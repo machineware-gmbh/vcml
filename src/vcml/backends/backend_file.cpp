@@ -77,6 +77,4 @@ namespace vcml {
         return new backend_file(nm.c_str());
     }
 
-    VCML_REGISTER_BACKEND_TYPE(file, &backend_file::create);
-
 }

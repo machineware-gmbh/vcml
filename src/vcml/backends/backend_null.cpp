@@ -45,6 +45,4 @@ namespace vcml {
         return new backend_null(nm.c_str());
     }
 
-    VCML_REGISTER_BACKEND_TYPE(null, &backend_null::create);
-
 }

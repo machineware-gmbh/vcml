@@ -142,6 +142,4 @@ namespace vcml {
         return new backend_tcp(nm.c_str());
     }
 
-    VCML_REGISTER_BACKEND_TYPE(tcp, &backend_tcp::create);
-
 }

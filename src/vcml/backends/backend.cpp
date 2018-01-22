@@ -22,10 +22,17 @@
 #include "vcml/backends/backend_file.h"
 #include "vcml/backends/backend_stdout.h"
 #include "vcml/backends/backend_term.h"
+#include "vcml/backends/backend_tcp.h"
 
 namespace vcml {
 
-    std::map<string, backend::backend_cfn> backend::types;
+    std::map<string, backend::backend_cfn> backend::types = {
+            { "null", &backend_null::create },
+            { "file", &backend_file::create },
+            { "stdout", &backend_stdout::create },
+            { "term", &backend_term::create },
+            { "tcp", &backend_tcp::create }
+    };
 
     backend::backend(const sc_module_name& nm):
         sc_module(nm) {

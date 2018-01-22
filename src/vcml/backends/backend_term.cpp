@@ -150,6 +150,4 @@ namespace vcml {
         return new backend_term(nm.c_str());
     }
 
-    VCML_REGISTER_BACKEND_TYPE(term, &backend_term::create);
-
 }

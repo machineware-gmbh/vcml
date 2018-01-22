@@ -66,9 +66,6 @@ namespace vcml {
         static size_t full_write(int fd, const void* buffer, size_t len);
     };
 
-#define VCML_REGISTER_BACKEND_TYPE(type, fn) \
-    int backend_register_##type = backend::register_backend_type(#type, fn)
-
 }
 
 #endif

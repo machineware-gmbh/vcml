@@ -45,6 +45,4 @@ namespace vcml {
         return new backend_stdout(nm.c_str());
     }
 
-    VCML_REGISTER_BACKEND_TYPE(stdout, &backend_stdout::create);
-
 }
