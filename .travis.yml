@@ -31,6 +31,7 @@ install:
   - cd googletest-release-1.8.0
   - mkdir BUILD && cd BUILD
   - cmake .. -DCMAKE_INSTALL_PREFIX=INSTALL
+  - make && make install
   - export GTEST_ROOT=`pwd`/INSTALL
   - export GMOCK_ROOT=$GTEST_ROOT
   - cd ../../..
