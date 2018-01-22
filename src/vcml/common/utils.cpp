@@ -176,7 +176,7 @@ namespace vcml {
             }
 
             if (!func || !offset || !end) {
-                sv[i-1] = mkstr("<unknown> [%p]", symbols[i]);
+                sv[i-skip] = mkstr("<unknown> [%p]", symbols[i]);
                 continue;
             }
 
