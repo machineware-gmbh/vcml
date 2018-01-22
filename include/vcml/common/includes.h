@@ -19,6 +19,14 @@
 #ifndef VCML_INCLUDES_H
 #define VCML_INCLUDES_H
 
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#ifndef SC_INCLUDE_DYNAMIC_PROCESSES
+#define SC_INCLUDE_DYNAMIC_PROCESSES
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>

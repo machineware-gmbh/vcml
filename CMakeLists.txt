@@ -16,11 +16,13 @@
  #                                                                            #
  ##############################################################################
 
-cmake_minimum_required(VERSION 3.5)
 project(vcml)
+cmake_minimum_required(VERSION 3.5)
+
+option(BUILD_TESTS "Build unit tests, requires GTest and GMock >= 1.8.0" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-find_package(SystemC "2.3.1" REQUIRED)
+find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibElf REQUIRED)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -71,7 +73,7 @@ target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 install(TARGETS vcml DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
 
-if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
