@@ -33,7 +33,7 @@ install:
   - cmake .. -DCMAKE_INSTALL_PREFIX=INSTALL
   - export GTEST_ROOT=`pwd`/INSTALL
   - export GMOCK_ROOT=$GTEST_ROOT
-  - cd ../..
+  - cd ../../..
 
 
 before_script:
