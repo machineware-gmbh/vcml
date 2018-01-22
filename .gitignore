@@ -1,7 +1,18 @@
 # Ignore build directory
 BUILD/
 
+# Ignore build files
+*.o
+*.a
+*.so
+*.elf
+*.log
+
+# Ignore setup files
+setup.sh
+
 # Ignore Eclipse files
 .project
 .cproject
 .settings/
+
