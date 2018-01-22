@@ -31,6 +31,10 @@ TEST(utils, dirname) {
     EXPECT_EQ(vcml::dirname("nothing"), "");
 }
 
+static bool str_begins_with(const std::string s, const char* prefix) {
+    return strncmp(s.c_str(), prefix, strlen(prefix)) == 0;
+}
+
 namespace N {
 
     template<typename T>
@@ -39,19 +43,19 @@ namespace N {
             void func() {
                 std::vector<std::string> bt = ::vcml::backtrace(1, 1);
                 EXPECT_EQ(bt.size(), 1);
-                EXPECT_EQ(bt[0], "N::A<int>::B::func()+0x38");
+                EXPECT_TRUE(str_begins_with(bt[0], "N::A<int>::B::func()"));
             }
 
             void func(T t) {
                 std::vector<std::string> bt = ::vcml::backtrace(1, 1);
                 EXPECT_EQ(bt.size(), 1);
-                EXPECT_EQ(bt[0], "N::A<char const*>::B::func(char const*)+0x3f");
+                EXPECT_TRUE(str_begins_with(bt[0], "N::A<char const*>::B::func(char const*)"));
             }
 
             void func2() {
                 std::vector<std::string> bt = ::vcml::backtrace(1, 1);
                 EXPECT_EQ(bt.size(), 1);
-                EXPECT_EQ(bt[0], "N::A<N::A<std::map<int, double, std::less<int>, std::allocator<std::pair<int const, double> > > > >::B::func2()+0x38");
+                EXPECT_TRUE(str_begins_with(bt[0], "N::A<N::A<std::map<int, double, std::less<int>, std::allocator<std::pair<int const, double> > > > >::B::func2()"));
             }
         };
     };
@@ -66,16 +70,16 @@ namespace N {
     template<>
     void U::unroll<0>(double d) {
         const char* ref[5] = {
-            "void N::U::unroll<0>(double)+0x68",
-            "void N::U::unroll<1>(double)+0x2a",
-            "void N::U::unroll<2>(double)+0x2a",
-            "void N::U::unroll<3>(double)+0x2a",
-            "void N::U::unroll<4>(double)+0x2a"
+            "void N::U::unroll<0>(double)",
+            "void N::U::unroll<1>(double)",
+            "void N::U::unroll<2>(double)",
+            "void N::U::unroll<3>(double)",
+            "void N::U::unroll<4>(double)"
         };
         std::vector<std::string> bt = ::vcml::backtrace(5, 1);
         EXPECT_EQ(bt.size(), 5);
         for (int i = 0; i < 5; i++)
-            EXPECT_EQ(bt[i], ref[i]);
+            EXPECT_TRUE(str_begins_with(bt[i], ref[i]));
     }
 }
 
