@@ -16,7 +16,7 @@ env:
 
 install:
   - mkdir depends && cd depends
-  - systemc=systemc-2.3.2
+  - systemc=systemc-2.3.1a
   - wget http://www.accellera.org/images/downloads/standards/systemc/$systemc.tar.gz
   - tar -xzf $systemc.tar.gz && cd $systemc
   - mkdir BUILD && cd BUILD
