@@ -21,13 +21,12 @@ is how to build and install them:
    environment variables `SYSTEMC_HOME` and `TARGET_ARCH` accordingly:
     ```
     wget http://www.accellera.org/images/downloads/standards/systemc/systemc-2.3.1a.tar.gz
-    tar -xzf systemc-2.3.1a.tar.gz
-    mkdir -p systemc-2.3.1a/BUILD && systemc-2.3.1a/BUILD
-    ../configure --enable-optimize --enable-static CXXFLAGS="-std=c++11"
-    make -j 4 && make install
-    cd ..
+    tar -xzf systemc-2.3.1a.tar.gz && cd systemc-2.3.1a
     export SYSTEMC_HOME=`pwd`
     export TARGET_ARCH=linux64
+    mkdir BUILD && cd BUILD
+    ../configure --prefix=$SYSTEMC_HOME --enable-optimize --enable-static CXXFLAGS="-std=c++11"
+    make -j 4 && make install
     ```
 
 2. Install `libelf` and `cmake`:
