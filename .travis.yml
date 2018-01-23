@@ -22,8 +22,8 @@ env:
 
 install:
   - mkdir -p DEPENDS && cd DEPENDS
-  - | # Setup SystemC
-      export SYSTEMC_HOME=`pwd`/$SYSTEMC
+  - export SYSTEMC_HOME=`pwd`/$SYSTEMC
+  - | # Build SystemC
       if [ ! -d $SYSTEMC_HOME ]; then
           wget http://www.accellera.org/images/downloads/standards/systemc/$SYSTEMC.tar.gz
           tar -xzf $SYSTEMC.tar.gz && cd $SYSTEMC
@@ -32,9 +32,9 @@ install:
           make -j 4 && make install
           cd ../..
       done
-  - | # Setup Google Test
-      export GTEST_ROOT=`pwd`/googletest-release-1.8.0/INSTALL
-      export GMOCK_ROOT=$GTEST_ROOT
+  - export GTEST_ROOT=`pwd`/googletest-release-1.8.0/INSTALL
+  - export GMOCK_ROOT=$GTEST_ROOT
+  - | # Build Google Test
       if [ ! -d $GTEST_ROOT ]; then
           wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz
           tar -xzf release-1.8.0.tar.gz && cd googletest-release-1.8.0
