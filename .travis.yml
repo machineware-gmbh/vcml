@@ -31,7 +31,7 @@ install:
           ../configure --enable-static CXXFLAGS="-std=c++11"
           make -j 4 && make install
           cd ../..
-      done
+      fi
   - export GTEST_ROOT=`pwd`/googletest-release-1.8.0/INSTALL
   - export GMOCK_ROOT=$GTEST_ROOT
   - | # Build Google Test
@@ -42,7 +42,7 @@ install:
           cmake .. -DCMAKE_INSTALL_PREFIX=$GTEST_ROOT -DCMAKE_CXX_STANDARD=11
           make -j 4 && make install
           cd ../..
-      done
+      fi
   - cd ..
 
 before_script:
