@@ -11,30 +11,38 @@ addons:
     packages:
     - libelf-dev
 
+cache:
+  directories:
+    - DEPENDS
+
 env:
   - BUILD=RELEASE TARGET_ARCH=linux64 SYSTEMC=systemc-2.3.0a
   - BUILD=RELEASE TARGET_ARCH=linux64 SYSTEMC=systemc-2.3.1a
   - BUILD=RELEASE TARGET_ARCH=linux64 SYSTEMC=systemc-2.3.2
 
 install:
-  - mkdir DEPENDS && cd DEPENDS
-  - | # Build SystemC
-      wget http://www.accellera.org/images/downloads/standards/systemc/$SYSTEMC.tar.gz
-      tar -xzf $SYSTEMC.tar.gz && cd $SYSTEMC
-      mkdir BUILD && cd BUILD
-      ../configure --enable-static CXXFLAGS="-std=c++11"
-      make -j 4 && make install
-      export SYSTEMC_HOME=`pwd`/..
-      cd ../..
-  - | # Build Google Test
-      wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz
-      tar -xzf release-1.8.0.tar.gz && cd googletest-release-1.8.0
-      mkdir BUILD && cd BUILD
-      cmake .. -DCMAKE_INSTALL_PREFIX=INSTALL -DCMAKE_CXX_STANDARD=11
-      make -j 4 && make install
-      export GTEST_ROOT=`pwd`/INSTALL
+  - mkdir -p DEPENDS && cd DEPENDS
+  - | # Setup SystemC
+      export SYSTEMC_HOME=`pwd`/$SYSTEMC
+      if [ ! -d $SYSTEMC_HOME ]; then
+          wget http://www.accellera.org/images/downloads/standards/systemc/$SYSTEMC.tar.gz
+          tar -xzf $SYSTEMC.tar.gz && cd $SYSTEMC
+          mkdir BUILD && cd BUILD
+          ../configure --enable-static CXXFLAGS="-std=c++11"
+          make -j 4 && make install
+          cd ../..
+      done
+  - | # Setup Google Test
+      export GTEST_ROOT=`pwd`/googletest-release-1.8.0/INSTALL
       export GMOCK_ROOT=$GTEST_ROOT
-      cd ../..
+      if [ ! -d $GTEST_ROOT ]; then
+          wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz
+          tar -xzf release-1.8.0.tar.gz && cd googletest-release-1.8.0
+          mkdir BUILD && cd BUILD
+          cmake .. -DCMAKE_INSTALL_PREFIX=$GTEST_ROOT -DCMAKE_CXX_STANDARD=11
+          make -j 4 && make install
+          cd ../..
+      done
   - cd ..
 
 before_script:
