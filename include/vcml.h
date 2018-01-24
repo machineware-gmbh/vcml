@@ -64,4 +64,6 @@
 #include "vcml/models/generic/crossbar.h"
 #include "vcml/models/generic/uart8250.h"
 
+#include "vcml/models/opencores/ompic.h"
+
 #endif
