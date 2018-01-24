@@ -22,10 +22,10 @@
 namespace vcml {
 
     bool property_provider::lookup(const string& name, string& value) {
-        if (!stl_contains(m_values, value))
+        if (!stl_contains(m_values, name))
             return false;
 
-        struct value val = m_values[name];
+        struct value& val = m_values[name];
         value = val.value;
         val.uses++;
         return true;
@@ -39,10 +39,9 @@ namespace vcml {
     property_provider::~property_provider() {
         unregister_provider(this);
 
-        std::map<string, struct value>::const_iterator it;
         for (auto val: m_values) {
             if (val.second.uses == 0)
-                log_debug("unused property '%s'", it->first.c_str());
+                log_debug("unused property '%s'", val.first.c_str());
         }
     }
 
@@ -66,8 +65,8 @@ namespace vcml {
     }
 
     bool property_provider::init(const string& name, string& value) {
-        for (unsigned int i = 0; i < providers.size(); i++)
-            if (providers[i]->lookup(name, value))
+        for (auto provider : providers)
+            if (provider->lookup(name, value))
                 return true;
         return false;
     }
