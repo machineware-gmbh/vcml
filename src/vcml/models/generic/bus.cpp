@@ -197,10 +197,10 @@ namespace vcml { namespace generic {
                   const string& peer) {
         const bus_mapping& other = lookup(addr);
         if (other.port != -1) {
-            VCML_ERROR("Cannot map 0x%08x..0x%08x to port %d, because it "\
-                       "overlaps with 0x%08x..0x%08x mapped to port %d",
-                       addr.start, addr.end, port, other.addr.start,
-                       other.addr.end, other.port);
+            VCML_ERROR("Cannot map %d:0x%016x..0x%016x to '%s', because it "\
+                       "overlaps with %d:0x%016x..0x%016x mapped to '%s'",
+                       port, addr.start, addr.end, peer.c_str(), other.port,
+                       other.addr.start, other.addr.end, other.peer.c_str());
         }
 
         bus_mapping mapping = {
