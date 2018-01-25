@@ -28,7 +28,7 @@ namespace vcml {
         sc_core::sc_out<bool>(sc_gen_unique_name("out")),
         m_state(false),
         m_update(),
-        m_stub(concat(name(), "_stub").c_str()) {
+        m_stub(concat(basename(), "_stub").c_str()) {
         sc_core::sc_spawn_options opts;
         opts.spawn_method();
         opts.set_sensitivity(&m_update);
@@ -43,14 +43,14 @@ namespace vcml {
         sc_core::sc_out<bool>(nm),
         m_state(false),
         m_update(),
-        m_stub(concat(name(), "_stub").c_str()) {
+        m_stub(concat(basename(), "_stub").c_str()) {
         sc_core::sc_spawn_options opts;
         opts.spawn_method();
         opts.set_sensitivity(&m_update);
         opts.dont_initialize();
 
         sc_spawn(sc_bind(&out_port::update, this),
-                 concat(name(), "_update").c_str(),
+                 concat(basename(), "_update").c_str(),
                  &opts);
     }
 
