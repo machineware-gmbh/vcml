@@ -44,12 +44,6 @@ namespace vcml {
     using std::ifstream;
     using std::ofstream;
 
-    using std::atomic;
-    using std::thread;
-    using std::mutex;
-    using std::unique_lock;
-    using std::condition_variable;
-
     using sc_core::sc_object;
     using sc_core::sc_attr_base;
 
