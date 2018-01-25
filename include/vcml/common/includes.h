@@ -19,6 +19,10 @@
 #ifndef VCML_INCLUDES_H
 #define VCML_INCLUDES_H
 
+#if __cplusplus < 201103L
+#error Please compile with c++11
+#endif
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -46,10 +50,7 @@
 #include <sstream>
 #include <algorithm>
 #include <functional>
-#include <atomic>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#include <limits>
 
 #include <unistd.h>
 #include <fcntl.h>
