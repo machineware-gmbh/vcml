@@ -48,9 +48,9 @@ namespace vcml {
         void invalidate(u64 start, u64 end);
         void invalidate(const range& r);
 
-        bool lookup(const range& r, tlm_command c, tlm_dmi& dmi) const;
-        bool lookup(u64 addr, u64 size, tlm_command c, tlm_dmi& dmi) const;
-        bool lookup(const tlm_generic_payload& tx, tlm_dmi& dmi) const;
+        bool lookup(const range& r, tlm_command c, tlm_dmi& dmi);
+        bool lookup(u64 addr, u64 size, tlm_command c, tlm_dmi& dmi);
+        bool lookup(const tlm_generic_payload& tx, tlm_dmi& dmi);
     };
 
     static inline void dmi_set_access(tlm_dmi& dmi, vcml_access a) {

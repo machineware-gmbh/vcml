@@ -39,6 +39,19 @@ namespace vcml {
         return true;
     }
 
+    static inline tlm_dmi dmi_merge(const tlm_dmi& a, const tlm_dmi& b) {
+        assert(dmi_is_mergeable(a, b));
+
+        tlm_dmi result = a;
+        if (b.get_end_address() > result.get_end_address())
+            result.set_end_address(b.get_end_address());
+        if (b.get_start_address() < result.get_start_address())
+            dmi_set_start_address(result, b.get_start_address());
+
+        return result;
+    }
+
+
     dmi_cache::dmi_cache():
         m_entries() {
         /* nothing to do */
@@ -49,25 +62,21 @@ namespace vcml {
     }
 
     void dmi_cache::insert(const tlm_dmi& dmi) {
-        vector<tlm_dmi>::iterator it = std::find_if(m_entries.begin(),
-            m_entries.end(), [dmi] (const tlm_dmi& entry) -> bool {
-            return dmi_is_mergeable(dmi, entry);
-        });
+        tlm_dmi merged(dmi);
+        while (true) {
+            vector<tlm_dmi>::iterator it = std::find_if(m_entries.begin(),
+                m_entries.end(), [merged] (const tlm_dmi& entry) -> bool {
+                return dmi_is_mergeable(merged, entry);
+            });
 
-        if (it == m_entries.end()) {
-            m_entries.push_back(dmi);
-            return;
-        }
+            if (it == m_entries.end()) {
+                m_entries.push_back(merged);
+                return;
+            }
 
-        tlm_dmi merged(*it);
-        m_entries.erase(it, it + 1);
-
-        if (dmi.get_end_address() > merged.get_end_address())
-            merged.set_end_address(dmi.get_end_address());
-        if (dmi.get_start_address() < merged.get_start_address())
-            dmi_set_start_address(merged, dmi.get_start_address());
-
-        insert(merged);
+            merged = dmi_merge(merged, *it);
+            m_entries.erase(it, it + 1);
+        };
     }
 
     void dmi_cache::invalidate(u64 start, u64 end) {
@@ -100,22 +109,22 @@ namespace vcml {
         }
     }
 
-    bool dmi_cache::lookup(const range& r, tlm_command c, tlm_dmi& out) const {
-        for (auto dmi : m_entries) {
-            if (r.inside(dmi) && dmi_check_access(dmi, c)) {
-                out = dmi;
+    bool dmi_cache::lookup(const range& r, tlm_command c, tlm_dmi& out) {
+        for (unsigned int i = 0; i < m_entries.size(); i++) {
+            if (r.inside(m_entries[i]) && dmi_check_access(m_entries[i], c)) {
+                std::swap(m_entries[i], m_entries[0]);
+                out = m_entries[0];
                 return true;
             }
         }
         return false;
     }
 
-    bool dmi_cache::lookup(u64 addr, u64 size, tlm_command c,
-                           tlm_dmi& dmi) const {
+    bool dmi_cache::lookup(u64 addr, u64 size, tlm_command c, tlm_dmi& dmi) {
         return lookup(range(addr, addr + size - 1), c, dmi);
     }
 
-    bool dmi_cache::lookup(const tlm_generic_payload& tx, tlm_dmi& dmi) const {
+    bool dmi_cache::lookup(const tlm_generic_payload& tx, tlm_dmi& dmi) {
         return lookup(range(tx), tx.get_command(), dmi);
     }
 
