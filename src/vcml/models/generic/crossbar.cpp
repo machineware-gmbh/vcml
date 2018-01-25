@@ -24,7 +24,6 @@ namespace vcml { namespace generic {
         bool val = IN[from].read();
         bool bcast = is_broadcast(from);
 
-        out_port_list::iterator it;
         for (auto port : OUT)
             if (bcast || is_forward(from, port.first))
                 port.second->write(val);
@@ -43,7 +42,6 @@ namespace vcml { namespace generic {
     }
 
     void crossbar::end_of_elaboration() {
-        in_port_list::iterator it;
         for (auto port : IN) {
             stringstream ss;
             ss << "forward_" << port.first;
@@ -53,7 +51,7 @@ namespace vcml { namespace generic {
             opts.set_sensitivity(port.second);
             opts.dont_initialize();
 
-            sc_spawn(sc_bind(&crossbar::forward, this, it->first),
+            sc_spawn(sc_bind(&crossbar::forward, this, port.first),
                      sc_gen_unique_name(ss.str().c_str()), &opts);
         }
     }
