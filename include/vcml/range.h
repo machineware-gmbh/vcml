@@ -60,6 +60,10 @@ namespace vcml {
             return range(max(start, other.start), min(end, other.end));
         }
 
+        inline range(): start(0), end(0) {
+            /* nothing to do */
+        }
+
         inline range(u64 _start, u64 _end): start(_start), end(_end) {
             VCML_ERROR_ON(_start > _end, "invalid range specified");
         }
@@ -85,6 +89,20 @@ namespace vcml {
         }
     };
 
+}
+
+inline std::istream& operator >> (std::istream& is, vcml::range& r) {
+    is >> r.start;
+    is >> r.end;
+    return is;
+}
+
+inline std::ostream& operator << (std::ostream& os, const vcml::range& r) {
+    int n = (r.start > std::numeric_limits<vcml::u32>::max() ||
+             r.end   > std::numeric_limits<vcml::u32>::max()) ? 16 : 8;
+    os <<  "0x" << std::hex << std::setw(n) << std::setfill('0') << r.start
+       << " 0x" << std::hex << std::setw(n) << std::setfill('0') << r.end;
+    return os;
 }
 
 #endif

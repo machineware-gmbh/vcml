@@ -85,6 +85,26 @@ TEST(range, transaction) {
     EXPECT_EQ(b.length(), tx.get_data_length());
 }
 
+TEST(range, init) {
+    vcml::range a = { 10, 20 };
+    EXPECT_EQ(a.start, 10);
+    EXPECT_EQ(a.end, 20);
+
+    vcml::range b({ 20, 30 });
+    EXPECT_EQ(b.start, 20);
+    EXPECT_EQ(b.end, 30);
+}
+
+TEST(range, tostring) {
+    vcml::range a = { 0x10, 0x20 };
+    std::string s = to_string(a);
+    EXPECT_EQ(s, "0x00000010 0x00000020");
+
+    vcml::range b = { 0xababababcdcdcdcd, 0xfefefefe12121212 };
+    std::string t = to_string(b);
+    EXPECT_EQ(t, "0xababababcdcdcdcd 0xfefefefe12121212");
+}
+
 extern "C" int sc_main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
