@@ -205,7 +205,7 @@ namespace vcml {
         memcpy(ptr, data, addr.length());
 
         if (tagged_write != NULL)
-            val = (m_host->*write)(val);
+            val = (m_host->*tagged_write)(val, tag);
         else if (write != NULL)
             val = (m_host->*write)(val);
 
