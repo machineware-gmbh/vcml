@@ -176,7 +176,7 @@ namespace vcml {
 
         int fd = open(m_filename.c_str(), O_RDONLY, 0);
         if (fd < 0)
-            VCML_ERROR("cannot open elf file");
+            VCML_ERROR("cannot open elf file '%s'", m_filename.c_str());
 
         Elf* e = elf_begin(fd, ELF_C_READ, NULL);
         if (e == NULL)
