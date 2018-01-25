@@ -57,7 +57,9 @@ namespace vcml { namespace generic {
         virtual ~bus_ports();
 
         bool exists(unsigned int idx) const;
-        unsigned int next() const;
+
+        unsigned int next_idx() const;
+        T& next();
 
         inline T& operator[] (unsigned int idx);
 
@@ -144,8 +146,13 @@ namespace vcml { namespace generic {
     }
 
     template <typename T>
-    unsigned int bus_ports<T>::next() const {
+    unsigned int bus_ports<T>::next_idx() const {
         return m_next;
+    }
+
+    template <typename T>
+    T& bus_ports<T>::next() {
+        return operator [] (next_idx());
     }
 
     template <typename T>

@@ -218,14 +218,14 @@ namespace vcml { namespace generic {
     }
 
     unsigned int bus::bind(tlm_initiator_socket<>& socket) {
-        unsigned int port = IN.next();
+        unsigned int port = IN.next_idx();
         socket.bind(IN[port]);
         return port;
     }
 
     unsigned int bus::bind(tlm_target_socket<>& socket, const range& addr,
                            u64 offset) {
-        unsigned int port = OUT.next();
+        unsigned int port = OUT.next_idx();
         map(port, addr, offset, socket.name());
         OUT[port].bind(socket);
         return port;
