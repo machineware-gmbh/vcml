@@ -38,8 +38,17 @@ namespace vcml {
 
     bool exmon::add_lock(int cpu, const range& r) {
         assert(cpu >= 0);
-        m_locks.push_back({cpu, r}); // maybe only one lock per cpu?
+        break_locks(cpu);
+        m_locks.push_back({cpu, r});
         return true;
+    }
+
+    void exmon::break_locks(int cpu) {
+        assert(cpu >= 0);
+        m_locks.erase(std::remove_if(m_locks.begin(), m_locks.end(),
+            [cpu] (const exlock& lock) -> bool {
+                return lock.cpu == cpu;
+        }), m_locks.end());
     }
 
     void exmon::break_locks(const range& r) {

@@ -51,6 +51,7 @@ namespace vcml {
         bool has_lock(int cpu, const range& r) const;
         bool add_lock(int cpu, const range& r);
 
+        void break_locks(int cpu);
         void break_locks(const range& r);
 
         bool update(tlm_generic_payload& tx);
