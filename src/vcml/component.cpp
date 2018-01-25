@@ -142,10 +142,6 @@ namespace vcml {
 
     void component::b_transport(slave_socket* origin, tlm_generic_payload& tx,
                                 sc_time& dt) {
-        tlm_dmi dmi;
-        if (m_dmi_cache.lookup(tx, dmi))
-            tx.set_dmi_allowed(true);
-
         if (tx_is_excl(tx) && tx.is_read()) {
             for (auto socket : m_slave_sockets) {
                 (*socket)->invalidate_direct_mem_ptr(tx.get_address(),
@@ -153,9 +149,17 @@ namespace vcml {
             }
         }
 
-        if (m_exmon.update(tx))
-            transport(tx, dt, tx_is_excl(tx) ? VCML_FLAG_EXCL
-                                             : VCML_FLAG_NONE);
+        if (!m_exmon.update(tx)) {
+            tx.set_dmi_allowed(false);
+            tx.set_response_status(tlm::TLM_OK_RESPONSE);
+            return;
+        }
+
+        transport(tx, dt, tx_is_excl(tx) ? VCML_FLAG_EXCL : VCML_FLAG_NONE);
+
+        tlm_dmi dmi;
+        if (m_dmi_cache.lookup(tx, dmi))
+            tx.set_dmi_allowed(true);
     }
 
     unsigned int component::transport_dbg(slave_socket* origin,
