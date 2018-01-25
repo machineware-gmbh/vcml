@@ -20,8 +20,7 @@
 
 namespace vcml {
 
-    void property_provider_file::parse_file(const string& filename)
-    {
+    void property_provider_file::parse_file(const string& filename) {
         int lno = 0;
         string line, buffer = "";
 
@@ -68,9 +67,8 @@ namespace vcml {
     }
 
     void property_provider_file::replace(string& str) {
-        std::map<string, string>::const_iterator it;
-        for (it = m_replacements.begin(); it != m_replacements.end(); it++)
-            vcml::replace(str, it->first, it->second);
+        for (auto it : m_replacements)
+            vcml::replace(str, it.first, it.second);
     }
 
     property_provider_file::property_provider_file(const string& filename):
