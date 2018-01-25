@@ -136,12 +136,14 @@ namespace vcml {
 
     int replace(string& str, const string& search, const string& repl) {
         int count = 0;
+        size_t index = 0;
+
         while (true) {
-             size_t index = str.find(search, index);
+             index = str.find(search, index);
              if (index == std::string::npos)
                  break;
 
-             str.replace(index, repl.length(), repl);
+             str.replace(index, search.length(), repl);
              index += repl.length();
              count++;
         }

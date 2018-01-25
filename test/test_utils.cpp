@@ -128,6 +128,16 @@ TEST(utils, from_string) {
     EXPECT_EQ(e, 8);
 }
 
+TEST(utils, replace) {
+    std::string s ="replace this";
+    EXPECT_EQ(vcml::replace(s, "this", "done"), 1);
+    EXPECT_EQ(s, "replace done");
+
+    std::string s2 = "$dir/file.txt";
+    EXPECT_EQ(vcml::replace(s2, "$dir", "/home/user"), 1);
+    EXPECT_EQ(s2, "/home/user/file.txt");
+}
+
 extern "C" int sc_main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
