@@ -90,8 +90,11 @@ namespace vcml {
 
     template <typename T>
     inline T from_string(const string& str) {
-        stringstream ss;
-        ss.str(str);
+        stringstream ss; ss.str(str);
+        ss.unsetf(std::ios::dec);
+        ss.unsetf(std::ios::hex);
+        ss.unsetf(std::ios::oct);
+
         T val;
         ss >> val;
         return val;

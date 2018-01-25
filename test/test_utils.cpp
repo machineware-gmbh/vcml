@@ -115,6 +115,19 @@ TEST(utils, split) {
     EXPECT_EQ(v.at(4), ":.;");
 }
 
+TEST(utils, from_string) {
+    vcml::u64 a = vcml::from_string<vcml::u64>("0xF");
+    EXPECT_EQ(a, 0xf);
+    vcml::u64 b = vcml::from_string<vcml::u64>("0x0000000b");
+    EXPECT_EQ(b, 0xb);
+    vcml::i32 c = vcml::from_string<vcml::i32>("10");
+    EXPECT_EQ(c, 10);
+    vcml::i32 d = vcml::from_string<vcml::i32>("-10");
+    EXPECT_EQ(d, -10);
+    vcml::u64 e = vcml::from_string<vcml::u64>("010");
+    EXPECT_EQ(e, 8);
+}
+
 extern "C" int sc_main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
