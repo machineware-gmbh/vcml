@@ -60,6 +60,14 @@ namespace vcml {
         return (i == string::npos) ? "" : filename.substr(0, i);
     }
 
+    void trim(string& s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+            [] (int ch) { return !std::isspace(ch); }));
+
+        s.erase(std::find_if(s.rbegin(), s.rend(),
+            [] (int ch) { return !std::isspace(ch); }).base(), s.end());
+    }
+
     string tlm_response_to_str(tlm_response_status status) {
         switch (status) {
         case TLM_INCOMPLETE_RESPONSE:

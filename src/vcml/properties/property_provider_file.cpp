@@ -30,9 +30,9 @@ namespace vcml {
         while (std::getline(file, line)) {
             lno++;
 
-            /* remove white spaces */
-            line.erase(std::remove_if(line.begin(), line.end(), isspace),
-                    line.end());
+            /* remove white spaces  */
+            trim(line);
+
             if (line.empty())
                 continue;
 
@@ -60,6 +60,9 @@ namespace vcml {
 
             string key = line.substr(0, separator);
             string val = line.substr(separator + 1);
+
+            trim(key);
+            trim(val);
 
             replace(val);
             add(key, val);
