@@ -104,7 +104,7 @@ namespace vcml {
 
         inline void reset();
 
-        bool get_irq_stats(unsigned int irq, irq_stats& stats);
+        bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
 
         virtual void end_of_elaboration();
 

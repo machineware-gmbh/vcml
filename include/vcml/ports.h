@@ -69,7 +69,10 @@ namespace vcml {
         port_list(const port_list<PORT>&);
 
     public:
-        typedef typename std::map<unsigned int, PORT*>::iterator iterator;
+        typedef typename std::map<unsigned int, PORT*> map_type;
+
+        typedef typename map_type::iterator iterator;
+        typedef typename map_type::const_iterator const_iterator;
 
         port_list(const sc_module_name& nm);
         virtual ~port_list();
@@ -78,6 +81,9 @@ namespace vcml {
 
         inline iterator begin() { return m_ports.begin(); }
         inline iterator end()   { return m_ports.end(); }
+
+        inline const_iterator begin() const { return m_ports.begin(); }
+        inline const_iterator end()   const { return m_ports.end(); }
 
         bool exists(unsigned int idx) const ;
         PORT& operator [] (unsigned int idx);

@@ -369,11 +369,11 @@ namespace vcml {
            delete m_symbols;
     }
 
-    bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) {
+    bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {
         if (m_irq_stats.find(irq) == m_irq_stats.end())
             return false;
 
-        stats = m_irq_stats[irq];
+        stats = m_irq_stats.at(irq);
         return true;
     }
 
