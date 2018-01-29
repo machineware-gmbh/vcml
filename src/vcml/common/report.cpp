@@ -21,13 +21,23 @@
 
 namespace vcml {
 
-    void report::init() {
+    static string find_source() {
         sc_core::sc_simcontext* simc = sc_core::sc_get_curr_simcontext();
-        if (simc && sc_core::sc_is_running(simc)) {
-            sc_core::sc_process_b* proc = sc_core::sc_get_current_process_b();
+        if (simc) {
+            sc_process_b* proc = sc_get_current_process_b();
             if (proc)
-                m_process = proc->name();
+                return proc->name();
+
+            sc_module* module = simc->hierarchy_curr();
+            if (module)
+                return module->name();
         }
+
+        return "";
+    }
+
+    void report::init() {
+        m_source = find_source();
 
         stringstream ss; ss << *this;
         m_desc = ss.str();
@@ -37,7 +47,7 @@ namespace vcml {
         std::exception(),
         m_severity(SEVERITY_ERROR),
         m_message(msg),
-        m_process(),
+        m_source(),
         m_time(sc_time_stamp()),
         m_file(),
         m_line(0),
@@ -49,7 +59,7 @@ namespace vcml {
         std::exception(),
         m_severity(sev),
         m_message(msg),
-        m_process(),
+        m_source(),
         m_time(sc_time_stamp()),
         m_file(),
         m_line(0),
@@ -61,7 +71,7 @@ namespace vcml {
         std::exception(),
         m_severity(sev),
         m_message(msg),
-        m_process(),
+        m_source(),
         m_time(sc_time_stamp()),
         m_file(file),
         m_line(ln),
@@ -170,14 +180,14 @@ std::ostream& operator << (std::ostream& os, const vcml::report& rep) {
        << std::fixed << std::setprecision(9)
        << rep.get_time().to_seconds() << "s] ";
 
-    std::string process = rep.get_process_name();
+    std::string process = rep.get_source();
     if (!process.empty())
         os << process << ": ";
     os << rep.get_message();
 
     std::string source = rep.get_file();
     if (!source.empty())
-        os << "\n\tFrom " << source << ":" << rep.get_line_number();
+        os << "\n\tFrom " << source << ":" << rep.get_line();
 
     if (sev == vcml::SEVERITY_ERROR) {
         const std::vector<std::string>& bt = rep.get_backtrace();
