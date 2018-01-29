@@ -20,14 +20,12 @@
 
 namespace vcml { namespace generic {
 
-    bool memory::cmd_reset(const vector<string>& args, ostream& os)
-    {
+    bool memory::cmd_reset(const vector<string>& args, ostream& os) {
         memset(m_memory, 0, size);
         return true;
     }
 
-    bool memory::cmd_load(const vector<string>& args, ostream& os)
-    {
+    bool memory::cmd_load(const vector<string>& args, ostream& os) {
         string binary = args[0];
         u64 offset = 0ull;
 
@@ -38,8 +36,7 @@ namespace vcml { namespace generic {
         return true;
     }
 
-    bool memory::cmd_show(const vector<string>& args, ostream& os)
-    {
+    bool memory::cmd_show(const vector<string>& args, ostream& os) {
         u64 start = strtoull(args[0].c_str(), NULL, 0);
         u64 end = strtoull(args[1].c_str(), NULL, 0);
 
@@ -112,7 +109,10 @@ namespace vcml { namespace generic {
 
     void memory::load(const string& binary, u64 offset) {
         ifstream file(binary.c_str(), std::ios::binary | std::ios::ate);
-        VCML_ERROR_ON(!file.is_open(), "error opening '%s'", binary.c_str());
+        if (!file.is_open()) {
+            log_warning("cannot open file '%s'", binary.c_str());
+            return;
+        }
 
         u64 nbytes = file.tellg();
         nbytes = min(nbytes, size - offset);
