@@ -64,6 +64,25 @@ namespace vcml {
         return vec;
     }
 
+    template <>
+    inline vector<string> split<char>(const string& str, char predicate) {
+        vector<string> vec;
+        string buf = "";
+        for (auto ch : str) {
+            if (ch == predicate) {
+                if (!buf.empty()) {
+                    vec.push_back(buf);
+                    buf = "";
+                }
+            } else {
+                buf += ch;
+            }
+        }
+        if (!buf.empty())
+            vec.push_back(buf);
+        return vec;
+    }
+
     template <typename T>
     inline void stl_remove_erase(vector<T>& v, const T& t) {
         v.erase(std::remove(v.begin(), v.end(), t), v.end());
@@ -92,6 +111,11 @@ namespace vcml {
         return ss.str();
     }
 
+    template <>
+    inline string to_string<string>(const string& s) {
+        return s;
+    }
+
     template <typename T>
     inline T from_string(const string& str) {
         stringstream ss; ss.str(str);
@@ -102,6 +126,11 @@ namespace vcml {
         T val;
         ss >> val;
         return val;
+    }
+
+    template <>
+    inline string from_string<string>(const string& s) {
+        return s;
     }
 
     template <typename DATA>
