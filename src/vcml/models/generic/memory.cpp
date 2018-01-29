@@ -20,6 +20,28 @@
 
 namespace vcml { namespace generic {
 
+    struct image_info {
+        string file;
+        u64 offset;
+    };
+
+    static vector<image_info> images_from_string(string s) {
+        vector<image_info> images;
+        s.erase(std::remove_if(s.begin(), s.end(), isspace), s.end());
+        vector<string> token = split(s, ';');
+        for (string cur : token) {
+            vector<string> vec = split(cur, '@');
+            if (vec.empty())
+                continue;
+
+            string file = vec[0];
+            u64 off = vec.size() > 1 ? strtoull(vec[1].c_str(), NULL, 0) : 0;
+            images.push_back({file, off});
+        }
+
+        return images;
+    }
+
     bool memory::cmd_reset(const vector<string>& args, ostream& os) {
         memset(m_memory, 0, size);
         return true;
@@ -87,18 +109,10 @@ namespace vcml { namespace generic {
             "Show memory contents between addresses [start] and [end]. " \
             "Usage: show [start] [end]");
 
-        if (!images.get().empty()) {
-            vector<string> strings = split(images, isspace);
-            for (auto str : strings) {
-                vector<string> params = split(str,
-                        [](int ch) -> bool { return (char)ch == '@'; });
-                string image = params[0];
-                u64 offset = 0;
-                if (params.size() > 1)
-                    offset = strtoull(params[1].c_str(), NULL, 0);
-                log_debug("loading '%s' to 0x%08llx", image.c_str(), offset);
-                load(image, offset);
-            }
+        vector<image_info> imagevec = images_from_string(images);
+        for (auto ii : imagevec) {
+            log_debug("loading '%s' to 0x%08llx", ii.file.c_str(), ii.offset);
+            load(ii.file, ii.offset);
         }
     }
 
