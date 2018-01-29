@@ -31,6 +31,7 @@ install:
           ../configure --enable-static CXXFLAGS="-std=c++11"
           make -j 4 && make install
           cd ../..
+          rm -rf $SYSTEMC.tar.gz $SYSTEMC/BUILD
       fi
   - export GTEST_ROOT=`pwd`/googletest-release-1.8.0/INSTALL
   - export GMOCK_ROOT=$GTEST_ROOT
@@ -42,6 +43,7 @@ install:
           cmake .. -DCMAKE_INSTALL_PREFIX=$GTEST_ROOT -DCMAKE_CXX_STANDARD=11
           make -j 4 && make install
           cd ../..
+          rm -rf release-1.8.0.tar.gz googletest-release-1.8.0/BUILD
       fi
   - cd ..
 
@@ -50,4 +52,4 @@ before_script:
   - cmake .. -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=$BUILD
 
 script:
-  - make && ctest --output-on-failure
+  - make -j 4 && ctest --output-on-failure
