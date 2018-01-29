@@ -34,6 +34,8 @@ namespace vcml {
     string concat(const string& a, const string& b);
     string dirname(const string& filename);
 
+    bool file_exists(const string& filename);
+
     void trim(string& s);
 
     string tlm_response_to_str(tlm_response_status status);

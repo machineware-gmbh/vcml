@@ -60,6 +60,10 @@ namespace vcml {
         return (i == string::npos) ? "" : filename.substr(0, i);
     }
 
+    bool file_exists(const string& filename) {
+        return access(filename.c_str(), F_OK) != -1;
+    }
+
     void trim(string& s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(),
             [] (int ch) { return !std::isspace(ch); }));

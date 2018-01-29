@@ -341,8 +341,13 @@ namespace vcml {
         DATA("DATA") {
         SC_THREAD(processor_thread);
 
-        if (!symbols.get().empty())
-            m_symbols = new elf(symbols);
+        if (!symbols.get().empty()) {
+            if (file_exists(symbols)) {
+                m_symbols = new elf(symbols);
+            } else {
+                log_warning("cannot open file '%s'", symbols.get().c_str());
+            }
+        }
 
         register_command("dump", 0, this, &processor::cmd_dump,
             "dump internal state of the processor");
@@ -400,8 +405,7 @@ namespace vcml {
         }
     }
 
-    void processor::interrupt(unsigned int irq, bool set)
-    {
+    void processor::interrupt(unsigned int irq, bool set) {
         /* interrupt ignored by default */
     }
 
