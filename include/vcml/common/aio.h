@@ -26,10 +26,16 @@
 
 namespace vcml {
 
-    void aio_notify(int fd, std::function<void(int, int)> callback);
+    enum aio_policy {
+        AIO_ONCE,
+        AIO_ALWAYS
+    };
+
+    typedef std::function<void(int, int)> aio_handler;
+
+    void aio_notify(int fd, aio_handler handler, aio_policy policy);
     void aio_cancel(int fd);
 
 }
-
 
 #endif

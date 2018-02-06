@@ -85,9 +85,9 @@ namespace vcml {
 
     void backend_tcp::listen_async() {
         disconnect();
+
         aio_notify(m_fd_server, std::bind(&backend_tcp::handle_accept, this,
-                                          std::placeholders::_1,
-                                          std::placeholders::_2));
+                   std::placeholders::_1, std::placeholders::_2), AIO_ONCE);
     }
 
     void backend_tcp::disconnect() {

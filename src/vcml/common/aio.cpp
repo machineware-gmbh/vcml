@@ -20,8 +20,13 @@
 
 namespace vcml {
 
+    struct handler_info {
+        aio_policy policy;
+        aio_handler handler;
+    };
+
+    static std::map<int, handler_info> handlers;
     static struct sigaction prev_sa;
-    static std::map<int, std::function<void(int, int)>> handlers;
 
     static void aio_enable(int fd) {
         int flags = fcntl(fd, F_GETFL);
@@ -38,24 +43,27 @@ namespace vcml {
 
     static void aio_call(int fd, int event) {
         try {
-            handlers[fd](fd, event);
+            handlers[fd].handler(fd, event);
         } catch (std::exception& ex) {
-            std::cerr << ex.what() << std::endl;
+            if (fd != STDERR_FILENO)
+                std::cerr << "aio exception: " << ex.what() << std::endl;
             std::abort();
         } catch (...) {
-            std::cerr << "unknown exception" << std::endl;
+            if (fd != STDERR_FILENO)
+                std::cerr << "unknown exception during aio" << std::endl;
             std::abort();
         }
     }
 
-    static void aio_handler(int sig, siginfo_t* siginfo, void* context) {
+    static void aio_sigaction(int sig, siginfo_t* siginfo, void* context) {
         if (sig != SIGIO)
             return; // should not happen
 
         int fd = siginfo->si_fd;
         if (stl_contains(handlers, fd)) {
             aio_call(fd, siginfo->si_band);
-            aio_cancel(fd);
+            if (handlers[fd].policy == AIO_ONCE)
+                aio_cancel(fd);
             return;
         }
 
@@ -75,7 +83,7 @@ namespace vcml {
         memset(&prev_sa, 0, sizeof(prev_sa));
         memset(&vcml_sa, 0, sizeof(vcml_sa));
 
-        vcml_sa.sa_sigaction = &aio_handler;
+        vcml_sa.sa_sigaction = &aio_sigaction;
         vcml_sa.sa_flags = SA_SIGINFO | SA_RESTART;
         sigemptyset(&vcml_sa.sa_mask);
 
@@ -83,7 +91,7 @@ namespace vcml {
             VCML_ERROR("failed to install SIGIO signal handler");
     }
 
-    void aio_notify(int fd, std::function<void(int, int)> handler) {
+    void aio_notify(int fd, aio_handler handler, aio_policy policy) {
         static bool aio_setup_done = false;
         if (!aio_setup_done) {
             aio_setup();
@@ -94,7 +102,10 @@ namespace vcml {
             VCML_ERROR("aio handler for fd %d already installed", fd);
 
         aio_enable(fd);
-        handlers[fd] = handler;
+        handlers[fd] = {
+            .policy = policy,
+            .handler = handler,
+        };
     }
 
     void aio_cancel(int fd) {

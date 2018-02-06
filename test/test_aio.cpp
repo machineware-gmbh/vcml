@@ -29,14 +29,15 @@ TEST(aio, callback) {
     EXPECT_EQ(pipe(fds), 0);
 
     bool handler_called = false;
-    vcml::aio_notify(fds[0], [&](int fd, int events)-> void {
+    vcml::aio_notify(fds[0], [&](int fd, int events)-> bool {
         handler_called = true;
         EXPECT_EQ(fd, fds[0]);
 
         char buf;
         EXPECT_EQ(read(fd, &buf, 1), 1);
         EXPECT_EQ(buf, msg);
-    });
+        return false;
+    }, vcml::AIO_ONCE);
 
     EXPECT_EQ(write(fds[1], &msg, 1), 1);
     EXPECT_TRUE(handler_called);
@@ -46,17 +47,53 @@ TEST(aio, callback) {
     EXPECT_EQ(write(fds[1], &msg, 1), 1);
     EXPECT_FALSE(handler_called);
 
-    vcml::aio_notify(fds[0], [&](int fd, int events)-> void {
+    vcml::aio_notify(fds[0], [&](int fd, int events)-> bool {
         handler_called = true;
         EXPECT_EQ(fd, fds[0]);
 
         char buf;
         EXPECT_EQ(read(fd, &buf, 1), 1);
         EXPECT_EQ(buf, msg);
-    });
+        return false;
+    }, vcml::AIO_ONCE);
 
     EXPECT_EQ(write(fds[1], &msg, 1), 1);
     EXPECT_TRUE(handler_called);
+
+    int handler_calls = 0;
+
+    vcml::aio_notify(fds[0], [&](int fd, int events)-> bool {
+        handler_calls++;
+        EXPECT_EQ(fd, fds[0]);
+
+        char buf;
+        EXPECT_EQ(read(fd, &buf, 1), 1);
+        EXPECT_EQ(buf, msg);
+        return false;
+    }, vcml::AIO_ALWAYS);
+
+    EXPECT_EQ(write(fds[1], &msg, 1), 1);
+    EXPECT_EQ(write(fds[1], &msg, 1), 1);
+    EXPECT_EQ(write(fds[1], &msg, 1), 1);
+    EXPECT_EQ(handler_calls, 3);
+
+    vcml::aio_cancel(fds[0]);
+    handler_calls = 0;
+
+    vcml::aio_notify(fds[0], [&](int fd, int events)-> bool {
+        handler_calls++;
+        EXPECT_EQ(fd, fds[0]);
+
+        char buf;
+        EXPECT_EQ(read(fd, &buf, 1), 1);
+        EXPECT_EQ(buf, msg);
+        return false;
+    }, vcml::AIO_ONCE);
+
+    EXPECT_EQ(write(fds[1], &msg, 1), 1);
+    EXPECT_EQ(write(fds[1], &msg, 1), 1);
+    EXPECT_EQ(write(fds[1], &msg, 1), 1);
+    EXPECT_EQ(handler_calls, 1);
 
     close(fds[0]);
     close(fds[1]);
