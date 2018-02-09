@@ -41,9 +41,9 @@ namespace vcml {
         fcntl(fd, F_SETFL, flags & ~O_ASYNC);
     }
 
-    static void aio_call(int fd, int event) {
+    static void aio_call(aio_handler handler, int fd, int event) {
         try {
-            handlers[fd].handler(fd, event);
+            handler(fd, event);
         } catch (std::exception& ex) {
             if (fd != STDERR_FILENO)
                 std::cerr << "aio exception: " << ex.what() << std::endl;
@@ -61,9 +61,10 @@ namespace vcml {
 
         int fd = siginfo->si_fd;
         if (stl_contains(handlers, fd)) {
-            aio_call(fd, siginfo->si_band);
+            handler_info info = handlers.at(fd);
             if (handlers[fd].policy == AIO_ONCE)
                 aio_cancel(fd);
+            aio_call(info.handler, fd, siginfo->si_band);
             return;
         }
 
@@ -97,6 +98,9 @@ namespace vcml {
             aio_setup();
             aio_setup_done = true;
         }
+
+        if (fd < 0)
+            VCML_ERROR("invalid aio fd %d", fd);
 
         if (stl_contains(handlers, fd))
             VCML_ERROR("aio handler for fd %d already installed", fd);
