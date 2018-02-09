@@ -79,7 +79,9 @@ namespace vcml {
         }
 
         virtual ~thctl_updater() {
+#if SYSTEMC_VERSION >= 20140417
             sc_get_curr_simcontext()->remove_trace_file(this);
+#endif
         }
 
     protected:
