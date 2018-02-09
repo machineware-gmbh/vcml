@@ -152,7 +152,7 @@ namespace vcml {
                 addr = sym->get_virt_addr();
         }
 
-        if (!insert_breakpoint(addr)) { // implementation specific
+        if (!gdb_insert_breakpoint(addr)) { // implementation specific
             os << "Failed to insert breakpoint at 0x" << HEX(addr, 16);
             return false;
         }
@@ -175,7 +175,7 @@ namespace vcml {
             return false;
         }
 
-        if (!remove_breakpoint(addr)) { // implementation specific
+        if (!gdb_remove_breakpoint(addr)) { // implementation specific
             os << "Failed to remove breakpoint at 0x" << HEX(addr, 16);
             return false;
         }
@@ -229,7 +229,8 @@ namespace vcml {
         u64 pstart = 0;
         u64 pend = 0;
 
-        bool virt = virt_to_phys(vstart, pstart) && virt_to_phys(vend, pend) &&
+        bool virt = gdb_virt_to_phys(vstart, pstart) &&
+                    gdb_virt_to_phys(vend, pend) &&
                     (pstart != vstart) && (pend != vend);
 
         os << "Disassembly of " << HEX(vstart, 16) << ".." << HEX(vend, 16);
@@ -254,7 +255,7 @@ namespace vcml {
 
             u64 phys = addr;
             if (virt) {
-                if (virt_to_phys(addr, phys))
+                if (gdb_virt_to_phys(addr, phys))
                     os << HEX(phys, 8) << " ";
                 else
                     os << "????????";
@@ -290,7 +291,10 @@ namespace vcml {
 
             timeval t1, t2;
             gettimeofday(&t1, NULL);
-            simulate(num_cycles);
+            if (m_gdb != NULL)
+                m_gdb->simulate(num_cycles);
+            else
+                simulate(num_cycles);
             gettimeofday(&t2, NULL);
 
             m_num_cycles += num_cycles;
@@ -332,10 +336,15 @@ namespace vcml {
         m_run_time(0),
         m_num_cycles(0),
         m_symbols(NULL),
+        m_gdb(NULL),
         m_irq_stats(),
         m_breakpoints(),
         clock("clock", clk),
         symbols("symbols"),
+        gdb_port("gdb_port", 0),
+        gdb_wait("gdb_wait", false),
+        gdb_sync("gdb_sync", false),
+        gdb_echo("gdb_echo", false),
         IRQ("IRQ"),
         INSN("INSN"),
         DATA("DATA") {
@@ -347,6 +356,15 @@ namespace vcml {
             } else {
                 log_warning("cannot open file '%s'", symbols.get().c_str());
             }
+        }
+
+        if (gdb_port > 0) {
+            debugging::gdb_status status = debugging::GDB_RUNNING;
+            if (gdb_wait)
+                status = debugging::GDB_STOPPED;
+            m_gdb = new debugging::gdbserver(gdb_port, this, status);
+            m_gdb->sync(gdb_sync);
+            m_gdb->echo(gdb_echo);
         }
 
         register_command("dump", 0, this, &processor::cmd_dump,
@@ -370,8 +388,10 @@ namespace vcml {
     }
 
     processor::~processor() {
-       if (m_symbols)
-           delete m_symbols;
+        if (m_gdb)
+            delete m_gdb;
+        if (m_symbols)
+            delete m_symbols;
     }
 
     bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {
@@ -407,6 +427,69 @@ namespace vcml {
 
     void processor::interrupt(unsigned int irq, bool set) {
         /* interrupt ignored by default */
+    }
+
+    u64 processor::gdb_num_registers() {
+        return 0;
+    }
+
+    u64 processor::gdb_register_width() {
+        return 4;
+    }
+
+    bool processor::gdb_read_reg(u64 idx, void* p, u64 size) {
+        return false;
+    }
+
+    bool processor::gdb_write_reg(u64 idx, const void* p, u64 size) {
+        return false;
+    }
+
+    bool processor::gdb_page_size(u64& size) {
+        size = 0;
+        return false;
+    }
+
+    bool processor::gdb_virt_to_phys(u64 vaddr, u64& paddr) {
+        paddr = vaddr;
+        return true;
+    }
+
+    bool processor::gdb_read_mem(u64 addr, void* buffer, u64 size) {
+        if (success(DATA.read(addr, buffer, size, VCML_FLAG_DEBUG)))
+            return true;
+        if (success(INSN.read(addr, buffer, size, VCML_FLAG_DEBUG)))
+            return true;
+        return false;
+    }
+
+    bool processor::gdb_write_mem(u64 addr, const void* buffer, u64 size) {
+        if (success(DATA.write(addr, buffer, size, VCML_FLAG_DEBUG)))
+            return true;
+        if (success(INSN.write(addr, buffer, size, VCML_FLAG_DEBUG)))
+            return true;
+        return false;
+    }
+
+    bool processor::gdb_insert_breakpoint(u64 addr) {
+        return false;
+    }
+
+    bool processor::gdb_remove_breakpoint(u64 addr) {
+        return false;
+    }
+
+    string processor::gdb_handle_rcmd(const string& command) {
+        return "n/a";
+    }
+
+    void processor::gdb_simulate(unsigned int& cycles) {
+        simulate(cycles);
+    }
+
+    void processor::gdb_notify(int signal) {
+        if (m_gdb)
+            m_gdb->notify(signal);
     }
 
 }

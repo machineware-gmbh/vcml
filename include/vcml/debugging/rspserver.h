@@ -16,59 +16,67 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_H
-#define VCML_H
+#ifndef VCML_RSP_H
+#define VCML_RSP_H
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
-#include "vcml/common/version.h"
-#include "vcml/common/aio.h"
-#include "vcml/common/thctl.h"
 
 #include "vcml/logging/logger.h"
-#include "vcml/logging/log_file.h"
-#include "vcml/logging/log_stream.h"
-#include "vcml/logging/log_term.h"
 
-#include "vcml/properties/property_base.h"
-#include "vcml/properties/property.h"
-#include "vcml/properties/property_provider.h"
-#include "vcml/properties/property_provider_arg.h"
-#include "vcml/properties/property_provider_env.h"
-#include "vcml/properties/property_provider_file.h"
+#define VCML_RSP_MAX_PACKET_SIZE (0x4000u)
 
-#include "vcml/backends/backend.h"
-#include "vcml/backends/backend_null.h"
-#include "vcml/backends/backend_file.h"
-#include "vcml/backends/backend_term.h"
-#include "vcml/backends/backend_stdout.h"
-#include "vcml/backends/backend_tcp.h"
+namespace vcml { namespace debugging {
 
-#include "vcml/debugging/rspserver.h"
-#include "vcml/debugging/gdbstub.h"
-#include "vcml/debugging/gdbserver.h"
+    class rspserver
+    {
+    private:
+        bool m_echo;
+        u16  m_port;
 
-#include "vcml/elf.h"
-#include "vcml/range.h"
-#include "vcml/txext.h"
-#include "vcml/exmon.h"
-#include "vcml/ports.h"
-#include "vcml/dmi_cache.h"
-#include "vcml/command.h"
-#include "vcml/component.h"
-#include "vcml/master_socket.h"
-#include "vcml/slave_socket.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
-#include "vcml/processor.h"
+        int  m_fd;
+        int  m_fd_server;
 
-#include "vcml/models/generic/bus.h"
-#include "vcml/models/generic/memory.h"
-#include "vcml/models/generic/crossbar.h"
-#include "vcml/models/generic/uart8250.h"
+        struct sockaddr_in m_server;
+        struct sockaddr_in m_client;
 
-#include "vcml/models/opencores/ompic.h"
+        pthread_t m_thread;
+
+        void send_char(char c);
+        char recv_char();
+
+        // disabled
+        rspserver();
+        rspserver(const rspserver&);
+
+    public:
+        u16 get_port() const { return m_port; }
+
+        bool is_connected() const { return m_fd > -1; }
+        bool is_listening() const { return m_fd_server > -1; }
+
+        void echo(bool e = true) { m_echo = e; }
+
+        rspserver(u16 port);
+        virtual ~rspserver();
+
+        void   send_packet(const string& s);
+        void   send_packet(const char* format, ...);
+        string recv_packet();
+        int    recv_signal(unsigned int timeoutms = 0);
+
+        void listen();
+        void disconnect();
+
+        void run();
+
+        virtual string handle_command(const string& command);
+        virtual void   handle_connect();
+        virtual void   handle_disconnect();
+    };
+
+}}
 
 #endif

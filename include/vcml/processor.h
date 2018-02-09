@@ -28,6 +28,9 @@
 #include "vcml/backends/backend.h"
 #include "vcml/properties/property.h"
 
+#include "vcml/debugging/gdbstub.h"
+#include "vcml/debugging/gdbserver.h"
+
 #include "vcml/elf.h"
 #include "vcml/range.h"
 #include "vcml/ports.h"
@@ -45,12 +48,14 @@ namespace vcml {
         sc_time      irq_longest;
     };
 
-    class processor: public component
-    {
+    class processor: public component,
+                     public debugging::gdbstub {
     private:
         double m_run_time;
         u64    m_num_cycles;
         elf*   m_symbols;
+
+        debugging::gdbserver* m_gdb;
 
         std::map<unsigned int, irq_stats> m_irq_stats;
         std::vector<u64> m_breakpoints;
@@ -67,6 +72,7 @@ namespace vcml {
 
         void processor_thread();
         void irq_handler(unsigned int irq);
+        void simulate_debug(unsigned int cycles);
 
         processor();
         processor(const processor&);
@@ -74,6 +80,11 @@ namespace vcml {
     public:
         property<clock_t> clock;
         property<string> symbols;
+
+        property<u16>  gdb_port;
+        property<bool> gdb_wait;
+        property<bool> gdb_sync;
+        property<bool> gdb_echo;
 
         in_port_list  IRQ;
         master_socket INSN;
@@ -84,10 +95,6 @@ namespace vcml {
 
         VCML_KIND(processor);
 
-        virtual bool insert_breakpoint(u64 address) { return false; }
-        virtual bool remove_breakpoint(u64 address) { return false; }
-
-        virtual bool virt_to_phys(u64 vaddr, u64& paddr);
         virtual string disassemble(u64& addr, unsigned char* insn);
 
         virtual u64 get_program_counter() { return 0; }
@@ -120,12 +127,26 @@ namespace vcml {
         template <typename T>
         inline tlm_response_status write (u64 addr, const T& data);
 
-    };
+        virtual u64  gdb_num_registers() override;
+        virtual u64  gdb_register_width() override;
 
-    inline bool processor::virt_to_phys(u64 vaddr, u64& paddr) {
-        paddr = vaddr;
-        return true;
-    }
+        virtual bool gdb_read_reg(u64 idx, void* buf, u64 sz) override;
+        virtual bool gdb_write_reg(u64 idx, const void* buf, u64 sz) override;
+
+        virtual bool gdb_page_size(u64& size) override;
+        virtual bool gdb_virt_to_phys(u64 vaddr, u64& paddr) override;
+
+        virtual bool gdb_read_mem(u64 addr, void* buf, u64 sz) override;
+        virtual bool gdb_write_mem(u64 addr, const void* buf, u64 sz) override;
+
+        virtual bool gdb_insert_breakpoint(u64 addr) override;
+        virtual bool gdb_remove_breakpoint(u64 addr) override;
+
+        virtual string gdb_handle_rcmd(const string& command) override;
+
+        virtual void gdb_simulate(unsigned int& cycles) override;
+        virtual void gdb_notify(int signal) override;
+    };
 
     inline string processor::disassemble(u64& addr, unsigned char* insn) {
         addr += 4;
