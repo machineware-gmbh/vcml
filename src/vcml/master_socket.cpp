@@ -45,7 +45,10 @@ namespace vcml {
     }
 
     master_socket::~master_socket() {
-        /* nothing to do */
+        m_tx.clear_extension<ext_bank>();
+        m_tx.clear_extension<ext_exmem>();
+        m_txd.clear_extension<ext_bank>();
+        m_txd.clear_extension<ext_exmem>();
     }
 
     unsigned int master_socket::send(tlm_generic_payload& tx, int flags) {
