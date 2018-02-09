@@ -52,6 +52,7 @@
 #include <functional>
 #include <limits>
 
+#include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
