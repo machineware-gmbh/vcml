@@ -51,14 +51,14 @@ namespace vcml {
         report();
 
     public:
-        inline severity       get_severity() const { return m_severity; }
-        inline const string&  get_message()  const { return m_message; }
-        inline const string&  get_source()   const { return m_source; }
-        inline const sc_time& get_time()     const { return m_time; }
-        inline const string&  get_file()     const { return m_file; }
-        inline int            get_line()     const { return m_line; }
+        severity       get_severity() const { return m_severity; }
+        const char*    get_message()  const { return m_message.c_str(); }
+        const char*    get_source()   const { return m_source.c_str(); }
+        const sc_time& get_time()     const { return m_time; }
+        const char*    get_file()     const { return m_file.c_str(); }
+        int            get_line()     const { return m_line; }
 
-        inline const vector<string> get_backtrace() const {
+        const vector<string> get_backtrace() const {
             return m_backtrace;
         }
 

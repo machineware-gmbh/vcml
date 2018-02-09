@@ -17,11 +17,19 @@
  ******************************************************************************/
 
 #include "vcml/common/report.h"
+#include "vcml/common/thctl.h"
 #include "vcml/logging/logger.h"
 
 namespace vcml {
 
     static string find_source() {
+        pthread_t this_thread = pthread_self();
+        if (this_thread != thctl_sysc_thread()) {
+            char buffer[16] = { 0 };
+            pthread_getname_np(this_thread, buffer, sizeof(buffer));
+            return mkstr("pthread '%s'", buffer);
+        }
+
         sc_core::sc_simcontext* simc = sc_core::sc_get_curr_simcontext();
         if (simc) {
             sc_process_b* proc = sc_get_current_process_b();
