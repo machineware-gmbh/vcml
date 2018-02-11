@@ -59,6 +59,8 @@ namespace vcml { namespace opencores {
 
         ompic(const sc_core::sc_module_name& name, unsigned int num_cores);
         virtual ~ompic();
+
+        VCML_KIND(ompic);
     };
 
 }}
