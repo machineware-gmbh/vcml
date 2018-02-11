@@ -67,7 +67,8 @@ set(sources
     "${src}/vcml/models/generic/memory.cpp"
     "${src}/vcml/models/generic/crossbar.cpp"
     "${src}/vcml/models/generic/uart8250.cpp"
-    "${src}/vcml/models/opencores/ompic.cpp")
+    "${src}/vcml/models/opencores/ompic.cpp"
+    "${src}/vcml/models/opencores/ethoc.cpp")
 
 add_library(vcml ${sources})
 target_include_directories(vcml PUBLIC ${inc})

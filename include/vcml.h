@@ -70,5 +70,6 @@
 #include "vcml/models/generic/uart8250.h"
 
 #include "vcml/models/opencores/ompic.h"
+#include "vcml/models/opencores/ethoc.h"
 
 #endif
