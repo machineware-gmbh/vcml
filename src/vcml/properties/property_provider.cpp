@@ -41,7 +41,7 @@ namespace vcml {
 
         for (auto val: m_values) {
             if (val.second.uses == 0)
-                log_debug("unused property '%s'", val.first.c_str());
+                log_warning("unused property '%s'", val.first.c_str());
         }
     }
 
@@ -65,10 +65,10 @@ namespace vcml {
     }
 
     bool property_provider::init(const string& name, string& value) {
+        bool found = false;
         for (auto provider : providers)
-            if (provider->lookup(name, value))
-                return true;
-        return false;
+            found |= provider->lookup(name, value);
+        return found;
     }
 
 }
