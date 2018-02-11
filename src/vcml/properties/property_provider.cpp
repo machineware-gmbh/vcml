@@ -54,10 +54,11 @@ namespace vcml {
         m_values[name] = val;
     }
 
-    vector<property_provider*> property_provider::providers;
+    list<property_provider*> property_provider::providers;
 
     void property_provider::register_provider(property_provider* p) {
-        stl_add_unique(providers, p);
+        if (!stl_contains(providers, p))
+            providers.push_front(p);
     }
 
     void property_provider::unregister_provider(property_provider* p) {

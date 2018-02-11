@@ -45,7 +45,7 @@ namespace vcml {
         void add(const string& name, const string& value);
 
     private:
-        static vector<property_provider*> providers;
+        static list<property_provider*> providers;
 
         static void register_provider(property_provider* provider);
         static void unregister_provider(property_provider* provider);

@@ -83,13 +83,13 @@ namespace vcml {
         return vec;
     }
 
-    template <typename T>
-    inline void stl_remove_erase(vector<T>& v, const T& t) {
+    template <typename V, typename T>
+    inline void stl_remove_erase(V& v, const T& t) {
         v.erase(std::remove(v.begin(), v.end(), t), v.end());
     }
 
-    template <typename T>
-    inline bool stl_contains(const vector<T>& v, const T& t) {
+    template <typename V, typename T>
+    inline bool stl_contains(const V& v, const T& t) {
         return std::find(v.begin(), v.end(), t) != v.end();
     }
 
