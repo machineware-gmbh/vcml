@@ -47,22 +47,22 @@ TEST(generic_bus, transfer) {
 
     sc_core::sc_start(sc_core::SC_ZERO_TIME);
 
-    EXPECT_EQ(initiator.OUT.write(0x0000, 0x11111111ul), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.write(0x0004, 0xfffffffful), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.write(0x2000, 0x55555555ul), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.write(0x2004, 0xbbbbbbbbul), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.write(0x4000, 0x1234ul), tlm::TLM_ADDRESS_ERROR_RESPONSE);
+    EXPECT_EQ(initiator.OUT.writew(0x0000, 0x11111111ul), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.writew(0x0004, 0xfffffffful), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.writew(0x2000, 0x55555555ul), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.writew(0x2004, 0xbbbbbbbbul), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.writew(0x4000, 0x1234ul), tlm::TLM_ADDRESS_ERROR_RESPONSE);
 
     vcml::u32 data;
-    EXPECT_EQ(initiator.OUT.read(0x0000, data), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.readw(0x0000, data), tlm::TLM_OK_RESPONSE);
     EXPECT_EQ(data, 0x11111111ul);
-    EXPECT_EQ(initiator.OUT.read(0x0004, data), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.readw(0x0004, data), tlm::TLM_OK_RESPONSE);
     EXPECT_EQ(data, 0xfffffffful);
-    EXPECT_EQ(initiator.OUT.read(0x2000, data), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.readw(0x2000, data), tlm::TLM_OK_RESPONSE);
     EXPECT_EQ(data, 0x55555555ul);
-    EXPECT_EQ(initiator.OUT.read(0x2004, data), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(initiator.OUT.readw(0x2004, data), tlm::TLM_OK_RESPONSE);
     EXPECT_EQ(data, 0xbbbbbbbbul);
-    EXPECT_EQ(initiator.OUT.read(0x4000, data), tlm::TLM_ADDRESS_ERROR_RESPONSE);
+    EXPECT_EQ(initiator.OUT.readw(0x4000, data), tlm::TLM_ADDRESS_ERROR_RESPONSE);
 
     EXPECT_EQ(initiator.get_dmi().get_entries().size(), 2);
     EXPECT_NE(initiator.get_dmi().get_entries()[0].get_start_address(), initiator.get_dmi().get_entries()[1].get_start_address());

@@ -80,12 +80,12 @@ namespace vcml {
                                     unsigned int* nbytes = NULL);
 
         template <typename T>
-        tlm_response_status read   (u64 addr, T& data,
+        tlm_response_status readw  (u64 addr, T& data,
                                     int flags = VCML_FLAG_NONE,
                                     unsigned int* nbytes = NULL);
 
         template <typename T>
-        tlm_response_status write  (u64 addr, const T& data,
+        tlm_response_status writew (u64 addr, const T& data,
                                     int flags = VCML_FLAG_NONE,
                                     unsigned int* nbytes = NULL);
     };
@@ -102,13 +102,13 @@ namespace vcml {
     }
 
     template <typename T>
-    inline tlm_response_status master_socket::read(u64 addr, T& data,
+    inline tlm_response_status master_socket::readw(u64 addr, T& data,
             int flags, unsigned int* nbytes) {
         return read(addr, &data, sizeof(T), flags, nbytes);
     }
 
     template <typename T>
-    inline tlm_response_status master_socket::write (u64 addr, const T& data,
+    inline tlm_response_status master_socket::writew(u64 addr, const T& data,
             int flags, unsigned int* nbytes) {
         return write(addr, &data, sizeof(T), flags, nbytes);
     }
