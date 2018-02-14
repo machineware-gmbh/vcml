@@ -31,14 +31,16 @@ namespace vcml {
     class dmi_cache
     {
     private:
+        size_t m_limit;
         vector<tlm_dmi> m_entries;
 
         void cleanup();
 
     public:
-        inline const vector<tlm_dmi> get_entries() const {
-            return m_entries;
-        }
+        size_t get_entry_limit() const     { return m_limit; }
+        void   set_entry_limit(size_t lim) { m_limit = lim; }
+
+        const vector<tlm_dmi> get_entries() const { return m_entries; }
 
         dmi_cache();
         virtual ~dmi_cache();
@@ -52,6 +54,14 @@ namespace vcml {
         bool lookup(u64 addr, u64 size, tlm_command c, tlm_dmi& dmi);
         bool lookup(const tlm_generic_payload& tx, tlm_dmi& dmi);
     };
+
+    inline bool dmi_cache::lookup(u64 a, u64 s, tlm_command c, tlm_dmi& dmi) {
+        return lookup(range(a, a + s - 1), c, dmi);
+    }
+
+    inline bool dmi_cache::lookup(const tlm_generic_payload& t, tlm_dmi& dmi) {
+        return lookup(range(t), t.get_command(), dmi);
+    }
 
     static inline void dmi_set_access(tlm_dmi& dmi, vcml_access a) {
         switch (a) {

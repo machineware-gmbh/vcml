@@ -53,6 +53,7 @@ namespace vcml {
 
 
     dmi_cache::dmi_cache():
+        m_limit(16),
         m_entries() {
         /* nothing to do */
     }
@@ -70,13 +71,16 @@ namespace vcml {
             });
 
             if (it == m_entries.end()) {
-                m_entries.push_back(merged);
-                return;
+                m_entries.insert(m_entries.begin(), merged);
+                break;
             }
 
             merged = dmi_merge(merged, *it);
             m_entries.erase(it, it + 1);
         };
+
+        if (m_entries.size() > m_limit)
+            m_entries.resize(m_limit);
     }
 
     void dmi_cache::invalidate(u64 start, u64 end) {
@@ -84,12 +88,12 @@ namespace vcml {
     }
 
     void dmi_cache::invalidate(const range& r) {
-        vector<tlm_dmi> entries(m_entries);
+        vector<tlm_dmi> entries(m_entries.rbegin(), m_entries.rend());
         m_entries.clear();
 
         for (auto dmi : entries) {
             if (!r.overlaps(dmi)) {
-                m_entries.push_back(dmi);
+                insert(dmi);
                 continue;
             }
 
@@ -97,14 +101,14 @@ namespace vcml {
                 tlm_dmi front(dmi);
                 front.set_end_address(r.start - 1);
                 if (front.get_start_address() < front.get_end_address())
-                    m_entries.push_back(front);
+                    insert(front);
             }
 
             if (r.end != (u64)-1) {
                 tlm_dmi back(dmi);
                 dmi_set_start_address(back, r.end + 1);
                 if (back.get_start_address() < back.get_end_address())
-                    m_entries.push_back(back);
+                    insert(back);
             }
         }
     }
@@ -118,14 +122,6 @@ namespace vcml {
             }
         }
         return false;
-    }
-
-    bool dmi_cache::lookup(u64 addr, u64 size, tlm_command c, tlm_dmi& dmi) {
-        return lookup(range(addr, addr + size - 1), c, dmi);
-    }
-
-    bool dmi_cache::lookup(const tlm_generic_payload& tx, tlm_dmi& dmi) {
-        return lookup(range(tx), tx.get_command(), dmi);
     }
 
 }
