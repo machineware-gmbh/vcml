@@ -55,7 +55,7 @@ TEST(component, sockets) {
 
     EXPECT_CALL(mock2, transport(_,_,_)).WillOnce(Return(sizeof(data)));
     mock1.OUT.readw(0, data);
-    EXPECT_TRUE(mock1.get_dmi().lookup(0, 4, tlm::TLM_READ_COMMAND, dmi));
+    EXPECT_TRUE(mock1.OUT.dmi().lookup(0, 4, tlm::TLM_READ_COMMAND, dmi));
     EXPECT_TRUE(dmi.is_read_allowed());
     EXPECT_FALSE(dmi.is_write_allowed());
     EXPECT_FALSE(dmi.is_read_write_allowed());

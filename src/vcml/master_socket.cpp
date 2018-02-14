@@ -22,6 +22,7 @@ namespace vcml {
 
     void master_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
                                                   sc_dt::uint64 end) {
+        unmap_dmi(start, end);
         m_host->invalidate_direct_mem_ptr(this, start, end);
     }
 
@@ -33,6 +34,7 @@ namespace vcml {
         m_txd(),
         m_bank_ext(),
         m_exmem_ext(),
+        m_dmi_cache(),
         m_host(host) {
         if (m_host == NULL) {
             m_host = dynamic_cast<component*>(get_parent_object());
@@ -102,9 +104,8 @@ namespace vcml {
 
         if (m_host->allow_dmi && tx.is_dmi_allowed()) {
             tlm_dmi dmi;
-            bool use_dmi = (*this)->get_direct_mem_ptr(tx, dmi);
-            if (use_dmi)
-                m_host->map_dmi(dmi);
+            if ((*this)->get_direct_mem_ptr(tx, dmi))
+                map_dmi(dmi);
         }
 
         return bytes;
@@ -118,7 +119,7 @@ namespace vcml {
 
         tlm_dmi dmi;
         tlm_command elevate = is_debug(flags) ? TLM_READ_COMMAND : cmd;
-        if (!m_host->get_dmi().lookup(addr, size, elevate, dmi))
+        if (!m_dmi_cache.lookup(addr, size, elevate, dmi))
             return TLM_INCOMPLETE_RESPONSE;
 
         if (is_sync(flags) && !is_debug(flags))

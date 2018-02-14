@@ -43,6 +43,8 @@ namespace vcml {
         ext_bank  m_bank_ext;
         ext_exmem m_exmem_ext;
 
+        dmi_cache m_dmi_cache;
+
         component* m_host;
 
         void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
@@ -57,6 +59,11 @@ namespace vcml {
         virtual ~master_socket();
 
         VCML_KIND(master_socket);
+
+        dmi_cache& dmi();
+
+        void map_dmi(const tlm_dmi& dmi);
+        void unmap_dmi(u64 start, u64 end);
 
         unsigned int send(tlm_generic_payload& tx, int flags = VCML_FLAG_NONE);
 
@@ -89,6 +96,18 @@ namespace vcml {
                                     int flags = VCML_FLAG_NONE,
                                     unsigned int* nbytes = NULL);
     };
+
+    inline dmi_cache& master_socket::dmi() {
+        return m_dmi_cache;
+    }
+
+    inline void master_socket::map_dmi(const tlm_dmi& dmi) {
+        m_dmi_cache.insert(dmi);
+    }
+
+    inline void master_socket::unmap_dmi(u64 start, u64 end) {
+        m_dmi_cache.invalidate(start, end);
+    }
 
     inline tlm_response_status master_socket::read(u64 addr, void* data,
             unsigned int size, int flags, unsigned int* bytes) {

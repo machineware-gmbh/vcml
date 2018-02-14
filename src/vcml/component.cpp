@@ -62,7 +62,6 @@ namespace vcml {
 
     component::component(const sc_module_name& nm, bool dmi):
         sc_module(nm),
-        m_dmi_cache(),
         m_exmon(),
         m_offsets(),
         m_master_sockets(),
@@ -94,7 +93,8 @@ namespace vcml {
     }
 
     void component::map_dmi(const tlm_dmi& dmi) {
-        m_dmi_cache.insert(dmi);
+        for (auto socket : m_slave_sockets)
+            socket->map_dmi(dmi);
     }
 
     void component::map_dmi(unsigned char* p, u64 start, u64 end, vcml_access a,
@@ -111,9 +111,8 @@ namespace vcml {
     }
 
     void component::unmap_dmi(u64 start, u64 end) {
-        m_dmi_cache.invalidate(start, end);
         for (auto socket : m_slave_sockets)
-            (*socket)->invalidate_direct_mem_ptr(start, end);
+            socket->unmap_dmi(start, end);
     }
 
     bool component::execute(const string& name, const vector<string>& args,
@@ -156,10 +155,6 @@ namespace vcml {
         }
 
         transport(tx, dt, tx_is_excl(tx) ? VCML_FLAG_EXCL : VCML_FLAG_NONE);
-
-        tlm_dmi dmi;
-        if (m_dmi_cache.lookup(tx, dmi))
-            tx.set_dmi_allowed(true);
     }
 
     unsigned int component::transport_dbg(slave_socket* origin,
@@ -175,18 +170,11 @@ namespace vcml {
     bool component::get_direct_mem_ptr(slave_socket* origin,
                                        const tlm_generic_payload& tx,
                                        tlm_dmi& dmi) {
-        dmi.allow_read_write();
-        dmi.set_start_address(0);
-        dmi.set_end_address((sc_dt::uint64)-1);
-
-        if (!m_dmi_cache.lookup(tx, dmi))
-            return false;
         return m_exmon.override_dmi(tx, dmi);
     }
 
     void component::invalidate_direct_mem_ptr(master_socket* origin,
                                              u64 start, u64 end) {
-        m_dmi_cache.invalidate(start, end);
         invalidate_dmi(start, end);
     }
 

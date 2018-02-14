@@ -48,7 +48,7 @@ TEST(generic_memory, access) {
     vcml::u64 data;
     EXPECT_EQ(mock.OUT.readw(0x0, data), tlm::TLM_OK_RESPONSE);
     EXPECT_EQ(data, 0x5566778811223344ull);
-    EXPECT_EQ(mock.get_dmi().get_entries().size(), mem.get_dmi().get_entries().size());
+    EXPECT_EQ(mock.OUT.dmi().get_entries().size(), mem.IN.dmi().get_entries().size());
 
     mem.readonly = true;
 
@@ -56,7 +56,7 @@ TEST(generic_memory, access) {
     EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::VCML_FLAG_DEBUG), tlm::TLM_OK_RESPONSE);
 
     EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe), tlm::TLM_OK_RESPONSE);
-    mock.get_dmi().invalidate(0, -1);
+    mock.OUT.dmi().invalidate(0, -1);
     EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe), tlm::TLM_COMMAND_ERROR_RESPONSE);
 }
 

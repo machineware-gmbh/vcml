@@ -48,10 +48,10 @@ TEST(dmi, insert) {
     dmi.set_dmi_ptr(&dummy + dmi.get_start_address());
     cache.insert(dmi);
     EXPECT_EQ(cache.get_entries().size(), 2);
-    EXPECT_EQ(cache.get_entries()[0].get_start_address(), 0);
-    EXPECT_EQ(cache.get_entries()[0].get_end_address(), 1100);
-    EXPECT_EQ(cache.get_entries()[1].get_start_address(), 1200);
-    EXPECT_EQ(cache.get_entries()[1].get_end_address(), 1500);
+    EXPECT_EQ(cache.get_entries()[1].get_start_address(), 0);
+    EXPECT_EQ(cache.get_entries()[1].get_end_address(), 1100);
+    EXPECT_EQ(cache.get_entries()[0].get_start_address(), 1200);
+    EXPECT_EQ(cache.get_entries()[0].get_end_address(), 1500);
 
     dmi.set_start_address(1000);
     dmi.set_end_address(1200);
@@ -92,10 +92,10 @@ TEST(dmi, invalidate) {
 
     cache.invalidate(400, 500);
     EXPECT_EQ(cache.get_entries().size(), 2);
-    EXPECT_EQ(cache.get_entries()[0].get_start_address(), 100);
-    EXPECT_EQ(cache.get_entries()[0].get_end_address(), 399);
-    EXPECT_EQ(cache.get_entries()[1].get_start_address(), 501);
-    EXPECT_EQ(cache.get_entries()[1].get_end_address(), 899);
+    EXPECT_EQ(cache.get_entries()[1].get_start_address(), 100);
+    EXPECT_EQ(cache.get_entries()[1].get_end_address(), 399);
+    EXPECT_EQ(cache.get_entries()[0].get_start_address(), 501);
+    EXPECT_EQ(cache.get_entries()[0].get_end_address(), 899);
 }
 
 TEST(dmi, lookup) {

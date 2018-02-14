@@ -43,7 +43,6 @@ namespace vcml {
         friend class master_socket;
         friend class slave_socket;
     private:
-        dmi_cache m_dmi_cache;
         exmon m_exmon;
 
         std::map<sc_process_b*, sc_time> m_offsets;
@@ -89,9 +88,6 @@ namespace vcml {
                      const sc_time& write_latency = SC_ZERO_TIME);
         void unmap_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
-
-        const dmi_cache& get_dmi() const;
-        dmi_cache& get_dmi();
 
         bool execute(const string& name, const vector<string>& args,
                      ostream& os);
@@ -167,14 +163,6 @@ namespace vcml {
 
     inline void component::unmap_dmi(const tlm_dmi& dmi) {
         unmap_dmi(dmi.get_start_address(), dmi.get_end_address());
-    }
-
-    inline const dmi_cache& component::get_dmi() const {
-        return m_dmi_cache;
-    }
-
-    inline dmi_cache& component::get_dmi() {
-        return m_dmi_cache;
     }
 
     template <class T>

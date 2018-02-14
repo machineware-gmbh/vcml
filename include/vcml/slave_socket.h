@@ -36,6 +36,7 @@ namespace vcml {
     private:
         bool m_free;
         sc_event m_free_ev;
+        dmi_cache m_dmi_cache;
         component* m_host;
 
         void b_transport(tlm_generic_payload& tx, sc_time& dt);
@@ -47,7 +48,20 @@ namespace vcml {
         virtual ~slave_socket();
 
         VCML_KIND(slave_socket);
+
+        dmi_cache& dmi();
+
+        void map_dmi(const tlm_dmi& dmi);
+        void unmap_dmi(u64 start, u64 end);
     };
+
+    inline dmi_cache& slave_socket::dmi() {
+        return m_dmi_cache;
+    }
+
+    inline void slave_socket::map_dmi(const tlm_dmi& dmi) {
+        m_dmi_cache.insert(dmi);
+    }
 
 }
 

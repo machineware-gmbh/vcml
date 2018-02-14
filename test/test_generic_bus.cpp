@@ -64,13 +64,13 @@ TEST(generic_bus, transfer) {
     EXPECT_EQ(data, 0xbbbbbbbbul);
     EXPECT_EQ(initiator.OUT.readw(0x4000, data), tlm::TLM_ADDRESS_ERROR_RESPONSE);
 
-    EXPECT_EQ(initiator.get_dmi().get_entries().size(), 2);
-    EXPECT_NE(initiator.get_dmi().get_entries()[0].get_start_address(), initiator.get_dmi().get_entries()[1].get_start_address());
-    EXPECT_NE(initiator.get_dmi().get_entries()[0].get_dmi_ptr(), initiator.get_dmi().get_entries()[1].get_dmi_ptr());
+    EXPECT_EQ(initiator.OUT.dmi().get_entries().size(), 2);
+    EXPECT_NE(initiator.OUT.dmi().get_entries()[0].get_start_address(), initiator.OUT.dmi().get_entries()[1].get_start_address());
+    EXPECT_NE(initiator.OUT.dmi().get_entries()[0].get_dmi_ptr(), initiator.OUT.dmi().get_entries()[1].get_dmi_ptr());
 
     mem1.unmap_dmi(0, 0x1fff);
-    EXPECT_EQ(initiator.get_dmi().get_entries().size(), 1);
-    EXPECT_EQ(initiator.get_dmi().get_entries()[0].get_start_address(), 0x2000);
+    EXPECT_EQ(initiator.OUT.dmi().get_entries().size(), 1);
+    EXPECT_EQ(initiator.OUT.dmi().get_entries()[0].get_start_address(), 0x2000);
 }
 
 extern "C" int sc_main(int argc, char** argv) {
