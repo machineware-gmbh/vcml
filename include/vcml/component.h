@@ -74,6 +74,9 @@ namespace vcml {
         sc_time& offset(sc_process_b* proc = NULL);
         void sync(sc_process_b* proc = NULL);
 
+        void hierarchy_push();
+        void hierarchy_pop();
+
         const vector<master_socket*>& get_master_sockets() const;
         const vector<slave_socket*>& get_slave_sockets() const;
 
@@ -139,6 +142,19 @@ namespace vcml {
             wait(to);
             to = SC_ZERO_TIME;
         }
+    }
+
+    inline void component::hierarchy_push() {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        VCML_ERROR_ON(!simc, "no simulation context");
+        simc->hierarchy_push(this);
+    }
+
+    inline void component::hierarchy_pop() {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        VCML_ERROR_ON(!simc, "no simulation context");
+        sc_module* top = simc->hierarchy_pop();
+        VCML_ERROR_ON(top != this, "broken hierarchy");
     }
 
     inline const vector<master_socket*>& component::get_master_sockets() const {
