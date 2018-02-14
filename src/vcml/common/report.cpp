@@ -92,7 +92,8 @@ namespace vcml {
     }
 
     const char* report::what() const throw() {
-        return m_desc.c_str();
+        //return m_desc.c_str();
+        return m_message.c_str();
     }
 
     const char* report::prefix[SEVERITY_MAX] = {
