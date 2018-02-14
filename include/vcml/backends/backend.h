@@ -62,6 +62,7 @@ namespace vcml {
         static backend* create(const string& type,
                                const string& name = "backend");
 
+        static size_t peek(int fd);
         static size_t full_read(int fd, void* buffer, size_t len);
         static size_t full_write(int fd, const void* buffer, size_t len);
     };

@@ -57,16 +57,14 @@ namespace vcml {
         return end - pos;
     }
 
-    size_t backend_file::read(void* buf, size_t len)
-    {
+    size_t backend_file::read(void* buf, size_t len) {
         if (!m_rx.is_open() || !m_rx.good())
             return 0;
         m_rx.read(reinterpret_cast<char*>(buf), len);
         return m_rx.gcount();
     }
 
-    size_t backend_file::write(const void* buf, size_t len)
-    {
+    size_t backend_file::write(const void* buf, size_t len) {
         if (!m_tx.is_open() || !m_tx.good())
             return 0;
         m_tx.write(reinterpret_cast<const char*>(buf), len);

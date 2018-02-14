@@ -23,6 +23,7 @@
 #include "vcml/backends/backend_stdout.h"
 #include "vcml/backends/backend_term.h"
 #include "vcml/backends/backend_tcp.h"
+#include "vcml/backends/backend_tap.h"
 
 namespace vcml {
 
@@ -31,7 +32,8 @@ namespace vcml {
             { "file", &backend_file::create },
             { "stdout", &backend_stdout::create },
             { "term", &backend_term::create },
-            { "tcp", &backend_tcp::create }
+            { "tcp", &backend_tcp::create },
+            { "tap", &backend_tap::create }
     };
 
     backend::backend(const sc_module_name& nm):
@@ -64,7 +66,35 @@ namespace vcml {
         }
 
         backend_cfn fn = types[type];
-        return (*fn)(name);
+        backend* be = NULL;
+
+        try {
+            be = (*fn)(name);
+            return be;
+        } catch (std::exception& ex) {
+            log_warning(ex.what());
+            log_warning("error creating %s backend", type.c_str());
+            return NULL;
+        }
+    }
+
+    size_t backend::peek(int fd) {
+        if (fd < 0)
+            return 0;
+
+        fd_set in, out, err;
+        struct timeval timeout;
+
+        FD_ZERO(&in);
+        FD_SET(fd, &in);
+        FD_ZERO(&out);
+        FD_ZERO(&err);
+
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+
+        int ret = select(fd + 1, &in, &out, &err, &timeout);
+        return ret > 0 ? 1 : 0;
     }
 
     size_t backend::full_read(int fd, void* buffer, size_t len) {

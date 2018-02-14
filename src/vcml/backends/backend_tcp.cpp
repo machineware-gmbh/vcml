@@ -98,24 +98,7 @@ namespace vcml {
     }
 
     size_t backend_tcp::peek() {
-        if (m_fd < 0)
-            return 0;
-
-        fd_set in, out, err;
-        struct timeval timeout;
-
-        FD_ZERO(&in);
-        FD_SET(m_fd, &in);
-        FD_ZERO(&out);
-        FD_ZERO(&err);
-
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
-
-        int ret = select(m_fd + 1, &in, NULL, NULL, &timeout);
-        if (ret < 0)
-            listen_async();
-        return ret > 0 ? 1 : 0;
+        return m_fd < 0 ? 0 : backend::peek(m_fd);
     }
 
     size_t backend_tcp::read(void* buf, size_t len) {

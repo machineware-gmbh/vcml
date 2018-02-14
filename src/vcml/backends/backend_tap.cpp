@@ -16,65 +16,53 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_INCLUDES_H
-#define VCML_INCLUDES_H
+#include "vcml/backends/backend_tap.h"
 
-#if __cplusplus < 201103L
-#error Please compile with c++11
-#endif
+namespace vcml {
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
+    static int g_devno = 0;
 
-#ifndef SC_INCLUDE_DYNAMIC_PROCESSES
-#define SC_INCLUDE_DYNAMIC_PROCESSES
-#endif
+    backend_tap::backend_tap(const sc_module_name& nm, int no):
+        backend(nm),
+        m_fd(-1),
+        devno("devno", no ? no : g_devno++) {
+        m_fd = open("/dev/net/tun", O_RDWR);
+        VCML_ERROR_ON(m_fd < 0, "error opening tundev: %s", strerror(errno));
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <ctype.h>
+        struct ifreq ifr;
+        memset(&ifr, 0, sizeof(ifr));
+        ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+        snprintf(ifr.ifr_name, IFNAMSIZ, "tap%d", devno.get());
 
-#include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <functional>
-#include <limits>
+        int err = ioctl(m_fd, TUNSETIFF, (void*)&ifr);
+        VCML_ERROR_ON(err < 0, "error creating tapdev: %s", strerror(errno));
+    }
 
-#include <pthread.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
+    backend_tap::~backend_tap() {
+        if (m_fd < 0)
+            return;
 
-#include <execinfo.h>
-#include <cxxabi.h>
+        close(m_fd);
+    }
 
-#include <libelf.h>
+    size_t backend_tap::peek() {
+        return m_fd < 0 ? 0 : backend::peek(m_fd);
+    }
 
-#include <systemc>
-#include <tlm>
-#include <tlm_utils/simple_initiator_socket.h>
-#include <tlm_utils/simple_target_socket.h>
+    size_t backend_tap::read(void* buf, size_t len) {
+        if (m_fd < 0)
+            return 0;
+        return ::read(m_fd, buf, len);
+    }
 
+    size_t backend_tap::write(const void* buf, size_t len) {
+        if (m_fd < 0)
+            return 0;
+        return backend::full_write(m_fd, buf, len);
+    }
 
-#endif
+    backend* backend_tap::create(const string& nm) {
+        return new backend_tap(nm.c_str());
+    }
+
+}

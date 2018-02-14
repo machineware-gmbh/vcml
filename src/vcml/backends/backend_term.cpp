@@ -112,20 +112,7 @@ namespace vcml {
     size_t backend_term::peek() {
         if (m_signal != 0)
             return 1;
-
-        fd_set in, out, err;
-        struct timeval timeout;
-
-        FD_ZERO(&in);
-        FD_SET(0, &in);
-        FD_ZERO(&out);
-        FD_ZERO(&err);
-
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
-
-        int ret = select(1, &in, &out, &err, &timeout);
-        return ret > 0 ? 1 : 0;
+        return backend::peek(STDOUT_FILENO);
     }
 
     size_t backend_term::read(void* buf, size_t len) {
