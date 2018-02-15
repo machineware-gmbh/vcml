@@ -32,34 +32,55 @@
 #include "vcml/master_socket.h"
 #include "vcml/slave_socket.h"
 
+#define VCML_OPENCORES_ETHOC_NUMBD 128
+
 namespace vcml { namespace opencores {
 
     class ethoc: public peripheral
     {
     private:
-        sc_event m_send_event;
-        sc_event m_receive_event;
+        u8  m_mac[6];
+        int m_tx_idx;
+        int m_rx_idx;
 
-        u32  m_desc[256]; /* Buffer descriptors for Tx and Rx */
-        u8   m_mac[6];
+        struct descriptor {
+            u32 info;
+            u32 addr;
+        };
 
-        int  m_tx_idx;
-        int  m_rx_idx;
+        descriptor m_desc[VCML_OPENCORES_ETHOC_NUMBD];
+
+        int num_txbd() const;
+        int num_rxbd() const;
+
+        descriptor current_txbd() const;
+        descriptor current_rxbd() const;
+
+        void update_txbd(const descriptor& desc);
+        void update_rxbd(const descriptor& desc);
+
         bool m_tx_enabled;
         bool m_rx_enabled;
 
-        void send_process();
-        void recv_process();
+        sc_event m_tx_event;
+        sc_event m_rx_event;
 
-        void send();
-        void recv();
+        void tx_process();
+        void rx_process();
 
+        void tx_poll();
+        void rx_poll();
+
+        bool tx_packet(u32 addr, u32 size);
+        bool rx_packet(u32 addr, u32& size);
+
+        void interrupt(int source);
         void reset();
 
         u32 write_MODER(u32 val);
         u32 write_INT_SOURCE(u32 val);
-        u32 write_TX_BD_NUM(u32 val);
         u32 write_INT_MASK(u32 val);
+        u32 write_TX_BD_NUM(u32 val);
         u32 write_MIICOMMAND(u32 val);
         u32 write_MAC_ADDR0(u32 val);
         u32 write_MAC_ADDR1(u32 val);
@@ -258,8 +279,56 @@ namespace vcml { namespace opencores {
         virtual ~ethoc();
 
         VCML_KIND(ethoc);
-        void set_mac_addr(uint8_t addr[6]);
+        void set_mac_addr(u8 addr[6]);
     };
+
+    inline int ethoc::num_txbd() const {
+        return TX_BD_NUM;
+    }
+
+    inline int ethoc::num_rxbd() const {
+        return VCML_OPENCORES_ETHOC_NUMBD - TX_BD_NUM;
+    }
+
+    inline ethoc::descriptor ethoc::current_txbd() const {
+        if (is_little_endian())
+            return m_desc[m_tx_idx];
+
+        descriptor bd;
+        bd.info = bswap(m_desc[m_tx_idx].info);
+        bd.addr = bswap(m_desc[m_tx_idx].addr);
+        return bd;
+    }
+
+    inline ethoc::descriptor ethoc::current_rxbd() const {
+        if (is_little_endian())
+            return m_desc[m_rx_idx];
+
+        descriptor bd;
+        bd.info = bswap(m_desc[m_rx_idx].info);
+        bd.addr = bswap(m_desc[m_rx_idx].addr);
+        return bd;
+    }
+
+    inline void ethoc::update_txbd(const ethoc::descriptor& desc) {
+        if (is_little_endian()) {
+            m_desc[m_tx_idx].info = desc.info;
+            m_desc[m_tx_idx].addr = desc.addr;
+        } else {
+            m_desc[m_tx_idx].info = bswap(desc.info);
+            m_desc[m_tx_idx].addr = bswap(desc.addr);
+        }
+    }
+
+    inline void ethoc::update_rxbd(const ethoc::descriptor& desc) {
+        if (is_little_endian()) {
+            m_desc[m_rx_idx].info = desc.info;
+            m_desc[m_rx_idx].addr = desc.addr;
+        } else {
+            m_desc[m_rx_idx].info = bswap(desc.info);
+            m_desc[m_rx_idx].addr = bswap(desc.addr);
+        }
+    }
 
     inline void ethoc::set_mac_addr(u8 addr[6]) {
         for (int i = 0; i < 6; i++)

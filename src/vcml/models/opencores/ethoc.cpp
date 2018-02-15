@@ -97,7 +97,7 @@
 
 #define ADVERTISE_FULL        (ADVERTISE_100FULL | ADVERTISE_10FULL   | \
                                  ADVERTISE_CSMA)
-#define ADVERTISE_ALL        (ADVERTISE_10HALF | ADVERTISE_10FULL    | \
+#define ADVERTISE_ALL         (ADVERTISE_10HALF | ADVERTISE_10FULL    | \
                                  ADVERTISE_100HALF | ADVERTISE_100FULL)
 
 /* Link partner ability register */
@@ -156,15 +156,15 @@
 
 namespace vcml { namespace opencores {
 
-    static const uint8_t bcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+    static const u8 bcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
     SC_HAS_PROCESS(ethoc);
 
-    void ethoc::send_process() {
+    void ethoc::tx_process() {
         while (true) {
-            wait(m_send_event);
+            wait(m_tx_event);
             while (m_tx_enabled) {
-                send();
+                tx_poll();
                 sc_time cycle = sc_time(1.0 / clock, SC_SEC);
                 sc_time quantum = tlm_global_quantum::instance().get();
                 wait(max(cycle, quantum));
@@ -172,11 +172,11 @@ namespace vcml { namespace opencores {
         }
     }
 
-    void ethoc::recv_process() {
+    void ethoc::rx_process() {
         while (true) {
-            wait(m_receive_event);
+            wait(m_rx_event);
             while (m_rx_enabled) {
-                recv();
+                rx_poll();
                 sc_time cycle = sc_time(1.0 / clock, SC_SEC);
                 sc_time quantum = tlm_global_quantum::instance().get();
                 wait(max(cycle, quantum));
@@ -184,103 +184,125 @@ namespace vcml { namespace opencores {
         }
     }
 
-    void ethoc::send() {
-        // do nothing, if IRQ outstanding
+    void ethoc::tx_poll() {
         if (IRQ.read())
             return;
 
-        u32 bd_info = m_desc[m_tx_idx];
-        u32 bd_addr = m_desc[m_tx_idx + 1];
-
-        if (!(bd_info & TXBD_RD))
+        descriptor bd = current_txbd();
+        if (!(bd.info & TXBD_RD))
             return;
 
-        bd_info &= ~(TXBD_DF | TXBD_CS | TXBD_RL | TXBD_UR | TXBD_LC);
-        i32 packet_length = bd_info >> TXBD_LEN_O;
-        if (packet_length <= 0)
+        bd.info &= ~(TXBD_UR | TXBD_RL | TXBD_LC | TXBD_DF | TXBD_CS);
+        u32 packet_length = bd.info >> TXBD_LEN_O;
+
+        bool success = tx_packet(bd.addr, packet_length);
+        if (success && (bd.info & TXBD_IRQ))
+            interrupt(INT_SOURCE_TXB);
+        if (!success)
+            interrupt(INT_SOURCE_TXE);
+        if (success)
+            log_debug("packet transmitted, %d bytes", packet_length);
+
+        bd.info &= ~TXBD_RD;
+        update_txbd(bd);
+
+        m_tx_idx++;
+        if ((m_tx_idx >= num_txbd()) || (bd.info & TXBD_WR))
+            m_tx_idx = 0;
+    }
+
+    void ethoc::rx_poll() {
+        if (IRQ.read())
             return;
 
-        if (packet_length > ETH_MAX_PACKET_LEN) {
-            log_warning("packet size %d exceeds max, ignored", packet_length);
+        descriptor bd = current_rxbd();
+        if (!(bd.info & RXBD_E))
             return;
+
+        bd.info &= ~(RXBD_M  | RXBD_OR | RXBD_IS | RXBD_DN);
+        bd.info &= ~(RXBD_TL | RXBD_SF | RXBD_LC);
+
+        u32 packet_length = 0;
+        bool success = rx_packet(bd.addr, packet_length);
+        if (success && (packet_length == 0))
+            return; // nothing received
+        if (success && (bd.info & RXBD_IRQ))
+            interrupt(INT_SOURCE_RXB);
+        if (!success)
+            interrupt(INT_SOURCE_RXE);
+        if (success)
+            log_debug("packet received, %d bytes", packet_length);
+
+        bd.info &= ~RXBD_E;
+        bd.info &= RXBD_LEN_M;
+        bd.info |= (packet_length + 4) << RXBD_LEN_O;
+        update_rxbd(bd);
+
+        m_rx_idx++;
+        if ((m_rx_idx >= VCML_OPENCORES_ETHOC_NUMBD) || (bd.info & RXBD_WRAP))
+            m_rx_idx = num_txbd();
+    }
+
+    bool ethoc::tx_packet(u32 addr, u32 length) {
+        if (length > ETH_MAX_PACKET_LEN) {
+            log_warning("packet size %d exceeds max, ignored", length);
+            return false;
         }
 
         unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
-        if (success(OUT.read(bd_addr, buffer, packet_length))) {
-            get_backend()->write(buffer, packet_length);
-            if ((INT_MASK & INT_MASK_TXB))
-                INT_SOURCE |= INT_SOURCE_TXB;
-        } else {
-            bd_info &= ~TXBD_LC; // retransmission
-            INT_SOURCE |= INT_SOURCE_TXE;
-            log_warning("failed to transmit packet");
+        tlm_response_status rs = OUT.read(addr, buffer, length);
+        if (failed(rs)) {
+            log_warning("tx error  %s while reading from 0x%08x",
+                        tlm_response_to_str(rs).c_str(), addr);
+            return false;
         }
 
-        bd_info &= ~TXBD_RD; // mark in use
-        m_desc[m_tx_idx] = bd_info;
+        size_t size = get_backend()->write(buffer, length);
+        if (size != length) {
+            log_warning("tx error, %d bytes requested, %d bytes sent",
+                        length, size);
+            return false;
+        }
 
-        // interrupt signaling
-        if ((bd_info & TXBD_IRQ) &&
-            ((INT_MASK & INT_MASK_TXB) || (INT_MASK & INT_MASK_TXE)))
-            IRQ = true;
-
-        // set next descriptor index
-        if ((bd_info & TXBD_WR) || (m_tx_idx >= (int)(TX_BD_NUM - 1) * 2))
-            m_tx_idx = 0;
-        else
-            m_tx_idx += 2;
+        return true;
     }
 
-    void ethoc::recv() {
-        // if interrupt outstanding do nothing
-        if (IRQ.read())
-            return;
-
-        u32 bd_info = m_desc[m_rx_idx];
-        u32 bd_addr = m_desc[m_rx_idx + 1];
-
-        if (!(bd_info & RXBD_E))
-            return;
-
-        // prepare base descriptor
-        bd_info &= ~(RXBD_M  | RXBD_IS | RXBD_DN | RXBD_OR |
-                     RXBD_LC | RXBD_TL | RXBD_SF);
-
-        // look for data
+    bool ethoc::rx_packet(u32 addr, u32& size) {
+        size = 0;
         backend* be = get_backend();
         if (!be || !be->peek())
-            return;
+            return true;
 
         unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
-        memset(buffer, 0, sizeof(buffer));
-        size_t packetlen = be->read(buffer, sizeof(buffer));
+        size_t length = be->read(&buffer, sizeof(buffer));
+        if (length > ETH_MAX_PACKET_LEN) {
+            log_warning("packet size %d exceeds max, ignored", length);
+            return false;
+        }
 
         // promiscuous mode disabled, check destination HW address
         if (!(MODER & MODER_PRO)) {
             if ((memcmp(buffer, m_mac, ETH_ALEN) != 0) &&
                 (memcmp(buffer, bcast, ETH_ALEN) != 0)) {
-                return; // packet not for us
+                log_debug("ignoring broadcast packet");
+                return true; // packet not for us
             }
         }
 
-        // store packet in memory
-        if (failed(OUT.write(bd_addr, buffer, packetlen)))
-            log_warning("failed to store packet");
+        tlm_response_status rs = OUT.write(addr, buffer, length);
+        if (failed(rs)) {
+            log_warning("rx error %s while writing to 0x%08x",
+                        tlm_response_to_str(rs).c_str(), addr);
+            return false;
+        }
 
-        // set new flags in bd_info
-        bd_info &= ~RXBD_E;
-        bd_info |= ((packetlen + 4) & RXBD_LEN_M) << RXBD_LEN_O;
-        m_desc[m_rx_idx] = bd_info;
+        size = (u32)length;
+        return true;
+    }
 
-        // set next descriptor index
-        if ((bd_info & RXBD_WRAP) || (m_rx_idx >= 0x100))
-            m_rx_idx = TX_BD_NUM * 2;
-        else
-            m_rx_idx += 2;
-
-        // interrupt signaling
-        INT_SOURCE |= INT_SOURCE_RXB;
-        if ((INT_MASK & INT_MASK_RXB) && (bd_info & RXBD_IRQ))
+    void ethoc::interrupt(int source) {
+        INT_SOURCE |= source;
+        if (INT_MASK & source)
             IRQ = true;
     }
 
@@ -293,7 +315,7 @@ namespace vcml { namespace opencores {
         IPGR2 = 0x12;
         PACKETLEN = 0x400600;
         COLLCONF = 0xf003f;
-        TX_BD_NUM = 0x40;
+        TX_BD_NUM = VCML_OPENCORES_ETHOC_NUMBD / 2;
         CTRLMODER = 0;
         MIIMODER = 0x64;
         MIICOMMAND = 0;
@@ -313,62 +335,63 @@ namespace vcml { namespace opencores {
         IRQ = false;
     }
 
-    u32 ethoc::write_MODER(u32 moder) {
-        // enable transmitter
-        if ((moder & MODER_TXEN) && !(MODER & MODER_TXEN)) {
+    u32 ethoc::write_MODER(u32 val) {
+        if ((val & MODER_TXEN) && !m_tx_enabled) {
+            log_debug("ethoc transmitter enabled");
             m_tx_enabled = true;
             m_tx_idx = 0;
-            m_send_event.notify(SC_ZERO_TIME);
+            m_tx_event.notify(SC_ZERO_TIME);
         }
 
-        // enable receiver
-        if ((moder & MODER_RXEN) && !(MODER & MODER_RXEN)) {
+        if ((val & MODER_RXEN) && !m_rx_enabled) {
+            log_debug("ethoc receiver enabled");
             m_rx_enabled = true;
-            m_rx_idx = TX_BD_NUM * 2;
-            m_receive_event.notify(SC_ZERO_TIME);
+            m_rx_idx = num_txbd();
+            m_rx_event.notify(SC_ZERO_TIME);
         }
 
-        // disable transmitter
-        if (!(moder & MODER_TXEN) && (MODER & MODER_TXEN))
+        if (!(val & MODER_TXEN) && m_tx_enabled) {
+            log_debug("ethoc transmitter disabled");
             m_tx_enabled = false;
+        }
 
-        // disable receiver
-        if (!(moder & MODER_RXEN) && (MODER & MODER_RXEN))
+        if (!(val & MODER_RXEN) && m_rx_enabled) {
+            log_debug("ethoc receiver disabled");
             m_rx_enabled = false;
+        }
 
-        // reset device
-        if (moder & MODER_RST)
+        if (val & MODER_RST) {
+            log_debug("ethoc reset");
+            val &= ~MODER_RST;
             reset();
+        }
 
-        // store new value
-        return moder;
+        return val;
     }
 
     u32 ethoc::write_INT_SOURCE(u32 source) {
-        // clear IRQs with 1 in source
-        INT_SOURCE &= ~source;
-        if (!(INT_SOURCE & INT_MASK) && IRQ.read())
-            IRQ = false;
+        INT_SOURCE &= ~source; // clear IRQs with 1 in source
+        IRQ = (INT_SOURCE & INT_MASK) != 0;
         return INT_SOURCE;
     }
 
-    u32 ethoc::write_TX_BD_NUM(u32 data) {
-        u8 db_num_val = data & TX_BD_NUM_M;
-        m_rx_idx = db_num_val * 2;
-        return db_num_val;
+    u32 ethoc::write_INT_MASK(u32 data) {
+        INT_MASK = data;
+        IRQ = (INT_SOURCE & INT_MASK) != 0;
+        return INT_MASK;
     }
 
-    u32 ethoc::write_INT_MASK(u32 data) {
-        if (IRQ.read())
-            IRQ = false;
-        return data;
+    u32 ethoc::write_TX_BD_NUM(u32 data) {
+        TX_BD_NUM = data & TX_BD_NUM_M;
+        log_debug("ethoc num bd tx = %d rx = %d", num_txbd(), num_rxbd());
+        return TX_BD_NUM;
     }
 
     u32 ethoc::write_MIICOMMAND(u32 data) {
-        if (data != (u32)MIICOMMAND_RSTAT)
+        if (data != MIICOMMAND_RSTAT)
             return data;
 
-        if (data & MIIADDRESS_FIAD_M)
+        if (MIIADDRESS & MIIADDRESS_FIAD_M)
             return data;
 
         switch ((MIIADDRESS >> MIIADDRESS_RGAD_O) & MIIADDRESS_RGAD_M) {
@@ -436,17 +459,9 @@ namespace vcml { namespace opencores {
         if ((addr.start < RAM_START) || (addr.end > RAM_END))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
-        if (addr.start % 4)
-            return TLM_ADDRESS_ERROR_RESPONSE;
+        const u8* from = reinterpret_cast<const u8*>(m_desc);
+        memcpy(data, from + addr.start - RAM_START, addr.length());
 
-        if (addr.length() != 4)
-            return TLM_BURST_ERROR_RESPONSE;
-
-        u32* ptr = reinterpret_cast<u32*>(data);
-        if (is_big_endian())
-            *ptr = bswap(m_desc[(addr.start - RAM_START) / 4]);
-        else
-            *ptr = m_desc[(addr.start - RAM_START) / 4];
         return TLM_OK_RESPONSE;
     }
 
@@ -455,29 +470,22 @@ namespace vcml { namespace opencores {
         if ((addr.start < RAM_START) || (addr.end > RAM_END))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
-        if (addr.start % 4)
-            return TLM_ADDRESS_ERROR_RESPONSE;
+        u8* dest = reinterpret_cast<u8*>(m_desc);
+        memcpy(dest + addr.start - RAM_START, data, addr.length());
 
-        if (addr.length() != 4)
-            return TLM_BURST_ERROR_RESPONSE;
-
-        const u32* ptr = reinterpret_cast<const u32*>(data);
-        if (is_big_endian())
-            m_desc[(addr.start - RAM_START) / 4] = bswap(*ptr);
-        else
-            m_desc[(addr.start - RAM_START) / 4] = *ptr;
         return TLM_OK_RESPONSE;
     }
 
     ethoc::ethoc(const sc_module_name &nm):
         peripheral(nm),
-        m_send_event(),
-        m_receive_event(),
-        m_desc(),
+        m_mac(),
         m_tx_idx(0),
-        m_rx_idx(0),
+        m_rx_idx(VCML_OPENCORES_ETHOC_NUMBD / 2),
+        m_desc(),
         m_tx_enabled(false),
         m_rx_enabled(false),
+        m_tx_event("tx_ev"),
+        m_rx_event("rx_ev"),
         MODER("MODER", 0x00, 0xA000),
         INT_SOURCE("INT_SOURCE", 0x04, 0),
         INT_MASK("INT_MASK", 0x08, 0),
@@ -486,7 +494,7 @@ namespace vcml { namespace opencores {
         IPGR2("IPGR2", 0x14, 0x12),
         PACKETLEN("PACKETLEN", 0x18, 0x400600),
         COLLCONF("COLLCONF", 0x1C, 0xF003F),
-        TX_BD_NUM("TX_BD_NUM", 0x20, 0x40),
+        TX_BD_NUM("TX_BD_NUM", 0x20, VCML_OPENCORES_ETHOC_NUMBD / 2),
         CTRLMODER("CTRLMODER", 0x24, 0),
         MIIMODER("MIIMODER", 0x28, 0x64),
         MIICOMMAND("MIICOMMAND", 0x2C, 0),
@@ -499,8 +507,8 @@ namespace vcml { namespace opencores {
         ETH_HASH0_ADR("ETH_HASH0_ADR", 0x48, 0),
         ETH_HASH1_ADR("ETH_HASH1_ADR", 0x4C, 0),
         ETH_TXCTRL("ETH_TXCTRL", 0x50, 0),
-        clock("clock", 15000000),
-        mac("mac", "3a:44:1d:55:11:5a"),
+        clock("clock", 20000000), // 20MHz polling frequency for input
+        mac("mac", "12:34:56:78:9A:BC"),
         IRQ("IRQ"),
         IN("IN"),
         OUT("OUT") {
@@ -513,8 +521,11 @@ namespace vcml { namespace opencores {
         for (int i = 0; i < 6; i++)
             m_mac[i] = addr[i];
 
-        SC_THREAD(send_process);
-        SC_THREAD(recv_process);
+        log_debug("using MAC addr: %02x:%02x:%02x:%02x:%02x:%02x",
+                  addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+
+        SC_THREAD(tx_process);
+        SC_THREAD(rx_process);
 
         MODER.allow_read_write();
         MODER.write = &ethoc::write_MODER;
@@ -522,11 +533,11 @@ namespace vcml { namespace opencores {
         INT_SOURCE.allow_read_write();
         INT_SOURCE.write = &ethoc::write_INT_SOURCE;
 
-        TX_BD_NUM.allow_read_write();
-        TX_BD_NUM.write = &ethoc::write_TX_BD_NUM;
-
         INT_MASK.allow_read_write();
         INT_MASK.write = &ethoc::write_INT_MASK;
+
+        TX_BD_NUM.allow_read_write();
+        TX_BD_NUM.write = &ethoc::write_TX_BD_NUM;
 
         IPGT.allow_read_write();
         IPGR1.allow_read_write();
