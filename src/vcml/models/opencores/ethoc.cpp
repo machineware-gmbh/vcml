@@ -18,63 +18,65 @@
 
 #include "vcml/models/opencores/ethoc.h"
 
-#define ETH_FRAME_LEN       1514
-#define ETH_FCS_LEN         4
-#define ETH_ALEN            6
-#define ETH_MAX_PACKET_LEN  (ETH_FRAME_LEN + ETH_FCS_LEN)
+#define ETH_FRAME_LEN           1514
+#define ETH_FCS_LEN             4
+#define ETH_MAX_PACKET_LEN      (ETH_FRAME_LEN + ETH_FCS_LEN)
+
+/* The following stuff is taken from the Linux kernel. It is used during
+ * access of the MIICOMMAND register. */
 
 /* Generic MII registers */
-#define MII_BMCR            0x00    /* Basic mode control register */
-#define MII_BMSR            0x01    /* Basic mode status register  */
-#define MII_PHYSID1         0x02    /* PHYS ID 1                   */
-#define MII_PHYSID2         0x03    /* PHYS ID 2                   */
-#define MII_ADVERTISE       0x04    /* Advertisement control reg   */
-#define MII_LPA             0x05    /* Link partner ability reg    */
-#define MII_EXPANSION       0x06    /* Expansion register          */
-#define MII_CTRL1000        0x09    /* 1000BASE-T control          */
-#define MII_STAT1000        0x0a    /* 1000BASE-T status           */
-#define MII_ESTATUS         0x0f    /* Extended Status             */
-#define MII_DCOUNTER        0x12    /* Disconnect counter          */
-#define MII_FCSCOUNTER      0x13    /* False carrier counter       */
-#define MII_NWAYTEST        0x14    /* N-way auto-neg test reg     */
-#define MII_RERRCOUNTER     0x15    /* Receive error counter       */
-#define MII_SREVISION       0x16    /* Silicon revision            */
-#define MII_RESV1           0x17    /* Reserved...                 */
-#define MII_LBRERROR        0x18    /* Lpback, rx, bypass error    */
-#define MII_PHYADDR         0x19    /* PHY address                 */
-#define MII_RESV2           0x1a    /* Reserved...                 */
-#define MII_TPISTATUS       0x1b    /* TPI status for 10mbps       */
-#define MII_NCONFIG         0x1c    /* Network interface config    */
+#define MII_BMCR                0x00    /* Basic mode control register */
+#define MII_BMSR                0x01    /* Basic mode status register  */
+#define MII_PHYSID1             0x02    /* PHYS ID 1                   */
+#define MII_PHYSID2             0x03    /* PHYS ID 2                   */
+#define MII_ADVERTISE           0x04    /* Advertisement control reg   */
+#define MII_LPA                 0x05    /* Link partner ability reg    */
+#define MII_EXPANSION           0x06    /* Expansion register          */
+#define MII_CTRL1000            0x09    /* 1000BASE-T control          */
+#define MII_STAT1000            0x0a    /* 1000BASE-T status           */
+#define MII_ESTATUS             0x0f    /* Extended Status             */
+#define MII_DCOUNTER            0x12    /* Disconnect counter          */
+#define MII_FCSCOUNTER          0x13    /* False carrier counter       */
+#define MII_NWAYTEST            0x14    /* N-way auto-neg test reg     */
+#define MII_RERRCOUNTER         0x15    /* Receive error counter       */
+#define MII_SREVISION           0x16    /* Silicon revision            */
+#define MII_RESV1               0x17    /* Reserved...                 */
+#define MII_LBRERROR            0x18    /* Lpback, rx, bypass error    */
+#define MII_PHYADDR             0x19    /* PHY address                 */
+#define MII_RESV2               0x1a    /* Reserved...                 */
+#define MII_TPISTATUS           0x1b    /* TPI status for 10mbps       */
+#define MII_NCONFIG             0x1c    /* Network interface config    */
 
 /* Basic mode control register */
-#define BMCR_RESV           0x003f  /* Unused...                   */
-#define BMCR_SPEED1000      0x0040  /* MSB of Speed (1000)         */
-#define BMCR_CTST           0x0080  /* Collision test              */
-#define BMCR_FULLDPLX       0x0100  /* Full duplex                 */
-#define BMCR_ANRESTART      0x0200  /* Auto negotiation restart    */
-#define BMCR_ISOLATE        0x0400  /* Isolate data paths from MII */
-#define BMCR_PDOWN          0x0800  /* Enable low power state      */
-#define BMCR_ANENABLE       0x1000  /* Enable auto negotiation     */
-#define BMCR_SPEED100       0x2000  /* Select 100Mbps              */
-#define BMCR_LOOPBACK       0x4000  /* TXD loopback bits           */
-#define BMCR_RESET          0x8000  /* Reset to default state      */
+#define BMCR_RESV               0x003f  /* Unused...                   */
+#define BMCR_SPEED1000          0x0040  /* MSB of Speed (1000)         */
+#define BMCR_CTST               0x0080  /* Collision test              */
+#define BMCR_FULLDPLX           0x0100  /* Full duplex                 */
+#define BMCR_ANRESTART          0x0200  /* Auto negotiation restart    */
+#define BMCR_ISOLATE            0x0400  /* Isolate data paths from MII */
+#define BMCR_PDOWN              0x0800  /* Enable low power state      */
+#define BMCR_ANENABLE           0x1000  /* Enable auto negotiation     */
+#define BMCR_SPEED100           0x2000  /* Select 100Mbps              */
+#define BMCR_LOOPBACK           0x4000  /* TXD loopback bits           */
+#define BMCR_RESET              0x8000  /* Reset to default state      */
 
 /* Basic mode status register */
-#define BMSR_ERCAP          0x0001    /* Ext-reg capability          */
-#define BMSR_JCD            0x0002    /* Jabber detected             */
-#define BMSR_LSTATUS        0x0004    /* Link status                 */
-#define BMSR_ANEGCAPABLE    0x0008    /* Able to do auto-negotiation */
-#define BMSR_RFAULT         0x0010    /* Remote fault detected       */
-#define BMSR_ANEGCOMPLETE   0x0020    /* Auto-negotiation complete   */
-#define BMSR_RESV           0x00c0    /* Unused...                   */
-#define BMSR_ESTATEN        0x0100    /* Extended Status in R15      */
-#define BMSR_100HALF2       0x0200    /* Can do 100BASE-T2 HDX       */
-#define BMSR_100FULL2       0x0400    /* Can do 100BASE-T2 FDX       */
-#define BMSR_10HALF         0x0800    /* Can do 10mbps, half-duplex  */
-#define BMSR_10FULL         0x1000    /* Can do 10mbps, full-duplex  */
-#define BMSR_100HALF        0x2000    /* Can do 100mbps, half-duplex */
-#define BMSR_100FULL        0x4000    /* Can do 100mbps, full-duplex */
-#define BMSR_100BASE4       0x8000    /* Can do 100mbps, 4k packets  */
+#define BMSR_ERCAP              0x0001    /* Ext-reg capability          */
+#define BMSR_JCD                0x0002    /* Jabber detected             */
+#define BMSR_LSTATUS            0x0004    /* Link status                 */
+#define BMSR_ANEGCAPABLE        0x0008    /* Able to do auto-negotiation */
+#define BMSR_RFAULT             0x0010    /* Remote fault detected       */
+#define BMSR_ANEGCOMPLETE       0x0020    /* Auto-negotiation complete   */
+#define BMSR_RESV               0x00c0    /* Unused...                   */
+#define BMSR_ESTATEN            0x0100    /* Extended Status in R15      */
+#define BMSR_100HALF2           0x0200    /* Can do 100BASE-T2 HDX       */
+#define BMSR_100FULL2           0x0400    /* Can do 100BASE-T2 FDX       */
+#define BMSR_10HALF             0x0800    /* Can do 10mbps, half-duplex  */
+#define BMSR_10FULL             0x1000    /* Can do 10mbps, full-duplex  */
+#define BMSR_100HALF            0x2000    /* Can do 100mbps, half-duplex */
+#define BMSR_100FULL            0x4000    /* Can do 100mbps, full-duplex */
+#define BMSR_100BASE4           0x8000    /* Can do 100mbps, 4k packets  */
 
 /* Advertisement control register */
 #define ADVERTISE_SLCT          0x001f    /* Selector bits               */
@@ -95,9 +97,9 @@
 #define ADVERTISE_LPACK         0x4000    /* Ack link partners response  */
 #define ADVERTISE_NPAGE         0x8000    /* Next page bit               */
 
-#define ADVERTISE_FULL        (ADVERTISE_100FULL | ADVERTISE_10FULL   | \
+#define ADVERTISE_FULL          (ADVERTISE_100FULL | ADVERTISE_10FULL   | \
                                  ADVERTISE_CSMA)
-#define ADVERTISE_ALL         (ADVERTISE_10HALF | ADVERTISE_10FULL    | \
+#define ADVERTISE_ALL           (ADVERTISE_10HALF | ADVERTISE_10FULL    | \
                                  ADVERTISE_100HALF | ADVERTISE_100FULL)
 
 /* Link partner ability register */
@@ -114,45 +116,6 @@
 
 #define LPA_DUPLEX              (LPA_10FULL | LPA_100FULL)
 #define LPA_100                 (LPA_100FULL | LPA_100HALF | LPA_100BASE4)
-
-/* Expansion register for auto-negotiation */
-#define EXPANSION_NWAY        0x0001 /* Can do N-way auto-nego      */
-#define EXPANSION_LCWP        0x0002 /* Got new RX page code word   */
-#define EXPANSION_ENABLENPAGE 0x0004 /* This enables npage words    */
-#define EXPANSION_NPCAPABLE   0x0008 /* Link partner supports npage */
-#define EXPANSION_MFAULTS     0x0010 /* Multiple faults detected    */
-#define EXPANSION_RESV        0xffe0 /* Unused...                   */
-
-#define ESTATUS_1000_TFULL    0x2000 /* Can do 1000BT Full          */
-#define ESTATUS_1000_THALF    0x1000 /* Can do 1000BT Half          */
-
-/* N-way test register */
-#define NWAYTEST_RESV1        0x00ff /* Unused...                   */
-#define NWAYTEST_LOOPBACK     0x0100 /* Enable loopback for N-way   */
-#define NWAYTEST_RESV2        0xfe00 /* Unused...                   */
-
-/* 1000BASE-T Control register */
-#define ADVERTISE_1000FULL    0x0200 /* Advertise 1000BASE-T full duplex */
-#define ADVERTISE_1000HALF    0x0100 /* Advertise 1000BASE-T half duplex */
-#define CTL1000_AS_MASTER     0x0800
-#define CTL1000_ENABLE_MASTER 0x1000
-
-/* 1000BASE-T Status register */
-#define LPA_1000LOCALRXOK     0x2000 /* Link partner local receiver status */
-#define LPA_1000REMRXOK       0x1000 /* Link partner remote receiver status */
-#define LPA_1000FULL          0x0800 /* Link partner 1000BASE-T full duplex */
-#define LPA_1000HALF          0x0400 /* Link partner 1000BASE-T half duplex */
-
-/* Flow control flags */
-#define FLOW_CTRL_TX          0x01
-#define FLOW_CTRL_RX          0x02
-
-/* MMD Access Control register fields */
-#define MII_MMD_CTRL_DEVAD_MASK 0x1f   /* Mask MMD DEVAD */
-#define MII_MMD_CTRL_ADDR       0x0000 /* Address */
-#define MII_MMD_CTRL_NOINCR     0x4000 /* no post increment */
-#define MII_MMD_CTRL_INCR_RDWT  0x8000 /* post increment on reads & writes */
-#define MII_MMD_CTRL_INCR_ON_WT 0xC000 /* post increment on writes only */
 
 namespace vcml { namespace opencores {
 
