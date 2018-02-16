@@ -103,11 +103,6 @@ namespace vcml { namespace opencores {
             RAM_END   = 0x7ff, /* internal RAM end address */
         };
 
-        enum phy_id {
-            MICREL_PHY1 = 0x22,   /* ID used for MII command from Linux */
-            MICREL_PHY2 = 0x1613, /* ID used for MII command from Linux */
-        };
-
         enum txbd_status {
             TXBD_CS     = 1 << 0,  /* carrier sense lost */
             TXBD_DF     = 1 << 1,  /* defer indication */
