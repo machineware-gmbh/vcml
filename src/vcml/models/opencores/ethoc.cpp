@@ -117,6 +117,10 @@
 #define LPA_DUPLEX              (LPA_10FULL | LPA_100FULL)
 #define LPA_100                 (LPA_100FULL | LPA_100HALF | LPA_100BASE4)
 
+/* ID of DP83848C 10/100 PHY (National Semiconductor / Texas Instruments) */
+#define ETHOC_PHYID1            0x2000
+#define ETHOC_PHYID2            0x5c90
+
 namespace vcml { namespace opencores {
 
     static const u8 bcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -293,7 +297,7 @@ namespace vcml { namespace opencores {
         ETH_TXCTRL = 0;
 
         m_tx_idx = 0;
-        m_rx_idx = TX_BD_NUM * 2;
+        m_rx_idx = num_txbd();
 
         IRQ = false;
     }
@@ -363,8 +367,8 @@ namespace vcml { namespace opencores {
                                            BMSR_10HALF  | BMSR_10FULL |
                                            BMSR_100HALF | BMSR_100FULL;
                               break;
-        case MII_PHYSID1:     MIIRX_DATA = MICREL_PHY1; break;
-        case MII_PHYSID2:     MIIRX_DATA = MICREL_PHY2; break;
+        case MII_PHYSID1:     MIIRX_DATA = ETHOC_PHYID1; break;
+        case MII_PHYSID2:     MIIRX_DATA = ETHOC_PHYID2; break;
         case MII_ADVERTISE:   MIIRX_DATA = ADVERTISE_FULL; break;
         case MII_LPA:         MIIRX_DATA = LPA_DUPLEX | LPA_100; break;
         case MII_EXPANSION:   MIIRX_DATA = 0; break;
