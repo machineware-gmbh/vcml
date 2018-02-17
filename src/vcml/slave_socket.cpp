@@ -23,15 +23,26 @@ namespace vcml {
     void slave_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
         while (!m_free)
             sc_core::wait(m_free_ev);
-
         m_free = false;
-        m_host->b_transport(this, tx, dt);
-        m_free = true;
-        m_free_ev.notify();
+
+        if (tx_is_excl(tx) && tx.is_read()) {
+            unmap_dmi(tx.get_address(),
+                      tx.get_address() + tx.get_data_length() - 1);
+        }
 
         tlm_dmi dmi;
         if (m_dmi_cache.lookup(tx, dmi))
             tx.set_dmi_allowed(true);
+
+        if (m_exmon.update(tx)) {
+            m_host->b_transport(this, tx, dt);
+        } else {
+            tx.set_dmi_allowed(false);
+            tx.set_response_status(tlm::TLM_OK_RESPONSE);
+        }
+
+        m_free = true;
+        m_free_ev.notify();
     }
 
     unsigned int slave_socket::transport_dbg(tlm_generic_payload& tx){
@@ -47,7 +58,10 @@ namespace vcml {
         if (!m_dmi_cache.lookup(tx, dmi))
             return false;
 
-        return m_host->get_direct_mem_ptr(this, tx, dmi);
+        if (!m_host->get_direct_mem_ptr(this, tx, dmi))
+            return false;
+
+        return m_exmon.override_dmi(tx, dmi);
     }
 
     slave_socket::slave_socket(const char* nm, component* host):
@@ -55,6 +69,7 @@ namespace vcml {
         m_free(true),
         m_free_ev("free"),
         m_dmi_cache(),
+        m_exmon(),
         m_host(host) {
         if (m_host == NULL) {
             m_host = dynamic_cast<component*>(get_parent_object());
@@ -76,4 +91,5 @@ namespace vcml {
         m_dmi_cache.invalidate(start, end);
         (*this)->invalidate_direct_mem_ptr(start, end);
     }
+
 }

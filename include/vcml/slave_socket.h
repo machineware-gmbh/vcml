@@ -26,6 +26,7 @@
 
 #include "vcml/range.h"
 #include "vcml/txext.h"
+#include "vcml/exmon.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 
@@ -34,9 +35,10 @@ namespace vcml {
     class slave_socket: public simple_target_socket<slave_socket>
     {
     private:
-        bool m_free;
-        sc_event m_free_ev;
-        dmi_cache m_dmi_cache;
+        bool       m_free;
+        sc_event   m_free_ev;
+        dmi_cache  m_dmi_cache;
+        exmon      m_exmon;
         component* m_host;
 
         void b_transport(tlm_generic_payload& tx, sc_time& dt);
@@ -49,15 +51,12 @@ namespace vcml {
 
         VCML_KIND(slave_socket);
 
-        dmi_cache& dmi();
+        dmi_cache& dmi()   { return m_dmi_cache; }
+        exmon&     exmem() { return m_exmon; }
 
         void map_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
     };
-
-    inline dmi_cache& slave_socket::dmi() {
-        return m_dmi_cache;
-    }
 
     inline void slave_socket::map_dmi(const tlm_dmi& dmi) {
         m_dmi_cache.insert(dmi);
