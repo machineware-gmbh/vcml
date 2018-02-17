@@ -22,11 +22,10 @@
 tapdev=$2
 ipaddr="10.0.0.1"
 netmask="255.0.0.0"
-tapctl="vcml-tapctl"
+tapctl=$(ls $(dirname $0)/*tapctl)
 
-tapctl_file=$(dirname $0)/$tapctl
-if ! [ -f "$tapctl_file" ]; then
-    echo "Error: $tapctl not found." >&2
+if ! [ -f "$tapctl" ]; then
+    echo "Error: tapctl not found." >&2
     exit 1
 fi
 
@@ -59,7 +58,7 @@ start() {
 
     # create a TAP device for the current user (needs root priv.)
     echo "starting $tapdev with IP $ipaddr/$netmask for user $SUDO_USER"
-    $tapctl_file start $tapdev $ipaddr $netmask
+    $tapctl start $tapdev $ipaddr $netmask
 
     # assign local (NAT) IP address
     ifconfig $tapdev $ipaddr promisc up
@@ -90,7 +89,7 @@ stop() {
     # stop and remove TAP device
     echo "stopping $tapdev"
     ifconfig $tapdev down
-    $tapctl_file stop $tapdev
+    $tapctl stop $tapdev
 }
 
 restart() {

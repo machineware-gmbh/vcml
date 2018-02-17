@@ -19,5 +19,4 @@
 add_executable(vcml-tapctl tapctl.c)
 install(TARGETS vcml-tapctl DESTINATION bin)
 
-
 install(PROGRAMS tapnet.sh DESTINATION bin RENAME vcml-tapnet)
