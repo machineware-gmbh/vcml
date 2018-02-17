@@ -53,7 +53,8 @@ is how to build and install them:
     ```
 
 5. Configure and build the project using `cmake`. During configuration you must
-   state whether or not to build the unit tests:
+   state whether or not to build the utility programs and unit tests:
+     * `-DBUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
      * `-DBUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
 
    Release and debug build configurations are controlled via the regular
@@ -73,6 +74,7 @@ is how to build and install them:
     <install-dir>/lib/libvcml.a   # library
     <install-dir>/include/vcml.h  # library header
     <install-dir>/include/vcml/   # header files
+    <install-dir>/bin/            # utility programs
     ```
 
 7. Update your environment so that other projects can reference your build:

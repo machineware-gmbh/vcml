@@ -20,6 +20,7 @@ project(vcml)
 cmake_minimum_required(VERSION 3.5)
 
 option(BUILD_TESTS "Build unit tests, requires GTest and GMock >= 1.8.0" OFF)
+option(BUILD_UTILS "Builds utility programs" ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(SystemC "2.3.0" REQUIRED)
@@ -77,6 +78,10 @@ target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 
 install(TARGETS vcml DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
+
+if(BUILD_UTILS)
+    add_subdirectory(utils)
+endif()
 
 if(BUILD_TESTS)
     enable_testing()
