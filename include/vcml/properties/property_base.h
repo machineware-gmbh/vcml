@@ -40,17 +40,10 @@ namespace vcml {
         property_base(const char* name, sc_module* parent = NULL);
         virtual ~property_base();
 
-        virtual const char* kind() const {
-            return "vcml::property";
-        }
+        VCML_KIND(property);
 
-        inline const char* hierarchy_name() const {
-            return m_name.c_str();
-        }
-
-        inline sc_module* get_module() const {
-            return m_parent;
-        }
+        inline const char* hierarchy_name() const { return m_name.c_str(); }
+        inline sc_module*  get_module()     const { return m_parent; }
 
         virtual const char* str() const = 0;
         virtual void str(const string& s) = 0;

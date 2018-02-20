@@ -29,175 +29,307 @@
 
 namespace vcml {
 
-    template <typename T>
+    template <typename T, const unsigned int N = 1>
     class property: public property_base
     {
     private:
-        T      m_value;
+        T      m_value[N];
         T      m_defval;
         string m_strval;
         bool   m_inited;
+
+        void update_strval();
 
         // disabled
         property();
         property(const property&);
 
     public:
-        property(const char* nm, const T& defval = T(), sc_module* mod = NULL):
-            property_base(nm, mod),
-            m_value(defval),
-            m_defval(defval),
-            m_strval(to_string(defval)),
-            m_inited(false) {
-            m_inited = property_provider::init(hierarchy_name(), m_strval);
-            if (m_inited)
-                m_value = from_string<T>(m_strval);
-        }
+        property(const char* nm, const T& defval = T(), sc_module* mod = NULL);
+        virtual ~property();
 
-        virtual ~property() {
-            /* nothing to do */
-        }
+        virtual const char* str() const;
+        virtual void str(const string& s);
 
-        inline const char* str() const {
-            return m_strval.c_str();
-        }
+        const T& get() const;
+        T& get();
 
-        virtual void str(const string& s) {
-            m_value = from_string<T>(s);
-            m_inited = true;
-            m_strval = s;
-        }
+        const T& get(unsigned int idx) const;
+        T& get(unsigned int idx);
 
-        inline const T& get() const {
-            return m_value;
-        }
+        void set(const T& val);
+        void set(const T  val[N]);
+        void set(const T& val, unsigned int idx);
 
-        inline T& get() {
-            return m_value;
-        }
+        const T& get_default() const;
+        void set_default(const T& defval);
 
-        virtual void set(const T& val) {
-            m_value = val;
-            m_inited = true;
-            m_strval = to_string(val);
-        }
+        operator T() const;
 
-        inline const T& get_default() const {
-            return m_defval;
-        }
+        const T& operator [] (unsigned int idx) const;
+        T& operator [] (unsigned int idx);
 
-        inline void set_default(const T& defval) {
-            m_defval = defval;
-            if (!m_inited)
-                set(defval);
-        }
+        property<T, N>& operator = (const property<T, N>& other);
 
-        inline operator T() const {
-            return get();
-        }
+        template <typename T2> property<T, N>& operator   = (const T2& other);
+        template <typename T2> property<T, N>& operator  += (const T2& other);
+        template <typename T2> property<T, N>& operator  -= (const T2& other);
+        template <typename T2> property<T, N>& operator  *= (const T2& other);
+        template <typename T2> property<T, N>& operator  /= (const T2& other);
+        template <typename T2> property<T, N>& operator  %= (const T2& other);
+        template <typename T2> property<T, N>& operator  &= (const T2& other);
+        template <typename T2> property<T, N>& operator  |= (const T2& other);
+        template <typename T2> property<T, N>& operator  ^= (const T2& other);
+        template <typename T2> property<T, N>& operator <<= (const T2& other);
+        template <typename T2> property<T, N>& operator >>= (const T2& other);
 
-        inline property<T>& operator = (const property<T>& other) {
-            set(other.m_value);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator = (const T2& other) {
-            set(other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator += (const T2& other) {
-            set(m_value + other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator -= (const T2& other) {
-            set(m_value - other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator *= (const T2& other) {
-            set(m_value * other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator /= (const T2& other) {
-            set(m_value / other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator %= (const T& other) {
-            set(m_value % other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator &= (const T2& other) {
-            set(m_value & other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator |= (const T2& other) {
-            set(m_value | other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator ^= (const T2& other) {
-            set(m_value ^ other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator <<= (const T2& other) {
-            set(m_value << other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline property<T>& operator >>= (const T2& other) {
-            set(m_value >> other);
-            return *this;
-        }
-
-        template <typename T2>
-        inline bool operator == (const T2& other) {
-            return m_value == other;
-        }
-
-        template <typename T2>
-        inline bool operator != (const T2& other) {
-            return m_value != other;
-        }
-
-        template <typename T2>
-        inline bool operator <= (const T2& other) {
-            return m_value <= other;
-        }
-
-        template <typename T2>
-        inline bool operator >= (const T2& other) {
-            return m_value >= other;
-        }
-
-        template <typename T2>
-        inline bool operator < (const T2& other) {
-            return m_value < other;
-        }
-
-        template <typename T2>
-        inline bool operator > (const T2& other) {
-            return m_value > other;
-        }
+        template <typename T2> bool operator == (const T2& other);
+        template <typename T2> bool operator != (const T2& other);
+        template <typename T2> bool operator <= (const T2& other);
+        template <typename T2> bool operator >= (const T2& other);
+        template <typename T2> bool operator  < (const T2& other);
+        template <typename T2> bool operator  > (const T2& other);
 
     };
+
+    template <typename T, const unsigned int N>
+    void property<T, N>::update_strval() {
+        m_strval = "";
+        for (unsigned int i = 0; i < (N - 1); i++)
+            m_strval += to_string<T>(m_value[i]) + ", ";
+        m_strval += to_string<T>(m_value[N - 1]);
+    }
+
+    template <typename T, const unsigned int N>
+    property<T, N>::property(const char* nm, const T& def, sc_module* m):
+        property_base(nm, m),
+        m_value(),
+        m_defval(def),
+        m_strval(),
+        m_inited(false) {
+        for (unsigned int i = 0; i < N; i++)
+            m_value[i] = m_defval;
+        update_strval();
+
+        string init;
+        if (property_provider::init(hierarchy_name(), init))
+            str(init);
+    }
+
+    template <typename T, const unsigned int N>
+    property<T, N>::~property() {
+        /* nothing to do */
+    }
+
+    template <typename T, const unsigned int N>
+    inline const char* property<T, N>::str() const {
+        return m_strval.c_str();
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T, N>::str(const string& s) {
+        m_inited = true;
+        m_strval = s;
+
+        vector<string> args = split(m_strval, ',');
+        unsigned int size = args.size();
+
+        if (size < N) {
+            log_warning("property %s has not enough initializers",
+                        hierarchy_name());
+        } else if (size > N) {
+            log_warning("property %s has too many initializers",
+                        hierarchy_name());
+        }
+
+        for (unsigned int i = 0; i < min(N, size); i++)
+            m_value[i] = from_string<T>(args[i]);
+    }
+
+    template <typename T, const unsigned int N>
+    const T& property<T, N>::get() const {
+        return get(0);
+    }
+
+    template <typename T, const unsigned int N>
+    inline T& property<T, N>::get() {
+        return get(0);
+    }
+
+    template <typename T, const unsigned int N>
+    const T& property<T, N>::get(unsigned int idx) const {
+        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+        return m_value[idx];
+    }
+
+    template <typename T, const unsigned int N>
+    inline T& property<T, N>::get(unsigned int idx) {
+        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+        return m_value[idx];
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T, N>::set(const T& val) {
+        for (unsigned int i = 0; i < N; i++)
+            m_value[i] = val;
+        m_inited = true;
+        update_strval();
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T, N>::set(const T val[N]) {
+        for (unsigned int i = 0; i < N; i++)
+            m_value[i] = val[i];
+        m_inited = true;
+        update_strval();
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T, N>::set(const T& val, unsigned int idx) {
+        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+        m_value[idx] = val;
+        m_inited = true;
+        update_strval();
+    }
+
+    template <typename T, const unsigned int N>
+    inline const T& property<T, N>::get_default() const {
+        return m_defval;
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T,N>::set_default(const T& defval) {
+        m_defval = defval;
+        if (!m_inited)
+            set(defval);
+    }
+
+    template <typename T, const unsigned int N>
+    inline property<T,N>::operator T() const {
+        return get(0);
+    }
+
+    template <typename T, const unsigned int N>
+    inline const T& property<T,N>::operator [] (unsigned int idx) const {
+        return get(idx);
+    }
+
+    template <typename T, const unsigned int N>
+    inline T& property<T,N>::operator [] (unsigned int idx) {
+        return get(idx);
+    }
+
+    template <typename T, const unsigned int N>
+    inline property<T,N>& property<T, N>::operator = (const property<T,N>& o) {
+        for (unsigned int i = 0; i < N; i++)
+            set(o.m_value[i], i);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator = (const T2& other) {
+        set(other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N>template <typename T2>
+    inline property<T, N>& property<T, N>::operator += (const T2& other) {
+        set(get() + other, 0);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator -= (const T2& other) {
+        set(get() - other, 0);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator *= (const T2& other) {
+        set(get() * other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator /= (const T2& other) {
+        set(get() / other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator %= (const T2& other) {
+        set(get() % other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator &= (const T2& other) {
+        set(get() & other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator |= (const T2& other) {
+        set(get() | other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator ^= (const T2& other) {
+        set(get() ^ other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator <<= (const T2& other) {
+        set(get() << other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline property<T, N>& property<T, N>::operator >>= (const T2& other) {
+        set(get() >> other);
+        return *this;
+    }
+
+    template <typename T, const unsigned int N> template<typename T2>
+    inline bool property<T, N>::operator == (const T2& other) {
+        for (unsigned int i = 0; i < N; i++)
+            if (m_value[i] != other)
+                return false;
+        return true;
+    }
+
+    template <typename T, const unsigned int N> template <typename T2>
+    inline bool property<T, N>::operator < (const T2& other) {
+        for (unsigned int i = 0; i < N; i++)
+            if (m_value[i] >= other)
+                return false;
+        return true;
+    }
+
+    template <typename T, const unsigned int N> template <typename T2>
+    inline bool property<T, N>::operator > (const T2& other) {
+        for (unsigned int i = 0; i < N; i++)
+            if (m_value[i] <= other)
+                return false;
+        return true;
+    }
+
+    template <typename T, const unsigned int N> template <typename T2>
+    inline bool property<T, N>::operator != (const T2& other) {
+        return !operator == (other);
+    }
+
+    template <typename T, const unsigned int N> template <typename T2>
+    inline bool property<T, N>::operator <= (const T2& other) {
+        return !operator > (other);
+    }
+
+    template <typename T, const unsigned int N>template <typename T2>
+    inline bool property<T, N>::operator >= (const T2& other) {
+        return !operator < (other);
+    }
 
 }
 
