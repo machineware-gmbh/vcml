@@ -64,6 +64,7 @@ set(sources
     "${src}/vcml/register.cpp"
     "${src}/vcml/peripheral.cpp"
     "${src}/vcml/ports.cpp"
+    "${src}/vcml/stubs.cpp"
     "${src}/vcml/processor.cpp"
     "${src}/vcml/models/generic/bus.cpp"
     "${src}/vcml/models/generic/memory.cpp"

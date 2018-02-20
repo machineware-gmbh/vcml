@@ -56,6 +56,7 @@
 #include "vcml/txext.h"
 #include "vcml/exmon.h"
 #include "vcml/ports.h"
+#include "vcml/stubs.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/command.h"
 #include "vcml/component.h"
