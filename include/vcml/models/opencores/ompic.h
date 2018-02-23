@@ -51,6 +51,11 @@ namespace vcml { namespace opencores {
         ompic(const ompic&);
 
     public:
+        enum control_bits {
+            CTRL_IRQ_GEN = 1 << 30,
+            CTRL_IRQ_ACK = 1 << 31
+        };
+
         reg<ompic, u32>** CONTROL;
         reg<ompic, u32>** STATUS;
 

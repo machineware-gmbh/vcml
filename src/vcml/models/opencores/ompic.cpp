@@ -18,11 +18,8 @@
 
 #include "vcml/models/opencores/ompic.h"
 
-#define OR1KSOC_OMPIC_IRQ_GEN (1 << 30)
-#define OR1KSOC_OMPIC_IRQ_ACK (1 << 31)
-
-#define OR1KSOC_OMPIC_DATA(x) ((x) & 0xffff)
-#define OR1KSOC_OMPIC_DEST(x) (((x) >> 16) & 0x3fff)
+#define OMPIC_DATA(x) ((x) & 0xffff)
+#define OMPIC_DEST(x) (((x) >> 16) & 0x3fff)
 
 namespace vcml { namespace opencores {
 
@@ -40,23 +37,23 @@ namespace vcml { namespace opencores {
     u32 ompic::write_CONTROL(u32 val, unsigned int core_id)
     {
         u32 self = static_cast<uint32_t>(core_id);
-        u32 dest = OR1KSOC_OMPIC_DEST(val);
-        u32 data = OR1KSOC_OMPIC_DATA(val);
+        u32 dest = OMPIC_DEST(val);
+        u32 data = OMPIC_DATA(val);
 
         m_control[core_id] = val;
 
-        log_debug("CTRL %d -> %d: 0x%08x", self, dest, val);
+        //log_debug("CTRL %d -> %d: 0x%08x", self, dest, val);
 
-        if (val & OR1KSOC_OMPIC_IRQ_GEN) {
+        if (val & CTRL_IRQ_GEN) {
             m_status[dest] = self << 16 | data;
-            log_debug("trigger irq on core %d", dest);
+            //log_debug("core %d triggers irq on core %d", self, dest);
             if (IRQ[dest].read())
                 log_warning("irq already pending on core %d", dest);
             IRQ[dest] = true;
         }
 
-        if (val & OR1KSOC_OMPIC_IRQ_ACK) {
-            log_debug("reset irq for core %d", core_id);
+        if (val & CTRL_IRQ_ACK) {
+            //log_debug("reset irq for core %d", core_id);
             if (!IRQ[self].read())
                 log_warning("no irq pending for core %d", core_id);
             IRQ[self] = false;
