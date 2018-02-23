@@ -24,6 +24,8 @@
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 
+#define VCML_NO_ARGS (::std::vector<::std::string>())
+
 namespace vcml {
 
     class command_base
