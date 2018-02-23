@@ -76,9 +76,8 @@ namespace vcml {
         switch (cmd) {
         case TLM_READ_COMMAND: return dmi.is_read_allowed();
         case TLM_WRITE_COMMAND: return dmi.is_write_allowed();
-        case TLM_IGNORE_COMMAND:
-        default:
-            break;
+        case TLM_IGNORE_COMMAND: return true;
+        default: break;
         }
 
         return false;
