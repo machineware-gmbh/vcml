@@ -30,64 +30,85 @@ namespace vcml {
         u64 start;
         u64 end;
 
-        inline u64 length() const {
-            return end - start + 1;
-        }
+        u64 length() const;
 
-        inline bool includes(const u64 addr) const {
-            return addr >= start && addr <= end;
-        }
+        bool includes(const u64 addr) const;
+        bool includes(const range& other) const;
+        bool inside(const range& other) const;
+        bool overlaps(const range& other) const;
+        bool connects(const range& other) const;
 
-        inline bool includes(const range& other) const {
-            return includes(other.start) && includes(other.end);
-        }
+        range intersect(const range& other) const;
 
-        inline bool inside(const range& other) const {
-            return other.includes(*this);
-        }
+        range();
+        range(u64 start, u64 end);
+        range(const tlm_generic_payload& tx);
+        range(const tlm_dmi& dmi);
 
-        inline bool overlaps(const range& other) const {
-            return other.end >= start && other.start <= end;
-        }
-
-        inline bool connects(const range& other) const {
-            return other.start == end + 1 || start == other.end + 1;
-        }
-
-        inline range intersect(const range& other) const {
-            if (!overlaps(other))
-                return range(0, 0);
-            return range(max(start, other.start), min(end, other.end));
-        }
-
-        inline range(): start(0), end(0) {
-            /* nothing to do */
-        }
-
-        inline range(u64 _start, u64 _end): start(_start), end(_end) {
-            VCML_ERROR_ON(_start > _end, "invalid range specified");
-        }
-
-        inline range(const tlm_generic_payload& tx):
-            start(tx.get_address()),
-            end(tx.get_address() + tx.get_streaming_width() - 1) {
-            if (tx.get_streaming_width() == 0)
-                end = tx.get_address() + tx.get_data_length() - 1;
-        }
-
-        inline range(const tlm_dmi& dmi):
-            start(dmi.get_start_address()),
-            end(dmi.get_end_address()) {
-        }
-
-        inline bool operator == (const range& other) const {
-            return start == other.start && end == other.end;
-        }
-
-        inline bool operator != (const range& other) const {
-            return start != other.start || end != other.end;
-        }
+        bool operator == (const range& other) const;
+        inline bool operator != (const range& other) const;
     };
+
+    inline u64 range::length() const {
+        return end - start + 1;
+    }
+
+    inline bool range::includes(const u64 addr) const {
+        return addr >= start && addr <= end;
+    }
+
+    inline bool range::includes(const range& other) const {
+        return includes(other.start) && includes(other.end);
+    }
+
+    inline bool range::inside(const range& other) const {
+        return other.includes(*this);
+    }
+
+    inline bool range::overlaps(const range& other) const {
+        return other.end >= start && other.start <= end;
+    }
+
+    inline bool range::connects(const range& other) const {
+        return other.start == end + 1 || start == other.end + 1;
+    }
+
+    inline range range::intersect(const range& other) const {
+        if (!overlaps(other))
+            return range(0, 0);
+        return range(max(start, other.start), min(end, other.end));
+    }
+
+    inline range::range(): start(0), end(0) {
+        /* nothing to do */
+    }
+
+    inline range::range(u64 s, u64 e): start(s), end(e) {
+        VCML_ERROR_ON(s > e, "invalid range specified: %016x..%016x", s, e);
+    }
+
+    inline range::range(const tlm_generic_payload& tx):
+        start(tx.get_address()),
+        end(tx.get_address() + tx.get_streaming_width() - 1) {
+        if (tx.get_streaming_width() == 0) {
+            end = tx.get_address() + tx.get_data_length() - 1;
+            if (tx.get_data_length() == 0)
+                end = start;
+        }
+    }
+
+    inline range::range(const tlm_dmi& dmi):
+        start(dmi.get_start_address()),
+        end(dmi.get_end_address()) {
+    }
+
+    inline bool range::operator == (const range& other) const {
+        return start == other.start && end == other.end;
+    }
+
+    inline bool range::operator != (const range& other) const {
+        return start != other.start || end != other.end;
+    }
 
 }
 
