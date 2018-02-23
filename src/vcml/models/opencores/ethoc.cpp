@@ -273,35 +273,6 @@ namespace vcml { namespace opencores {
             IRQ = true;
     }
 
-    void ethoc::reset() {
-        MODER = 0xa000;
-        INT_SOURCE = 0;
-        INT_MASK = 0;
-        IPGT = 0x12;
-        IPGR1 = 0xc;
-        IPGR2 = 0x12;
-        PACKETLEN = 0x400600;
-        COLLCONF = 0xf003f;
-        TX_BD_NUM = VCML_OPENCORES_ETHOC_NUMBD / 2;
-        CTRLMODER = 0;
-        MIIMODER = 0x64;
-        MIICOMMAND = 0;
-        MIIADDRESS = 0;
-        MIITX_DATA = 0;
-        MIIRX_DATA = 0;
-        MIISTATUS = 0;
-        MAC_ADDR0 = 0;
-        MAC_ADDR1 = 0;
-        ETH_HASH0_ADR = 0;
-        ETH_HASH1_ADR = 0;
-        ETH_TXCTRL = 0;
-
-        m_tx_idx = 0;
-        m_rx_idx = num_txbd();
-
-        IRQ = false;
-    }
-
     u32 ethoc::write_MODER(u32 val) {
         if ((val & MODER_TXEN) && !m_tx_enabled) {
             log_debug("ethoc transmitter enabled");
@@ -474,7 +445,7 @@ namespace vcml { namespace opencores {
         ETH_HASH0_ADR("ETH_HASH0_ADR", 0x48, 0),
         ETH_HASH1_ADR("ETH_HASH1_ADR", 0x4C, 0),
         ETH_TXCTRL("ETH_TXCTRL", 0x50, 0),
-        clock("clock", 20000000), // 20MHz polling frequency for input
+        clock("clock", VCML_OPENCORES_ETHOC_CLK), // input polling frequency
         mac("mac", "12:34:56:78:9A:BC"),
         IRQ("IRQ"),
         IN("IN"),
@@ -537,6 +508,35 @@ namespace vcml { namespace opencores {
 
     ethoc::~ethoc() {
         /* nothing to do */
+    }
+
+    void ethoc::reset() {
+        MODER = 0xa000;
+        INT_SOURCE = 0;
+        INT_MASK = 0;
+        IPGT = 0x12;
+        IPGR1 = 0xc;
+        IPGR2 = 0x12;
+        PACKETLEN = 0x400600;
+        COLLCONF = 0xf003f;
+        TX_BD_NUM = VCML_OPENCORES_ETHOC_NUMBD / 2;
+        CTRLMODER = 0;
+        MIIMODER = 0x64;
+        MIICOMMAND = 0;
+        MIIADDRESS = 0;
+        MIITX_DATA = 0;
+        MIIRX_DATA = 0;
+        MIISTATUS = 0;
+        MAC_ADDR0 = 0;
+        MAC_ADDR1 = 0;
+        ETH_HASH0_ADR = 0;
+        ETH_HASH1_ADR = 0;
+        ETH_TXCTRL = 0;
+
+        m_tx_idx = 0;
+        m_rx_idx = num_txbd();
+
+        IRQ = false;
     }
 
 }}

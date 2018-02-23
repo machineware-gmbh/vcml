@@ -58,6 +58,7 @@ namespace vcml {
 
         bool cmd_clist(const vector<string>& args, ostream& os);
         bool cmd_cinfo(const vector<string>& args, ostream& os);
+        bool cmd_reset(const vector<string>& args, ostream& os);
 
     public:
         property<bool> allow_dmi;
@@ -66,6 +67,8 @@ namespace vcml {
         virtual ~component();
 
         VCML_KIND(component);
+
+        virtual void reset();
 
         const sc_time& get_offset(sc_process_b* proc = NULL) const;
         sc_time& offset(sc_process_b* proc = NULL);

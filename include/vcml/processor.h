@@ -61,7 +61,6 @@ namespace vcml {
         std::vector<u64> m_breakpoints;
 
         bool cmd_dump(const vector<string>& args, ostream& os);
-        bool cmd_reset(const vector<string>& args, ostream& os);
         bool cmd_read(const vector<string>& args, ostream& os);
         bool cmd_symbols(const vector<string>& args, ostream& os);
         bool cmd_lsym(const vector<string>& args, ostream& os);
@@ -109,7 +108,7 @@ namespace vcml {
         double get_run_time() const { return m_run_time; }
         double get_cps()      const { return m_num_cycles / m_run_time; }
 
-        inline void reset();
+        virtual void reset();
 
         bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
 
@@ -153,14 +152,9 @@ namespace vcml {
         return "n/a";
     }
 
-    inline void processor::reset() {
-        m_num_cycles = 0;
-        m_run_time = 0.0;
-    }
-
     template <typename T>
     inline tlm_response_status processor::fetch(u64 addr, T& data) {
-        tlm_response_status rs = INSN.read(addr, data);
+        tlm_response_status rs = INSN.readw(addr, data);
         if (failed(rs)) {
             string status = tlm_response_to_str(rs);
             log_error("detected bus error during fetch operation");
@@ -176,7 +170,7 @@ namespace vcml {
 
     template <typename T>
     inline tlm_response_status processor::read(u64 addr, T& data) {
-        tlm_response_status rs = DATA.read(addr, data);
+        tlm_response_status rs = DATA.readw(addr, data);
         if (failed(rs)) {
             string status = tlm_response_to_str(rs);
             log_error("detected bus error during read operation");
@@ -192,7 +186,7 @@ namespace vcml {
 
     template <typename T>
     inline tlm_response_status processor::write(u64 addr, const T& data) {
-        tlm_response_status rs = DATA.write(addr, data);
+        tlm_response_status rs = DATA.writew(addr, data);
         if (failed(rs)) {
             string status = tlm_response_to_str(rs);
             log_error("detected bus error during write operation");

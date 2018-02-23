@@ -212,6 +212,7 @@ namespace vcml { namespace generic {
 
         m_mappings.push_back(mapping);
     }
+
     void bus::map(unsigned int port, u64 start, u64 end, u64 offset,
                   const string& peer) {
         map(port, range(start, end), offset, peer);

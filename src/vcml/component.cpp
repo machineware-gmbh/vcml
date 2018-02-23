@@ -60,6 +60,12 @@ namespace vcml {
         return true;
     }
 
+    bool component::cmd_reset(const vector<string>& args, ostream& os) {
+        reset();
+        os << "OK";
+        return true;
+    }
+
     component::component(const sc_module_name& nm, bool dmi):
         sc_module(nm),
         m_offsets(),
@@ -68,13 +74,23 @@ namespace vcml {
         m_commands(),
         allow_dmi("allow_dmi", dmi){
         register_command("clist", 0, this, &component::cmd_clist,
-                                 "returns a list of supported commands");
+                         "returns a list of supported commands");
         register_command("cinfo", 1, this, &component::cmd_cinfo,
                          "returns information on a given command");
+        register_command("reset", 0 ,this, &component::cmd_reset,
+                         "resets this component");
     }
 
     component::~component() {
         // nothing to do
+    }
+
+    void component::reset() {
+        for (auto obj : get_child_objects()) {
+            component* child = dynamic_cast<component*>(obj);
+            if (child)
+                child->reset();
+        }
     }
 
     master_socket* component::get_master_socket(const string& name) const {

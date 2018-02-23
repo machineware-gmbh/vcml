@@ -110,7 +110,7 @@ namespace vcml { namespace arm {
             virtual ~timer();
             VCML_KIND(sp804timer::timer);
 
-            void reset();
+            virtual void reset();
         };
 
         enum timer_address {
@@ -149,7 +149,7 @@ namespace vcml { namespace arm {
         VCML_KIND(sp804timer);
 
         virtual unsigned int receive(tlm_generic_payload& tx, int flags);
-        void reset();
+        virtual void reset();
     };
 
     inline int sp804timer::timer::get_prescale_stages() const {

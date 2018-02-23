@@ -42,11 +42,6 @@ namespace vcml { namespace generic {
         return images;
     }
 
-    bool memory::cmd_reset(const vector<string>& args, ostream& os) {
-        memset(m_memory, 0, size);
-        return true;
-    }
-
     bool memory::cmd_load(const vector<string>& args, ostream& os) {
         string binary = args[0];
         u64 offset = 0ull;
@@ -100,8 +95,6 @@ namespace vcml { namespace generic {
                                                     : VCML_ACCESS_READ_WRITE);
         }
 
-        register_command("reset", 0, this, &memory::cmd_reset,
-            "Reset memory contents back to zero");
         register_command("load", 1, this, &memory::cmd_load,
             "Load <binary> [off] to load the contents of file <binary> to " \
             "relative offset [off] in memory (offset is zero if unspecified).");
@@ -119,6 +112,10 @@ namespace vcml { namespace generic {
     memory::~memory() {
         if (m_memory)
             delete [] m_memory;
+    }
+
+    void memory::reset() {
+        memset(m_memory, 0, size);
     }
 
     void memory::load(const string& binary, u64 offset) {

@@ -36,7 +36,6 @@ namespace vcml { namespace generic {
         unsigned char* m_memory;
 
         // commands
-        bool cmd_reset(const vector<string>& args, ostream& os);
         bool cmd_load(const vector<string>& args, ostream& os);
         bool cmd_show(const vector<string>& args, ostream& os);
 
@@ -58,6 +57,8 @@ namespace vcml { namespace generic {
         virtual ~memory();
 
         VCML_KIND(memory);
+
+        virtual void reset();
 
         void load(const string& binary, u64 offset = 0);
 

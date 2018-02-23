@@ -219,6 +219,8 @@ namespace vcml { namespace arm {
     }
 
     void sp804timer::reset() {
+        component::reset();
+
         ITCR = 0x00000000;
         ITOP = 0x00000000;
 
@@ -231,9 +233,6 @@ namespace vcml { namespace arm {
         CID1 = (VCML_ARM_SP804TIMER_CID >>  8) & 0xFF;
         CID2 = (VCML_ARM_SP804TIMER_CID >> 16) & 0xFF;
         CID3 = (VCML_ARM_SP804TIMER_CID >> 24) & 0xFF;
-
-        TIMER1.reset();
-        TIMER2.reset();
 
         IRQC = false;
     }

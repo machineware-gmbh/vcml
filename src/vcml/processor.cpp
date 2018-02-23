@@ -54,11 +54,6 @@ namespace vcml {
         return true;
     }
 
-    bool processor::cmd_reset(const vector<string>& args, ostream& os) {
-        reset();
-        return true;
-    }
-
     bool processor::cmd_read(const vector<string>& args, ostream& os) {
         if (args.size() < 1) {
             os << "Usage: read <INSN|DATA> <start> <end>";
@@ -369,8 +364,6 @@ namespace vcml {
 
         register_command("dump", 0, this, &processor::cmd_dump,
             "dump internal state of the processor");
-        register_command("reset", 0, this, &processor::cmd_reset,
-            "reset statistic counters of the processor");
         register_command("read", 3, this, &processor::cmd_read,
             "read memory from INSN or DATA ports");
         register_command("symbols", 1, this, &processor::cmd_symbols,
@@ -392,6 +385,11 @@ namespace vcml {
             delete m_gdb;
         if (m_symbols)
             delete m_symbols;
+    }
+
+    void processor::reset() {
+        m_num_cycles = 0;
+        m_run_time = 0.0;
     }
 
     bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {

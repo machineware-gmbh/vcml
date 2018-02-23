@@ -33,6 +33,7 @@
 #include "vcml/slave_socket.h"
 
 #define VCML_OPENCORES_ETHOC_NUMBD 128
+#define VCML_OPENCORES_ETHOC_CLK   20000000 // 20MHz
 
 namespace vcml { namespace opencores {
 
@@ -75,7 +76,6 @@ namespace vcml { namespace opencores {
         bool rx_packet(u32 addr, u32& size);
 
         void interrupt(int source);
-        void reset();
 
         u32 write_MODER(u32 val);
         u32 write_INT_SOURCE(u32 val);
@@ -272,8 +272,10 @@ namespace vcml { namespace opencores {
 
         ethoc(const sc_module_name& name);
         virtual ~ethoc();
-
         VCML_KIND(ethoc);
+
+        virtual void reset();
+
         void set_mac_addr(u8 addr[6]);
     };
 
