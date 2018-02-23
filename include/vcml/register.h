@@ -94,6 +94,7 @@ namespace vcml {
         std::map<int, DATA*> m_banks;
         int m_current_bank;
 
+        void init_bank(int bank);
         void load_bank(int bank);
 
     public:
@@ -113,6 +114,22 @@ namespace vcml {
 
         bool is_banked() const { return m_banked; }
         void set_banked(bool set = true) { m_banked = set; }
+
+        int current_bank() const { return m_current_bank; }
+
+        const DATA& read_bank(int bank) const;
+        DATA& read_bank(int bank);
+
+        const DATA& read_bank(int bank, unsigned int idx) const;
+        DATA& read_bank(int bank, unsigned int idx);
+
+        void write_bank(int bank, const DATA& val);
+        void write_bank_all(const DATA& val);
+
+        void write_bank(int bank, const DATA& val, unsigned int idx);
+        void write_bank_all(const DATA& val, unsigned int idx);
+
+        const char* name() const { return sc_core::sc_object::name(); }
 
         reg(const char* nm, u64 addr, const DATA& init = DATA(),
             HOST* host = NULL);
@@ -134,24 +151,31 @@ namespace vcml {
         template <typename T> reg<HOST, DATA, N>& operator *= (const T& value);
         template <typename T> reg<HOST, DATA, N>& operator /= (const T& value);
 
-        template <typename T2> bool operator == (const T2& other);
-        template <typename T2> bool operator != (const T2& other);
-        template <typename T2> bool operator <= (const T2& other);
-        template <typename T2> bool operator >= (const T2& other);
-        template <typename T2> bool operator  < (const T2& other);
-        template <typename T2> bool operator  > (const T2& other);
+        template <typename T> bool operator == (const T& other);
+        template <typename T> bool operator != (const T& other);
+        template <typename T> bool operator <= (const T& other);
+        template <typename T> bool operator >= (const T& other);
+        template <typename T> bool operator  < (const T& other);
+        template <typename T> bool operator  > (const T& other);
     };
+
+    template <class HOST, typename DATA, const unsigned int N>
+    void reg<HOST, DATA, N>::init_bank(int bank) {
+        if (stl_contains(m_banks, bank))
+            return;
+
+        m_banks[bank] = new DATA[N];
+        for (unsigned int i = 0; i < N; i++)
+            m_banks[bank][i] = property<DATA, N>::get_default();
+    }
 
     template <class HOST, typename DATA, const unsigned int N>
     void reg<HOST, DATA, N>::load_bank(int bank) {
         if (!m_banked || bank == m_current_bank)
             return;
 
-        if (!stl_contains(m_banks, bank)) {
-            m_banks[bank] = new DATA[N];
-            for (unsigned int i = 0; i < N; i++)
-                m_banks[bank][i] = property<DATA, N>::get_default();
-        }
+        if (!stl_contains(m_banks, bank))
+            init_bank(bank);
 
         for (unsigned int i = 0; i < N; i++) {
             m_banks[m_current_bank][i] = property<DATA, N>::get(i);
@@ -162,9 +186,67 @@ namespace vcml {
     }
 
     template <class HOST, typename DATA, const unsigned int N>
+    const DATA& reg<HOST, DATA, N>::read_bank(int bank) const {
+        return read_bank(bank, 0);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    DATA& reg<HOST, DATA, N>::read_bank(int bank) {
+        return read_bank(bank, 0);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    const DATA& reg<HOST, DATA, N>::read_bank(int bk,  unsigned int idx) const {
+        VCML_ERROR_ON(!m_banked, "register %s is not banked", name());
+        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+        if (!stl_contains(m_banks, bk))
+            return property<DATA, N>::get_default();
+        return m_banks.at(bk);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    DATA& reg<HOST, DATA, N>::read_bank(int bank, unsigned int idx) {
+        VCML_ERROR_ON(!m_banked, "register %s is not banked", name());
+        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+        if (!stl_contains(m_banks, bank))
+            init_bank(bank);
+        return m_banks[bank][idx];
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    void reg<HOST, DATA, N>::write_bank(int bank, const DATA& val) {
+        for (unsigned int i = 0; i < N; i++)
+            write_bank(bank, val, i);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    void reg<HOST, DATA, N>::write_bank_all(const DATA& val) {
+        for (auto bank : m_banks)
+            write_bank(bank.first, val);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    void reg<HOST, DATA, N>::write_bank(int bank, const DATA& val,
+                                        unsigned int idx) {
+        VCML_ERROR_ON(!m_banked, "register %s is not banked", name());
+        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+
+        if (!stl_contains(m_banks, bank))
+            init_bank(bank);
+
+        m_banks[bank][idx] = val;
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    void reg<HOST, DATA, N>::write_bank_all(const DATA& val, unsigned int idx) {
+        for (auto bank : m_banks)
+            write_bank(bank.first, val, idx);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
     reg<HOST, DATA, N>::reg(const char* n, u64 addr, const DATA& def, HOST* h):
         reg_base(n, addr, N * sizeof(DATA), h),
-        property<DATA>(n, def, h),
+        property<DATA, N>(n, def, h),
         m_host(h),
         m_banked(false),
         m_banks(),
@@ -176,7 +258,7 @@ namespace vcml {
         tagged_write(NULL) {
         m_banks[m_current_bank] = new DATA[N];
         for (unsigned int i = 0; i < N; i++)
-            m_banks[m_current_bank][i] = property<DATA>::get(i);
+            m_banks[m_current_bank][i] = property<DATA, N>::get(i);
 
         if (m_host == NULL)
             m_host = dynamic_cast<HOST*>(get_host());
@@ -206,14 +288,14 @@ namespace vcml {
         u64 idx = (addr.start - get_address()) / sizeof(DATA);
         u64 off = (addr.start - get_address()) % sizeof(DATA);
 
-        DATA val = property<DATA>::get(idx);
+        DATA val = property<DATA, N>::get(idx);
 
         if (tagged_read != NULL)
             val = (m_host->*tagged_read)(N > 1 ? idx : tag);
         else if (read != NULL)
             val = (m_host->*read)();
 
-        property<DATA>::set(val, idx);
+        property<DATA, N>::set(val, idx);
 
         unsigned char* ptr = (unsigned char*)&val + off;
         memcpy(data, ptr, addr.length());
@@ -224,7 +306,7 @@ namespace vcml {
         u64 idx = (addr.start - get_address()) / sizeof(DATA);
         u64 off = (addr.start - get_address()) % sizeof(DATA);
 
-        DATA val = property<DATA>::get(idx);
+        DATA val = property<DATA, N>::get(idx);
 
         unsigned char* ptr = (unsigned char*)&val + off;
         memcpy(ptr, data, addr.length());
@@ -234,7 +316,7 @@ namespace vcml {
         else if (write != NULL)
             val = (m_host->*write)(val);
 
-        property<DATA>::set(val, idx);
+        property<DATA, N>::set(val, idx);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
