@@ -74,4 +74,6 @@
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ethoc.h"
 
+#include "vcml/models/arm/sp804timer.h"
+
 #endif
