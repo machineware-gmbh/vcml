@@ -23,7 +23,11 @@ namespace vcml {
     log_stream::log_stream(ostream& o):
         logger(SEVERITY_ERROR, SEVERITY_INFO),
         os(o) {
-        // nothing to do
+        /* nothing to do */
+    }
+
+    log_stream::~log_stream() {
+        /* nothing to do */
     }
 
     void log_stream::write_log(const report& msg) {
