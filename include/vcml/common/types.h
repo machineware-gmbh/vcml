@@ -37,6 +37,7 @@ namespace vcml {
     using std::max;
 
     using std::list;
+    using std::queue;
     using std::vector;
     using std::string;
     using std::stringstream;
