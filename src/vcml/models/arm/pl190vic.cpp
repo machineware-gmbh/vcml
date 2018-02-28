@@ -26,10 +26,10 @@ namespace vcml { namespace arm {
         IRQS = RISR & INTE & ~INTS; // update IRQ status
 
         for (auto irq : IRQ_OUT)
-            irq.second->write(IRQS != 0);
+            irq.second->write(IRQS != 0u);
 
         for (auto fiq : FIQ_OUT)
-            fiq.second->write(FIQS != 0);
+            fiq.second->write(FIQS != 0u);
 
         for (unsigned int l = 0; l < VCTRL.num(); l++) {
             if (VCTRL[l] & VCTRL_ENABLED) {
