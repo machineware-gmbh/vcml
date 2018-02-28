@@ -22,6 +22,8 @@
 
 namespace vcml {
 
+    bool g_backtrace_on_error = true;
+
     static string find_source() {
         pthread_t this_thread = pthread_self();
         if (this_thread != thctl_sysc_thread()) {
@@ -91,6 +93,48 @@ namespace vcml {
         // nothing to do
     }
 
+    void report::write(ostream& os) const {
+        vector<string> lines = split(m_message, '\n');
+        for (unsigned int i = 0; i < lines.size(); i++) {
+            write_severity_and_time(os);
+            if (!m_source.empty())
+                os << m_source << ": ";
+            os << lines[i];
+            if (i < (lines.size() - 1))
+                os << std::endl;
+        }
+
+        if (!m_file.empty()) {
+            os << std::endl;
+            write_severity_and_time(os);
+            os << "(" << m_file << ":" << m_line << ")";
+        }
+
+        if ((m_severity == SEVERITY_ERROR) && g_backtrace_on_error) {
+            os << std::endl;
+            write_backtrace(os);
+        }
+    }
+
+    void report::write_severity_and_time(ostream& os) const {
+        os << "[" << vcml::report::prefix[m_severity] << " "
+           << std::fixed << std::setprecision(9)
+           << m_time.to_seconds() << "s] ";
+    }
+
+    void report::write_backtrace(ostream& os) const {
+        size_t count = m_backtrace.size();
+
+        write_severity_and_time(os);
+        os << "Backtrace(" << count << ")" << std::endl;
+        for (unsigned int i = count - 1; i < count; i--) {
+            write_severity_and_time(os);
+            os << "#" << i << ": " << m_backtrace[i];
+            if (i != 0)
+                os << std::endl;
+        }
+    }
+
     const char* report::what() const throw() {
         //return m_desc.c_str();
         return m_message.c_str();
@@ -109,8 +153,6 @@ namespace vcml {
             [SEVERITY_INFO] = "info",
             [SEVERITY_DEBUG] = "debug"
     };
-
-    bool g_backtrace_on_error = true;
 
     string vcml_report_compose_message(const sc_report& rep) {
         stringstream ss;
@@ -184,26 +226,6 @@ std::istream& operator >> (std::istream& is, vcml::severity& sev) {
 }
 
 std::ostream& operator << (std::ostream& os, const vcml::report& rep) {
-    vcml::severity sev = rep.get_severity();
-    os << "[" << vcml::report::prefix[sev] << " "
-       << std::fixed << std::setprecision(9)
-       << rep.get_time().to_seconds() << "s] ";
-
-    std::string process = rep.get_source();
-    if (!process.empty())
-        os << process << ": ";
-    os << rep.get_message();
-
-    std::string source = rep.get_file();
-    if (!source.empty())
-        os << "\n\tFrom " << source << ":" << rep.get_line();
-
-    if (sev == vcml::SEVERITY_ERROR) {
-        const std::vector<std::string>& bt = rep.get_backtrace();
-        os << std::endl << "Backtrace(" << bt.size() << "):";
-        for (unsigned int i = bt.size() - 1; i < bt.size(); i--)
-            os << std::endl << "#" << i << ": " << bt[i];
-    }
-
+    rep.write(os);
     return os;
 }

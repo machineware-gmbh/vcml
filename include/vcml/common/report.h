@@ -68,6 +68,10 @@ namespace vcml {
         report(const sc_report& rep);
         virtual ~report() throw();
 
+        void write(ostream& os) const;
+        void write_severity_and_time(ostream& os) const;
+        void write_backtrace(ostream& os) const;
+
         virtual const char* what() const throw();
 
         static const char* prefix[SEVERITY_MAX];
