@@ -51,6 +51,8 @@ namespace vcml {
         virtual const char* str() const;
         virtual void str(const string& s);
 
+        constexpr unsigned int num() const;
+
         const T& get() const;
         T& get();
 
@@ -65,6 +67,7 @@ namespace vcml {
         void set_default(const T& defval);
 
         operator T() const;
+        T operator ~ () const;
 
         const T& operator [] (unsigned int idx) const;
         T& operator [] (unsigned int idx);
@@ -147,6 +150,11 @@ namespace vcml {
     }
 
     template <typename T, const unsigned int N>
+    constexpr unsigned int property<T, N>::num() const {
+        return N;
+    }
+
+    template <typename T, const unsigned int N>
     const T& property<T, N>::get() const {
         return get(0);
     }
@@ -207,6 +215,11 @@ namespace vcml {
     template <typename T, const unsigned int N>
     inline property<T,N>::operator T() const {
         return get(0);
+    }
+
+    template <typename T, const unsigned int N>
+    inline T property<T,N>::operator ~ () const {
+        return ~get(0);
     }
 
     template <typename T, const unsigned int N>
