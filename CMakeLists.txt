@@ -73,6 +73,7 @@ set(sources
     "${src}/vcml/models/opencores/ompic.cpp"
     "${src}/vcml/models/opencores/ethoc.cpp"
     "${src}/vcml/models/arm/pl011uart.cpp"
+    "${src}/vcml/models/arm/pl190vic.cpp"
     "${src}/vcml/models/arm/sp804timer.cpp")
 
 add_library(vcml ${sources})

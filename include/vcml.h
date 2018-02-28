@@ -75,6 +75,7 @@
 #include "vcml/models/opencores/ethoc.h"
 
 #include "vcml/models/arm/pl011uart.h"
+#include "vcml/models/arm/pl190vic.h"
 #include "vcml/models/arm/sp804timer.h"
 
 #endif
