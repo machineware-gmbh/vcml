@@ -146,6 +146,7 @@ namespace vcml {
         template <typename T> reg<HOST, DATA, N>& operator =  (const T& value);
         template <typename T> reg<HOST, DATA, N>& operator |= (const T& value);
         template <typename T> reg<HOST, DATA, N>& operator &= (const T& value);
+        template <typename T> reg<HOST, DATA, N>& operator ^= (const T& value);
         template <typename T> reg<HOST, DATA, N>& operator += (const T& value);
         template <typename T> reg<HOST, DATA, N>& operator -= (const T& value);
         template <typename T> reg<HOST, DATA, N>& operator *= (const T& value);
@@ -337,6 +338,13 @@ namespace vcml {
     template <typename T>
     reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator &= (const T& value) {
         property<DATA, N>::set(property<DATA, N>::get() & value);
+        return *this;
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    template <typename T>
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator ^= (const T& value) {
+        property<DATA, N>::set(property<DATA, N>::get() ^ value);
         return *this;
     }
 
