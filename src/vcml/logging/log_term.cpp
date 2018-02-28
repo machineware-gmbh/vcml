@@ -23,8 +23,7 @@ namespace vcml {
     log_term::log_term(bool use_cerr):
         logger(SEVERITY_ERROR, SEVERITY_INFO),
         m_use_colors(isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)),
-        m_os(use_cerr ? std::cerr : std::cout)
-    {
+        m_os(use_cerr ? std::cerr : std::cout) {
         // nothing to do
     }
 
@@ -44,7 +43,7 @@ namespace vcml {
     const char* log_term::colors[SEVERITY_MAX] = {
         [SEVERITY_ERROR]   = "\x1B[31m", // red
         [SEVERITY_WARNING] = "\x1B[33m", // yellow
-        [SEVERITY_INFO]    = "\x1B[37m", // white
+        [SEVERITY_INFO]    = "\x1B[32m", // green
         [SEVERITY_DEBUG]   = "\x1B[34m"  // blue
     };
 
