@@ -61,9 +61,18 @@ namespace vcml {
     }
 
     bool component::cmd_reset(const vector<string>& args, ostream& os) {
-        reset();
+        do_reset();
         os << "OK";
         return true;
+    }
+
+    void component::do_reset() {
+        reset();
+        for (auto obj : get_child_objects()) {
+            component* child = dynamic_cast<component*>(obj);
+            if (child)
+                child->reset();
+        }
     }
 
     component::component(const sc_module_name& nm, bool dmi):
@@ -86,11 +95,7 @@ namespace vcml {
     }
 
     void component::reset() {
-        for (auto obj : get_child_objects()) {
-            component* child = dynamic_cast<component*>(obj);
-            if (child)
-                child->reset();
-        }
+        // nothing to do
     }
 
     master_socket* component::get_master_socket(const string& name) const {

@@ -60,6 +60,8 @@ namespace vcml {
         bool cmd_cinfo(const vector<string>& args, ostream& os);
         bool cmd_reset(const vector<string>& args, ostream& os);
 
+        void do_reset();
+
     public:
         property<bool> allow_dmi;
 
