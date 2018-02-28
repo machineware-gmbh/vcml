@@ -401,7 +401,6 @@ namespace vcml {
     }
 
     void processor::end_of_elaboration() {
-        in_port_list::iterator it;
         for (auto it : IRQ) {
             std::stringstream ss;
             ss << "irq_handler_" << it.first;
