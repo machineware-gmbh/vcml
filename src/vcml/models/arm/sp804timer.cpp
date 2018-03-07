@@ -148,9 +148,8 @@ namespace vcml { namespace arm {
         m_ev.cancel();
     }
 
-
     void sp804timer::update_IRQC() {
-        IRQC = IRQ1.read() | IRQ2.read();
+        IRQC = IRQ1.read() || IRQ2.read();
     }
 
     sp804timer::sp804timer(const sc_module_name& nm):
