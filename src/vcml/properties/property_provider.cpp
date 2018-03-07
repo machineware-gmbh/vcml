@@ -41,7 +41,7 @@ namespace vcml {
 
         for (auto val: m_values) {
             if (val.second.uses == 0)
-                log_warning("unused property '%s'", val.first.c_str());
+                log_warn("unused property '%s'", val.first.c_str());
         }
     }
 

@@ -117,17 +117,11 @@ namespace vcml {
 
         int current_bank() const { return m_current_bank; }
 
-        const DATA& read_bank(int bank) const;
-        DATA& read_bank(int bank);
+        const DATA& bank(int bank) const;
+        DATA& bank(int bank);
 
-        const DATA& read_bank(int bank, unsigned int idx) const;
-        DATA& read_bank(int bank, unsigned int idx);
-
-        void write_bank(int bank, const DATA& val);
-        void write_bank_all(const DATA& val);
-
-        void write_bank(int bank, const DATA& val, unsigned int idx);
-        void write_bank_all(const DATA& val, unsigned int idx);
+        const DATA& bank(int bank, unsigned int idx) const;
+        DATA& bank(int bank, unsigned int idx);
 
         const char* name() const { return sc_core::sc_object::name(); }
 
@@ -187,17 +181,17 @@ namespace vcml {
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    const DATA& reg<HOST, DATA, N>::read_bank(int bank) const {
-        return read_bank(bank, 0);
+    const DATA& reg<HOST, DATA, N>::bank(int bk) const {
+        return bank(bk, 0);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    DATA& reg<HOST, DATA, N>::read_bank(int bank) {
-        return read_bank(bank, 0);
+    DATA& reg<HOST, DATA, N>::bank(int bk) {
+        return bank(bk, 0);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    const DATA& reg<HOST, DATA, N>::read_bank(int bk,  unsigned int idx) const {
+    const DATA& reg<HOST, DATA, N>::bank(int bk,  unsigned int idx) const {
         VCML_ERROR_ON(!m_banked, "register %s is not banked", name());
         VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
         if (!stl_contains(m_banks, bk))
@@ -206,42 +200,12 @@ namespace vcml {
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    DATA& reg<HOST, DATA, N>::read_bank(int bank, unsigned int idx) {
+    DATA& reg<HOST, DATA, N>::bank(int bank, unsigned int idx) {
         VCML_ERROR_ON(!m_banked, "register %s is not banked", name());
         VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
         if (!stl_contains(m_banks, bank))
             init_bank(bank);
         return m_banks[bank][idx];
-    }
-
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::write_bank(int bank, const DATA& val) {
-        for (unsigned int i = 0; i < N; i++)
-            write_bank(bank, val, i);
-    }
-
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::write_bank_all(const DATA& val) {
-        for (auto bank : m_banks)
-            write_bank(bank.first, val);
-    }
-
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::write_bank(int bank, const DATA& val,
-                                        unsigned int idx) {
-        VCML_ERROR_ON(!m_banked, "register %s is not banked", name());
-        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
-
-        if (!stl_contains(m_banks, bank))
-            init_bank(bank);
-
-        m_banks[bank][idx] = val;
-    }
-
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::write_bank_all(const DATA& val, unsigned int idx) {
-        for (auto bank : m_banks)
-            write_bank(bank.first, val, idx);
     }
 
     template <class HOST, typename DATA, const unsigned int N>

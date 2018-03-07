@@ -21,7 +21,7 @@
 namespace vcml {
 
     log_term::log_term(bool use_cerr):
-        logger(SEVERITY_ERROR, SEVERITY_INFO),
+        logger(LOG_ERROR, LOG_DEBUG),
         m_use_colors(isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)),
         m_os(use_cerr ? std::cerr : std::cout) {
         // nothing to do
@@ -31,20 +31,20 @@ namespace vcml {
         // nothing to do
     }
 
-    void log_term::write_log(const report& msg) {
+    void log_term::log_line(log_level lvl, const char* line) {
         if (m_use_colors)
-            m_os << colors[msg.get_severity()];
-        m_os << msg;
+            m_os << colors[lvl];
+        m_os << line;
         if (m_use_colors)
             m_os << reset;
         m_os << std::endl;
     }
 
-    const char* log_term::colors[SEVERITY_MAX] = {
-        [SEVERITY_ERROR]   = "\x1B[31m", // red
-        [SEVERITY_WARNING] = "\x1B[33m", // yellow
-        [SEVERITY_INFO]    = "\x1B[32m", // green
-        [SEVERITY_DEBUG]   = "\x1B[34m"  // blue
+    const char* log_term::colors[NUM_LOG_LEVELS] = {
+        [LOG_ERROR] = "\x1B[31m", // red
+        [LOG_WARN]  = "\x1B[33m", // yellow
+        [LOG_INFO]  = "\x1B[32m", // green
+        [LOG_DEBUG] = "\x1B[34m"  // blue
     };
 
     const char* log_term::reset = "\x1B[0m";

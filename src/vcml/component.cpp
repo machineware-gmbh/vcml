@@ -75,13 +75,25 @@ namespace vcml {
         }
     }
 
+    log_level component::default_log_level() const {
+        sc_object* obj = get_parent_object();
+        if (obj != NULL) {
+            component* comp = dynamic_cast<component*>(obj);
+            if (comp)
+                return comp->loglvl.get_default();
+        }
+
+        return LOG_INFO;
+    }
+
     component::component(const sc_module_name& nm, bool dmi):
         sc_module(nm),
         m_offsets(),
         m_master_sockets(),
         m_slave_sockets(),
         m_commands(),
-        allow_dmi("allow_dmi", dmi){
+        allow_dmi("allow_dmi", dmi),
+        loglvl("loglvl", default_log_level()) {
         register_command("clist", 0, this, &component::cmd_clist,
                          "returns a list of supported commands");
         register_command("cinfo", 1, this, &component::cmd_cinfo,

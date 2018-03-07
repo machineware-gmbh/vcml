@@ -37,7 +37,7 @@ namespace vcml {
         log_stream(ostream& os);
         virtual ~log_stream();
 
-        virtual void write_log(const report& msg);
+        virtual void log_line(log_level lvl, const char* line);
     };
 
 }

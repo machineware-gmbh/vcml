@@ -25,62 +25,44 @@
 
 namespace vcml {
 
-    enum severity {
-        SEVERITY_ERROR = 0,
-        SEVERITY_WARNING,
-        SEVERITY_INFO,
-        SEVERITY_DEBUG,
-        SEVERITY_MAX
-    };
-
     class report: public std::exception
     {
     private:
-        severity       m_severity;
         string         m_message;
-        string         m_source;
+        string         m_origin;
         sc_time        m_time;
         string         m_file;
         int            m_line;
         vector<string> m_backtrace;
         string         m_desc;
 
-        void init();
-
         // disabled
         report();
 
     public:
-        severity       get_severity() const { return m_severity; }
-        const char*    get_message()  const { return m_message.c_str(); }
-        const char*    get_source()   const { return m_source.c_str(); }
-        const sc_time& get_time()     const { return m_time; }
-        const char*    get_file()     const { return m_file.c_str(); }
-        int            get_line()     const { return m_line; }
+        const char*    message()  const { return m_message.c_str(); }
+        const char*    origin()   const { return m_origin.c_str(); }
+        const sc_time& time()     const { return m_time; }
+        const char*    file()     const { return m_file.c_str(); }
+        int            line()     const { return m_line; }
 
-        const vector<string> get_backtrace() const {
-            return m_backtrace;
-        }
+        const vector<string> backtrace() const;
 
-        report(const string& msg);
-        report(severity sev, const string& msg);
-        report(severity sev, const string& msg, const char* file, int line);
+        report(const string& msg, const char* file, int line);
         report(const sc_report& rep);
         virtual ~report() throw();
 
-        void write(ostream& os) const;
-        void write_severity_and_time(ostream& os) const;
-        void write_backtrace(ostream& os) const;
-
         virtual const char* what() const throw();
 
-        static const char* prefix[SEVERITY_MAX];
-        static const char* desc[SEVERITY_MAX];
+        static unsigned int max_backtrace_length;
     };
 
+    inline const vector<string> report::backtrace() const {
+        return m_backtrace;
+    }
+
 #define VCML_ERROR(...)                                                      \
-    throw ::vcml::report(::vcml::SEVERITY_ERROR, ::vcml::mkstr(__VA_ARGS__), \
-                         __FILE__, __LINE__)
+    throw ::vcml::report(::vcml::mkstr(__VA_ARGS__), __FILE__, __LINE__)
 
 #define VCML_ERROR_ON(condition, ...)                                        \
     do {                                                                     \
@@ -89,25 +71,16 @@ namespace vcml {
         }                                                                    \
     } while (0)
 
-#define VCML_ERROR_ONCE(...) do {                                            \
-    static bool report_done = false;                                         \
-    if (!report_done) {                                                      \
-        report_done = true;                                                  \
-        VCML_ERROR(__VA_ARGS__);                                             \
-    }                                                                        \
-} while (0)
+#define VCML_ERROR_ONCE(...)                                                 \
+    do {                                                                     \
+        static bool report_done = false;                                     \
+        if (!report_done) {                                                  \
+            report_done = true;                                              \
+            VCML_ERROR(__VA_ARGS__);                                         \
+        }                                                                    \
+    } while (0)
 
-
-#define VCML_DOMAIN              "vcml"
-#define VCML_REPORT_INFO(msg)    SC_REPORT_INFO(VCML_DOMAIN, msg)
-#define VCML_REPORT_WARNING(msg) SC_REPORT_WARNING(VCML_DOMAIN, msg)
-#define VCML_REPORT_ERROR(msg)   SC_REPORT_ERROR(VCML_DOMAIN, msg)
-
-    void initialize_reporting();
 }
-
-std::ostream& operator << (std::ostream& os, const vcml::severity sev);
-std::istream& operator >> (std::istream& is, vcml::severity& sev);
 
 std::ostream& operator << (std::ostream& os, const vcml::report& rep);
 

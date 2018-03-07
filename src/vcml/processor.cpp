@@ -307,7 +307,7 @@ namespace vcml {
         bool irq_up = IRQ[irq].read();
 
         if (irq_up == stats.irq_status) {
-            log_warning("irq %d already %s", irq, irq_up ? "set" : "cleared");
+            log_warn("irq %d already %s", irq, irq_up ? "set" : "cleared");
             return;
         }
 
@@ -349,7 +349,7 @@ namespace vcml {
             if (file_exists(symbols)) {
                 m_symbols = new elf(symbols);
             } else {
-                log_warning("cannot open file '%s'", symbols.get().c_str());
+                log_warn("cannot open file '%s'", symbols.get().c_str());
             }
         }
 

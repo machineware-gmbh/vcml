@@ -48,14 +48,14 @@ namespace vcml { namespace opencores {
             m_status[dest] = self << 16 | data;
             //log_debug("core %d triggers irq on core %d", self, dest);
             if (IRQ[dest].read())
-                log_warning("irq already pending on core %d", dest);
+                log_warn("irq already pending on core %d", dest);
             IRQ[dest] = true;
         }
 
         if (val & CTRL_IRQ_ACK) {
             //log_debug("reset irq for core %d", core_id);
             if (!IRQ[self].read())
-                log_warning("no irq pending for core %d", core_id);
+                log_warn("no irq pending for core %d", core_id);
             IRQ[self] = false;
         }
 

@@ -212,22 +212,22 @@ namespace vcml { namespace opencores {
 
     bool ethoc::tx_packet(u32 addr, u32 length) {
         if (length > ETH_MAX_PACKET_LEN) {
-            log_warning("packet size %d exceeds max, ignored", length);
+            log_warn("packet size %d exceeds max, ignored", length);
             return false;
         }
 
         unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
         tlm_response_status rs = OUT.read(addr, buffer, length);
         if (failed(rs)) {
-            log_warning("tx error  %s while reading from 0x%08x",
-                        tlm_response_to_str(rs).c_str(), addr);
+            log_warn("tx error  %s while reading from 0x%08x",
+                     tlm_response_to_str(rs).c_str(), addr);
             return false;
         }
 
         size_t size = get_backend()->write(buffer, length);
         if (size != length) {
-            log_warning("tx error, %d bytes requested, %d bytes sent",
-                        length, size);
+            log_warn("tx error, %d bytes requested, %d bytes sent",
+                     length, size);
             return false;
         }
 
@@ -243,7 +243,7 @@ namespace vcml { namespace opencores {
         unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
         size_t length = be->read(&buffer, sizeof(buffer));
         if (length > ETH_MAX_PACKET_LEN) {
-            log_warning("packet size %d exceeds max, ignored", length);
+            log_warn("packet size %d exceeds max, ignored", length);
             return false;
         }
 
@@ -258,8 +258,8 @@ namespace vcml { namespace opencores {
 
         tlm_response_status rs = OUT.write(addr, buffer, length);
         if (failed(rs)) {
-            log_warning("rx error %s while writing to 0x%08x",
-                        tlm_response_to_str(rs).c_str(), addr);
+            log_warn("rx error %s while writing to 0x%08x",
+                     tlm_response_to_str(rs).c_str(), addr);
             return false;
         }
 

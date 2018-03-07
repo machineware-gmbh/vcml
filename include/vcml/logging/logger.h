@@ -26,11 +26,20 @@
 
 namespace vcml {
 
+    enum log_level {
+        LOG_ERROR = 0,
+        LOG_WARN,
+        LOG_INFO,
+        LOG_DEBUG,
+        LOG_TRACE,
+        NUM_LOG_LEVELS
+    };
+
     class logger
     {
     private:
-        severity m_min;
-        severity m_max;
+        log_level m_min;
+        log_level m_max;
 
         void register_logger();
         void unregister_logger();
@@ -40,88 +49,71 @@ namespace vcml {
         logger(const logger&);
         logger& operator = (const logger&);
 
-        static vector<logger*> loggers[SEVERITY_MAX];
+        static vector<logger*> loggers[NUM_LOG_LEVELS];
 
     public:
-        inline void set_level(severity lvl);
-        void set_level(severity min, severity max);
+        inline void set_level(log_level lvl);
+        void set_level(log_level min, log_level max);
 
-        logger(severity min, severity max);
+        logger(log_level min, log_level max);
         virtual ~logger();
 
-        virtual void write_log(const report& message) = 0;
+        virtual void log_line(log_level lvl, const char* line) = 0;
 
-        inline static bool would_log(severity sev) {
-            return !loggers[sev].empty();
-        }
+        static bool would_log(log_level lvl);
 
-        static void log(const report& message);
+        static void log(log_level lvl, const string& org, const string& msg);
+        static void log(const report& rep);
+
+        static bool print_time_stamp;
+        static bool print_delta_cycle;
+        static bool print_origin;
+        static bool print_backtrace;
+
+        static const char* prefix[NUM_LOG_LEVELS];
+        static const char* desc[NUM_LOG_LEVELS];
     };
 
-    inline void logger::set_level(severity lvl) {
+    inline void logger::set_level(log_level lvl) {
         set_level(lvl, lvl);
     }
 
-    void log(const severity lvl, const string& msg);
-
-#define VCML_DEFINE_LOG(name, level)            \
-    inline void name(const char* format, ...) { \
-        if (!logger::would_log(level))          \
-            return;                             \
-        va_list args;                           \
-        va_start(args, format);                 \
-        log(level, vmkstr(format, args));       \
-        va_end(args);                           \
+    inline bool logger::would_log(log_level lvl) {
+        return !loggers[lvl].empty();
     }
 
-    VCML_DEFINE_LOG(log_error, SEVERITY_ERROR);
-    VCML_DEFINE_LOG(log_warning, SEVERITY_WARNING);
-    VCML_DEFINE_LOG(log_info, SEVERITY_INFO);
-    VCML_DEFINE_LOG(log_debug, SEVERITY_DEBUG);
+#define VCML_DEFINE_LOG(name, level)                             \
+    inline void name(const char* format, ...) {                  \
+        if (!logger::would_log(level))                           \
+            return;                                              \
+        va_list args;                                            \
+        va_start(args, format);                                  \
+        logger::log(level, call_origin(), vmkstr(format, args)); \
+        va_end(args);                                            \
+    }
+
+    VCML_DEFINE_LOG(log_error, LOG_ERROR);
+    VCML_DEFINE_LOG(log_warn, LOG_WARN);
+    VCML_DEFINE_LOG(log_warning, LOG_WARN);
+    VCML_DEFINE_LOG(log_info, LOG_INFO);
+    VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
 #undef VCML_DEFINE_LOG
 
-#define VCML_WARNING(...)                                          \
-    ::vcml::logger::log(::vcml::report(::vcml::SEVERITY_WARNING,   \
-                                       ::vcml::mkstr(__VA_ARGS__), \
-                                       __FILE__, __LINE__))
+    inline void trace(const tlm_generic_payload& tx) {
+        if (!logger::would_log(LOG_TRACE))
+            return;
+        logger::log(LOG_TRACE, call_origin(), tlm_transaction_to_str(tx));
+    }
 
-#define VCML_INFO(...)                                             \
-    ::vcml::logger::log(::vcml::report(::vcml::SEVERITY_INFO,      \
-                                       ::vcml::mkstr(__VA_ARGS__), \
-                                       __FILE__, __LINE__))
-
-#define VCML_DEBUG(...)                                            \
-    ::vcml::logger::log(::vcml::report(::vcml::SEVERITY_WAR,       \
-                                       ::vcml::mkstr(__VA_ARGS__), \
-                                       __FILE__, __LINE__))
-
-#define VCML_WARNING_ONCE(...)           \
-    do {                                 \
-        static bool report_done = false; \
-        if (!report_done) {              \
-            report_done = true;          \
-            VCML_WARNING(__VA_ARGS__);   \
-        }                                \
-    } while (0)
-
-#define VCML_INFO_ONCE(...)              \
-    do {                                 \
-        static bool report_done = false; \
-        if (!report_done) {              \
-            report_done = true;          \
-            VCML_INFO(__VA_ARGS__);      \
-        }                                \
-    } while (0)
-
-#define VCML_DEBUG_ONCE(...)             \
-    do {                                 \
-        static bool report_done = false; \
-        if (!report_done) {              \
-            report_done = true;          \
-            VCML_DEBUG(__VA_ARGS__);     \
-        }                                \
-    } while (0)
+    inline void trace_errors(const tlm_generic_payload& tx) {
+        if (!logger::would_log(LOG_TRACE) || tx.is_response_ok())
+            return;
+        logger::log(LOG_TRACE, call_origin(), tlm_transaction_to_str(tx));
+    }
 
 }
+
+std::ostream& operator << (std::ostream& os, const vcml::log_level& lvl);
+std::istream& operator >> (std::istream& is, vcml::log_level& lvl);
 
 #endif

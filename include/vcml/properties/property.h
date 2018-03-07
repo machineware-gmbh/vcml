@@ -138,11 +138,11 @@ namespace vcml {
         unsigned int size = args.size();
 
         if (size < N) {
-            log_warning("property %s has not enough initializers",
-                        hierarchy_name());
+            log_warn("property %s has not enough initializers",
+                     hierarchy_name());
         } else if (size > N) {
-            log_warning("property %s has too many initializers",
-                        hierarchy_name());
+            log_warn("property %s has too many initializers",
+                     hierarchy_name());
         }
 
         for (unsigned int i = 0; i < min(N, size); i++)

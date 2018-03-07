@@ -61,7 +61,7 @@ namespace vcml {
             std::map<string, backend_cfn>::const_iterator it;
             for (it = types.begin(); it != types.end(); it++)
                 ss << " " << it->first << std::endl;
-            log_warning(ss.str().c_str());
+            log_warn(ss.str().c_str());
             return NULL;
         }
 
@@ -72,8 +72,8 @@ namespace vcml {
             be = (*fn)(name);
             return be;
         } catch (std::exception& ex) {
-            log_warning(ex.what());
-            log_warning("error creating %s backend", type.c_str());
+            log_warn(ex.what());
+            log_warn("error creating %s backend", type.c_str());
             return NULL;
         }
     }

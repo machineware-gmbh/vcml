@@ -21,7 +21,7 @@
 namespace vcml {
 
     log_stream::log_stream(ostream& o):
-        logger(SEVERITY_ERROR, SEVERITY_INFO),
+        logger(LOG_ERROR, LOG_DEBUG),
         os(o) {
         /* nothing to do */
     }
@@ -30,8 +30,8 @@ namespace vcml {
         /* nothing to do */
     }
 
-    void log_stream::write_log(const report& msg) {
-        os << msg << std::endl;
+    void log_stream::log_line(log_level lvl, const char* line) {
+        os << line << std::endl;
     }
 
 }

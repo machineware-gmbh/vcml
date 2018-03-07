@@ -52,6 +52,8 @@ namespace vcml {
     using sc_core::sc_gen_unique_name;
     using sc_core::SC_HIERARCHY_CHAR;
 
+    using sc_core::sc_delta_count;
+
     using sc_core::sc_time;
     using sc_core::sc_time_stamp;
 

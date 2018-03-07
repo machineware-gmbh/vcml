@@ -121,7 +121,7 @@ namespace vcml { namespace generic {
     void memory::load(const string& binary, u64 offset) {
         ifstream file(binary.c_str(), std::ios::binary | std::ios::ate);
         if (!file.is_open()) {
-            log_warning("cannot open file '%s'", binary.c_str());
+            log_warn("cannot open file '%s'", binary.c_str());
             return;
         }
 

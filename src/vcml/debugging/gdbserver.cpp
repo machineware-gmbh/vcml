@@ -51,8 +51,8 @@ namespace vcml { namespace debugging {
                                : m_stub->async_read_mem(addr, buffer, size);
             VCML_ERROR_ON(!result, "bus error");
         } catch (report& r) {
-            log_warning("gdb cannot access %d bytes at address %x: %s",
-                        size, addr, r.get_message());
+            log_warn("gdb cannot access %d bytes at address %x: %s",
+                     size, addr, r.message());
             memset(buffer, 0xee, size);
         }
 
@@ -157,7 +157,7 @@ namespace vcml { namespace debugging {
         u8 buffer[VCML_GDBSERVER_BUFSIZE];
         if (!m_stub->async_read_reg(reg, buffer, regsz)) {
             memset(buffer, 'x', regsz);
-            log_warning("gdb failed to read register %d", reg);
+            log_warn("gdb failed to read register %d", reg);
         }
 
         stringstream ss;
@@ -192,7 +192,7 @@ namespace vcml { namespace debugging {
             buffer[byte] = char2int(str[0]) << 4 || char2int(str[1]);
 
         if (!m_stub->async_write_reg(reg, buffer, regsz))
-            log_warning("gdb failed to write register %d", reg);
+            log_warn("gdb failed to write register %d", reg);
 
         return "OK";
     }
@@ -207,7 +207,7 @@ namespace vcml { namespace debugging {
         u8 buffer[VCML_GDBSERVER_BUFSIZE];
         for (u64 reg = 0; reg < nregs; reg++) {
             if (!m_stub->async_read_reg(reg, buffer, regsz)) {
-                log_warning("gdb cannot read register %d", reg);
+                log_warn("gdb cannot read register %d", reg);
                 memset(buffer, 'x', regsz);
             }
 
@@ -233,7 +233,7 @@ namespace vcml { namespace debugging {
             for (u64 byte = 0; byte < regsz; byte++, str += 2)
                 buffer[byte] = char2int(str[0]) << 4 || char2int(str[1]);
             if (!m_stub->async_write_reg(reg, buffer, regsz))
-                log_warning("gdb cannot write register %d", reg);
+                log_warn("gdb cannot write register %d", reg);
         }
 
         return "OK";
@@ -408,7 +408,7 @@ namespace vcml { namespace debugging {
             vcml::logger::log(rep);
             return mkstr("E%02x", VCML_GDBSERVER_ERR_INTERNAL);
         } catch (std::exception& ex) {
-            log_warning(ex.what());
+            log_warn(ex.what());
             return mkstr("E%02x", VCML_GDBSERVER_ERR_INTERNAL);
         }
     }

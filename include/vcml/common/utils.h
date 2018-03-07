@@ -21,6 +21,7 @@
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
+#include "vcml/common/thctl.h"
 
 namespace vcml {
 
@@ -42,6 +43,8 @@ namespace vcml {
     string tlm_transaction_to_str(const tlm_generic_payload& tx);
 
     int replace(string& str, const string& s1, const string& s2);
+
+    string call_origin();
 
     vector<string> backtrace(unsigned int frames = 63, unsigned int skip = 1);
 

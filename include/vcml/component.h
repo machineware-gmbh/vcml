@@ -62,8 +62,11 @@ namespace vcml {
 
         void do_reset();
 
+        log_level default_log_level() const;
+
     public:
         property<bool> allow_dmi;
+        property<log_level> loglvl;
 
         component(const sc_module_name& nm, bool allow_dmi = true);
         virtual ~component();
@@ -116,6 +119,26 @@ namespace vcml {
         virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
                                        int flags);
         virtual void invalidate_dmi(u64 start, u64 end);
+
+#define VCML_DEFINE_LOG(log_name, level)                  \
+        inline void log_name(const char* format, ...) {       \
+            if (!logger::would_log(level) || level > loglvl)  \
+                return;                                       \
+            va_list args;                                     \
+            va_start(args, format);                           \
+            logger::log(level, name(), vmkstr(format, args)); \
+            va_end(args);                                     \
+        }
+
+        VCML_DEFINE_LOG(log_error, LOG_ERROR);
+        VCML_DEFINE_LOG(log_warn, LOG_WARN);
+        VCML_DEFINE_LOG(log_warning, LOG_WARN);
+        VCML_DEFINE_LOG(log_info, LOG_INFO);
+        VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
+#undef VCML_DEFINE_LOG
+
+        void trace(const tlm_generic_payload& tx);
+        void trace_errors(const tlm_generic_payload& tx);
     };
 
     inline sc_time& component::offset(sc_process_b* proc) {
@@ -179,6 +202,17 @@ namespace vcml {
 
     inline command_base* component::get_command(const string& name) {
         return m_commands[name];
+    }
+
+    inline void component::trace(const tlm_generic_payload& tx) {
+        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
+            return;
+        logger::log(LOG_TRACE, name(), tlm_transaction_to_str(tx));
+    }
+
+    inline void component::trace_errors(const tlm_generic_payload& tx) {
+        if (tx.is_response_error())
+            trace(tx);
     }
 
 }

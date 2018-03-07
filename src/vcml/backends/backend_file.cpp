@@ -30,14 +30,14 @@ namespace vcml {
         if (!rx.get().empty()) {
             m_rx.open(rx.get().c_str(), ifstream::binary | ifstream::in);
             if (!m_rx.good())
-                log_warning("failed to open file '%s'", rx.get().c_str());
+                log_warn("failed to open file '%s'", rx.get().c_str());
         }
 
         if (!tx.get().empty()) {
             m_tx.open(tx.get().c_str(),
                       ofstream::binary | ofstream::app | ofstream::out);
             if (!m_tx.good())
-                log_warning("failed to open file '%s'", tx.get().c_str());
+                log_warn("failed to open file '%s'", tx.get().c_str());
         }
     }
 

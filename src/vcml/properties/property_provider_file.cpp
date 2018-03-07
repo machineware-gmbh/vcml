@@ -56,7 +56,7 @@ namespace vcml {
             /* read key=value part */
             size_t separator = line.find('=');
             if (separator == line.npos)
-                log_warning("%s:%d missing '='", m_filename.c_str(), lno);
+                log_warn("%s:%d missing '='", m_filename.c_str(), lno);
 
             string key = line.substr(0, separator);
             string val = line.substr(separator + 1);

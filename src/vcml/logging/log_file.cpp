@@ -21,13 +21,13 @@
 namespace vcml {
 
     log_file::log_file(const string& filename):
-        logger(SEVERITY_ERROR, SEVERITY_INFO),
+        logger(LOG_ERROR, LOG_DEBUG),
         m_file(filename.c_str(), std::ios_base::out) {
         // nothing to do
     }
 
-    void log_file::write_log(const report& msg) {
-        m_file << msg << std::endl;
+    void log_file::log_line(log_level lvl, const char* line) {
+        m_file << line << std::endl;
     }
 
 }

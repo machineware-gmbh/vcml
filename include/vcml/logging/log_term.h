@@ -35,22 +35,25 @@ namespace vcml {
         ostream& m_os;
 
     public:
-        inline bool using_colors() const {
-            return m_use_colors;
-        }
-
-        inline void set_colors(bool set = true) {
-            m_use_colors = set;
-        }
+        inline bool using_colors() const;
+        inline void set_colors(bool set = true);
 
         log_term(bool use_cerr = true);
         virtual ~log_term();
 
-        virtual void write_log(const report& msg);
+        virtual void log_line(log_level lvl, const char* line);
 
-        static const char* colors[SEVERITY_MAX];
+        static const char* colors[NUM_LOG_LEVELS];
         static const char* reset;
     };
+
+    inline bool log_term::using_colors() const {
+        return m_use_colors;
+    }
+
+    inline void log_term::set_colors(bool set) {
+        m_use_colors = set;
+    }
 
 }
 
