@@ -276,48 +276,67 @@ namespace vcml {
     void reg<HOST, DATA, N>::do_read(const range& addr, int bank, void* ptr) {
         load_bank(bank);
         do_read(addr, static_cast<DATA*>(ptr));
+        load_bank(ext_bank::NONE);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
     void reg<HOST, DATA, N>::do_write(const range& a, int b, const void* ptr) {
         load_bank(b);
         do_write(a, static_cast<const DATA*>(ptr));
+        load_bank(ext_bank::NONE);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::do_read(const range& addr, DATA* data) {
-        u64 idx = (addr.start - get_address()) / sizeof(DATA);
-        u64 off = (addr.start - get_address()) % sizeof(DATA);
+    void reg<HOST, DATA, N>::do_read(const range& txaddr, DATA* data) {
+        range addr(txaddr);
+        unsigned char* dest = (unsigned char*)data;
 
-        DATA val = property<DATA, N>::get(idx);
+        while (addr.start <= addr.end) {
+            u64 idx  = (addr.start - get_address()) / sizeof(DATA);
+            u64 off  = (addr.start - get_address()) % sizeof(DATA);
+            u64 size = min(addr.length(), (u64)sizeof(DATA));
 
-        if (tagged_read != NULL)
-            val = (m_host->*tagged_read)(N > 1 ? idx : tag);
-        else if (read != NULL)
-            val = (m_host->*read)();
+            DATA val = property<DATA, N>::get(idx);
 
-        property<DATA, N>::set(val, idx);
+            if (tagged_read != NULL)
+                val = (m_host->*tagged_read)(N > 1 ? idx : tag);
+            else if (read != NULL)
+                val = (m_host->*read)();
 
-        unsigned char* ptr = (unsigned char*)&val + off;
-        memcpy(data, ptr, addr.length());
+            property<DATA, N>::set(val, idx);
+
+            unsigned char* ptr = (unsigned char*)&val + off;
+            memcpy(dest, ptr, size);
+
+            addr.start += size;
+            dest += size;
+        }
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::do_write(const range& addr, const DATA* data) {
-        u64 idx = (addr.start - get_address()) / sizeof(DATA);
-        u64 off = (addr.start - get_address()) % sizeof(DATA);
+    void reg<HOST, DATA, N>::do_write(const range& txaddr, const DATA* data) {
+        range addr(txaddr);
+        const unsigned char* src = (const unsigned char*)data;
 
-        DATA val = property<DATA, N>::get(idx);
+        while (addr.start <= addr.end) {
+            u64 idx  = (addr.start - get_address()) / sizeof(DATA);
+            u64 off  = (addr.start - get_address()) % sizeof(DATA);
+            u64 size = min(addr.length(), (u64)sizeof(DATA));
 
-        unsigned char* ptr = (unsigned char*)&val + off;
-        memcpy(ptr, data, addr.length());
+            DATA val = property<DATA, N>::get(idx);
 
-        if (tagged_write != NULL)
-            val = (m_host->*tagged_write)(val, N > 1 ? idx : tag);
-        else if (write != NULL)
-            val = (m_host->*write)(val);
+            unsigned char* ptr = (unsigned char*)&val + off;
+            memcpy(ptr, src, size);
 
-        property<DATA, N>::set(val, idx);
+            if (tagged_write != NULL)
+                val = (m_host->*tagged_write)(val, N > 1 ? idx : tag);
+            else if (write != NULL)
+                val = (m_host->*write)(val);
+
+            property<DATA, N>::set(val, idx);
+            addr.start += size;
+            src += size;
+        }
     }
 
     template <class HOST, typename DATA, const unsigned int N>

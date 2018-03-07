@@ -116,12 +116,20 @@ namespace vcml {
     }
 
     unsigned int peripheral::receive(tlm_generic_payload& tx, int flags) {
-        for (auto reg : m_registers)
-            if (reg->get_range().overlaps(tx))
-                return reg->receive(tx, flags);
+        unsigned int bytes = 0;
+        unsigned int nregs = 0;
 
-        const range addr(tx);
+        for (auto reg : m_registers)
+            if (reg->get_range().overlaps(tx)) {
+                bytes += reg->receive(tx, flags);
+                nregs ++;
+            }
+
+        if (nregs > 0) // stop if at least one register took the access
+            return bytes;
+
         tlm_response_status rs = TLM_OK_RESPONSE;
+        const range addr(tx);
         if (tx.is_read())
             rs = read(addr, tx.get_data_ptr(), flags);
         if (tx.is_write())
