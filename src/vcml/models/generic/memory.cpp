@@ -125,6 +125,11 @@ namespace vcml { namespace generic {
             return;
         }
 
+        if (offset >= size) {
+            log_warn("offset %llu exceeds memsize %llu", offset, size.get());
+            return;
+        }
+
         u64 nbytes = file.tellg();
         nbytes = min(nbytes, size - offset);
         file.seekg(0, std::ios::beg);
