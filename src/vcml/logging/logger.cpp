@@ -60,6 +60,18 @@ namespace vcml {
         register_logger();
     }
 
+    logger::logger():
+        m_min(LOG_ERROR),
+        m_max(LOG_DEBUG) {
+        register_logger();
+    }
+
+    logger::logger(log_level max):
+        m_min(LOG_ERROR),
+        m_max(max) {
+        register_logger();
+    }
+
     logger::logger(log_level min, log_level max):
         m_min(min),
         m_max(max) {
@@ -86,7 +98,7 @@ namespace vcml {
         ss << "]";
 
         if (print_origin && !org.empty())
-            ss << org << ":";
+            ss << " " << org << ":";
 
         vector<string> lines = split(msg, '\n');
         for (auto line : lines) {

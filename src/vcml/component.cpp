@@ -77,10 +77,11 @@ namespace vcml {
 
     log_level component::default_log_level() const {
         sc_object* obj = get_parent_object();
-        if (obj != NULL) {
+        while (obj != NULL) {
             component* comp = dynamic_cast<component*>(obj);
             if (comp)
-                return comp->loglvl.get_default();
+                return comp->loglvl;
+            obj = obj->get_parent_object();
         }
 
         return LOG_INFO;

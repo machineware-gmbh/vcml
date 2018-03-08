@@ -60,8 +60,8 @@ TEST(logging, levels) {
     vcml::log_error("this is an error message");
     vcml::log_warning("this is a warning message");
 
-    logger.set_level(vcml::LOG_DEBUG);
-    cons.set_level(vcml::LOG_DEBUG);
+    logger.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
+    cons.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
     EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_ERROR));
     EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_WARN));
     EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_INFO));
@@ -74,6 +74,63 @@ TEST(logging, levels) {
 
     EXPECT_CALL(logger, log_line(vcml::LOG_DEBUG,_)).Times(3);
     vcml::log_debug("multi\nline\nmessage");
+}
+
+TEST(logging, component) {
+    vcml::log_term cons;
+    mock_logger logger;
+
+    cons.set_level(vcml::LOG_DEBUG);
+    logger.set_level(vcml::LOG_DEBUG);
+
+    vcml::component comp("mock");
+    comp.loglvl = vcml::LOG_WARN;
+
+    EXPECT_CALL(logger, log_line(vcml::LOG_WARN,_)).Times(1);
+    comp.log_warn("this is a warning message");
+    comp.log_debug("this debug message should be filtered out");
+
+    EXPECT_CALL(logger, log_line(_,_)).Times(4);
+    comp.loglvl = vcml::LOG_DEBUG;
+    comp.log_debug("debug message");
+    comp.log_info("info message");
+    comp.log_warn("warning message");
+    comp.log_error("error message");
+}
+
+class mock_component: public vcml::component
+{
+public:
+    vcml::component subcomp;
+
+    mock_component(const sc_core::sc_module_name& nm):
+        vcml::component(nm),
+        subcomp("subcomp") {
+    }
+
+    virtual ~mock_component() {}
+};
+
+TEST(logging, hierarchy) {
+    vcml::log_term cons;
+    mock_logger logger;
+
+    cons.set_level(vcml::LOG_DEBUG);
+    logger.set_level(vcml::LOG_DEBUG);
+
+    vcml::property_provider prov;
+    prov.add("mock.loglvl", "debug");
+
+    mock_component comp("mock");
+    EXPECT_EQ(comp.loglvl.get(), vcml::LOG_DEBUG);
+    EXPECT_EQ(comp.subcomp.loglvl.get(), vcml::LOG_DEBUG);
+    EXPECT_CALL(logger, log_line(vcml::LOG_DEBUG,_)).Times(2);
+    comp.log_debug("top level debug message");
+    comp.subcomp.log_debug("sub level debug message");
+
+    mock_component comp2("mock2");
+    EXPECT_EQ(comp2.loglvl.get(), vcml::LOG_INFO);
+    EXPECT_EQ(comp2.subcomp.loglvl.get(), vcml::LOG_INFO);
 }
 
 TEST(logging, reporting) {

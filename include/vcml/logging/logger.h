@@ -45,16 +45,17 @@ namespace vcml {
         void unregister_logger();
 
         // disabled
-        logger();
         logger(const logger&);
         logger& operator = (const logger&);
 
         static vector<logger*> loggers[NUM_LOG_LEVELS];
 
     public:
-        inline void set_level(log_level lvl);
+        inline void set_level(log_level max);
         void set_level(log_level min, log_level max);
 
+        logger();
+        logger(log_level max);
         logger(log_level min, log_level max);
         virtual ~logger();
 
@@ -74,8 +75,8 @@ namespace vcml {
         static const char* desc[NUM_LOG_LEVELS];
     };
 
-    inline void logger::set_level(log_level lvl) {
-        set_level(lvl, lvl);
+    inline void logger::set_level(log_level max) {
+        set_level(LOG_ERROR, max);
     }
 
     inline bool logger::would_log(log_level lvl) {
