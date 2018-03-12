@@ -162,10 +162,10 @@ namespace vcml { namespace arm {
 
     void pl190vic::reset() {
         for (unsigned int i = 0; i < PID.num(); i++)
-            PID[i] = (VCML_ARM_PL190VIC_PID >> i) & 0xFF;
+            PID[i] = (VCML_ARM_PL190VIC_PID >> (i * 8)) & 0xFF;
 
         for (unsigned int i = 0; i < CID.num(); i++)
-            CID[i] = (VCML_ARM_PL190VIC_CID >> i) & 0xFF;
+            CID[i] = (VCML_ARM_PL190VIC_CID >> (i * 8)) & 0xFF;
     }
 
     void pl190vic::end_of_elaboration() {
