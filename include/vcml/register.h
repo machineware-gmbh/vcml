@@ -112,10 +112,10 @@ namespace vcml {
         tagged_readfunc tagged_read;
         tagged_writefunc tagged_write;
 
-        bool is_banked() const { return m_banked; }
-        void set_banked(bool set = true) { m_banked = set; }
+        inline bool is_banked() const { return m_banked; }
+        inline void set_banked(bool set = true) { m_banked = set; }
 
-        int current_bank() const { return m_current_bank; }
+        inline int current_bank() const { return m_current_bank; }
 
         const DATA& bank(int bank) const;
         DATA& bank(int bank);
