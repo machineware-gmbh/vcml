@@ -89,7 +89,9 @@ namespace vcml { namespace generic {
 
     void bus::cb_b_transport(int port, tlm_generic_payload& tx,
                                     sc_time& dt) {
+        trace_in(tx);
         b_transport(port, tx, dt);
+        trace_out(tx);
     }
 
     unsigned int bus::cb_transport_dbg(int port,

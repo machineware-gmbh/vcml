@@ -174,7 +174,9 @@ namespace vcml {
 
     void component::b_transport(slave_socket* origin, tlm_generic_payload& tx,
                                 sc_time& dt) {
+        trace_in(tx);
         transport(tx, dt, tx_is_excl(tx) ? VCML_FLAG_EXCL : VCML_FLAG_NONE);
+        trace_out(tx);
     }
 
     unsigned int component::transport_dbg(slave_socket* origin,
