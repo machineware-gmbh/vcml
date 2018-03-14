@@ -59,6 +59,10 @@ namespace vcml { namespace arm {
         else
             RIS |= RIS_RX;
         MIS = RIS & IMSC;
+        if (MIS != 0 && !IRQ.read())
+            log_debug("raising interrupt");
+        if (MIS == 0 && IRQ.read())
+            log_debug("clearing interrupt");
         IRQ.write(MIS != 0);
     }
 
@@ -105,9 +109,9 @@ namespace vcml { namespace arm {
 
     u8 pl011uart::write_LCR(u8 val) {
         if ((val & LCR_FEN) && !(LCR & LCR_FEN))
-            vcml::log_debug("%s FIFO enabled", name());
+            log_debug("FIFO enabled");
         if (!(val & LCR_FEN) && (LCR & LCR_FEN))
-            vcml::log_debug("%s FIFO disabled", name());
+            log_debug("FIFO disabled");
 
         m_fifo_size = (val & LCR_FEN) ? VCML_ARM_PL011UART_FIFOSIZE : 1;
         return val & LCR_H_M;
@@ -115,17 +119,17 @@ namespace vcml { namespace arm {
 
     u16 pl011uart::write_CR(u16 val) {
         if (!is_enabled() && (val & CR_UARTEN))
-            vcml::log_debug("%s enabled", name());
+            log_debug("enabled");
         if (is_enabled() && !(val & CR_UARTEN))
-            vcml::log_debug("%s disabled", name());
+            log_debug("disabled");
         if (!is_tx_enabled() && (val & CR_TXE))
-            vcml::log_debug("%s transmitter enabled", name());
+            log_debug("transmitter enabled");
         if (is_tx_enabled() && !(val & CR_TXE))
-            vcml::log_debug("%s transmitter disabled", name());
+            log_debug("transmitter disabled");
         if (!is_rx_enabled() && (val & CR_RXE))
-            vcml::log_debug("%s receiver enabled", name());
+            log_debug("receiver enabled");
         if (is_rx_enabled() && !(val & CR_RXE))
-            vcml::log_debug("%s receiver disabled", name());
+            log_debug("receiver disabled");
 
         m_enable.notify(SC_ZERO_TIME);
         return val;
@@ -166,14 +170,8 @@ namespace vcml { namespace arm {
         MIS  ("MIS",   0x040, 0x0),
         ICR  ("ICR",   0x044, 0x0),
         DMAC ("DMACR", 0x048, 0x0),
-        PID0 ("PID0",  0xFE0, (VCML_ARM_PL011UART_PID >>  0) & 0xFF),
-        PID1 ("PID1",  0xFE4, (VCML_ARM_PL011UART_PID >>  8) & 0xFF),
-        PID2 ("PID2",  0xFE8, (VCML_ARM_PL011UART_PID >> 16) & 0xFF),
-        PID3 ("PID3",  0xFEC, (VCML_ARM_PL011UART_PID >> 24) & 0xFF),
-        CID0 ("CID0",  0xFF0, (VCML_ARM_PL011UART_CID >>  0) & 0xFF),
-        CID1 ("CID1",  0xFF4, (VCML_ARM_PL011UART_CID >>  8) & 0xFF),
-        CID2 ("CID2",  0xFF8, (VCML_ARM_PL011UART_CID >> 16) & 0xFF),
-        CID3 ("CID3",  0xFFC, (VCML_ARM_PL011UART_CID >> 24) & 0xFF),
+        PID  ("PID0",  0xFE0, 0x00000000),
+        CID  ("CID0",  0xFF0, 0x00000000),
         clock("clock", VCML_ARM_PL011UART_CLK),
         IN("IN"),
         IRQ("IRQ") {
@@ -214,17 +212,12 @@ namespace vcml { namespace arm {
 
         DMAC.allow_read_write(); // not implemented
 
-        PID0.allow_read();
-        PID1.allow_read();
-        PID2.allow_read();
-        PID3.allow_read();
-
-        CID0.allow_read();
-        CID1.allow_read();
-        CID2.allow_read();
-        CID3.allow_read();
+        PID.allow_read();
+        CID.allow_read();
 
         SC_METHOD(poll);
+
+        reset();
     }
 
     pl011uart::~pl011uart() {
@@ -246,14 +239,12 @@ namespace vcml { namespace arm {
         MIS  = 0x0;
         ICR  = 0x0;
         DMAC = 0x0;
-        PID0 = (VCML_ARM_PL011UART_PID >>  0) & 0xFF;
-        PID1 = (VCML_ARM_PL011UART_PID >>  8) & 0xFF;
-        PID2 = (VCML_ARM_PL011UART_PID >> 16) & 0xFF;
-        PID3 = (VCML_ARM_PL011UART_PID >> 24) & 0xFF;
-        CID0 = (VCML_ARM_PL011UART_CID >>  0) & 0xFF;
-        CID1 = (VCML_ARM_PL011UART_CID >>  8) & 0xFF;
-        CID2 = (VCML_ARM_PL011UART_CID >> 16) & 0xFF;
-        CID3 = (VCML_ARM_PL011UART_CID >> 24) & 0xFF;
+
+        for (unsigned int i = 0; i < PID.num(); i++)
+            PID[i] = (VCML_ARM_PL011UART_PID >> (i * 8)) & 0xFF;
+
+        for (unsigned int i = 0; i < CID.num(); i++)
+            CID[i] = (VCML_ARM_PL011UART_CID >> (i * 8)) & 0xFF;
     }
 
 }}

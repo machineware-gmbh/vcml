@@ -123,18 +123,11 @@ namespace vcml { namespace arm {
         timer TIMER1;
         timer TIMER2;
 
-        reg<sp804timer, u32> ITCR;  // Integration Test Control Register
-        reg<sp804timer, u32> ITOP;  // Integration Test OutPut set register
+        reg<sp804timer, u32> ITCR;   // Integration Test Control Register
+        reg<sp804timer, u32> ITOP;   // Integration Test OutPut set register
 
-        reg<sp804timer, u8> PID0; // Peripheral ID Register 0
-        reg<sp804timer, u8> PID1; // Peripheral ID Register 1
-        reg<sp804timer, u8> PID2; // Peripheral ID Register 2
-        reg<sp804timer, u8> PID3; // Peripheral ID Register 3
-
-        reg<sp804timer, u8> CID0; // Cell ID Register 0
-        reg<sp804timer, u8> CID1; // Cell ID Register 1
-        reg<sp804timer, u8> CID2; // Cell ID Register 2
-        reg<sp804timer, u8> CID3; // Cell ID Register 3
+        reg<sp804timer, u32, 4> PID; // Peripheral ID Register
+        reg<sp804timer, u32, 4> CID; // Cell ID Register
 
         slave_socket IN;
 
@@ -146,7 +139,7 @@ namespace vcml { namespace arm {
 
         sp804timer(const sc_module_name& nm);
         virtual ~sp804timer();
-        VCML_KIND(sp804timer);
+        VCML_KIND(arm::sp804timer);
 
         virtual unsigned int receive(tlm_generic_payload& tx, int flags);
         virtual void reset();

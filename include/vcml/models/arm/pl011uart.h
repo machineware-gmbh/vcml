@@ -135,15 +135,8 @@ namespace vcml { namespace arm {
         reg<pl011uart, u16> ICR;  // Interrupt Clear Register
         reg<pl011uart, u16> DMAC; // DMA Control
 
-        reg<pl011uart,  u8> PID0; // Peripheral ID Register 0
-        reg<pl011uart,  u8> PID1; // Peripheral ID Register 1
-        reg<pl011uart,  u8> PID2; // Peripheral ID Register 2
-        reg<pl011uart,  u8> PID3; // Peripheral ID Register 3
-
-        reg<pl011uart,  u8> CID0; // Cell ID Register 0
-        reg<pl011uart,  u8> CID1; // Cell ID Register 1
-        reg<pl011uart,  u8> CID2; // Cell ID Register 2
-        reg<pl011uart,  u8> CID3; // Cell ID Register 3
+        reg<pl011uart, u32, 4> PID; // Peripheral ID Register
+        reg<pl011uart, u32, 4> CID; // Cell ID Register
 
         property<clock_t> clock;
 
@@ -156,7 +149,7 @@ namespace vcml { namespace arm {
 
         pl011uart(const sc_module_name& name);
         virtual ~pl011uart();
-        VCML_KIND(pl011uart);
+        VCML_KIND(arm::pl011uart);
 
         virtual void reset();
     };

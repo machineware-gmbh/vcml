@@ -153,19 +153,13 @@ namespace vcml { namespace arm {
     }
 
     sp804timer::sp804timer(const sc_module_name& nm):
-        vcml::peripheral(nm),
+        peripheral(nm),
         TIMER1("TIMER1"),
         TIMER2("TIMER2"),
         ITCR("ITCR", 0xF00, 0x00000000),
         ITOP("ITOP", 0xF04, 0x00000000),
-        PID0("PID0", 0xFE0, (VCML_ARM_SP804TIMER_PID >>  0) & 0xFF),
-        PID1("PID1", 0xFE4, (VCML_ARM_SP804TIMER_PID >>  8) & 0xFF),
-        PID2("PID2", 0xFE8, (VCML_ARM_SP804TIMER_PID >> 16) & 0xFF),
-        PID3("PID3", 0xFEC, (VCML_ARM_SP804TIMER_PID >> 24) & 0xFF),
-        CID0("CID0", 0xFF0, (VCML_ARM_SP804TIMER_CID >>  0) & 0xFF),
-        CID1("CID1", 0xFF4, (VCML_ARM_SP804TIMER_CID >>  8) & 0xFF),
-        CID2("CID2", 0xFF8, (VCML_ARM_SP804TIMER_CID >> 16) & 0xFF),
-        CID3("CID3", 0xFFC, (VCML_ARM_SP804TIMER_CID >> 24) & 0xFF),
+        PID("PID", 0xFE0),
+        CID("CID", 0xFF0),
         IN("IN"),
         IRQ1("IRQ1"),
         IRQ2("IRQ2"),
@@ -175,15 +169,8 @@ namespace vcml { namespace arm {
         ITCR.allow_read_write();
         ITOP.allow_read();
 
-        PID0.allow_read();
-        PID1.allow_read();
-        PID2.allow_read();
-        PID3.allow_read();
-
-        CID0.allow_read();
-        CID1.allow_read();
-        CID2.allow_read();
-        CID3.allow_read();
+        PID.allow_read();
+        CID.allow_read();
 
         TIMER1.IRQ.bind(IRQ1);
         TIMER2.IRQ.bind(IRQ2);
@@ -191,6 +178,8 @@ namespace vcml { namespace arm {
         SC_METHOD(update_IRQC);
         sensitive << IRQ1 << IRQ2;
         dont_initialize();
+
+        reset();
     }
 
     sp804timer::~sp804timer() {
@@ -218,20 +207,14 @@ namespace vcml { namespace arm {
     }
 
     void sp804timer::reset() {
-        component::reset();
-
         ITCR = 0x00000000;
         ITOP = 0x00000000;
 
-        PID0 = (VCML_ARM_SP804TIMER_PID >>  0) & 0xFF;
-        PID1 = (VCML_ARM_SP804TIMER_PID >>  8) & 0xFF;
-        PID2 = (VCML_ARM_SP804TIMER_PID >> 16) & 0xFF;
-        PID3 = (VCML_ARM_SP804TIMER_PID >> 24) & 0xFF;
+        for (unsigned int i = 0; i < PID.num(); i++)
+            PID[i] = (VCML_ARM_SP804TIMER_PID >> (i * 8)) & 0xFF;
 
-        CID0 = (VCML_ARM_SP804TIMER_CID >>  0) & 0xFF;
-        CID1 = (VCML_ARM_SP804TIMER_CID >>  8) & 0xFF;
-        CID2 = (VCML_ARM_SP804TIMER_CID >> 16) & 0xFF;
-        CID3 = (VCML_ARM_SP804TIMER_CID >> 24) & 0xFF;
+        for (unsigned int i = 0; i < CID.num(); i++)
+            CID[i] = (VCML_ARM_SP804TIMER_CID >> (i * 8)) & 0xFF;
 
         IRQC = false;
     }
