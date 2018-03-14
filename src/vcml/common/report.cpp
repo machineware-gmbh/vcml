@@ -43,4 +43,28 @@ namespace vcml {
         return m_message.c_str();
     }
 
+    void report::handle_segfault(int sig, siginfo_t* info, void* context) {
+        fprintf(stderr, "Backtrace\n");
+        auto symbols = vcml::backtrace(max_backtrace_length, 2);
+        for (unsigned int i = symbols.size() - 1; i < symbols.size(); i--)
+            fprintf(stderr, "# %2u: %s\n", i, symbols[i].c_str());
+        fprintf(stderr,
+                "Caught signal %d (%s) while accessing memory at location %p\n",
+                sig, strsignal(sig), info->si_addr);
+        signal(sig, SIG_DFL);
+        raise(sig);
+    }
+
+    void report::report_segfaults() {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sigemptyset(&sa.sa_mask);
+
+        sa.sa_sigaction = &report::handle_segfault;
+        sa.sa_flags = SA_NODEFER;
+
+        if (sigaction(SIGSEGV, &sa, NULL) < 0)
+            VCML_ERROR("failed to install SIGSEGV signal handler");
+    }
+
 }

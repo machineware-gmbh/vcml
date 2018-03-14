@@ -36,6 +36,8 @@ namespace vcml {
         vector<string> m_backtrace;
         string         m_desc;
 
+        static void handle_segfault(int sig, siginfo_t* info, void* context);
+
         // disabled
         report();
 
@@ -54,6 +56,7 @@ namespace vcml {
 
         virtual const char* what() const throw();
 
+        static void report_segfaults();
         static unsigned int max_backtrace_length;
     };
 
