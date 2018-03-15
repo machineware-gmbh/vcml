@@ -119,9 +119,9 @@ namespace vcml { namespace arm {
 
     u16 pl011uart::write_CR(u16 val) {
         if (!is_enabled() && (val & CR_UARTEN))
-            log_debug("enabled");
+            log_debug("device enabled");
         if (is_enabled() && !(val & CR_UARTEN))
-            log_debug("disabled");
+            log_debug("device disabled");
         if (!is_tx_enabled() && (val & CR_TXE))
             log_debug("transmitter enabled");
         if (is_tx_enabled() && !(val & CR_TXE))
@@ -170,8 +170,8 @@ namespace vcml { namespace arm {
         MIS  ("MIS",   0x040, 0x0),
         ICR  ("ICR",   0x044, 0x0),
         DMAC ("DMACR", 0x048, 0x0),
-        PID  ("PID0",  0xFE0, 0x00000000),
-        CID  ("CID0",  0xFF0, 0x00000000),
+        PID  ("PID",   0xFE0, 0x00000000),
+        CID  ("CID",   0xFF0, 0x00000000),
         clock("clock", VCML_ARM_PL011UART_CLK),
         IN("IN"),
         IRQ("IRQ") {
