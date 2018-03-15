@@ -75,7 +75,8 @@ set(sources
     "${src}/vcml/models/arm/pl011uart.cpp"
     "${src}/vcml/models/arm/pl190vic.cpp"
     "${src}/vcml/models/arm/sp804timer.cpp"
-    "${src}/vcml/models/arm/syscon.cpp")
+    "${src}/vcml/models/arm/syscon.cpp"
+    "${src}/vcml/models/arm/gicv2.cpp")
 
 add_library(vcml ${sources})
 target_include_directories(vcml PUBLIC ${inc})
