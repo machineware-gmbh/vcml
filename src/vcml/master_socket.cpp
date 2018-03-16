@@ -53,7 +53,7 @@ namespace vcml {
         m_txd.clear_extension<ext_exmem>();
     }
 
-    unsigned int master_socket::send(tlm_generic_payload& tx, int flags) {
+    unsigned int master_socket::send(tlm_generic_payload& tx, int flags) try {
         unsigned int   bytes = 0;
         unsigned int   size  = tx.get_data_length();
         unsigned int   width = tx.get_streaming_width();
@@ -109,6 +109,10 @@ namespace vcml {
         }
 
         return bytes;
+    } catch (std::exception& ex) {
+        tx.clear_extension<ext_bank>();
+        tx.clear_extension<ext_exmem>();
+        throw;
     }
 
     tlm_response_status master_socket::access_dmi(tlm_command cmd, u64 addr,
