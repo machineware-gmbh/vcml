@@ -28,7 +28,7 @@ TEST(utils, dirname) {
     EXPECT_EQ(vcml::dirname("/a/b/c.txt"), "/a/b");
     EXPECT_EQ(vcml::dirname("a/b/c.txt"), "a/b");
     EXPECT_EQ(vcml::dirname("/a/b/c/"), "/a/b/c");
-    EXPECT_EQ(vcml::dirname("nothing"), "");
+    EXPECT_EQ(vcml::dirname("nothing"), ".");
 }
 
 namespace N {

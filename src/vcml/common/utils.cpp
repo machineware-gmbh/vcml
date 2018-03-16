@@ -57,7 +57,7 @@ namespace vcml {
 #endif
 
         size_t i = filename.rfind(separator, filename.length());
-        return (i == string::npos) ? "" : filename.substr(0, i);
+        return (i == string::npos) ? "." : filename.substr(0, i);
     }
 
     bool file_exists(const string& filename) {
