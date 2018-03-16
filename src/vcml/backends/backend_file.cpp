@@ -68,6 +68,7 @@ namespace vcml {
         if (!m_tx.is_open() || !m_tx.good())
             return 0;
         m_tx.write(reinterpret_cast<const char*>(buf), len);
+        m_tx.flush();
         return len;
     }
 
