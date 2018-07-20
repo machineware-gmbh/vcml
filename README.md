@@ -107,6 +107,14 @@ build you want to use:
 * `export VCML_HOME=(...)/vcml/BUILD/RELEASE` for the release build
 
 ----
+## Documentation
+Some basic documentation about this library and its models can be found
+[here](doc/main.md).
+Another potential useful source for help can be the study of projects that
+employ VCML to construct a complete VP, for example
+[`or1kmvp`](https://github.com/janweinstock/or1kmvp/).
+
+----
 ## License
 
 This project is licensed under the Apache-2.0 license - see the
