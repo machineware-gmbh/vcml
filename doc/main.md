@@ -5,7 +5,7 @@ The Virtual Components Modeling Library (`vcml`) is an addon library for SystemC
 that provides facilities to ease construction of Virtual Platforms (VPs).
 Roughly speaking, its contributions can be separated into two areas:
 *Modeling Primitives* and *Hardware Models*. Modeling Primitives refer to
-utlities such as improved TLM sockets, port lists and registers and are 
+utilities such as improved TLM sockets, port lists and registers and are 
 intended to serve as building blocks for new models.
 Hardware Models, such as UARTs, Timers, Memories etc. are also available
 based on actual hardware models from various vendors or common implementations.
@@ -14,9 +14,9 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
 
 * Documentation files for VCML modeling primitives:
   * [Logging](logging.md)
+  * [Components](components.md)
   * [Properties](properties.md)
   * [Backends](backends.md)
-  * [Components](components.md)
   * [Peripherals](peripherals.md)
 
 * Documentation for VCML hardware models:

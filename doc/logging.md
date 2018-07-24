@@ -10,16 +10,16 @@ an exception is caught.
 * `vcml::LOG_WARNING`: used for reporting abnormal events, such as missing files
 or erroneous configurations.
 * `vcml::LOG_INFO`: used for generic info messages, e.g., for printing out the
-simulation duriation or bus memory maps at the beginning of the simulation.
+simulation duration or bus memory maps at the beginning of the simulation.
 * `vcml::LOG_DEBUG`: for printing debug messages
 * `vcml::LOG_TRACE`: lowest priority, used for tracing transactions entering or
-exiting busses or peripheral components.
+exiting buses or peripheral components.
 
 Log message output adheres the following format:
 
 `[<LEVEL> <TIME>] <SOURCE>: <MESSAGE>`
 
-In this format, `<LEVEL>` refers to the log level and is shortend to its first
+In this format, `<LEVEL>` refers to the log level and is shortened to its first
 letter, i.e., `E`, `W`, `I`, `D` or `T`. After the log level, the current SystemC
 time is printed with nanosecond resolution. One can optionally also print out
 the current delta cycle after the time stamp by setting
@@ -150,7 +150,7 @@ transaction will be converted to string using the following format:
 
 `<OP> <ADDRESS> [<VALUE>] (<RESPONSE>)`
 
-Here, `<OP>` referes to the access operation and can be `RD` (read) or `WR`
+Here, `<OP>` refers to the access operation and can be `RD` (read) or `WR`
 (write). `<ADDRESS>` shows the destination address in hex and `<VALUE>` contains
 the individual byte values of the internal transaction buffer. `<RESPONSE>`
 holds the current state of the transaction, see the TLM reference manual for
