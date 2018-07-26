@@ -1,6 +1,4 @@
 # VCML Components
-----
-
 Components form the basic building blocks for hardware models in VCML. In
 combination with master- and slave-sockets, they can be used to swiftly
 assemble a skeleton component that can receive and send TLM transactions. To
@@ -61,10 +59,8 @@ bool is_sync(int flags);
 bool is_excl(int flags);
 ```
 
-
-## Direct Memory Interface
 ----
-
+## Direct Memory Interface
 Instead of calling the interface methods within `vcml::component`, some request
 may also be handled via the TLM Direct Memory Interface (DMI). DMI passes data
 pointers from a TLM target back to the initiator, allowing it to directly
@@ -104,9 +100,8 @@ This call returns once all initiators have confirmed invalidation. It is
 possible to only invalidate subregions of a previously mapped region. E.g., you
 can map an entire memory block of 1GB and then unmap individual 4kB pages.
 
-
-## Sending Transactions
 ----
+## Sending Transactions
 If a component has been equipped with a `vcml::master_socket`, you can use it to
 send transactions. Fundamentally, you can use it to directly call TLM interface
 methods, e.g.:
@@ -129,7 +124,7 @@ tlm_response_status master_socket::write(u64 addr, const void* data, unsigned in
 * `read` reads `size` bytes from address `addr` and stores them to `data`.
 * `write` writes `size` bytes from buffer `data` to address `addr`.
 
-VCML flags my be passed to suppress DMI (`VCML_FLAG_NODMI`), to indicate a debug
+VCML flags may be passed to suppress DMI (`VCML_FLAG_NODMI`), to indicate a debug
 call (`VCML_FLAG_DEBUG`) or to force time synchronization (`VCML_FLAG_SYNC`).
 Multiple flags can be combined using the binary `|` operator.
 Finally, you can provide an integer pointer `nbytes` that will be used to report
@@ -138,9 +133,8 @@ Both methods return their success status using the standard TLM
 `tlm_response_status` type. You can use the utility functions `vcml::success` and
 `vcml::failed` to find out if your call was successful.
 
-
-## Logging and Tracing
 ----
+## Logging and Tracing
 You can trace all incoming transactions and outgoing transaction responses for
 transactions received via `vcml::slave_socket` automatically. To enable tracing
 for individual components, set the following:
@@ -164,9 +158,8 @@ void vcml::component::log_info(const char* format, ...);
 void vcml::component::log_debug(const char* format, ...);
 ```
 
-
-## Commands
 ----
+## Commands
 Components can serve as the host for user-specifiable commands. These commands
 are intended for debug purposes and look similar to UNIX command line commands.
 They use the following syntax:
@@ -202,4 +195,4 @@ Each component has a set of pre-registered default commands. These are:
 * `reset`: resets the component and calls `vcml::component::reset`
 
 ----
-Documentation `vcml-1.0` July 2018
+Documentation July 2018

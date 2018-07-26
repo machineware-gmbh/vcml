@@ -1,6 +1,4 @@
 # VCML Documentation
-----
-
 The Virtual Components Modeling Library (`vcml`) is an addon library for SystemC
 that provides facilities to ease construction of Virtual Platforms (VPs).
 Roughly speaking, its contributions can be separated into two areas:
@@ -31,4 +29,4 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [ARM GICv2](models/arm_gicv2.md)
 
 ----
-Documentation `vcml-1.0` July 2018
+Documentation July 2018

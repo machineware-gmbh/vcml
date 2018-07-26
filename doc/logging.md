@@ -1,6 +1,4 @@
 # VCML Logging
-----
-
 VCML uses a centralized logging system that allows its individual components
 and models to report on everything that happens during the simulation. Log
 messages are split into five categories, listed below in priority order:
@@ -63,8 +61,8 @@ namespace vcml {
 }
 ```
 
+----
 ## Logging Output
----
 In order to actually see log messages, you need a logger that will receive the
 messages and display them in some form. VCML currently provides three loggers:
 
@@ -113,9 +111,8 @@ public:
 };
 ```
 
+----
 ## Exceptions and Tracing
----
-
 The logging system is typically also used for TLM transaction tracing as well
 as for exception reporting. VCML generally uses the class `vcml::report` for
 unrecoverable exceptions, so a good approach to handling would be:
@@ -160,4 +157,4 @@ details. Following is an example of an actual TLM transaction trace:
 * writing single byte to invalid address: `WR 0xFFFFFFFF [EE] (TLM_ADDRESS_ERROR_RESPONSE)`
 
 ----
-Documentation `vcml-1.0` July 2018
+Documentation July 2018
