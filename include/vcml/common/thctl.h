@@ -31,6 +31,7 @@ namespace vcml {
     void thctl_sysc_pause();
     void thctl_sysc_resume();
     void thctl_sysc_update();
+    void thctl_sysc_yield();
 
     void thctl_sysc_set_paused(bool paused = true);
 
