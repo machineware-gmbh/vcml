@@ -148,6 +148,16 @@ namespace vcml {
         pthread_mutex_unlock(&g_thctl_lock);
     }
 
+    void thctl_sysc_yield() {
+        VCML_ERROR_ON(!thctl_is_sysc_thread(), "yield called outside thctl");
+        pthread_mutex_lock(&g_thctl_lock);
+        g_sysc_stopped = true;
+        pthread_cond_broadcast(&g_notify_stop);
+        pthread_cond_wait(&g_notify_resume, &g_thctl_lock);
+        g_sysc_stopped = false;
+        pthread_mutex_unlock(&g_thctl_lock);
+    }
+
     void thctl_sysc_set_paused(bool paused) {
         pthread_mutex_lock(&g_thctl_lock);
         g_sysc_stopped = paused;
