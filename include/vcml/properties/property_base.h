@@ -29,7 +29,7 @@ namespace vcml {
     class property_base: public sc_attr_base
     {
     private:
-        string m_name;
+        string     m_base;
         sc_module* m_parent;
 
         // disabled
@@ -42,8 +42,8 @@ namespace vcml {
 
         VCML_KIND(property);
 
-        inline const char* hierarchy_name() const { return m_name.c_str(); }
-        inline sc_module*  get_module()     const { return m_parent; }
+        inline const char* basename()   const { return m_base.c_str(); }
+        inline sc_module*  get_module() const { return m_parent; }
 
         virtual const char* str() const = 0;
         virtual void str(const string& s) = 0;

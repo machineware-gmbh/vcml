@@ -115,7 +115,7 @@ namespace vcml {
         update_strval();
 
         string init;
-        if (property_provider::init(hierarchy_name(), init))
+        if (property_provider::init(name(), init))
             str(init);
     }
 
@@ -138,11 +138,9 @@ namespace vcml {
         unsigned int size = args.size();
 
         if (size < N) {
-            log_warn("property %s has not enough initializers",
-                     hierarchy_name());
+            log_warn("property %s has not enough initializers", name());
         } else if (size > N) {
-            log_warn("property %s has too many initializers",
-                     hierarchy_name());
+            log_warn("property %s has too many initializers", name());
         }
 
         for (unsigned int i = 0; i < min(N, size); i++)
