@@ -146,6 +146,22 @@ namespace vcml {
         return ss.str();
     }
 
+    sc_object* find_object(const string& name) {
+        return sc_core::sc_find_object(name.c_str());
+    }
+
+    sc_attr_base* find_attribute(const string& name) {
+        size_t pos = name.rfind(SC_HIERARCHY_CHAR);
+        if (pos == string::npos)
+            return NULL;
+
+        sc_object* parent = find_object(name.substr(0, pos));
+        if (parent == NULL)
+            return NULL;
+
+        return parent->get_attribute(name);
+    }
+
     int replace(string& str, const string& search, const string& repl) {
         int count = 0;
         size_t index = 0;

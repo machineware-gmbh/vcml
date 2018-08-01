@@ -42,6 +42,9 @@ namespace vcml {
     string tlm_response_to_str(tlm_response_status status);
     string tlm_transaction_to_str(const tlm_generic_payload& tx);
 
+    sc_object*    find_object(const string& name);
+    sc_attr_base* find_attribute(const string& name);
+
     int replace(string& str, const string& s1, const string& s2);
 
     string call_origin();
