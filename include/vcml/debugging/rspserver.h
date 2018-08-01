@@ -32,6 +32,9 @@ namespace vcml { namespace debugging {
 
     class rspserver
     {
+    public:
+        typedef std::function<std::string(const char*)> handler;
+
     private:
         bool m_echo;
         u16  m_port;
@@ -42,7 +45,10 @@ namespace vcml { namespace debugging {
         struct sockaddr_in m_server;
         struct sockaddr_in m_client;
 
+        bool      m_running;
         pthread_t m_thread;
+
+        std::map<string, handler> m_handlers;
 
         void send_char(char c);
         char recv_char();
@@ -53,6 +59,9 @@ namespace vcml { namespace debugging {
 
     public:
         u16 get_port() const { return m_port; }
+
+        int get_server_fd()     const { return m_fd_server; }
+        int get_connection_fd() const { return m_fd; }
 
         bool is_connected() const { return m_fd > -1; }
         bool is_listening() const { return m_fd_server > -1; }
@@ -70,11 +79,22 @@ namespace vcml { namespace debugging {
         void listen();
         void disconnect();
 
+        void run_async();
         void run();
+        void stop();
 
         virtual string handle_command(const string& command);
-        virtual void   handle_connect();
+        virtual void   handle_connect(const char* peer);
         virtual void   handle_disconnect();
+
+        void register_handler(const char* command, handler handler);
+        void unregister_handler(const char* command);
+
+        static const char* ERR_COMMAND;  // malformed command
+        static const char* ERR_PARAM;    // parameter has invalid value
+        static const char* ERR_INTERNAL; // internal error
+        static const char* ERR_UNKNOWN;  // unknown error
+        static const char* ERR_PROTOCOL; // protocol error
     };
 
 }}

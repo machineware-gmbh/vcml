@@ -371,6 +371,8 @@ namespace vcml { namespace debugging {
         m_handler['H'] = &gdbserver::handle_thread;
         m_handler['v'] = &gdbserver::handle_vcont;
         m_handler['?'] = &gdbserver::handle_exception;
+
+        run_async();
     }
 
     gdbserver::~gdbserver() {
@@ -413,8 +415,8 @@ namespace vcml { namespace debugging {
         }
     }
 
-    void gdbserver::handle_connect() {
-        log_debug("gdb connected");
+    void gdbserver::handle_connect(const char* peer) {
+        log_debug("gdb connected to %s", peer);
         m_status = GDB_STOPPED;
     }
 

@@ -46,6 +46,8 @@ namespace vcml {
     using std::ifstream;
     using std::ofstream;
 
+    using std::function;
+
     using sc_core::sc_object;
     using sc_core::sc_attr_base;
 
@@ -63,6 +65,15 @@ namespace vcml {
     using sc_core::SC_US;
     using sc_core::SC_NS;
     using sc_core::SC_PS;
+
+    using sc_core::sc_start;
+    using sc_core::sc_stop;
+
+#if (SYSTEMC_VERSION < 20120701)
+#   define sc_pause sc_stop
+#else
+    using sc_core::sc_pause;
+#endif
 
     using sc_core::sc_simcontext;
     using sc_core::sc_get_curr_simcontext;

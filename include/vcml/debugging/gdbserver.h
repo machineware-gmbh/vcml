@@ -107,7 +107,7 @@ namespace vcml { namespace debugging {
         void notify(int signal);
 
         virtual string handle_command(const string& command) override;
-        virtual void   handle_connect() override;
+        virtual void   handle_connect(const char* peer) override;
         virtual void   handle_disconnect() override;
     };
 

@@ -20,6 +20,13 @@
 
 namespace vcml { namespace debugging {
 
+    static inline string opcode(const string& s) {
+        size_t pos = s.find(',');
+        if (pos == std::string::npos)
+            return s;
+        return s.substr(0, pos);
+    }
+
     static inline int checksum(const char* str) {
         int result = 0;
         while (str && *str)
@@ -60,24 +67,21 @@ namespace vcml { namespace debugging {
             VCML_ERROR("error receiving data: %s", strerror(errno));
         return ch;
     }
+
     rspserver::rspserver(u16 port):
         m_echo(false),
         m_port(port),
         m_fd(-1),
         m_fd_server(-1),
         m_server(),
-        m_client() {
+        m_client(),
+        m_running(false),
+        m_thread() {
         memset(&m_server, 0, sizeof(m_server));
         memset(&m_client, 0, sizeof(m_client));
         m_server.sin_family = AF_INET;
         m_server.sin_addr.s_addr = INADDR_ANY;
         m_server.sin_port = htons(m_port);
-        if (pthread_create(&m_thread, NULL, &rsp_thread_func, this))
-            VCML_ERROR("failed to spawn rsp listener thread");
-
-        stringstream ss; ss << "rsp_" << port;
-        if (pthread_setname_np(m_thread, ss.str().c_str()))
-            VCML_ERROR("failed to name rsp listener thread");
     }
 
     rspserver::~rspserver() {
@@ -98,7 +102,12 @@ namespace vcml { namespace debugging {
 
         va_list args;
         va_start(args, format);
+        int lim = sizeof(packet) - 4;
         int len = std::vsnprintf(packet + 1, sizeof(packet) - 5, format, args);
+        if (len > lim) {
+            log_warning("rsp packet too long, truncating %d bytes", len - lim);
+            len = lim;
+        }
         va_end(args);
 
         int sum = checksum(packet + 1);
@@ -227,7 +236,7 @@ namespace vcml { namespace debugging {
         close(m_fd_server);
         m_fd_server = -1;
 
-        handle_connect();
+        handle_connect(inet_ntoa(m_client.sin_addr));
     }
 
     void rspserver::disconnect() {
@@ -238,8 +247,18 @@ namespace vcml { namespace debugging {
         }
     }
 
+    void rspserver::run_async() {
+        if (pthread_create(&m_thread, NULL, &rsp_thread_func, this))
+            VCML_ERROR("failed to spawn rsp listener thread");
+
+        stringstream ss; ss << "rsp_" << m_port;
+        if (pthread_setname_np(m_thread, ss.str().c_str()))
+            VCML_ERROR("failed to name rsp listener thread");
+    }
+
     void rspserver::run() {
-        while (true) try {
+        m_running = true;
+        while (m_running) try {
             disconnect();
             listen();
             while (is_connected()) {
@@ -253,17 +272,46 @@ namespace vcml { namespace debugging {
         }
     }
 
-    string rspserver::handle_command(const string& command) {
-        // to be overloaded
-        return "OK";
+    void rspserver::stop() {
+        VCML_ERROR_ON(!m_running, "server not running");
+        m_running = false;
     }
 
-    void rspserver::handle_connect() {
+    string rspserver::handle_command(const string& command) {
+        try {
+            string op = opcode(command);
+            if (!stl_contains(m_handlers, op))
+                return ""; // empty response means command not supported
+            return m_handlers[op](command.c_str());
+        } catch (report& rep) {
+            logger::log(rep);
+            return ERR_INTERNAL;
+        } catch (std::exception& ex) {
+            log_warn(ex.what());
+            return ERR_INTERNAL;
+        }
+    }
+
+    void rspserver::handle_connect(const char* peer) {
         // to be overloaded
     }
 
     void rspserver::handle_disconnect() {
         // to be overloaded
     }
+
+    void rspserver::register_handler(const char* cmd, handler h) {
+        m_handlers[cmd] = h;
+    }
+
+    void rspserver::unregister_handler(const char* cmd) {
+        m_handlers.erase(cmd);
+    }
+
+    const char* rspserver::ERR_COMMAND  = "E01";
+    const char* rspserver::ERR_PARAM    = "E02";
+    const char* rspserver::ERR_INTERNAL = "E03";
+    const char* rspserver::ERR_UNKNOWN  = "E04";
+    const char* rspserver::ERR_PROTOCOL = "E05";
 
 }}
