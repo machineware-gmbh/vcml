@@ -232,7 +232,6 @@ namespace vcml {
         if (virt)
             os << " (virtual)";
 
-        unsigned char insn[8];
         u64 addr = vstart;
         while (addr < vend) {
             os << "\n" << ((addr == get_program_counter()) ? " > " : "   ");
@@ -257,10 +256,13 @@ namespace vcml {
             }
 
             u64 prev = addr;
-            if (success(INSN.read(phys, insn, VCML_FLAG_DEBUG))) {
+            unsigned char insn[8];
+            if (success(INSN.read(phys, insn, sizeof(insn), VCML_FLAG_DEBUG))) {
                 string disas = disassemble(addr, insn);
                 VCML_ERROR_ON(addr == prev, "disassembly address stuck");
-                os << HEX(insn, (addr - prev) * 2) << " " << disas;
+                for (unsigned int i = 0; i < (addr - prev); i++)
+                    os << HEX((int)insn[i], 2);
+                os << " " << disas;
             } else {
                 os << "????????";
                 addr += 4;
