@@ -55,6 +55,7 @@ set(sources
     "${src}/vcml/backends/backend_tap.cpp"
     "${src}/vcml/debugging/rspserver.cpp"
     "${src}/vcml/debugging/gdbserver.cpp"
+    "${src}/vcml/debugging/vspserver.cpp"
     "${src}/vcml/elf.cpp"
     "${src}/vcml/dmi_cache.cpp"
     "${src}/vcml/exmon.cpp"

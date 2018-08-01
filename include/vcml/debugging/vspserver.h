@@ -16,69 +16,50 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_H
-#define VCML_H
+#ifndef VCML_VSPSERVER_H
+#define VCML_VSPSERVER_H
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
-#include "vcml/common/version.h"
 #include "vcml/common/aio.h"
-#include "vcml/common/thctl.h"
 
 #include "vcml/logging/logger.h"
-#include "vcml/logging/log_file.h"
-#include "vcml/logging/log_stream.h"
-#include "vcml/logging/log_term.h"
-
-#include "vcml/properties/property_base.h"
 #include "vcml/properties/property.h"
-#include "vcml/properties/property_provider.h"
-#include "vcml/properties/property_provider_arg.h"
-#include "vcml/properties/property_provider_env.h"
-#include "vcml/properties/property_provider_file.h"
-
-#include "vcml/backends/backend.h"
-#include "vcml/backends/backend_null.h"
-#include "vcml/backends/backend_file.h"
-#include "vcml/backends/backend_term.h"
-#include "vcml/backends/backend_stdout.h"
-#include "vcml/backends/backend_tcp.h"
-#include "vcml/backends/backend_tap.h"
-
 #include "vcml/debugging/rspserver.h"
-#include "vcml/debugging/gdbstub.h"
-#include "vcml/debugging/gdbserver.h"
-#include "vcml/debugging/vspserver.h"
 
-#include "vcml/elf.h"
-#include "vcml/range.h"
-#include "vcml/txext.h"
-#include "vcml/exmon.h"
-#include "vcml/ports.h"
-#include "vcml/stubs.h"
-#include "vcml/dmi_cache.h"
-#include "vcml/command.h"
 #include "vcml/component.h"
-#include "vcml/master_socket.h"
-#include "vcml/slave_socket.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
-#include "vcml/processor.h"
 
-#include "vcml/models/generic/bus.h"
-#include "vcml/models/generic/memory.h"
-#include "vcml/models/generic/crossbar.h"
-#include "vcml/models/generic/uart8250.h"
+namespace vcml { namespace debugging {
 
-#include "vcml/models/opencores/ompic.h"
-#include "vcml/models/opencores/ethoc.h"
+    class vspserver: public rspserver {
+    private:
+        string handle_none(const char* command);
+        string handle_step(const char* command);
+        string handle_cont(const char* command);
+        string handle_info(const char* command);
+        string handle_exec(const char* command);
+        string handle_time(const char* command);
+        string handle_rdgq(const char* command);
+        string handle_wrgq(const char* command);
+        string handle_geta(const char* command);
+        string handle_seta(const char* command);
+        string handle_quit(const char* command);
 
-#include "vcml/models/arm/pl011uart.h"
-#include "vcml/models/arm/pl190vic.h"
-#include "vcml/models/arm/sp804timer.h"
-#include "vcml/models/arm/syscon.h"
-#include "vcml/models/arm/gicv2.h"
+        void run_interruptible(const sc_time& duration);
+
+    public:
+        vspserver(u16 port);
+        virtual ~vspserver();
+
+        void start();
+        void interrupt();
+
+        virtual void handle_connect(const char* peer) override;
+        virtual void handle_disconnect() override;
+    };
+
+}}
 
 #endif
