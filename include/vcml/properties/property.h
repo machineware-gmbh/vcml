@@ -138,9 +138,9 @@ namespace vcml {
         unsigned int size = args.size();
 
         if (size < N) {
-            log_warn("property %s has not enough initializers", name());
+            log_warn("property %s has not enough initializers", name().c_str());
         } else if (size > N) {
-            log_warn("property %s has too many initializers", name());
+            log_warn("property %s has too many initializers", name().c_str());
         }
 
         for (unsigned int i = 0; i < min(N, size); i++)
