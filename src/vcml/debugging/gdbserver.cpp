@@ -44,8 +44,6 @@ namespace vcml { namespace debugging {
     }
 
     void gdbserver::access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
-        thctl_sysc_pause();
-
         try {
             bool result = iswr ? m_stub->async_write_mem(addr, buffer, size)
                                : m_stub->async_read_mem(addr, buffer, size);
@@ -55,8 +53,6 @@ namespace vcml { namespace debugging {
                      size, addr, r.message());
             memset(buffer, 0xee, size);
         }
-
-        thctl_sysc_resume();
     }
 
     void gdbserver::access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
