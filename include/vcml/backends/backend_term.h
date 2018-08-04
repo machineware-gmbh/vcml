@@ -37,7 +37,7 @@ namespace vcml {
         bool m_stopped;
 
         termios m_termios;
-        timeval m_time;
+        double  m_time;
 
         sighandler_t m_sigint;
         sighandler_t m_sigstp;

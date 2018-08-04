@@ -286,17 +286,14 @@ namespace vcml {
             if (num_cycles == 0)
                 num_cycles = 1;
 
-            timeval t1, t2;
-            gettimeofday(&t1, NULL);
+            double start = realtime();
             if (m_gdb != NULL)
                 m_gdb->simulate(num_cycles);
             else
                 simulate(num_cycles);
-            gettimeofday(&t2, NULL);
 
             m_num_cycles += num_cycles;
-            m_run_time   += (t2.tv_sec  - t1.tv_sec) +
-                            (t2.tv_usec - t1.tv_usec) * 1e-6;
+            m_run_time   += realtime() - start;
 
             sc_time delay((double)num_cycles / (double)clock, SC_SEC);
             wait(delay + offset());

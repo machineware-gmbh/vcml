@@ -42,11 +42,8 @@ namespace vcml {
     }
 
     void backend_term::handle_sigint(int sig) {
-        timeval now;
-        gettimeofday(&now, NULL);
-        double delta = (now.tv_sec + now.tv_usec * 1e-6) -
-                       (m_time.tv_sec + m_time.tv_usec * 1e-6);
-        if (delta < 1.0) {
+        double now = realtime();
+        if ((now - m_time) < 1.0) {
             tcsetattr(STDIN_FILENO, TCSANOW, &m_termios);
             if (m_stopped || m_exit || !sc_core::sc_is_running()) {
                 cleanup();
@@ -77,7 +74,7 @@ namespace vcml {
         m_exit(false),
         m_stopped(false),
         m_termios(),
-        m_time(),
+        m_time(realtime()),
         m_sigint(),
         m_sigstp() {
         VCML_ERROR_ON(singleton, "multiple terminal backends requested");
@@ -99,9 +96,6 @@ namespace vcml {
 
         m_sigint = signal(SIGINT, &backend_term::handle_signal);
         m_sigstp = signal(SIGTSTP, &backend_term::handle_signal);
-
-        if (gettimeofday(&m_time, NULL))
-            VCML_ERROR("gettimeofday call failed");
     }
 
     backend_term::~backend_term() {
