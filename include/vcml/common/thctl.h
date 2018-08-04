@@ -27,15 +27,10 @@ namespace vcml {
     pthread_t thctl_sysc_thread();
     bool      thctl_is_sysc_thread();
 
-    bool thctl_sysc_paused();
-    void thctl_sysc_pause();
-    void thctl_sysc_resume();
-    void thctl_sysc_update();
-    void thctl_sysc_yield();
-
-    void thctl_sysc_set_paused(bool paused = true);
+    void thctl_enter_critical();
+    void thctl_exit_critical();
+    bool thctl_in_critical();
 
 }
-
 
 #endif

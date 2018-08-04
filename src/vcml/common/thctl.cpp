@@ -18,12 +18,11 @@
 
 #include "vcml/common/thctl.h"
 #include "vcml/common/report.h"
-#include "vcml/logging/logger.h"
 
 namespace vcml {
 
     // we just need this class to have something that is called every cycle...
-    class thctl_updater: public sc_core::sc_trace_file
+    class thctl_helper: public sc_core::sc_trace_file
     {
     public:
     #define DECL_TRACE_METHOD_A(tp) \
@@ -74,94 +73,62 @@ namespace vcml {
         virtual void write_comment(const std::string& comment) {};
         virtual void set_time_unit(double v, sc_core::sc_time_unit tu) {}
 
-        thctl_updater() {
+        thctl_helper() {
             sc_get_curr_simcontext()->add_trace_file(this);
         }
 
-        virtual ~thctl_updater() {
-#if SYSTEMC_VERSION >= 20140417
+        virtual ~thctl_helper() {
+    #if SYSTEMC_VERSION >= 20140417
             sc_get_curr_simcontext()->remove_trace_file(this);
-#endif
+    #endif
         }
 
     protected:
-        virtual void cycle(bool delta_cycle) override {
-            thctl_sysc_update();
-        }
+        virtual void cycle(bool delta_cycle) override;
     };
 
-    static pthread_t thctl_init() {
-        static thctl_updater updater;
-        return pthread_self();
+    void thctl_helper::cycle(bool delta_cycle) {
+        if (delta_cycle) {
+            thctl_exit_critical();
+            thctl_enter_critical();
+        }
     }
 
-    static pthread_mutex_t g_thctl_lock    = PTHREAD_MUTEX_INITIALIZER;
-    static pthread_cond_t  g_notify_stop   = PTHREAD_COND_INITIALIZER;
-    static pthread_cond_t  g_notify_resume = PTHREAD_COND_INITIALIZER;
-    static pthread_t       g_sysc_thread   = thctl_init();
-    static bool            g_sysc_stopreq  = false;
-    static bool            g_sysc_stopped  = false;
+    static pthread_t thctl_init();
+
+    pthread_t g_thctl_sysc_thread = pthread_self();
+    pthread_t g_thctl_mutex_owner = thctl_init();
+    pthread_mutex_t g_thctl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
     pthread_t thctl_sysc_thread() {
-        return g_sysc_thread;
+        return g_thctl_sysc_thread;
     }
 
     bool thctl_is_sysc_thread() {
-        return pthread_self() == g_sysc_thread;
+        return g_thctl_sysc_thread == pthread_self();
     }
 
-    bool thctl_sysc_paused() {
-        pthread_mutex_lock(&g_thctl_lock);
-        bool stopped = g_sysc_stopped;
-        pthread_mutex_unlock(&g_thctl_lock);
-        return stopped;
+    void thctl_enter_critical() {
+        VCML_ERROR_ON(thctl_in_critical(),
+                      "thread already in critical section");
+        pthread_mutex_lock(&g_thctl_mutex);
+        g_thctl_mutex_owner = pthread_self();
     }
 
-    void thctl_sysc_pause() {
-        VCML_ERROR_ON(thctl_is_sysc_thread(), "thctl cannot pause itself");
-        pthread_mutex_lock(&g_thctl_lock);
-        g_sysc_stopreq = true;
-        while (!g_sysc_stopped)
-            pthread_cond_wait(&g_notify_stop, &g_thctl_lock);
-        pthread_mutex_unlock(&g_thctl_lock);
+    void thctl_exit_critical() {
+        VCML_ERROR_ON(!thctl_in_critical(), "thread not in critical section");
+        g_thctl_mutex_owner = 0;
+        pthread_mutex_unlock(&g_thctl_mutex);
     }
 
-    void thctl_sysc_resume() {
-        VCML_ERROR_ON(thctl_is_sysc_thread(), "thctl cannot resume itself");
-        pthread_mutex_lock(&g_thctl_lock);
-        g_sysc_stopreq = false;
-        g_sysc_stopped = false;
-        pthread_cond_broadcast(&g_notify_resume);
-        pthread_mutex_unlock(&g_thctl_lock);
+    bool thctl_in_critical() {
+        return g_thctl_mutex_owner == pthread_self();
     }
 
-    void thctl_sysc_update() {
-        VCML_ERROR_ON(!thctl_is_sysc_thread(), "update called outside thctl");
-        pthread_mutex_lock(&g_thctl_lock);
-        while (g_sysc_stopreq) {
-            g_sysc_stopped = true;
-            pthread_cond_broadcast(&g_notify_stop);
-            pthread_cond_wait(&g_notify_resume, &g_thctl_lock);
-        }
-
-        g_sysc_stopped = false;
-        pthread_mutex_unlock(&g_thctl_lock);
-    }
-
-    void thctl_sysc_yield() {
-        VCML_ERROR_ON(!thctl_is_sysc_thread(), "yield called outside thctl");
-        pthread_mutex_lock(&g_thctl_lock);
-        g_sysc_stopped = true;
-        pthread_cond_broadcast(&g_notify_stop);
-        pthread_cond_wait(&g_notify_resume, &g_thctl_lock);
-        g_sysc_stopped = false;
-        pthread_mutex_unlock(&g_thctl_lock);
-    }
-
-    void thctl_sysc_set_paused(bool paused) {
-        pthread_mutex_lock(&g_thctl_lock);
-        g_sysc_stopped = paused;
-        pthread_mutex_unlock(&g_thctl_lock);
+    static pthread_t thctl_init() {
+        static thctl_helper instance;
+        pthread_mutex_lock(&g_thctl_mutex);
+        return pthread_self();
     }
 
 }

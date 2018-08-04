@@ -204,14 +204,14 @@ namespace vcml { namespace debugging {
     }
 
     void vspserver::run_interruptible(const sc_time& duration) {
+        thctl_enter_critical();
         aio_notify(get_connection_fd(), &do_interrupt, AIO_ONCE);
-
         if (duration != SC_ZERO_TIME)
             sc_start(duration);
         else
             sc_start();
-
         aio_cancel(get_connection_fd());
+        thctl_exit_critical();
     }
 
     vspserver::vspserver(u16 port):
@@ -241,6 +241,8 @@ namespace vcml { namespace debugging {
         // Finish elaboration first before processing commands
         sc_start(SC_ZERO_TIME);
         log_info("vspserver listening on port %d", (int)get_port());
+
+        thctl_exit_critical();
         run();
     }
 

@@ -70,79 +70,79 @@ namespace vcml { namespace debugging {
     };
 
     inline u64 gdbstub::async_num_registers() {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         u64 result = gdb_num_registers();
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline u64 gdbstub::async_register_width() {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         u64 result = gdb_register_width();
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_read_reg(u64 idx, void* buffer, u64 size) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_read_reg(idx, buffer, size);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_write_reg(u64 idx, const void* buffer, u64 sz) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_write_reg(idx, buffer, sz);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_page_size(u64& size) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_page_size(size);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_virt_to_phys(u64 vaddr, u64& paddr) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_virt_to_phys(vaddr, paddr);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_read_mem(u64 addr, void* buffer, u64 size) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_read_mem(addr, buffer, size);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_write_mem(u64 addr, const void* buf, u64 sz) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_write_mem(addr, buf, sz);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_insert_breakpoint(u64 addr) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_insert_breakpoint(addr);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline bool gdbstub::async_remove_breakpoint(u64 addr) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         bool result = gdb_remove_breakpoint(addr);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return result;
     }
 
     inline string gdbstub::async_handle_rcmd(const string& command) {
-        thctl_sysc_pause();
+        thctl_enter_critical();
         string response = gdb_handle_rcmd(command);
-        thctl_sysc_resume();
+        thctl_exit_critical();
         return response;
     }
 
