@@ -22,6 +22,11 @@ namespace vcml { namespace debugging {
 
     static vspserver* session = NULL;
 
+    static void cleanup_session() {
+        if (session != NULL)
+            session->cleanup();
+    }
+
     string vspserver::handle_none(const char* command) {
         return "";
     }
@@ -215,9 +220,11 @@ namespace vcml { namespace debugging {
     }
 
     vspserver::vspserver(u16 port):
-        rspserver(port) {
+        rspserver(port),
+        m_announce(tempdir() + mkstr("vcml_session_%d", (int)port)) {
         VCML_ERROR_ON(session != NULL, "vspserver already created");
         session = this;
+        atexit(&cleanup_session);
 
         using std::placeholders::_1;
         register_handler("n", std::bind(&vspserver::handle_none, this, _1));
@@ -234,10 +241,17 @@ namespace vcml { namespace debugging {
     }
 
     vspserver::~vspserver() {
+        remove(m_announce.c_str());
         session = NULL;
     }
 
     void vspserver::start() {
+        // Create announce file
+        remove(m_announce.c_str());
+        ofstream of(m_announce.c_str());
+        of << "localhost:" << std::dec << get_port() << ":" << username()
+           << ":" << progname() << std::endl;
+
         // Finish elaboration first before processing commands
         sc_start(SC_ZERO_TIME);
         log_info("vspserver listening on port %d", (int)get_port());
@@ -266,6 +280,10 @@ namespace vcml { namespace debugging {
             sc_pause();
             disconnect();
         }
+    }
+
+    void vspserver::cleanup() {
+        remove(m_announce.c_str());
     }
 
     void vspserver::handle_connect(const char* peer) {

@@ -35,6 +35,8 @@ namespace vcml { namespace debugging {
 
     class vspserver: public rspserver {
     private:
+        string m_announce;
+
         string handle_none(const char* command);
         string handle_step(const char* command);
         string handle_cont(const char* command);
@@ -55,6 +57,7 @@ namespace vcml { namespace debugging {
 
         void start();
         void interrupt();
+        void cleanup();
 
         virtual void handle_connect(const char* peer) override;
         virtual void handle_disconnect() override;

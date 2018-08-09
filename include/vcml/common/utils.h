@@ -34,6 +34,10 @@ namespace vcml {
     string vmkstr(const char* format, va_list args);
     string concat(const string& a, const string& b);
     string dirname(const string& filename);
+    string tempdir();
+
+    string progname();
+    string username();
 
     double realtime();
 

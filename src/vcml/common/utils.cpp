@@ -72,6 +72,29 @@ namespace vcml {
             [] (int ch) { return !std::isspace(ch); }).base(), s.end());
     }
 
+    string tempdir() {
+#ifdef _WIN32
+        // ToDo: implement tempdir for windows
+#else
+        return "/tmp/";
+#endif
+    }
+
+    string progname() {
+        char path[PATH_MAX];
+        memset(path, 0, sizeof(path));
+        if (readlink("/proc/self/exe", path, sizeof(path)) < 0)
+            return "unknown";
+        return path;
+    }
+
+    string username() {
+        char uname[255];
+        if (getlogin_r(uname, sizeof(uname)))
+            return "unknown";
+        return uname;
+    }
+
     double realtime() {
         struct timespec tp;
         clock_gettime(CLOCK_REALTIME, &tp);
