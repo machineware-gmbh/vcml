@@ -138,6 +138,10 @@ namespace vcml { namespace debugging {
         return mkstr("%4.12f", sc_time_stamp().to_seconds());
     }
 
+    string vspserver::handle_dcyc(const char* command) {
+        return mkstr("%llu", sc_delta_count());
+    }
+
     string vspserver::handle_rdgq(const char* command) {
         sc_time quantum = tlm::tlm_global_quantum::instance().get();
         return mkstr("%4.12f", quantum.to_seconds());
@@ -233,6 +237,7 @@ namespace vcml { namespace debugging {
         register_handler("i", std::bind(&vspserver::handle_info, this, _1));
         register_handler("e", std::bind(&vspserver::handle_exec, this, _1));
         register_handler("t", std::bind(&vspserver::handle_time, this, _1));
+        register_handler("d", std::bind(&vspserver::handle_dcyc, this, _1));
         register_handler("q", std::bind(&vspserver::handle_rdgq, this, _1));
         register_handler("Q", std::bind(&vspserver::handle_wrgq, this, _1));
         register_handler("a", std::bind(&vspserver::handle_geta, this, _1));
