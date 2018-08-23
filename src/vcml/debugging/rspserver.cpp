@@ -261,14 +261,17 @@ namespace vcml { namespace debugging {
         while (m_running) try {
             disconnect();
             listen();
-            while (is_connected()) {
+            while (is_connected()) try {
                 string command = recv_packet();
                 string response = handle_command(command);
                 if (is_connected())
                     send_packet(response);
+            } catch (vcml::report& r) {
+                log_debug(r.message()); // not an error, e.g. disconnect
             }
         } catch (vcml::report& r) {
-            log_debug(r.message()); // not an error, e.g. disconnect
+            logger::log(r);
+            return;
         }
     }
 
