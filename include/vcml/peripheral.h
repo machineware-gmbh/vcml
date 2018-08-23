@@ -43,7 +43,7 @@ namespace vcml {
     private:
         vcml_endian m_endian;
         vector<reg_base*> m_registers;
-        backend* m_backend;
+        vector<backend*> m_backends;
 
         // disabled
         peripheral();
@@ -53,7 +53,7 @@ namespace vcml {
         property<sc_time> read_latency;
         property<sc_time> write_latency;
 
-        property<string> backend_type;
+        property<string> backends;
 
 
         inline vcml_endian get_endian() const { return m_endian; }
@@ -77,10 +77,15 @@ namespace vcml {
 
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
 
-        backend* get_backend();
+        bool   bepeek();
+        size_t beread(void* buffer, size_t size);
+        size_t bewrite(const void* buffer, size_t size);
+
+        template <typename T> size_t beread(T& val);
+        template <typename T> size_t bewrite(const T& val);
 
         virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
-                                               int flags);
+                                       int flags);
         virtual unsigned int receive(tlm_generic_payload& tx, int flags);
         virtual tlm_response_status read  (const range& addr, void* data,
                                            int flags);
@@ -96,9 +101,14 @@ namespace vcml {
         return m_endian == VCML_ENDIAN_BIG;
     }
 
-    inline backend* peripheral::get_backend() {
-        VCML_ERROR_ON(!m_backend, "no backend available");
-        return m_backend;
+    template <typename T>
+    inline size_t peripheral::beread(T& val) {
+        return beread(&val, sizeof(T));
+    }
+
+    template <typename T>
+    inline size_t peripheral::bewrite(const T& val) {
+        return bewrite(&val, sizeof(T));
     }
 
 }

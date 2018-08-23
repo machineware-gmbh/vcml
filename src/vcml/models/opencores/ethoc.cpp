@@ -224,28 +224,33 @@ namespace vcml { namespace opencores {
             return false;
         }
 
-        size_t size = get_backend()->write(buffer, length);
-        if (size != length) {
-            log_warn("tx error, %d bytes requested, %d bytes sent",
-                     length, size);
-            return false;
+        stringstream ss;
+        for (unsigned int i = 0; i < length; i++) {
+            ss << std::hex << std::setw(2) << std::setfill('0')
+               << (int)buffer[i] << " ";
         }
 
+        log_debug("sending packet:");
+        log_debug(ss.str().c_str());
+
+        bewrite(buffer, length);
         return true;
     }
 
     bool ethoc::rx_packet(u32 addr, u32& size) {
-        size = 0;
-        backend* be = get_backend();
-        if (!be || !be->peek())
+        unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
+        size_t length = beread(buffer, sizeof(buffer));
+        if (length == 0)
             return true;
 
-        unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
-        size_t length = be->read(&buffer, sizeof(buffer));
-        if (length > ETH_MAX_PACKET_LEN) {
-            log_warn("packet size %d exceeds max, ignored", length);
-            return false;
+        stringstream ss;
+        for (unsigned int i = 0; i < length; i++) {
+            ss << std::hex << std::setw(2) << std::setfill('0')
+               << (int)buffer[i] << " ";
         }
+
+        log_debug("received packet:");
+        log_debug(ss.str().c_str());
 
         // promiscuous mode disabled, check destination HW address
         if (!(MODER & MODER_PRO)) {

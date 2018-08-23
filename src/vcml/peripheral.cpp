@@ -26,18 +26,22 @@ namespace vcml {
         component(nm),
         m_endian(endian),
         m_registers(),
-        m_backend(NULL),
+        m_backends(),
         read_latency("read_latency", rlatency),
         write_latency("write_latency", wlatency),
-        backend_type("backend", "null") {
-        m_backend = backend::create(backend_type, "backend");
-        if (!m_backend)
-            m_backend = backend::create("null", "backend");
+        backends("backends", "null") {
+        vector<string> types = split(backends.get(), ' ');
+        for (size_t i = 0; i < types.size(); i++) {
+            stringstream ss; ss << "backend" << i;
+            backend* be = backend::create(types[i], ss.str());
+            if (be != NULL)
+                m_backends.push_back(be);
+        }
     }
 
     peripheral::~peripheral() {
-        if (m_backend)
-            delete m_backend;
+        for (backend* be : m_backends)
+            delete be;
     }
 
     void peripheral::add_register(reg_base* reg) {
@@ -64,6 +68,26 @@ namespace vcml {
     void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
                              vcml_access acs) {
         component::map_dmi(ptr, start, end, acs, read_latency, write_latency);
+    }
+
+    bool peripheral::bepeek() {
+        for (backend* be : m_backends)
+            if (be->peek())
+                return true;
+        return false;
+    }
+
+    size_t peripheral::beread(void* buffer, size_t size) {
+        for (backend* be : m_backends)
+            if (be->peek())
+                return be->read(buffer, size);
+        return 0;
+    }
+
+    size_t peripheral::bewrite(const void* buffer, size_t size) {
+        for (backend* be : m_backends)
+            be->write(buffer, size);
+        return size;
     }
 
     unsigned int peripheral::transport(tlm_generic_payload& tx, sc_time& dt,

@@ -42,6 +42,9 @@ namespace vcml { namespace generic {
         bool m_rx_ready;
         bool m_tx_empty;
 
+        size_t    m_size;
+        queue<u8> m_fifo;
+
         void update();
         void poll();
 

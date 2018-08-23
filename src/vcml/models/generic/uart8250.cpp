@@ -28,6 +28,8 @@ namespace vcml { namespace generic {
         m_divisor_lsb(0),
         m_rx_ready(false),
         m_tx_empty(true),
+        m_size(1),
+        m_fifo(),
         THR("THR", 0x0, 0x00),
         IER("IER", 0x1, 0x00),
         IIR("IIR", 0x2, 0x00),
@@ -70,7 +72,15 @@ namespace vcml { namespace generic {
 
 
     void uart8250::update() {
-        if ((m_rx_ready = get_backend()->peek()))
+        u8 val;
+        if (beread(val)) {
+            if (m_fifo.size() < m_size)
+                m_fifo.push(val);
+            else
+                log_debug("FIFO full, dropping character 0x%02x", (int)val);
+        }
+
+        if ((m_rx_ready = !m_fifo.empty()))
             LSR |= LSR_DR;
         else
             LSR &= ~LSR_DR;
@@ -97,11 +107,11 @@ namespace vcml { namespace generic {
         if (LCR & LCR_DLAB)
             return m_divisor_lsb;
 
-        if (!get_backend()->peek())
+        if (m_fifo.empty())
             return 0;
 
-        u8 val = 0;
-        get_backend()->read(val);
+        u8 val = m_fifo.front();
+        m_fifo.pop();
         update();
         return val;
     }
@@ -133,7 +143,7 @@ namespace vcml { namespace generic {
             return THR;
         }
 
-        get_backend()->write(val);
+        bewrite(val);
         m_tx_empty = true;
         update();
         return val;

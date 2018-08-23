@@ -28,14 +28,10 @@ namespace vcml { namespace arm {
             return;
         }
 
-        backend* be = get_backend();
-        if (be && be->peek()) {
-            if (m_fifo.size() < m_fifo_size) {
-                u8 val = 0;
-                be->read(val);
+        u8 val;
+        if (beread(val)) {
+            if (m_fifo.size() < m_fifo_size)
                 m_fifo.push((u16)val);
-            }
-
             update();
         }
 
@@ -87,7 +83,7 @@ namespace vcml { namespace arm {
         // Upper 8 bits of DR are used for encoding transmission errors, but
         // since those are not simulated, we just set them to zero.
         u8 val8 = val & 0xFF;
-        get_backend()->write(val8);
+        bewrite(val8);
         RIS |= RIS_TX;
         update();
         return val8;
