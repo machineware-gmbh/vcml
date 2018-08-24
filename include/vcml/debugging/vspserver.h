@@ -24,6 +24,7 @@
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 #include "vcml/common/aio.h"
+#include "vcml/common/version.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
@@ -49,6 +50,7 @@ namespace vcml { namespace debugging {
         string handle_geta(const char* command);
         string handle_seta(const char* command);
         string handle_quit(const char* command);
+        string handle_vers(const char* command);
 
         void run_interruptible(const sc_time& duration);
 

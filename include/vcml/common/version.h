@@ -19,7 +19,7 @@
 #ifndef VCML_VERSION_H
 #define VCML_VERSION_H
 
-#define VCML_VERSION 20180301
+#define VCML_VERSION 20180824
 
 #define VCML_VERSION_MAJOR 1
 #define VCML_VERSION_MINOR 0
@@ -31,6 +31,7 @@
 #define VCML_RELEASE_STRING VCML_STRINGIFY(VCML_VERSION)
 #define VCML_VERSION_STRING VCML_STRINGIFY(VCML_VERSION_MAJOR) "." \
                             VCML_STRINGIFY(VCML_VERSION_MINOR) "." \
-                            VCML_STRINGIFY(VCML_VERSION_PATCH)
+                            VCML_STRINGIFY(VCML_VERSION_PATCH) "-" \
+                            VCML_RELEASE_STRING
 
 #endif

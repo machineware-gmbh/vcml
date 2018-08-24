@@ -200,6 +200,13 @@ namespace vcml { namespace debugging {
         return "OK";
     }
 
+    string vspserver::handle_vers(const char* command) {
+        stringstream ss;
+        ss << "sysc:" << SC_VERSION << ";"
+           << "vcml:" << VCML_VERSION_STRING << ";";
+        return ss.str();
+    }
+
     static void do_interrupt(int fd, int event) {
         assert(session != NULL);
         session->interrupt();
@@ -236,6 +243,7 @@ namespace vcml { namespace debugging {
         register_handler("a", std::bind(&vspserver::handle_geta, this, _1));
         register_handler("A", std::bind(&vspserver::handle_seta, this, _1));
         register_handler("x", std::bind(&vspserver::handle_quit, this, _1));
+        register_handler("v", std::bind(&vspserver::handle_vers, this, _1));
     }
 
     vspserver::~vspserver() {
