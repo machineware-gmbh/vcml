@@ -201,6 +201,8 @@ namespace vcml {
     }
 
     inline command_base* component::get_command(const string& name) {
+        if (!stl_contains(m_commands, name))
+            return NULL;
         return m_commands[name];
     }
 

@@ -67,10 +67,8 @@ namespace vcml { namespace debugging {
         if (args.size() < 2) {
             stringstream info;
             info << "kind:root,";
-
-            const vector<sc_object*>& v = sc_core::sc_get_top_level_objects();
-            for (unsigned int i = 0; i < v.size(); i++)
-                info << "child:" << v[i]->basename() << ",";
+            for (const sc_object* obj : sc_core::sc_get_top_level_objects())
+                info << "child:" << obj->basename() << ",";
             return info.str();
         }
 
@@ -84,25 +82,20 @@ namespace vcml { namespace debugging {
         info << "kind:" << obj->kind() << ",";
 
         // List all child objects
-        const vector<sc_object*>& children = obj->get_child_objects();
-        for (unsigned int i = 0; i < children.size(); i++)
-            info << "child:" << children[i]->basename() << ",";
+        for (const sc_object* child : obj->get_child_objects())
+            info << "child:" << child->basename() << ",";
 
         // List all attributes
+        for (const sc_attr_base* attr : obj->attr_cltn())
+            info << "attr:" << attr->name() << ",";
         sc_core::sc_attr_cltn::const_iterator it;
-        const sc_core::sc_attr_cltn& attributes = obj->attr_cltn();
-        for (it = attributes.begin(); it != attributes.end(); it++)
-            info << "attr:" << (*it)->name() << ",";
 
         // List all commands
         component* mod = dynamic_cast<component*>(obj);
         if (mod != NULL) {
-            vector<command_base*> commands = mod->get_commands();
-            for (unsigned int i = 0; i < commands.size(); i++) {
-                info << "cmd:";
-                info << commands[i]->name() << ":";
-                info << commands[i]->argc() << ":";
-                info << commands[i]->desc() << ",";
+            for (const command_base* cmd : mod->get_commands()) {
+                info << "cmd:" << cmd->name() << ":" << cmd->argc()
+                     << ":" << cmd->desc() << ",";
             }
         }
 

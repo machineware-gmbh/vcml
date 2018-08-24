@@ -43,14 +43,13 @@ namespace vcml {
     }
 
     bool component::cmd_clist(const vector<string>& args, ostream& os) {
-        std::map<string, command_base*>::iterator it;
-        for (it = m_commands.begin(); it != m_commands.end(); it++)
-            os << it->first << ",";
+        for (auto cmd : m_commands)
+            os << cmd.first << ",";
         return true;
     }
 
     bool component::cmd_cinfo(const vector<string>& args, ostream& os) {
-        command_base* cmd = m_commands[args[0]];
+        command_base* cmd = get_command(args[0]);
         if (cmd == NULL) {
             os << "no such command: " << args[0];
             return false;
@@ -150,7 +149,7 @@ namespace vcml {
 
     bool component::execute(const string& name, const vector<string>& args,
                             ostream& os) {
-        command_base* cmd = m_commands[name];
+        command_base* cmd = get_command(name);
         if (!cmd) {
             os << "command '" << name << "' not supported";
             return false;
@@ -168,7 +167,8 @@ namespace vcml {
     vector<command_base*> component::get_commands() const {
         vector<command_base*> list;
         for (auto cmd : m_commands)
-            list.push_back(cmd.second);
+            if (cmd.second != NULL)
+                list.push_back(cmd.second);
         return list;
     }
 
