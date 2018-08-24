@@ -268,6 +268,7 @@ namespace vcml { namespace debugging {
                     send_packet(response);
             } catch (vcml::report& r) {
                 log_debug(r.message()); // not an error, e.g. disconnect
+                break;
             }
         } catch (vcml::report& r) {
             logger::log(r);
