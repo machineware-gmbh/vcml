@@ -70,8 +70,6 @@ namespace vcml {
     }
 
     void backend_tcp::listen() {
-        disconnect();
-
         socklen_t len = sizeof(m_client);
         if ((m_fd = accept(m_fd_server,
                            (struct sockaddr *)&m_client, &len)) < 0)
@@ -84,8 +82,7 @@ namespace vcml {
     }
 
     void backend_tcp::listen_async() {
-        disconnect();
-
+        VCML_ERROR_ON(m_fd != -1, "previous connection not closed");
         aio_notify(m_fd_server, std::bind(&backend_tcp::handle_accept, this,
                    std::placeholders::_1, std::placeholders::_2), AIO_ONCE);
     }
@@ -98,7 +95,21 @@ namespace vcml {
     }
 
     size_t backend_tcp::peek() {
-        return m_fd < 0 ? 0 : backend::peek(m_fd);
+        if (m_fd < 0)
+            return 0;
+
+        char buf[32];
+        int nbytes = recv(m_fd, buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT);
+        if (nbytes > 0)
+            return nbytes;
+        if (nbytes == 0) {
+            disconnect();
+            listen_async();
+            return 0;
+        }
+
+        VCML_ERROR_ON(errno != EAGAIN, "unexpected recv result");
+        return 0;
     }
 
     size_t backend_tcp::read(void* buf, size_t len) {
@@ -106,8 +117,11 @@ namespace vcml {
             return 0;
 
         size_t numread = full_read(m_fd, buf, len);
-        if (numread != len)
+        if (numread != len) {
+            disconnect();
             listen_async();
+        }
+
         return numread;
     }
 
@@ -116,8 +130,11 @@ namespace vcml {
             return len;
 
         size_t written = full_write(m_fd, buf, len);
-        if (written != len)
+        if (written != len) {
+            disconnect();
             listen_async();
+        }
+
         return written;
     }
 
