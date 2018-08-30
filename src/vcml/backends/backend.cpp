@@ -103,10 +103,8 @@ namespace vcml {
         size_t numread = 0;
         while (numread < len) {
             ssize_t res = ::read(fd, ptr + numread, len - numread);
-            if (res == 0)
+            if (res <= 0)
                 return numread;
-            if (res < 0)
-                VCML_ERROR(strerror(errno));
             numread += res;
         }
 
@@ -119,10 +117,8 @@ namespace vcml {
         size_t written = 0;
         while (written < len) {
             ssize_t res = ::write(fd, ptr + written, len - written);
-            if (res == 0)
+            if (res <= 0)
                 return written;
-            if (res < 0)
-                VCML_ERROR(strerror(errno));
             written += res;
         }
 
