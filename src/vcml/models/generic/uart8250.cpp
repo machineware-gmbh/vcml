@@ -72,13 +72,19 @@ namespace vcml { namespace generic {
 
 
     void uart8250::update() {
-        u8 val;
-        if (beread(val)) {
-            if (m_fifo.size() < m_size)
-                m_fifo.push(val);
-            else
-                log_debug("FIFO full, dropping character 0x%02x", (int)val);
-        }
+        u8 val; // only read data if there is room in the FIFO
+        if ((m_fifo.size() < m_size) && beread(val))
+            m_fifo.push(val);
+
+//      The following code is more accurate for a real UART, but causes data
+//      to be dropped if the processor does not empty the FIFO quick enough
+//
+//        if (beread(val)) {
+//            if (m_fifo.size() < m_size)
+//                m_fifo.push(val);
+//            else
+//                log_warn("FIFO full, dropping character 0x%02x", (int)val);
+//        }
 
         if ((m_rx_ready = !m_fifo.empty()))
             LSR |= LSR_DR;
