@@ -25,6 +25,7 @@
 #include "vcml/common/report.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
 
 namespace vcml {
 
@@ -38,6 +39,8 @@ namespace vcml {
         static std::map<string, backend_cfn> types;
 
     public:
+        property<log_level> loglvl;
+
         backend(const sc_module_name& nm = "backend");
         virtual ~backend();
 
@@ -56,6 +59,23 @@ namespace vcml {
         inline size_t write(const T& val) {
             return write(&val, sizeof(T));
         }
+
+#define VCML_DEFINE_LOG(log_name, level)                  \
+        inline void log_name(const char* format, ...) {       \
+            if (!logger::would_log(level) || level > loglvl)  \
+                return;                                       \
+            va_list args;                                     \
+            va_start(args, format);                           \
+            logger::log(level, name(), vmkstr(format, args)); \
+            va_end(args);                                     \
+        }
+
+        VCML_DEFINE_LOG(log_error, LOG_ERROR);
+        VCML_DEFINE_LOG(log_warn, LOG_WARN);
+        VCML_DEFINE_LOG(log_warning, LOG_WARN);
+        VCML_DEFINE_LOG(log_info, LOG_INFO);
+        VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
+#undef VCML_DEFINE_LOG
 
         static int register_backend_type(const string& type, backend_cfn fn);
 
