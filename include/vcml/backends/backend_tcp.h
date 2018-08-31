@@ -55,8 +55,8 @@ namespace vcml {
 
         VCML_KIND(backend_tcp);
 
-        void listen();
-        void listen_async();
+        void accept();
+        void accept_async();
 
         void disconnect();
 

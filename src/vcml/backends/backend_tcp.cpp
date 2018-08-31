@@ -20,11 +20,27 @@
 
 namespace vcml {
 
+    static void set_nodelay(int fd) {
+        int err, one = 1;
+        if ((err = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+                             (const void*)&one, sizeof(one)))) {
+            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(err));
+        }
+    }
+
+    static void set_blocking(int fd, bool blocking) {
+        int flags = fcntl(fd, F_GETFL, 0);
+        VCML_ERROR_ON(flags < 0, "fcntl failed: %s", strerror(flags));
+        flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+        int err = fcntl(fd, F_SETFL, flags);
+        VCML_ERROR_ON(err < 0, "fcntl failed: %s", strerror(err));
+    }
+
     void backend_tcp::handle_accept(int fd, int events) {
         if (fd != m_fd_server)
             return;
 
-        listen();
+        accept();
     }
 
     u16 backend_tcp::default_port = 34444;
@@ -59,7 +75,7 @@ namespace vcml {
         if ((err = ::listen(m_fd_server, 1)))
             VCML_ERROR("listening for connections failed: %s", strerror(err));
 
-        listen_async();
+        accept_async();
     }
 
     backend_tcp::~backend_tcp() {
@@ -69,26 +85,35 @@ namespace vcml {
             close(m_fd_server);
     }
 
-    void backend_tcp::listen() {
-        socklen_t len = sizeof(m_client);
-        if ((m_fd = accept(m_fd_server,
-                           (struct sockaddr *)&m_client, &len)) < 0)
-            VCML_ERROR("failed to accept connection: %s", strerror(m_fd));
+    void backend_tcp::accept() {
+        log_debug("listening for incoming connections");
 
-        int err, one = 1;
-        if ((err = setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
-                              (const void*)&one, sizeof(one))))
-            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(err));
+        socklen_t len = sizeof(m_client);
+        m_fd = ::accept(m_fd_server, (struct sockaddr *)&m_client, &len);
+        if (m_fd < 0 && errno == EAGAIN)
+            return;
+
+        VCML_ERROR_ON(m_fd < 0, "accept failed: %s", strerror(errno));
+        set_nodelay(m_fd);
+        log_debug("connected");
     }
 
-    void backend_tcp::listen_async() {
-        VCML_ERROR_ON(m_fd != -1, "previous connection not closed");
-        aio_notify(m_fd_server, std::bind(&backend_tcp::handle_accept, this,
-                   std::placeholders::_1, std::placeholders::_2), AIO_ONCE);
+    void backend_tcp::accept_async() {
+        VCML_ERROR_ON(m_fd >= 0, "previous connection not closed");
+        set_blocking(m_fd_server, false);
+        accept();
+        set_blocking(m_fd_server, true);
+
+        if (m_fd < 0) {
+            log_debug("accepting asynchronously");
+            aio_notify(m_fd_server, std::bind(&backend_tcp::handle_accept, this,
+                       std::placeholders::_1, std::placeholders::_2), AIO_ONCE);
+        }
     }
 
     void backend_tcp::disconnect() {
         if (m_fd > -1) {
+            log_debug("disconnected");
             close(m_fd);
             m_fd = -1;
         }
@@ -104,7 +129,7 @@ namespace vcml {
             return nbytes;
         if (nbytes == 0) {
             disconnect();
-            listen_async();
+            accept_async();
             return 0;
         }
 
@@ -119,7 +144,7 @@ namespace vcml {
         size_t numread = full_read(m_fd, buf, len);
         if (numread != len) {
             disconnect();
-            listen_async();
+            accept_async();
         }
 
         return numread;
@@ -132,7 +157,7 @@ namespace vcml {
         size_t written = full_write(m_fd, buf, len);
         if (written != len) {
             disconnect();
-            listen_async();
+            accept_async();
         }
 
         return written;
