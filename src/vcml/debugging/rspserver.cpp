@@ -261,7 +261,7 @@ namespace vcml { namespace debugging {
         while (m_running) try {
             disconnect();
             listen();
-            while (is_connected()) try {
+            while (m_running && is_connected()) try {
                 string command = recv_packet();
                 string response = handle_command(command);
                 if (is_connected())

@@ -221,6 +221,22 @@ namespace vcml { namespace debugging {
             sc_start();
         aio_cancel(get_connection_fd());
         thctl_exit_critical();
+
+        switch (sc_core::sc_curr_simcontext->sim_status()) {
+        case sc_core::SC_SIM_ERROR:
+            send_packet(ERR_INTERNAL);
+            disconnect();
+            stop();
+            break;
+        case sc_core::SC_SIM_USER_STOP:
+            send_packet("STOP");
+            disconnect();
+            stop();
+            break;
+        case sc_core::SC_SIM_OK:
+        default:
+            break;
+        }
     }
 
     vspserver::vspserver(u16 port):
