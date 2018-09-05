@@ -65,6 +65,11 @@ namespace vcml {
         return true;
     }
 
+    bool component::cmd_abort(const vector<string>& args, ostream& os) {
+        std::abort();
+        return true;
+    }
+
     void component::do_reset() {
         reset();
         for (auto obj : get_child_objects()) {
@@ -100,6 +105,8 @@ namespace vcml {
                          "returns information on a given command");
         register_command("reset", 0 ,this, &component::cmd_reset,
                          "resets this component");
+        register_command("abort", 0, this, &component::cmd_abort,
+                         "immediately aborts the simulation");
     }
 
     component::~component() {

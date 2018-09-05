@@ -59,6 +59,7 @@ namespace vcml {
         bool cmd_clist(const vector<string>& args, ostream& os);
         bool cmd_cinfo(const vector<string>& args, ostream& os);
         bool cmd_reset(const vector<string>& args, ostream& os);
+        bool cmd_abort(const vector<string>& args, ostream& os);
 
         void do_reset();
 
