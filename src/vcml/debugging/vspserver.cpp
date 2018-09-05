@@ -314,7 +314,6 @@ namespace vcml { namespace debugging {
 
     void vspserver::handle_disconnect() {
         log_info("vspserver listening on port %d", (int)get_port());
-
     }
 
 }}

@@ -91,7 +91,8 @@ namespace vcml { namespace debugging {
             m_fd_server = -1;
         }
 
-        pthread_cancel(m_thread);
+        if (m_thread)
+            pthread_cancel(m_thread);
     }
 
     void rspserver::send_packet(const char* format, ...) {
