@@ -34,6 +34,16 @@ namespace vcml { namespace debugging {
         return result & 0xff;
     }
 
+    static inline string escape(const string& s) {
+        stringstream ss;
+        for (char c : s) {
+            if (c == '$' || c == '#' || c == '\\')
+                ss << '\\';
+            ss << c;
+        }
+        return ss.str();
+    }
+
     static inline int char2int(char c) {
         return ((c >= 'a') && (c <= 'f')) ? c - 'a' + 10 :
                ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 :
@@ -96,36 +106,32 @@ namespace vcml { namespace debugging {
     }
 
     void rspserver::send_packet(const char* format, ...) {
-        VCML_ERROR_ON(m_fd == -1, "no connection established");
-
-        char packet[VCML_RSP_MAX_PACKET_SIZE] = { 0 };
-        packet[0] = '$';
-
         va_list args;
         va_start(args, format);
-        int lim = sizeof(packet) - 4;
-        int len = std::vsnprintf(packet + 1, sizeof(packet) - 5, format, args);
-        if (len > lim) {
-            log_warning("rsp packet too long, truncating %d bytes", len - lim);
-            len = lim;
-        }
+        send_packet(vmkstr(format, args));
         va_end(args);
+    }
 
-        int sum = checksum(packet + 1);
-        packet[++len] = '#';
-        packet[++len] = int2char((sum >> 4) & 0xf);
-        packet[++len] = int2char((sum >> 0) & 0xf);
-        packet[++len] = '\0';
+    void rspserver::send_packet(const string& s) {
+        VCML_ERROR_ON(m_fd == -1, "no connection established");
+
+        string esc = escape(s);
+        int sum = checksum(esc.c_str());
+        stringstream ss;
+        ss << "$" << esc << "#"
+           << int2char((sum >> 4) & 0xf)
+           << int2char((sum >> 0) & 0xf);
 
         char ack;
+        int len = ss.str().length();
         int attempts = 10;
 
         do {
             if (attempts-- == 0)
                 VCML_ERROR("giving up sending packet");
             if (m_echo)
-                log_debug("sending packet '%s'", packet);
-            if (send(m_fd, packet, len, 0) != len)
+                log_debug("sending packet '%s'", ss.str().c_str());
+            if (send(m_fd, ss.str().c_str(), len, 0) != len)
                 VCML_ERROR("error sending packet: %s", strerror(errno));
             ack = recv_char();
             if (m_echo)
@@ -133,26 +139,21 @@ namespace vcml { namespace debugging {
         } while (ack != '+');
     }
 
-    void rspserver::send_packet(const string& s) {
-        send_packet(s.c_str());
-    }
-
     string rspserver::recv_packet() {
-        unsigned int idx = 0, checksum = 0;
-        char packet[VCML_RSP_MAX_PACKET_SIZE];
-        while (idx < VCML_RSP_MAX_PACKET_SIZE) {
+        VCML_ERROR_ON(m_fd == -1, "no connection established");
+        unsigned int checksum = 0;
+        stringstream ss;
+        while (true) {
             char ch = recv_char();
             switch (ch) {
             case '$':
                 checksum = 0;
-                idx = 0;
+                ss.str("");
                 break;
 
             case '#': {
-                packet[idx++] = '\0';
-
                 if (m_echo)
-                    log_debug("received packet '%s'", packet);
+                    log_debug("received packet '%s'", ss.str().c_str());
 
                 unsigned int refsum = 0;
                 refsum |= char2int(recv_char()) << 4;
@@ -161,7 +162,8 @@ namespace vcml { namespace debugging {
                 if (refsum != checksum) {
                     log_debug("checksum mismatch %d != %d", refsum, checksum);
                     send_char('-');
-                    checksum = idx = 0;
+                    checksum = 0;
+                    ss.str("");
                     break;
                 }
 
@@ -169,17 +171,22 @@ namespace vcml { namespace debugging {
                     log_debug("sending ack '+'");
 
                 send_char('+');
-                return packet;
+                return ss.str();
             }
+
+            case '\\':
+                checksum = (checksum + ch) & 0xff;
+                ch = recv_char();
+                // no break
 
             default:
                 checksum = (checksum + ch) & 0xff;
-                packet[idx++] = ch;
+                ss << ch;
                 break;
             }
         }
 
-        VCML_ERROR("rsp packet length exceeded");
+        VCML_ERROR("error receiving rsp packet");
         return "";
     }
 
