@@ -68,6 +68,7 @@ namespace vcml {
         bool cmd_lsbp(const vector<string>& args, ostream& os);
         bool cmd_rmbp(const vector<string>& args, ostream& os);
         bool cmd_disas(const vector<string>& args, ostream& os);
+        bool cmd_v2p(const vector<string>& args, ostream& os);
 
         void processor_thread();
         void irq_handler(unsigned int irq);

@@ -55,15 +55,14 @@ namespace vcml {
     }
 
     bool processor::cmd_read(const vector<string>& args, ostream& os) {
-        if (args.size() < 1) {
-            os << "Usage: read <INSN|DATA> <start> <end>";
-            return false;
-        }
-
         master_socket& socket = (args[0] == "INSN") ? INSN : DATA;
         u64 start = strtoull(args[1].c_str(), NULL, 0);
         u64 end   = strtoull(args[2].c_str(), NULL, 0);
         u64 size  = end - start;
+        if (end <= start) {
+            os << "Usage: read <INSN|DATA> <start> <end>";
+            return false;
+        }
 
         tlm_response_status rs;
         unsigned char* data = new unsigned char [size];
@@ -250,9 +249,9 @@ namespace vcml {
             u64 phys = addr;
             if (virt) {
                 if (gdb_virt_to_phys(addr, phys))
-                    os << HEX(phys, 8) << " ";
+                    os << HEX(phys, 16) << " ";
                 else
-                    os << "????????";
+                    os << "????????????????";
             }
 
             u64 prev = addr;
@@ -264,12 +263,26 @@ namespace vcml {
                     os << HEX((int)insn[i], 2);
                 os << " " << disas;
             } else {
+                log_warn("debugger failed to read address 0x%016x", phys);
                 os << "????????";
                 addr += 4;
             }
         }
 
         return true;
+    }
+
+    bool processor::cmd_v2p(const vector<string>& args, ostream& os) {
+        u64 phys = -1;
+        u64 virt = strtoull(args[0].c_str(), NULL, 0);
+        bool success = gdb_virt_to_phys(virt, phys);
+        if (!success) {
+            os << "cannot translate virtual address 0x" << HEX(virt, 16);
+            return false;
+        } else {
+            os << "0x" << HEX(virt, 16) << " -> 0x" << HEX(phys, 16);
+            return true;
+        }
     }
 
     SC_HAS_PROCESS(processor);
@@ -377,6 +390,8 @@ namespace vcml {
             "lists all currently installed breakpoints");
         register_command("disas", 0, this, &processor::cmd_disas,
             "disassemble instructions from memory");
+        register_command("v2p", 1, this, &processor::cmd_v2p,
+            "translate a given virtual address to physical");
     }
 
     processor::~processor() {
