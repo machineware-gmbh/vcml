@@ -281,6 +281,14 @@ namespace vcml {
         return sv;
     }
 
+    bool is_debug_build() {
+#ifdef VCML_DEBUG
+        return true;
+#else
+        return false;
+#endif
+    }
+
 }
 
 std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian) {

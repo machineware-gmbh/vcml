@@ -203,7 +203,12 @@ namespace vcml { namespace debugging {
     string vspserver::handle_vers(const char* command) {
         stringstream ss;
         ss << "sysc:" << SC_VERSION << ","
-           << "vcml:" << VCML_VERSION_STRING << ",";
+           << "vcml:" << VCML_VERSION_STRING
+#ifdef VCML_DEBUG
+           << "-debug,";
+#else
+           << ",";
+#endif
         return ss.str();
     }
 

@@ -57,6 +57,8 @@ namespace vcml {
 
     vector<string> backtrace(unsigned int frames = 63, unsigned int skip = 1);
 
+    bool is_debug_build();
+
     template <typename PRED>
     inline vector<string> split(const string& str, PRED predicate) {
         vector<string> vec;
