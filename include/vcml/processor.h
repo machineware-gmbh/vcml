@@ -128,7 +128,7 @@ namespace vcml {
         inline tlm_response_status write (u64 addr, const T& data);
 
         virtual u64  gdb_num_registers() override;
-        virtual u64  gdb_register_width() override;
+        virtual u64  gdb_register_width(u64 idx) override;
 
         virtual bool gdb_read_reg(u64 idx, void* buf, u64 sz) override;
         virtual bool gdb_write_reg(u64 idx, const void* buf, u64 sz) override;

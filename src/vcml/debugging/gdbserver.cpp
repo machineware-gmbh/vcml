@@ -141,74 +141,96 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_reg_read(const char* command) {
         unsigned int reg;
-        if (sscanf(command, "p%x", &reg) != 1)
-            VCML_ERROR("malformed command '%s'", command);
+        if (sscanf(command, "p%x", &reg) != 1) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
         u64 nregs = m_stub->async_num_registers();
-        u64 regsz = m_stub->async_register_width();
-
-        if (reg >= nregs)
-            VCML_ERROR("malformed command '%s'", command);
-
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
-        if (!m_stub->async_read_reg(reg, buffer, regsz)) {
-            memset(buffer, 'x', regsz);
-            log_warn("gdb failed to read register %d", reg);
+        if (reg >= nregs) {
+            log_warn("register index out of bounds: %llu", reg);
+            return ERR_PARAM;
         }
+
+        u64 regsz = m_stub->async_register_width(reg);
+        if (regsz == 0)
+            return "xxxxxxxx"; // respond with "contents unknown"
+
+        u8* buffer = new u8[regsz];
+        bool ok = m_stub->async_read_reg(reg, buffer, regsz);
 
         stringstream ss;
         ss << std::hex << std::setfill('0');
-        for (unsigned int byte = 0; byte < regsz; byte++)
-            ss << std::setw(2) << (int)buffer[byte];
+        for (unsigned int byte = 0; byte < regsz; byte++) {
+            if (ok) ss << std::setw(2) << (int)buffer[byte];
+            else    ss << "xx";
+        }
 
+        delete [] buffer;
         return ss.str();
     }
 
     string gdbserver::handle_reg_write(const char* command) {
         unsigned int reg;
-        if (sscanf(command, "P%x=", &reg) != 1)
-            VCML_ERROR("malformed command '%s'", command);
+        if (sscanf(command, "P%x=", &reg) != 1) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
         u64 nregs = m_stub->async_num_registers();
-        u64 regsz = m_stub->async_register_width();
+        if (reg >= nregs) {
+            log_warn("register index out of bounds: %llu", reg);
+            return ERR_PARAM;
+        }
 
-        if (reg >= nregs)
-            VCML_ERROR("malformed command '%s'", command);
+        u64 regsz = m_stub->async_register_width(reg);
+        if (regsz == 0)
+            return "OK";
 
         const char* str = strchr(command, '=');
-        if (str == NULL)
-            VCML_ERROR("malformed command '%s'", command);
-        str++;
+        if (str == NULL) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
-        if (strlen(str) != regsz * 2)
-            VCML_ERROR("malformed command '%s'", command);
+        str++; // step beyond '='
+        if (strlen(str) != regsz * 2) { // need two hex chars per byte
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
+        u8* buffer = new u8[regsz];
         for (unsigned int byte = 0; byte < regsz; byte++, str += 2)
             buffer[byte] = char2int(str[0]) << 4 || char2int(str[1]);
 
-        if (!m_stub->async_write_reg(reg, buffer, regsz))
-            log_warn("gdb failed to write register %d", reg);
+        bool ok = m_stub->async_write_reg(reg, buffer, regsz);
+        delete [] buffer;
+        if (!ok) {
+            log_warn("gdb cannot write register %llu", reg);
+            return ERR_INTERNAL;
+        }
 
         return "OK";
     }
 
     string gdbserver::handle_reg_read_all(const char* command) {
         u64 nregs = m_stub->async_num_registers();
-        u64 regsz = m_stub->async_register_width();
-
         stringstream ss;
         ss << std::hex << std::setfill('0');
 
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
         for (u64 reg = 0; reg < nregs; reg++) {
-            if (!m_stub->async_read_reg(reg, buffer, regsz)) {
-                log_warn("gdb cannot read register %d", reg);
-                memset(buffer, 'x', regsz);
+            u64 regsz = m_stub->async_register_width(reg);
+            if (regsz == 0)
+                continue;
+
+            u8* buffer = new u8[regsz];
+            bool ok = m_stub->async_read_reg(reg, buffer, regsz);
+            for (u64 byte = 0; byte < regsz; byte++) {
+                if (ok) ss << std::setw(2) << (int)buffer[byte];
+                else    ss << "xx";
             }
 
-            for (u64 byte = 0; byte < regsz; byte++)
-                ss << std::setw(2) << (int)buffer[byte];
+            delete [] buffer;
         }
 
         return ss.str();
@@ -216,20 +238,27 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_reg_write_all(const char* command) {
         u64 nregs = m_stub->async_num_registers();
-        u64 regsz = m_stub->async_register_width();
+        u64 bufsz = 0;
+        for (u64 reg = 0; reg < nregs; reg++)
+            bufsz += m_stub->async_register_width(reg) * 2;
 
-        u64 bufsz = nregs * regsz * 2;
         const char* str = command + 1;
+        if (strlen(str) != bufsz) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
-        if (strlen(str) != bufsz)
-            VCML_ERROR("malformed command '%s'", command);
-
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
         for (u64 reg = 0; reg < nregs; reg++) {
+            u64 regsz = m_stub->async_register_width(reg);
+            if (regsz == 0)
+                continue;
+
+            u8* buffer = new u8[regsz];
             for (u64 byte = 0; byte < regsz; byte++, str += 2)
                 buffer[byte] = char2int(str[0]) << 4 || char2int(str[1]);
             if (!m_stub->async_write_reg(reg, buffer, regsz))
-                log_warn("gdb cannot write register %d", reg);
+                log_warn("gdb cannot write register %llu", reg);
+            delete [] buffer;
         }
 
         return "OK";

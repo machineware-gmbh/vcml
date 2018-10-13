@@ -31,7 +31,7 @@ namespace vcml { namespace debugging {
         virtual ~gdbstub() {}
 
         virtual u64  gdb_num_registers() = 0;
-        virtual u64  gdb_register_width() = 0;
+        virtual u64  gdb_register_width(u64 idx) = 0;
 
         virtual bool gdb_read_reg(u64 idx, void* buffer, u64 size) = 0;
         virtual bool gdb_write_reg(u64 idx, const void* buffer, u64 size) = 0;
@@ -52,7 +52,7 @@ namespace vcml { namespace debugging {
 
     public:
         u64  async_num_registers();
-        u64  async_register_width();
+        u64  async_register_width(u64 idx);
 
         bool async_read_reg(u64 idx, void* buffer, u64 size);
         bool async_write_reg(u64 idx, const void* buffer, u64 size);
@@ -76,9 +76,9 @@ namespace vcml { namespace debugging {
         return result;
     }
 
-    inline u64 gdbstub::async_register_width() {
+    inline u64 gdbstub::async_register_width(u64 idx) {
         thctl_enter_critical();
-        u64 result = gdb_register_width();
+        u64 result = gdb_register_width(idx);
         thctl_exit_critical();
         return result;
     }

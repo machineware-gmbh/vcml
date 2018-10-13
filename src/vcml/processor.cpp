@@ -444,7 +444,7 @@ namespace vcml {
         return 0;
     }
 
-    u64 processor::gdb_register_width() {
+    u64 processor::gdb_register_width(u64 idx) {
         return 4;
     }
 
