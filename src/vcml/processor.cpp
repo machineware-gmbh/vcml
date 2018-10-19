@@ -440,6 +440,26 @@ namespace vcml {
         /* interrupt ignored by default */
     }
 
+    void processor::log_bus_error(const master_socket& socket, vcml_access acs,
+                                  tlm_response_status rs, u64 addr, u64 size) {
+        string op;
+        switch (acs) {
+        case VCML_ACCESS_READ  : op = (&socket == &INSN) ? "fetch"
+                                                         : "read"; break;
+        case VCML_ACCESS_WRITE : op = "write"; break;
+        default: op = "memory"; break;
+        }
+
+        string status = tlm_response_to_str(rs);
+        log_debug("detected bus error during %s operation", op.c_str());
+        log_debug("  addr = 0x%016" PRIx64, addr);
+        log_debug("  pc   = 0x%016" PRIx64, get_program_counter());
+        log_debug("  sp   = 0x%016" PRIx64, get_stack_pointer());
+        log_debug("  size = " PRIu64 " bytes", size);
+        log_debug("  port = %s", DATA.name());
+        log_debug("  code = %s", status.c_str());
+    }
+
     u64 processor::gdb_num_registers() {
         return 0;
     }

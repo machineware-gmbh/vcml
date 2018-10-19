@@ -118,6 +118,9 @@ namespace vcml {
         virtual void interrupt(unsigned int irq, bool set);
         virtual void simulate(unsigned int&) = 0;
 
+        void log_bus_error(const master_socket& socket, vcml_access accss,
+                           tlm_response_status rs, u64 addr, u64 size);
+
         template <typename T>
         inline tlm_response_status fetch (u64 addr, T& data);
 
@@ -156,48 +159,24 @@ namespace vcml {
     template <typename T>
     inline tlm_response_status processor::fetch(u64 addr, T& data) {
         tlm_response_status rs = INSN.readw(addr, data);
-        if (failed(rs)) {
-            string status = tlm_response_to_str(rs);
-            log_error("detected bus error during fetch operation");
-            log_error("  addr = 0x%08" PRIx32, addr);
-            log_error("  pc   = 0x%08" PRIx32, get_program_counter());
-            log_error("  sp   = 0x%08" PRIx32, get_stack_pointer());
-            log_error("  size = %d bytes", sizeof(data));
-            log_error("  port = %s", INSN.name());
-            log_error("  code = %s", status.c_str());
-        }
+        if (failed(rs))
+            log_bus_error(INSN, VCML_ACCESS_READ, rs, addr, sizeof(T));
         return rs;
     }
 
     template <typename T>
     inline tlm_response_status processor::read(u64 addr, T& data) {
         tlm_response_status rs = DATA.readw(addr, data);
-        if (failed(rs)) {
-            string status = tlm_response_to_str(rs);
-            log_error("detected bus error during read operation");
-            log_error("  addr = 0x%08" PRIx32, addr);
-            log_error("  pc   = 0x%08" PRIx32, get_program_counter());
-            log_error("  sp   = 0x%08" PRIx32, get_stack_pointer());
-            log_error("  size = %d bytes", sizeof(data));
-            log_error("  port = %s", DATA.name());
-            log_error("  code = %s", status.c_str());
-        }
+        if (failed(rs))
+            log_bus_error(DATA, VCML_ACCESS_READ, rs, addr, sizeof(T));
         return rs;
     }
 
     template <typename T>
     inline tlm_response_status processor::write(u64 addr, const T& data) {
         tlm_response_status rs = DATA.writew(addr, data);
-        if (failed(rs)) {
-            string status = tlm_response_to_str(rs);
-            log_error("detected bus error during write operation");
-            log_error("  addr = 0x%08" PRIx32, addr);
-            log_error("  pc   = 0x%08" PRIx32, get_program_counter());
-            log_error("  sp   = 0x%08" PRIx32, get_stack_pointer());
-            log_error("  size = %d bytes", sizeof(data));
-            log_error("  port = %s", DATA.name());
-            log_error("  code = %s", status.c_str());
-        }
+        if (failed(rs))
+            log_bus_error(DATA, VCML_ACCESS_WRITE, rs, addr, sizeof(T));
         return rs;
     }
 
