@@ -201,7 +201,7 @@ namespace vcml { namespace debugging {
 
         u8* buffer = new u8[regsz];
         for (unsigned int byte = 0; byte < regsz; byte++, str += 2)
-            buffer[byte] = char2int(str[0]) << 4 || char2int(str[1]);
+            buffer[byte] = char2int(str[0]) << 4 | char2int(str[1]);
 
         bool ok = m_stub->async_write_reg(reg, buffer, regsz);
         delete [] buffer;
@@ -255,7 +255,7 @@ namespace vcml { namespace debugging {
 
             u8* buffer = new u8[regsz];
             for (u64 byte = 0; byte < regsz; byte++, str += 2)
-                buffer[byte] = char2int(str[0]) << 4 || char2int(str[1]);
+                buffer[byte] = char2int(str[0]) << 4 | char2int(str[1]);
             if (!m_stub->async_write_reg(reg, buffer, regsz))
                 log_warn("gdb cannot write register %llu", reg);
             delete [] buffer;
