@@ -25,17 +25,43 @@ extern "C" int sc_main(int argc, char** argv) {
 }
 
 TEST(elf, symbols) {
-    vcml::elf elf(sc_core::sc_argv()[0]);
-    EXPECT_TRUE(elf.is_64bit());
+    EXPECT_TRUE(sc_core::sc_argc() >= 2);
+    EXPECT_TRUE(sc_core::sc_argv()[1] != nullptr);
 
+    std::string path = std::string(sc_core::sc_argv()[1]) + "/test_elf.elf";
+    EXPECT_TRUE(vcml::file_exists(path));
+
+    vcml::elf elf(path);
+    EXPECT_EQ(elf.get_filename(), path);
+    EXPECT_EQ(elf.get_entry_point(), 0x24e0);
+    EXPECT_EQ(elf.get_endianess(), vcml::VCML_ENDIAN_BIG);
+
+    EXPECT_FALSE(elf.is_64bit());
     EXPECT_FALSE(elf.get_symbols().empty());
     EXPECT_FALSE(elf.get_sections().empty());
 
-    vcml::elf_symbol* sym = elf.get_symbol("sc_main");
-    EXPECT_NE(sym, nullptr);
-    EXPECT_EQ(sym->get_name(), "sc_main");
-    EXPECT_EQ(sym->get_type(), vcml::ELF_SYM_FUNCTION);
-    EXPECT_EQ(sym->get_virt_addr(), (vcml::u64)sc_main);
+    EXPECT_EQ(elf.get_num_sections(), 30);
+    EXPECT_EQ(elf.get_num_symbols(), 71);
+
+    EXPECT_NE(elf.get_section(".ctors"), nullptr);
+    EXPECT_NE(elf.get_section(".text"), nullptr);
+    EXPECT_NE(elf.get_section(".data"), nullptr);
+    EXPECT_NE(elf.get_section(".bss"), nullptr);
+    EXPECT_NE(elf.get_section(".init"), nullptr);
+    EXPECT_NE(elf.get_section(".symtab"), nullptr);
+    EXPECT_NE(elf.get_section(".strtab"), nullptr);
+
+    vcml::elf_symbol* main = elf.get_symbol("main");
+    EXPECT_NE(main, nullptr);
+    EXPECT_EQ(main->get_name(), "main");
+    EXPECT_EQ(main->get_type(), vcml::ELF_SYM_FUNCTION);
+    EXPECT_EQ(main->get_virt_addr(), 0x233c);
+
+    vcml::elf_symbol* ctors = elf.get_symbol("__CTOR_LIST__");
+    EXPECT_NE(ctors, nullptr);
+    EXPECT_EQ(ctors->get_name(), "__CTOR_LIST__");
+    EXPECT_EQ(ctors->get_type(), vcml::ELF_SYM_OBJECT);
+    EXPECT_EQ(ctors->get_virt_addr(), 0x4860);
 }
 
 TEST(elf, sections) {

@@ -32,6 +32,6 @@ foreach(test ${tests})
     add_dependencies(${test} vcml)
     target_link_libraries(${test} vcml ${GTEST_LIBRARIES} ${GMOCK_LIBRARIES}
                           ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES} -pthread)
-    add_test(NAME ${test} COMMAND ${test})
+    add_test(NAME ${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(${test} PROPERTIES TIMEOUT 30)
 endforeach()
