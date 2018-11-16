@@ -59,12 +59,11 @@ namespace vcml {
 
     bool is_debug_build();
 
-    template <typename PRED>
-    inline vector<string> split(const string& str, PRED predicate) {
+    inline vector<string> split(const string& str, std::function<int(int)> f) {
         vector<string> vec;
         string buf = "";
         for (auto ch : str) {
-            if (predicate(ch)) {
+            if (f(ch)) {
                 if (!buf.empty()) {
                     vec.push_back(buf);
                     buf = "";
@@ -78,8 +77,7 @@ namespace vcml {
         return vec;
     }
 
-    template <>
-    inline vector<string> split<char>(const string& str, char predicate) {
+    inline vector<string> split(const string& str, char predicate) {
         vector<string> vec;
         string buf = "";
         for (auto ch : str) {
