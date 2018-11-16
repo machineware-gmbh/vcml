@@ -227,7 +227,7 @@ namespace vcml { namespace debugging {
         aio_cancel(get_connection_fd());
         thctl_exit_critical();
 
-        switch (sc_core::sc_curr_simcontext->sim_status()) {
+        switch (sc_core::sc_get_curr_simcontext()->sim_status()) {
         case sc_core::SC_SIM_ERROR:
             send_packet(ERR_INTERNAL);
             disconnect();
