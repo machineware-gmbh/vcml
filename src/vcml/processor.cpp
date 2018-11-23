@@ -455,7 +455,7 @@ namespace vcml {
         log_debug("  addr = 0x%016" PRIx64, addr);
         log_debug("  pc   = 0x%016" PRIx64, get_program_counter());
         log_debug("  sp   = 0x%016" PRIx64, get_stack_pointer());
-        log_debug("  size = " PRIu64 " bytes", size);
+        log_debug("  size = %" PRIu64 " bytes", size);
         log_debug("  port = %s", DATA.name());
         log_debug("  code = %s", status.c_str());
     }
