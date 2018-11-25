@@ -131,6 +131,12 @@ namespace vcml { namespace generic {
         }
 
         u64 nbytes = file.tellg();
+        if (nbytes > size - offset) {
+            nbytes = size - offset;
+            log_warn("image file '%s' to big, truncating after %llu bytes",
+                     nbytes, binary.c_str());
+        }
+
         nbytes = min(nbytes, size - offset);
         file.seekg(0, std::ios::beg);
         file.read((char*)(m_memory + offset), nbytes);
