@@ -36,25 +36,26 @@ namespace vcml { namespace generic {
     class uart8250: public peripheral
     {
     private:
+        const size_t m_rx_size;
+        const size_t m_tx_size;
+
+        queue<u8> m_rx_fifo;
+        queue<u8> m_tx_fifo;
+
         u8 m_divisor_msb;
         u8 m_divisor_lsb;
 
-        bool m_rx_ready;
-        bool m_tx_empty;
-
-        size_t    m_size;
-        queue<u8> m_fifo;
-
+        void update_divisor();
         void update();
         void poll();
 
         u8 read_RBR();
         u8 read_IER();
         u8 read_IIR();
-        u8 read_LSR();
 
         u8 write_THR(u8 val);
         u8 write_IER(u8 val);
+        u8 write_LCR(u8 val);
         u8 write_FCR(u8 val);
 
         // disabled
@@ -72,17 +73,39 @@ namespace vcml { namespace generic {
             IER_RDA  = 1 << 0, /* enable receiver data available irq */
             IER_THRE = 1 << 1, /* enable transmitter hold empty irq */
             IER_RLS  = 1 << 2, /* enable receiver line status irq */
+            IER_MST  = 1 << 3, /* enable modem status irq */
         };
 
         enum iir_status {
-            IIR_NOIP = 0x1,    /* no interrupt pending */
-            IIR_THRE = 0x2,    /* irq transmitter hold empty */
-            IIR_RDA  = 0x4,    /* irq received data available */
-            IIR_RLS  = 0x6,    /* irq receiver line status */
+            IIR_NOIP = 1 << 0, /* no interrupt pending */
+            IIR_MST  = 0 << 1, /* irq modem status */
+            IIR_THRE = 1 << 1, /* irq transmitter hold empty */
+            IIR_RDA  = 2 << 1, /* irq received data available */
+            IIR_RLS  = 3 << 1, /* irq receiver line status */
         };
 
         enum lcr_status {
+            LCR_WL5  = 0 << 0, /* word length 5 bit */
+            LCR_WL6  = 1 << 0, /* word length 6 bit */
+            LCR_WL7  = 2 << 0, /* word length 7 bit */
+            LCR_WL8  = 3 << 0, /* word length 8 bit */
+            LCR_STP  = 1 << 2, /* stop bit control */
+            LCR_PEN  = 1 << 3, /* parity bit enable */
+            LCR_EPS  = 1 << 4, /* even parity select */
+            LCR_SPB  = 1 << 5, /* stick parity bit */
+            LCR_BCB  = 1 << 6, /* break control bit */
             LCR_DLAB = 1 << 7, /* divisor latch access bit */
+        };
+
+        enum fcr_status {
+            FCR_FE   = 1 << 0, /* FIFO enable */
+            FCR_CRF  = 1 << 1, /* Clear receiver FIFO */
+            FCR_CTF  = 1 << 2, /* Clear transmit FIFO */
+            FCR_DMA  = 1 << 3, /* DMA mode control */
+            FCR_IT1  = 0 << 6, /* IRQ trigger threshold at 1 byte */
+            FCR_IT4  = 1 << 6, /* IRQ trigger threshold at 4 bytes */
+            FCR_IT8  = 2 << 6, /* IRQ trigger threshold at 8 bytes */
+            FCR_IT14 = 3 << 6, /* IRQ trigger threshold at 14 bytes */
         };
 
         reg<uart8250, u8> THR; /* transmit hold / receive buffer */

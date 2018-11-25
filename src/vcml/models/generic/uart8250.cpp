@@ -18,29 +18,205 @@
 
 #include "vcml/models/generic/uart8250.h"
 
+#define DEFAULT_BAUD 9600
+
+#define LOG_REG_BIT_CHANGE(bit, reg, val) do {                    \
+    if ((reg & bit) != (val & bit))                               \
+        log_debug(#bit " bit %s", val & bit ? "set" : "cleared"); \
+} while (0)
+
 namespace vcml { namespace generic {
+
+    void uart8250::update_divisor() {
+        u32 divisor = m_divisor_msb << 8 | m_divisor_lsb;
+        if (divisor == 0) {
+            log_warn("zero baud divisor specified, reverting to default");
+            divisor = clock / (16 * DEFAULT_BAUD);
+        }
+
+        u32 baud = clock / (divisor * 16);
+        log_debug("setup divisor %u (%u baud)", divisor, baud);
+    }
+
+    void uart8250::update() {
+        u8 val;
+
+        if ((m_rx_fifo.size() < m_rx_size) && beread(val)) {
+            m_rx_fifo.push(val);
+            LSR |= LSR_DR;
+            if (IER & IER_RDA) {
+                log_debug("data received, rising IRQ");
+                IRQ = true;
+            }
+        }
+
+        while (!m_tx_fifo.empty()) {
+            val = m_tx_fifo.front();
+            m_tx_fifo.pop();
+            bewrite(val);
+
+            LSR |= LSR_THRE;
+            if (m_tx_fifo.empty())
+                LSR |= LSR_TEMT;
+
+            if (IER & IER_THRE) {
+                log_debug("data transmitted, rising IRQ");
+                IRQ = true;
+            }
+        }
+    }
+
+    void uart8250::poll() {
+        update();
+
+        // it does not make sense to poll multiple times during
+        // a quantum, so if a quantum is set, only update once.
+        u32 divisor = m_divisor_msb << 8 | m_divisor_lsb;
+        sc_time cycle = sc_time(1.0 / clock, SC_SEC) * divisor;
+        sc_time quantum = tlm_global_quantum::instance().get();
+        next_trigger(max(cycle, quantum));
+    }
+
+    u8 uart8250::read_RBR() {
+        if (LCR & LCR_DLAB)
+            return m_divisor_lsb;
+
+        if (m_rx_fifo.empty())
+            return 0;
+
+        u8 val = m_rx_fifo.front();
+        m_rx_fifo.pop();
+        if (m_rx_fifo.empty()) {
+            LSR &= ~LSR_DR;
+            if (IER & IER_RDA)
+                IRQ = false;
+        }
+
+        update();
+        return val;
+    }
+
+    u8 uart8250::read_IER() {
+        if (LCR & LCR_DLAB)
+            return m_divisor_msb;
+        return IER;
+    }
+
+    u8 uart8250::read_IIR() {
+        if (!IRQ.read())
+            return IIR_NOIP;
+
+        if (!m_rx_fifo.empty())
+            return IIR_RDA;
+
+        IRQ = false;
+        return IIR_THRE;
+    }
+
+    u8 uart8250::write_THR(u8 val) {
+        if (LCR & LCR_DLAB) {
+            m_divisor_lsb = val;
+            update_divisor();
+            return THR;
+        }
+
+        m_tx_fifo.push(val);
+        LSR &= ~LSR_TEMT;
+        if (m_tx_fifo.size() == m_tx_size)
+            LSR &= ~LSR_THRE;
+
+        update();
+
+        return val;
+    }
+
+    u8 uart8250::write_IER(u8 val) {
+        if (LCR & LCR_DLAB) {
+            m_divisor_msb = val;
+            update_divisor();
+            return IER;
+        }
+
+        LOG_REG_BIT_CHANGE(IER_RDA,  IER, val);
+        LOG_REG_BIT_CHANGE(IER_THRE, IER, val);
+        LOG_REG_BIT_CHANGE(IER_RLS,  IER, val);
+        LOG_REG_BIT_CHANGE(IER_MST,  IER, val);
+
+        IER = val & 0xF;
+        update();
+        return val;
+    }
+
+    u8 uart8250::write_LCR(u8 val) {
+        int oldwl = (LCR & 0x3) + 5;
+        int newwl = (val & 0x3) + 5;
+        if (newwl != oldwl)
+            log_debug("word length %d bits", newwl);
+
+        LOG_REG_BIT_CHANGE(LCR_STP, LCR, val);
+        LOG_REG_BIT_CHANGE(LCR_PEN, LCR, val);
+        LOG_REG_BIT_CHANGE(LCR_EPS, LCR, val);
+        LOG_REG_BIT_CHANGE(LCR_SPB, LCR, val);
+        LOG_REG_BIT_CHANGE(LCR_BCB, LCR, val);
+        LOG_REG_BIT_CHANGE(LCR_DLAB, LCR, val);
+
+        return val;
+    }
+
+    u8 uart8250::write_FCR(u8 val) {
+        log_debug("FIFOs %sabled", val & FCR_FE ? "en" : "dis");
+
+        if (val & FCR_CRF) {
+            while (!m_rx_fifo.empty())
+                m_rx_fifo.pop();
+            log_debug("receiver FIFO cleared");
+        }
+
+        if (val & FCR_CTF) {
+            while (!m_tx_fifo.empty())
+                m_tx_fifo.pop();
+            log_debug("transmitter FIFO cleared");
+        }
+
+        if (val & FCR_DMA)
+            log_debug("FCR_DMA bit set");
+
+        switch (val & 0x3f) {
+        case FCR_IT1:  log_debug("interrupt threshold 1 byte"); break;
+        case FCR_IT4:  log_debug("interrupt threshold 4 byte"); break;
+        case FCR_IT8:  log_debug("interrupt threshold 8 byte"); break;
+        case FCR_IT14: log_debug("interrupt threshold 14 bytes"); break;
+        default: break;
+        }
+
+        return IIR;
+    }
 
     SC_HAS_PROCESS(uart8250);
 
     uart8250::uart8250(const sc_module_name& nm):
         peripheral(nm),
+        m_rx_size(1),
+        m_tx_size(1),
+        m_rx_fifo(),
+        m_tx_fifo(),
         m_divisor_msb(0),
         m_divisor_lsb(0),
-        m_rx_ready(false),
-        m_tx_empty(true),
-        m_size(1),
-        m_fifo(),
         THR("THR", 0x0, 0x00),
         IER("IER", 0x1, 0x00),
-        IIR("IIR", 0x2, 0x00),
+        IIR("IIR", 0x2, IIR_NOIP),
         LCR("LCR", 0x3, 0x00),
         MCR("MCR", 0x4, 0x00),
-        LSR("LSR", 0x5, 0x00),
+        LSR("LSR", 0x5, LSR_THRE | LSR_TEMT),
         MSR("MSR", 0x6, 0x00),
         SCR("SCR", 0x7, 0x00),
         IRQ("IRQ"),
         IN("IN"),
-        clock("clock", 20000000) { // 20MHz polling frequency for input
+        clock("clock", 20000000) { // 20MHz
+
+        u16 divider = clock / (16 * DEFAULT_BAUD);
+        m_divisor_msb = divider >> 8;
+        m_divisor_lsb = divider & 0xf;
 
         THR.allow_read_write();
         THR.read = &uart8250::read_RBR;
@@ -54,11 +230,10 @@ namespace vcml { namespace generic {
         IIR.read = &uart8250::read_IIR;
         IIR.write = &uart8250::write_FCR;
 
-        LSR.allow_read();
-        LSR.read = &uart8250::read_LSR;
-        LSR = LSR_THRE | LSR_TEMT;
-
         LCR.allow_read_write();
+        LCR.write = &uart8250::write_LCR;
+
+        LSR.allow_read();
         MCR.allow_read_write();
         MSR.allow_read_write();
         SCR.allow_read_write();
@@ -68,106 +243,6 @@ namespace vcml { namespace generic {
 
     uart8250::~uart8250() {
         /* nothing to do */
-    }
-
-
-    void uart8250::update() {
-        u8 val; // only read data if there is room in the FIFO
-        if ((m_fifo.size() < m_size) && beread(val))
-            m_fifo.push(val);
-
-//      The following code is more accurate for a real UART, but causes data
-//      to be dropped if the processor does not empty the FIFO quick enough
-//
-//        if (beread(val)) {
-//            if (m_fifo.size() < m_size)
-//                m_fifo.push(val);
-//            else
-//                log_warn("FIFO full, dropping character 0x%02x", (int)val);
-//        }
-
-        if ((m_rx_ready = !m_fifo.empty()))
-            LSR |= LSR_DR;
-        else
-            LSR &= ~LSR_DR;
-
-        IIR = IIR_NOIP;
-        if ((m_tx_empty) && (IER & IER_THRE))
-            IIR = IIR_THRE;
-        if ((m_rx_ready) && (IER & IER_RDA))
-            IIR = IIR_RDA;
-        IRQ = (IIR != IIR_NOIP);
-    }
-
-    void uart8250::poll() {
-        update();
-
-        // it does not make sense to poll multiple times during
-        // a quantum, so if a quantum is set, only update once.
-        sc_time cycle = sc_time(1.0 / clock, SC_SEC);
-        sc_time quantum = tlm_global_quantum::instance().get();
-        next_trigger(max(cycle, quantum));
-    }
-
-    u8 uart8250::read_RBR() {
-        if (LCR & LCR_DLAB)
-            return m_divisor_lsb;
-
-        if (m_fifo.empty())
-            return 0;
-
-        u8 val = m_fifo.front();
-        m_fifo.pop();
-        update();
-        return val;
-    }
-
-    u8 uart8250::read_IER() {
-        if (LCR & LCR_DLAB)
-            return m_divisor_msb;
-        return IER;
-    }
-
-    u8 uart8250::read_IIR() {
-        u8 val = IIR;
-        m_tx_empty = false;
-        update();
-        return val;
-    }
-
-    u8 uart8250::read_LSR() {
-        if (m_rx_ready)
-            LSR |= LSR_DR;
-        else
-            LSR &= ~LSR_DR;
-        return LSR;
-    }
-
-    u8 uart8250::write_THR(u8 val) {
-        if (LCR & LCR_DLAB) {
-            m_divisor_lsb = val;
-            return THR;
-        }
-
-        bewrite(val);
-        m_tx_empty = true;
-        update();
-        return val;
-    }
-
-    u8 uart8250::write_IER(u8 val) {
-        if (LCR & LCR_DLAB) {
-            m_divisor_msb = val;
-            return IER;
-        }
-
-        IER = val;
-        update();
-        return val;
-    }
-
-    u8 uart8250::write_FCR(u8 val) {
-        return val;
     }
 
 }}
