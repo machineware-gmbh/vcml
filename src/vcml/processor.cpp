@@ -335,6 +335,7 @@ namespace vcml {
             stats.irq_uptime += delta;
         }
 
+        log_debug("%sing IRQ %u", irq_up ? "ris" : "lower", irq);
         interrupt(irq, irq_up);
     }
 
