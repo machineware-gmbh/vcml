@@ -87,15 +87,17 @@ namespace vcml { namespace generic {
         return sock;
     }
 
-    void bus::cb_b_transport(int port, tlm_generic_payload& tx,
-                                    sc_time& dt) {
-        trace_in(tx);
+    void bus::cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt) {
+        if (!trace_errors)
+            trace_in(port, tx);
+
         b_transport(port, tx, dt);
-        trace_out(tx);
+
+        if (!trace_errors || failed(tx.get_response_status()))
+            trace_out(port, tx);
     }
 
-    unsigned int bus::cb_transport_dbg(int port,
-                                              tlm_generic_payload& tx) {
+    unsigned int bus::cb_transport_dbg(int port, tlm_generic_payload& tx) {
         return transport_dbg(port, tx);
     }
 
@@ -105,12 +107,11 @@ namespace vcml { namespace generic {
     }
 
     void bus::cb_invalidate_direct_mem_ptr(int port, sc_dt::uint64 s,
-                                                  sc_dt::uint64 e) {
+                                           sc_dt::uint64 e) {
         invalidate_direct_mem_ptr(port, s, e);
     }
 
-    void bus::b_transport(int port, tlm_generic_payload& tx,
-                                 sc_time& dt) {
+    void bus::b_transport(int port, tlm_generic_payload& tx, sc_time& dt) {
         const bus_mapping& dest = lookup(tx);
         if (dest.port == -1) {
             tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);

@@ -62,6 +62,7 @@ namespace vcml { namespace generic {
         T& next();
 
         inline T& operator[] (unsigned int idx);
+        inline const T& operator[] (unsigned int idx) const;
 
         typedef typename std::map<unsigned int, T*>::iterator iterator;
 
@@ -123,6 +124,9 @@ namespace vcml { namespace generic {
 
         template <typename T>
         T* create_socket(unsigned int idx);
+
+        void trace_in(int port, const tlm_generic_payload& tx) const;
+        void trace_out(int port, const tlm_generic_payload& tx) const;
     };
 
     template <typename T>
@@ -163,6 +167,26 @@ namespace vcml { namespace generic {
         }
 
         return *m_sockets[idx];
+    }
+
+    template <typename T>
+    inline const T& bus_ports<T>::operator[] (unsigned int idx) const {
+        VCML_ERROR_ON(!exists(idx), "bus port %d does not exist", idx);
+        return *m_sockets.at(idx);
+    }
+
+    inline void bus::trace_in(int port, const tlm_generic_payload& tx) const {
+        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
+            return;
+        const tlm_target_socket<>& tgt = IN[port];
+        logger::log(LOG_TRACE, tgt.name(), ">> " + tlm_transaction_to_str(tx));
+    }
+
+    inline void bus::trace_out(int port, const tlm_generic_payload& tx) const {
+        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
+            return;
+        const tlm_target_socket<>& tgt = IN[port];
+        logger::log(LOG_TRACE, tgt.name(), "<< " + tlm_transaction_to_str(tx));
     }
 
 }}

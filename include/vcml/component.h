@@ -67,6 +67,7 @@ namespace vcml {
 
     public:
         property<bool> allow_dmi;
+        property<bool> trace_errors;
         property<log_level> loglvl;
 
         component(const sc_module_name& nm, bool allow_dmi = true);

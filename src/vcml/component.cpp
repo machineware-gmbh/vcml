@@ -98,7 +98,8 @@ namespace vcml {
         m_slave_sockets(),
         m_commands(),
         allow_dmi("allow_dmi", dmi),
-        loglvl("loglvl", default_log_level()) {
+        trace_errors("trace_errors", false),
+        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()) {
         register_command("clist", 0, this, &component::cmd_clist,
                          "returns a list of supported commands");
         register_command("cinfo", 1, this, &component::cmd_cinfo,
@@ -181,9 +182,13 @@ namespace vcml {
 
     void component::b_transport(slave_socket* origin, tlm_generic_payload& tx,
                                 sc_time& dt) {
-        trace_in(tx);
+        if (!trace_errors)
+            trace_in(tx);
+
         transport(tx, dt, tx_is_excl(tx) ? VCML_FLAG_EXCL : VCML_FLAG_NONE);
-        trace_out(tx);
+
+        if (!trace_errors || failed(tx.get_response_status()))
+            trace_out(tx);
     }
 
     unsigned int component::transport_dbg(slave_socket* origin,
