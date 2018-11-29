@@ -122,8 +122,8 @@ namespace vcml {
                                        int flags);
         virtual void invalidate_dmi(u64 start, u64 end);
 
-#define VCML_DEFINE_LOG(log_name, level)                  \
-        inline void log_name(const char* format, ...) {       \
+#define VCML_DEFINE_LOG(log_name, level)                      \
+        inline void log_name(const char* format, ...) const { \
             if (!logger::would_log(level) || level > loglvl)  \
                 return;                                       \
             va_list args;                                     \
