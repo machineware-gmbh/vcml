@@ -16,11 +16,17 @@
  #                                                                            #
  ##############################################################################
 
-find_path(LIBELF_INCLUDE_DIRS NAMES libelf.h
-          HINTS /usr/include /usr/include/libelf /opt/libelf/include)
+if(EXISTS $ENV{LIBELF_HOME})
+    set(LIBELF_INCLUDE_DIRS $ENV{LIBELF_HOME}/include
+                            $ENV{LIBELF_HOME}/include/libelf)
+    set(LIBELF_LIBRARIES    $ENV{LIBELF_HOME}/lib/libelf.a)
+else()
+    find_path(LIBELF_INCLUDE_DIRS NAMES libelf.h
+              HINTS /usr/include /usr/include/libelf /opt/libelf/include)
 
-find_library(LIBELF_LIBRARIES NAMES elf
-             HINTS /usr/lib /opt/libelf/lib ENV LD_LIBRARY_PATH)
+    find_library(LIBELF_LIBRARIES NAMES elf
+                 HINTS /usr/lib /opt/libelf/lib LD_LIBRARY_PATH)
+endif()
 
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibElf DEFAULT_MSG
