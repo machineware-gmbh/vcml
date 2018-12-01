@@ -212,7 +212,7 @@ namespace vcml { namespace generic {
         SCR("SCR", 0x7, 0x00),
         IRQ("IRQ"),
         IN("IN"),
-        clock("clock", 20000000) { // 20MHz
+        clock("clock", 3686400) { // 3.6864MHz
 
         u16 divider = clock / (16 * DEFAULT_BAUD);
         m_divisor_msb = divider >> 8;
