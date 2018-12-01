@@ -24,6 +24,7 @@
 namespace vcml { namespace opencores {
 
     u32 ompic::read_STATUS(unsigned int core_id) {
+        VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
         u32 val = m_status[core_id];
         if (IRQ[core_id].read())
             val |= 1 << 30;
@@ -31,31 +32,39 @@ namespace vcml { namespace opencores {
     }
 
     u32 ompic::read_CONTROL(unsigned int core_id) {
+        VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
         return m_control[core_id];
     }
 
-    u32 ompic::write_CONTROL(u32 val, unsigned int core_id)
-    {
+    u32 ompic::write_CONTROL(u32 val, unsigned int core_id) {
+        VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
+
         u32 self = static_cast<uint32_t>(core_id);
         u32 dest = OMPIC_DEST(val);
         u32 data = OMPIC_DATA(val);
 
+        if (dest >= m_num_cores) {
+            log_warn("illegal interrupt request ignored");
+            log_warn(" core: cpu%d", self);
+            log_warn(" dest: cpu%d", dest);
+            log_warn(" data: 0x%04x", data);
+            return 0;
+        }
+
         m_control[core_id] = val;
-
-        //log_debug("CTRL %d -> %d: 0x%08x", self, dest, val);
-
         if (val & CTRL_IRQ_GEN) {
             m_status[dest] = self << 16 | data;
-            //log_debug("core %d triggers irq on core %d", self, dest);
+            log_debug("cpu%d triggers interrupt on cpu%d (data: 0x%04x)",
+                      self, dest, data);
             if (IRQ[dest].read())
-                log_warn("irq already pending on core %d", dest);
+                log_debug("interrupt already pending for cpu%d", dest);
             IRQ[dest] = true;
         }
 
         if (val & CTRL_IRQ_ACK) {
-            //log_debug("reset irq for core %d", core_id);
+            log_debug("cpu%d acknowledges interrupt", self);
             if (!IRQ[self].read())
-                log_warn("no irq pending for core %d", core_id);
+                log_debug("no pending interrupt for cpu%d", self);
             IRQ[self] = false;
         }
 
