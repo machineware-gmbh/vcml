@@ -12,6 +12,7 @@ This model has the following properties:
 | Property        | Type        | Default    | Description        |
 | --------------- | ----------- | ---------- | ------------------ |
 | `clock`         | `clock_t`   | `20000000` | Poll rate (in Hz)  |
+| `vncport`       | `u16`       | `0`        | VNC server port    |
 | `read_latency`  | `sc_time`   | `0ns`      | Extra read delay   |
 | `write_latency` | `sc_time`   | `0ns`      | Extra write delay  |
 | `backends`      | `string`    | `<empty>`  | List of backends   |
