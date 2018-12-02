@@ -18,20 +18,13 @@
 
 #include "vcml/models/generic/uart8250.h"
 
-#define DEFAULT_BAUD 9600
-
-#define LOG_REG_BIT_CHANGE(bit, reg, val) do {                    \
-    if ((reg & bit) != (val & bit))                               \
-        log_debug(#bit " bit %s", val & bit ? "set" : "cleared"); \
-} while (0)
-
 namespace vcml { namespace generic {
 
     void uart8250::update_divisor() {
         u32 divisor = m_divisor_msb << 8 | m_divisor_lsb;
         if (divisor == 0) {
             log_warn("zero baud divisor specified, reverting to default");
-            divisor = clock / (16 * DEFAULT_BAUD);
+            divisor = clock / (16 * VCML_GENERIC_UART8250_DEFAULT_BAUD);
         }
 
         u32 baud = clock / (divisor * 16);
@@ -137,10 +130,10 @@ namespace vcml { namespace generic {
             return IER;
         }
 
-        LOG_REG_BIT_CHANGE(IER_RDA,  IER, val);
-        LOG_REG_BIT_CHANGE(IER_THRE, IER, val);
-        LOG_REG_BIT_CHANGE(IER_RLS,  IER, val);
-        LOG_REG_BIT_CHANGE(IER_MST,  IER, val);
+        VCML_LOG_REG_BIT_CHANGE(IER_RDA,  IER, val);
+        VCML_LOG_REG_BIT_CHANGE(IER_THRE, IER, val);
+        VCML_LOG_REG_BIT_CHANGE(IER_RLS,  IER, val);
+        VCML_LOG_REG_BIT_CHANGE(IER_MST,  IER, val);
 
         IER = val & 0xF;
         update();
@@ -153,12 +146,12 @@ namespace vcml { namespace generic {
         if (newwl != oldwl)
             log_debug("word length %d bits", newwl);
 
-        LOG_REG_BIT_CHANGE(LCR_STP, LCR, val);
-        LOG_REG_BIT_CHANGE(LCR_PEN, LCR, val);
-        LOG_REG_BIT_CHANGE(LCR_EPS, LCR, val);
-        LOG_REG_BIT_CHANGE(LCR_SPB, LCR, val);
-        LOG_REG_BIT_CHANGE(LCR_BCB, LCR, val);
-        LOG_REG_BIT_CHANGE(LCR_DLAB, LCR, val);
+        VCML_LOG_REG_BIT_CHANGE(LCR_STP, LCR, val);
+        VCML_LOG_REG_BIT_CHANGE(LCR_PEN, LCR, val);
+        VCML_LOG_REG_BIT_CHANGE(LCR_EPS, LCR, val);
+        VCML_LOG_REG_BIT_CHANGE(LCR_SPB, LCR, val);
+        VCML_LOG_REG_BIT_CHANGE(LCR_BCB, LCR, val);
+        VCML_LOG_REG_BIT_CHANGE(LCR_DLAB, LCR, val);
 
         return val;
     }
@@ -214,7 +207,7 @@ namespace vcml { namespace generic {
         IN("IN"),
         clock("clock", 3686400) { // 3.6864MHz
 
-        u16 divider = clock / (16 * DEFAULT_BAUD);
+        u16 divider = clock / (16 * VCML_GENERIC_UART8250_DEFAULT_BAUD);
         m_divisor_msb = divider >> 8;
         m_divisor_lsb = divider & 0xf;
 

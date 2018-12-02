@@ -31,6 +31,8 @@
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
+#define VCML_GENERIC_UART8250_DEFAULT_BAUD 9600
+
 namespace vcml { namespace generic {
 
     class uart8250: public peripheral

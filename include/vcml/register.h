@@ -406,4 +406,9 @@ namespace vcml {
 
 }
 
+#define VCML_LOG_REG_BIT_CHANGE(bit, reg, val) do {               \
+    if ((reg & bit) != (val & bit))                               \
+        log_debug(#bit " bit %s", val & bit ? "set" : "cleared"); \
+} while (0)
+
 #endif
