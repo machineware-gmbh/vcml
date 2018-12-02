@@ -270,7 +270,7 @@ namespace vcml { namespace debugging {
             VCML_ERROR("malformed command '%s'", command);
 
         if (size > VCML_GDBSERVER_BUFSIZE)
-            VCML_ERROR("too much data requested: % bytes", size);
+            VCML_ERROR("too much data requested: %d bytes", size);
 
         stringstream ss;
         ss << std::hex << std::setfill('0');
@@ -290,7 +290,7 @@ namespace vcml { namespace debugging {
             VCML_ERROR("malformed command '%s'", command);
 
         if (size > VCML_GDBSERVER_BUFSIZE)
-            VCML_ERROR("too much data requested: % bytes", size);
+            VCML_ERROR("too much data requested: %d bytes", size);
 
         const char* data = strchr(command, ':');
         if (data == NULL)
@@ -312,7 +312,7 @@ namespace vcml { namespace debugging {
             VCML_ERROR("malformed command '%s'", command);
 
         if (size > VCML_GDBSERVER_BUFSIZE)
-            VCML_ERROR("too much data requested: % bytes", size);
+            VCML_ERROR("too much data requested: %d bytes", size);
 
         if (size == 0)
             return "OK"; // empty load to test if binary write is supported
