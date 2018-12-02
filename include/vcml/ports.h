@@ -45,17 +45,16 @@ namespace vcml {
 
         VCML_KIND(out_port);
 
-        inline void set()                    { write(true); }
-        inline void clear()                  { write(false); }
-        inline bool is_set() const           { return read(); }
+        void set()                    { write(true); }
+        void clear()                  { write(false); }
+        bool is_set() const           { return read(); }
 
-        inline operator bool () const        { return read(); }
-        inline out_port& operator = (bool b) { write(b); return *this; }
+        out_port& operator = (bool b) { write(b); return *this; }
 
-        inline bool read() const             { return m_state; }
+        bool read() const             { return m_state; }
         void write(bool set);
 
-        inline void stub()                   { bind(m_stub); }
+        void stub()                   { bind(m_stub); }
     };
 
     template <class PORT>
@@ -79,11 +78,11 @@ namespace vcml {
 
         VCML_KIND(port_list);
 
-        inline iterator begin() { return m_ports.begin(); }
-        inline iterator end()   { return m_ports.end(); }
+        iterator begin() { return m_ports.begin(); }
+        iterator end()   { return m_ports.end(); }
 
-        inline const_iterator begin() const { return m_ports.begin(); }
-        inline const_iterator end()   const { return m_ports.end(); }
+        const_iterator begin() const { return m_ports.begin(); }
+        const_iterator end()   const { return m_ports.end(); }
 
         bool exists(unsigned int idx) const ;
         PORT& operator [] (unsigned int idx);
