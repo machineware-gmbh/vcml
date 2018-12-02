@@ -16,68 +16,36 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_INCLUDES_H
-#define VCML_INCLUDES_H
+#ifndef VCML_DEBUGGING_VNCSERVER_H
+#define VCML_DEBUGGING_VNCSERVER_H
 
-#if __cplusplus < 201103L
-#error Please compile with c++11
-#endif
+#include "vcml/common/includes.h"
+#include "vcml/common/types.h"
+#include "vcml/common/utils.h"
+#include "vcml/common/report.h"
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
+#include "vcml/logging/logger.h"
 
-#ifndef SC_INCLUDE_DYNAMIC_PROCESSES
-#define SC_INCLUDE_DYNAMIC_PROCESSES
-#endif
+namespace vcml { namespace debugging {
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <ctype.h>
+    class vncserver {
+    private:
+        u16 m_port;
 
-#include <string>
-#include <vector>
-#include <queue>
-#include <list>
-#include <map>
-#include <memory>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <functional>
-#include <limits>
+        static std::map<u16, shared_ptr<vncserver>> m_servers;
 
-#include <pthread.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
+        vncserver();
+        vncserver(u16 port);
+        vncserver(const vncserver&);
 
-#include <execinfo.h>
-#include <cxxabi.h>
+    public:
+        u16 get_port() const { return m_port; }
 
-#include <libelf.h>
+        virtual ~vncserver();
 
-#include <systemc>
-#include <tlm>
-#include <tlm_utils/simple_initiator_socket.h>
-#include <tlm_utils/simple_target_socket.h>
+        static shared_ptr<vncserver> lookup(u16 port);
+    };
 
+}}
 
 #endif

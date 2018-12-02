@@ -46,6 +46,9 @@ namespace vcml {
     using std::ifstream;
     using std::ofstream;
 
+    using std::shared_ptr;
+    using std::unique_ptr;
+
     using std::function;
 
     using sc_core::sc_object;
