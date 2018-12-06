@@ -16,30 +16,25 @@
  #                                                                            #
  ##############################################################################
 
-enable_testing()
+if(EXISTS $ENV{LIBELF_HOME})
+    set(LIBELF_INCLUDE_DIRS $ENV{LIBELF_HOME}/include
+                            $ENV{LIBELF_HOME}/include/libelf)
+    set(LIBELF_LIBRARIES    $ENV{LIBELF_HOME}/lib/libelf.a)
+else()
+    find_path(LIBELF_INCLUDE_DIRS NAMES libelf.h
+              HINTS /usr/include /usr/include/libelf /opt/libelf/include)
 
-find_package(GTest "1.8.0" REQUIRED)
-find_package(GMock "1.8.0" REQUIRED)
-include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GMOCK_INCLUDE_DIRS})
-set(CMAKE_EXE_LINKER_FLAGS -rdynamic)
-
-set(tests test_hello test_utils test_logging test_version test_aio test_elf
-    test_dmi test_range test_exmon test_component test_peripheral test_register
-    test_backend_tcp test_generic_memory test_generic_bus test_processor)
-
-if(LIBVNC_FOUND)
-    set(tests ${tests} test_vnc)
+    find_library(LIBELF_LIBRARIES NAMES elf
+                 HINTS /usr/lib /opt/libelf/lib LD_LIBRARY_PATH)
 endif()
 
-foreach(test ${tests})
-    add_executable(${test} ${test}.cpp)
-    add_dependencies(${test} vcml)
-    target_link_libraries(${test} vcml ${GTEST_LIBRARIES} ${GMOCK_LIBRARIES}
-                          ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES} -pthread)
-    if(LIBVNC_FOUND)
-        target_link_libraries(${test} ${LIBVNC_LIBRARIES})
-    endif()
+include(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBELF DEFAULT_MSG
+                                  LIBELF_LIBRARIES
+                                  LIBELF_INCLUDE_DIRS)
 
-    add_test(NAME ${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(${test} PROPERTIES TIMEOUT 30)
-endforeach()
+mark_as_advanced(LIBELF_INCLUDE_DIRS LIBELF_LIBRARIES)
+
+#message(STATUS "LIBELF_FOUND        " ${LIBELF_FOUND})
+#message(STATUS "LIBELF_INCLUDE_DIRS " ${LIBELF_INCLUDE_DIRS})
+#message(STATUS "LIBELF_LIBRARIES    " ${LIBELF_LIBRARIES})

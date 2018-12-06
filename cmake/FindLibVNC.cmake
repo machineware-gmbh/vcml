@@ -16,25 +16,19 @@
  #                                                                            #
  ##############################################################################
 
-if(EXISTS $ENV{LIBELF_HOME})
-    set(LIBELF_INCLUDE_DIRS $ENV{LIBELF_HOME}/include
-                            $ENV{LIBELF_HOME}/include/libelf)
-    set(LIBELF_LIBRARIES    $ENV{LIBELF_HOME}/lib/libelf.a)
-else()
-    find_path(LIBELF_INCLUDE_DIRS NAMES libelf.h
-              HINTS /usr/include /usr/include/libelf /opt/libelf/include)
+find_path(LIBVNC_INCLUDE_DIRS NAMES "rfb/rfb.h"
+          HINTS $ENV{LIBVNC_HOME}/include)
 
-    find_library(LIBELF_LIBRARIES NAMES elf
-                 HINTS /usr/lib /opt/libelf/lib LD_LIBRARY_PATH)
-endif()
+find_library(LIBVNC_LIBRARIES NAMES "libvncserver.a"
+             HINTS $ENV{LIBVNC_HOME}/lib)
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibElf DEFAULT_MSG
-                                  LIBELF_LIBRARIES
-                                  LIBELF_INCLUDE_DIRS)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBVNC DEFAULT_MSG
+                                  LIBVNC_LIBRARIES
+                                  LIBVNC_INCLUDE_DIRS)
 
-mark_as_advanced(LIBELF_INCLUDE_DIRS LIBELF_LIBRARIES)
+mark_as_advanced(LIBVNC_INCLUDE_DIRS LIBVNC_LIBRARIES)
 
-#message(STATUS "LIBELF_FOUND        " ${LIBELF_FOUND})
-#message(STATUS "LIBELF_INCLUDE_DIRS " ${LIBELF_INCLUDE_DIRS})
-#message(STATUS "LIBELF_LIBRARIES    " ${LIBELF_LIBRARIES})
+#message(STATUS "LIBVNC_FOUND        " ${LIBVNC_FOUND})
+#message(STATUS "LIBVNC_INCLUDE_DIRS " ${LIBVNC_INCLUDE_DIRS})
+#message(STATUS "LIBVNC_LIBRARIES    " ${LIBVNC_LIBRARIES})

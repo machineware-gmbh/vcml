@@ -24,7 +24,8 @@ option(BUILD_UTILS "Builds utility programs" ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(SystemC "2.3.0" REQUIRED)
-find_package(LibElf REQUIRED)
+find_package(LibELF REQUIRED)
+find_package(LibVNC)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
@@ -57,7 +58,6 @@ set(sources
     "${src}/vcml/debugging/rspserver.cpp"
     "${src}/vcml/debugging/gdbserver.cpp"
     "${src}/vcml/debugging/vspserver.cpp"
-    "${src}/vcml/debugging/vncserver.cpp"
     "${src}/vcml/elf.cpp"
     "${src}/vcml/dmi_cache.cpp"
     "${src}/vcml/exmon.cpp"
@@ -86,6 +86,15 @@ set(sources
 add_library(vcml ${sources})
 target_include_directories(vcml PUBLIC ${inc})
 target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
+
+if(LIBVNC_FOUND)
+    message(STATUS "Building with VNC support")
+    target_compile_definitions(vcml PUBLIC HAVE_LIBVNC)
+    target_include_directories(vcml SYSTEM PUBLIC ${LIBVNC_INCLUDE_DIRS})
+    target_sources(vcml PUBLIC "${src}/vcml/debugging/vncserver.cpp")
+else()
+    message(STATUS "Building without VNC support")
+endif()
 
 install(TARGETS vcml DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
