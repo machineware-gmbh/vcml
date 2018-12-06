@@ -9,20 +9,20 @@ interface, which is backed by a 16 character wide FIFO.
 ## Properties
 This model has the following properties:
 
-| Property        | Type        | Default    | Description        |
-| --------------- | ----------- | ---------- | ------------------ |
-| `clock`         | `clock_t`   | `20000000` | Poll rate (in Hz)  |
-| `vncport`       | `u16`       | `0`        | VNC server port    |
-| `read_latency`  | `sc_time`   | `0ns`      | Extra read delay   |
-| `write_latency` | `sc_time`   | `0ns`      | Extra write delay  |
-| `backends`      | `string`    | `<empty>`  | List of backends   |
-| `allow_dmi`     | `bool`      | `true`     | Ignored            |
-| `loglvl`        | `log_level` | `info`     | Logging threshold  |
-| `trace_errors`  | `bool`      | `false`    | Report TLM errors  |
-
-Extra properties are available from the specified [`backends`](../backends.md).
+| Property        | Type        | Default    | Description                   |
+| --------------- | ----------- | ---------- | ----------------------------- |
+| `fifosize`      | `size_t`    | `16`       | Maximum size of keycode FIFO  |
+| `vncport`       | `u16`       | `0`        | VNC server port               |
+| `read_latency`  | `sc_time`   | `0ns`      | Extra read delay              |
+| `write_latency` | `sc_time`   | `0ns`      | Extra write delay             |
+| `backends`      | `string`    | `<empty>`  | Ignored                       |
+| `allow_dmi`     | `bool`      | `true`     | Ignored                       |
+| `loglvl`        | `log_level` | `info`     | Logging threshold             |
+| `trace_errors`  | `bool`      | `false`    | Report TLM errors             |
 
 The properties `loglvl` and `trace_errors` require [`loggers`](../logging.md).
+
+The `vncport` property is only used if VCML has been build with VNC support.
 
 ----
 ## Hardware Interface
@@ -84,4 +84,4 @@ keyboard@93000000 {
 ```
 
 ----
-Documentation Deccember 2018
+Documentation updated December 2018

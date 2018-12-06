@@ -36,15 +36,18 @@ namespace vcml { namespace opencores {
 
     class ockbd: public peripheral {
     private:
-        size_t    m_key_size;
         queue<u8> m_key_fifo;
 
-        shared_ptr<debugging::vncserver> m_vnc;
+        function<void(u32,bool)> m_key_handler;
 
-        void update();
-        void poll();
+        void key_event(u32 key, bool down);
+        void push_key(u8 code, bool down);
 
         u8 read_KHR();
+
+        // disabled
+        ockbd();
+        ockbd(const ockbd&);
 
     public:
         reg<ockbd, u8> KHR;
@@ -52,7 +55,7 @@ namespace vcml { namespace opencores {
         out_port IRQ;
         slave_socket IN;
 
-        property<clock_t> clock;
+        property<size_t> fifosize;
         property<u16> vncport;
 
         ockbd(const sc_module_name& name);
