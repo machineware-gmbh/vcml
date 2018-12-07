@@ -186,6 +186,14 @@ namespace vcml {
     }
 }
 
+#if (SYSTEMC_VERSION < 20140417)
+inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
+                                    const sc_core::sc_time& t2 ) {
+    sc_core::sc_time tmp(t1.value() % t2.value(), false);
+    return tmp;
+}
+#endif
+
 std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian);
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
 
