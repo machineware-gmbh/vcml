@@ -60,6 +60,7 @@ namespace vcml { namespace opencores {
             m_resy = (VTIM & 0xffff) + 1;
             m_bpp  = OCFBC_BPP(val);
 
+#ifdef HAVE_LIBVNC
             u32 size = m_resx * m_resy * m_bpp;
             u8* vram = NULL;
 
@@ -74,7 +75,6 @@ namespace vcml { namespace opencores {
                 }
             }
 
-#ifdef HAVE_LIBVNC
             debugging::vnc_fbdesc desc;
             switch (m_bpp) {
             case 4: desc = debugging::fbdesc_argb32(m_resx, m_resy); break;
