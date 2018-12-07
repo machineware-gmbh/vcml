@@ -46,7 +46,11 @@ namespace vcml { namespace opencores {
         const range m_palette_addr;
         u32 m_palette[PALETTE_SIZE];
 
-        shared_ptr<debugging::vncserver> m_vnc;
+        u8* m_fb;
+
+        u32 m_resx;
+        u32 m_resy;
+        u32 m_bpp;
 
         u32 read_STAT();
 
@@ -58,6 +62,11 @@ namespace vcml { namespace opencores {
                                          int flags) override;
         virtual tlm_response_status write(const range& addr, const void* data,
                                          int flags) override;
+
+        sc_event m_enable;
+
+        void render();
+        void update();
 
         // disabled
         ocfbc();
@@ -94,7 +103,8 @@ namespace vcml { namespace opencores {
         slave_socket IN;
         master_socket OUT;
 
-        property<u16> vncport;
+        property<clock_t> clock;
+        property<u16>     vncport;
 
         ocfbc(const sc_module_name& name);
         virtual ~ocfbc();

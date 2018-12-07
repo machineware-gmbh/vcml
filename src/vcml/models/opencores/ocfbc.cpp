@@ -19,9 +19,11 @@
 #include "vcml/models/opencores/ocfbc.h"
 
 #define OCFBC_VBL(val) (1 << (((val) & CTLR_VBL8) >> 7))
-#define OCFBC_BPP(val) (((((val) & CTLR_BPP32) >> 9) + 1) * 8)
+#define OCFBC_BPP(val) ((((val) & CTLR_BPP32) >> 9) + 1)
 
 namespace vcml { namespace opencores {
+
+    SC_HAS_PROCESS(ocfbc);
 
     u32 ocfbc::read_STAT() {
         log_debug("read STAT register = 0x%08x", STAT.get());
@@ -43,8 +45,8 @@ namespace vcml { namespace opencores {
             log_debug("video burst changed to %d (from %d)", new_vbl, old_vbl);
         }
 
-        int old_bpp = OCFBC_BPP(CTLR);
-        int new_bpp = OCFBC_BPP(val);
+        int old_bpp = OCFBC_BPP(CTLR) * 8;
+        int new_bpp = OCFBC_BPP(val) * 8;
         if (new_bpp != old_bpp) {
             log_debug("color depth changed to %d (from %d)", new_bpp, old_bpp);
         }
@@ -53,7 +55,53 @@ namespace vcml { namespace opencores {
 
         if ((val & CTLR_VEN) && !(CTLR & CTLR_VEN)) {
             log_debug("device enabled, video ram at 0x%08x", VBARA.get());
+
+            m_resx = (HTIM & 0xffff) + 1;
+            m_resy = (VTIM & 0xffff) + 1;
+            m_bpp  = OCFBC_BPP(val);
+
+            u32 size = m_resx * m_resy * m_bpp;
+            u8* vram = NULL;
+
+            tlm_dmi dmi;
+            tlm_generic_payload tx;
+            tx_setup(tx, TLM_READ_COMMAND, VBARA, NULL, size);
+            if (allow_dmi && OUT->get_direct_mem_ptr(tx, dmi)) {
+                if (dmi.is_read_allowed() &&
+                    dmi.get_start_address() <= VBARA &&
+                    dmi.get_end_address() >= VBARA + size) {
+                    vram = dmi.get_dmi_ptr() + VBARA - dmi.get_start_address();
+                }
+            }
+
+#ifdef HAVE_LIBVNC
+            debugging::vnc_fbdesc desc;
+            switch (m_bpp) {
+            case 4: desc = debugging::fbdesc_argb32(m_resx, m_resy); break;
+            case 3: desc = debugging::fbdesc_rgb24(m_resx, m_resy); break;
+            case 2: desc = debugging::fbdesc_rgb16(m_resx, m_resy); break;
+            case 1: desc = debugging::fbdesc_gray8(m_resx, m_resy); break;
+            default:
+                VCML_ERROR("unknown pixel format %u bpp", m_bpp * 8);
+            }
+
+            shared_ptr<debugging::vncserver> vnc =
+                    debugging::vncserver::lookup(vncport);
+
+            // cannot use DMI with pseudocolor
+            if ((vram == NULL) || (val & CTLR_PC)) {
+                log_debug("copying vnc framebuffer from vram");
+                desc = debugging::fbdesc_rgb24(m_resx, m_resy);
+                m_fb = vnc->setup_framebuffer(desc);
+            } else {
+                log_debug("mapping vnc framebuffer into vram");
+                vnc->setup_framebuffer(desc, vram);
+                m_fb = NULL;
+            }
+#endif
+            m_enable.notify(SC_ZERO_TIME);
         }
+
         return val;
     }
 
@@ -93,8 +141,101 @@ namespace vcml { namespace opencores {
         return TLM_OK_RESPONSE;
     }
 
+    void ocfbc::render() {
+        if (m_fb != NULL) { // need to copy data to framebuffer manually
+            u8* fb = m_fb;
+            for (u32 y = 0; y < m_resy; y++) {
+                u32 burstsz = OCFBC_VBL(CTLR);
+                u32 linesz = m_resx * m_bpp;
+                u8 linebuf[linesz];
+                tlm_response_status rs;
+
+                // burst-read one horizontal line of pixels into buffer
+                for (u32 off = 0; off < linesz; off += burstsz) {
+                    u32 addr = VBARA + y * linesz + off;
+                    if (failed(rs = OUT.read(addr, linebuf + off, burstsz))) {
+                        log_debug("failed to read vmem at 0x%08x: %s", addr,
+                                  tlm_response_to_str(rs).c_str());
+                    }
+                }
+
+                // decode each line pixel by pixel and write to vnc framebuffer
+                u32 i = 0;
+                while (i < linesz) {
+                    switch (m_bpp) {
+                    case 4:
+                        i++; // skip alpha
+                        // no break
+
+                    case 3:
+                        *fb++ = linebuf[i++]; // r
+                        *fb++ = linebuf[i++]; // g
+                        *fb++ = linebuf[i++]; // b
+                        break;
+
+                    case 2: {
+                        u16 a = linebuf[i++];
+                        u16 b = linebuf[i++];
+                        u16 pixel = is_big_endian() ? a << 8 | b : b << 8 | a;
+                        *fb++ = ((((pixel >> 11) & 0x1F)) * 255) / 31;
+                        *fb++ = ((((pixel >>  5) & 0x3F)) * 255) / 63;
+                        *fb++ = ((((pixel >>  0) & 0x1F)) * 255) / 31;
+                        break;
+                    }
+
+                    case 1: {
+                        if (CTLR & CTLR_PC) {
+                            u32 color = m_palette[linebuf[i++]];
+                            *fb++ = (color >>  8) & 0xFF; // r
+                            *fb++ = (color >> 16) & 0xFF; // g
+                            *fb++ = (color >> 24) & 0xFF; // b
+                        } else {
+                            *fb++ = linebuf[i];
+                            *fb++ = linebuf[i];
+                            *fb++ = linebuf[i++];
+                        }
+                        break;
+                    }
+
+                    default:
+                        VCML_ERROR("unknown pixel format %u bpp", m_bpp * 8);
+                    }
+                }
+            }
+        }
+
+#ifdef HAVE_LIBVNC
+        debugging::vncserver::lookup(vncport)->render();
+#endif
+    }
+
+    void ocfbc::update() {
+        while (true) {
+            while (!(CTLR & CTLR_VEN))
+                wait(m_enable);
+
+            sc_time t = sc_time_stamp();
+            render();
+            sc_time delta = sc_time_stamp() - t;
+            sc_time frame(1.0 / clock, SC_SEC);
+            if (delta < frame) {
+                wait(frame - delta); // wait until next frame
+            } else {
+                log_debug("skipped %d frames", (int)(delta / frame));
+                wait(frame - delta % frame);
+            }
+        }
+    }
+
     ocfbc::ocfbc(const sc_module_name& nm):
         peripheral(nm),
+        m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
+        m_palette(),
+        m_fb(NULL),
+        m_resx(0),
+        m_resy(0),
+        m_bpp(0),
+        m_enable("enabled"),
         CTLR("CTRLR", 0x00, 0),
         STAT("STATR", 0x04, 0),
         HTIM("HTIMR", 0x08, 0),
@@ -104,11 +245,8 @@ namespace vcml { namespace opencores {
         IRQ("IRQ"),
         IN("IN"),
         OUT("OUT"),
+        clock("clock", 60), // 60Hz
         vncport("vncport", 0) {
-        if (vncport > 0)
-            m_vnc = debugging::vncserver::lookup(vncport);
-        if (m_vnc)
-            log_debug("using vncserver at port %d", (int)m_vnc->get_port());
 
         CTLR.allow_read_write();
         CTLR.write = &ocfbc::write_CTRL;
@@ -121,6 +259,8 @@ namespace vcml { namespace opencores {
 
         VTIM.allow_read_write();
         VTIM.write = &ocfbc::write_VTIM;
+
+        SC_THREAD(update);
     }
 
     ocfbc::~ocfbc() {

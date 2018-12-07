@@ -16,8 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_DEBUGGING_VNCSERVER_H
+#if defined(HAVE_LIBVNC) && !defined(VCML_DEBUGGING_VNCSERVER_H)
 #define VCML_DEBUGGING_VNCSERVER_H
+
+#include <rfb/rfb.h>
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
@@ -28,20 +30,61 @@
 
 namespace vcml { namespace debugging {
 
+    typedef struct {
+        u8 offset;
+        u8 size;
+    } vnc_color_format;
+
+    typedef struct {
+        u32 resx;
+        u32 resy;
+        u32 size;
+        vnc_color_format a;
+        vnc_color_format r;
+        vnc_color_format g;
+        vnc_color_format b;
+    } vnc_fbdesc;
+
+    vnc_fbdesc fbdesc_argb32(u32 width, u32 height);
+    vnc_fbdesc fbdesc_rgb24(u32 width, u32 height);
+    vnc_fbdesc fbdesc_rgb16(u32 width, u32 height);
+    vnc_fbdesc fbdesc_gray8(u32 width, u32 height);
+
     class vncserver {
     private:
-        u16 m_port;
+        rfbScreenInfo* m_screen;
+        pthread_t      m_thread;
+        volatile bool  m_running;
 
-        static std::map<u16, shared_ptr<vncserver>> m_servers;
+        vnc_fbdesc     m_fbdesc;
+        u8*            m_fb;
+
+        vector<function<void(u32, bool)>*> m_key_handler;
+
+        static std::map<u16, shared_ptr<vncserver>> servers;
+
+        void run();
+        void dokey(unsigned int key, bool down);
+
+        static void* thread_func(void* data);
+        static void  key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl);
 
         vncserver();
         vncserver(u16 port);
         vncserver(const vncserver&);
 
     public:
-        u16 get_port() const { return m_port; }
+        u16 get_port() const { return (u16)m_screen->port; }
+
+        u8*  setup_framebuffer(const vnc_fbdesc& desc);
+        void setup_framebuffer(const vnc_fbdesc& desc, u8* ptr);
+
+        void render();
 
         virtual ~vncserver();
+
+        void add_key_listener(function<void(u32, bool)>* handler);
+        void remove_key_listener(function<void(u32, bool)>* handler);
 
         static shared_ptr<vncserver> lookup(u16 port);
     };
