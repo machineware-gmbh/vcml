@@ -21,54 +21,81 @@
 #include <gtest/gtest.h>
 #include "vcml.h"
 
+using namespace vcml;
+using namespace vcml::debugging;
+
+TEST(vnc, fbmode) {
+    u32 resx = 800;
+    u32 resy = 600;
+    vnc_fbmode mode;
+
+    mode = fbmode_argb32(resx, resy);
+    EXPECT_EQ(mode.resx, resx);
+    EXPECT_EQ(mode.resy, resy);
+    EXPECT_EQ(mode.size, resx * resy * 4);
+
+    mode = fbmode_bgra32(resx, resy);
+    EXPECT_EQ(mode.resx, resx);
+    EXPECT_EQ(mode.resy, resy);
+    EXPECT_EQ(mode.size, resx * resy * 4);
+
+    mode = fbmode_rgb24(resx, resy);
+    EXPECT_EQ(mode.resx, resx);
+    EXPECT_EQ(mode.resy, resy);
+    EXPECT_EQ(mode.size, resx * resy * 3);
+
+    mode = fbmode_bgr24(resx, resy);
+    EXPECT_EQ(mode.resx, resx);
+    EXPECT_EQ(mode.resy, resy);
+    EXPECT_EQ(mode.size, resx * resy * 3);
+
+    mode = fbmode_rgb16(resx, resy);
+    EXPECT_EQ(mode.resx, resx);
+    EXPECT_EQ(mode.resy, resy);
+    EXPECT_EQ(mode.size, resx * resy * 2);
+
+    mode = fbmode_gray8(resx, resy);
+    EXPECT_EQ(mode.resx, resx);
+    EXPECT_EQ(mode.resy, resy);
+    EXPECT_EQ(mode.size, resx * resy * 1);
+}
+
+TEST(vnc, server) {
+    u16 port1 = 40000;
+    u16 port2 = 40001;
+
+    shared_ptr<vncserver> p1 = vncserver::lookup(port1);
+    shared_ptr<vncserver> p2 = vncserver::lookup(port1);
+    shared_ptr<vncserver> p3 = vncserver::lookup(port2);
+    shared_ptr<vncserver> p4 = vncserver::lookup(port2);
+    shared_ptr<vncserver> p5 = vncserver::lookup(port2);
+
+    EXPECT_EQ(p1->get_port(), port1);
+    EXPECT_EQ(p2->get_port(), port1);
+    EXPECT_EQ(p3->get_port(), port2);
+    EXPECT_EQ(p4->get_port(), port2);
+    EXPECT_EQ(p5->get_port(), port2);
+
+    EXPECT_EQ(p1, p2);
+    EXPECT_EQ(p3, p4);
+    EXPECT_EQ(p4, p5);
+
+    EXPECT_NE(p1, p3);
+    EXPECT_NE(p1, p4);
+    EXPECT_NE(p1, p5);
+
+    EXPECT_NE(p2, p3);
+    EXPECT_NE(p2, p4);
+    EXPECT_NE(p2, p5);
+
+    EXPECT_EQ(p1.use_count(), 3);
+    EXPECT_EQ(p2.use_count(), 3);
+    EXPECT_EQ(p3.use_count(), 4);
+    EXPECT_EQ(p4.use_count(), 4);
+    EXPECT_EQ(p5.use_count(), 4);
+}
+
 extern "C" int sc_main(int argc, char** argv) {
-
-    vcml::log_term logger;
-    logger.set_level(vcml::LOG_ERROR, vcml::LOG_DEBUG);
-
-    if (argc < 3) {
-        // automated testing will not work for this
-        puts("usage: ./test_vnc <dir> <port>");
-        return 0;
-    }
-
-    {
-        int port = atoi(argv[2]);
-        std::shared_ptr<vcml::debugging::vncserver> vnc =
-                vcml::debugging::vncserver::lookup(port);
-        vcml::log_debug("use count = %d", vnc.use_count());
-
-        bool running = true;
-        while (running) {/*
-            if (vnc->has_input()) {
-                vcml::u8 key = vnc->get_input();
-                printf("received key %d (0x%02x) '%c'\n", (int)key, (int)key, (char)key);
-
-                switch (key) {
-                case '1':
-                    vnc->change_resolution(640, 480);
-                    break;
-                case '2':
-                    vnc->change_resolution(800, 600);
-                    break;
-                case '3':
-                    vnc->change_resolution(1024, 768);
-                    break;
-
-                case 0x1b: // escape
-                    running = false;
-                    break;
-                default:
-                    // do nothing
-                    break;
-                }
-            }
-
-            usleep(100);
-            */
-        }
-    }
-
-    vcml::log_debug("end of program");
-    return 0;
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
