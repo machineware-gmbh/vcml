@@ -23,33 +23,6 @@
 
 namespace vcml { namespace opencores {
 
-#ifdef HAVE_LIBVNC
-    static debugging::vnc_fbmode find_mode(u32 resx, u32 resy, u32 bpp,
-                                           bool truecolor, bool host_endian) {
-        if (!truecolor)
-            return debugging::fbmode_argb32(resx, resy);
-
-        if (bpp == 1)
-            return debugging::fbmode_gray8(resx, resy);
-
-        if (host_endian) {
-            switch (bpp) {
-            case 4: return debugging::fbmode_argb32(resx, resy);
-            case 3: return debugging::fbmode_rgb24(resx, resy);
-            case 2: return debugging::fbmode_rgb16(resx, resy);
-            default: VCML_ERROR("unknown pixel format %dbpp", bpp * 8);
-            }
-        } else {
-            switch (bpp) {
-            case 4: return debugging::fbmode_bgra32(resx, resy);
-            case 3: return debugging::fbmode_bgr24(resx, resy);
-            case 2: return debugging::fbmode_rgb16(resx, resy);
-            default: VCML_ERROR("unknown pixel format %dbpp", bpp * 8);
-            }
-        }
-    }
-#endif
-
     SC_HAS_PROCESS(ocfbc);
 
     u32 ocfbc::read_STAT() {
@@ -141,13 +114,49 @@ namespace vcml { namespace opencores {
             }
 
             bool truecolor = (val & CTLR_PC) != CTLR_PC;
-            debugging::vnc_fbmode mode = find_mode(m_resx, m_resy, m_bpp,
-                                                   truecolor, is_host_endian());
+            debugging::vnc_fbmode mode;
+
+            // Below we should ideally just select the mode that suits our
+            // display mode and pass our own model endianess. However, some
+            // VNC clients seem to have trouble reading big endian data, and
+            // 24bpp modes are also not being treated consistently. Therefore
+            // below is a combination of endian + format that seems to work
+            // most of the time. Tested with RealVNC and Remmina.
+            switch (m_bpp) {
+            case 4: if (is_little_endian())
+                        mode = debugging::fbmode_argb32(m_resx, m_resy);
+                    else
+                        mode = debugging::fbmode_bgra32(m_resx, m_resy);
+                    mode.endian = VCML_ENDIAN_LITTLE;
+                    break;
+
+            case 3: if (is_little_endian())
+                        mode = debugging::fbmode_rgb24(m_resx, m_resy);
+                    else
+                        mode = debugging::fbmode_bgr24(m_resx, m_resy);
+                    mode.endian = VCML_ENDIAN_LITTLE;
+                    break;
+
+            case 2: mode = debugging::fbmode_rgb16(m_resx, m_resy);
+                    mode.endian = get_endian();
+                    break;
+
+            case 1: if (truecolor)
+                        mode = debugging::fbmode_gray8(m_resx, m_resy);
+                    else
+                        mode = debugging::fbmode_argb32(m_resx, m_resy);
+                    mode.endian = VCML_ENDIAN_LITTLE;
+                    break;
+
+            default:
+                VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
+            }
+
             shared_ptr<debugging::vncserver> vnc =
                     debugging::vncserver::lookup(vncport);
 
             // cannot use DMI with pseudocolor
-            if ((vram == NULL) || (!truecolor) || (m_bpp == 2)) {
+            if ((vram == NULL) || (!truecolor)) {
                 log_debug("copying vnc framebuffer from vram");
                 m_fb = vnc->setup_framebuffer(mode);
             } else {
@@ -200,80 +209,44 @@ namespace vcml { namespace opencores {
 
     void ocfbc::render() {
         if (m_fb != NULL) { // need to copy data to framebuffer manually
-            u8* fb = m_fb;
-            for (u32 y = 0; y < m_resy; y++) {
-                u32 burstsz = OCFBC_VBL(CTLR);
-                u32 linesz = m_resx * m_bpp;
-                u8 linebuf[linesz];
-                tlm_response_status rs;
+            tlm_response_status rs;
 
+            u32 burstsz = OCFBC_VBL(CTLR);
+            u32 linesz = m_resx * m_bpp;
+
+            bool truecolor = (CTLR & CTLR_PC) != CTLR_PC;
+            u8 linebuf[linesz];
+            u8* fb = m_fb;
+
+            for (u32 y = 0; y < m_resy; y++) {
                 // burst-read one horizontal line of pixels into buffer
                 for (u32 x = 0; x < linesz; x += burstsz) {
                     u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
                     u32 addr = base + y * linesz + x;
-                    if (failed(rs = OUT.read(addr, linebuf + x, burstsz))) {
+                    u8* dest = truecolor ? fb : linebuf;
+                    if (failed(rs = OUT.read(addr, dest + x, burstsz))) {
                         log_debug("failed to read vmem at 0x%08x: %s", addr,
                                   tlm_response_to_str(rs).c_str());
+                        STAT |= STAT_SINT;
+                        IRQ = true;
                     }
                 }
 
-                // Decode each line pixel by pixel and write to vnc framebuffer
-                // Note that fb is host endian, linebuf is target endian. How-
-                // ever, the format of fb has been adapted to match the target
-                // one as best as possible (e.g. ARGB becomes BGRA on big
-                // endian systems, etc.). So most of the time, a simple copy
-                // from linebuf to fb suffices.
-                for (u32 i = 0; i < linesz; i += m_bpp) {
-                    switch (m_bpp) {
-                    case 4:
-                        *fb++ = linebuf[i + 0]; // target b
-                        *fb++ = linebuf[i + 1]; // target g
-                        *fb++ = linebuf[i + 2]; // target r
-                        *fb++ = linebuf[i + 3]; // target a
-                        break;
+                if (truecolor) {
+                    fb += linesz; // done, data is already copied
+                } else {
+                    u32* current_palette = m_palette;
+                    if (STAT & STAT_ACMP)
+                        current_palette = m_palette + 0x100;
 
-                    case 3:
-                        *fb++ = linebuf[i + 0]; // target b
-                        *fb++ = linebuf[i + 1]; // target g
-                        *fb++ = linebuf[i + 2]; // target r
-                        break;
-
-                    case 2: {
-                        // libvnc internally expects rgb16 as bgr15
-                        u16 msb = is_big_endian() ? linebuf[i] : linebuf[i+1];
-                        u16 lsb = is_big_endian() ? linebuf[i+1] : linebuf[i];
-                        u16 rgb = (msb <<  8) | lsb;
-                        u16 b5  = (rgb >>  0) & 0x1F;
-                        u16 g6  = (rgb >>  5) & 0x3F;
-                        u16 r5  = (rgb >> 11) & 0x1F;
-                        u16 g5  = (g6  >>  1);
-                        u16 bgr = (b5  << 10) | (g5 << 5) | r5;
-                        *fb++   = (bgr >>  0) & 0xFF;
-                        *fb++   = (bgr >>  8) & 0xFF;
-                        break;
-                    }
-
-                    case 1:
-                        if (CTLR & CTLR_PC) {
-                            u32* cur_palette = m_palette;
-                            if (STAT & STAT_ACMP)
-                                cur_palette += 0x100;
-                            u32 color = cur_palette[linebuf[i]];
-                            if (!is_host_endian())
-                                color = bswap(color); // target -> host
-                            *fb++ = (color >>  0) & 0xFF; // b
-                            *fb++ = (color >>  8) & 0xFF; // g
-                            *fb++ = (color >> 16) & 0xFF; // r
-                        } else {
-                            *fb++ = linebuf[i];
-                            *fb++ = linebuf[i];
-                            *fb++ = linebuf[i];
-                        }
-                        fb++; // skip a
-                        break;
-
-                    default:
-                        VCML_ERROR("unknown pixel format %u bpp", m_bpp * 8);
+                    for (u32 x = 0; x < linesz; x++) {
+                        u32 color = current_palette[linebuf[x]];
+                        if (is_big_endian())
+                            color = bswap(color); // target -> host
+                        *fb++ = (color >>  0) & 0xFF; // b
+                        *fb++ = (color >>  8) & 0xFF; // g
+                        *fb++ = (color >> 16) & 0xFF; // r
+                        *fb++ = 0xFF; // a
                     }
                 }
 
@@ -307,6 +280,7 @@ namespace vcml { namespace opencores {
 
 #ifdef HAVE_LIBVNC
         debugging::vncserver::lookup(vncport)->render();
+
 #endif
     }
 
