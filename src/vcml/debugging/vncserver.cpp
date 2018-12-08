@@ -24,8 +24,8 @@
 
 namespace vcml { namespace debugging {
 
-    vnc_fbdesc fbdesc_argb32(u32 width, u32 height) {
-        vnc_fbdesc desc;
+    vnc_fbmode fbmode_argb32(u32 width, u32 height) {
+        vnc_fbmode desc;
 
         desc.resx = width;
         desc.resy = height;
@@ -33,16 +33,33 @@ namespace vcml { namespace debugging {
 
         desc.a.size = desc.r.size = desc.g.size = desc.b.size = 8;
 
-        desc.a.offset = 0;
-        desc.r.offset = 8;
+        desc.a.offset = 24;
+        desc.r.offset = 16;
+        desc.g.offset =  8;
+        desc.b.offset =  0;
+
+        return desc;
+    }
+
+    vnc_fbmode fbmode_bgra32(u32 width, u32 height) {
+        vnc_fbmode desc;
+
+        desc.resx = width;
+        desc.resy = height;
+        desc.size = width * height * 4;
+
+        desc.a.size = desc.r.size = desc.g.size = desc.b.size = 8;
+
+        desc.a.offset =  0;
+        desc.r.offset =  8;
         desc.g.offset = 16;
         desc.b.offset = 24;
 
         return desc;
     }
 
-    vnc_fbdesc fbdesc_rgb24(u32 width, u32 height) {
-        vnc_fbdesc desc;
+    vnc_fbmode fbmode_rgb24(u32 width, u32 height) {
+        vnc_fbmode desc;
 
         desc.resx = width;
         desc.resy = height;
@@ -53,15 +70,34 @@ namespace vcml { namespace debugging {
 
         desc.r.size = desc.g.size = desc.b.size = 8;
 
-        desc.r.offset = 0;
-        desc.g.offset = 8;
+        desc.r.offset = 16;
+        desc.g.offset =  8;
+        desc.b.offset =  0;
+
+        return desc;
+    }
+
+    vnc_fbmode fbmode_bgr24(u32 width, u32 height) {
+        vnc_fbmode desc;
+
+        desc.resx = width;
+        desc.resy = height;
+        desc.size = width * height * 3;
+
+        desc.a.size = 0;
+        desc.a.offset = 0;
+
+        desc.r.size = desc.g.size = desc.b.size = 8;
+
+        desc.r.offset =  0;
+        desc.g.offset =  8;
         desc.b.offset = 16;
 
         return desc;
     }
 
-    vnc_fbdesc fbdesc_rgb16(u32 width, u32 height) {
-        vnc_fbdesc desc;
+    vnc_fbmode fbmode_rgb16(u32 width, u32 height) {
+        vnc_fbmode desc;
 
         desc.resx = width;
         desc.resy = height;
@@ -74,15 +110,15 @@ namespace vcml { namespace debugging {
         desc.g.size = 6;
         desc.b.size = 5;
 
-        desc.r.offset = 0;
+        desc.r.offset = 11;
         desc.g.offset = 5;
-        desc.b.offset = 11;
+        desc.b.offset = 0;
 
         return desc;
     }
 
-    vnc_fbdesc fbdesc_gray8(u32 width, u32 height) {
-        vnc_fbdesc desc;
+    vnc_fbmode fbmode_gray8(u32 width, u32 height) {
+        vnc_fbmode desc;
 
         desc.resx = width;
         desc.resy = height;
@@ -151,23 +187,23 @@ namespace vcml { namespace debugging {
         m_screen(NULL),
         m_thread(),
         m_running(true),
-        m_fbdesc(fbdesc_argb32(800, 600)),
-        m_fb(new u8[m_fbdesc.size]),
+        m_fbmode(fbmode_argb32(800, 600)),
+        m_fb(NULL),
         m_key_handler() {
 
         rfbLog = &vncserver_log_func;
         rfbErr = &vncserver_err_func;
 
-        int w = m_fbdesc.resx;
-        int h = m_fbdesc.resy;
+        int w = m_fbmode.resx;
+        int h = m_fbmode.resy;
 
         m_screen = rfbGetScreen(NULL, NULL, w, h, 8, 4, 4);
         m_screen->port = m_screen->ipv6port = port;
         m_screen->kbdAddEvent = &vncserver::key_func;
-        m_screen->frameBuffer = (char*)m_fb;
 
-        // blue initial framebuffer
-        for (u32 i = 2; i < m_fbdesc.size; i += 4)
+        // setup green initial framebuffer
+        m_fb = setup_framebuffer(m_fbmode);
+        for (u32 i = 1; i < m_fbmode.size; i += 4)
             m_fb[i] = 0xff;
 
         rfbInitServer(m_screen);
@@ -203,14 +239,14 @@ namespace vcml { namespace debugging {
         stl_remove_erase(m_key_handler, handler);
     }
 
-    u8* vncserver::setup_framebuffer(const vnc_fbdesc& desc) {
+    u8* vncserver::setup_framebuffer(const vnc_fbmode& desc) {
         u8* fb = new u8[desc.size];
         setup_framebuffer(desc, fb);
         m_fb = fb;
         return fb;
     }
 
-    void vncserver::setup_framebuffer(const vnc_fbdesc& desc, u8* ptr) {
+    void vncserver::setup_framebuffer(const vnc_fbmode& desc, u8* ptr) {
         VCML_ERROR_ON(ptr == NULL, "attempt to map NULL as framebuffer");
 
         if (m_fb != NULL) {
@@ -218,7 +254,7 @@ namespace vcml { namespace debugging {
             m_fb = NULL;
         }
 
-        m_fbdesc = desc;
+        m_fbmode = desc;
         m_screen->frameBuffer = (char*)ptr;
 
         u8 thebits = desc.a.offset + desc.a.size;
@@ -236,8 +272,8 @@ namespace vcml { namespace debugging {
         if (desc.g.size > 0)
             samples++;
 
-        rfbNewFramebuffer(m_screen, m_screen->frameBuffer, m_fbdesc.resx,
-                          m_fbdesc.resy, desc.r.size, samples, thebits / 8);
+        rfbNewFramebuffer(m_screen, m_screen->frameBuffer, m_fbmode.resx,
+                          m_fbmode.resy, desc.r.size, samples, thebits / 8);
 
         m_screen->serverFormat.redShift   = desc.r.offset;
         m_screen->serverFormat.greenShift = desc.g.offset;
@@ -251,8 +287,8 @@ namespace vcml { namespace debugging {
     }
 
     void vncserver::render() {
-        int x2 = m_fbdesc.resx - 1;
-        int y2 = m_fbdesc.resy - 1;
+        int x2 = m_fbmode.resx - 1;
+        int y2 = m_fbmode.resy - 1;
         rfbMarkRectAsModified(m_screen, 0, 0, x2, y2);
     }
 

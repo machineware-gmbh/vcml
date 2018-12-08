@@ -23,6 +23,30 @@
 
 namespace vcml { namespace opencores {
 
+    debugging::vnc_fbmode ocfbc::lookup_mode(bool truecolor) const {
+        if (!truecolor)
+            return debugging::fbmode_argb32(m_resx, m_resy);
+
+        if (m_bpp == 1)
+            return debugging::fbmode_gray8(m_resx, m_resy);
+
+        if (is_host_endian()) {
+            switch (m_bpp) {
+            case 4: return debugging::fbmode_argb32(m_resx, m_resy);
+            case 3: return debugging::fbmode_rgb24(m_resx, m_resy);
+            case 2: return debugging::fbmode_rgb16(m_resx, m_resy);
+            default: VCML_ERROR("unknown pixel format %dbpp", m_bpp * 8);
+            }
+        } else {
+            switch (m_bpp) {
+            case 4: return debugging::fbmode_bgra32(m_resx, m_resy);
+            case 3: return debugging::fbmode_bgr24(m_resx, m_resy);
+            case 2: return debugging::fbmode_rgb16(m_resx, m_resy);
+            default: VCML_ERROR("unknown pixel format %dbpp", m_bpp * 8);
+            }
+        }
+    }
+
     SC_HAS_PROCESS(ocfbc);
 
     u32 ocfbc::read_STAT() {
@@ -98,41 +122,33 @@ namespace vcml { namespace opencores {
             m_bpp  = OCFBC_BPP(val);
 
 #ifdef HAVE_LIBVNC
+            u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
             u32 size = m_resx * m_resy * m_bpp;
             u8* vram = NULL;
 
             tlm_dmi dmi;
             tlm_generic_payload tx;
-            tx_setup(tx, TLM_READ_COMMAND, VBARA, NULL, size);
+            tx_setup(tx, TLM_READ_COMMAND, base, NULL, size);
             if (allow_dmi && OUT->get_direct_mem_ptr(tx, dmi)) {
                 if (dmi.is_read_allowed() &&
-                    dmi.get_start_address() <= VBARA &&
-                    dmi.get_end_address() >= VBARA + size) {
-                    vram = dmi.get_dmi_ptr() + VBARA - dmi.get_start_address();
+                    dmi.get_start_address() <= base &&
+                    dmi.get_end_address() >= base + size) {
+                    vram = dmi.get_dmi_ptr() + base - dmi.get_start_address();
                 }
             }
 
-            debugging::vnc_fbdesc desc;
-            switch (m_bpp) {
-            case 4: desc = debugging::fbdesc_argb32(m_resx, m_resy); break;
-            case 3: desc = debugging::fbdesc_rgb24(m_resx, m_resy); break;
-            case 2: desc = debugging::fbdesc_rgb16(m_resx, m_resy); break;
-            case 1: desc = debugging::fbdesc_gray8(m_resx, m_resy); break;
-            default:
-                VCML_ERROR("unknown pixel format %u bpp", m_bpp * 8);
-            }
-
+            bool truecolor = (val & CTLR_PC) != CTLR_PC;
+            debugging::vnc_fbmode mode = lookup_mode(truecolor);
             shared_ptr<debugging::vncserver> vnc =
                     debugging::vncserver::lookup(vncport);
 
             // cannot use DMI with pseudocolor
-            if ((vram == NULL) || (val & CTLR_PC)) {
+            if ((vram == NULL) || (!truecolor) || (m_bpp == 2)) {
                 log_debug("copying vnc framebuffer from vram");
-                desc = debugging::fbdesc_rgb24(m_resx, m_resy);
-                m_fb = vnc->setup_framebuffer(desc);
+                m_fb = vnc->setup_framebuffer(mode);
             } else {
                 log_debug("mapping vnc framebuffer into vram");
-                vnc->setup_framebuffer(desc, vram);
+                vnc->setup_framebuffer(mode, vram);
                 m_fb = NULL;
             }
 #endif
@@ -188,55 +204,69 @@ namespace vcml { namespace opencores {
                 tlm_response_status rs;
 
                 // burst-read one horizontal line of pixels into buffer
-                for (u32 off = 0; off < linesz; off += burstsz) {
+                for (u32 x = 0; x < linesz; x += burstsz) {
                     u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
-                    u32 addr = base + y * linesz + off;
-                    if (failed(rs = OUT.read(addr, linebuf + off, burstsz))) {
+                    u32 addr = base + y * linesz + x;
+                    if (failed(rs = OUT.read(addr, linebuf + x, burstsz))) {
                         log_debug("failed to read vmem at 0x%08x: %s", addr,
                                   tlm_response_to_str(rs).c_str());
                     }
                 }
 
-                // decode each line pixel by pixel and write to vnc framebuffer
-                u32 i = 0;
-                while (i < linesz) {
+                // Decode each line pixel by pixel and write to vnc framebuffer
+                // Note that fb is host endian, linebuf is target endian. How-
+                // ever, the format of fb has been adapted to match the target
+                // one as best as possible (e.g. ARGB becomes BGRA on big
+                // endian systems, etc.). So most of the time, a simple copy
+                // from linebuf to fb suffices.
+                for (u32 i = 0; i < linesz; i += m_bpp) {
                     switch (m_bpp) {
                     case 4:
-                        i++; // skip alpha
-                        // no break
+                        *fb++ = linebuf[i + 0]; // target b
+                        *fb++ = linebuf[i + 1]; // target g
+                        *fb++ = linebuf[i + 2]; // target r
+                        *fb++ = linebuf[i + 3]; // target a
+                        break;
 
                     case 3:
-                        *fb++ = linebuf[i++]; // r
-                        *fb++ = linebuf[i++]; // g
-                        *fb++ = linebuf[i++]; // b
+                        *fb++ = linebuf[i + 0]; // target b
+                        *fb++ = linebuf[i + 1]; // target g
+                        *fb++ = linebuf[i + 2]; // target r
                         break;
 
                     case 2: {
-                        u16 a = linebuf[i++];
-                        u16 b = linebuf[i++];
-                        u16 pixel = is_big_endian() ? a << 8 | b : b << 8 | a;
-                        *fb++ = ((((pixel >> 11) & 0x1F)) * 255) / 31;
-                        *fb++ = ((((pixel >>  5) & 0x3F)) * 255) / 63;
-                        *fb++ = ((((pixel >>  0) & 0x1F)) * 255) / 31;
+                        // libvnc internally expects rgb16 as bgr15
+                        u16 msb = is_big_endian() ? linebuf[i] : linebuf[i+1];
+                        u16 lsb = is_big_endian() ? linebuf[i+1] : linebuf[i];
+                        u16 rgb = (msb <<  8) | lsb;
+                        u16 b5  = (rgb >>  0) & 0x1F;
+                        u16 g6  = (rgb >>  5) & 0x3F;
+                        u16 r5  = (rgb >> 11) & 0x1F;
+                        u16 g5  = (g6  >>  1);
+                        u16 bgr = (b5  << 10) | (g5 << 5) | r5;
+                        *fb++   = (bgr >>  0) & 0xFF;
+                        *fb++   = (bgr >>  8) & 0xFF;
                         break;
                     }
 
-                    case 1: {
+                    case 1:
                         if (CTLR & CTLR_PC) {
                             u32* cur_palette = m_palette;
                             if (STAT & STAT_ACMP)
-                                 cur_palette += 0x100;
-                            u32 color = m_palette[linebuf[i++]];
-                            *fb++ = (color >>  8) & 0xFF; // r
-                            *fb++ = (color >> 16) & 0xFF; // g
-                            *fb++ = (color >> 24) & 0xFF; // b
+                                cur_palette += 0x100;
+                            u32 color = cur_palette[linebuf[i]];
+                            if (!is_host_endian())
+                                color = bswap(color); // target -> host
+                            *fb++ = (color >>  0) & 0xFF; // b
+                            *fb++ = (color >>  8) & 0xFF; // g
+                            *fb++ = (color >> 16) & 0xFF; // r
                         } else {
                             *fb++ = linebuf[i];
                             *fb++ = linebuf[i];
-                            *fb++ = linebuf[i++];
+                            *fb++ = linebuf[i];
                         }
+                        fb++; // skip a
                         break;
-                    }
 
                     default:
                         VCML_ERROR("unknown pixel format %u bpp", m_bpp * 8);
@@ -244,7 +274,7 @@ namespace vcml { namespace opencores {
                 }
 
                 // Note that the HSYNC interrupt will only be triggered when
-                // DMI is not used. Otherwise, this is never skipped executed
+                // DMI is not used. Otherwise, this is never executed
                 if (CTLR & CTLR_HIE) {
                     STAT |= STAT_HINT;
                     IRQ = true;

@@ -52,6 +52,8 @@ namespace vcml { namespace opencores {
         u32 m_resy;
         u32 m_bpp;
 
+        debugging::vnc_fbmode lookup_mode(bool truecolor) const;
+
         u32 read_STAT();
 
         u32 write_STAT(u32 val);

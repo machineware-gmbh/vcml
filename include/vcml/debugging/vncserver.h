@@ -43,12 +43,14 @@ namespace vcml { namespace debugging {
         vnc_color_format r;
         vnc_color_format g;
         vnc_color_format b;
-    } vnc_fbdesc;
+    } vnc_fbmode;
 
-    vnc_fbdesc fbdesc_argb32(u32 width, u32 height);
-    vnc_fbdesc fbdesc_rgb24(u32 width, u32 height);
-    vnc_fbdesc fbdesc_rgb16(u32 width, u32 height);
-    vnc_fbdesc fbdesc_gray8(u32 width, u32 height);
+    vnc_fbmode fbmode_argb32(u32 width, u32 height);
+    vnc_fbmode fbmode_bgra32(u32 width, u32 height);
+    vnc_fbmode fbmode_rgb24(u32 width, u32 height);
+    vnc_fbmode fbmode_bgr24(u32 width, u32 height);
+    vnc_fbmode fbmode_rgb16(u32 width, u32 height);
+    vnc_fbmode fbmode_gray8(u32 width, u32 height);
 
     class vncserver {
     private:
@@ -56,7 +58,7 @@ namespace vcml { namespace debugging {
         pthread_t      m_thread;
         volatile bool  m_running;
 
-        vnc_fbdesc     m_fbdesc;
+        vnc_fbmode     m_fbmode;
         u8*            m_fb;
 
         vector<function<void(u32, bool)>*> m_key_handler;
@@ -76,8 +78,8 @@ namespace vcml { namespace debugging {
     public:
         u16 get_port() const { return (u16)m_screen->port; }
 
-        u8*  setup_framebuffer(const vnc_fbdesc& desc);
-        void setup_framebuffer(const vnc_fbdesc& desc, u8* ptr);
+        u8*  setup_framebuffer(const vnc_fbmode& desc);
+        void setup_framebuffer(const vnc_fbmode& desc, u8* ptr);
 
         void render();
 
