@@ -23,29 +23,32 @@
 
 namespace vcml { namespace opencores {
 
-    debugging::vnc_fbmode ocfbc::lookup_mode(bool truecolor) const {
+#ifdef HAVE_LIBVNC
+    static debugging::vnc_fbmode find_mode(u32 resx, u32 resy, u32 bpp,
+                                           bool truecolor, bool host_endian) {
         if (!truecolor)
-            return debugging::fbmode_argb32(m_resx, m_resy);
+            return debugging::fbmode_argb32(resx, resy);
 
-        if (m_bpp == 1)
-            return debugging::fbmode_gray8(m_resx, m_resy);
+        if (bpp == 1)
+            return debugging::fbmode_gray8(resx, resy);
 
-        if (is_host_endian()) {
-            switch (m_bpp) {
-            case 4: return debugging::fbmode_argb32(m_resx, m_resy);
-            case 3: return debugging::fbmode_rgb24(m_resx, m_resy);
-            case 2: return debugging::fbmode_rgb16(m_resx, m_resy);
-            default: VCML_ERROR("unknown pixel format %dbpp", m_bpp * 8);
+        if (host_endian) {
+            switch (bpp) {
+            case 4: return debugging::fbmode_argb32(resx, resy);
+            case 3: return debugging::fbmode_rgb24(resx, resy);
+            case 2: return debugging::fbmode_rgb16(resx, resy);
+            default: VCML_ERROR("unknown pixel format %dbpp", bpp * 8);
             }
         } else {
-            switch (m_bpp) {
-            case 4: return debugging::fbmode_bgra32(m_resx, m_resy);
-            case 3: return debugging::fbmode_bgr24(m_resx, m_resy);
-            case 2: return debugging::fbmode_rgb16(m_resx, m_resy);
-            default: VCML_ERROR("unknown pixel format %dbpp", m_bpp * 8);
+            switch (bpp) {
+            case 4: return debugging::fbmode_bgra32(resx, resy);
+            case 3: return debugging::fbmode_bgr24(resx, resy);
+            case 2: return debugging::fbmode_rgb16(resx, resy);
+            default: VCML_ERROR("unknown pixel format %dbpp", bpp * 8);
             }
         }
     }
+#endif
 
     SC_HAS_PROCESS(ocfbc);
 
@@ -138,7 +141,8 @@ namespace vcml { namespace opencores {
             }
 
             bool truecolor = (val & CTLR_PC) != CTLR_PC;
-            debugging::vnc_fbmode mode = lookup_mode(truecolor);
+            debugging::vnc_fbmode mode = find_mode(m_resx, m_resy, m_bpp,
+                                                   truecolor, is_host_endian());
             shared_ptr<debugging::vncserver> vnc =
                     debugging::vncserver::lookup(vncport);
 
