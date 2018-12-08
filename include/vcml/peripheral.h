@@ -55,15 +55,15 @@ namespace vcml {
 
         property<string> backends;
 
+        vcml_endian get_endian() const { return m_endian; }
+        void set_endian(vcml_endian e) { m_endian = e; }
 
-        inline vcml_endian get_endian() const { return m_endian; }
-        inline void set_endian(vcml_endian e) { m_endian = e; }
+        void set_little_endian() { m_endian = VCML_ENDIAN_LITTLE; }
+        void set_big_endian() { m_endian = VCML_ENDIAN_BIG; }
 
-        inline void set_little_endian() { m_endian = VCML_ENDIAN_LITTLE; }
-        inline void set_big_endian() { m_endian = VCML_ENDIAN_BIG; }
-
-        inline bool is_little_endian() const;
-        inline bool is_big_endian() const;
+        bool is_little_endian() const;
+        bool is_big_endian() const;
+        bool is_host_endian() const;
 
         peripheral(const sc_module_name& nm, vcml_endian e = host_endian(),
                    const sc_time& read_latency = SC_ZERO_TIME,
@@ -99,6 +99,10 @@ namespace vcml {
 
     inline bool peripheral::is_big_endian() const {
         return m_endian == VCML_ENDIAN_BIG;
+    }
+
+    inline bool peripheral::is_host_endian() const {
+        return m_endian == host_endian();
     }
 
     template <typename T>

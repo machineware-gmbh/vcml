@@ -137,9 +137,9 @@ namespace vcml {
     using tlm_utils::simple_target_socket_tagged;
 
     enum vcml_endian {
-        VCML_ENDIAN_LITTLE = 0,
-        VCML_ENDIAN_BIG = 1,
-        VCML_ENDIAN_UNKNOWN = 2
+        VCML_ENDIAN_UNKNOWN = 0,
+        VCML_ENDIAN_LITTLE = 1,
+        VCML_ENDIAN_BIG = 2,
     };
 
     static inline vcml_endian host_endian() {
