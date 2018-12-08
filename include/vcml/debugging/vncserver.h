@@ -43,6 +43,7 @@ namespace vcml { namespace debugging {
         vnc_color_format r;
         vnc_color_format g;
         vnc_color_format b;
+        vcml_endian endian;
     } vnc_fbmode;
 
     vnc_fbmode fbmode_argb32(u32 width, u32 height);

@@ -25,117 +25,129 @@
 namespace vcml { namespace debugging {
 
     vnc_fbmode fbmode_argb32(u32 width, u32 height) {
-        vnc_fbmode desc;
+        vnc_fbmode mode;
 
-        desc.resx = width;
-        desc.resy = height;
-        desc.size = width * height * 4;
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = width * height * 4;
 
-        desc.a.size = desc.r.size = desc.g.size = desc.b.size = 8;
+        mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
 
-        desc.a.offset = 24;
-        desc.r.offset = 16;
-        desc.g.offset =  8;
-        desc.b.offset =  0;
+        mode.a.offset = 24;
+        mode.r.offset = 16;
+        mode.g.offset =  8;
+        mode.b.offset =  0;
 
-        return desc;
+        mode.endian = host_endian();
+
+        return mode;
     }
 
     vnc_fbmode fbmode_bgra32(u32 width, u32 height) {
-        vnc_fbmode desc;
+        vnc_fbmode mode;
 
-        desc.resx = width;
-        desc.resy = height;
-        desc.size = width * height * 4;
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = width * height * 4;
 
-        desc.a.size = desc.r.size = desc.g.size = desc.b.size = 8;
+        mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
 
-        desc.a.offset =  0;
-        desc.r.offset =  8;
-        desc.g.offset = 16;
-        desc.b.offset = 24;
+        mode.a.offset =  0;
+        mode.r.offset =  8;
+        mode.g.offset = 16;
+        mode.b.offset = 24;
 
-        return desc;
+        mode.endian = host_endian();
+
+        return mode;
     }
 
     vnc_fbmode fbmode_rgb24(u32 width, u32 height) {
-        vnc_fbmode desc;
+        vnc_fbmode mode;
 
-        desc.resx = width;
-        desc.resy = height;
-        desc.size = width * height * 3;
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = width * height * 3;
 
-        desc.a.size = 0;
-        desc.a.offset = 0;
+        mode.a.size = 0;
+        mode.a.offset = 0;
 
-        desc.r.size = desc.g.size = desc.b.size = 8;
+        mode.r.size = mode.g.size = mode.b.size = 8;
 
-        desc.r.offset = 16;
-        desc.g.offset =  8;
-        desc.b.offset =  0;
+        mode.r.offset = 16;
+        mode.g.offset =  8;
+        mode.b.offset =  0;
 
-        return desc;
+        mode.endian = host_endian();
+
+        return mode;
     }
 
     vnc_fbmode fbmode_bgr24(u32 width, u32 height) {
-        vnc_fbmode desc;
+        vnc_fbmode mode;
 
-        desc.resx = width;
-        desc.resy = height;
-        desc.size = width * height * 3;
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = width * height * 3;
 
-        desc.a.size = 0;
-        desc.a.offset = 0;
+        mode.a.size = 0;
+        mode.a.offset = 0;
 
-        desc.r.size = desc.g.size = desc.b.size = 8;
+        mode.r.size = mode.g.size = mode.b.size = 8;
 
-        desc.r.offset =  0;
-        desc.g.offset =  8;
-        desc.b.offset = 16;
+        mode.r.offset =  0;
+        mode.g.offset =  8;
+        mode.b.offset = 16;
 
-        return desc;
+        mode.endian = host_endian();
+
+        return mode;
     }
 
     vnc_fbmode fbmode_rgb16(u32 width, u32 height) {
-        vnc_fbmode desc;
+        vnc_fbmode mode;
 
-        desc.resx = width;
-        desc.resy = height;
-        desc.size = width * height * 2;
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = width * height * 2;
 
-        desc.a.size = 0;
-        desc.a.offset = 0;
+        mode.a.size = 0;
+        mode.a.offset = 0;
 
-        desc.r.size = 5;
-        desc.g.size = 6;
-        desc.b.size = 5;
+        mode.r.size = 5;
+        mode.g.size = 6;
+        mode.b.size = 5;
 
-        desc.r.offset = 11;
-        desc.g.offset = 5;
-        desc.b.offset = 0;
+        mode.r.offset = 11;
+        mode.g.offset = 5;
+        mode.b.offset = 0;
 
-        return desc;
+        mode.endian = host_endian();
+
+        return mode;
     }
 
     vnc_fbmode fbmode_gray8(u32 width, u32 height) {
-        vnc_fbmode desc;
+        vnc_fbmode mode;
 
-        desc.resx = width;
-        desc.resy = height;
-        desc.size = width * height;
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = width * height;
 
-        desc.a.size = 0;
-        desc.a.offset = 0;
+        mode.a.size = 0;
+        mode.a.offset = 0;
 
-        desc.r.size = 8;
-        desc.g.size = 8;
-        desc.b.size = 8;
+        mode.r.size = 8;
+        mode.g.size = 8;
+        mode.b.size = 8;
 
-        desc.r.offset = 0;
-        desc.g.offset = 0;
-        desc.b.offset = 0;
+        mode.r.offset = 0;
+        mode.g.offset = 0;
+        mode.b.offset = 0;
 
-        return desc;
+        mode.endian = host_endian();
+
+        return mode;
     }
 
     std::map<u16, shared_ptr<vncserver>> vncserver::servers;
@@ -246,7 +258,7 @@ namespace vcml { namespace debugging {
         return fb;
     }
 
-    void vncserver::setup_framebuffer(const vnc_fbmode& desc, u8* ptr) {
+    void vncserver::setup_framebuffer(const vnc_fbmode& mode, u8* ptr) {
         VCML_ERROR_ON(ptr == NULL, "attempt to map NULL as framebuffer");
 
         if (m_fb != NULL) {
@@ -254,36 +266,37 @@ namespace vcml { namespace debugging {
             m_fb = NULL;
         }
 
-        m_fbmode = desc;
+        m_fbmode = mode;
         m_screen->frameBuffer = (char*)ptr;
 
-        u8 thebits = desc.a.offset + desc.a.size;
-        thebits = max<u8>(thebits, desc.r.size + desc.r.offset);
-        thebits = max<u8>(thebits, desc.g.size + desc.g.offset);
-        thebits = max<u8>(thebits, desc.b.size + desc.b.offset);
+        u8 thebits = mode.a.offset + mode.a.size;
+        thebits = max<u8>(thebits, mode.r.size + mode.r.offset);
+        thebits = max<u8>(thebits, mode.g.size + mode.g.offset);
+        thebits = max<u8>(thebits, mode.b.size + mode.b.offset);
 
         u32 samples = 0;
-        if (desc.a.size > 0)
+        if (mode.a.size > 0)
             samples++;
-        if (desc.r.size > 0)
+        if (mode.r.size > 0)
             samples++;
-        if (desc.g.size > 0)
+        if (mode.g.size > 0)
             samples++;
-        if (desc.g.size > 0)
+        if (mode.g.size > 0)
             samples++;
 
         rfbNewFramebuffer(m_screen, m_screen->frameBuffer, m_fbmode.resx,
-                          m_fbmode.resy, desc.r.size, samples, thebits / 8);
+                          m_fbmode.resy, mode.r.size, samples, thebits / 8);
 
-        m_screen->serverFormat.redShift   = desc.r.offset;
-        m_screen->serverFormat.greenShift = desc.g.offset;
-        m_screen->serverFormat.blueShift  = desc.b.offset;
+        m_screen->serverFormat.redShift   = mode.r.offset;
+        m_screen->serverFormat.greenShift = mode.g.offset;
+        m_screen->serverFormat.blueShift  = mode.b.offset;
 
-        m_screen->serverFormat.redMax   = (1 << desc.r.size) - 1;
-        m_screen->serverFormat.greenMax = (1 << desc.g.size) - 1;
-        m_screen->serverFormat.blueMax  = (1 << desc.b.size) - 1;
+        m_screen->serverFormat.redMax   = (1 << mode.r.size) - 1;
+        m_screen->serverFormat.greenMax = (1 << mode.g.size) - 1;
+        m_screen->serverFormat.blueMax  = (1 << mode.b.size) - 1;
 
         m_screen->serverFormat.bitsPerPixel = thebits;
+        m_screen->serverFormat.bigEndian = mode.endian == VCML_ENDIAN_BIG;
     }
 
     void vncserver::render() {
