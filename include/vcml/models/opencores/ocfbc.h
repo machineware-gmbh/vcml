@@ -40,7 +40,7 @@ namespace vcml { namespace opencores {
     private:
         enum palette_info {
             PALETTE_ADDR = 0x800,
-            PALETTE_SIZE = 0x200
+            PALETTE_SIZE = 0x200 // 2x 256x4bytes
         };
 
         const range m_palette_addr;
@@ -54,6 +54,7 @@ namespace vcml { namespace opencores {
 
         u32 read_STAT();
 
+        u32 write_STAT(u32 val);
         u32 write_CTRL(u32 val);
         u32 write_HTIM(u32 val);
         u32 write_VTIM(u32 val);
@@ -73,7 +74,7 @@ namespace vcml { namespace opencores {
         ocfbc(const ocfbc&);
 
     public:
-        enum control_status {
+        enum control_bits {
             CTLR_VEN   = 1 << 0,  /* video enable */
             CTLR_VIE   = 1 << 1,  /* vsync interrupt enable */
             CTLR_HIE   = 1 << 2,  /* hsync interrupt enable */
@@ -92,12 +93,26 @@ namespace vcml { namespace opencores {
             CTLR_PC    = 1 << 11, /* 8 bit pseudo color */
         };
 
+        enum status_bits {
+            STAT_SINT   = 1 << 0,  /* system error interrupt pending */
+            STAT_LUINT  = 1 << 1,  /* line FIFO underrun interrupt pending */
+            STAT_VINT   = 1 << 4,  /* vertical interrupt pending */
+            STAT_HINT   = 1 << 5,  /* horizontal interrupt pending */
+            STAT_VBSINT = 1 << 6,  /* video bank switch interrupt pending */
+            STAT_CBSINT = 1 << 7,  /* CLUT bank switch interrupt pending */
+            STAT_AVMP   = 1 << 16, /* active video memory page */
+            STAT_ACMP   = 1 << 17, /* active CLUT memory page */
+            STAT_HC0A   = 1 << 20, /* hardware cursor 0 available */
+            STAT_HC1A   = 1 << 24, /* hardware cursor 1 available */
+        };
+
         reg<ocfbc, u32> CTLR;
         reg<ocfbc, u32> STAT;
         reg<ocfbc, u32> HTIM;
         reg<ocfbc, u32> VTIM;
         reg<ocfbc, u32> HVLEN;
         reg<ocfbc, u32> VBARA;
+        reg<ocfbc, u32> VBARB;
 
         out_port IRQ;
         slave_socket IN;

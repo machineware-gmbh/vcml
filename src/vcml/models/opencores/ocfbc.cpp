@@ -30,6 +30,43 @@ namespace vcml { namespace opencores {
         return STAT;
     }
 
+    u32 ocfbc::write_STAT(u32 val) {
+        // only the lower 8 bits are writable
+        val = (STAT & 0xFFFFFF00) | (val & 0xFF);
+
+        if ((STAT & STAT_SINT) && !(val & STAT_SINT)) {
+            log_debug("clearing system error interrupt");
+            IRQ = false;
+        }
+
+        if ((STAT & STAT_LUINT) && !(val & STAT_LUINT)) {
+            log_debug("clearing FIFO underrun interrupt");
+            IRQ = false;
+        }
+
+        if ((STAT & STAT_VINT) && !(val & STAT_VINT)) {
+            log_debug("clearing vertical interrupt");
+            IRQ = false;
+        }
+
+        if ((STAT & STAT_HINT) && !(val & STAT_HINT)) {
+            log_debug("clearing horizontal interrupt");
+            IRQ = false;
+        }
+
+        if ((STAT & STAT_VBSINT) && !(val & STAT_VBSINT)) {
+            log_debug("clearing video bank switch interrupt");
+            IRQ = false;
+        }
+
+        if ((STAT & STAT_CBSINT) && !(val & STAT_CBSINT)) {
+            log_debug("clearing color bank switch interrupt");
+            IRQ = false;
+        }
+
+        return val;
+    }
+
     u32 ocfbc::write_CTRL(u32 val) {
         VCML_LOG_REG_BIT_CHANGE(CTLR_VEN,   CTLR, val);
         VCML_LOG_REG_BIT_CHANGE(CTLR_VIE,   CTLR, val);
@@ -152,7 +189,8 @@ namespace vcml { namespace opencores {
 
                 // burst-read one horizontal line of pixels into buffer
                 for (u32 off = 0; off < linesz; off += burstsz) {
-                    u32 addr = VBARA + y * linesz + off;
+                    u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
+                    u32 addr = base + y * linesz + off;
                     if (failed(rs = OUT.read(addr, linebuf + off, burstsz))) {
                         log_debug("failed to read vmem at 0x%08x: %s", addr,
                                   tlm_response_to_str(rs).c_str());
@@ -185,6 +223,9 @@ namespace vcml { namespace opencores {
 
                     case 1: {
                         if (CTLR & CTLR_PC) {
+                            u32* cur_palette = m_palette;
+                            if (STAT & STAT_ACMP)
+                                 cur_palette += 0x100;
                             u32 color = m_palette[linebuf[i++]];
                             *fb++ = (color >>  8) & 0xFF; // r
                             *fb++ = (color >> 16) & 0xFF; // g
@@ -201,7 +242,33 @@ namespace vcml { namespace opencores {
                         VCML_ERROR("unknown pixel format %u bpp", m_bpp * 8);
                     }
                 }
+
+                // Note that the HSYNC interrupt will only be triggered when
+                // DMI is not used. Otherwise, this is never skipped executed
+                if (CTLR & CTLR_HIE) {
+                    STAT |= STAT_HINT;
+                    IRQ = true;
+                }
             }
+        }
+
+        if (CTLR & CTLR_CBSWE) {
+            STAT ^= STAT_ACMP;   // toggle ACMP bit
+            CTLR &= ~CTLR_CBSWE; // clear CBSWE bit
+            if (CTLR & CTLR_CBSIE)
+                IRQ = true;
+        }
+
+        if (CTLR & CTLR_VBSWE) {
+            STAT ^= STAT_AVMP;   // toggle AVMP bit
+            CTLR &= ~CTLR_VBSWE; // clear VBSWE bit
+            if (CTLR & CTLR_VBSIE)
+                IRQ = true;
+        }
+
+        if (CTLR & CTLR_VIE) {
+            STAT |= STAT_VINT;
+            IRQ = true; // VSYNC interrupt
         }
 
 #ifdef HAVE_LIBVNC
@@ -242,6 +309,7 @@ namespace vcml { namespace opencores {
         VTIM("VTIMR", 0x0c, 0),
         HVLEN("HVLEN", 0x10, 0),
         VBARA("VBARA", 0x14, 0),
+        VBARB("VBARB", 0x18, 0),
         IRQ("IRQ"),
         IN("IN"),
         OUT("OUT"),
@@ -251,8 +319,9 @@ namespace vcml { namespace opencores {
         CTLR.allow_read_write();
         CTLR.write = &ocfbc::write_CTRL;
 
-        STAT.allow_read();
+        STAT.allow_read_write();
         STAT.read = &ocfbc::read_STAT;
+        STAT.write = &ocfbc::write_STAT;
 
         HTIM.allow_read_write();
         HTIM.write = &ocfbc::write_HTIM;
