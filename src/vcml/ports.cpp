@@ -59,7 +59,7 @@ namespace vcml {
     }
 
     void out_port::write(bool set) {
-        if (m_state != set) {
+        if ((*this)->read() != set) {
             m_state = set;
             m_update.notify(SC_ZERO_TIME);
         }
