@@ -21,6 +21,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [Generic Memory](models/generic_mem.md)
   * [Generic Bus](models/generic_bus.md)
   * [8250 UART](models/uart8250.md)
+  * [DS1742 RTC](models/rtc1742.md)
   * [OpenCores ETHOC](models/oc_ethoc.md)
   * [OpenCores OMPIC](models/oc_ompic.md)
   * [OpenCores OCKBD](models/oc_ockbd.md)

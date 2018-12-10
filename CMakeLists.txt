@@ -73,6 +73,7 @@ set(sources
     "${src}/vcml/models/generic/memory.cpp"
     "${src}/vcml/models/generic/crossbar.cpp"
     "${src}/vcml/models/generic/uart8250.cpp"
+    "${src}/vcml/models/generic/rtc1742.cpp"
     "${src}/vcml/models/opencores/ompic.cpp"
     "${src}/vcml/models/opencores/ethoc.cpp"
     "${src}/vcml/models/opencores/ockbd.cpp"
