@@ -137,7 +137,6 @@ namespace vcml { namespace generic {
                      nbytes, binary.c_str());
         }
 
-        nbytes = min(nbytes, size - offset);
         file.seekg(0, std::ios::beg);
         file.read((char*)(m_memory + offset), nbytes);
     }
