@@ -25,6 +25,22 @@ The properties `loglvl` and `trace_errors` require [`loggers`](../logging.md).
 The `vncport` property is only used if VCML has been build with VNC support.
 
 ----
+## Commands
+The model supports the following commands during simulation:
+
+| Command       | Description                           |
+| ------------- | ------------------------------------- |
+| `clist`       | Lists available commands              |
+| `cinfo <cmd>` | Shows information about command `cmd` |
+| `reset`       | Resets the component                  |
+| `abort`       | Aborts the simulation                 |
+| `info`        | Prints internal model state           |
+
+In order to execute commands, an active VSP session is required. Tools such
+as [`viper`](https://github.com/janweinstock/viper/) can be used as a
+graphical frontend for running commands via VSP.
+
+----
 ## Hardware Interface
 The following ports and sockets must be connected prior to simulating:
 

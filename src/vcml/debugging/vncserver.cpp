@@ -202,6 +202,7 @@ namespace vcml { namespace debugging {
         m_fbmode(fbmode_argb32(800, 600)),
         m_fb(NULL),
         m_key_handler() {
+        VCML_ERROR_ON(port == 0, "invalid port specified: %d", (int)port);
 
         rfbLog = &vncserver_log_func;
         rfbErr = &vncserver_err_func;

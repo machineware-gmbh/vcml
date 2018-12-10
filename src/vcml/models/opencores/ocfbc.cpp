@@ -92,80 +92,14 @@ namespace vcml { namespace opencores {
 
         if ((val & CTLR_VEN) && !(CTLR & CTLR_VEN)) {
             log_debug("device enabled, video ram at 0x%08x", VBARA.get());
+            m_enable.notify(SC_ZERO_TIME);
 
             m_resx = (HTIM & 0xffff) + 1;
             m_resy = (VTIM & 0xffff) + 1;
             m_bpp  = OCFBC_BPP(val);
+            m_pc   = (val & CTLR_PC) == CTLR_PC;
 
-#ifdef HAVE_LIBVNC
-            u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
-            u32 size = m_resx * m_resy * m_bpp;
-            u8* vram = NULL;
-
-            tlm_dmi dmi;
-            tlm_generic_payload tx;
-            tx_setup(tx, TLM_READ_COMMAND, base, NULL, size);
-            if (allow_dmi && OUT->get_direct_mem_ptr(tx, dmi)) {
-                if (dmi.is_read_allowed() &&
-                    dmi.get_start_address() <= base &&
-                    dmi.get_end_address() >= base + size) {
-                    vram = dmi.get_dmi_ptr() + base - dmi.get_start_address();
-                }
-            }
-
-            bool truecolor = (val & CTLR_PC) != CTLR_PC;
-            debugging::vnc_fbmode mode;
-
-            // Below we should ideally just select the mode that suits our
-            // display mode and pass our own model endianess. However, some
-            // VNC clients seem to have trouble reading big endian data, and
-            // 24bpp modes are also not being treated consistently. Therefore
-            // below is a combination of endian + format that seems to work
-            // most of the time. Tested with RealVNC and Remmina.
-            switch (m_bpp) {
-            case 4: if (is_little_endian())
-                        mode = debugging::fbmode_argb32(m_resx, m_resy);
-                    else
-                        mode = debugging::fbmode_bgra32(m_resx, m_resy);
-                    mode.endian = VCML_ENDIAN_LITTLE;
-                    break;
-
-            case 3: if (is_little_endian())
-                        mode = debugging::fbmode_rgb24(m_resx, m_resy);
-                    else
-                        mode = debugging::fbmode_bgr24(m_resx, m_resy);
-                    mode.endian = VCML_ENDIAN_LITTLE;
-                    break;
-
-            case 2: mode = debugging::fbmode_rgb16(m_resx, m_resy);
-                    mode.endian = get_endian();
-                    break;
-
-            case 1: if (truecolor)
-                        mode = debugging::fbmode_gray8(m_resx, m_resy);
-                    else
-                        mode = debugging::fbmode_argb32(m_resx, m_resy);
-                    mode.endian = VCML_ENDIAN_LITTLE;
-                    break;
-
-            default:
-                VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
-            }
-
-            shared_ptr<debugging::vncserver> vnc =
-                    debugging::vncserver::lookup(vncport);
-
-            // cannot use DMI with pseudocolor
-            if ((vram == NULL) || (!truecolor)) {
-                log_debug("copying vnc framebuffer from vram");
-                m_fb = vnc->setup_framebuffer(mode);
-            } else {
-                log_debug("mapping vnc framebuffer into vram");
-                vnc->setup_framebuffer(mode, vram);
-                m_fb = NULL;
-            }
-#endif
-            m_enable.notify(SC_ZERO_TIME);
+            create_framebuffer();
         }
 
         return val;
@@ -207,6 +141,87 @@ namespace vcml { namespace opencores {
         return TLM_OK_RESPONSE;
     }
 
+    void ocfbc::create_framebuffer() {
+        if (vncport == 0)
+            return;
+
+#ifdef HAVE_LIBVNC
+        u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
+        u32 size = m_resx * m_resy * m_bpp;
+        u8* vram = NULL;
+
+        tlm_dmi dmi;
+        tlm_generic_payload tx;
+        tx_setup(tx, TLM_READ_COMMAND, base, NULL, size);
+        if (allow_dmi && OUT->get_direct_mem_ptr(tx, dmi)) {
+            if (dmi.is_read_allowed() &&
+                dmi.get_start_address() <= base &&
+                dmi.get_end_address() >= base + size) {
+                vram = dmi.get_dmi_ptr() + base - dmi.get_start_address();
+            }
+        }
+
+        debugging::vnc_fbmode mode;
+        // Below we should ideally just select the mode that suits our
+        // display mode and pass our own model endianess. However, some
+        // VNC clients seem to have trouble reading big endian data, and
+        // 24bpp modes are also not being treated consistently. Therefore
+        // below is a combination of endian + format that seems to work
+        // most of the time. Tested with RealVNC and Remmina.
+        switch (m_bpp) {
+        case 4: if (is_little_endian())
+                    mode = debugging::fbmode_argb32(m_resx, m_resy);
+                else
+                    mode = debugging::fbmode_bgra32(m_resx, m_resy);
+                mode.endian = VCML_ENDIAN_LITTLE;
+                break;
+
+        case 3: if (is_little_endian())
+                    mode = debugging::fbmode_rgb24(m_resx, m_resy);
+                else
+                    mode = debugging::fbmode_bgr24(m_resx, m_resy);
+                mode.endian = VCML_ENDIAN_LITTLE;
+                break;
+
+        case 2: mode = debugging::fbmode_rgb16(m_resx, m_resy);
+                mode.endian = get_endian();
+                break;
+
+        case 1: if (m_pc)
+                    mode = debugging::fbmode_argb32(m_resx, m_resy);
+                else
+                    mode = debugging::fbmode_gray8(m_resx, m_resy);
+                mode.endian = VCML_ENDIAN_LITTLE;
+                break;
+
+        default:
+            VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
+        }
+
+        shared_ptr<debugging::vncserver> vnc =
+                debugging::vncserver::lookup(vncport);
+
+        // cannot use DMI with pseudocolor
+        if ((vram == NULL) || (m_pc)) {
+            log_debug("copying vnc framebuffer from vram");
+            m_fb = vnc->setup_framebuffer(mode);
+        } else {
+            log_debug("mapping vnc framebuffer into vram");
+            vnc->setup_framebuffer(mode, vram);
+            m_fb = NULL;
+        }
+#endif
+    }
+
+    void ocfbc::render_framebuffer() {
+        if (vncport == 0)
+            return;
+
+#ifdef HAVE_LIBVNC
+        debugging::vncserver::lookup(vncport)->render();
+#endif
+    }
+
     void ocfbc::render() {
         if (m_fb != NULL) { // need to copy data to framebuffer manually
             tlm_response_status rs;
@@ -214,7 +229,6 @@ namespace vcml { namespace opencores {
             u32 burstsz = OCFBC_VBL(CTLR);
             u32 linesz = m_resx * m_bpp;
 
-            bool truecolor = (CTLR & CTLR_PC) != CTLR_PC;
             u8 linebuf[linesz];
             u8* fb = m_fb;
 
@@ -223,7 +237,7 @@ namespace vcml { namespace opencores {
                 for (u32 x = 0; x < linesz; x += burstsz) {
                     u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
                     u32 addr = base + y * linesz + x;
-                    u8* dest = truecolor ? fb : linebuf;
+                    u8* dest = m_pc ? linebuf : fb;
                     if (failed(rs = OUT.read(addr, dest + x, burstsz))) {
                         log_debug("failed to read vmem at 0x%08x: %s", addr,
                                   tlm_response_to_str(rs).c_str());
@@ -232,7 +246,7 @@ namespace vcml { namespace opencores {
                     }
                 }
 
-                if (truecolor) {
+                if (!m_pc) {
                     fb += linesz; // done, data is already copied
                 } else {
                     u32* current_palette = m_palette;
@@ -278,10 +292,7 @@ namespace vcml { namespace opencores {
             IRQ = true; // VSYNC interrupt
         }
 
-#ifdef HAVE_LIBVNC
-        debugging::vncserver::lookup(vncport)->render();
-
-#endif
+        render_framebuffer(); // output image
     }
 
     void ocfbc::update() {
@@ -302,6 +313,14 @@ namespace vcml { namespace opencores {
         }
     }
 
+    bool ocfbc::cmd_info(const vector<string>& args, ostream& os) {
+        os << "resolution:  " << m_resx << "x" << m_resy
+           << "@" << clock.get() << "Hz" << std::endl
+           << "framebuffer: " << (m_fb ? "copied" : "mapped") << std::endl
+           << "interrupt:   " << (IRQ.read() ? "set" : "cleared") << std::endl;
+        return true;
+    }
+
     ocfbc::ocfbc(const sc_module_name& nm):
         peripheral(nm),
         m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
@@ -310,6 +329,7 @@ namespace vcml { namespace opencores {
         m_resx(0),
         m_resy(0),
         m_bpp(0),
+        m_pc(false),
         m_enable("enabled"),
         CTLR("CTRLR", 0x00, 0),
         STAT("STATR", 0x04, 0),
@@ -338,6 +358,9 @@ namespace vcml { namespace opencores {
         VTIM.write = &ocfbc::write_VTIM;
 
         SC_THREAD(update);
+
+        register_command("info", 0, this, &ocfbc::cmd_info,
+                         "shows information about the framebuffer");
     }
 
     ocfbc::~ocfbc() {

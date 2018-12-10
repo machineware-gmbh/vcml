@@ -44,13 +44,14 @@ namespace vcml { namespace opencores {
         };
 
         const range m_palette_addr;
-        u32 m_palette[PALETTE_SIZE];
+        u32  m_palette[PALETTE_SIZE];
 
-        u8* m_fb;
+        u8*  m_fb;
 
-        u32 m_resx;
-        u32 m_resy;
-        u32 m_bpp;
+        u32  m_resx;
+        u32  m_resy;
+        u32  m_bpp;
+        bool m_pc;
 
         u32 read_STAT();
 
@@ -66,8 +67,13 @@ namespace vcml { namespace opencores {
 
         sc_event m_enable;
 
+        void create_framebuffer();
+        void render_framebuffer();
+
         void render();
         void update();
+
+        bool cmd_info(const vector<string>& args, ostream& os);
 
         // disabled
         ocfbc();
