@@ -265,12 +265,16 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_mem_read(const char* command) {
-        unsigned int addr, size;
-        if (sscanf(command, "m%x,%x", &addr, &size) != 2)
-            VCML_ERROR("malformed command '%s'", command);
+        unsigned long long addr, size;
+        if (sscanf(command, "m%llx,%llx", &addr, &size) != 2) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
-        if (size > VCML_GDBSERVER_BUFSIZE)
-            VCML_ERROR("too much data requested: %d bytes", size);
+        if (size > VCML_GDBSERVER_BUFSIZE) {
+            log_warn("too much data requested: %llu bytes", size);
+            return ERR_PARAM;
+        }
 
         stringstream ss;
         ss << std::hex << std::setfill('0');
@@ -285,16 +289,22 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_mem_write(const char* command) {
-        unsigned int addr, size;
-        if (sscanf(command, "M%x,%x", &addr, &size) != 2)
-            VCML_ERROR("malformed command '%s'", command);
+        unsigned long long addr, size;
+        if (sscanf(command, "M%llx,%llx", &addr, &size) != 2) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
-        if (size > VCML_GDBSERVER_BUFSIZE)
-            VCML_ERROR("too much data requested: %d bytes", size);
+        if (size > VCML_GDBSERVER_BUFSIZE) {
+            log_warn("too much data requested: %llu bytes", size);
+            return ERR_PARAM;
+        }
 
         const char* data = strchr(command, ':');
-        if (data == NULL)
-            VCML_ERROR("malformed command '%s'", command);
+        if (data == NULL) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
         data++;
 
@@ -307,19 +317,26 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_mem_write_bin(const char* command) {
-        unsigned int addr, size;
-        if (sscanf(command, "X%x,%x:", &addr, &size) != 2)
-            VCML_ERROR("malformed command '%s'", command);
+        unsigned long long addr, size;
+        if (sscanf(command, "X%llx,%llx:", &addr, &size) != 2) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
-        if (size > VCML_GDBSERVER_BUFSIZE)
-            VCML_ERROR("too much data requested: %d bytes", size);
+        if (size > VCML_GDBSERVER_BUFSIZE) {
+            log_warn("too much data requested: %llu bytes", size);
+            return ERR_PARAM;
+        }
 
         if (size == 0)
             return "OK"; // empty load to test if binary write is supported
 
         const char* data = strchr(command, ':');
-        if (data == NULL)
-            VCML_ERROR("malformed command '%s'", command);
+        if (data == NULL) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
+
         data++;
 
         u8 buffer[VCML_GDBSERVER_BUFSIZE];
@@ -331,9 +348,11 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_breakpoint_set(const char* command) {
-        unsigned int type, addr, length;
-        if (sscanf(command, "Z%x,%x,%x", &type, &addr, &length) != 3)
-            VCML_ERROR("malformed command '%s'", command);
+        unsigned long long type, addr, length;
+        if (sscanf(command, "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
         // ToDO: we assume type = r/w breakpoint and length = 4...
         m_stub->async_insert_breakpoint(addr);
@@ -342,9 +361,11 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_breakpoint_delete(const char* command) {
-        unsigned int type, addr, length;
-        if (sscanf(command, "z%x,%x,%x", &type, &addr, &length) != 3)
-            VCML_ERROR("malformed command '%s'", command);
+        unsigned long long type, addr, length;
+        if (sscanf(command, "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
+            log_warn("malformed command '%s'", command);
+            return ERR_COMMAND;
+        }
 
         // ToDO: we assume type = r/w breakpoint and length = 4...
         m_stub->async_remove_breakpoint(addr);
