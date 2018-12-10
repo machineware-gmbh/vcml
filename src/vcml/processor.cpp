@@ -138,72 +138,6 @@ namespace vcml {
         return true;
     }
 
-    bool processor::cmd_bp(const vector<string>& args, ostream& os) {
-        u64 addr = strtoul(args[0].c_str(), NULL, 0);
-        if (m_symbols) {
-            elf_symbol* sym = m_symbols->get_symbol(args[0]);
-            if (sym)
-                addr = sym->get_virt_addr();
-        }
-
-        if (!gdb_insert_breakpoint(addr)) { // implementation specific
-            os << "Failed to insert breakpoint at 0x" << HEX(addr, 16);
-            return false;
-        }
-
-        m_breakpoints.push_back(addr);
-        os << "Inserted breakpoint at 0x" << HEX(addr, 16);
-        return true;
-    }
-
-    bool processor::cmd_rmbp(const vector<string>& args, ostream& os) {
-        u64 addr = strtoul(args[0].c_str(), NULL, 0);
-        if (m_symbols) {
-            elf_symbol* sym = m_symbols->get_symbol(args[0]);
-            if (sym)
-                addr = sym->get_virt_addr();
-        }
-
-        if (!stl_contains(m_breakpoints, addr)) {
-            os << "No breakpoint at 0x" << HEX(addr, 16);
-            return false;
-        }
-
-        if (!gdb_remove_breakpoint(addr)) { // implementation specific
-            os << "Failed to remove breakpoint at 0x" << HEX(addr, 16);
-            return false;
-        }
-
-        stl_remove_erase(m_breakpoints, addr);
-        os << "Removed breakpoint at 0x" << HEX(addr, 16);
-        return true;
-    }
-
-    bool processor::cmd_lsbp(const vector<string>& args, ostream& os) {
-        if (m_breakpoints.empty()) {
-            os << "No breakpoints";
-            return true;
-        }
-
-        os << "Showing breakpoints:";
-        for (unsigned int i = 0; i < m_breakpoints.size(); i++) {
-            u64 addr = m_breakpoints[i];
-            os << "\n" << i << ": 0x" << HEX(addr, 16);
-            if (m_symbols) {
-                elf_symbol* sym = m_symbols->get_symbol(addr);
-                if (sym && sym->is_function()) {
-                    os << " [" << sym->get_name();
-                    u64 offset = addr - sym->get_virt_addr();
-                    if (offset)
-                       os << "+"<< HEX(offset, 4);
-                    os << "]";
-                }
-            }
-        }
-
-        return true;
-    }
-
     bool processor::cmd_disas(const vector<string>& args, ostream& os) {
         u64 vstart = get_program_counter();
         if (args.size() > 0)
@@ -346,7 +280,6 @@ namespace vcml {
         m_symbols(NULL),
         m_gdb(NULL),
         m_irq_stats(),
-        m_breakpoints(),
         clock("clock", clk),
         symbols("symbols"),
         gdb_port("gdb_port", 0),
@@ -383,12 +316,6 @@ namespace vcml {
             "load a symbol file for use in disassembly");
         register_command("lsym", 0, this, &processor::cmd_lsym,
             "show a list of all available symbols");
-        register_command("bp", 1, this, &processor::cmd_bp,
-            "installs a breakpoint at the given address or symbol");
-        register_command("rmbp", 1, this, &processor::cmd_rmbp,
-            "removes a given breakpoint");
-        register_command("lsbp", 0, this, &processor::cmd_lsbp,
-            "lists all currently installed breakpoints");
         register_command("disas", 0, this, &processor::cmd_disas,
             "disassemble instructions from memory");
         register_command("v2p", 1, this, &processor::cmd_v2p,
@@ -508,6 +435,14 @@ namespace vcml {
     }
 
     bool processor::gdb_remove_breakpoint(u64 addr) {
+        return false;
+    }
+
+    bool processor::gdb_insert_watchpoint(const range& mem, vcml_access acs) {
+        return false;
+    }
+
+    bool processor::gdb_remove_watchpoint(const range& mem, vcml_access acs) {
         return false;
     }
 

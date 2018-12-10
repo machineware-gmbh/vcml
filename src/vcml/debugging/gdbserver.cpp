@@ -354,8 +354,34 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        // ToDO: we assume type = r/w breakpoint and length = 4...
-        m_stub->async_insert_breakpoint(addr);
+        const range mem(addr, addr + length - 1);
+        switch (type) {
+        case GDB_BREAKPOINT_SW:
+        case GDB_BREAKPOINT_HW:
+            if (!m_stub->async_insert_breakpoint(addr))
+                return ERR_INTERNAL;
+            break;
+
+        case GDB_WATCHPOINT_WRITE:
+            if (!m_stub->async_insert_watchpoint(mem, VCML_ACCESS_WRITE))
+                return ERR_INTERNAL;
+            break;
+
+        case GDB_WATCHPOINT_READ:
+            if (!m_stub->async_insert_watchpoint(mem, VCML_ACCESS_READ))
+                return ERR_INTERNAL;
+            break;
+
+
+        case GDB_WATCHPOINT_ACCESS:
+            if (!m_stub->async_insert_watchpoint(mem, VCML_ACCESS_READ_WRITE))
+                return ERR_INTERNAL;
+            break;
+
+        default:
+            log_warn("unknown breakpoint type %llu", type);
+            return ERR_COMMAND;
+        }
 
         return "OK";
     }
@@ -367,8 +393,33 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        // ToDO: we assume type = r/w breakpoint and length = 4...
-        m_stub->async_remove_breakpoint(addr);
+        const range mem(addr, addr + length - 1);
+        switch (type) {
+        case GDB_BREAKPOINT_SW:
+        case GDB_BREAKPOINT_HW:
+            if (!m_stub->async_remove_breakpoint(addr))
+                return ERR_INTERNAL;
+            break;
+
+        case GDB_WATCHPOINT_WRITE:
+            if (!m_stub->async_remove_watchpoint(mem, VCML_ACCESS_WRITE))
+                return ERR_INTERNAL;
+            break;
+
+        case GDB_WATCHPOINT_READ:
+            if (!m_stub->async_remove_watchpoint(mem, VCML_ACCESS_READ))
+                return ERR_INTERNAL;
+            break;
+
+        case GDB_WATCHPOINT_ACCESS:
+            if (!m_stub->async_remove_watchpoint(mem, VCML_ACCESS_READ_WRITE))
+                return ERR_INTERNAL;
+            break;
+
+        default:
+            log_warn("unknown breakpoint type %llu", type);
+            return ERR_COMMAND;
+        }
 
         return "OK";
     }

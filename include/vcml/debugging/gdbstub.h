@@ -23,6 +23,8 @@
 #include "vcml/common/types.h"
 #include "vcml/common/thctl.h"
 
+#include "vcml/range.h"
+
 namespace vcml { namespace debugging {
 
     class gdbstub
@@ -45,6 +47,9 @@ namespace vcml { namespace debugging {
         virtual bool gdb_insert_breakpoint(u64 addr) = 0;
         virtual bool gdb_remove_breakpoint(u64 addr) = 0;
 
+        virtual bool gdb_insert_watchpoint(const range& m, vcml_access a) = 0;
+        virtual bool gdb_remove_watchpoint(const range& m, vcml_access a) = 0;
+
         virtual string gdb_handle_rcmd(const string& command) = 0;
 
         virtual void gdb_simulate(unsigned int& cycles) = 0;
@@ -65,6 +70,9 @@ namespace vcml { namespace debugging {
 
         bool async_insert_breakpoint(u64 addr);
         bool async_remove_breakpoint(u64 addr);
+
+        bool async_insert_watchpoint(const range& m, vcml_access a);
+        bool async_remove_watchpoint(const range& m, vcml_access a);
 
         string async_handle_rcmd(const string& command);
     };
@@ -135,6 +143,22 @@ namespace vcml { namespace debugging {
     inline bool gdbstub::async_remove_breakpoint(u64 addr) {
         thctl_enter_critical();
         bool result = gdb_remove_breakpoint(addr);
+        thctl_exit_critical();
+        return result;
+    }
+
+    inline bool gdbstub::async_insert_watchpoint(const range& address,
+                                                 vcml_access acs) {
+        thctl_enter_critical();
+        bool result = gdb_insert_watchpoint(address, acs);
+        thctl_exit_critical();
+        return result;
+    }
+
+    inline bool gdbstub::async_remove_watchpoint(const range& address,
+                                                 vcml_access acs) {
+        thctl_enter_critical();
+        bool result = gdb_remove_watchpoint(address, acs);
         thctl_exit_critical();
         return result;
     }

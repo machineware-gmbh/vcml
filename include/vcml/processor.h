@@ -58,15 +58,11 @@ namespace vcml {
         debugging::gdbserver* m_gdb;
 
         std::map<unsigned int, irq_stats> m_irq_stats;
-        std::vector<u64> m_breakpoints;
 
         bool cmd_dump(const vector<string>& args, ostream& os);
         bool cmd_read(const vector<string>& args, ostream& os);
         bool cmd_symbols(const vector<string>& args, ostream& os);
         bool cmd_lsym(const vector<string>& args, ostream& os);
-        bool cmd_bp(const vector<string>& args, ostream& os);
-        bool cmd_lsbp(const vector<string>& args, ostream& os);
-        bool cmd_rmbp(const vector<string>& args, ostream& os);
         bool cmd_disas(const vector<string>& args, ostream& os);
         bool cmd_v2p(const vector<string>& args, ostream& os);
 
@@ -144,6 +140,11 @@ namespace vcml {
 
         virtual bool gdb_insert_breakpoint(u64 addr) override;
         virtual bool gdb_remove_breakpoint(u64 addr) override;
+
+        virtual bool gdb_insert_watchpoint(const range& mem,
+                                           vcml_access acs) override;
+        virtual bool gdb_remove_watchpoint(const range& mem,
+                                           vcml_access a) override;
 
         virtual string gdb_handle_rcmd(const string& command) override;
 

@@ -65,6 +65,14 @@ namespace vcml { namespace debugging {
         typedef string (gdbserver::*handler)(const char*);
         std::map<char, handler> m_handler;
 
+        enum breakpoint_type {
+             GDB_BREAKPOINT_SW     = 0,
+             GDB_BREAKPOINT_HW     = 1,
+             GDB_WATCHPOINT_WRITE  = 2,
+             GDB_WATCHPOINT_READ   = 3,
+             GDB_WATCHPOINT_ACCESS = 4
+        };
+
         handler find_handler(const char* command);
 
         string handle_unknown(const char* command);
