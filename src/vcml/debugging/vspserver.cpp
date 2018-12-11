@@ -168,8 +168,11 @@ namespace vcml { namespace debugging {
         ss << "name:" << attr->name() << ",";
 
         property_base* prop = dynamic_cast<property_base*>(attr);
-        if (prop)
+        if (prop) {
             ss << "value:" << prop->str() << ",";
+            ss << "size:" << prop->size() << ",";
+            ss << "num:" << prop->num() << ",";
+        }
 
         return ss.str();
     }

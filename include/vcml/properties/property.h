@@ -51,7 +51,8 @@ namespace vcml {
         virtual const char* str() const;
         virtual void str(const string& s);
 
-        constexpr unsigned int num() const;
+        virtual size_t size() const;
+        virtual size_t num() const;
 
         const T& get() const;
         T& get();
@@ -99,7 +100,7 @@ namespace vcml {
     void property<T, N>::update_strval() {
         m_strval = "";
         for (unsigned int i = 0; i < (N - 1); i++)
-            m_strval += to_string<T>(m_value[i]) + ", ";
+            m_strval += to_string<T>(m_value[i]) + "; ";
         m_strval += to_string<T>(m_value[N - 1]);
     }
 
@@ -134,7 +135,7 @@ namespace vcml {
         m_inited = true;
         m_strval = s;
 
-        vector<string> args = split(m_strval, ',');
+        vector<string> args = split(m_strval, ';');
         unsigned int size = args.size();
 
         if (size < N) {
@@ -148,7 +149,12 @@ namespace vcml {
     }
 
     template <typename T, const unsigned int N>
-    constexpr unsigned int property<T, N>::num() const {
+    size_t property<T, N>::size() const {
+        return sizeof(T);
+    }
+
+    template <typename T, const unsigned int N>
+    size_t property<T, N>::num() const {
         return N;
     }
 

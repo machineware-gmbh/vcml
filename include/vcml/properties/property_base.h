@@ -47,6 +47,9 @@ namespace vcml {
 
         virtual const char* str() const = 0;
         virtual void str(const string& s) = 0;
+
+        virtual size_t size() const = 0;
+        virtual size_t num() const = 0;
     };
 
 }

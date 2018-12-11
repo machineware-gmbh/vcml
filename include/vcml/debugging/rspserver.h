@@ -33,7 +33,7 @@ namespace vcml { namespace debugging {
     class rspserver
     {
     public:
-        typedef std::function<std::string(const char*)> handler;
+        typedef function<string(const char*)> handler;
 
     private:
         bool m_echo;

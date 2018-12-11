@@ -127,12 +127,21 @@ namespace vcml { namespace debugging {
         int attempts = 10;
 
         do {
-            if (attempts-- == 0)
-                VCML_ERROR("giving up sending packet");
+            if (attempts-- == 0) {
+                log_error("giving up sending packet");
+                disconnect();
+                return;
+            }
+
             if (m_echo)
                 log_debug("sending packet '%s'", ss.str().c_str());
-            if (send(m_fd, ss.str().c_str(), len, 0) != len)
-                VCML_ERROR("error sending packet: %s", strerror(errno));
+
+            if (send(m_fd, ss.str().c_str(), len, 0) != len) {
+                log_error("error sending packet: %s", strerror(errno));
+                disconnect();
+                return;
+            }
+
             ack = recv_char();
             if (m_echo)
                 log_debug("received ack '%c'", ack);
