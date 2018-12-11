@@ -128,6 +128,13 @@ namespace vcml {
         return s;
     }
 
+    template <>
+    inline string to_string<u8>(const u8& v) {
+        stringstream ss;
+        ss << (unsigned int)v;
+        return ss.str();
+    }
+
     template <typename T>
     inline T from_string(const string& str) {
         stringstream ss; ss.str(str);
