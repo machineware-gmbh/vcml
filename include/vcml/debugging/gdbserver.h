@@ -35,7 +35,7 @@
 #define VCML_GDBSERVER_ERR_INTERNAL (3) // internal error during execution
 #define VCML_GDBSERVER_ERR_UNKNOWN  (4) // used for all other kinds of errors
 
-#define VCML_GDBSERVER_BUFSIZE      (VCML_RSP_MAX_PACKET_SIZE >> 2)
+#define VCML_GDBSERVER_BUFSIZE      (VCML_RSP_MAX_PACKET_SIZE >> 1)
 
 namespace vcml { namespace debugging {
 
