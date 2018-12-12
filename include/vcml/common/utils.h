@@ -131,7 +131,6 @@ namespace vcml {
     template <>
     inline string to_string<u8>(const u8& v) {
         stringstream ss;
-        printf("u8 to string\n");
         ss << (unsigned int)v;
         return ss.str();
     }
