@@ -131,6 +131,7 @@ namespace vcml {
     template <>
     inline string to_string<u8>(const u8& v) {
         stringstream ss;
+        printf("u8 to string\n");
         ss << (unsigned int)v;
         return ss.str();
     }
@@ -150,6 +151,18 @@ namespace vcml {
     template <>
     inline string from_string<string>(const string& s) {
         return s;
+    }
+
+    template <>
+    inline u8 from_string<u8>(const string& str) {
+        stringstream ss; ss.str(str);
+        ss.unsetf(std::ios::dec);
+        ss.unsetf(std::ios::hex);
+        ss.unsetf(std::ios::oct);
+
+        unsigned int val;
+        ss >> val;
+        return (u8)val;
     }
 
     template <typename DATA>

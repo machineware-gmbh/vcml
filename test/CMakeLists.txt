@@ -25,7 +25,8 @@ set(CMAKE_EXE_LINKER_FLAGS -rdynamic)
 
 set(tests test_hello test_utils test_logging test_version test_aio test_elf
     test_dmi test_range test_exmon test_component test_peripheral test_register
-    test_backend_tcp test_generic_memory test_generic_bus test_processor)
+    test_backend_tcp test_generic_memory test_generic_bus test_processor
+    test_property)
 
 if(LIBVNC_FOUND)
     set(tests ${tests} test_vnc)

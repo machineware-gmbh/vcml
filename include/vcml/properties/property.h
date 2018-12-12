@@ -94,13 +94,14 @@ namespace vcml {
         template <typename T2> bool operator  < (const T2& other);
         template <typename T2> bool operator  > (const T2& other);
 
+        static const char ARRAY_DELIMITER;
     };
 
     template <typename T, const unsigned int N>
     void property<T, N>::update_strval() {
         m_strval = "";
         for (unsigned int i = 0; i < (N - 1); i++)
-            m_strval += to_string<T>(m_value[i]) + "; ";
+            m_strval += to_string<T>(m_value[i]) + ARRAY_DELIMITER;
         m_strval += to_string<T>(m_value[N - 1]);
     }
 
@@ -135,7 +136,7 @@ namespace vcml {
         m_inited = true;
         m_strval = s;
 
-        vector<string> args = split(m_strval, ';');
+        vector<string> args = split(m_strval, ARRAY_DELIMITER);
         unsigned int size = args.size();
 
         if (size < N) {
@@ -347,6 +348,9 @@ namespace vcml {
     inline bool property<T, N>::operator >= (const T2& other) {
         return !operator < (other);
     }
+
+    template <typename T, const unsigned int N>
+    const char property<T, N>::ARRAY_DELIMITER = ',';
 
 }
 
