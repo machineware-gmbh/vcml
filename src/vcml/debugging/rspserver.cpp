@@ -34,16 +34,6 @@ namespace vcml { namespace debugging {
         return result & 0xff;
     }
 
-    static inline string escape(const string& s) {
-        stringstream ss;
-        for (char c : s) {
-            if (c == '$' || c == '#' || c == '\\')
-                ss << '\\';
-            ss << c;
-        }
-        return ss.str();
-    }
-
     static inline int char2int(char c) {
         return ((c >= 'a') && (c <= 'f')) ? c - 'a' + 10 :
                ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 :
@@ -115,7 +105,7 @@ namespace vcml { namespace debugging {
     void rspserver::send_packet(const string& s) {
         VCML_ERROR_ON(m_fd == -1, "no connection established");
 
-        string esc = escape(s);
+        string esc = escape(s, "$#");
         int sum = checksum(esc.c_str());
         stringstream ss;
         ss << "$" << esc << "#"

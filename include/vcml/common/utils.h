@@ -59,6 +59,27 @@ namespace vcml {
 
     bool is_debug_build();
 
+    inline string escape(const string& s, const string& chars) {
+        stringstream ss;
+        for (auto c : s) {
+            for (auto esc : chars + "\\") {
+                if (c == esc)
+                    ss << '\\';
+            }
+            ss << c;
+        }
+        return ss.str();
+    }
+
+    inline string unescape(const string& s) {
+        stringstream ss;
+        for (auto c : s) {
+            if (c != '\\')
+                ss << c;
+        }
+        return ss.str();
+    }
+
     inline vector<string> split(const string& str, std::function<int(int)> f) {
         vector<string> vec;
         string buf = "";
@@ -80,8 +101,11 @@ namespace vcml {
     inline vector<string> split(const string& str, char predicate) {
         vector<string> vec;
         string buf = "";
-        for (auto ch : str) {
-            if (ch == predicate) {
+        for (unsigned int i = 0; i < str.length(); i++) {
+            char ch = str[i];
+            if (ch == '\\')
+                buf += str[++i];
+            else if (ch == predicate) {
                 if (!buf.empty()) {
                     vec.push_back(buf);
                     buf = "";

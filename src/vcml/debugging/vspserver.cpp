@@ -94,8 +94,9 @@ namespace vcml { namespace debugging {
         component* mod = dynamic_cast<component*>(obj);
         if (mod != NULL) {
             for (const command_base* cmd : mod->get_commands()) {
-                info << "cmd:" << cmd->name() << ":" << cmd->argc()
-                     << ":" << cmd->desc() << ",";
+                info << "cmd:" << escape(cmd->name(), ",")
+                     << ":" << cmd->argc()
+                     << ":" << escape(cmd->desc(), ",") << ",";
             }
         }
 
@@ -121,9 +122,10 @@ namespace vcml { namespace debugging {
             stringstream ss;
             vector<string> cmdargs(args.begin() + 3, args.end());
             bool success = mod->execute(args[2], cmdargs, ss);
-            return mkstr("%s,%s", success ? "OK" : "ERROR", ss.str().c_str());
+            string resp = escape(ss.str(), ",");
+            return mkstr("%s,%s", success ? "OK" : "ERROR", resp.c_str());
         } catch (std::exception& e) {
-            return mkstr("ERROR,%s", e.what());
+            return mkstr("ERROR,%s", escape(e.what(), ",").c_str());
         }
     }
 
@@ -169,7 +171,7 @@ namespace vcml { namespace debugging {
 
         property_base* prop = dynamic_cast<property_base*>(attr);
         if (prop) {
-            ss << "value:" << prop->str() << ",";
+            ss << "value:" << escape(prop->str(), ",") << ",";
             ss << "size:" << prop->size() << ",";
             ss << "num:" << prop->num() << ",";
         }
