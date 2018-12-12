@@ -165,6 +165,11 @@ namespace vcml { namespace generic {
             return CONTROL | CONTROL_R;
         }
 
+        if ((val & CONTROL_W) && !(CONTROL & CONTROL_W)) { // CONTROL_W set
+            load_time();
+            return CONTROL | CONTROL_W;
+        }
+
         if (!(val & CONTROL_W) && (CONTROL & CONTROL_W)) { // CONTROL_W cleared
             save_time();
             return CONTROL & ~CONTROL_W;
