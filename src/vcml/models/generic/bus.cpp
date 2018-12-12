@@ -155,8 +155,18 @@ namespace vcml { namespace generic {
             u64 s = dmi.get_start_address() + dest.addr.start - dest.offset;
             u64 e = dmi.get_end_address() + dest.addr.start - dest.offset;
 
-            s = max(s, dest.addr.start);
-            e = min(e, dest.addr.end);
+            // check if target gave more DMI space than it has address space
+            if (s < dest.addr.start) {
+                log_warning("truncating dmi start from 0x%016x to 0x%016x", s,
+                            dest.addr.start);
+                s = dest.addr.start;
+            }
+
+            if (e > dest.addr.end) {
+                log_warning("truncating dmi end from 0x%016x to 0x%016x", e,
+                            dest.addr.end);
+                e = dest.addr.end;
+            }
 
             dmi.set_start_address(s);
             dmi.set_end_address(e);
