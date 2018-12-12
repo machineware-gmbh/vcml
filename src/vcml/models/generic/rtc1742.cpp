@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <vcml/models/generic/rtc1742.h>
+#include "vcml/models/generic/rtc1742.h"
 
 namespace vcml { namespace generic {
 
@@ -40,7 +40,7 @@ namespace vcml { namespace generic {
         // the amount of SystemC seconds elapsed since simulation start.
         // Otherwise we just fetch the current real time stamp from host.
         time_t now = sctime ? sysc_timestamp() : real_timestamp();
-        struct tm* timeinfo = localtime(&now);
+        struct tm* timeinfo = gmtime(&now);
         log_debug("loading current time %llu (%s)", now, strtime(timeinfo));
 
         u8 osc = SECONDS & SECONDS_OSC; /* oscillator stop bit */
@@ -60,7 +60,7 @@ namespace vcml { namespace generic {
     }
 
     void rtc1742::save_time() {
-        struct tm tinfo;
+        struct tm tinfo = { 0 };
         tinfo.tm_sec  = bcd2bin(SECONDS & 0x7F);
         tinfo.tm_min  = bcd2bin(MINUTES & 0x7F);
         tinfo.tm_hour = bcd2bin(HOUR & 0x3F);
@@ -74,11 +74,8 @@ namespace vcml { namespace generic {
         // since this change is added. This is only relevant if the clock
         // operates based on SystemC time. If hose time is used, this change
         // is ineffectual.
-        m_real_timestamp = mktime(&tinfo);
+        m_real_timestamp = timegm(&tinfo);
         m_sysc_timestamp = sc_time_stamp();
-
-        struct tm* check = localtime(&m_real_timestamp);
-        VCML_ERROR_ON(check->tm_hour != tinfo.tm_hour, "time zone error");
 
         log_debug("saving current time %llu (%s)", m_real_timestamp,
                   strtime(&tinfo));
@@ -102,7 +99,7 @@ namespace vcml { namespace generic {
         }
 
         file.seekg(0, std::ios::beg);
-        file.read((char*)m_nvram, nbytes);
+        file.read((char*)m_nvmem, nbytes);
     }
 
     void rtc1742::save_nvram(const string& filename) {
@@ -114,7 +111,7 @@ namespace vcml { namespace generic {
         }
 
         u64 size = m_addr.length() - CONTROL.get_address();
-        file.write((char*)m_nvram, size);
+        file.write((char*)m_nvmem, size);
     }
 
     bool rtc1742::cmd_load(const vector<string>& args, ostream& os) {
@@ -147,7 +144,7 @@ namespace vcml { namespace generic {
                                       int flags) {
         if (!addr.inside(m_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
-        memcpy(ptr, m_nvram + addr.start, addr.length());
+        memcpy(ptr, m_nvmem + addr.start, addr.length());
         return TLM_OK_RESPONSE;
     }
 
@@ -155,42 +152,45 @@ namespace vcml { namespace generic {
                                        int flags) {
         if (!addr.inside(m_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
-        memcpy(m_nvram + addr.start, ptr, addr.length());
+        memcpy(m_nvmem + addr.start, ptr, addr.length());
         return TLM_OK_RESPONSE;
     }
 
     u8 rtc1742::write_CONTROL(u8 val) {
-        if ((val & CONTROL_R) && !(CONTROL & CONTROL_R)) {
+        VCML_LOG_REG_BIT_CHANGE(CONTROL_R, CONTROL, val);
+        VCML_LOG_REG_BIT_CHANGE(CONTROL_W, CONTROL, val);
+
+        if ((val & CONTROL_R) && !(CONTROL & CONTROL_R)) { // CONTROL_R set
             load_time();
             return CONTROL | CONTROL_R;
         }
 
-        if (!(val & CONTROL_R) && (CONTROL & CONTROL_R)) {
+        if (!(val & CONTROL_W) && (CONTROL & CONTROL_W)) { // CONTROL_W cleared
             save_time();
-            return CONTROL & ~CONTROL_R;
+            return CONTROL & ~CONTROL_W;
         }
 
         return val;
     }
 
-    rtc1742::rtc1742(const sc_module_name& nm, u32 nvramsz):
+    rtc1742::rtc1742(const sc_module_name& nm, u32 nvmemsz):
         peripheral(nm),
-        m_nvram(NULL),
-        m_addr(0, nvramsz - 9), // need 8 bytes at the end for registers
+        m_nvmem(NULL),
+        m_addr(0, nvmemsz - 9), // need 8 bytes at the end for registers
         m_real_timestamp(time(NULL)),
         m_sysc_timestamp(sc_time_stamp()),
-        CONTROL ("CONTROL", nvramsz - 8, 0),
-        SECONDS ("SECONDS", nvramsz - 7, SECONDS_OSC),
-        MINUTES ("MINUTES", nvramsz - 6, 0),
-        HOUR    ("HOUR",    nvramsz - 5, 0),
-        DAY     ("DAY",     nvramsz - 4, DAY_BF),
-        DATE    ("DATE",    nvramsz - 3, 0),
-        MONTH   ("MONTH",   nvramsz - 2, 0),
-        YEAR    ("YEAR",    nvramsz - 1, 0),
+        CONTROL ("CONTROL", nvmemsz - 8, 0),
+        SECONDS ("SECONDS", nvmemsz - 7, 0),
+        MINUTES ("MINUTES", nvmemsz - 6, 0),
+        HOUR    ("HOUR",    nvmemsz - 5, 0),
+        DAY     ("DAY",     nvmemsz - 4, DAY_BF),
+        DATE    ("DATE",    nvmemsz - 3, 0),
+        MONTH   ("MONTH",   nvmemsz - 2, 0),
+        YEAR    ("YEAR",    nvmemsz - 1, 0),
         IN("IN"),
         sctime("sctime", true),
         nvmem("nvmem", "") {
-        m_nvram = new u8[nvramsz];
+        m_nvmem = new u8[nvmemsz];
         if (!nvmem.get().empty())
             load_nvram(nvmem);
 
@@ -206,17 +206,17 @@ namespace vcml { namespace generic {
         YEAR.allow_read_write();
 
         register_command("load", 1, this, &rtc1742::cmd_load,
-                         "loads <file> into nvram");
+                         "loads <file> into nvmem");
         register_command("save", 1, this, &rtc1742::cmd_save,
-                         "stores the contents of nvram into <file>");
-        register_command("battery", 1, this, &rtc1742::cmd_battery,
+                         "stores the contents of nvmem into <file>");
+        register_command("battery", 0, this, &rtc1742::cmd_battery,
                          "toggle battery bit");
     }
 
     rtc1742::~rtc1742() {
         if (!nvmem.get().empty())
             save_nvram(nvmem);
-        delete [] m_nvram;
+        delete [] m_nvmem;
     }
 
     void rtc1742::reset() {

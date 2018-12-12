@@ -36,7 +36,7 @@ namespace vcml { namespace generic {
     class rtc1742: public peripheral
     {
     private:
-        u8*     m_nvram;
+        u8*     m_nvmem;
         range   m_addr;
 
         time_t  m_real_timestamp;
