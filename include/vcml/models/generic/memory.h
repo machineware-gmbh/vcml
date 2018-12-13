@@ -46,6 +46,7 @@ namespace vcml { namespace generic {
         property<u64> size;
         property<bool> readonly;
         property<string> images;
+        property<u8> poison;
 
         slave_socket IN;
 

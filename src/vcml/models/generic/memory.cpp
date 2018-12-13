@@ -88,12 +88,16 @@ namespace vcml { namespace generic {
         size("size", sz),
         readonly("readonly", false),
         images("images", ""),
+        poison("poison", 0x00),
         IN("IN") {
         if (size > 0u) {
             m_memory = new unsigned char [size]();
             map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
                                                     : VCML_ACCESS_READ_WRITE);
         }
+
+        if (poison > 0)
+            memset(m_memory, poison, size);
 
         register_command("load", 1, this, &memory::cmd_load,
             "Load <binary> [off] to load the contents of file <binary> to " \
