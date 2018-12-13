@@ -24,19 +24,15 @@ using namespace ::testing;
 class test_component: public vcml::component
 {
 public:
-    vcml::property<std::string> prop_str;
-    vcml::property<vcml::u64>   prop_u64;
-    vcml::property<vcml::u32>   prop_u32;
-    vcml::property<vcml::u16>   prop_u16;
-    vcml::property<vcml::u8>    prop_u8;
-
-    vcml::property<vcml::i32>   prop_i32;
-
-    vcml::property<std::string> not_inited;
-
-    vcml::property<vcml::u32, 4> prop_array;
-
-    vcml::property<std::string, 4> prop_array_string;
+    vcml::property<std::string>     prop_str;
+    vcml::property<vcml::u64>       prop_u64;
+    vcml::property<vcml::u32>       prop_u32;
+    vcml::property<vcml::u16>       prop_u16;
+    vcml::property<vcml::u8>        prop_u8;
+    vcml::property<vcml::i32>       prop_i32;
+    vcml::property<std::string>     not_inited;
+    vcml::property<vcml::u32, 4>    prop_array;
+    vcml::property<std::string, 4>  prop_array_string;
 
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
@@ -76,7 +72,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_str.get_default(), "abc");
 
     EXPECT_EQ(test.prop_u64, 0x123456789ABCDEF0);
-    EXPECT_EQ(std::string(test.prop_u64.str()), "0x123456789ABCDEF0");
+    EXPECT_EQ(std::string(test.prop_u64.str()), "1311768467463790320");
     EXPECT_EQ(test.prop_u64.get_default(), 0xFFFFFFFFFFFFFFFF);
 
     EXPECT_EQ(test.prop_u32, 12345678);
@@ -99,10 +95,10 @@ TEST(property, init) {
     EXPECT_EQ((std::string)test.not_inited, test.not_inited.get_default());
 
     EXPECT_EQ(test.prop_array.num(), 4);
-    EXPECT_EQ(test.prop_array.get(0), 1);
-    EXPECT_EQ(test.prop_array.get(1), 2);
-    EXPECT_EQ(test.prop_array.get(2), 3);
-    EXPECT_EQ(test.prop_array.get(3), 4);
+    EXPECT_EQ(test.prop_array[0], 1);
+    EXPECT_EQ(test.prop_array[1], 2);
+    EXPECT_EQ(test.prop_array[2], 3);
+    EXPECT_EQ(test.prop_array[3], 4);
     EXPECT_EQ(test.prop_array.get_default(), 7);
     EXPECT_EQ(std::string(test.prop_array.str()), "1,2,3,4");
 
@@ -113,8 +109,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array_string[3], "zzz");
     EXPECT_EQ(std::string(test.prop_array_string.str()), "abc,def,x\\,y,zzz");
 
-    // test.prop_array_string[3] = "z,z" does not work, strval not updated
-    test.prop_array_string.set("z,z", 3);
+    test.prop_array_string[3] = "z,z";
     EXPECT_EQ(std::string(test.prop_array_string.str()), "abc,def,x\\,y,z\\,z");
 }
 

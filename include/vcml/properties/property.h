@@ -35,10 +35,9 @@ namespace vcml {
     private:
         T      m_value[N];
         T      m_defval;
-        string m_strval;
         bool   m_inited;
 
-        void update_strval();
+        mutable string m_str;
 
         // disabled
         property();
@@ -98,23 +97,14 @@ namespace vcml {
     };
 
     template <typename T, const unsigned int N>
-    void property<T, N>::update_strval() {
-        m_strval = "";
-        for (unsigned int i = 0; i < (N - 1); i++)
-            m_strval += escape(to_string<T>(m_value[i]), ",") + ARRAY_DELIMITER;
-        m_strval += escape(to_string<T>(m_value[N - 1]), ",");
-    }
-
-    template <typename T, const unsigned int N>
     property<T, N>::property(const char* nm, const T& def, sc_module* m):
         property_base(nm, m),
         m_value(),
         m_defval(def),
-        m_strval(),
-        m_inited(false) {
+        m_inited(false),
+        m_str("") {
         for (unsigned int i = 0; i < N; i++)
             m_value[i] = m_defval;
-        update_strval();
 
         string init;
         if (property_provider::init(name(), init))
@@ -128,15 +118,17 @@ namespace vcml {
 
     template <typename T, const unsigned int N>
     inline const char* property<T, N>::str() const {
-        return m_strval.c_str();
+        m_str = "";
+        for (unsigned int i = 0; i < (N - 1); i++)
+            m_str += escape(to_string<T>(m_value[i]), ",") + ARRAY_DELIMITER;
+        m_str += escape(to_string<T>(m_value[N - 1]), ",");
+        return m_str.c_str();
     }
 
     template <typename T, const unsigned int N>
     inline void property<T, N>::str(const string& s) {
         m_inited = true;
-        m_strval = s;
-
-        vector<string> args = split(m_strval, ARRAY_DELIMITER);
+        vector<string> args = split(s, ARRAY_DELIMITER);
         unsigned int size = args.size();
 
         if (size < N) {
@@ -186,7 +178,6 @@ namespace vcml {
         for (unsigned int i = 0; i < N; i++)
             m_value[i] = val;
         m_inited = true;
-        update_strval();
     }
 
     template <typename T, const unsigned int N>
@@ -194,7 +185,6 @@ namespace vcml {
         for (unsigned int i = 0; i < N; i++)
             m_value[i] = val[i];
         m_inited = true;
-        update_strval();
     }
 
     template <typename T, const unsigned int N>
@@ -202,7 +192,6 @@ namespace vcml {
         VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
         m_value[idx] = val;
         m_inited = true;
-        update_strval();
     }
 
     template <typename T, const unsigned int N>
