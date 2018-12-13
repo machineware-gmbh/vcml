@@ -36,6 +36,8 @@ public:
 
     vcml::property<vcml::u32, 4> prop_array;
 
+    vcml::property<std::string, 4> prop_array_string;
+
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
         prop_str("prop_str", "abc"),
@@ -45,7 +47,8 @@ public:
         prop_u8("prop_u8",   0xFF),
         prop_i32("prop_i32", -1),
         not_inited("prop_not_inited", "not_inited"),
-        prop_array("prop_array", 7) {
+        prop_array("prop_array", 7),
+        prop_array_string("prop_array_string", "not_inited") {
     }
 
     virtual ~test_component() { /* nothing to do */ }
@@ -54,21 +57,22 @@ public:
 TEST(property, init) {
     const char* argv[] {
             "arg0isprogram",
-            "-c", "test.prop_str=string",
+            "-c", "test.prop_str=hello world",
             "-c", "test.prop_u64=0x123456789ABCDEF0",
             "-c", "test.prop_u32=12345678",
             "-c", "test.prop_u16=12345",
             "-c", "test.prop_u8=123",
             "-c", "test.prop_i32=-2",
             "-c", "test.prop_array=1,2,3,4",
+            "-c", "test.prop_array_string=abc,def,x\\,y,zzz",
     };
 
     int argc = sizeof(argv) / sizeof(argv[0]);
     vcml::property_provider_arg provider(argc, const_cast<char**>(argv));
 
     test_component test("test");
-    EXPECT_EQ((std::string)test.prop_str, "string");
-    EXPECT_EQ(std::string(test.prop_str.str()), "string");
+    EXPECT_EQ((std::string)test.prop_str, "hello world");
+    EXPECT_EQ(std::string(test.prop_str.str()), "hello world");
     EXPECT_EQ(test.prop_str.get_default(), "abc");
 
     EXPECT_EQ(test.prop_u64, 0x123456789ABCDEF0);
@@ -101,6 +105,17 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array.get(3), 4);
     EXPECT_EQ(test.prop_array.get_default(), 7);
     EXPECT_EQ(std::string(test.prop_array.str()), "1,2,3,4");
+
+    EXPECT_EQ(test.prop_array_string.num(), 4);
+    EXPECT_EQ(test.prop_array_string[0], "abc");
+    EXPECT_EQ(test.prop_array_string[1], "def");
+    EXPECT_EQ(test.prop_array_string[2], "x,y");
+    EXPECT_EQ(test.prop_array_string[3], "zzz");
+    EXPECT_EQ(std::string(test.prop_array_string.str()), "abc,def,x\\,y,zzz");
+
+    // test.prop_array_string[3] = "z,z" does not work, strval not updated
+    test.prop_array_string.set("z,z", 3);
+    EXPECT_EQ(std::string(test.prop_array_string.str()), "abc,def,x\\,y,z\\,z");
 }
 
 extern "C" int sc_main(int argc, char** argv) {

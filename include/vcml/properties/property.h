@@ -101,8 +101,8 @@ namespace vcml {
     void property<T, N>::update_strval() {
         m_strval = "";
         for (unsigned int i = 0; i < (N - 1); i++)
-            m_strval += to_string<T>(m_value[i]) + ARRAY_DELIMITER;
-        m_strval += to_string<T>(m_value[N - 1]);
+            m_strval += escape(to_string<T>(m_value[i]), ",") + ARRAY_DELIMITER;
+        m_strval += escape(to_string<T>(m_value[N - 1]), ",");
     }
 
     template <typename T, const unsigned int N>
