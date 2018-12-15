@@ -44,6 +44,11 @@ namespace vcml {
             delete be;
     }
 
+    void peripheral::reset() {
+        for (auto r : m_registers)
+            r->reset();
+    }
+
     void peripheral::add_register(reg_base* reg) {
         if (stl_contains(m_registers, reg))
             VCML_ERROR("register '%' already assigned", reg->name());

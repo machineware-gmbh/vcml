@@ -72,6 +72,8 @@ namespace vcml {
 
         VCML_KIND(peripheral);
 
+        virtual void reset() override;
+
         void add_register(reg_base* reg);
         void remove_register(reg_base* reg);
 

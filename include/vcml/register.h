@@ -70,6 +70,8 @@ namespace vcml {
 
         VCML_KIND(reg_base);
 
+        virtual void reset() = 0;
+
         unsigned int receive(tlm_generic_payload& tx, int flags);
 
         virtual void do_read(const range& addr, int bank, void* ptr) = 0;
@@ -130,6 +132,8 @@ namespace vcml {
         virtual ~reg();
 
         VCML_KIND(reg);
+
+        virtual void reset() override;
 
         virtual void do_read(const range& addr, int bank, void* ptr);
         virtual void do_read(const range& addr, DATA* ptr);
@@ -234,6 +238,16 @@ namespace vcml {
     reg<HOST, DATA, N>::~reg() {
         for (auto bank : m_banks)
             delete [] bank.second;
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    void reg<HOST, DATA, N>::reset() {
+        const DATA& defval = property<DATA, N>::get_default();
+        property<DATA, N>::set(defval);
+        for (auto bank : m_banks) {
+            for (unsigned int i = 0; i < N; i++)
+                m_banks[bank.first][i] = defval;
+        }
     }
 
     template <class HOST, typename DATA, const unsigned int N>
