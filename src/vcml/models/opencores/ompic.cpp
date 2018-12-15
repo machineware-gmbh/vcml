@@ -27,7 +27,7 @@ namespace vcml { namespace opencores {
         VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
         u32 val = m_status[core_id];
         if (IRQ[core_id].read())
-            val |= 1 << 30;
+            val |= CTRL_IRQ_GEN;
         return val;
     }
 
