@@ -301,8 +301,12 @@ namespace vcml {
 
         if (gdb_port > 0) {
             debugging::gdb_status status = debugging::GDB_RUNNING;
-            if (gdb_wait)
+            if (gdb_wait) {
                 status = debugging::GDB_STOPPED;
+                log_info("waiting for GDB connection on port %u",
+                         (unsigned int)gdb_port.get());
+            }
+
             m_gdb = new debugging::gdbserver(gdb_port, this, status);
             m_gdb->sync(gdb_sync);
             m_gdb->echo(gdb_echo);
