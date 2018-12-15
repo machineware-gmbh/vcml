@@ -37,8 +37,8 @@ namespace vcml { namespace generic {
         if ((m_rx_fifo.size() < m_rx_size) && beread(val)) {
             m_rx_fifo.push(val);
             LSR |= LSR_DR;
-            if (IER & IER_RDA) {
-                log_debug("data received, rising IRQ");
+            if ((IER & IER_RDA) && !IRQ) {
+                log_debug("data received, setting RDA interrupt");
                 IRQ = true;
             }
         }
@@ -52,8 +52,8 @@ namespace vcml { namespace generic {
             if (m_tx_fifo.empty())
                 LSR |= LSR_TEMT;
 
-            if (IER & IER_THRE) {
-                log_debug("data transmitted, rising IRQ");
+            if ((IER & IER_THRE) && !IRQ) {
+                log_debug("data transmitted, setting THRE interrupt");
                 IRQ = true;
             }
         }
@@ -81,8 +81,10 @@ namespace vcml { namespace generic {
         m_rx_fifo.pop();
         if (m_rx_fifo.empty()) {
             LSR &= ~LSR_DR;
-            if (IER & IER_RDA)
+            if ((IER & IER_RDA) && IRQ) {
+                log_debug("received data fetched, clearing RDA interrupt");
                 IRQ = false;
+            }
         }
 
         update();
@@ -102,6 +104,7 @@ namespace vcml { namespace generic {
         if (!m_rx_fifo.empty())
             return IIR_RDA;
 
+        log_debug("IIR read, clearing THRE interrupt");
         IRQ = false;
         return IIR_THRE;
     }
