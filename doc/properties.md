@@ -75,7 +75,8 @@ printf("value = %u\n", (uint32_t)my_property); // cast to POD needed
 printf("value = %u\n", my_property.get()); // read below!
 ```
 
-However, if you need to explicitly convert a property to its base type `T` (e.g. for using it with `printf`), you can call `vcml::property<T>::get()`.
+However, if you need to explicitly convert a property to its base type `T`
+(e.g. for using it with `printf`), you can call `vcml::property<T>::get()`.
 
 Properties receive their configuration values in string form. The system uses
 `stringstreams` to convert this to `T`, e.g. the following must be possible for
@@ -103,8 +104,8 @@ std::istream& operator >> (std::istream& is, my_data_type& val) {
 
 If you do not want to use property providers, you can still initialize your
 property directly from a string using `vcml::property<T>::str(string s)`, e.g.
-`my_property.str("17")` assigns the integer value `17` to `my_property`. Note that
-commas have a special meaning within initialization strings (see Array
+`my_property.str("17")` assigns the integer value `17` to `my_property`. Note
+that commas have a special meaning within initialization strings (see Array
 Properties), so they must be escaped, e.g. `my,string` needs to become
 `my\,string` in order to retain the comma. Note that backslashes must also be
 escaped in C/C++, so initialization using a string constant within your code
@@ -147,9 +148,9 @@ std::cout << my_property.str() << std::endl; // output: "3,2,1,0"
 Similarly, initialization of array properties also requires comma separated
 value lists. Note that if you want to use array properties with strings, you
 need to escape commas or otherwise they will be treated as a delimiter, e.g.
-`my,string,with,commas` needs to become `my\,string\,with\,commas`. Since `\` has
-a special meaning in C/C++, you need to escape it as well for the compiler if
-you are initializing your property by yourself:
+`my,string,with,commas` needs to become `my\,string\,with\,commas`. Since `\`
+has a special meaning in C/C++, you need to escape it as well for the compiler
+if you are initializing your property by yourself:
 
 ```
 my_property.str("my\\,string\\,with\\,commas");
@@ -160,16 +161,17 @@ my_property.str("my\\,string\\,with\\,commas");
 Property Providers are used to assign values to properties. Fundamentally, a
 Property Provider is a key value store, where the keys are the names of the
 properties and the values are their corresponding values in string form. This
-functionality is provided within the `vcml::property_provider` base class that is
-used by all property providers.
+functionality is provided within the `vcml::property_provider` base class that
+is used by all property providers.
 
 All property providers are kept in a list which is used by all properties while
 looking for an initialization value. New providers are added to the front of
-this list, meaning the later the provider is created during your program, the
-higher its priority for assigning property values. Newly created properties
-iterate over this list front to back and asking each encountered provider for
-an initialization value by passing its full name. This process stops, once one
-of the providers provides a suitable value. Otherwise, the property uses its
+this list: **the earlier the provider is created in your program, the higher
+its priority for assigning property values**. Newly created properties iterate
+over this list front to back and ask each encountered provider for an
+initialization value by passing its full name. This process stops once all
+of the providers have been asked, with the last provided value being reported
+back. If no provider had a suitable initialization value, the property uses its
 default value specified in its constructor.
 
 VCML includes a set of default property providers that you can use to assign
