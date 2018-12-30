@@ -26,6 +26,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [OpenCores OMPIC](models/oc_ompic.md)
   * [OpenCores OCKBD](models/oc_ockbd.md)
   * [OpenCores OCFBC](models/oc_ocfbc.md)
+  * [OpenCores OCSPI](models/oc_ocspi.md)
   * [ARM PL011 UART](models/arm_pl011.md)
   * [ARM PL190 VIC](models/arm_pl190.md)
   * [ARM SP804 Dual Timer](models/arm_sp804.md)
