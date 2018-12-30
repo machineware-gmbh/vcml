@@ -21,7 +21,8 @@
 namespace vcml {
 
     void out_port::update() {
-        (*this)->write(m_state);
+        if ((*this)->read() != m_state)
+            (*this)->write(m_state);
     }
 
     out_port::out_port():
@@ -59,10 +60,9 @@ namespace vcml {
     }
 
     void out_port::write(bool set) {
-        if ((*this)->read() != set) {
-            m_state = set;
+        m_state = set;
+        if ((*this)->read() != set)
             m_update.notify(SC_ZERO_TIME);
-        }
     }
 
 }
