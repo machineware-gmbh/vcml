@@ -109,6 +109,11 @@ namespace vcml {
         }
 
         return bytes;
+    } catch (report& rep) {
+        tx.clear_extension<ext_bank>();
+        tx.clear_extension<ext_exmem>();
+        logger::log(rep);
+        throw;
     } catch (std::exception& ex) {
         tx.clear_extension<ext_bank>();
         tx.clear_extension<ext_exmem>();
