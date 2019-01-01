@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <strings.h>
 
 #include <string>
 #include <vector>

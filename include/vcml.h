@@ -26,6 +26,7 @@
 #include "vcml/common/version.h"
 #include "vcml/common/aio.h"
 #include "vcml/common/thctl.h"
+#include "vcml/common/bitops.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/logging/log_file.h"
@@ -66,17 +67,22 @@
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
 #include "vcml/processor.h"
+#include "vcml/spi.h"
+#include "vcml/sd.h"
 
 #include "vcml/models/generic/bus.h"
 #include "vcml/models/generic/memory.h"
 #include "vcml/models/generic/crossbar.h"
 #include "vcml/models/generic/uart8250.h"
 #include "vcml/models/generic/rtc1742.h"
+#include "vcml/models/generic/spi2sd.h"
+#include "vcml/models/generic/sdcard.h"
 
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ethoc.h"
 #include "vcml/models/opencores/ockbd.h"
 #include "vcml/models/opencores/ocfbc.h"
+#include "vcml/models/opencores/ocspi.h"
 
 #include "vcml/models/arm/pl011uart.h"
 #include "vcml/models/arm/pl190vic.h"

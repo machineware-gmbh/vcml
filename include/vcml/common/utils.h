@@ -25,6 +25,11 @@
 
 namespace vcml {
 
+    const size_t KiB = 1024;
+    const size_t MiB = 1024 * KiB;
+    const size_t GiB = 1024 * MiB;
+    const size_t TiB = 1024 * GiB;
+
 #define VCML_KIND(name)                \
     virtual const char* kind() const { \
         return "vcml::" #name;         \
