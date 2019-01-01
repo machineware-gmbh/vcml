@@ -55,6 +55,7 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <typeindex>
 
 #include <pthread.h>
 #include <unistd.h>

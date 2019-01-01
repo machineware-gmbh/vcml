@@ -242,6 +242,12 @@ inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
 }
 #endif
 
+#if (SYSTEMC_VERSION < 20171012)
+namespace sc_core {
+    typedef std::type_index sc_type_index;
+}
+#endif
+
 std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian);
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
 
