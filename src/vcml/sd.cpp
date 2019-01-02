@@ -97,6 +97,7 @@ namespace vcml {
         case  2: return "ALL_SEND_CID";
         case  3: return "SEND_RELATIVE_ADDR";
         case  4: return "SET_DSR";
+        case  5: return "SD_IO_SEND_OP_COND";
         case  6: return "SWITCH_FUNC";
         case  7: return "SELECT_DESELECT_CARD";
         case  8: return "SEND_IF_COND";
@@ -125,6 +126,8 @@ namespace vcml {
         case 42: return "LOCK_UNLOCK";
         case 48: return "READ_EXTR_SINGLE";
         case 49: return "WRITE_EXTR_SINGLE";
+        case 52: return "IO_RW_DIRECT";
+        case 53: return "IO_RW_EXTENDED";
         case 55: return "APP_CMD";
         case 56: return "GEN_CMD";
         case 58: return "READ_OCR";
