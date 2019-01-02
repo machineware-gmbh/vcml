@@ -240,6 +240,7 @@ namespace vcml { namespace generic {
         if (m_image.is_open()) {
             m_image.seekg(m_curoff, std::ios::beg);
             m_image.read((char*)m_buffer, blklen);
+            VCML_ERROR_ON(!m_image.good(), "I/O error while reading image");
         }
 
         if (m_do_crc) {
@@ -401,7 +402,7 @@ namespace vcml { namespace generic {
         if (image.get().empty()) {
             log_info("no image file specified, discarding all written data");
             if (capacity == 0u) {
-                capacity = 0x80000000;
+                capacity = 2 * GiB;
                 log_info("no capacity specified, assuming 2GB");
             } else if (capacity % 1024) {
                 VCML_ERROR("capacity must be multiples of 1kB");
@@ -414,6 +415,11 @@ namespace vcml { namespace generic {
         log_debug("using image at '%s'", image.get().c_str());
         m_image.open(image.get().c_str(),
                      std::ios::binary | std::ios::in | std::ios::out);
+
+        if (!m_image.is_open()) {
+            log_debug("opening image read-only");
+            m_image.open(image.get().c_str(), std::ios::binary | std::ios::in);
+        }
 
         if (!m_image.is_open())
             VCML_ERROR("cannot open '%s'", image.get().c_str());
@@ -572,6 +578,7 @@ namespace vcml { namespace generic {
             break;
 
         case 12: // STOP_TRANSMISSION (SD/SPI)
+            log_debug("stopping transmission after %u blocks", m_numblk);
             m_state = TRANSFER;
             make_r1(tx);
             return SD_OK;
@@ -655,14 +662,20 @@ namespace vcml { namespace generic {
         /*** class 6 commands (protection) ***/
 
         case 28: // SET_WRITE_PROT (SD/SPI)
+            if (is_sdhc())
+                return SD_ERR_ILLEGAL;
             // not implemented
             break;
 
         case 29: // CLR_WRITE_PROT (SD/SPI)
+            if (is_sdhc())
+                return SD_ERR_ILLEGAL;
             // not implemented
             break;
 
         case 30: // SEND_WRITE_PROT (SD/SPI)
+            if (is_sdhc())
+                return SD_ERR_ILLEGAL;
             // not implemented
             break;
 
@@ -748,8 +761,15 @@ namespace vcml { namespace generic {
             return SD_OK_TX_RDY;
 
         case 22: // SEND_NUM_WR_BLOCKS (SD/SPI)
-            // not implemented
-            break;
+            m_buffer[0] = (u8)(m_numblk >> 24);
+            m_buffer[1] = (u8)(m_numblk >> 16);
+            m_buffer[2] = (u8)(m_numblk >>  8);
+            m_buffer[3] = (u8)(m_numblk >>  0);
+            m_buffer[4] = (u8)(crc16(m_buffer, 4) >> 8);
+            m_buffer[5] = (u8)(crc16(m_buffer, 4) >> 0);
+            setup_tx(m_buffer, 6);
+            make_r1(tx);
+            return SD_OK_TX_RDY;
 
         case 23: // SET_WR_BLK_ERASE_COUNT (SD/SPI)
             // not implemented
@@ -857,10 +877,8 @@ namespace vcml { namespace generic {
         bool appcmd = (m_status & APP_CMD);
         tx.resp_len = 0;
 
-        if (m_state == SENDING)
-            log_debug("%s command during TX", sd_cmd_str(tx.opcode, appcmd));
-        if (m_state == RECEIVING)
-            log_debug("%s command during RX", sd_cmd_str(tx.opcode, appcmd));
+        if (m_state == SENDING || m_state == RECEIVING)
+            m_state = TRANSFER;
 
         m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND);
         m_curcmd = tx.opcode;
@@ -976,6 +994,10 @@ namespace vcml { namespace generic {
         if (m_image.is_open()) {
             m_image.seekp(m_curoff, std::ios::beg);
             m_image.write((char*)m_buffer, blklen);
+            if (!m_image.good()) {
+                log_debug("I/O error while writing image");
+                m_image.clear();
+            }
         }
 
         m_numblk++;
