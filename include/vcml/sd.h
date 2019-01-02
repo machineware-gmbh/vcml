@@ -116,22 +116,8 @@ namespace vcml {
         VCML_KIND(sd_target_stub);
     };
 
-    const char* sd_cmd_str(u8 opcode);
-    const char* sd_acmd_str(u8 opcode);
-
-    bool sd_spi_cmd_valid(u8 opcode);
-    bool sd_spi_acmd_valid(u8 opcode);
-
-    string sd_cmd_str(const sd_command& tx);
-    string sd_acmd_str(const sd_command& tx);
-
-    inline bool sd_spi_cmd_valid(const sd_command& tx) {
-        return sd_spi_cmd_valid(tx.opcode);
-    }
-
-    inline bool sd_spi_acmd_valid(const sd_command& tx) {
-        return sd_spi_acmd_valid(tx.opcode);
-    }
+    const char* sd_cmd_str(u8 opcode, bool appcmd = false);
+    string sd_cmd_str(const sd_command& tx, bool appcmd = false);
 
 }
 

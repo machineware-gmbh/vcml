@@ -90,7 +90,7 @@ namespace vcml {
         /* nothing to do */
     }
 
-    const char* sd_cmd_str(u8 opcode) {
+    static const char* do_cmd_str(u8 opcode) {
         switch (opcode) {
         case  0: return "GO_IDLE_STATE";
         case  1: return "SEND_OP_COND";
@@ -137,7 +137,7 @@ namespace vcml {
         }
     }
 
-    const char* sd_acmd_str(u8 opcode) {
+    static const char* do_acmd_str(u8 opcode) {
         switch (opcode) {
         case  6: return "SET_BUS_WIDTH";
         case 13: return "SD_STATUS";
@@ -150,33 +150,16 @@ namespace vcml {
         }
     }
 
-    bool sd_spi_cmd_valid(u8 opcode) {
-        switch (opcode) {
-        case  0: case  1: case  6: case  8: case  9: case 10: case 12: case 13:
-        case 16: case 17: case 18: case 24: case 25: case 27: case 32: case 33:
-        case 38: case 55: case 56: case 58: case 59: return true;
-        default: return false;
-        }
-    }
-
-    bool sd_spi_acmd_valid(u8 opcode) {
-        switch (opcode) {
-        case 13: return true; // SD_STATUS
-        case 22: return true; // SEND_NUM_WR_BLOCKS
-        case 23: return true; // SET_WR_BLK_ERASE_COUNT
-        case 41: return true; // SD_SEND_OP_COND
-        case 42: return true; // SET_CLR_CARD_DETECT
-        case 51: return true; // SEND_SCR
-        default: return false;
-        }
+    const char* sd_cmd_str(u8 opcode, bool appcmd) {
+        return appcmd ? do_acmd_str(opcode) : do_cmd_str(opcode);
     }
 
 #define HEXW(w) std::hex << std::setw(w) << std::setfill('0')
 
-    static string sd_xcmd_str(const sd_command& tx, bool app) {
+    string sd_cmd_str(const sd_command& tx, bool appcmd) {
         stringstream ss; u8 op = tx.opcode;
-        ss << (app ? "ACMD" : "CMD") << std::dec << (unsigned int)tx.opcode;
-        ss << " '" << (app ? sd_acmd_str(op) : sd_cmd_str(op)) << "'";
+        ss << (appcmd ? "ACMD" : "CMD") << std::dec << (unsigned int)tx.opcode;
+        ss << " '" << sd_cmd_str(op, appcmd) << "'";
         ss << " (" << HEXW(8) << tx.argument << ")";
 
         if (tx.resp_len > 0) {
@@ -187,14 +170,6 @@ namespace vcml {
         }
 
         return ss.str();
-    }
-
-    string sd_cmd_str(const sd_command& tx) {
-        return sd_xcmd_str(tx, false);
-    }
-
-    string sd_acmd_str(const sd_command& tx) {
-        return sd_xcmd_str(tx, true);
     }
 
 }

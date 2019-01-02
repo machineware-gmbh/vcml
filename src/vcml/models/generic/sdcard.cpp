@@ -598,8 +598,11 @@ namespace vcml { namespace generic {
         /*** class 2 commands (reading) ***/
 
         case 16: // SET_BLOCKLEN (SD/SPI)
-            m_blklen = tx.argument;
-            log_debug("block length changed to %zu bytes", m_blklen);
+            if (tx.argument != m_blklen) {
+                m_blklen = tx.argument;
+                log_debug("block length changed to %zu bytes", m_blklen);
+            }
+            make_r1(tx);
             return SD_OK;
 
         case 17: // READ_SINGLE_BLOCK (SD/SPI)
@@ -840,12 +843,8 @@ namespace vcml { namespace generic {
     }
 
     sd_status sdcard::do_command(sd_command& tx) {
-        if (!check_crc7(tx)) {
-            log_debug("command checksum error");
-            m_status |= COM_CRC_ERROR;
-            make_r1(tx);
+        if (!check_crc7(tx))
             return SD_ERR_CRC;
-        }
 
         if (!(m_status & APP_CMD))
             return do_normal_command(tx);
@@ -857,6 +856,11 @@ namespace vcml { namespace generic {
     sd_status sdcard::sd_transport(sd_command& tx) {
         bool appcmd = (m_status & APP_CMD);
         tx.resp_len = 0;
+
+        if (m_state == SENDING)
+            log_debug("%s command during TX", sd_cmd_str(tx.opcode, appcmd));
+        if (m_state == RECEIVING)
+            log_debug("%s command during RX", sd_cmd_str(tx.opcode, appcmd));
 
         m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND);
         m_curcmd = tx.opcode;
@@ -880,17 +884,23 @@ namespace vcml { namespace generic {
 
         case SD_ERR_CRC:
             m_status |= COM_CRC_ERROR;
+            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
+            log_debug("command checksum error");
             break;
 
         case SD_ERR_ARG:
             m_status |= OUT_OF_RANGE;
+            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
+            log_debug("command argument out of range 0x%08x", tx.argument);
             break;
 
         case SD_ERR_ILLEGAL:
             m_status |= ILLEGAL_COMMAND;
+            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
+            log_debug("illegal command %s", sd_cmd_str(tx, appcmd).c_str());
             break;
 
         default:
