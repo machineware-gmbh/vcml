@@ -88,6 +88,7 @@ namespace vcml {
 
         bool exists(unsigned int idx) const ;
         PORT& operator [] (unsigned int idx);
+        const PORT& operator [] (unsigned int idx) const;
     };
 
     template <class PORT>
@@ -120,6 +121,12 @@ namespace vcml {
         sc_core::sc_get_curr_simcontext()->hierarchy_pop();
         m_ports[idx] = port;
         return *port;
+    }
+
+    template <class PORT>
+    const PORT& port_list<PORT>::operator [] (unsigned int idx) const {
+        VCML_ERROR_ON(!exists(idx), "PORT%u does not exist", idx);
+        return *m_ports.at(idx);
     }
 
     typedef port_list<out_port>    out_port_list;
