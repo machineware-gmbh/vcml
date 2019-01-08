@@ -28,6 +28,7 @@ namespace vcml {
     out_port::out_port():
         sc_core::sc_out<bool>(sc_gen_unique_name("out")),
         m_state(false),
+        m_stubbed(false),
         m_update(),
         m_stub(concat(basename(), "_stub").c_str()) {
         sc_core::sc_spawn_options opts;
@@ -43,6 +44,7 @@ namespace vcml {
     out_port::out_port(const sc_module_name& nm):
         sc_core::sc_out<bool>(nm),
         m_state(false),
+        m_stubbed(false),
         m_update(),
         m_stub(concat(basename(), "_stub").c_str()) {
         sc_core::sc_spawn_options opts;
@@ -63,6 +65,12 @@ namespace vcml {
         m_state = set;
         if ((*this)->read() != set)
             m_update.notify(SC_ZERO_TIME);
+    }
+
+    void out_port::stub() {
+        VCML_ERROR_ON(m_stubbed, "port %s already stubbed", name());
+        bind(m_stub);
+        m_stubbed = true;
     }
 
 }

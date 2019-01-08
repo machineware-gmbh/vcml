@@ -30,6 +30,7 @@ namespace vcml {
     {
     private:
         bool m_state;
+        bool m_stubbed;
         sc_event m_update;
         sc_signal<bool> m_stub;
 
@@ -54,7 +55,8 @@ namespace vcml {
         bool read() const             { return m_state; }
         void write(bool set);
 
-        void stub()                   { bind(m_stub); }
+        bool is_stubbed() const       { return m_stubbed; }
+        void stub();
     };
 
     template <class PORT>
