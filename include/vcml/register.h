@@ -178,7 +178,7 @@ namespace vcml {
 
         for (unsigned int i = 0; i < N; i++) {
             m_banks[m_current_bank][i] = property<DATA, N>::get(i);
-            property<DATA, N>::set(m_banks[bank][i]);
+            property<DATA, N>::set(m_banks[bank][i], i);
         }
 
         m_current_bank = bank;
