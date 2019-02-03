@@ -811,7 +811,7 @@ namespace vcml { namespace arm {
                 if (is_irq_enabled(irq, mask) && test_pending(irq, mask)) {
                     int idx = irq - VCML_ARM_GICv2_NSGI;
                     if (DISTIF.PPIP.bank(cpu, idx) < best_prio) {
-                        best_prio = DISTIF.PPIP.bank(cpu, irq);
+                        best_prio = DISTIF.PPIP.bank(cpu, idx);
                         best_irq = irq;
                     }
                 }
