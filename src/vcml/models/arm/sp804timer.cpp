@@ -178,8 +178,6 @@ namespace vcml { namespace arm {
         SC_METHOD(update_IRQC);
         sensitive << IRQ1 << IRQ2;
         dont_initialize();
-
-        reset();
     }
 
     sp804timer::~sp804timer() {

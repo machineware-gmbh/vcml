@@ -212,8 +212,6 @@ namespace vcml { namespace arm {
         CID.allow_read();
 
         SC_METHOD(poll);
-
-        reset();
     }
 
     pl011uart::~pl011uart() {

@@ -152,8 +152,6 @@ namespace vcml { namespace arm {
 
         PID.allow_read();
         CID.allow_read();
-
-        reset();
     }
 
     pl190vic::~pl190vic() {
