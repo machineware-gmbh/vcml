@@ -63,7 +63,11 @@ namespace vcml {
 
     void out_port::write(bool set) {
         m_state = set;
-        if ((*this)->read() != set)
+
+        // Only notify the updater process if necessary, i.e. when the signal
+        // value has to change. However, if the port has not been bound, we
+        // always notify since we cannot know the state of the future signal.
+        if (bind_count() == 0 || (*this)->read() != set)
             m_update.notify(SC_ZERO_TIME);
     }
 
