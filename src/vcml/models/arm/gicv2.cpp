@@ -861,7 +861,7 @@ namespace vcml { namespace arm {
     }
 
     void gicv2::ppi_handler(unsigned int cpu, unsigned int irq) {
-        unsigned int idx = irq - VCML_ARM_GICv2_NSGI;
+        unsigned int idx = irq - VCML_ARM_GICv2_NSGI + cpu * VCML_ARM_GICv2_NPPI;
         unsigned int mask = 1 << cpu;
 
         bool irq_level = PPI_IN[idx].read();
