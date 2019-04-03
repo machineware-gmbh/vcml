@@ -32,10 +32,11 @@
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
-#define VCML_ARM_GICv2_NCPU (8)    // number of CPUs handled by the ARM GIC
-#define VCML_ARM_GICv2_NIRQ (1020) // number of possible interrupts
-#define VCML_ARM_GICv2_NSGI (16)   // number of software generated interrupts
-#define VCML_ARM_GICv2_NPPI (16)   // number of private peripheral interrupts
+#define VCML_ARM_GICv2_NCPU (8)      // number of CPUs handled by the ARM GIC
+#define VCML_ARM_GICv2_NIRQ (1020)   // number of possible interrupts
+#define VCML_ARM_GICv2_NSPCL_IRQ (4) // number of special purpose IRQs
+#define VCML_ARM_GICv2_NSGI (16)     // number of software generated interrupts
+#define VCML_ARM_GICv2_NPPI (16)     // number of private peripheral interrupts
 #define VCML_ARM_GICv2_PRIV (VCML_ARM_GICv2_NSGI + VCML_ARM_GICv2_NPPI)
 
 #define VCML_ARM_GICv2_IDLE_PRIO     (0xFF)
@@ -181,7 +182,7 @@ namespace vcml { namespace arm {
             gicv2* m_parent;
 
             u32 m_curr_irq[VCML_ARM_GICv2_NCPU];
-            u32 m_prev_irq[VCML_ARM_GICv2_NIRQ][VCML_ARM_GICv2_NCPU];
+            u32 m_prev_irq[VCML_ARM_GICv2_NIRQ+VCML_ARM_GICv2_NSPCL_IRQ][VCML_ARM_GICv2_NCPU];
 
             void set_current_irq(unsigned int cpu_id, unsigned int irq);
 
