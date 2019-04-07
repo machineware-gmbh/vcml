@@ -37,6 +37,7 @@
 #define VCML_ARM_GICv2_NSPCL_IRQ (4) // number of special purpose IRQs
 #define VCML_ARM_GICv2_NSGI (16)     // number of software generated interrupts
 #define VCML_ARM_GICv2_NPPI (16)     // number of private peripheral interrupts
+#define VCML_ARM_GICv2_REGS (VCML_ARM_GICv2_NIRQ + VCML_ARM_GICv2_NSPCL_IRQ)
 #define VCML_ARM_GICv2_PRIV (VCML_ARM_GICv2_NSGI + VCML_ARM_GICv2_NPPI)
 
 #define VCML_ARM_GICv2_IDLE_PRIO     (0xFF)
@@ -182,7 +183,7 @@ namespace vcml { namespace arm {
             gicv2* m_parent;
 
             u32 m_curr_irq[VCML_ARM_GICv2_NCPU];
-            u32 m_prev_irq[VCML_ARM_GICv2_NIRQ+VCML_ARM_GICv2_NSPCL_IRQ][VCML_ARM_GICv2_NCPU];
+            u32 m_prev_irq[VCML_ARM_GICv2_REGS][VCML_ARM_GICv2_NCPU];
 
             void set_current_irq(unsigned int cpu_id, unsigned int irq);
 
@@ -230,8 +231,8 @@ namespace vcml { namespace arm {
 
         sc_in<bool>& ppi_in(unsigned int cpu, unsigned int irq);
 
-        inline unsigned int get_irq_num() const { return m_irq_num; }
-        inline unsigned int get_cpu_num() const { return m_cpu_num; }
+        unsigned int get_irq_num() const { return m_irq_num; }
+        unsigned int get_cpu_num() const { return m_cpu_num; }
 
         // interrupt state control
         void enable_irq(unsigned int irq, unsigned int mask);
