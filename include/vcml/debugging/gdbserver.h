@@ -46,7 +46,7 @@ namespace vcml { namespace debugging {
     };
 
     enum gdb_signal {
-        GDBSIG_BREAKPOINT = 5
+        GDBSIG_TRAP = 5
     };
 
     class gdbserver: public rspserver

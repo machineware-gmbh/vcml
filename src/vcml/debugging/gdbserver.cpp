@@ -88,7 +88,7 @@ namespace vcml { namespace debugging {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
                 m_status = GDB_STOPPED;
-                m_signal = GDBSIG_BREAKPOINT;
+                m_signal = GDBSIG_TRAP;
             }
         }
 
@@ -102,7 +102,7 @@ namespace vcml { namespace debugging {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
                 m_status = GDB_STOPPED;
-                m_signal = GDBSIG_BREAKPOINT;
+                m_signal = GDBSIG_TRAP;
             }
         }
 
@@ -486,7 +486,7 @@ namespace vcml { namespace debugging {
         case GDB_STEPPING: {
             unsigned int one = 1;
             m_stub->gdb_simulate(one);
-            notify(GDBSIG_BREAKPOINT);
+            notify(GDBSIG_TRAP);
             if (m_sync)
                 cycles = 1;
             return;
