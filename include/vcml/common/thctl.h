@@ -31,6 +31,13 @@ namespace vcml {
     void thctl_exit_critical();
     bool thctl_in_critical();
 
+    class thctl_lock
+    {
+    public:
+        thctl_lock()  { thctl_enter_critical(); }
+        ~thctl_lock() { thctl_exit_critical(); }
+    };
+
 }
 
 #endif

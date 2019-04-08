@@ -78,96 +78,70 @@ namespace vcml { namespace debugging {
     };
 
     inline u64 gdbstub::async_num_registers() {
-        thctl_enter_critical();
-        u64 result = gdb_num_registers();
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_num_registers();
     }
 
     inline u64 gdbstub::async_register_width(u64 idx) {
-        thctl_enter_critical();
-        u64 result = gdb_register_width(idx);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_register_width(idx);
     }
 
     inline bool gdbstub::async_read_reg(u64 idx, void* buffer, u64 size) {
-        thctl_enter_critical();
-        bool result = gdb_read_reg(idx, buffer, size);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_read_reg(idx, buffer, size);
     }
 
     inline bool gdbstub::async_write_reg(u64 idx, const void* buffer, u64 sz) {
-        thctl_enter_critical();
-        bool result = gdb_write_reg(idx, buffer, sz);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_write_reg(idx, buffer, sz);
     }
 
     inline bool gdbstub::async_page_size(u64& size) {
-        thctl_enter_critical();
-        bool result = gdb_page_size(size);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_page_size(size);
     }
 
     inline bool gdbstub::async_virt_to_phys(u64 vaddr, u64& paddr) {
-        thctl_enter_critical();
-        bool result = gdb_virt_to_phys(vaddr, paddr);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_virt_to_phys(vaddr, paddr);
     }
 
     inline bool gdbstub::async_read_mem(u64 addr, void* buffer, u64 size) {
-        thctl_enter_critical();
-        bool result = gdb_read_mem(addr, buffer, size);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_read_mem(addr, buffer, size);
     }
 
     inline bool gdbstub::async_write_mem(u64 addr, const void* buf, u64 sz) {
-        thctl_enter_critical();
-        bool result = gdb_write_mem(addr, buf, sz);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_write_mem(addr, buf, sz);
     }
 
     inline bool gdbstub::async_insert_breakpoint(u64 addr) {
-        thctl_enter_critical();
-        bool result = gdb_insert_breakpoint(addr);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_insert_breakpoint(addr);
     }
 
     inline bool gdbstub::async_remove_breakpoint(u64 addr) {
-        thctl_enter_critical();
-        bool result = gdb_remove_breakpoint(addr);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_remove_breakpoint(addr);
     }
 
     inline bool gdbstub::async_insert_watchpoint(const range& address,
                                                  vcml_access acs) {
-        thctl_enter_critical();
-        bool result = gdb_insert_watchpoint(address, acs);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_insert_watchpoint(address, acs);
     }
 
     inline bool gdbstub::async_remove_watchpoint(const range& address,
                                                  vcml_access acs) {
-        thctl_enter_critical();
-        bool result = gdb_remove_watchpoint(address, acs);
-        thctl_exit_critical();
-        return result;
+        thctl_lock lock;
+        return gdb_remove_watchpoint(address, acs);
     }
 
     inline string gdbstub::async_handle_rcmd(const string& command) {
-        thctl_enter_critical();
-        string response = gdb_handle_rcmd(command);
-        thctl_exit_critical();
-        return response;
+        thctl_lock lock;
+        return gdb_handle_rcmd(command);
     }
 
 }}
