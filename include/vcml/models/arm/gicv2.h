@@ -44,6 +44,15 @@
 #define VCML_ARM_GICv2_SPURIOUS_IRQ  (1023)
 #define VCML_ARM_GICv2_ALL_CPU_MASK  ((1 << VCML_ARM_GICv2_NCPU) - 1)
 
+#define VCML_ARM_GICv2_IIDR_IMPL(v)  (((v) & 0xfff) <<  0)
+#define VCML_ARM_GICv2_IIDR_REV(v)   (((v) & 0x00f) << 12)
+#define VCML_ARM_GICv2_IIDR_ARCH(v)  (((v) & 0x00f) << 16)
+#define VCML_ARM_GICv2_IIDR_PID(v)   (((v) & 0xfff) << 20)
+#define VCML_ARM_GICv2_IIDR          VCML_ARM_GICv2_IIDR_PID(0)  | \
+                                     VCML_ARM_GICv2_IIDR_ARCH(2) | \
+                                     VCML_ARM_GICv2_IIDR_REV(0)  | \
+                                     VCML_ARM_GICv2_IIDR_IMPL(0x43B)
+
 #define VCML_ARM_GICv2_CID 0xB105F00D // PrimeCell ID
 
 namespace vcml { namespace arm {
@@ -115,6 +124,9 @@ namespace vcml { namespace arm {
             u32 read_IACR();
             u32 read_SACR(unsigned int idx);
 
+            u32 write_ICAR(u32 value);
+            u32 write_SCAR(u32 value, unsigned int idx);
+
             u32 read_INTT(unsigned int idx);
 
             u32 write_CPPI(u32 value);
@@ -144,6 +156,9 @@ namespace vcml { namespace arm {
 
             reg<distif, u32>     IACR; // INT Active register
             reg<distif, u32, 31> SACR; // SPI Active register
+
+            reg<distif, u32>     ICAR; // INT Clear Active register
+            reg<distif, u32, 31> SCAR; // SPI Clear Active register
 
             reg<distif, u8, 16>  SGIP; // SGI Priority register
             reg<distif, u8, 16>  PPIP; // PPI Priority register
@@ -202,14 +217,16 @@ namespace vcml { namespace arm {
                 CTLR_ENABLE = 1 << 0,
             };
 
-            reg<cpuif, u32> CTLR; // CPU Control register
-            reg<cpuif, u32> IPMR; // IRQ Priority Mask register
-            reg<cpuif, u32> BIPR; // Binary Point register
-            reg<cpuif, u32> IACK; // Interrupt Acknowledge register
-            reg<cpuif, u32> EOIR; // End Of Interrupt register
-            reg<cpuif, u32> PRIO; // Running Priority register
-            reg<cpuif, u32> PEND; // Highest Pending IRQ register
-            reg<cpuif, u32> ABPR; // Alias Binary Point register
+            reg<cpuif, u32>    CTLR; // CPU Control register
+            reg<cpuif, u32>    IPMR; // IRQ Priority Mask register
+            reg<cpuif, u32>    BIPR; // Binary Point register
+            reg<cpuif, u32>    IACK; // Interrupt Acknowledge register
+            reg<cpuif, u32>    EOIR; // End Of Interrupt register
+            reg<cpuif, u32>    PRIO; // Running Priority register
+            reg<cpuif, u32>    PEND; // Highest Pending IRQ register
+            reg<cpuif, u32>    ABPR; // Alias Binary Point register
+            reg<cpuif, u32, 4> ACPR; // Active Priorities registers
+            reg<cpuif, u32>    IIDR; // Interface Identification register
 
             reg<cpuif, u32, 4> CIDR; // Component ID register
 

@@ -331,6 +331,32 @@ namespace vcml { namespace arm {
         return value;
     }
 
+    u32 gicv2::distif::write_ICAR(u32 val) {
+        int cpu = ICAR.current_bank();
+        if (cpu < 0) {
+            log_warning("(ICAR) invalid cpu %d, assuming 0", cpu);
+            cpu = 0;
+        }
+
+        unsigned int mask = 1 << cpu;
+        for (unsigned int irq = 0; irq < 32; irq++) {
+            if (val & (1 << irq))
+                m_parent->set_irq_active(irq, false, mask);
+        }
+
+        return 0;
+    }
+
+    u32 gicv2::distif::write_SCAR(u32 val, unsigned int idx) {
+        unsigned int irq = VCML_ARM_GICv2_PRIV + idx * 32;
+        for (unsigned int i = 0; i < 32; i++) {
+            if (val & (1 << i))
+                m_parent->set_irq_active(irq + i, false, gicv2::ALL_CPU);
+        }
+
+        return 0;
+    }
+
     u32 gicv2::distif::read_INTT(unsigned int idx) {
         int cpu = INTT.current_bank();
         if (cpu < 0) {
@@ -467,6 +493,8 @@ namespace vcml { namespace arm {
         SCPR("SCPR", 0x284, 0x00000000),
         IACR("IACR", 0x300),
         SACR("SACR", 0x304),
+        ICAR("ICAR", 0x380, 0x00000000),
+        SCAR("SCAR", 0x384, 0x00000000),
         SGIP("SGIP", 0x400, 0x00),
         PPIP("PPIP", 0x410, 0x00),
         SPIP("SPIP", 0x420, 0x00),
@@ -528,6 +556,13 @@ namespace vcml { namespace arm {
 
         SACR.allow_read();
         SACR.tagged_read = &distif::read_SACR;
+
+        ICAR.set_banked();
+        ICAR.allow_read_write();
+        ICAR.write = &distif::write_ICAR;
+
+        SCAR.allow_read_write();
+        SCAR.tagged_write = &distif::write_SCAR;
 
         SGIP.set_banked();
         SGIP.allow_read_write();
@@ -708,6 +743,8 @@ namespace vcml { namespace arm {
         PRIO("PRIO", 0x14, VCML_ARM_GICv2_IDLE_PRIO),
         PEND("PEND", 0x18, VCML_ARM_GICv2_SPURIOUS_IRQ),
         ABPR("ABPR", 0x1C, 0x0),
+        ACPR("ACPR", 0xD0, 0x00000000),
+        IIDR("IIDR", 0xFC, VCML_ARM_GICv2_IIDR),
         CIDR("CIDR", 0xFF0),
         IN("IN") {
         VCML_ERROR_ON(!m_parent, "gicv2 parent module not found");
@@ -741,6 +778,9 @@ namespace vcml { namespace arm {
         ABPR.set_banked();
         ABPR.allow_read_write();
 
+        ACPR.allow_read_write();
+
+        IIDR.allow_read();
         CIDR.allow_read();
 
         reset();
