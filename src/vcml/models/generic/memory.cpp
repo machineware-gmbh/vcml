@@ -27,7 +27,10 @@ namespace vcml { namespace generic {
 
     static vector<image_info> images_from_string(string s) {
         vector<image_info> images;
-        s.erase(std::remove_if(s.begin(), s.end(), isspace), s.end());
+        s.erase(std::remove_if(s.begin(), s.end(), [] (unsigned char c) {
+            return isspace(c);
+        }), s.end());
+
         vector<string> token = split(s, ';');
         for (string cur : token) {
             vector<string> vec = split(cur, '@');
