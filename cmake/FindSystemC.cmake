@@ -40,10 +40,12 @@ else()
     endif()
 endif()
 
-find_library(SYSTEMC_LIBRARY NAMES libsystemc.a systemc
-             HINTS ${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH})
+find_library(SYSTEMC_LIBRARY NAMES libsystemc.a systemc libSnpsVP.so
+             HINTS ${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH}
+                   ${SYSTEMC_HOME}/libso-gcc-6.2.0-64
+                   ${SYSTEMC_HOME}/libso-gcc-5.2.0-64)
 
-set(SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR})
+set(SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR} ${SYSTEMC_INCLUDE_DIR}/tlm)
 set(SYSTEMC_LIBRARIES "${SYSTEMC_LIBRARY}")
 
 set(_sysc_ver_file "${SYSTEMC_INCLUDE_DIR}/sysc/kernel/sc_ver.h")
