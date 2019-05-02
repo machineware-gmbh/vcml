@@ -234,7 +234,7 @@ namespace vcml {
     }
 }
 
-#if (SYSTEMC_VERSION < 20140417)
+#if (SYSTEMC_VERSION < 20140408)
 inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
                                     const sc_core::sc_time& t2 ) {
     sc_core::sc_time tmp(t1.value() % t2.value(), false);
