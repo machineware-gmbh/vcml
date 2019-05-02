@@ -66,13 +66,8 @@ namespace vcml { namespace generic {
 
         typedef typename std::map<unsigned int, T*>::iterator iterator;
 
-        iterator begin() {
-            return m_sockets.begin();
-        }
-
-        iterator end() {
-            return m_sockets.end();
-        }
+        iterator begin() { return m_sockets.begin(); }
+        iterator end()   { return m_sockets.end(); }
     };
 
     class bus: public component
@@ -91,6 +86,11 @@ namespace vcml { namespace generic {
                                    tlm_dmi& dmi);
         void cb_invalidate_direct_mem_ptr(int port, sc_dt::uint64 s,
                                           sc_dt::uint64 e);
+
+        using component::b_transport;
+        using component::transport_dbg;
+        using component::get_direct_mem_ptr;
+        using component::invalidate_direct_mem_ptr;
 
     protected:
         void b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
