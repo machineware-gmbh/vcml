@@ -21,6 +21,7 @@ cmake_minimum_required(VERSION 3.5)
 
 option(BUILD_TESTS "Build unit tests, requires GTest and GMock >= 1.8.0" OFF)
 option(BUILD_UTILS "Builds utility programs" ON)
+option(BUILD_PIC "Build position independent code" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(SystemC "2.3.0" REQUIRED)
@@ -30,6 +31,10 @@ find_package(LibVNC)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DVCML_DEBUG")
+
+if(BUILD_PIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 set(src "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(inc "${CMAKE_CURRENT_SOURCE_DIR}/include")
