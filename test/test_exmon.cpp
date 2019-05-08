@@ -119,8 +119,3 @@ TEST(exmon, dmi) {
     EXPECT_EQ(dmi.get_end_address(), -1);
     EXPECT_EQ(dmi.get_dmi_ptr(), (unsigned char*)400);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

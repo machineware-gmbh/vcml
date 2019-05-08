@@ -112,8 +112,3 @@ TEST(property, init) {
     test.prop_array_string[3] = "z,z";
     EXPECT_EQ(std::string(test.prop_array_string.str()), "abc,def,x\\,y,z\\,z");
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

@@ -116,9 +116,3 @@ TEST(dmi, lookup) {
     EXPECT_EQ(vcml::dmi_get_ptr(dmi2, 997), &dummy + 997);
     EXPECT_FALSE(cache.lookup(998, 4, tlm::TLM_READ_COMMAND, dmi2));
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
-

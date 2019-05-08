@@ -72,9 +72,3 @@ TEST(generic_bus, transfer) {
     EXPECT_EQ(initiator.OUT.dmi().get_entries().size(), 1);
     EXPECT_EQ(initiator.OUT.dmi().get_entries()[0].get_start_address(), 0x2000);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
-}

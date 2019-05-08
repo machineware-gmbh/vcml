@@ -29,8 +29,3 @@ TEST(version, vstr) {
     EXPECT_GT(std::strlen(VCML_VERSION_STRING), 0);
 
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

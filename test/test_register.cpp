@@ -356,9 +356,3 @@ TEST(registers, endianess) {
     EXPECT_EQ(t, mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
-}

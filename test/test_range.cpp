@@ -104,9 +104,3 @@ TEST(range, tostring) {
     std::string t = to_string(b);
     EXPECT_EQ(t, "0xababababcdcdcdcd 0xfefefefe12121212");
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
-

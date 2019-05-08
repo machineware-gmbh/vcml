@@ -106,7 +106,10 @@ TEST(utils, memswap) {
 
 TEST(utils, split) {
     std::string s = "abc def\nghi\tjkl    :.;";
-    std::vector<std::string> v = vcml::split(s, isspace);
+    std::vector<std::string> v = vcml::split(s, [] (unsigned char c) {
+        return isspace(c);
+    });
+
     EXPECT_EQ(v.size(), 5);
     EXPECT_EQ(v.at(0), "abc");
     EXPECT_EQ(v.at(1), "def");
@@ -136,9 +139,4 @@ TEST(utils, replace) {
     std::string s2 = "$dir/file.txt";
     EXPECT_EQ(vcml::replace(s2, "$dir", "/home/user"), 1);
     EXPECT_EQ(s2, "/home/user/file.txt");
-}
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

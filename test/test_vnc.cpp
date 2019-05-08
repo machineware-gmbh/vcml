@@ -94,8 +94,3 @@ TEST(vnc, server) {
     EXPECT_EQ(p4.use_count(), 4);
     EXPECT_EQ(p5.use_count(), 4);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

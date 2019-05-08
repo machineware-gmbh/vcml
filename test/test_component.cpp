@@ -64,9 +64,3 @@ TEST(component, sockets) {
     EXPECT_CALL(mock1, transport(_,_,_)).WillOnce(Return(sizeof(data)));
     mock2.OUT.writew(0, data);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
-}

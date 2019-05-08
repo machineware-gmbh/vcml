@@ -98,8 +98,3 @@ TEST(aio, callback) {
     close(fds[0]);
     close(fds[1]);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

@@ -83,8 +83,3 @@ TEST(processor, processor) {
     EXPECT_CALL(cpu, simulate(Eq(quantum / cycle))).Times(1);
     sc_core::sc_start(quantum);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

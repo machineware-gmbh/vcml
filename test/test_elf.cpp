@@ -19,11 +19,6 @@
 #include <gtest/gtest.h>
 #include "vcml.h"
 
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
-
 TEST(elf, main) {
     ASSERT_TRUE(sc_core::sc_argc() >= 2);
     ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);

@@ -65,15 +65,9 @@ public:
 
 };
 
-
 TEST(spi, sockets) {
     initiator spi_i("SPI_I");
     target spi_t("SPI_T");
     spi_i.OUT.bind(spi_t.IN);
     sc_core::sc_start();
-}
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

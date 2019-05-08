@@ -179,9 +179,3 @@ TEST(peripheral, transporting_byte_enable_with_streaming) {
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(t, mock.write_latency * npulses);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
-}

@@ -59,9 +59,3 @@ TEST(generic_memory, access) {
     mock.OUT.dmi().invalidate(0, -1);
     EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe), tlm::TLM_COMMAND_ERROR_RESPONSE);
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
-}

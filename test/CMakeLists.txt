@@ -21,7 +21,9 @@ enable_testing()
 find_package(GTest "1.8.0" REQUIRED)
 find_package(GMock "1.8.0" REQUIRED)
 include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GMOCK_INCLUDE_DIRS})
+include_directories(SYSTEM ${SYSTEMC_INCLUDE_DIRS})
 set(CMAKE_EXE_LINKER_FLAGS -rdynamic)
+add_library(test_main test_main.cpp)
 
 set(tests test_hello test_utils test_logging test_version test_aio test_elf
     test_dmi test_range test_exmon test_component test_peripheral test_register
@@ -34,9 +36,10 @@ endif()
 
 foreach(test ${tests})
     add_executable(${test} ${test}.cpp)
-    add_dependencies(${test} vcml)
+    add_dependencies(${test} vcml test_main)
     target_link_libraries(${test} vcml ${GTEST_LIBRARIES} ${GMOCK_LIBRARIES}
-                          ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES} -pthread)
+                          ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES} test_main
+                          -pthread -lrt -lelf)
     if(LIBVNC_FOUND)
         target_link_libraries(${test} ${LIBVNC_LIBRARIES})
     endif()

@@ -27,8 +27,3 @@ TEST(hello, fortytwo) {
     EXPECT_EQ(50, fortytwo() + 8);
     EXPECT_GT(99, fortytwo());
 }
-
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
