@@ -26,6 +26,10 @@ namespace vcml {
         // nothing to do
     }
 
+    log_file::~log_file() {
+        // nothing to do
+    }
+
     void log_file::log_line(log_level lvl, const char* line) {
         m_file << line << std::endl;
     }
