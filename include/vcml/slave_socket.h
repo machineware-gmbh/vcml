@@ -32,7 +32,7 @@
 
 namespace vcml {
 
-    class slave_socket: public simple_target_socket<slave_socket>
+    class slave_socket: public simple_target_socket<slave_socket, 64>
     {
     private:
         bool       m_free;

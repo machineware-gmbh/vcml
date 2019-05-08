@@ -65,7 +65,7 @@ namespace vcml {
     }
 
     slave_socket::slave_socket(const char* nm, component* host):
-        simple_target_socket<slave_socket>(nm),
+        simple_target_socket<slave_socket, 64>(nm),
         m_free(true),
         m_free_ev("free"),
         m_dmi_cache(),

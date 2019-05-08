@@ -77,8 +77,8 @@ namespace vcml { namespace generic {
 
         vector<bus_mapping> m_mappings;
 
-        tlm_target_socket<>* create_target_socket(unsigned int idx);
-        tlm_initiator_socket<>* create_initiator_socket(unsigned int idx);
+        tlm_target_socket<64>* create_target_socket(unsigned int idx);
+        tlm_initiator_socket<64>* create_initiator_socket(unsigned int idx);
 
         void cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
         unsigned int cb_transport_dbg(int port, tlm_generic_payload& tx);
@@ -101,8 +101,8 @@ namespace vcml { namespace generic {
                                        sc_dt::uint64 end);
 
     public:
-        bus_ports<tlm_target_socket<> > IN;
-        bus_ports<tlm_initiator_socket<> > OUT;
+        bus_ports<tlm_target_socket<64> > IN;
+        bus_ports<tlm_initiator_socket<64> > OUT;
 
         const bus_mapping& lookup(const range& addr) const;
 
@@ -111,10 +111,10 @@ namespace vcml { namespace generic {
         void map(unsigned int port, u64 start, u64 end, u64 offset = 0,
                  const string& peer = "");
 
-        unsigned int bind(tlm_initiator_socket<>& socket);
-        unsigned int bind(tlm_target_socket<>& socket, const range& addr,
+        unsigned int bind(tlm_initiator_socket<64>& socket);
+        unsigned int bind(tlm_target_socket<64>& socket, const range& addr,
                           u64 offset = 0);
-        unsigned int bind(tlm_target_socket<>& socket, u64 start, u64 end,
+        unsigned int bind(tlm_target_socket<64>& socket, u64 start, u64 end,
                           u64 offset = 0);
 
         bus(const sc_core::sc_module_name& nm);
@@ -178,14 +178,14 @@ namespace vcml { namespace generic {
     inline void bus::trace_in(int port, const tlm_generic_payload& tx) const {
         if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
             return;
-        const tlm_target_socket<>& tgt = IN[port];
+        const tlm_target_socket<64>& tgt = IN[port];
         logger::log(LOG_TRACE, tgt.name(), ">> " + tlm_transaction_to_str(tx));
     }
 
     inline void bus::trace_out(int port, const tlm_generic_payload& tx) const {
         if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
             return;
-        const tlm_target_socket<>& tgt = IN[port];
+        const tlm_target_socket<64>& tgt = IN[port];
         logger::log(LOG_TRACE, tgt.name(), "<< " + tlm_transaction_to_str(tx));
     }
 

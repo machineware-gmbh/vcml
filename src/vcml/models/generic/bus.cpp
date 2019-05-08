@@ -47,10 +47,10 @@ namespace vcml { namespace generic {
         return true;
     }
 
-    typedef tlm_utils::simple_initiator_socket_tagged<bus> isock;
-    typedef tlm_utils::simple_target_socket_tagged<bus> tsock;
+    typedef tlm_utils::simple_initiator_socket_tagged<bus, 64> isock;
+    typedef tlm_utils::simple_target_socket_tagged<bus, 64> tsock;
 
-    tlm_target_socket<>* bus::create_target_socket(unsigned int idx) {
+    tlm_target_socket<64>* bus::create_target_socket(unsigned int idx) {
         sc_simcontext* simc = sc_get_curr_simcontext();
         simc->hierarchy_push(this);
 
@@ -70,7 +70,7 @@ namespace vcml { namespace generic {
         return sock;
     }
 
-    tlm_initiator_socket<>*
+    tlm_initiator_socket<64>*
     bus::create_initiator_socket(unsigned int idx) {
         sc_simcontext* simc = sc_get_curr_simcontext();
         simc->hierarchy_push(this);
@@ -183,7 +183,7 @@ namespace vcml { namespace generic {
                 u64 s = m.addr.start + start - m.offset;
                 u64 e = m.addr.start + end - m.offset;
 
-                bus_ports<tlm_target_socket<> >::iterator it;
+                bus_ports<tlm_target_socket<64> >::iterator it;
                 for (it = IN.begin(); it != IN.end(); it++)
                     (*it->second)->invalidate_direct_mem_ptr(s, e);
             }
@@ -231,13 +231,13 @@ namespace vcml { namespace generic {
         map(port, range(start, end), offset, peer);
     }
 
-    unsigned int bus::bind(tlm_initiator_socket<>& socket) {
+    unsigned int bus::bind(tlm_initiator_socket<64>& socket) {
         unsigned int port = IN.next_idx();
         socket.bind(IN[port]);
         return port;
     }
 
-    unsigned int bus::bind(tlm_target_socket<>& socket, const range& addr,
+    unsigned int bus::bind(tlm_target_socket<64>& socket, const range& addr,
                            u64 offset) {
         unsigned int port = OUT.next_idx();
         map(port, addr, offset, socket.name());
@@ -245,7 +245,7 @@ namespace vcml { namespace generic {
         return port;
     }
 
-    unsigned int bus::bind(tlm_target_socket<>& socket, u64 start,
+    unsigned int bus::bind(tlm_target_socket<64>& socket, u64 start,
                                   u64 end, u64 offset) {
         return bind(socket, range(start, end), offset);
     }
@@ -264,14 +264,14 @@ namespace vcml { namespace generic {
     }
 
     template <>
-    tlm_target_socket<>*
-    bus::create_socket<tlm_target_socket<> >(unsigned int idx) {
+    tlm_target_socket<64>*
+    bus::create_socket<tlm_target_socket<64> >(unsigned int idx) {
         return create_target_socket(idx);
     }
 
     template <>
-    tlm_initiator_socket<>*
-    bus::create_socket<tlm_initiator_socket<> >(unsigned int idx) {
+    tlm_initiator_socket<64>*
+    bus::create_socket<tlm_initiator_socket<64> >(unsigned int idx) {
         return create_initiator_socket(idx);
     }
 
