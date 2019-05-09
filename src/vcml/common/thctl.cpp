@@ -88,10 +88,8 @@ namespace vcml {
     };
 
     void thctl_helper::cycle(bool delta_cycle) {
-        if (delta_cycle) {
-            thctl_exit_critical();
-            thctl_enter_critical();
-        }
+        thctl_exit_critical();
+        thctl_enter_critical();
     }
 
     static pthread_t thctl_init();
