@@ -103,29 +103,26 @@ namespace vcml {
 
     string tlm_response_to_str(tlm_response_status status) {
         switch (status) {
+        case TLM_OK_RESPONSE:
+            return "TLM_OK_RESPONSE";
+
         case TLM_INCOMPLETE_RESPONSE:
             return "TLM_INCOMPLETE_RESPONSE";
-            break;
 
         case TLM_GENERIC_ERROR_RESPONSE:
             return "TLM_GENERIC_ERROR_RESPONSE";
-            break;
 
         case TLM_ADDRESS_ERROR_RESPONSE:
             return "TLM_ADDRESS_ERROR_RESPONSE";
-            break;
 
         case TLM_COMMAND_ERROR_RESPONSE:
             return "TLM_COMMAND_ERROR_RESPONSE";
-            break;
 
         case TLM_BURST_ERROR_RESPONSE:
             return "TLM_BURST_ERROR_RESPONSE";
-            break;
 
         case TLM_BYTE_ENABLE_ERROR_RESPONSE:
             return "TLM_BYTE_ENABLE_ERROR_RESPONSE";
-            break;
 
         default: {
                 stringstream ss;
