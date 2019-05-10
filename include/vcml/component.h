@@ -162,10 +162,8 @@ namespace vcml {
             VCML_ERROR("attempt to sync outside of SC_THREAD process");
 
         sc_time& to = offset(proc);
-        if (to != SC_ZERO_TIME) {
-            wait(to);
-            to = SC_ZERO_TIME;
-        }
+        wait(to);
+        to = SC_ZERO_TIME;
     }
 
     inline void component::hierarchy_push() {
