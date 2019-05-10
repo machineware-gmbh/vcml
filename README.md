@@ -56,6 +56,7 @@ is how to build and install them:
    state whether or not to build the utility programs and unit tests:
      * `-DBUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
      * `-DBUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
+     * `-DBUILD_PIC=[ON|OFF]  `: build position independent code (default: `ON`)
 
    Release and debug build configurations are controlled via the regular
    parameters:
