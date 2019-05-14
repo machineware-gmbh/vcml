@@ -85,8 +85,6 @@ namespace vcml {
             sc_time t2 = sc_time_stamp();
             VCML_ERROR_ON(t1 != t2, "time advanced during debug call");
         } else {
-            if (is_sync(flags))
-                m_host->sync();
             (*this)->b_transport(tx, m_host->offset());
             if (is_sync(flags))
                 m_host->sync();
