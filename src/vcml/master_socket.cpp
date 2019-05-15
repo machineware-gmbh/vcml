@@ -166,7 +166,14 @@ namespace vcml {
             tx_setup(tx, cmd, addr, data, size);
             size = send(tx, flags);
             rs = tx.get_response_status();
+
+            // transport_dbg does not change response status
+            if (rs == TLM_INCOMPLETE_RESPONSE && is_debug(flags))
+                rs = TLM_OK_RESPONSE;
         }
+
+        if (rs == TLM_INCOMPLETE_RESPONSE)
+            log_warn("got incomplete response from target at 0x%016llx", addr);
 
         if (bytes != NULL)
             *bytes = size;
