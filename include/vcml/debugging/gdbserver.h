@@ -120,8 +120,10 @@ namespace vcml { namespace debugging {
     };
 
     inline void gdbserver::notify(int signal) {
-        m_status = GDB_STOPPED;
-        m_signal = signal;
+        if (is_connected()) {
+            m_status = GDB_STOPPED;
+            m_signal = signal;
+        }
     }
 
     inline gdbserver::handler gdbserver::find_handler(const char* command) {
