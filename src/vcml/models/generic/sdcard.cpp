@@ -708,8 +708,8 @@ namespace vcml { namespace generic {
         /*** class 8 commands (application specific) ***/
 
         case 55: // APP_CMD (SD/SPI)
-            make_r1(tx);
             m_status |= APP_CMD;
+            make_r1(tx);
             return SD_OK;
 
         case 56: // GEN_CMD (SD/SPI)
