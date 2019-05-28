@@ -43,6 +43,15 @@ namespace vcml { namespace generic {
 
             os << (bm.peer.empty() ? OUT[bm.port].name() : bm.peer);
         }
+
+        if (m_default.port != -1) {
+            os << std::endl << "default route -> ";
+            if (m_default.peer.empty())
+                os << OUT[m_default.port].name();
+            else
+                os << m_default.peer;
+        }
+
         #undef HEX
         return true;
     }
@@ -197,13 +206,7 @@ namespace vcml { namespace generic {
                 return m;
         }
 
-        static bus_mapping none = {
-            .port = -1,
-            .addr = range(0, 0),
-            .offset = 0,
-            .peer = "",
-        };
-        return none;
+        return m_default;
     }
 
     void bus::map(unsigned int port, const range& addr, u64 offset,
@@ -250,11 +253,35 @@ namespace vcml { namespace generic {
         return bind(socket, range(start, end), offset);
     }
 
+    void bus::map_default(unsigned int port, const string& peer) {
+        if (m_default.port != -1)
+            VCML_ERROR("default bus route already mapped");
+
+        m_default.port = port;
+        m_default.addr = range(0ull, ~0ull);
+        m_default.offset = 0;
+        m_default.peer = peer;
+    }
+
+    unsigned int bus::bind_default(tlm_target_socket<64>& socket) {
+        unsigned int port = OUT.next_idx();
+        map_default(port, socket.name());
+        OUT[port].bind(socket);
+        return port;
+    }
+
     bus::bus(const sc_module_name& nm):
         component(nm),
         m_mappings(),
+        m_default(),
         IN(this),
         OUT(this) {
+
+        m_default.port = -1;
+        m_default.addr = range(0ull, ~0ull);
+        m_default.offset = 0;
+        m_default.peer = "";
+
         register_command("show", 0, this, &bus::cmd_show,
                          "shows the memory map of this bus");
     }

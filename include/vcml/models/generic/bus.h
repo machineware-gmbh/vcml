@@ -76,6 +76,7 @@ namespace vcml { namespace generic {
         bool cmd_show(const vector<string>& args, ostream& os);
 
         vector<bus_mapping> m_mappings;
+        bus_mapping         m_default;
 
         tlm_target_socket<64>* create_target_socket(unsigned int idx);
         tlm_initiator_socket<64>* create_initiator_socket(unsigned int idx);
@@ -116,6 +117,9 @@ namespace vcml { namespace generic {
                           u64 offset = 0);
         unsigned int bind(tlm_target_socket<64>& socket, u64 start, u64 end,
                           u64 offset = 0);
+
+        void map_default(unsigned int port, const string& peer = "");
+        unsigned int bind_default(tlm_target_socket<64>& socket);
 
         bus(const sc_core::sc_module_name& nm);
         virtual ~bus();
