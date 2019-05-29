@@ -139,6 +139,11 @@ namespace vcml {
         return m.find(t) != m.end();
     }
 
+    template <typename T1, typename T2>
+    inline bool stl_contains(const std::unordered_map<T1,T2>& m, const T1& t) {
+        return m.find(t) != m.end();
+    }
+
     template <typename T>
     inline void stl_add_unique(vector<T>& v, const T& t) {
         if (!stl_contains(v, t))

@@ -43,7 +43,7 @@ namespace vcml {
         friend class master_socket;
         friend class slave_socket;
     private:
-        std::map<sc_process_b*, sc_time> m_offsets;
+        std::unordered_map<sc_process_b*, sc_time> m_offsets;
 
         vector<master_socket*> m_master_sockets;
         vector<slave_socket*> m_slave_sockets;
