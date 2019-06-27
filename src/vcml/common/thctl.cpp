@@ -123,10 +123,31 @@ namespace vcml {
         return g_thctl_mutex_owner == pthread_self();
     }
 
+#ifdef SNPS_VP_SC_VERSION
+    static void snps_enter_critical(void* unused) {
+        (void)unused;
+        thctl_enter_critical();
+    }
+
+    static void snps_exit_critical(void* unused) {
+        (void)unused;
+        thctl_exit_critical();
+    }
+#endif
+
     static pthread_t thctl_init() {
+#ifdef SNPS_VP_SC_VERSION
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        simc->add_phase_callback(snps::sc::PCB_BEGIN_OF_EVALUATE_PHASE,
+                                 &snps_enter_critical);
+        simc->add_phase_callback(snps::sc::PCB_END_OF_EVALUATE_PHASE,
+                                 &snps_exit_critical);
+        return 0;
+#else
         static thctl_helper instance;
         pthread_mutex_lock(&g_thctl_mutex);
         return pthread_self();
+#endif
     }
 
 }
