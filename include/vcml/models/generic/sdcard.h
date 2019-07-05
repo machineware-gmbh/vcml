@@ -58,16 +58,15 @@ namespace vcml { namespace generic {
         size_t  m_maxblk;
 
         enum state {
-            INACTIVE       = 0,
-            IDLE           = 1,
-            READY          = 2,
-            IDENTIFICATION = 3,
-            STAND_BY       = 4,
-            TRANSFER       = 5,
-            SENDING        = 6,
-            RECEIVING      = 7,
-            PROGRAMMING    = 8,
-            DISCONNECTED   = 9,
+            IDLE           = 0,
+            READY          = 1,
+            IDENTIFICATION = 2,
+            STAND_BY       = 3,
+            TRANSFER       = 4,
+            SENDING        = 5,
+            RECEIVING      = 6,
+            PROGRAMMING    = 7,
+            DISCONNECTED   = 8,
         };
 
         state m_state;
@@ -97,6 +96,11 @@ namespace vcml { namespace generic {
         void init_csd();
         void init_scr();
         void init_sts();
+
+        inline void update_m_status() {
+            m_status &= ~(0xf << 9);
+            m_status |= m_state << 9;
+        }
 
         void init_image();
 
