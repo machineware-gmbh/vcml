@@ -513,12 +513,22 @@ namespace vcml { namespace generic {
             return SD_OK;
 
         case 2: // ALL_SEND_CID (SD only)
-            // not implemented
-            break;
+            if(m_spi)
+                break;
+
+            make_r2(tx);
+            m_state = IDENTIFICATION;
+            update_m_status();
+            return SD_OK;
 
         case 3: // SEND_RELATIVE_ADDR (SD only)
-            // not implemented
-            break;
+            if(m_spi)
+                break;
+
+            make_r6(tx);
+            m_state = STAND_BY;
+            update_m_status();
+            return SD_OK;
 
         case 4: // SET_DSR (SD only)
             // not implemented
@@ -527,20 +537,20 @@ namespace vcml { namespace generic {
         case 5: // reserved for SDIO
             break;
 
-        case 6: // SWITCH_FUNC (SPI only)
-            if (!m_spi)
-                break;
-
+        case 6: // SWITCH_FUNC (SD/SPI)
             switch_function(tx.argument);
             setup_tx(m_swf, sizeof(m_swf));
-            make_r1_spi(tx);
+            make_r1(tx);
             return SD_OK_TX_RDY;
 
         case 7: // SELECT/DESELECT CARD (SD only)
             if (m_spi)
                 break;
-            // not implemented
-            break;
+
+            make_r1(tx);
+            m_state = TRANSFER;
+            update_m_status();
+            return SD_OK;
 
         case 8: // SEND_IF_COND (SD/SPI)
             m_hvs = tx.argument & 0xfff;
@@ -595,6 +605,7 @@ namespace vcml { namespace generic {
                 else
                     make_r0(tx);
             }
+            m_status &= ~READY_FOR_DATA;
             return SD_OK;
 
         case 14: // reserved
@@ -652,6 +663,7 @@ namespace vcml { namespace generic {
         case 25: // WRITE_MULTIPLE_BLOCK (SD/SPI)
             m_numblk = 0;
             setup_rx_blk(is_sdhc() ? tx.argument * SDHC_BLKLEN : tx.argument);
+            m_status |= READY_FOR_DATA;
             make_r1(tx);
             return SD_OK_RX_RDY;
 
