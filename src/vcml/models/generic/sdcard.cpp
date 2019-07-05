@@ -834,7 +834,6 @@ namespace vcml { namespace generic {
         m_curcmd(),
         m_curoff(),
         m_numblk(),
-        m_maxblk(-1),
         m_state(IDLE),
         capacity("capacity", 0),
         image("image", ""),
@@ -958,7 +957,7 @@ namespace vcml { namespace generic {
             m_bufptr = NULL;
             m_bufend = NULL;
 
-            if ((m_curcmd != 18) || (m_numblk >= m_maxblk))
+            if ((m_curcmd != 18))
                 return SDTX_OK_COMPLETE;
 
             size_t blklen = is_sdhc() ? SDHC_BLKLEN : m_blklen;
@@ -1014,9 +1013,6 @@ namespace vcml { namespace generic {
         m_numblk++;
 
         if (m_curcmd == 24) // writing only single block?
-            return SDRX_OK_COMPLETE;
-
-        if (m_numblk >= m_maxblk) // written requested number of blocks?
             return SDRX_OK_COMPLETE;
 
         size_t offset = m_curoff + blklen;
