@@ -67,8 +67,9 @@ namespace vcml { namespace generic {
 
         tx.response[0] = 0x3f;
         switch (tx.opcode) {
-        case  2: memcpy(tx.response + 1, m_cid, sizeof(m_cid)); break;
-        case 10: memcpy(tx.response + 1, m_csd, sizeof(m_csd)); break;
+        case  2:
+        case 10: memcpy(tx.response + 1, m_cid, sizeof(m_cid)); break;
+        case  9: memcpy(tx.response + 1, m_csd, sizeof(m_csd)); break;
         default: VCML_ERROR("invalid response for CMD%u", (unsigned)tx.opcode);
         }
 
@@ -308,8 +309,9 @@ namespace vcml { namespace generic {
         m_cid[11] = 0xBE;
         m_cid[12] = 0xEF;
 
-        m_cid[13] = 1;    // manufacturing date: month
-        m_cid[14] = 18;   // manufacturing date: year
+        m_cid[13] = 4;    // manufacturing date: year (offset from 2014)
+        m_cid[14] = 1;    // manufacturing date: month
+
 
         m_cid[15] = crc7(m_cid, sizeof(m_cid) - 1);
     }
@@ -636,6 +638,7 @@ namespace vcml { namespace generic {
         case 23: // SET_BLOCK_COUNT (SD only)
             if (m_spi)
                 break;
+            // for sdhc cards not necessary
             break;
 
         /*** class 4 commands (writing) ***/
@@ -785,8 +788,10 @@ namespace vcml { namespace generic {
             if (m_state != IDLE)
                 return SD_ERR_ILLEGAL;
 
-            if (!(tx.argument & 0xFFFFFF))
-                m_state = READY; /* make sure its not just an inquiry */
+            if (tx.argument) { //make sure its not just an inquiry
+                m_state = READY;
+                m_ocr |= OCR_POWERED_UP;
+            }
 
             make_r3(tx);
             return SD_OK;
