@@ -97,10 +97,7 @@ namespace vcml { namespace generic {
         void init_scr();
         void init_sts();
 
-        inline void update_m_status() {
-            m_status &= ~(0xf << 9);
-            m_status |= m_state << 9;
-        }
+        void update_status();
 
         void init_image();
 
@@ -196,6 +193,11 @@ namespace vcml { namespace generic {
         void trace_in(sd_command& tx, bool appcmd) const;
         void trace_out(sd_command& tx, bool appcmd) const;
     };
+
+    inline void sdcard::update_status() {
+        m_status &= ~(0xf << 9);
+        m_status |= m_state << 9;
+    }
 
     inline void sdcard::trace_in(sd_command& tx, bool appcmd) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {

@@ -309,7 +309,7 @@ namespace vcml { namespace generic {
         m_cid[11] = 0xBE;
         m_cid[12] = 0xEF;
 
-        m_cid[13] = 0x01; // manufacturing date in format ryym (r stands for reserved)
+        m_cid[13] = 0x01; // manufacturing date
         m_cid[14] = 0x21; // year: 0x12 = 18, month: 0x1 = 1
 
 
@@ -883,7 +883,7 @@ namespace vcml { namespace generic {
 
         if (m_state == SENDING || m_state == RECEIVING) {
             m_state = TRANSFER;
-            update_m_status();
+            update_status();
         }
 
         m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND);
@@ -894,16 +894,16 @@ namespace vcml { namespace generic {
 
         switch (result) {
         case SD_OK:
-            update_m_status();
+            update_status();
             break;
 
         case SD_OK_TX_RDY:
-            update_m_status();
+            update_status();
             VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
             break;
 
         case SD_OK_RX_RDY:
-            update_m_status();
+            update_status();
             VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
             break;
 
@@ -911,7 +911,7 @@ namespace vcml { namespace generic {
             m_status |= COM_CRC_ERROR;
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
-            update_m_status();
+            update_status();
             log_debug("command checksum error");
             break;
 
@@ -919,7 +919,7 @@ namespace vcml { namespace generic {
             m_status |= OUT_OF_RANGE;
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
-            update_m_status();
+            update_status();
             log_debug("command argument out of range 0x%08x", tx.argument);
             break;
 
@@ -927,7 +927,7 @@ namespace vcml { namespace generic {
             m_status |= ILLEGAL_COMMAND;
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
-            update_m_status();
+            update_status();
             log_debug("illegal command %s", sd_cmd_str(tx, appcmd).c_str());
             break;
 
