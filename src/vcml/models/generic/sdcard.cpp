@@ -67,8 +67,9 @@ namespace vcml { namespace generic {
 
         tx.response[0] = 0x3f;
         switch (tx.opcode) {
-        case  2: memcpy(tx.response + 1, m_cid, sizeof(m_cid)); break;
-        case 10: memcpy(tx.response + 1, m_csd, sizeof(m_csd)); break;
+        case  2:
+        case 10: memcpy(tx.response + 1, m_cid, sizeof(m_cid)); break;
+        case  9: memcpy(tx.response + 1, m_csd, sizeof(m_csd)); break;
         default: VCML_ERROR("invalid response for CMD%u", (unsigned)tx.opcode);
         }
 
@@ -308,8 +309,9 @@ namespace vcml { namespace generic {
         m_cid[11] = 0xBE;
         m_cid[12] = 0xEF;
 
-        m_cid[13] = 1;    // manufacturing date: month
-        m_cid[14] = 18;   // manufacturing date: year
+        m_cid[13] = 0x01; // manufacturing date in format ryym (r stands for reserved)
+        m_cid[14] = 0x21; // year: 0x12 = 18, month: 0x1 = 1
+
 
         m_cid[15] = crc7(m_cid, sizeof(m_cid) - 1);
     }
@@ -636,6 +638,7 @@ namespace vcml { namespace generic {
         case 23: // SET_BLOCK_COUNT (SD only)
             if (m_spi)
                 break;
+            // for sdhc cards not necessary
             break;
 
         /*** class 4 commands (writing) ***/
@@ -785,8 +788,10 @@ namespace vcml { namespace generic {
             if (m_state != IDLE)
                 return SD_ERR_ILLEGAL;
 
-            if (!(tx.argument & 0xFFFFFF))
-                m_state = READY; /* make sure its not just an inquiry */
+            if (tx.argument) { //make sure its not just an inquiry
+                m_state = READY;
+                m_ocr |= OCR_POWERED_UP;
+            }
 
             make_r3(tx);
             return SD_OK;
@@ -877,8 +882,10 @@ namespace vcml { namespace generic {
         bool appcmd = (m_status & APP_CMD);
         tx.resp_len = 0;
 
-        if (m_state == SENDING || m_state == RECEIVING)
+        if (m_state == SENDING || m_state == RECEIVING) {
             m_state = TRANSFER;
+            update_m_status();
+        }
 
         m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND);
         m_curcmd = tx.opcode;
@@ -888,15 +895,16 @@ namespace vcml { namespace generic {
 
         switch (result) {
         case SD_OK:
+            update_m_status();
             break;
 
         case SD_OK_TX_RDY:
-            m_state = SENDING;
+            update_m_status();
             VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
             break;
 
         case SD_OK_RX_RDY:
-            m_state = RECEIVING;
+            update_m_status();
             VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
             break;
 
@@ -904,6 +912,7 @@ namespace vcml { namespace generic {
             m_status |= COM_CRC_ERROR;
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
+            update_m_status();
             log_debug("command checksum error");
             break;
 
@@ -911,6 +920,7 @@ namespace vcml { namespace generic {
             m_status |= OUT_OF_RANGE;
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
+            update_m_status();
             log_debug("command argument out of range 0x%08x", tx.argument);
             break;
 
@@ -918,6 +928,7 @@ namespace vcml { namespace generic {
             m_status |= ILLEGAL_COMMAND;
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
+            update_m_status();
             log_debug("illegal command %s", sd_cmd_str(tx, appcmd).c_str());
             break;
 
