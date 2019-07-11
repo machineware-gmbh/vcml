@@ -906,7 +906,7 @@ namespace vcml { namespace arm {
 
         bool irq_level = PPI_IN[idx].read();
         set_irq_level(irq, irq_level, mask);
-        if (get_irq_trigger(irq) == EDGE)
+        if (get_irq_trigger(irq) == EDGE && irq_level)
             set_irq_pending(irq, true, mask);
 
         update();
@@ -918,7 +918,7 @@ namespace vcml { namespace arm {
 
         bool irq_level = SPI_IN[idx].read();
         set_irq_level(irq, irq_level, gicv2::ALL_CPU);
-        if (get_irq_trigger(irq) == EDGE)
+        if (get_irq_trigger(irq) == EDGE && irq_level)
             set_irq_pending(irq, true, target_cpu);
 
         update();
