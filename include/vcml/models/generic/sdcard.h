@@ -55,7 +55,6 @@ namespace vcml { namespace generic {
         u8      m_curcmd;
         size_t  m_curoff;
         size_t  m_numblk;
-        size_t  m_maxblk;
 
         enum state {
             IDLE           = 0,
