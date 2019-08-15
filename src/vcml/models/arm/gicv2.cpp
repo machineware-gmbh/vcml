@@ -102,7 +102,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::read_ISER() {
-        int cpu = ISER.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -113,7 +113,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::write_ISER(u32 val) {
-        int cpu = ISER.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -164,7 +164,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::read_ICER() {
-        int cpu = ICER.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -175,7 +175,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::write_ICER(u32 val) {
-        int cpu = ICER.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -216,7 +216,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::read_ISPR() {
-        int cpu = ISPR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISPR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -226,7 +226,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::write_ISPR(u32 value) {
-        int cpu = ISPR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISPR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -260,7 +260,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::read_ICPR() {
-        int cpu = ICPR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICPR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -270,7 +270,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::write_ICPR(u32 value) {
-        int cpu = ICPR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICPR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -304,7 +304,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::read_IACR() {
-        int cpu = ICPR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(IACR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -332,7 +332,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::write_ICAR(u32 val) {
-        int cpu = ICAR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICAR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -358,7 +358,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::read_INTT(unsigned int idx) {
-        int cpu = INTT.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(INTT) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -405,7 +405,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::distif::write_SCTL(u32 value) {
-        int cpu = SCTL.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(SCTL) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -445,7 +445,7 @@ namespace vcml { namespace arm {
 
 
     u8 gicv2::distif::write_SGIS(u8 value, unsigned int idx) {
-        int cpu = SGIS.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(SGIS) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -462,7 +462,7 @@ namespace vcml { namespace arm {
     }
 
     u8 gicv2::distif::write_SGIC(u8 value, unsigned int idx) {
-        int cpu = SGIC.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(SGIC) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -642,9 +642,9 @@ namespace vcml { namespace arm {
 
     u32 gicv2::cpuif::write_CTLR(u32 val) {
         if ((val & CTLR_ENABLE) && !(CTLR & CTLR_ENABLE))
-            log_debug("(CTLR) enabling cpu %d", CTLR.current_bank());
+            log_debug("(CTLR) enabling cpu %d", current_cpu());
         if (!(val & CTLR_ENABLE) && (CTLR & CTLR_ENABLE))
-            log_debug("(CTLR) disabling cpu %d", CTLR.current_bank());
+            log_debug("(CTLR) disabling cpu %d", current_cpu());
         return val & CTLR_ENABLE;
     }
 
@@ -658,7 +658,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::cpuif::write_EOIR(u32 val) {
-        int cpu = EOIR.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(EOIR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
@@ -693,7 +693,7 @@ namespace vcml { namespace arm {
     }
 
     u32 gicv2::cpuif::read_IACK() {
-        int cpu = IACK.current_bank();
+        int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(IACK) invalid cpu %d, assuming 0", cpu);
             cpu = 0;

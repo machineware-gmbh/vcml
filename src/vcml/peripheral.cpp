@@ -24,6 +24,7 @@ namespace vcml {
     peripheral::peripheral(const sc_module_name& nm, vcml_endian endian,
                            const sc_time& rlatency, const sc_time& wlatency):
         component(nm),
+        m_current_cpu(ext_bank::NONE),
         m_endian(endian),
         m_registers(),
         m_backends(),
@@ -148,12 +149,16 @@ namespace vcml {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
 
+        int cpu = tx_bank_id(tx);
+        set_current_cpu(cpu);
+
         for (auto reg : m_registers)
             if (reg->get_range().overlaps(tx)) {
                 bytes += reg->receive(tx, flags);
                 nregs ++;
             }
 
+        set_current_cpu(ext_bank::NONE);
         if (nregs > 0) // stop if at least one register took the access
             return bytes;
 

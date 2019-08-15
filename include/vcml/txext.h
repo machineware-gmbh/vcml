@@ -32,7 +32,7 @@ namespace vcml {
         int m_bank;
 
     public:
-        static const int NONE = -1;
+        static const int NONE = 0;
 
         inline int get_bank() const {
             return m_bank;

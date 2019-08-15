@@ -41,13 +41,10 @@ namespace vcml {
     class peripheral: public component
     {
     private:
+        int m_current_cpu;
         vcml_endian m_endian;
         vector<reg_base*> m_registers;
         vector<backend*> m_backends;
-
-        // disabled
-        peripheral();
-        peripheral(const peripheral&);
 
     public:
         property<sc_time> read_latency;
@@ -59,16 +56,22 @@ namespace vcml {
         void set_endian(vcml_endian e) { m_endian = e; }
 
         void set_little_endian() { m_endian = VCML_ENDIAN_LITTLE; }
-        void set_big_endian() { m_endian = VCML_ENDIAN_BIG; }
+        void set_big_endian()    { m_endian = VCML_ENDIAN_BIG; }
 
         bool is_little_endian() const;
         bool is_big_endian() const;
         bool is_host_endian() const;
 
+        int  current_cpu() const      { return m_current_cpu; }
+        void set_current_cpu(int cpu) { m_current_cpu = cpu; }
+
         peripheral(const sc_module_name& nm, vcml_endian e = host_endian(),
                    const sc_time& read_latency = SC_ZERO_TIME,
                    const sc_time& write_latency = SC_ZERO_TIME);
         virtual ~peripheral();
+
+        peripheral() = delete;
+        peripheral(const peripheral&) = delete;
 
         VCML_KIND(peripheral);
 

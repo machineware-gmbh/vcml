@@ -72,9 +72,9 @@ namespace vcml {
             memswap(ptr, addr.length());
 
         if (tx.is_read())
-            do_read(addr, tx_bank_id(tx), ptr);
+            do_read(addr, ptr);
         if (tx.is_write())
-            do_write(addr, tx_bank_id(tx), ptr);
+            do_write(addr, ptr);
 
         if (m_host->get_endian() != host_endian()) // i.e. swap back
             memswap(ptr, addr.length());
