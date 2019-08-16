@@ -93,6 +93,7 @@ namespace vcml {
     private:
         HOST* m_host;
         bool m_banked;
+        DATA m_init[N];
         std::map<int, DATA*> m_banks;
 
         void init_bank(int bank);
@@ -162,12 +163,14 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     void reg<HOST, DATA, N>::init_bank(int bank) {
+        VCML_ERROR_ON(!m_banked, "cannot create banks in register %s", name());
+
         if (bank == 0 || stl_contains(m_banks, bank))
             return;
 
         m_banks[bank] = new DATA[N];
         for (unsigned int i = 0; i < N; i++)
-            m_banks[bank][i] = property<DATA, N>::get_default();
+            m_banks[bank][i] = m_init[i];
     }
 
     template <class HOST, typename DATA, const unsigned int N>
@@ -183,7 +186,7 @@ namespace vcml {
     template <class HOST, typename DATA, const unsigned int N>
     const DATA& reg<HOST, DATA, N>::bank(int bk,  unsigned int idx) const {
         VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
-        if (bk == 0)
+        if (bk == 0 || !m_banked)
             return property<DATA, N>::get(idx);
         if (!stl_contains(m_banks, bk))
             return property<DATA, N>::get_default();
@@ -193,7 +196,7 @@ namespace vcml {
     template <class HOST, typename DATA, const unsigned int N>
     DATA& reg<HOST, DATA, N>::bank(int bk, unsigned int idx) {
         VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
-        if (bk == 0)
+        if (bk == 0 || !m_banked)
             return property<DATA, N>::get(idx);
         if (!stl_contains(m_banks, bk))
             init_bank(bk);
@@ -216,12 +219,16 @@ namespace vcml {
         property<DATA, N>(n, def, h),
         m_host(h),
         m_banked(false),
+        m_init(),
         m_banks(),
         read(NULL),
         write(NULL),
         tag(0),
         tagged_read(NULL),
         tagged_write(NULL) {
+        for (unsigned int i = 0; i < N; i++)
+            m_init[i] = property<DATA, N>::get(i);
+
         if (m_host == NULL)
             m_host = dynamic_cast<HOST*>(get_host());
         VCML_ERROR_ON(!m_host, "invalid host specified for register %s", n);
@@ -235,11 +242,12 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     void reg<HOST, DATA, N>::reset() {
-        const DATA& defval = property<DATA, N>::get_default();
-        property<DATA, N>::set(defval);
+        for (unsigned int i = 0; i < N; i++)
+            property<DATA, N>::set(m_init[i], i);
+
         for (auto bank : m_banks) {
             for (unsigned int i = 0; i < N; i++)
-                m_banks[bank.first][i] = defval;
+                m_banks[bank.first][i] = m_init[i];
         }
     }
 
