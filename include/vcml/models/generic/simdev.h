@@ -71,7 +71,7 @@ namespace vcml { namespace generic {
 
         simdev(const sc_module_name& name);
         virtual ~simdev();
-        VCML_KIND(reset);
+        VCML_KIND(simdev);
 
         virtual void reset() override;
     };
