@@ -93,4 +93,6 @@
 #include "vcml/models/arm/syscon.h"
 #include "vcml/models/arm/gicv2.h"
 
+#include "vcml/models/riscv/plic.h"
+
 #endif

@@ -28,7 +28,7 @@ add_library(test_main test_main.cpp)
 set(tests test_hello test_utils test_logging test_version test_aio test_elf
     test_dmi test_range test_exmon test_component test_peripheral test_register
     test_backend_tcp test_generic_memory test_generic_bus test_processor
-    test_property test_spi test_bitops)
+    test_property test_spi test_bitops test_plic)
 
 if(LIBVNC_FOUND)
     set(tests ${tests} test_vnc)
@@ -45,5 +45,5 @@ foreach(test ${tests})
     endif()
 
     add_test(NAME ${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(${test} PROPERTIES TIMEOUT 30)
+    set_tests_properties(${test} PROPERTIES TIMEOUT 4)
 endforeach()
