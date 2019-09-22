@@ -68,7 +68,7 @@ namespace vcml {
         // value has to change. However, if the port has not been bound, we
         // always notify since we cannot know the state of the future signal.
         if (bind_count() == 0 || (*this)->read() != set)
-            m_update.notify(SC_ZERO_TIME);
+            m_update.notify();
     }
 
     void out_port::stub() {
