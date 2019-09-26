@@ -95,7 +95,7 @@ namespace vcml { namespace arm {
             reg<timer, u32> MISR; // Masked Interrupt Status register
             reg<timer, u32> BGLR; // Background Load register
 
-            out_port IRQ;
+            out_port<bool> IRQ;
 
             bool is_enabled()     const { return CTLR & CTLR_ENABLED; }
             bool is_irq_enabled() const { return CTLR & CTLR_IRQEN; }
@@ -131,9 +131,9 @@ namespace vcml { namespace arm {
 
         slave_socket IN;
 
-        sc_out<bool> IRQ1;
-        sc_out<bool> IRQ2;
-        out_port     IRQC;
+        sc_out<bool>   IRQ1;
+        sc_out<bool>   IRQ2;
+        out_port<bool> IRQC;
 
         property<clock_t> clock;
 

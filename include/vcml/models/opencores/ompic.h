@@ -59,7 +59,7 @@ namespace vcml { namespace opencores {
         reg<ompic, u32>** CONTROL;
         reg<ompic, u32>** STATUS;
 
-        out_port_list IRQ;
+        out_port_list<bool> IRQ;
         slave_socket IN;
 
         ompic(const sc_core::sc_module_name& name, unsigned int num_cores);

@@ -51,7 +51,7 @@ namespace vcml { namespace generic {
         spi_target_socket  SPI_IN;
         spi_initiator_list SPI_OUT;
 
-        in_port_list CS;
+        in_port_list<bool> CS;
 
         spibus(const sc_module_name& nm);
         virtual ~spibus();

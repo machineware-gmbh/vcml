@@ -120,7 +120,8 @@ namespace vcml { namespace opencores {
         reg<ocfbc, u32> VBARA;
         reg<ocfbc, u32> VBARB;
 
-        out_port IRQ;
+        out_port<bool> IRQ;
+
         slave_socket IN;
         master_socket OUT;
 

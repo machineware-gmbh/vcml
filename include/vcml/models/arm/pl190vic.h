@@ -82,9 +82,10 @@ namespace vcml { namespace arm {
         reg<pl190vic, u32, 4> CID; // Cell ID registers
 
         slave_socket  IN;
-        in_port_list  IRQ_IN;
-        out_port_list IRQ_OUT;
-        out_port_list FIQ_OUT;
+
+        in_port_list<bool>  IRQ_IN;
+        out_port_list<bool> IRQ_OUT;
+        out_port_list<bool> FIQ_OUT;
 
         pl190vic(const sc_module_name& nm);
         virtual ~pl190vic();

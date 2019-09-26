@@ -64,7 +64,8 @@ namespace vcml { namespace opencores {
         reg<ocspi, u32> CONTROL;
         reg<ocspi, u32> BAUDDIV;
 
-        out_port IRQ;
+        out_port<bool> IRQ;
+
         slave_socket IN;
         spi_initiator_socket SPI_OUT;
 

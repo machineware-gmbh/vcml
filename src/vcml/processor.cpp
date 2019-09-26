@@ -30,7 +30,7 @@ namespace vcml {
            << "  ID 0x" << HEX(get_core_id(), 16) << std::endl;
 
         os << "Interrupts:" << std::endl;
-        in_port_list::iterator it;
+        in_port_list<bool>::iterator it;
         for (it = IRQ.begin(); it != IRQ.end(); it++) {
             irq_stats stats;
             if (get_irq_stats(it->first, stats)) {

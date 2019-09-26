@@ -82,8 +82,8 @@ namespace vcml { namespace riscv {
         reg<plic, u32, NIRQ> PRIORITY;
         reg<plic, u32, NIRQ / 32> PENDING;
 
-        in_port_list  IRQS;
-        out_port_list IRQT;
+        in_port_list<bool>  IRQS;
+        out_port_list<bool> IRQT;
 
         slave_socket IN;
 

@@ -119,7 +119,7 @@ namespace vcml { namespace generic {
         reg<uart8250, u8> MSR; /* modem status register */
         reg<uart8250, u8> SCR; /* scratch register */
 
-        out_port IRQ;
+        out_port<bool> IRQ;
         slave_socket IN;
 
         property<clock_t> clock;

@@ -82,7 +82,8 @@ namespace vcml {
         property<bool> gdb_sync;
         property<bool> gdb_echo;
 
-        in_port_list  IRQ;
+        in_port_list<bool> IRQ;
+
         master_socket INSN;
         master_socket DATA;
 

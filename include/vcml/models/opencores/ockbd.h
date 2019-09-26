@@ -52,7 +52,7 @@ namespace vcml { namespace opencores {
     public:
         reg<ockbd, u8> KHR;
 
-        out_port IRQ;
+        out_port<bool> IRQ;
         slave_socket IN;
 
         property<size_t> fifosize;

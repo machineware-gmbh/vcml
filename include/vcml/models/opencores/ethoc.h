@@ -266,7 +266,7 @@ namespace vcml { namespace opencores {
         property<clock_t> clock;
         property<string> mac;
 
-        out_port IRQ;
+        out_port<bool> IRQ;
         slave_socket IN;
         master_socket OUT;
 

@@ -47,8 +47,8 @@ namespace vcml { namespace generic {
         crossbar(const crossbar&);
 
     public:
-        in_port_list IN;
-        out_port_list OUT;
+        in_port_list<bool> IN;
+        out_port_list<bool> OUT;
 
         bool is_forward(unsigned int from, unsigned int to) const;
         void set_forward(unsigned int from, unsigned int to);

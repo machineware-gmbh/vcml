@@ -140,8 +140,8 @@ namespace vcml { namespace arm {
 
         property<clock_t> clock;
 
-        slave_socket IN;
-        out_port     IRQ;
+        slave_socket   IN;
+        out_port<bool> IRQ;
 
         bool is_enabled()    const { return CR & CR_UARTEN; }
         bool is_rx_enabled() const { return CR & CR_RXE; }

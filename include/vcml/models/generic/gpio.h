@@ -47,7 +47,7 @@ namespace vcml { namespace generic {
     public:
         reg<gpio, u32> DATA;
 
-        out_port_list GPIO;
+        out_port_list<bool> GPIO;
         slave_socket IN;
 
         gpio(const sc_module_name& name);

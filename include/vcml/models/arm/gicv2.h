@@ -241,10 +241,10 @@ namespace vcml { namespace arm {
         distif DISTIF;
         cpuif CPUIF;
 
-        in_port_list  PPI_IN;
-        in_port_list  SPI_IN;
-        out_port_list FIQ_OUT;
-        out_port_list IRQ_OUT;
+        in_port_list<bool>  PPI_IN;
+        in_port_list<bool>  SPI_IN;
+        out_port_list<bool> FIQ_OUT;
+        out_port_list<bool> IRQ_OUT;
 
         sc_in<bool>& ppi_in(unsigned int cpu, unsigned int irq);
 
