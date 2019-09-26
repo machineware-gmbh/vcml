@@ -72,7 +72,6 @@ set(sources
     "${src}/vcml/slave_socket.cpp"
     "${src}/vcml/register.cpp"
     "${src}/vcml/peripheral.cpp"
-    "${src}/vcml/ports.cpp"
     "${src}/vcml/stubs.cpp"
     "${src}/vcml/processor.cpp"
     "${src}/vcml/spi.cpp"
