@@ -186,24 +186,25 @@ namespace vcml { namespace arm {
         // nothing to do
     }
 
-    unsigned int sp804timer::receive(tlm_generic_payload& tx, int flags) {
+    unsigned int sp804timer::receive(tlm_generic_payload& tx, sc_time& offset,
+                                     int flags) {
         u64 addr = tx.get_address();
 
         if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
             tx.set_address(addr - TIMER1_START);
-            unsigned int bytes = TIMER1.receive(tx, flags);
+            unsigned int bytes = TIMER1.receive(tx, offset, flags);
             tx.set_address(addr);
             return bytes;
         }
 
         if ((addr >= TIMER2_START) && (addr <= TIMER2_END)) {
             tx.set_address(addr - TIMER2_START);
-            unsigned int bytes = TIMER2.receive(tx, flags);
+            unsigned int bytes = TIMER2.receive(tx, offset, flags);
             tx.set_address(addr);
             return bytes;
         }
 
-        return peripheral::receive(tx, flags);
+        return peripheral::receive(tx, offset, flags);
     }
 
     void sp804timer::reset() {

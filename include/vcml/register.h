@@ -43,6 +43,8 @@ namespace vcml {
     private:
         range       m_range;
         vcml_access m_access;
+        bool        m_rsync;
+        bool        m_wsync;
         peripheral* m_host;
 
     public:
@@ -62,6 +64,15 @@ namespace vcml {
         void allow_read() { m_access = VCML_ACCESS_READ; }
         void allow_write() { m_access = VCML_ACCESS_WRITE; }
         void allow_read_write() { m_access = VCML_ACCESS_READ_WRITE; }
+
+        void sync_on_read(bool sync = true) { m_rsync = sync; }
+        void sync_on_write(bool sync = true) { m_wsync = sync; }
+
+        void sync_always() { m_rsync = m_wsync = true; }
+        void sync_never() { m_rsync = m_wsync = false; }
+
+        bool needs_sync(tlm_command cmd) const;
+        bool needs_sync(const tlm_generic_payload& tx) const;
 
         peripheral* get_host() { return m_host; }
 

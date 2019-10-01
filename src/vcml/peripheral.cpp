@@ -115,7 +115,7 @@ namespace vcml {
             if (be_ptr == NULL) {
                 tx.set_data_ptr(ptr + pulse * streaming_width);
                 tx.set_data_length(streaming_width);
-                nbytes += receive(tx, flags);
+                nbytes += receive(tx, dt, flags);
             } else {
                 for (unsigned int byte = 0; byte < streaming_width; byte++) {
                     if (be_ptr[be_index++ % be_length] == 0x00)
@@ -127,7 +127,7 @@ namespace vcml {
                     tx.set_streaming_width(1);
                     tx.set_byte_enable_ptr(NULL);
                     tx.set_byte_enable_length(0);
-                    nbytes += receive(tx, flags);
+                    nbytes += receive(tx, dt, flags);
                 }
             }
 
@@ -145,7 +145,8 @@ namespace vcml {
         return nbytes;
     }
 
-    unsigned int peripheral::receive(tlm_generic_payload& tx, int flags) {
+    unsigned int peripheral::receive(tlm_generic_payload& tx, sc_time& dt,
+                                     int flags) {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
 
@@ -154,6 +155,8 @@ namespace vcml {
 
         for (auto reg : m_registers)
             if (reg->get_range().overlaps(tx)) {
+                if (reg->needs_sync(tx) && !is_debug(flags))
+                    sync(dt);
                 bytes += reg->receive(tx, flags);
                 nregs ++;
             }

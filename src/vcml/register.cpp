@@ -21,10 +21,30 @@
 
 namespace vcml {
 
+    bool reg_base::needs_sync(tlm_command cmd) const {
+        switch (cmd) {
+        case TLM_READ_COMMAND:
+            return m_rsync;
+
+        case TLM_WRITE_COMMAND:
+            return m_wsync;
+
+        case TLM_IGNORE_COMMAND:
+        default:
+            return false;
+        }
+    }
+
+    bool reg_base::needs_sync(const tlm_generic_payload& tx) const {
+        return needs_sync(tx.get_command());
+    }
+
     reg_base::reg_base(const char* nm, u64 addr, u64 size, peripheral* host):
         sc_object(nm),
         m_range(addr, addr + size - 1),
         m_access(VCML_ACCESS_READ_WRITE),
+        m_rsync(false),
+        m_wsync(false),
         m_host(host)
     {
         if (m_host == NULL)
