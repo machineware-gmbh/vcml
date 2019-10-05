@@ -66,7 +66,7 @@ namespace vcml {
 
         tlm_response_status rs;
         unsigned char* data = new unsigned char [size];
-        if (failed(rs = socket.read(start, data, size, VCML_FLAG_DEBUG))) {
+        if (failed(rs = socket.read(start, data, size, SBI_DEBUG))) {
             os << "Read request failed: " << tlm_response_to_str(rs);
             return false;
         }
@@ -190,7 +190,7 @@ namespace vcml {
 
             u64 prev = addr;
             unsigned char insn[8];
-            if (success(INSN.read(phys, insn, sizeof(insn), VCML_FLAG_DEBUG))) {
+            if (success(INSN.read(phys, insn, sizeof(insn), SBI_DEBUG))) {
                 string disas = disassemble(addr, insn);
                 VCML_ERROR_ON(addr == prev, "disassembly address stuck");
                 for (unsigned int i = 0; i < (addr - prev); i++)
@@ -419,17 +419,17 @@ namespace vcml {
     }
 
     bool processor::gdb_read_mem(u64 addr, void* buffer, u64 size) {
-        if (success(DATA.read(addr, buffer, size, VCML_FLAG_DEBUG)))
+        if (success(DATA.read(addr, buffer, size, SBI_DEBUG)))
             return true;
-        if (success(INSN.read(addr, buffer, size, VCML_FLAG_DEBUG)))
+        if (success(INSN.read(addr, buffer, size, SBI_DEBUG)))
             return true;
         return false;
     }
 
     bool processor::gdb_write_mem(u64 addr, const void* buffer, u64 size) {
-        if (success(DATA.write(addr, buffer, size, VCML_FLAG_DEBUG)))
+        if (success(DATA.write(addr, buffer, size, SBI_DEBUG)))
             return true;
-        if (success(INSN.write(addr, buffer, size, VCML_FLAG_DEBUG)))
+        if (success(INSN.write(addr, buffer, size, SBI_DEBUG)))
             return true;
         return false;
     }

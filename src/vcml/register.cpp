@@ -58,7 +58,8 @@ namespace vcml {
         m_host->remove_register(this);
     }
 
-    unsigned int reg_base::receive(tlm_generic_payload& tx, int flags) {
+    unsigned int reg_base::receive(tlm_generic_payload& tx,
+                                   const sideband& info) {
         VCML_ERROR_ON(!m_range.overlaps(tx), "invalid register access");
         range addr = m_range.intersect(tx);
 
@@ -77,12 +78,12 @@ namespace vcml {
             return 0;
         }
 
-        if (tx.is_read() && !is_readable() && !is_debug(flags)) {
+        if (tx.is_read() && !is_readable() && !info.is_debug) {
             tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
             return 0;
         }
 
-        if (tx.is_write() && !is_writeable() && !is_debug(flags)) {
+        if (tx.is_write() && !is_writeable() && !info.is_debug) {
             tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
             return 0;
         }

@@ -29,7 +29,7 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/range.h"
-#include "vcml/txext.h"
+#include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 #include "vcml/register.h"
@@ -83,7 +83,7 @@ namespace vcml {
 
         virtual void reset() = 0;
 
-        unsigned int receive(tlm_generic_payload& tx, int flags);
+        unsigned int receive(tlm_generic_payload& tx, const sideband& info);
 
         virtual void do_read(const range& addr, void* ptr) = 0;
         virtual void do_write(const range& addr, const void* ptr) = 0;
