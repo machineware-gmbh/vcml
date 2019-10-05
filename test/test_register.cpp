@@ -69,7 +69,7 @@ TEST(registers, read) {
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0x00001337u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(buffer[0], expect[0]);
@@ -97,7 +97,7 @@ TEST(registers, read_callback) {
 
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0x00001337u);
     EXPECT_EQ(buffer[0], expect[0]);
@@ -121,7 +121,7 @@ TEST(registers, write) {
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0x44332211u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(t, mock.write_latency);
@@ -143,7 +143,7 @@ TEST(registers, write_callback) {
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_write(0x44332211)).WillOnce(Return(value));
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0xffffffff);
     EXPECT_EQ(mock.test_reg_b, value);
     EXPECT_EQ(t, mock.write_latency);
@@ -168,7 +168,7 @@ TEST(registers, read_byte_enable) {
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 2);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 2);
     EXPECT_EQ(mock.test_reg_a, 0x00001337u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(buffer[0], expect[0]);
@@ -196,7 +196,7 @@ TEST(registers, write_byte_enable) {
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 2);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 2);
     EXPECT_EQ(mock.test_reg_a, 0x00330011u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(t, mock.write_latency);
@@ -218,7 +218,7 @@ TEST(registers, permissions) {
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_write(_)).Times(0);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 0);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
@@ -229,7 +229,7 @@ TEST(registers, permissions) {
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_read()).Times(0);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 0);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
@@ -250,7 +250,7 @@ TEST(registers, misaligned_accesses) {
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 2);
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 2);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 2);
     EXPECT_EQ(mock.test_reg_a, 0x00221100u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(t, mock.write_latency);
@@ -260,7 +260,7 @@ TEST(registers, misaligned_accesses) {
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 4);
 
     EXPECT_CALL(mock, reg_write(0xffffff44)).WillOnce(Return(0xffffff44));
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4); // !
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4); // !
     EXPECT_EQ(mock.test_reg_a, 0x33221100u);
     EXPECT_EQ(mock.test_reg_b, 0xffffff44u); // !
     EXPECT_EQ(t, mock.write_latency);
@@ -271,7 +271,7 @@ TEST(registers, misaligned_accesses) {
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, largebuf, 8);
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 8);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 8);
     EXPECT_EQ(largebuf[0], 0x00);
     EXPECT_EQ(largebuf[1], 0x11);
     EXPECT_EQ(largebuf[2], 0x22);
@@ -293,36 +293,40 @@ TEST(registers, banking) {
 
     sc_core::sc_time t;
     tlm::tlm_generic_payload tx;
-    vcml::ext_bank bank;
+    vcml::sbiext bank;
+    vcml::sideband bank1, bank2;
     const vcml::u8 val1 = 0xab;
     const vcml::u8 val2 = 0xcd;
     unsigned char buffer;
 
+    bank1.cpuid = 1;
+    bank2.cpuid = 2;
+
     tx.set_extension(&bank);
 
     buffer = val1;
-    bank.set_bank(1);
+    bank.cpuid = 1;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 1);
+    EXPECT_EQ(mock.transport(tx, t, bank1), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = val2;
-    bank.set_bank(2);
+    bank.cpuid = 2;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 1);
+    EXPECT_EQ(mock.transport(tx, t, bank2), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = 0x0;
-    bank.set_bank(1);
+    bank.cpuid = 1;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 1);
+    EXPECT_EQ(mock.transport(tx, t, bank1), 1);
     EXPECT_TRUE(tx.is_response_ok());
     EXPECT_EQ(buffer, val1);
 
     buffer = 0x0;
-    bank.set_bank(2);
+    bank.cpuid = 2;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 1);
+    EXPECT_EQ(mock.transport(tx, t, bank2), 1);
     EXPECT_TRUE(tx.is_response_ok());
     EXPECT_EQ(buffer, val2);
 
@@ -342,7 +346,7 @@ TEST(registers, endianess) {
 
     mock.test_reg_a = 0x11223344;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 4);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
     EXPECT_EQ(buffer, 0x44332211);
     EXPECT_EQ(t, mock.read_latency);
     EXPECT_TRUE(tx.is_response_ok());
@@ -350,7 +354,7 @@ TEST(registers, endianess) {
     buffer = 0xeeff00cc;
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 4);
-    EXPECT_EQ(mock.transport(tx, t, vcml::VCML_FLAG_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0xcc00ffeeu);
     EXPECT_EQ(t, mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());

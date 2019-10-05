@@ -52,8 +52,8 @@ TEST(generic_memory, access) {
 
     mem.readonly = true;
 
-    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::VCML_FLAG_NODMI), tlm::TLM_COMMAND_ERROR_RESPONSE);
-    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::VCML_FLAG_DEBUG), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::SBI_NODMI), tlm::TLM_COMMAND_ERROR_RESPONSE);
+    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::SBI_DEBUG), tlm::TLM_OK_RESPONSE);
 
     EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe), tlm::TLM_OK_RESPONSE);
     mock.OUT.dmi().invalidate(0, -1);

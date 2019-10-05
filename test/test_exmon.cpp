@@ -35,8 +35,9 @@ TEST(exmon, locking) {
 TEST(exmon, update) {
     vcml::exmon mon;
 
-    vcml::ext_exmem ex1(1);
-    vcml::ext_exmem ex2(2);
+    vcml::sbiext ex1, ex2;
+    ex1.cpuid = 1; ex1.is_excl = true;
+    ex2.cpuid = 2; ex2.is_excl = true;
     tlm::tlm_generic_payload tx;
 
     tx.set_address(100);
@@ -45,17 +46,17 @@ TEST(exmon, update) {
     tx.set_extension(&ex1);
 
     EXPECT_TRUE(mon.update(tx));
-    EXPECT_EQ(mon.get_locks().size(), 1);
+    ASSERT_EQ(mon.get_locks().size(), 1);
     EXPECT_EQ(mon.get_locks()[0].addr, vcml::range(100, 103));
-    EXPECT_EQ(mon.get_locks()[0].cpu, ex1.get_id());
+    EXPECT_EQ(mon.get_locks()[0].cpu, ex1.cpuid);
 
     tx.clear_extension(&ex1);
     tx.set_extension(&ex2);
 
     EXPECT_TRUE(mon.update(tx));
-    EXPECT_EQ(mon.get_locks().size(), 2);
+    ASSERT_EQ(mon.get_locks().size(), 2);
     EXPECT_EQ(mon.get_locks()[1].addr, vcml::range(100, 103));
-    EXPECT_EQ(mon.get_locks()[1].cpu, ex2.get_id());
+    EXPECT_EQ(mon.get_locks()[1].cpu, ex2.cpuid);
 
     tx.set_write();
 

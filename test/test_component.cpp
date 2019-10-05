@@ -35,7 +35,7 @@ public:
         IN("IN") {
     }
 
-    MOCK_METHOD3(transport, unsigned int(tlm::tlm_generic_payload&, sc_core::sc_time&, int));
+    MOCK_METHOD3(transport, unsigned int(tlm::tlm_generic_payload&, sc_core::sc_time&, const vcml::sideband&));
 };
 
 TEST(component, sockets) {
