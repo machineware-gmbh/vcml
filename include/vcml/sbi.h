@@ -64,7 +64,7 @@ namespace vcml {
         bool operator != (const sideband& other) const;
     };
 
-    static_assert(sizeof(sideband) == sizeof(u64));
+    static_assert(sizeof(sideband) == sizeof(u64), "sideband too large");
 
     inline sideband& sideband::operator  = (const sideband& other) {
         code = other.code;
