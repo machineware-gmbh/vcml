@@ -64,9 +64,9 @@ namespace vcml { namespace generic {
         void load(const string& binary, u64 offset = 0);
 
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           int flags);
+                                           const sideband& info) override;
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           int flags);
+                                           const sideband& info) override;
     };
 
 }}

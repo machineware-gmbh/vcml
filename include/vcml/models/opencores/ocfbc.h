@@ -61,9 +61,9 @@ namespace vcml { namespace opencores {
         u32 write_VTIM(u32 val);
 
         virtual tlm_response_status read(const range& addr, void* data,
-                                         int flags) override;
+                                         const sideband& info) override;
         virtual tlm_response_status write(const range& addr, const void* data,
-                                         int flags) override;
+                                          const sideband& info) override;
 
         sc_event m_enable;
 

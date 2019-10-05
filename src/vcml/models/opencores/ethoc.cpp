@@ -398,7 +398,8 @@ namespace vcml { namespace opencores {
         return mac;
     }
 
-    tlm_response_status ethoc::read(const range& addr, void* data, int flags) {
+    tlm_response_status ethoc::read(const range& addr, void* data,
+                                    const sideband& info) {
         if ((addr.start < RAM_START) || (addr.end > RAM_END))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
@@ -409,7 +410,7 @@ namespace vcml { namespace opencores {
     }
 
     tlm_response_status ethoc::write(const range& addr, const void* data,
-                                     int flags) {
+                                     const sideband& info) {
         if ((addr.start < RAM_START) || (addr.end > RAM_END))
             return TLM_ADDRESS_ERROR_RESPONSE;
 

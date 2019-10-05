@@ -56,9 +56,9 @@ namespace vcml { namespace generic {
         bool cmd_battery(const vector<string>& args, ostream& os);
 
         virtual tlm_response_status read(const range& addr, void* ptr,
-                                         int flags) override;
+                                         const sideband& info) override;
         virtual tlm_response_status write(const range& addr, const void* ptr,
-                                         int flags) override;
+                                         const sideband& info) override;
 
         u8 write_CONTROL(u8 val);
 

@@ -153,7 +153,8 @@ namespace vcml { namespace generic {
         file.read((char*)(m_memory + offset), nbytes);
     }
 
-    tlm_response_status memory::read(const range& addr, void* data, int flags) {
+    tlm_response_status memory::read(const range& addr, void* data,
+                                     const sideband& info) {
         if (addr.end >= size)
             return TLM_ADDRESS_ERROR_RESPONSE;
         memcpy(data, m_memory + addr.start, addr.length());
@@ -161,10 +162,10 @@ namespace vcml { namespace generic {
     }
 
     tlm_response_status memory::write(const range& addr, const void* data,
-                                      int flags) {
+                                      const sideband& info) {
         if (addr.end >= size)
             return TLM_ADDRESS_ERROR_RESPONSE;
-        if (readonly && !is_debug(flags))
+        if (readonly && !info.is_debug)
             return TLM_COMMAND_ERROR_RESPONSE;
         memcpy(m_memory + addr.start, data, addr.length());
         return TLM_OK_RESPONSE;

@@ -89,9 +89,9 @@ namespace vcml { namespace opencores {
         u32 read_MAC_ADDR1();
 
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           int flags) override;
+                                           const sideband& info) override;
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           int flags) override;
+                                           const sideband& info) override;
 
         // Disabled
         ethoc();

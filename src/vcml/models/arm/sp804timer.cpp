@@ -187,24 +187,24 @@ namespace vcml { namespace arm {
     }
 
     unsigned int sp804timer::receive(tlm_generic_payload& tx, sc_time& offset,
-                                     int flags) {
+                                     const sideband& info) {
         u64 addr = tx.get_address();
 
         if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
             tx.set_address(addr - TIMER1_START);
-            unsigned int bytes = TIMER1.receive(tx, offset, flags);
+            unsigned int bytes = TIMER1.receive(tx, offset, info);
             tx.set_address(addr);
             return bytes;
         }
 
         if ((addr >= TIMER2_START) && (addr <= TIMER2_END)) {
             tx.set_address(addr - TIMER2_START);
-            unsigned int bytes = TIMER2.receive(tx, offset, flags);
+            unsigned int bytes = TIMER2.receive(tx, offset, info);
             tx.set_address(addr);
             return bytes;
         }
 
-        return peripheral::receive(tx, offset, flags);
+        return peripheral::receive(tx, offset, info);
     }
 
     void sp804timer::reset() {

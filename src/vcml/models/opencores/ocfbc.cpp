@@ -123,7 +123,8 @@ namespace vcml { namespace opencores {
         return val;
     }
 
-    tlm_response_status ocfbc::read(const range& addr, void* ptr, int flags) {
+    tlm_response_status ocfbc::read(const range& addr, void* ptr,
+                                    const sideband& info) {
         if (!addr.inside(m_palette_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
@@ -132,12 +133,13 @@ namespace vcml { namespace opencores {
         return TLM_OK_RESPONSE;
     }
 
-    tlm_response_status ocfbc::write(const range& addr, const void* p, int f) {
+    tlm_response_status ocfbc::write(const range& addr, const void* ptr,
+                                     const sideband& info) {
         if (!addr.inside(m_palette_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
         u8* palette = (u8*)m_palette + addr.start - PALETTE_ADDR;
-        memcpy(palette, p, addr.length());
+        memcpy(palette, ptr, addr.length());
         return TLM_OK_RESPONSE;
     }
 
