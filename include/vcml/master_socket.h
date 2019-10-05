@@ -25,7 +25,7 @@
 #include "vcml/common/report.h"
 
 #include "vcml/range.h"
-#include "vcml/txext.h"
+#include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 
@@ -40,8 +40,7 @@ namespace vcml {
         tlm_generic_payload m_tx;
         tlm_generic_payload m_txd;
 
-        ext_bank  m_bank_ext;
-        ext_exmem m_exmem_ext;
+        sideband m_sbi;
 
         dmi_cache m_dmi_cache;
 
@@ -50,11 +49,13 @@ namespace vcml {
         void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
 
     public:
-        inline int  get_bank() const   { return m_bank_ext.get_bank(); }
-        inline void set_bank(int bank) { m_bank_ext.set_bank(bank); }
-        inline int  get_exid() const   { return m_exmem_ext.get_id(); }
-        inline void set_exid(int id)   { m_exmem_ext.set_id(id); }
+        int  get_cpuid() const  { return m_sbi.cpuid; }
+        int  get_level() const  { return m_sbi.level; }
 
+        void set_cpuid(int cpuid);
+        void set_level(int level);
+
+        master_socket() = delete;
         master_socket(const char* name, component* host = NULL);
         virtual ~master_socket();
 
@@ -65,37 +66,48 @@ namespace vcml {
         void map_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
 
-        unsigned int send(tlm_generic_payload& tx, int flags = VCML_FLAG_NONE);
+        unsigned int send(tlm_generic_payload& tx,
+                          const sideband& info = SBI_NONE);
 
         tlm_response_status access_dmi(tlm_command c, u64 addr, void* data,
                                        unsigned int size,
-                                       int flags = VCML_FLAG_NONE);
+                                       const sideband& info = SBI_NONE);
 
         tlm_response_status access (tlm_command cmd, u64 addr, void* data,
                                     unsigned int size,
-                                    int flags = VCML_FLAG_NONE,
+                                    const sideband& info = SBI_NONE,
                                     unsigned int* nbytes = NULL);
 
         tlm_response_status read   (u64 addr, void* data,
                                     unsigned int size,
-                                    int flags = VCML_FLAG_NONE,
+                                    const sideband& info = SBI_NONE,
                                     unsigned int* nbytes = NULL);
 
         tlm_response_status write  (u64 addr, const void* data,
                                     unsigned int size,
-                                    int flags = VCML_FLAG_NONE,
+                                    const sideband& info = SBI_NONE,
                                     unsigned int* nbytes = NULL);
 
         template <typename T>
         tlm_response_status readw  (u64 addr, T& data,
-                                    int flags = VCML_FLAG_NONE,
+                                    const sideband& info = SBI_NONE,
                                     unsigned int* nbytes = NULL);
 
         template <typename T>
         tlm_response_status writew (u64 addr, const T& data,
-                                    int flags = VCML_FLAG_NONE,
+                                    const sideband& info = SBI_NONE,
                                     unsigned int* nbytes = NULL);
     };
+
+    inline void master_socket::set_cpuid(int cpuid) {
+        m_sbi.cpuid = cpuid;
+        VCML_ERROR_ON(m_sbi.cpuid != cpuid, "cpuid too large");
+    }
+
+    inline void master_socket::set_level(int level) {
+        m_sbi.level = level;
+        VCML_ERROR_ON(m_sbi.level != level, "level too large");
+    }
 
     inline dmi_cache& master_socket::dmi() {
         return m_dmi_cache;
@@ -110,26 +122,26 @@ namespace vcml {
     }
 
     inline tlm_response_status master_socket::read(u64 addr, void* data,
-            unsigned int size, int flags, unsigned int* bytes) {
-        return access(TLM_READ_COMMAND, addr, data, size, flags, bytes);
+            unsigned int size, const sideband& info, unsigned int* bytes) {
+        return access(TLM_READ_COMMAND, addr, data, size, info, bytes);
     }
 
     inline tlm_response_status master_socket::write(u64 addr, const void* data,
-            unsigned int size, int flags, unsigned int* bytes) {
+            unsigned int size, const sideband& info, unsigned int* bytes) {
         void* ptr = const_cast<void*>(data);
-        return access(TLM_WRITE_COMMAND, addr, ptr, size, flags, bytes);
+        return access(TLM_WRITE_COMMAND, addr, ptr, size, info, bytes);
     }
 
     template <typename T>
     inline tlm_response_status master_socket::readw(u64 addr, T& data,
-            int flags, unsigned int* nbytes) {
-        return read(addr, &data, sizeof(T), flags, nbytes);
+            const sideband& info, unsigned int* nbytes) {
+        return read(addr, &data, sizeof(T), info, nbytes);
     }
 
     template <typename T>
     inline tlm_response_status master_socket::writew(u64 addr, const T& data,
-            int flags, unsigned int* nbytes) {
-        return write(addr, &data, sizeof(T), flags, nbytes);
+            const sideband& info, unsigned int* nbytes) {
+        return write(addr, &data, sizeof(T), info, nbytes);
     }
 
     static inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd,

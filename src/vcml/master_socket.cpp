@@ -32,8 +32,7 @@ namespace vcml {
         m_free_ev(concat(nm, "_free").c_str()),
         m_tx(),
         m_txd(),
-        m_bank_ext(),
-        m_exmem_ext(),
+        m_sbi(SBI_NONE),
         m_dmi_cache(),
         m_host(host) {
         if (m_host == NULL) {
@@ -44,16 +43,17 @@ namespace vcml {
         m_host->register_socket(this);
         register_invalidate_direct_mem_ptr(this,
                 &master_socket::invalidate_direct_mem_ptr);
+
+        m_tx.set_extension(new sbiext());
+        m_txd.set_extension(new sbiext());
     }
 
     master_socket::~master_socket() {
-        m_tx.clear_extension<ext_bank>();
-        m_tx.clear_extension<ext_exmem>();
-        m_txd.clear_extension<ext_bank>();
-        m_txd.clear_extension<ext_exmem>();
+        // nothing to do
     }
 
-    unsigned int master_socket::send(tlm_generic_payload& tx, int flags) try {
+    unsigned int master_socket::send(tlm_generic_payload& tx,
+                                     const sideband& info) try {
         unsigned int   bytes = 0;
         unsigned int   size  = tx.get_data_length();
         unsigned int   width = tx.get_streaming_width();
@@ -72,33 +72,24 @@ namespace vcml {
 
         tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
         tx.set_dmi_allowed(false);
+        tx_set_sbi(tx, m_sbi | info);
 
-        tx.set_extension(&m_bank_ext);
-        if (is_excl(flags)) {
-            m_exmem_ext.reset();
-            tx.set_extension(&m_exmem_ext);
-        }
-
-        if (is_debug(flags)) {
+        if (info.is_debug) {
             sc_time t1 = sc_time_stamp();
             bytes = (*this)->transport_dbg(tx);
             sc_time t2 = sc_time_stamp();
             VCML_ERROR_ON(t1 != t2, "time advanced during debug call");
         } else {
+            if (info.is_sync)
+                m_host->sync();
             (*this)->b_transport(tx, m_host->offset());
-            if (is_sync(flags))
+            if (info.is_sync)
                 m_host->sync();
             bytes = tx.is_response_ok() ? tx.get_data_length() : 0;
         }
 
-        tx.clear_extension<ext_bank>();
-
-        if (is_excl(flags)) {
-            ext_exmem* ext = tx.get_extension<ext_exmem>();
-            if (!ext->get_status())
-                bytes = 0;
-            tx.clear_extension<ext_exmem>();
-        }
+        if (info.is_excl && !tx_is_excl(tx))
+            bytes = 0;
 
         if (m_host->allow_dmi && tx.is_dmi_allowed()) {
             tlm_dmi dmi;
@@ -108,28 +99,24 @@ namespace vcml {
 
         return bytes;
     } catch (report& rep) {
-        tx.clear_extension<ext_bank>();
-        tx.clear_extension<ext_exmem>();
         logger::log(rep);
         throw;
     } catch (std::exception& ex) {
-        tx.clear_extension<ext_bank>();
-        tx.clear_extension<ext_exmem>();
         throw;
     }
 
     tlm_response_status master_socket::access_dmi(tlm_command cmd, u64 addr,
                                                   void* data, unsigned int size,
-                                                  int flags) {
-        if (flags & (VCML_FLAG_NODMI | VCML_FLAG_EXCL))
+                                                  const sideband& info) {
+        if (info.is_nodmi || info.is_excl)
             return TLM_INCOMPLETE_RESPONSE;
 
         tlm_dmi dmi;
-        tlm_command elevate = is_debug(flags) ? TLM_READ_COMMAND : cmd;
+        tlm_command elevate = info.is_debug ? TLM_READ_COMMAND : cmd;
         if (!m_dmi_cache.lookup(addr, size, elevate, dmi))
             return TLM_INCOMPLETE_RESPONSE;
 
-        if (is_sync(flags) && !is_debug(flags))
+        if (info.is_sync && !info.is_debug)
             m_host->sync();
 
         sc_time latency = SC_ZERO_TIME;
@@ -141,9 +128,9 @@ namespace vcml {
             latency += dmi.get_write_latency();
         }
 
-        if (!is_debug(flags)) {
+        if (!info.is_debug) {
             m_host->offset() += latency;
-            if (is_sync(flags))
+            if (info.is_sync)
                 m_host->sync();
         }
 
@@ -152,30 +139,31 @@ namespace vcml {
 
     tlm_response_status master_socket::access(tlm_command cmd, u64 addr,
                                               void* data, unsigned int size,
-                                              int flags, unsigned int* bytes) {
+                                              const sideband& info,
+                                              unsigned int* bytes) {
 
         tlm_response_status rs = TLM_INCOMPLETE_RESPONSE;
 
         // check if we are allowed to do a DMI access on that address
         if ((cmd != TLM_IGNORE_COMMAND) && (m_host->allow_dmi))
-            rs = access_dmi(cmd, addr, data, size, flags);
+            rs = access_dmi(cmd, addr, data, size, info);
 
         // if DMI was not successful, send a regular transaction
         if (rs == TLM_INCOMPLETE_RESPONSE) {
-            tlm_generic_payload& tx = is_debug(flags) ? m_txd : m_tx;
+            tlm_generic_payload& tx = info.is_debug ? m_txd : m_tx;
             tx_setup(tx, cmd, addr, data, size);
-            size = send(tx, flags);
+            size = send(tx, info);
             rs = tx.get_response_status();
 
             // transport_dbg does not change response status
-            if (rs == TLM_INCOMPLETE_RESPONSE && is_debug(flags))
+            if (rs == TLM_INCOMPLETE_RESPONSE && info.is_debug)
                 rs = TLM_OK_RESPONSE;
         }
 
         if (rs == TLM_INCOMPLETE_RESPONSE)
             log_warn("got incomplete response from target at 0x%016llx", addr);
 
-        if (bytes != NULL)
+        if (bytes != nullptr)
             *bytes = size;
         return rs;
     }

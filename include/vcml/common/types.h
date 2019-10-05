@@ -150,32 +150,8 @@ namespace vcml {
         return VCML_ENDIAN_UNKNOWN;
     }
 
-    enum flags {
-        VCML_FLAG_NONE  = 0,
-        VCML_FLAG_DEBUG = 1 << 0,
-        VCML_FLAG_NODMI = 1 << 1,
-        VCML_FLAG_SYNC  = 1 << 2,
-        VCML_FLAG_EXCL  = 1 << 3
-    };
-
     static inline bool is_set(int flags, int set) {
         return (flags & set) == set;
-    }
-
-    static inline bool is_debug(int flags) {
-        return is_set(flags, VCML_FLAG_DEBUG);
-    }
-
-    static inline bool is_nodmi(int flags) {
-        return is_set(flags, VCML_FLAG_NODMI);
-    }
-
-    static inline bool is_sync(int flags) {
-        return is_set(flags, VCML_FLAG_SYNC);
-    }
-
-    static inline bool is_excl(int flags) {
-        return is_set(flags, VCML_FLAG_EXCL);
     }
 
     enum vcml_access {

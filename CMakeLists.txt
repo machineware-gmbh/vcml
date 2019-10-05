@@ -65,6 +65,7 @@ set(sources
     "${src}/vcml/debugging/gdbserver.cpp"
     "${src}/vcml/debugging/vspserver.cpp"
     "${src}/vcml/elf.cpp"
+    "${src}/vcml/sbi.cpp"
     "${src}/vcml/dmi_cache.cpp"
     "${src}/vcml/exmon.cpp"
     "${src}/vcml/component.cpp"

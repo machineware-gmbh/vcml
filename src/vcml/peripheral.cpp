@@ -24,7 +24,7 @@ namespace vcml {
     peripheral::peripheral(const sc_module_name& nm, vcml_endian endian,
                            const sc_time& rlatency, const sc_time& wlatency):
         component(nm),
-        m_current_cpu(ext_bank::NONE),
+        m_current_cpu(SBI_NONE.cpuid),
         m_endian(endian),
         m_registers(),
         m_backends(),
@@ -97,7 +97,7 @@ namespace vcml {
     }
 
     unsigned int peripheral::transport(tlm_generic_payload& tx, sc_time& dt,
-                                       int flags) {
+                                       const sideband& info) {
         sc_dt::uint64 addr = tx.get_address();
         unsigned char* ptr = tx.get_data_ptr();
         unsigned int length = tx.get_data_length();
@@ -115,7 +115,7 @@ namespace vcml {
             if (be_ptr == NULL) {
                 tx.set_data_ptr(ptr + pulse * streaming_width);
                 tx.set_data_length(streaming_width);
-                nbytes += receive(tx, dt, flags);
+                nbytes += receive(tx, dt, info);
             } else {
                 for (unsigned int byte = 0; byte < streaming_width; byte++) {
                     if (be_ptr[be_index++ % be_length] == 0x00)
@@ -127,11 +127,11 @@ namespace vcml {
                     tx.set_streaming_width(1);
                     tx.set_byte_enable_ptr(NULL);
                     tx.set_byte_enable_length(0);
-                    nbytes += receive(tx, dt, flags);
+                    nbytes += receive(tx, dt, info);
                 }
             }
 
-            if (!is_debug(flags))
+            if (!info.is_debug)
                 dt += tx.is_read() ? read_latency : write_latency;
         }
 
@@ -146,31 +146,30 @@ namespace vcml {
     }
 
     unsigned int peripheral::receive(tlm_generic_payload& tx, sc_time& dt,
-                                     int flags) {
+                                     const sideband& info) {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
 
-        int cpu = tx_bank_id(tx);
-        set_current_cpu(cpu);
+        set_current_cpu(info.cpuid);
 
         for (auto reg : m_registers)
             if (reg->get_range().overlaps(tx)) {
-                if (reg->needs_sync(tx) && !is_debug(flags))
+                if (reg->needs_sync(tx) && !info.is_debug)
                     sync(dt);
-                bytes += reg->receive(tx, flags);
+                bytes += reg->receive(tx, info);
                 nregs ++;
             }
 
-        set_current_cpu(ext_bank::NONE);
+        set_current_cpu(SBI_NONE.cpuid);
         if (nregs > 0) // stop if at least one register took the access
             return bytes;
 
         tlm_response_status rs = TLM_OK_RESPONSE;
         const range addr(tx);
         if (tx.is_read())
-            rs = read(addr, tx.get_data_ptr(), flags);
+            rs = read(addr, tx.get_data_ptr(), info);
         if (tx.is_write())
-            rs = write(addr, tx.get_data_ptr(), flags);
+            rs = write(addr, tx.get_data_ptr(), info);
 
         if (rs == TLM_INCOMPLETE_RESPONSE)
             rs = TLM_ADDRESS_ERROR_RESPONSE;
@@ -179,12 +178,12 @@ namespace vcml {
     }
 
     tlm_response_status peripheral::read(const range& addr, void* data,
-                                         int flags) {
+                                         const sideband& info) {
         return TLM_INCOMPLETE_RESPONSE; // to be overloaded
     }
 
     tlm_response_status peripheral::write(const range& addr, const void* data,
-                                          int flags) {
+                                          const sideband& info) {
         return TLM_INCOMPLETE_RESPONSE; // to be overloaded
     }
 

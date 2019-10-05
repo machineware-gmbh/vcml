@@ -29,7 +29,7 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/range.h"
-#include "vcml/txext.h"
+#include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 #include "vcml/register.h"
@@ -92,13 +92,14 @@ namespace vcml {
         template <typename T> size_t bewrite(const T& val);
 
         virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
-                                       int flags);
+                                       const sideband& info) override;
         virtual unsigned int receive(tlm_generic_payload& tx, sc_time& dt,
-                                     int flags);
+                                     const sideband& info);
+
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           int flags);
+                                           const sideband& info);
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           int flags);
+                                           const sideband& info);
     };
 
     inline bool peripheral::is_little_endian() const {

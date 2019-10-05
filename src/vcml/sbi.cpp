@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2019 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,52 +16,39 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SLAVE_SOCKET_H
-#define VCML_SLAVE_SOCKET_H
-
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-
-#include "vcml/range.h"
 #include "vcml/sbi.h"
-#include "vcml/exmon.h"
-#include "vcml/dmi_cache.h"
-#include "vcml/component.h"
 
 namespace vcml {
 
-    class slave_socket: public simple_target_socket<slave_socket, 64>
-    {
-    private:
-        bool       m_free;
-        sc_event   m_free_ev;
-        dmi_cache  m_dmi_cache;
-        exmon      m_exmon;
-        component* m_host;
+    tlm_extension_base* sbiext::clone() const {
+        return new sbiext(*this);
+    }
 
-        void b_transport(tlm_generic_payload& tx, sc_time& dt);
-        unsigned int transport_dbg(tlm_generic_payload& tx);
-        bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
+    void sbiext::copy_from(const tlm_extension_base& ext) {
+        VCML_ERROR_ON(typeid(this) != typeid(ext), "cannot copy extension");
+        const sbiext& other = (const sbiext&)ext;
+        code = other.code;
+    }
 
-    public:
-        slave_socket(const char* name, component* host = NULL);
-        virtual ~slave_socket();
+    void tx_set_sbi(tlm_generic_payload& tx, const sideband& info) {
+        if (!tx_has_sbi(tx) && info == SBI_NONE)
+            return;
+        if (!tx_has_sbi(tx))
+            tx.set_extension<sbiext>(new sbiext());
+        sbiext* ext = tx.get_extension<sbiext>();
+        ext->code = info.code;
+    }
 
-        VCML_KIND(slave_socket);
+    void tx_set_cpuid(tlm_generic_payload& tx, int id) {
+        sideband info; info.cpuid = id;
+        VCML_ERROR_ON(info.cpuid != id, "coreid too large");
+        tx_set_sbi(tx, SBI_NONE | info);
+    }
 
-        dmi_cache& dmi()   { return m_dmi_cache; }
-        exmon&     exmem() { return m_exmon; }
-
-        void map_dmi(const tlm_dmi& dmi);
-        void unmap_dmi(u64 start, u64 end);
-    };
-
-    inline void slave_socket::map_dmi(const tlm_dmi& dmi) {
-        m_dmi_cache.insert(dmi);
+    void tx_set_level(tlm_generic_payload& tx, int lvl) {
+        sideband info; info.level = lvl;
+        VCML_ERROR_ON(info.level != lvl, "privlvl too large");
+        tx_set_sbi(tx, SBI_NONE | info);
     }
 
 }
-
-#endif

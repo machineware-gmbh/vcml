@@ -25,7 +25,7 @@
 #include "vcml/common/report.h"
 
 #include "vcml/range.h"
-#include "vcml/txext.h"
+#include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"
 
 namespace vcml {

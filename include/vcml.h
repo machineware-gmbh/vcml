@@ -55,7 +55,7 @@
 
 #include "vcml/elf.h"
 #include "vcml/range.h"
-#include "vcml/txext.h"
+#include "vcml/sbi.h"
 #include "vcml/exmon.h"
 #include "vcml/ports.h"
 #include "vcml/stubs.h"

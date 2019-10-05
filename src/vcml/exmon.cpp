@@ -63,18 +63,20 @@ namespace vcml {
             if (lock.addr.overlaps(tx))
                 tx.set_dmi_allowed(false);
 
-        ext_exmem* ex = tx.get_extension<ext_exmem>();
-        if (ex != NULL) {
+        bool proceed = true;
+        sbiext* ex = tx.get_extension<sbiext>();
+        if (ex != nullptr && ex->is_excl) {
             if (tx.is_read())
-                ex->set_status(add_lock(ex->get_id(), tx));
+                add_lock(ex->cpuid, tx);
             if (tx.is_write())
-                ex->set_status(has_lock(ex->get_id(), tx));
+                ex->is_excl = has_lock(ex->cpuid, tx);
+            proceed = ex->is_excl;
         }
 
         if (tx.is_write())
             break_locks(tx); // increase range to invalidate entire cache line?
 
-        return ex ? ex->get_status() : true;
+        return proceed;
     }
 
     bool exmon::override_dmi(const tlm_generic_payload& tx, tlm_dmi& dmi) {

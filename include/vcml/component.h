@@ -28,7 +28,7 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/range.h"
-#include "vcml/txext.h"
+#include "vcml/sbi.h"
 #include "vcml/exmon.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/command.h"
@@ -109,7 +109,7 @@ namespace vcml {
         vector<command_base*> get_commands() const;
 
         virtual void b_transport(slave_socket* origin, tlm_generic_payload& tx,
-                                         sc_time& dt);
+                                 sc_time& dt);
         virtual unsigned int transport_dbg(slave_socket* origin,
                                            tlm_generic_payload& tx);
         virtual bool get_direct_mem_ptr(slave_socket* origin,
@@ -119,7 +119,7 @@ namespace vcml {
                                                u64 start, u64 end);
 
         virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
-                                       int flags);
+                                       const sideband& info);
         virtual void invalidate_dmi(u64 start, u64 end);
 
 #define VCML_DEFINE_LOG(log_name, level)                      \

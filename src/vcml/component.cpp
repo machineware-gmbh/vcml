@@ -185,7 +185,7 @@ namespace vcml {
         if (!trace_errors)
             trace_in(tx);
 
-        transport(tx, dt, tx_is_excl(tx) ? VCML_FLAG_EXCL : VCML_FLAG_NONE);
+        transport(tx, dt, tx_get_sbi(tx));
 
         if (!trace_errors || failed(tx.get_response_status()))
             trace_out(tx);
@@ -195,7 +195,7 @@ namespace vcml {
                                           tlm_generic_payload& tx) {
         sc_time zero = SC_ZERO_TIME;
         sc_time t1 = sc_time_stamp();
-        unsigned int bytes = transport(tx, zero, VCML_FLAG_DEBUG);
+        unsigned int bytes = transport(tx, zero, tx_get_sbi(tx) | SBI_DEBUG);
         sc_time t2 = sc_time_stamp();
         VCML_ERROR_ON(t1 != t2, "time advance during debug call");
         return bytes;
@@ -213,7 +213,7 @@ namespace vcml {
     }
 
     unsigned int component::transport(tlm_generic_payload& tx, sc_time& dt,
-                                      int flags) {
+                                      const sideband& info) {
         return 0; /* to be overloaded */
     }
 
