@@ -48,6 +48,8 @@ namespace vcml {
     }
 
     void peripheral::reset() {
+        component::reset();
+
         for (auto r : m_registers)
             r->reset();
     }

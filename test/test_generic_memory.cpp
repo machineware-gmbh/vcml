@@ -40,10 +40,10 @@ TEST(generic_memory, access) {
     vcml::generic::memory mem("MEM", 0x1000);
     mock.OUT.bind(mem.IN);
 
-    mock.CLOCK.stub();
+    mock.CLOCK.stub(10 * vcml::MHz);
     mock.RESET.stub();
 
-    mem.CLOCK.stub();
+    mem.CLOCK.stub(10 * vcml::MHz);
     mem.RESET.stub();
 
     sc_core::sc_start(sc_core::SC_ZERO_TIME);

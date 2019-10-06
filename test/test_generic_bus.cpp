@@ -45,13 +45,14 @@ TEST(generic_bus, transfer) {
     bus.bind(mem1.IN, 0x0000, 0x1fff, 0);
     bus.bind(mem2.IN, 0x2000, 0x3fff, 0);
 
-    initiator.CLOCK.stub();
+    vcml::clock_t clk = 100 * vcml::MHz;
+    initiator.CLOCK.stub(clk);
     initiator.RESET.stub();
-    mem1.CLOCK.stub();
+    mem1.CLOCK.stub(clk);
     mem1.RESET.stub();
-    mem2.CLOCK.stub();
+    mem2.CLOCK.stub(clk);
     mem2.RESET.stub();
-    bus.CLOCK.stub();
+    bus.CLOCK.stub(clk);
     bus.RESET.stub();
 
     sc_core::sc_start(sc_core::SC_ZERO_TIME);
@@ -73,11 +74,11 @@ TEST(generic_bus, transfer) {
     EXPECT_EQ(data, 0xbbbbbbbbul);
     EXPECT_EQ(initiator.OUT.readw(0x4000, data), tlm::TLM_ADDRESS_ERROR_RESPONSE);
 
-    EXPECT_EQ(initiator.OUT.dmi().get_entries().size(), 2);
+    ASSERT_EQ(initiator.OUT.dmi().get_entries().size(), 2);
     EXPECT_NE(initiator.OUT.dmi().get_entries()[0].get_start_address(), initiator.OUT.dmi().get_entries()[1].get_start_address());
     EXPECT_NE(initiator.OUT.dmi().get_entries()[0].get_dmi_ptr(), initiator.OUT.dmi().get_entries()[1].get_dmi_ptr());
 
     mem1.unmap_dmi(0, 0x1fff);
-    EXPECT_EQ(initiator.OUT.dmi().get_entries().size(), 1);
+    ASSERT_EQ(initiator.OUT.dmi().get_entries().size(), 1);
     EXPECT_EQ(initiator.OUT.dmi().get_entries()[0].get_start_address(), 0x2000);
 }

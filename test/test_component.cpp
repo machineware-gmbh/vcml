@@ -42,6 +42,7 @@ TEST(component, sockets) {
     vcml::u32 data = 0xf3f3f3f3;
     tlm::tlm_dmi dmi;
     unsigned char* dmi_ptr = (unsigned char*)&data;
+    clock_t clk = 100 * vcml::MHz;
 
     mock_component mock1("mock1");
     mock_component mock2("mock2");
@@ -49,8 +50,8 @@ TEST(component, sockets) {
     mock1.OUT.bind(mock2.IN);
     mock2.OUT.bind(mock1.IN);
 
-    mock1.CLOCK.stub();
-    mock2.CLOCK.stub();
+    mock1.CLOCK.stub(clk);
+    mock2.CLOCK.stub(clk);
 
     mock1.RESET.stub();
     mock2.RESET.stub();

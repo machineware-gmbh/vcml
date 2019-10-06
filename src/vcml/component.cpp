@@ -98,6 +98,11 @@ namespace vcml {
         if (newclk == m_curclk)
             return;
 
+        if (newclk <= 0) {
+            for (auto socket : m_slave_sockets)
+                socket->invalidate_dmi();
+        }
+
         log_debug("changed clock from %ldHz to %ldHz", m_curclk, newclk);
         handle_clock_update(m_curclk, newclk);
 
@@ -143,7 +148,8 @@ namespace vcml {
     }
 
     void component::reset() {
-        // nothing to do
+        for (auto socket : m_slave_sockets)
+            socket->invalidate_dmi();
     }
 
     void component::wait_clock_reset() {

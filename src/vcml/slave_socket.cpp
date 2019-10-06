@@ -55,6 +55,9 @@ namespace vcml {
         dmi.set_start_address(0);
         dmi.set_end_address((sc_dt::uint64)-1);
 
+        if (m_host->RESET || m_host->CLOCK <= 0)
+            return false;
+
         if (!m_dmi_cache.lookup(tx, dmi))
             return false;
 
@@ -100,6 +103,13 @@ namespace vcml {
                 dmi.set_read_latency(rdlat);
                 dmi.set_write_latency(wrlat);
             }
+        }
+    }
+
+    void slave_socket::invalidate_dmi() {
+        for (auto dmi : m_dmi_cache.get_entries()) {
+            (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
+                                               dmi.get_end_address());
         }
     }
 
