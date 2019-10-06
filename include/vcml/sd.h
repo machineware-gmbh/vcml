@@ -102,7 +102,7 @@ namespace vcml {
         VCML_KIND(sd_initiator_stub);
     };
 
-    class sd_target_stub: public component, protected sd_fw_transport_if
+    class sd_target_stub: public sc_module, protected sd_fw_transport_if
     {
     protected:
         virtual sd_status sd_transport(sd_command& cmd) override;

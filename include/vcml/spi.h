@@ -66,7 +66,7 @@ namespace vcml {
         VCML_KIND(spi_initiator_stub);
     };
 
-    class spi_target_stub: public component, protected spi_fw_transport_if
+    class spi_target_stub: public sc_module, protected spi_fw_transport_if
     {
     protected:
         virtual u8 spi_transport(u8 val) override;

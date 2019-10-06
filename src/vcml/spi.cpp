@@ -65,12 +65,13 @@ namespace vcml {
 
 
     u8 spi_target_stub::spi_transport(u8 val) {
-        log_debug("received 0x%02x", (unsigned int)val);
+        string msg = mkstr("received 0x%02x", (unsigned int)val);
+        logger::log(LOG_DEBUG, name(), msg);
         return 0xff;
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):
-        component(nm),
+        sc_module(nm),
         spi_fw_transport_if(),
         SPI_IN("SPI_IN") {
         SPI_IN.bind(*this);

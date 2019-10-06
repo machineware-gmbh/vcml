@@ -64,23 +64,26 @@ namespace vcml {
     }
 
     sd_status sd_target_stub::sd_transport(sd_command& tx) {
-        log_debug("received SD CMD%hhu (%u)", tx.opcode, tx.argument);
+        string msg = mkstr("received SD CMD%hhu (%u)", tx.opcode, tx.argument);
+        logger::log(LOG_DEBUG, name(), msg);
         tx.resp_len = 0;
         return SD_OK;
     }
 
     sd_tx_status sd_target_stub::sd_data_read(u8& val) {
-        log_debug("data read request");
+        string msg = mkstr("data read request");
+        logger::log(LOG_DEBUG, name(), msg);
         return SDTX_ERR_ILLEGAL;
     }
 
     sd_rx_status sd_target_stub::sd_data_write(u8 data) {
-        log_debug("data write request [%02hhx]", data);
+        string msg = mkstr("data write request [%02hhx]", data);
+        logger::log(LOG_DEBUG, name(), msg);
         return SDRX_OK;
     }
 
     sd_target_stub::sd_target_stub(const sc_module_name& nm):
-        component(nm),
+        sc_module(nm),
         sd_fw_transport_if(),
         SD_IN("SD_IN") {
         SD_IN.bind(*this);
