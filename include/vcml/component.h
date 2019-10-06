@@ -28,6 +28,7 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/range.h"
+#include "vcml/ports.h"
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"
 #include "vcml/dmi_cache.h"
@@ -43,6 +44,7 @@ namespace vcml {
         friend class master_socket;
         friend class slave_socket;
     private:
+        clock_t m_curclk;
         std::unordered_map<sc_process_b*, sc_time> m_offsets;
 
         vector<master_socket*> m_master_sockets;
@@ -61,21 +63,29 @@ namespace vcml {
         bool cmd_reset(const vector<string>& args, ostream& os);
         bool cmd_abort(const vector<string>& args, ostream& os);
 
+        log_level default_log_level() const;
+
         void do_reset();
 
-        log_level default_log_level() const;
+        void clock_handler();
+        void reset_handler();
 
     public:
         property<bool> allow_dmi;
         property<bool> trace_errors;
         property<log_level> loglvl;
 
+        in_port<clock_t> CLOCK;
+        in_port<bool>    RESET;
+
+        component() = delete;
+        component(const component&) = delete;
         component(const sc_module_name& nm, bool allow_dmi = true);
         virtual ~component();
-
         VCML_KIND(component);
 
         virtual void reset();
+        virtual void wait_clock_reset();
 
         const sc_time& get_offset(sc_process_b* proc = NULL) const;
         sc_time& offset(sc_process_b* proc = NULL);
@@ -121,6 +131,8 @@ namespace vcml {
         virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
                                        const sideband& info);
         virtual void invalidate_dmi(u64 start, u64 end);
+
+        virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
 
 #define VCML_DEFINE_LOG(log_name, level)                      \
         inline void log_name(const char* format, ...) const { \

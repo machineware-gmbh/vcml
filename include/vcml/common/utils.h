@@ -30,6 +30,11 @@ namespace vcml {
     const size_t GiB = 1024 * MiB;
     const size_t TiB = 1024 * GiB;
 
+    const clock_t kHz = 1000;
+    const clock_t MHz = 1000 * kHz;
+    const clock_t GHz = 1000 * MHz;
+    const clock_t THz = 1000 * GHz;
+
 #define VCML_KIND(name)                \
     virtual const char* kind() const { \
         return "vcml::" #name;         \
@@ -52,6 +57,9 @@ namespace vcml {
 
     string tlm_response_to_str(tlm_response_status status);
     string tlm_transaction_to_str(const tlm_generic_payload& tx);
+
+    bool is_thread(sc_process_b* proc = nullptr);
+    bool is_method(sc_process_b* proc = nullptr);
 
     sc_object*    find_object(const string& name);
     sc_attr_base* find_attribute(const string& name);

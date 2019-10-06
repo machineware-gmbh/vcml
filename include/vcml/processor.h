@@ -67,14 +67,12 @@ namespace vcml {
         bool cmd_v2p(const vector<string>& args, ostream& os);
 
         void processor_thread();
+
         void irq_handler(unsigned int irq);
+
         void simulate_debug(unsigned int cycles);
 
-        processor();
-        processor(const processor&);
-
     public:
-        property<clock_t> clock;
         property<string> symbols;
 
         property<u16>  gdb_port;
@@ -87,10 +85,12 @@ namespace vcml {
         master_socket INSN;
         master_socket DATA;
 
-        processor(const sc_module_name& name, clock_t clk);
+        processor(const sc_module_name& name);
         virtual ~processor();
-
         VCML_KIND(processor);
+
+        processor() = delete;
+        processor(const processor&) = delete;
 
         virtual string disassemble(u64& addr, unsigned char* insn);
 

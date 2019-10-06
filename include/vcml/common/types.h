@@ -33,6 +33,8 @@ namespace vcml {
     typedef int32_t i32;
     typedef int64_t i64;
 
+    using std::clock_t;
+
     using std::min;
     using std::max;
 

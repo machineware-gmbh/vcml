@@ -49,6 +49,12 @@ TEST(component, sockets) {
     mock1.OUT.bind(mock2.IN);
     mock2.OUT.bind(mock1.IN);
 
+    mock1.CLOCK.stub();
+    mock2.CLOCK.stub();
+
+    mock1.RESET.stub();
+    mock2.RESET.stub();
+
     sc_core::sc_start(sc_core::SC_ZERO_TIME);
 
     mock2.map_dmi(dmi_ptr, 0, 3, vcml::VCML_ACCESS_READ);

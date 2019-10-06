@@ -225,11 +225,15 @@ namespace vcml {
         wait(SC_ZERO_TIME);
 
         while (true) {
+            // check for standby requests
+            wait_clock_reset();
+
+            clock_t qcurclk = CLOCK.read();
             sc_time quantum = tlm_global_quantum::instance().get();
 
             unsigned int num_cycles = 1;
             if (quantum != SC_ZERO_TIME)
-                num_cycles = quantum.to_seconds() * clock;
+                num_cycles = quantum.to_seconds() * qcurclk;
             if (num_cycles == 0)
                 num_cycles = 1;
 
@@ -242,7 +246,7 @@ namespace vcml {
             m_num_cycles += num_cycles;
             m_run_time   += realtime() - start;
 
-            sc_time delay((double)num_cycles / (double)clock, SC_SEC);
+            sc_time delay((double)num_cycles / (double)qcurclk, SC_SEC);
             wait(delay + offset());
             offset() = SC_ZERO_TIME;
         }
@@ -273,14 +277,13 @@ namespace vcml {
         interrupt(irq, irq_up);
     }
 
-    processor::processor(const sc_module_name& nm, clock_t clk):
+    processor::processor(const sc_module_name& nm):
         component(nm),
         m_run_time(0),
         m_num_cycles(0),
         m_symbols(NULL),
         m_gdb(NULL),
         m_irq_stats(),
-        clock("clock", clk),
         symbols("symbols"),
         gdb_port("gdb_port", 0),
         gdb_wait("gdb_wait", false),
@@ -369,7 +372,7 @@ namespace vcml {
     }
 
     void processor::interrupt(unsigned int irq, bool set) {
-        /* interrupt ignored by default */
+        // to be overloaded
     }
 
     void processor::log_bus_error(const master_socket& socket, vcml_access acs,

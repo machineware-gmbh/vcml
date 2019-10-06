@@ -130,6 +130,12 @@ TEST(plic, plic) {
     mock_stim stim("STIM");
     vcml::riscv::plic plic("PLIC");
 
+    stim.CLOCK.stub();
+    stim.RESET.stub();
+
+    plic.CLOCK.stub();
+    plic.RESET.stub();
+
     stim.OUT.bind(plic.IN);
 
     plic.IRQS[1].bind(irqs1);

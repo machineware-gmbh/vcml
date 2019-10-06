@@ -45,6 +45,15 @@ TEST(generic_bus, transfer) {
     bus.bind(mem1.IN, 0x0000, 0x1fff, 0);
     bus.bind(mem2.IN, 0x2000, 0x3fff, 0);
 
+    initiator.CLOCK.stub();
+    initiator.RESET.stub();
+    mem1.CLOCK.stub();
+    mem1.RESET.stub();
+    mem2.CLOCK.stub();
+    mem2.RESET.stub();
+    bus.CLOCK.stub();
+    bus.RESET.stub();
+
     sc_core::sc_start(sc_core::SC_ZERO_TIME);
 
     EXPECT_EQ(initiator.OUT.writew(0x0000, 0x11111111ul), tlm::TLM_OK_RESPONSE);

@@ -70,15 +70,6 @@ namespace vcml {
         return true;
     }
 
-    void component::do_reset() {
-        reset();
-        for (auto obj : get_child_objects()) {
-            component* child = dynamic_cast<component*>(obj);
-            if (child)
-                child->reset();
-        }
-    }
-
     log_level component::default_log_level() const {
         sc_object* obj = get_parent_object();
         while (obj != NULL) {
@@ -91,15 +82,52 @@ namespace vcml {
         return LOG_INFO;
     }
 
+    void component::do_reset() {
+        reset();
+        for (auto obj : get_child_objects()) {
+            component* child = dynamic_cast<component*>(obj);
+            if (child)
+                child->reset();
+        }
+    }
+
+    SC_HAS_PROCESS(component);
+
+    void component::clock_handler() {
+        clock_t newclk = CLOCK.read();
+        if (newclk == m_curclk)
+            return;
+
+        log_debug("changed clock from %ldHz to %ldHz", m_curclk, newclk);
+        handle_clock_update(m_curclk, newclk);
+
+        m_curclk = newclk;
+    }
+
+    void component::reset_handler() {
+        do_reset();
+    }
+
     component::component(const sc_module_name& nm, bool dmi):
         sc_module(nm),
+        m_curclk(),
         m_offsets(),
         m_master_sockets(),
         m_slave_sockets(),
         m_commands(),
         allow_dmi("allow_dmi", dmi),
         trace_errors("trace_errors", false),
-        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()) {
+        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()),
+        CLOCK("CLOCK"),
+        RESET("RESET") {
+        SC_METHOD(clock_handler);
+        sensitive << CLOCK;
+        dont_initialize();
+
+        SC_METHOD(reset_handler);
+        sensitive << RESET.pos();
+        dont_initialize();
+
         register_command("clist", 0, this, &component::cmd_clist,
                          "returns a list of supported commands");
         register_command("cinfo", 1, this, &component::cmd_cinfo,
@@ -116,6 +144,18 @@ namespace vcml {
 
     void component::reset() {
         // nothing to do
+    }
+
+    void component::wait_clock_reset() {
+        if (!is_thread())
+            return;
+
+        while (CLOCK <= 0 || RESET) {
+            if (CLOCK <= 0)
+                wait(CLOCK.default_event());
+            if (RESET)
+                wait(RESET.negedge_event());
+        }
     }
 
     master_socket* component::get_master_socket(const string& name) const {
@@ -185,6 +225,7 @@ namespace vcml {
         if (!trace_errors)
             trace_in(tx);
 
+        wait_clock_reset();
         transport(tx, dt, tx_get_sbi(tx));
 
         if (!trace_errors || failed(tx.get_response_status()))
@@ -214,11 +255,15 @@ namespace vcml {
 
     unsigned int component::transport(tlm_generic_payload& tx, sc_time& dt,
                                       const sideband& info) {
-        return 0; /* to be overloaded */
+        return 0; // to be overloaded
     }
 
     void component::invalidate_dmi(u64 start, u64 end) {
-        /* to be overloaded */
+        // to be overloaded
+    }
+
+    void component::handle_clock_update(clock_t oldclk, clock_t newclk) {
+        // to be overloaded
     }
 
 }

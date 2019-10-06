@@ -38,6 +38,8 @@ public:
         vcml::component(nm), OUT("OUT") {
         OUT.bind(*this);
         SC_THREAD(run);
+        CLOCK.stub();
+        RESET.stub();
     }
 
     virtual ~initiator() {
@@ -53,6 +55,8 @@ public:
     target(const sc_core::sc_module_name& nm):
         vcml::component(nm), IN("IN") {
         IN.bind(*this);
+        CLOCK.stub();
+        RESET.stub();
     }
 
     virtual ~target() {

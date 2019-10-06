@@ -172,6 +172,22 @@ namespace vcml {
         return ss.str();
     }
 
+    bool is_thread(sc_process_b* proc) {
+        if (proc == nullptr)
+            proc = sc_get_current_process_b();
+        if (proc == nullptr)
+            return false;
+        return proc->proc_kind() == sc_core::SC_THREAD_PROC_;
+    }
+
+    bool is_method(sc_process_b* proc) {
+        if (proc == nullptr)
+            proc = sc_get_current_process_b();
+        if (proc == nullptr)
+            return false;
+        return proc->proc_kind() == sc_core::SC_METHOD_PROC_;
+    }
+
     sc_object* find_object(const string& name) {
         return sc_core::sc_find_object(name.c_str());
     }

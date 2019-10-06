@@ -40,6 +40,12 @@ TEST(generic_memory, access) {
     vcml::generic::memory mem("MEM", 0x1000);
     mock.OUT.bind(mem.IN);
 
+    mock.CLOCK.stub();
+    mock.RESET.stub();
+
+    mem.CLOCK.stub();
+    mem.RESET.stub();
+
     sc_core::sc_start(sc_core::SC_ZERO_TIME);
 
     mock.OUT.writew(0x0, 0x11223344);
