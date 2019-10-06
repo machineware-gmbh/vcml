@@ -56,6 +56,7 @@ namespace vcml {
 
         void map_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
+        void remap_dmi(const sc_time& rlat, const sc_time& wlat);
     };
 
     inline void slave_socket::map_dmi(const tlm_dmi& dmi) {

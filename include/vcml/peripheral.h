@@ -43,12 +43,14 @@ namespace vcml {
     private:
         int m_current_cpu;
         vcml_endian m_endian;
+        sc_time m_rdlatency;
+        sc_time m_wrlatency;
         vector<reg_base*> m_registers;
         vector<backend*> m_backends;
 
     public:
-        property<sc_time> read_latency;
-        property<sc_time> write_latency;
+        property<unsigned int> read_latency;
+        property<unsigned int> write_latency;
 
         property<string> backends;
 
@@ -66,8 +68,8 @@ namespace vcml {
         void set_current_cpu(int cpu) { m_current_cpu = cpu; }
 
         peripheral(const sc_module_name& nm, vcml_endian e = host_endian(),
-                   const sc_time& read_latency = SC_ZERO_TIME,
-                   const sc_time& write_latency = SC_ZERO_TIME);
+                   unsigned int read_latency = 0,
+                   unsigned int write_latency = 0);
         virtual ~peripheral();
 
         peripheral() = delete;
@@ -100,6 +102,9 @@ namespace vcml {
                                            const sideband& info);
         virtual tlm_response_status write (const range& addr, const void* data,
                                            const sideband& info);
+
+        virtual void handle_clock_update(clock_t oldclk,
+                                         clock_t newclk) override;
     };
 
     inline bool peripheral::is_little_endian() const {

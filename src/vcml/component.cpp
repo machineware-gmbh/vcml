@@ -195,6 +195,11 @@ namespace vcml {
             socket->unmap_dmi(start, end);
     }
 
+    void component::remap_dmi(const sc_time& rdlat, const sc_time& wrlat) {
+        for (auto socket : m_slave_sockets)
+            socket->remap_dmi(rdlat, wrlat);
+    }
+
     bool component::execute(const string& name, const vector<string>& args,
                             ostream& os) {
         command_base* cmd = get_command(name);

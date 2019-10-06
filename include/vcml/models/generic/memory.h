@@ -53,8 +53,7 @@ namespace vcml { namespace generic {
         inline unsigned char* get_data_ptr() const { return m_memory; }
 
         memory(const sc_module_name& name, u64 size, bool read_only = false,
-               const sc_core::sc_time& read_latency = sc_core::SC_ZERO_TIME,
-               const sc_core::sc_time& write_latency = sc_core::SC_ZERO_TIME);
+               unsigned int read_latency = 0, unsigned int write_latency = 0);
         virtual ~memory();
 
         VCML_KIND(memory);

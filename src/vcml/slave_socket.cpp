@@ -86,10 +86,21 @@ namespace vcml {
         /* nothing to do */
     }
 
-
     void slave_socket::unmap_dmi(u64 start, u64 end) {
         m_dmi_cache.invalidate(start, end);
         (*this)->invalidate_direct_mem_ptr(start, end);
+    }
+
+    void slave_socket::remap_dmi(const sc_time& rdlat, const sc_time& wrlat) {
+        for (auto dmi : m_dmi_cache.get_entries()) {
+            if (dmi.get_read_latency() != rdlat ||
+                dmi.get_write_latency() != wrlat) {
+                (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
+                                                   dmi.get_end_address());
+                dmi.set_read_latency(rdlat);
+                dmi.set_write_latency(wrlat);
+            }
+        }
     }
 
 }

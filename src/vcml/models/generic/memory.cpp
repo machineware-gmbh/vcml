@@ -85,7 +85,7 @@ namespace vcml { namespace generic {
     }
 
     memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
-                   const sc_core::sc_time& rlat, const sc_core::sc_time& wlat):
+                   unsigned int rlat, unsigned int wlat):
         peripheral(nm, host_endian(), rlat, wlat),
         m_memory(NULL),
         size("size", sz),

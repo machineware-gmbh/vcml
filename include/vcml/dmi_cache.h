@@ -40,6 +40,7 @@ namespace vcml {
         size_t get_entry_limit() const     { return m_limit; }
         void   set_entry_limit(size_t lim) { m_limit = lim; }
 
+        vector<tlm_dmi>& get_entries() { return m_entries; }
         const vector<tlm_dmi> get_entries() const { return m_entries; }
 
         dmi_cache();

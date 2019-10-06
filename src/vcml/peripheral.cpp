@@ -22,10 +22,12 @@
 namespace vcml {
 
     peripheral::peripheral(const sc_module_name& nm, vcml_endian endian,
-                           const sc_time& rlatency, const sc_time& wlatency):
+                           unsigned int rlatency, unsigned int wlatency):
         component(nm),
         m_current_cpu(SBI_NONE.cpuid),
         m_endian(endian),
+        m_rdlatency(SC_ZERO_TIME),
+        m_wrlatency(SC_ZERO_TIME),
         m_registers(),
         m_backends(),
         read_latency("read_latency", rlatency),
@@ -73,7 +75,7 @@ namespace vcml {
 
     void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
                              vcml_access acs) {
-        component::map_dmi(ptr, start, end, acs, read_latency, write_latency);
+        component::map_dmi(ptr, start, end, acs, m_rdlatency, m_wrlatency);
     }
 
     bool peripheral::bepeek() {
@@ -132,7 +134,7 @@ namespace vcml {
             }
 
             if (!info.is_debug)
-                dt += tx.is_read() ? read_latency : write_latency;
+                dt += tx.is_read() ? m_rdlatency : m_wrlatency;
         }
 
         tx.set_address(addr);
@@ -185,6 +187,17 @@ namespace vcml {
     tlm_response_status peripheral::write(const range& addr, const void* data,
                                           const sideband& info) {
         return TLM_INCOMPLETE_RESPONSE; // to be overloaded
+    }
+
+    void peripheral::handle_clock_update(clock_t oldclk, clock_t newclk) {
+        if (newclk == 0)
+            return;
+
+        sc_time cycle(1.0 / newclk, SC_SEC);
+        m_rdlatency = cycle * read_latency;
+        m_wrlatency = cycle * write_latency;
+
+        component::remap_dmi(m_rdlatency, m_wrlatency);
     }
 
 }

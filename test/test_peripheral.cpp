@@ -27,7 +27,9 @@ class mock_peripheral: public vcml::peripheral
 {
 public:
     mock_peripheral(const sc_core::sc_module_name& nm = "mock_peripheral"):
-        vcml::peripheral(nm) {
+        vcml::peripheral(nm, vcml::VCML_ENDIAN_LITTLE, 1, 10) {
+        CLOCK.stub(100 * vcml::MHz);
+        handle_clock_update(0, CLOCK.read());
     }
 
     MOCK_METHOD3(read, vcml::tlm_response_status(const vcml::range&, void*, const vcml::sideband&));
@@ -37,11 +39,8 @@ public:
 TEST(peripheral, transporting) {
     mock_peripheral mock;
     vcml::tlm_generic_payload tx;
-    sc_core::sc_time t;
+    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
     unsigned char buffer[10];
-
-    mock.read_latency = sc_core::sc_time(1, sc_core::SC_US);
-    mock.write_latency = sc_core::sc_time(10, sc_core::SC_US);
 
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, 4);
@@ -50,7 +49,7 @@ TEST(peripheral, transporting) {
     EXPECT_CALL(mock, write(_,_,_)).Times(0);
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
-    EXPECT_EQ(t, mock.read_latency);
+    EXPECT_EQ(t, cycle * mock.read_latency);
 
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, 4);
@@ -59,17 +58,14 @@ TEST(peripheral, transporting) {
     EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE)).WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
-    EXPECT_EQ(t, mock.write_latency);
+    EXPECT_EQ(t, cycle * mock.write_latency);
 }
 
 TEST(peripheral, transporting_debug) {
     mock_peripheral mock;
     vcml::tlm_generic_payload tx;
-    sc_core::sc_time t;
+    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
     unsigned char buffer[12];
-
-    mock.read_latency = sc_core::sc_time(1, sc_core::SC_US);
-    mock.write_latency = sc_core::sc_time(10, sc_core::SC_US);
 
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, 16);
@@ -79,7 +75,6 @@ TEST(peripheral, transporting_debug) {
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_DEBUG), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(t, sc_core::SC_ZERO_TIME);
-
 
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, 16);
@@ -94,12 +89,9 @@ TEST(peripheral, transporting_debug) {
 TEST(peripheral, transport_streaming) {
     mock_peripheral mock;
     vcml::tlm_generic_payload tx;
-    sc_core::sc_time t;
+    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
     unsigned char buffer[10];
     int npulses;
-
-    mock.read_latency = sc_core::sc_time(1, sc_core::SC_US);
-    mock.write_latency = sc_core::sc_time(10, sc_core::SC_US);
 
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
@@ -109,7 +101,7 @@ TEST(peripheral, transport_streaming) {
     EXPECT_CALL(mock, read(_,_,_)).Times(0);
     EXPECT_CALL(mock, write(vcml::range(tx), _, vcml::SBI_NONE)).Times(npulses);
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
-    EXPECT_EQ(t, mock.write_latency * npulses);
+    EXPECT_EQ(t, cycle *  mock.write_latency * npulses);
 
     t = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
@@ -119,17 +111,14 @@ TEST(peripheral, transport_streaming) {
     EXPECT_CALL(mock, read(vcml::range(tx), _, vcml::SBI_NONE)).Times(npulses);
     EXPECT_CALL(mock, write(_,_,_)).Times(0);
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
-    EXPECT_EQ(t, mock.read_latency * npulses);
+    EXPECT_EQ(t, cycle *  mock.read_latency * npulses);
 }
 
 TEST(peripheral, transporting_byte_enable) {
     mock_peripheral mock;
     vcml::tlm_generic_payload tx;
-    sc_core::sc_time t;
+    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
     unsigned char buffer[100];
-
-    mock.read_latency = sc_core::sc_time(1, sc_core::SC_US);
-    mock.write_latency = sc_core::sc_time(10, sc_core::SC_US);
 
     t = sc_core::SC_ZERO_TIME;
     vcml::u8 byte_enable[4] = { 0xff, 0x00, 0xff, 0x00 };
@@ -149,13 +138,13 @@ TEST(peripheral, transporting_byte_enable) {
     EXPECT_CALL(mock, write(vcml::range(11, 11), buffer + 7, vcml::SBI_NONE)).Times(0);
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
-    EXPECT_EQ(t, mock.write_latency);
+    EXPECT_EQ(t, cycle * mock.write_latency);
 }
 
 TEST(peripheral, transporting_byte_enable_with_streaming) {
     mock_peripheral mock;
     vcml::tlm_generic_payload tx;
-    sc_core::sc_time t;
+    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
     unsigned char buffer[100];
     int npulses;
 
@@ -177,5 +166,5 @@ TEST(peripheral, transporting_byte_enable_with_streaming) {
     EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE)).Times(0);
     EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
-    EXPECT_EQ(t, mock.write_latency * npulses);
+    EXPECT_EQ(t, cycle * mock.write_latency * npulses);
 }

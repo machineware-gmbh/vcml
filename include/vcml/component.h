@@ -106,6 +106,7 @@ namespace vcml {
                      const sc_time& write_latency = SC_ZERO_TIME);
         void unmap_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
+        void remap_dmi(const sc_time& rdlat, const sc_time& wrlat);
 
         bool execute(const string& name, const vector<string>& args,
                      ostream& os);
