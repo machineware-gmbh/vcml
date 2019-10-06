@@ -96,7 +96,7 @@ namespace vcml {
 
     template <typename T>
     void in_port<T>::stub(const T& retval) {
-        VCML_ERROR_ON(!is_stubbed(), "%s already stubbed", sc_in<T>::name());
+        VCML_ERROR_ON(is_stubbed(), "%s already stubbed", sc_in<T>::name());
 
         sc_simcontext* simc = sc_object::simcontext();
         simc->hierarchy_push(m_parent);
@@ -201,7 +201,7 @@ namespace vcml {
 
     template <typename T>
     void out_port<T>::stub() {
-        VCML_ERROR_ON(!is_stubbed(), "%s already stubbed", sc_out<T>::name());
+        VCML_ERROR_ON(is_stubbed(), "%s already stubbed", sc_out<T>::name());
 
         sc_simcontext* simc = sc_object::simcontext();
         simc->hierarchy_push(m_parent);
@@ -216,16 +216,14 @@ namespace vcml {
     private:
         std::map<unsigned int, PORT*> m_ports;
 
-        // disabled
-        port_list();
-        port_list(const port_list<PORT>&);
-
     public:
         typedef typename std::map<unsigned int, PORT*> map_type;
 
         typedef typename map_type::iterator iterator;
         typedef typename map_type::const_iterator const_iterator;
 
+        port_list() = delete;
+        port_list(const port_list<PORT>&) = delete;
         port_list(const sc_module_name& nm);
         virtual ~port_list();
 
