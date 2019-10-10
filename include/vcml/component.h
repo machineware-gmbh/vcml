@@ -32,14 +32,14 @@
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"
 #include "vcml/dmi_cache.h"
-#include "vcml/command.h"
+#include "vcml/module.h"
 
 namespace vcml {
 
     class master_socket;
     class slave_socket;
 
-    class component: public sc_module
+    class component: public module
     {
         friend class master_socket;
         friend class slave_socket;
@@ -56,14 +56,7 @@ namespace vcml {
         void unregister_socket(master_socket* socket);
         void unregister_socket(slave_socket* socket);
 
-        std::map<string, command_base*> m_commands;
-
-        bool cmd_clist(const vector<string>& args, ostream& os);
-        bool cmd_cinfo(const vector<string>& args, ostream& os);
         bool cmd_reset(const vector<string>& args, ostream& os);
-        bool cmd_abort(const vector<string>& args, ostream& os);
-
-        log_level default_log_level() const;
 
         void do_reset();
 
@@ -72,8 +65,6 @@ namespace vcml {
 
     public:
         property<bool> allow_dmi;
-        property<bool> trace_errors;
-        property<log_level> loglvl;
 
         in_port<clock_t> CLOCK;
         in_port<bool>    RESET;
@@ -91,9 +82,6 @@ namespace vcml {
         sc_time& offset(sc_process_b* proc = NULL);
         void sync(sc_process_b* proc = NULL);
 
-        void hierarchy_push();
-        void hierarchy_pop();
-
         const vector<master_socket*>& get_master_sockets() const;
         const vector<slave_socket*>& get_slave_sockets() const;
 
@@ -107,17 +95,6 @@ namespace vcml {
         void unmap_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
         void remap_dmi(const sc_time& rdlat, const sc_time& wrlat);
-
-        bool execute(const string& name, const vector<string>& args,
-                     ostream& os);
-
-        template <class T>
-        void register_command(const string& name, unsigned int argc,
-                    T* host, bool (T::*func)(const vector<string>&, ostream&),
-                    const string& description);
-
-        command_base* get_command(const string& name);
-        vector<command_base*> get_commands() const;
 
         virtual void b_transport(slave_socket* origin, tlm_generic_payload& tx,
                                  sc_time& dt);
@@ -134,26 +111,6 @@ namespace vcml {
         virtual void invalidate_dmi(u64 start, u64 end);
 
         virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
-
-#define VCML_DEFINE_LOG(log_name, level)                      \
-        inline void log_name(const char* format, ...) const { \
-            if (!logger::would_log(level) || level > loglvl)  \
-                return;                                       \
-            va_list args;                                     \
-            va_start(args, format);                           \
-            logger::log(level, name(), vmkstr(format, args)); \
-            va_end(args);                                     \
-        }
-
-        VCML_DEFINE_LOG(log_error, LOG_ERROR);
-        VCML_DEFINE_LOG(log_warn, LOG_WARN);
-        VCML_DEFINE_LOG(log_warning, LOG_WARN);
-        VCML_DEFINE_LOG(log_info, LOG_INFO);
-        VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
-#undef VCML_DEFINE_LOG
-
-        void trace_in(const tlm_generic_payload& tx) const;
-        void trace_out(const tlm_generic_payload& tx) const;
     };
 
     inline sc_time& component::offset(sc_process_b* proc) {
@@ -179,19 +136,6 @@ namespace vcml {
         to = SC_ZERO_TIME;
     }
 
-    inline void component::hierarchy_push() {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        VCML_ERROR_ON(!simc, "no simulation context");
-        simc->hierarchy_push(this);
-    }
-
-    inline void component::hierarchy_pop() {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        VCML_ERROR_ON(!simc, "no simulation context");
-        sc_module* top = simc->hierarchy_pop();
-        VCML_ERROR_ON(top != this, "broken hierarchy");
-    }
-
     inline const vector<master_socket*>& component::get_master_sockets() const {
         return m_master_sockets;
     }
@@ -202,33 +146,6 @@ namespace vcml {
 
     inline void component::unmap_dmi(const tlm_dmi& dmi) {
         unmap_dmi(dmi.get_start_address(), dmi.get_end_address());
-    }
-
-    template <class T>
-    void component::register_command(const string& name, unsigned int argc,
-                T* host, bool (T::*func)(const vector<string>&, ostream&),
-                const string& desc) {
-        if (stl_contains(m_commands, name))
-            VCML_ERROR("command '%s' already registered", name.c_str());
-        m_commands[name] = new command<T>(name, argc, desc, host, func);
-    }
-
-    inline command_base* component::get_command(const string& name) {
-        if (!stl_contains(m_commands, name))
-            return NULL;
-        return m_commands[name];
-    }
-
-    inline void component::trace_in(const tlm_generic_payload& tx) const {
-        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
-            return;
-        logger::log(LOG_TRACE, name(), ">> " + tlm_transaction_to_str(tx));
-    }
-
-    inline void component::trace_out(const tlm_generic_payload& tx) const {
-        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
-            return;
-        logger::log(LOG_TRACE, name(), "<< " + tlm_transaction_to_str(tx));
     }
 
 }

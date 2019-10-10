@@ -53,7 +53,7 @@ namespace vcml {
     }
 
     sd_initiator_stub::sd_initiator_stub(const sc_module_name& nm):
-        sc_module(nm),
+        module(nm),
         sd_bw_transport_if(),
         SD_OUT("SD_OUT") {
         SD_OUT.bind(*this);
@@ -64,26 +64,23 @@ namespace vcml {
     }
 
     sd_status sd_target_stub::sd_transport(sd_command& tx) {
-        string msg = mkstr("received SD CMD%hhu (%u)", tx.opcode, tx.argument);
-        logger::log(LOG_DEBUG, name(), msg);
+        log_debug("received SD CMD%hhu (%u)", tx.opcode, tx.argument);
         tx.resp_len = 0;
         return SD_OK;
     }
 
     sd_tx_status sd_target_stub::sd_data_read(u8& val) {
-        string msg = mkstr("data read request");
-        logger::log(LOG_DEBUG, name(), msg);
+        log_debug("stubbed data read request");
         return SDTX_ERR_ILLEGAL;
     }
 
     sd_rx_status sd_target_stub::sd_data_write(u8 data) {
-        string msg = mkstr("data write request [%02hhx]", data);
-        logger::log(LOG_DEBUG, name(), msg);
+        log_debug("stubbed data write request [%02hhx]", data);
         return SDRX_OK;
     }
 
     sd_target_stub::sd_target_stub(const sc_module_name& nm):
-        sc_module(nm),
+        module(nm),
         sd_fw_transport_if(),
         SD_IN("SD_IN") {
         SD_IN.bind(*this);

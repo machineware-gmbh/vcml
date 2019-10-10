@@ -61,6 +61,7 @@
 #include "vcml/stubs.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/command.h"
+#include "vcml/module.h"
 #include "vcml/component.h"
 #include "vcml/master_socket.h"
 #include "vcml/slave_socket.h"

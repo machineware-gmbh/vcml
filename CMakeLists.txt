@@ -68,6 +68,7 @@ set(sources
     "${src}/vcml/sbi.cpp"
     "${src}/vcml/dmi_cache.cpp"
     "${src}/vcml/exmon.cpp"
+    "${src}/vcml/module.cpp"
     "${src}/vcml/component.cpp"
     "${src}/vcml/master_socket.cpp"
     "${src}/vcml/slave_socket.cpp"

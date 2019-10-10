@@ -53,7 +53,7 @@ namespace vcml {
     }
 
     spi_initiator_stub::spi_initiator_stub(const sc_module_name& nm):
-        sc_module(nm),
+        module(nm),
         spi_bw_transport_if(),
         SPI_OUT("SPI_OUT") {
         SPI_OUT.bind(*this);
@@ -65,13 +65,12 @@ namespace vcml {
 
 
     u8 spi_target_stub::spi_transport(u8 val) {
-        string msg = mkstr("received 0x%02x", (unsigned int)val);
-        logger::log(LOG_DEBUG, name(), msg);
+        log_debug("received 0x%02x", (unsigned int)val);
         return 0xff;
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):
-        sc_module(nm),
+        module(nm),
         spi_fw_transport_if(),
         SPI_IN("SPI_IN") {
         SPI_IN.bind(*this);

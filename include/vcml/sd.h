@@ -93,7 +93,7 @@ namespace vcml {
         virtual sc_core::sc_type_index get_protocol_types() const;
     };
 
-    class sd_initiator_stub: public sc_module, protected sd_bw_transport_if
+    class sd_initiator_stub: public module, protected sd_bw_transport_if
     {
     public:
         sd_initiator_socket SD_OUT;
@@ -102,7 +102,7 @@ namespace vcml {
         VCML_KIND(sd_initiator_stub);
     };
 
-    class sd_target_stub: public sc_module, protected sd_fw_transport_if
+    class sd_target_stub: public module, protected sd_fw_transport_if
     {
     protected:
         virtual sd_status sd_transport(sd_command& cmd) override;

@@ -57,7 +57,7 @@ namespace vcml {
         virtual sc_core::sc_type_index get_protocol_types() const;
     };
 
-    class spi_initiator_stub: public sc_module, protected spi_bw_transport_if
+    class spi_initiator_stub: public module, protected spi_bw_transport_if
     {
     public:
         spi_initiator_socket SPI_OUT;
@@ -66,7 +66,7 @@ namespace vcml {
         VCML_KIND(spi_initiator_stub);
     };
 
-    class spi_target_stub: public sc_module, protected spi_fw_transport_if
+    class spi_target_stub: public module, protected spi_fw_transport_if
     {
     protected:
         virtual u8 spi_transport(u8 val) override;

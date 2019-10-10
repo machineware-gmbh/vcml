@@ -42,44 +42,10 @@ namespace vcml {
         stl_remove_erase(m_slave_sockets, socket);
     }
 
-    bool component::cmd_clist(const vector<string>& args, ostream& os) {
-        for (auto cmd : m_commands)
-            os << cmd.first << ",";
-        return true;
-    }
-
-    bool component::cmd_cinfo(const vector<string>& args, ostream& os) {
-        command_base* cmd = get_command(args[0]);
-        if (cmd == NULL) {
-            os << "no such command: " << args[0];
-            return false;
-        }
-
-        os << cmd->desc();
-        return true;
-    }
-
     bool component::cmd_reset(const vector<string>& args, ostream& os) {
         do_reset();
         os << "OK";
         return true;
-    }
-
-    bool component::cmd_abort(const vector<string>& args, ostream& os) {
-        std::abort();
-        return true;
-    }
-
-    log_level component::default_log_level() const {
-        sc_object* obj = get_parent_object();
-        while (obj != NULL) {
-            component* comp = dynamic_cast<component*>(obj);
-            if (comp)
-                return comp->loglvl;
-            obj = obj->get_parent_object();
-        }
-
-        return LOG_INFO;
     }
 
     void component::do_reset() {
@@ -114,15 +80,12 @@ namespace vcml {
     }
 
     component::component(const sc_module_name& nm, bool dmi):
-        sc_module(nm),
+        module(nm),
         m_curclk(),
         m_offsets(),
         m_master_sockets(),
         m_slave_sockets(),
-        m_commands(),
         allow_dmi("allow_dmi", dmi),
-        trace_errors("trace_errors", false),
-        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()),
         CLOCK("CLOCK"),
         RESET("RESET") {
         SC_METHOD(clock_handler);
@@ -133,14 +96,8 @@ namespace vcml {
         sensitive << RESET.pos();
         dont_initialize();
 
-        register_command("clist", 0, this, &component::cmd_clist,
-                         "returns a list of supported commands");
-        register_command("cinfo", 1, this, &component::cmd_cinfo,
-                         "returns information on a given command");
         register_command("reset", 0 ,this, &component::cmd_reset,
                          "resets this component");
-        register_command("abort", 0, this, &component::cmd_abort,
-                         "immediately aborts the simulation");
     }
 
     component::~component() {
@@ -204,31 +161,6 @@ namespace vcml {
     void component::remap_dmi(const sc_time& rdlat, const sc_time& wrlat) {
         for (auto socket : m_slave_sockets)
             socket->remap_dmi(rdlat, wrlat);
-    }
-
-    bool component::execute(const string& name, const vector<string>& args,
-                            ostream& os) {
-        command_base* cmd = get_command(name);
-        if (!cmd) {
-            os << "command '" << name << "' not supported";
-            return false;
-        }
-
-        if (args.size() < cmd->argc()) {
-            os << "command '" << name << "' requires " << cmd->argc() << " "
-               << "arguments (" << args.size() << " given)";
-            return false;
-        }
-
-        return cmd->execute(args, os);
-    }
-
-    vector<command_base*> component::get_commands() const {
-        vector<command_base*> list;
-        for (auto cmd : m_commands)
-            if (cmd.second != NULL)
-                list.push_back(cmd.second);
-        return list;
     }
 
     void component::b_transport(slave_socket* origin, tlm_generic_payload& tx,

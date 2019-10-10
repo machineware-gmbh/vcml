@@ -114,7 +114,7 @@ namespace vcml { namespace debugging {
         if (obj == NULL)
             return mkstr("object '%s' not found", name.c_str());
 
-        component* mod = dynamic_cast<component*>(obj);
+        module* mod = dynamic_cast<module*>(obj);
         if (!mod)
             return mkstr("object '%s' does not support commands", name.c_str());
 
