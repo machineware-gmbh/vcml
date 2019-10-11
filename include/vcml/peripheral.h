@@ -79,8 +79,6 @@ namespace vcml {
 
         virtual void reset() override;
 
-        void sync(sc_time& dt);
-
         void add_register(reg_base* reg);
         void remove_register(reg_base* reg);
 
@@ -93,9 +91,9 @@ namespace vcml {
         template <typename T> size_t beread(T& val);
         template <typename T> size_t bewrite(const T& val);
 
-        virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
+        virtual unsigned int transport(tlm_generic_payload& tx,
                                        const sideband& info) override;
-        virtual unsigned int receive(tlm_generic_payload& tx, sc_time& dt,
+        virtual unsigned int receive(tlm_generic_payload& tx,
                                      const sideband& info);
 
         virtual tlm_response_status read  (const range& addr, void* data,
@@ -117,13 +115,6 @@ namespace vcml {
 
     inline bool peripheral::is_host_endian() const {
         return m_endian == host_endian();
-    }
-
-    inline void peripheral::sync(sc_time& dt) {
-        if (dt != SC_ZERO_TIME) {
-            wait(dt);
-            dt = SC_ZERO_TIME;
-        }
     }
 
     template <typename T>

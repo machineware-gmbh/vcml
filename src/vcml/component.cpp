@@ -82,7 +82,7 @@ namespace vcml {
     component::component(const sc_module_name& nm, bool dmi):
         module(nm),
         m_curclk(),
-        m_offsets(),
+        m_proctimes(),
         m_master_sockets(),
         m_slave_sockets(),
         allow_dmi("allow_dmi", dmi),
@@ -113,13 +113,43 @@ namespace vcml {
         if (!is_thread())
             return;
 
+        sc_time now = sc_time_stamp();
         while (CLOCK <= 0 || RESET) {
             if (CLOCK <= 0)
                 wait(CLOCK.default_event());
             if (RESET)
                 wait(RESET.negedge_event());
         }
+
+        local_time() += sc_time_stamp() - now;
     }
+
+    sc_time component::clock_cycle() const {
+        if (CLOCK <= 0)
+            return SC_ZERO_TIME;
+        return sc_time(1.0 / CLOCK, SC_SEC);
+    }
+
+    sc_time& component::local_time(sc_process_b* proc) {
+        if (proc == nullptr)
+            proc = sc_get_current_process_b();
+        if (!stl_contains(m_proctimes, proc))
+            m_proctimes[proc] = sc_time_stamp();
+        return m_proctimes[proc];
+    }
+
+    void component::sync(sc_process_b* proc) {
+        if (proc == nullptr)
+            proc = sc_get_current_process_b();
+        if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
+            VCML_ERROR("attempt to sync outside of SC_THREAD process");
+
+        sc_time now = sc_time_stamp();
+        sc_time local = local_time(proc);
+        VCML_ERROR_ON(local < now, "process %s behind sim time", proc->name());
+        wait(local - now);
+    }
+
 
     master_socket* component::get_master_socket(const string& name) const {
         for (auto socket : m_master_sockets)
@@ -169,7 +199,15 @@ namespace vcml {
             trace_in(tx);
 
         wait_clock_reset();
-        transport(tx, dt, tx_get_sbi(tx));
+
+        sc_time now = sc_time_stamp();
+        sc_time& local = local_time();
+        local = now + dt;
+
+        transport(tx, tx_get_sbi(tx));
+
+        now = sc_time_stamp();
+        dt = local > now ? local - now : SC_ZERO_TIME;
 
         if (!trace_errors || failed(tx.get_response_status()))
             trace_out(tx);
@@ -177,9 +215,8 @@ namespace vcml {
 
     unsigned int component::transport_dbg(slave_socket* origin,
                                           tlm_generic_payload& tx) {
-        sc_time zero = SC_ZERO_TIME;
         sc_time t1 = sc_time_stamp();
-        unsigned int bytes = transport(tx, zero, tx_get_sbi(tx) | SBI_DEBUG);
+        unsigned int bytes = transport(tx, tx_get_sbi(tx) | SBI_DEBUG);
         sc_time t2 = sc_time_stamp();
         VCML_ERROR_ON(t1 != t2, "time advance during debug call");
         return bytes;
@@ -196,7 +233,7 @@ namespace vcml {
         invalidate_dmi(start, end);
     }
 
-    unsigned int component::transport(tlm_generic_payload& tx, sc_time& dt,
+    unsigned int component::transport(tlm_generic_payload& tx,
                                       const sideband& info) {
         return 0; // to be overloaded
     }

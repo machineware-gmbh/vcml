@@ -52,7 +52,8 @@ namespace vcml {
                      public debugging::gdbstub {
     private:
         double m_run_time;
-        u64    m_num_cycles;
+        u64    m_curr_cycle_count;
+        u64    m_prev_cycle_count;
         elf*   m_symbols;
 
         debugging::gdbserver* m_gdb;
@@ -102,11 +103,13 @@ namespace vcml {
         virtual void set_stack_pointer(u64 val)   {}
         virtual void set_core_id(u64 val)         {}
 
-        u64 get_num_cycles()  const { return m_num_cycles; }
-        double get_run_time() const { return m_run_time; }
-        double get_cps()      const { return m_num_cycles / m_run_time; }
+        virtual u64 cycle_count() const { return m_curr_cycle_count; }
 
-        virtual void reset();
+        double get_run_time() const { return m_run_time; }
+        double get_cps()      const { return cycle_count() / m_run_time; }
+
+        virtual void reset() override;
+        virtual sc_time& local_time(sc_process_b* proc = nullptr) override;
 
         bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
 

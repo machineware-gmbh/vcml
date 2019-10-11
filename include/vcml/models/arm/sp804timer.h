@@ -141,8 +141,8 @@ namespace vcml { namespace arm {
         virtual ~sp804timer();
         VCML_KIND(arm::sp804timer);
 
-        virtual unsigned int receive(tlm_generic_payload& tx, sc_time& offset,
-                                     const sideband& info);
+        virtual unsigned int receive(tlm_generic_payload& tx,
+                                     const sideband& info) override;
         virtual void reset();
     };
 

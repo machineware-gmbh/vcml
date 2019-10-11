@@ -45,7 +45,7 @@ namespace vcml {
         friend class slave_socket;
     private:
         clock_t m_curclk;
-        std::unordered_map<sc_process_b*, sc_time> m_offsets;
+        std::unordered_map<sc_process_b*, sc_time> m_proctimes;
 
         vector<master_socket*> m_master_sockets;
         vector<slave_socket*> m_slave_sockets;
@@ -78,9 +78,10 @@ namespace vcml {
         virtual void reset();
         virtual void wait_clock_reset();
 
-        const sc_time& get_offset(sc_process_b* proc = NULL) const;
-        sc_time& offset(sc_process_b* proc = NULL);
-        void sync(sc_process_b* proc = NULL);
+        virtual sc_time clock_cycle() const;
+
+        virtual sc_time& local_time(sc_process_b* proc = nullptr);
+        virtual void sync(sc_process_b* proc = nullptr);
 
         const vector<master_socket*>& get_master_sockets() const;
         const vector<slave_socket*>& get_slave_sockets() const;
@@ -106,35 +107,12 @@ namespace vcml {
         virtual void invalidate_direct_mem_ptr(master_socket* origin,
                                                u64 start, u64 end);
 
-        virtual unsigned int transport(tlm_generic_payload& tx, sc_time& dt,
+        virtual unsigned int transport(tlm_generic_payload& tx,
                                        const sideband& info);
         virtual void invalidate_dmi(u64 start, u64 end);
 
         virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
     };
-
-    inline sc_time& component::offset(sc_process_b* proc) {
-        return m_offsets[proc ? proc : sc_get_current_process_b()];
-    }
-
-    inline const sc_time& component::get_offset(sc_process_b* proc) const {
-        if (proc == NULL)
-            proc = sc_get_current_process_b();
-        if (!stl_contains(m_offsets, proc))
-            return SC_ZERO_TIME;
-        return m_offsets.at(proc);
-    }
-
-    inline void component::sync(sc_process_b* proc) {
-        if (proc == NULL)
-            proc = sc_get_current_process_b();
-        if (proc == NULL || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
-            VCML_ERROR("attempt to sync outside of SC_THREAD process");
-
-        sc_time& to = offset(proc);
-        wait(to);
-        to = SC_ZERO_TIME;
-    }
 
     inline const vector<master_socket*>& component::get_master_sockets() const {
         return m_master_sockets;

@@ -223,7 +223,6 @@ namespace vcml {
 
     void processor::processor_thread() {
         wait(SC_ZERO_TIME);
-
         while (true) {
             // check for standby requests
             wait_clock_reset();
@@ -243,12 +242,13 @@ namespace vcml {
             else
                 simulate(num_cycles);
 
-            m_num_cycles += num_cycles;
-            m_run_time   += realtime() - start;
+            m_run_time += realtime() - start;
+            m_curr_cycle_count += num_cycles;
 
-            sc_time delay((double)num_cycles / (double)qcurclk, SC_SEC);
-            wait(delay + offset());
-            offset() = SC_ZERO_TIME;
+            if(m_curr_cycle_count != cycle_count())
+                VCML_ERROR("processor cycle count mismatch");
+
+            wait(local_time() - sc_time_stamp());
         }
     }
 
@@ -280,7 +280,8 @@ namespace vcml {
     processor::processor(const sc_module_name& nm):
         component(nm),
         m_run_time(0),
-        m_num_cycles(0),
+        m_curr_cycle_count(0),
+        m_prev_cycle_count(0),
         m_symbols(NULL),
         m_gdb(NULL),
         m_irq_stats(),
@@ -337,8 +338,21 @@ namespace vcml {
     }
 
     void processor::reset() {
-        m_num_cycles = 0;
+        component::reset();
+
+        m_curr_cycle_count = 0;
+        m_prev_cycle_count = 0;
         m_run_time = 0.0;
+    }
+
+    sc_time& processor::local_time(sc_process_b* proc) {
+        u64 ncycles = cycle_count();
+        VCML_ERROR_ON(ncycles < m_prev_cycle_count, "cycle count goes down");
+
+        sc_time& local = component::local_time(proc);
+        local += clock_cycle() * (ncycles - m_prev_cycle_count);
+        m_prev_cycle_count = ncycles;
+        return local;
     }
 
     bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {

@@ -82,7 +82,18 @@ namespace vcml {
         } else {
             if (info.is_sync)
                 m_host->sync();
-            (*this)->b_transport(tx, m_host->offset());
+
+            sc_time now = sc_time_stamp();
+            sc_time local = m_host->local_time();
+            VCML_ERROR_ON(local < now, "local time behind simulation time");
+            sc_time offset = local - now;
+
+            (*this)->b_transport(tx, offset);
+
+            now = sc_time_stamp() + offset;
+            VCML_ERROR_ON(now < local, "b_transport time went backwards");
+            m_host->local_time() += now - local;
+
             if (info.is_sync)
                 m_host->sync();
             bytes = tx.is_response_ok() ? tx.get_data_length() : 0;
@@ -129,7 +140,7 @@ namespace vcml {
         }
 
         if (!info.is_debug) {
-            m_host->offset() += latency;
+            m_host->local_time() += latency;
             if (info.is_sync)
                 m_host->sync();
         }

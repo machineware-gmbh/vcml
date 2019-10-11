@@ -100,7 +100,7 @@ namespace vcml {
         return size;
     }
 
-    unsigned int peripheral::transport(tlm_generic_payload& tx, sc_time& dt,
+    unsigned int peripheral::transport(tlm_generic_payload& tx,
                                        const sideband& info) {
         sc_dt::uint64 addr = tx.get_address();
         unsigned char* ptr = tx.get_data_ptr();
@@ -119,7 +119,7 @@ namespace vcml {
             if (be_ptr == NULL) {
                 tx.set_data_ptr(ptr + pulse * streaming_width);
                 tx.set_data_length(streaming_width);
-                nbytes += receive(tx, dt, info);
+                nbytes += receive(tx, info);
             } else {
                 for (unsigned int byte = 0; byte < streaming_width; byte++) {
                     if (be_ptr[be_index++ % be_length] == 0x00)
@@ -131,12 +131,12 @@ namespace vcml {
                     tx.set_streaming_width(1);
                     tx.set_byte_enable_ptr(NULL);
                     tx.set_byte_enable_length(0);
-                    nbytes += receive(tx, dt, info);
+                    nbytes += receive(tx, info);
                 }
             }
 
             if (!info.is_debug)
-                dt += tx.is_read() ? m_rdlatency : m_wrlatency;
+                local_time() += tx.is_read() ? m_rdlatency : m_wrlatency;
         }
 
         tx.set_address(addr);
@@ -149,7 +149,7 @@ namespace vcml {
         return nbytes;
     }
 
-    unsigned int peripheral::receive(tlm_generic_payload& tx, sc_time& dt,
+    unsigned int peripheral::receive(tlm_generic_payload& tx,
                                      const sideband& info) {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
@@ -159,7 +159,7 @@ namespace vcml {
         for (auto reg : m_registers)
             if (reg->get_range().overlaps(tx)) {
                 if (reg->needs_sync(tx) && !info.is_debug)
-                    sync(dt);
+                    sync();
                 bytes += reg->receive(tx, info);
                 nregs ++;
             }
@@ -192,13 +192,8 @@ namespace vcml {
     }
 
     void peripheral::handle_clock_update(clock_t oldclk, clock_t newclk) {
-        if (newclk == 0)
-            return;
-
-        sc_time cycle(1.0 / newclk, SC_SEC);
-        m_rdlatency = cycle * read_latency;
-        m_wrlatency = cycle * write_latency;
-
+        m_rdlatency = clock_cycle() * read_latency;
+        m_wrlatency = clock_cycle() * write_latency;
         component::remap_dmi(m_rdlatency, m_wrlatency);
     }
 

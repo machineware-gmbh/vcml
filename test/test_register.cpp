@@ -59,198 +59,207 @@ public:
 
 TEST(registers, read) {
     mock_peripheral mock;
-
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
+
     unsigned char buffer [] = { 0xcc, 0xcc, 0xcc, 0xcc };
     unsigned char expect [] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_a = 0x1337;
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
+    EXPECT_EQ(mock.transport(tx,  vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0x00001337u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(buffer[0], expect[0]);
     EXPECT_EQ(buffer[1], expect[1]);
     EXPECT_EQ(buffer[2], expect[2]);
     EXPECT_EQ(buffer[3], expect[3]);
-    EXPECT_EQ(t, cycle * mock.read_latency);
+    EXPECT_EQ(local, cycle * mock.read_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
 TEST(registers, read_callback) {
     mock_peripheral mock;
-
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
+
     unsigned char buffer [] = { 0xcc, 0xcc, 0xcc, 0xcc };
     unsigned char expect [] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_b = 0x1337;
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, sizeof(buffer));
 
-
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0x00001337u);
     EXPECT_EQ(buffer[0], expect[0]);
     EXPECT_EQ(buffer[1], expect[1]);
     EXPECT_EQ(buffer[2], expect[2]);
     EXPECT_EQ(buffer[3], expect[3]);
-    EXPECT_EQ(t, cycle * mock.read_latency);
+    EXPECT_EQ(local, cycle * mock.read_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
 TEST(registers, write) {
     mock_peripheral mock;
-
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
+
     unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
 
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0x44332211u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
 TEST(registers, write_callback) {
     mock_peripheral mock;
-
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
+
     u32 value = 0x98765432;
     unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
 
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_write(0x44332211)).WillOnce(Return(value));
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0xffffffff);
     EXPECT_EQ(mock.test_reg_b, value);
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
 TEST(registers, read_byte_enable) {
     mock_peripheral mock;
-
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
+
     unsigned char buffer [] = { 0xcc, 0xcc, 0x00, 0x00 };
     unsigned char bebuff [] = { 0xff, 0xff, 0x00, 0x00 };
     unsigned char expect [] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_a = 0x1337;
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 2);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 2);
     EXPECT_EQ(mock.test_reg_a, 0x00001337u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(buffer[0], expect[0]);
     EXPECT_EQ(buffer[1], expect[1]);
     EXPECT_EQ(buffer[2], expect[2]);
     EXPECT_EQ(buffer[3], expect[3]);
-    EXPECT_EQ(t, cycle * mock.read_latency);
+    EXPECT_EQ(local, cycle * mock.read_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
 TEST(registers, write_byte_enable) {
     mock_peripheral mock;
-
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
+
     unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
     unsigned char bebuff [] = { 0xff, 0x00, 0xff, 0x00 };
 
     mock.test_reg_a = 0;
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 2);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 2);
     EXPECT_EQ(mock.test_reg_a, 0x00330011u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
 TEST(registers, permissions) {
     mock_peripheral mock;
 
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
+
     tlm::tlm_generic_payload tx;
     unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
 
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     mock.test_reg_b.allow_read();
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_write(_)).Times(0);
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
 
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     mock.test_reg_b.allow_write();
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_read()).Times(0);
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
-    EXPECT_EQ(t, cycle * mock.read_latency);
+    EXPECT_EQ(local, cycle * mock.read_latency);
 }
 
 TEST(registers, misaligned_accesses) {
     mock_peripheral mock;
 
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
+
     tlm::tlm_generic_payload tx;
     unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
 
     mock.test_reg_a = 0;
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 2);
 
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 2);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 2);
     EXPECT_EQ(mock.test_reg_a, 0x00221100u);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 4);
 
     EXPECT_CALL(mock, reg_write(0xffffff44)).WillOnce(Return(0xffffff44));
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4); // !
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 4); // !
     EXPECT_EQ(mock.test_reg_a, 0x33221100u);
     EXPECT_EQ(mock.test_reg_b, 0xffffff44u); // !
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 
     unsigned char largebuf [8] = { 0xff };
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, largebuf, 8);
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 8);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 8);
     EXPECT_EQ(largebuf[0], 0x00);
     EXPECT_EQ(largebuf[1], 0x11);
     EXPECT_EQ(largebuf[2], 0x22);
@@ -259,7 +268,7 @@ TEST(registers, misaligned_accesses) {
     EXPECT_EQ(largebuf[5], 0xff);
     EXPECT_EQ(largebuf[6], 0xff);
     EXPECT_EQ(largebuf[7], 0xff);
-    EXPECT_EQ(t, cycle * mock.read_latency);
+    EXPECT_EQ(local, cycle * mock.read_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }
 
@@ -267,7 +276,8 @@ TEST(registers, banking) {
     mock_peripheral mock;
     mock.test_reg_a.set_banked();
 
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+
     tlm::tlm_generic_payload tx;
     vcml::sbiext bank;
     vcml::sideband bank1, bank2;
@@ -283,26 +293,26 @@ TEST(registers, banking) {
     buffer = val1;
     bank.cpuid = 1;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, bank1), 1);
+    EXPECT_EQ(mock.transport(tx, bank1), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = val2;
     bank.cpuid = 2;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, bank2), 1);
+    EXPECT_EQ(mock.transport(tx, bank2), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = 0x0;
     bank.cpuid = 1;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, bank1), 1);
+    EXPECT_EQ(mock.transport(tx, bank1), 1);
     EXPECT_TRUE(tx.is_response_ok());
     EXPECT_EQ(buffer, val1);
 
     buffer = 0x0;
     bank.cpuid = 2;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
-    EXPECT_EQ(mock.transport(tx, t, bank2), 1);
+    EXPECT_EQ(mock.transport(tx, bank2), 1);
     EXPECT_TRUE(tx.is_response_ok());
     EXPECT_EQ(buffer, val2);
 
@@ -313,22 +323,24 @@ TEST(registers, endianess) {
     mock_peripheral mock;
     mock.set_big_endian();
 
-    sc_core::sc_time t, cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);;
+    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
+
     tlm::tlm_generic_payload tx;
     u32 buffer = 0;
 
     mock.test_reg_a = 0x11223344;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 4);
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 4);
     EXPECT_EQ(buffer, 0x44332211);
-    EXPECT_EQ(t, cycle * mock.read_latency);
+    EXPECT_EQ(local, cycle * mock.read_latency);
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = 0xeeff00cc;
-    t = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 4);
-    EXPECT_EQ(mock.transport(tx, t, vcml::SBI_NONE), 4);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 4);
     EXPECT_EQ(mock.test_reg_a, 0xcc00ffeeu);
-    EXPECT_EQ(t, cycle * mock.write_latency);
+    EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 }

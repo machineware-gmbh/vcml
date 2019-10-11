@@ -35,7 +35,7 @@ public:
         IN("IN") {
     }
 
-    MOCK_METHOD3(transport, unsigned int(tlm::tlm_generic_payload&, sc_core::sc_time&, const vcml::sideband&));
+    MOCK_METHOD2(transport, unsigned int(tlm::tlm_generic_payload&, const vcml::sideband&));
 };
 
 TEST(component, sockets) {
@@ -60,7 +60,7 @@ TEST(component, sockets) {
 
     mock2.map_dmi(dmi_ptr, 0, 3, vcml::VCML_ACCESS_READ);
 
-    EXPECT_CALL(mock2, transport(_,_,_)).WillOnce(Return(sizeof(data)));
+    EXPECT_CALL(mock2, transport(_,_)).WillOnce(Return(sizeof(data)));
     mock1.OUT.readw(0, data);
     EXPECT_TRUE(mock1.OUT.dmi().lookup(0, 4, tlm::TLM_READ_COMMAND, dmi));
     EXPECT_TRUE(dmi.is_read_allowed());
@@ -68,6 +68,6 @@ TEST(component, sockets) {
     EXPECT_FALSE(dmi.is_read_write_allowed());
     EXPECT_EQ(dmi.get_dmi_ptr(), dmi_ptr);
 
-    EXPECT_CALL(mock1, transport(_,_,_)).WillOnce(Return(sizeof(data)));
+    EXPECT_CALL(mock1, transport(_,_)).WillOnce(Return(sizeof(data)));
     mock2.OUT.writew(0, data);
 }
