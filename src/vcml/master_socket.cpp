@@ -83,7 +83,6 @@ namespace vcml {
             if (info.is_sync || m_host->needs_sync())
                 m_host->sync();
 
-            m_host->update_local_time();
             sc_time& offset = m_host->local_time();
             sc_time local = sc_time_stamp() + offset;
 

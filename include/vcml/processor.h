@@ -52,7 +52,7 @@ namespace vcml {
                      protected debugging::gdbstub {
     private:
         double m_run_time;
-        u64    m_prev_cycle_count;
+        u64    m_cycle_count;
         elf*   m_symbols;
 
         debugging::gdbserver* m_gdb;
@@ -124,7 +124,7 @@ namespace vcml {
 
         virtual void interrupt(unsigned int irq, bool set);
         virtual void simulate(unsigned int cycles) = 0;
-        virtual void update_local_time() override;
+        virtual void update_local_time(sc_time& local_time) override;
         virtual void end_of_elaboration() override;
 
         virtual u64  gdb_num_registers() override;

@@ -323,9 +323,10 @@ namespace vcml {
             if (needs_sync())
                 sync();
 
-            // check that sync() advanced processor beyond quantum start time
+            // check that local time advanced beyond quantum start time
             // if we fail here, we have most likely a broken cycle_count()
-            VCML_ERROR_ON(local_time_stamp() == now, "%s stuck in time", name());
+            if (local_time_stamp() == now)
+                VCML_ERROR("processor %s is stuck in time", name());
         }
     }
 
@@ -359,7 +360,7 @@ namespace vcml {
     processor::processor(const sc_module_name& nm):
         component(nm),
         m_run_time(0),
-        m_prev_cycle_count(0),
+        m_cycle_count(0),
         m_symbols(NULL),
         m_gdb(NULL),
         m_irq_stats(),
@@ -417,7 +418,7 @@ namespace vcml {
 
     void processor::reset() {
         component::reset();
-        m_prev_cycle_count = 0;
+        m_cycle_count = 0;
         m_run_time = 0.0;
     }
 
@@ -453,11 +454,11 @@ namespace vcml {
         // to be overloaded
     }
 
-    void processor::update_local_time() {
-        u64 curr_cycle_count = cycle_count();
-        VCML_ERROR_ON(curr_cycle_count < m_prev_cycle_count, "cycle count goes down");
-        local_time() += clock_cycles(curr_cycle_count - m_prev_cycle_count);
-        m_prev_cycle_count = curr_cycle_count;
+    void processor::update_local_time(sc_time& local_time) {
+        u64 cycles = cycle_count();
+        VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
+        local_time += clock_cycles(cycles - m_cycle_count);
+        m_cycle_count = cycles;
     }
 
     void processor::end_of_elaboration() {

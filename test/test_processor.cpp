@@ -42,7 +42,6 @@ public:
 
         simulatem(n);
         cycles += n;
-        update_local_time();
 
         ASSERT_EQ(local_time(), clock_cycles(n));
     }

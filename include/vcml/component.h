@@ -81,11 +81,10 @@ namespace vcml {
         sc_time clock_cycle() const;
         sc_time clock_cycles(u64 num) const;
 
-              sc_time& local_time(sc_process_b* proc = nullptr);
-        const sc_time& local_time(sc_process_b* proc = nullptr) const;
-              sc_time  local_time_stamp(sc_process_b* proc = nullptr) const;
+        sc_time& local_time(sc_process_b* proc = nullptr);
+        sc_time  local_time_stamp(sc_process_b* proc = nullptr);
 
-        bool needs_sync(sc_process_b* proc = nullptr) const;
+        bool needs_sync(sc_process_b* proc = nullptr);
         void sync(sc_process_b* proc = nullptr);
 
         const vector<master_socket*>& get_master_sockets() const;
@@ -116,7 +115,7 @@ namespace vcml {
                                        const sideband& info);
         virtual void invalidate_dmi(u64 start, u64 end);
 
-        virtual void update_local_time();
+        virtual void update_local_time(sc_time& local_time);
         virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
     };
 

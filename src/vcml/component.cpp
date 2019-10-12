@@ -70,7 +70,6 @@ namespace vcml {
         }
 
         log_debug("changed clock from %ldHz to %ldHz", m_curclk, newclk);
-        update_local_time();
         handle_clock_update(m_curclk, newclk);
 
         m_curclk = newclk;
@@ -133,22 +132,17 @@ namespace vcml {
             proc = sc_get_current_process_b();
         if (!stl_contains(m_offsets, proc))
              m_offsets[proc] = SC_ZERO_TIME;
-        return m_offsets[proc];
+
+        sc_time& local = m_offsets[proc];
+        update_local_time(local);
+        return local;
     }
 
-    const sc_time& component::local_time(sc_process_b* proc) const {
-        if (proc == nullptr)
-            proc = sc_get_current_process_b();
-        if (!stl_contains(m_offsets, proc))
-            return SC_ZERO_TIME;
-        return m_offsets.at(proc);
-    }
-
-    sc_time component::local_time_stamp(sc_process_b* proc) const {
+    sc_time component::local_time_stamp(sc_process_b* proc) {
         return sc_time_stamp() + local_time(proc);
     }
 
-    bool component::needs_sync(sc_process_b* proc) const {
+    bool component::needs_sync(sc_process_b* proc) {
         if (proc == nullptr)
             proc = sc_get_current_process_b();
         if (!is_thread(proc))
@@ -164,9 +158,7 @@ namespace vcml {
         if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
             VCML_ERROR("attempt to sync outside of SC_THREAD process");
 
-        update_local_time();
         sc_time& offset = local_time(proc);
-
         if (offset > SC_ZERO_TIME) {
             wait(offset);
             offset = SC_ZERO_TIME;
@@ -260,7 +252,7 @@ namespace vcml {
         // to be overloaded
     }
 
-    void component::update_local_time() {
+    void component::update_local_time(sc_time& local_time) {
         // to be overloaded
     }
 
