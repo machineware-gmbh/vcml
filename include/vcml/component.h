@@ -45,7 +45,7 @@ namespace vcml {
         friend class slave_socket;
     private:
         clock_t m_curclk;
-        std::unordered_map<sc_process_b*, sc_time> m_proctimes;
+        std::unordered_map<sc_process_b*, sc_time> m_offsets;
 
         vector<master_socket*> m_master_sockets;
         vector<slave_socket*> m_slave_sockets;
@@ -78,10 +78,15 @@ namespace vcml {
         virtual void reset();
         virtual void wait_clock_reset();
 
-        virtual sc_time clock_cycle() const;
+        sc_time clock_cycle() const;
+        sc_time clock_cycles(u64 num) const;
 
-        virtual sc_time& local_time(sc_process_b* proc = nullptr);
-        virtual void sync(sc_process_b* proc = nullptr);
+              sc_time& local_time(sc_process_b* proc = nullptr);
+        const sc_time& local_time(sc_process_b* proc = nullptr) const;
+              sc_time  local_time_stamp(sc_process_b* proc = nullptr) const;
+
+        bool needs_sync(sc_process_b* proc = nullptr) const;
+        void sync(sc_process_b* proc = nullptr);
 
         const vector<master_socket*>& get_master_sockets() const;
         const vector<slave_socket*>& get_slave_sockets() const;
@@ -111,8 +116,13 @@ namespace vcml {
                                        const sideband& info);
         virtual void invalidate_dmi(u64 start, u64 end);
 
+        virtual void update_local_time();
         virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
     };
+
+    inline sc_time component::clock_cycles(u64 num) const {
+        return clock_cycle() * num;
+    }
 
     inline const vector<master_socket*>& component::get_master_sockets() const {
         return m_master_sockets;

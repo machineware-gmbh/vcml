@@ -158,7 +158,7 @@ namespace vcml {
 
         for (auto reg : m_registers)
             if (reg->get_range().overlaps(tx)) {
-                if (reg->needs_sync(tx) && !info.is_debug)
+                if (!info.is_debug && (needs_sync() || reg->needs_sync(tx)))
                     sync();
                 bytes += reg->receive(tx, info);
                 nregs ++;
@@ -192,8 +192,8 @@ namespace vcml {
     }
 
     void peripheral::handle_clock_update(clock_t oldclk, clock_t newclk) {
-        m_rdlatency = clock_cycle() * read_latency;
-        m_wrlatency = clock_cycle() * write_latency;
+        m_rdlatency = clock_cycles(read_latency);
+        m_wrlatency = clock_cycles(write_latency);
         component::remap_dmi(m_rdlatency, m_wrlatency);
     }
 

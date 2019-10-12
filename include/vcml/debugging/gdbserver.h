@@ -111,7 +111,7 @@ namespace vcml { namespace debugging {
         gdbserver(u16 port, gdbstub* stub, gdb_status status = GDB_STOPPED);
         virtual ~gdbserver();
 
-        void simulate(unsigned int& cycles);
+        void simulate(unsigned int cycles);
         void notify(int signal);
 
         virtual string handle_command(const string& command) override;

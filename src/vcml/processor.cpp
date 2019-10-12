@@ -23,6 +23,83 @@
 
 namespace vcml {
 
+    u64 processor::gdb_num_registers() {
+        return 0;
+    }
+
+    u64 processor::gdb_register_width(u64 idx) {
+        return 4;
+    }
+
+    bool processor::gdb_read_reg(u64 idx, void* p, u64 size) {
+        return false;
+    }
+
+    bool processor::gdb_write_reg(u64 idx, const void* p, u64 size) {
+        return false;
+    }
+
+    bool processor::gdb_page_size(u64& size) {
+        size = 0;
+        return false;
+    }
+
+    bool processor::gdb_virt_to_phys(u64 vaddr, u64& paddr) {
+        paddr = vaddr;
+        return true;
+    }
+
+    bool processor::gdb_read_mem(u64 addr, void* buffer, u64 size) {
+        if (success(DATA.read(addr, buffer, size, SBI_DEBUG)))
+            return true;
+        if (success(INSN.read(addr, buffer, size, SBI_DEBUG)))
+            return true;
+        return false;
+    }
+
+    bool processor::gdb_write_mem(u64 addr, const void* buffer, u64 size) {
+        if (success(DATA.write(addr, buffer, size, SBI_DEBUG)))
+            return true;
+        if (success(INSN.write(addr, buffer, size, SBI_DEBUG)))
+            return true;
+        return false;
+    }
+
+    bool processor::gdb_insert_breakpoint(u64 addr) {
+        return false;
+    }
+
+    bool processor::gdb_remove_breakpoint(u64 addr) {
+        return false;
+    }
+
+    bool processor::gdb_insert_watchpoint(const range& mem, vcml_access acs) {
+        return false;
+    }
+
+    bool processor::gdb_remove_watchpoint(const range& mem, vcml_access acs) {
+        return false;
+    }
+
+    string processor::gdb_handle_rcmd(const string& command) {
+        vector<string> args = split(command, ' ');
+        string cmdname = args[0];
+        args.erase(args.begin());
+
+        stringstream ss;
+        execute(cmdname, args, ss);
+        return ss.str();
+    }
+
+    void processor::gdb_simulate(unsigned int cycles) {
+        simulate(cycles);
+    }
+
+    void processor::gdb_notify(int signal) {
+        if (m_gdb)
+            m_gdb->notify(signal);
+    }
+
     bool processor::cmd_dump(const vector<string>& args, ostream& os) {
         os << "Registers:" << std::endl
            << "  PC 0x" << HEX(get_program_counter(), 16) << std::endl
@@ -219,20 +296,19 @@ namespace vcml {
         }
     }
 
-    SC_HAS_PROCESS(processor);
-
     void processor::processor_thread() {
         wait(SC_ZERO_TIME);
         while (true) {
+            sc_time now = local_time_stamp();
+
             // check for standby requests
             wait_clock_reset();
 
-            clock_t qcurclk = CLOCK.read();
             sc_time quantum = tlm_global_quantum::instance().get();
 
             unsigned int num_cycles = 1;
             if (quantum != SC_ZERO_TIME)
-                num_cycles = quantum.to_seconds() * qcurclk;
+                num_cycles = (quantum - local_time()) / clock_cycle();
             if (num_cycles == 0)
                 num_cycles = 1;
 
@@ -243,12 +319,13 @@ namespace vcml {
                 simulate(num_cycles);
 
             m_run_time += realtime() - start;
-            m_curr_cycle_count += num_cycles;
 
-            if(m_curr_cycle_count != cycle_count())
-                VCML_ERROR("processor cycle count mismatch");
+            if (needs_sync())
+                sync();
 
-            wait(local_time() - sc_time_stamp());
+            // check that sync() advanced processor beyond quantum start time
+            // if we fail here, we have most likely a broken cycle_count()
+            VCML_ERROR_ON(local_time_stamp() == now, "%s stuck in time", name());
         }
     }
 
@@ -277,10 +354,11 @@ namespace vcml {
         interrupt(irq, irq_up);
     }
 
+    SC_HAS_PROCESS(processor);
+
     processor::processor(const sc_module_name& nm):
         component(nm),
         m_run_time(0),
-        m_curr_cycle_count(0),
         m_prev_cycle_count(0),
         m_symbols(NULL),
         m_gdb(NULL),
@@ -339,20 +417,8 @@ namespace vcml {
 
     void processor::reset() {
         component::reset();
-
-        m_curr_cycle_count = 0;
         m_prev_cycle_count = 0;
         m_run_time = 0.0;
-    }
-
-    sc_time& processor::local_time(sc_process_b* proc) {
-        u64 ncycles = cycle_count();
-        VCML_ERROR_ON(ncycles < m_prev_cycle_count, "cycle count goes down");
-
-        sc_time& local = component::local_time(proc);
-        local += clock_cycle() * (ncycles - m_prev_cycle_count);
-        m_prev_cycle_count = ncycles;
-        return local;
     }
 
     bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {
@@ -361,32 +427,6 @@ namespace vcml {
 
         stats = m_irq_stats.at(irq);
         return true;
-    }
-
-    void processor::end_of_elaboration() {
-        for (auto it : IRQ) {
-            std::stringstream ss;
-            ss << "irq_handler_" << it.first;
-
-            sc_spawn_options opts;
-            opts.spawn_method();
-            opts.set_sensitivity(it.second);
-            opts.dont_initialize();
-            sc_spawn(sc_bind(&processor::irq_handler, this, it.first),
-                     sc_gen_unique_name(ss.str().c_str()), &opts);
-
-            irq_stats& stats = m_irq_stats[it.first];
-            stats.irq = it.first;
-            stats.irq_count = 0;
-            stats.irq_status = (*it.second)->read();
-            stats.irq_last = SC_ZERO_TIME;
-            stats.irq_uptime = SC_ZERO_TIME;
-            stats.irq_longest = SC_ZERO_TIME;
-        }
-    }
-
-    void processor::interrupt(unsigned int irq, bool set) {
-        // to be overloaded
     }
 
     void processor::log_bus_error(const master_socket& socket, vcml_access acs,
@@ -409,75 +449,37 @@ namespace vcml {
         log_debug("  code = %s", status.c_str());
     }
 
-    u64 processor::gdb_num_registers() {
-        return 0;
+    void processor::interrupt(unsigned int irq, bool set) {
+        // to be overloaded
     }
 
-    u64 processor::gdb_register_width(u64 idx) {
-        return 4;
+    void processor::update_local_time() {
+        u64 curr_cycle_count = cycle_count();
+        VCML_ERROR_ON(curr_cycle_count < m_prev_cycle_count, "cycle count goes down");
+        local_time() += clock_cycles(curr_cycle_count - m_prev_cycle_count);
+        m_prev_cycle_count = curr_cycle_count;
     }
 
-    bool processor::gdb_read_reg(u64 idx, void* p, u64 size) {
-        return false;
-    }
+    void processor::end_of_elaboration() {
+        for (auto it : IRQ) {
+            std::stringstream ss;
+            ss << "irq_handler_" << it.first;
 
-    bool processor::gdb_write_reg(u64 idx, const void* p, u64 size) {
-        return false;
-    }
+            sc_spawn_options opts;
+            opts.spawn_method();
+            opts.set_sensitivity(it.second);
+            opts.dont_initialize();
+            sc_spawn(sc_bind(&processor::irq_handler, this, it.first),
+                     sc_gen_unique_name(ss.str().c_str()), &opts);
 
-    bool processor::gdb_page_size(u64& size) {
-        size = 0;
-        return false;
-    }
-
-    bool processor::gdb_virt_to_phys(u64 vaddr, u64& paddr) {
-        paddr = vaddr;
-        return true;
-    }
-
-    bool processor::gdb_read_mem(u64 addr, void* buffer, u64 size) {
-        if (success(DATA.read(addr, buffer, size, SBI_DEBUG)))
-            return true;
-        if (success(INSN.read(addr, buffer, size, SBI_DEBUG)))
-            return true;
-        return false;
-    }
-
-    bool processor::gdb_write_mem(u64 addr, const void* buffer, u64 size) {
-        if (success(DATA.write(addr, buffer, size, SBI_DEBUG)))
-            return true;
-        if (success(INSN.write(addr, buffer, size, SBI_DEBUG)))
-            return true;
-        return false;
-    }
-
-    bool processor::gdb_insert_breakpoint(u64 addr) {
-        return false;
-    }
-
-    bool processor::gdb_remove_breakpoint(u64 addr) {
-        return false;
-    }
-
-    bool processor::gdb_insert_watchpoint(const range& mem, vcml_access acs) {
-        return false;
-    }
-
-    bool processor::gdb_remove_watchpoint(const range& mem, vcml_access acs) {
-        return false;
-    }
-
-    string processor::gdb_handle_rcmd(const string& command) {
-        return "n/a";
-    }
-
-    void processor::gdb_simulate(unsigned int& cycles) {
-        simulate(cycles);
-    }
-
-    void processor::gdb_notify(int signal) {
-        if (m_gdb)
-            m_gdb->notify(signal);
+            irq_stats& stats = m_irq_stats[it.first];
+            stats.irq = it.first;
+            stats.irq_count = 0;
+            stats.irq_status = (*it.second)->read();
+            stats.irq_last = SC_ZERO_TIME;
+            stats.irq_uptime = SC_ZERO_TIME;
+            stats.irq_longest = SC_ZERO_TIME;
+        }
     }
 
 }

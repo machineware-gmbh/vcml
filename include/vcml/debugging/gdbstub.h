@@ -52,7 +52,7 @@ namespace vcml { namespace debugging {
 
         virtual string gdb_handle_rcmd(const string& command) = 0;
 
-        virtual void gdb_simulate(unsigned int& cycles) = 0;
+        virtual void gdb_simulate(unsigned int cycles) = 0;
         virtual void gdb_notify(int signal) = 0;
 
     public:

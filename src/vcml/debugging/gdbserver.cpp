@@ -476,7 +476,7 @@ namespace vcml { namespace debugging {
         /* nothing to do */
     }
 
-    void gdbserver::simulate(unsigned int& cycles) {
+    void gdbserver::simulate(unsigned int cycles) {
         switch (m_status) {
         case GDB_STOPPED:
             if (m_sync)
@@ -484,11 +484,8 @@ namespace vcml { namespace debugging {
             return;
 
         case GDB_STEPPING: {
-            unsigned int one = 1;
-            m_stub->gdb_simulate(one);
+            m_stub->gdb_simulate(1);
             notify(GDBSIG_TRAP);
-            if (m_sync)
-                cycles = 1;
             return;
         }
 

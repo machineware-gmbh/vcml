@@ -72,7 +72,7 @@ namespace vcml {
     }
 
     bool module::execute(const string& name, const vector<string>& args,
-                            ostream& os) {
+                         ostream& os) {
         command_base* cmd = get_command(name);
         if (!cmd) {
             os << "command '" << name << "' not supported";

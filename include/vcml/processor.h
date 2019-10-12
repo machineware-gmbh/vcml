@@ -49,10 +49,9 @@ namespace vcml {
     };
 
     class processor: public component,
-                     public debugging::gdbstub {
+                     protected debugging::gdbstub {
     private:
         double m_run_time;
-        u64    m_curr_cycle_count;
         u64    m_prev_cycle_count;
         elf*   m_symbols;
 
@@ -70,8 +69,6 @@ namespace vcml {
         void processor_thread();
 
         void irq_handler(unsigned int irq);
-
-        void simulate_debug(unsigned int cycles);
 
     public:
         property<string> symbols;
@@ -103,23 +100,14 @@ namespace vcml {
         virtual void set_stack_pointer(u64 val)   {}
         virtual void set_core_id(u64 val)         {}
 
-        virtual u64 cycle_count() const { return m_curr_cycle_count; }
+        virtual u64 cycle_count() const = 0;
 
         double get_run_time() const { return m_run_time; }
         double get_cps()      const { return cycle_count() / m_run_time; }
 
         virtual void reset() override;
-        virtual sc_time& local_time(sc_process_b* proc = nullptr) override;
 
         bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
-
-        virtual void end_of_elaboration();
-
-        virtual void interrupt(unsigned int irq, bool set);
-        virtual void simulate(unsigned int&) = 0;
-
-        void log_bus_error(const master_socket& socket, vcml_access accss,
-                           tlm_response_status rs, u64 addr, u64 size);
 
         template <typename T>
         inline tlm_response_status fetch (u64 addr, T& data);
@@ -130,29 +118,32 @@ namespace vcml {
         template <typename T>
         inline tlm_response_status write (u64 addr, const T& data);
 
+    protected:
+        void log_bus_error(const master_socket& socket, vcml_access accss,
+                           tlm_response_status rs, u64 addr, u64 size);
+
+        virtual void interrupt(unsigned int irq, bool set);
+        virtual void simulate(unsigned int cycles) = 0;
+        virtual void update_local_time() override;
+        virtual void end_of_elaboration() override;
+
         virtual u64  gdb_num_registers() override;
         virtual u64  gdb_register_width(u64 idx) override;
-
-        virtual bool gdb_read_reg(u64 idx, void* buf, u64 sz) override;
-        virtual bool gdb_write_reg(u64 idx, const void* buf, u64 sz) override;
-
+        virtual bool gdb_read_reg(u64 idx, void* p, u64 size) override;
+        virtual bool gdb_write_reg(u64 idx, const void* p, u64 sz) override;
         virtual bool gdb_page_size(u64& size) override;
         virtual bool gdb_virt_to_phys(u64 vaddr, u64& paddr) override;
-
         virtual bool gdb_read_mem(u64 addr, void* buf, u64 sz) override;
         virtual bool gdb_write_mem(u64 addr, const void* buf, u64 sz) override;
-
         virtual bool gdb_insert_breakpoint(u64 addr) override;
         virtual bool gdb_remove_breakpoint(u64 addr) override;
-
         virtual bool gdb_insert_watchpoint(const range& mem,
                                            vcml_access acs) override;
         virtual bool gdb_remove_watchpoint(const range& mem,
                                            vcml_access a) override;
-
         virtual string gdb_handle_rcmd(const string& command) override;
 
-        virtual void gdb_simulate(unsigned int& cycles) override;
+        virtual void gdb_simulate(unsigned int cycles) override;
         virtual void gdb_notify(int signal) override;
     };
 

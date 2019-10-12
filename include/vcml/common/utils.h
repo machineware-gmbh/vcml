@@ -61,6 +61,9 @@ namespace vcml {
     bool is_thread(sc_process_b* proc = nullptr);
     bool is_method(sc_process_b* proc = nullptr);
 
+    sc_process_b* current_thread();
+    sc_process_b* current_method();
+
     sc_object*    find_object(const string& name);
     sc_attr_base* find_attribute(const string& name);
 
