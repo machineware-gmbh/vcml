@@ -71,6 +71,8 @@
 #include "vcml/spi.h"
 #include "vcml/sd.h"
 
+#include "vcml/models/generic/clock.h"
+#include "vcml/models/generic/reset.h"
 #include "vcml/models/generic/bus.h"
 #include "vcml/models/generic/memory.h"
 #include "vcml/models/generic/gpio.h"
