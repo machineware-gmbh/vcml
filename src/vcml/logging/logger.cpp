@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/logging/logger.h"
+#include "vcml/component.h"
 
 namespace vcml {
 
@@ -86,11 +87,17 @@ namespace vcml {
         if (loggers[lvl].empty())
             return;
 
+        sc_object* obj = find_object(org);
+        component* comp = dynamic_cast<component*>(obj);
+        sc_time now = sc_time_stamp();
+        if (comp && is_thread())
+            now += comp->local_time();
+
         stringstream ss;
         ss << "[" << vcml::logger::prefix[lvl];
         if (print_time_stamp) {
             ss << " " << std::fixed << std::setprecision(9)
-               << sc_time_stamp().to_seconds() << "s";
+               << now.to_seconds() << "s";
         }
 
         if (print_delta_cycle)

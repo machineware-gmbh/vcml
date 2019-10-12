@@ -137,7 +137,7 @@ namespace vcml {
         }
 
         if (!info.is_debug) {
-            m_host->local_time_stamp() += latency;
+            m_host->local_time() += latency;
             if (info.is_sync)
                 m_host->sync();
         }
