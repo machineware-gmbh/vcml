@@ -23,7 +23,7 @@ option(BUILD_TESTS "Build unit tests, requires GTest and GMock >= 1.8.0" OFF)
 option(BUILD_UTILS "Builds utility programs" ON)
 option(BUILD_PIC   "Build position independent code" ON)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
 find_package(LibVNC)
