@@ -44,6 +44,7 @@ namespace vcml { namespace generic {
             return;
         }
 
+        update_status();
         tx.response[0] = tx.opcode;
         tx.response[1] = m_status >> 24;
         tx.response[2] = m_status >> 16;
@@ -133,6 +134,7 @@ namespace vcml { namespace generic {
 
     void sdcard::make_r1_spi(sd_command& tx) {
         VCML_ERROR_ON(!m_spi, "not in SPI mode");
+        update_status();
 
         tx.resp_len = 1;
         tx.response[0] = 0;
