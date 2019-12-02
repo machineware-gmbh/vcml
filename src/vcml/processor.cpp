@@ -313,7 +313,7 @@ namespace vcml {
                 num_cycles = 1;
 
             double start = realtime();
-            if (m_gdb != NULL)
+            if (m_gdb != nullptr)
                 m_gdb->simulate(num_cycles);
             else
                 simulate(num_cycles);
@@ -324,9 +324,12 @@ namespace vcml {
                 sync();
 
             // check that local time advanced beyond quantum start time
-            // if we fail here, we have most likely a broken cycle_count()
-            if (local_time_stamp() == now)
-                VCML_ERROR("processor %s is stuck in time", name());
+            // if we fail here, we might have been stopped by our debugger or
+            // we most likely have a broken cycle_count()
+            if (local_time_stamp() == now) {
+                VCML_ERROR_ON(!m_gdb, "processor %s is stuck in time", name());
+                wait(gdb_sync ? SC_ZERO_TIME : num_cycles * clock_cycle());
+            }
         }
     }
 
@@ -391,7 +394,6 @@ namespace vcml {
             }
 
             m_gdb = new debugging::gdbserver(gdb_port, this, status);
-            m_gdb->sync(gdb_sync);
             m_gdb->echo(gdb_echo);
         }
 

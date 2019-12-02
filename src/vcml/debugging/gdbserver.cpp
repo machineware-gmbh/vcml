@@ -442,7 +442,6 @@ namespace vcml { namespace debugging {
         m_status(status),
         m_default(status),
         m_signal(-1),
-        m_sync(false),
         m_handler() {
         VCML_ERROR_ON(!stub, "no debug stub given");
 
@@ -479,8 +478,6 @@ namespace vcml { namespace debugging {
     void gdbserver::simulate(unsigned int cycles) {
         switch (m_status) {
         case GDB_STOPPED:
-            if (m_sync)
-                cycles = 0;
             return;
 
         case GDB_STEPPING: {
