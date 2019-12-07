@@ -106,7 +106,9 @@ namespace vcml { namespace debugging {
         gdbserver(const gdbserver&);
 
     public:
-        gdb_status get_status() const { return m_status; }
+        bool is_stopped()  const { return m_status == GDB_STOPPED; }
+        bool is_stepping() const { return m_status == GDB_STEPPING; }
+        bool is_running()  const { return m_status == GDB_RUNNING; }
 
         void sync(bool s = true) { m_sync = s; }
 

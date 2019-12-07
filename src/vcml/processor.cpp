@@ -318,18 +318,18 @@ namespace vcml {
             else
                 simulate(num_cycles);
 
+            if (!gdb_sync && m_gdb != nullptr && m_gdb->is_stopped())
+                local_time() += clock_cycles(num_cycles);
+
             m_run_time += realtime() - start;
 
             if (needs_sync())
                 sync();
 
             // check that local time advanced beyond quantum start time
-            // if we fail here, we might have been stopped by our debugger or
-            // we most likely have a broken cycle_count()
-            if (local_time_stamp() == now) {
-                VCML_ERROR_ON(!m_gdb, "processor %s is stuck in time", name());
-                wait(gdb_sync ? SC_ZERO_TIME : num_cycles * clock_cycle());
-            }
+            // if we fail here, we most likely have a broken cycle_count()
+            if (local_time_stamp() == now)
+                VCML_ERROR("processor %s is stuck in time", name());
         }
     }
 
