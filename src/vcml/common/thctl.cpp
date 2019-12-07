@@ -94,9 +94,10 @@ namespace vcml {
 
     static pthread_t thctl_init();
 
-    pthread_t g_thctl_sysc_thread = pthread_self();
-    pthread_t g_thctl_mutex_owner = thctl_init();
-    pthread_mutex_t g_thctl_mutex = PTHREAD_MUTEX_INITIALIZER;
+    static pthread_t g_thctl_sysc_thread = pthread_self();
+    static pthread_t g_thctl_mutex_owner = thctl_init();
+    static pthread_mutex_t g_thctl_mutex = PTHREAD_MUTEX_INITIALIZER;
+    static pthread_cond_t g_thctl_notify = PTHREAD_COND_INITIALIZER;
 
     pthread_t thctl_sysc_thread() {
         return g_thctl_sysc_thread;
@@ -123,6 +124,24 @@ namespace vcml {
         return g_thctl_mutex_owner == pthread_self();
     }
 
+    void thctl_suspend() {
+        VCML_ERROR_ON(!thctl_is_sysc_thread(),
+                      "thctl_suspend must be called from SystemC thread");
+        VCML_ERROR_ON(!thctl_in_critical(), "thread not in critical section");
+
+        g_thctl_mutex_owner = 0;
+        int res = pthread_cond_wait(&g_thctl_notify, &g_thctl_mutex);
+        VCML_ERROR_ON(res != 0, "pthread_cond_wait: %s", strerror(res));
+        g_thctl_mutex_owner = pthread_self();
+    }
+
+    void thctl_resume() {
+        VCML_ERROR_ON(thctl_is_sysc_thread(),
+                      "SystemC thread cannot resume itself");
+        int res = pthread_cond_signal(&g_thctl_notify);
+        VCML_ERROR_ON(res != 0, "pthread_cond_signal: %s", strerror(res));
+    }
+
 #ifdef SNPS_VP_SC_VERSION
     static void snps_enter_critical(void* unused) {
         (void)unused;
@@ -145,6 +164,8 @@ namespace vcml {
         return 0;
 #else
         static thctl_helper instance;
+        pthread_mutex_init(&g_thctl_mutex, nullptr);
+        pthread_cond_init(&g_thctl_notify, nullptr);
         pthread_mutex_lock(&g_thctl_mutex);
         return pthread_self();
 #endif

@@ -56,7 +56,10 @@ namespace vcml { namespace debugging {
         gdb_status m_status;
         gdb_status m_default;
 
+        bool m_sync;
         int m_signal;
+
+        void update_status(gdb_status status);
 
         void access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size);
         void access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size);
@@ -104,6 +107,8 @@ namespace vcml { namespace debugging {
 
     public:
         gdb_status get_status() const { return m_status; }
+
+        void sync(bool s = true) { m_sync = s; }
 
         gdbserver(u16 port, gdbstub* stub, gdb_status status = GDB_STOPPED);
         virtual ~gdbserver();

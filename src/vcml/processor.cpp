@@ -370,7 +370,7 @@ namespace vcml {
         symbols("symbols"),
         gdb_port("gdb_port", 0),
         gdb_wait("gdb_wait", false),
-        gdb_sync("gdb_sync", false),
+        gdb_sync("gdb_sync", true),
         gdb_echo("gdb_echo", false),
         IRQ("IRQ"),
         INSN("INSN"),
@@ -395,6 +395,7 @@ namespace vcml {
 
             m_gdb = new debugging::gdbserver(gdb_port, this, status);
             m_gdb->echo(gdb_echo);
+            m_gdb->sync(gdb_sync);
         }
 
         register_command("dump", 0, this, &processor::cmd_dump,

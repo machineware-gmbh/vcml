@@ -43,6 +43,14 @@ namespace vcml { namespace debugging {
         return result;
     }
 
+    void gdbserver::update_status(gdb_status status) {
+        if (m_status == status)
+            return;
+
+        m_status = status;
+        thctl_resume();
+    }
+
     void gdbserver::access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
         try {
             bool result = iswr ? m_stub->async_write_mem(addr, buffer, size)
@@ -83,7 +91,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_step(const char* command) {
         int signal = 0;
-        m_status = GDB_STEPPING;
+        update_status(GDB_STEPPING);
         while (m_status == GDB_STEPPING) {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -97,7 +105,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_continue(const char* command) {
         int signal = 0;
-        m_status = GDB_RUNNING;
+        update_status(GDB_RUNNING);
         while (m_status == GDB_RUNNING) {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -110,13 +118,13 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_detach(const char* command) {
-        m_status = m_default;
+        update_status(m_default);
         disconnect();
         return "";
     }
 
     string gdbserver::handle_kill(const char* command) {
-        m_status = m_default;
+        update_status(m_default);
         disconnect();
         sc_core::sc_stop();
         return "";
@@ -441,6 +449,7 @@ namespace vcml { namespace debugging {
         m_stub(stub),
         m_status(status),
         m_default(status),
+        m_sync(true),
         m_signal(-1),
         m_handler() {
         VCML_ERROR_ON(!stub, "no debug stub given");
@@ -476,6 +485,9 @@ namespace vcml { namespace debugging {
     }
 
     void gdbserver::simulate(unsigned int cycles) {
+        while (m_sync && m_status == GDB_STOPPED)
+            thctl_suspend();
+
         switch (m_status) {
         case GDB_STOPPED:
             return;
@@ -508,12 +520,12 @@ namespace vcml { namespace debugging {
 
     void gdbserver::handle_connect(const char* peer) {
         log_debug("gdb connected to %s", peer);
-        m_status = GDB_STOPPED;
+        update_status(GDB_STOPPED);
     }
 
     void gdbserver::handle_disconnect() {
         log_debug("gdb disconnected");
-        m_status = m_default;
+        update_status(m_default);
     }
 
 }}

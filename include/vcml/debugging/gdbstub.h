@@ -78,69 +78,69 @@ namespace vcml { namespace debugging {
     };
 
     inline u64 gdbstub::async_num_registers() {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_num_registers();
     }
 
     inline u64 gdbstub::async_register_width(u64 idx) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_register_width(idx);
     }
 
     inline bool gdbstub::async_read_reg(u64 idx, void* buffer, u64 size) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_read_reg(idx, buffer, size);
     }
 
     inline bool gdbstub::async_write_reg(u64 idx, const void* buffer, u64 sz) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_write_reg(idx, buffer, sz);
     }
 
     inline bool gdbstub::async_page_size(u64& size) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_page_size(size);
     }
 
     inline bool gdbstub::async_virt_to_phys(u64 vaddr, u64& paddr) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_virt_to_phys(vaddr, paddr);
     }
 
     inline bool gdbstub::async_read_mem(u64 addr, void* buffer, u64 size) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_read_mem(addr, buffer, size);
     }
 
     inline bool gdbstub::async_write_mem(u64 addr, const void* buf, u64 sz) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_write_mem(addr, buf, sz);
     }
 
     inline bool gdbstub::async_insert_breakpoint(u64 addr) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_insert_breakpoint(addr);
     }
 
     inline bool gdbstub::async_remove_breakpoint(u64 addr) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_remove_breakpoint(addr);
     }
 
     inline bool gdbstub::async_insert_watchpoint(const range& address,
                                                  vcml_access acs) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_insert_watchpoint(address, acs);
     }
 
     inline bool gdbstub::async_remove_watchpoint(const range& address,
                                                  vcml_access acs) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_remove_watchpoint(address, acs);
     }
 
     inline string gdbstub::async_handle_rcmd(const string& command) {
-        thctl_lock lock;
+        thctl_guard guard;
         return gdb_handle_rcmd(command);
     }
 

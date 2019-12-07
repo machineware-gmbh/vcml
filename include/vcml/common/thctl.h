@@ -31,12 +31,28 @@ namespace vcml {
     void thctl_exit_critical();
     bool thctl_in_critical();
 
-    class thctl_lock
+    void thctl_suspend();
+    void thctl_resume();
+
+    class thctl_guard
     {
+    private:
+        bool m_locked;
+
     public:
-        thctl_lock()  { thctl_enter_critical(); }
-        ~thctl_lock() { thctl_exit_critical(); }
+        thctl_guard();
+        ~thctl_guard();
     };
+
+    inline thctl_guard::thctl_guard(): m_locked(!thctl_in_critical()) {
+        if (m_locked)
+            thctl_enter_critical();
+    }
+
+    inline thctl_guard::~thctl_guard() {
+        if (m_locked)
+            thctl_exit_critical();
+    }
 
 }
 
