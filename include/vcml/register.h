@@ -21,6 +21,7 @@
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 
@@ -170,6 +171,9 @@ namespace vcml {
         template <typename T> bool operator >= (const T& other) const;
         template <typename T> bool operator  < (const T& other) const;
         template <typename T> bool operator  > (const T& other) const;
+
+        template <typename F> DATA get_bitfield(F field);
+        template <typename F, typename T> void set_bitfield(F field, T val);
     };
 
     template <class HOST, typename DATA, const unsigned int N>
@@ -440,6 +444,18 @@ namespace vcml {
         return !operator < (other);
     }
 
+    template <class HOST, typename DATA, const unsigned int N>
+    template <typename F>
+    inline DATA reg<HOST, DATA, N>::get_bitfield(F field) {
+        return get_bitfield(field, current_bank());
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    template <typename F, typename T>
+    inline void reg<HOST, DATA, N>::set_bitfield(F field, T val) {
+        for (unsigned int i = 0; i < N; i++)
+            set_bitfield(field, current_bank(i));
+    }
 }
 
 #define VCML_LOG_REG_BIT_CHANGE(bit, reg, val) do {               \

@@ -24,52 +24,54 @@
 
 namespace vcml {
 
-    // is_aligned returns true if the address is properly aligned for a data
-    // type of the given size. It is assumed that size is only 4, 2 or 1 byte.
-    inline bool is_aligned(u32 addr, u32 size) {
-        return !(addr & (std::min(size, 4u) - 1));
+    inline int clz(u32 val) {
+        return val ? __builtin_clz(val) : 32;
     }
 
-    // mask32 generates an integer value that can be used to mask all bits from
-    // l to r, assuming a word width of w. For example:
-    //   mask32( 7,  0, 32) = 0x000000ff
-    //   mask32(31, 24, 32) = 0xff000000
-    inline u32 mask32(int l, int r) {
-        return (~0u << (32 - (l - r + 1))) >> (31 - l);
+    inline int clz(u64 val) {
+        return val ? __builtin_clzl(val) : 64;
     }
 
-    // bits32 extracts bits from v starting at bit index l until before bit
-    // index r and returns them as an integer value. For example:
-    //   bits32(0xab, 7, 4) = 0x0000000a
-    inline u32 bits32(u32 v, int l, int r) {
-        return (v << (31 - l)) >> (31 - l + r);
+    inline int ctz(u32 val) {
+        return val ? __builtin_ctz(val) : 32;
     }
 
-    // sign_extend32 performs a sign extension on the value v, thereby
-    // interpreting bit i as the sign bit. Bits 31..i will be set to 1 if bit i
-    // is one, otherwise they will be set to zero.
-    inline u32 sign_extend32(u32 v, int i) {
-        // Right shift on signed operands is not defined for C, but gcc
-        // happens do to exactly what we need, so we use it here (and
-        // feel really bad about it!)
-        i32 t = (v << (31 - i));
-        return t >> (31 - i);
+    inline int ctz(u64 val) {
+        return val ? __builtin_ctzl(val) : 64;
     }
 
-    // fls32 finds the position of the last bit set to 1 and returns it. If no
-    // bit is set (i.e. parameter is 0), it returns zero.
+    inline int ffs(u32 val) {
+        return __builtin_ffs(val) - 1;
+    }
+
+    inline int ffs(u64 val) {
+        return __builtin_ffsl(val) - 1;
+    }
+
     template <typename T>
-    inline unsigned int fls(const T& v) {
-        for (unsigned int i = (sizeof(T) * 8); i > 0; i--)
-            if ((v >> (i - 1)) & 0x1)
-                return i;
-        return 0;
+    inline unsigned int fls(T val) {
+        return sizeof(T) * 8 - clz(val) - 1;
     }
 
-    // ispwr2 returns true if the given integer is a power of two.
     template <typename T>
-    inline bool ispwr2(const T& v) {
-        return (v != 0) && (ffs(v) == fls(v));
+    inline unsigned int popcnt(T val) {
+        return __builtin_popcountl((long)val);
+    }
+
+    template <typename T>
+    inline bool is_pow2(T val) {
+        return val != 0 && popcnt(val) == 1;
+    }
+
+    template <typename T>
+    inline T extract(T val, unsigned int off, unsigned int len) {
+        return (val >> off) & ((1ull << len) - 1);
+    }
+
+    template <typename T, typename T2>
+    static inline T deposit(T val, unsigned int off, unsigned int len, T2 x) {
+        const T mask = ((1ull << len) - 1) << off;
+        return (val & ~mask) | (((T)x << off) & mask);
     }
 
     // crc7 calculates a 7 bit CRC of the specified data using the polynomial
@@ -90,6 +92,25 @@ namespace vcml {
         while (len--)
             crc = (crc << 8) ^ crc16_table[((crc >> 8) ^ *buffer++) & 0xff];
         return crc;
+    }
+
+    template <unsigned int OFF, unsigned int LEN, typename T = u64>
+    struct bitfield {
+        enum : unsigned int { OFFSET = OFF };
+        enum : unsigned int { LENGTH = LEN };
+        enum : T { MASK = ((1ull << LEN) - 1) << OFF };
+
+        operator T() const { return MASK; }
+    };
+
+    template <typename F, typename T>
+    T get_bitfield(F f, T val) {
+        return extract(val, F::OFFSET, F::LENGTH);
+    }
+
+    template <typename F, typename T, typename T2>
+    void set_bitfield(F f, T& val, T2 x) {
+        val = deposit(val, F::OFFSET, F::LENGTH, x);
     }
 
 }

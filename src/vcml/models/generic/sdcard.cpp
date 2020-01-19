@@ -378,7 +378,7 @@ namespace vcml { namespace generic {
     }
 
     void sdcard::init_csd() {
-        VCML_ERROR_ON(!ispwr2(m_blklen), "invalid block size");
+        VCML_ERROR_ON(!is_pow2(m_blklen), "invalid block size");
 
         if (is_sdhc())
             init_csd_sdhc();
