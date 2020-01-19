@@ -105,11 +105,13 @@ namespace vcml {
 
     template <typename F, typename T>
     T get_bitfield(F f, T val) {
+        (void)f;
         return extract(val, F::OFFSET, F::LENGTH);
     }
 
     template <typename F, typename T, typename T2>
     void set_bitfield(F f, T& val, T2 x) {
+        (void)f;
         val = deposit(val, F::OFFSET, F::LENGTH, x);
     }
 

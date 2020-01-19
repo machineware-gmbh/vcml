@@ -154,12 +154,15 @@ TEST(bitops, crc16) {
     EXPECT_EQ(vcml::crc16(b0, sizeof(b0)), 0x7fa1);
 }
 
-vcml::bitfield<0,3> TEST_FIELD1;
-vcml::bitfield<4,1> TEST_FIELD2;
+const vcml::bitfield<0,3> TEST_FIELD1;
+const vcml::bitfield<4,1> TEST_FIELD2;
 
 TEST(bitops, bitfield) {
     EXPECT_EQ(TEST_FIELD1, 0b111);
     EXPECT_EQ(TEST_FIELD2, 0b10000);
+
+    EXPECT_EQ(0xffff & TEST_FIELD1, 0b111);
+    EXPECT_EQ(0xffff & TEST_FIELD2, 0b10000);
 
     vcml::u64 val = 0;
 
