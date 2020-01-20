@@ -100,6 +100,7 @@ set(sources
     "${src}/vcml/models/arm/sp804timer.cpp"
     "${src}/vcml/models/arm/syscon.cpp"
     "${src}/vcml/models/arm/gicv2.cpp"
+    "${src}/vcml/models/riscv/clint.cpp"
     "${src}/vcml/models/riscv/plic.cpp")
 
 add_library(vcml ${sources})
