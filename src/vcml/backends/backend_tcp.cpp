@@ -60,20 +60,19 @@ namespace vcml {
         m_server.sin_addr.s_addr = INADDR_ANY;
         m_server.sin_port = htons(port);
 
-        int err, one = 1;
-        if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < -1)
-            VCML_ERROR("failed to create socket: %s", strerror(m_fd_server));
+        const int one = 1;
+        if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+            VCML_ERROR("failed to create socket: %s", strerror(errno));
 
-        if ((err = setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
-                              (const void*)&one, sizeof(one))))
-            VCML_ERROR("setsockopt SO_REUSEADDR failed: %s", strerror(err));
+        if (setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
+                       (const void*)&one, sizeof(one)))
+            VCML_ERROR("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
 
-        if ((err = bind(m_fd_server, (struct sockaddr *)&m_server,
-                        sizeof(m_server)) < 0))
-            VCML_ERROR("binding server socket failed: %s", strerror(err));
+        if (bind(m_fd_server, (struct sockaddr*)&m_server, sizeof(m_server)))
+            VCML_ERROR("binding server socket failed: %s", strerror(errno));
 
-        if ((err = ::listen(m_fd_server, 1)))
-            VCML_ERROR("listening for connections failed: %s", strerror(err));
+        if (::listen(m_fd_server, 1))
+            VCML_ERROR("listen for connections failed: %s", strerror(errno));
 
         accept_async();
     }
