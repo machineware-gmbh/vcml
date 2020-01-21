@@ -30,15 +30,22 @@ namespace vcml {
 
     static void aio_enable(int fd) {
         int flags = fcntl(fd, F_GETFL);
-        fcntl(fd, F_SETOWN, getpid());
-        fcntl(fd, F_SETFL, flags | O_ASYNC);
-        fcntl(fd, F_SETSIG, SIGIO);
+        VCML_ERROR_ON(flags == -1, "fcntl(F_GETFL): %s", strerror(errno));
+        if (fcntl(fd, F_SETOWN, getpid()))
+            VCML_ERROR("fcntl(F_SETOWN): %s", strerror(errno));
+        if (fcntl(fd, F_SETFL, flags | O_ASYNC))
+            VCML_ERROR("fcntl(F_SETFL): %s", strerror(errno));
+        if (fcntl(fd, F_SETSIG, SIGIO))
+            VCML_ERROR("fcntl(F_SETSIG): %s", strerror(errno));
     }
 
     static void aio_disable(int fd) {
         int flags = fcntl(fd, F_GETFL);
-        fcntl(fd, F_SETOWN, getpid());
-        fcntl(fd, F_SETFL, flags & ~O_ASYNC);
+        VCML_ERROR_ON(flags == -1, "fcntl(F_GETFL): %s", strerror(errno));
+        if (fcntl(fd, F_SETOWN, getpid()))
+            VCML_ERROR("fcntl(F_SETOWN): %s", strerror(errno));
+        if (fcntl(fd, F_SETFL, flags & ~O_ASYNC))
+            VCML_ERROR("fcntl(F_SETFL): %s", strerror(errno));
     }
 
     static void aio_call(aio_handler handler, int fd, int event) {
@@ -88,7 +95,7 @@ namespace vcml {
         vcml_sa.sa_flags = SA_SIGINFO | SA_RESTART;
         sigemptyset(&vcml_sa.sa_mask);
 
-        if (sigaction(SIGIO, &vcml_sa, &prev_sa) < 0)
+        if (::sigaction(SIGIO, &vcml_sa, &prev_sa) < 0)
             VCML_ERROR("failed to install SIGIO signal handler");
     }
 
