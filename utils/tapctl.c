@@ -90,7 +90,7 @@ int tap_open(const char *dev, int persistent) {
     }
 
     memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
 
     if (ioctl(tap_fd, TUNSETIFF, &ifr) < 0) {
@@ -145,9 +145,13 @@ void ip_setup(const char *dev, const char *ipaddr, const char *netmask) {
     struct sockaddr_in* addr = (struct sockaddr_in *)&ifr.ifr_addr;
 
     net_fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (net_fd < 0) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
 
     memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
     ifr.ifr_addr.sa_family = AF_INET;
 
     /* Set IP address */
@@ -173,7 +177,7 @@ void ip_setup(const char *dev, const char *ipaddr, const char *netmask) {
         exit(EXIT_FAILURE);
     }
 
-    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
     ifr.ifr_flags |= (IFF_UP | IFF_RUNNING);
 
     if (ioctl(net_fd, SIOCSIFFLAGS, &ifr) < 0) {
