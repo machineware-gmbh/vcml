@@ -21,19 +21,19 @@
 namespace vcml {
 
     static void set_nodelay(int fd) {
-        int err, one = 1;
-        if ((err = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
-                             (const void*)&one, sizeof(one)))) {
-            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(err));
+        const int one = 1;
+        if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const void*)&one,
+            sizeof(one)) < 0) {
+            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(errno));
         }
     }
 
     static void set_blocking(int fd, bool blocking) {
         int flags = fcntl(fd, F_GETFL, 0);
-        VCML_ERROR_ON(flags < 0, "fcntl failed: %s", strerror(flags));
+        VCML_ERROR_ON(flags < 0, "fcntl failed: %s", strerror(errno));
         flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
         int err = fcntl(fd, F_SETFL, flags);
-        VCML_ERROR_ON(err < 0, "fcntl failed: %s", strerror(err));
+        VCML_ERROR_ON(err < 0, "fcntl failed: %s", strerror(errno));
     }
 
     void backend_tcp::handle_accept(int fd, int events) {

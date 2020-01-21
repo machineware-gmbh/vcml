@@ -82,9 +82,12 @@ namespace vcml {
 
     string progname() {
         char path[PATH_MAX];
-        memset(path, 0, sizeof(path));
-        if (readlink("/proc/self/exe", path, sizeof(path) - 1) < 0)
+        ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+
+        if (len == -1)
             return "unknown";
+
+        path[len] = '\0';
         return path;
     }
 
