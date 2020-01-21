@@ -35,10 +35,13 @@ namespace vcml {
         std::replace(nm.begin(), nm.end(), SC_HIERARCHY_CHAR, '_');
 
         const char* env = std::getenv(nm.c_str());
-        if (env == NULL)
+        if (env == nullptr)
             return false;
 
-        val = string(env);
+        char* str = strdup(env);
+        val = string(str);
+        free(str);
+
         return true;
     }
 
