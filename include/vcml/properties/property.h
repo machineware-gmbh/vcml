@@ -118,10 +118,15 @@ namespace vcml {
 
     template <typename T, const unsigned int N>
     inline const char* property<T, N>::str() const {
+        const string delim = to_string(ARRAY_DELIMITER);
+
         m_str = "";
-        for (unsigned int i = 0; i < (N - 1); i++)
-            m_str += escape(to_string<T>(m_value[i]), ",") + ARRAY_DELIMITER;
-        m_str += escape(to_string<T>(m_value[N - 1]), ",");
+        for (unsigned int i = 0; i < N; i++) {
+            if (i > 0)
+                m_str += delim;
+            m_str += escape(to_string<T>(m_value[i]), delim);
+        }
+
         return m_str.c_str();
     }
 
