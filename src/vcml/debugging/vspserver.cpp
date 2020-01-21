@@ -20,10 +20,10 @@
 
 namespace vcml { namespace debugging {
 
-    static vspserver* session = NULL;
+    static vspserver* session = nullptr;
 
     static void cleanup_session() {
-        if (session != NULL)
+        if (session != nullptr)
             session->cleanup();
     }
 
@@ -75,7 +75,7 @@ namespace vcml { namespace debugging {
         // First argument holds the object name that was queried.
         string name = args[1];
         sc_object* obj = find_object(name);
-        if (obj == NULL)
+        if (obj == nullptr)
             return mkstr("object '%s' not found", name.c_str());
 
         stringstream info;
@@ -92,7 +92,7 @@ namespace vcml { namespace debugging {
 
         // List all commands
         component* mod = dynamic_cast<component*>(obj);
-        if (mod != NULL) {
+        if (mod != nullptr) {
             for (const command_base* cmd : mod->get_commands()) {
                 info << "cmd:" << escape(cmd->name(), ",")
                      << ":" << cmd->argc()
@@ -111,7 +111,7 @@ namespace vcml { namespace debugging {
 
         string name = args[1];
         sc_object* obj = find_object(name);
-        if (obj == NULL)
+        if (obj == nullptr)
             return mkstr("object '%s' not found", name.c_str());
 
         module* mod = dynamic_cast<module*>(obj);
@@ -163,7 +163,7 @@ namespace vcml { namespace debugging {
 
         string name = args[1];
         sc_attr_base* attr = find_attribute(name);
-        if (attr == NULL)
+        if (attr == nullptr)
             return mkstr("attribute '%s' not found", name.c_str());
 
         stringstream ss;
@@ -188,11 +188,11 @@ namespace vcml { namespace debugging {
         string value = args[2];
 
         sc_attr_base* attr = find_attribute(name);
-        if (attr == NULL)
+        if (attr == nullptr)
             return mkstr("attribute '%s' not found", name.c_str());
 
         property_base* prop = dynamic_cast<property_base*>(attr);
-        if (prop == NULL)
+        if (prop == nullptr)
             return mkstr("attribute '%s' not writable", name.c_str());
 
         prop->str(value);
@@ -218,7 +218,7 @@ namespace vcml { namespace debugging {
     }
 
     static void do_interrupt(int fd, int event) {
-        assert(session != NULL);
+        VCML_ERROR_ON(session != nullptr, "interrupt on no session");
         session->interrupt();
     }
 
@@ -252,7 +252,7 @@ namespace vcml { namespace debugging {
     vspserver::vspserver(u16 port):
         rspserver(port),
         m_announce(tempdir() + mkstr("vcml_session_%d", (int)port)) {
-        VCML_ERROR_ON(session != NULL, "vspserver already created");
+        VCML_ERROR_ON(session != nullptr, "vspserver already created");
         session = this;
         atexit(&cleanup_session);
 
@@ -273,13 +273,14 @@ namespace vcml { namespace debugging {
     }
 
     vspserver::~vspserver() {
-        remove(m_announce.c_str());
-        session = NULL;
+        cleanup();
+        session = nullptr;
     }
 
     void vspserver::start() {
+        cleanup();
+
         // Create announce file
-        remove(m_announce.c_str());
         ofstream of(m_announce.c_str());
         of << "localhost:" << std::dec << get_port() << ":" << username()
            << ":" << progname() << std::endl;
@@ -315,7 +316,13 @@ namespace vcml { namespace debugging {
     }
 
     void vspserver::cleanup() {
-        remove(m_announce.c_str());
+        if (!file_exists(m_announce))
+            return;
+
+        if (remove(m_announce.c_str())) {
+            log_warning("failed to remove file '%s': %s", m_announce.c_str(),
+                        strerror(errno));
+        }
     }
 
     void vspserver::handle_connect(const char* peer) {
