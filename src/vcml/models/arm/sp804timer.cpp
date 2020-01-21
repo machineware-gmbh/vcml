@@ -71,7 +71,7 @@ namespace vcml { namespace arm {
     }
 
     u32 sp804timer::timer::write_CTLR(u32 val) {
-        if (((val & CTLR_PRESCALE_M) >> CTLR_PRESCALE_O) == 3)
+        if (((val >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) == 3)
             log_warn("invalid prescaler value defined");
         CTLR = val & CTLR_M;
         schedule(LOAD);
