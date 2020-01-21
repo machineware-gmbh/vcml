@@ -216,29 +216,27 @@ namespace vcml { namespace debugging {
     }
 
     void rspserver::listen() {
-        int err, one = 1;
-        if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < -1)
-            VCML_ERROR("failed to create socket: %s", strerror(m_fd_server));
+        const int one = 1;
+        if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+            VCML_ERROR("failed to create socket: %s", strerror(errno));
 
-        if ((err = setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
-                              (const void*)&one, sizeof(one))))
-            VCML_ERROR("setsockopt SO_REUSEADDR failed: %s", strerror(err));
+        if (setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
+                       (const void*)&one, sizeof(one)))
+            VCML_ERROR("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
 
-        if ((err = bind(m_fd_server, (struct sockaddr *)&m_server,
-                        sizeof(m_server)) < 0))
-            VCML_ERROR("binding server socket failed: %s", strerror(err));
+        if (bind(m_fd_server, (struct sockaddr*)&m_server, sizeof(m_server)))
+            VCML_ERROR("binding server socket failed: %s", strerror(errno));
 
-        if ((err = ::listen(m_fd_server, 1)))
-            VCML_ERROR("listening for connections failed: %s", strerror(err));
+        if (::listen(m_fd_server, 1))
+            VCML_ERROR("listen for connections failed: %s", strerror(errno));
 
         socklen_t len = sizeof(m_client);
-        if ((m_fd = accept(m_fd_server,
-                           (struct sockaddr *)&m_client, &len)) < 0)
-            VCML_ERROR("failed to accept connection: %s", strerror(m_fd));
+        if ((m_fd = accept(m_fd_server, (struct sockaddr*)&m_client, &len)))
+            VCML_ERROR("failed to accept connection: %s", strerror(errno));
 
-        if ((err = setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
-                              (const void*)&one, sizeof(one))))
-            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(err));
+        if (setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
+                       (const void*)&one, sizeof(one)) < 0)
+            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(errno));
 
         close(m_fd_server);
         m_fd_server = -1;
