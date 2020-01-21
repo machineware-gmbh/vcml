@@ -87,23 +87,23 @@ namespace vcml { namespace generic {
     memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
                    unsigned int rlat, unsigned int wlat):
         peripheral(nm, host_endian(), rlat, wlat),
-        m_memory(NULL),
+        m_memory(nullptr),
         size("size", sz),
         readonly("readonly", false),
         images("images", ""),
         poison("poison", 0x00),
         IN("IN") {
-        if (size > 0u) {
-            int perms = PROT_READ | PROT_WRITE;
-            int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
-            void* p = mmap(0, size, perms, flags, -1, 0);
-            VCML_ERROR_ON(p == MAP_FAILED, "mmap failed: %s", strerror(errno));
 
-            m_memory = (unsigned char*)p;
-            map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
-                                                    : VCML_ACCESS_READ_WRITE);
-        }
+        VCML_ERROR_ON(size == 0u, "memory size cannot be 0");
 
+        int perms = PROT_READ | PROT_WRITE;
+        int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+        void* p = mmap(0, size, perms, flags, -1, 0);
+        VCML_ERROR_ON(p == MAP_FAILED, "mmap failed: %s", strerror(errno));
+
+        m_memory = (unsigned char*)p;
+        map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
+                                                : VCML_ACCESS_READ_WRITE);
         if (poison > 0)
             memset(m_memory, poison, size);
 
