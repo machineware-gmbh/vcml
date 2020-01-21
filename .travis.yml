@@ -9,7 +9,7 @@ compiler:
 addons:
   apt:
     packages:
-    - libelf-dev
+      - libelf-dev
 
 cache:
   directories:
@@ -22,6 +22,15 @@ env:
     - BUILD=RELEASE TARGET_ARCH=linux64 SYSTEMC=systemc-2.3.0a
     - BUILD=RELEASE TARGET_ARCH=linux64 SYSTEMC=systemc-2.3.1a
     - BUILD=RELEASE TARGET_ARCH=linux64 SYSTEMC=systemc-2.3.2
+
+addons:
+  coverity_scan:
+    project:
+      name: "janweinstock/vcml"
+      description: "A modeling library with virtual components for SystemC and TLM simulators"
+    notification_email: jan.weinstock@rwth-aachen.de
+    build_command: make
+    branch_pattern: master
 
 install:
   - mkdir -p DEPENDS && cd DEPENDS
@@ -56,13 +65,4 @@ before_script:
 
 script:
   - make -j 4 && ctest --output-on-failure
-
-addons:
-  coverity_scan:
-    project:
-      name: "janweinstock/vcml"
-      description: "A modeling library with virtual components for SystemC and TLM simulators"
-    notification_email: "jan.weinstock@rwth-aachen.de"
-    build_command: "make"
-    branch_pattern: "master
 
