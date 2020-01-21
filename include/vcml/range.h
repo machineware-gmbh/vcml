@@ -84,7 +84,7 @@ namespace vcml {
     }
 
     inline range::range(u64 s, u64 e): start(s), end(e) {
-        VCML_ERROR_ON(s > e, "invalid range specified: %016x..%016x", s, e);
+        VCML_ERROR_ON(s > e, "invalid range specified: %016lx..%016lx", s, e);
     }
 
     inline range::range(const tlm_generic_payload& tx):

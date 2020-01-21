@@ -27,7 +27,7 @@ namespace vcml {
         m_fd(-1),
         devno("devno", no ? no : g_devno++) {
         m_fd = open("/dev/net/tun", O_RDWR);
-        VCML_ERROR_ON(m_fd < 0, "error opening tundev: %s", strerror(errno));
+        VCML_REPORT_ON(m_fd < 0, "error opening tundev: %s", strerror(errno));
 
         struct ifreq ifr;
         memset(&ifr, 0, sizeof(ifr));
@@ -35,7 +35,7 @@ namespace vcml {
         snprintf(ifr.ifr_name, IFNAMSIZ, "tap%d", devno.get());
 
         int err = ioctl(m_fd, TUNSETIFF, (void*)&ifr);
-        VCML_ERROR_ON(err < 0, "error creating tapdev: %s", strerror(errno));
+        VCML_REPORT_ON(err < 0, "error creating tapdev: %s", strerror(errno));
     }
 
     backend_tap::~backend_tap() {

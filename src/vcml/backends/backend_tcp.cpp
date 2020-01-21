@@ -24,16 +24,16 @@ namespace vcml {
         const int one = 1;
         if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const void*)&one,
             sizeof(one)) < 0) {
-            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(errno));
+            VCML_REPORT("setsockopt TCP_NODELAY failed: %s", strerror(errno));
         }
     }
 
     static void set_blocking(int fd, bool blocking) {
         int flags = fcntl(fd, F_GETFL, 0);
-        VCML_ERROR_ON(flags < 0, "fcntl failed: %s", strerror(errno));
+        VCML_REPORT_ON(flags < 0, "fcntl failed: %s", strerror(errno));
         flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
         int err = fcntl(fd, F_SETFL, flags);
-        VCML_ERROR_ON(err < 0, "fcntl failed: %s", strerror(errno));
+        VCML_REPORT_ON(err < 0, "fcntl failed: %s", strerror(errno));
     }
 
     void backend_tcp::handle_accept(int fd, int events) {
@@ -62,17 +62,17 @@ namespace vcml {
 
         const int one = 1;
         if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-            VCML_ERROR("failed to create socket: %s", strerror(errno));
+            VCML_REPORT("failed to create socket: %s", strerror(errno));
 
         if (setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
                        (const void*)&one, sizeof(one)))
-            VCML_ERROR("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
+            VCML_REPORT("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
 
         if (bind(m_fd_server, (struct sockaddr*)&m_server, sizeof(m_server)))
-            VCML_ERROR("binding server socket failed: %s", strerror(errno));
+            VCML_REPORT("binding server socket failed: %s", strerror(errno));
 
         if (::listen(m_fd_server, 1))
-            VCML_ERROR("listen for connections failed: %s", strerror(errno));
+            VCML_REPORT("listen for connections failed: %s", strerror(errno));
 
         accept_async();
     }
@@ -92,13 +92,13 @@ namespace vcml {
         if (m_fd < 0 && errno == EAGAIN)
             return;
 
-        VCML_ERROR_ON(m_fd < 0, "accept failed: %s", strerror(errno));
+        VCML_REPORT_ON(m_fd < 0, "accept failed: %s", strerror(errno));
         set_nodelay(m_fd);
         log_debug("connected");
     }
 
     void backend_tcp::accept_async() {
-        VCML_ERROR_ON(m_fd >= 0, "previous connection not closed");
+        VCML_REPORT_ON(m_fd >= 0, "previous connection not closed");
         set_blocking(m_fd_server, false);
         accept();
         set_blocking(m_fd_server, true);
@@ -132,7 +132,7 @@ namespace vcml {
             return 0;
         }
 
-        VCML_ERROR_ON(errno != EAGAIN, "unexpected recv result");
+        VCML_REPORT_ON(errno != EAGAIN, "unexpected recv result");
         return 0;
     }
 

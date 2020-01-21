@@ -141,7 +141,7 @@ namespace vcml {
                     char* name = elf_strptr(e, shdr->sh_link,
                                             symbols[i].st_name);
                     if (name == NULL)
-                        VCML_ERROR(elf_errmsg(-1));
+                        VCML_ERROR("elf_strptr failed: %s", elf_errmsg(-1));
 
                     elf_symbol* sym = new elf_symbol(name, symbols + i);
                     m_symbols.push_back(sym);
@@ -172,7 +172,7 @@ namespace vcml {
         m_sections(),
         m_symbols() {
         if (elf_version(EV_CURRENT) == EV_NONE)
-            VCML_ERROR(elf_errmsg(-1));
+            VCML_ERROR("failed to read libelf version");
 
         int fd = open(m_filename.c_str(), O_RDONLY, 0);
         if (fd < 0)
@@ -180,7 +180,7 @@ namespace vcml {
 
         Elf* e = elf_begin(fd, ELF_C_READ, NULL);
         if (e == NULL)
-            VCML_ERROR(elf_errmsg(-1));
+            VCML_ERROR("elf_begin failed: %s", elf_errmsg(-1));
 
         if (elf_kind(e) != ELF_K_ELF)
             VCML_ERROR("error reading elf file");
@@ -195,7 +195,7 @@ namespace vcml {
         else if (ehdr32)
             init<Elf32_Ehdr, Elf32_Shdr, Elf32_Sym>(e, ehdr32, elf32_getshdr);
         else
-            VCML_ERROR(elf_errmsg(-1));
+            VCML_ERROR("cannot find elf program header");
 
         elf_end(e);
         close(fd);

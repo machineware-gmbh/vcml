@@ -77,14 +77,14 @@ namespace vcml {
         m_time(realtime()),
         m_sigint(),
         m_sigstp() {
-        VCML_ERROR_ON(singleton, "multiple terminal backends requested");
+        VCML_REPORT_ON(singleton, "multiple terminal backends requested");
         singleton = this;
 
         if (!isatty(STDIN_FILENO))
-            VCML_ERROR("not a terminal");
+            VCML_REPORT("not a terminal");
 
         if (tcgetattr(STDIN_FILENO, &m_termios) == -1)
-            VCML_ERROR("failed to get terminal attributes");
+            VCML_REPORT("failed to get terminal attributes");
 
         termios attr = m_termios;
         attr.c_lflag &= ~(ICANON | ECHO);
@@ -92,7 +92,7 @@ namespace vcml {
         attr.c_cc[VTIME] = 0;
 
         if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &attr) == -1)
-            VCML_ERROR("failed to set terminal attributes");
+            VCML_REPORT("failed to set terminal attributes");
 
         m_sigint = signal(SIGINT, &backend_term::handle_signal);
         m_sigstp = signal(SIGTSTP, &backend_term::handle_signal);
@@ -119,7 +119,7 @@ namespace vcml {
 
         ssize_t n = ::read(STDIN_FILENO, buf, 1);
         if (n < 0)
-            VCML_ERROR(strerror(errno));
+            VCML_REPORT("read failed: %s", strerror(errno));
         return n;
     }
 

@@ -64,23 +64,38 @@ namespace vcml {
         return m_backtrace;
     }
 
-#define VCML_ERROR(...)                                                      \
+#define VCML_REPORT(...)                                                      \
     throw ::vcml::report(::vcml::mkstr(__VA_ARGS__), __FILE__, __LINE__)
 
-#define VCML_ERROR_ON(condition, ...)                                        \
-    do {                                                                     \
-        if (condition)  {                                                    \
-            VCML_ERROR(__VA_ARGS__) ;                                        \
-        }                                                                    \
+#define VCML_REPORT_ON(condition, ...)                                        \
+    do {                                                                      \
+        if (condition)  {                                                     \
+            VCML_REPORT(__VA_ARGS__) ;                                        \
+        }                                                                     \
     } while (0)
 
-#define VCML_ERROR_ONCE(...)                                                 \
-    do {                                                                     \
-        static bool report_done = false;                                     \
-        if (!report_done) {                                                  \
-            report_done = true;                                              \
-            VCML_ERROR(__VA_ARGS__);                                         \
-        }                                                                    \
+#define VCML_REPORT_ONCE(...)                                                 \
+    do {                                                                      \
+        static bool report_done = false;                                      \
+        if (!report_done) {                                                   \
+            report_done = true;                                               \
+            VCML_REPORT(__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define VCML_ERROR(...)                                                       \
+    do {                                                                      \
+        fprintf(stderr, "%s:%d ", __FILE__, __LINE__);                        \
+        fprintf(stderr, __VA_ARGS__);                                         \
+        fprintf(stderr, "\n");                                                \
+        abort();                                                              \
+    } while (0)
+
+#define VCML_ERROR_ON(condition, ...)                                         \
+    do {                                                                      \
+        if (condition) {                                                      \
+            VCML_ERROR(__VA_ARGS__);                                          \
+        }                                                                     \
     } while (0)
 
 }

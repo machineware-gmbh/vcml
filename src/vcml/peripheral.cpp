@@ -56,7 +56,7 @@ namespace vcml {
 
     void peripheral::add_register(reg_base* reg) {
         if (stl_contains(m_registers, reg))
-            VCML_ERROR("register '%' already assigned", reg->name());
+            VCML_ERROR("register %s already assigned", reg->name());
 
         for (auto r : m_registers)
             if (r->get_range().overlaps(reg->get_range()))
