@@ -9,7 +9,7 @@ Based on these design primitives, TLM models for frequently deployed components
 are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
 [![Build Status](https://travis-ci.org/janweinstock/vcml.svg?branch=master)](https://travis-ci.org/janweinstock/vcml)
-[![Coverity Scan Build Status](https://scan.coverity.org/projects/18906/badge.svg)](https://scan.coverity.com/projects/janweinstock-vcml)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/18906/badge.svg)](https://scan.coverity.com/projects/janweinstock-vcml)
 
 ----
 ## Build & Installation
