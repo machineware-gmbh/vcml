@@ -177,10 +177,10 @@ namespace vcml { namespace generic {
         if (val & FCR_DMA)
             log_debug("FCR_DMA bit set");
 
-        switch (val & 0x3f) {
+        switch (val & 0b11000000) {
         case FCR_IT1:  log_debug("interrupt threshold 1 byte"); break;
-        case FCR_IT4:  log_debug("interrupt threshold 4 byte"); break;
-        case FCR_IT8:  log_debug("interrupt threshold 8 byte"); break;
+        case FCR_IT4:  log_debug("interrupt threshold 4 bytes"); break;
+        case FCR_IT8:  log_debug("interrupt threshold 8 bytes"); break;
         case FCR_IT14: log_debug("interrupt threshold 14 bytes"); break;
         default: break;
         }
