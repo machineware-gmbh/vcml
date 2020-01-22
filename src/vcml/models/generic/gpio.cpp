@@ -23,7 +23,7 @@ namespace vcml { namespace generic {
     bool gpio::cmd_status(const vector<string>& args, ostream& os) {
         os << basename() << " status" << std::endl
            << "  DATA: 0x" << std::hex << std::setw(8) << std::setfill('0')
-           << read_DATA() << std::endl;
+           << read_DATA() << std::dec << std::setfill(' ') << std::endl;
 
         os << "Set: ";
         for (auto port : GPIO) {

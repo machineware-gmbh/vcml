@@ -38,10 +38,7 @@ namespace vcml {
         if (env == nullptr)
             return false;
 
-        char* str = strdup(env);
-        val = string(str);
-        free(str);
-
+        val = string(env);
         return true;
     }
 

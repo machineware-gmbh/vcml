@@ -248,6 +248,18 @@ namespace vcml {
         for (unsigned int i = 0; i < size / 2; i++)
             std::swap(v[i], v[size - 1 - i]);
     }
+
+    class stream_state_guard
+    {
+    private:
+        std::ostream& m_os;
+        std::ios::fmtflags m_flags;
+        stream_state_guard() = delete;
+    public:
+        stream_state_guard(ostream& os): m_os(os), m_flags(os.flags()) {}
+        ~stream_state_guard() { m_os.flags(m_flags); }
+    };
+
 }
 
 #if (SYSTEMC_VERSION < 20140408)

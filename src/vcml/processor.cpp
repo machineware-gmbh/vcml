@@ -18,8 +18,8 @@
 
 #include "vcml/processor.h"
 
-#define HEX(x, w) std::setfill('0') << std::setw(w) << \
-                  std::hex << x << std::dec
+#define HEX(x, w) std::setfill('0') << std::setw(w) << std::hex << x \
+                  << std::dec << std::setfill('0')
 
 namespace vcml {
 
