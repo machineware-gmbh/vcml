@@ -38,6 +38,7 @@ namespace vcml {
         if (env == nullptr)
             return false;
 
+        // coverity[tainted_data]
         val = string(env);
         return true;
     }
