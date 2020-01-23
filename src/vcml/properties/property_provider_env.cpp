@@ -38,7 +38,10 @@ namespace vcml {
         if (env == nullptr)
             return false;
 
-        // coverity[tainted_data]
+        const size_t max_size = string().max_size() - 1;
+        if (strlen(env) > max_size)
+            return false;
+
         val = string(env);
         return true;
     }
