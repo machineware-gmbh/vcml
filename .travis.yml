@@ -16,7 +16,7 @@ addons:
       description: "A modeling library with virtual components for SystemC and TLM simulators"
     notification_email: jan.weinstock@rwth-aachen.de
     build_command: make
-    branch_pattern: master
+    branch_pattern: coverity
 
 cache:
   directories:
