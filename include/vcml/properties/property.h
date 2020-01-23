@@ -121,11 +121,11 @@ namespace vcml {
         const string delim = to_string(ARRAY_DELIMITER);
 
         m_str = "";
-        for (unsigned int i = 0; i < N; i++) {
-            if (i > 0)
-                m_str += delim;
-            m_str += escape(to_string<T>(m_value[i]), delim);
-        }
+
+        // coverity[unsigned_compare]
+        for (unsigned int i = 0; i < (N - 1); i++)
+            m_str += escape(to_string<T>(m_value[i]), delim) + delim;
+        m_str += escape(to_string<T>(m_value[N - 1]), delim);
 
         return m_str.c_str();
     }

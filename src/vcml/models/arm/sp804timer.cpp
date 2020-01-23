@@ -190,6 +190,7 @@ namespace vcml { namespace arm {
                                      const sideband& info) {
         u64 addr = tx.get_address();
 
+        // coverity[unsigned_compare]
         if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
             tx.set_address(addr - TIMER1_START);
             unsigned int bytes = TIMER1.receive(tx, info);
