@@ -64,8 +64,7 @@ namespace vcml { namespace generic {
     }
 
     u32 simdev::read_PRNG() {
-        // coverity[dont_call]
-        return (u32)rand();
+        return (u32)random();
     }
 
     simdev::simdev(const sc_module_name& nm):
