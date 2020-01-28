@@ -29,7 +29,7 @@ set(tests test_hello test_utils test_logging test_version test_aio test_elf
     test_dmi test_range test_exmon test_module test_component test_peripheral
     test_register test_backend_tcp test_generic_memory test_generic_bus
     test_processor test_property test_spi test_bitops test_riscv_clint
-    test_riscv_plic)
+    test_riscv_plic test_sdhci)
 
 if(LIBVNC_FOUND)
     set(tests ${tests} test_vnc)
