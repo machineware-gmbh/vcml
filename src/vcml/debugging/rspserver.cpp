@@ -230,8 +230,8 @@ namespace vcml { namespace debugging {
         if (::listen(m_fd_server, 1))
             VCML_ERROR("listen for connections failed: %s", strerror(errno));
 
-        socklen_t len = sizeof(m_client);
-        if ((m_fd = accept(m_fd_server, (struct sockaddr*)&m_client, &len)))
+        socklen_t l = sizeof(m_client);
+        if ((m_fd = accept(m_fd_server, (struct sockaddr*)&m_client, &l)) < 0)
             VCML_ERROR("failed to accept connection: %s", strerror(errno));
 
         if (setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
