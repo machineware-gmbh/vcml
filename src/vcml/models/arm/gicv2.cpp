@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2020 Jan Henrik Weinstock, Lukas Juenger                         *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -15,6 +15,8 @@
  * limitations under the License.                                             *
  *                                                                            *
  ******************************************************************************/
+
+#include <algorithm>
 
 #include "vcml/models/arm/gicv2.h"
 
@@ -64,6 +66,17 @@ namespace vcml { namespace arm {
         // nothing to do
     }
 
+    gicv2::lr::lr():
+        pending(false),
+        active(false),
+        hw(0),
+        prio(0),
+        virtual_id(0),
+        physical_id(0),
+        cpu_id(0) {
+        // nothing to do
+    }
+
     u32 gicv2::distif::int_pending_mask(int cpu) {
         u32 value = 0;
         unsigned int mask = 1 << cpu;
@@ -99,6 +112,10 @@ namespace vcml { namespace arm {
         CTLR = val & CTLR_ENABLE;
         m_parent->update();
         return CTLR;
+    }
+
+    u32 gicv2::distif::read_ICTR() {
+        return 0xFF;
     }
 
     u32 gicv2::distif::read_ISER() {
@@ -438,7 +455,7 @@ namespace vcml { namespace arm {
             if (targets & (1 << target))
                 set_sgi_pending(1 << cpu, sgi_num, target, true);
         }
-
+        m_parent->set_irq_signaled(sgi_num, false, targets);
         m_parent->update();
         return SCTL;
     }
@@ -456,6 +473,7 @@ namespace vcml { namespace arm {
 
         set_sgi_pending(value, irq, cpu, true);
         m_parent->set_irq_pending(irq, true, mask);
+        m_parent->set_irq_signaled(irq, false, mask);
         m_parent->update();
 
         return SGIS;
@@ -483,6 +501,7 @@ namespace vcml { namespace arm {
         m_parent(dynamic_cast<gicv2*>(get_parent_object())),
         CTLR("CTLR", 0x000, 0x00000000),
         ICTR("ICTR", 0x004, 0x00000000),
+        IIDR("IIDR", 0x008, 0x00000000),
         ISER("ISER", 0x100, 0x0000FFFF),
         SSER("SSER", 0x104, 0x00000000),
         ICER("ICER", 0x180, 0x0000FFFF),
@@ -512,7 +531,11 @@ namespace vcml { namespace arm {
 
         CTLR.allow_read_write();
         CTLR.write = &distif::write_CTLR;
+
         ICTR.allow_read();
+        ICTR.read = &distif::read_ICTR;
+
+        IIDR.allow_read_write();
 
         ISER.set_banked();
         ISER.allow_read_write();
@@ -573,7 +596,7 @@ namespace vcml { namespace arm {
         SPIP.allow_read_write();
 
         INTT.set_banked();
-        INTT.allow_read();
+        INTT.allow_read_write();
         INTT.tagged_read = &distif::read_INTT;
 
         SPIT.allow_read_write();
@@ -674,7 +697,9 @@ namespace vcml { namespace arm {
         }
 
         if (irq == m_curr_irq[cpu]) {
+            log_debug("(EOI) cpu %d eois irq %d", cpu, irq);
             set_current_irq(cpu, m_prev_irq[irq][cpu]);
+            m_parent->set_irq_active(irq, false, 1 << cpu);
             return 0;
         }
 
@@ -728,7 +753,8 @@ namespace vcml { namespace arm {
 
         m_prev_irq[irq][cpu] = m_curr_irq[cpu];
         set_current_irq(cpu, irq); // set the acknowledged IRQ to running
-
+        m_parent->set_irq_active(irq, true, cpu_mask);
+        m_parent->set_irq_signaled(irq, true, cpu_mask);
         return IACK;
     }
 
@@ -746,6 +772,7 @@ namespace vcml { namespace arm {
         ACPR("ACPR", 0xD0, 0x00000000),
         IIDR("IIDR", 0xFC, VCML_ARM_GICv2_IIDR),
         CIDR("CIDR", 0xFF0),
+        DIR("DIR", 0x1000),
         IN("IN") {
         VCML_ERROR_ON(!m_parent, "gicv2 parent module not found");
 
@@ -783,6 +810,9 @@ namespace vcml { namespace arm {
         IIDR.allow_read();
         CIDR.allow_read();
 
+        DIR.set_banked();
+        DIR.allow_read_write();
+
         reset();
     }
 
@@ -805,14 +835,293 @@ namespace vcml { namespace arm {
             m_curr_irq[cpu] = VCML_ARM_GICv2_SPURIOUS_IRQ;
     }
 
+    u32 gicv2::vifctrl::write_HCR(u32 val) {
+        u8 core_id = current_cpu();
+        HCR.bank(core_id) = val;
+        m_parent->update(true);
+        return val;
+    };
+
+    u32 gicv2::vifctrl::read_VTR() {
+        return 0x90000000 | (VCML_ARM_GICv2_NLR-1);
+    };
+
+    u32 gicv2::vifctrl::write_LR(u32 val, unsigned int idx) {
+        u8 core_id = current_cpu();
+        u8 state = (val >> 28) & 0b11;
+        u8 hw = (val >> 31) & 0b1;
+        if (hw == 0) {
+            u8 eoi = (val >> 19) & 0b1;
+            if (eoi == 1)
+                log_error("Maintenance IRQ not implemented");
+            u8 cpu_id = (val >> 10) & 0b111;
+            set_lr_cpuid(idx, core_id, cpu_id);
+            set_lr_hw(idx, core_id, false);
+            set_lr_physid(idx, core_id, 0);
+        } else {
+            set_lr_cpuid(idx, core_id, 0);
+            set_lr_hw(idx, core_id, true);
+            u16 physid = (val >> 10) & 0x1ff;
+            set_lr_physid(idx, core_id, physid);
+        }
+
+        if (state & 1)
+            set_lr_pending(idx, core_id, true);
+        if (state & 2)
+            set_lr_active(idx, core_id, true);
+        if (state == 0) {
+            set_lr_pending(idx, core_id, false);
+            set_lr_active(idx, core_id, false);
+        }
+        u32 prio = (val >> 23) & 0x1f;
+        set_lr_prio(idx, core_id, prio);
+        u32 irq = val & 0x1ff;
+        set_lr_vid(idx, core_id, irq);
+        LR[idx] = val;
+        m_parent->update(true);
+        return val;
+    };
+
+    u32 gicv2::vifctrl::read_LR(unsigned int idx) {
+        u8 core_id = current_cpu();
+        // Update pending and active bit
+        if(is_lr_pending(idx, core_id)) {
+            LR[idx] = LR[idx] | VCML_ARM_GICv2_LR_PENDING_MASK;
+        } else {
+            LR[idx] = LR[idx] & ~VCML_ARM_GICv2_LR_PENDING_MASK;
+        }
+        if(is_lr_active(idx, core_id)) {
+            LR[idx] = LR[idx] | VCML_ARM_GICv2_LR_ACTIVE_MASK;
+        } else {
+            LR[idx] = LR[idx] & ~VCML_ARM_GICv2_LR_ACTIVE_MASK;
+        }
+        return LR[idx];
+    }
+
+    u32 gicv2::vifctrl::write_VMCR(u32 val) {
+        int core_id = current_cpu();
+        u8 prio_mask = (val >> 27) & 0x1f;
+        u8 bpr = (val >> 21) & 0x03;
+        u32 ctlr = val & 0x1ff;
+        m_parent->VCPUIF.PMR.bank(core_id) = prio_mask << 3;
+        m_parent->VCPUIF.BPR.bank(core_id) = bpr;
+        m_parent->VCPUIF.CTLR.bank(core_id) = ctlr;
+        return val;
+    }
+
+    u32 gicv2::vifctrl::read_VMCR() {
+        int core_id = current_cpu();
+        u8 prio_mask = (m_parent->VCPUIF.PMR.bank(core_id) >> 3) & 0x1f;
+        u8 bpr = m_parent->VCPUIF.BPR.bank(core_id) & 0x03;
+        u32 ctlr = m_parent->VCPUIF.CTLR.bank(core_id) & 0x1ff;
+        return (prio_mask << 27 | bpr << 21 | ctlr);
+    }
+
+    u32 gicv2::vifctrl::write_APR(u32 val) {
+       int core_id = current_cpu();
+       u8 prio = VCML_ARM_GICv2_IDLE_PRIO;
+       if (val != 0)
+           prio = ((u32) (pow(2,log2(val)))) << (VCML_ARM_GICv2_VIRT_MIN_BPR + 1);
+       m_parent->VCPUIF.RPR.bank(core_id) = prio;
+       return val;
+    }
+
+    u8 gicv2::vifctrl::get_irq_priority(unsigned int core_id, unsigned int irq) {
+        for(unsigned int i = 0; i < VCML_ARM_GICv2_NLR; i++) {
+            if (m_lr_state[core_id][i].virtual_id == irq &&
+                    (m_lr_state[core_id][i].active ||
+                    m_lr_state[core_id][i].pending)) {
+                return m_lr_state[core_id][i].prio;
+            }
+        }
+        log_error("Failed getting LR prio for irq %d on cpu %d", irq, core_id);
+        return 0;
+    }
+
+    u8 gicv2::vifctrl::get_lr(unsigned int irq, u8 core_id) {
+        for(unsigned int i = 0; i < VCML_ARM_GICv2_NLR; i++) {
+            if (m_lr_state[core_id][i].virtual_id == irq  &&
+                (m_lr_state[core_id][i].active ||
+                m_lr_state[core_id][i].pending)) {
+                return i;
+            }
+        }
+        log_error("Failed getting LR for irq %d on cpu%d", irq, core_id);
+        return 0;
+    }
+
+    gicv2::vifctrl::vifctrl(const sc_module_name& nm):
+        peripheral(nm),
+        m_parent(dynamic_cast<gicv2*>(get_parent_object())),
+        m_lr_state(),
+        HCR("HCR", 0x0),
+        VTR("VTR", 0x04, 0x0),
+        VMCR("VMCR", 0x08),
+        APR("APR", 0xF0, 0x0),
+        LR("LR", 0x100, 0x0),
+        IN("IN") {
+
+        HCR.set_banked();
+        HCR.allow_read_write();
+        HCR.write = &vifctrl::write_HCR;
+
+        VTR.allow_read();
+        VTR.read = &vifctrl::read_VTR;
+
+        LR.set_banked();
+        LR.allow_read_write();
+        LR.tagged_write = &vifctrl::write_LR;
+        LR.tagged_read = &vifctrl::read_LR;
+
+        VMCR.allow_read_write();
+        VMCR.read = &vifctrl::read_VMCR;
+        VMCR.write = &vifctrl::write_VMCR;
+
+        APR.set_banked();
+        APR.allow_read_write();
+        APR.write = &vifctrl::write_APR;
+    }
+
+    gicv2::vifctrl::~vifctrl() {
+        // nothing to do
+    }
+
+    u32 gicv2::vcpuif::write_CTLR(u32 val) {
+        if (val > 1)
+            log_error("Using unimplemented features");
+        return val;
+    }
+
+    u32 gicv2::vcpuif::write_BPR(u32 val) {
+        return std::max(val & 0x07, (u32) VCML_ARM_GICv2_VIRT_MIN_BPR);
+    }
+
+    u32 gicv2::vcpuif::read_IAR() {
+        u8 core_id = current_cpu();
+
+        u32 irq = HPPIR.bank(core_id);
+        if (irq == VCML_ARM_GICv2_SPURIOUS_IRQ ||
+                m_vifctrl->get_irq_priority(core_id, irq) >= RPR.bank(core_id))
+            return VCML_ARM_GICv2_SPURIOUS_IRQ;
+
+        u32 prio = m_vifctrl->get_irq_priority(core_id, irq) << 3;
+        u32 mask = ~0ul << ((BPR.bank(core_id) & 0x07) + 1);
+        RPR.bank(core_id) = prio & mask;
+        u32 preemption_level = prio >> (VCML_ARM_GICv2_VIRT_MIN_BPR + 1);
+        u32 bitno = preemption_level % 32;
+        m_parent->VIFCTRL.APR.bank(core_id) |= (1 << bitno);
+
+        u8 lr = m_vifctrl->get_lr(irq, core_id);
+        m_vifctrl->set_lr_active(lr, core_id, true);
+
+        m_vifctrl->set_lr_pending(lr, core_id, false);
+
+        log_debug("(vIACK) cpu %d acknowledges virq %d", core_id, irq);
+        m_parent->update(true);
+        u8 cpu_id = m_vifctrl->get_lr_cpuid(lr, core_id);
+        return ( (cpu_id & 0x111) << 10 | irq);
+    }
+
+    u32 gicv2::vcpuif::write_EOIR(u32 val) {
+        u8 core_id = current_cpu();
+        u32 irq = val & 0x1FF;
+
+        if (irq >= m_parent->get_irq_num()) {
+            log_warning("(EOI) invalid irq %d ignored", irq);
+            return 0;
+        }
+        log_debug("(vEOIR) cpu%d eois virq %d", core_id, irq);
+
+        u8 lr = m_vifctrl->get_lr(irq, core_id);
+        // drop priority and update APR
+        m_vifctrl->APR.bank(core_id) &= m_parent->VIFCTRL.APR.bank(core_id) - 1;
+        u32 apr = m_parent->VIFCTRL.APR.bank(core_id);
+        if (apr)
+            RPR.bank(core_id) = ((u32) (pow(2,log2(apr)))) << (VCML_ARM_GICv2_VIRT_MIN_BPR + 1);
+        else
+            RPR.bank(core_id) = VCML_ARM_GICv2_IDLE_PRIO;
+        // deactivate interrupt
+        m_vifctrl->set_lr_active(lr, core_id, false);
+        if (m_vifctrl->is_lr_hw(lr, core_id)) {
+            u16 physid = m_vifctrl->get_lr_physid(lr, core_id);
+            if (!(physid < VCML_ARM_GICv2_NSGI || physid > VCML_ARM_GICv2_NIRQ)) {
+                m_parent->set_irq_active(physid, false, 1 << core_id);
+            } else {
+                log_error("Unexpected physical id %d for cpu %d in LR %d", physid, core_id, lr);
+            }
+        }
+        m_parent->update(true);
+        return val;
+    }
+
+    gicv2::vcpuif::vcpuif(const sc_module_name& nm, vifctrl *vifctrl):
+        peripheral(nm),
+        m_parent(dynamic_cast<gicv2*>(get_parent_object())),
+        m_vifctrl(vifctrl),
+        CTLR("CTLR", 0x00, 0x0),
+        PMR("PMR", 0x04, 0x0),
+        BPR("BPR", 0x08, 2),
+        IAR("IAR", 0x0C, 0x0),
+        EOIR("EOIR", 0x10, 0x0),
+        RPR("RPR", 0x14, VCML_ARM_GICv2_IDLE_PRIO),
+        HPPIR("HPPIR", 0x18, VCML_ARM_GICv2_SPURIOUS_IRQ),
+        APR("APR", 0xD0, 0x00000000),
+        IIDR("IIDR", 0xFC, VCML_ARM_GICv2_IIDR),
+        IN("IN") {
+
+        CTLR.set_banked();
+        CTLR.allow_read_write();
+        CTLR.write = &vcpuif::write_CTLR;
+
+        PMR.set_banked();
+        PMR.allow_read_write();
+
+        BPR.set_banked();
+        BPR.allow_read_write();
+        BPR.write = &vcpuif::write_BPR;
+
+        IAR.set_banked();
+        IAR.allow_read();
+        IAR.read = &vcpuif::read_IAR;
+
+        EOIR.set_banked();
+        EOIR.allow_write();
+        EOIR.write = &vcpuif::write_EOIR;
+
+        RPR.set_banked();
+
+        HPPIR.set_banked();
+        HPPIR.allow_read_write();
+
+        APR.set_banked();
+        APR.allow_read_write();
+
+        IIDR.allow_read();
+
+        reset();
+    }
+
+    gicv2::vcpuif::~vcpuif() {
+        // nothing to do
+    }
+
+    void gicv2::vcpuif::reset() {
+        RPR = RPR.get_default();
+        HPPIR = HPPIR.get_default();
+    }
+
     gicv2::gicv2(const sc_module_name& nm):
         peripheral(nm),
         DISTIF("distif"),
         CPUIF("cpuif"),
+        VIFCTRL("vifctrl"),
+        VCPUIF("vcpuif", &VIFCTRL),
         PPI_IN("PPI_IN"),
         SPI_IN("SPI_IN"),
         FIQ_OUT("FIQ_OUT"),
         IRQ_OUT("IRQ_OUT"),
+        VFIQ_OUT("VFIQ_OUT"),
+        VIRQ_OUT("VIRQ_OUT"),
         m_irq_num(VCML_ARM_GICv2_PRIV),
         m_cpu_num(0),
         m_irq_state() {
@@ -823,67 +1132,102 @@ namespace vcml { namespace arm {
         // nothing to do
     }
 
-    void gicv2::update() {
+    void gicv2::update(bool virt) {
         for (unsigned int cpu = 0; cpu < m_cpu_num; cpu++) {
             unsigned int irq;
             unsigned int mask = 1 << cpu;
             unsigned int best_irq = VCML_ARM_GICv2_SPURIOUS_IRQ;
             unsigned int best_prio = VCML_ARM_GICv2_IDLE_PRIO;
-            CPUIF.PEND.bank(cpu) = VCML_ARM_GICv2_SPURIOUS_IRQ;
+            if (!virt)
+                CPUIF.PEND.bank(cpu) = VCML_ARM_GICv2_SPURIOUS_IRQ;
+            else
+                VCPUIF.HPPIR.bank(cpu) = VCML_ARM_GICv2_SPURIOUS_IRQ;
 
-            if (DISTIF.CTLR == 0u || CPUIF.CTLR.bank(cpu) == 0u) {
+            if (!virt && (DISTIF.CTLR == 0u || CPUIF.CTLR.bank(cpu) == 0u)) {
+                log_debug("Disabling IRQ[%d]", cpu);
                 IRQ_OUT[cpu].write(false);
                 continue; // TODO check if continue or return
             }
 
-            // check SGIs
-            for (irq = 0; irq < VCML_ARM_GICv2_NSGI; irq++) {
-                if (is_irq_enabled(irq, mask) && test_pending(irq, mask)) {
-                    if (DISTIF.SGIP.bank(cpu, irq) < best_prio) {
-                        best_prio = DISTIF.SGIP.bank(cpu, irq);
-                        best_irq = irq;
+            if (virt && (VIFCTRL.HCR.bank(cpu) == 0u)) {
+                log_debug("Disabling VIRQ[%d]", cpu);
+                VIRQ_OUT[cpu].write(false);
+                continue;
+            }
+
+            if(!virt) {
+                // check SGIs
+                for (irq = 0; irq < VCML_ARM_GICv2_NSGI; irq++) {
+                    if (is_irq_enabled(irq, mask) && test_pending(irq, mask) && !is_irq_active(irq, mask)) {
+                        if (DISTIF.SGIP.bank(cpu, irq) < best_prio) {
+                            best_prio = DISTIF.SGIP.bank(cpu, irq);
+                            best_irq = irq;
+                        }
+                    }
+                }
+
+                // check PPIs
+                for (irq = VCML_ARM_GICv2_NSGI; irq < VCML_ARM_GICv2_PRIV; irq++) {
+                    if (is_irq_enabled(irq, mask) && test_pending(irq, mask) && !is_irq_active(irq, mask)) {
+                        int idx = irq - VCML_ARM_GICv2_NSGI;
+                        if (DISTIF.PPIP.bank(cpu, idx) < best_prio) {
+                            best_prio = DISTIF.PPIP.bank(cpu, idx);
+                            best_irq = irq;
+                        }
+                    }
+                }
+
+                // check SPIs
+                for (irq = VCML_ARM_GICv2_PRIV; irq < m_irq_num; irq++) {
+                    int idx = irq - VCML_ARM_GICv2_PRIV;
+                    if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
+                        (DISTIF.SPIT[idx] & mask) && !is_irq_active(irq, mask)) {
+                        if (DISTIF.SPIP[idx] < best_prio) {
+                            best_prio = DISTIF.SPIP[idx];
+                            best_irq = irq;
+                        }
                     }
                 }
             }
-
-            // check PPIs
-            for (irq = VCML_ARM_GICv2_NSGI; irq < VCML_ARM_GICv2_PRIV; irq++) {
-                if (is_irq_enabled(irq, mask) && test_pending(irq, mask)) {
-                    int idx = irq - VCML_ARM_GICv2_NSGI;
-                    if (DISTIF.PPIP.bank(cpu, idx) < best_prio) {
-                        best_prio = DISTIF.PPIP.bank(cpu, idx);
-                        best_irq = irq;
+            else {
+                for (int lr_idx = 0; lr_idx < VCML_ARM_GICv2_NLR; lr_idx++) {
+                    if (VIFCTRL.is_lr_pending(lr_idx, cpu)) {
+                        u8 prio = (VIFCTRL.LR.bank(cpu, lr_idx) & (0x1F<<23)) >> 23;
+                        if (prio < best_prio) {
+                            best_prio = prio;
+                            best_irq = (VIFCTRL.LR.bank(cpu, lr_idx) & 0x1FF);
+                        }
                     }
                 }
             }
-
-            // check SPIs
-            for (irq = VCML_ARM_GICv2_PRIV; irq < m_irq_num; irq++) {
-                int idx = irq - VCML_ARM_GICv2_PRIV;
-                if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
-                    (DISTIF.SPIT[idx] & mask)) {
-                    if (DISTIF.SPIP[idx] < best_prio) {
-                        best_prio = DISTIF.SPIP[idx];
-                        best_irq = irq;
-                    }
-                }
-            }
-
             // signal IRQ to processor if priority is higher
             bool level = false;
-            if (best_prio < CPUIF.IPMR.bank(cpu)) {
-                CPUIF.PEND.bank(cpu) = best_irq;
-                if (best_prio < CPUIF.PRIO.bank(cpu))
-                    level = true;
+            if (!virt) {
+                if (best_prio < CPUIF.IPMR.bank(cpu)) {
+                    log_debug("Setting irq %u pending on cpuif %u", best_irq, cpu);
+                    CPUIF.PEND.bank(cpu) = best_irq;
+                    if (best_prio < CPUIF.PRIO.bank(cpu))
+                        level = true;
+                }
+            }
+            else {
+                if (best_prio < VCPUIF.PMR.bank(cpu)) {
+                    VCPUIF.HPPIR.bank(cpu) = best_irq;
+                    if (best_prio < VCPUIF.RPR.bank(cpu))
+                        level = true;
+                 }
             }
 
-            if (!IRQ_OUT[cpu].read() && level)
-                log_debug("raising irq %u for cpu %d", best_irq, cpu);
-
-            if (IRQ_OUT[cpu].read() && !level)
-                log_debug("clearing irq %u for cpu %d", best_irq, cpu);
-
-            IRQ_OUT[cpu].write(level); // FIRQ or NIRQ?
+            if(!virt) {
+                if (IRQ_OUT[cpu].read() != level)
+                    log_debug("%sing %s[%u] for irq %u", level ? "sett" : "clear", "IRQ", cpu, best_irq);
+                IRQ_OUT[cpu].write(level); // FIRQ or NIRQ?
+            }
+            else {
+                if(VIRQ_OUT[cpu].read() != level)
+                    log_debug("%sing %s[%u] for irq %u", level ? "sett" : "clear", "VIRQ", cpu, best_irq);
+                VIRQ_OUT[cpu].write(level);
+            }
         }
     }
 
@@ -906,6 +1250,7 @@ namespace vcml { namespace arm {
 
         bool irq_level = PPI_IN[idx].read();
         set_irq_level(irq, irq_level, mask);
+        set_irq_signaled(irq, false, gicv2::ALL_CPU);
         if (get_irq_trigger(irq) == EDGE && irq_level)
             set_irq_pending(irq, true, mask);
 
@@ -918,6 +1263,7 @@ namespace vcml { namespace arm {
 
         bool irq_level = SPI_IN[idx].read();
         set_irq_level(irq, irq_level, gicv2::ALL_CPU);
+        set_irq_signaled(irq, false, gicv2::ALL_CPU);
         if (get_irq_trigger(irq) == EDGE && irq_level)
             set_irq_pending(irq, true, target_cpu);
 
