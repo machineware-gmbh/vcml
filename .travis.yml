@@ -32,6 +32,10 @@ jobs:
 
     - name: "SystemC 2.3.2"
       env:  SYSTEMC=systemc-2.3.2
+      if:   branch != coverity
+
+    - name: "SystemC 2.3.3"
+      env:  SYSTEMC=systemc-2.3.3
 
 env:
   global:
@@ -51,18 +55,6 @@ install:
           make -j 4 && make install
           cd ../..
           rm -rf $SYSTEMC.tar.gz $SYSTEMC/BUILD
-      fi
-  - export GTEST_ROOT=`pwd`/googletest-release-1.8.0/INSTALL
-  - export GMOCK_ROOT=$GTEST_ROOT
-  - | # Build Google Test
-      if [ ! -d $GTEST_ROOT ]; then
-          wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz
-          tar -xzf release-1.8.0.tar.gz && cd googletest-release-1.8.0
-          mkdir BUILD && cd BUILD
-          cmake .. -DCMAKE_INSTALL_PREFIX=$GTEST_ROOT -DCMAKE_CXX_STANDARD=11
-          make -j 4 && make install
-          cd ../..
-          rm -rf release-1.8.0.tar.gz googletest-release-1.8.0/BUILD
       fi
   - cd ..
 
