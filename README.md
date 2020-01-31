@@ -35,17 +35,13 @@ is how to build and install them:
     sudo apt-get install cmake libelf-dev  # Ubuntu
     sudo yum install cmake3 libelf-dev     # Centos
     ```
-3. (Optional) Install `googletest-1.8.0` and set the environment variables
-    `GTEST_ROOT` and `GMOCK_ROOT`:
+    
+3. Install `libvncserver` (optional, needed if you want graphic output):
     ```
-    wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz
-    tar -xzf release-1.8.0.tar.gz && cd googletest-release-1.8.0
-    mkdir BUILD && cd BUILD
-    cmake .. -DCMAKE_INSTALL_PREFIX=INSTALL -DCMAKE_CXX_STANDARD=11
-    make -j 4 && make install
-    export GTEST_ROOT=`pwd`/INSTALL
-    export GMOCK_ROOT=$GTEST_ROOT
+    sudo apt-get install libvncserver-dev  # Ubuntu
+    sudo yum install libvncserver-devel    # Centos
     ```
+
 4. Chose directories for building and deployment:
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
@@ -55,9 +51,9 @@ is how to build and install them:
 
 5. Configure and build the project using `cmake`. During configuration you must
    state whether or not to build the utility programs and unit tests:
-     * `-DBUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
-     * `-DBUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
-     * `-DBUILD_PIC=[ON|OFF]`: build position independent code (default: `ON`)
+     * `-DVCML_BUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
+     * `-DVCML_BUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
+     * `-DVCML_BUILD_PIC=[ON|OFF]`: build position independent code (default: `ON`)
 
    Release and debug build configurations are controlled via the regular
    parameters:
@@ -68,7 +64,7 @@ is how to build and install them:
    make -j 4
    sudo make install
    ```
-   If building with `-DBUILD_TESTS=ON` you can run all unit tests using
+   If building with `-DVCML_BUILD_TESTS=ON` you can run all unit tests using
    `make test` within `<build-dir>`.
 
 6. After installation, the following new files should be present:

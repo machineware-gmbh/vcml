@@ -23,7 +23,7 @@ TEST(elf, main) {
     ASSERT_TRUE(sc_core::sc_argc() >= 2);
     ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);
 
-    std::string path = std::string(sc_core::sc_argv()[1]) + "/test_elf.elf";
+    std::string path = std::string(sc_core::sc_argv()[1]) + "/elf.elf";
     ASSERT_TRUE(vcml::file_exists(path));
 
     vcml::elf elf(path);
@@ -38,7 +38,7 @@ TEST(elf, sections) {
     ASSERT_TRUE(sc_core::sc_argc() >= 2);
     ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);
 
-    std::string path = std::string(sc_core::sc_argv()[1]) + "/test_elf.elf";
+    std::string path = std::string(sc_core::sc_argv()[1]) + "/elf.elf";
     ASSERT_TRUE(vcml::file_exists(path));
 
     vcml::elf elf(path);
@@ -78,7 +78,7 @@ TEST(elf, symbols) {
     ASSERT_TRUE(sc_core::sc_argc() >= 2);
     ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);
 
-    std::string path = std::string(sc_core::sc_argv()[1]) + "/test_elf.elf";
+    std::string path = std::string(sc_core::sc_argv()[1]) + "/elf.elf";
     ASSERT_TRUE(vcml::file_exists(path));
 
     vcml::elf elf(path);
