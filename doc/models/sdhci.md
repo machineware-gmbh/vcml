@@ -6,17 +6,17 @@ the possibility to communicate to an MMC/SD card.
 The host driver can write the command argument to the argument register ARG.
 Afterwards the command should be written to the command register CMD. For the
 command index bits 13-08 are reserved and for some execution flags bits 07-00.
-After the command register has been written, the controller forwards the argument
-and the command to the SD card bound to the SD_OUT initiator socket.
-The responsonse of the SD card is stored in the RESPONSE register and an interrupt
-is triggered. The kind of the interrupt (e.g. command complete, transaction complete)
-is shown in the normal interrupt status register. The status of the controller is
-shown in the present state register all the time.
+After the command register has been written, the controller forwards the
+argument and the command to the SD card bound to the SD_OUT initiator socket.
+The responsonse of the SD card is stored in the RESPONSE register and an
+interrupt is triggered. The kind of the interrupt (e.g. command complete,
+transaction complete) is shown in the normal interrupt status register. The
+status of the controller is shown in the present state register all the time.
 To write data to the sd card CMD24 (single block) or CMD25 (multiple block) has
-to be send. If an interrupt is triggered by the controller, the the host can start
-transferring data to the controller via the BUFFER_DATA_PORT register.
-Reading commands are CMD17 (single block) and CMD18 (multiple block). The controller
-provides the data to the host in the BUFFER_DATA_PORT register.
+to be send. If an interrupt is triggered by the controller, the the host can
+start transferring data to the controller via the BUFFER_DATA_PORT register.
+Reading commands are CMD17 (single block) and CMD18 (multiple block). The
+controller provides the data to the host in the BUFFER_DATA_PORT register.
 
 For more information see [SD Host Controller Simplified Specification](https://www.sdcard.org/downloads/pls/index.html).
 
@@ -69,12 +69,12 @@ The device driver for Linux can be found at:
 drivers/mmc/host/sdhci_f_sdh30.c
 ```
 
-Driver support in the kernel is controlled via `CONFIG_MMC_SDHCI_F_SDH30`. Set this
-to `y` or `m` to include the driver into the kernel or build it as a module,
-respectively.
+Driver support in the kernel is controlled via `CONFIG_MMC_SDHCI_F_SDH30`. Set
+this to `y` or `m` to include the driver into the kernel or build it as a
+module, respectively.
 
-Once this is done, a new device tree node must be added. The following example adds
-an Fujitsu F_SDH30 SD Host Controller Interface to address `0x99000000`:
+Once this is done, a new device tree node must be added. The following example
+adds an Fujitsu F_SDH30 SD Host Controller Interface to address `0x99000000`:
 
 ```
 sdhci1: mmc@99000000 {
