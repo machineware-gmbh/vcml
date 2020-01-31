@@ -17,10 +17,10 @@
  ##############################################################################
 
 find_path(LIBVNC_INCLUDE_DIRS NAMES "rfb/rfb.h"
-          HINTS $ENV{LIBVNC_HOME}/include)
+          HINTS $ENV{LIBVNC_HOME}/include /usr/include)
 
 find_library(LIBVNC_LIBRARIES NAMES "libvncserver.a"
-             HINTS $ENV{LIBVNC_HOME}/lib)
+             HINTS $ENV{LIBVNC_HOME}/lib /usr/lib)
 
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBVNC DEFAULT_MSG
