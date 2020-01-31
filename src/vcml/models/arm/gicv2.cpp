@@ -61,6 +61,7 @@ namespace vcml { namespace arm {
         pending(0),
         active(0),
         level(0),
+        signaled(0),
         model(N_N),
         trigger(EDGE) {
         // nothing to do
