@@ -32,7 +32,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DVCML_DEBUG")
 
-if(BUILD_PIC)
+if(VCML_BUILD_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
@@ -120,11 +120,11 @@ endif()
 install(TARGETS vcml DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
 
-if(BUILD_UTILS)
+if(VCML_BUILD_UTILS)
     add_subdirectory(utils)
 endif()
 
-if(BUILD_TESTS)
+if(VCML_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
