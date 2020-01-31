@@ -15,14 +15,14 @@ are also provided, such as memories, memory-mapped buses, UARTs, etc.
 ## Build & Installation
 In order to build `vcml`, you need a working installation of SystemC.
 Currently, versions >= 2.3.0 are supported. Furthermore, you need `cmake`,
-`libelf` and `googletest-1.8.0` if you also want to run the unit tests. This
-is how to build and install them:
+`libelf` and, optionally, `libvncserver` if you also want graphics support.
+This is how to build and install them:
 
-1. Download and build SystemC (here `systemc-2.3.1a`). Make sure to set the
+1. Download and build SystemC (here `systemc-2.3.2`). Make sure to set the
    environment variables `SYSTEMC_HOME` and `TARGET_ARCH` accordingly:
     ```
-    wget http://www.accellera.org/images/downloads/standards/systemc/systemc-2.3.1a.tar.gz
-    tar -xzf systemc-2.3.1a.tar.gz && cd systemc-2.3.1a
+    wget http://www.accellera.org/images/downloads/standards/systemc/systemc-2.3.2.tar.gz
+    tar -xzf systemc-2.3.2.tar.gz && cd systemc-2.3.2
     export SYSTEMC_HOME=`pwd`
     export TARGET_ARCH=linux64
     mkdir BUILD && cd BUILD
