@@ -95,7 +95,7 @@
 #include "vcml/models/arm/pl190vic.h"
 #include "vcml/models/arm/sp804timer.h"
 #include "vcml/models/arm/syscon.h"
-#include "vcml/models/arm/gicv2.h"
+#include "vcml/models/arm/gic400.h"
 
 #include "vcml/models/riscv/clint.h"
 #include "vcml/models/riscv/plic.h"

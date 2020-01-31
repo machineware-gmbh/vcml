@@ -16,11 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef AVP_ARM_GICV2_H
-#define AVP_ARM_GICV2_H
+#ifndef AVP_ARM_GIC400_H
+#define AVP_ARM_GIC400_H
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 
@@ -32,39 +33,32 @@
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
-#define VCML_ARM_GICv2_NCPU (8)      // number of CPUs handled by the ARM GIC
-#define VCML_ARM_GICv2_NVCPU (8)     // number of vCPUs handled by the ARM GIC
-#define VCML_ARM_GICv2_NIRQ (1020)   // number of possible interrupts
-#define VCML_ARM_GICv2_NSPCL_IRQ (4) // number of special purpose IRQs
-#define VCML_ARM_GICv2_NSGI (16)     // number of software generated interrupts
-#define VCML_ARM_GICv2_NPPI (16)     // number of private peripheral interrupts
-#define VCML_ARM_GICv2_REGS (VCML_ARM_GICv2_NIRQ + VCML_ARM_GICv2_NSPCL_IRQ)
-#define VCML_ARM_GICv2_PRIV (VCML_ARM_GICv2_NSGI + VCML_ARM_GICv2_NPPI)
-#define VCML_ARM_GICv2_NLR (64)
-#define VCML_ARM_GICv2_LR_PENDING_MASK 0x10000000;
-#define VCML_ARM_GICv2_LR_ACTIVE_MASK  0x20000000;
-#define VCML_ARM_GICv2_VIRT_MIN_BPR (2)
-
-#define VCML_ARM_GICv2_IDLE_PRIO     (0xFF)
-#define VCML_ARM_GICv2_SPURIOUS_IRQ  (1023)
-#define VCML_ARM_GICv2_ALL_CPU_MASK  ((1 << VCML_ARM_GICv2_NCPU) - 1)
-
-#define VCML_ARM_GICv2_IIDR_IMPL(v)  (((v) & 0xfff) <<  0)
-#define VCML_ARM_GICv2_IIDR_REV(v)   (((v) & 0x00f) << 12)
-#define VCML_ARM_GICv2_IIDR_ARCH(v)  (((v) & 0x00f) << 16)
-#define VCML_ARM_GICv2_IIDR_PID(v)   (((v) & 0xfff) << 20)
-#define VCML_ARM_GICv2_IIDR          VCML_ARM_GICv2_IIDR_PID(0)  | \
-                                     VCML_ARM_GICv2_IIDR_ARCH(2) | \
-                                     VCML_ARM_GICv2_IIDR_REV(0)  | \
-                                     VCML_ARM_GICv2_IIDR_IMPL(0x43B)
-
-#define VCML_ARM_GICv2_CID 0xB105F00D // PrimeCell ID
-
 namespace vcml { namespace arm {
 
-    class gicv2: public peripheral
+    class gic400: public peripheral
     {
     public:
+        static const unsigned int NCPU  = 8; // max supported CPUs
+        static const unsigned int NVCPU = 8; // max supported virtual CPUs
+
+        static const unsigned int NIRQ  = 1020;
+        static const unsigned int NRES  = 4;
+        static const unsigned int NSGI  = 16;
+        static const unsigned int NPPI  = 16;
+        static const unsigned int NREGS = NIRQ + NRES;
+        static const unsigned int NPRIV = NSGI + NPPI;
+
+        static const unsigned int NLR             = 64;
+        static const unsigned int LR_PENDING_MASK = 0x10000000;
+        static const unsigned int LR_ACTIVE_MASK  = 0x20000000;
+        static const unsigned int VIRT_MIN_BPR    = 2;
+
+        static const unsigned int IDLE_PRIO    = 0xFF;
+        static const unsigned int SPURIOUS_IRQ = 1023;
+
+        static const u32 PCID = 0xB105F00D;
+        static const u32 IIDR = 0x0202143B;
+
         enum handling_model {
             N_N = 0, // all processors handle the interrupt
             N_1 = 1  // only one processor handles interrupt
@@ -76,7 +70,7 @@ namespace vcml { namespace arm {
         };
 
         enum cpu_mask {
-            ALL_CPU = VCML_ARM_GICv2_ALL_CPU_MASK
+            ALL_CPU = ((1 << NCPU) - 1)
         };
 
         struct irq_state {
@@ -96,10 +90,10 @@ namespace vcml { namespace arm {
             bool pending;
             bool active;
             bool hw;
-            u8 prio;
-            u16 virtual_id;
-            u16 physical_id;
-            u8 cpu_id;
+            u8   prio;
+            u16  virtual_id;
+            u16  physical_id;
+            u8   cpu_id;
 
             lr();
         };
@@ -107,7 +101,7 @@ namespace vcml { namespace arm {
         class distif: public peripheral
         {
         private:
-            gicv2* m_parent;
+            gic400* m_parent;
 
             u32 int_pending_mask(int cpu);
             u32 spi_pending_mask(int cpu);
@@ -157,9 +151,7 @@ namespace vcml { namespace arm {
             u8  write_SGIC(u8 value, unsigned int idx);
 
         public:
-            enum ctlr_bits {
-                CTLR_ENABLE = 1 << 0,
-            };
+            bitfield<0,1> CTLR_ENABLE;
 
             reg<distif, u32>     CTLR; // Distributor Control register
             reg<distif, u32>     ICTR; // IRQ Controller Type register
@@ -201,7 +193,7 @@ namespace vcml { namespace arm {
 
             distif(const sc_module_name& nm);
             virtual ~distif();
-            VCML_KIND(gicv2::distif);
+            VCML_KIND(gic400::distif);
 
             virtual void reset() override;
             virtual void end_of_elaboration() override;
@@ -215,10 +207,10 @@ namespace vcml { namespace arm {
         class cpuif: public peripheral
         {
         private:
-            gicv2* m_parent;
+            gic400* m_parent;
 
-            u32 m_curr_irq[VCML_ARM_GICv2_NCPU];
-            u32 m_prev_irq[VCML_ARM_GICv2_REGS][VCML_ARM_GICv2_NCPU];
+            u32 m_curr_irq[NCPU];
+            u32 m_prev_irq[NREGS][NCPU];
 
             void set_current_irq(unsigned int cpu_id, unsigned int irq);
 
@@ -233,9 +225,7 @@ namespace vcml { namespace arm {
             cpuif(const cpuif&);
 
         public:
-            enum ctlr_bits {
-                CTLR_ENABLE = 1 << 0,
-            };
+            bitfield<0,1> CTLR_ENABLE;
 
             reg<cpuif, u32>    CTLR; // CPU Control register
             reg<cpuif, u32>    IPMR; // IRQ Priority Mask register
@@ -262,8 +252,8 @@ namespace vcml { namespace arm {
         class vifctrl : public peripheral
         {
         private:
-            gicv2* m_parent;
-            lr m_lr_state[VCML_ARM_GICv2_NVCPU][VCML_ARM_GICv2_NLR];
+            gic400* m_parent;
+            lr m_lr_state[NVCPU][NLR];
 
             u32 write_HCR(u32 val);
             u32 read_VTR();
@@ -285,7 +275,6 @@ namespace vcml { namespace arm {
             reg<vifctrl, u32, 64> LR;  // List registers
 
             slave_socket IN;
-
 
             u8 get_irq_priority(unsigned int cpu, unsigned int irq);
             // list register state control
@@ -314,7 +303,7 @@ namespace vcml { namespace arm {
                 EnableGrp0 = 1 << 0,
             };
 
-            gicv2* m_parent;
+            gic400* m_parent;
             vifctrl* m_vifctrl;
 
             u32 write_BPR(u32 val);
@@ -334,7 +323,7 @@ namespace vcml { namespace arm {
             reg<vcpuif, u32>    IAR;   // IRQ Acknowledge register
             reg<vcpuif, u32>    EOIR;  // End of Interrupt register
             reg<vcpuif, u32>    RPR;   // Running Priority register
-            reg<vcpuif, u32>    HPPIR; // Highest Priority Pending Interrupt register
+            reg<vcpuif, u32>    HPPIR; // High. Priority Pending Interrupt reg.
             reg<vcpuif, u32, 4> APR;   // Active Priorities registers
             reg<vcpuif, u32>    IIDR;  // Interface Identification register
 
@@ -382,7 +371,7 @@ namespace vcml { namespace arm {
 
         trigger_mode get_irq_trigger(unsigned int irq);
         void set_irq_trigger(unsigned int irq, trigger_mode t);
-        void set_irq_signaled(unsigned int irq, bool signaled, unsigned int mask);
+        void set_irq_signaled(unsigned int irq, bool signaled, unsigned int m);
         bool irq_signaled(unsigned int irq, unsigned int mask);
         bool is_edge_triggered(unsigned int irq) const;
         bool is_level_triggered(unsigned int irq) const;
@@ -390,12 +379,12 @@ namespace vcml { namespace arm {
         bool test_pending(unsigned int irq, unsigned int mask);
 
         // constructor / destructor
-        gicv2(const sc_module_name& nm);
-        virtual ~gicv2();
+        gic400(const sc_module_name& nm);
+        virtual ~gic400();
 
         u8 get_irq_priority(unsigned int cpu, unsigned int irq);
 
-        void update(bool virt=false);
+        void update(bool virt = false);
 
         virtual void end_of_elaboration() override;
 
@@ -403,29 +392,29 @@ namespace vcml { namespace arm {
         unsigned int m_irq_num;
         unsigned int m_cpu_num;
 
-        irq_state m_irq_state[VCML_ARM_GICv2_NIRQ+VCML_ARM_GICv2_NSPCL_IRQ];
+        irq_state m_irq_state[NIRQ+NRES];
 
         void ppi_handler(unsigned int cpu, unsigned int irq);
         void spi_handler(unsigned int irq);
     };
 
-    inline sc_in<bool>& gicv2::ppi_in(unsigned int cpu, unsigned int irq) {
-        return PPI_IN[cpu * VCML_ARM_GICv2_NPPI + irq];
+    inline sc_in<bool>& gic400::ppi_in(unsigned int cpu, unsigned int irq) {
+        return PPI_IN[cpu * NPPI + irq];
     }
 
-    inline void gicv2::enable_irq(unsigned int irq, unsigned int mask) {
+    inline void gic400::enable_irq(unsigned int irq, unsigned int mask) {
         m_irq_state[irq].enabled |= mask;
     }
 
-    inline void gicv2::disable_irq(unsigned int irq, unsigned int mask) {
+    inline void gic400::disable_irq(unsigned int irq, unsigned int mask) {
         m_irq_state[irq].enabled &= ~mask;
     }
 
-    inline bool gicv2::is_irq_enabled(unsigned int irq, unsigned int mask) {
+    inline bool gic400::is_irq_enabled(unsigned int irq, unsigned int mask) {
         return (m_irq_state[irq].enabled & mask) != 0;
     }
 
-    inline void gicv2::set_irq_pending(unsigned int irq, bool pending,
+    inline void gic400::set_irq_pending(unsigned int irq, bool pending,
                                        unsigned int mask) {
         if (pending)
             m_irq_state[irq].pending |= mask;
@@ -433,11 +422,11 @@ namespace vcml { namespace arm {
             m_irq_state[irq].pending &= ~mask;
     }
 
-    inline bool gicv2::is_irq_pending(unsigned int irq, unsigned int mask) {
+    inline bool gic400::is_irq_pending(unsigned int irq, unsigned int mask) {
         return (m_irq_state[irq].pending & mask) != 0;
     }
 
-    inline void gicv2::set_irq_active(unsigned int irq, bool active,
+    inline void gic400::set_irq_active(unsigned int irq, bool active,
                                         unsigned int mask) {
         if (active)
             m_irq_state[irq].active |= mask;
@@ -445,11 +434,11 @@ namespace vcml { namespace arm {
             m_irq_state[irq].active &= ~mask;
     }
 
-    inline bool gicv2::is_irq_active(unsigned int irq, unsigned int mask) {
+    inline bool gic400::is_irq_active(unsigned int irq, unsigned int mask) {
         return (m_irq_state[irq].active & mask) != 0;
     }
 
-    inline void gicv2::set_irq_level(unsigned int irq, bool level,
+    inline void gic400::set_irq_level(unsigned int irq, bool level,
                                        unsigned int mask) {
         if (level)
             m_irq_state[irq].level |= mask;
@@ -457,89 +446,92 @@ namespace vcml { namespace arm {
             m_irq_state[irq].level &= ~mask;
     }
 
-    inline bool gicv2::get_irq_level(unsigned int irq, unsigned int mask) {
+    inline bool gic400::get_irq_level(unsigned int irq, unsigned int mask) {
         return (m_irq_state[irq].level & mask) != 0;
     }
 
-    inline gicv2::handling_model gicv2::get_irq_model(unsigned int irq) {
+    inline gic400::handling_model gic400::get_irq_model(unsigned int irq) {
         return m_irq_state[irq].model;
     }
 
-    inline void gicv2::set_irq_model(unsigned int irq, handling_model m) {
+    inline void gic400::set_irq_model(unsigned int irq, handling_model m) {
         m_irq_state[irq].model = m;
     }
 
-    inline gicv2::trigger_mode gicv2::get_irq_trigger(unsigned int irq) {
+    inline gic400::trigger_mode gic400::get_irq_trigger(unsigned int irq) {
         return m_irq_state[irq].trigger;
     }
 
-    inline void gicv2::set_irq_trigger(unsigned int irq, trigger_mode t) {
+    inline void gic400::set_irq_trigger(unsigned int irq, trigger_mode t) {
         m_irq_state[irq].trigger = t;
     }
 
-    inline void gicv2::set_irq_signaled(unsigned int irq, bool signaled, unsigned int mask) {
+    inline void gic400::set_irq_signaled(unsigned int irq, bool signaled,
+                                         unsigned int mask) {
         if (signaled)
             m_irq_state[irq].signaled |= mask;
         else
             m_irq_state[irq].signaled &= ~mask;
     }
 
-    inline bool gicv2::irq_signaled(unsigned int irq, unsigned int mask) {
+    inline bool gic400::irq_signaled(unsigned int irq, unsigned int mask) {
         return (m_irq_state[irq].signaled & mask) != 0;
     }
 
-    inline bool gicv2::test_pending(unsigned int irq, unsigned int mask) {
+    inline bool gic400::test_pending(unsigned int irq, unsigned int mask) {
         return (is_irq_pending(irq, mask) ||
-               (get_irq_trigger(irq) == LEVEL && get_irq_level(irq, mask) && !irq_signaled(irq, mask)));
+               (get_irq_trigger(irq) == LEVEL && get_irq_level(irq, mask) &&
+                !irq_signaled(irq, mask)));
     }
 
-    inline bool gicv2::vifctrl::is_lr_pending(u8 lr, u8 core_id) {
+    inline bool gic400::vifctrl::is_lr_pending(u8 lr, u8 core_id) {
         return m_lr_state[core_id][lr].pending;
     }
 
-    inline void gicv2::vifctrl::set_lr_pending(u8 lr, u8 core_id, bool p) {
+    inline void gic400::vifctrl::set_lr_pending(u8 lr, u8 core_id, bool p) {
         m_lr_state[core_id][lr].pending = p;
     }
 
-    inline void gicv2::vifctrl::set_lr_prio(u8 lr, u8 core_id, u32 prio) {
+    inline void gic400::vifctrl::set_lr_prio(u8 lr, u8 core_id, u32 prio) {
         m_lr_state[core_id][lr].prio = prio;
     }
 
-    inline void gicv2::vifctrl::set_lr_vid(u8 lr, u8 core_id, u16 virt_id) {
+    inline void gic400::vifctrl::set_lr_vid(u8 lr, u8 core_id, u16 virt_id) {
         m_lr_state[core_id][lr].virtual_id = virt_id;
     }
 
-    inline void gicv2::vifctrl::set_lr_physid(u8 lr, u8 core_id, u16 phys_id) {
+    inline void gic400::vifctrl::set_lr_physid(u8 lr, u8 core_id, u16 phys_id) {
         m_lr_state[core_id][lr].physical_id = phys_id;
     }
 
-    inline u16 gicv2::vifctrl::get_lr_physid(u8 lr, u8 core_id) {
+    inline u16 gic400::vifctrl::get_lr_physid(u8 lr, u8 core_id) {
         return m_lr_state[core_id][lr].physical_id;
     }
 
-    inline bool gicv2::vifctrl::is_lr_active(u8 lr, u8 core_id) {
+    inline bool gic400::vifctrl::is_lr_active(u8 lr, u8 core_id) {
         return m_lr_state[core_id][lr].active;
     }
 
-    inline void gicv2::vifctrl::set_lr_active(u8 lr, u8 core_id, bool p) {
+    inline void gic400::vifctrl::set_lr_active(u8 lr, u8 core_id, bool p) {
         m_lr_state[core_id][lr].active = p;
     }
 
-    inline void gicv2::vifctrl::set_lr_cpuid(u8 lr, u8 core_id, u8 cpu_id) {
+    inline void gic400::vifctrl::set_lr_cpuid(u8 lr, u8 core_id, u8 cpu_id) {
         m_lr_state[core_id][lr].cpu_id = cpu_id;
     }
 
-    inline u8 gicv2::vifctrl::get_lr_cpuid(u8 lr, u8 core_id) {
+    inline u8 gic400::vifctrl::get_lr_cpuid(u8 lr, u8 core_id) {
         return m_lr_state[core_id][lr].cpu_id;
     }
 
-    inline void gicv2::vifctrl::set_lr_hw(u8 lr, u8 core_id, bool p) {
+    inline void gic400::vifctrl::set_lr_hw(u8 lr, u8 core_id, bool p) {
         m_lr_state[core_id][lr].hw = p;
     }
 
-    inline bool gicv2::vifctrl::is_lr_hw(u8 lr, u8 core_id) {
+    inline bool gic400::vifctrl::is_lr_hw(u8 lr, u8 core_id) {
         return m_lr_state[core_id][lr].hw;
     }
+
 }}
 
 #endif

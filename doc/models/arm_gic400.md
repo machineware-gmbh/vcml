@@ -1,4 +1,4 @@
-# VCML Models: ARM GICv2
+# VCML Models: ARM GIC400
 ----
 
 *ToDo*
