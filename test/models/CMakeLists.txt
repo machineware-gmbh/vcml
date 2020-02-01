@@ -34,7 +34,6 @@ endmacro()
 
 model_test("generic_bus")
 model_test("generic_memory")
-model_test("spi")
 model_test("sdhci")
 model_test("riscv_clint")
 model_test("riscv_plic")
