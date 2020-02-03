@@ -48,9 +48,9 @@ namespace vcml {
         sideband(sideband&&) = default;
 
         sideband(bool debug, bool nodmi, bool sync, bool insn, bool excl,
-                 bool lock):
+                 bool lock, int cpu = 0, int lvl = 0):
              is_debug(debug), is_nodmi(nodmi), is_sync(sync), is_insn(insn),
-             is_excl(excl), is_lock(lock), cpuid(0), level(0) {
+             is_excl(excl), is_lock(lock), cpuid(cpu), level(lvl) {
         }
 
         sideband& operator  = (const sideband& other);
@@ -106,6 +106,14 @@ namespace vcml {
     const sideband SBI_INSN  = { false, false, false, true,  false, false };
     const sideband SBI_EXCL  = { false, false, false, false, true,  false };
     const sideband SBI_LOCK  = { false, false, false, false, false, true  };
+
+    inline sideband SBI_CPUID(int cpu) {
+        return sideband(false, false, false, false, false, cpu, 0);
+    }
+
+    inline sideband SBI_LEVEL(int lvl) {
+        return sideband(false, false, false, false, false, 0, lvl);
+    }
 
     class sbiext: public tlm_extension<sbiext>,
                   public sideband {
