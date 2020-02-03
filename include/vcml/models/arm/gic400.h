@@ -188,7 +188,6 @@ namespace vcml { namespace arm {
             reg<distif, u8, 16>  CPENDSGIR; // SGI Clear Pending register
             reg<distif, u8, 16>  SPENDSGIR; // SGI Set Pending register
 
-
             reg<distif, u32, 4>  CIDR; // Component ID register
 
             slave_socket IN;
