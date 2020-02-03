@@ -139,7 +139,7 @@ namespace vcml {
 
         const char* name() const { return sc_core::sc_object::name(); }
 
-        reg(const char* nm, u64 addr, const DATA& init = DATA(),
+        reg(const char* nm, u64 addr, DATA init = DATA(),
             HOST* host = NULL);
         virtual ~reg();
         reg() = delete;
@@ -156,21 +156,21 @@ namespace vcml {
         const DATA& operator [] (unsigned int idx) const;
         DATA& operator [] (unsigned int idx);
 
-        template <typename T> reg<HOST, DATA, N>& operator =  (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator |= (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator &= (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator ^= (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator += (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator -= (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator *= (const T& value);
-        template <typename T> reg<HOST, DATA, N>& operator /= (const T& value);
+        template <typename T> reg<HOST, DATA, N>& operator =  (T value);
+        template <typename T> reg<HOST, DATA, N>& operator |= (T value);
+        template <typename T> reg<HOST, DATA, N>& operator &= (T value);
+        template <typename T> reg<HOST, DATA, N>& operator ^= (T value);
+        template <typename T> reg<HOST, DATA, N>& operator += (T value);
+        template <typename T> reg<HOST, DATA, N>& operator -= (T value);
+        template <typename T> reg<HOST, DATA, N>& operator *= (T value);
+        template <typename T> reg<HOST, DATA, N>& operator /= (T value);
 
-        template <typename T> bool operator == (const T& other) const;
-        template <typename T> bool operator != (const T& other) const;
-        template <typename T> bool operator <= (const T& other) const;
-        template <typename T> bool operator >= (const T& other) const;
-        template <typename T> bool operator  < (const T& other) const;
-        template <typename T> bool operator  > (const T& other) const;
+        template <typename T> bool operator == (T other) const;
+        template <typename T> bool operator != (T other) const;
+        template <typename T> bool operator <= (T other) const;
+        template <typename T> bool operator >= (T other) const;
+        template <typename T> bool operator  < (T other) const;
+        template <typename T> bool operator  > (T other) const;
 
         template <typename F> DATA get_bitfield(F field);
         template <typename F, typename T> void set_bitfield(F field, T val);
@@ -229,7 +229,7 @@ namespace vcml {
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>::reg(const char* n, u64 addr, const DATA& def, HOST* h):
+    reg<HOST, DATA, N>::reg(const char* n, u64 addr, DATA def, HOST* h):
         reg_base(n, addr, N * sizeof(DATA), h),
         property<DATA, N>(n, def, h),
         m_host(h),
@@ -337,7 +337,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator = (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator = (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) = value;
         return *this;
@@ -345,7 +345,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator |= (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator |= (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) |= value;
         return *this;
@@ -353,7 +353,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator &= (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator &= (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) &= value;
         return *this;
@@ -361,7 +361,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator ^= (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator ^= (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) ^= value;
         return *this;
@@ -369,7 +369,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator += (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator += (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) += value;
         return *this;
@@ -377,7 +377,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator -= (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator -= (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) -= value;
         return *this;
@@ -385,7 +385,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator *= (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator *= (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) *= value;
         return *this;
@@ -393,7 +393,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator /= (const T& value) {
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator /= (T value) {
         for (unsigned int i = 0; i < N; i++)
             current_bank(i) /= value;
         return *this;
@@ -401,7 +401,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator == (const T& other) const {
+    inline bool reg<HOST, DATA, N>::operator == (T other) const {
         for (unsigned int i = 0; i < N; i++)
             if (current_bank(i) != other)
                 return false;
@@ -410,7 +410,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator < (const T& other) const {
+    inline bool reg<HOST, DATA, N>::operator < (T other) const {
         for (unsigned int i = 0; i < N; i++)
             if (current_bank(i) >= other)
                 return false;
@@ -419,7 +419,7 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator > (const T& other) const {
+    inline bool reg<HOST, DATA, N>::operator > (T other) const {
         for (unsigned int i = 0; i < N; i++)
             if (current_bank(i) <= other)
                 return false;
@@ -428,19 +428,19 @@ namespace vcml {
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator != (const T& other) const {
+    inline bool reg<HOST, DATA, N>::operator != (T other) const {
         return !operator == (other);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator <= (const T& other) const {
+    inline bool reg<HOST, DATA, N>::operator <= (T other) const {
         return !operator > (other);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator >= (const T& other) const {
+    inline bool reg<HOST, DATA, N>::operator >= (T other) const {
         return !operator < (other);
     }
 
