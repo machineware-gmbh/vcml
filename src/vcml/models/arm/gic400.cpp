@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <algorithm>
+//#include <algorithm>
 
 #include "vcml/models/arm/gic400.h"
 
@@ -85,11 +85,11 @@ namespace vcml { namespace arm {
         return CTLR;
     }
 
-    u32 gic400::distif::read_ICTR() {
+    u32 gic400::distif::read_TYPER() {
         return 0xFF;
     }
 
-    u32 gic400::distif::read_ISER() {
+    u32 gic400::distif::read_ISENABLER_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISER) invalid cpu %d, assuming 0", cpu);
@@ -100,7 +100,7 @@ namespace vcml { namespace arm {
         return (mask << 16) | 0xFFFF; // SGIs are always enabled
     }
 
-    u32 gic400::distif::write_ISER(u32 val) {
+    u32 gic400::distif::write_ISENABLER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISER) invalid cpu %d, assuming 0", cpu);
@@ -121,10 +121,10 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ISER;
+        return ISENABLER_PPI;
     }
 
-    u32 gic400::distif::read_SSER(unsigned int idx) {
+    u32 gic400::distif::read_ISENABLER_SPI(unsigned int idx) {
         u32 value = 0;
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
@@ -135,7 +135,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_SSER(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ISENABLER_SPI(u32 val, unsigned int idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i)) {
@@ -148,10 +148,10 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return SSER;
+        return ISENABLER_SPI;
     }
 
-    u32 gic400::distif::read_ICER() {
+    u32 gic400::distif::read_ICENABLER_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICER) invalid cpu %d, assuming 0", cpu);
@@ -162,7 +162,7 @@ namespace vcml { namespace arm {
         return (mask << 16) | 0xFFFF; // SGIs are always enabled
     }
 
-    u32 gic400::distif::write_ICER(u32 val) {
+    u32 gic400::distif::write_ICENABLER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICER) invalid cpu %d, assuming 0", cpu);
@@ -178,10 +178,10 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICER;
+        return ICENABLER_PPI;
     }
 
-    u32 gic400::distif::read_SCER(unsigned int idx) {
+    u32 gic400::distif::read_ICENABLER_SPI(unsigned int idx) {
         u32 value = 0;
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
@@ -192,7 +192,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_SCER(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ICENABLER_SPI(u32 val, unsigned int idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -200,10 +200,10 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return SCER;
+        return ICENABLER_SPI;
     }
 
-    u32 gic400::distif::read_ISPR() {
+    u32 gic400::distif::read_ISPENDR_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISPR) invalid cpu %d, assuming 0", cpu);
@@ -213,7 +213,7 @@ namespace vcml { namespace arm {
         return int_pending_mask(cpu);
     }
 
-    u32 gic400::distif::write_ISPR(u32 value) {
+    u32 gic400::distif::write_ISPENDR_PPI(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ISPR) invalid cpu %d, assuming 0", cpu);
@@ -229,7 +229,7 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ISPR;
+        return ISPENDR_PPI;
     }
 
     u32 gic400::distif::read_SSPR(unsigned int idx) {
@@ -240,27 +240,27 @@ namespace vcml { namespace arm {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (value & (1 << i))
-                m_parent->set_irq_pending(irq + i, true, SPIT[i]);
+                m_parent->set_irq_pending(irq + i, true, ITARGETS_SPI[i]);
         }
 
         m_parent->update();
-        return SSPR;
+        return ISPENDR_SPI;
     }
 
-    u32 gic400::distif::read_ICPR() {
+    u32 gic400::distif::read_ICPENDR_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICPR) invalid cpu %d, assuming 0", cpu);
+            log_warning("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
         return int_pending_mask(cpu);
     }
 
-    u32 gic400::distif::write_ICPR(u32 value) {
+    u32 gic400::distif::write_ICPENDR_PPI(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICPR) invalid cpu %d, assuming 0", cpu);
+            log_warning("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -273,14 +273,14 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return SCPR;
+        return ICPENDR_SPI;
     }
 
-    u32 gic400::distif::read_SCPR(unsigned int idx) {
+    u32 gic400::distif::read_ICPENDR_SPI(unsigned int idx) {
         return spi_pending_mask(idx);
     }
 
-    u32 gic400::distif::write_SCPR(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ICPENDR_SPI(u32 val, unsigned int idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -288,13 +288,13 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return SCPR;
+        return ICPENDR_SPI;
     }
 
-    u32 gic400::distif::read_IACR() {
+    u32 gic400::distif::read_ISACTIVER_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(IACR) invalid cpu %d, assuming 0", cpu);
+            log_warning("(ISACTIVER0) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -308,7 +308,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::read_SACR(unsigned int idx) {
+    u32 gic400::distif::read_ISACTIVER_SPI(unsigned int idx) {
         u32 value = 0;
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
@@ -319,7 +319,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_ICAR(u32 val) {
+    u32 gic400::distif::write_ICACTIVER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(ICAR) invalid cpu %d, assuming 0", cpu);
@@ -335,7 +335,7 @@ namespace vcml { namespace arm {
         return 0;
     }
 
-    u32 gic400::distif::write_SCAR(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ICACTIVER_SPI(u32 val, unsigned int idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -345,7 +345,7 @@ namespace vcml { namespace arm {
         return 0;
     }
 
-    u32 gic400::distif::read_INTT(unsigned int idx) {
+    u32 gic400::distif::read_ITARGETS_PPI(unsigned int idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(INTT) invalid cpu %d, assuming 0", cpu);
@@ -356,8 +356,8 @@ namespace vcml { namespace arm {
         return 0x01010101 << cpu;
     }
 
-    u32 gic400::distif::write_CPPI(u32 value) {
-        CPPI = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
+    u32 gic400::distif::write_ICFGR(u32 value) {
+        ICFGR_PPI = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
 
         unsigned int irq = NSGI;
         for (unsigned int i = 0; i < NPPI; i++) {
@@ -371,11 +371,11 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return CPPI;
+        return ICFGR_PPI;
     }
 
-    u32 gic400::distif::write_CSPI(u32 value, unsigned int idx) {
-        CSPI[idx] = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
+    u32 gic400::distif::write_ICFGR_SPI(u32 value, unsigned int idx) {
+        ICFGR_SPI[idx] = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
 
         unsigned int irq = NPRIV + idx * 16;
         for (unsigned int i = 0; i < 16; i++) {
@@ -389,10 +389,10 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return CSPI;
+        return ICFGR_SPI;
     }
 
-    u32 gic400::distif::write_SCTL(u32 value) {
+    u32 gic400::distif::write_SGIR(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(SCTL) invalid cpu %d, assuming 0", cpu);
@@ -430,11 +430,11 @@ namespace vcml { namespace arm {
         m_parent->set_irq_signaled(sgi_num, false, targets);
         m_parent->update();
 
-        return SCTL;
+        return SGIR;
     }
 
 
-    u8 gic400::distif::write_SGIS(u8 value, unsigned int idx) {
+    u8 gic400::distif::write_SPENDSGIR(u8 value, unsigned int idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(SGIS) invalid cpu %d, assuming 0", cpu);
@@ -449,10 +449,10 @@ namespace vcml { namespace arm {
         m_parent->set_irq_signaled(irq, false, mask);
         m_parent->update();
 
-        return SGIS;
+        return SPENDSGIR;
     }
 
-    u8 gic400::distif::write_SGIC(u8 value, unsigned int idx) {
+    u8 gic400::distif::write_CPENDSGIR(u8 value, unsigned int idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(SGIC) invalid cpu %d, assuming 0", cpu);
@@ -463,138 +463,165 @@ namespace vcml { namespace arm {
         unsigned int irq = idx;
 
         set_sgi_pending(value, irq, cpu, false);
-        if (SGIC.bank(cpu, idx) == 0) // clear SGI if no sources remain
+        if (CPENDSGIR.bank(cpu, idx) == 0) // clear SGI if no sources remain
             m_parent->set_irq_pending(irq, false, mask);
         m_parent->update();
-        return SGIC;
+        return CPENDSGIR;
     }
 
     gic400::distif::distif(const sc_module_name& nm):
         peripheral(nm),
         m_parent(dynamic_cast<gic400*>(get_parent_object())),
         CTLR("CTLR", 0x000, 0x00000000),
-        ICTR("ICTR", 0x004, 0x00000000),
+        TYPER("TYPER", 0x004, 0x00000000),
         IIDR("IIDR", 0x008, 0x00000000),
-        ISER("ISER", 0x100, 0x0000FFFF),
-        SSER("SSER", 0x104, 0x00000000),
-        ICER("ICER", 0x180, 0x0000FFFF),
-        SCER("SCER", 0x184, 0x00000000),
-        ISPR("ISPR", 0x200, 0x00000000),
-        SSPR("SSPR", 0x204, 0x00000000),
-        ICPR("ICPR", 0x280, 0x00000000),
-        SCPR("SCPR", 0x284, 0x00000000),
-        IACR("IACR", 0x300),
-        SACR("SACR", 0x304),
-        ICAR("ICAR", 0x380, 0x00000000),
-        SCAR("SCAR", 0x384, 0x00000000),
-        SGIP("SGIP", 0x400, 0x00),
-        PPIP("PPIP", 0x410, 0x00),
-        SPIP("SPIP", 0x420, 0x00),
-        INTT("INTT", 0x800),
-        SPIT("SPIT", 0x820),
-        CSGI("CSGI", 0xC00, 0xAAAAAAAA),
-        CPPI("CPPI", 0xC04, 0xAAAAAAAA),
-        CSPI("CSPI", 0xC08),
-        SCTL("SCTL", 0xF00),
-        SGIS("SGIS", 0xF20),
-        SGIC("SGIC", 0xF10),
+        ISENABLER_PPI("ISENABLER_PPI", 0x100, 0x0000FFFF),
+        ISENABLER_SPI("ISENABLER_SPI", 0x104, 0x00000000),
+        ICENABLER_PPI("ICENABLER_PPI", 0x180, 0x0000FFFF),
+        ICENABLER_SPI("ICENABLER_SPI", 0x184, 0x00000000),
+        ISPENDR_PPI("ISPENDR_PPI", 0x200, 0x00000000),
+        ISPENDR_SPI("ISPENDR_SPI", 0x204, 0x00000000),
+        ICPENDR_PPI("ICPENDR_PPI", 0x280, 0x00000000),
+        ICPENDR_SPI("ICPENDR_SPI", 0x284, 0x00000000),
+        ISACTIVER_PPI("ISACTIVER_PPI", 0x300),
+        ISACTIVER_SPI("ISACTIVER_SPI", 0x304),
+        ICACTIVER_PPI("ICACTIVER_PPI", 0x380, 0x00000000),
+        ICACTIVER_SPI("ICACTIVER_SPI", 0x384, 0x00000000),
+        IPRIORITY_SGI("IPRIORITY_SGI", 0x400, 0x00),
+        IPRIORITY_PPI("IPRIORITY_PPI", 0x410, 0x00),
+        IPRIORITY_SPI("IPRIORITY_SPI", 0x420, 0x00),
+        ITARGETS_PPI("ITARGETS_PPI", 0x800),
+        ITARGETS_SPI("ITARGETS_SPI", 0x820),
+        ICFGR_SGI("ICFGR_SGI", 0xC00, 0xAAAAAAAA),
+        ICFGR_PPI("ICFGR_PPI", 0xC04, 0xAAAAAAAA),
+        ICFGR_SPI("ICFGR_SPI", 0xC08),
+        SGIR("SGIR", 0xF00),
+        CPENDSGIR("SGIC", 0xF10),
+        SPENDSGIR("SPENDSGIR", 0xF20),
         CIDR("CIDR", 0xFF0),
         IN("IN") {
         VCML_ERROR_ON(!m_parent, "gic400 parent module not found");
 
+        CTLR.sync_on_write();
         CTLR.allow_read_write();
         CTLR.write = &distif::write_CTLR;
 
-        ICTR.allow_read();
-        ICTR.read = &distif::read_ICTR;
+        TYPER.sync_never();
+        TYPER.allow_read();
+        TYPER.read = &distif::read_TYPER;
 
-        IIDR.allow_read_write();
+        IIDR.sync_never();
+        IIDR.allow_read();
 
-        ISER.set_banked();
-        ISER.allow_read_write();
-        ISER.read = &distif::read_ISER;
-        ISER.write = &distif::write_ISER;
+        ISENABLER_PPI.set_banked();
+        ISENABLER_PPI.sync_always();
+        ISENABLER_PPI.allow_read_write();
+        ISENABLER_PPI.read = &distif::read_ISENABLER_PPI;
+        ISENABLER_PPI.write = &distif::write_ISENABLER_PPI;
 
-        SSER.allow_read_write();
-        SSER.tagged_read = &distif::read_SSER;
-        SSER.tagged_write = &distif::write_SSER;
+        ISENABLER_SPI.sync_always();
+        ISENABLER_SPI.allow_read_write();
+        ISENABLER_SPI.tagged_read = &distif::read_ISENABLER_SPI;
+        ISENABLER_SPI.tagged_write = &distif::write_ISENABLER_SPI;
 
-        ICER.set_banked();
-        ICER.allow_read_write();
-        ICER.read = &distif::read_ICER;
-        ICER.write = &distif::write_ICER;
+        ICENABLER_PPI.set_banked();
+        ICENABLER_PPI.sync_always();
+        ICENABLER_PPI.allow_read_write();
+        ICENABLER_PPI.read = &distif::read_ICENABLER_PPI;
+        ICENABLER_PPI.write = &distif::write_ICENABLER_PPI;
 
-        SCER.allow_read_write();
-        SCER.tagged_read = &distif::read_SCER;
-        SCER.tagged_write = &distif::write_SCER;
+        ICENABLER_SPI.sync_always();
+        ICENABLER_SPI.allow_read_write();
+        ICENABLER_SPI.tagged_read = &distif::read_ICENABLER_SPI;
+        ICENABLER_SPI.tagged_write = &distif::write_ICENABLER_SPI;
 
-        ISPR.set_banked();
-        ISPR.allow_read_write();
-        ISPR.read = &distif::read_ISPR;
-        ISPR.write = &distif::write_ISPR;
+        ISPENDR_PPI.set_banked();
+        ISPENDR_PPI.sync_always();
+        ISPENDR_PPI.allow_read_write();
+        ISPENDR_PPI.read = &distif::read_ISPENDR_PPI;
+        ISPENDR_PPI.write = &distif::write_ISPENDR_PPI;
 
-        SSPR.allow_read_write();
-        SSPR.tagged_read = &distif::read_SSPR;
-        SSPR.tagged_write = &distif::write_SSPR;
+        ISPENDR_SPI.sync_always();
+        ISPENDR_SPI.allow_read_write();
+        ISPENDR_SPI.tagged_read = &distif::read_SSPR;
+        ISPENDR_SPI.tagged_write = &distif::write_SSPR;
 
-        ICPR.set_banked();
-        ICPR.allow_read_write();
-        ICPR.read = &distif::read_ICPR;
-        ICPR.write = &distif::write_ICPR;
+        ICPENDR_PPI.set_banked();
+        ICPENDR_PPI.sync_always();
+        ICPENDR_PPI.allow_read_write();
+        ICPENDR_PPI.read = &distif::read_ICPENDR_PPI;
+        ICPENDR_PPI.write = &distif::write_ICPENDR_PPI;
 
-        SCPR.allow_read_write();
-        SCPR.tagged_read = &distif::read_SCPR;
-        SCPR.tagged_write = &distif::write_SCPR;
+        ICPENDR_SPI.sync_always();
+        ICPENDR_SPI.allow_read_write();
+        ICPENDR_SPI.tagged_read = &distif::read_ICPENDR_SPI;
+        ICPENDR_SPI.tagged_write = &distif::write_ICPENDR_SPI;
 
-        IACR.set_banked();
-        IACR.allow_read();
-        IACR.read = &distif::read_IACR;
+        ISACTIVER_PPI.set_banked();
+        ISACTIVER_PPI.allow_read();
+        ISACTIVER_PPI.sync_on_read();
+        ISACTIVER_PPI.read = &distif::read_ISACTIVER_PPI;
 
-        SACR.allow_read();
-        SACR.tagged_read = &distif::read_SACR;
+        ISACTIVER_SPI.allow_read();
+        ISACTIVER_SPI.sync_on_read();
+        ISACTIVER_SPI.tagged_read = &distif::read_ISACTIVER_SPI;
 
-        ICAR.set_banked();
-        ICAR.allow_read_write();
-        ICAR.write = &distif::write_ICAR;
+        ICACTIVER_PPI.set_banked();
+        ICACTIVER_PPI.sync_on_write();
+        ICACTIVER_PPI.allow_read_write();
+        ICACTIVER_PPI.write = &distif::write_ICACTIVER_PPI;
 
-        SCAR.allow_read_write();
-        SCAR.tagged_write = &distif::write_SCAR;
+        ICACTIVER_SPI.sync_on_write();
+        ICACTIVER_SPI.allow_read_write();
+        ICACTIVER_SPI.tagged_write = &distif::write_ICACTIVER_SPI;
 
-        SGIP.set_banked();
-        SGIP.allow_read_write();
+        IPRIORITY_SGI.set_banked();
+        IPRIORITY_SGI.sync_never();
+        IPRIORITY_SGI.allow_read_write();
 
-        PPIP.set_banked();
-        PPIP.allow_read_write();
+        IPRIORITY_PPI.set_banked();
+        IPRIORITY_PPI.sync_never();
+        IPRIORITY_PPI.allow_read_write();
 
-        SPIP.allow_read_write();
+        IPRIORITY_SGI.sync_never();
+        IPRIORITY_SGI.allow_read_write();
 
-        INTT.set_banked();
-        INTT.allow_read_write();
-        INTT.tagged_read = &distif::read_INTT;
+        ITARGETS_PPI.set_banked();
+        ITARGETS_PPI.sync_always();
+        ITARGETS_PPI.allow_read_write();
+        ITARGETS_PPI.tagged_read = &distif::read_ITARGETS_PPI;
 
-        SPIT.allow_read_write();
+        ITARGETS_SPI.sync_always();
+        ITARGETS_SPI.allow_read_write();
 
-        CSGI.allow_read();
+        ICFGR_SGI.allow_read();
+        ICFGR_SGI.sync_on_read();
 
-        CPPI.allow_read_write();
-        CPPI.write = &distif::write_CPPI;
+        ICFGR_PPI.sync_on_write();
+        ICFGR_PPI.allow_read_write();
+        ICFGR_PPI.write = &distif::write_ICFGR;
 
-        CSPI.allow_read_write();
-        CSPI.tagged_write = &distif::write_CSPI;
+        ICFGR_SPI.sync_on_write();
+        ICFGR_SPI.allow_read_write();
+        ICFGR_SPI.tagged_write = &distif::write_ICFGR_SPI;
 
-        SCTL.set_banked();
-        SCTL.allow_write();
-        SCTL.write = &distif::write_SCTL;
+        SGIR.set_banked();
+        SGIR.allow_write();
+        SGIR.sync_on_write();
+        SGIR.write = &distif::write_SGIR;
 
-        SGIS.set_banked();
-        SGIS.allow_read_write();
-        SGIS.tagged_write = &distif::write_SGIS;
+        SPENDSGIR.set_banked();
+        SPENDSGIR.sync_always();
+        SPENDSGIR.allow_read_write();
+        SPENDSGIR.tagged_write = &distif::write_SPENDSGIR;
 
-        SGIC.set_banked();
-        SGIC.allow_read_write();
-        SGIC.tagged_write = &distif::write_SGIC;
+        CPENDSGIR.set_banked();
+        CPENDSGIR.sync_always();
+        CPENDSGIR.allow_read_write();
+        CPENDSGIR.tagged_write = &distif::write_CPENDSGIR;
 
         CIDR.allow_read();
+        CIDR.sync_never();
 
         reset();
     }
@@ -604,22 +631,24 @@ namespace vcml { namespace arm {
     }
 
     void gic400::distif::reset() {
+        peripheral::reset();
+
         for (unsigned int i = 0; i < CIDR.num(); i++)
             CIDR[i] = (PCID >> (i * 8)) & 0xFF;
     }
 
     void gic400::distif::setup(unsigned int num_cpu, unsigned int num_irq) {
-        ICTR = ((num_cpu & 0x7) << 5) | (0xF & ((num_irq / 32) - 1));
+        TYPER = ((num_cpu & 0x7) << 5) | (0xF & ((num_irq / 32) - 1));
     }
 
     void gic400::distif::set_sgi_pending(u8 value, unsigned int sgi,
                                         unsigned int cpu, bool set) {
         if (set) {
-            SGIS.bank(cpu, sgi) |= value;
-            SGIC.bank(cpu, sgi) |= value;
+            SPENDSGIR.bank(cpu, sgi) |= value;
+            CPENDSGIR.bank(cpu, sgi) |= value;
         } else {
-            SGIS.bank(cpu, sgi) &= ~value;
-            SGIC.bank(cpu, sgi) &= ~value;
+            SPENDSGIR.bank(cpu, sgi) &= ~value;
+            CPENDSGIR.bank(cpu, sgi) &= ~value;
         }
     }
 
@@ -631,7 +660,7 @@ namespace vcml { namespace arm {
 
     void gic400::cpuif::set_current_irq(unsigned int cpu, unsigned int irq) {
         m_curr_irq[cpu] = irq;
-        PRIO.bank(cpu) = (irq == SPURIOUS_IRQ) ? 0x100 :
+        RPR.bank(cpu) = (irq == SPURIOUS_IRQ) ? 0x100 :
                          (m_parent->get_irq_priority(cpu, irq));
         m_parent->update();
     }
@@ -644,11 +673,11 @@ namespace vcml { namespace arm {
         return val & CTLR_ENABLE;
     }
 
-    u32 gic400::cpuif::write_IPMR(u32 val) {
+    u32 gic400::cpuif::write_PMR(u32 val) {
         return val & 0x000000FF; // read only first 8 bits
     }
 
-    u32 gic400::cpuif::write_BIPR(u32 val) {
+    u32 gic400::cpuif::write_BPR(u32 val) {
         ABPR = val & 0x7; // read only first 3 bits, store copy in ABPR
         return ABPR;
     }
@@ -690,14 +719,14 @@ namespace vcml { namespace arm {
         return 0;
     }
 
-    u32 gic400::cpuif::read_IACK() {
+    u32 gic400::cpuif::read_IAR() {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warning("(IACK) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
-        int irq = PEND.bank(cpu);
+        int irq = HPPIR.bank(cpu);
         int cpu_mask = (m_parent->get_irq_model(irq) == gic400::N_1) ?
                        (gic400::ALL_CPU) : (1 << cpu);
 
@@ -705,85 +734,98 @@ namespace vcml { namespace arm {
 
         // check if CPU is acknowledging a not pending interrupt
         if (irq == SPURIOUS_IRQ ||
-            m_parent->get_irq_priority(cpu, irq) >= PRIO.bank(cpu)) {
+            m_parent->get_irq_priority(cpu, irq) >= RPR.bank(cpu)) {
             return SPURIOUS_IRQ;
         }
 
         if (is_software_interrupt(irq)) {
-            u32 pending = m_parent->DISTIF.SGIS.bank(cpu, irq);
+            u32 pending = m_parent->DISTIF.SPENDSGIR.bank(cpu, irq);
             unsigned int src_cpu = ctz(pending);
             m_parent->DISTIF.set_sgi_pending(1 << src_cpu, irq, cpu, false);
 
             // check if SGI is not pending from any CPUs
-            if (m_parent->DISTIF.SGIS.bank(cpu, irq) == 0)
+            if (m_parent->DISTIF.SPENDSGIR.bank(cpu, irq) == 0)
                 m_parent->set_irq_pending(irq, false, cpu_mask);
-            IACK = (src_cpu & 0x7) << 10 | irq;
+            IAR = (src_cpu & 0x7) << 10 | irq;
         } else {
             // clear pending state for interrupt 'irq'
             m_parent->set_irq_pending(irq, false, cpu_mask);
-            IACK = irq;
+            IAR = irq;
         }
 
         m_prev_irq[irq][cpu] = m_curr_irq[cpu];
         set_current_irq(cpu, irq); // set the acknowledged IRQ to running
         m_parent->set_irq_active(irq, true, cpu_mask);
         m_parent->set_irq_signaled(irq, true, cpu_mask);
-        return IACK;
+        return IAR;
     }
 
     gic400::cpuif::cpuif(const sc_module_name& nm):
         peripheral(nm),
         m_parent(dynamic_cast<gic400*>(get_parent_object())),
         CTLR("CTLR", 0x00, 0x0),
-        IPMR("IPMR", 0x04, 0x0),
-        BIPR("BIPR", 0x08, 0x0),
-        IACK("IACK", 0x0C, 0x0),
+        PMR("PMR", 0x04, 0x0),
+        BPR("BPR", 0x08, 0x0),
+        IAR("IAR", 0x0C, 0x0),
         EOIR("EOIR", 0x10, 0x0),
-        PRIO("PRIO", 0x14, IDLE_PRIO),
-        PEND("PEND", 0x18, SPURIOUS_IRQ),
+        RPR("RPR", 0x14, IDLE_PRIO),
+        HPPIR("HPPIR", 0x18, SPURIOUS_IRQ),
         ABPR("ABPR", 0x1C, 0x0),
-        ACPR("ACPR", 0xD0, 0x00000000),
-        IIDR("IIDR", 0xFC, IIDR),
+        APR("APR", 0xD0, 0x00000000),
+        IIDR("IIDR", 0xFC, IFID),
         CIDR("CIDR", 0xFF0),
         DIR("DIR", 0x1000),
         IN("IN") {
         VCML_ERROR_ON(!m_parent, "gic400 parent module not found");
 
         CTLR.set_banked();
+        CTLR.sync_always();
         CTLR.allow_read_write();
         CTLR.write = &cpuif::write_CTLR;
 
-        IPMR.set_banked();
-        IPMR.allow_read_write();
-        IPMR.write = &cpuif::write_IPMR;
+        PMR.set_banked();
+        PMR.sync_always();
+        PMR.allow_read_write();
+        PMR.write = &cpuif::write_PMR;
 
-        BIPR.set_banked();
-        BIPR.allow_read_write();
-        BIPR.write = &cpuif::write_BIPR;
+        BPR.set_banked();
+        BPR.sync_always();
+        BPR.allow_read_write();
+        BPR.write = &cpuif::write_BPR;
 
-        IACK.set_banked();
-        IACK.allow_read();
-        IACK.read = &cpuif::read_IACK;
+        IAR.set_banked();
+        IAR.allow_read();
+        IAR.sync_on_read();
+        IAR.read = &cpuif::read_IAR;
 
         EOIR.set_banked();
         EOIR.allow_write();
+        EOIR.sync_on_write();
         EOIR.write = &cpuif::write_EOIR;
 
-        PRIO.set_banked();
-        PRIO.allow_read();
+        RPR.set_banked();
+        RPR.sync_never();
+        RPR.allow_read();
 
-        PEND.set_banked();
-        PEND.allow_read();
+        HPPIR.set_banked();
+        HPPIR.sync_never();
+        HPPIR.allow_read();
 
         ABPR.set_banked();
+        ABPR.sync_always();
         ABPR.allow_read_write();
 
-        ACPR.allow_read_write();
+        APR.sync_always();
+        APR.allow_read_write();
 
+        IIDR.sync_never();
         IIDR.allow_read();
+
+        CIDR.sync_never();
         CIDR.allow_read();
 
         DIR.set_banked();
+        DIR.sync_always();
         DIR.allow_read_write();
 
         reset();
@@ -794,8 +836,7 @@ namespace vcml { namespace arm {
     }
 
     void gic400::cpuif::reset() {
-        PRIO = PRIO.get_default();
-        PEND = PEND.get_default();
+        peripheral::reset();
 
         for (unsigned int i = 0; i < CIDR.num(); i++)
             CIDR[i] = (PCID >> (i * 8)) & 0xFF;
@@ -1054,7 +1095,7 @@ namespace vcml { namespace arm {
         RPR("RPR", 0x14, IDLE_PRIO),
         HPPIR("HPPIR", 0x18, SPURIOUS_IRQ),
         APR("APR", 0xD0, 0x00000000),
-        IIDR("IIDR", 0xFC, IIDR),
+        IIDR("IIDR", 0xFC, IFID),
         IN("IN") {
 
         CTLR.set_banked();
@@ -1113,7 +1154,14 @@ namespace vcml { namespace arm {
         m_irq_num(NPRIV),
         m_cpu_num(0),
         m_irq_state() {
-        // nothing to do
+        DISTIF.CLOCK.bind(CLOCK);
+        DISTIF.RESET.bind(RESET);
+        CPUIF.CLOCK.bind(CLOCK);
+        CPUIF.RESET.bind(RESET);
+        VIFCTRL.CLOCK.bind(CLOCK);
+        VIFCTRL.RESET.bind(RESET);
+        VCPUIF.CLOCK.bind(CLOCK);
+        VCPUIF.RESET.bind(RESET);
     }
 
     gic400::~gic400() {
@@ -1128,7 +1176,7 @@ namespace vcml { namespace arm {
             unsigned int best_prio = IDLE_PRIO;
 
             if (!virt)
-                CPUIF.PEND.bank(cpu) = SPURIOUS_IRQ;
+                CPUIF.HPPIR.bank(cpu) = SPURIOUS_IRQ;
             else
                 VCPUIF.HPPIR.bank(cpu) = SPURIOUS_IRQ;
 
@@ -1149,8 +1197,8 @@ namespace vcml { namespace arm {
                 for (irq = 0; irq < NSGI; irq++) {
                     if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
                         !is_irq_active(irq, mask)) {
-                        if (DISTIF.SGIP.bank(cpu, irq) < best_prio) {
-                            best_prio = DISTIF.SGIP.bank(cpu, irq);
+                        if (DISTIF.IPRIORITY_SGI.bank(cpu, irq) < best_prio) {
+                            best_prio = DISTIF.IPRIORITY_SGI.bank(cpu, irq);
                             best_irq = irq;
                         }
                     }
@@ -1161,8 +1209,8 @@ namespace vcml { namespace arm {
                     if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
                         !is_irq_active(irq, mask)) {
                         int idx = irq - NSGI;
-                        if (DISTIF.PPIP.bank(cpu, idx) < best_prio) {
-                            best_prio = DISTIF.PPIP.bank(cpu, idx);
+                        if (DISTIF.IPRIORITY_PPI.bank(cpu, idx) < best_prio) {
+                            best_prio = DISTIF.IPRIORITY_PPI.bank(cpu, idx);
                             best_irq = irq;
                         }
                     }
@@ -1172,9 +1220,9 @@ namespace vcml { namespace arm {
                 for (irq = NPRIV; irq < m_irq_num; irq++) {
                     int idx = irq - NPRIV;
                     if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
-                        (DISTIF.SPIT[idx] & mask) && !is_irq_active(irq, mask)) {
-                        if (DISTIF.SPIP[idx] < best_prio) {
-                            best_prio = DISTIF.SPIP[idx];
+                        (DISTIF.ITARGETS_SPI[idx] & mask) && !is_irq_active(irq, mask)) {
+                        if (DISTIF.IPRIORITY_SGI[idx] < best_prio) {
+                            best_prio = DISTIF.IPRIORITY_SGI[idx];
                             best_irq = irq;
                         }
                     }
@@ -1196,10 +1244,10 @@ namespace vcml { namespace arm {
             // signal IRQ to processor if priority is higher
             bool level = false;
             if (!virt) {
-                if (best_prio < CPUIF.IPMR.bank(cpu)) {
+                if (best_prio < CPUIF.PMR.bank(cpu)) {
                     log_debug("setting irq %u pending on cpuif %u", best_irq, cpu);
-                    CPUIF.PEND.bank(cpu) = best_irq;
-                    if (best_prio < CPUIF.PRIO.bank(cpu))
+                    CPUIF.HPPIR.bank(cpu) = best_irq;
+                    if (best_prio < CPUIF.RPR.bank(cpu))
                         level = true;
                 }
             } else {
@@ -1226,11 +1274,11 @@ namespace vcml { namespace arm {
 
     u8 gic400::get_irq_priority(unsigned int cpu, unsigned int irq) {
         if (irq < NSGI)
-            return DISTIF.SGIP.bank(cpu, irq);
+            return DISTIF.IPRIORITY_SGI.bank(cpu, irq);
         else if (irq < NPRIV)
-            return DISTIF.PPIP.bank(cpu, irq - NSGI);
+            return DISTIF.IPRIORITY_PPI.bank(cpu, irq - NSGI);
         else if (irq < NIRQ)
-            return DISTIF.SPIP[irq - NPRIV];
+            return DISTIF.IPRIORITY_SGI[irq - NPRIV];
 
         log_error("tried to get IRQ priority of invalid IRQ ID (%d)", irq);
         return 0;
@@ -1251,7 +1299,7 @@ namespace vcml { namespace arm {
 
     void gic400::spi_handler(unsigned int irq) {
         unsigned int idx = irq - NPRIV;
-        unsigned int target_cpu = DISTIF.SPIT[idx];
+        unsigned int target_cpu = DISTIF.ITARGETS_SPI[idx];
 
         bool irq_level = SPI_IN[idx].read();
         set_irq_level(irq, irq_level, gic400::ALL_CPU);
