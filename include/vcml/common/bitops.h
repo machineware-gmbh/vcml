@@ -94,7 +94,7 @@ namespace vcml {
         return crc;
     }
 
-    template <unsigned int OFF, unsigned int LEN, typename T = u64>
+    template <unsigned int OFF, unsigned int LEN, typename T = u32>
     struct bitfield {
         enum : unsigned int { OFFSET = OFF };
         enum : unsigned int { LENGTH = LEN };
@@ -107,6 +107,12 @@ namespace vcml {
     T get_bitfield(F f, T val) {
         (void)f;
         return extract(val, F::OFFSET, F::LENGTH);
+    }
+
+    template <typename F, typename T>
+    void set_bitfield(F f, T& val) {
+        (void)f;
+        val = deposit(val, F::OFFSET, F::LENGTH, (T)~0ull);
     }
 
     template <typename F, typename T, typename T2>
