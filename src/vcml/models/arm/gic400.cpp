@@ -16,8 +16,6 @@
  *                                                                            *
  ******************************************************************************/
 
-//#include <algorithm>
-
 #include "vcml/models/arm/gic400.h"
 
 namespace vcml { namespace arm {
@@ -950,7 +948,7 @@ namespace vcml { namespace arm {
     }
 
     u8 gic400::vifctrl::get_irq_priority(unsigned int cpu, unsigned int irq) {
-        for(unsigned int i = 0; i < LR; i++) {
+        for(unsigned int i = 0; i < NLR; i++) {
             if (m_lr_state[cpu][i].virtual_id == irq &&
                     (m_lr_state[cpu][i].active ||
                     m_lr_state[cpu][i].pending)) {
