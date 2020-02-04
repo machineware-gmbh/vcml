@@ -22,6 +22,7 @@ namespace vcml { namespace arm {
 
     void sp804timer::timer::trigger() {
         IRQ = false;
+
         if (!is_enabled())
             return;
 
@@ -38,8 +39,10 @@ namespace vcml { namespace arm {
         if (!is_enabled())
             return;
 
-        ticks &= is_32bit() ? 0xFFFFFFFF : 0x0000FFFF;
-        clock_t effclk = m_parent->clock / get_prescale_divider();
+        if (!is_32bit())
+            ticks &= 0xffff;
+
+        clock_t effclk = CLOCK / get_prescale_divider();
         sc_time delta((double)ticks / (double)effclk, SC_SEC);
 
         m_prev = sc_time_stamp();
@@ -47,7 +50,7 @@ namespace vcml { namespace arm {
         m_ev.notify(delta);
     }
 
-    u32 sp804timer::timer::read_CVAL() {
+    u32 sp804timer::timer::read_VALUE() {
         if (!is_enabled())
             return LOAD;
 
@@ -55,77 +58,81 @@ namespace vcml { namespace arm {
         return LOAD * (1.0 - delta);
     }
 
-    u32 sp804timer::timer::read_RISR() {
+    u32 sp804timer::timer::read_RIS() {
         return IRQ.read() ? 0x1 : 0x0;
     }
 
-    u32 sp804timer::timer::read_MISR() {
-        return is_irq_enabled() ? read_RISR() : 0x0;
+    u32 sp804timer::timer::read_MIS() {
+        return is_irq_enabled() ? read_RIS() : 0x0;
     }
 
     u32 sp804timer::timer::write_LOAD(u32 val) {
         LOAD = val;
-        BGLR = val;
+        BGLOAD = val;
         schedule(val);
         return val;
     }
 
-    u32 sp804timer::timer::write_CTLR(u32 val) {
+    u32 sp804timer::timer::write_CONTROL(u32 val) {
         if (((val >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) == 3)
             log_warn("invalid prescaler value defined");
-        CTLR = val & CTLR_M;
+        CONTROL = val & (u32)CONTROL_M;
         schedule(LOAD);
-        return CTLR;
+        return CONTROL;
     }
 
-    u32 sp804timer::timer::write_ICLR(u32 val) {
+    u32 sp804timer::timer::write_INTCLR(u32 val) {
         IRQ = false;
         return 0;
     }
 
-    u32 sp804timer::timer::write_BGLR(u32 val) {
+    u32 sp804timer::timer::write_BGLOAD(u32 val) {
         LOAD = val;
-        BGLR = val;
+        BGLOAD = val;
         return val;
     }
 
     sp804timer::timer::timer(const sc_module_name& nm):
-        vcml::peripheral(nm),
-        m_parent(NULL),
+        peripheral(nm),
         m_ev("event"),
         m_prev(SC_ZERO_TIME),
         m_next(SC_ZERO_TIME),
         LOAD("LOAD", 0x00, 0x00000000),
-        CVAL("CVAL", 0x04, 0xFFFFFFFF),
-        CTLR("CTLR", 0x08, 0x00000020),
-        ICLR("ICLR", 0x0C, 0x00000000),
-        RISR("RISR", 0x10, 0x00000000),
-        MISR("MISR", 0x14, 0x00000000),
-        BGLR("BGLR", 0x18, 0x00000000),
+        VALUE("VALUE", 0x04, 0xFFFFFFFF),
+        CONTROL("CONTROL", 0x08, 0x00000020),
+        INTCLR("INTCLR", 0x0C, 0x00000000),
+        RIS("RIS", 0x10, 0x00000000),
+        MIS("MIS", 0x14, 0x00000000),
+        BGLOAD("BGLOAD", 0x18, 0x00000000),
         IRQ("IRQ") {
-        m_parent = dynamic_cast<sp804timer*>(get_parent_object());
-        VCML_ERROR_ON(!m_parent, "invalid timer parent specified");
 
+        LOAD.sync_always();
         LOAD.allow_read_write();
         LOAD.write = &timer::write_LOAD;
 
-        CVAL.allow_read();
-        CVAL.read = &timer::read_CVAL;
+        VALUE.sync_always();
+        VALUE.allow_read();
+        VALUE.read = &timer::read_VALUE;
 
-        CTLR.allow_read_write();
-        CTLR.write = &timer::write_CTLR;
+        CONTROL.sync_always();
+        CONTROL.allow_read_write();
+        CONTROL.write = &timer::write_CONTROL;
 
-        ICLR.allow_write();
-        ICLR.write = &timer::write_ICLR;
+        INTCLR.sync_always();
+        INTCLR.allow_write();
+        INTCLR.write = &timer::write_INTCLR;
 
-        RISR.allow_read();
-        RISR.read = &timer::read_RISR;
+        RIS.sync_always();
+        RIS.allow_read();
+        RIS.read = &timer::read_RIS;
 
-        MISR.allow_read();
-        MISR.read = &timer::read_MISR;
+        MIS.sync_always();
+        MIS.allow_read();
+        MIS.read = &timer::read_MIS;
 
-        BGLR.allow_read_write();
-        BGLR.write = &timer::write_BGLR;
+        BGLOAD.sync_always();
+        BGLOAD.allow_read_write();
+        BGLOAD.write = &timer::write_BGLOAD;
 
         SC_METHOD(trigger);
         sensitive << m_ev;
@@ -137,14 +144,7 @@ namespace vcml { namespace arm {
     }
 
     void sp804timer::timer::reset() {
-        LOAD = 0x00000000;
-        CVAL = 0xFFFFFFFF;
-        CTLR = 0x00000020;
-        ICLR = 0x00000000;
-        RISR = 0x00000000;
-        MISR = 0x00000000;
-        BGLR = 0x00000000;
-        IRQ  = false;
+        peripheral::reset();
         m_ev.cancel();
     }
 
@@ -163,17 +163,28 @@ namespace vcml { namespace arm {
         IN("IN"),
         IRQ1("IRQ1"),
         IRQ2("IRQ2"),
-        IRQC("IRQC"),
-        clock("clock", VCML_ARM_SP804TIMER_CLK) {
+        IRQC("IRQC") {
 
+        ITCR.sync_never();
         ITCR.allow_read_write();
+
+        ITOP.sync_never();
         ITOP.allow_read();
 
+        PID.sync_never();
         PID.allow_read();
+
+        CID.sync_never();
         CID.allow_read();
 
         TIMER1.IRQ.bind(IRQ1);
         TIMER2.IRQ.bind(IRQ2);
+
+        TIMER1.CLOCK.bind(CLOCK);
+        TIMER2.CLOCK.bind(CLOCK);
+
+        TIMER1.RESET.bind(RESET);
+        TIMER2.RESET.bind(RESET);
 
         SC_METHOD(update_IRQC);
         sensitive << IRQ1 << IRQ2;
@@ -209,14 +220,13 @@ namespace vcml { namespace arm {
     }
 
     void sp804timer::reset() {
-        ITCR = 0x00000000;
-        ITOP = 0x00000000;
+        peripheral::reset();
 
         for (unsigned int i = 0; i < PID.num(); i++)
-            PID[i] = (VCML_ARM_SP804TIMER_PID >> (i * 8)) & 0xFF;
+            PID[i] = (SP804TIMER_PID >> (i * 8)) & 0xFF;
 
         for (unsigned int i = 0; i < CID.num(); i++)
-            CID[i] = (VCML_ARM_SP804TIMER_CID >> (i * 8)) & 0xFF;
+            CID[i] = (SP804TIMER_CID >> (i * 8)) & 0xFF;
 
         IRQC = false;
     }

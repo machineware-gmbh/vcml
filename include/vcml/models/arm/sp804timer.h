@@ -32,10 +32,6 @@
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
-#define VCML_ARM_SP804TIMER_CLK 1000000    // 1MHz
-#define VCML_ARM_SP804TIMER_PID 0x00141804 // Peripheral ID
-#define VCML_ARM_SP804TIMER_CID 0xB105F00D // PrimeCell ID
-
 namespace vcml { namespace arm {
 
     class sp804timer: public peripheral
@@ -49,12 +45,13 @@ namespace vcml { namespace arm {
         sp804timer(const sp804timer&);
 
     public:
+        const u32 SP804TIMER_PID = 0x00141804; // Peripheral ID
+        const u32 SP804TIMER_CID = 0xB105F00D; // PrimeCell ID
+
         class timer: public peripheral
         {
         private:
             SC_HAS_PROCESS(timer);
-
-            sp804timer* m_parent;
 
             sc_event    m_ev;
             sc_time     m_prev;
@@ -63,45 +60,45 @@ namespace vcml { namespace arm {
             void trigger();
             void schedule(u32 ticks);
 
-            u32 read_CVAL();
-            u32 read_RISR();
-            u32 read_MISR();
+            u32 read_VALUE();
+            u32 read_RIS();
+            u32 read_MIS();
 
             u32 write_LOAD(u32 val);
-            u32 write_CTLR(u32 val);
-            u32 write_ICLR(u32 val);
-            u32 write_BGLR(u32 val);
+            u32 write_CONTROL(u32 val);
+            u32 write_INTCLR(u32 val);
+            u32 write_BGLOAD(u32 val);
 
         public:
-            enum ctrl_status {
-                CTLR_ENABLED = 1 << 7,
-                CTLR_PERIOD  = 1 << 6,
-                CTLR_IRQEN   = 1 << 5,
-                CTLR_32BIT   = 1 << 1,
-                CTLR_ONESHOT = 1 << 0,
-                CTLR_M       = 0xFF
+            enum control_bits: u32 {
+                CONTROL_ONESHOT = 1 << 0,
+                CONTROL_32BIT   = 1 << 1,
+                CONTROL_IRQEN   = 1 << 5,
+                CONTROL_PERIOD  = 1 << 6,
+                CONTROL_ENABLED = 1 << 7,
+                CONTROL_M       = 0xFF,
             };
 
-            enum ctrl_prescale {
+            enum control_prescale_bits: u32 {
                 CTLR_PRESCALE_O = 2,
                 CTLR_PRESCALE_M = 3,
             };
 
-            reg<timer, u32> LOAD; // Load register
-            reg<timer, u32> CVAL; // Current Value register
-            reg<timer, u32> CTLR; // Timer Control register
-            reg<timer, u32> ICLR; // Interrupt Clear register
-            reg<timer, u32> RISR; // Raw Interrupt Status register
-            reg<timer, u32> MISR; // Masked Interrupt Status register
-            reg<timer, u32> BGLR; // Background Load register
+            reg<timer, u32> LOAD;    // Load register
+            reg<timer, u32> VALUE;   // Current Value register
+            reg<timer, u32> CONTROL; // Timer Control register
+            reg<timer, u32> INTCLR;  // Interrupt Clear register
+            reg<timer, u32> RIS;     // Raw Interrupt Status register
+            reg<timer, u32> MIS;     // Masked Interrupt Status register
+            reg<timer, u32> BGLOAD;  // Background Load register
 
             out_port<bool> IRQ;
 
-            bool is_enabled()     const { return CTLR & CTLR_ENABLED; }
-            bool is_irq_enabled() const { return CTLR & CTLR_IRQEN; }
-            bool is_32bit()       const { return CTLR & CTLR_32BIT; }
-            bool is_periodic()    const { return CTLR & CTLR_PERIOD; }
-            bool is_oneshot()     const { return CTLR & CTLR_ONESHOT; }
+            bool is_enabled()     const { return CONTROL & CONTROL_ENABLED; }
+            bool is_irq_enabled() const { return CONTROL & CONTROL_IRQEN; }
+            bool is_32bit()       const { return CONTROL & CONTROL_32BIT; }
+            bool is_periodic()    const { return CONTROL & CONTROL_PERIOD; }
+            bool is_oneshot()     const { return CONTROL & CONTROL_ONESHOT; }
 
             int get_prescale_stages() const;
             int get_prescale_divider() const;
@@ -135,8 +132,6 @@ namespace vcml { namespace arm {
         sc_out<bool>   IRQ2;
         out_port<bool> IRQC;
 
-        property<clock_t> clock;
-
         sp804timer(const sc_module_name& nm);
         virtual ~sp804timer();
         VCML_KIND(arm::sp804timer);
@@ -147,7 +142,7 @@ namespace vcml { namespace arm {
     };
 
     inline int sp804timer::timer::get_prescale_stages() const {
-        return ((CTLR >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) << 2;
+        return ((CONTROL >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) << 2;
     }
 
     inline int sp804timer::timer::get_prescale_divider() const {
