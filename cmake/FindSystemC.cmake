@@ -42,6 +42,7 @@ endif()
 
 find_library(SYSTEMC_LIBRARY NAMES libsystemc.a systemc libSnpsVP.so
              HINTS ${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH}
+                   ${SYSTEMC_HOME}/lib
                    ${SYSTEMC_HOME}/libso-gcc-6.2.0-64
                    ${SYSTEMC_HOME}/libso-gcc-5.2.0-64)
 

@@ -22,7 +22,7 @@ macro(model_test test)
     target_include_directories(${test} SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
     target_link_libraries(${test} vcml gtest gmock)
     target_link_libraries(${test} ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES})
-    target_link_libraries(${test} main -pthread -lrt -lelf -rdynamic)
+    target_link_libraries(${test} main -pthread -lrt -rdynamic)
 
     if(LIBVNC_FOUND)
         target_link_libraries(${test} ${LIBVNC_LIBRARIES})
