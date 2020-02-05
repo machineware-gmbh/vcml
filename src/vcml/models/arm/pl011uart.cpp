@@ -35,7 +35,7 @@ namespace vcml { namespace arm {
             update();
         }
 
-        sc_time cycle = sc_time(1.0 / clock, SC_SEC);
+        sc_time cycle = clock_cycle();
         sc_time quantum = tlm_global_quantum::instance().get();
         next_trigger(max(cycle, quantum));
     }
@@ -109,7 +109,7 @@ namespace vcml { namespace arm {
         if (!(val & LCR_FEN) && (LCR & LCR_FEN))
             log_debug("FIFO disabled");
 
-        m_fifo_size = (val & LCR_FEN) ? VCML_ARM_PL011UART_FIFOSIZE : 1;
+        m_fifo_size = (val & LCR_FEN) ? FIFOSIZE : 1;
         return val & LCR_H_M;
     }
 
@@ -168,47 +168,64 @@ namespace vcml { namespace arm {
         DMAC ("DMACR", 0x048, 0x0),
         PID  ("PID",   0xFE0, 0x00000000),
         CID  ("CID",   0xFF0, 0x00000000),
-        clock("clock", VCML_ARM_PL011UART_CLK),
         IN("IN"),
         IRQ("IRQ") {
+        DR.sync_always();
         DR.allow_read_write();
         DR.read = &pl011uart::read_DR;
         DR.write = &pl011uart::write_DR;
 
+        RSR.sync_always();
         RSR.allow_read_write();
         RSR.write = &pl011uart::write_RSR;
 
+        FR.sync_always();
         FR.allow_read();
 
+        ILPR.sync_never();
         ILPR.allow_read_write(); // not implemented
 
+        IBRD.sync_always();
         IBRD.allow_read_write();
         IBRD.write = &pl011uart::write_IBRD;
 
+        FBRD.sync_always();
         FBRD.allow_read_write();
         FBRD.write = &pl011uart::write_FBRD;
 
+        LCR.sync_always();
         LCR.allow_read_write();
         LCR.write = &pl011uart::write_LCR;
 
+        CR.sync_always();
         CR.allow_read_write();
         CR.write = &pl011uart::write_CR;
 
+        IFLS.sync_always();
         IFLS.allow_read_write();
         IFLS.write = &pl011uart::write_IFLS;
 
+        IMSC.sync_always();
         IMSC.allow_read_write();
         IMSC.write = &pl011uart::write_IMSC;
 
+        RIS.sync_always();
         RIS.allow_read();
+
+        MIS.sync_always();
         MIS.allow_read();
 
+        ICR.sync_always();
         ICR.allow_write();
         ICR.write = &pl011uart::write_ICR;
 
+        DMAC.sync_never();
         DMAC.allow_read_write(); // not implemented
 
+        PID.sync_never();
         PID.allow_read();
+
+        CID.sync_never();
         CID.allow_read();
 
         SC_METHOD(poll);
@@ -221,26 +238,18 @@ namespace vcml { namespace arm {
     }
 
     void pl011uart::reset() {
-        DR   = 0x0;
-        RSR  = 0x0;
-        FR   = FR_TXFE | FR_RXFE;
-        ILPR = 0x0;
-        IBRD = 0x0;
-        FBRD = 0x0;
-        LCR  = 0x0;
-        CR   = CR_TXE | CR_RXE;
-        IFLS = 0x0;
-        IMSC = 0x0;
-        RIS  = 0x0;
-        MIS  = 0x0;
-        ICR  = 0x0;
-        DMAC = 0x0;
+        peripheral::reset();
 
         for (unsigned int i = 0; i < PID.num(); i++)
-            PID[i] = (VCML_ARM_PL011UART_PID >> (i * 8)) & 0xFF;
+            PID[i] = (AMBA_PID >> (i * 8)) & 0xFF;
 
         for (unsigned int i = 0; i < CID.num(); i++)
-            CID[i] = (VCML_ARM_PL011UART_CID >> (i * 8)) & 0xFF;
+            CID[i] = (AMBA_CID >> (i * 8)) & 0xFF;
+
+        while (!m_fifo.empty())
+            m_fifo.pop();
+
+        IRQ = false;
     }
 
 }}

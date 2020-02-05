@@ -32,17 +32,11 @@
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
-#define VCML_ARM_PL011UART_CLK      (20000000)   // 20MHz
-#define VCML_ARM_PL011UART_PID      (0x00141011) // Peripheral ID
-#define VCML_ARM_PL011UART_CID      (0xB105F00D) // PrimeCell ID
-#define VCML_ARM_PL011UART_FIFOSIZE (16)         // FIFO size
-
 namespace vcml { namespace arm {
 
     class pl011uart: public peripheral
     {
     private:
-
         unsigned int m_fifo_size;
         queue<u16>   m_fifo;
         sc_event     m_enable;
@@ -66,19 +60,28 @@ namespace vcml { namespace arm {
         pl011uart(const pl011uart&);
 
     public:
-        enum dr_bits {
+        enum amba_ids: u32 {
+            AMBA_PID = 0x00141011, // Peripheral ID
+            AMBA_CID = 0xB105F00D, // PrimeCell ID
+        };
+
+        enum : u32 {
+            FIFOSIZE = 16, // FIFO size
+        };
+
+        enum dr_bits: u16 {
             DR_FE = 1 <<  8, // Framing Error
             DR_PE = 1 <<  9, // Parity Error
             DR_BE = 1 << 10, // Break Error
             DR_OE = 1 << 11, // Overrun Error
         };
 
-        enum rsr_bits {
+        enum rsr_bits: u32 {
             RSR_O = 0x8, // RSR Flags Offset
             RSR_M = 0xF, // RSR Flags Mask
         };
 
-        enum fr_bits {
+        enum fr_bits: u16 {
             FR_CTS    = 1 << 0,  // Clear To Send
             FR_DSR    = 1 << 1,  // Data Set Ready
             FR_DCD    = 1 << 2,  // Data Carrier Detect
@@ -90,7 +93,7 @@ namespace vcml { namespace arm {
             FR_RI     = 1 << 8   // Ring Indicator
         };
 
-        enum ris_bits {
+        enum ris_bits: u32 {
             RIS_RX = 1 <<  4, // Receive Interrupt Status
             RIS_TX = 1 <<  5, // Transmit Interrupt Status
             RIS_RT = 1 <<  6, // Receive Timeout Interrupt Status
@@ -101,7 +104,7 @@ namespace vcml { namespace arm {
             RIS_M  = 0x7F     // Raw Interrupt Status Mask
         };
 
-        enum lcr_bits {
+        enum lcr_bits: u32 {
             LCR_BRK    = 1 <<  0, // Send Break
             LCR_PEN    = 1 <<  1, // Parity Enable
             LCR_EPS    = 1 <<  2, // Even Parity Select
@@ -137,8 +140,6 @@ namespace vcml { namespace arm {
 
         reg<pl011uart, u32, 4> PID; // Peripheral ID Register
         reg<pl011uart, u32, 4> CID; // Cell ID Register
-
-        property<clock_t> clock;
 
         slave_socket   IN;
         out_port<bool> IRQ;
