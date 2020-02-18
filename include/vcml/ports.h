@@ -205,7 +205,7 @@ namespace vcml {
 
         sc_simcontext* simc = sc_object::simcontext();
         simc->hierarchy_push(m_parent);
-        m_stub = new sc_signal<T>(this);
+        m_stub = new stub_signal<T>(this);
         sc_out<T>::bind(*m_stub);
         simc->hierarchy_pop();
     }
