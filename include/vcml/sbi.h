@@ -108,11 +108,11 @@ namespace vcml {
     const sideband SBI_LOCK  = { false, false, false, false, false, true  };
 
     inline sideband SBI_CPUID(int cpu) {
-        return sideband(false, false, false, false, false, cpu, 0);
+        return sideband(false, false, false, false, false, false, cpu, 0);
     }
 
     inline sideband SBI_LEVEL(int lvl) {
-        return sideband(false, false, false, false, false, 0, lvl);
+        return sideband(false, false, false, false, false, false, 0, lvl);
     }
 
     class sbiext: public tlm_extension<sbiext>,

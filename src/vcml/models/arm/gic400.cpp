@@ -1219,8 +1219,8 @@ namespace vcml { namespace arm {
                     int idx = irq - NPRIV;
                     if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
                         (DISTIF.ITARGETS_SPI[idx] & mask) && !is_irq_active(irq, mask)) {
-                        if (DISTIF.IPRIORITY_SGI[idx] < best_prio) {
-                            best_prio = DISTIF.IPRIORITY_SGI[idx];
+                        if (DISTIF.IPRIORITY_SPI[idx] < best_prio) {
+                            best_prio = DISTIF.IPRIORITY_SPI[idx];
                             best_irq = irq;
                         }
                     }
