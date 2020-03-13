@@ -51,24 +51,21 @@ namespace vcml { namespace debugging {
         thctl_resume();
     }
 
-    void gdbserver::access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
+    bool gdbserver::access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
         try {
-            bool result = iswr ? m_stub->async_write_mem(addr, buffer, size)
-                               : m_stub->async_read_mem(addr, buffer, size);
-            VCML_ERROR_ON(!result, "bus error");
+            return iswr ? m_stub->async_write_mem(addr, buffer, size)
+                        : m_stub->async_read_mem(addr, buffer, size);
         } catch (report& r) {
-            log_warn("gdb cannot access %d bytes at address %x: %s",
+            log_warn("gdb cannot access %lu bytes at address %lx: %s",
                      size, addr, r.message());
-            memset(buffer, 0xee, size);
+            return false;
         }
     }
 
-    void gdbserver::access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
+    bool gdbserver::access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
         u64 page_size = 0;
-        if (!m_stub->async_page_size(page_size)) {
-            access_pmem(iswr, addr, buffer, size);
-            return;
-        }
+        if (!m_stub->async_page_size(page_size))
+            return access_pmem(iswr, addr, buffer, size);
 
         u64 end = addr + size;
         while (addr < end) {
@@ -83,6 +80,8 @@ namespace vcml { namespace debugging {
             addr += todo;
             buffer += todo;
         }
+
+        return true;
     }
 
     string gdbserver::handle_unknown(const char* command) {
@@ -118,21 +117,19 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_detach(const char* command) {
-        update_status(m_default);
         disconnect();
         return "";
     }
 
     string gdbserver::handle_kill(const char* command) {
-        update_status(m_default);
         disconnect();
-        sc_core::sc_stop();
+        update_status(GDB_KILLED);
         return "";
     }
 
     string gdbserver::handle_query(const char* command) {
         if (strncmp(command, "qSupported", strlen("qSupported")) == 0)
-            return mkstr("PacketSize=%x", VCML_RSP_MAX_PACKET_SIZE);
+            return mkstr("PacketSize=%zx", PACKET_SIZE);
         else if (strncmp(command, "qAttached", strlen("qAttached")) == 0)
             return "1";
         else if (strncmp(command, "qOffsets", strlen("qOffsets")) == 0)
@@ -156,7 +153,7 @@ namespace vcml { namespace debugging {
 
         u64 nregs = m_stub->async_num_registers();
         if (reg >= nregs) {
-            log_warn("register index out of bounds: %llu", reg);
+            log_warn("register index out of bounds: %u", reg);
             return ERR_PARAM;
         }
 
@@ -187,7 +184,7 @@ namespace vcml { namespace debugging {
 
         u64 nregs = m_stub->async_num_registers();
         if (reg >= nregs) {
-            log_warn("register index out of bounds: %llu", reg);
+            log_warn("register index out of bounds: %u", reg);
             return ERR_PARAM;
         }
 
@@ -214,7 +211,7 @@ namespace vcml { namespace debugging {
         bool ok = m_stub->async_write_reg(reg, buffer, regsz);
         delete [] buffer;
         if (!ok) {
-            log_warn("gdb cannot write register %llu", reg);
+            log_warn("gdb cannot write register %u", reg);
             return ERR_INTERNAL;
         }
 
@@ -265,7 +262,7 @@ namespace vcml { namespace debugging {
             for (u64 byte = 0; byte < regsz; byte++, str += 2)
                 buffer[byte] = char2int(str[0]) << 4 | char2int(str[1]);
             if (!m_stub->async_write_reg(reg, buffer, regsz))
-                log_warn("gdb cannot write register %llu", reg);
+                log_warn("gdb cannot write register %lu", reg);
             delete [] buffer;
         }
 
@@ -279,7 +276,7 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        if (size > VCML_GDBSERVER_BUFSIZE) {
+        if (size > BUFFER_SIZE) {
             log_warn("too much data requested: %llu bytes", size);
             return ERR_PARAM;
         }
@@ -287,8 +284,9 @@ namespace vcml { namespace debugging {
         stringstream ss;
         ss << std::hex << std::setfill('0');
 
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
-        access_vmem(false, addr, buffer, size);
+        u8 buffer[BUFFER_SIZE];
+        if (!access_vmem(false, addr, buffer, size))
+            return ERR_UNKNOWN;
 
         for (unsigned int i = 0; i < size; i++)
             ss << std::setw(2) << (int)buffer[i];
@@ -303,7 +301,7 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        if (size > VCML_GDBSERVER_BUFSIZE) {
+        if (size > BUFFER_SIZE) {
             log_warn("too much data requested: %llu bytes", size);
             return ERR_PARAM;
         }
@@ -316,11 +314,13 @@ namespace vcml { namespace debugging {
 
         data++;
 
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
+        u8 buffer[BUFFER_SIZE];
         for (unsigned int i = 0; i < size; i++)
             buffer[i] = str2int(data++, 2);
 
-        access_vmem(true, addr, buffer, size);
+        if (!access_vmem(true, addr, buffer, size))
+            return ERR_UNKNOWN;
+
         return "OK";
     }
 
@@ -331,7 +331,7 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        if (size > VCML_GDBSERVER_BUFSIZE) {
+        if (size > BUFFER_SIZE) {
             log_warn("too much data requested: %llu bytes", size);
             return ERR_PARAM;
         }
@@ -347,11 +347,13 @@ namespace vcml { namespace debugging {
 
         data++;
 
-        u8 buffer[VCML_GDBSERVER_BUFSIZE];
+        u8 buffer[BUFFER_SIZE];
         for (unsigned int i = 0; i < size; i++)
             buffer[i] = char_unescape(data);
 
-        access_vmem(true, addr, buffer, size);
+        if (!access_vmem(true, addr, buffer, size))
+            return ERR_UNKNOWN;
+
         return "OK";
     }
 
@@ -489,6 +491,10 @@ namespace vcml { namespace debugging {
             thctl_suspend();
 
         switch (m_status) {
+        case GDB_KILLED:
+            sc_stop();
+            return;
+
         case GDB_STOPPED:
             return;
 
@@ -511,10 +517,10 @@ namespace vcml { namespace debugging {
             return (this->*func)(command.c_str());
         } catch (report& rep) {
             vcml::logger::log(rep);
-            return mkstr("E%02x", VCML_GDBSERVER_ERR_INTERNAL);
+            return ERR_INTERNAL;
         } catch (std::exception& ex) {
             log_warn(ex.what());
-            return mkstr("E%02x", VCML_GDBSERVER_ERR_INTERNAL);
+            return ERR_INTERNAL;
         }
     }
 

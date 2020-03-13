@@ -30,19 +30,13 @@
 #include "vcml/debugging/gdbstub.h"
 #include "vcml/debugging/rspserver.h"
 
-#define VCML_GDBSERVER_ERR_COMMAND  (1) // gdb rsp command was malformed
-#define VCML_GDBSERVER_ERR_PARAM    (2) // command parameter has invalid value
-#define VCML_GDBSERVER_ERR_INTERNAL (3) // internal error during execution
-#define VCML_GDBSERVER_ERR_UNKNOWN  (4) // used for all other kinds of errors
-
-#define VCML_GDBSERVER_BUFSIZE      (VCML_RSP_MAX_PACKET_SIZE >> 1)
-
 namespace vcml { namespace debugging {
 
     enum gdb_status {
         GDB_STOPPED,
         GDB_STEPPING,
-        GDB_RUNNING
+        GDB_RUNNING,
+        GDB_KILLED,
     };
 
     enum gdb_signal {
@@ -61,8 +55,8 @@ namespace vcml { namespace debugging {
 
         void update_status(gdb_status status);
 
-        void access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size);
-        void access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size);
+        bool access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size);
+        bool access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size);
 
         typedef string (gdbserver::*handler)(const char*);
         std::map<char, handler> m_handler;
@@ -106,9 +100,15 @@ namespace vcml { namespace debugging {
         gdbserver(const gdbserver&);
 
     public:
+        enum : size_t {
+            PACKET_SIZE = 4096,
+            BUFFER_SIZE = PACKET_SIZE / 2,
+        };
+
         bool is_stopped()  const { return m_status == GDB_STOPPED; }
         bool is_stepping() const { return m_status == GDB_STEPPING; }
         bool is_running()  const { return m_status == GDB_RUNNING; }
+        bool is_killed()   const { return m_status == GDB_KILLED; }
 
         void sync(bool s = true) { m_sync = s; }
 

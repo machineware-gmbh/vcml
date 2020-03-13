@@ -313,13 +313,17 @@ namespace vcml {
                 num_cycles = 1;
 
             double start = realtime();
-            if (m_gdb != nullptr)
-                m_gdb->simulate(num_cycles);
-            else
+            if (m_gdb == nullptr) {
                 simulate(num_cycles);
+            } else {
+                m_gdb->simulate(num_cycles);
 
-            if (!gdb_sync && m_gdb != nullptr && m_gdb->is_stopped())
-                local_time() += clock_cycles(num_cycles);
+                if (m_gdb->is_killed())
+                    return;
+
+                if (m_gdb->is_stopped() && !gdb_sync)
+                    local_time() += clock_cycles(num_cycles);
+            }
 
             m_run_time += realtime() - start;
 

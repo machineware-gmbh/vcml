@@ -26,8 +26,6 @@
 
 #include "vcml/logging/logger.h"
 
-#define VCML_RSP_MAX_PACKET_SIZE (0x4000u)
-
 namespace vcml { namespace debugging {
 
     class rspserver
