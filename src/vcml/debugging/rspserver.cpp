@@ -56,7 +56,7 @@ namespace vcml { namespace debugging {
     void rspserver::send_char(char c) {
         VCML_ERROR_ON(m_fd == -1, "not connected");
         if (send(m_fd, &c, sizeof(c), 0) != sizeof(c))
-            VCML_ERROR("error sending data '%c': %s", c, strerror(errno));
+            VCML_REPORT("error sending data '%c': %s", c, strerror(errno));
     }
 
     char rspserver::recv_char() {
@@ -64,7 +64,7 @@ namespace vcml { namespace debugging {
 
         char ch = 0;
         if (recv(m_fd, &ch, sizeof(ch), 0) != sizeof(ch))
-            VCML_ERROR("error receiving data: %s", strerror(errno));
+            VCML_REPORT("error receiving data: %s", strerror(errno));
         return ch;
     }
 

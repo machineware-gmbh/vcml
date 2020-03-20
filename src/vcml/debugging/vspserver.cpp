@@ -218,7 +218,7 @@ namespace vcml { namespace debugging {
     }
 
     static void do_interrupt(int fd, int event) {
-        VCML_ERROR_ON(session != nullptr, "interrupt on no session");
+        VCML_ERROR_ON(session == nullptr, "interrupt on no session");
         session->interrupt();
     }
 
