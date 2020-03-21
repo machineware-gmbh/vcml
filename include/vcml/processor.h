@@ -72,6 +72,7 @@ namespace vcml {
             property_base* prop;
 
             void create(u64 defval);
+            void reset();
             u64  get()const ;
             void set(u64 val);
 
