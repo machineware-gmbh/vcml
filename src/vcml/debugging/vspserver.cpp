@@ -224,12 +224,14 @@ namespace vcml { namespace debugging {
 
     void vspserver::run_interruptible(const sc_time& duration) {
         thctl_enter_critical();
+        notify_resume(nullptr);
         aio_notify(get_connection_fd(), &do_interrupt, AIO_ONCE);
         if (duration != SC_ZERO_TIME)
             sc_start(duration);
         else
             sc_start();
         aio_cancel(get_connection_fd());
+        notify_suspend(nullptr);
         thctl_exit_critical();
 
         switch (sc_core::sc_get_curr_simcontext()->sim_status()) {
@@ -247,6 +249,35 @@ namespace vcml { namespace debugging {
         default:
             break;
         }
+    }
+
+
+    void vspserver::notify_suspend(sc_object* obj) {
+        const auto& children = obj ? obj->get_child_objects()
+                                   : sc_core::sc_get_top_level_objects();
+        for (auto child : children)
+            notify_suspend(child);
+
+        if (obj == nullptr)
+            return;
+
+        module* mod = dynamic_cast<module*>(obj);
+        if (mod != nullptr)
+            mod->session_suspend();
+    }
+
+    void vspserver::notify_resume(sc_object* obj) {
+        const auto& children = obj ? obj->get_child_objects()
+                                   : sc_core::sc_get_top_level_objects();
+        for (auto child : children)
+            notify_resume(child);
+
+        if (obj == nullptr)
+            return;
+
+        module* mod = dynamic_cast<module*>(obj);
+        if (mod != nullptr)
+            mod->session_resume();
     }
 
     vspserver::vspserver(u16 port):

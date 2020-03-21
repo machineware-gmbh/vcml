@@ -215,8 +215,8 @@ namespace vcml {
             return NULL;
 
         sc_object* parent = find_object(name.substr(0, pos));
-        if (parent == NULL)
-            return NULL;
+        if (parent == nullptr)
+            return nullptr;
 
         return parent->get_attribute(name);
     }

@@ -71,6 +71,14 @@ namespace vcml {
         // nothing to do
     }
 
+    void module::session_suspend() {
+        // to be overloaded
+    }
+
+    void module::session_resume() {
+        // to be overloaded
+    }
+
     bool module::execute(const string& name, const vector<string>& args,
                          ostream& os) {
         command_base* cmd = get_command(name);

@@ -54,7 +54,11 @@ namespace vcml { namespace debugging {
 
         void run_interruptible(const sc_time& duration);
 
+        void notify_suspend(sc_object* obj);
+        void notify_resume(sc_object* obj);
+
     public:
+        vspserver() = delete;
         vspserver(u16 port);
         virtual ~vspserver();
 

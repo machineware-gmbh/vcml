@@ -55,6 +55,9 @@ namespace vcml {
         void hierarchy_push();
         void hierarchy_pop();
 
+        virtual void session_suspend();
+        virtual void session_resume();
+
         bool execute(const string& name, const vector<string>& args,
                      ostream& os);
 
