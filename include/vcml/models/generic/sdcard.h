@@ -174,6 +174,7 @@ namespace vcml { namespace generic {
 
         property<size_t> capacity;
         property<string> image;
+        property<bool>   readonly;
 
         sd_target_socket SD_IN;
 

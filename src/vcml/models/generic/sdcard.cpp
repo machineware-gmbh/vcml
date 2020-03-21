@@ -417,8 +417,10 @@ namespace vcml { namespace generic {
             VCML_ERROR("cannot access image file '%s'", image.get().c_str());
 
         log_debug("using image at '%s'", image.get().c_str());
-        m_image.open(image.get().c_str(),
-                     std::ios::binary | std::ios::in | std::ios::out);
+        if (!readonly) {
+            auto flags = std::ios::binary | std::ios::in | std::ios::out;
+            m_image.open(image.get().c_str(), flags);
+        }
 
         if (!m_image.is_open()) {
             log_debug("opening image read-only");
@@ -849,6 +851,7 @@ namespace vcml { namespace generic {
         m_state(IDLE),
         capacity("capacity", 0),
         image("image", ""),
+        readonly("readonly", false),
         SD_IN("SD_IN") {
         SD_IN.bind(*this);
 
@@ -1014,7 +1017,7 @@ namespace vcml { namespace generic {
             return SDRX_ERR_CRC;
         }
 
-        if (m_image.is_open()) {
+        if (m_image.is_open() && !readonly) {
             m_image.seekp(m_curoff, std::ios::beg);
             m_image.write((char*)m_buffer, blklen);
             if (!m_image.good()) {
