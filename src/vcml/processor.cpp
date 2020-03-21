@@ -24,18 +24,48 @@
 namespace vcml {
 
     u64 processor::gdb_num_registers() {
-        return 0;
+        return m_num_gdbregs;
     }
 
     u64 processor::gdb_register_width(u64 idx) {
-        return 4;
+        cpureg_info reg;
+        if (!lookup_gdbreg(idx, reg))
+            return 0;
+        return reg.size;
     }
 
     bool processor::gdb_read_reg(u64 idx, void* p, u64 size) {
-        return false;
+        cpureg_info reg;
+        if (!lookup_gdbreg(idx, reg))
+            return false;
+
+        VCML_ERROR_ON(size != reg.size, "invalid register size %lu", size);
+
+        u64 val = get_cpureg_internal(reg);
+        memcpy(p, &val, size);
+
+        if (is_big_endian())
+            memswap(p, size);
+
+        return true;
     }
 
     bool processor::gdb_write_reg(u64 idx, const void* p, u64 size) {
+        cpureg_info reg;
+        if (!lookup_gdbreg(idx, reg))
+            return false;
+        if (is_write_allowed(reg.perms))
+            return false;
+
+        VCML_ERROR_ON(size != reg.size, "invalid register size %lu", size);
+
+        u64 val = 0;
+        memcpy(&val, p, size);
+
+        if (is_big_endian())
+            memswap(&val, size);
+
+        set_cpureg_internal(reg, val);
         return false;
     }
 
@@ -296,6 +326,81 @@ namespace vcml {
         }
     }
 
+    void processor::cpureg_info::create(u64 defval) {
+        if (defval > 0 && fls(defval) >= size * 8)
+            VCML_ERROR("value 0x%lx is too big for register %s", defval, name);
+
+        switch (size) {
+        case 1: prop = new property< u8>(name, defval); break;
+        case 2: prop = new property<u16>(name, defval); break;
+        case 4: prop = new property<u32>(name, defval); break;
+        case 8: prop = new property<u64>(name, defval); break;
+        default:
+            VCML_ERROR("register %s has illegal size %u bytes", name, size);
+        }
+    }
+
+    u64 processor::cpureg_info::get() const {
+        switch (size) {
+        case 1: return dynamic_cast<property< u8>*>(prop)->get();
+        case 2: return dynamic_cast<property<u16>*>(prop)->get();
+        case 4: return dynamic_cast<property<u32>*>(prop)->get();
+        case 8: return dynamic_cast<property<u64>*>(prop)->get();
+        default:
+            VCML_ERROR("register %s has illegal size %u bytes", name, size);
+        }
+    }
+
+    void processor::cpureg_info::set(u64 val) {
+        if (val > 0 && fls(val) >= size * 8)
+            VCML_ERROR("value 0x%lx is too big for register %s", val, name);
+
+        switch (size) {
+        case 1: dynamic_cast<property< u8>*>(prop)->set(( u8)val); break;
+        case 2: dynamic_cast<property<u16>*>(prop)->set((u16)val); break;
+        case 4: dynamic_cast<property<u32>*>(prop)->set((u32)val); break;
+        case 8: dynamic_cast<property<u64>*>(prop)->set((u64)val); break;
+        default:
+            VCML_ERROR("register %s has illegal size %u bytes", name, size);
+        }
+    }
+
+    bool processor::has_cpureg(int regno) const {
+        return m_cpuregs.find(regno) != m_cpuregs.end();
+    }
+
+    bool processor::lookup_cpureg(int regno, cpureg_info& info) {
+        auto it = m_cpuregs.find(regno);
+        if (it == m_cpuregs.end())
+            return false;
+
+        info = it->second;
+        return true;
+    }
+
+    bool processor::lookup_gdbreg(int gdbno, cpureg_info& info) {
+        for (auto it : m_cpuregs) {
+            if (it.second.gdbno == gdbno) {
+                info = it.second;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    u64  processor::get_cpureg_internal(const cpureg_info& reg) {
+        if (!reg.read_allowed())
+            return 0;
+        return get_cpureg(reg.regno);
+    }
+
+    void processor::set_cpureg_internal(const cpureg_info& reg, u64 val) {
+        if (!reg.write_allowed())
+            return;
+        set_cpureg(reg.regno, val);
+    }
+
     void processor::processor_thread() {
         wait(SC_ZERO_TIME);
         while (true) {
@@ -371,6 +476,9 @@ namespace vcml {
         m_symbols(NULL),
         m_gdb(NULL),
         m_irq_stats(),
+        m_endian(VCML_ENDIAN_LITTLE),
+        m_cpuregs(),
+        m_num_gdbregs(0),
         symbols("symbols"),
         gdb_port("gdb_port", 0),
         gdb_wait("gdb_wait", false),
@@ -421,6 +529,8 @@ namespace vcml {
             delete m_gdb;
         if (m_symbols)
             delete m_symbols;
+        for (auto reg : m_cpuregs)
+            delete reg.second.prop;
     }
 
     void processor::reset() {
@@ -429,12 +539,67 @@ namespace vcml {
         m_run_time = 0.0;
     }
 
+    void processor::session_suspend() {
+        component::session_suspend();
+        fetch_cpuregs();
+    }
+
+    void processor::session_resume() {
+        component::session_resume();
+        flush_cpuregs();
+    }
+
     bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {
         if (m_irq_stats.find(irq) == m_irq_stats.end())
             return false;
 
         stats = m_irq_stats.at(irq);
         return true;
+    }
+
+    u64 processor::get_cpureg(int regno) {
+        return 0; // to be overloaded
+    }
+
+    void processor::set_cpureg(int regno, u64 val) {
+        // to be overloaded
+    }
+
+    void processor::fetch_cpuregs() {
+        for (auto it : m_cpuregs)
+            it.second.set(get_cpureg_internal(it.second));
+    }
+
+    void processor::flush_cpuregs() {
+        for (auto it : m_cpuregs)
+            set_cpureg_internal(it.second, it.second.get());
+    }
+
+    void processor::define_cpuregs(const vector<cpureg>& regs) {
+        for (auto reg : regs) {
+            if (has_cpureg(reg.regno))
+                VCML_ERROR("register %s already defined", reg.name);
+
+            if (!is_pow2(reg.size) || reg.size > 64)
+                VCML_ERROR("register %s has illegal size", reg.name);
+
+            u64 def = is_read_allowed(reg.perms) ? get_cpureg(reg.regno) : 0;
+            cpureg_info& info = m_cpuregs[reg.regno];
+            info.regno = reg.regno;
+            info.gdbno = reg.gdbno;
+            info.name  = reg.name;
+            info.size  = reg.size;
+            info.perms = reg.perms;
+            info.create(def);
+
+            if (reg.gdbno >= 0 && (u64)reg.gdbno > m_num_gdbregs)
+                m_num_gdbregs = reg.gdbno + 1;
+        }
+
+        log_debug("defined %zu cpu registers", m_cpuregs.size());
+        log_debug("defined %lu gdb registers", m_num_gdbregs);
+
+        flush_cpuregs();
     }
 
     void processor::log_bus_error(const master_socket& socket, vcml_access acs,

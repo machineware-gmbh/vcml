@@ -163,11 +163,11 @@ namespace vcml {
         VCML_ACCESS_READ_WRITE = VCML_ACCESS_READ | VCML_ACCESS_WRITE
     };
 
-    static inline bool is_read_allowed(vcml_access a) {
+    static inline bool is_read_allowed(int a) {
         return is_set(a, VCML_ACCESS_READ);
     }
 
-    static inline bool is_write_allowed(vcml_access a) {
+    static inline bool is_write_allowed(int a) {
         return is_set(a, VCML_ACCESS_WRITE);
     }
 

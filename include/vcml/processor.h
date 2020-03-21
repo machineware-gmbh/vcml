@@ -23,6 +23,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/bitops.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/backends/backend.h"
@@ -48,6 +49,14 @@ namespace vcml {
         sc_time      irq_longest;
     };
 
+    struct cpureg {
+        int          regno;
+        int          gdbno;
+        const char*  name;
+        unsigned int size;
+        int          perms;
+    };
+
     class processor: public component,
                      protected debugging::gdbstub {
     private:
@@ -59,12 +68,34 @@ namespace vcml {
 
         std::map<unsigned int, irq_stats> m_irq_stats;
 
+        struct cpureg_info: public cpureg {
+            property_base* prop;
+
+            void create(u64 defval);
+            u64  get()const ;
+            void set(u64 val);
+
+            bool read_allowed()  const { return is_read_allowed(perms); }
+            bool write_allowed() const { return is_write_allowed(perms); }
+        };
+
+        vcml_endian m_endian;
+        std::map<int, cpureg_info> m_cpuregs;
+        u64 m_num_gdbregs;
+
         bool cmd_dump(const vector<string>& args, ostream& os);
         bool cmd_read(const vector<string>& args, ostream& os);
         bool cmd_symbols(const vector<string>& args, ostream& os);
         bool cmd_lsym(const vector<string>& args, ostream& os);
         bool cmd_disas(const vector<string>& args, ostream& os);
         bool cmd_v2p(const vector<string>& args, ostream& os);
+
+        bool has_cpureg(int regno) const;
+        bool lookup_cpureg(int regno, cpureg_info& reg);
+        bool lookup_gdbreg(int regno, cpureg_info& reg);
+
+        u64  get_cpureg_internal(const cpureg_info& reg);
+        void set_cpureg_internal(const cpureg_info& reg, u64 val);
 
         void processor_thread();
 
@@ -89,6 +120,9 @@ namespace vcml {
 
         processor() = delete;
         processor(const processor&) = delete;
+
+        virtual void session_suspend() override;
+        virtual void session_resume() override;
 
         virtual string disassemble(u64& addr, unsigned char* insn);
 
@@ -117,6 +151,24 @@ namespace vcml {
 
         template <typename T>
         inline tlm_response_status write (u64 addr, const T& data);
+
+        vcml_endian get_endian() const { return m_endian; }
+        void set_endian(vcml_endian e) { m_endian = e; }
+
+        void set_little_endian() { m_endian = VCML_ENDIAN_LITTLE; }
+        void set_big_endian()    { m_endian = VCML_ENDIAN_BIG; }
+
+        bool is_little_endian() const;
+        bool is_big_endian() const;
+        bool is_host_endian() const;
+
+        virtual u64  get_cpureg(int regno);
+        virtual void set_cpureg(int regno, u64 val);
+
+        void fetch_cpuregs();
+        void flush_cpuregs();
+
+        void define_cpuregs(const vector<cpureg>& regs);
 
     protected:
         void log_bus_error(const master_socket& socket, vcml_access accss,
@@ -174,6 +226,18 @@ namespace vcml {
         if (failed(rs))
             log_bus_error(DATA, VCML_ACCESS_WRITE, rs, addr, sizeof(T));
         return rs;
+    }
+
+    inline bool processor::is_little_endian() const {
+        return m_endian == VCML_ENDIAN_LITTLE;
+    }
+
+    inline bool processor::is_big_endian() const {
+        return m_endian == VCML_ENDIAN_BIG;
+    }
+
+    inline bool processor::is_host_endian() const {
+        return m_endian == host_endian();
     }
 
 }
