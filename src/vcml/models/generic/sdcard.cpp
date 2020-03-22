@@ -411,6 +411,8 @@ namespace vcml { namespace generic {
             } else if (capacity % 1024) {
                 VCML_ERROR("capacity must be multiples of 1kB");
             }
+
+            return;
         }
 
         if (!file_exists(image))
