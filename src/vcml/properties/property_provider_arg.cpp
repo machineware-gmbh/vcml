@@ -21,7 +21,8 @@
 namespace vcml {
 
     property_provider_arg::property_provider_arg(int argc, char** argv):
-             property_provider() {
+        property_provider() {
+
         int i = 1;
         while (++i < argc) {
             if ((strcmp(argv[i - 1], "--config") == 0) ||
@@ -43,7 +44,7 @@ namespace vcml {
     }
 
     property_provider_arg::~property_provider_arg() {
-        /* nothing to do */
+        // nothing to do
     }
 
 }

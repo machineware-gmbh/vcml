@@ -30,12 +30,8 @@ namespace vcml {
 
     class property_provider_arg: public property_provider
     {
-    private:
-        // disabled
-        property_provider_arg();
-        property_provider_arg(const property_provider_arg&);
-
     public:
+        property_provider_arg() = delete;
         property_provider_arg(int argc, char** argv);
         virtual ~property_provider_arg();
     };
