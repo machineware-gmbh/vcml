@@ -76,6 +76,8 @@ set(sources
     "${src}/vcml/peripheral.cpp"
     "${src}/vcml/stubs.cpp"
     "${src}/vcml/processor.cpp"
+    "${src}/vcml/system.cpp"
+    "${src}/vcml/setup.cpp"
     "${src}/vcml/spi.cpp"
     "${src}/vcml/sd.cpp"
     "${src}/vcml/models/generic/clock.cpp"

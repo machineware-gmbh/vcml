@@ -68,6 +68,8 @@
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
 #include "vcml/processor.h"
+#include "vcml/system.h"
+#include "vcml/setup.h"
 #include "vcml/spi.h"
 #include "vcml/sd.h"
 
