@@ -23,37 +23,37 @@ namespace vcml {
     void property_provider_file::parse_file(const string& filename) {
         int lno = 0;
         string line, buffer = "";
-
-        m_filename = filename;
         ifstream file(filename.c_str());
+
+        VCML_ERROR_ON(!file.good(), "cannot read '%s'", filename.c_str());
 
         while (std::getline(file, line)) {
             lno++;
 
-            /* remove white spaces  */
+            // remove white spaces
             trim(line);
 
             if (line.empty())
                 continue;
 
-            /* continue on next line? */
+            // continue on next line?
             if (line[line.size() -1] == '\\') {
                 buffer += line.substr(0, line.size() - 1);
                 continue;
             }
 
-            /* prepend buffer from previous lines */
+            // prepend buffer from previous lines
             line = buffer + line;
             buffer = "";
 
-            /* remove comments */
+            // remove comments
             size_t pos = line.find('#');
             if (pos != line.npos)
                 line.erase(pos);
             if (line.empty())
                 continue;
 
-            /* read key=value part */
+            // read key=value part
             size_t separator = line.find('=');
             if (separator == line.npos)
                 log_warn("%s:%d missing '='", m_filename.c_str(), lno);
@@ -79,11 +79,16 @@ namespace vcml {
         m_filename(filename),
         m_replacements() {
         m_replacements["$dir"] = dirname(filename);
+        m_replacements["$app"] = progname();
+        m_replacements["$tmp"] = tempdir();
+        m_replacements["$usr"] = username();
+        m_replacements["$pid"] = to_string(getpid());
+        m_replacements["$pwd"] = getenv("PWD");
         parse_file(filename);
     }
 
     property_provider_file::~property_provider_file() {
-        /* nothing to do */
+        // nothing to do
     }
 
 }

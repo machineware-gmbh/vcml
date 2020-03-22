@@ -38,10 +38,8 @@ namespace vcml {
         void parse_file(const string& filename);
         void replace(string& str);
 
-        property_provider_file();
-        property_provider_file(const property_provider_file&);
-
     public:
+        property_provider_file() = delete;
         property_provider_file(const string& filename);
         virtual ~property_provider_file();
     };
