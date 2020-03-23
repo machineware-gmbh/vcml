@@ -24,6 +24,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [Simulation Device](models/generic_simdev.md)
   * [8250 UART](models/uart8250.md)
   * [DS1742 RTC](models/rtc1742.md)
+  * [HWRNG](models/hwrng.md)
   * [OpenCores ETHOC](models/oc_ethoc.md)
   * [OpenCores OMPIC](models/oc_ompic.md)
   * [OpenCores OCKBD](models/oc_ockbd.md)

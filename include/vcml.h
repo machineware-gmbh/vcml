@@ -86,6 +86,7 @@
 #include "vcml/models/generic/spi2sd.h"
 #include "vcml/models/generic/sdcard.h"
 #include "vcml/models/generic/sdhci.h"
+#include "vcml/models/generic/hwrng.h"
 
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ethoc.h"

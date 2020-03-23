@@ -93,6 +93,7 @@ set(sources
     "${src}/vcml/models/generic/spi2sd.cpp"
     "${src}/vcml/models/generic/sdcard.cpp"
     "${src}/vcml/models/generic/sdhci.cpp"
+    "${src}/vcml/models/generic/hwrng.cpp"
     "${src}/vcml/models/opencores/ompic.cpp"
     "${src}/vcml/models/opencores/ethoc.cpp"
     "${src}/vcml/models/opencores/ockbd.cpp"
