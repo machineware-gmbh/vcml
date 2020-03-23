@@ -608,7 +608,7 @@ namespace vcml {
             info.perms = reg.perms;
             info.create(def);
 
-            if (reg.gdbno >= 0 && (u64)reg.gdbno > m_num_gdbregs)
+            if (reg.gdbno >= 0 && (u64)reg.gdbno >= m_num_gdbregs)
                 m_num_gdbregs = reg.gdbno + 1;
         }
 
