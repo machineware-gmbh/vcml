@@ -53,7 +53,7 @@ TEST(backend_tcp, connect) {
     const char msg[] = "Hello World";
 
     EXPECT_FALSE(backend->peek());
-    ASSERT_EQ(vcml::backend::full_write(fd, msg, sizeof(msg)), sizeof(msg));
+    ASSERT_EQ(vcml::fd_write(fd, msg, sizeof(msg)), sizeof(msg));
     EXPECT_TRUE(backend->peek());
 
     char buf[12];

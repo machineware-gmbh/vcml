@@ -106,7 +106,7 @@ namespace vcml {
     size_t backend_term::peek() {
         if (m_signal != 0)
             return 1;
-        return backend::peek(STDOUT_FILENO);
+        return fd_peek(STDOUT_FILENO);
     }
 
     size_t backend_term::read(void* buf, size_t len) {
@@ -124,7 +124,7 @@ namespace vcml {
     }
 
     size_t backend_term::write(const void* buf, size_t len) {
-        return full_write(STDOUT_FILENO, buf, len);
+        return fd_write(STDOUT_FILENO, buf, len);
     }
 
     backend* backend_term::create(const string& nm) {

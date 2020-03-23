@@ -140,7 +140,7 @@ namespace vcml {
         if (m_fd < 0)
             return 0;
 
-        size_t numread = full_read(m_fd, buf, len);
+        size_t numread = fd_read(m_fd, buf, len);
         if (numread != len) {
             disconnect();
             accept_async();
@@ -153,7 +153,7 @@ namespace vcml {
         if (m_fd < 0)
             return len;
 
-        size_t written = full_write(m_fd, buf, len);
+        size_t written = fd_write(m_fd, buf, len);
         if (written != len) {
             disconnect();
             accept_async();

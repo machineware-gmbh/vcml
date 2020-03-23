@@ -38,7 +38,7 @@ namespace vcml {
     }
 
     size_t backend_stdout::write(const void* buf, size_t len) {
-        return full_write(STDOUT_FILENO, buf, len);
+        return fd_write(STDOUT_FILENO, buf, len);
     }
 
     backend* backend_stdout::create(const string& nm) {

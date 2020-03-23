@@ -53,6 +53,10 @@ namespace vcml {
 
     bool file_exists(const string& filename);
 
+    size_t fd_peek(int fd);
+    size_t fd_read(int fd, void* buffer, size_t buflen);
+    size_t fd_write(int fd, const void* buffer, size_t buflen);
+
     void trim(string& s);
 
     string tlm_response_to_str(tlm_response_status status);

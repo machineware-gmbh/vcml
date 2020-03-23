@@ -46,7 +46,7 @@ namespace vcml {
     }
 
     size_t backend_tap::peek() {
-        return m_fd < 0 ? 0 : backend::peek(m_fd);
+        return m_fd < 0 ? 0 : fd_peek(m_fd);
     }
 
     size_t backend_tap::read(void* buf, size_t len) {
@@ -58,7 +58,7 @@ namespace vcml {
     size_t backend_tap::write(const void* buf, size_t len) {
         if (m_fd < 0)
             return 0;
-        return backend::full_write(m_fd, buf, len);
+        return fd_write(m_fd, buf, len);
     }
 
     backend* backend_tap::create(const string& nm) {

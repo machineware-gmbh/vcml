@@ -64,6 +64,59 @@ namespace vcml {
         return access(filename.c_str(), F_OK) != -1;
     }
 
+    size_t fd_peek(int fd) {
+        if (fd < 0)
+            return 0;
+
+        fd_set in, out, err;
+        struct timeval timeout;
+
+        FD_ZERO(&in);
+        FD_SET(fd, &in);
+        FD_ZERO(&out);
+        FD_ZERO(&err);
+
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+
+        int ret = select(fd + 1, &in, &out, &err, &timeout);
+        return ret > 0 ? 1 : 0;
+    }
+
+    size_t fd_read(int fd, void* buffer, size_t buflen) {
+        if  (fd < 0 || buffer == nullptr || buflen == 0)
+            return 0;
+
+        char* ptr = reinterpret_cast<char*>(buffer);
+
+        size_t numread = 0;
+        while (numread < buflen) {
+            ssize_t res = ::read(fd, ptr + numread, buflen - numread);
+            if (res <= 0)
+                return numread;
+            numread += res;
+        }
+
+        return numread;
+    }
+
+    size_t fd_write(int fd, const void* buffer, size_t buflen) {
+        if  (fd < 0 || buffer == nullptr || buflen == 0)
+            return false;
+
+        const char* ptr = reinterpret_cast<const char*>(buffer);
+
+        size_t written = 0;
+        while (written < buflen) {
+            ssize_t res = ::write(fd, ptr + written, buflen - written);
+            if (res <= 0)
+                return written;
+            written += res;
+        }
+
+        return written;
+    }
+
     void trim(string& s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(),
             [] (int ch) { return !std::isspace(ch); }));
