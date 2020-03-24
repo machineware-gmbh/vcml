@@ -217,15 +217,18 @@ namespace vcml { namespace debugging {
 
     void rspserver::listen() {
         const int one = 1;
-        if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-            VCML_ERROR("failed to create socket: %s", strerror(errno));
 
-        if (setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
-                       (const void*)&one, sizeof(one)))
-            VCML_ERROR("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
+        if (m_fd_server < 0) {
+            if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+                VCML_ERROR("failed to create socket: %s", strerror(errno));
 
-        if (bind(m_fd_server, (struct sockaddr*)&m_server, sizeof(m_server)))
-            VCML_ERROR("binding server socket failed: %s", strerror(errno));
+            if (setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
+                           (const void*)&one, sizeof(one)))
+                VCML_ERROR("setsockopt failed: %s", strerror(errno));
+
+            if (bind(m_fd_server, (sockaddr*)&m_server, sizeof(m_server)))
+                VCML_ERROR("binding socket failed: %s", strerror(errno));
+        }
 
         if (::listen(m_fd_server, 1))
             VCML_ERROR("listen for connections failed: %s", strerror(errno));
@@ -237,9 +240,6 @@ namespace vcml { namespace debugging {
         if (setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
                        (const void*)&one, sizeof(one)) < 0)
             VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(errno));
-
-        close(m_fd_server);
-        m_fd_server = -1;
 
         handle_connect(inet_ntoa(m_client.sin_addr));
     }
