@@ -20,10 +20,10 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
 * Documentation for VCML hardware models:
   * [Generic Memory](models/generic_mem.md)
   * [Generic Bus](models/generic_bus.md)
-  * [Generic SDHCI](models/sdhci.md)
   * [Simulation Device](models/generic_simdev.md)
   * [8250 UART](models/uart8250.md)
   * [DS1742 RTC](models/rtc1742.md)
+  * [SDHCI](models/sdhci.md)
   * [HWRNG](models/hwrng.md)
   * [OpenCores ETHOC](models/oc_ethoc.md)
   * [OpenCores OMPIC](models/oc_ompic.md)

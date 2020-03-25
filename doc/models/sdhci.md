@@ -39,30 +39,35 @@ The model exposes the following memory mapped registers:
 | `BLOCK_SIZE`              | `+0x004` |  RW       | 16bit   | Block Size Register                 |
 | `BLOCK_COUNT_16BIT`       | `+0x006` |  RW       | 16bit   | 16-bit Block Count Register         |
 | `ARG`                     | `+0x008` |  RW       | 32bit   | Argument Register                   |
-| `TRANSFER_MODE`           | `+0x00C` |  RW       | 16bit   | Transfer Mode Register              |
-| `CMD`                     | `+0x00E` |  RW       | 16bit   | Command Register                    |
+| `TRANSFER_MODE`           | `+0x00c` |  RW       | 16bit   | Transfer Mode Register              |
+| `CMD`                     | `+0x00e` |  RW       | 16bit   | Command Register                    |
 | `RESPONSE`                | `+0x010` |  ROC      | 4*32bit | Response Register                   |
 | `BUFFER_DATA_PORT`        | `+0x020` |  RW       | 32bit   | Buffer Data Port Register           |
 | `PRESENT_STATE`           | `+0x024` |  RO/ROC   | 32bit   | Present State Register              |
 | `HOST_CONTROL_1`          | `+0x028` |  RW       | 8bit    | Host Control 1 Register             |
 | `POWER_CTRL`              | `+0x029` |  RW       | 8bit    | Power Control Register              |
-| `CLOCK_CTRL`              | `+0x02C` |  RW/ROC   | 16bit   | Clock Control Register              |
-| `TIMEOUT_CTRL`            | `+0x02E` |  RW       | 8bit    | Timeout Control Register            |
-| `SOFTWARE_RESET`          | `+0x02F` |  RWAC     | 8bit    | Software Reset Register             |
+| `CLOCK_CTRL`              | `+0x02c` |  RW/ROC   | 16bit   | Clock Control Register              |
+| `TIMEOUT_CTRL`            | `+0x02e` |  RW       | 8bit    | Timeout Control Register            |
+| `SOFTWARE_RESET`          | `+0x02f` |  RWAC     | 8bit    | Software Reset Register             |
 |                           |          |           |         |                                     |
 | `NORMAL_INT_STAT`         | `+0x030` |  ROC/RW1C | 16bit   | Normal Interrupt Status Register    |
 | `ERROR_INT_STAT`          | `+0x032` |  RW1C     | 16bit   | Error Interrupt Status Register     |
 | `NORMAL_INT_STAT_ENABLE`  | `+0x034` |  RW       | 16bit   | Normal Interrupt Status Enable Reg. |
 | `ERROR_INT_STAT_ENABLE`   | `+0x036` |  RW       | 16bit   | Error Interrupt Status Enable Reg.  |
 | `NORMAL_INT_SIG_ENABLE`   | `+0x038` |  RW       | 16bit   | Normal Interrupt Signal Enable Reg. |
-| `ERROR_INT_SIG_ENABLE`    | `+0x03A` |  RW       | 16bit   | Error Interrupt Signal Enable Reg.  |
+| `ERROR_INT_SIG_ENABLE`    | `+0x03a` |  RW       | 16bit   | Error Interrupt Signal Enable Reg.  |
 |                           |          |           |         |                                     |
 | `CAPABILITIES`            | `+0x040` |  HWInit   | 2*32bit | Capabilities Register               |
 | `MAX_CURR_CAP`            | `+0x048` |  HWInit   | 32bit   | Max. Current Capabilities Register  |
-| `HOST_CONTROLLER_VERSION` | `+0x0FE` |  HWInit   | 16bit   | Host Controller Version Register    |
+| `HOST_CONTROLLER_VERSION` | `+0x0fe` |  HWInit   | 16bit   | Host Controller Version Register    |
 | `F_SDH30_AHB_CONFIG`      | `+0x100` |  RW       | 16bit   | Controller specific Register        |
 | `F_SDH30_ESD_CONTROL`     | `+0x124` |  RW       | 32bit   | Controller specific Register        |
 
+Note:
+* `ROC`: read-only, cleared on reset
+* `RW1C`: read-only, write one to clear
+* `RWAC`: read/write, automatic clear
+* `HWInit`: read-only, initialized by the device
 
 The device driver for Linux can be found at:
 ```
@@ -77,14 +82,19 @@ Once this is done, a new device tree node must be added. The following example
 adds an Fujitsu F_SDH30 SD Host Controller Interface to address `0x99000000`:
 
 ```
-sdhci1: mmc@99000000 {
+sdhciclk: clk50mhz {
+    compatible = "fixed-clock";
+    #clock-cells = <0>;
+    clock-frequency = <50000000>;
+};
+
+sdhci0: mmc@99000000 {
     compatible = "fujitsu,mb86s70-sdhci-3.0";
     reg = <0x99000000 0x1000>;
-    interrupts = <8>;
-    bus-width = <1>;
-    clocks = <&clock 2 2 0>, <&clock 2 3 0>;
+    interrupts = <8>
+    clocks = <&sdhciclk>, <&sdhciclk>;
     clock-names = "iface", "core";
 };
 ```
 ----
-Documentation updated July 2019
+Documentation updated March 2020

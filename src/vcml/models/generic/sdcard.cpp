@@ -767,7 +767,17 @@ namespace vcml { namespace generic {
         case 6: // SET_BUS_WIDTH (SD only)
             if (m_spi)
                 break;
-            log_info("%u bit bus width", (tx.argument & 0x3));
+
+            switch (tx.argument & 0b11) {
+            case 0b00:
+            case 0b10:
+                log_debug("%u bit bus width", 1u << (tx.argument & 0b11));
+                break;
+
+            default:
+                log_debug("illegal argument for SET_BUS_WIDTH");
+            }
+
             make_r1(tx);
             return SD_OK;
 

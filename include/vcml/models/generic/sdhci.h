@@ -16,33 +16,31 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_SDHCI
-#define VCML_GENERIC_SDHCI
+#ifndef VCML_GENERIC_SDHCI_H
+#define VCML_GENERIC_SDHCI_H
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/bitops.h"
 
 #include "vcml/ports.h"
 #include "vcml/master_socket.h"
 #include "vcml/slave_socket.h"
-#include "vcml/peripheral.h"
 #include "vcml/register.h"
+#include "vcml/peripheral.h"
 #include "vcml/sd.h"
-#include "vcml/common/bitops.h"
-
-#define CAPABILITY_VALUES_0 0x01000A8A
 
 namespace vcml { namespace generic {
 
     class sdhci: public peripheral, public sd_bw_transport_if
     {
     private:
-        enum kind_of_reset {
-            RESET_ALL       = 1 << 0,
-            RESET_CMD_LINE  = 1 << 1,
-            RESET_DAT_LINE  = 1 << 2
+        enum reset_kind {
+            RESET_ALL      = 1 << 0,
+            RESET_CMD_LINE = 1 << 1,
+            RESET_DAT_LINE = 1 << 2
         };
 
         enum present_state : unsigned int {
@@ -75,60 +73,46 @@ namespace vcml { namespace generic {
             ERR_DATA_END_BIT        = 1 << 6
         };
 
+        enum capabilities : u32 {
+            CAPABILITY_VALUES_0 = 0x01000A8A,
+        };
+
         sd_command m_cmd;
         sd_status  m_status;
 
         u16 m_bufptr;
-        u8 m_buffer[514]; // block length specified in the CAPABILITIES register in Bits 17-16 -> 00 means 512 bytes, two more bytes for the CRC code
+        u8 m_buffer[514]; // 512 block length + 2 bytes CRC
 
-        u8 calc_crc7();
-        void reset_RESPONSE(int response_reg_nr);
-        void write_sd_resp_to_RESPONSE();
-        void set_PRESENT_STATE(unsigned int act_state);
-        void transfer_data_from_sd_buffer_to_sdhci_buffer();
-        void transfer_data_from_sdhci_buffer_to_BUFFER_DATA_PORT();
-        void transfer_data_from_BUFFER_DATA_PORT_to_sdhci_buffer();
-        void transfer_data_from_sdhci_buffer_to_sd_buffer();
+        u8 calc_crc7() const;
 
-        u32 write_SDMA_SYSTEM_ADDRESS(u32 val);
+        void reset_response(int response_reg_nr);
+        void store_response();
+        void set_present_state(unsigned int state);
 
-        u16 read_CMD();
+        void transfer_data_from_sd();
+        void transfer_data_to_sd();
+        void transfer_data_from_port();
+        void transfer_data_to_port();
+
         u16 write_CMD(u16 val);
-
         u32 read_BUFFER_DATA_PORT();
         u32 write_BUFFER_DATA_PORT(u32 val);
-
-        u16 read_CLOCK_CTRL();
         u16 write_CLOCK_CTRL(u16 val);
-
-        u8 read_SOFTWARE_RESET();
-        u8 write_SOFTWARE_RESET(u8 val);
-
-        u16 read_NORMAL_INT_STAT();
+        u8  write_SOFTWARE_RESET(u8 val);
         u16 write_NORMAL_INT_STAT(u16 val);
-        u16 read_ERROR_INT_STAT();
         u16 write_ERROR_INT_STAT(u16 val);
-
         u32 read_CAPABILITIES();
 
-        // for DMA Implementation
-        SC_HAS_PROCESS(sdhci);
-        void exec_DMA_transfer();
-        tlm_response_status DMA_read_from_sd(u32 SDMA_boundary);
-        tlm_response_status DMA_write_to_sd(u32 SDMA_boundary);
-        sc_event m_start_DMA_event;
-        sc_event m_new_DMA_address_event;
+        void dma_thread();
 
-        // disabled
-        sdhci();
-        sdhci(const sdhci&);
+        tlm_response_status dma_read(u32 boundary);
+        tlm_response_status dma_write(u32 boundary);
 
+        sc_event m_dma_start;
 
     public:
-        // registers implemented as shown in the SD Host Controller Simplified Specification page 32
-
-        // SD Command Generation (00F-000h)
-        reg<sdhci, u32> SDMA_SYSTEM_ADDRESS;            // added with the introduction of DMA
+        // Common SDHCI registers
+        reg<sdhci, u32> SDMA_SYSTEM_ADDRESS;
         reg<sdhci, u16> BLOCK_SIZE;
         reg<sdhci, u16> BLOCK_COUNT_16BIT;
 
@@ -136,13 +120,10 @@ namespace vcml { namespace generic {
         reg<sdhci, u16> TRANSFER_MODE;
         reg<sdhci, u16> CMD;
 
-        // Response (01F-010h)
         reg<sdhci, u32, 4> RESPONSE;
 
-        // Buffer Data Port (023-020h)
         reg<sdhci, u32> BUFFER_DATA_PORT;
 
-        // Host Control 1 and Others (03D-030h)
         reg<sdhci, u32> PRESENT_STATE;
         reg<sdhci, u8>  HOST_CONTROL_1;
         reg<sdhci, u8>  POWER_CTRL;
@@ -150,36 +131,39 @@ namespace vcml { namespace generic {
         reg<sdhci, u8>  TIMEOUT_CTRL;
         reg<sdhci, u8>  SOFTWARE_RESET;
 
-        // Interrupt Controls (03D-030h)
-        reg<sdhci, u16> NORMAL_INT_STAT;                // Normal Interrupt Status
+        reg<sdhci, u16> NORMAL_INT_STAT;
         reg<sdhci, u16> ERROR_INT_STAT;
-        reg<sdhci, u16> NORMAL_INT_STAT_ENABLE;         // Normal Interrupt Status Enable
+        reg<sdhci, u16> NORMAL_INT_STAT_ENABLE;
         reg<sdhci, u16> ERROR_INT_STAT_ENABLE;
-        reg<sdhci, u16> NORMAL_INT_SIG_ENABLE;          // Normal Interrupt Signal Enable
+        reg<sdhci, u16> NORMAL_INT_SIG_ENABLE;
         reg<sdhci, u16> ERROR_INT_SIG_ENABLE;
 
-        // Capabilities (04F-040h)
         reg<sdhci, u32, 2> CAPABILITIES;
         reg<sdhci, u32> MAX_CURR_CAP;
 
-        // Common Area (0FF-0F0h), common for SD host controllers with multiple slots (contains version number)
         reg<sdhci, u16> HOST_CONTROLLER_VERSION;
 
         // Controller specific registers
         reg<sdhci, u16> F_SDH30_AHB_CONFIG;
         reg<sdhci, u32> F_SDH30_ESD_CONTROL;
 
-        property<bool> DMA_enabled;
+        property<bool> dma_enabled;
 
         out_port<bool> IRQ;
+
         slave_socket IN;
         master_socket OUT;
+
         sd_initiator_socket SD_OUT;
 
+        sdhci() = delete;
         sdhci(const sc_module_name& name);
         virtual ~sdhci();
         VCML_KIND(sdhci);
-        };
+
+        virtual void reset() override;
+    };
+
 }}
 
 #endif
