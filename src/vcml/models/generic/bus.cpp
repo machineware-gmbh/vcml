@@ -60,13 +60,10 @@ namespace vcml { namespace generic {
     typedef tlm_utils::simple_target_socket_tagged<bus, 64> tsock;
 
     tlm_target_socket<64>* bus::create_target_socket(unsigned int idx) {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        simc->hierarchy_push(this);
+        hierarchy_push();
 
-        stringstream ss;
-        ss << "IN" << idx;
-
-        tsock* sock = new tsock(ss.str().c_str());
+        string name = "IN" + to_string(idx);
+        tsock* sock = new tsock(name.c_str());
 
         sock->register_b_transport(this,
                 &bus::cb_b_transport, idx);
@@ -75,24 +72,21 @@ namespace vcml { namespace generic {
         sock->register_get_direct_mem_ptr(this,
                 &bus::cb_get_direct_mem_ptr, idx);
 
-        simc->hierarchy_pop();
+        hierarchy_pop();
         return sock;
     }
 
     tlm_initiator_socket<64>*
     bus::create_initiator_socket(unsigned int idx) {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        simc->hierarchy_push(this);
+        hierarchy_push();
 
-        stringstream ss;
-        ss << "OUT" << idx;
-
-        isock* sock = new isock(ss.str().c_str());
+        string name = "OUT" + to_string(idx);
+        isock* sock = new isock(name.c_str());
 
         sock->register_invalidate_direct_mem_ptr(this,
                 &bus::cb_invalidate_direct_mem_ptr, idx);
 
-        simc->hierarchy_pop();
+        hierarchy_pop();
         return sock;
     }
 
@@ -166,14 +160,14 @@ namespace vcml { namespace generic {
 
             // check if target gave more DMI space than it has address space
             if (s < dest.addr.start) {
-                log_warning("truncating dmi start from 0x%016x to 0x%016x", s,
-                            dest.addr.start);
+                log_warning("truncating DMI start from 0x%016lx to 0x%016lx",
+                            s, dest.addr.start);
                 s = dest.addr.start;
             }
 
             if (e > dest.addr.end) {
-                log_warning("truncating dmi end from 0x%016x to 0x%016x", e,
-                            dest.addr.end);
+                log_warning("truncating DMI end from 0x%016lx to 0x%016lx",
+                            e, dest.addr.end);
                 e = dest.addr.end;
             }
 
@@ -287,7 +281,7 @@ namespace vcml { namespace generic {
     }
 
     bus::~bus() {
-        /* nothing to do */
+        // nothing to do
     }
 
     template <>

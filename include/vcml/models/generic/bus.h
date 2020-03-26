@@ -44,31 +44,52 @@ namespace vcml { namespace generic {
     {
     private:
         unsigned int m_next;
-        bus*  m_parent;
+        bus* m_parent;
         std::map<unsigned int, T*> m_sockets;
 
-        // disabled
-        bus_ports();
-        bus_ports(const bus_ports&);
-        bus_ports& operator= (const bus_ports&);
-
     public:
+        bus_ports() = delete;
         bus_ports(bus* parent);
         virtual ~bus_ports();
 
         bool exists(unsigned int idx) const;
 
-        unsigned int next_idx() const;
-        T& next();
+        unsigned int next_idx() const { return m_next; }
+        T& next() { return operator [] (next_idx()); }
 
-        inline T& operator[] (unsigned int idx);
-        inline const T& operator[] (unsigned int idx) const;
+        T& operator[] (unsigned int idx);
+        const T& operator[] (unsigned int idx) const;
 
         typedef typename std::map<unsigned int, T*>::iterator iterator;
 
         iterator begin() { return m_sockets.begin(); }
         iterator end()   { return m_sockets.end(); }
     };
+
+    template <typename T>
+    inline bus_ports<T>::bus_ports(bus* parent):
+        m_next(0),
+        m_parent(parent),
+        m_sockets() {
+        VCML_ERROR_ON(parent == nullptr, "bus_ports parent must not be NULL");
+    }
+
+    template <typename T>
+    inline bus_ports<T>::~bus_ports() {
+        for (auto it : m_sockets)
+            delete it.second;
+    }
+
+    template <typename T>
+    inline bool bus_ports<T>::exists(unsigned int idx) const {
+        return m_sockets.find(idx) != m_sockets.end();
+    }
+
+    template <typename T>
+    inline const T& bus_ports<T>::operator[] (unsigned int idx) const {
+        VCML_ERROR_ON(!exists(idx), "bus port %d does not exist", idx);
+        return *m_sockets.at(idx);
+    }
 
     class bus: public component
     {
@@ -78,7 +99,7 @@ namespace vcml { namespace generic {
         vector<bus_mapping> m_mappings;
         bus_mapping         m_default;
 
-        tlm_target_socket<64>* create_target_socket(unsigned int idx);
+        tlm_target_socket<64>*    create_target_socket(unsigned int idx);
         tlm_initiator_socket<64>* create_initiator_socket(unsigned int idx);
 
         void cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
@@ -121,9 +142,9 @@ namespace vcml { namespace generic {
         void map_default(unsigned int port, const string& peer = "");
         unsigned int bind_default(tlm_target_socket<64>& socket);
 
-        bus(const sc_core::sc_module_name& nm);
+        bus() = delete;
+        bus(const sc_module_name& nm);
         virtual ~bus();
-
         VCML_KIND(bus);
 
         template <typename T>
@@ -132,52 +153,6 @@ namespace vcml { namespace generic {
         void trace_in(int port, const tlm_generic_payload& tx) const;
         void trace_out(int port, const tlm_generic_payload& tx) const;
     };
-
-    template <typename T>
-    bus_ports<T>::bus_ports(bus* parent):
-        m_next(0),
-        m_parent(parent),
-        m_sockets() {
-        VCML_ERROR_ON(parent == NULL, "bus_ports parent must not be NULL");
-    }
-
-    template <typename T>
-    bus_ports<T>::~bus_ports() {
-        typename std::map<unsigned int, T*>::iterator it;
-        for (it = m_sockets.begin(); it != m_sockets.end(); it++)
-            delete it->second;
-    }
-
-    template <typename T>
-    bool bus_ports<T>::exists(unsigned int idx) const {
-        return m_sockets.find(idx) != m_sockets.end();
-    }
-
-    template <typename T>
-    unsigned int bus_ports<T>::next_idx() const {
-        return m_next;
-    }
-
-    template <typename T>
-    T& bus_ports<T>::next() {
-        return operator [] (next_idx());
-    }
-
-    template <typename T>
-    inline T& bus_ports<T>::operator[] (unsigned int idx) {
-        if (!exists(idx)) {
-            m_sockets[idx] = m_parent->create_socket<T>(idx);
-            m_next = idx + 1;
-        }
-
-        return *m_sockets[idx];
-    }
-
-    template <typename T>
-    inline const T& bus_ports<T>::operator[] (unsigned int idx) const {
-        VCML_ERROR_ON(!exists(idx), "bus port %d does not exist", idx);
-        return *m_sockets.at(idx);
-    }
 
     inline void bus::trace_in(int port, const tlm_generic_payload& tx) const {
         if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
@@ -191,6 +166,16 @@ namespace vcml { namespace generic {
             return;
         const tlm_target_socket<64>& tgt = IN[port];
         logger::log(LOG_TRACE, tgt.name(), "<< " + tlm_transaction_to_str(tx));
+    }
+
+    template <typename T>
+    inline T& bus_ports<T>::operator[] (unsigned int idx) {
+        if (!exists(idx)) {
+            m_sockets[idx] = m_parent->create_socket<T>(idx);
+            m_next = idx + 1;
+        }
+
+        return *m_sockets[idx];
     }
 
 }}
