@@ -46,14 +46,16 @@ find_library(SYSTEMC_LIBRARY NAMES libsystemc.a systemc libSnpsVP.so
                    ${SYSTEMC_HOME}/libso-gcc-6.2.0-64
                    ${SYSTEMC_HOME}/libso-gcc-5.2.0-64)
 
+set(SYSTEMC_VERSION "")
 set(SYSTEMC_LIBRARIES ${SYSTEMC_LIBRARY})
 set(SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR})
+
 if(EXISTS ${SYSTEMC_INCLUDE_DIR}/tlm/)
     list(APPEND SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR}/tlm)
 endif()
 
 set(_sysc_ver_file "${SYSTEMC_INCLUDE_DIR}/sysc/kernel/sc_ver.h")
-set(SYSTEMC_VERSION "")
+
 if(EXISTS ${_sysc_ver_file})
     file(STRINGS ${_sysc_ver_file}  _systemc_ver REGEX
          "^#[\t ]*define[\t ]+SC_VERSION_(MAJOR|MINOR|PATCH)[\t ]+([0-9]+)$")
