@@ -53,6 +53,7 @@ if(EXISTS ${SYSTEMC_INCLUDE_DIR}/tlm/)
 endif()
 
 set(_sysc_ver_file "${SYSTEMC_INCLUDE_DIR}/sysc/kernel/sc_ver.h")
+set(SYSTEMC_VERSION "")
 if(EXISTS ${_sysc_ver_file})
     file(STRINGS ${_sysc_ver_file}  _systemc_ver REGEX
          "^#[\t ]*define[\t ]+SC_VERSION_(MAJOR|MINOR|PATCH)[\t ]+([0-9]+)$")
