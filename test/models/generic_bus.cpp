@@ -19,66 +19,110 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-using namespace ::testing;
-
+#include <systemc>
 #include "vcml.h"
 
-class mock_initiator: public vcml::component
+using namespace ::testing;
+using namespace ::sc_core;
+using namespace ::vcml;
+
+#define ASSERT_OK(tlmcall) ASSERT_EQ(tlmcall, TLM_OK_RESPONSE)
+#define ASSERT_AE(tlmcall) ASSERT_EQ(tlmcall, TLM_ADDRESS_ERROR_RESPONSE)
+#define ASSERT_CE(tlmcall) ASSERT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
+
+class test_harness: public component
 {
 public:
-    vcml::master_socket OUT;
+    generic::memory mem1;
+    generic::memory mem2;
+    generic::bus bus;
 
-    mock_initiator(const sc_core::sc_module_name& nm):
-        vcml::component(nm),
+    master_socket OUT;
+
+    test_harness(const sc_module_name& nm):
+        component(nm),
+        mem1("MEM1", 0x2000),
+        mem2("MEM2", 0x2000),
+        bus("BUS"),
         OUT("OUT") {
-        /* nothing to do */
+
+        mem1.CLOCK.stub(100 * MHz);
+        mem2.CLOCK.stub(100 * MHz);
+        bus.CLOCK.stub(100 * MHz);
+        CLOCK.stub(100 * MHz);
+
+        mem1.RESET.stub();
+        mem2.RESET.stub();
+        bus.RESET.stub();
+        RESET.stub();
+
+        bus.bind(OUT);
+        bus.bind(mem1.IN, 0x0000, 0x1fff, 0);
+        bus.bind(mem2.IN, 0x2000, 0x3fff, 0);
+
+        SC_HAS_PROCESS(test_harness);
+        SC_THREAD(run_test);
     }
+
+    void run_test() {
+        wait(SC_ZERO_TIME);
+
+        ASSERT_OK(OUT.writew<u32>(0x0000, 0x11111111ul))
+            << "cannot write 0x0000 (mem1 + 0x0)";
+        ASSERT_OK(OUT.writew<u32>(0x0004, 0xfffffffful))
+            << "cannot write 0x0004 (mem1 + 0x4)";
+        ASSERT_OK(OUT.writew<u32>(0x2000, 0x55555555ul))
+            << "cannot write 0x2000 (mem2 + 0x0)";
+        ASSERT_OK(OUT.writew<u32>(0x2004, 0xbbbbbbbbul))
+            << "cannot write 0x2004 (mem2 + 0x4)";
+        ASSERT_AE(OUT.writew<u16>(0x4000, 0x1234ul))
+            << "bus reported success for writing to unmapped address";
+
+        u32 data;
+        ASSERT_OK(OUT.readw<u32>(0x0000, data))
+            << "cannot read 0x0000 (mem1 + 0x0)";
+        EXPECT_EQ(data, 0x11111111ul)
+            << "read invalid data from 0x0000 (mem1 + 0x0)";
+        ASSERT_OK(OUT.readw<u32>(0x0004, data))
+            << "cannot read 0x0004 (mem1 + 0x4)";
+        EXPECT_EQ(data, 0xfffffffful)
+            << "read invalid data from 0x0004 (mem1 + 0x4)";
+        ASSERT_OK(OUT.readw<u32>(0x2000, data))
+            << "cannot read 0x2000 (mem2 + 0x0)";
+        EXPECT_EQ(data, 0x55555555ul)
+            << "read invalid data from 0x2000 (mem2 + 0x0)";
+        ASSERT_OK(OUT.readw<u32>(0x2004, data))
+            << "cannot read 0x2004 (mem2 + 0x4)";
+        EXPECT_EQ(data, 0xbbbbbbbbul)
+            << "read invalid data from 0x2000 (mem2 + 0x4)";
+        ASSERT_AE(OUT.readw<u32>(0x4000, data))
+            << "bus reported success for reading from unmapped address";
+
+        ASSERT_EQ(OUT.dmi().get_entries().size(), 2)
+            << "bus did not forward DMI regions for both memories";
+        EXPECT_NE(OUT.dmi().get_entries()[0].get_start_address(),
+                  OUT.dmi().get_entries()[1].get_start_address())
+            << "bus forwarded overlapping DMI regions";
+        EXPECT_NE(OUT.dmi().get_entries()[0].get_dmi_ptr(),
+                  OUT.dmi().get_entries()[1].get_dmi_ptr())
+            << "bus forwarded overlapping DMI pointers";
+
+        mem1.unmap_dmi(0, 0x1fff);
+        ASSERT_EQ(OUT.dmi().get_entries().size(), 1)
+            << "bus did not forward DMI invalidation";
+        EXPECT_EQ(OUT.dmi().get_entries()[0].get_start_address(), 0x2000)
+            << "bus invalidated wrong DMI region";
+
+        sc_stop();
+        return;
+    }
+
 };
 
 TEST(generic_bus, transfer) {
-    mock_initiator initiator("INITIATOR");
-    vcml::generic::memory mem1("MEM1", 0x2000);
-    vcml::generic::memory mem2("MEM2", 0x2000);
-    vcml::generic::bus bus("BUS");
+    test_harness test("harness");
 
-    bus.bind(initiator.OUT);
-    bus.bind(mem1.IN, 0x0000, 0x1fff, 0);
-    bus.bind(mem2.IN, 0x2000, 0x3fff, 0);
+    sc_start();
 
-    vcml::clock_t clk = 100 * vcml::MHz;
-    initiator.CLOCK.stub(clk);
-    initiator.RESET.stub();
-    mem1.CLOCK.stub(clk);
-    mem1.RESET.stub();
-    mem2.CLOCK.stub(clk);
-    mem2.RESET.stub();
-    bus.CLOCK.stub(clk);
-    bus.RESET.stub();
-
-    sc_core::sc_start(sc_core::SC_ZERO_TIME);
-
-    EXPECT_EQ(initiator.OUT.writew(0x0000, 0x11111111ul), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.writew(0x0004, 0xfffffffful), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.writew(0x2000, 0x55555555ul), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.writew(0x2004, 0xbbbbbbbbul), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(initiator.OUT.writew(0x4000, 0x1234ul), tlm::TLM_ADDRESS_ERROR_RESPONSE);
-
-    vcml::u32 data;
-    EXPECT_EQ(initiator.OUT.readw(0x0000, data), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(data, 0x11111111ul);
-    EXPECT_EQ(initiator.OUT.readw(0x0004, data), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(data, 0xfffffffful);
-    EXPECT_EQ(initiator.OUT.readw(0x2000, data), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(data, 0x55555555ul);
-    EXPECT_EQ(initiator.OUT.readw(0x2004, data), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(data, 0xbbbbbbbbul);
-    EXPECT_EQ(initiator.OUT.readw(0x4000, data), tlm::TLM_ADDRESS_ERROR_RESPONSE);
-
-    ASSERT_EQ(initiator.OUT.dmi().get_entries().size(), 2);
-    EXPECT_NE(initiator.OUT.dmi().get_entries()[0].get_start_address(), initiator.OUT.dmi().get_entries()[1].get_start_address());
-    EXPECT_NE(initiator.OUT.dmi().get_entries()[0].get_dmi_ptr(), initiator.OUT.dmi().get_entries()[1].get_dmi_ptr());
-
-    mem1.unmap_dmi(0, 0x1fff);
-    ASSERT_EQ(initiator.OUT.dmi().get_entries().size(), 1);
-    EXPECT_EQ(initiator.OUT.dmi().get_entries()[0].get_start_address(), 0x2000);
+    ASSERT_EQ(sc_get_status(), SC_STOPPED) << "simulation incomplete";
 }

@@ -19,49 +19,80 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-using namespace ::testing;
-
+#include <systemc>
 #include "vcml.h"
 
-class mock_component: public vcml::component
+using namespace ::testing;
+using namespace ::sc_core;
+using namespace ::vcml;
+
+#define ASSERT_OK(tlmcall) ASSERT_EQ(tlmcall, TLM_OK_RESPONSE)
+#define ASSERT_AE(tlmcall) ASSERT_EQ(tlmcall, TLM_ADDRESS_ERROR_RESPONSE)
+#define ASSERT_CE(tlmcall) ASSERT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
+
+class test_harness: public component
 {
 public:
-    vcml::master_socket OUT;
+    vcml::generic::memory mem;
+    master_socket OUT;
 
-    mock_component(const sc_core::sc_module_name& nm):
-        vcml::component(nm),
+    test_harness(const sc_core::sc_module_name& nm):
+        component(nm),
+        mem("mem", 0x1000),
         OUT("OUT") {
-        /* nothing to do */
+        OUT.bind(mem.IN);
+
+        CLOCK.stub(10 * MHz);
+        RESET.stub();
+
+        mem.CLOCK.stub(10 * MHz);
+        mem.RESET.stub();
+
+        SC_HAS_PROCESS(test_harness);
+        SC_THREAD(run_test);
+    }
+
+    void run_test() {
+        wait(SC_ZERO_TIME);
+
+        ASSERT_OK(OUT.writew(0x0, 0x11223344))
+            << "cannot write 32bits to address 0";
+        ASSERT_OK(OUT.writew(0x4, 0x55667788))
+            << "cannot write 32bits to address 4";
+
+        u64 data;
+        ASSERT_OK(OUT.readw(0x0, data))
+            << "cannot read 64bits from address 0";
+        EXPECT_EQ(data, 0x5566778811223344ull)
+            << "data read from address 4 is invalid";
+
+        EXPECT_GT(mem.IN.dmi().get_entries().size(), 0)
+            << "memory does not provide DMI access";
+        EXPECT_GT(OUT.dmi().get_entries().size(), 0)
+            << "did not get DMI access to memory";
+
+        mem.readonly = true;
+
+        ASSERT_CE(OUT.writew(0x0, 0xfefefefe, SBI_NODMI))
+            << "read-only memory permitted write access";
+        ASSERT_OK(OUT.writew(0x0, 0xfefefefe, SBI_DEBUG))
+            << "read-only memory did not permit debug write access";
+
+        ASSERT_OK(OUT.writew(0x0, 0xfefefefe))
+            << "DMI was denied or invalidated prematurely";
+        OUT.dmi().invalidate(0, -1);
+        ASSERT_CE(OUT.writew(0x0, 0xfefefefe))
+            << "read-only memory permitted write access after DMI invalidate";
+
+        sc_stop();
+        return;
     }
 };
 
 TEST(generic_memory, access) {
-    mock_component mock("MOCK");
-    vcml::generic::memory mem("MEM", 0x1000);
-    mock.OUT.bind(mem.IN);
+    test_harness test("harness");
 
-    mock.CLOCK.stub(10 * vcml::MHz);
-    mock.RESET.stub();
+    sc_start();
 
-    mem.CLOCK.stub(10 * vcml::MHz);
-    mem.RESET.stub();
-
-    sc_core::sc_start(sc_core::SC_ZERO_TIME);
-
-    mock.OUT.writew(0x0, 0x11223344);
-    mock.OUT.writew(0x4, 0x55667788);
-
-    vcml::u64 data;
-    EXPECT_EQ(mock.OUT.readw(0x0, data), tlm::TLM_OK_RESPONSE);
-    EXPECT_EQ(data, 0x5566778811223344ull);
-    EXPECT_EQ(mock.OUT.dmi().get_entries().size(), mem.IN.dmi().get_entries().size());
-
-    mem.readonly = true;
-
-    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::SBI_NODMI), tlm::TLM_COMMAND_ERROR_RESPONSE);
-    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe, vcml::SBI_DEBUG), tlm::TLM_OK_RESPONSE);
-
-    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe), tlm::TLM_OK_RESPONSE);
-    mock.OUT.dmi().invalidate(0, -1);
-    EXPECT_EQ(mock.OUT.writew(0x0, 0xfefefefe), tlm::TLM_COMMAND_ERROR_RESPONSE);
+    ASSERT_EQ(sc_get_status(), SC_STOPPED) << "simulation incomplete";
 }

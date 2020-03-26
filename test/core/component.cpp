@@ -19,55 +19,80 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-using namespace ::testing;
-
+#include <systemc>
 #include "vcml.h"
 
-class mock_component: public vcml::component
+#define ASSERT_OK(tlmcall) ASSERT_EQ(tlmcall, tlm::TLM_OK_RESPONSE)
+#define ASSERT_AE(tlmcall) ASSERT_EQ(tlmcall, tlm::TLM_ADDRESS_ERROR_RESPONSE)
+#define ASSERT_CE(tlmcall) ASSERT_EQ(tlmcall, tlm::TLM_COMMAND_ERROR_RESPONSE)
+
+using namespace ::testing;
+using namespace sc_core;
+using namespace vcml;
+
+class test_component: public component
 {
 public:
-    vcml::master_socket OUT;
-    vcml::slave_socket  IN;
+    slave_socket IN;
+    master_socket OUT;
 
-    mock_component(const sc_core::sc_module_name& nm = "mock_component"):
-        vcml::component(nm),
-        OUT("OUT"),
-        IN("IN") {
+    test_component(const sc_module_name& nm):
+        component(nm),
+        IN("IN"),
+        OUT("OUT") {
+
+        OUT.bind(IN);
+
+        CLOCK.stub(100 * MHz);
+        RESET.stub();
+
+        SC_HAS_PROCESS(test_component);
+        SC_THREAD(run_test);
     }
 
-    MOCK_METHOD2(transport, unsigned int(tlm::tlm_generic_payload&, const vcml::sideband&));
+    virtual unsigned int transport(tlm_generic_payload& tx,
+                                   const sideband& sbi) override {
+        EXPECT_EQ(tx.get_address(), 0x0);
+        EXPECT_EQ(tx.get_data_length(), 4);
+        EXPECT_NE(tx.get_data_ptr(), nullptr);
+        tx.set_response_status(TLM_OK_RESPONSE);
+        return tx.get_data_length();
+    }
+
+    void run_test() {
+        wait(SC_ZERO_TIME);
+
+        u32 data = 0xf3f3f3f3;
+        unsigned char* dmi_ptr = (unsigned char*)&data;
+        map_dmi(dmi_ptr, 0, 3, VCML_ACCESS_READ);
+
+        ASSERT_OK(OUT.readw<u32>(0, data))
+            << "component did respond to read command";
+
+        tlm_dmi dmi; // previous read should have provided DMI access
+        ASSERT_TRUE(OUT.dmi().lookup(0, 4, TLM_READ_COMMAND, dmi))
+            << "component did not provide DMI mapping";
+        EXPECT_TRUE(dmi.is_read_allowed())
+            << "component denied previously granted DMI read access";
+        EXPECT_FALSE(dmi.is_write_allowed())
+            << "component granted previously denied DMI write access";
+        EXPECT_FALSE(dmi.is_read_write_allowed())
+            << "component grants both read- and write access";
+        EXPECT_EQ(dmi.get_dmi_ptr(), dmi_ptr)
+            << "component returned invalid DMI pointer";
+
+        ASSERT_OK(OUT.writew<u32>(0, data))
+            << "component did not respond to write command";
+
+        sc_stop();
+        return;
+    }
 };
 
 TEST(component, sockets) {
-    vcml::u32 data = 0xf3f3f3f3;
-    tlm::tlm_dmi dmi;
-    unsigned char* dmi_ptr = (unsigned char*)&data;
-    clock_t clk = 100 * vcml::MHz;
+    test_component test("component");
 
-    mock_component mock1("mock1");
-    mock_component mock2("mock2");
+    sc_start();
 
-    mock1.OUT.bind(mock2.IN);
-    mock2.OUT.bind(mock1.IN);
-
-    mock1.CLOCK.stub(clk);
-    mock2.CLOCK.stub(clk);
-
-    mock1.RESET.stub();
-    mock2.RESET.stub();
-
-    sc_core::sc_start(sc_core::SC_ZERO_TIME);
-
-    mock2.map_dmi(dmi_ptr, 0, 3, vcml::VCML_ACCESS_READ);
-
-    EXPECT_CALL(mock2, transport(_,_)).WillOnce(Return(sizeof(data)));
-    mock1.OUT.readw(0, data);
-    EXPECT_TRUE(mock1.OUT.dmi().lookup(0, 4, tlm::TLM_READ_COMMAND, dmi));
-    EXPECT_TRUE(dmi.is_read_allowed());
-    EXPECT_FALSE(dmi.is_write_allowed());
-    EXPECT_FALSE(dmi.is_read_write_allowed());
-    EXPECT_EQ(dmi.get_dmi_ptr(), dmi_ptr);
-
-    EXPECT_CALL(mock1, transport(_,_)).WillOnce(Return(sizeof(data)));
-    mock2.OUT.writew(0, data);
+    ASSERT_EQ(sc_get_status(), SC_STOPPED);
 }
