@@ -80,6 +80,9 @@ namespace vcml {
             sc_time t2 = sc_time_stamp();
             VCML_ERROR_ON(t1 != t2, "time advanced during debug call");
         } else {
+            if (!is_thread())
+                VCML_ERROR("non-debug TLM access outside SC_THREAD forbidden");
+
             if (info.is_sync || m_host->needs_sync())
                 m_host->sync();
 
@@ -151,6 +154,10 @@ namespace vcml {
                                               unsigned int* bytes) {
 
         tlm_response_status rs = TLM_INCOMPLETE_RESPONSE;
+
+        // TLM protocol sanity checking
+        if (!info.is_debug && !is_thread())
+            VCML_ERROR("non-debug TLM access outside SC_THREAD forbidden");
 
         // check if we are allowed to do a DMI access on that address
         if ((cmd != TLM_IGNORE_COMMAND) && (m_host->allow_dmi))
