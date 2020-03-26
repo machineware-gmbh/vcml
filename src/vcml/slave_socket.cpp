@@ -70,7 +70,7 @@ namespace vcml {
     slave_socket::slave_socket(const char* nm, component* host):
         simple_target_socket<slave_socket, 64>(nm),
         m_free(true),
-        m_free_ev("free"),
+        m_free_ev(concat(nm, "_free").c_str()),
         m_dmi_cache(),
         m_exmon(),
         m_host(host) {
