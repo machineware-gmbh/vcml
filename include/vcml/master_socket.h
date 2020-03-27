@@ -28,6 +28,7 @@
 #include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
+#include "vcml/adapters.h"
 
 namespace vcml {
 
@@ -44,6 +45,7 @@ namespace vcml {
 
         dmi_cache m_dmi_cache;
 
+        sc_module* m_adapter;
         component* m_host;
 
         void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
@@ -97,6 +99,12 @@ namespace vcml {
         tlm_response_status writew (u64 addr, const T& data,
                                     const sideband& info = SBI_NONE,
                                     unsigned int* nbytes = NULL);
+
+        template <unsigned int WIDTH>
+        void bind(tlm_initiator_socket<WIDTH>& other);
+
+        template <unsigned int WIDTH>
+        void bind(tlm_target_socket<WIDTH>& other);
     };
 
     inline void master_socket::set_cpuid(int cpuid) {
@@ -142,6 +150,46 @@ namespace vcml {
     inline tlm_response_status master_socket::writew(u64 addr, const T& data,
             const sideband& info, unsigned int* nbytes) {
         return write(addr, &data, sizeof(T), info, nbytes);
+    }
+
+    template <unsigned int WIDTH>
+    inline void master_socket::bind(tlm_initiator_socket<WIDTH>& other) {
+        typedef bus_width_adapter<64, WIDTH> adapter_type;
+        VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
+
+        m_host->hierarchy_push();
+        string nm = concat(name(), "_adapter");
+        adapter_type* adapter = new adapter_type(nm.c_str());
+        m_host->hierarchy_pop();
+
+        base_type::bind(adapter->IN);
+        adapter->OUT.bind(other);
+        m_adapter = adapter;
+    }
+
+    template <>
+    inline void master_socket::bind<64>(tlm_initiator_socket<64>& other) {
+        base_type::bind(other);
+    }
+
+    template <unsigned int WIDTH>
+    inline void master_socket::bind(tlm_target_socket<WIDTH>& other) {
+        typedef bus_width_adapter<64, WIDTH> adapter_type;
+        VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
+
+        m_host->hierarchy_push();
+        string nm = concat(name(), "_adapter");
+        adapter_type* adapter = new adapter_type(nm.c_str());
+        m_host->hierarchy_pop();
+
+        base_type::bind(adapter->IN);
+        adapter->OUT.bind(other);
+        m_adapter = adapter;
+    }
+
+    template <>
+    inline void master_socket::bind<64>(tlm_target_socket<64>& other) {
+        base_type::bind(other);
     }
 
     static inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd,

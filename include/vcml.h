@@ -63,6 +63,7 @@
 #include "vcml/command.h"
 #include "vcml/module.h"
 #include "vcml/component.h"
+#include "vcml/adapters.h"
 #include "vcml/master_socket.h"
 #include "vcml/slave_socket.h"
 #include "vcml/register.h"

@@ -29,6 +29,7 @@
 #include "vcml/exmon.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
+#include "vcml/adapters.h"
 
 namespace vcml {
 
@@ -39,6 +40,7 @@ namespace vcml {
         sc_event   m_free_ev;
         dmi_cache  m_dmi_cache;
         exmon      m_exmon;
+        sc_module* m_adapter;
         component* m_host;
 
         void b_transport(tlm_generic_payload& tx, sc_time& dt);
@@ -46,7 +48,8 @@ namespace vcml {
         bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
 
     public:
-        slave_socket(const char* name, component* host = NULL);
+        slave_socket() = delete;
+        slave_socket(const char* name, component* host = nullptr);
         virtual ~slave_socket();
 
         VCML_KIND(slave_socket);
@@ -58,10 +61,56 @@ namespace vcml {
         void unmap_dmi(u64 start, u64 end);
         void remap_dmi(const sc_time& rlat, const sc_time& wlat);
         void invalidate_dmi();
+
+        template <unsigned int WIDTH>
+        void bind(tlm_initiator_socket<WIDTH>& other);
+
+        template <unsigned int WIDTH>
+        void bind(tlm_target_socket<WIDTH>& other);
     };
 
     inline void slave_socket::map_dmi(const tlm_dmi& dmi) {
         m_dmi_cache.insert(dmi);
+    }
+
+    template <unsigned int WIDTH>
+    inline void slave_socket::bind(tlm_initiator_socket<WIDTH>& other) {
+        typedef bus_width_adapter<WIDTH, 64> adapter_type;
+        VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
+
+        m_host->hierarchy_push();
+        string nm = concat(name(), "_adapter");
+        adapter_type* adapter = new adapter_type(nm.c_str());
+        m_host->hierarchy_pop();
+
+        other.bind(adapter->IN);
+        adapter->OUT.bind(*this);
+        m_adapter = adapter;
+    }
+
+    template <>
+    inline void slave_socket::bind<64>(tlm_initiator_socket<64>& other) {
+        base_type::bind(other);
+    }
+
+    template <unsigned int WIDTH>
+    inline void slave_socket::bind(tlm_target_socket<WIDTH>& other) {
+        typedef bus_width_adapter<WIDTH, 64> adapter_type;
+        VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
+
+        m_host->hierarchy_push();
+        string nm = concat(name(), "_adapter");
+        adapter_type* adapter = new adapter_type(nm.c_str());
+        m_host->hierarchy_pop();
+
+        other.bind(adapter->IN);
+        adapter->OUT.bind(*this);
+        m_adapter = adapter;
+    }
+
+    template <>
+    inline void slave_socket::bind<64>(tlm_target_socket<64>& other) {
+        base_type::bind(other);
     }
 
 }

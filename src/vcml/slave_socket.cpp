@@ -73,8 +73,9 @@ namespace vcml {
         m_free_ev(concat(nm, "_free").c_str()),
         m_dmi_cache(),
         m_exmon(),
+        m_adapter(nullptr),
         m_host(host) {
-        if (m_host == NULL) {
+        if (m_host == nullptr) {
             m_host = dynamic_cast<component*>(get_parent_object());
             VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
         }
@@ -86,7 +87,8 @@ namespace vcml {
     }
 
     slave_socket::~slave_socket() {
-        /* nothing to do */
+        if (m_adapter != nullptr)
+            delete m_adapter;
     }
 
     void slave_socket::unmap_dmi(u64 start, u64 end) {

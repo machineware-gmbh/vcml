@@ -34,8 +34,9 @@ namespace vcml {
         m_txd(),
         m_sbi(SBI_NONE),
         m_dmi_cache(),
+        m_adapter(nullptr),
         m_host(host) {
-        if (m_host == NULL) {
+        if (m_host == nullptr) {
             m_host = dynamic_cast<component*>(get_parent_object());
             VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
         }
@@ -49,7 +50,8 @@ namespace vcml {
     }
 
     master_socket::~master_socket() {
-        // nothing to do
+        if (m_adapter != nullptr)
+            delete m_adapter;
     }
 
     unsigned int master_socket::send(tlm_generic_payload& tx,
