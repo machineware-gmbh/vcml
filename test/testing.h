@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2020 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,12 +16,44 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <vector>
-#include <systemc>
-#include <gtest/gtest.h>
+#ifndef VCML_TESTING_H
+#define VCML_TESTING_H
 
-extern "C" int sc_main(int argc, char** argv) __attribute__ ((weak));
-extern "C" int sc_main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+
+#include <systemc>
+#include "vcml.h"
+
+using namespace ::testing;
+using namespace ::sc_core;
+using namespace ::vcml;
+
+#define ASSERT_OK(tlmcall) ASSERT_EQ(tlmcall, TLM_OK_RESPONSE)
+#define ASSERT_AE(tlmcall) ASSERT_EQ(tlmcall, TLM_ADDRESS_ERROR_RESPONSE)
+#define ASSERT_CE(tlmcall) ASSERT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
+
+#define EXPECT_OK(tlmcall) EXPECT_EQ(tlmcall, TLM_OK_RESPONSE)
+#define EXPECT_AE(tlmcall) EXPECT_EQ(tlmcall, TLM_ADDRESS_ERROR_RESPONSE)
+#define EXPECT_CE(tlmcall) EXPECT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
+
+class test_base: public component
+{
+private:
+    void run();
+
+public:
+    test_base() = delete;
+    test_base(const sc_module_name& nm);
+    virtual ~test_base();
+
+    virtual void run_test() = 0;
+    virtual void finalize_test();
+
+protected:
+    void before_end_of_elaboration() override;
+};
+
+extern vector<string> args;
+
+#endif
