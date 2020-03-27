@@ -177,6 +177,10 @@ namespace vcml {
         return s;
     }
 
+    inline string to_string(const char* s) {
+        return s;
+    }
+
     template <>
     inline string to_string<u8>(const u8& v) {
         stringstream ss;
