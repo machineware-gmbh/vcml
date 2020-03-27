@@ -71,6 +71,7 @@ namespace vcml {
         virtual ~in_port();
         VCML_KIND(in_port);
 
+        bool is_bound() const;
         bool is_stubbed() const;
         void stub(const T& retval = T());
     };
@@ -87,6 +88,11 @@ namespace vcml {
     in_port<T>::~in_port() {
         if (m_stub != nullptr)
             delete m_stub;
+    }
+
+    template <typename T>
+    bool in_port<T>::is_bound() const {
+        return sc_in<T>::size() > 0;
     }
 
     template <typename T>
@@ -131,6 +137,7 @@ namespace vcml {
         const T& read() const;
         void write(T val);
 
+        bool is_bound() const;
         bool is_stubbed() const;
         void stub();
     };
@@ -192,6 +199,11 @@ namespace vcml {
             else
                 m_update.notify();
         }
+    }
+
+    template <typename T>
+    bool out_port<T>::is_bound() const {
+        return sc_in<T>::size() > 0;
     }
 
     template <typename T>
