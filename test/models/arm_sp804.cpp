@@ -16,20 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "testing.h"
 
-#include "vcml.h"
-
-using namespace ::testing;
-using namespace ::sc_core;
-using namespace ::vcml;
-
-#define EXPECT_OK(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_OK_RESPONSE)
-#define EXPECT_AE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_ADDRESS_ERROR_RESPONSE)
-#define EXPECT_CE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_COMMAND_ERROR_RESPONSE)
-
-class test_harness: public component
+class sp804_stim: public test_base
 {
 public:
     master_socket OUT;
@@ -40,19 +29,15 @@ public:
     sc_in<bool> IRQ2;
     sc_in<bool> IRQC;
 
-    SC_HAS_PROCESS(test_harness);
-
-    test_harness(const sc_module_name& nm):
-        component(nm), OUT("OUT"), IRQ1("IRQ1"), IRQ2("IRQ2"), IRQC("IRQC") {
-        SC_THREAD(run);
+    sp804_stim(const sc_module_name& nm):
+        test_base(nm),
+        OUT("OUT"),
+        IRQ1("IRQ1"),
+        IRQ2("IRQ2"),
+        IRQC("IRQC") {
     }
 
-    void run() {
-        run_test();
-        sc_stop();
-    }
-
-    void run_test() {
+    virtual void run_test() override {
         const u64 TIMER1_LOAD    = 0x00;
         const u64 TIMER1_VALUE   = 0x04;
         const u64 TIMER1_CONTROL = 0x08;
@@ -115,18 +100,18 @@ TEST(sp804timer, main) {
     generic::clock sysclk("SYSCLK", 1 * MHz);
     sysclk.CLOCK.bind(clk);
 
-    test_harness harness("HARNESS");
+    sp804_stim stim("STIM");
     arm::sp804timer sp804("SP804");
 
-    harness.OUT.bind(sp804.IN);
-    harness.RESET_OUT.bind(rst);
+    stim.OUT.bind(sp804.IN);
+    stim.RESET_OUT.bind(rst);
 
-    harness.CLOCK.bind(clk);
-    harness.RESET.bind(rst);
+    stim.CLOCK.bind(clk);
+    stim.RESET.bind(rst);
 
-    harness.IRQ1.bind(irq1);
-    harness.IRQ2.bind(irq2);
-    harness.IRQC.bind(irqc);
+    stim.IRQ1.bind(irq1);
+    stim.IRQ2.bind(irq2);
+    stim.IRQC.bind(irqc);
 
     sp804.CLOCK.bind(clk);
     sp804.RESET.bind(rst);
@@ -135,7 +120,5 @@ TEST(sp804timer, main) {
     sp804.IRQ2.bind(irq2);
     sp804.IRQC.bind(irqc);
 
-    sc_start();
-
-    ASSERT_EQ(sc_get_status(), SC_STOPPED);
+    sc_core::sc_start();
 }

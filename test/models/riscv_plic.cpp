@@ -16,23 +16,29 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "testing.h"
 
-#include "vcml.h"
-
-using namespace ::testing;
-using namespace ::sc_core;
-
-#define EXPECT_OK(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_OK_RESPONSE)
-#define EXPECT_AE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_ADDRESS_ERROR_RESPONSE)
-
-class mock_stim: public vcml::component
+class plic_stim: public test_base
 {
-private:
-    SC_HAS_PROCESS(mock_stim);
+public:
+    master_socket OUT;
 
-    void run_test() {
+    sc_in<bool> IRQT1;
+    sc_in<bool> IRQT2;
+
+    sc_out<bool> IRQS1;
+    sc_out<bool> IRQS2;
+
+    plic_stim(const sc_module_name& nm):
+        test_base(nm),
+        OUT("OUT"),
+        IRQT1("IRQT1"),
+        IRQT2("IRQT2"),
+        IRQS1("IRQS1"),
+        IRQS2("IRQS2") {
+    }
+
+    virtual void run_test() override {
         // test that interrupts are reset
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(IRQT1.read()) << "irqt1 not reset";
@@ -100,24 +106,6 @@ private:
         EXPECT_FALSE(IRQT2.read()) << "irqt2 not disabled";
     }
 
-    void run() {
-        run_test();
-        sc_core::sc_stop();
-    }
-
-public:
-    vcml::master_socket OUT;
-
-    sc_in<bool> IRQT1;
-    sc_in<bool> IRQT2;
-
-    sc_out<bool> IRQS1;
-    sc_out<bool> IRQS2;
-
-    mock_stim(const sc_core::sc_module_name& nm): component(nm), OUT("OUT"),
-        IRQT1("IRQT1"), IRQT2("IRQT2"), IRQS1("IRQS1"), IRQS2("IRQS2") {
-        SC_THREAD(run);
-    }
 };
 
 TEST(plic, plic) {
@@ -127,13 +115,19 @@ TEST(plic, plic) {
     sc_signal<bool> irqt1("irqt1");
     sc_signal<bool> irqt2("irqt2");
 
-    mock_stim stim("STIM");
-    vcml::riscv::plic plic("PLIC");
+    sc_signal<clock_t> clk("clk");
 
-    stim.CLOCK.stub();
+    plic_stim stim("STIM");
+    riscv::plic plic("PLIC");
+    generic::clock sysclk("SYSCLK", 100 * MHz);
+
+    stim.CLOCK.bind(clk);
+    plic.CLOCK.bind(clk);
+    sysclk.CLOCK.bind(clk);
+
+    EXPECT_EQ(stim.CLOCK.size(), 1);
+
     stim.RESET.stub();
-
-    plic.CLOCK.stub();
     plic.RESET.stub();
 
     stim.OUT.bind(plic.IN);

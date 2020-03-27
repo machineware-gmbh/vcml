@@ -18,16 +18,7 @@
 
 macro(core_test test)
     add_executable(${test} ${test}.cpp)
-
-    target_include_directories(${test} SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
-    target_link_libraries(${test} vcml gtest gmock)
-    target_link_libraries(${test} ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES})
-    target_link_libraries(${test} main -pthread -lrt -rdynamic)
-
-    if(LIBVNC_FOUND)
-        target_link_libraries(${test} ${LIBVNC_LIBRARIES})
-    endif()
-
+    target_link_libraries(${test} testing)
     add_test(NAME core/${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(core/${test} PROPERTIES TIMEOUT 4)
 endmacro()
@@ -50,6 +41,7 @@ core_test("peripheral")
 core_test("register")
 core_test("processor")
 core_test("spi")
+core_test("adapter")
 
 if(LIBVNC_FOUND)
     core_test("vnc")

@@ -16,20 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "testing.h"
 
-#include "vcml.h"
-
-using namespace ::testing;
-using namespace ::sc_core;
-using namespace ::vcml;
-
-#define EXPECT_OK(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_OK_RESPONSE)
-#define EXPECT_AE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_ADDRESS_ERROR_RESPONSE)
-#define EXPECT_CE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_COMMAND_ERROR_RESPONSE)
-
-class test_harness: public component
+class gic400_stim: public test_base
 {
 public:
     master_socket DISTIF_OUT;
@@ -46,10 +35,9 @@ public:
     sc_vector<sc_in<bool>> VFIRQ_IN;
     sc_vector<sc_in<bool>> VNIRQ_IN;
 
-    SC_HAS_PROCESS(test_harness);
 
-    test_harness(const sc_module_name& nm):
-        component(nm),
+    gic400_stim(const sc_module_name& nm):
+        test_base(nm),
         DISTIF_OUT("DISTIF_OUT"),
         CPUIF_OUT("CPUIF_OUT"),
         VIFCTRL_OUT("VCTRLIF_OUT"),
@@ -60,15 +48,9 @@ public:
         NIRQ_IN("NIRQ_IN", 2),
         VFIRQ_IN("VFIRQ_IN", 2),
         VNIRQ_IN("VNIRQ_IN", 2) {
-        SC_THREAD(run);
     }
 
-    void run() {
-        run_test();
-        sc_stop();
-    }
-
-    void run_test() {
+    virtual void run_test() override {
         const u64 GICC_IIDR = 0xfc;
 
         u32 val = ~0;
@@ -98,19 +80,19 @@ TEST(gic400, gic400) {
     sc_vector<sc_signal<bool>> spis("SPI", 2);
     sc_vector<sc_signal<bool>> ppis("PPI", 2);
 
-    test_harness harness("HARNESS");
+    gic400_stim stim("STIM");
     arm::gic400 gic400("GIC400");
 
-    harness.CLOCK.stub(100 * MHz);
-    harness.RESET.stub();
+    stim.CLOCK.stub(100 * MHz);
+    stim.RESET.stub();
 
     gic400.CLOCK.stub(100 * MHz);
     gic400.RESET.stub();
 
-    harness.DISTIF_OUT.bind(gic400.DISTIF.IN);
-    harness.CPUIF_OUT.bind(gic400.CPUIF.IN);
-    harness.VIFCTRL_OUT.bind(gic400.VIFCTRL.IN);
-    harness.VCPUIF_OUT.bind(gic400.VCPUIF.IN);
+    stim.DISTIF_OUT.bind(gic400.DISTIF.IN);
+    stim.CPUIF_OUT.bind(gic400.CPUIF.IN);
+    stim.VIFCTRL_OUT.bind(gic400.VIFCTRL.IN);
+    stim.VCPUIF_OUT.bind(gic400.VCPUIF.IN);
 
     for (int cpu = 0; cpu < 2; cpu++) {
         gic400.FIQ_OUT[cpu].bind(firqs[cpu]);
@@ -120,16 +102,14 @@ TEST(gic400, gic400) {
         gic400.SPI_IN[cpu].bind(spis[cpu]);
         gic400.ppi_in(cpu, 0).bind(ppis[cpu]);
 
-        harness.FIRQ_IN[cpu].bind(firqs[cpu]);
-        harness.NIRQ_IN[cpu].bind(nirqs[cpu]);
-        harness.VFIRQ_IN[cpu].bind(vfirqs[cpu]);
-        harness.VNIRQ_IN[cpu].bind(vnirqs[cpu]);
-        harness.SPI_OUT[cpu].bind(spis[cpu]);
-        harness.PPI_OUT[cpu].bind(ppis[cpu]);
+        stim.FIRQ_IN[cpu].bind(firqs[cpu]);
+        stim.NIRQ_IN[cpu].bind(nirqs[cpu]);
+        stim.VFIRQ_IN[cpu].bind(vfirqs[cpu]);
+        stim.VNIRQ_IN[cpu].bind(vnirqs[cpu]);
+        stim.SPI_OUT[cpu].bind(spis[cpu]);
+        stim.PPI_OUT[cpu].bind(ppis[cpu]);
     }
 
-    sc_start();
-
-    ASSERT_EQ(sc_get_status(), SC_STOPPED);
+    sc_core::sc_start();
 }
 

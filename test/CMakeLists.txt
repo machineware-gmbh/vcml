@@ -16,10 +16,9 @@
  #                                                                            #
  ##############################################################################
 
-set(CMAKE_EXE_LINKER_FLAGS -rdynamic)
-add_library(main main.cpp)
-target_include_directories(main SYSTEM PRIVATE ${SYSTEMC_INCLUDE_DIRS})
-target_link_libraries(main gtest)
+add_library(testing testing.cpp)
+target_include_directories(testing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(testing vcml gtest gmock)
 
 add_subdirectory(googletest EXCLUDE_FROM_ALL)
 add_subdirectory(core)

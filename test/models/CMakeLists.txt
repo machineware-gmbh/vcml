@@ -18,16 +18,7 @@
 
 macro(model_test test)
     add_executable(${test} ${test}.cpp)
-
-    target_include_directories(${test} SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
-    target_link_libraries(${test} vcml gtest gmock)
-    target_link_libraries(${test} ${SYSTEMC_LIBRARIES} ${LIBELF_LIBRARIES})
-    target_link_libraries(${test} main -pthread -lrt -rdynamic)
-
-    if(LIBVNC_FOUND)
-        target_link_libraries(${test} ${LIBVNC_LIBRARIES})
-    endif()
-
+    target_link_libraries(${test} testing)
     add_test(NAME models/${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(models/${test} PROPERTIES TIMEOUT 4)
 endmacro()

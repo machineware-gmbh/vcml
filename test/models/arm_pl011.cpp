@@ -16,20 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "testing.h"
 
-#include "vcml.h"
-
-using namespace ::testing;
-using namespace ::sc_core;
-using namespace ::vcml;
-
-#define EXPECT_OK(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_OK_RESPONSE)
-#define EXPECT_AE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_ADDRESS_ERROR_RESPONSE)
-#define EXPECT_CE(tlmcall) EXPECT_EQ(tlmcall, tlm::TLM_COMMAND_ERROR_RESPONSE)
-
-class test_harness: public component
+class pl011_stim: public test_base
 {
 public:
     master_socket OUT;
@@ -38,19 +27,14 @@ public:
 
     sc_in<bool> IRQ_IN;
 
-    SC_HAS_PROCESS(test_harness);
-
-    test_harness(const sc_module_name& nm):
-        component(nm), OUT("OUT"), RESET_OUT("RESET_OUT"), IRQ_IN("IRQ_IN") {
-        SC_THREAD(run);
+    pl011_stim(const sc_module_name& nm):
+        test_base(nm),
+        OUT("OUT"),
+        RESET_OUT("RESET_OUT"),
+        IRQ_IN("IRQ_IN") {
     }
 
-    void run() {
-        run_test();
-        sc_stop();
-    }
-
-    void run_test() {
+    virtual void run_test() override {
         u32 val;
 
         const u64 PL011_UARTDR   = 0x00;
@@ -100,6 +84,7 @@ public:
         EXPECT_TRUE(val & arm::pl011uart::FR_TXFE) << "TX FIFO not reset";
         EXPECT_FALSE(IRQ_IN) << "interrupt state did not reset";
     }
+
 };
 
 TEST(arm_pl011, main) {
@@ -110,20 +95,18 @@ TEST(arm_pl011, main) {
     generic::clock sysclk("SYSCLK", 1 * MHz);
     sysclk.CLOCK.bind(clk);
 
-    test_harness harness("HARNESS");
+    pl011_stim stim("STIM");
     arm::pl011uart pl011("PL011");
 
-    harness.OUT.bind(pl011.IN);
-    harness.RESET_OUT.bind(rst);
-    harness.CLOCK.bind(clk);
-    harness.RESET.bind(rst);
-    harness.IRQ_IN.bind(irq);
+    stim.OUT.bind(pl011.IN);
+    stim.RESET_OUT.bind(rst);
+    stim.CLOCK.bind(clk);
+    stim.RESET.bind(rst);
+    stim.IRQ_IN.bind(irq);
 
     pl011.CLOCK.bind(clk);
     pl011.RESET.bind(rst);
     pl011.IRQ.bind(irq);
 
-    sc_start();
-
-    ASSERT_EQ(sc_get_status(), SC_STOPPED);
+    sc_core::sc_start();
 }

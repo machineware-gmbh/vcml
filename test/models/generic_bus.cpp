@@ -16,21 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "testing.h"
 
-#include <systemc>
-#include "vcml.h"
-
-using namespace ::testing;
-using namespace ::sc_core;
-using namespace ::vcml;
-
-#define ASSERT_OK(tlmcall) ASSERT_EQ(tlmcall, TLM_OK_RESPONSE)
-#define ASSERT_AE(tlmcall) ASSERT_EQ(tlmcall, TLM_ADDRESS_ERROR_RESPONSE)
-#define ASSERT_CE(tlmcall) ASSERT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
-
-class test_harness: public component
+class bus_harness: public test_base
 {
 public:
     generic::memory mem1;
@@ -39,8 +27,8 @@ public:
 
     master_socket OUT;
 
-    test_harness(const sc_module_name& nm):
-        component(nm),
+    bus_harness(const sc_module_name& nm):
+        test_base(nm),
         mem1("MEM1", 0x2000),
         mem2("MEM2", 0x2000),
         bus("BUS"),
@@ -59,14 +47,9 @@ public:
         bus.bind(OUT);
         bus.bind(mem1.IN, 0x0000, 0x1fff, 0);
         bus.bind(mem2.IN, 0x2000, 0x3fff, 0);
-
-        SC_HAS_PROCESS(test_harness);
-        SC_THREAD(run_test);
     }
 
-    void run_test() {
-        wait(SC_ZERO_TIME);
-
+    virtual void run_test() override {
         ASSERT_OK(OUT.writew<u32>(0x0000, 0x11111111ul))
             << "cannot write 0x0000 (mem1 + 0x0)";
         ASSERT_OK(OUT.writew<u32>(0x0004, 0xfffffffful))
@@ -112,17 +95,11 @@ public:
             << "bus did not forward DMI invalidation";
         EXPECT_EQ(OUT.dmi().get_entries()[0].get_start_address(), 0x2000)
             << "bus invalidated wrong DMI region";
-
-        sc_stop();
-        return;
     }
 
 };
 
 TEST(generic_bus, transfer) {
-    test_harness test("harness");
-
-    sc_start();
-
-    ASSERT_EQ(sc_get_status(), SC_STOPPED) << "simulation incomplete";
+    bus_harness test("harness");
+    sc_core::sc_start();
 }

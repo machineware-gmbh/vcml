@@ -141,8 +141,3 @@ TEST(logging, reporting) {
     vcml::report rep("This is an error message - things are really bad", __FILE__, __LINE__);
     vcml::logger::log(rep);
 }
-
-extern "C" int main(int argc, char** argv) {
-    // custom main function to have control about which loggers are created
-    return sc_core::sc_elab_and_sim(argc, argv);
-}

@@ -16,35 +16,30 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include "vcml.h"
+#include "testing.h"
 
 TEST(elf, main) {
-    ASSERT_TRUE(sc_core::sc_argc() >= 2);
-    ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);
-
-    std::string path = std::string(sc_core::sc_argv()[1]) + "/elf.elf";
-    ASSERT_TRUE(vcml::file_exists(path));
+    ASSERT_GE(args.size(), 2);
+    string path = args[1] + "/elf.elf";
+    ASSERT_TRUE(file_exists(path));
 
     vcml::elf elf(path);
     EXPECT_EQ(elf.get_filename(), path);
     EXPECT_EQ(elf.get_entry_point(), 0x24e0);
-    EXPECT_EQ(elf.get_endianess(), vcml::VCML_ENDIAN_BIG);
+    EXPECT_EQ(elf.get_endianess(), VCML_ENDIAN_BIG);
 
     EXPECT_FALSE(elf.is_64bit());
 }
 
 TEST(elf, sections) {
-    ASSERT_TRUE(sc_core::sc_argc() >= 2);
-    ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);
-
-    std::string path = std::string(sc_core::sc_argv()[1]) + "/elf.elf";
+    ASSERT_GE(args.size(), 2);
+    string path = args[1] + "/elf.elf";
     ASSERT_TRUE(vcml::file_exists(path));
 
     vcml::elf elf(path);
     EXPECT_EQ(elf.get_filename(), path);
     EXPECT_EQ(elf.get_entry_point(), 0x24e0);
-    EXPECT_EQ(elf.get_endianess(), vcml::VCML_ENDIAN_BIG);
+    EXPECT_EQ(elf.get_endianess(), VCML_ENDIAN_BIG);
 
     EXPECT_FALSE(elf.is_64bit());
     EXPECT_FALSE(elf.get_sections().empty());
@@ -58,7 +53,7 @@ TEST(elf, sections) {
     EXPECT_NE(elf.get_section(".symtab"), nullptr);
     EXPECT_NE(elf.get_section(".strtab"), nullptr);
 
-    vcml::elf_section* text = elf.get_section(".text");
+    elf_section* text = elf.get_section(".text");
     ASSERT_NE(text, nullptr);
     EXPECT_EQ(text->get_name(), ".text");
     EXPECT_TRUE(text->is_executable());
@@ -75,25 +70,23 @@ TEST(elf, sections) {
 }
 
 TEST(elf, symbols) {
-    ASSERT_TRUE(sc_core::sc_argc() >= 2);
-    ASSERT_TRUE(sc_core::sc_argv()[1] != nullptr);
-
-    std::string path = std::string(sc_core::sc_argv()[1]) + "/elf.elf";
-    ASSERT_TRUE(vcml::file_exists(path));
+    ASSERT_GE(args.size(), 2);
+    string path = args[1] + "/elf.elf";
+    ASSERT_TRUE(file_exists(path));
 
     vcml::elf elf(path);
     EXPECT_FALSE(elf.get_symbols().empty());
     EXPECT_EQ(elf.get_num_symbols(), 71);
 
-    vcml::elf_symbol* main = elf.get_symbol("main");
+    elf_symbol* main = elf.get_symbol("main");
     ASSERT_NE(main, nullptr);
     EXPECT_EQ(main->get_name(), "main");
-    EXPECT_EQ(main->get_type(), vcml::ELF_SYM_FUNCTION);
+    EXPECT_EQ(main->get_type(), ELF_SYM_FUNCTION);
     EXPECT_EQ(main->get_virt_addr(), 0x233c);
 
     vcml::elf_symbol* ctors = elf.get_symbol("__CTOR_LIST__");
     ASSERT_NE(ctors, nullptr);
     EXPECT_EQ(ctors->get_name(), "__CTOR_LIST__");
-    EXPECT_EQ(ctors->get_type(), vcml::ELF_SYM_OBJECT);
+    EXPECT_EQ(ctors->get_type(), ELF_SYM_OBJECT);
     EXPECT_EQ(ctors->get_virt_addr(), 0x4860);
 }
