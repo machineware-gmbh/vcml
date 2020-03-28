@@ -79,6 +79,20 @@ namespace vcml {
 
     bool is_debug_build();
 
+    inline string to_lower(const string& s) {
+        string result;
+        for (auto ch : s)
+            result += tolower(ch);
+        return result;
+    }
+
+    inline string to_upper(const string& s) {
+        string result;
+        for (auto ch : s)
+            result += toupper(ch);
+        return result;
+    }
+
     inline string escape(const string& s, const string& chars) {
         stringstream ss;
         for (auto c : s) {
@@ -173,6 +187,11 @@ namespace vcml {
     }
 
     template <>
+    inline string to_string<bool>(const bool& b) {
+        return b ? "true" : "false";
+    }
+
+    template <>
     inline string to_string<string>(const string& s) {
         return s;
     }
@@ -215,6 +234,16 @@ namespace vcml {
         unsigned int val;
         ss >> val;
         return (u8)val;
+    }
+
+    template <>
+    inline bool from_string<bool>(const string& str) {
+        const string lower = to_lower(str);
+        if (lower == "true")
+            return true;
+        if (lower == "false")
+            return false;
+        return from_string<unsigned int>(str) > 0;
     }
 
     template <typename DATA>

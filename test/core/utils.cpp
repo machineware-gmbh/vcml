@@ -16,8 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include "vcml.h"
+#include "testing.h"
 
 TEST(utils, mkstr) {
     EXPECT_EQ(vcml::mkstr("%d %s", 42, "fortytwo"), "42 fortytwo");
@@ -65,17 +64,10 @@ namespace N {
 
     template<>
     void U::unroll<0>(double d) {
-        //const char* ref[5] = {
-        //    "void N::U::unroll<0>(double)",
-        //    "void N::U::unroll<1>(double)",
-        //    "void N::U::unroll<2>(double)",
-        //    "void N::U::unroll<3>(double)",
-        //    "void N::U::unroll<4>(double)"
-        //};
         std::vector<std::string> bt = ::vcml::backtrace(5, 1);
         EXPECT_EQ(bt.size(), 5);
-        //for (int i = 0; i < 5; i++)
-        //    EXPECT_TRUE(str_begins_with(bt[i], ref[i]));
+        for (auto func : bt)
+            std::cout << func << std::endl;
     }
 }
 
@@ -119,16 +111,20 @@ TEST(utils, split) {
 }
 
 TEST(utils, from_string) {
-    vcml::u64 a = vcml::from_string<vcml::u64>("0xF");
-    EXPECT_EQ(a, 0xf);
-    vcml::u64 b = vcml::from_string<vcml::u64>("0x0000000b");
-    EXPECT_EQ(b, 0xb);
-    vcml::i32 c = vcml::from_string<vcml::i32>("10");
-    EXPECT_EQ(c, 10);
-    vcml::i32 d = vcml::from_string<vcml::i32>("-10");
-    EXPECT_EQ(d, -10);
-    vcml::u64 e = vcml::from_string<vcml::u64>("010");
-    EXPECT_EQ(e, 8);
+    EXPECT_EQ(vcml::from_string<vcml::u64>("0xF"), 0xf);
+    EXPECT_EQ(vcml::from_string<vcml::u64>("0x0000000b"), 0xb);
+    EXPECT_EQ(vcml::from_string<vcml::i32>("10"), 10);
+    EXPECT_EQ(vcml::from_string<vcml::i32>("-10"), -10);
+    EXPECT_EQ(vcml::from_string<vcml::u64>("010"), 8);
+
+    EXPECT_TRUE(vcml::from_string<bool>("true"));
+    EXPECT_TRUE(vcml::from_string<bool>("True"));
+    EXPECT_TRUE(vcml::from_string<bool>("1"));
+    EXPECT_TRUE(vcml::from_string<bool>("0x1234"));
+    EXPECT_FALSE(vcml::from_string<bool>("false"));
+    EXPECT_FALSE(vcml::from_string<bool>("False"));
+    EXPECT_FALSE(vcml::from_string<bool>("0"));
+    EXPECT_FALSE(vcml::from_string<bool>("0x0"));
 }
 
 TEST(utils, replace) {
