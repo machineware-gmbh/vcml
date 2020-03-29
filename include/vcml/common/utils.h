@@ -62,6 +62,10 @@ namespace vcml {
     string tlm_response_to_str(tlm_response_status status);
     string tlm_transaction_to_str(const tlm_generic_payload& tx);
 
+    u64 time_to_ns(const sc_time& t);
+    u64 time_to_us(const sc_time& t);
+    u64 time_to_ms(const sc_time& t);
+
     bool is_thread(sc_process_b* proc = nullptr);
     bool is_method(sc_process_b* proc = nullptr);
 

@@ -136,3 +136,26 @@ TEST(utils, replace) {
     EXPECT_EQ(vcml::replace(s2, "$dir", "/home/user"), 1);
     EXPECT_EQ(s2, "/home/user/file.txt");
 }
+
+TEST(utils, time) {
+    EXPECT_EQ(time_to_ns(sc_time(1.0, SC_NS)), 1ull);
+    EXPECT_EQ(time_to_ns(sc_time(1.9, SC_NS)), 1ull);
+    EXPECT_EQ(time_to_ns(sc_time(2.0, SC_NS)), 2ull);
+    EXPECT_EQ(time_to_ns(sc_time(1.0, SC_US)), 1000ull);
+    EXPECT_EQ(time_to_ns(sc_time(1.0, SC_MS)), 1000ull * 1000ull);
+    EXPECT_EQ(time_to_ns(sc_time(1.0, SC_SEC)), 1000ull * 1000ull * 1000ull);
+
+    EXPECT_EQ(time_to_us(sc_time(1.0, SC_NS)), 0ull);
+    EXPECT_EQ(time_to_us(sc_time(1.0, SC_US)), 1ull);
+    EXPECT_EQ(time_to_us(sc_time(1.9, SC_US)), 1ull);
+    EXPECT_EQ(time_to_us(sc_time(2.0, SC_US)), 2ull);
+    EXPECT_EQ(time_to_us(sc_time(1.0, SC_MS)), 1000ull);
+    EXPECT_EQ(time_to_us(sc_time(1.0, SC_SEC)), 1000ull * 1000ull);
+
+    EXPECT_EQ(time_to_ms(sc_time(1.0, SC_NS)), 0ull);
+    EXPECT_EQ(time_to_ms(sc_time(1.0, SC_US)), 0ull);
+    EXPECT_EQ(time_to_ms(sc_time(1.0, SC_MS)), 1ull);
+    EXPECT_EQ(time_to_ms(sc_time(1.9, SC_MS)), 1ull);
+    EXPECT_EQ(time_to_ms(sc_time(2.0, SC_MS)), 2ull);
+    EXPECT_EQ(time_to_ms(sc_time(1.0, SC_SEC)), 1000ull);
+}

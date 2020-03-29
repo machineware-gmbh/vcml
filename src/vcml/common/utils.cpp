@@ -228,6 +228,18 @@ namespace vcml {
         return ss.str();
     }
 
+    u64 time_to_ns(const sc_time& t) {
+        return t.value() / sc_time(1.0, SC_NS).value();
+    }
+
+    u64 time_to_us(const sc_time& t) {
+        return t.value() / sc_time(1.0, SC_US).value();
+    }
+
+    u64 time_to_ms(const sc_time& t) {
+        return t.value() / sc_time(1.0, SC_MS).value();
+    }
+
     bool is_thread(sc_process_b* proc) {
         if (proc == nullptr)
             proc = sc_get_current_process_b();
