@@ -203,9 +203,11 @@ namespace vcml { namespace debugging {
         timeout.tv_sec  = (timeoutms / 1000u);
         timeout.tv_usec = (timeoutms % 1000u) * 1000u;
 
-        int ret = select(m_fd + 1, &in, NULL, NULL, &timeout);
+        struct timeval* ptimeout = timeoutms ? &timeout : nullptr;
+        int ret = select(m_fd + 1, &in, nullptr, nullptr, ptimeout);
         if (ret == 0)
             return 0;
+
         if (ret < 0)
             VCML_ERROR("select call failed: %s", strerror(errno));
 
