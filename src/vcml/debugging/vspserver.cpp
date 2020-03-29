@@ -130,11 +130,9 @@ namespace vcml { namespace debugging {
     }
 
     string vspserver::handle_time(const char* command) {
-        return mkstr("%4.12f", sc_time_stamp().to_seconds());
-    }
-
-    string vspserver::handle_dcyc(const char* command) {
-        return mkstr("%llu", sc_delta_count());
+        u64 delta = sc_delta_count();
+        u64 nanos = time_to_ns(sc_time_stamp());
+        return mkstr("%lu,%lu", nanos, delta);
     }
 
     string vspserver::handle_rdgq(const char* command) {
@@ -251,7 +249,6 @@ namespace vcml { namespace debugging {
         }
     }
 
-
     void vspserver::notify_suspend(sc_object* obj) {
         const auto& children = obj ? obj->get_child_objects()
                                    : sc_core::sc_get_top_level_objects();
@@ -294,7 +291,6 @@ namespace vcml { namespace debugging {
         register_handler("i", std::bind(&vspserver::handle_info, this, _1));
         register_handler("e", std::bind(&vspserver::handle_exec, this, _1));
         register_handler("t", std::bind(&vspserver::handle_time, this, _1));
-        register_handler("d", std::bind(&vspserver::handle_dcyc, this, _1));
         register_handler("q", std::bind(&vspserver::handle_rdgq, this, _1));
         register_handler("Q", std::bind(&vspserver::handle_wrgq, this, _1));
         register_handler("a", std::bind(&vspserver::handle_geta, this, _1));
@@ -326,7 +322,8 @@ namespace vcml { namespace debugging {
 
     void vspserver::interrupt() {
         try {
-            switch (recv_signal(0)) {
+            int sig = recv_signal(0);
+            switch (sig) {
             case 0x00: // terminate request
             case  'x':
                 sc_stop();
@@ -337,9 +334,16 @@ namespace vcml { namespace debugging {
                 sc_pause();
                 return;
 
+            case 0x42: // update request
+            case  'u':
+                send_packet(handle_time(nullptr));
+                aio_notify(get_connection_fd(), &do_interrupt, AIO_ONCE);
+                return;
+
             default:
-                VCML_ERROR("invalid signal received");
+                VCML_ERROR("invalid signal received: 0x%x", sig);
             }
+
         } catch (...) {
             sc_pause();
             disconnect();
