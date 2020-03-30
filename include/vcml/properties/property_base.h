@@ -32,18 +32,17 @@ namespace vcml {
         string     m_base;
         sc_module* m_parent;
 
-        // disabled
-        property_base();
-        property_base(const property_base&);
-
     public:
-        property_base(const char* name, sc_module* parent = NULL);
+        property_base(const char* name, sc_module* parent = nullptr);
         virtual ~property_base();
+        VCML_KIND(property_base);
 
-        VCML_KIND(property);
+        property_base() = delete;
+        property_base(const property_base&) = delete;
+        property_base& operator = (const property_base&) = delete;
 
-        inline const char* basename()   const { return m_base.c_str(); }
-        inline sc_module*  get_module() const { return m_parent; }
+        const char* basename()   const { return m_base.c_str(); }
+        sc_module*  get_module() const { return m_parent; }
 
         virtual const char* str() const = 0;
         virtual void str(const string& s) = 0;

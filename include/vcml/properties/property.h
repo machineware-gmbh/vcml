@@ -33,19 +33,19 @@ namespace vcml {
     class property: public property_base
     {
     private:
-        T      m_value[N];
-        T      m_defval;
-        bool   m_inited;
+        T    m_value[N];
+        T    m_defval;
+        bool m_inited;
 
         mutable string m_str;
 
-        // disabled
-        property();
-        property(const property&);
-
     public:
-        property(const char* nm, const T& defval = T(), sc_module* mod = NULL);
+        property(const char* nm, const T& def = T(), sc_module* mod = nullptr);
         virtual ~property();
+        VCML_KIND(property);
+
+        property() = delete;
+        property(const property<T,N>&) = delete;
 
         virtual const char* str() const;
         virtual void str(const string& s);
