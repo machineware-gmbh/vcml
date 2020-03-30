@@ -32,6 +32,9 @@ namespace vcml { namespace generic {
         if (!fd_read(fd, &data, sizeof(data)))
             VCML_ERROR("failed to read %s: %s", src, strerror(errno));
 
+        if (close(fd) < 0)
+            VCML_ERROR("failed to close %s: %s", src, strerror(errno));
+
         return data;
     }
 
