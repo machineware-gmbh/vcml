@@ -165,13 +165,13 @@ namespace vcml { namespace debugging {
             return mkstr("attribute '%s' not found", name.c_str());
 
         stringstream ss;
-        ss << "name:" << attr->name() << ",";
+        ss << attr->name();
 
         property_base* prop = dynamic_cast<property_base*>(attr);
         if (prop) {
-            ss << "value:" << escape(prop->str(), ",") << ",";
-            ss << "size:" << prop->size() << ",";
-            ss << "num:" << prop->num() << ",";
+            ss << "," << escape(prop->str(), ",");
+            ss << "," << prop->size();
+            ss << "," << prop->num();
         }
 
         return ss.str();
@@ -205,12 +205,10 @@ namespace vcml { namespace debugging {
 
     string vspserver::handle_vers(const char* command) {
         stringstream ss;
-        ss << "sysc:" << SC_VERSION << ","
-           << "vcml:" << VCML_VERSION_STRING
+        ss << SC_VERSION << ",";
+        ss << VCML_VERSION_STRING;
 #ifdef VCML_DEBUG
-           << "-debug,";
-#else
-           << ",";
+        ss << "-debug";
 #endif
         return ss.str();
     }
