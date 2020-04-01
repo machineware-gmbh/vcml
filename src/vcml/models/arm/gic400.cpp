@@ -1276,7 +1276,7 @@ namespace vcml { namespace arm {
         else if (irq < NPRIV)
             return DISTIF.IPRIORITY_PPI.bank(cpu, irq - NSGI);
         else if (irq < NIRQ)
-            return DISTIF.IPRIORITY_SGI[irq - NPRIV];
+            return DISTIF.IPRIORITY_SPI[irq - NPRIV];
 
         log_error("tried to get IRQ priority of invalid IRQ ID (%d)", irq);
         return 0;
