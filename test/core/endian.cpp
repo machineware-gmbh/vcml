@@ -16,46 +16,29 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_LOG_TERM_H
-#define VCML_LOG_TERM_H
+#include "testing.h"
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-
-#include "vcml/logging/logger.h"
-
-namespace vcml {
-
-    class log_term: public logger
-    {
-    private:
-        bool     m_use_colors;
-        ostream& m_os;
-
-    public:
-        inline bool using_colors() const;
-        inline void set_colors(bool set = true);
-
-        log_term(bool use_cerr = true);
-        virtual ~log_term();
-
-        virtual void log_line(log_level lvl, const char* line);
-
-        static const char* colors[NUM_LOG_LEVELS];
-        static const char* reset;
-    };
-
-    inline bool log_term::using_colors() const {
-        return m_use_colors;
-    }
-
-    inline void log_term::set_colors(bool set) {
-        m_use_colors = set;
-    }
-
+TEST(endian, swap) {
+    EXPECT_EQ(vcml::swap< u8>(0x11), 0x11);
+    EXPECT_EQ(vcml::swap<u16>(0x1122), 0x2211);
+    EXPECT_EQ(vcml::swap<u32>(0x11223344), 0x44332211);
+    EXPECT_EQ(vcml::swap<u64>(0x1122334455667788ull), 0x8877665544332211ull);
 }
 
-#endif
+TEST(endian, memswap) {
+    vcml::u8 x8 = 0x11;
+    vcml::memswap(&x8, sizeof(x8));
+    EXPECT_EQ(x8, 0x11);
+
+    vcml::u16 x16 = 0x1122;
+    vcml::memswap(&x16, sizeof(x16));
+    EXPECT_EQ(x16, 0x2211);
+
+    vcml::u32 x32 = 0x11223344;
+    vcml::memswap(&x32, sizeof(x32));
+    EXPECT_EQ(x32, 0x44332211);
+
+    vcml::u64 x64 = 0x1122334455667788ull;
+    vcml::memswap(&x64, sizeof(x64));
+    EXPECT_EQ(x64, 0x8877665544332211ull);
+}

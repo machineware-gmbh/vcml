@@ -20,35 +20,6 @@
 
 namespace vcml {
 
-    string mkstr(const char* format, ...) {
-        va_list args;
-        va_start(args, format);
-        string str = vmkstr(format, args);
-        va_end(args);
-        return str;
-    }
-
-    string vmkstr(const char* format, va_list args) {
-        va_list args2;
-        va_copy(args2, args);
-
-        int size = vsnprintf(NULL, 0, format, args) + 1;
-        if (size <= 0)
-            return "";
-
-        char* buffer = new char [size];
-        vsnprintf(buffer, size, format, args2);
-        va_end(args2);
-
-        string s(buffer);
-        delete [] buffer;
-        return s;
-    }
-
-    string concat(const string& a, const string& b) {
-        return a + b;
-    }
-
     string dirname(const string& filename) {
 #ifdef _WIN32
         const char separator = '\\';
@@ -64,7 +35,7 @@ namespace vcml {
         return access(filename.c_str(), F_OK) != -1;
     }
 
-    size_t fd_peek(int fd) {
+    size_t fd_peek(int fd, time_t timeoutms) {
         if (fd < 0)
             return 0;
 
@@ -76,10 +47,11 @@ namespace vcml {
         FD_ZERO(&out);
         FD_ZERO(&err);
 
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
+        timeout.tv_sec  = (timeoutms / 1000ull);
+        timeout.tv_usec = (timeoutms % 1000ull) * 1000ull;
 
-        int ret = select(fd + 1, &in, &out, &err, &timeout);
+        struct timeval* ptimeout = ~timeoutms ? &timeout : nullptr;
+        int ret = select(fd + 1, &in, &out, &err, ptimeout);
         return ret > 0 ? 1 : 0;
     }
 
@@ -115,14 +87,6 @@ namespace vcml {
         }
 
         return written;
-    }
-
-    void trim(string& s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-            [] (int ch) { return !std::isspace(ch); }));
-
-        s.erase(std::find_if(s.rbegin(), s.rend(),
-            [] (int ch) { return !std::isspace(ch); }).base(), s.end());
     }
 
     string tempdir() {
@@ -286,23 +250,6 @@ namespace vcml {
         return parent->get_attribute(name);
     }
 
-    int replace(string& str, const string& search, const string& repl) {
-        int count = 0;
-        size_t index = 0;
-
-        while (true) {
-             index = str.find(search, index);
-             if (index == std::string::npos)
-                 break;
-
-             str.replace(index, search.length(), repl);
-             index += repl.length();
-             count++;
-        }
-
-        return count;
-    }
-
     string call_origin() {
         pthread_t this_thread = pthread_self();
         if (this_thread != thctl_sysc_thread()) {
@@ -384,19 +331,6 @@ namespace vcml {
 #endif
     }
 
-}
-
-std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian) {
-    std::string str;
-    is >> str;
-
-    if ((str == "big") || (str == "BIG"))
-        endian = vcml::VCML_ENDIAN_BIG;
-    else if ((str == "little") || (str == "LITTLE"))
-        endian = vcml::VCML_ENDIAN_LITTLE;
-    else
-        endian = vcml::VCML_ENDIAN_UNKNOWN;
-    return is;
 }
 
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {

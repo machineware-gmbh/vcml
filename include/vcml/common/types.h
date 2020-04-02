@@ -35,14 +35,51 @@ namespace vcml {
 
     using std::clock_t;
 
+    const clock_t kHz = 1000;
+    const clock_t MHz = 1000 * kHz;
+    const clock_t GHz = 1000 * MHz;
+    const clock_t THz = 1000 * GHz;
+
+    using std::size_t;
+
+    const size_t KiB = 1024;
+    const size_t MiB = 1024 * KiB;
+    const size_t GiB = 1024 * MiB;
+    const size_t TiB = 1024 * GiB;
+
     using std::min;
     using std::max;
 
     using std::list;
     using std::queue;
     using std::vector;
-    using std::string;
-    using std::stringstream;
+
+    template <typename V, typename T>
+    inline void stl_remove_erase(V& v, const T& t) {
+        v.erase(std::remove(v.begin(), v.end(), t), v.end());
+    }
+
+    template <typename V, typename T>
+    inline bool stl_contains(const V& v, const T& t) {
+        return std::find(v.begin(), v.end(), t) != v.end();
+    }
+
+    template <typename T1, typename T2>
+    inline bool stl_contains(const std::map<T1,T2>& m, const T1& t) {
+        return m.find(t) != m.end();
+    }
+
+    template <typename T1, typename T2>
+    inline bool stl_contains(const std::unordered_map<T1,T2>& m, const T1& t) {
+        return m.find(t) != m.end();
+    }
+
+    template <typename T>
+    inline void stl_add_unique(vector<T>& v, const T& t) {
+        if (!stl_contains(v, t))
+            v.push_back(t);
+    }
+
     using std::ostream;
     using std::fstream;
     using std::ifstream;
@@ -137,20 +174,6 @@ namespace vcml {
     using tlm_utils::simple_initiator_socket_tagged;
     using tlm_utils::simple_target_socket;
     using tlm_utils::simple_target_socket_tagged;
-
-    enum vcml_endian {
-        VCML_ENDIAN_UNKNOWN = 0,
-        VCML_ENDIAN_LITTLE = 1,
-        VCML_ENDIAN_BIG = 2,
-    };
-
-    static inline vcml_endian host_endian() {
-        u32 test = 1;
-        u8* p = reinterpret_cast<u8*>(&test);
-        if (p[0] == 1) return VCML_ENDIAN_LITTLE;
-        if (p[3] == 1) return VCML_ENDIAN_BIG;
-        return VCML_ENDIAN_UNKNOWN;
-    }
 
     static inline bool is_set(int flags, int set) {
         return (flags & set) == set;

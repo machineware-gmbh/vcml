@@ -21,6 +21,7 @@
 
 #include "vcml/common/includes.h"
 #include "vcml/common/types.h"
+#include "vcml/common/strings.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 
@@ -72,7 +73,7 @@ namespace vcml { namespace debugging {
         void   send_packet(const string& s);
         void   send_packet(const char* format, ...);
         string recv_packet();
-        int    recv_signal(unsigned int timeoutms = 0);
+        int    recv_signal(time_t timeoutms = ~0ull);
 
         void listen();
         void disconnect();

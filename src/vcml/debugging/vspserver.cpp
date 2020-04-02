@@ -320,7 +320,7 @@ namespace vcml { namespace debugging {
 
     void vspserver::interrupt() {
         try {
-            int sig = recv_signal(0);
+            int sig = recv_signal();
             switch (sig) {
             case 0x00: // terminate request
             case  'x':

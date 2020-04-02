@@ -258,7 +258,7 @@ namespace vcml { namespace opencores {
                     for (u32 x = 0; x < linesz; x++) {
                         u32 color = current_palette[linebuf[x]];
                         if (is_big_endian())
-                            color = bswap(color); // target -> host
+                            color = swap(color); // target -> host
                         *fb++ = (color >>  0) & 0xFF; // b
                         *fb++ = (color >>  8) & 0xFF; // g
                         *fb++ = (color >> 16) & 0xFF; // r

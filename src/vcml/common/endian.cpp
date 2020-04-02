@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2020 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,46 +16,37 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_LOG_TERM_H
-#define VCML_LOG_TERM_H
-
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
+#include "vcml/common/endian.h"
 #include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-
-#include "vcml/logging/logger.h"
 
 namespace vcml {
 
-    class log_term: public logger
-    {
-    private:
-        bool     m_use_colors;
-        ostream& m_os;
-
-    public:
-        inline bool using_colors() const;
-        inline void set_colors(bool set = true);
-
-        log_term(bool use_cerr = true);
-        virtual ~log_term();
-
-        virtual void log_line(log_level lvl, const char* line);
-
-        static const char* colors[NUM_LOG_LEVELS];
-        static const char* reset;
-    };
-
-    inline bool log_term::using_colors() const {
-        return m_use_colors;
-    }
-
-    inline void log_term::set_colors(bool set) {
-        m_use_colors = set;
+    const char* endian_to_str(int endian) {
+        switch (endian) {
+        case VCML_ENDIAN_LITTLE: return "little";
+        case VCML_ENDIAN_BIG: return "big";
+        default:
+            return "unknown";
+        }
     }
 
 }
 
-#endif
+std::ostream& operator << (std::ostream& os, vcml::vcml_endian& endian) {
+    return os << vcml::endian_to_str(endian);
+}
+
+std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian) {
+    std::string str;
+    is >> str;
+    str = vcml::to_lower(str);
+
+    if (str == "big")
+        endian = vcml::VCML_ENDIAN_BIG;
+    else if (str == "little")
+        endian = vcml::VCML_ENDIAN_LITTLE;
+    else
+        endian = vcml::VCML_ENDIAN_UNKNOWN;
+
+    return is;
+}

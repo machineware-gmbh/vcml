@@ -42,6 +42,7 @@ set(inc "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(sources
     "${src}/vcml/common/report.cpp"
     "${src}/vcml/common/utils.cpp"
+    "${src}/vcml/common/strings.cpp"
     "${src}/vcml/common/aio.cpp"
     "${src}/vcml/common/thctl.cpp"
     "${src}/vcml/common/bitops.cpp"

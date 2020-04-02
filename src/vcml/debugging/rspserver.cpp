@@ -189,27 +189,12 @@ namespace vcml { namespace debugging {
         return "";
     }
 
-    int rspserver::recv_signal(unsigned int timeoutms) {
+    int rspserver::recv_signal(time_t timeoutms) {
         if (m_fd == -1)
             return 0;
 
-        fd_set in, out, err;
-        struct timeval timeout;
-        FD_ZERO(&in);
-        FD_SET(m_fd, &in);
-        FD_ZERO(&out);
-        FD_ZERO(&err);
-
-        timeout.tv_sec  = (timeoutms / 1000u);
-        timeout.tv_usec = (timeoutms % 1000u) * 1000u;
-
-        struct timeval* ptimeout = timeoutms ? &timeout : nullptr;
-        int ret = select(m_fd + 1, &in, nullptr, nullptr, ptimeout);
-        if (ret == 0)
+        if (!fd_peek(m_fd, timeoutms))
             return 0;
-
-        if (ret < 0)
-            VCML_ERROR("select call failed: %s", strerror(errno));
 
         char signal = 0;
         if (recv(m_fd, &signal, 1, MSG_DONTWAIT) != 1)

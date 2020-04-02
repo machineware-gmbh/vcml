@@ -31,7 +31,7 @@ namespace vcml {
             lno++;
 
             // remove white spaces
-            trim(line);
+            line = trim(line);
 
             if (line.empty())
                 continue;
@@ -61,8 +61,8 @@ namespace vcml {
             string key = line.substr(0, separator);
             string val = line.substr(separator + 1);
 
-            trim(key);
-            trim(val);
+            key = trim(key);
+            val = trim(val);
 
             replace(val);
             add(key, val);
