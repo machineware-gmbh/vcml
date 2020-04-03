@@ -220,7 +220,7 @@ namespace vcml { namespace opencores {
         tlm_response_status rs = OUT.read(addr, buffer, length);
         if (failed(rs)) {
             log_warn("tx error  %s while reading from 0x%08x",
-                     tlm_response_to_str(rs).c_str(), addr);
+                     tlm_response_to_str(rs), addr);
             return false;
         }
 
@@ -264,7 +264,7 @@ namespace vcml { namespace opencores {
         tlm_response_status rs = OUT.write(addr, buffer, length);
         if (failed(rs)) {
             log_warn("rx error %s while writing to 0x%08x",
-                     tlm_response_to_str(rs).c_str(), addr);
+                     tlm_response_to_str(rs), addr);
             return false;
         }
 

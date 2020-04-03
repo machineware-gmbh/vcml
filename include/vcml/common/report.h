@@ -30,7 +30,7 @@ namespace vcml {
     private:
         string         m_message;
         string         m_origin;
-        sc_time        m_time;
+        double         m_time;
         string         m_file;
         int            m_line;
         vector<string> m_backtrace;
@@ -42,16 +42,15 @@ namespace vcml {
         report();
 
     public:
-        const char*    message()  const { return m_message.c_str(); }
-        const char*    origin()   const { return m_origin.c_str(); }
-        const sc_time& time()     const { return m_time; }
-        const char*    file()     const { return m_file.c_str(); }
-        int            line()     const { return m_line; }
+        const char*  message()  const { return m_message.c_str(); }
+        const char*  origin()   const { return m_origin.c_str(); }
+        const double time()     const { return m_time; }
+        const char*  file()     const { return m_file.c_str(); }
+        int          line()     const { return m_line; }
 
         const vector<string> backtrace() const;
 
         report(const string& msg, const char* file, int line);
-        report(const sc_report& rep);
         virtual ~report() throw();
 
         virtual const char* what() const throw();

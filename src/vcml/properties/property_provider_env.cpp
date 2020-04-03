@@ -16,6 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/common/systemc.h" // for SC_HIERARCHY_CHAR
 #include "vcml/properties/property_provider_env.h"
 
 namespace vcml {

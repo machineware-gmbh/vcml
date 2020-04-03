@@ -23,16 +23,8 @@
 #error Please compile with c++11
 #endif
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
-
-#ifndef SC_INCLUDE_DYNAMIC_PROCESSES
-#define SC_INCLUDE_DYNAMIC_PROCESSES
-#endif
 
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -42,19 +34,13 @@
 #include <ctype.h>
 #include <strings.h>
 
-#include <vector>
-#include <queue>
-#include <list>
-#include <map>
-#include <unordered_map>
 #include <memory>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <algorithm>
-#include <functional>
+//#include <algorithm>
+//#include <functional>
 #include <limits>
-#include <typeindex>
 
 #include <pthread.h>
 #include <unistd.h>
@@ -75,11 +61,6 @@
 #include <cxxabi.h>
 
 #include <libelf.h>
-
-#include <systemc>
-#include <tlm>
-#include <tlm_utils/simple_initiator_socket.h>
-#include <tlm_utils/simple_target_socket.h>
 
 
 #endif

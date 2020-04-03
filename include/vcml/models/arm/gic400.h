@@ -24,6 +24,7 @@
 #include "vcml/common/bitops.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/range.h"
 #include "vcml/ports.h"

@@ -16,6 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/logging/logger.h"
 #include "vcml/properties/property_provider_file.h"
 
 namespace vcml {

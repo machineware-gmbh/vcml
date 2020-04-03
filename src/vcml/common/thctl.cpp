@@ -18,6 +18,7 @@
 
 #include "vcml/common/thctl.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 namespace vcml {
 

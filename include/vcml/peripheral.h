@@ -23,6 +23,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/backends/backend.h"
@@ -63,6 +64,9 @@ namespace vcml {
         bool is_little_endian() const;
         bool is_big_endian() const;
         bool is_host_endian() const;
+
+        template <typename T> T to_host_endian(T val) const;
+        template <typename T> T from_host_endian(T val) const;
 
         int  current_cpu() const      { return m_current_cpu; }
         void set_current_cpu(int cpu) { m_current_cpu = cpu; }
@@ -115,6 +119,16 @@ namespace vcml {
 
     inline bool peripheral::is_host_endian() const {
         return m_endian == host_endian();
+    }
+
+    template <typename T>
+    inline T peripheral::to_host_endian(T val) const {
+        return is_host_endian() ? val : bswap(val);
+    }
+
+    template <typename T>
+    inline T peripheral::from_host_endian(T val) const {
+        return is_host_endian() ? val : bswap(val);
     }
 
     template <typename T>

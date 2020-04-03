@@ -45,24 +45,7 @@ namespace vcml {
     size_t fd_read(int fd, void* buffer, size_t buflen);
     size_t fd_write(int fd, const void* buffer, size_t buflen);
 
-    string tlm_response_to_str(tlm_response_status status);
-    string tlm_transaction_to_str(const tlm_generic_payload& tx);
-
-    u64 time_to_ns(const sc_time& t);
-    u64 time_to_us(const sc_time& t);
-    u64 time_to_ms(const sc_time& t);
-
-    bool is_thread(sc_process_b* proc = nullptr);
-    bool is_method(sc_process_b* proc = nullptr);
-
-    sc_process_b* current_thread();
-    sc_process_b* current_method();
-
-    sc_object*    find_object(const string& name);
-    sc_attr_base* find_attribute(const string& name);
-
     string call_origin();
-
     vector<string> backtrace(unsigned int frames = 63, unsigned int skip = 1);
 
     bool is_debug_build();
@@ -79,19 +62,5 @@ namespace vcml {
     };
 
 }
-
-#if (SYSTEMC_VERSION < 20140408)
-inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
-                                    const sc_core::sc_time& t2 ) {
-    sc_core::sc_time tmp(t1.value() % t2.value(), false);
-    return tmp;
-}
-#endif
-
-#if (SYSTEMC_VERSION < 20171012)
-namespace sc_core {
-    typedef std::type_index sc_type_index;
-}
-#endif
 
 #endif

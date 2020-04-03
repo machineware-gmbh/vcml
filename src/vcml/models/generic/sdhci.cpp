@@ -407,7 +407,7 @@ namespace vcml { namespace generic {
             }
 
             if (failed(rs))
-                log_warn("DMA failed: %s", tlm_response_to_str(rs).c_str());
+                log_warn("DMA failed: %s", tlm_response_to_str(rs));
 
             set_present_state(~DAT_LINE_ACTIVE);
             NORMAL_INT_STAT |= INT_TRANSFER_COMPLETE;

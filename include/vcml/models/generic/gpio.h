@@ -23,6 +23,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/ports.h"
 #include "vcml/slave_socket.h"

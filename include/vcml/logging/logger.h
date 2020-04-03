@@ -24,6 +24,7 @@
 #include "vcml/common/strings.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 namespace vcml {
 

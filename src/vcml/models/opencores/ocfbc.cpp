@@ -150,11 +150,11 @@ namespace vcml { namespace opencores {
 #ifdef HAVE_LIBVNC
         u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
         u32 size = m_resx * m_resy * m_bpp;
-        u8* vram = NULL;
+        u8* vram = nullptr;
 
         tlm_dmi dmi;
         tlm_generic_payload tx;
-        tx_setup(tx, TLM_READ_COMMAND, base, NULL, size);
+        tx_setup(tx, TLM_READ_COMMAND, base, nullptr, size);
         if (allow_dmi && OUT->get_direct_mem_ptr(tx, dmi)) {
             if (dmi.is_read_allowed() &&
                 dmi.get_start_address() <= base &&
@@ -204,13 +204,13 @@ namespace vcml { namespace opencores {
                 debugging::vncserver::lookup(vncport);
 
         // cannot use DMI with pseudocolor
-        if ((vram == NULL) || (m_pc)) {
+        if ((vram == nullptr) || (m_pc)) {
             log_debug("copying vnc framebuffer from vram");
             m_fb = vnc->setup_framebuffer(mode);
         } else {
             log_debug("mapping vnc framebuffer into vram");
             vnc->setup_framebuffer(mode, vram);
-            m_fb = NULL;
+            m_fb = nullptr;
         }
 #endif
     }
@@ -225,7 +225,7 @@ namespace vcml { namespace opencores {
     }
 
     void ocfbc::render() {
-        if (m_fb != NULL) { // need to copy data to framebuffer manually
+        if (m_fb != nullptr) { // need to copy data to framebuffer manually
             tlm_response_status rs;
 
             u32 burstsz = OCFBC_VBL(CTLR);
@@ -242,7 +242,7 @@ namespace vcml { namespace opencores {
                     u8* dest = m_pc ? linebuf : fb;
                     if (failed(rs = OUT.read(addr, dest + x, burstsz))) {
                         log_debug("failed to read vmem at 0x%08x: %s", addr,
-                                  tlm_response_to_str(rs).c_str());
+                                  tlm_response_to_str(rs));
                         STAT |= STAT_SINT;
                         IRQ = true;
                     }
@@ -251,18 +251,16 @@ namespace vcml { namespace opencores {
                 if (!m_pc) {
                     fb += linesz; // done, data is already copied
                 } else {
-                    u32* current_palette = m_palette;
+                    u32* palette = m_palette;
                     if (STAT & STAT_ACMP)
-                        current_palette = m_palette + 0x100;
+                        palette = m_palette + 0x100;
 
                     for (u32 x = 0; x < linesz; x++) {
-                        u32 color = current_palette[linebuf[x]];
-                        if (is_big_endian())
-                            color = bswap(color); // target -> host
-                        *fb++ = (color >>  0) & 0xFF; // b
-                        *fb++ = (color >>  8) & 0xFF; // g
-                        *fb++ = (color >> 16) & 0xFF; // r
-                        *fb++ = 0xFF; // a
+                        u32 color = to_host_endian(palette[linebuf[x]]);
+                        *fb++ = (color >>  0) & 0xff; // b
+                        *fb++ = (color >>  8) & 0xff; // g
+                        *fb++ = (color >> 16) & 0xff; // r
+                        *fb++ = 0xff; // a
                     }
                 }
 
@@ -327,7 +325,7 @@ namespace vcml { namespace opencores {
         peripheral(nm),
         m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
         m_palette(),
-        m_fb(NULL),
+        m_fb(nullptr),
         m_resx(0),
         m_resy(0),
         m_bpp(0),

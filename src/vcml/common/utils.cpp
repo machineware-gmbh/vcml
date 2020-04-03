@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/common/utils.h"
+#include "vcml/common/systemc.h"
 
 namespace vcml {
 
@@ -119,135 +120,6 @@ namespace vcml {
         struct timespec tp;
         clock_gettime(CLOCK_REALTIME, &tp);
         return tp.tv_sec + tp.tv_nsec * 1e-9;
-    }
-
-    string tlm_response_to_str(tlm_response_status status) {
-        switch (status) {
-        case TLM_OK_RESPONSE:
-            return "TLM_OK_RESPONSE";
-
-        case TLM_INCOMPLETE_RESPONSE:
-            return "TLM_INCOMPLETE_RESPONSE";
-
-        case TLM_GENERIC_ERROR_RESPONSE:
-            return "TLM_GENERIC_ERROR_RESPONSE";
-
-        case TLM_ADDRESS_ERROR_RESPONSE:
-            return "TLM_ADDRESS_ERROR_RESPONSE";
-
-        case TLM_COMMAND_ERROR_RESPONSE:
-            return "TLM_COMMAND_ERROR_RESPONSE";
-
-        case TLM_BURST_ERROR_RESPONSE:
-            return "TLM_BURST_ERROR_RESPONSE";
-
-        case TLM_BYTE_ENABLE_ERROR_RESPONSE:
-            return "TLM_BYTE_ENABLE_ERROR_RESPONSE";
-
-        default: {
-                stringstream ss;
-                ss << "TLM_UNKNOWN_RESPONSE (" << status << ")";
-                return ss.str();
-            }
-        }
-    }
-
-    string tlm_transaction_to_str(const tlm_generic_payload& tx) {
-        stringstream ss;
-
-        // command
-        switch (tx.get_command()) {
-        case TLM_READ_COMMAND  : ss << "RD "; break;
-        case TLM_WRITE_COMMAND : ss << "WR "; break;
-        default: ss << "IG "; break;
-        }
-
-        // address
-        ss << "0x";
-        ss << std::hex;
-        ss.width(16);
-        ss.fill('0');
-        ss << tx.get_address();
-
-        // data array
-        unsigned int size = tx.get_data_length();
-        unsigned char* c = tx.get_data_ptr();
-
-        ss << " [";
-        if (size == 0)
-            ss << "<no data>";
-        for (unsigned int i = 0; i < size; i++) {
-            ss.width(2);
-            ss.fill('0');
-            ss << static_cast<unsigned int>(*c++);
-            if (i != (size - 1))
-                ss << " ";
-        }
-        ss << "]";
-
-        // response status
-        ss << " (" << tx.get_response_string() << ")";
-
-        // ToDo: byte enable, streaming, etc.
-        return ss.str();
-    }
-
-    u64 time_to_ns(const sc_time& t) {
-        return t.value() / sc_time(1.0, SC_NS).value();
-    }
-
-    u64 time_to_us(const sc_time& t) {
-        return t.value() / sc_time(1.0, SC_US).value();
-    }
-
-    u64 time_to_ms(const sc_time& t) {
-        return t.value() / sc_time(1.0, SC_MS).value();
-    }
-
-    bool is_thread(sc_process_b* proc) {
-        if (proc == nullptr)
-            proc = sc_get_current_process_b();
-        if (proc == nullptr)
-            return false;
-        return proc->proc_kind() == sc_core::SC_THREAD_PROC_;
-    }
-
-    bool is_method(sc_process_b* proc) {
-        if (proc == nullptr)
-            proc = sc_get_current_process_b();
-        if (proc == nullptr)
-            return false;
-        return proc->proc_kind() == sc_core::SC_METHOD_PROC_;
-    }
-
-    sc_process_b* current_thread() {
-        sc_process_b* proc = sc_get_current_process_b();
-        if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
-            return nullptr;
-        return proc;
-    }
-
-    sc_process_b* current_method() {
-        sc_process_b* proc = sc_get_current_process_b();
-        if (proc == nullptr || proc->proc_kind() != sc_core::SC_METHOD_PROC_)
-            return nullptr;
-        return proc;
-    }
-
-    sc_object* find_object(const string& name) {
-        return sc_core::sc_find_object(name.c_str());
-    }
-
-    sc_attr_base* find_attribute(const string& name) {
-        size_t pos = name.rfind(SC_HIERARCHY_CHAR);
-        if (pos == string::npos)
-            return NULL;
-
-        sc_object* parent = find_object(name.substr(0, pos));
-        if (parent == nullptr)
-            return nullptr;
-
-        return parent->get_attribute(name);
     }
 
     string call_origin() {

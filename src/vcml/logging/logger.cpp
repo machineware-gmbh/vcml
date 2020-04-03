@@ -87,7 +87,7 @@ namespace vcml {
         if (loggers[lvl].empty())
             return;
 
-        sc_object* obj = find_object(org);
+        sc_object* obj = find_object(org.c_str());
         component* comp = dynamic_cast<component*>(obj);
         sc_time now = sc_time_stamp();
         if (comp && is_thread())

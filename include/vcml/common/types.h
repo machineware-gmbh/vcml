@@ -19,7 +19,22 @@
 #ifndef VCML_TYPES_H
 #define VCML_TYPES_H
 
-#include "vcml/common/includes.h"
+#if __cplusplus < 201103L
+#error Please compile with c++11
+#endif
+
+#include <stdint.h>
+#include <time.h>
+
+#include <vector>
+#include <queue>
+#include <deque>
+#include <list>
+#include <map>
+#include <unordered_map>
+#include <algorithm>
+#include <memory>
+#include <functional>
 
 namespace vcml {
 
@@ -33,7 +48,7 @@ namespace vcml {
     typedef int32_t i32;
     typedef int64_t i64;
 
-    using std::clock_t;
+    using ::clock_t;
 
     const clock_t kHz = 1000;
     const clock_t MHz = 1000 * kHz;
@@ -52,6 +67,7 @@ namespace vcml {
 
     using std::list;
     using std::queue;
+    using std::deque;
     using std::vector;
 
     template <typename V, typename T>
@@ -90,92 +106,7 @@ namespace vcml {
 
     using std::function;
 
-    using sc_core::sc_object;
-    using sc_core::sc_attr_base;
-
-    using sc_core::sc_gen_unique_name;
-    using sc_core::SC_HIERARCHY_CHAR;
-
-    using sc_core::sc_delta_count;
-
-    using sc_core::sc_time;
-    using sc_core::sc_time_stamp;
-
-    using sc_core::SC_ZERO_TIME;
-    using sc_core::SC_SEC;
-    using sc_core::SC_MS;
-    using sc_core::SC_US;
-    using sc_core::SC_NS;
-    using sc_core::SC_PS;
-
-    using sc_core::sc_start;
-    using sc_core::sc_stop;
-
-#if (SYSTEMC_VERSION < 20120701)
-#   define sc_pause sc_stop
-#else
-    using sc_core::sc_pause;
-#endif
-
-    using sc_core::sc_simcontext;
-    using sc_core::sc_get_curr_simcontext;
-
-    using sc_core::sc_event;
-
-    using sc_core::sc_process_b;
-    using sc_core::sc_get_current_process_b;
-
-    using sc_core::sc_actions;
-    using sc_core::sc_report;
-
-    using sc_core::sc_port;
-    using sc_core::sc_export;
-    using sc_core::sc_signal;
-    using sc_core::sc_out;
-    using sc_core::sc_in;
-
-    using sc_core::sc_module_name;
-    using sc_core::sc_module;
-
-    using sc_core::sc_spawn;
-    using sc_core::sc_spawn_options;
-
-    using tlm::tlm_global_quantum;
-    using tlm::tlm_initiator_socket;
-    using tlm::tlm_target_socket;
-    using tlm::tlm_generic_payload;
-    using tlm::tlm_dmi;
-    using tlm::tlm_extension;
-    using tlm::tlm_extension_base;
-
-    using tlm::tlm_command;
-    using tlm::TLM_READ_COMMAND;
-    using tlm::TLM_WRITE_COMMAND;
-    using tlm::TLM_IGNORE_COMMAND;
-
-    using tlm::tlm_response_status;
-    using tlm::TLM_OK_RESPONSE;
-    using tlm::TLM_INCOMPLETE_RESPONSE;
-    using tlm::TLM_GENERIC_ERROR_RESPONSE;
-    using tlm::TLM_ADDRESS_ERROR_RESPONSE;
-    using tlm::TLM_COMMAND_ERROR_RESPONSE;
-    using tlm::TLM_BURST_ERROR_RESPONSE;
-    using tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE;
-
-    inline static bool success(tlm_response_status status) {
-        return status == TLM_OK_RESPONSE;
-    }
-
-    inline static bool failed(tlm_response_status status) {
-        return status != TLM_OK_RESPONSE;
-    }
-
-    using tlm_utils::simple_initiator_socket;
-    using tlm_utils::simple_initiator_socket_tagged;
-    using tlm_utils::simple_target_socket;
-    using tlm_utils::simple_target_socket_tagged;
-
-    static inline bool is_set(int flags, int set) {
+    inline bool is_set(int flags, int set) {
         return (flags & set) == set;
     }
 
@@ -211,8 +142,6 @@ namespace vcml {
     }
 
 }
-
-std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
 
 std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian);
 std::ostream& operator << (std::ostream& os, vcml::vcml_endian& endian);

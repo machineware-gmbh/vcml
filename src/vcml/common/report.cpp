@@ -18,6 +18,7 @@
 
 #include "vcml/common/report.h"
 #include "vcml/common/thctl.h"
+#include "vcml/common/systemc.h"
 #include "vcml/logging/logger.h"
 
 namespace vcml {
@@ -28,7 +29,7 @@ namespace vcml {
         std::exception(),
         m_message(msg),
         m_origin(call_origin()),
-        m_time(sc_time_stamp()),
+        m_time(sc_time_stamp().to_seconds()),
         m_file(file),
         m_line(line),
         m_backtrace(vcml::backtrace(max_backtrace_length, 2)) {

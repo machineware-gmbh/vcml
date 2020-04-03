@@ -28,6 +28,7 @@
 #include "vcml/common/aio.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/bitops.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/logging/log_file.h"

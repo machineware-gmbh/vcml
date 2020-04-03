@@ -23,6 +23,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/range.h"
 #include "vcml/ports.h"
@@ -288,43 +289,23 @@ namespace vcml { namespace opencores {
     }
 
     inline ethoc::descriptor ethoc::current_txbd() const {
-        if (is_little_endian())
-            return m_desc[m_tx_idx];
-
-        descriptor bd;
-        bd.info = bswap(m_desc[m_tx_idx].info);
-        bd.addr = bswap(m_desc[m_tx_idx].addr);
-        return bd;
+        return { to_host_endian(m_desc[m_tx_idx].info),
+                 to_host_endian(m_desc[m_tx_idx].addr) };
     }
 
     inline ethoc::descriptor ethoc::current_rxbd() const {
-        if (is_little_endian())
-            return m_desc[m_rx_idx];
-
-        descriptor bd;
-        bd.info = bswap(m_desc[m_rx_idx].info);
-        bd.addr = bswap(m_desc[m_rx_idx].addr);
-        return bd;
+        return { to_host_endian(m_desc[m_rx_idx].info),
+                 to_host_endian(m_desc[m_rx_idx].addr) };
     }
 
     inline void ethoc::update_txbd(const ethoc::descriptor& desc) {
-        if (is_little_endian()) {
-            m_desc[m_tx_idx].info = desc.info;
-            m_desc[m_tx_idx].addr = desc.addr;
-        } else {
-            m_desc[m_tx_idx].info = bswap(desc.info);
-            m_desc[m_tx_idx].addr = bswap(desc.addr);
-        }
+        m_desc[m_tx_idx].info = from_host_endian(desc.info);
+        m_desc[m_tx_idx].addr = from_host_endian(desc.addr);
     }
 
     inline void ethoc::update_rxbd(const ethoc::descriptor& desc) {
-        if (is_little_endian()) {
-            m_desc[m_rx_idx].info = desc.info;
-            m_desc[m_rx_idx].addr = desc.addr;
-        } else {
-            m_desc[m_rx_idx].info = bswap(desc.info);
-            m_desc[m_rx_idx].addr = bswap(desc.addr);
-        }
+        m_desc[m_rx_idx].info = from_host_endian(desc.info);
+        m_desc[m_rx_idx].addr = from_host_endian(desc.addr);
     }
 
     inline void ethoc::set_mac_addr(u8 addr[6]) {

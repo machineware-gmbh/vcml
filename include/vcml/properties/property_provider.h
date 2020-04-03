@@ -19,11 +19,8 @@
 #ifndef VCML_PROPERTY_PROVIDER_H
 #define VCML_PROPERTY_PROVIDER_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
 
 namespace vcml {
 
