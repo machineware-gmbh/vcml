@@ -94,6 +94,4 @@ namespace sc_core {
 }
 #endif
 
-std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
-
 #endif

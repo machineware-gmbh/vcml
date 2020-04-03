@@ -186,14 +186,35 @@ namespace vcml {
         VCML_ACCESS_READ_WRITE = VCML_ACCESS_READ | VCML_ACCESS_WRITE
     };
 
-    static inline bool is_read_allowed(int a) {
+    inline bool is_read_allowed(int a) {
         return is_set(a, VCML_ACCESS_READ);
     }
 
-    static inline bool is_write_allowed(int a) {
+    inline bool is_write_allowed(int a) {
         return is_set(a, VCML_ACCESS_WRITE);
     }
 
+    enum vcml_endian {
+        VCML_ENDIAN_UNKNOWN = 0,
+        VCML_ENDIAN_LITTLE = 1,
+        VCML_ENDIAN_BIG = 2,
+    };
+
+    const char* endian_to_str(int endian);
+
+    inline vcml_endian host_endian() {
+        u32 test = 1;
+        u8* p = reinterpret_cast<u8*>(&test);
+        if (p[0] == 1) return VCML_ENDIAN_LITTLE;
+        if (p[3] == 1) return VCML_ENDIAN_BIG;
+        return VCML_ENDIAN_UNKNOWN;
+    }
+
 }
+
+std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
+
+std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian);
+std::ostream& operator << (std::ostream& os, vcml::vcml_endian& endian);
 
 #endif

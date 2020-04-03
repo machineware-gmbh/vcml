@@ -332,27 +332,3 @@ namespace vcml {
     }
 
 }
-
-std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
-    std::string str;
-    is >> str;
-
-    char* endptr = NULL;
-    sc_dt::uint64 value = strtoul(str.c_str(), &endptr, 0);
-    double fval = value;
-
-    if (strcmp(endptr, "ps") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_PS);
-    else if (strcmp(endptr, "ns") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_NS);
-    else if (strcmp(endptr, "us") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_US);
-    else if (strcmp(endptr, "ms") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_MS);
-    else if (strcmp(endptr, "s") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_SEC);
-    else // raw value, not part of ieee1666!
-        t = sc_core::sc_time(value, true);
-
-    return is;
-}
