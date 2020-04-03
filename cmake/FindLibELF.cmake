@@ -23,7 +23,7 @@ find_library(LIBELF_LIBRARIES NAMES elf "libelf.a"
              HINTS $ENV{LIBELF_HOME}/lib /usr/lib /lib)
 
 find_library(LIBZ_LIBRARIES NAMES z "libz.a"
-             HINTS $ENV{LIBELF_HOME} $ENV{LIBZ_HOME} /usr/lib /lib)
+             HINTS $ENV{LIBZ_HOME}/lib /usr/lib /lib)
 
 list(APPEND LIBELF_LIBRARIES ${LIBZ_LIBRARIES})
 
