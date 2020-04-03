@@ -19,9 +19,10 @@
 #ifndef VCML_REPORT_H
 #define VCML_REPORT_H
 
-#include "vcml/common/includes.h"
+#include <exception>
+
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
+#include "vcml/common/strings.h"
 
 namespace vcml {
 
@@ -36,11 +37,6 @@ namespace vcml {
         vector<string> m_backtrace;
         string         m_desc;
 
-        static void handle_segfault(int sig, siginfo_t* info, void* context);
-
-        // disabled
-        report();
-
     public:
         const char*  message()  const { return m_message.c_str(); }
         const char*  origin()   const { return m_origin.c_str(); }
@@ -50,6 +46,7 @@ namespace vcml {
 
         const vector<string> backtrace() const;
 
+        report() = delete;
         report(const string& msg, const char* file, int line);
         virtual ~report() throw();
 

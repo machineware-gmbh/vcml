@@ -18,6 +18,7 @@
 
 #include <linux/input.h>
 
+#include "vcml/common/thctl.h"
 #include "vcml/models/opencores/ockbd.h"
 
 #define MOD_RELEASE (1 << 7)

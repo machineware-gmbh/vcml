@@ -32,7 +32,11 @@
 #include <list>
 #include <map>
 #include <unordered_map>
+#include <iterator>
 #include <algorithm>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <memory>
 #include <functional>
 

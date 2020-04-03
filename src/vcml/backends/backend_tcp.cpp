@@ -16,6 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/common/aio.h"
 #include "vcml/backends/backend_tcp.h"
 
 namespace vcml {

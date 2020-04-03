@@ -112,6 +112,7 @@ set(sources
 
 add_library(vcml ${sources})
 target_include_directories(vcml PUBLIC ${inc})
+target_include_directories(vcml PRIVATE ${src})
 target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 target_include_directories(vcml SYSTEM PUBLIC ${LIBELF_INCLUDE_DIRS})
 

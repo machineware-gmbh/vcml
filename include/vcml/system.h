@@ -19,14 +19,9 @@
 #ifndef VCML_SYSTEM_H
 #define VCML_SYSTEM_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
-#include "vcml/common/bitops.h"
-
 #include "vcml/debugging/vspserver.h"
-
 #include "vcml/module.h"
 
 namespace vcml {
@@ -47,7 +42,7 @@ namespace vcml {
 
         system() = delete;
         system(const system&) = delete;
-        system(const sc_module_name& name);
+        explicit system(const sc_module_name& name);
         virtual ~system();
         VCML_KIND(system);
 

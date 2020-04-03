@@ -19,10 +19,8 @@
 #ifndef VCML_GDBSTUB_H
 #define VCML_GDBSTUB_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/thctl.h"
-
 #include "vcml/range.h"
 
 namespace vcml { namespace debugging {

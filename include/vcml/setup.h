@@ -19,9 +19,7 @@
 #ifndef VCML_SETUP_H
 #define VCML_SETUP_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 
 #include "vcml/logging/logger.h"

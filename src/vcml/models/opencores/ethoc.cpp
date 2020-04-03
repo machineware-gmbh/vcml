@@ -18,6 +18,7 @@
 
 #include "vcml/models/opencores/ethoc.h"
 
+#define ETH_ALEN                6
 #define ETH_FRAME_LEN           1514
 #define ETH_FCS_LEN             4
 #define ETH_MAX_PACKET_LEN      (ETH_FRAME_LEN + ETH_FCS_LEN)

@@ -142,6 +142,11 @@ namespace vcml {
     using tlm_utils::simple_target_socket;
     using tlm_utils::simple_target_socket_tagged;
 
+#define VCML_KIND(name)                \
+    virtual const char* kind() const { \
+        return "vcml::" #name;         \
+    }
+
 }
 
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t);

@@ -19,11 +19,10 @@
 #ifndef VCML_REGISTER_H
 #define VCML_REGISTER_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/bitops.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/backends/backend.h"

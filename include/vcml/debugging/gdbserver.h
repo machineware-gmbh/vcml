@@ -19,9 +19,8 @@
 #ifndef VCML_GDBSERVER_H
 #define VCML_GDBSERVER_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
+#include "vcml/common/strings.h"
 #include "vcml/common/report.h"
 #include "vcml/common/thctl.h"
 

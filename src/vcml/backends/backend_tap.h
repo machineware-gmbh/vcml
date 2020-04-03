@@ -19,13 +19,6 @@
 #ifndef VCML_BACKEND_TAP_H
 #define VCML_BACKEND_TAP_H
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-
-#include "vcml/logging/logger.h"
-#include "vcml/properties/property.h"
 #include "vcml/backends/backend.h"
 
 namespace vcml {
@@ -40,7 +33,6 @@ namespace vcml {
 
         backend_tap(const sc_module_name& name = "backend", int devno = -1);
         virtual ~backend_tap();
-
         VCML_KIND(backend_tap);
 
         virtual size_t peek();

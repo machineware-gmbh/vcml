@@ -16,13 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-using namespace ::testing;
-
-#include "vcml.h"
+#include <testing.h>
 #include <arpa/inet.h>
 
-
+#include "../../src/vcml/backends/backend_tcp.h"
 
 TEST(backend_tcp, connect) {
     vcml::backend* backend = vcml::backend::create("tcp", "name");

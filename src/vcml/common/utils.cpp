@@ -16,7 +16,13 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <limits.h>
+#include <cxxabi.h>
+#include <execinfo.h>
+#include <unistd.h>
+
 #include "vcml/common/utils.h"
+#include "vcml/common/thctl.h"
 #include "vcml/common/systemc.h"
 
 namespace vcml {
@@ -158,7 +164,7 @@ namespace vcml {
         char* dmbuf = (char*)malloc(dmbufsz);
         char** names = ::backtrace_symbols(symbols, size);
         for (unsigned int i = skip; i < size; i++) {
-            char* func = NULL, *offset = NULL, *end = NULL;
+            char* func = nullptr, *offset = nullptr, *end = nullptr;
             for (char* ptr = names[i]; *ptr != '\0'; ptr++) {
                 if (*ptr == '(')
                     func = ptr++;

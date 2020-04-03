@@ -16,25 +16,27 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_STDOUT_H
-#define VCML_BACKEND_STDOUT_H
-
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
+#ifndef VCML_BACKEND_FILE_H
+#define VCML_BACKEND_FILE_H
 
 #include "vcml/backends/backend.h"
 
 namespace vcml {
 
-    class backend_stdout: public backend
+    class backend_file: public backend
     {
-    public:
-        backend_stdout(const sc_module_name& name = "backend");
-        virtual ~backend_stdout();
+    private:
+        ifstream m_rx;
+        ofstream m_tx;
 
-        VCML_KIND(backend_stdout);
+    public:
+        property<string> rx;
+        property<string> tx;
+
+        backend_file(const sc_module_name& name = "backend",
+                     const char* rx = nullptr, const char* tx = nullptr);
+        virtual ~backend_file();
+        VCML_KIND(backend_file);
 
         virtual size_t peek();
         virtual size_t read(void* buf, size_t len);

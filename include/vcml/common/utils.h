@@ -19,17 +19,10 @@
 #ifndef VCML_UTILS_H
 #define VCML_UTILS_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
-#include "vcml/common/thctl.h"
 
 namespace vcml {
-
-#define VCML_KIND(name)                \
-    virtual const char* kind() const { \
-        return "vcml::" #name;         \
-    }
 
     string dirname(const string& filename);
     string tempdir();

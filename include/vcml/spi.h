@@ -19,8 +19,8 @@
 #ifndef VCML_SPI_H
 #define VCML_SPI_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
+#include "vcml/common/systemc.h"
 #include "vcml/component.h"
 
 namespace vcml {

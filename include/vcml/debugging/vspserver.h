@@ -19,19 +19,11 @@
 #ifndef VCML_VSPSERVER_H
 #define VCML_VSPSERVER_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
-#include "vcml/common/aio.h"
-#include "vcml/common/version.h"
-
-#include "vcml/logging/logger.h"
-#include "vcml/properties/property.h"
+#include "vcml/common/systemc.h"
 #include "vcml/debugging/rspserver.h"
-
-#include "vcml/component.h"
 
 namespace vcml { namespace debugging {
 
@@ -59,7 +51,7 @@ namespace vcml { namespace debugging {
 
     public:
         vspserver() = delete;
-        vspserver(u16 port);
+        explicit vspserver(u16 port);
         virtual ~vspserver();
 
         void start();

@@ -16,7 +16,15 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/common/aio.h"
+#include "vcml/common/thctl.h"
+#include "vcml/common/utils.h"
+#include "vcml/common/systemc.h"
+#include "vcml/common/version.h"
+#include "vcml/component.h"
+
 #include "vcml/debugging/vspserver.h"
+
 
 namespace vcml { namespace debugging {
 

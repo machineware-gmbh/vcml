@@ -16,6 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <signal.h> // for SIGTRAP
 #include "vcml/debugging/gdbserver.h"
 
 namespace vcml { namespace debugging {

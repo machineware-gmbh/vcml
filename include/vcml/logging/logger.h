@@ -19,7 +19,6 @@
 #ifndef VCML_LOGGER_H
 #define VCML_LOGGER_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/utils.h"

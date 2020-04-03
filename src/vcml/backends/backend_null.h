@@ -16,49 +16,19 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_TCP_H
-#define VCML_BACKEND_TCP_H
+#ifndef VCML_BACKEND_NULL_H
+#define VCML_BACKEND_NULL_H
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-#include "vcml/common/aio.h"
-
-#include "vcml/logging/logger.h"
-#include "vcml/properties/property.h"
 #include "vcml/backends/backend.h"
 
 namespace vcml {
 
-    class backend_tcp: public backend
+    class backend_null: public backend
     {
-    private:
-        int m_fd;
-        int m_fd_server;
-
-        struct sockaddr_in m_server;
-        struct sockaddr_in m_client;
-
-        void handle_accept(int fd, int events);
-
     public:
-        property<u16> port;
-
-        static u16 default_port;
-
-        inline bool is_connected() const { return m_fd > -1; }
-        inline bool is_listening() const { return m_fd_server > -1; }
-
-        backend_tcp(const sc_module_name& nm = "backend", u16 port = 0);
-        virtual ~backend_tcp();
-
-        VCML_KIND(backend_tcp);
-
-        void accept();
-        void accept_async();
-
-        void disconnect();
+        explicit backend_null(const sc_module_name& name = "backend");
+        virtual ~backend_null();
+        VCML_KIND(backend_null);
 
         virtual size_t peek();
         virtual size_t read(void* buf, size_t len);

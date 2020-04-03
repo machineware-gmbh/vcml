@@ -22,11 +22,11 @@ namespace vcml {
 
     backend_null::backend_null(const sc_module_name& nm):
         backend(nm) {
-        /* nothing to do */
+        // nothing to do
     }
 
     backend_null::~backend_null() {
-        /* nothing to do */
+        // nothing to do
     }
 
     size_t backend_null::peek() {

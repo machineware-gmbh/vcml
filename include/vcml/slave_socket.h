@@ -19,10 +19,9 @@
 #ifndef VCML_SLAVE_SOCKET_H
 #define VCML_SLAVE_SOCKET_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/range.h"
 #include "vcml/sbi.h"

@@ -16,6 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <stdio.h> // for vsnprintf
+#include <ctype.h> // for isspace, tolower, toupper
+
 #include "vcml/common/strings.h"
 
 namespace vcml {

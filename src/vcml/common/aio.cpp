@@ -16,7 +16,18 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <string.h>
+#include <signal.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+#include <iostream>
+
 #include "vcml/common/aio.h"
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
 
 namespace vcml {
 
@@ -113,10 +124,7 @@ namespace vcml {
             VCML_ERROR("aio handler for fd %d already installed", fd);
 
         aio_enable(fd);
-        handlers[fd] = {
-            .policy = policy,
-            .handler = handler,
-        };
+        handlers[fd] = { policy, handler };
     }
 
     void aio_cancel(int fd) {

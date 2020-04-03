@@ -19,8 +19,7 @@
 #ifndef VCML_THCTL_H
 #define VCML_THCTL_H
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
+#include <pthread.h>
 
 namespace vcml {
 

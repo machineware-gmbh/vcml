@@ -16,17 +16,18 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/common/utils.h"
 #include "vcml/backends/backend_stdout.h"
 
 namespace vcml {
 
     backend_stdout::backend_stdout(const sc_module_name& nm):
         backend(nm) {
-        /* nothing to do */
+        // nothing to do
     }
 
     backend_stdout::~backend_stdout() {
-        /* nothing to do */
+        // nothing to do
     }
 
     size_t backend_stdout::peek() {

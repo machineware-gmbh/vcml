@@ -19,9 +19,8 @@
 #ifndef VCML_GENERIC_SIMDEV_H
 #define VCML_GENERIC_SIMDEV_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
+#include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
 #include "vcml/ports.h"

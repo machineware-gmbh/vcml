@@ -19,13 +19,13 @@
 #ifndef VCML_RSP_H
 #define VCML_RSP_H
 
-#include "vcml/common/includes.h"
+#include <pthread.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
-
-#include "vcml/logging/logger.h"
 
 namespace vcml { namespace debugging {
 

@@ -19,7 +19,6 @@
 #ifndef VCML_H
 #define VCML_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/utils.h"
@@ -43,12 +42,6 @@
 #include "vcml/properties/property_provider_file.h"
 
 #include "vcml/backends/backend.h"
-#include "vcml/backends/backend_null.h"
-#include "vcml/backends/backend_file.h"
-#include "vcml/backends/backend_term.h"
-#include "vcml/backends/backend_stdout.h"
-#include "vcml/backends/backend_tcp.h"
-#include "vcml/backends/backend_tap.h"
 
 #include "vcml/debugging/rspserver.h"
 #include "vcml/debugging/gdbstub.h"

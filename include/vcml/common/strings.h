@@ -19,10 +19,11 @@
 #ifndef VCML_STRINGS_H
 #define VCML_STRINGS_H
 
+#include <stdarg.h>
+#include <string.h>
 #include <string>
 #include <sstream>
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 
 namespace vcml {

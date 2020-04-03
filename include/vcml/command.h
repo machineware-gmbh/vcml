@@ -19,9 +19,7 @@
 #ifndef VCML_COMMAND_H
 #define VCML_COMMAND_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 
 #define VCML_NO_ARGS (::std::vector<::std::string>())

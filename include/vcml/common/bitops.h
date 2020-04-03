@@ -19,7 +19,6 @@
 #ifndef VCML_BITOPS_H
 #define VCML_BITOPS_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
 
 namespace vcml {

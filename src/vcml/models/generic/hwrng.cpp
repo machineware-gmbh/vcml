@@ -16,6 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <unistd.h>
+#include <fcntl.h>
+
 #include "vcml/models/generic/hwrng.h"
 
 namespace vcml { namespace generic {

@@ -16,45 +16,19 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_TERM_H
-#define VCML_BACKEND_TERM_H
+#ifndef VCML_BACKEND_STDOUT_H
+#define VCML_BACKEND_STDOUT_H
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-
-#include "vcml/logging/logger.h"
 #include "vcml/backends/backend.h"
 
 namespace vcml {
 
-    class backend_term: public backend
+    class backend_stdout: public backend
     {
-    private:
-        int m_signal;
-        bool m_exit;
-        bool m_stopped;
-
-        termios m_termios;
-        double  m_time;
-
-        sighandler_t m_sigint;
-        sighandler_t m_sigstp;
-
-        static backend_term* singleton;
-        static void handle_signal(int sig);
-
-        void handle_sigstp(int sig);
-        void handle_sigint(int sig);
-
-        void cleanup();
-
     public:
-        backend_term(const sc_module_name& name = "backend");
-        virtual ~backend_term();
-
-        VCML_KIND(backend_term);
+        explicit backend_stdout(const sc_module_name& name = "backend");
+        virtual ~backend_stdout();
+        VCML_KIND(backend_stdout);
 
         virtual size_t peek();
         virtual size_t read(void* buf, size_t len);

@@ -16,10 +16,14 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <signal.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "vcml/common/report.h"
+#include "vcml/common/utils.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/systemc.h"
-#include "vcml/logging/logger.h"
 
 namespace vcml {
 
@@ -44,9 +48,9 @@ namespace vcml {
         return m_message.c_str();
     }
 
-    void report::handle_segfault(int sig, siginfo_t* info, void* context) {
+    static void handle_segfault(int sig, siginfo_t* info, void* context) {
         fprintf(stderr, "Backtrace\n");
-        auto symbols = vcml::backtrace(max_backtrace_length, 2);
+        auto symbols = vcml::backtrace(report::max_backtrace_length, 2);
         for (unsigned int i = symbols.size() - 1; i < symbols.size(); i--)
             fprintf(stderr, "# %2u: %s\n", i, symbols[i].c_str());
         fprintf(stderr,
@@ -61,7 +65,7 @@ namespace vcml {
         memset(&sa, 0, sizeof(sa));
         sigemptyset(&sa.sa_mask);
 
-        sa.sa_sigaction = &report::handle_segfault;
+        sa.sa_sigaction = &handle_segfault;
         sa.sa_flags = SA_NODEFER;
 
         if (sigaction(SIGSEGV, &sa, NULL) < 0)

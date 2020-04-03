@@ -38,11 +38,11 @@ namespace vcml {
 
     backend::backend(const sc_module_name& nm):
         sc_module(nm), loglvl("loglvl", LOG_INFO) {
-        /* nothing to do */
+        // nothing to do
     }
 
     backend::~backend() {
-        /* nothing to do */
+        // nothing to do
     }
 
     int backend::register_backend_type(const string& type, backend_cfn fn) {
@@ -62,11 +62,11 @@ namespace vcml {
             for (it = types.begin(); it != types.end(); it++)
                 ss << " " << it->first << std::endl;
             vcml::log_warn(ss.str().c_str());
-            return NULL;
+            return nullptr;
         }
 
         backend_cfn fn = types[type];
-        backend* be = NULL;
+        backend* be = nullptr;
 
         try {
             be = (*fn)(name);
@@ -74,7 +74,10 @@ namespace vcml {
         } catch (std::exception& ex) {
             vcml::log_warn(ex.what());
             vcml::log_warn("error creating %s backend", type.c_str());
-            return NULL;
+            return nullptr;
+        } catch (...) {
+            vcml::log_warn("unknown error creating %s backend", type.c_str());
+            return nullptr;
         }
     }
 

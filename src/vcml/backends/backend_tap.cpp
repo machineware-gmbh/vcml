@@ -16,6 +16,18 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <errno.h>
+#include <string.h>
+
+#include "vcml/common/utils.h"
 #include "vcml/backends/backend_tap.h"
 
 namespace vcml {

@@ -16,6 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <sys/mman.h>
+
 #include "vcml/models/generic/memory.h"
 
 namespace vcml { namespace generic {

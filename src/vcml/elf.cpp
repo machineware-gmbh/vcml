@@ -16,6 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <fcntl.h> // for open
+
 #include "vcml/elf.h"
 
 namespace vcml {
@@ -222,7 +224,7 @@ namespace vcml {
         static const char* endstr[] = { "little", "big", "unknown" };
 
         log_info("name     : %s\n", m_filename.c_str());
-        log_info("entry    : 0x%08" PRIx64 "\n", m_entry);
+        log_info("entry    : 0x%08lx\n", m_entry);
         log_info("endian   : %s\n", endstr[m_endianess]);
         log_info("sections : %d\n", m_sections.size());
         log_info("symbols  : %d\n", m_symbols.size());
@@ -233,9 +235,9 @@ namespace vcml {
         for (unsigned int i = 0; i < m_sections.size(); i++) {
             elf_section* sec = m_sections[i];
             log_info("[%2d] ", i);
-            log_info("0x%08" PRIx64 " ", sec->get_virt_addr());
-            log_info("0x%08" PRIx64 " ", sec->get_phys_addr());
-            log_info("0x%08" PRIx32 " ", sec->get_size());
+            log_info("0x%08lx ", sec->get_virt_addr());
+            log_info("0x%08lx ", sec->get_phys_addr());
+            log_info("0x%08x ", sec->get_size());
             log_info("%s\n", sec->get_name().c_str());
         }
 
@@ -249,8 +251,8 @@ namespace vcml {
                 continue;
 
             log_info("[%5d] ", i);
-            log_info("0x%08" PRIx64 " ", sym->get_virt_addr());
-            log_info("0x%08" PRIx64 " ", sym->get_phys_addr());
+            log_info("0x%08lx ", sym->get_virt_addr());
+            log_info("0x%08lx ", sym->get_phys_addr());
             log_info("%s ", typestr[sym->get_type()]);
             log_info("%s\n", sym->get_name().c_str());
         }

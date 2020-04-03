@@ -19,10 +19,7 @@
 #ifndef VCML_AIO_H
 #define VCML_AIO_H
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
+#include <functional>
 
 namespace vcml {
 

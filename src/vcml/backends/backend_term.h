@@ -16,35 +16,41 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_FILE_H
-#define VCML_BACKEND_FILE_H
+#ifndef VCML_BACKEND_TERM_H
+#define VCML_BACKEND_TERM_H
 
-#include "vcml/common/includes.h"
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
+#include <signal.h>
+#include <termios.h>
 
-#include "vcml/logging/logger.h"
-#include "vcml/properties/property.h"
 #include "vcml/backends/backend.h"
 
 namespace vcml {
 
-    class backend_file: public backend
+    class backend_term: public backend
     {
     private:
-        ifstream m_rx;
-        ofstream m_tx;
+        int m_signal;
+        bool m_exit;
+        bool m_stopped;
+
+        termios m_termios;
+        double  m_time;
+
+        sighandler_t m_sigint;
+        sighandler_t m_sigstp;
+
+        static backend_term* singleton;
+        static void handle_signal(int sig);
+
+        void handle_sigstp(int sig);
+        void handle_sigint(int sig);
+
+        void cleanup();
 
     public:
-        property<string> rx;
-        property<string> tx;
-
-        backend_file(const sc_module_name& name = "backend",
-                     const char* rx_file = NULL, const char* tx_file = NULL);
-        virtual ~backend_file();
-
-        VCML_KIND(backend_file);
+        explicit backend_term(const sc_module_name& name = "backend");
+        virtual ~backend_term();
+        VCML_KIND(backend_term);
 
         virtual size_t peek();
         virtual size_t read(void* buf, size_t len);

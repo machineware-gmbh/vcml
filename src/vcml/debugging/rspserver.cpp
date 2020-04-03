@@ -16,6 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include <arpa/inet.h> // for inet_ntoa
+
+#include "vcml/logging/logger.h"
 #include "vcml/debugging/rspserver.h"
 
 namespace vcml { namespace debugging {

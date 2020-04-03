@@ -19,16 +19,14 @@
 #ifndef VCML_BACKEND_H
 #define VCML_BACKEND_H
 
-#include "vcml/common/includes.h"
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
+#include "vcml/common/strings.h"
 #include "vcml/common/report.h"
-
+#include "vcml/common/systemc.h"
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
 namespace vcml {
-
 
     class backend: public sc_module
     {
@@ -41,9 +39,12 @@ namespace vcml {
     public:
         property<log_level> loglvl;
 
-        backend(const sc_module_name& nm = "backend");
-        virtual ~backend();
+        backend() = delete;
+        backend(const backend&) = delete;
+        backend& operator = (const backend&) = delete;
 
+        explicit backend(const sc_module_name& nm = "backend");
+        virtual ~backend();
         VCML_KIND(backend);
 
         virtual size_t peek() = 0;
