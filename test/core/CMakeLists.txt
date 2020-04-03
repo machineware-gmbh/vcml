@@ -25,7 +25,6 @@ endmacro()
 
 core_test("hello")
 core_test("strings")
-core_test("endian")
 core_test("utils")
 core_test("bitops")
 core_test("logging")

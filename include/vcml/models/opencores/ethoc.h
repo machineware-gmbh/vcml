@@ -292,8 +292,8 @@ namespace vcml { namespace opencores {
             return m_desc[m_tx_idx];
 
         descriptor bd;
-        bd.info = swap(m_desc[m_tx_idx].info);
-        bd.addr = swap(m_desc[m_tx_idx].addr);
+        bd.info = bswap(m_desc[m_tx_idx].info);
+        bd.addr = bswap(m_desc[m_tx_idx].addr);
         return bd;
     }
 
@@ -302,8 +302,8 @@ namespace vcml { namespace opencores {
             return m_desc[m_rx_idx];
 
         descriptor bd;
-        bd.info = swap(m_desc[m_rx_idx].info);
-        bd.addr = swap(m_desc[m_rx_idx].addr);
+        bd.info = bswap(m_desc[m_rx_idx].info);
+        bd.addr = bswap(m_desc[m_rx_idx].addr);
         return bd;
     }
 
@@ -312,8 +312,8 @@ namespace vcml { namespace opencores {
             m_desc[m_tx_idx].info = desc.info;
             m_desc[m_tx_idx].addr = desc.addr;
         } else {
-            m_desc[m_tx_idx].info = swap(desc.info);
-            m_desc[m_tx_idx].addr = swap(desc.addr);
+            m_desc[m_tx_idx].info = bswap(desc.info);
+            m_desc[m_tx_idx].addr = bswap(desc.addr);
         }
     }
 
@@ -322,8 +322,8 @@ namespace vcml { namespace opencores {
             m_desc[m_rx_idx].info = desc.info;
             m_desc[m_rx_idx].addr = desc.addr;
         } else {
-            m_desc[m_rx_idx].info = swap(desc.info);
-            m_desc[m_rx_idx].addr = swap(desc.addr);
+            m_desc[m_rx_idx].info = bswap(desc.info);
+            m_desc[m_rx_idx].addr = bswap(desc.addr);
         }
     }
 

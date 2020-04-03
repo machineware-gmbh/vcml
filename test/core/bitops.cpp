@@ -106,6 +106,36 @@ TEST(bitops, is_pow2) {
     EXPECT_TRUE(vcml::is_pow2(256));
 }
 
+TEST(bitops, bswap) {
+    vcml::u8  val1 = 0x11;
+    vcml::u16 val2 = 0x1122;
+    vcml::u32 val3 = 0x11223344;
+    vcml::u64 val4 = 0x1122334455667788ull;
+
+    EXPECT_EQ(vcml::bswap(val1), 0x11);
+    EXPECT_EQ(vcml::bswap(val2), 0x2211);
+    EXPECT_EQ(vcml::bswap(val3), 0x44332211);
+    EXPECT_EQ(vcml::bswap(val4), 0x8877665544332211ull);
+}
+
+TEST(bitops, memswap) {
+    vcml::u8 x8 = 0x11;
+    vcml::memswap(&x8, sizeof(x8));
+    EXPECT_EQ(x8, 0x11);
+
+    vcml::u16 x16 = 0x1122;
+    vcml::memswap(&x16, sizeof(x16));
+    EXPECT_EQ(x16, 0x2211);
+
+    vcml::u32 x32 = 0x11223344;
+    vcml::memswap(&x32, sizeof(x32));
+    EXPECT_EQ(x32, 0x44332211);
+
+    vcml::u64 x64 = 0x1122334455667788ull;
+    vcml::memswap(&x64, sizeof(x64));
+    EXPECT_EQ(x64, 0x8877665544332211ull);
+}
+
 TEST(bitops, extract32) {
     EXPECT_EQ(vcml::extract(0b01011001u, 3, 2), 0b11u);
     EXPECT_EQ(vcml::extract(0b11000110u, 2, 3), 0b001u);

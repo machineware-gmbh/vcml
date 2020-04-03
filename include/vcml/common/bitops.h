@@ -63,6 +63,36 @@ namespace vcml {
         return val != 0 && popcnt(val) == 1;
     }
 
+    inline u8 bswap(u8 val) {
+        return val;
+    }
+
+    inline u16 bswap(u16 val) {
+        return ((val & 0xff00) >> 8) | ((val & 0x00ff) << 8);
+    }
+
+    inline u32 bswap(u32 val) {
+        return ((val & 0xff000000) >> 24) | ((val & 0x00ff0000) >>  8) |
+               ((val & 0x0000ff00) <<  8) | ((val & 0x000000ff) << 24);
+    }
+
+    inline u64 bswap(u64 val) {
+        return ((val & 0xff00000000000000ull) >> 56) |
+               ((val & 0x00ff000000000000ull) >> 40) |
+               ((val & 0x0000ff0000000000ull) >> 24) |
+               ((val & 0x000000ff00000000ull) >>  8) |
+               ((val & 0x00000000ff000000ull) <<  8) |
+               ((val & 0x0000000000ff0000ull) << 24) |
+               ((val & 0x000000000000ff00ull) << 40) |
+               ((val & 0x00000000000000ffull) << 56);
+    }
+
+    inline void memswap(void* ptr, unsigned int size) {
+        u8* v = static_cast<u8*>(ptr);
+        for (unsigned int i = 0; i < size / 2; i++)
+            std::swap(v[i], v[size - 1 - i]);
+    }
+
     template <typename T>
     inline T extract(T val, unsigned int off, unsigned int len) {
         return (val >> off) & ((1ull << len) - 1);
