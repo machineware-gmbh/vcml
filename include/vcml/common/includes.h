@@ -42,7 +42,6 @@
 #include <ctype.h>
 #include <strings.h>
 
-#include <string>
 #include <vector>
 #include <queue>
 #include <list>
@@ -52,7 +51,6 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <sstream>
 #include <algorithm>
 #include <functional>
 #include <limits>
