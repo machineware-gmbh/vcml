@@ -34,7 +34,7 @@ namespace vcml { namespace debugging {
         string handle_none(const char* command);
         string handle_step(const char* command);
         string handle_cont(const char* command);
-        string handle_info(const char* command);
+        string handle_list(const char* command);
         string handle_exec(const char* command);
         string handle_time(const char* command);
         string handle_rdgq(const char* command);
