@@ -631,7 +631,7 @@ namespace vcml { namespace arm {
     void gic400::distif::reset() {
         peripheral::reset();
 
-        for (unsigned int i = 0; i < CIDR.num(); i++)
+        for (unsigned int i = 0; i < CIDR.count(); i++)
             CIDR[i] = (PCID >> (i * 8)) & 0xFF;
     }
 
@@ -836,7 +836,7 @@ namespace vcml { namespace arm {
     void gic400::cpuif::reset() {
         peripheral::reset();
 
-        for (unsigned int i = 0; i < CIDR.num(); i++)
+        for (unsigned int i = 0; i < CIDR.count(); i++)
             CIDR[i] = (PCID >> (i * 8)) & 0xFF;
 
         for (unsigned int irq = 0; irq < NIRQ; irq++)

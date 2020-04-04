@@ -46,11 +46,12 @@ namespace vcml {
         property() = delete;
         property(const property<T,N>&) = delete;
 
-        virtual const char* str() const;
-        virtual void str(const string& s);
+        virtual const char* str() const override;
+        virtual void str(const string& s) override;
 
-        virtual size_t size() const;
-        virtual size_t num() const;
+        virtual size_t size() const override;
+        virtual size_t count() const override;
+        virtual const char* type() const override;
 
         const T& get() const;
         T& get();
@@ -91,8 +92,6 @@ namespace vcml {
         template <typename T2> bool operator >= (const T2& other);
         template <typename T2> bool operator  < (const T2& other);
         template <typename T2> bool operator  > (const T2& other);
-
-        static const char ARRAY_DELIMITER;
     };
 
     template <typename T, const unsigned int N>
@@ -112,7 +111,7 @@ namespace vcml {
 
     template <typename T, const unsigned int N>
     property<T, N>::~property() {
-        /* nothing to do */
+        // nothing to do
     }
 
     template <typename T, const unsigned int N>
@@ -142,17 +141,22 @@ namespace vcml {
         }
 
         for (unsigned int i = 0; i < min(N, size); i++)
-            m_value[i] = from_string<T>(args[i]);
+            m_value[i] = from_string<T>(trim(args[i]));
     }
 
     template <typename T, const unsigned int N>
-    size_t property<T, N>::size() const {
+    inline size_t property<T, N>::size() const {
         return sizeof(T);
     }
 
     template <typename T, const unsigned int N>
-    size_t property<T, N>::num() const {
+    inline size_t property<T, N>::count() const {
         return N;
+    }
+
+    template <typename T, const unsigned int N>
+    inline const char* property<T, N>::type() const {
+        return type_name<T>();
     }
 
     template <typename T, const unsigned int N>
@@ -341,9 +345,6 @@ namespace vcml {
     inline bool property<T, N>::operator >= (const T2& other) {
         return !operator < (other);
     }
-
-    template <typename T, const unsigned int N>
-    const char property<T, N>::ARRAY_DELIMITER = ',';
 
 }
 

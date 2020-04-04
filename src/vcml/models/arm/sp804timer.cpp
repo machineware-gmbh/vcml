@@ -222,10 +222,10 @@ namespace vcml { namespace arm {
     void sp804timer::reset() {
         peripheral::reset();
 
-        for (unsigned int i = 0; i < PID.num(); i++)
+        for (unsigned int i = 0; i < PID.count(); i++)
             PID[i] = (SP804TIMER_PID >> (i * 8)) & 0xFF;
 
-        for (unsigned int i = 0; i < CID.num(); i++)
+        for (unsigned int i = 0; i < CID.count(); i++)
             CID[i] = (SP804TIMER_CID >> (i * 8)) & 0xFF;
 
         IRQC = false;

@@ -94,7 +94,7 @@ TEST(property, init) {
     EXPECT_EQ((std::string)test.not_inited, std::string("not_inited"));
     EXPECT_EQ((std::string)test.not_inited, test.not_inited.get_default());
 
-    EXPECT_EQ(test.prop_array.num(), 4);
+    EXPECT_EQ(test.prop_array.count(), 4);
     EXPECT_EQ(test.prop_array[0], 1);
     EXPECT_EQ(test.prop_array[1], 2);
     EXPECT_EQ(test.prop_array[2], 3);
@@ -102,7 +102,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array.get_default(), 7);
     EXPECT_EQ(std::string(test.prop_array.str()), "1,2,3,4");
 
-    EXPECT_EQ(test.prop_array_string.num(), 4);
+    EXPECT_EQ(test.prop_array_string.count(), 4);
     EXPECT_EQ(test.prop_array_string[0], "abc");
     EXPECT_EQ(test.prop_array_string[1], "def");
     EXPECT_EQ(test.prop_array_string[2], "x,y");

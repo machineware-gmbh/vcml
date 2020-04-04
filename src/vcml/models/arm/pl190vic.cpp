@@ -31,7 +31,7 @@ namespace vcml { namespace arm {
         for (auto fiq : FIQ_OUT)
             fiq.second->write(FIQS != 0u);
 
-        for (unsigned int l = 0; l < VCTRL.num(); l++) {
+        for (unsigned int l = 0; l < VCTRL.count(); l++) {
             if (VCTRL[l] & VCTRL_ENABLED) {
                 u32 source = VCTRL[l] & VCTRL_SOURCE_M;
                 u32 srcmsk = 1 << source;
@@ -161,10 +161,10 @@ namespace vcml { namespace arm {
     }
 
     void pl190vic::reset() {
-        for (unsigned int i = 0; i < PID.num(); i++)
+        for (unsigned int i = 0; i < PID.count(); i++)
             PID[i] = (VCML_ARM_PL190VIC_PID >> (i * 8)) & 0xFF;
 
-        for (unsigned int i = 0; i < CID.num(); i++)
+        for (unsigned int i = 0; i < CID.count(); i++)
             CID[i] = (VCML_ARM_PL190VIC_CID >> (i * 8)) & 0xFF;
     }
 

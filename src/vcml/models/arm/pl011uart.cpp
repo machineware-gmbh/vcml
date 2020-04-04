@@ -240,10 +240,10 @@ namespace vcml { namespace arm {
     void pl011uart::reset() {
         peripheral::reset();
 
-        for (unsigned int i = 0; i < PID.num(); i++)
+        for (unsigned int i = 0; i < PID.count(); i++)
             PID[i] = (AMBA_PID >> (i * 8)) & 0xFF;
 
-        for (unsigned int i = 0; i < CID.num(); i++)
+        for (unsigned int i = 0; i < CID.count(); i++)
             CID[i] = (AMBA_CID >> (i * 8)) & 0xFF;
 
         while (!m_fifo.empty())
