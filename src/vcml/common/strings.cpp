@@ -102,17 +102,14 @@ namespace vcml {
         string buf = "";
         for (auto ch : str) {
             if (f(ch)) {
-                if (!buf.empty()) {
-                    vec.push_back(buf);
-                    buf = "";
-                }
+                vec.push_back(buf);
+                buf = "";
             } else {
                 buf += ch;
             }
         }
 
-        if (!buf.empty())
-            vec.push_back(buf);
+        vec.push_back(buf);
         return vec;
     }
 
@@ -124,17 +121,14 @@ namespace vcml {
             if (ch == '\\')
                 buf += str[++i];
             else if (ch == predicate) {
-                if (!buf.empty()) {
-                    vec.push_back(buf);
-                    buf = "";
-                }
+                vec.push_back(buf);
+                buf = "";
             } else {
                 buf += ch;
             }
         }
 
-        if (!buf.empty())
-            vec.push_back(buf);
+        vec.push_back(buf);
         return vec;
     }
 
