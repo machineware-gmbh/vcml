@@ -66,6 +66,34 @@ namespace vcml {
     const size_t GiB = 1024 * MiB;
     const size_t TiB = 1024 * GiB;
 
+    template <typename T> struct typeinfo {
+        static const char* name() { return "unknown"; }
+    };
+
+#define VCML_TYPEINFO(T)                         \
+    template <> struct typeinfo<T> {             \
+        static const char* name() { return #T; } \
+    }
+
+    VCML_TYPEINFO(u8);
+    VCML_TYPEINFO(u16);
+    VCML_TYPEINFO(u32);
+    VCML_TYPEINFO(u64);
+
+    VCML_TYPEINFO(i8);
+    VCML_TYPEINFO(i16);
+    VCML_TYPEINFO(i32);
+    VCML_TYPEINFO(i64);
+
+    VCML_TYPEINFO(bool);
+    VCML_TYPEINFO(float);
+    VCML_TYPEINFO(double);
+
+    template <typename T>
+    inline const char* type_name() {
+        return typeinfo<T>::name();
+    }
+
     using std::min;
     using std::max;
 

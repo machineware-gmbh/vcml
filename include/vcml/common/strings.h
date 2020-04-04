@@ -29,6 +29,8 @@
 namespace vcml {
 
     using std::string;
+    VCML_TYPEINFO(string);
+
     using std::stringstream;
     using std::ostringstream;
     using std::istringstream;

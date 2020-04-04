@@ -66,6 +66,8 @@ namespace vcml {
         return t.value() / sc_time(1.0, SC_MS).value();
     }
 
+    VCML_TYPEINFO(sc_time);
+
     using sc_core::sc_start;
     using sc_core::sc_stop;
 

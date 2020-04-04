@@ -48,6 +48,8 @@ namespace vcml {
         inline bool operator != (const range& other) const;
     };
 
+    VCML_TYPEINFO(range);
+
     inline u64 range::length() const {
         return end - start + 1;
     }
