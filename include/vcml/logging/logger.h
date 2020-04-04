@@ -36,6 +36,8 @@ namespace vcml {
         NUM_LOG_LEVELS
     };
 
+    VCML_TYPEINFO(log_level);
+
     class logger
     {
     private:
