@@ -49,7 +49,13 @@ namespace vcml { namespace debugging {
             return;
 
         m_status = status;
-        thctl_resume();
+        resume();
+    }
+
+    bool gdbserver::is_suspend_requested() const {
+        if (!m_sync)
+            return false;
+        return m_status == GDB_STOPPED;
     }
 
     bool gdbserver::access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
@@ -97,6 +103,7 @@ namespace vcml { namespace debugging {
                 log_debug("received signal 0x%x", signal);
                 m_status = GDB_STOPPED;
                 m_signal = GDBSIG_TRAP;
+                wait_for_suspend();
             }
         }
 
@@ -111,6 +118,7 @@ namespace vcml { namespace debugging {
                 log_debug("received signal 0x%x", signal);
                 m_status = GDB_STOPPED;
                 m_signal = GDBSIG_TRAP;
+                wait_for_suspend();
             }
         }
 
@@ -449,6 +457,7 @@ namespace vcml { namespace debugging {
 
     gdbserver::gdbserver(u16 port, gdbstub* stub, gdb_status status):
         rspserver(port),
+        suspender("gdbserver"),
         m_stub(stub),
         m_status(status),
         m_default(status),
@@ -488,8 +497,7 @@ namespace vcml { namespace debugging {
     }
 
     void gdbserver::simulate(unsigned int cycles) {
-        while (m_sync && m_status == GDB_STOPPED)
-            thctl_suspend();
+        suspender::handle_requests();
 
         switch (m_status) {
         case GDB_KILLED:

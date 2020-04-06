@@ -22,12 +22,12 @@
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
-#include "vcml/common/thctl.h"
 
 #include "vcml/logging/logger.h"
 
 #include "vcml/debugging/gdbstub.h"
 #include "vcml/debugging/rspserver.h"
+#include "vcml/debugging/suspender.h"
 
 namespace vcml { namespace debugging {
 
@@ -42,7 +42,8 @@ namespace vcml { namespace debugging {
         GDBSIG_TRAP = 5
     };
 
-    class gdbserver: public rspserver
+    class gdbserver: public rspserver,
+                     private suspender
     {
     private:
         gdbstub*   m_stub;
@@ -53,6 +54,8 @@ namespace vcml { namespace debugging {
         int m_signal;
 
         void update_status(gdb_status status);
+
+        bool is_suspend_requested() const override;
 
         bool access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size);
         bool access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size);
@@ -94,10 +97,6 @@ namespace vcml { namespace debugging {
         string handle_thread(const char*);
         string handle_vcont(const char*);
 
-        // disabled
-        gdbserver();
-        gdbserver(const gdbserver&);
-
     public:
         enum : size_t {
             PACKET_SIZE = 4096,
@@ -111,6 +110,8 @@ namespace vcml { namespace debugging {
 
         void sync(bool s = true) { m_sync = s; }
 
+        gdbserver() = delete;
+        gdbserver(const gdbserver&) = delete;
         gdbserver(u16 port, gdbstub* stub, gdb_status status = GDB_STOPPED);
         virtual ~gdbserver();
 

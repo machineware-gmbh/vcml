@@ -39,6 +39,7 @@
 #include <fstream>
 #include <memory>
 #include <functional>
+#include <atomic>
 
 namespace vcml {
 
@@ -137,6 +138,8 @@ namespace vcml {
     using std::unique_ptr;
 
     using std::function;
+
+    using std::atomic;
 
     inline bool is_set(int flags, int set) {
         return (flags & set) == set;
