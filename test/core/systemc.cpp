@@ -52,7 +52,11 @@ TEST(systemc, callback) {
     delta_calls = time_calls = 0;
     sc_core::sc_start(SC_ZERO_TIME);
     EXPECT_EQ(delta_calls, 1);
+#if SYSTEMC_VERSION < 20140417
+    EXPECT_EQ(time_calls, 1); // SystemC <= 2.3.1a has different behavior
+#else
     EXPECT_EQ(time_calls, 0);
+#endif
 
     delta_calls = time_calls = 0;
     sc_core::sc_start(10, SC_SEC);
@@ -64,5 +68,9 @@ TEST(systemc, callback) {
     sc_core::sc_start(SC_ZERO_TIME);
     sc_core::sc_start(10, SC_SEC);
     EXPECT_EQ(delta_calls, 3);
+#if SYSTEMC_VERSION <= 20140417
+    EXPECT_EQ(time_calls, 3); // SystemC <= 2.3.1a has different behavior
+#else
     EXPECT_EQ(time_calls, 2);
+#endif
 }
