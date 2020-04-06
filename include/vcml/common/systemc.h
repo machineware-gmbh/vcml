@@ -149,6 +149,9 @@ namespace vcml {
         return "vcml::" #name;         \
     }
 
+    void on_each_delta_cycle(function<void(void)> callback);
+    void on_each_time_step(function<void(void)> callback);
+
 }
 
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t);

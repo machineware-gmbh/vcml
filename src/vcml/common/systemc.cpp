@@ -135,6 +135,101 @@ namespace vcml {
         return ss.str();
     }
 
+    // we just need this class to have something that is called every cycle...
+    class cycle_helper: public sc_core::sc_trace_file
+    {
+    public:
+    #define DECL_TRACE_METHOD_A(tp) \
+        virtual void trace(const tp& object, const string& nm) {}
+
+    #define DECL_TRACE_METHOD_B(tp) \
+        virtual void trace(const tp& object,const string& nm, int w) {}
+
+        DECL_TRACE_METHOD_A(sc_event)
+        DECL_TRACE_METHOD_A(sc_time)
+
+        DECL_TRACE_METHOD_A(bool)
+        DECL_TRACE_METHOD_A(sc_dt::sc_bit)
+        DECL_TRACE_METHOD_A(sc_dt::sc_logic)
+
+        DECL_TRACE_METHOD_B(unsigned char)
+        DECL_TRACE_METHOD_B(unsigned short)
+        DECL_TRACE_METHOD_B(unsigned int)
+        DECL_TRACE_METHOD_B(unsigned long)
+        DECL_TRACE_METHOD_B(char)
+        DECL_TRACE_METHOD_B(short)
+        DECL_TRACE_METHOD_B(int)
+        DECL_TRACE_METHOD_B(long)
+        DECL_TRACE_METHOD_B(sc_dt::int64)
+        DECL_TRACE_METHOD_B(sc_dt::uint64)
+
+        DECL_TRACE_METHOD_A(float)
+        DECL_TRACE_METHOD_A(double)
+        DECL_TRACE_METHOD_A(sc_dt::sc_int_base)
+        DECL_TRACE_METHOD_A(sc_dt::sc_uint_base)
+        DECL_TRACE_METHOD_A(sc_dt::sc_signed)
+        DECL_TRACE_METHOD_A(sc_dt::sc_unsigned)
+
+        DECL_TRACE_METHOD_A(sc_dt::sc_fxval)
+        DECL_TRACE_METHOD_A(sc_dt::sc_fxval_fast)
+        DECL_TRACE_METHOD_A(sc_dt::sc_fxnum)
+        DECL_TRACE_METHOD_A(sc_dt::sc_fxnum_fast)
+
+        DECL_TRACE_METHOD_A(sc_dt::sc_bv_base)
+        DECL_TRACE_METHOD_A(sc_dt::sc_lv_base)
+
+    #undef DECL_TRACE_METHOD_A
+    #undef DECL_TRACE_METHOD_B
+
+        virtual void trace(const unsigned int& object,
+                           const std::string& name,
+                           const char** enum_literals ) {};
+        virtual void write_comment(const std::string& comment) {};
+        virtual void set_time_unit(double v, sc_core::sc_time_unit tu) {}
+
+        vector<function<void(void)>> deltas;
+        vector<function<void(void)>> tsteps;
+
+        cycle_helper(): deltas(), tsteps() {
+            sc_get_curr_simcontext()->add_trace_file(this);
+        }
+
+        virtual ~cycle_helper() {
+    #if SYSTEMC_VERSION >= 20140417
+            sc_get_curr_simcontext()->remove_trace_file(this);
+    #endif
+        }
+
+    protected:
+        virtual void cycle(bool delta_cycle) override;
+    };
+
+    void cycle_helper::cycle(bool delta_cycle) {
+        if (delta_cycle) {
+            for (auto func : deltas)
+                func();
+        } else {
+            for (auto func : tsteps)
+                func();
+        }
+    }
+
+    static cycle_helper* g_cycle_helper = nullptr;
+
+    void on_each_delta_cycle(function<void(void)> callback) {
+        if (g_cycle_helper == nullptr)
+            g_cycle_helper = new cycle_helper();
+
+        g_cycle_helper->deltas.push_back(callback);
+    }
+
+    void on_each_time_step(function<void(void)> callback) {
+        if (g_cycle_helper == nullptr)
+            g_cycle_helper = new cycle_helper();
+
+        g_cycle_helper->tsteps.push_back(callback);
+    }
+
 }
 
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
