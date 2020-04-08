@@ -35,6 +35,9 @@ namespace vcml { namespace generic {
 
         vector<string> token = split(s, ';');
         for (string cur : token) {
+            if (cur.empty())
+                continue;
+
             vector<string> vec = split(cur, '@');
             if (vec.empty())
                 continue;
