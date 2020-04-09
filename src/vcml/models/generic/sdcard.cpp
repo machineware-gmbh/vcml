@@ -288,7 +288,7 @@ namespace vcml { namespace generic {
         m_ocr |= OCR_VDD_34_35;
         m_ocr |= OCR_VDD_35_36;
 
-        if (capacity >= 2 * GiB)
+        if (capacity > 1 * GiB)
             m_ocr |= OCR_CCS;
     }
 
@@ -319,11 +319,15 @@ namespace vcml { namespace generic {
     }
 
     void sdcard::init_csd_sdsc() {
-        u32 read_bl_len = fls(m_blklen) - 1;
+        u32 read_bl_len = fls(m_blklen);
         u32 c_size_mult = 7; // 2^(7+2) = 512
-        u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2))) - 1;
+        u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2)));
         u32 sector_size = 7; // 128 blocks erasable at once (max)
         u32 wpgrp_size = 7; // 128 blocks per write-protect group
+
+        // prevent underflow if capacity < 256k
+        if (c_size > 0)
+            c_size -= 1;
 
         log_debug("using SDSC specification");
         log_debug("  capacity: %zu bytes", capacity.get());
@@ -351,7 +355,11 @@ namespace vcml { namespace generic {
 
     void sdcard::init_csd_sdhc() {
         u32 c_size_mult = 8; // 2^(8+2) = 1024, fixed by spec
-        u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2))) - 1;
+        u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2)));
+
+        // prevent underflow if capacity < 512k
+        if (c_size > 0)
+            c_size -=1;
 
         log_debug("using SDHC/SDXC specification");
         log_debug("  capacity: %zu bytes", capacity.get());
@@ -408,8 +416,8 @@ namespace vcml { namespace generic {
             if (capacity == 0u) {
                 capacity = 2 * GiB;
                 log_info("no capacity specified, assuming 2GB");
-            } else if (capacity % 1024) {
-                VCML_ERROR("capacity must be multiples of 1kB");
+            } else if (capacity % (256 * KiB)) {
+                VCML_ERROR("capacity must be multiples of 256kB");
             }
 
             return;
