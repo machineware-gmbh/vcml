@@ -16,11 +16,11 @@
  #                                                                            #
  ##############################################################################
 
-project(vcml)
 cmake_minimum_required(VERSION 3.5)
+project(vcml LANGUAGES C CXX)
 
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
-option(VCML_BUILD_UTILS "Builds utility programs" ON)
+option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -29,87 +29,86 @@ find_package(LibELF REQUIRED)
 find_package(LibVNC)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DVCML_DEBUG")
 
 if(VCML_BUILD_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-set(src "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(inc "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(sources
-    "${src}/vcml/common/types.cpp"
-    "${src}/vcml/common/report.cpp"
-    "${src}/vcml/common/utils.cpp"
-    "${src}/vcml/common/strings.cpp"
-    "${src}/vcml/common/aio.cpp"
-    "${src}/vcml/common/thctl.cpp"
-    "${src}/vcml/common/bitops.cpp"
-    "${src}/vcml/common/systemc.cpp"
-    "${src}/vcml/logging/logger.cpp"
-    "${src}/vcml/logging/log_file.cpp"
-    "${src}/vcml/logging/log_stream.cpp"
-    "${src}/vcml/logging/log_term.cpp"
-    "${src}/vcml/properties/property_base.cpp"
-    "${src}/vcml/properties/property_provider.cpp"
-    "${src}/vcml/properties/property_provider_arg.cpp"
-    "${src}/vcml/properties/property_provider_env.cpp"
-    "${src}/vcml/properties/property_provider_file.cpp"
-    "${src}/vcml/backends/backend.cpp"
-    "${src}/vcml/backends/backend_null.cpp"
-    "${src}/vcml/backends/backend_file.cpp"
-    "${src}/vcml/backends/backend_term.cpp"
-    "${src}/vcml/backends/backend_stdout.cpp"
-    "${src}/vcml/backends/backend_tcp.cpp"
-    "${src}/vcml/backends/backend_tap.cpp"
-    "${src}/vcml/debugging/suspender.cpp"
-    "${src}/vcml/debugging/rspserver.cpp"
-    "${src}/vcml/debugging/gdbserver.cpp"
-    "${src}/vcml/debugging/vspserver.cpp"
-    "${src}/vcml/elf.cpp"
-    "${src}/vcml/sbi.cpp"
-    "${src}/vcml/dmi_cache.cpp"
-    "${src}/vcml/exmon.cpp"
-    "${src}/vcml/module.cpp"
-    "${src}/vcml/component.cpp"
-    "${src}/vcml/master_socket.cpp"
-    "${src}/vcml/slave_socket.cpp"
-    "${src}/vcml/register.cpp"
-    "${src}/vcml/peripheral.cpp"
-    "${src}/vcml/stubs.cpp"
-    "${src}/vcml/processor.cpp"
-    "${src}/vcml/system.cpp"
-    "${src}/vcml/setup.cpp"
-    "${src}/vcml/spi.cpp"
-    "${src}/vcml/sd.cpp"
-    "${src}/vcml/models/generic/clock.cpp"
-    "${src}/vcml/models/generic/reset.cpp"
-    "${src}/vcml/models/generic/bus.cpp"
-    "${src}/vcml/models/generic/memory.cpp"
-    "${src}/vcml/models/generic/gpio.cpp"
-    "${src}/vcml/models/generic/simdev.cpp"
-    "${src}/vcml/models/generic/crossbar.cpp"
-    "${src}/vcml/models/generic/uart8250.cpp"
-    "${src}/vcml/models/generic/rtc1742.cpp"
-    "${src}/vcml/models/generic/spibus.cpp"
-    "${src}/vcml/models/generic/spi2sd.cpp"
-    "${src}/vcml/models/generic/sdcard.cpp"
-    "${src}/vcml/models/generic/sdhci.cpp"
-    "${src}/vcml/models/generic/hwrng.cpp"
-    "${src}/vcml/models/opencores/ompic.cpp"
-    "${src}/vcml/models/opencores/ethoc.cpp"
-    "${src}/vcml/models/opencores/ockbd.cpp"
-    "${src}/vcml/models/opencores/ocfbc.cpp"
-    "${src}/vcml/models/opencores/ocspi.cpp"
-    "${src}/vcml/models/arm/pl011uart.cpp"
-    "${src}/vcml/models/arm/pl190vic.cpp"
-    "${src}/vcml/models/arm/sp804timer.cpp"
-    "${src}/vcml/models/arm/syscon.cpp"
-    "${src}/vcml/models/arm/gic400.cpp"
-    "${src}/vcml/models/riscv/clint.cpp"
-    "${src}/vcml/models/riscv/plic.cpp")
+    ${src}/vcml/common/types.cpp
+    ${src}/vcml/common/report.cpp
+    ${src}/vcml/common/utils.cpp
+    ${src}/vcml/common/strings.cpp
+    ${src}/vcml/common/aio.cpp
+    ${src}/vcml/common/thctl.cpp
+    ${src}/vcml/common/bitops.cpp
+    ${src}/vcml/common/systemc.cpp
+    ${src}/vcml/logging/logger.cpp
+    ${src}/vcml/logging/log_file.cpp
+    ${src}/vcml/logging/log_stream.cpp
+    ${src}/vcml/logging/log_term.cpp
+    ${src}/vcml/properties/property_base.cpp
+    ${src}/vcml/properties/property_provider.cpp
+    ${src}/vcml/properties/property_provider_arg.cpp
+    ${src}/vcml/properties/property_provider_env.cpp
+    ${src}/vcml/properties/property_provider_file.cpp
+    ${src}/vcml/backends/backend.cpp
+    ${src}/vcml/backends/backend_null.cpp
+    ${src}/vcml/backends/backend_file.cpp
+    ${src}/vcml/backends/backend_term.cpp
+    ${src}/vcml/backends/backend_stdout.cpp
+    ${src}/vcml/backends/backend_tcp.cpp
+    ${src}/vcml/backends/backend_tap.cpp
+    ${src}/vcml/debugging/suspender.cpp
+    ${src}/vcml/debugging/rspserver.cpp
+    ${src}/vcml/debugging/gdbserver.cpp
+    ${src}/vcml/debugging/vspserver.cpp
+    ${src}/vcml/elf.cpp
+    ${src}/vcml/sbi.cpp
+    ${src}/vcml/dmi_cache.cpp
+    ${src}/vcml/exmon.cpp
+    ${src}/vcml/module.cpp
+    ${src}/vcml/component.cpp
+    ${src}/vcml/master_socket.cpp
+    ${src}/vcml/slave_socket.cpp
+    ${src}/vcml/register.cpp
+    ${src}/vcml/peripheral.cpp
+    ${src}/vcml/stubs.cpp
+    ${src}/vcml/processor.cpp
+    ${src}/vcml/system.cpp
+    ${src}/vcml/setup.cpp
+    ${src}/vcml/spi.cpp
+    ${src}/vcml/sd.cpp
+    ${src}/vcml/models/generic/clock.cpp
+    ${src}/vcml/models/generic/reset.cpp
+    ${src}/vcml/models/generic/bus.cpp
+    ${src}/vcml/models/generic/memory.cpp
+    ${src}/vcml/models/generic/gpio.cpp
+    ${src}/vcml/models/generic/simdev.cpp
+    ${src}/vcml/models/generic/crossbar.cpp
+    ${src}/vcml/models/generic/uart8250.cpp
+    ${src}/vcml/models/generic/rtc1742.cpp
+    ${src}/vcml/models/generic/spibus.cpp
+    ${src}/vcml/models/generic/spi2sd.cpp
+    ${src}/vcml/models/generic/sdcard.cpp
+    ${src}/vcml/models/generic/sdhci.cpp
+    ${src}/vcml/models/generic/hwrng.cpp
+    ${src}/vcml/models/opencores/ompic.cpp
+    ${src}/vcml/models/opencores/ethoc.cpp
+    ${src}/vcml/models/opencores/ockbd.cpp
+    ${src}/vcml/models/opencores/ocfbc.cpp
+    ${src}/vcml/models/opencores/ocspi.cpp
+    ${src}/vcml/models/arm/pl011uart.cpp
+    ${src}/vcml/models/arm/pl190vic.cpp
+    ${src}/vcml/models/arm/sp804timer.cpp
+    ${src}/vcml/models/arm/syscon.cpp
+    ${src}/vcml/models/arm/gic400.cpp
+    ${src}/vcml/models/riscv/clint.cpp
+    ${src}/vcml/models/riscv/plic.cpp)
 
 add_library(vcml ${sources})
 target_include_directories(vcml PUBLIC ${inc})
@@ -128,7 +127,7 @@ if(LIBVNC_FOUND)
     target_compile_definitions(vcml PUBLIC HAVE_LIBVNC)
     target_include_directories(vcml SYSTEM PUBLIC ${LIBVNC_INCLUDE_DIRS})
     target_link_libraries(vcml PUBLIC ${LIBVNC_LIBRARIES})
-    target_sources(vcml PRIVATE "${src}/vcml/debugging/vncserver.cpp")
+    target_sources(vcml PRIVATE ${src}/vcml/debugging/vncserver.cpp)
 else()
     message(STATUS "Building without VNC support")
 endif()
