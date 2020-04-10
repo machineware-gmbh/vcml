@@ -48,7 +48,7 @@ namespace vcml {
     }
 
     template <typename T>
-    inline unsigned int fls(T val) {
+    inline int fls(T val) {
         return sizeof(T) * 8 - clz(val) - 1;
     }
 

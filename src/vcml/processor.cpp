@@ -327,7 +327,7 @@ namespace vcml {
     }
 
     void processor::cpureg_info::create(u64 defval) {
-        if (defval > 0 && fls(defval) >= size * 8)
+        if (defval > 0 && fls(defval) >= (int)size * 8)
             VCML_ERROR("value 0x%lx is too big for register %s", defval, name);
 
         switch (size) {
@@ -363,7 +363,7 @@ namespace vcml {
     }
 
     void processor::cpureg_info::set(u64 val) {
-        if (val > 0 && fls(val) >= size * 8)
+        if (val > 0 && fls(val) >= (int)size * 8)
             VCML_ERROR("value 0x%lx is too big for register %s", val, name);
 
         switch (size) {
