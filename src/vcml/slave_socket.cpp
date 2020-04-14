@@ -21,6 +21,8 @@
 namespace vcml {
 
     void slave_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
+        trace_fw(tx, dt);
+
         while (!m_free)
             sc_core::wait(m_free_ev);
         m_free = false;
@@ -43,6 +45,8 @@ namespace vcml {
 
         m_free = true;
         m_free_ev.notify();
+
+        trace_bw(tx, dt);
     }
 
     unsigned int slave_socket::transport_dbg(tlm_generic_payload& tx){

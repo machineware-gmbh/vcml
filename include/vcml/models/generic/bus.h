@@ -149,22 +149,27 @@ namespace vcml { namespace generic {
         template <typename T>
         T* create_socket(unsigned int idx);
 
-        void trace_in(int port, const tlm_generic_payload& tx) const;
-        void trace_out(int port, const tlm_generic_payload& tx) const;
+        template <typename T>
+        void trace_fw(const T& socket, const tlm_generic_payload& tx,
+                      const sc_time& dt) const;
+
+        template <typename T>
+        void trace_bw(const T& socket, const tlm_generic_payload& tx,
+                      const sc_time& dt) const;
     };
 
-    inline void bus::trace_in(int port, const tlm_generic_payload& tx) const {
-        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
-            return;
-        const tlm_target_socket<64>& tgt = IN[port];
-        logger::log(LOG_TRACE, tgt.name(), ">> " + tlm_transaction_to_str(tx));
+    template <typename T>
+    inline void bus::trace_fw(const T& s, const tlm_generic_payload& tx,
+                              const sc_time& dt) const {
+        if (loglvl >= LOG_TRACE && !trace_errors)
+            logger::trace_fw(s.name(), tx, dt);
     }
 
-    inline void bus::trace_out(int port, const tlm_generic_payload& tx) const {
-        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
-            return;
-        const tlm_target_socket<64>& tgt = IN[port];
-        logger::log(LOG_TRACE, tgt.name(), "<< " + tlm_transaction_to_str(tx));
+    template <typename T>
+    inline void bus::trace_bw(const T& s, const tlm_generic_payload& tx,
+                              const sc_time& dt) const {
+        if (loglvl >= LOG_TRACE && (!trace_errors || failed(tx)))
+            logger::trace_bw(s.name(), tx, dt);
     }
 
     template <typename T>

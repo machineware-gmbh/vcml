@@ -209,18 +209,12 @@ namespace vcml {
 
     void component::b_transport(slave_socket* origin, tlm_generic_payload& tx,
                                 sc_time& dt) {
-        if (!trace_errors)
-            trace_in(tx);
-
         wait_clock_reset();
 
         sc_process_b* proc = current_thread();
         m_offsets[proc] = dt;
         transport(tx, tx_get_sbi(tx));
         dt = m_offsets[proc];
-
-        if (!trace_errors || failed(tx.get_response_status()))
-            trace_out(tx);
     }
 
     unsigned int component::transport_dbg(slave_socket* origin,

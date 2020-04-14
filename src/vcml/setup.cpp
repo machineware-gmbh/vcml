@@ -26,10 +26,11 @@ namespace vcml {
         PRINT("Usage: %s [program arguments]\n", arg0);
         PRINT("  -l | --log [file]         Enable logging to <file>|stdout\n");
         PRINT("       --log-debug          Activate debug logging\n");
+        PRINT("       --log-delta          Include delta cycle in logs\n");
         PRINT("  -t | --trace [file]       Enable tracing to <file>|stdout\n");
         PRINT("  -f | --config-file <file> Read configuration from <file>\n");
         PRINT("  -c | --config  <x>=<y>    Set property <x> to value <y>\n");
-        PRINT("  -h | --help               Prints this message\n");
+        PRINT("  -h | --help               Print this message\n");
         exit(code);
     }
 
@@ -43,6 +44,9 @@ namespace vcml {
 
             } else if (!strcmp(arg, "--log-debug")) {
                 m_log_debug = !m_log_debug;
+
+            } else if (!strcmp(arg, "--log-delta")) {
+                logger::print_delta_cycle = !logger::print_delta_cycle;
 
             } else if (!strcmp(arg, "--log") || !strcmp(arg, "-l")) {
                 if (i >= argc - 1 || *argv[i+1] == '-')

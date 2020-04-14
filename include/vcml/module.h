@@ -84,9 +84,6 @@ namespace vcml {
         VCML_DEFINE_LOG(log_info, LOG_INFO);
         VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
 #undef VCML_DEFINE_LOG
-
-        void trace_in(const tlm_generic_payload& tx) const;
-        void trace_out(const tlm_generic_payload& tx) const;
     };
 
     inline void module::hierarchy_push() {
@@ -115,18 +112,6 @@ namespace vcml {
         if (!stl_contains(m_commands, name))
             return NULL;
         return m_commands[name];
-    }
-
-    inline void module::trace_in(const tlm_generic_payload& tx) const {
-        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
-            return;
-        logger::log(LOG_TRACE, name(), ">> " + tlm_transaction_to_str(tx));
-    }
-
-    inline void module::trace_out(const tlm_generic_payload& tx) const {
-        if (!logger::would_log(LOG_TRACE) || loglvl < LOG_TRACE)
-            return;
-        logger::log(LOG_TRACE, name(), "<< " + tlm_transaction_to_str(tx));
     }
 
 }

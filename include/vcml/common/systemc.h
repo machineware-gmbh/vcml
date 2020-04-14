@@ -132,8 +132,16 @@ namespace vcml {
         return status == TLM_OK_RESPONSE;
     }
 
+    inline bool success(const tlm_generic_payload& tx) {
+        return success(tx.get_response_status());
+    }
+
     inline bool failed(tlm_response_status status) {
         return status != TLM_OK_RESPONSE;
+    }
+
+    inline bool failed(const tlm_generic_payload& tx) {
+        return failed(tx.get_response_status());
     }
 
     const char* tlm_response_to_str(tlm_response_status status);

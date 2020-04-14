@@ -91,13 +91,11 @@ namespace vcml { namespace generic {
     }
 
     void bus::cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt) {
-        if (!trace_errors)
-            trace_in(port, tx);
+        const auto& socket = IN[port];
 
+        trace_fw(socket, tx, dt);
         b_transport(port, tx, dt);
-
-        if (!trace_errors || failed(tx.get_response_status()))
-            trace_out(port, tx);
+        trace_bw(socket, tx, dt);
     }
 
     unsigned int bus::cb_transport_dbg(int port, tlm_generic_payload& tx) {
@@ -123,7 +121,13 @@ namespace vcml { namespace generic {
 
         u64 addr = tx.get_address();
         tx.set_address(addr - dest.addr.start + dest.offset);
-        OUT[dest.port]->b_transport(tx, dt);
+        auto& socket = OUT[dest.port];
+
+
+        trace_fw(socket, tx, dt);
+        socket->b_transport(tx, dt);
+        trace_bw(socket, tx, dt);
+
         tx.set_address(addr);
     }
 

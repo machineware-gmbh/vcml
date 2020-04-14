@@ -84,7 +84,7 @@ namespace vcml {
     }
 
     void logger::log(log_level lvl, const string& org, const string& msg) {
-        if (loggers[lvl].empty())
+        if (!would_log(lvl))
             return;
 
         sc_object* obj = find_object(org.c_str());
@@ -128,6 +128,22 @@ namespace vcml {
         ss << "(from " << rep.file() << ":" << rep.line() << ")";
 
         log(LOG_ERROR, rep.origin(), ss.str());
+    }
+
+    void logger::trace_fw(const string& org, const tlm_generic_payload& tx,
+                          const sc_time& dt) {
+        if (!would_log(LOG_TRACE))
+            return;
+
+        log(LOG_TRACE, org, "\t>> " + tlm_transaction_to_str(tx));
+    }
+
+    void logger::trace_bw(const string& org, const tlm_generic_payload& tx,
+                          const sc_time& dt) {
+        if (!would_log(LOG_TRACE))
+            return;
+
+        log(LOG_TRACE, org, "\t<< " + tlm_transaction_to_str(tx));
     }
 
 }

@@ -69,6 +69,11 @@ namespace vcml {
         static void log(log_level lvl, const string& org, const string& msg);
         static void log(const report& rep);
 
+        static void trace_fw(const string& org, const tlm_generic_payload& tx,
+                             const sc_time& dt);
+        static void trace_bw(const string& org, const tlm_generic_payload& tx,
+                             const sc_time& dt);
+
         static bool print_time_stamp;
         static bool print_delta_cycle;
         static bool print_origin;
