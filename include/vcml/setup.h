@@ -38,8 +38,9 @@ namespace vcml {
     class setup
     {
     private:
-        bool m_no_log;
         bool m_log_debug;
+        bool m_log_stdout;
+        bool m_trace_stdout;
 
         vector<string>  m_args;
         vector<string>  m_log_files;
@@ -58,8 +59,9 @@ namespace vcml {
         setup(int argc, char** argv);
         virtual ~setup();
 
-        bool no_log() const { return m_no_log; }
         bool log_debug() const { return m_log_debug; }
+        bool log_stdout() const { return m_log_stdout; }
+        bool trace_stdout() const { return m_trace_stdout; }
 
         const vector<string>& log_files() const { return m_log_files; }
         const vector<string>& trace_files() const { return m_trace_files; }
@@ -68,7 +70,7 @@ namespace vcml {
         unsigned int argc() const { return m_args.size(); }
         const vector<string>& argv() const { return m_args; }
 
-        static setup& instance();
+        static setup* instance();
     };
 
     int main(int argc, char** argv);
