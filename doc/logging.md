@@ -18,9 +18,9 @@ Log message output adheres the following format:
 `[<LEVEL> <TIME>] <SOURCE>: <MESSAGE>`
 
 In this format, `<LEVEL>` refers to the log level and is shortened to its first
-letter, i.e., `E`, `W`, `I`, `D` or `T`. After the log level, the current SystemC
-time is printed with nanosecond resolution. One can optionally also print out
-the current delta cycle after the time stamp by setting
+letter, i.e., `E`, `W`, `I`, `D` or `T`. After the log level, the current
+SystemC time is printed with nanosecond resolution. One can optionally also
+print out the current delta cycle after the time stamp by setting
 `vcml::logger::print_delta_cycle = true`. The `<SOURCE>` of the log message is
 automatically determined, depending on the log function you called (see below).
 A full log message could therefore look like this:
@@ -30,20 +30,20 @@ A full log message could therefore look like this:
 This tells us that there was a debug message at *1s + 200ns*, informing us that
 the component `system.uart0` has been disabled.
 
-Log messages can be generated using the top level logging functions from the
-`vcml` namespace. These functions use the current SystemC process name as the
-log message source. They use a `printf` style for string formatting:
+Log messages can be generated using the global top level logging functions from
+the `vcml` namespace. These functions use the current SystemC process name as
+the log message source. They use a `printf` style for string formatting:
 
 ```
 namespace vcml {
-    void vcml::log_error(const char* format, ...);
-    void vcml::log_warn(const char* format, ...);
-    void vcml::log_info(const char* format, ...);
-    void vcml::log_debug(const char* format, ...);
+    void log_error(const char* format, ...);
+    void log_warn(const char* format, ...);
+    void log_info(const char* format, ...);
+    void log_debug(const char* format, ...);
 }
 ```
 
-Furthermore, the base class used for modelling hardware in VCML `vcml::component`
+Furthermore, the base class used for modeling hardware in VCML `vcml::component`
 also provides logging functionality, that will add the name of the component
 as the source of the log message:
 
@@ -79,7 +79,7 @@ my_logger.set_level(vcml::LOG_ERROR); // only receives error messages
 my_logger.set_level(vcml::LOG_ERROR, vcml::LOG_INFO); // receives error, warning and info messages
 ```
 
-Having multiple loggers for different purposes is possible and encourages. You
+Having multiple loggers for different purposes is possible and encouraged. You
 could have for example a logger that exclusively receives messages from the
 `vcml::LOG_DEBUG` level and writes them to a files. Then you could have a second
 logger to print all other messages to console:
@@ -111,11 +111,19 @@ public:
 };
 ```
 
+When you are not using a custom `main` function, VCML will provide a default
+one for you that accepts the following logging related program arguments:
+
+* `-l <file>` or `--log <file`: creates a `vcml::log_file(<file>)`
+* `-l` or `--log`: without an extra filename, creates a `vcml::log_term`
+* `--log-debug`: elevates the log level of all loggers to `LOG_DEBUG`
+* `--log-delta`: toggles `vcml::logger::print_delta_cycle`
+
 ----
-## Exceptions and Tracing
-The logging system is typically also used for TLM transaction tracing as well
-as for exception reporting. VCML generally uses the class `vcml::report` for
-unrecoverable exceptions, so a good approach to handling would be:
+## Exceptions
+The logging system is typically also used for exception reporting. VCML
+generally uses the class `vcml::report` for exceptions, so a basic approach to
+exception handling would be:
 
 ```
 int sc_main(int argc, char** argv) {
@@ -134,10 +142,21 @@ int sc_main(int argc, char** argv) {
 }
 ```
 
+This is also the default implementation used when not defining a custom `main`
+function in your program.
+
 *Note*: when you are using `vcml::logger::log(const vcml::report&)` to log an
 exception, VCML will additionally print the call stack from when the exception
 was thrown for debug purposes. This behaviour can be disabled by setting
 `vcml::logger::print_backtrace = false`.
+
+----
+## Tracing
+The logging subsystem also features basic TLM transaction tracing functionality.
+To take advantage of it, you need to create a logger that accepts messages from
+the `vcml::LOG_TRACE` log level. If you are not defining a custom `main`
+function in your program, you can create a default trace file logger using
+`--trace <filename>`, or a stderr logger using `--trace` (without a file).
 
 You can also use `vcml::trace` and `vcml::trace_errors` to log transactions or
 just transactions that have an error state set. This feature is generally used
@@ -145,16 +164,18 @@ with buses and peripheral components to report on incoming and outgoing
 transactions. The transaction type must be `tlm::tlm_generic_payload`. The
 transaction will be converted to string using the following format:
 
-`<OP> <ADDRESS> [<VALUE>] (<RESPONSE>)`
+`<DIR> <OP> <ADDRESS> [<VALUE>] (<RESPONSE>)`
 
-Here, `<OP>` refers to the access operation and can be `RD` (read) or `WR`
-(write). `<ADDRESS>` shows the destination address in hex and `<VALUE>` contains
-the individual byte values of the internal transaction buffer. `<RESPONSE>`
-holds the current state of the transaction, see the TLM reference manual for
-details. Following is an example of an actual TLM transaction trace:
+Here, `<DIR>` refers to the direction of the transaction. Outgoing requests are
+denoted with a `>>`, incoming responses use `<<`. `<OP>` refers to the access
+operation and can be `RD` (read) or `WR` (write). `<ADDRESS>` shows the
+destination address in hex and `<VALUE>` contains the individual byte values of
+the internal transaction buffer. `<RESPONSE>` holds the current state of the
+transaction, see the TLM reference manual for details. Following is an example
+of an actual TLM transaction trace:
 
-* reading four bytes from address 0x100: `RD 0x0000100 [00 FF 00 FF] (TLM_OK_RESPONSE)`
-* writing single byte to invalid address: `WR 0xFFFFFFFF [EE] (TLM_ADDRESS_ERROR_RESPONSE)`
+* reading four bytes from address 0x100: `<< RD 0x0000100 [00 FF 00 FF] (TLM_OK_RESPONSE)`
+* writing single byte to invalid address: `<< WR 0xFFFFFFFF [EE] (TLM_ADDRESS_ERROR_RESPONSE)`
 
 ----
-Documentation July 2018
+Documentation April 2020

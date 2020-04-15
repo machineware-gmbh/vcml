@@ -53,6 +53,11 @@ namespace vcml {
 
         static vector<logger*> loggers[NUM_LOG_LEVELS];
 
+        static void print_prefix(ostream& os, log_level lvl, const sc_time& t);
+        static void print_trace(bool forward, const string& org,
+                                const tlm_generic_payload& tx,
+                                const sc_time& dt);
+
     public:
         inline void set_level(log_level max);
         void set_level(log_level min, log_level max);
@@ -78,6 +83,8 @@ namespace vcml {
         static bool print_delta_cycle;
         static bool print_origin;
         static bool print_backtrace;
+
+        static size_t trace_name_length;
 
         static const char* prefix[NUM_LOG_LEVELS];
         static const char* desc[NUM_LOG_LEVELS];

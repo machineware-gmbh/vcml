@@ -28,6 +28,8 @@ namespace vcml {
     bool logger::print_origin = true;
     bool logger::print_backtrace = true;
 
+    size_t logger::trace_name_length = 20;
+
     const char* logger::prefix[NUM_LOG_LEVELS] = {
             [LOG_ERROR] = "E",
             [LOG_WARN]  = "W",
@@ -43,6 +45,45 @@ namespace vcml {
             [LOG_DEBUG] = "debug",
             [LOG_TRACE] = "trace"
     };
+
+    void logger::print_prefix(ostream& os, log_level lvl, const sc_time& t) {
+        os << "[" << vcml::logger::prefix[lvl];
+
+        if (print_time_stamp) {
+            u64 seconds = time_to_ns(t) / 1000000000ull;
+            u64 nanosec = time_to_ns(t) % 1000000000ull;
+            os << " " << std::dec << seconds
+               << "." << std::setw(9) << std::setfill('0') << nanosec;
+        }
+
+        if (print_delta_cycle)
+            os << " <" << sc_delta_count() << ">";
+
+        os << "]";
+    }
+
+    void logger::print_trace(bool forward, const string& org,
+                             const tlm_generic_payload& tx,
+                             const sc_time& dt) {
+        if (!would_log(LOG_TRACE))
+            return;
+
+        stringstream ss;
+        print_prefix(ss, LOG_TRACE, sc_time_stamp() + dt);
+
+        if (trace_name_length < org.length())
+            trace_name_length = org.length();
+
+        ss << org << ":";
+        for (size_t i = org.length(); i < trace_name_length; i++)
+            ss << " ";
+
+        ss << (forward ? ">> " : "<< ");
+        ss << tlm_transaction_to_str(tx);
+
+        for (auto out: loggers[LOG_TRACE])
+            out->log_line(LOG_TRACE, ss.str().c_str());
+    }
 
     void logger::register_logger() {
         for (int l = m_min; l <= m_max; l++)
@@ -94,15 +135,7 @@ namespace vcml {
             now += comp->local_time();
 
         stringstream ss;
-        ss << "[" << vcml::logger::prefix[lvl];
-        if (print_time_stamp) {
-            ss << " " << std::fixed << std::setprecision(9)
-               << now.to_seconds() << "s";
-        }
-
-        if (print_delta_cycle)
-            ss << " <" << sc_delta_count() << ">";
-        ss << "]";
+        print_prefix(ss, lvl, now);
 
         if (print_origin && !org.empty())
             ss << " " << org << ":";
@@ -132,18 +165,12 @@ namespace vcml {
 
     void logger::trace_fw(const string& org, const tlm_generic_payload& tx,
                           const sc_time& dt) {
-        if (!would_log(LOG_TRACE))
-            return;
-
-        log(LOG_TRACE, org, "\t>> " + tlm_transaction_to_str(tx));
+        print_trace(true, org, tx, dt);
     }
 
     void logger::trace_bw(const string& org, const tlm_generic_payload& tx,
                           const sc_time& dt) {
-        if (!would_log(LOG_TRACE))
-            return;
-
-        log(LOG_TRACE, org, "\t<< " + tlm_transaction_to_str(tx));
+        print_trace(false, org, tx, dt);
     }
 
 }
