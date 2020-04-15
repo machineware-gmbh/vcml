@@ -66,6 +66,10 @@ namespace vcml {
         return t.value() / sc_time(1.0, SC_MS).value();
     }
 
+    inline u64 time_to_sec(const sc_time& t) {
+        return t.value() / sc_time(1.0, SC_SEC).value();
+    }
+
     VCML_TYPEINFO(sc_time);
 
     using sc_core::sc_start;
