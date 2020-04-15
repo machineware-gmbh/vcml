@@ -71,12 +71,14 @@ namespace vcml {
         stringstream ss;
         print_prefix(ss, LOG_TRACE, sc_time_stamp() + dt);
 
-        if (trace_name_length < org.length())
-            trace_name_length = org.length();
+        if (!org.empty()) {
+            if (trace_name_length < org.length())
+                trace_name_length = org.length();
 
-        ss << org << ":";
-        for (size_t i = org.length(); i < trace_name_length; i++)
-            ss << " ";
+            ss << " " << org << ":";
+            for (size_t i = org.length(); i < trace_name_length; i++)
+                ss << " ";
+        }
 
         ss << (forward ? ">> " : "<< ");
         ss << tlm_transaction_to_str(tx);
