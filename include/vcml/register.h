@@ -71,9 +71,6 @@ namespace vcml {
         void sync_always() { m_rsync = m_wsync = true; }
         void sync_never() { m_rsync = m_wsync = false; }
 
-        bool needs_sync(tlm_command cmd) const;
-        bool needs_sync(const tlm_generic_payload& tx) const;
-
         peripheral* get_host() { return m_host; }
 
         reg_base(const char* nm, u64 addr, u64 size, peripheral* host = NULL);

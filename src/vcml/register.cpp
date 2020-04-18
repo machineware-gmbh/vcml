@@ -21,24 +21,6 @@
 
 namespace vcml {
 
-    bool reg_base::needs_sync(tlm_command cmd) const {
-        switch (cmd) {
-        case TLM_READ_COMMAND:
-            return m_rsync;
-
-        case TLM_WRITE_COMMAND:
-            return m_wsync;
-
-        case TLM_IGNORE_COMMAND:
-        default:
-            return false;
-        }
-    }
-
-    bool reg_base::needs_sync(const tlm_generic_payload& tx) const {
-        return needs_sync(tx.get_command());
-    }
-
     reg_base::reg_base(const char* nm, u64 addr, u64 size, peripheral* host):
         sc_object(nm),
         m_range(addr, addr + size - 1),
@@ -88,6 +70,9 @@ namespace vcml {
             return 0;
         }
 
+        if (!info.is_debug && tx.is_read() && m_rsync)
+            m_host->sync();
+
         unsigned char* ptr = tx.get_data_ptr() + addr.start - tx.get_address();
         if (m_host->get_endian() != host_endian()) // i.e. if big endian
             memswap(ptr, addr.length());
@@ -101,6 +86,10 @@ namespace vcml {
             memswap(ptr, addr.length());
 
         tx.set_response_status(TLM_OK_RESPONSE);
+
+        if (!info.is_debug && tx.is_write() && m_wsync)
+            m_host->sync();
+
         return addr.length();
     }
 

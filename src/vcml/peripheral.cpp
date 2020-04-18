@@ -148,6 +148,10 @@ namespace vcml {
         tx.set_byte_enable_ptr(be_ptr);
         tx.set_byte_enable_length(be_length);
 
+        // check for quantum overshoot
+        if (!info.is_debug && needs_sync())
+            sync();
+
         return nbytes;
     }
 
@@ -160,8 +164,6 @@ namespace vcml {
 
         for (auto reg : m_registers)
             if (reg->get_range().overlaps(tx)) {
-                if (!info.is_debug && (needs_sync() || reg->needs_sync(tx)))
-                    sync();
                 bytes += reg->receive(tx, info);
                 nregs ++;
             }
