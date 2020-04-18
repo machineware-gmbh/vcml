@@ -58,7 +58,7 @@ namespace vcml {
             VCML_ERROR("Call to elf_getshdrstrndx failed");
 
         char* name = elf_strptr(elf, shstrndx, shdr->sh_name);
-        if (name == NULL)
+        if (name == nullptr)
             VCML_ERROR("Call to elfstrptr failed");
 
         m_name = name;
@@ -82,7 +82,7 @@ namespace vcml {
                               - phdr[i].p_vaddr;
         }
 
-        Elf_Data* data = NULL;
+        Elf_Data* data = nullptr;
         unsigned int copied = 0;
         while ((copied < shdr->sh_size) && (data = elf_getdata(scn, data))) {
             if (data->d_buf) {
@@ -96,7 +96,7 @@ namespace vcml {
         m_size(0),
         m_virt_addr(0),
         m_phys_addr(0),
-        m_data(NULL),
+        m_data(nullptr),
         m_flag_alloc(false),
         m_flag_write(false),
         m_flag_exec(false) {
@@ -117,7 +117,7 @@ namespace vcml {
     }
 
     elf_section::~elf_section() {
-        if (m_data != NULL)
+        if (m_data != nullptr)
             delete [] m_data;
     }
 
@@ -132,17 +132,17 @@ namespace vcml {
         }
 
         // Traverse all sections
-        Elf_Scn* scn = NULL;
+        Elf_Scn* scn = nullptr;
         while ((scn = elf_nextscn(e, scn)) != 0) {
             SHDR* shdr = getshdr(scn);
             if (shdr->sh_type == SHT_SYMTAB) {
-                Elf_Data* data = elf_getdata(scn, NULL);
+                Elf_Data* data = elf_getdata(scn, nullptr);
                 unsigned int num_symbols = shdr->sh_size / shdr->sh_entsize;
                 SYM* symbols = reinterpret_cast<SYM*>(data->d_buf);
                 for (unsigned int i = 0; i < num_symbols; i++) {
                     char* name = elf_strptr(e, shdr->sh_link,
                                             symbols[i].st_name);
-                    if (name == NULL)
+                    if (name == nullptr)
                         VCML_ERROR("elf_strptr failed: %s", elf_errmsg(-1));
 
                     elf_symbol* sym = new elf_symbol(name, symbols + i);
@@ -180,8 +180,8 @@ namespace vcml {
         if (fd < 0)
             VCML_ERROR("cannot open elf file '%s'", m_filename.c_str());
 
-        Elf* e = elf_begin(fd, ELF_C_READ, NULL);
-        if (e == NULL)
+        Elf* e = elf_begin(fd, ELF_C_READ, nullptr);
+        if (e == nullptr)
             VCML_ERROR("elf_begin failed: %s", elf_errmsg(-1));
 
         if (elf_kind(e) != ELF_K_ELF)
@@ -190,7 +190,7 @@ namespace vcml {
         Elf32_Ehdr* ehdr32 = elf32_getehdr(e);
         Elf64_Ehdr* ehdr64 = elf64_getehdr(e);
 
-        m_64bit = ehdr64 != NULL;
+        m_64bit = ehdr64 != nullptr;
 
         if (ehdr64)
             init<Elf64_Ehdr, Elf64_Shdr, Elf64_Sym>(e, ehdr64, elf64_getshdr);
@@ -260,7 +260,7 @@ namespace vcml {
 
     elf_section* elf::get_section(unsigned int idx) const {
         if (idx >= m_sections.size())
-            return NULL;
+            return nullptr;
         return m_sections[idx];
     }
 
@@ -268,12 +268,12 @@ namespace vcml {
         for (auto section : m_sections)
             if (section->get_name() == name)
                 return section;
-        return NULL;
+        return nullptr;
     }
 
     elf_symbol* elf::get_symbol(unsigned int idx) const {
         if (idx >= m_symbols.size())
-            return NULL;
+            return nullptr;
         return m_symbols[idx];
     }
 
@@ -281,7 +281,7 @@ namespace vcml {
         for (auto symbol : m_symbols)
             if (symbol->get_name() == name)
                 return symbol;
-        return NULL;
+        return nullptr;
     }
 
     elf_symbol* elf::find_function(uint64_t addr) const {
@@ -291,7 +291,7 @@ namespace vcml {
                 return sym;
         }
 
-        return NULL;
+        return nullptr;
     }
 
 }

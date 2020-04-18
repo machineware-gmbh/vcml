@@ -67,7 +67,7 @@ namespace vcml {
             return 0;
         }
 
-        if ((beptr != NULL) && (belen == 0)) {
+        if ((beptr != nullptr) && (belen == 0)) {
             tx.set_response_status(TLM_BYTE_ENABLE_ERROR_RESPONSE);
             return 0;
         }

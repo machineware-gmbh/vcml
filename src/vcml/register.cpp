@@ -29,7 +29,7 @@ namespace vcml {
         m_wsync(false),
         m_host(host)
     {
-        if (m_host == NULL)
+        if (m_host == nullptr)
             m_host = dynamic_cast<peripheral*>(get_parent_object());
 
         VCML_ERROR_ON(!m_host, "register '%s' declared outside peripheral", nm);

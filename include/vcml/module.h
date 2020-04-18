@@ -110,7 +110,7 @@ namespace vcml {
 
     inline command_base* module::get_command(const string& name) {
         if (!stl_contains(m_commands, name))
-            return NULL;
+            return nullptr;
         return m_commands[name];
     }
 

@@ -57,7 +57,7 @@ namespace vcml {
         void set_level(int level);
 
         master_socket() = delete;
-        master_socket(const char* name, component* host = NULL);
+        master_socket(const char* name, component* host = nullptr);
         virtual ~master_socket();
 
         VCML_KIND(master_socket);
@@ -77,27 +77,27 @@ namespace vcml {
         tlm_response_status access (tlm_command cmd, u64 addr, void* data,
                                     unsigned int size,
                                     const sideband& info = SBI_NONE,
-                                    unsigned int* nbytes = NULL);
+                                    unsigned int* nbytes = nullptr);
 
         tlm_response_status read   (u64 addr, void* data,
                                     unsigned int size,
                                     const sideband& info = SBI_NONE,
-                                    unsigned int* nbytes = NULL);
+                                    unsigned int* nbytes = nullptr);
 
         tlm_response_status write  (u64 addr, const void* data,
                                     unsigned int size,
                                     const sideband& info = SBI_NONE,
-                                    unsigned int* nbytes = NULL);
+                                    unsigned int* nbytes = nullptr);
 
         template <typename T>
         tlm_response_status readw  (u64 addr, T& data,
                                     const sideband& info = SBI_NONE,
-                                    unsigned int* nbytes = NULL);
+                                    unsigned int* nbytes = nullptr);
 
         template <typename T>
         tlm_response_status writew (u64 addr, const T& data,
                                     const sideband& info = SBI_NONE,
-                                    unsigned int* nbytes = NULL);
+                                    unsigned int* nbytes = nullptr);
 
         template <unsigned int WIDTH>
         void bind(tlm_initiator_socket<WIDTH>& other);
@@ -215,7 +215,7 @@ namespace vcml {
         tx.set_data_ptr(reinterpret_cast<unsigned char*>(data));
         tx.set_data_length(size);
         tx.set_streaming_width(size);
-        tx.set_byte_enable_ptr(NULL);
+        tx.set_byte_enable_ptr(nullptr);
         tx.set_byte_enable_length(0);
         tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
         tx.set_dmi_allowed(false);

@@ -862,8 +862,8 @@ namespace vcml { namespace generic {
         m_scr(),
         m_sts(),
         m_swf(),
-        m_bufptr(NULL),
-        m_bufend(NULL),
+        m_bufptr(nullptr),
+        m_bufend(nullptr),
         m_buffer(),
         m_curcmd(),
         m_curoff(),
@@ -983,14 +983,14 @@ namespace vcml { namespace generic {
             return SDTX_ERR_ILLEGAL;
         }
 
-        VCML_ERROR_ON(m_bufptr == NULL, "buffer not loaded");
-        VCML_ERROR_ON(m_bufend == NULL, "buffer size not set");
+        VCML_ERROR_ON(m_bufptr == nullptr, "buffer not loaded");
+        VCML_ERROR_ON(m_bufend == nullptr, "buffer size not set");
 
         if (m_bufptr >= m_bufend) {
             m_numblk++;
             m_state = TRANSFER;
-            m_bufptr = NULL;
-            m_bufend = NULL;
+            m_bufptr = nullptr;
+            m_bufend = nullptr;
 
             if ((m_curcmd != 18))
                 return SDTX_OK_COMPLETE;
@@ -1014,8 +1014,8 @@ namespace vcml { namespace generic {
             return SDRX_ERR_ILLEGAL;
         }
 
-        VCML_ERROR_ON(m_bufptr == NULL, "buffer not loaded");
-        VCML_ERROR_ON(m_bufend == NULL, "buffer size not set");
+        VCML_ERROR_ON(m_bufptr == nullptr, "buffer not loaded");
+        VCML_ERROR_ON(m_bufend == nullptr, "buffer size not set");
 
         if (m_bufptr < m_bufend) {
             *m_bufptr++ = val;
@@ -1024,8 +1024,8 @@ namespace vcml { namespace generic {
 
         m_state = TRANSFER;
         update_status();
-        m_bufptr = NULL;
-        m_bufend = NULL;
+        m_bufptr = nullptr;
+        m_bufend = nullptr;
 
         if ((m_curcmd != 24) && (m_curcmd != 25)) // WRITE or WRITE_MULTIPLE
             VCML_ERROR("unsupported write CMD%hhu", m_curcmd);

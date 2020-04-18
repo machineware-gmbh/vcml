@@ -20,7 +20,7 @@
 
 namespace vcml {
 
-    backend_term* backend_term::singleton = NULL;
+    backend_term* backend_term::singleton = nullptr;
 
     void backend_term::handle_signal(int sig) {
         if (singleton) {
@@ -100,7 +100,7 @@ namespace vcml {
 
     backend_term::~backend_term() {
         cleanup();
-        singleton = NULL;
+        singleton = nullptr;
     }
 
     size_t backend_term::peek() {

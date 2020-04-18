@@ -28,7 +28,7 @@ namespace vcml {
     sc_attr_base* find_attribute(const string& name) {
         size_t pos = name.rfind(SC_HIERARCHY_CHAR);
         if (pos == string::npos)
-            return NULL;
+            return nullptr;
 
         sc_object* parent = find_object(name.substr(0, pos));
         if (parent == nullptr)
@@ -236,7 +236,7 @@ std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
     std::string str; is >> str;
     str = vcml::to_lower(str);
 
-    char* endptr = NULL;
+    char* endptr = nullptr;
     sc_dt::uint64 value = strtoul(str.c_str(), &endptr, 0);
     double fval = value;
 

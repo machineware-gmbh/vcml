@@ -217,12 +217,12 @@ namespace vcml { namespace opencores {
         for (auto & info : layout)
             if (info.key == key)
                 return &info;
-        return NULL;
+        return nullptr;
     }
 
     void ockbd::key_event(u32 key, bool down) {
         const keyinfo* info = lookup_key(key, keyboard_us_layout);
-        if (info == NULL) {
+        if (info == nullptr) {
             if (down)
                 log_debug("no scancode for key 0x%x", key, key);
             return;

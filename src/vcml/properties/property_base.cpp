@@ -29,7 +29,7 @@ namespace vcml {
 
     static string gen_hierarchy_name(const char* nm, sc_module* parent) {
         parent = find_parent(parent);
-        if (parent == NULL)
+        if (parent == nullptr)
             return nm;
 
         stringstream ss;

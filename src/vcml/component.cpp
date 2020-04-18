@@ -169,14 +169,14 @@ namespace vcml {
         for (auto socket : m_master_sockets)
             if (name == socket->name())
                 return socket;
-        return NULL;
+        return nullptr;
     }
 
     slave_socket* component::get_slave_socket(const string& name) const {
         for (auto socket : m_slave_sockets)
             if (name == socket->name())
                 return socket;
-        return NULL;
+        return nullptr;
     }
 
     void component::map_dmi(const tlm_dmi& dmi) {

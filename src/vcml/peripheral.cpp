@@ -35,7 +35,7 @@ namespace vcml {
         for (size_t i = 0; i < types.size(); i++) {
             stringstream ss; ss << "backend" << i;
             backend* be = backend::create(types[i], ss.str());
-            if (be != NULL)
+            if (be != nullptr)
                 m_backends.push_back(be);
         }
     }
@@ -134,7 +134,7 @@ namespace vcml {
                     tx.set_data_ptr(ptr + pulse * streaming_width + byte);
                     tx.set_data_length(1);
                     tx.set_streaming_width(1);
-                    tx.set_byte_enable_ptr(NULL);
+                    tx.set_byte_enable_ptr(nullptr);
                     tx.set_byte_enable_length(0);
                     nbytes += receive(tx, info);
                 }

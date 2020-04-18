@@ -208,7 +208,7 @@ namespace vcml {
                << "in file '" << symbols.str() << "'";
         } catch (std::exception& e) {
             symbols = "";
-            m_symbols = NULL;
+            m_symbols = nullptr;
             os << e.what();
             return false;
         }
@@ -484,8 +484,8 @@ namespace vcml {
         component(nm),
         m_run_time(0),
         m_cycle_count(0),
-        m_symbols(NULL),
-        m_gdb(NULL),
+        m_symbols(nullptr),
+        m_gdb(nullptr),
         m_irq_stats(),
         m_endian(VCML_ENDIAN_LITTLE),
         m_cpuregs(),

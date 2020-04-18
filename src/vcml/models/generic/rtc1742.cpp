@@ -180,7 +180,7 @@ namespace vcml { namespace generic {
 
     rtc1742::rtc1742(const sc_module_name& nm, u32 nvmemsz):
         peripheral(nm),
-        m_nvmem(NULL),
+        m_nvmem(nullptr),
         m_addr(0, nvmemsz - 9), // need 8 bytes at the end for registers
         m_real_timestamp(time(NULL)),
         m_sysc_timestamp(sc_time_stamp()),

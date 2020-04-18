@@ -73,7 +73,7 @@ namespace vcml {
 
         peripheral* get_host() { return m_host; }
 
-        reg_base(const char* nm, u64 addr, u64 size, peripheral* host = NULL);
+        reg_base(const char* nm, u64 addr, u64 size, peripheral* h = nullptr);
         virtual ~reg_base();
 
         VCML_KIND(reg_base);
@@ -136,7 +136,7 @@ namespace vcml {
         const char* name() const { return sc_core::sc_object::name(); }
 
         reg(const char* nm, u64 addr, DATA init = DATA(),
-            HOST* host = NULL);
+            HOST* host = nullptr);
         virtual ~reg();
         reg() = delete;
 
@@ -232,15 +232,15 @@ namespace vcml {
         m_banked(false),
         m_init(),
         m_banks(),
-        read(NULL),
-        write(NULL),
+        read(nullptr),
+        write(nullptr),
         tag(0),
-        tagged_read(NULL),
-        tagged_write(NULL) {
+        tagged_read(nullptr),
+        tagged_write(nullptr) {
         for (unsigned int i = 0; i < N; i++)
             m_init[i] = property<DATA, N>::get(i);
 
-        if (m_host == NULL)
+        if (m_host == nullptr)
             m_host = dynamic_cast<HOST*>(get_host());
         VCML_ERROR_ON(!m_host, "invalid host specified for register %s", n);
     }
@@ -274,9 +274,9 @@ namespace vcml {
 
             DATA val = current_bank(idx);
 
-            if (tagged_read != NULL)
+            if (tagged_read != nullptr)
                 val = (m_host->*tagged_read)(N > 1 ? idx : tag);
-            else if (read != NULL)
+            else if (read != nullptr)
                 val = (m_host->*read)();
 
             current_bank(idx) = val;
@@ -304,9 +304,9 @@ namespace vcml {
             unsigned char* ptr = (unsigned char*)&val + off;
             memcpy(ptr, src, size);
 
-            if (tagged_write != NULL)
+            if (tagged_write != nullptr)
                 val = (m_host->*tagged_write)(val, N > 1 ? idx : tag);
-            else if (write != NULL)
+            else if (write != nullptr)
                 val = (m_host->*write)(val);
 
             current_bank(idx) = val;

@@ -28,7 +28,7 @@ namespace vcml {
 
     bool module::cmd_cinfo(const vector<string>& args, ostream& os) {
         command_base* cmd = get_command(args[0]);
-        if (cmd == NULL) {
+        if (cmd == nullptr) {
             os << "no such command: " << args[0];
             return false;
         }
@@ -44,7 +44,7 @@ namespace vcml {
 
     log_level module::default_log_level() const {
         sc_object* obj = get_parent_object();
-        while (obj != NULL) {
+        while (obj != nullptr) {
             module* comp = dynamic_cast<module*>(obj);
             if (comp)
                 return comp->loglvl;
@@ -99,7 +99,7 @@ namespace vcml {
     vector<command_base*> module::get_commands() const {
         vector<command_base*> list;
         for (auto cmd : m_commands)
-            if (cmd.second != NULL)
+            if (cmd.second != nullptr)
                 list.push_back(cmd.second);
         return list;
     }

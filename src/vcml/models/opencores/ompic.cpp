@@ -74,10 +74,10 @@ namespace vcml { namespace opencores {
     ompic::ompic(const sc_core::sc_module_name& nm, unsigned int num_cores):
         peripheral(nm),
         m_num_cores(num_cores),
-        m_control(NULL),
-        m_status(NULL),
-        CONTROL(NULL),
-        STATUS(NULL),
+        m_control(nullptr),
+        m_status(nullptr),
+        CONTROL(nullptr),
+        STATUS(nullptr),
         IRQ("IRQ"),
         IN("IN") {
         VCML_ERROR_ON(num_cores == 0, "number of cores must not be zero");
