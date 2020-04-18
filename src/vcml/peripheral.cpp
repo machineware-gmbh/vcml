@@ -26,8 +26,6 @@ namespace vcml {
         component(nm),
         m_current_cpu(SBI_NONE.cpuid),
         m_endian(endian),
-        m_rdlatency(SC_ZERO_TIME),
-        m_wrlatency(SC_ZERO_TIME),
         m_registers(),
         m_backends(),
         read_latency("read_latency", rlatency),
@@ -77,7 +75,9 @@ namespace vcml {
 
     void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
                              vcml_access acs) {
-        component::map_dmi(ptr, start, end, acs, m_rdlatency, m_wrlatency);
+        const sc_time rlat = clock_cycles(read_latency);
+        const sc_time wlat = clock_cycles(write_latency);
+        component::map_dmi(ptr, start, end, acs, rlat, wlat);
     }
 
     bool peripheral::bepeek() {
@@ -116,7 +116,12 @@ namespace vcml {
 
         unsigned int npulses = length / streaming_width;
         for (unsigned int pulse = 0; pulse < npulses; pulse++) {
-            if (be_ptr == NULL) {
+            if (!info.is_debug) {
+                local_time() += tx.is_read() ? clock_cycles(read_latency)
+                                             : clock_cycles(write_latency);
+            }
+
+            if (be_ptr == nullptr) {
                 tx.set_data_ptr(ptr + pulse * streaming_width);
                 tx.set_data_length(streaming_width);
                 nbytes += receive(tx, info);
@@ -134,9 +139,6 @@ namespace vcml {
                     nbytes += receive(tx, info);
                 }
             }
-
-            if (!info.is_debug)
-                local_time() += tx.is_read() ? m_rdlatency : m_wrlatency;
         }
 
         tx.set_address(addr);
@@ -192,9 +194,9 @@ namespace vcml {
     }
 
     void peripheral::handle_clock_update(clock_t oldclk, clock_t newclk) {
-        m_rdlatency = clock_cycles(read_latency);
-        m_wrlatency = clock_cycles(write_latency);
-        component::remap_dmi(m_rdlatency, m_wrlatency);
+        const sc_time rlat = clock_cycles(read_latency);
+        const sc_time wlat = clock_cycles(write_latency);
+        component::remap_dmi(rlat, wlat);
     }
 
 }

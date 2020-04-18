@@ -42,8 +42,6 @@ namespace vcml {
     private:
         int m_current_cpu;
         vcml_endian m_endian;
-        sc_time m_rdlatency;
-        sc_time m_wrlatency;
         vector<reg_base*> m_registers;
         vector<backend*> m_backends;
 
