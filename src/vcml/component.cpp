@@ -122,7 +122,7 @@ namespace vcml {
     }
 
     sc_time component::clock_cycle() const {
-        if (CLOCK <= 0)
+        if (!CLOCK.is_bound() || CLOCK <= 0)
             return SC_ZERO_TIME;
         return sc_time(1.0 / CLOCK.read(), SC_SEC);
     }
