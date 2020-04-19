@@ -31,13 +31,6 @@ namespace vcml { namespace generic {
 
     class bus;
 
-    struct bus_mapping {
-        int port;
-        range addr;
-        u64 offset;
-        string peer;
-    };
-
     template <typename T>
     class bus_ports
     {
@@ -92,14 +85,25 @@ namespace vcml { namespace generic {
 
     class bus: public component
     {
+    public:
+        typedef tlm_initiator_socket<64> initiator_socket;
+        typedef tlm_target_socket<64> target_socket;
+
     private:
         bool cmd_show(const vector<string>& args, ostream& os);
 
-        vector<bus_mapping> m_mappings;
-        bus_mapping         m_default;
+        struct mapping {
+            int port;
+            range addr;
+            u64 offset;
+            string peer;
+        };
 
-        tlm_target_socket<64>*    create_target_socket(unsigned int idx);
-        tlm_initiator_socket<64>* create_initiator_socket(unsigned int idx);
+        vector<mapping> m_mappings;
+        mapping         m_default;
+
+        target_socket*    create_target_socket(unsigned int idx);
+        initiator_socket* create_initiator_socket(unsigned int idx);
 
         void cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
         unsigned int cb_transport_dbg(int port, tlm_generic_payload& tx);
@@ -122,24 +126,25 @@ namespace vcml { namespace generic {
                                        sc_dt::uint64 end);
 
     public:
-        bus_ports<tlm_target_socket<64> > IN;
-        bus_ports<tlm_initiator_socket<64> > OUT;
+        bus_ports<target_socket> IN;
+        bus_ports<initiator_socket> OUT;
 
-        const bus_mapping& lookup(const range& addr) const;
+        const mapping& lookup(const range& addr) const;
 
         void map(unsigned int port, const range& addr, u64 offset = 0,
                  const string& peer = "");
         void map(unsigned int port, u64 start, u64 end, u64 offset = 0,
                  const string& peer = "");
+        void map_default(unsigned int port, u64 offset = 0,
+                         const string& peer = "");
 
-        unsigned int bind(tlm_initiator_socket<64>& socket);
-        unsigned int bind(tlm_target_socket<64>& socket, const range& addr,
+        unsigned int bind(initiator_socket& socket);
+        unsigned int bind(target_socket& socket, const range& addr,
                           u64 offset = 0);
-        unsigned int bind(tlm_target_socket<64>& socket, u64 start, u64 end,
+        unsigned int bind(target_socket& socket, u64 start, u64 end,
                           u64 offset = 0);
-
-        void map_default(unsigned int port, const string& peer = "");
-        unsigned int bind_default(tlm_target_socket<64>& socket);
+        unsigned int bind_default(initiator_socket& socket, u64 offset = 0);
+        unsigned int bind_default(target_socket& socket, u64 offset = 0);
 
         bus() = delete;
         bus(const sc_module_name& nm);

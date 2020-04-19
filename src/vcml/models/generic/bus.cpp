@@ -25,9 +25,9 @@ namespace vcml { namespace generic {
         #define HEX(x, w) std::setfill('0') << std::setw(w) << \
                           std::hex << (x) << std::dec
 
-        vector<bus_mapping> mappings(m_mappings);
+        vector<mapping> mappings(m_mappings);
         std::sort(mappings.begin(), mappings.end(),
-                [](const bus_mapping& a, const bus_mapping& b) -> bool {
+                [](const mapping& a, const mapping& b) -> bool {
             return a.addr.start < b.addr.start;
         });
 
@@ -59,7 +59,7 @@ namespace vcml { namespace generic {
     typedef tlm_utils::simple_initiator_socket_tagged<bus, 64> isock;
     typedef tlm_utils::simple_target_socket_tagged<bus, 64> tsock;
 
-    tlm_target_socket<64>* bus::create_target_socket(unsigned int idx) {
+    bus::target_socket* bus::create_target_socket(unsigned int idx) {
         hierarchy_push();
 
         string name = "IN" + to_string(idx);
@@ -76,8 +76,7 @@ namespace vcml { namespace generic {
         return sock;
     }
 
-    tlm_initiator_socket<64>*
-    bus::create_initiator_socket(unsigned int idx) {
+    bus::initiator_socket* bus::create_initiator_socket(unsigned int idx) {
         hierarchy_push();
 
         string name = "OUT" + to_string(idx);
@@ -113,7 +112,7 @@ namespace vcml { namespace generic {
     }
 
     void bus::b_transport(int port, tlm_generic_payload& tx, sc_time& dt) {
-        const bus_mapping& dest = lookup(tx);
+        const mapping& dest = lookup(tx);
         if (dest.port == -1) {
             tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
             return;
@@ -132,7 +131,7 @@ namespace vcml { namespace generic {
     }
 
     unsigned int bus::transport_dbg(int port, tlm_generic_payload& tx) {
-        const bus_mapping& dest = lookup(tx);
+        const mapping& dest = lookup(tx);
         if (dest.port == -1) {
             tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
             return 0;
@@ -147,7 +146,7 @@ namespace vcml { namespace generic {
 
     bool bus::get_direct_mem_ptr(int port, tlm_generic_payload& tx,
                             tlm_dmi& dmi) {
-        const bus_mapping& dest = lookup(tx);
+        const mapping& dest = lookup(tx);
         if (dest.port == -1) {
             tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
             return false;
@@ -185,7 +184,7 @@ namespace vcml { namespace generic {
     void bus::invalidate_direct_mem_ptr(int port, sc_dt::uint64 start,
                                                sc_dt::uint64 end) {
         for (unsigned int i = 0; i < m_mappings.size(); i++) {
-            const bus_mapping& m = m_mappings[i];
+            const mapping& m = m_mappings[i];
             if (m.port == port) {
                 u64 s = m.addr.start + start - m.offset;
                 u64 e = m.addr.start + end - m.offset;
@@ -197,9 +196,9 @@ namespace vcml { namespace generic {
         }
     }
 
-    const bus_mapping& bus::lookup(const range& addr) const {
+    const bus::mapping& bus::lookup(const range& addr) const {
         for (unsigned int i = 0; i < m_mappings.size(); i++) {
-            const bus_mapping& m = m_mappings[i];
+            const mapping& m = m_mappings[i];
             if (m.addr.includes(addr))
                 return m;
         }
@@ -209,15 +208,15 @@ namespace vcml { namespace generic {
 
     void bus::map(unsigned int port, const range& addr, u64 offset,
                   const string& peer) {
-        const bus_mapping& other = lookup(addr);
-        if (other.port != -1) {
+        const mapping& other = lookup(addr);
+        if (other.port != -1 && other.port != m_default.port) {
             VCML_ERROR("Cannot map %d:0x%016lx..0x%016lx to '%s', because it "\
                        "overlaps with %d:0x%016lx..0x%016lx mapped to '%s'",
                        port, addr.start, addr.end, peer.c_str(), other.port,
                        other.addr.start, other.addr.end, other.peer.c_str());
         }
 
-        bus_mapping mapping = {
+        mapping mapping = {
             .port = (int)port,
             .addr = addr,
             .offset = offset,
@@ -230,6 +229,16 @@ namespace vcml { namespace generic {
     void bus::map(unsigned int port, u64 start, u64 end, u64 offset,
                   const string& peer) {
         map(port, range(start, end), offset, peer);
+    }
+
+    void bus::map_default(unsigned int port, u64 offset, const string& peer) {
+        if (m_default.port != -1)
+            VCML_ERROR("default bus route already mapped");
+
+        m_default.port = port;
+        m_default.addr = range(0ull, ~0ull);
+        m_default.offset = offset;
+        m_default.peer = peer;
     }
 
     unsigned int bus::bind(tlm_initiator_socket<64>& socket) {
@@ -251,19 +260,16 @@ namespace vcml { namespace generic {
         return bind(socket, range(start, end), offset);
     }
 
-    void bus::map_default(unsigned int port, const string& peer) {
-        if (m_default.port != -1)
-            VCML_ERROR("default bus route already mapped");
-
-        m_default.port = port;
-        m_default.addr = range(0ull, ~0ull);
-        m_default.offset = 0;
-        m_default.peer = peer;
+    unsigned int bus::bind_default(initiator_socket& socket, u64 offset) {
+        unsigned int port = OUT.next_idx();
+        map_default(port, offset, socket.name());
+        OUT[port].bind(socket);
+        return port;
     }
 
-    unsigned int bus::bind_default(tlm_target_socket<64>& socket) {
+    unsigned int bus::bind_default(target_socket& socket, u64 offset) {
         unsigned int port = OUT.next_idx();
-        map_default(port, socket.name());
+        map_default(port, offset, socket.name());
         OUT[port].bind(socket);
         return port;
     }
@@ -289,14 +295,14 @@ namespace vcml { namespace generic {
     }
 
     template <>
-    tlm_target_socket<64>*
-    bus::create_socket<tlm_target_socket<64> >(unsigned int idx) {
+    bus::target_socket*
+    bus::create_socket<bus::target_socket>(unsigned int idx) {
         return create_target_socket(idx);
     }
 
     template <>
-    tlm_initiator_socket<64>*
-    bus::create_socket<tlm_initiator_socket<64> >(unsigned int idx) {
+    bus::initiator_socket*
+    bus::create_socket<bus::initiator_socket>(unsigned int idx) {
         return create_initiator_socket(idx);
     }
 
