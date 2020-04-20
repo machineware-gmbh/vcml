@@ -160,12 +160,6 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        u64 nregs = m_stub->async_num_registers();
-        if (reg >= nregs) {
-            log_warn("register index out of bounds: %u", reg);
-            return ERR_PARAM;
-        }
-
         u64 regsz = m_stub->async_register_width(reg);
         if (regsz == 0)
             return "xxxxxxxx"; // respond with "contents unknown"
@@ -189,12 +183,6 @@ namespace vcml { namespace debugging {
         if (sscanf(command, "P%x=", &reg) != 1) {
             log_warn("malformed command '%s'", command);
             return ERR_COMMAND;
-        }
-
-        u64 nregs = m_stub->async_num_registers();
-        if (reg >= nregs) {
-            log_warn("register index out of bounds: %u", reg);
-            return ERR_PARAM;
         }
 
         u64 regsz = m_stub->async_register_width(reg);

@@ -36,8 +36,10 @@ namespace vcml {
 
     bool processor::gdb_read_reg(u64 idx, void* p, u64 size) {
         cpureg_info reg;
-        if (!lookup_gdbreg(idx, reg))
+        if (!lookup_gdbreg(idx, reg) && !lookup_cpureg(idx, reg)) {
+            log_warn("cannot find gdb register %lu", idx);
             return false;
+        }
 
         VCML_ERROR_ON(size != reg.size, "invalid register size %lu", size);
 
@@ -52,10 +54,15 @@ namespace vcml {
 
     bool processor::gdb_write_reg(u64 idx, const void* p, u64 size) {
         cpureg_info reg;
-        if (!lookup_gdbreg(idx, reg))
+        if (!lookup_gdbreg(idx, reg) && !lookup_cpureg(idx, reg)) {
+            log_warn("cannot find gdb register %lu", idx);
             return false;
-        if (is_write_allowed(reg.perms))
+        }
+
+        if (!is_write_allowed(reg.perms)) {
+            log_warn("cannot write gdb register '%s'", reg.name);
             return false;
+        }
 
         VCML_ERROR_ON(size != reg.size, "invalid register size %lu", size);
 
@@ -66,7 +73,7 @@ namespace vcml {
             memswap(&val, size);
 
         set_cpureg_internal(reg, val);
-        return false;
+        return true;
     }
 
     bool processor::gdb_page_size(u64& size) {
