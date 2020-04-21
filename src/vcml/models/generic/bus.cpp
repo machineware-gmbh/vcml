@@ -20,10 +20,10 @@
 
 namespace vcml { namespace generic {
 
-    bool bus::cmd_show(const vector<string>& args, ostream& os) {
+    bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
         os << "Memory map of " << name();
-        #define HEX(x, w) std::setfill('0') << std::setw(w) << \
-                          std::hex << (x) << std::dec
+        #define HEX(x) std::setfill('0') << std::setw((x) > ~0u ? 16 : 8) << \
+                       std::hex << (x) << std::dec
 
         vector<mapping> mappings(m_mappings);
         std::sort(mappings.begin(), mappings.end(),
@@ -33,12 +33,12 @@ namespace vcml { namespace generic {
 
         int i = 0;
         for (auto bm : mappings) {
-            os << std::endl << i++ << ": " << HEX(bm.addr.start, 8) << ".."
-               << HEX(bm.addr.end, 8) << " -> ";
+            os << std::endl << i++ << ": " << HEX(bm.addr.start) << ".."
+               << HEX(bm.addr.end) << " -> ";
 
             if (bm.offset > 0) {
-                os << HEX(bm.offset, 8) << " .. "
-                   << HEX(bm.offset + bm.addr.length() - 1, 8) << " ";
+                os << HEX(bm.offset) << " .. "
+                   << HEX(bm.offset + bm.addr.length() - 1) << " ";
             }
 
             os << (bm.peer.empty() ? OUT[bm.port].name() : bm.peer);
@@ -286,7 +286,7 @@ namespace vcml { namespace generic {
         m_default.offset = 0;
         m_default.peer = "";
 
-        register_command("show", 0, this, &bus::cmd_show,
+        register_command("mmap", 0, this, &bus::cmd_mmap,
                          "shows the memory map of this bus");
     }
 

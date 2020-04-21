@@ -100,12 +100,15 @@ namespace vcml {
     }
 
     template <class T>
-    void module::register_command(const string& name, unsigned int argc,
+    void module::register_command(const string& cmdnm, unsigned int argc,
                 T* host, bool (T::*func)(const vector<string>&, ostream&),
                 const string& desc) {
-        if (stl_contains(m_commands, name))
-            VCML_ERROR("command '%s' already registered", name.c_str());
-        m_commands[name] = new command<T>(name, argc, desc, host, func);
+        if (stl_contains(m_commands, cmdnm)) {
+            VCML_ERROR("module %s already has a command called %s",
+                       name(), cmdnm.c_str());
+        }
+
+        m_commands[cmdnm] = new command<T>(cmdnm, argc, desc, host, func);
     }
 
     inline command_base* module::get_command(const string& name) {

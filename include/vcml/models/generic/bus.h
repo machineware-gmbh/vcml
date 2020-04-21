@@ -90,7 +90,7 @@ namespace vcml { namespace generic {
         typedef tlm_target_socket<64> target_socket;
 
     private:
-        bool cmd_show(const vector<string>& args, ostream& os);
+        bool cmd_mmap(const vector<string>& args, ostream& os);
 
         struct mapping {
             int port;

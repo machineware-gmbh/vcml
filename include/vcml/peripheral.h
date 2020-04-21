@@ -45,6 +45,8 @@ namespace vcml {
         vector<reg_base*> m_registers;
         vector<backend*> m_backends;
 
+        bool cmd_mmap(const vector<string>& args, ostream& os);
+
     public:
         property<unsigned int> read_latency;
         property<unsigned int> write_latency;
@@ -81,6 +83,8 @@ namespace vcml {
 
         void add_register(reg_base* reg);
         void remove_register(reg_base* reg);
+
+        vector<reg_base*> get_registers() const { return m_registers; }
 
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
 

@@ -21,6 +21,28 @@
 
 namespace vcml {
 
+    bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
+        os << "Memory map of " << name();
+        #define HEX(x) std::setfill('0') << std::setw((x) > ~0u ? 16 : 8) << \
+                       std::hex << (x) << std::dec
+
+        auto regs = get_registers();
+        std::sort(regs.begin(), regs.end(),
+                [](reg_base* a, reg_base* b) -> bool {
+            return a->get_range().start < b->get_range().start;
+        });
+
+        int i = 0;
+        for (auto reg : regs) {
+            os << std::endl << i++ << ": "
+               << HEX(reg->get_range().start) << ".."
+               << HEX(reg->get_range().end) << " -> " << reg->basename();
+        }
+
+        #undef HEX
+        return true;
+    }
+
     peripheral::peripheral(const sc_module_name& nm, vcml_endian endian,
                            unsigned int rlatency, unsigned int wlatency):
         component(nm),
@@ -38,6 +60,9 @@ namespace vcml {
             if (be != nullptr)
                 m_backends.push_back(be);
         }
+
+        register_command("mmap", 0, this, &peripheral::cmd_mmap,
+                         "shows the memory map of this peripheral");
     }
 
     peripheral::~peripheral() {
