@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2020 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,10 +16,27 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <iostream>
-#include <cstring>
-#include <gtest/gtest.h>
-#include "vcml.h"
+#include "vcml/common/version.h"
+
+#ifndef VCML_VERSION_MAJOR
+#error VCML_VERSION_MAJOR undefined
+#endif
+
+#ifndef VCML_VERSION_MINOR
+#error VCML_VERSION_MINOR undefined
+#endif
+
+#ifndef VCML_VERSION_PATCH
+#error VCML_VERSION_PATCH undefined
+#endif
+
+#ifndef VCML_GIT_REV
+#error VCML_GIT_REV undefined
+#endif
+
+#ifndef VCML_GIT_REV_SHORT
+#error VCML_GIT_REV_SHORT undefined
+#endif
 
 #ifndef VCML_VERSION
 #error VCML_VERSION undefined
@@ -29,14 +46,9 @@
 #error VCML_VERSION_STRING undefined
 #endif
 
-TEST(version, vstr) {
-    std::cout << VCML_VERSION << std::endl;
-    std::cout << VCML_VERSION_STRING << std::endl;
+namespace vcml {
 
-    EXPECT_GT(VCML_VERSION, 20200000);
-    EXPECT_GT(std::strlen(VCML_VERSION_STRING), 0);
-    EXPECT_GT(std::strlen(VCML_GIT_REV), std::strlen(VCML_GIT_REV_SHORT));
+    const unsigned int version = VCML_VERSION;
+    const char* const version_string = VCML_VERSION_STRING;
 
-    EXPECT_EQ(vcml::version, VCML_VERSION);
-    EXPECT_STREQ(vcml::version_string, VCML_VERSION_STRING);
 }

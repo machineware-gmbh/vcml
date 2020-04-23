@@ -24,6 +24,7 @@
 #include "vcml/common/utils.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/version.h"
 
 namespace vcml {
 

@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2020 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -19,19 +19,25 @@
 #ifndef VCML_VERSION_H
 #define VCML_VERSION_H
 
-#define VCML_VERSION 20180824
+#define VCML_VERSION_MAJOR    @PROJECT_VERSION_MAJOR@
+#define VCML_VERSION_MINOR    @PROJECT_VERSION_MINOR@
+#define VCML_VERSION_PATCH    @PROJECT_VERSION_PATCH@
 
-#define VCML_VERSION_MAJOR 1
-#define VCML_VERSION_MINOR 0
-#define VCML_VERSION_PATCH 0
+#define VCML_GIT_REV          "@VCML_GIT_REV@"
+#define VCML_GIT_REV_SHORT    "@VCML_GIT_REV_SHORT@"
 
-#define VCML_STRINGIFY(s)   VCML_STRINGIFY2(s)
-#define VCML_STRINGIFY2(s)  #s
+#define VCML_VERSION          @VCML_VERSION@
+#define VCML_VERSION_STRING   "@VCML_VERSION_STRING@"
 
-#define VCML_RELEASE_STRING VCML_STRINGIFY(VCML_VERSION)
-#define VCML_VERSION_STRING VCML_STRINGIFY(VCML_VERSION_MAJOR) "." \
-                            VCML_STRINGIFY(VCML_VERSION_MINOR) "." \
-                            VCML_STRINGIFY(VCML_VERSION_PATCH) "-" \
-                            VCML_RELEASE_STRING
+namespace vcml {
+
+    extern const unsigned int version;
+    extern const char* const version_string;
+
+    static inline bool version_check() {
+        return version == VCML_VERSION;
+    }
+
+}
 
 #endif

@@ -17,7 +17,7 @@
  ##############################################################################
 
 cmake_minimum_required(VERSION 3.5)
-project(vcml LANGUAGES C CXX)
+project(vcml VERSION 2020.04.23 LANGUAGES C CXX)
 
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
@@ -28,6 +28,8 @@ find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
 find_package(LibVNC)
 
+include(GenVersionHeader)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DVCML_DEBUG")
 
@@ -37,12 +39,14 @@ endif()
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(gen ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
 set(sources
     ${src}/vcml/common/types.cpp
     ${src}/vcml/common/report.cpp
     ${src}/vcml/common/utils.cpp
     ${src}/vcml/common/strings.cpp
+    ${src}/vcml/common/version.cpp
     ${src}/vcml/common/aio.cpp
     ${src}/vcml/common/thctl.cpp
     ${src}/vcml/common/bitops.cpp
@@ -111,7 +115,11 @@ set(sources
     ${src}/vcml/models/riscv/plic.cpp)
 
 add_library(vcml ${sources})
+set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
+target_compile_features(vcml PUBLIC cxx_std_11)
+
 target_include_directories(vcml PUBLIC ${inc})
+target_include_directories(vcml PUBLIC ${gen})
 target_include_directories(vcml PRIVATE ${src})
 target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 target_include_directories(vcml SYSTEM PUBLIC ${LIBELF_INCLUDE_DIRS})
@@ -134,6 +142,7 @@ endif()
 
 install(TARGETS vcml DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
+install(DIRECTORY ${gen}/ DESTINATION include)
 
 if(VCML_BUILD_UTILS)
     add_subdirectory(utils)
