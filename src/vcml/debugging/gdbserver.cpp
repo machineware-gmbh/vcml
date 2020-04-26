@@ -133,6 +133,7 @@ namespace vcml { namespace debugging {
     string gdbserver::handle_kill(const char* command) {
         disconnect();
         update_status(GDB_KILLED);
+        sc_stop();
         return "";
     }
 
@@ -489,7 +490,6 @@ namespace vcml { namespace debugging {
 
         switch (m_status) {
         case GDB_KILLED:
-            sc_stop();
             return;
 
         case GDB_STOPPED:
