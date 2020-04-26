@@ -159,10 +159,8 @@ namespace vcml {
             VCML_ERROR("attempt to sync outside of SC_THREAD process");
 
         sc_time& offset = local_time(proc);
-        if (offset > SC_ZERO_TIME) {
-            wait(offset);
-            offset = SC_ZERO_TIME;
-        }
+        wait(offset);
+        offset = SC_ZERO_TIME;
     }
 
     master_socket* component::get_master_socket(const string& name) const {
