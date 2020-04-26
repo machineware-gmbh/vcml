@@ -103,7 +103,7 @@ namespace vcml { namespace riscv {
 
         u32 pending = 0u;
         for (unsigned int irqno = 0; irqno < 32; irqno++) {
-            if (is_pending(irqbase + irqno))
+            if (is_pending(irqbase + irqno) && !is_claimed(irqno))
                 pending |= (1u << irqno);
         }
 
@@ -129,6 +129,8 @@ namespace vcml { namespace riscv {
 
         if (irq > 0)
             m_claims[irq] = ctxno;
+
+        log_debug("context %u claims irq %u", ctxno, irq);
 
         update();
 
@@ -156,7 +158,13 @@ namespace vcml { namespace riscv {
     }
 
     u32 plic::write_COMPLETE(u32 value, unsigned int ctxno) {
-        if (m_claims[ctxno] != ctxno)
+        unsigned int irq = value;
+        if (value >= NIRQ) {
+            log_warn("context %u completes illegal irq %u", ctxno, irq);
+            return value;
+        }
+
+        if (m_claims[irq] != ctxno)
             log_debug("context %u completes unclaimed irq %u", ctxno, value);
 
         m_claims[ctxno] = ~0u;
@@ -166,17 +174,10 @@ namespace vcml { namespace riscv {
     }
 
     void plic::irq_handler(unsigned int irqno) {
-        VCML_ERROR_ON(!IRQS.exists(irqno), "invalid irq%u", irqno);
+        VCML_ERROR_ON(!IRQS.exists(irqno), "invalid irq %u", irqno);
 
         bool state = IRQS[irqno].read();
-
-        unsigned int regno = irqno / 32;
-        unsigned int shift = irqno % 32;
-
-        if (state)
-            PENDING.get(regno) |= (1u << shift);
-        else
-            PENDING.get(regno) &= ~(1u << shift);
+        log_debug("irq %u %s", irqno, state ? "set" : "cleared");
 
         update();
     }
@@ -191,7 +192,10 @@ namespace vcml { namespace riscv {
                     && is_enabled(irq.first, ctx.first)
                     && !is_claimed(irq.first)
                     && irq_priority(irq.first) > th) {
+
                     ctx.second->write(true);
+                    log_debug("forwarding irq %u to context %u", irq.first,
+                              ctx.first);
                     break;
                 }
             }
