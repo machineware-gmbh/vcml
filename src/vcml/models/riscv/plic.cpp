@@ -167,7 +167,7 @@ namespace vcml { namespace riscv {
         if (m_claims[irq] != ctxno)
             log_debug("context %u completes unclaimed irq %u", ctxno, value);
 
-        m_claims[ctxno] = ~0u;
+        m_claims[irq] = ~0u;
         update();
 
         return value;
