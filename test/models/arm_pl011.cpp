@@ -62,13 +62,11 @@ public:
         val = 0;
         EXPECT_OK(OUT.readw(PL011_UARTRIS, val)) << "cannot read UARTRIS";
         EXPECT_EQ(val, arm::pl011uart::RIS_TX) << "bogus irq state returned";
-        wait(clock_cycle());
         EXPECT_FALSE(IRQ_IN) << "spurious interrupt received";
 
         // set interrupt mask, await interrupt
         val = arm::pl011uart::RIS_TX;
         EXPECT_OK(OUT.writew(PL011_UARTIMSC, val)) << "cannot write UARTIMSC";
-        wait(IRQ_IN.value_changed_event());
         EXPECT_TRUE(IRQ_IN) << "interrupt did not trigger";
 
         // check reset works
