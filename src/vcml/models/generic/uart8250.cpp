@@ -51,11 +51,11 @@ namespace vcml { namespace generic {
             LSR |= LSR_THRE;
             if (m_tx_fifo.empty())
                 LSR |= LSR_TEMT;
+        }
 
-            if ((IER & IER_THRE) && !IRQ) {
-                log_debug("data transmitted, setting THRE interrupt");
-                IRQ = true;
-            }
+        if (m_tx_fifo.empty() && (IER & IER_THRE) && !IRQ) {
+            log_debug("transmitter empty, setting THRE interrupt");
+            IRQ = true;
         }
     }
 
