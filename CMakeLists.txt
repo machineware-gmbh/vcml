@@ -23,15 +23,12 @@ option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
 find_package(LibVNC)
 
 include(GenVersionHeader)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DVCML_DEBUG")
 
 if(VCML_BUILD_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -117,6 +114,7 @@ set(sources
 add_library(vcml ${sources})
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 target_compile_features(vcml PUBLIC cxx_std_11)
+target_compile_definitions(vcml PUBLIC $<$<CONFIG:DEBUG>:VCML_DEBUG>)
 
 target_include_directories(vcml PUBLIC ${inc})
 target_include_directories(vcml PUBLIC ${gen})
