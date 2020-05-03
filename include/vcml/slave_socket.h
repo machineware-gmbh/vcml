@@ -35,7 +35,8 @@ namespace vcml {
     class slave_socket: public simple_target_socket<slave_socket, 64>
     {
     private:
-        bool       m_free;
+        int        m_curr;
+        int        m_next;
         sc_event   m_free_ev;
         dmi_cache  m_dmi_cache;
         exmon      m_exmon;

@@ -23,9 +23,9 @@ namespace vcml {
     void slave_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
         trace_fw(tx, dt);
 
-        while (!m_free)
+        int self = m_next++;
+        while (self != m_curr)
             sc_core::wait(m_free_ev);
-        m_free = false;
 
         if (tx_is_excl(tx) && tx.is_read()) {
             unmap_dmi(tx.get_address(),
@@ -43,7 +43,7 @@ namespace vcml {
             tx.set_response_status(tlm::TLM_OK_RESPONSE);
         }
 
-        m_free = true;
+        m_curr++;
         m_free_ev.notify();
 
         trace_bw(tx, dt);
@@ -73,7 +73,8 @@ namespace vcml {
 
     slave_socket::slave_socket(const char* nm, component* host):
         simple_target_socket<slave_socket, 64>(nm),
-        m_free(true),
+        m_curr(0),
+        m_next(0),
         m_free_ev(concat(nm, "_free").c_str()),
         m_dmi_cache(),
         m_exmon(),
