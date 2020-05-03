@@ -167,7 +167,7 @@ namespace vcml {
     }
 
 }
-
+extern "C" int main(int argc, char** argv) __attribute__ ((weak));
 extern "C" int main(int argc, char** argv) {
     return vcml::main(argc, argv);
 }
