@@ -486,25 +486,28 @@ namespace vcml { namespace debugging {
     }
 
     void gdbserver::simulate(unsigned int cycles) {
-        suspender::handle_requests();
+        while (cycles > 0) {
+            suspender::handle_requests();
 
-        switch (m_status) {
-        case GDB_KILLED:
-            return;
+            switch (m_status) {
+            case GDB_KILLED:
+                return;
 
-        case GDB_STOPPED:
-            return;
+            case GDB_STOPPED:
+                return;
 
-        case GDB_STEPPING: {
-            m_stub->gdb_simulate(1);
-            notify(GDBSIG_TRAP);
-            return;
-        }
+            case GDB_STEPPING:
+                m_stub->gdb_simulate(1);
+                notify(GDBSIG_TRAP);
+                cycles--;
+                break;
 
-        case GDB_RUNNING:
-        default:
-            m_stub->gdb_simulate(cycles);
-            return;
+            case GDB_RUNNING:
+            default:
+                m_stub->gdb_simulate(cycles);
+                cycles = 0;
+                break;
+            }
         }
     }
 
