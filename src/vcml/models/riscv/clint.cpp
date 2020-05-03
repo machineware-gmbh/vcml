@@ -36,7 +36,12 @@ namespace vcml { namespace riscv {
         if (!IRQ_SW.exists(hart))
             return 0;
 
-        IRQ_SW[hart].write(val);
+        const u32 mask = 1u << 0;
+        val &= mask;
+
+        log_debug("%sing interrupt on hart %u", val ? "sett" : "clear", hart);
+
+        IRQ_SW[hart].write(val != 0);
         return val;
     }
 
@@ -44,14 +49,8 @@ namespace vcml { namespace riscv {
         if (!IRQ_TIMER.exists(hart))
             return 0;
 
-        u64 mtime = get_cycles();
-        u64 mcomp = val;
-
-        IRQ_TIMER[hart].write(mtime >= mcomp);
-
-        if (mtime < mcomp)
-            m_trigger.notify(clock_cycles(mcomp - mtime));
-
+        MTIMECMP[hart] = val;
+        update_timer();
         return val;
     }
 
@@ -60,7 +59,6 @@ namespace vcml { namespace riscv {
     }
 
     void clint::update_timer() {
-        u64 mnext = ~0ull;
         u64 mtime = get_cycles();
 
         for (auto it : IRQ_TIMER) {
@@ -70,12 +68,11 @@ namespace vcml { namespace riscv {
             u64 mcomp = MTIMECMP.get(hart);
             port->write(mtime >= mcomp);
 
-            if (mcomp > mtime && mcomp < mnext)
-                mnext = mcomp;
+            if (mtime >= mcomp)
+                log_debug("triggering hart %u timer interrupt", it.first);
+            else
+                m_trigger.notify(clock_cycles(mcomp - mtime));
         }
-
-        if (mnext != ~0ull)
-            next_trigger(clock_cycles(mnext - mtime));
     }
 
     clint::clint(const sc_module_name& nm):
