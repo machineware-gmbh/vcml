@@ -196,7 +196,6 @@ namespace vcml { namespace riscv {
                     ctx.second->write(true);
                     log_debug("forwarding irq %u to context %u", irq.first,
                               ctx.first);
-                    break;
                 }
             }
         }
