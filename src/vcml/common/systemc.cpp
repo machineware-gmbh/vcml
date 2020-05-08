@@ -38,6 +38,8 @@ namespace vcml {
     }
 
     bool is_thread(sc_process_b* proc) {
+        if (!thctl_is_sysc_thread())
+            return false;
         if (proc == nullptr)
             proc = sc_get_current_process_b();
         if (proc == nullptr)
@@ -46,6 +48,8 @@ namespace vcml {
     }
 
     bool is_method(sc_process_b* proc) {
+        if (!thctl_is_sysc_thread())
+            return false;
         if (proc == nullptr)
             proc = sc_get_current_process_b();
         if (proc == nullptr)
@@ -54,6 +58,8 @@ namespace vcml {
     }
 
     sc_process_b* current_thread() {
+        if (!thctl_is_sysc_thread())
+            return nullptr;
         sc_process_b* proc = sc_get_current_process_b();
         if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
             return nullptr;
@@ -61,6 +67,8 @@ namespace vcml {
     }
 
     sc_process_b* current_method() {
+        if (!thctl_is_sysc_thread())
+            return nullptr;
         sc_process_b* proc = sc_get_current_process_b();
         if (proc == nullptr || proc->proc_kind() != sc_core::SC_METHOD_PROC_)
             return nullptr;
