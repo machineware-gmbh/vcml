@@ -89,11 +89,12 @@ namespace vcml { namespace generic {
         return true;
     }
 
-    memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
-                   unsigned int rlat, unsigned int wlat):
+    memory::memory(const sc_module_name& nm, u64 sz, u8 alg,
+                   bool read_only, unsigned int rlat, unsigned int wlat):
         peripheral(nm, host_endian(), rlat, wlat),
         m_memory(nullptr),
         size("size", sz),
+        align("align", alg),
         readonly("readonly", false),
         images("images", ""),
         poison("poison", 0x00),
@@ -103,10 +104,17 @@ namespace vcml { namespace generic {
 
         int perms = PROT_READ | PROT_WRITE;
         int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
-        void* p = mmap(0, size, perms, flags, -1, 0);
+        size_t total = size;
+        u64 alg_sz = 1 << align;
+        if (align != 0u)
+            total = size + alg_sz;
+        void* p = mmap(0, total, perms, flags, -1, 0);
         VCML_ERROR_ON(p == MAP_FAILED, "mmap failed: %s", strerror(errno));
-
-        m_memory = (unsigned char*)p;
+        m_mapped_memory = p;
+        void *p_aligned = p;
+        if (align != 0u)
+            p_aligned = reinterpret_cast<void *>((reinterpret_cast<u64>(p) / alg_sz + 1) * alg_sz);
+        m_memory = (unsigned char*)p_aligned;
         map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
                                                 : VCML_ACCESS_READ_WRITE);
         if (poison > 0)
