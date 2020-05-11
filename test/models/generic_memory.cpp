@@ -26,7 +26,7 @@ public:
 
     test_harness(const sc_core::sc_module_name& nm):
         test_base(nm),
-        mem("mem", 0x1000),
+        mem("mem", 0x1000, 21),
         OUT("OUT") {
         OUT.bind(mem.IN);
         mem.CLOCK.stub(10 * MHz);
@@ -62,6 +62,10 @@ public:
         OUT.dmi().invalidate(0, -1);
         ASSERT_CE(OUT.writew(0x0, 0xfefefefe))
             << "read-only memory permitted write access after DMI invalidate";
+
+        unsigned char *data_ptr = mem.get_data_ptr();
+        ASSERT_EQ(reinterpret_cast<std::uintptr_t>(data_ptr) & 0x1FFFFF, 0)
+            << "memory is not 21 bit aligned";
     }
 
 };
