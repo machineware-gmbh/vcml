@@ -89,32 +89,38 @@ namespace vcml { namespace generic {
         return true;
     }
 
-    memory::memory(const sc_module_name& nm, u64 sz, u8 alg,
-                   bool read_only, unsigned int rlat, unsigned int wlat):
-        peripheral(nm, host_endian(), rlat, wlat),
+    u8* _align(u8* p, size_t align) {
+        return (u8*)(((std::uintptr_t)p + align) & ~(align - 1));
+    }
+
+    template <typename T>
+    T* malign(T* ptr, unsigned int align) {
+        const size_t mask = (1ull << align) - 1;
+        return (T*)(((u64)ptr + mask) & ~mask);
+    }
+
+    memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
+                   unsigned int alignment, unsigned int rl, unsigned int wl):
+        peripheral(nm, host_endian(), rl, wl),
+        m_base(nullptr),
         m_memory(nullptr),
         size("size", sz),
-        align("align", alg),
-        readonly("readonly", false),
+        align("align", alignment),
+        readonly("readonly", read_only),
         images("images", ""),
         poison("poison", 0x00),
         IN("IN") {
-
         VCML_ERROR_ON(size == 0u, "memory size cannot be 0");
+        VCML_ERROR_ON(align >= 64u, "requested alignment too big");
 
-        int perms = PROT_READ | PROT_WRITE;
-        int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
-        size_t total = size;
-        u64 alg_sz = 1 << align;
-        if (align != 0u)
-            total = size + alg_sz;
-        void* p = mmap(0, total, perms, flags, -1, 0);
-        VCML_ERROR_ON(p == MAP_FAILED, "mmap failed: %s", strerror(errno));
-        m_mapped_memory = p;
-        void *p_aligned = p;
-        if (align != 0u)
-            p_aligned = reinterpret_cast<void *>((reinterpret_cast<u64>(p) / alg_sz + 1) * alg_sz);
-        m_memory = (unsigned char*)p_aligned;
+        const int perms = PROT_READ | PROT_WRITE;
+        const int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+
+        std::uintptr_t extra = (1ull << align) - 1;
+        m_base = mmap(0, size + extra, perms, flags, -1, 0);
+        VCML_ERROR_ON(m_base == MAP_FAILED, "mmap failed: %s", strerror(errno));
+        m_memory = (u8*)(((std::uintptr_t)m_base + extra) & ~extra);
+
         map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
                                                 : VCML_ACCESS_READ_WRITE);
         if (poison > 0)
@@ -135,8 +141,8 @@ namespace vcml { namespace generic {
     }
 
     memory::~memory() {
-        if (m_memory)
-            munmap(m_memory, size);
+        if (m_base)
+            munmap(m_base, size);
     }
 
     void memory::reset() {

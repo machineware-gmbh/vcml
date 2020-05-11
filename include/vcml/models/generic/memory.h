@@ -32,8 +32,8 @@ namespace vcml { namespace generic {
     class memory: public peripheral
     {
     private:
-        unsigned char* m_memory;
-        void *m_mapped_memory;
+        void* m_base;
+        u8* m_memory;
 
         // commands
         bool cmd_load(const vector<string>& args, ostream& os);
@@ -51,14 +51,13 @@ namespace vcml { namespace generic {
 
         slave_socket IN;
 
-        inline unsigned char* get_data_ptr() const { return m_memory; }
+        u8* get_data_ptr() const { return m_memory; }
 
-        memory(const sc_module_name& name, u64 size, u8 alg = 0, bool read_only = false,
-               unsigned int read_latency = 0, unsigned int write_latency = 0);
+        memory(const sc_module_name& name, u64 size, bool read_only = false,
+               unsigned int alignment = 0, unsigned int read_latency = 0,
+               unsigned int write_latency = 0);
         virtual ~memory();
-
         VCML_KIND(memory);
-
         virtual void reset();
 
         void load(const string& binary, u64 offset = 0);
