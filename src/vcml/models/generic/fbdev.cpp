@@ -22,11 +22,13 @@
 namespace vcml { namespace generic {
 
     void fbdev::update() {
+#ifdef HAVE_LIBVNC
         while (true) {
             wait_clock_cycle();
             auto vnc = debugging::vncserver::lookup(vncport);
             vnc->render();
         }
+#endif
     }
 
     fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
