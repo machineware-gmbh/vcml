@@ -55,7 +55,7 @@ namespace vcml { namespace debugging {
     private:
         rfbScreenInfo* m_screen;
         pthread_t      m_thread;
-        volatile bool  m_running;
+        atomic<bool>   m_running;
 
         vnc_fbmode     m_fbmode;
         u8*            m_fb;
@@ -81,6 +81,7 @@ namespace vcml { namespace debugging {
         void setup_framebuffer(const vnc_fbmode& desc, u8* ptr);
 
         void render();
+        void stop() { m_running = false; }
 
         virtual ~vncserver();
 

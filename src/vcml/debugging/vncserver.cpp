@@ -173,7 +173,7 @@ namespace vcml { namespace debugging {
     void* vncserver::thread_func(void* arg) {
         vncserver* server = (vncserver*)arg;
         server->run();
-        return NULL;
+        return nullptr;
     }
 
     void vncserver::key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
@@ -196,11 +196,11 @@ namespace vcml { namespace debugging {
     }
 
     vncserver::vncserver(u16 port):
-        m_screen(NULL),
+        m_screen(nullptr),
         m_thread(),
         m_running(true),
         m_fbmode(fbmode_argb32(800, 600)),
-        m_fb(NULL),
+        m_fb(nullptr),
         m_key_handler() {
         VCML_ERROR_ON(port == 0, "invalid port specified: %d", (int)port);
 
@@ -260,11 +260,11 @@ namespace vcml { namespace debugging {
     }
 
     void vncserver::setup_framebuffer(const vnc_fbmode& mode, u8* ptr) {
-        VCML_ERROR_ON(ptr == NULL, "attempt to map NULL as framebuffer");
+        VCML_ERROR_ON(ptr == nullptr, "cannot map NULL framebuffer");
 
-        if (m_fb != NULL) {
+        if (m_fb != nullptr) {
             delete [] m_fb;
-            m_fb = NULL;
+            m_fb = nullptr;
         }
 
         m_fbmode = mode;
@@ -308,7 +308,7 @@ namespace vcml { namespace debugging {
 
     shared_ptr<vncserver> vncserver::lookup(u16 port) {
         shared_ptr<vncserver>& server = servers[port];
-        if (server == NULL)
+        if (server == nullptr)
             server.reset(new vncserver(port));
         return server;
     }
