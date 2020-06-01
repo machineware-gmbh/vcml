@@ -75,7 +75,10 @@ namespace vcml {
         VCML_KIND(component);
 
         virtual void reset();
+
         virtual void wait_clock_reset();
+        virtual void wait_clock_cycle();
+        virtual void wait_clock_cycles(u64 num);
 
         sc_time clock_cycle() const;
         sc_time clock_cycles(u64 num) const;

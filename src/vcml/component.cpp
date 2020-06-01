@@ -121,6 +121,16 @@ namespace vcml {
         }
     }
 
+    void component::wait_clock_cycle() {
+        wait_clock_reset();
+        wait(clock_cycle());
+    }
+
+    void component::wait_clock_cycles(u64 num) {
+        for (u64 i = 0; i < num; i++)
+            wait_clock_cycle();
+    }
+
     sc_time component::clock_cycle() const {
         if (!CLOCK.is_bound() || CLOCK <= 0)
             return SC_ZERO_TIME;
