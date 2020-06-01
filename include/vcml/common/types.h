@@ -55,7 +55,8 @@ namespace vcml {
 
     using ::clock_t;
 
-    const clock_t kHz = 1000;
+    const clock_t  Hz = 1;
+    const clock_t kHz = 1000 *  Hz;
     const clock_t MHz = 1000 * kHz;
     const clock_t GHz = 1000 * MHz;
     const clock_t THz = 1000 * GHz;
