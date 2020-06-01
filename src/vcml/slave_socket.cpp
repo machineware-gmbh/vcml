@@ -59,9 +59,6 @@ namespace vcml {
         dmi.set_start_address(0);
         dmi.set_end_address((sc_dt::uint64)-1);
 
-        if (m_host->RESET || m_host->CLOCK <= 0)
-            return false;
-
         if (!m_dmi_cache.lookup(tx, dmi))
             return false;
 
