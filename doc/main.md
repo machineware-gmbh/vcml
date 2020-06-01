@@ -25,6 +25,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [DS1742 RTC](models/rtc1742.md)
   * [SDHCI](models/sdhci.md)
   * [HWRNG](models/hwrng.md)
+  * [FBDEV](models/fbdev.md)
   * [OpenCores ETHOC](models/oc_ethoc.md)
   * [OpenCores OMPIC](models/oc_ompic.md)
   * [OpenCores OCKBD](models/oc_ockbd.md)

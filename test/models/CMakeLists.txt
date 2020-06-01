@@ -25,6 +25,7 @@ endmacro()
 
 model_test("generic_bus")
 model_test("generic_memory")
+model_test("generic_fbdev")
 model_test("sdhci")
 model_test("arm_pl011")
 model_test("arm_sp804")
