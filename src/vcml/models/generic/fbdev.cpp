@@ -60,15 +60,12 @@ namespace vcml { namespace generic {
     }
 
     void fbdev::end_of_elaboration() {
+#ifdef HAVE_LIBVNC
         range vmem(addr, addr + m_size - 1);
         log_debug("video memory at %p..%p", vmem.start, vmem.end);
 
         if (vncport == 0)
             return;
-
-#ifndef HAVE_LIBVNC
-        return;
-#endif
 
         tlm_dmi dmi;
         tlm_generic_payload tx;
@@ -98,6 +95,7 @@ namespace vcml { namespace generic {
 
         SC_HAS_PROCESS(fbdev);
         SC_THREAD(update);
+#endif
     }
 
 }}
