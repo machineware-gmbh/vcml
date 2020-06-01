@@ -62,7 +62,6 @@ namespace vcml { namespace generic {
     }
 
     void fbdev::end_of_elaboration() {
-#ifdef HAVE_LIBVNC
         range vmem(addr, addr + m_size - 1);
         log_debug("video memory at %p..%p", vmem.start, vmem.end);
 
@@ -91,6 +90,7 @@ namespace vcml { namespace generic {
         m_vptr = dmi.get_dmi_ptr() - dmi.get_start_address() + addr;
         log_debug("using DMI pointer %p", m_vptr);
 
+#ifdef HAVE_LIBVNC
         auto vnc = debugging::vncserver::lookup(vncport);
         debugging::vnc_fbmode mode = debugging::fbmode_argb32(resx, resy);
         vnc->setup_framebuffer(mode, m_vptr);
