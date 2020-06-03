@@ -43,7 +43,7 @@ graphical frontend for running commands via VSP.
 The following ports and sockets must be connected prior to simulating:
 
 | Port       | Type                     | Description            |
-| ---------- | ------------------------ | ------- -------------- |
+| ---------- | ------------------------ | ---------------------- |
 | `OUT`      |`tlm_initiator_socket<64>`| Port for memory access |
 
 ----
