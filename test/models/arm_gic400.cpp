@@ -43,7 +43,7 @@ public:
         VIFCTRL_OUT("VCTRLIF_OUT"),
         VCPUIF_OUT("VCPUIF_OUT"),
         PPI_OUT("PPI_OUT", 2),
-        SPI_OUT("SPI_OUT", 2),
+        SPI_OUT("SPI_OUT", 3),
         FIRQ_IN("FIRQ_IN", 2),
         NIRQ_IN("NIRQ_IN", 2),
         VFIRQ_IN("VFIRQ_IN", 2),
@@ -57,12 +57,22 @@ public:
         const u64 GICC_IAR = 0x0c;  // Interrupt Acknowledge Register
         const u64 GICC_EOIR = 0x10; // End of Interrupt Register
         const u64 GICC_RPR = 0x14;  // Running Priority Register
+        const u64 GICC_HPPIR = 0x18;// Highest Pending IRQ register
 
         const u64 GICD_CTLR = 0x000;          // Distributor Control Register
         const u64 GICD_ISENABLER_SPI = 0x104; // Interrupt Set-Enable Registers
         const u64 GICD_ITARGETS_SPI = 0x820;  // Interrupt Target Registers
         const u64 GICD_IPRIORITY_SGI = 0x400; // SGI Priority Register
         const u64 GICD_IPRIORITY_SPI = 0x420; // SPI Priority Register
+
+        const u32 GICV_CTLR = 0x00;     // VM Control Register
+        const u32 GICV_PMR = 0x04;      // VM Priority Mask Register
+        const u32 GICV_IAR = 0x0C;      // VM Interrupt Acknowledge Register
+        const u32 GICV_EOIR = 0x10;     // VM End of Interrupt Register
+        const u32 GICV_HPPIR = 0x18;    // VM Highest Priority Pending Interrupt Register
+
+        const u32 GICH_HCR = 0x00;     // Hypervisor Control Register
+        const u32 GICH_LR = 0x100;     // List Registers
 
         u32 val = ~0;
         EXPECT_OK(CPUIF_OUT.readw(GICC_IIDR, val, SBI_CPUID(0)))
@@ -452,6 +462,194 @@ public:
             << "failed to write GICD_IPRIORITY_SGI register";
         EXPECT_OK(DISTIF_OUT.writew(GICD_IPRIORITY_SPI,val))
             << "failed to write GICD_IPRIORITY_SPI register";
+
+        /**********************************************************************
+         *                                                                    *
+         *              Virtual Interrupt Test                                *
+         *                                                                    *
+         **********************************************************************/
+
+        // allow forwarding virtual interrupts
+        val = 0x01;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_CTLR, val, SBI_CPUID(0)))
+                            << "failed to write GICV_CTLR in VCPUIF";
+        EXPECT_OK(VCPUIF_OUT.readw(GICV_CTLR, val))
+                            << "failed to read GICV_CTLR from VCPUIF";
+        EXPECT_EQ(val, 0x01) << "GICV_CTLR of VCPUIF should be 1";
+        val = 0x01;
+        EXPECT_OK(VIFCTRL_OUT.writew(GICH_HCR, val, SBI_CPUID(0)))
+                            << "failed to write GICH_HCR";
+        EXPECT_OK(VIFCTRL_OUT.readw(GICH_HCR, val))
+                            << "failed to read GICH_HCR from VIFCTRL";
+        EXPECT_EQ(val, 0x01) << "GICH_HCR of VIFCTRL should be 1";
+
+        // set GICV_PMR register
+        val = 0b11110000;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_PMR, val))
+                            << "failed to write GICV_PMR register";
+        // set Virtual Interrupt (HW=0, prio=20, virtID=27) pending (01) in List Register of VIFCTRL
+        val = 0b00011010000000000000000000011011;
+        EXPECT_OK(VIFCTRL_OUT.writew(GICH_LR, val))
+                            << "failed to write GICH_LR register";
+        // read GICV_HPPIR register of VCPUIF
+        val = 0x00;
+        EXPECT_OK(VCPUIF_OUT.readw(GICV_HPPIR, val))
+                            << "failed to read GICV_HPPIR register of VCPUIF";
+        EXPECT_EQ(val, 0b00011011)
+                            << "GICV_HPPIR of VCPUIF should be 0b00011011=27";
+
+        // check if vIRQ is signaled to GuestOS
+        wait(SC_ZERO_TIME);
+        EXPECT_EQ(VNIRQ_IN[0], 1)
+                            << "vIRQ should have been signaled to GuestOS";
+
+        // GuestOS reads IAR of its VCPUIF
+        val = 0x00;
+        EXPECT_OK(VCPUIF_OUT.readw(GICV_IAR, val))
+                            << "failed to read GICV_IAR register of VCPUIF";
+        EXPECT_EQ(val, 0b00011011)
+                            << "GICV_IAR of VCPUIF should be 0b00011011=27";
+        EXPECT_EQ(VNIRQ_IN[0], 0)
+                            << "vIRQ should be 0 after GuestOS has read IAR";
+        // GuestOS handles interrupt and writes to EOIR of its VCPUIF
+        val = 27;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_EOIR, val))
+                            << "failed to write GICV_EOIR register";
+
+        // reset registers
+        val = 0x0;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_CTLR, val, SBI_CPUID(0)))
+                            << "failed to write GICV_CTLR register of VCPUIF";
+        EXPECT_OK(VIFCTRL_OUT.writew(GICH_HCR, val))
+                            << "failed to write GICH_HCR register of VIFCTRL";
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_PMR, val))
+                            << "failed to write GICV_PMR register of VCPUIF";
+
+
+        /**********************************************************************
+         *                                                                    *
+         *           Virtual Interrupt Test - Hardware interrupt              *
+         *                                                                    *
+         **********************************************************************/
+
+        // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
+        val = 0x1;
+        EXPECT_OK(CPUIF_OUT.writew(GICC_CTLR, val, SBI_CPUID(0)))
+                            << "failed to set GICC_CTLR for cpu0 HIGH";
+        val = 0x1;
+        EXPECT_OK(DISTIF_OUT.writew(GICD_CTLR, val))
+                            << "failed to write GICD_CTLR";
+
+        // write GICD_ITARGETS_SPI (irq 42 targets cpu0), GICC_PMR and GICD_ISENABLER_SPI (enable irq 42)
+        val = 0x1;
+        EXPECT_OK(DISTIF_OUT.writew(GICD_ITARGETS_SPI+0xA, val))
+                            << "failed to write ITARGETS_SPI register of distributor";
+        val = 0xF;
+        EXPECT_OK(CPUIF_OUT.writew(GICC_PMR, val, SBI_CPUID(0)))
+                            << "failed to set Priority Mask GICC_PMR for cpu0";
+        val = 1<<10;
+        EXPECT_OK(DISTIF_OUT.writew(GICD_ISENABLER_SPI, val));
+        wait(SC_ZERO_TIME);
+
+        // allow forwarding virtual interrupts (CTLR), enable Virtual CPU interface operation (HCR)
+        val = 0x01;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_CTLR, val, SBI_CPUID(0)))
+                            << "failed to write GICV_CTLR in VCPUIF";
+        val = 0x01;
+        EXPECT_OK(VIFCTRL_OUT.writew(GICH_HCR, val, SBI_CPUID(0)))
+                            << "failed to write GICH_HCR";
+        // set GICV_PMR register
+        val = 0b11110000;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_PMR, val))
+                            << "failed to write GICV_PMR register";
+
+        // setting peripheral connection high (connected to irq 42)
+        SPI_OUT[2].write(true);
+        wait(SC_ZERO_TIME);
+        wait(SC_ZERO_TIME);
+        EXPECT_EQ(NIRQ_IN[0], 1) << "IRQ should have been signaled";
+
+        // check HPPIR register in cpuif
+        val = 0x0;
+        EXPECT_OK(CPUIF_OUT.readw(GICC_HPPIR, val))
+                            << "failed to read GICC_HPPIR register of CPUIF";
+        EXPECT_EQ(val, 42)
+                            << "GICC_HPPIR of CPUIF should be 42";
+
+        // hypervisor acks and eois interrupt 42 in cpuif
+        val = 0x00;
+        EXPECT_OK(CPUIF_OUT.readw(GICC_IAR, val, SBI_CPUID(0)))
+                            << "failed to read GICC_IAR register of CPUIF";
+        EXPECT_EQ(val, 42)
+                            << "GICC_IAR of VCPUIF should be 42";
+        val = 42;
+        EXPECT_OK(CPUIF_OUT.writew(GICC_EOIR, val, SBI_CPUID(0)))
+                            << "cpu0 failed to write in GICC_EOIR";
+        val = 0x0;
+        EXPECT_OK(CPUIF_OUT.readw(GICC_HPPIR, val))
+                            << "failed to read GICC_HPPIR register of CPUIF";
+        EXPECT_EQ(val, 1023)
+                            << "GICC_HPPIR of CPUIF should be 1023";
+
+        // hypervisor updates list registers: add pending physical hardware interrupt with virtualID 42
+        val =     ( 1 << 31) // HW = 1 hardware interrupt
+                | ( 0 << 30) // group0 interrupt
+                | ( 1 << 28) // state: pending
+                | (20 << 23) // priority = 20
+                | (42 << 10) // phys id
+                |  42;       // virt id
+        EXPECT_OK(VIFCTRL_OUT.writew(GICH_LR, val))
+                            << "failed to write GICH_LR register";
+
+        // check GICV_HPPIR register of VCPUIF
+        val = 0x0;
+        EXPECT_OK(VCPUIF_OUT.readw(GICV_HPPIR, val))
+                            << "failed to read GICV_HPPIR register of VCPUIF";
+        EXPECT_EQ(val, 42)
+                            << "GICV_HPPIR of VCPUIF should be 42";
+
+        // check if vIRQ is signaled to GuestOS
+        wait(SC_ZERO_TIME);
+        EXPECT_EQ(VNIRQ_IN[0], 1)
+                            << "vIRQ should have been signaled to GuestOS";
+
+        // GuestOS reads IAR of its VCPUIF and handles interrupt
+        val = 0x00;
+        EXPECT_OK(VCPUIF_OUT.readw(GICV_IAR, val))
+                            << "failed to read GICV_IAR register of VCPUIF";
+        EXPECT_EQ(val, 42)
+                            << "GICV_IAR of VCPUIF should be 42";
+        EXPECT_EQ(VNIRQ_IN[0], 0)
+                            << "vIRQ should be 0 after GuestOS has read IAR";
+
+        // deactivate interrupt
+        val = 42;
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_EOIR, val))
+                            << "failed to write GICV_EOIR register";
+
+        // check GICV_HPPIR register of VCPUIF
+        val = 0x0;
+        EXPECT_OK(VCPUIF_OUT.readw(GICV_HPPIR, val))
+                            << "failed to read GICV_HPPIR register of VCPUIF";
+        EXPECT_EQ(val, 1023)
+                            << "GICV_HPPIR of VCPUIF should be 1023";
+
+        // reset registers
+        val = 0x0;
+        EXPECT_OK(CPUIF_OUT.writew(GICC_PMR, val, SBI_CPUID(0)))
+                            << "failed to set Priority Mask GICC_PMR for cpu0";
+        EXPECT_OK(DISTIF_OUT.writew(GICD_ITARGETS_SPI+0xA, val))
+                            << "failed to write ITARGETS_SPI register of distributor";
+        EXPECT_OK(DISTIF_OUT.writew(GICD_CTLR, val))
+                            << "failed to write GICD_CTLR";
+        EXPECT_OK(CPUIF_OUT.writew(GICC_CTLR, val, SBI_CPUID(0)))
+                            << "failed to set GICC_CTLR for cpu0 HIGH";
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_CTLR, val, SBI_CPUID(0)))
+                            << "failed to write GICV_CTLR in VCPUIF";
+        EXPECT_OK(VIFCTRL_OUT.writew(GICH_HCR, val, SBI_CPUID(0)))
+                            << "failed to write GICH_HCR";
+        EXPECT_OK(VCPUIF_OUT.writew(GICV_PMR, val))
+                            << "failed to write GICV_PMR register";
     }
 };
 
@@ -460,7 +658,7 @@ TEST(gic400, gic400) {
     sc_vector<sc_signal<bool>> nirqs("NIRQ", 2);
     sc_vector<sc_signal<bool>> vfirqs("VFIRQ", 2);
     sc_vector<sc_signal<bool>> vnirqs("VNIRQ", 2);
-    sc_vector<sc_signal<bool>> spis("SPI", 2);
+    sc_vector<sc_signal<bool>> spis("SPI", 3);
     sc_vector<sc_signal<bool>> ppis("PPI", 2);
 
     gic400_stim stim("STIM");
@@ -492,6 +690,9 @@ TEST(gic400, gic400) {
         stim.SPI_OUT[cpu].bind(spis[cpu]);
         stim.PPI_OUT[cpu].bind(ppis[cpu]);
     }
+    stim.SPI_OUT[2].bind(spis[2]);
+    gic400.SPI_IN[10].bind(spis[2]);
+
 
     sc_core::sc_start();
 }
