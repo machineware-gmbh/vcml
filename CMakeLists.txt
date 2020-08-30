@@ -110,7 +110,8 @@ set(sources
     ${src}/vcml/models/arm/syscon.cpp
     ${src}/vcml/models/arm/gic400.cpp
     ${src}/vcml/models/riscv/clint.cpp
-    ${src}/vcml/models/riscv/plic.cpp)
+    ${src}/vcml/models/riscv/plic.cpp
+    ${src}/vcml/models/riscv/simdev.cpp)
 
 add_library(vcml ${sources})
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
