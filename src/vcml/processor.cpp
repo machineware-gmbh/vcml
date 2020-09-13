@@ -261,7 +261,7 @@ namespace vcml {
         if (args.size() > 1)
             vend = strtoull(args[1].c_str(), NULL, 0);
 
-        vstart &= ~0x3ull;
+        vstart &= ~0x1ull;
 
         if (vstart > vend) {
             os << "Invalid range specified";
