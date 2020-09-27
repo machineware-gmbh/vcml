@@ -307,8 +307,13 @@ namespace vcml {
             if (success(INSN.read(phys, insn, sizeof(insn), SBI_DEBUG))) {
                 string disas = disassemble(addr, insn);
                 VCML_ERROR_ON(addr == prev, "disassembly address stuck");
-                for (unsigned int i = 0; i < (addr - prev); i++)
-                    os << HEX((int)insn[i], 2);
+                if (is_big_endian()) {
+                    for (unsigned int i = 0; i < (addr - prev); i++)
+                        os << HEX((int)insn[i], 2);
+                } else {
+                    for (unsigned int i = addr - prev; i > 0; i--)
+                        os << HEX((int)insn[i - 1], 2);
+                }
                 os << " " << disas;
             } else {
                 log_warn("debugger failed to read address 0x%016x", phys);
