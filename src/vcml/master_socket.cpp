@@ -54,6 +54,33 @@ namespace vcml {
             delete m_adapter;
     }
 
+    u8* master_socket::lookup_dmi_ptr(const range& addr, vcml_access acs) {
+        if (!m_host->allow_dmi)
+            return nullptr;
+
+        tlm_dmi dmi;
+        if (m_dmi_cache.lookup(addr, acs, dmi))
+            return dmi_get_ptr(dmi, addr.start);
+
+        tlm_generic_payload tx;
+        tlm_command cmd = tlm_command_from_access(acs);
+        tx_setup(tx, cmd, addr.start, nullptr, addr.length());
+        if (!(*this)->get_direct_mem_ptr(tx, dmi))
+            return nullptr;
+
+        m_dmi_cache.insert(dmi);
+
+        // Re-check permission for RW requests
+        if (!dmi_check_access(dmi, acs))
+            return nullptr;
+
+        // Granted DMI region might be smaller
+        if (!addr.inside(dmi))
+            return nullptr;
+
+        return dmi_get_ptr(dmi, addr.start);
+    }
+
     unsigned int master_socket::send(tlm_generic_payload& tx,
                                      const sideband& info) try {
         unsigned int   bytes = 0;

@@ -50,10 +50,15 @@ namespace vcml {
         void invalidate(u64 start, u64 end);
         void invalidate(const range& r);
 
+        bool lookup(const range& r, vcml_access acs, tlm_dmi& dmi);
         bool lookup(const range& r, tlm_command c, tlm_dmi& dmi);
         bool lookup(u64 addr, u64 size, tlm_command c, tlm_dmi& dmi);
         bool lookup(const tlm_generic_payload& tx, tlm_dmi& dmi);
     };
+
+    inline bool dmi_cache::lookup(const range& r, tlm_command c, tlm_dmi& d) {
+        return lookup(r, tlm_command_to_access(c), d);
+    }
 
     inline bool dmi_cache::lookup(u64 a, u64 s, tlm_command c, tlm_dmi& dmi) {
         return lookup(range(a, a + s - 1), c, dmi);
@@ -68,19 +73,20 @@ namespace vcml {
         case VCML_ACCESS_READ: dmi.allow_read(); break;
         case VCML_ACCESS_WRITE: dmi.allow_write(); break;
         case VCML_ACCESS_READ_WRITE: dmi.allow_read_write(); break;
-        default: dmi.allow_none();
+        default:
+            dmi.allow_none();
         }
     }
 
-    static inline bool dmi_check_access(const tlm_dmi& dmi, tlm_command cmd) {
-        switch (cmd) {
-        case TLM_READ_COMMAND: return dmi.is_read_allowed();
-        case TLM_WRITE_COMMAND: return dmi.is_write_allowed();
-        case TLM_IGNORE_COMMAND: return true;
-        default: break;
+    static inline bool dmi_check_access(const tlm_dmi& dmi, vcml_access acs) {
+        switch (acs) {
+        case VCML_ACCESS_READ: return dmi.is_read_allowed();
+        case VCML_ACCESS_WRITE: return dmi.is_write_allowed();
+        case VCML_ACCESS_READ_WRITE: return dmi.is_read_write_allowed();
+        case VCML_ACCESS_NONE: return true;
+        default:
+            VCML_ERROR("illegal access mode: %d", acs);
         }
-
-        return false;
     }
 
     static inline unsigned char* dmi_get_ptr(const tlm_dmi& dmi, u64 addr) {

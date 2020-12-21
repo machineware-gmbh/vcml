@@ -30,6 +30,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/report.h"
 
 namespace vcml {
 
@@ -150,6 +151,27 @@ namespace vcml {
 
     const char* tlm_response_to_str(tlm_response_status status);
     string tlm_transaction_to_str(const tlm_generic_payload& tx);
+
+    inline vcml_access tlm_command_to_access(tlm_command c) {
+        switch (c) {
+        case TLM_READ_COMMAND: return VCML_ACCESS_READ;
+        case TLM_WRITE_COMMAND: return VCML_ACCESS_WRITE;
+        case TLM_IGNORE_COMMAND: return VCML_ACCESS_NONE;
+        default:
+            VCML_ERROR("illegal TLM command %d", (int)c);
+        }
+    }
+
+    inline tlm_command tlm_command_from_access(vcml_access acs) {
+        switch (acs) {
+        case VCML_ACCESS_NONE: return TLM_IGNORE_COMMAND;
+        case VCML_ACCESS_READ: return TLM_READ_COMMAND;
+        case VCML_ACCESS_WRITE: return TLM_WRITE_COMMAND;
+        case VCML_ACCESS_READ_WRITE: return TLM_WRITE_COMMAND;
+        default:
+            VCML_ERROR("illegal access mode: %d", (int)acs);
+        }
+    }
 
     using tlm_utils::simple_initiator_socket;
     using tlm_utils::simple_initiator_socket_tagged;

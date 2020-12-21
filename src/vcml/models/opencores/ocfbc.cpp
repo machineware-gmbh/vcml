@@ -152,15 +152,9 @@ namespace vcml { namespace opencores {
         u32 size = m_resx * m_resy * m_bpp;
         u8* vram = nullptr;
 
-        tlm_dmi dmi;
-        tlm_generic_payload tx;
-        tx_setup(tx, TLM_READ_COMMAND, base, nullptr, size);
-        if (allow_dmi && OUT->get_direct_mem_ptr(tx, dmi)) {
-            if (dmi.is_read_allowed() &&
-                dmi.get_start_address() <= base &&
-                dmi.get_end_address() >= base + size) {
-                vram = dmi.get_dmi_ptr() + base - dmi.get_start_address();
-            }
+        if (allow_dmi) {
+            const range area(base, base + size - 1);
+            vram = OUT.lookup_dmi_ptr(area, VCML_ACCESS_READ);
         }
 
         debugging::vnc_fbmode mode;

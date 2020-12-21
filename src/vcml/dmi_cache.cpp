@@ -113,9 +113,9 @@ namespace vcml {
         }
     }
 
-    bool dmi_cache::lookup(const range& r, tlm_command c, tlm_dmi& out) {
+    bool dmi_cache::lookup(const range& r, vcml_access a, tlm_dmi& out) {
         for (unsigned int i = 0; i < m_entries.size(); i++) {
-            if (r.inside(m_entries[i]) && dmi_check_access(m_entries[i], c)) {
+            if (r.inside(m_entries[i]) && dmi_check_access(m_entries[i], a)) {
                 std::swap(m_entries[i], m_entries[0]);
                 out = m_entries[0];
                 return true;

@@ -68,26 +68,17 @@ namespace vcml { namespace generic {
         if (vncport == 0)
             return;
 
-        tlm_dmi dmi;
-        tlm_generic_payload tx;
-        tx_setup(tx, TLM_READ_COMMAND, addr, nullptr, m_size);
+        if (!allow_dmi) {
+            log_warn("fbdev requires DMI to be enabled");
+            return;
+        }
 
-        if (!OUT->get_direct_mem_ptr(tx, dmi) || !dmi.get_dmi_ptr()) {
+        m_vptr = OUT.lookup_dmi_ptr(vmem, VCML_ACCESS_READ);
+        if (m_vptr == nullptr) {
             log_warn("failed to get DMI pointer for %p", addr.get());
             return;
         }
 
-        if (!vmem.inside(dmi)) {
-            log_warn("framebuffer DMI range too small");
-            return;
-        }
-
-        if  (!dmi.is_read_allowed()) {
-            log_warn("framebuffer DMI pointer denies reading");
-            return;
-        }
-
-        m_vptr = dmi.get_dmi_ptr() - dmi.get_start_address() + addr;
         log_debug("using DMI pointer %p", m_vptr);
 
 #ifdef HAVE_LIBVNC

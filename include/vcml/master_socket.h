@@ -62,6 +62,9 @@ namespace vcml {
 
         VCML_KIND(master_socket);
 
+        u8* lookup_dmi_ptr(const range& addr,
+                           vcml_access acs = VCML_ACCESS_READ);
+
         dmi_cache& dmi();
 
         void map_dmi(const tlm_dmi& dmi);
