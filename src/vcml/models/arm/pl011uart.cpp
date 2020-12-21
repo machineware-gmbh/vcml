@@ -180,7 +180,7 @@ namespace vcml { namespace arm {
         RSR.write = &pl011uart::write_RSR;
 
         FR.sync_always();
-        FR.allow_read();
+        FR.allow_read_only();
 
         ILPR.sync_never();
         ILPR.allow_read_write(); // not implemented
@@ -210,23 +210,23 @@ namespace vcml { namespace arm {
         IMSC.write = &pl011uart::write_IMSC;
 
         RIS.sync_always();
-        RIS.allow_read();
+        RIS.allow_read_only();
 
         MIS.sync_always();
-        MIS.allow_read();
+        MIS.allow_read_only();
 
         ICR.sync_always();
-        ICR.allow_write();
+        ICR.allow_write_only();
         ICR.write = &pl011uart::write_ICR;
 
         DMAC.sync_never();
         DMAC.allow_read_write(); // not implemented
 
         PID.sync_never();
-        PID.allow_read();
+        PID.allow_read_only();
 
         CID.sync_never();
-        CID.allow_read();
+        CID.allow_read_only();
 
         SC_METHOD(poll);
 

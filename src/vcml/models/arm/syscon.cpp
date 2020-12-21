@@ -36,7 +36,7 @@ namespace vcml { namespace arm {
         SYS_CFGCTRL ("SYS_CFGCTRL", 0xa4),
         SYS_CFGSTAT ("SYS_CFGSTAT", 0xa8),
         IN("IN") {
-        SYS_ID.allow_read();
+        SYS_ID.allow_read_only();
 
         LOCKVAL.allow_read_write();
         LOCKVAL.write = &syscon::write_LOCKVAL;
@@ -54,7 +54,7 @@ namespace vcml { namespace arm {
         NVFLAGS_C.allow_read_write();
         NVFLAGS_C.write = &syscon::write_NVFLAGS_C;
 
-        CLCK24.allow_read();
+        CLCK24.allow_read_only();
         CLCK24.read = &syscon::read_CLCK24;
 
         PROC_ID.allow_read_write();

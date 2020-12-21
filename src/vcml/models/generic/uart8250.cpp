@@ -230,7 +230,7 @@ namespace vcml { namespace generic {
         LCR.allow_read_write();
         LCR.write = &uart8250::write_LCR;
 
-        LSR.allow_read();
+        LSR.allow_read_only();
         MCR.allow_read_write();
         MSR.allow_read_write();
         SCR.allow_read_write();

@@ -61,8 +61,8 @@ namespace vcml {
         bool is_readable() const { return is_read_allowed(m_access); }
         bool is_writeable() const { return is_write_allowed(m_access); }
 
-        void allow_read() { m_access = VCML_ACCESS_READ; }
-        void allow_write() { m_access = VCML_ACCESS_WRITE; }
+        void allow_read_only()  { m_access = VCML_ACCESS_READ; }
+        void allow_write_only() { m_access = VCML_ACCESS_WRITE; }
         void allow_read_write() { m_access = VCML_ACCESS_READ_WRITE; }
 
         void sync_on_read(bool sync = true) { m_rsync = sync; }

@@ -103,7 +103,7 @@ namespace vcml { namespace opencores {
             ss << "STATUS" << core;
 
             STATUS[core] = new reg<ompic, u32>(ss.str().c_str(), core * 8 + 4);
-            STATUS[core]->allow_read();
+            STATUS[core]->allow_read_only();
             STATUS[core]->tagged_read = &ompic::read_STATUS;
             STATUS[core]->tag = core;
         }

@@ -111,7 +111,7 @@ namespace vcml { namespace arm {
         LOAD.write = &timer::write_LOAD;
 
         VALUE.sync_always();
-        VALUE.allow_read();
+        VALUE.allow_read_only();
         VALUE.read = &timer::read_VALUE;
 
         CONTROL.sync_always();
@@ -119,15 +119,15 @@ namespace vcml { namespace arm {
         CONTROL.write = &timer::write_CONTROL;
 
         INTCLR.sync_always();
-        INTCLR.allow_write();
+        INTCLR.allow_write_only();
         INTCLR.write = &timer::write_INTCLR;
 
         RIS.sync_always();
-        RIS.allow_read();
+        RIS.allow_read_only();
         RIS.read = &timer::read_RIS;
 
         MIS.sync_always();
-        MIS.allow_read();
+        MIS.allow_read_only();
         MIS.read = &timer::read_MIS;
 
         BGLOAD.sync_always();
@@ -169,13 +169,13 @@ namespace vcml { namespace arm {
         ITCR.allow_read_write();
 
         ITOP.sync_never();
-        ITOP.allow_read();
+        ITOP.allow_read_only();
 
         PID.sync_never();
-        PID.allow_read();
+        PID.allow_read_only();
 
         CID.sync_never();
-        CID.allow_read();
+        CID.allow_read_only();
 
         TIMER1.IRQ.bind(IRQ1);
         TIMER2.IRQ.bind(IRQ2);

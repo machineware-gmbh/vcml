@@ -537,7 +537,7 @@ namespace vcml { namespace generic {
         CMD.write = &sdhci::write_CMD;
 
         RESPONSE.sync_never();
-        RESPONSE.allow_read();
+        RESPONSE.allow_read_only();
 
         BUFFER_DATA_PORT.sync_always();
         BUFFER_DATA_PORT.allow_read_write();
@@ -545,7 +545,7 @@ namespace vcml { namespace generic {
         BUFFER_DATA_PORT.write = &sdhci::write_BUFFER_DATA_PORT;
 
         PRESENT_STATE.sync_never();
-        PRESENT_STATE.allow_read();
+        PRESENT_STATE.allow_read_only();
 
         HOST_CONTROL_1.sync_never();
         HOST_CONTROL_1.allow_read_write();
@@ -585,15 +585,15 @@ namespace vcml { namespace generic {
         ERROR_INT_SIG_ENABLE.allow_read_write();
 
         CAPABILITIES.sync_always();
-        CAPABILITIES.allow_read();
+        CAPABILITIES.allow_read_only();
         CAPABILITIES.read = &sdhci::read_CAPABILITIES;
         CAPABILITIES[0] = CAPABILITY_VALUES_0;
 
         MAX_CURR_CAP.sync_never();
-        MAX_CURR_CAP.allow_read();
+        MAX_CURR_CAP.allow_read_only();
 
         HOST_CONTROLLER_VERSION.sync_never();
-        HOST_CONTROLLER_VERSION.allow_read();
+        HOST_CONTROLLER_VERSION.allow_read_only();
 
         F_SDH30_AHB_CONFIG.sync_never();
         F_SDH30_AHB_CONFIG.allow_read_write();

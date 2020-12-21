@@ -120,9 +120,9 @@ namespace vcml { namespace arm {
         IRQ_OUT("IRQ_OUT"),
         FIQ_OUT("FIQ_OUT") {
 
-        IRQS.allow_read();
-        FIQS.allow_read();
-        RISR.allow_read();
+        IRQS.allow_read_only();
+        FIQS.allow_read_only();
+        RISR.allow_read_only();
 
         INTS.allow_read_write();
 
@@ -135,7 +135,7 @@ namespace vcml { namespace arm {
         SINT.allow_read_write();
         SINT.write = &pl190vic::write_SINT;
 
-        SICR.allow_write();
+        SICR.allow_write_only();
         SICR.write = &pl190vic::write_SICR;
 
         PROT.allow_read_write(); // not implemented
@@ -150,8 +150,8 @@ namespace vcml { namespace arm {
         VCTRL.allow_read_write();
         VCTRL.tagged_write = &pl190vic::write_VCTRL;
 
-        PID.allow_read();
-        CID.allow_read();
+        PID.allow_read_only();
+        CID.allow_read_only();
 
         reset();
     }

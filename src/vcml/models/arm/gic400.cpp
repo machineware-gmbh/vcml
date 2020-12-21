@@ -505,11 +505,11 @@ namespace vcml { namespace arm {
         CTLR.write = &distif::write_CTLR;
 
         TYPER.sync_never();
-        TYPER.allow_read();
+        TYPER.allow_read_only();
         TYPER.read = &distif::read_TYPER;
 
         IIDR.sync_never();
-        IIDR.allow_read();
+        IIDR.allow_read_only();
 
         ISENABLER_PPI.set_banked();
         ISENABLER_PPI.sync_always();
@@ -556,11 +556,11 @@ namespace vcml { namespace arm {
         ICPENDR_SPI.tagged_write = &distif::write_ICPENDR_SPI;
 
         ISACTIVER_PPI.set_banked();
-        ISACTIVER_PPI.allow_read();
+        ISACTIVER_PPI.allow_read_only();
         ISACTIVER_PPI.sync_on_read();
         ISACTIVER_PPI.read = &distif::read_ISACTIVER_PPI;
 
-        ISACTIVER_SPI.allow_read();
+        ISACTIVER_SPI.allow_read_only();
         ISACTIVER_SPI.sync_on_read();
         ISACTIVER_SPI.tagged_read = &distif::read_ISACTIVER_SPI;
 
@@ -592,7 +592,7 @@ namespace vcml { namespace arm {
         ITARGETS_SPI.sync_always();
         ITARGETS_SPI.allow_read_write();
 
-        ICFGR_SGI.allow_read();
+        ICFGR_SGI.allow_read_only();
         ICFGR_SGI.sync_on_read();
 
         ICFGR_PPI.sync_on_write();
@@ -604,7 +604,7 @@ namespace vcml { namespace arm {
         ICFGR_SPI.tagged_write = &distif::write_ICFGR_SPI;
 
         SGIR.set_banked();
-        SGIR.allow_write();
+        SGIR.allow_write_only();
         SGIR.sync_on_write();
         SGIR.write = &distif::write_SGIR;
 
@@ -618,7 +618,7 @@ namespace vcml { namespace arm {
         CPENDSGIR.allow_read_write();
         CPENDSGIR.tagged_write = &distif::write_CPENDSGIR;
 
-        CIDR.allow_read();
+        CIDR.allow_read_only();
         CIDR.sync_never();
 
         reset();
@@ -792,22 +792,22 @@ namespace vcml { namespace arm {
         BPR.write = &cpuif::write_BPR;
 
         IAR.set_banked();
-        IAR.allow_read();
+        IAR.allow_read_only();
         IAR.sync_on_read();
         IAR.read = &cpuif::read_IAR;
 
         EOIR.set_banked();
-        EOIR.allow_write();
+        EOIR.allow_write_only();
         EOIR.sync_on_write();
         EOIR.write = &cpuif::write_EOIR;
 
         RPR.set_banked();
         RPR.sync_never();
-        RPR.allow_read();
+        RPR.allow_read_only();
 
         HPPIR.set_banked();
         HPPIR.sync_never();
-        HPPIR.allow_read();
+        HPPIR.allow_read_only();
 
         ABPR.set_banked();
         ABPR.sync_always();
@@ -817,10 +817,10 @@ namespace vcml { namespace arm {
         APR.allow_read_write();
 
         IIDR.sync_never();
-        IIDR.allow_read();
+        IIDR.allow_read_only();
 
         CIDR.sync_never();
-        CIDR.allow_read();
+        CIDR.allow_read_only();
 
         DIR.set_banked();
         DIR.sync_always();
@@ -987,7 +987,7 @@ namespace vcml { namespace arm {
         HCR.allow_read_write();
         HCR.write = &vifctrl::write_HCR;
 
-        VTR.allow_read();
+        VTR.allow_read_only();
         VTR.read = &vifctrl::read_VTR;
 
         LR.set_banked();
@@ -1108,11 +1108,11 @@ namespace vcml { namespace arm {
         BPR.write = &vcpuif::write_BPR;
 
         IAR.set_banked();
-        IAR.allow_read();
+        IAR.allow_read_only();
         IAR.read = &vcpuif::read_IAR;
 
         EOIR.set_banked();
-        EOIR.allow_write();
+        EOIR.allow_write_only();
         EOIR.write = &vcpuif::write_EOIR;
 
         RPR.set_banked();
@@ -1123,7 +1123,7 @@ namespace vcml { namespace arm {
         APR.set_banked();
         APR.allow_read_write();
 
-        IIDR.allow_read();
+        IIDR.allow_read_only();
 
         reset();
     }

@@ -124,7 +124,7 @@ namespace vcml { namespace opencores {
         clock("clock", 50000000) { /* 50 MHz default clock */
         SPI_OUT.bind(*this);
 
-        RXDATA.allow_read();
+        RXDATA.allow_read_only();
         RXDATA.read = &ocspi::read_RXDATA;
 
         TXDATA.allow_read_write();

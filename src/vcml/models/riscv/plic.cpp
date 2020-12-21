@@ -213,7 +213,7 @@ namespace vcml { namespace riscv {
         PRIORITY.allow_read_write();
         PRIORITY.tagged_write = &plic::write_PRIORITY;
 
-        PENDING.allow_read();
+        PENDING.allow_read_only();
         PENDING.tagged_read = &plic::read_PENDING;
 
         for (unsigned int ctx = 0; ctx < NCTX; ctx++)

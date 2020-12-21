@@ -48,7 +48,7 @@ namespace vcml { namespace generic {
         pseudo("pseudo", false),
         seed("seed", 0) {
 
-        RNG.allow_read();
+        RNG.allow_read_only();
         RNG.sync_never();
         RNG.read = &hwrng::read_RNG;
 

@@ -96,7 +96,7 @@ namespace vcml { namespace riscv {
         MTIMECMP.tagged_write = &clint::write_MTIMECMP;
 
         MTIME.sync_on_read();
-        MTIME.allow_read();
+        MTIME.allow_read_only();
         MTIME.read = &clint::read_MTIME;
 
         SC_METHOD(update_timer);

@@ -497,8 +497,8 @@ namespace vcml { namespace opencores {
 
         MIIADDRESS.allow_read_write();
         MIITX_DATA.allow_read_write();
-        MIIRX_DATA.allow_read();
-        MIISTATUS.allow_read();
+        MIIRX_DATA.allow_read_only();
+        MIISTATUS.allow_read_only();
 
         MAC_ADDR0.allow_read_write();
         MAC_ADDR0.write = &ethoc::write_MAC_ADDR0;

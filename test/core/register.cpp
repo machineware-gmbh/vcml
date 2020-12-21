@@ -203,7 +203,7 @@ TEST(registers, permissions) {
     unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
 
     local = sc_core::SC_ZERO_TIME;
-    mock.test_reg_b.allow_read();
+    mock.test_reg_b.allow_read_only();
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_write(_)).Times(0);
@@ -214,7 +214,7 @@ TEST(registers, permissions) {
     EXPECT_EQ(local, cycle * mock.write_latency);
 
     local = sc_core::SC_ZERO_TIME;
-    mock.test_reg_b.allow_write();
+    mock.test_reg_b.allow_write_only();
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_read()).Times(0);

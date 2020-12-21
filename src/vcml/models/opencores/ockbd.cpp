@@ -293,7 +293,7 @@ namespace vcml { namespace opencores {
         fifosize("fifosize", 16),
         vncport("vncport", 0) {
 
-        KHR.allow_read();
+        KHR.allow_read_only();
         KHR.read = &ockbd::read_KHR;
 
         using std::placeholders::_1;
