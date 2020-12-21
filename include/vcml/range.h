@@ -45,7 +45,15 @@ namespace vcml {
         range(const tlm_dmi& dmi);
 
         bool operator == (const range& other) const;
-        inline bool operator != (const range& other) const;
+        bool operator != (const range& other) const;
+        bool operator <  (const range& other) const;
+        bool operator >  (const range& other) const;
+
+        range& operator += (u64 offset);
+        range& operator -= (u64 offset);
+
+        range operator + (u64 offset) const;
+        range operator - (u64 offset) const;
     };
 
     VCML_TYPEINFO(range);
@@ -109,6 +117,40 @@ namespace vcml {
 
     inline bool range::operator != (const range& other) const {
         return start != other.start || end != other.end;
+    }
+
+    inline bool range::operator < (const range& other) const {
+        return end < other.start;
+    }
+
+    inline bool range::operator > (const range& other) const {
+        return start > other.end;
+    }
+
+    inline range& range::operator += (u64 offset) {
+        VCML_ERROR_ON(end + offset < end, "range overflow");
+        start += offset;
+        end += offset;
+        return *this;
+    }
+
+    inline range& range::operator -= (u64 offset) {
+        VCML_ERROR_ON(offset > start, "range underflow");
+        start -= offset;
+        end -= offset;
+        return *this;
+    }
+
+    inline range range::operator + (u64 offset) const {
+        range r(*this);
+        r += offset;
+        return r;
+    }
+
+    inline range range::operator - (u64 offset) const {
+        range r(*this);
+        r -= offset;
+        return r;
     }
 
 }

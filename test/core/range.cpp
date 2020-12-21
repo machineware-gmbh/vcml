@@ -95,12 +95,26 @@ TEST(range, init) {
     EXPECT_EQ(b.end, 30);
 }
 
+TEST(range, operators) {
+    vcml::range a = { 10, 20 };
+    vcml::range b = { 15, 25 };
+    vcml::range c = { 30, 40 };
+
+    EXPECT_EQ(a, a);
+    EXPECT_NE(a, c);
+    EXPECT_LT(a, c);
+    EXPECT_GT(c, a);
+
+    EXPECT_FALSE(a > b);
+    EXPECT_FALSE(b < a);
+}
+
 TEST(range, tostring) {
     vcml::range a = { 0x10, 0x20 };
     std::string s = to_string(a);
     EXPECT_EQ(s, "0x00000010 0x00000020");
 
-    vcml::range b = { 0xababababcdcdcdcd, 0xfefefefe12121212 };
+    vcml::range b = { 0xababababcdcdcdcdull, 0xfefefefe12121212ull };
     std::string t = to_string(b);
     EXPECT_EQ(t, "0xababababcdcdcdcd 0xfefefefe12121212");
 }
