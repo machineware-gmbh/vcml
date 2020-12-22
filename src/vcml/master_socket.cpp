@@ -68,7 +68,7 @@ namespace vcml {
         if (!(*this)->get_direct_mem_ptr(tx, dmi))
             return nullptr;
 
-        m_dmi_cache.insert(dmi);
+        map_dmi(dmi);
 
         // Re-check permission for RW requests
         if (!dmi_check_access(dmi, acs))
