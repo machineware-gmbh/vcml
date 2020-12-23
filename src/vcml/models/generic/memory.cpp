@@ -123,8 +123,6 @@ namespace vcml { namespace generic {
 
         map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
                                                 : VCML_ACCESS_READ_WRITE);
-        if (poison > 0)
-            memset(m_memory, poison, size);
 
         register_command("load", 1, this, &memory::cmd_load,
             "Load <binary> [off] to load the contents of file <binary> to " \
@@ -132,12 +130,6 @@ namespace vcml { namespace generic {
         register_command("show", 2, this, &memory::cmd_show,
             "Show memory contents between addresses [start] and [end]. " \
             "Usage: show [start] [end]");
-
-        vector<image_info> imagevec = images_from_string(images);
-        for (auto ii : imagevec) {
-            log_debug("loading '%s' to 0x%08llx", ii.file.c_str(), ii.offset);
-            load(ii.file, ii.offset);
-        }
     }
 
     memory::~memory() {
@@ -147,6 +139,12 @@ namespace vcml { namespace generic {
 
     void memory::reset() {
         memset(m_memory, poison, size);
+
+        vector<image_info> imagevec = images_from_string(images);
+        for (auto ii : imagevec) {
+            log_debug("loading '%s' to 0x%08llx", ii.file.c_str(), ii.offset);
+            load(ii.file, ii.offset);
+        }
     }
 
     void memory::load(const string& binary, u64 offset) {
