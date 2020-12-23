@@ -352,17 +352,6 @@ namespace vcml {
         }
     }
 
-    void processor::cpureg_info::reset() {
-        switch (size) {
-        case 1: set(dynamic_cast<property< u8>*>(prop)->get_default()); break;
-        case 2: set(dynamic_cast<property<u16>*>(prop)->get_default()); break;
-        case 4: set(dynamic_cast<property<u32>*>(prop)->get_default()); break;
-        case 8: set(dynamic_cast<property<u64>*>(prop)->get_default()); break;
-        default:
-            VCML_ERROR("register %s has illegal size %u bytes", name, size);
-        }
-    }
-
     u64 processor::cpureg_info::get() const {
         switch (size) {
         case 1: return dynamic_cast<property< u8>*>(prop)->get();
@@ -562,7 +551,7 @@ namespace vcml {
         m_run_time = 0.0;
 
         for (auto reg : m_cpuregs)
-            reg.second.reset();
+            reg.second.prop->reset();
 
         flush_cpuregs();
     }
