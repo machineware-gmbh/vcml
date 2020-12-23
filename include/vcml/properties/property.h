@@ -46,6 +46,8 @@ namespace vcml {
         property() = delete;
         property(const property<T,N>&) = delete;
 
+        virtual void reset() override;
+
         virtual const char* str() const override;
         virtual void str(const string& s) override;
 
@@ -101,17 +103,22 @@ namespace vcml {
         m_defval(def),
         m_inited(false),
         m_str("") {
+        property<T, N>::reset();
+    }
+
+    template <typename T, const unsigned int N>
+    property<T, N>::~property() {
+        // nothing to do
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T, N>::reset() {
         for (unsigned int i = 0; i < N; i++)
             m_value[i] = m_defval;
 
         string init;
         if (property_provider::init(name(), init))
             str(init);
-    }
-
-    template <typename T, const unsigned int N>
-    property<T, N>::~property() {
-        // nothing to do
     }
 
     template <typename T, const unsigned int N>

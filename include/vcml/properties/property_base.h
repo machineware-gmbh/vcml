@@ -44,6 +44,8 @@ namespace vcml {
         const char* basename()   const { return m_base.c_str(); }
         sc_module*  get_module() const { return m_parent; }
 
+        virtual void reset() = 0;
+
         virtual const char* str() const = 0;
         virtual void str(const string& s) = 0;
 
