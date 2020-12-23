@@ -94,7 +94,6 @@ namespace vcml {
 
         SC_METHOD(reset_handler);
         sensitive << RESET.pos();
-        dont_initialize();
 
         register_command("reset", 0 ,this, &component::cmd_reset,
                          "resets this component");
