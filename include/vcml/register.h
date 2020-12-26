@@ -152,6 +152,12 @@ namespace vcml {
         const DATA& operator [] (unsigned int idx) const;
         DATA& operator [] (unsigned int idx);
 
+        DATA operator ++ (int);
+        DATA operator -- (int);
+
+        reg<HOST, DATA, N>& operator ++ ();
+        reg<HOST, DATA, N>& operator -- ();
+
         template <typename T> reg<HOST, DATA, N>& operator =  (T value);
         template <typename T> reg<HOST, DATA, N>& operator |= (T value);
         template <typename T> reg<HOST, DATA, N>& operator &= (T value);
@@ -329,6 +335,42 @@ namespace vcml {
     template <class HOST, typename DATA, const unsigned int N>
     DATA& reg<HOST, DATA, N>::operator [] (unsigned int idx) {
         return current_bank(idx);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    DATA reg<HOST, DATA, N>::operator ++ (int unused) {
+        (void) unused;
+        DATA result = current_bank();
+
+        for (unsigned int i = 0; i < N; i++)
+            ++current_bank(i);
+
+        return result;
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    DATA reg<HOST, DATA, N>::operator -- (int unused) {
+        (void) unused;
+        DATA result = current_bank();
+
+        for (unsigned int i = 0; i < N; i++)
+            --current_bank(i);
+
+        return result;
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator ++ () {
+        for (unsigned int i = 0; i < N; i++)
+            current_bank(i)++;
+        return *this;
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator -- () {
+        for (unsigned int i = 0; i < N; i++)
+            current_bank(i)--;
+        return *this;
     }
 
     template <class HOST, typename DATA, const unsigned int N>

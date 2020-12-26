@@ -40,7 +40,8 @@ public:
     u32 _reg_read() { return reg_read(); }
     u32 _reg_write(u32 val) { return reg_write(val); }
 
-    mock_peripheral(const sc_core::sc_module_name& nm = "mock_peripheral"):
+    mock_peripheral(const sc_core::sc_module_name& nm =
+        sc_core::sc_gen_unique_name("mock_peripheral")):
         vcml::peripheral(nm, vcml::VCML_ENDIAN_LITTLE, 1, 10),
         mock_peripheral_base(),
         test_reg_a("test_reg_a", 0x0, 0xffffffff),
@@ -343,4 +344,28 @@ TEST(registers, endianess) {
     EXPECT_EQ(mock.test_reg_a, 0xcc00ffeeu);
     EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
+}
+
+TEST(registers, operators) {
+    mock_peripheral mock;
+
+    mock.test_reg_a = 3;
+    mock.test_reg_b = 3;
+
+    EXPECT_TRUE(mock.test_reg_a == 3u);
+    EXPECT_TRUE(mock.test_reg_b == 3u);
+
+    EXPECT_FALSE(mock.test_reg_a != 3u);
+    EXPECT_FALSE(mock.test_reg_b != 3u);
+
+    EXPECT_EQ(mock.test_reg_a++, 3u);
+    EXPECT_EQ(mock.test_reg_a,   4u);
+    EXPECT_EQ(++mock.test_reg_a, 5u);
+
+    EXPECT_EQ(mock.test_reg_b--, 3u);
+    EXPECT_EQ(mock.test_reg_b,   2u);
+    EXPECT_EQ(--mock.test_reg_b, 1u);
+
+    EXPECT_EQ(mock.test_reg_b += 1, 2u);
+    EXPECT_EQ(mock.test_reg_a -= 1, 4u);
 }
