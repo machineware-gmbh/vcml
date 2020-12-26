@@ -64,6 +64,8 @@ namespace vcml {
 
         u8* lookup_dmi_ptr(const range& addr,
                            vcml_access acs = VCML_ACCESS_READ);
+        u8* lookup_dmi_ptr(u64 start, u64 length,
+                           vcml_access acs = VCML_ACCESS_READ);
 
         dmi_cache& dmi();
 
@@ -120,6 +122,10 @@ namespace vcml {
     inline void master_socket::set_level(int level) {
         m_sbi.level = level;
         VCML_ERROR_ON(m_sbi.level != level, "level too large");
+    }
+
+    inline u8* master_socket::lookup_dmi_ptr(u64 s, u64 len, vcml_access a) {
+        return lookup_dmi_ptr(range(s, s + len - 1), a);
     }
 
     inline dmi_cache& master_socket::dmi() {
