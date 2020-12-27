@@ -72,3 +72,12 @@ TEST(utils, backtrace) {
     N::A< N::A<std::map<int, double> > >::B().func2();
     N::U().unroll<5>(42.0);
 }
+
+TEST(utils, realtime) {
+    double t = vcml::realtime();
+    usleep(10000); // 10ms
+    t = vcml::realtime() - t;
+
+    EXPECT_GE(t, 0.010); // >= 10ms?
+    EXPECT_LT(t, 0.011); // < 11ms?
+}
