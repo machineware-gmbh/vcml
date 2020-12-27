@@ -106,6 +106,12 @@ TEST(bitops, is_pow2) {
     EXPECT_TRUE(vcml::is_pow2(256));
 }
 
+TEST(bitops, fourcc) {
+    EXPECT_EQ(vcml::fourcc("vcml"), 0x6c6d6376);
+    EXPECT_EQ(vcml::fourcc("virt"), 0x74726976);
+    EXPECT_EQ(vcml::fourcc("\0\0\0\0"), 0);
+}
+
 TEST(bitops, bswap) {
     vcml::u8  val1 = 0x11;
     vcml::u16 val2 = 0x1122;

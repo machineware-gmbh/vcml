@@ -48,18 +48,22 @@ namespace vcml {
     }
 
     template <typename T>
-    inline int fls(T val) {
+    inline int fls(const T& val) {
         return sizeof(T) * 8 - clz(val) - 1;
     }
 
     template <typename T>
-    inline unsigned int popcnt(T val) {
+    inline unsigned int popcnt(const T& val) {
         return __builtin_popcountl((long)val);
     }
 
     template <typename T>
-    inline bool is_pow2(T val) {
+    inline bool is_pow2(const T& val) {
         return val != 0 && popcnt(val) == 1;
+    }
+
+    constexpr u32 fourcc(const char* s) {
+        return s[0] | s[1] << 8 | s[2] << 16 | s[3] << 24;
     }
 
     inline u8 bswap(u8 val) {
