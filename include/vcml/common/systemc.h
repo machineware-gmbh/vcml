@@ -110,6 +110,7 @@ namespace vcml {
 
     using sc_core::sc_spawn;
     using sc_core::sc_spawn_options;
+    using sc_core::sc_type_index;
 
     using tlm::tlm_global_quantum;
     using tlm::tlm_initiator_socket;

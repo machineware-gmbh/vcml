@@ -62,6 +62,10 @@ namespace vcml {
         return val != 0 && popcnt(val) == 1;
     }
 
+    constexpr u64 bitmask(unsigned int length, unsigned int offset = 0) {
+        return ((1ull << length) - 1) << offset;
+    }
+
     constexpr u32 fourcc(const char* s) {
         return s[0] | s[1] << 8 | s[2] << 16 | s[3] << 24;
     }
@@ -131,7 +135,7 @@ namespace vcml {
     struct bitfield {
         enum : unsigned int { OFFSET = OFF };
         enum : unsigned int { LENGTH = LEN };
-        enum : T { MASK = ((1ull << LEN) - 1) << OFF };
+        enum : T { MASK = bitmask(LEN, OFF) };
 
         operator T() const { return MASK; }
     };
