@@ -32,6 +32,21 @@
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
 
+#if (SYSTEMC_VERSION < 20140408)
+inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
+                                    const sc_core::sc_time& t2 ) {
+    sc_core::sc_time tmp(t1.value() % t2.value(), false);
+    return tmp;
+}
+#endif
+
+#if (SYSTEMC_VERSION < 20171012)
+#include <typeindex>
+namespace sc_core {
+    typedef std::type_index sc_type_index;
+}
+#endif
+
 namespace vcml {
 
     using sc_core::sc_object;
@@ -190,21 +205,6 @@ namespace vcml {
 }
 
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
-
-#if (SYSTEMC_VERSION < 20140408)
-inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
-                                    const sc_core::sc_time& t2 ) {
-    sc_core::sc_time tmp(t1.value() % t2.value(), false);
-    return tmp;
-}
-#endif
-
-#if (SYSTEMC_VERSION < 20171012)
-#include <typeindex>
-namespace sc_core {
-    typedef std::type_index sc_type_index;
-}
-#endif
 
 
 #endif
