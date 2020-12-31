@@ -86,6 +86,10 @@
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
 
+#include "vcml/models/virtio/virtio.h"
+#include "vcml/models/virtio/mmio.h"
+#include "vcml/models/virtio/rng.h"
+
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ethoc.h"
 #include "vcml/models/opencores/ockbd.h"

@@ -99,6 +99,9 @@ set(sources
     ${src}/vcml/models/generic/sdhci.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/virtio/virtio.cpp
+    ${src}/vcml/models/virtio/mmio.cpp
+    ${src}/vcml/models/virtio/rng.cpp
     ${src}/vcml/models/opencores/ompic.cpp
     ${src}/vcml/models/opencores/ethoc.cpp
     ${src}/vcml/models/opencores/ockbd.cpp
