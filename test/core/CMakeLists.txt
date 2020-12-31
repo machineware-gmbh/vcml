@@ -45,6 +45,7 @@ core_test("register")
 core_test("processor")
 core_test("spi")
 core_test("adapter")
+core_test("virtio")
 
 if(LIBVNC_FOUND)
     core_test("vnc")
