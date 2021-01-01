@@ -137,8 +137,7 @@ namespace vcml { namespace virtio {
         const range& regbase = CONFIG_GEN.get_range();
         if (addr.start <= regbase.end && addr.end > regbase.end)
             return TLM_ADDRESS_ERROR_RESPONSE;
-
-        if (!VIRTIO_OUT->read_config(addr - regbase.end + 1, data))
+        if (!VIRTIO_OUT->read_config(addr - regbase.end - 1, data))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
         return TLM_OK_RESPONSE;
@@ -155,7 +154,7 @@ namespace vcml { namespace virtio {
         if (addr.start <= regbase.end && addr.end > regbase.end)
             return TLM_ADDRESS_ERROR_RESPONSE;
 
-        if (!VIRTIO_OUT->write_config(addr - regbase.end + 1, data))
+        if (!VIRTIO_OUT->write_config(addr - regbase.end - 1, data))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
         CONFIG_GEN++;
