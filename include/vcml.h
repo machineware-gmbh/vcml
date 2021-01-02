@@ -49,6 +49,9 @@
 #include "vcml/debugging/gdbserver.h"
 #include "vcml/debugging/vspserver.h"
 
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/vnc.h"
+
 #include "vcml/elf.h"
 #include "vcml/range.h"
 #include "vcml/sbi.h"
@@ -89,6 +92,7 @@
 #include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"
 #include "vcml/models/virtio/rng.h"
+#include "vcml/models/virtio/input.h"
 
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ethoc.h"
