@@ -31,8 +31,8 @@ namespace vcml { namespace ui {
         u16  sym;   // key symbol (e.g. 'A' or '\t') from vnc
         u16  code;  // linux key code (depends on keyboard layout)
         bool shift; // additionally needs shift to produce key symbol
-        bool alt;   // additionally needs alt to produce key symbol
-        bool altgr; // additionally needs altgr to produce key symbol
+        bool l_alt; // additionally needs alt to produce key symbol
+        bool r_alt; // additionally needs altgr to produce key symbol
         const char* name;
     };
 
@@ -47,6 +47,11 @@ namespace vcml { namespace ui {
         keymap() = delete;
         keymap(const keymap&) = default;
         keymap(keymap&&) = default;
+
+        bool is_reserved(u16 code) const;
+        bool is_reserved(const syminfo* info) const {
+            return !info || is_reserved(info->code);
+        }
 
         const syminfo* lookup_symbol(u32 symbol) const;
         vector<u16> translate_symbol(u32 symbol) const;

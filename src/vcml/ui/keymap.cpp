@@ -203,19 +203,12 @@ namespace vcml { namespace ui {
         layout(l) {
     }
 
-    const syminfo* keymap::lookup_symbol(u32 symbol) const {
-        for (auto& info : layout)
-            if (info.sym == symbol)
-                return &info;
-        return nullptr;
-
-    }
-
     // Do not translate modifier keys, they will be added automatically when
     // needed. This is to work around different keyboard layouts between guest
     // and host (e.g. DE host: shift + "/" = "/", US guest: shift + "/" = "?")
-    static bool key_reserved(u16 code) {
+    bool keymap::is_reserved(u16 code) const {
         switch (code) {
+        case KEY_CAPSLOCK:
         case KEY_LEFTSHIFT:
         case KEY_RIGHTSHIFT:
         case KEY_LEFTALT:
@@ -227,17 +220,25 @@ namespace vcml { namespace ui {
         }
     }
 
+    const syminfo* keymap::lookup_symbol(u32 symbol) const {
+        for (auto& info : layout)
+            if (info.sym == symbol)
+                return &info;
+        return nullptr;
+
+    }
+
     vector<u16> keymap::translate_symbol(u32 symbol) const {
         vector<u16> keys;
         const syminfo* info = lookup_symbol(symbol);
-        if (info == nullptr || key_reserved(info->code))
+        if (info == nullptr || is_reserved(info->code))
             return keys;
 
         if (info->shift)
             keys.push_back(KEY_LEFTSHIFT);
-        if (info->alt)
+        if (info->l_alt)
             keys.push_back(KEY_LEFTALT);
-        if (info->altgr)
+        if (info->r_alt)
             keys.push_back(KEY_RIGHTALT);
 
         keys.push_back(info->code);

@@ -65,7 +65,7 @@ namespace vcml { namespace virtio {
             if (keyboard) {
                 auto keys = ui::keymap::lookup(keymap);
                 for (auto k : keys.layout) {
-                    if (k.code < 1024)
+                    if (k.code < sizeof(m_config.u.bitmap) * 8)
                         m_config.u.bitmap[k.code / 8] |= 1u << (k.code % 8);
                 }
                 m_config.size = sizeof(m_config.u.bitmap);
@@ -143,7 +143,10 @@ namespace vcml { namespace virtio {
 
     void input::key_event(u32 key, bool down) {
         const auto& map = ui::keymap::lookup(keymap);
-        auto keys = map.translate_symbol(key);
+        auto info = map.lookup_symbol(key);
+
+        if (map.is_reserved(info))
+            return;
 
         u32 val = 0u;
         if (down) { // handle up 0, down 1, repeat 2
@@ -152,8 +155,14 @@ namespace vcml { namespace virtio {
         }
 
         lock_guard<mutex> lock(m_events_mutex);
-        for (auto key : keys)
-            m_events.push({EV_KEY, key, val});
+        if (info->shift)
+            m_events.push({EV_KEY, KEY_LEFTSHIFT, (u32)down});
+        if (info->l_alt)
+            m_events.push({EV_KEY, KEY_LEFTALT, (u32)down});
+        if (info->r_alt)
+            m_events.push({EV_KEY, KEY_RIGHTALT, (u32)down});
+
+        m_events.push({EV_KEY, info->code, val});
         m_events.push({EV_SYN, SYN_REPORT, 0u});
     }
 
@@ -256,17 +265,18 @@ namespace vcml { namespace virtio {
     }
 
     input::~input() {
-#ifdef HAVE_LIBVNC
         if (vncport > 0) {
             auto vnc = ui::vnc::lookup(vncport);
             if (keyboard)
                 vnc->remove_key_listener(&m_key_handler);
         }
-#endif
     }
 
     void input::reset() {
         memset(&m_config, 0, sizeof(m_config));
+
+        m_messages = {};
+        m_events = {};
     }
 
 }}
