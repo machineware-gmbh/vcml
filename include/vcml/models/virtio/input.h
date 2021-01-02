@@ -89,8 +89,13 @@ namespace vcml { namespace virtio {
 
         input_config m_config;
 
-        function<void(u32, bool)> m_key_handler;
+        function<void(u32, bool)>     m_key_listener;
+        function<void(u32, u32, u32)> m_ptr_listener;
+
         u32 m_prev_symbol;
+        u32 m_prev_btn;
+        u32 m_prev_x;
+        u32 m_prev_y;
 
         mutex m_events_mutex;
         queue<input_event> m_events;
@@ -106,6 +111,7 @@ namespace vcml { namespace virtio {
         void config_update();
 
         void key_event(u32 code, bool state);
+        void ptr_event(u32 buttons, u32 x, u32 y);
 
         void update();
 
@@ -119,7 +125,6 @@ namespace vcml { namespace virtio {
         virtual bool write_config(const range& addr, const void* ptr) override;
 
     public:
-        property<bool> mouse;
         property<bool> touchpad;
         property<bool> keyboard;
         property<string> keymap;

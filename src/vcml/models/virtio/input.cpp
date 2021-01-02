@@ -55,20 +55,33 @@ namespace vcml { namespace virtio {
     }
 
     void input::config_update_evbits() {
+        bitset<1024> events;
+
         switch (m_config.subsel) {
         case EV_SYN:
-            m_config.u.bitmap[0] |= 1u << SYN_REPORT;
-            m_config.size = 1;
+            events.set(SYN_REPORT);
             break;
 
         case EV_KEY:
             if (keyboard) {
                 auto keys = ui::keymap::lookup(keymap);
-                for (auto k : keys.layout) {
-                    if (k.code < sizeof(m_config.u.bitmap) * 8)
-                        m_config.u.bitmap[k.code / 8] |= 1u << (k.code % 8);
-                }
-                m_config.size = sizeof(m_config.u.bitmap);
+                for (auto key : keys.layout)
+                    events.set(key.code);
+            }
+
+            if (touchpad) {
+                events.set(BTN_TOUCH);
+                events.set(BTN_TOOL_FINGER);
+                events.set(BTN_TOOL_DOUBLETAP);
+                events.set(BTN_TOOL_TRIPLETAP);
+            }
+
+            break;
+
+        case EV_ABS:
+            if (touchpad) {
+                events.set(ABS_X);
+                events.set(ABS_Y);
             }
 
             break;
@@ -77,6 +90,16 @@ namespace vcml { namespace virtio {
             // ignore the other event types
             break;
         }
+
+        if (events.none())
+            return;
+
+        for (size_t bit = 0; bit < events.size(); bit++) {
+            if (events[bit])
+                m_config.u.bitmap[bit / 8] |= 1u << (bit % 8);
+        }
+
+        m_config.size = sizeof(m_config.u.bitmap);
     }
 
     void input::config_update_absinfo() {
@@ -88,13 +111,13 @@ namespace vcml { namespace virtio {
         switch (m_config.subsel) {
         case ABS_X:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = vnc->resx();
+            m_config.u.abs.max  = vnc->resx() - 1;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
         case ABS_Y:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = vnc->resy();
+            m_config.u.abs.max  = vnc->resy() - 1;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
@@ -164,6 +187,36 @@ namespace vcml { namespace virtio {
 
         m_events.push({EV_KEY, info->code, val});
         m_events.push({EV_SYN, SYN_REPORT, 0u});
+    }
+
+    void input::ptr_event(u32 buttons, u32 x, u32 y) {
+        lock_guard<mutex> lock(m_events_mutex);
+
+        buttons &= 0b111; // lclick, mclick, rclick
+        size_t size = m_events.size();
+        u32 change = buttons ^ m_prev_btn;
+
+        if (change)
+            m_events.push({EV_KEY, BTN_TOUCH, !m_prev_btn});
+
+        if (change & (1u << 0))
+            m_events.push({EV_KEY, BTN_TOOL_FINGER,    (buttons >> 0) & 1u});
+        if (change & (1u << 1))
+            m_events.push({EV_KEY, BTN_TOOL_TRIPLETAP, (buttons >> 1) & 1u});
+        if (change & (1u << 2))
+            m_events.push({EV_KEY, BTN_TOOL_DOUBLETAP, (buttons >> 2) & 1u});
+
+        if (m_prev_x != x)
+            m_events.push({EV_ABS, ABS_X, x});
+        if (m_prev_y != y)
+            m_events.push({EV_ABS, ABS_Y, y});
+
+        if (m_events.size() != size)
+            m_events.push({EV_SYN, SYN_REPORT, 0u});
+
+        m_prev_btn = buttons;
+        m_prev_x = x;
+        m_prev_y = y;
     }
 
     void input::update() {
@@ -237,9 +290,12 @@ namespace vcml { namespace virtio {
     input::input(const sc_module_name& nm):
         module(nm),
         m_config(),
-        m_key_handler(),
+        m_key_listener(),
+        m_ptr_listener(),
         m_prev_symbol(),
-        mouse("mouse", true),
+        m_prev_btn(),
+        m_prev_x(),
+        m_prev_y(),
         touchpad("touchpad", true),
         keyboard("keyboard", true),
         keymap("keymap", "us"),
@@ -250,15 +306,20 @@ namespace vcml { namespace virtio {
 
         using std::placeholders::_1;
         using std::placeholders::_2;
-        m_key_handler = std::bind(&input::key_event, this, _1, _2);
+        using std::placeholders::_3;
+
+        m_key_listener = std::bind(&input::key_event, this, _1, _2);
+        m_ptr_listener = std::bind(&input::ptr_event, this, _1, _2, _3);
 
         if (vncport > 0) {
             auto vnc = ui::vnc::lookup(vncport);
             if (keyboard)
-                vnc->add_key_listener(&m_key_handler);
+                vnc->add_key_listener(&m_key_listener);
+            if (touchpad)
+                vnc->add_ptr_listener(&m_ptr_listener);
         }
 
-        if (mouse || keyboard || keyboard) {
+        if (keyboard || keyboard) {
             SC_HAS_PROCESS(input);
             SC_METHOD(update);
         }
@@ -268,12 +329,19 @@ namespace vcml { namespace virtio {
         if (vncport > 0) {
             auto vnc = ui::vnc::lookup(vncport);
             if (keyboard)
-                vnc->remove_key_listener(&m_key_handler);
+                vnc->remove_key_listener(&m_key_listener);
+            if (touchpad)
+                vnc->remove_ptr_listener(&m_ptr_listener);
         }
     }
 
     void input::reset() {
         memset(&m_config, 0, sizeof(m_config));
+
+        m_prev_symbol = 0;
+        m_prev_btn = 0;
+        m_prev_x = 0;
+        m_prev_y = 0;
 
         m_messages = {};
         m_events = {};
