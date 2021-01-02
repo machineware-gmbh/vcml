@@ -24,12 +24,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/range.h"
-#include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
-#include "vcml/master_socket.h"
+#include "vcml/module.h"
 
 #include "vcml/models/virtio/virtio.h"
 
@@ -39,6 +34,10 @@ namespace vcml { namespace virtio {
                 private virtio_fw_transport_if
     {
     private:
+        enum virtqueues : int {
+            VIRTQUEUE_REQUEST = 0,
+        };
+
         unsigned int m_seed;
 
         virtual void identify(virtio_device_desc& desc) override;

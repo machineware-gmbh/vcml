@@ -24,7 +24,7 @@ namespace vcml { namespace virtio {
         reset();
         desc.device_id = VIRTIO_DEVICE_RNG;
         desc.vendor_id = VIRTIO_VENDOR_VCML;
-        desc.request_virtqueue(0, 8);
+        desc.request_virtqueue(VIRTQUEUE_REQUEST, 8);
     }
 
     bool rng::notify(u32 vqid) {
