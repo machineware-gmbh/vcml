@@ -34,6 +34,7 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <bitset>
 #include <iterator>
 #include <algorithm>
 #include <iostream>
@@ -110,6 +111,7 @@ namespace vcml {
     using std::set;
     using std::unordered_set;
     using std::unordered_map;
+    using std::bitset;
 
     template <typename V, typename T>
     inline void stl_remove_erase(V& v, const T& t) {
