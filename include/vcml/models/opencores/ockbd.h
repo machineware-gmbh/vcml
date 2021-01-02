@@ -22,6 +22,10 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/thctl.h"
+
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/vnc.h"
 
 #include "vcml/ports.h"
 #include "vcml/register.h"
@@ -29,7 +33,6 @@
 #include "vcml/slave_socket.h"
 
 #include "vcml/properties/property.h"
-#include "vcml/debugging/vncserver.h"
 
 namespace vcml { namespace opencores {
 
@@ -54,6 +57,7 @@ namespace vcml { namespace opencores {
         out_port<bool> IRQ;
         slave_socket IN;
 
+        property<string> keymap;
         property<size_t> fifosize;
         property<u16> vncport;
 

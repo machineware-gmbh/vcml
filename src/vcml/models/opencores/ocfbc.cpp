@@ -147,7 +147,6 @@ namespace vcml { namespace opencores {
         if (vncport == 0)
             return;
 
-#ifdef HAVE_LIBVNC
         u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
         u32 size = m_resx * m_resy * m_bpp;
         u8* vram = nullptr;
@@ -157,7 +156,7 @@ namespace vcml { namespace opencores {
             vram = OUT.lookup_dmi_ptr(area, VCML_ACCESS_READ);
         }
 
-        debugging::vnc_fbmode mode;
+        ui::vnc_fbmode mode;
         // Below we should ideally just select the mode that suits our
         // display mode and pass our own model endianess. However, some
         // VNC clients seem to have trouble reading big endian data, and
@@ -166,27 +165,27 @@ namespace vcml { namespace opencores {
         // most of the time. Tested with RealVNC and Remmina.
         switch (m_bpp) {
         case 4: if (is_little_endian())
-                    mode = debugging::fbmode_argb32(m_resx, m_resy);
+                    mode = ui::fbmode_argb32(m_resx, m_resy);
                 else
-                    mode = debugging::fbmode_bgra32(m_resx, m_resy);
+                    mode = ui::fbmode_bgra32(m_resx, m_resy);
                 mode.endian = VCML_ENDIAN_LITTLE;
                 break;
 
         case 3: if (is_little_endian())
-                    mode = debugging::fbmode_rgb24(m_resx, m_resy);
+                    mode = ui::fbmode_rgb24(m_resx, m_resy);
                 else
-                    mode = debugging::fbmode_bgr24(m_resx, m_resy);
+                    mode = ui::fbmode_bgr24(m_resx, m_resy);
                 mode.endian = VCML_ENDIAN_LITTLE;
                 break;
 
-        case 2: mode = debugging::fbmode_rgb16(m_resx, m_resy);
+        case 2: mode = ui::fbmode_rgb16(m_resx, m_resy);
                 mode.endian = get_endian();
                 break;
 
         case 1: if (m_pc)
-                    mode = debugging::fbmode_argb32(m_resx, m_resy);
+                    mode = ui::fbmode_argb32(m_resx, m_resy);
                 else
-                    mode = debugging::fbmode_gray8(m_resx, m_resy);
+                    mode = ui::fbmode_gray8(m_resx, m_resy);
                 mode.endian = VCML_ENDIAN_LITTLE;
                 break;
 
@@ -194,8 +193,7 @@ namespace vcml { namespace opencores {
             VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
         }
 
-        shared_ptr<debugging::vncserver> vnc =
-                debugging::vncserver::lookup(vncport);
+        auto vnc = ui::vnc::lookup(vncport);
 
         // cannot use DMI with pseudocolor
         if ((vram == nullptr) || (m_pc)) {
@@ -206,16 +204,13 @@ namespace vcml { namespace opencores {
             vnc->setup_framebuffer(mode, vram);
             m_fb = nullptr;
         }
-#endif
     }
 
     void ocfbc::render_framebuffer() {
         if (vncport == 0)
             return;
 
-#ifdef HAVE_LIBVNC
-        debugging::vncserver::lookup(vncport)->render();
-#endif
+        ui::vnc::lookup(vncport)->render();
     }
 
     void ocfbc::render() {

@@ -30,7 +30,7 @@
 #include "vcml/master_socket.h"
 
 #include "vcml/properties/property.h"
-#include "vcml/debugging/vncserver.h"
+#include "vcml/ui/vnc.h"
 
 namespace vcml { namespace opencores {
 
