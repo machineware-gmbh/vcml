@@ -31,7 +31,9 @@
 #include <deque>
 #include <list>
 #include <map>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <iterator>
 #include <algorithm>
 #include <iostream>
@@ -40,6 +42,8 @@
 #include <memory>
 #include <functional>
 #include <atomic>
+#include <mutex>
+#include <thread>
 
 namespace vcml {
 
@@ -103,6 +107,9 @@ namespace vcml {
     using std::queue;
     using std::deque;
     using std::vector;
+    using std::set;
+    using std::unordered_set;
+    using std::unordered_map;
 
     template <typename V, typename T>
     inline void stl_remove_erase(V& v, const T& t) {
@@ -141,6 +148,10 @@ namespace vcml {
     using std::function;
 
     using std::atomic;
+
+    using std::mutex;
+    using std::lock_guard;
+    using std::thread;
 
     inline bool is_set(int flags, int set) {
         return (flags & set) == set;
