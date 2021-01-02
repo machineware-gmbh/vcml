@@ -202,6 +202,14 @@ namespace vcml {
         return sv;
     }
 
+    bool set_thread_name(thread& t, const string& name) {
+#ifdef __linux__
+        return pthread_setname_np(t.native_handle(), name.c_str()) == 0;
+#else
+        return false;
+#endif
+    }
+
     bool is_debug_build() {
 #ifdef VCML_DEBUG
         return true;
