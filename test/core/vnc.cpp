@@ -22,7 +22,7 @@
 #include "vcml.h"
 
 using namespace vcml;
-using namespace vcml::debugging;
+using namespace vcml::ui;
 
 TEST(vnc, fbmode) {
     u32 resx = 800;
@@ -64,17 +64,17 @@ TEST(vnc, server) {
     u16 port1 = 40000;
     u16 port2 = 40001;
 
-    shared_ptr<vncserver> p1 = vncserver::lookup(port1);
-    shared_ptr<vncserver> p2 = vncserver::lookup(port1);
-    shared_ptr<vncserver> p3 = vncserver::lookup(port2);
-    shared_ptr<vncserver> p4 = vncserver::lookup(port2);
-    shared_ptr<vncserver> p5 = vncserver::lookup(port2);
+    shared_ptr<vnc> p1 = vnc::lookup(port1);
+    shared_ptr<vnc> p2 = vnc::lookup(port1);
+    shared_ptr<vnc> p3 = vnc::lookup(port2);
+    shared_ptr<vnc> p4 = vnc::lookup(port2);
+    shared_ptr<vnc> p5 = vnc::lookup(port2);
 
-    EXPECT_EQ(p1->get_port(), port1);
-    EXPECT_EQ(p2->get_port(), port1);
-    EXPECT_EQ(p3->get_port(), port2);
-    EXPECT_EQ(p4->get_port(), port2);
-    EXPECT_EQ(p5->get_port(), port2);
+    EXPECT_EQ(p1->port(), port1);
+    EXPECT_EQ(p2->port(), port1);
+    EXPECT_EQ(p3->port(), port2);
+    EXPECT_EQ(p4->port(), port2);
+    EXPECT_EQ(p5->port(), port2);
 
     EXPECT_EQ(p1, p2);
     EXPECT_EQ(p3, p4);

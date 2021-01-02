@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,17 +16,15 @@
  *                                                                            *
  ******************************************************************************/
 
-#if defined(HAVE_LIBVNC) && !defined(VCML_DEBUGGING_VNCSERVER_H)
-#define VCML_DEBUGGING_VNCSERVER_H
-
-#include <rfb/rfb.h>
+#ifndef VCML_UI_VNC_H
+#define VCML_UI_VNC_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
 #include "vcml/logging/logger.h"
 
-namespace vcml { namespace debugging {
+namespace vcml { namespace ui {
 
     typedef struct {
         u8 offset;
@@ -36,7 +34,7 @@ namespace vcml { namespace debugging {
     typedef struct {
         u32 resx;
         u32 resy;
-        u32 size;
+        u64 size;
         vnc_color_format a;
         vnc_color_format r;
         vnc_color_format g;
@@ -51,44 +49,52 @@ namespace vcml { namespace debugging {
     vnc_fbmode fbmode_rgb16(u32 width, u32 height);
     vnc_fbmode fbmode_gray8(u32 width, u32 height);
 
-    class vncserver {
+    class vnc
+    {
     private:
-        rfbScreenInfo* m_screen;
-        pthread_t      m_thread;
-        atomic<bool>   m_running;
+        u16        m_port;
+        vnc_fbmode m_mode;
+        u8*        m_myfb;
+        u8*        m_fb;
 
-        vnc_fbmode     m_fbmode;
-        u8*            m_fb;
+        vector<function<void(u32, bool)>*> m_key_listener;
+        vector<function<void(u32, u32, u32)>*> m_ptr_listener;
 
-        vector<function<void(u32, bool)>*> m_key_handler;
+        vnc() = delete;
+        vnc(const vnc&) = delete;
 
-        static std::map<u16, shared_ptr<vncserver>> servers;
+        void cleanup();
 
-        void run();
-        void dokey(unsigned int key, bool down);
+    protected:
+        static unordered_map<u16, shared_ptr<vnc>> servers;
 
-        static void* thread_func(void* data);
-        static void  key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl);
-
-        vncserver();
-        vncserver(u16 port);
-        vncserver(const vncserver&);
+        vnc(u16 port);
+        virtual void init_framebuffer(const vnc_fbmode& mode, u8* fb);
 
     public:
-        u16 get_port() const { return (u16)m_screen->port; }
+        u32 resx() const { return m_mode.resx; }
+        u32 resy() const { return m_mode.resy; }
+        u16 port() const { return m_port; }
+
+        u8* framebuffer()      const { return m_fb; }
+        u64 framebuffer_size() const { return m_mode.size; }
+
+        virtual ~vnc();
+
+        virtual void render();
 
         u8*  setup_framebuffer(const vnc_fbmode& desc);
         void setup_framebuffer(const vnc_fbmode& desc, u8* ptr);
 
-        void render();
-        void stop() { m_running = false; }
+        void add_key_listener(function<void(u32, bool)>* listener);
+        void remove_key_listener(function<void(u32, bool)>* listener);
+        void notify_key_listeners(unsigned int key, bool down);
 
-        virtual ~vncserver();
+        void add_ptr_listener(function<void(u32, u32, u32)>* listener);
+        void remove_ptr_listener(function<void(u32, u32, u32)>* listener);
+        void notify_ptr_listeners(u32 buttons, u32 x, u32 y);
 
-        void add_key_listener(function<void(u32, bool)>* handler);
-        void remove_key_listener(function<void(u32, bool)>* handler);
-
-        static shared_ptr<vncserver> lookup(u16 port);
+        static shared_ptr<vnc> lookup(u16 port);
     };
 
 }}
