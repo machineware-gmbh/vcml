@@ -68,6 +68,8 @@ set(sources
     ${src}/vcml/debugging/rspserver.cpp
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
+    ${src}/vcml/ui/keymap.cpp
+    ${src}/vcml/ui/vnc.cpp
     ${src}/vcml/elf.cpp
     ${src}/vcml/sbi.cpp
     ${src}/vcml/dmi_cache.cpp
@@ -102,6 +104,7 @@ set(sources
     ${src}/vcml/models/virtio/virtio.cpp
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/rng.cpp
+    ${src}/vcml/models/virtio/input.cpp
     ${src}/vcml/models/opencores/ompic.cpp
     ${src}/vcml/models/opencores/ethoc.cpp
     ${src}/vcml/models/opencores/ockbd.cpp
@@ -138,7 +141,6 @@ if(LIBVNC_FOUND)
     target_compile_definitions(vcml PUBLIC HAVE_LIBVNC)
     target_include_directories(vcml SYSTEM PUBLIC ${LIBVNC_INCLUDE_DIRS})
     target_link_libraries(vcml PUBLIC ${LIBVNC_LIBRARIES})
-    target_sources(vcml PRIVATE ${src}/vcml/debugging/vncserver.cpp)
 else()
     message(STATUS "Building without VNC support")
 endif()
