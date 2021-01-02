@@ -23,6 +23,7 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
+#include "vcml/ui/vnc.h"
 #include "vcml/component.h"
 #include "vcml/master_socket.h"
 

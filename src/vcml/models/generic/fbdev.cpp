@@ -17,18 +17,15 @@
  ******************************************************************************/
 
 #include "vcml/models/generic/fbdev.h"
-#include "vcml/debugging/vncserver.h"
 
 namespace vcml { namespace generic {
 
     void fbdev::update() {
-#ifdef HAVE_LIBVNC
         while (true) {
             wait_clock_cycle();
-            auto vnc = debugging::vncserver::lookup(vncport);
+            auto vnc = ui::vnc::lookup(vncport);
             vnc->render();
         }
-#endif
     }
 
     fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
@@ -51,10 +48,7 @@ namespace vcml { namespace generic {
     }
 
     fbdev::~fbdev() {
-#ifdef HAVE_LIBVNC
-        if (vncport > 0 && m_vptr != nullptr)
-            debugging::vncserver::lookup(vncport)->stop();
-#endif
+        // nothing to do
     }
 
     void fbdev::reset() {
@@ -81,14 +75,12 @@ namespace vcml { namespace generic {
 
         log_debug("using DMI pointer %p", m_vptr);
 
-#ifdef HAVE_LIBVNC
-        auto vnc = debugging::vncserver::lookup(vncport);
-        debugging::vnc_fbmode mode = debugging::fbmode_argb32(resx, resy);
+        auto vnc = ui::vnc::lookup(vncport);
+        auto mode = ui::fbmode_argb32(resx, resy);
         vnc->setup_framebuffer(mode, m_vptr);
 
         SC_HAS_PROCESS(fbdev);
         SC_THREAD(update);
-#endif
     }
 
 }}
