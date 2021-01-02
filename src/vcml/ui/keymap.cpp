@@ -201,6 +201,11 @@ namespace vcml { namespace ui {
 
     keymap::keymap(const vector<syminfo>& l):
         layout(l) {
+        // sanity checking
+        for (const auto info : layout) {
+            if (info.code > KEY_MAX)
+                VCML_ERROR("invalid key code 0x%x", info.code);
+        }
     }
 
     // Do not translate modifier keys, they will be added automatically when
