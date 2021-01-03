@@ -23,6 +23,8 @@
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
 
+#include "vcml/logging/logger.h"
+
 #include "vcml/properties/property_base.h"
 #include "vcml/properties/property_provider.h"
 
