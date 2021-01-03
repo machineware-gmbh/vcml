@@ -129,6 +129,20 @@ namespace vcml {
         return tp.tv_sec + tp.tv_nsec * 1e-9;
     }
 
+    u64 realtime_us() {
+        struct timespec tp = { 0 };
+        if (clock_gettime(CLOCK_REALTIME, &tp))
+            VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
+        return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
+    }
+
+    u64 timestamp_us() {
+        struct timespec tp = { 0 };
+        if (clock_gettime(CLOCK_MONOTONIC, &tp))
+            VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
+        return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
+    }
+
     string call_origin() {
         pthread_t this_thread = pthread_self();
         if (this_thread != thctl_sysc_thread()) {

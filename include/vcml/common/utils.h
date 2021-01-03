@@ -32,6 +32,9 @@ namespace vcml {
 
     double realtime();
 
+    u64 realtime_us();
+    u64 timestamp_us();
+
     bool file_exists(const string& filename);
 
     size_t fd_peek(int fd, time_t timeout_ms = 0ull);
