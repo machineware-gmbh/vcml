@@ -1,15 +1,15 @@
 # VCML Models: Simulation Throttle
 The simulation throttle can be used to limit the simulation speed to a factor
 of realtime, configurable via the `rtf` property. If the simulation proceeds
-faster than realtime, this device can be used to reduce its speed so that it
-remains interactive and hardware or software timeouts remain within resonable
+faster than realtime, this throttle can be used to reduce its speed so that it
+remains interactive and hardware and software timeouts remain within resonable
 limits for human interaction. The `rtf` property can be used to specify the
 maximum speed the simulation is allowed to run at. Anything beyond `rtf` will
-be throttled; i.e. `rtf = 1` limits simulation to realtime (one second of
+be throttled; i.e. `rtf = 1.0` limits simulation to realtime (one second of
 simulated time per second of realtime), `rtf = 0.5` is half speed (one second
-of real time per two seconds of realtime) and `rtf = 2` means twice as fast as
-realtime (two seconds of simulated time per second of realtime). A value of
-zero disables throttling entirely.
+of simulated time per two seconds of realtime) and `rtf = 2.0` means twice as
+fast as realtime (two seconds of simulated time per second of realtime). A
+value of zero disables throttling entirely.
 
 ----
 ## Properties
