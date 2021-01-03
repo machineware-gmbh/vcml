@@ -7,7 +7,7 @@ VIRTIO devices can be split into a controller and a device part. The
 *controller* handles all bus communication with the guest processor (via MMIO
 or PCIe), while the *device* implements the actual functionality (ethernet,
 entropy, input, graphics, etc.). More information about VIRTIO can be found
-at [1](https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html).
+at [[1]](https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html).
 
 ----
 ## VIRTIO MMIO
@@ -20,15 +20,16 @@ via its `use_packed_queues` property.
 ### Properties
 The `virtio::mmio` model has the following properties:
 
-| Property            | Type        | Default    | Description             |
-| ------------------- | ----------- | ---------- | ----------------------- |
-| `use_packed_queues` | `bool`      | `false`    | Virtqueue type selector |
-| `read_latency`      | `sc_time`   | `0ns`      | Extra read delay        |
-| `write_latency`     | `sc_time`   | `0ns`      | Extra write delay       |
-| `backends`          | `string`    | `<empty>`  | Ignored                 |
-| `allow_dmi`         | `bool`      | `true`     | Ignored                 |
-| `loglvl`            | `log_level` | `info`     | Logging threshold       |
-| `trace_errors`      | `bool`      | `false`    | Report TLM errors       |
+| Property              | Type        | Default    | Description             |
+| --------------------- | ----------- | ---------- | ----------------------- |
+| `use_packed_queues`   | `bool`      | `false`    | Virtqueue type selector |
+| `use_strong_barriers` | `bool`      | `false`    | Request strong barriers |
+| `read_latency`        | `sc_time`   | `0ns`      | Extra read delay        |
+| `write_latency`       | `sc_time`   | `0ns`      | Extra write delay       |
+| `backends`            | `string`    | `<empty>`  | Ignored                 |
+| `allow_dmi`           | `bool`      | `true`     | Ignored                 |
+| `loglvl`              | `log_level` | `info`     | Logging threshold       |
+| `trace_errors`        | `bool`      | `false`    | Report TLM errors       |
 
 The properties `loglvl` and `trace_errors` require [`loggers`](../logging.md).
 
@@ -80,9 +81,9 @@ drivers/virtio/virtio_mmio.c
 ```
 
 In order to allow the kernel to discover this `virtio::mmio` device, a new
-device tree node needs to be added. The following example adds a VIRTIO
+device-tree node needs to be added. The following example adds a VIRTIO
 controller to address `0x14000000` using interrupt `12`. Afterwards, the
-connected VIRTIO device is discovered automatically.
+connected VIRTIO device will be discovered automatically.
 
 ```
 virtio@14000000 {
