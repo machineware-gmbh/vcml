@@ -93,4 +93,10 @@ TEST(vnc, server) {
     EXPECT_EQ(p3.use_count(), 4);
     EXPECT_EQ(p4.use_count(), 4);
     EXPECT_EQ(p5.use_count(), 4);
+
+    p1->shutdown();
+    p2->shutdown();
+    p3->shutdown();
+    p4->shutdown();
+    p5->shutdown();
 }
