@@ -14,7 +14,7 @@ at [[1]](https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-cspr
 This model serves as a VIRTIO controller that is accesses via memory-mapped IO
 registers (MMIO). Connection to a VIRTIO device is established via its
 `VIRTIO_OUT` TLM port. This model supports both *split* and *packed* virtqueues
-for transmission of data to and from its connected VIRTIO device, controlable
+for transmission of data to and from its connected VIRTIO device, controllable
 via its `use_packed_queues` property.
 
 ### Properties
@@ -112,7 +112,7 @@ implement. They need to be connected to a VIRTIO controller (e.g.
 | Device                | ID     | Description                          |
 | --------------------- | ------ | -------------------------------------|
 | `vcml::virtio::rng`   | `0x04` | Used to supply entropy to the system |
-| `vcml::virtio::input` | `0x12` | Keyboard and touchpad event devices  |
+| `vcml::virtio::input` | `0x12` | Keyboard and touchpad event device   |
 
 ----
 Documentation updated January 2021
