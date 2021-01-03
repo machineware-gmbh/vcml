@@ -153,16 +153,19 @@ namespace vcml { namespace ui {
         }
     }
 
-    unordered_map<u16, shared_ptr<vnc>> vnc::servers;
+    unordered_map<u16, shared_ptr<vnc>> vnc::servers = {
+        { 0, shared_ptr<vnc>(new vnc(0)) } // no-op server for port 0
+    };
 
     vnc::vnc(u16 port):
+        m_mutex(),
+        m_name(mkstr("vcml vnc server %hu", port)),
         m_port(port),
         m_mode(),
         m_myfb(nullptr),
         m_fb(nullptr),
         m_key_listener(),
         m_ptr_listener() {
-        VCML_ERROR_ON(port == 0, "invalid VNC port specified: %hu", port);
     }
 
     vnc::~vnc() {
@@ -171,6 +174,12 @@ namespace vcml { namespace ui {
 
     void vnc::render() {
         // to be overloaded
+    }
+
+    void vnc::shutdown() {
+        lock_guard<mutex> lock(m_mutex);
+        m_key_listener.clear();
+        m_ptr_listener.clear();
     }
 
     void vnc::init_framebuffer(const vnc_fbmode& mode, u8* fb) {
@@ -194,36 +203,38 @@ namespace vcml { namespace ui {
         init_framebuffer(mode, ptr);
     }
 
-    void vnc::add_key_listener(function<void(u32, bool)>* listener) {
-        if (stl_contains(m_key_listener, listener))
+    void vnc::add_key_listener(vnc_key_listener& listener) {
+        lock_guard<mutex> lock(m_mutex);
+        if (stl_contains(m_key_listener, &listener))
             VCML_ERROR("key listener already registered");
-        m_key_listener.push_back(listener);
+        m_key_listener.push_back(&listener);
     }
 
-    void vnc::remove_key_listener(function<void(u32, bool)>* listener) {
-        if (!stl_contains(m_key_listener, listener))
-            VCML_ERROR("attempt to remove unknown key listener");
-        stl_remove_erase(m_key_listener, listener);
+    void vnc::remove_key_listener(vnc_key_listener& listener) {
+        lock_guard<mutex> lock(m_mutex);
+        stl_remove_erase(m_key_listener, &listener);
     }
 
     void vnc::notify_key_listeners(unsigned int key, bool down) {
+        lock_guard<mutex> lock(m_mutex);
         for (auto listener : m_key_listener)
             (*listener)(key, down);
     }
 
-    void vnc::add_ptr_listener(function<void(u32, u32, u32)>* listener) {
-        if (stl_contains(m_ptr_listener, listener))
+    void vnc::add_ptr_listener(vnc_ptr_listener& listener) {
+        lock_guard<mutex> lock(m_mutex);
+        if (stl_contains(m_ptr_listener, &listener))
             VCML_ERROR("pointer listener already registered");
-        m_ptr_listener.push_back(listener);
+        m_ptr_listener.push_back(&listener);
     }
 
-    void vnc::remove_ptr_listener(function<void(u32, u32, u32)>* listener) {
-        if (!stl_contains(m_ptr_listener, listener))
-            VCML_ERROR("attempt to remove unknown pointer listener");
-        stl_remove_erase(m_ptr_listener, listener);
+    void vnc::remove_ptr_listener(vnc_ptr_listener& listener) {
+        lock_guard<mutex> lock(m_mutex);
+        stl_remove_erase(m_ptr_listener, &listener);
     }
 
     void vnc::notify_ptr_listeners(u32 buttons, u32 x, u32 y) {
+        lock_guard<mutex> lock(m_mutex);
         for (auto listener : m_ptr_listener)
             (*listener)(buttons, x, y);
     }
@@ -290,9 +301,8 @@ namespace vcml { namespace ui {
 
         void run() {
             log_debug("starting vnc server on port %d", m_screen->port);
-            while (m_running && rfbIsActive(m_screen))
-                rfbProcessEvents(m_screen, 1000);
-            rfbShutdownServer(m_screen, false);
+            rfbRunEventLoop(m_screen, 1000, false);
+            log_debug("terminating vnc server on port %d", m_screen->port);
         }
 
         static void key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
@@ -315,15 +325,18 @@ namespace vcml { namespace ui {
             m_running(true),
             m_screen(),
             m_thread() {
+            VCML_ERROR_ON(port == 0, "invalid VNC port specified: %hu", port);
+
             rfbLog = &rfb_log_func;
             rfbErr = &rfb_err_func;
 
             m_screen = rfbGetScreen(NULL, NULL, resx(), resy(), 8, 4, 4);
+            m_screen->desktopName = name();
             m_screen->port = m_screen->ipv6port = port;
             m_screen->kbdAddEvent = &vnc_librfb::key_func;
             m_screen->ptrAddEvent = &vnc_librfb::ptr_func;
 
-            // setup green initial framebuffer
+            // setup initial framebuffer
             auto defmode = fbmode_argb32(1280, 720);
             setup_framebuffer(defmode);
 
@@ -340,15 +353,24 @@ namespace vcml { namespace ui {
         }
 
         virtual ~vnc_librfb() {
-            m_running = false;
-            if (m_thread.joinable())
-                m_thread.join();
+            VCML_ERROR_ON(m_thread.joinable(), "vnc server not shut down");
         }
 
         virtual void render() override {
             int x2 = resx() - 1;
             int y2 = resy() - 1;
             rfbMarkRectAsModified(m_screen, 0, 0, x2, y2);
+        }
+
+        virtual void shutdown() override {
+            if (!m_thread.joinable())
+                return;
+
+            rfbShutdownServer(m_screen, true);
+            rfbScreenCleanup(m_screen);
+            m_thread.join();
+
+            vnc::shutdown();
         }
 
     };

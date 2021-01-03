@@ -99,14 +99,19 @@ namespace vcml { namespace opencores {
 
         if (vncport > 0) {
             auto vnc = ui::vnc::lookup(vncport);
-            vnc->add_key_listener(&m_key_handler);
+            vnc->add_key_listener(m_key_handler);
         }
     }
 
     ockbd::~ockbd() {
+        // nothing to do
+    }
+
+    void ockbd::end_of_simulation() {
         if (vncport > 0) {
             auto vnc = ui::vnc::lookup(vncport);
-            vnc->remove_key_listener(&m_key_handler);
+            vnc->remove_key_listener(m_key_handler);
+            vnc->shutdown();
         }
     }
 

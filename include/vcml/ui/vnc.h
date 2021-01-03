@@ -49,16 +49,21 @@ namespace vcml { namespace ui {
     vnc_fbmode fbmode_rgb16(u32 width, u32 height);
     vnc_fbmode fbmode_gray8(u32 width, u32 height);
 
+    typedef function<void(u32, bool)>     vnc_key_listener;
+    typedef function<void(u32, u32, u32)> vnc_ptr_listener;
+
     class vnc
     {
     private:
+        mutex      m_mutex;
+        string     m_name;
         u16        m_port;
         vnc_fbmode m_mode;
         u8*        m_myfb;
         u8*        m_fb;
 
-        vector<function<void(u32, bool)>*> m_key_listener;
-        vector<function<void(u32, u32, u32)>*> m_ptr_listener;
+        vector<vnc_key_listener*> m_key_listener;
+        vector<vnc_ptr_listener*> m_ptr_listener;
 
         vnc() = delete;
         vnc(const vnc&) = delete;
@@ -79,19 +84,22 @@ namespace vcml { namespace ui {
         u8* framebuffer()      const { return m_fb; }
         u64 framebuffer_size() const { return m_mode.size; }
 
+        const char* name() const { return m_name.c_str(); }
+
         virtual ~vnc();
 
         virtual void render();
+        virtual void shutdown();
 
         u8*  setup_framebuffer(const vnc_fbmode& desc);
         void setup_framebuffer(const vnc_fbmode& desc, u8* ptr);
 
-        void add_key_listener(function<void(u32, bool)>* listener);
-        void remove_key_listener(function<void(u32, bool)>* listener);
+        void add_key_listener(vnc_key_listener& listener);
+        void remove_key_listener(vnc_key_listener& listener);
         void notify_key_listeners(unsigned int key, bool down);
 
-        void add_ptr_listener(function<void(u32, u32, u32)>* listener);
-        void remove_ptr_listener(function<void(u32, u32, u32)>* listener);
+        void add_ptr_listener(vnc_ptr_listener& listener);
+        void remove_ptr_listener(vnc_ptr_listener& listener);
         void notify_ptr_listeners(u32 buttons, u32 x, u32 y);
 
         static shared_ptr<vnc> lookup(u16 port);

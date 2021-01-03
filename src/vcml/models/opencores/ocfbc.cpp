@@ -356,4 +356,9 @@ namespace vcml { namespace opencores {
         /* nothing to do */
     }
 
+    void ocfbc::end_of_simulation() {
+        if (vncport > 0)
+            ui::vnc::lookup(vncport)->shutdown();
+    }
+
 }}

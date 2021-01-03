@@ -60,6 +60,7 @@ namespace vcml { namespace generic {
 
     protected:
         void end_of_elaboration() override;
+        void end_of_simulation() override;
     };
 
 }}

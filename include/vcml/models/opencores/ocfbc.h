@@ -130,6 +130,9 @@ namespace vcml { namespace opencores {
         ocfbc(const sc_module_name& name);
         virtual ~ocfbc();
         VCML_KIND(ocfbc);
+
+    protected:
+        virtual void end_of_simulation() override;
     };
 
 }}

@@ -40,7 +40,7 @@ namespace vcml { namespace opencores {
     private:
         queue<u8> m_key_fifo;
 
-        function<void(u32,bool)> m_key_handler;
+        ui::vnc_key_listener m_key_handler;
 
         void key_event(u32 key, bool down);
         void push_key(u8 code, bool down);
@@ -64,6 +64,9 @@ namespace vcml { namespace opencores {
         ockbd(const sc_module_name& name);
         virtual ~ockbd();
         VCML_KIND(ockbd);
+
+    protected:
+        virtual void end_of_simulation() override;
     };
 
 }}

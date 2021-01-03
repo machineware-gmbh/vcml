@@ -89,8 +89,8 @@ namespace vcml { namespace virtio {
 
         input_config m_config;
 
-        function<void(u32, bool)>     m_key_listener;
-        function<void(u32, u32, u32)> m_ptr_listener;
+        ui::vnc_key_listener m_key_listener;
+        ui::vnc_ptr_listener m_ptr_listener;
 
         u32 m_prev_symbol;
         u32 m_prev_btn;
@@ -138,6 +138,9 @@ namespace vcml { namespace virtio {
         VCML_KIND(virtio::input);
 
         virtual void reset();
+
+    protected:
+        virtual void end_of_simulation() override;
     };
 
 }}

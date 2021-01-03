@@ -45,6 +45,11 @@ namespace vcml { namespace generic {
 
         m_stride = resx * 4;
         m_size = m_stride * resy;
+
+        if (vncport > 0) {
+            SC_HAS_PROCESS(fbdev);
+            SC_THREAD(update);
+        }
     }
 
     fbdev::~fbdev() {
@@ -56,6 +61,8 @@ namespace vcml { namespace generic {
     }
 
     void fbdev::end_of_elaboration() {
+        component::end_of_elaboration();
+
         range vmem(addr, addr + m_size - 1);
         log_debug("video memory at %p..%p", vmem.start, vmem.end);
 
@@ -78,9 +85,12 @@ namespace vcml { namespace generic {
         auto vnc = ui::vnc::lookup(vncport);
         auto mode = ui::fbmode_argb32(resx, resy);
         vnc->setup_framebuffer(mode, m_vptr);
+    }
 
-        SC_HAS_PROCESS(fbdev);
-        SC_THREAD(update);
+    void fbdev::end_of_simulation() {
+        component::end_of_simulation();
+        auto vnc = ui::vnc::lookup(vncport);
+        vnc->shutdown();
     }
 
 }}

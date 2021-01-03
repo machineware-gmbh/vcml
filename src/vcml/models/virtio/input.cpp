@@ -314,9 +314,9 @@ namespace vcml { namespace virtio {
         if (vncport > 0) {
             auto vnc = ui::vnc::lookup(vncport);
             if (keyboard)
-                vnc->add_key_listener(&m_key_listener);
+                vnc->add_key_listener(m_key_listener);
             if (touchpad)
-                vnc->add_ptr_listener(&m_ptr_listener);
+                vnc->add_ptr_listener(m_ptr_listener);
         }
 
         if (keyboard || keyboard) {
@@ -326,13 +326,7 @@ namespace vcml { namespace virtio {
     }
 
     input::~input() {
-        if (vncport > 0) {
-            auto vnc = ui::vnc::lookup(vncport);
-            if (keyboard)
-                vnc->remove_key_listener(&m_key_listener);
-            if (touchpad)
-                vnc->remove_ptr_listener(&m_ptr_listener);
-        }
+        // nothing to do
     }
 
     void input::reset() {
@@ -345,6 +339,17 @@ namespace vcml { namespace virtio {
 
         m_messages = {};
         m_events = {};
+    }
+
+    void input::end_of_simulation() {
+        if (vncport > 0) {
+            auto vnc = ui::vnc::lookup(vncport);
+            if (keyboard)
+                vnc->remove_key_listener(m_key_listener);
+            if (touchpad)
+                vnc->remove_ptr_listener(m_ptr_listener);
+            vnc->shutdown();
+        }
     }
 
 }}
