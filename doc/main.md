@@ -27,6 +27,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [SDHCI](models/sdhci.md)
   * [HWRNG](models/hwrng.md)
   * [FBDEV](models/fbdev.md)
+  * [VIRTIO Models] (models/virtio.md)
   * [OpenCores ETHOC](models/oc_ethoc.md)
   * [OpenCores OMPIC](models/oc_ompic.md)
   * [OpenCores OCKBD](models/oc_ockbd.md)
