@@ -21,6 +21,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [Generic Memory](models/generic_mem.md)
   * [Generic Bus](models/generic_bus.md)
   * [Simulation Device](models/generic_simdev.md)
+  * [Simulation Throttle](models/throttle.md)
   * [8250 UART](models/uart8250.md)
   * [DS1742 RTC](models/rtc1742.md)
   * [SDHCI](models/sdhci.md)
@@ -39,4 +40,4 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [RISC-V PLIC](models/riscv_plic.md)
 
 ----
-Documentation January 2020
+Documentation January 2021

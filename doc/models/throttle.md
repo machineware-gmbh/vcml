@@ -1,0 +1,46 @@
+# VCML Models: Simulation Throttle
+The simulation throttle can be used to limit the simulation speed to a factor
+of realtime, configurable via the `rtf` property. If the simulation proceeds
+faster that realtime, this device can be used to reduce speed so that it
+remains interactive, so that hardware or software timeouts remain within
+resonable limits for human interaction. The `rtf` property can be used to
+specify the maximum speed the simulation is allowed to run at, anything beyond
+will be throttled; i.e. `rtf = 1` limits simulation to realtime (1 second of
+simulated time per second of realtime), `rtf = 0.5` is half speed and `rtf = 2`
+means twice as fast as realtime. A value of zero disables throttling.
+
+----
+## Properties
+This model has the following properties:
+
+| Property          | Type        | Default    | Description             |
+| ----------------- | ----------- | ---------- | ----------------------- |
+| `loglvl`          | `log_level` | `info`     | Logging threshold       |
+| `trace_errors`    | `bool`      | `false`    | Report TLM errors       |
+| `update_interval` | `sc_time`   | `10ms`     | Throttle interval       |
+| `rtf`             | `double`    | `0.0`      | Target Realtime Factor  |
+
+The properties `loglvl` and `trace_errors` require [`loggers`](../logging.md).
+
+----
+## Commands
+The model supports the following commands during simulation:
+
+| Command       | Description                           |
+| ------------- | ------------------------------------- |
+| `clist`       | Lists available commands              |
+| `cinfo <cmd>` | Shows information about command `cmd` |
+| `reset`       | Resets the component                  |
+| `abort`       | Aborts the simulation                 |
+
+In order to execute commands, an active VSP session is required. Tools such
+as [`viper`](https://github.com/janweinstock/viper/) can be used as a
+graphical frontend for running commands via VSP.
+
+----
+## Hardware and Software Interface
+This model does not expose any ports. It cannot be interacted with from within
+the simulation, neither via hardware, nor via software.
+
+----
+Documentation updated January 2021

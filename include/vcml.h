@@ -88,6 +88,7 @@
 #include "vcml/models/generic/sdhci.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
+#include "vcml/models/generic/throttle.h"
 
 #include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"
