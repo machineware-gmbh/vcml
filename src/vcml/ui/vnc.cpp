@@ -301,8 +301,14 @@ namespace vcml { namespace ui {
 
         void run() {
             log_debug("starting vnc server on port %d", m_screen->port);
-            rfbRunEventLoop(m_screen, 1000, false);
+
+            while (m_running && rfbIsActive(m_screen))
+                rfbProcessEvents(m_screen, 1000);
+
             log_debug("terminating vnc server on port %d", m_screen->port);
+
+            rfbShutdownServer(m_screen, true);
+            rfbScreenCleanup(m_screen);
         }
 
         static void key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
@@ -366,8 +372,7 @@ namespace vcml { namespace ui {
             if (!m_thread.joinable())
                 return;
 
-            rfbShutdownServer(m_screen, true);
-            rfbScreenCleanup(m_screen);
+            m_running = false;
             m_thread.join();
 
             vnc::shutdown();
