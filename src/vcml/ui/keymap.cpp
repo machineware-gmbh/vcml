@@ -161,6 +161,7 @@ namespace vcml { namespace ui {
         {    ' ', KEY_SPACE,      false, false, false, "KEY_SPACE"      },
         { 0xffec, KEY_RIGHTMETA,  false, false, false, "KEY_RIGHTMETA"  },
         { 0xff67, KEY_MENU,       false, false, false, "KEY_MENU"       },
+        { 0xffe4, KEY_RIGHTCTRL,  false, false, false, "KEY_RIGHTCTRL"  },
 
         /* extended keys */
         { 0xff61, KEY_PRINT,      false, false, false, "KEY_PRINT"      },
