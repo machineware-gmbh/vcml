@@ -175,6 +175,8 @@ namespace vcml { namespace virtio {
         if (down) { // handle up 0, down 1, repeat 2
             val = (key == m_prev_symbol) ? 2u : 1u;
             m_prev_symbol = key;
+        } else {
+            m_prev_symbol = -1;
         }
 
         lock_guard<mutex> lock(m_events_mutex);
