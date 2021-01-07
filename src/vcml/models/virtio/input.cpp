@@ -168,9 +168,6 @@ namespace vcml { namespace virtio {
         const auto& map = ui::keymap::lookup(keymap);
         auto info = map.lookup_symbol(key);
 
-        if (map.is_reserved(info))
-            return;
-
         u32 val = 0u;
         if (down) { // handle up 0, down 1, repeat 2
             val = (key == m_prev_symbol) ? 2u : 1u;
@@ -179,16 +176,42 @@ namespace vcml { namespace virtio {
             m_prev_symbol = -1;
         }
 
+        if (info == nullptr) {
+            log_debug("no key code found for key 0x%x", key);
+            return;
+        }
+
         lock_guard<mutex> lock(m_events_mutex);
-        if (info->shift)
-            m_events.push({EV_KEY, KEY_LEFTSHIFT, (u32)down});
-        if (info->l_alt)
-            m_events.push({EV_KEY, KEY_LEFTALT, (u32)down});
-        if (info->r_alt)
-            m_events.push({EV_KEY, KEY_RIGHTALT, (u32)down});
+        if (!info->is_special()) {
+            if (down && m_shift != info->shift)
+                m_events.push({EV_KEY, KEY_LEFTSHIFT, (u32)info->shift});
+            if (down && m_alt_l != info->l_alt)
+                m_events.push({EV_KEY, KEY_LEFTALT, (u32)info->l_alt});
+            if (down && m_alt_r != info->r_alt)
+                m_events.push({EV_KEY, KEY_RIGHTALT, (u32)info->r_alt});
+        }
 
         m_events.push({EV_KEY, info->code, val});
         m_events.push({EV_SYN, SYN_REPORT, 0u});
+
+        if (!info->is_special()) {
+            size_t size = m_events.size();
+            if (down && m_shift != info->shift)
+                m_events.push({EV_KEY, KEY_LEFTSHIFT, (u32)m_shift});
+            if (down && m_alt_l != info->l_alt)
+                m_events.push({EV_KEY, KEY_LEFTALT, (u32)m_alt_l});
+            if (down && m_alt_r != info->r_alt)
+                m_events.push({EV_KEY, KEY_RIGHTALT, (u32)m_alt_r});
+            if (size != m_events.size())
+                m_events.push({EV_SYN, SYN_REPORT, 0u});
+        }
+
+        if (info->code == KEY_LEFTSHIFT || info->code == KEY_RIGHTSHIFT)
+            m_shift = down;
+        if (info->code == KEY_LEFTALT)
+            m_alt_l = down;
+        if (info->code == KEY_RIGHTALT)
+            m_alt_r = down;
     }
 
     void input::ptr_event(u32 buttons, u32 x, u32 y) {
@@ -294,6 +317,9 @@ namespace vcml { namespace virtio {
         m_config(),
         m_key_listener(),
         m_ptr_listener(),
+        m_shift(),
+        m_alt_l(),
+        m_alt_r(),
         m_prev_symbol(),
         m_prev_btn(),
         m_prev_x(),

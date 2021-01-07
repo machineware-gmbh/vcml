@@ -34,6 +34,8 @@ namespace vcml { namespace ui {
         bool l_alt; // additionally needs alt to produce key symbol
         bool r_alt; // additionally needs altgr to produce key symbol
         const char* name;
+
+        bool is_special() const { return sym > 0xff; }
     };
 
     class keymap
@@ -47,11 +49,6 @@ namespace vcml { namespace ui {
         keymap() = delete;
         keymap(const keymap&) = default;
         keymap(keymap&&) = default;
-
-        bool is_reserved(u16 code) const;
-        bool is_reserved(const syminfo* info) const {
-            return !info || is_reserved(info->code);
-        }
 
         const syminfo* lookup_symbol(u32 symbol) const;
         vector<u16> translate_symbol(u32 symbol) const;

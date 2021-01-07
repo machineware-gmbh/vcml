@@ -197,6 +197,19 @@ namespace vcml { namespace ui {
         { 0xffb7, KEY_KP7,        false, false, false, "KEY_KP7"        },
         { 0xffb8, KEY_KP8,        false, false, false, "KEY_KP8"        },
         { 0xffb9, KEY_KP9,        false, false, false, "KEY_KP9"        },
+
+        /* keypad functions */
+        { 0xff9f, KEY_KPDOT,      false, false, false, "KEY_KPDOT"      },
+        { 0xff9e, KEY_KP0,        false, false, false, "KEY_KP0"        },
+        { 0xff9c, KEY_KP1,        false, false, false, "KEY_KP1"        },
+        { 0xff99, KEY_KP2,        false, false, false, "KEY_KP2"        },
+        { 0xff9b, KEY_KP3,        false, false, false, "KEY_KP3"        },
+        { 0xff96, KEY_KP4,        false, false, false, "KEY_KP4"        },
+        { 0xff9d, KEY_KP5,        false, false, false, "KEY_KP5"        },
+        { 0xff98, KEY_KP6,        false, false, false, "KEY_KP6"        },
+        { 0xff95, KEY_KP7,        false, false, false, "KEY_KP7"        },
+        { 0xff97, KEY_KP8,        false, false, false, "KEY_KP8"        },
+        { 0xff9a, KEY_KP9,        false, false, false, "KEY_KP9"        },
     };
 
     keymap::keymap(const vector<syminfo>& l):
@@ -208,10 +221,14 @@ namespace vcml { namespace ui {
         }
     }
 
-    // Do not translate modifier keys, they will be added automatically when
-    // needed. This is to work around different keyboard layouts between guest
-    // and host (e.g. DE host: shift + "/" = "/", US guest: shift + "/" = "?")
-    bool keymap::is_reserved(u16 code) const {
+    const syminfo* keymap::lookup_symbol(u32 symbol) const {
+        for (auto& info : layout)
+            if (info.sym == symbol)
+                return &info;
+        return nullptr;
+    }
+
+    static bool is_reserved(u16 code) {
         switch (code) {
         case KEY_CAPSLOCK:
         case KEY_LEFTSHIFT:
@@ -223,14 +240,6 @@ namespace vcml { namespace ui {
         default:
             return false;
         }
-    }
-
-    const syminfo* keymap::lookup_symbol(u32 symbol) const {
-        for (auto& info : layout)
-            if (info.sym == symbol)
-                return &info;
-        return nullptr;
-
     }
 
     vector<u16> keymap::translate_symbol(u32 symbol) const {

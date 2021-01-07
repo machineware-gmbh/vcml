@@ -92,6 +92,10 @@ namespace vcml { namespace virtio {
         ui::vnc_key_listener m_key_listener;
         ui::vnc_ptr_listener m_ptr_listener;
 
+        bool m_shift;
+        bool m_alt_l;
+        bool m_alt_r;
+
         u32 m_prev_symbol;
         u32 m_prev_btn;
         u32 m_prev_x;
