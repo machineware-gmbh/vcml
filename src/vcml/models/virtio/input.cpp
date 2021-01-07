@@ -183,29 +183,31 @@ namespace vcml { namespace virtio {
 
         lock_guard<mutex> lock(m_events_mutex);
         if (!info->is_special()) {
-            if (down && m_shift != info->shift)
-                m_events.push({EV_KEY, KEY_LEFTSHIFT, (u32)info->shift});
+            if (down && (m_shift ^ m_capsl) != info->shift)
+                push_key(KEY_LEFTSHIFT, info->shift ^ m_capsl);
             if (down && m_alt_l != info->l_alt)
-                m_events.push({EV_KEY, KEY_LEFTALT, (u32)info->l_alt});
+                push_key(KEY_LEFTALT, info->l_alt);
             if (down && m_alt_r != info->r_alt)
-                m_events.push({EV_KEY, KEY_RIGHTALT, (u32)info->r_alt});
+                push_key(KEY_RIGHTALT, info->r_alt);
         }
 
-        m_events.push({EV_KEY, info->code, val});
-        m_events.push({EV_SYN, SYN_REPORT, 0u});
+        push_key(info->code, val);
+        push_sync();
 
         if (!info->is_special()) {
             size_t size = m_events.size();
-            if (down && m_shift != info->shift)
-                m_events.push({EV_KEY, KEY_LEFTSHIFT, (u32)m_shift});
+            if (down && (m_shift ^ m_capsl) != info->shift)
+                push_key(KEY_LEFTSHIFT, !(info->shift ^ m_capsl));
             if (down && m_alt_l != info->l_alt)
-                m_events.push({EV_KEY, KEY_LEFTALT, (u32)m_alt_l});
+                push_key(KEY_LEFTALT, m_alt_l);
             if (down && m_alt_r != info->r_alt)
-                m_events.push({EV_KEY, KEY_RIGHTALT, (u32)m_alt_r});
+                push_key(KEY_RIGHTALT, m_alt_r);
             if (size != m_events.size())
-                m_events.push({EV_SYN, SYN_REPORT, 0u});
+                push_sync();
         }
 
+        if (info->code == KEY_CAPSLOCK && down)
+            m_capsl = !m_capsl;
         if (info->code == KEY_LEFTSHIFT || info->code == KEY_RIGHTSHIFT)
             m_shift = down;
         if (info->code == KEY_LEFTALT)
@@ -222,22 +224,22 @@ namespace vcml { namespace virtio {
         u32 change = buttons ^ m_prev_btn;
 
         if (change)
-            m_events.push({EV_KEY, BTN_TOUCH, !m_prev_btn});
+            push_key(BTN_TOUCH, !m_prev_btn);
 
         if (change & (1u << 0))
-            m_events.push({EV_KEY, BTN_TOOL_FINGER,    (buttons >> 0) & 1u});
+            push_key(BTN_TOOL_FINGER,    (buttons >> 0) & 1u);
         if (change & (1u << 1))
-            m_events.push({EV_KEY, BTN_TOOL_TRIPLETAP, (buttons >> 1) & 1u});
+            push_key(BTN_TOOL_TRIPLETAP, (buttons >> 1) & 1u);
         if (change & (1u << 2))
-            m_events.push({EV_KEY, BTN_TOOL_DOUBLETAP, (buttons >> 2) & 1u});
+            push_key(BTN_TOOL_DOUBLETAP, (buttons >> 2) & 1u);
 
         if (m_prev_x != x)
-            m_events.push({EV_ABS, ABS_X, x});
+            push_abs(ABS_X, x);
         if (m_prev_y != y)
-            m_events.push({EV_ABS, ABS_Y, y});
+            push_abs(ABS_Y, y);
 
         if (m_events.size() != size)
-            m_events.push({EV_SYN, SYN_REPORT, 0u});
+            push_sync();
 
         m_prev_btn = buttons;
         m_prev_x = x;
@@ -318,6 +320,7 @@ namespace vcml { namespace virtio {
         m_key_listener(),
         m_ptr_listener(),
         m_shift(),
+        m_capsl(),
         m_alt_l(),
         m_alt_r(),
         m_prev_symbol(),

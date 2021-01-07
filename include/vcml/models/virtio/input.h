@@ -93,6 +93,7 @@ namespace vcml { namespace virtio {
         ui::vnc_ptr_listener m_ptr_listener;
 
         bool m_shift;
+        bool m_capsl;
         bool m_alt_l;
         bool m_alt_r;
 
@@ -104,6 +105,18 @@ namespace vcml { namespace virtio {
         mutex m_events_mutex;
         queue<input_event> m_events;
         queue<vq_message> m_messages;
+
+        void push_key(u16 key, u32 down) {
+            m_events.push({EV_KEY, key, down});
+        }
+
+        void push_abs(u16 axis, u32 val) {
+            m_events.push({EV_ABS, axis, val});
+        }
+
+        void push_sync() {
+            m_events.push({EV_SYN, SYN_REPORT, 0});
+        }
 
         void config_update_name();
         void config_update_serial();
