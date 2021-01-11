@@ -162,6 +162,8 @@ namespace vcml { namespace virtio {
 
         virtio_dmifn lookup_dmi_ptr;
 
+        module* parent;
+
         virtqueue() = delete;
         virtqueue(const virtqueue&) = delete;
         virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);

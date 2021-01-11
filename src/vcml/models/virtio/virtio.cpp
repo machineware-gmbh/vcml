@@ -18,6 +18,13 @@
 
 #include "vcml/models/virtio/virtio.h"
 
+#define vq_log_debug(...)                              \
+        parent->log_debug("vq%u.%s: %s", id, __func__, \
+                         mkstr(__VA_ARGS__).c_str())
+#define vq_log_warn(...)                               \
+        parent->log_warn("vq%u.%s: %s", id, __func__,  \
+                         mkstr(__VA_ARGS__).c_str())
+
 namespace vcml { namespace virtio {
 
     size_t vq_message::copy_out(const void* ptr, size_t size, size_t offset) {
@@ -83,7 +90,9 @@ namespace vcml { namespace virtio {
         addr_device(desc.device),
         has_event_idx(desc.has_event_idx),
         notify(false),
-        lookup_dmi_ptr(dmi) {
+        lookup_dmi_ptr(dmi),
+        parent(dynamic_cast<module*>(hierarchy_top())) {
+        VCML_ERROR_ON(!parent, "virtqueue created outside module");
     }
 
     virtqueue::~virtqueue() {
@@ -100,7 +109,7 @@ namespace vcml { namespace virtio {
         m_used_ev(nullptr),
         m_avail_ev(nullptr) {
         if (!addr_desc || !addr_driver || !addr_device) {
-            log_warn("invalid virtqueue ring addresses");
+            vq_log_warn("invalid virtqueue ring addresses");
             return;
         }
 
@@ -118,7 +127,7 @@ namespace vcml { namespace virtio {
         u8* used_ptr = lookup_dmi_ptr(addr_device, usedsz, VCML_ACCESS_WRITE);
 
         if (!desc_ptr || !avail_ptr || !used_ptr) {
-            log_warn("failed to get DMI pointers");
+            vq_log_warn("failed to get DMI pointers");
             return;
         }
 
@@ -131,10 +140,10 @@ namespace vcml { namespace virtio {
             m_avail_ev = (u16*)(m_used->ring + size);
         }
 
-        log_debug("created split virtqueue %u with size %u", id, limit);
-        log_debug("  descriptors at %p -> %p", addr_desc, m_desc);
-        log_debug("  driver ring at %p -> %p", addr_driver, m_avail);
-        log_debug("  device ring at %p -> %p", addr_device, m_used);
+        vq_log_debug("created split virtqueue %u with size %u", id, limit);
+        vq_log_debug("  descriptors at %p -> %p", addr_desc, m_desc);
+        vq_log_debug("  driver ring at %p -> %p", addr_driver, m_avail);
+        vq_log_debug("  device ring at %p -> %p", addr_device, m_used);
     }
 
     split_virtqueue::~split_virtqueue() {
@@ -152,7 +161,7 @@ namespace vcml { namespace virtio {
         msg.clear();
         msg.index = m_avail->ring[m_last_avail_idx++ % size];
         if (msg.index >= size) {
-            log_warn("%s: illegal descriptor index %u", __func__, msg.index);
+            vq_log_warn("illegal descriptor index %u", msg.index);
             return false;
         }
 
@@ -167,7 +176,7 @@ namespace vcml { namespace virtio {
 
         if (desc->is_indirect()) {
             if (!desc->len || desc->len % sizeof(vq_desc)) {
-                log_warn("%s: broken indirect descriptor", __func__);
+                vq_log_warn("broken indirect descriptor");
                 return false;
             }
 
@@ -175,7 +184,7 @@ namespace vcml { namespace virtio {
             desc = base = (vq_desc*)lookup_desc_ptr(desc);
 
             if (!desc) {
-                log_warn("%s: cannot access indirect descriptor", __func__);
+                vq_log_warn("cannot access indirect descriptor");
                 return false;
             }
         }
@@ -183,13 +192,13 @@ namespace vcml { namespace virtio {
         while (true) {
             u8* ptr = lookup_desc_ptr(desc);
             if (!ptr) {
-                log_warn("%s: cannot get DMI pointer for descriptor at "
-                         "address 0x%016lx", __func__, desc->addr);
+                vq_log_warn("cannot get DMI pointer for descriptor at address "
+                            "0x%016lx", desc->addr);
                 return false;
             }
 
             if (!desc->is_write() && msg.length_out)
-                log_warn("%s: invalid descriptor order", __func__);
+                vq_log_warn("invalid descriptor order");
 
             msg.append(desc->addr, ptr, desc->len, desc->is_write());
 
@@ -197,12 +206,12 @@ namespace vcml { namespace virtio {
                 return true;
 
             if (desc->next >= size) {
-                log_warn("%s: broken descriptor chain", __func__);
+                vq_log_warn("broken descriptor chain");
                 return false;
             }
 
             if (count++ >= limit) {
-                log_warn("%s: descriptor chain too long", __func__);
+                vq_log_warn("descriptor chain too long");
                 return false;
             }
 
@@ -214,7 +223,7 @@ namespace vcml { namespace virtio {
         notify = false;
 
         if (msg.index >= size) {
-            log_warn("%s: index out of bounds: %u", __func__, msg.index);
+            vq_log_warn("index out of bounds: %u", msg.index);
             return false;
         }
 
@@ -238,7 +247,7 @@ namespace vcml { namespace virtio {
         m_wrap_get(true),
         m_wrap_put(true) {
         if (!addr_desc || !addr_driver || !addr_device) {
-            log_warn("invalid virtqueue ring addresses");
+            vq_log_warn("invalid virtqueue ring addresses");
             return;
         }
 
@@ -252,14 +261,14 @@ namespace vcml { namespace virtio {
                                                  VCML_ACCESS_WRITE);
         }
 
-        log_debug("created packed virtqueue %u with size %u", id, limit);
-        log_debug("  descriptors at %p -> %p", addr_desc, m_desc);
+        vq_log_debug("created packed virtqueue %u with size %u", id, limit);
+        vq_log_debug("  descriptors at %p -> %p", addr_desc, m_desc);
 
         if (m_driver)
-            log_debug("  driver events at %p -> %p", addr_driver, m_driver);
+            vq_log_debug("  driver events at %p -> %p", addr_driver, m_driver);
 
         if (m_device)
-            log_debug("  device events at %p -> %p", addr_device, m_device);
+            vq_log_debug("  device events at %p -> %p", addr_device, m_device);
     }
 
     packed_virtqueue::~packed_virtqueue() {
@@ -287,7 +296,7 @@ namespace vcml { namespace virtio {
         bool indirect = desc->is_indirect();
         if (indirect) {
             if (!desc->len || desc->len % sizeof(vq_desc)) {
-                log_warn("%s: broken indirect descriptor", __func__);
+                vq_log_warn("broken indirect descriptor");
                 return false;
             }
 
@@ -296,31 +305,31 @@ namespace vcml { namespace virtio {
             desc = base = (vq_desc*)lookup_desc_ptr(desc);
 
             if (!desc) {
-                log_warn("%s: cannot access indirect descriptor", __func__);
+                vq_log_warn("cannot access indirect descriptor");
                 return false;
             }
         }
 
         while (true) {
             if (!desc->is_avail(m_wrap_get) || desc->is_used(m_wrap_get)) {
-                log_warn("%s: descriptor not available", __func__);
+                parent->log_warn("descriptor not available", __func__);
                 return false;
             }
 
             u8* ptr = lookup_desc_ptr(desc);
             if (!ptr) {
-                log_warn("%s: cannot get DMI pointer for descriptor at "
-                         "address 0x%016lx", __func__, desc->addr);
+                vq_log_warn("cannot get DMI pointer for descriptor at address "
+                            "0x%016lx", desc->addr);
                 return false;
             }
 
             if (!desc->is_write() && msg.length_out)
-                log_warn("%s: invalid descriptor order", __func__);
+                vq_log_warn("invalid descriptor order");
 
             msg.append(desc->addr, ptr, desc->len, desc->is_write());
 
             if (count++ >= limit) {
-                log_warn("%s: descriptor chain too long", __func__);
+                vq_log_warn("descriptor chain too long");
                 return false;
             }
 
@@ -356,7 +365,7 @@ namespace vcml { namespace virtio {
 
         if (desc->is_indirect()) {
             if (!desc->len || desc->len % sizeof(vq_desc)) {
-                log_warn("%s: broken indirect descriptor", __func__);
+                vq_log_warn("broken indirect descriptor");
                 return false;
             }
 
@@ -365,7 +374,7 @@ namespace vcml { namespace virtio {
             desc = base = (vq_desc*)lookup_desc_ptr(desc);
 
             if (!desc) {
-                log_warn("%s: cannot access indirect descriptor", __func__);
+                vq_log_warn("cannot access indirect descriptor");
                 return false;
             }
         }
@@ -374,7 +383,7 @@ namespace vcml { namespace virtio {
             desc->mark_used(m_wrap_put);
 
             if (count++ >= limit) {
-                log_warn("%s: descriptor chain too long", __func__);
+                vq_log_warn("descriptor chain too long");
                 return false;
             }
 

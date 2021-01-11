@@ -52,6 +52,8 @@ namespace vcml { namespace virtio {
             return OUT.lookup_dmi_ptr(addr, len, acs);
         };
 
+        hierarchy_guard guard(this);
+
         virtqueue* q;
         if (has_feature(VIRTIO_F_RING_PACKED))
             q = m_queues[vqid] = new packed_virtqueue(qd, dmifn);
@@ -62,7 +64,6 @@ namespace vcml { namespace virtio {
             log_warn("failed to enable virtqueue %u", vqid);
             STATUS = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
         }
-
     }
 
     void mmio::disable_virtqueue(u32 vqid) {
