@@ -93,6 +93,7 @@
 #include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"
 #include "vcml/models/virtio/rng.h"
+#include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
 
 #include "vcml/models/opencores/ompic.h"

@@ -105,6 +105,7 @@ set(sources
     ${src}/vcml/models/virtio/virtio.cpp
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/rng.cpp
+    ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp
     ${src}/vcml/models/opencores/ompic.cpp
     ${src}/vcml/models/opencores/ethoc.cpp

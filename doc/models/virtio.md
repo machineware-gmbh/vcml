@@ -109,10 +109,11 @@ Below is a list of currently available VIRTIO devices and the function they
 implement. They need to be connected to a VIRTIO controller (e.g.
 `virtio::mmio`) via their `VIRTIO_IN` port.
 
-| Device                | ID     | Description                          |
-| --------------------- | ------ | -------------------------------------|
-| `vcml::virtio::rng`   | `0x04` | Used to supply entropy to the system |
-| `vcml::virtio::input` | `0x12` | Keyboard and touchpad event device   |
+| Device                  | ID     | Description                          |
+| ----------------------- | ------ | -------------------------------------|
+| `vcml::virtio::rng`     | `0x04` | Used to supply entropy to the system |
+| `vcml::virtio::input`   | `0x12` | Keyboard and touchpad event device   |
+| `vcml::virtio::console` | `0x03` | Serial hypervisor console device     |
 
 ----
 Documentation updated January 2021
