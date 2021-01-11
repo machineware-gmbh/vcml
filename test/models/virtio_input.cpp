@@ -24,7 +24,7 @@ public:
     generic::bus    bus;
     generic::memory mem;
     virtio::mmio    virtio;
-    virtio::rng     virtio_rng;
+    virtio::input   virtio_input;
     master_socket   OUT;
     sc_in<bool>     IRQ;
     sc_signal<bool> irq;
@@ -34,12 +34,12 @@ public:
         bus("bus"),
         mem("mem", 0x1000),
         virtio("virtio"),
-        virtio_rng("virtio_rng"),
+        virtio_input("virtio_input"),
         OUT("OUT"),
         IRQ("IRQ"),
         irq("irq") {
 
-        virtio.VIRTIO_OUT.bind(virtio_rng.VIRTIO_IN);
+        virtio.VIRTIO_OUT.bind(virtio_input.VIRTIO_IN);
 
         bus.bind(mem.IN, 0, 0xfff);
         bus.bind(virtio.IN, 0x1000, 0x1fff);
@@ -60,44 +60,49 @@ public:
     }
 
     virtual void run_test() override {
-        const u64 RNG_BASE = 0x1000;
+        const u64 INPUT_BASE = 0x1000;
 
-        const u64 RNG_MAGIC   = RNG_BASE + 0x00;
-        const u64 RNG_VERSION = RNG_BASE + 0x04;
-        const u64 RNG_DEVID   = RNG_BASE + 0x08;
-        const u64 RNG_VQ_SEL  = RNG_BASE + 0x30;
-        const u64 RNG_VQ_MAX  = RNG_BASE + 0x34;
-        const u64 RNG_STATUS  = RNG_BASE + 0x70;
+        const u64 INPUT_MAGIC   = INPUT_BASE + 0x00;
+        const u64 INPUT_VERSION = INPUT_BASE + 0x04;
+        const u64 INPUT_DEVID   = INPUT_BASE + 0x08;
+        const u64 INPUT_VQ_SEL  = INPUT_BASE + 0x30;
+        const u64 INPUT_VQ_MAX  = INPUT_BASE + 0x34;
+        const u64 INPUT_STATUS  = INPUT_BASE + 0x70;
 
         u32 data;
-        ASSERT_OK(OUT.readw(RNG_MAGIC, data));
+        ASSERT_OK(OUT.readw(INPUT_MAGIC, data));
         ASSERT_EQ(data, 0x74726976);
 
-        ASSERT_OK(OUT.readw(RNG_VERSION, data));
+        ASSERT_OK(OUT.readw(INPUT_VERSION, data));
         ASSERT_EQ(data, 2);
 
-        ASSERT_OK(OUT.readw(RNG_DEVID, data));
-        ASSERT_EQ(data, virtio::VIRTIO_DEVICE_RNG);
+        ASSERT_OK(OUT.readw(INPUT_DEVID, data));
+        ASSERT_EQ(data, virtio::VIRTIO_DEVICE_INPUT);
 
-        ASSERT_OK(OUT.readw(RNG_STATUS, data));
+        ASSERT_OK(OUT.readw(INPUT_STATUS, data));
         ASSERT_EQ(data, 0);
 
         data = virtio::mmio::VIRTIO_STATUS_ACKNOWLEDGE |
                virtio::mmio::VIRTIO_STATUS_DRIVER |
                virtio::mmio::VIRTIO_STATUS_FEATURES_OK;
-        ASSERT_OK(OUT.writew(RNG_STATUS, data));
+        ASSERT_OK(OUT.writew(INPUT_STATUS, data));
 
-        ASSERT_OK(OUT.readw(RNG_STATUS, data));
+        ASSERT_OK(OUT.readw(INPUT_STATUS, data));
         ASSERT_TRUE(data & virtio::mmio::VIRTIO_STATUS_FEATURES_OK);
 
         data = 0;
-        ASSERT_OK(OUT.writew(RNG_VQ_SEL, data));
-        ASSERT_OK(OUT.readw(RNG_VQ_MAX, data));
+        ASSERT_OK(OUT.writew(INPUT_VQ_SEL, data));
+        ASSERT_OK(OUT.readw(INPUT_VQ_MAX, data));
         EXPECT_EQ(data, 8);
 
         data = 1;
-        ASSERT_OK(OUT.writew(RNG_VQ_SEL, data));
-        ASSERT_OK(OUT.readw(RNG_VQ_MAX, data));
+        ASSERT_OK(OUT.writew(INPUT_VQ_SEL, data));
+        ASSERT_OK(OUT.readw(INPUT_VQ_MAX, data));
+        EXPECT_EQ(data, 8);
+
+        data = 2;
+        ASSERT_OK(OUT.writew(INPUT_VQ_SEL, data));
+        ASSERT_OK(OUT.readw(INPUT_VQ_MAX, data));
         EXPECT_EQ(data, 0);
     }
 
