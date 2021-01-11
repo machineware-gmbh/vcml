@@ -22,6 +22,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
@@ -87,15 +88,11 @@ namespace vcml {
     };
 
     inline void module::hierarchy_push() {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        VCML_ERROR_ON(!simc, "no simulation context");
-        simc->hierarchy_push(this);
+        vcml::hierarchy_push(this);
     }
 
     inline void module::hierarchy_pop() {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        VCML_ERROR_ON(!simc, "no simulation context");
-        sc_module* top = simc->hierarchy_pop();
+        sc_module* top = vcml::hierarchy_pop();
         VCML_ERROR_ON(top != this, "broken hierarchy");
     }
 

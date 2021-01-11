@@ -123,6 +123,26 @@ namespace vcml {
     using sc_core::sc_module_name;
     using sc_core::sc_module;
 
+    void hierarchy_push(sc_module* mod);
+    sc_module* hierarchy_pop();
+    sc_module* hierarchy_top();
+
+    class hierarchy_guard
+    {
+    private:
+        sc_module* m_owner;
+
+    public:
+        hierarchy_guard(sc_module* owner): m_owner(owner) {
+            hierarchy_push(owner);
+        }
+
+        ~hierarchy_guard() {
+            sc_module* top = hierarchy_pop();
+            VCML_ERROR_ON(top != m_owner, "SystemC hierarchy corrupted");
+        }
+    };
+
     using sc_core::sc_spawn;
     using sc_core::sc_spawn_options;
     using sc_core::sc_type_index;

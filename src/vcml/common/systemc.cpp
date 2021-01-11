@@ -75,6 +75,24 @@ namespace vcml {
         return proc;
     }
 
+    void hierarchy_push(sc_module* mod) {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        VCML_ERROR_ON(!simc, "no simulation context");
+        simc->hierarchy_push(mod);
+    }
+
+    sc_module* hierarchy_pop() {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        VCML_ERROR_ON(!simc, "no simulation context");
+        return simc->hierarchy_pop();
+    }
+
+    sc_module* hierarchy_top() {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        VCML_ERROR_ON(!simc, "no simulation context");
+        return simc->hierarchy_curr();
+    }
+
     const char* tlm_response_to_str(tlm_response_status status) {
         switch (status) {
         case TLM_OK_RESPONSE:
