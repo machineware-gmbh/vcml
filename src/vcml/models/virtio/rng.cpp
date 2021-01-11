@@ -40,7 +40,7 @@ namespace vcml { namespace virtio {
                 elem = rand_r(&m_seed);
 
             count++;
-            msg.copy_out(random.data(), random.size());
+            msg.copy_out(random);
 
             if (!VIRTIO_IN->put(vqid, msg))
                 return false;

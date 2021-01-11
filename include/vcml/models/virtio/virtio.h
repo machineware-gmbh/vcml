@@ -109,6 +109,12 @@ namespace vcml { namespace virtio {
         size_t copy_in(void* ptr, size_t sz, size_t offset = 0);
 
         template <typename T>
+        size_t copy_out(const vector<T>& data, size_t offset = 0);
+
+        template <typename T>
+        size_t copy_in(vector<T>& data, size_t offset = 0);
+
+        template <typename T>
         size_t copy_out(const T& data, size_t offset = 0);
 
         template <typename T>
@@ -141,6 +147,16 @@ namespace vcml { namespace virtio {
     template <typename T>
     size_t vq_message::copy_in(T& data, size_t offset) {
         return copy_in(&data, sizeof(data), offset);
+    }
+
+    template <typename T>
+    size_t vq_message::copy_out(const vector<T>& data, size_t offset) {
+        return copy_out(data.data(), data.size(), offset);
+    }
+
+    template <typename T>
+    size_t vq_message::copy_in(vector<T>& data, size_t offset) {
+        return copy_in(data.data(), data.size(), offset);
     }
 
     typedef function<u8*(u64, u64, vcml_access)> virtio_dmifn;
