@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,43 +16,36 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "testing.h"
+#ifndef VCML_UI_FBMODE_H
+#define VCML_UI_FBMODE_H
 
-#define RESX 1280
-#define RESY  720
+#include "vcml/common/types.h"
 
-class test_harness: public test_base
-{
-public:
-    u8 vmem[RESX * RESY * 4];
-    generic::fbdev fb;
-    slave_socket IN;
+namespace vcml { namespace ui {
 
-    test_harness(const sc_core::sc_module_name& nm):
-        test_base(nm),
-        fb("fb", RESX, RESY),
-        IN("IN") {
-        fb.OUT.bind(IN);
-        fb.CLOCK.stub(60);
-        fb.RESET.stub();
-        fb.display = "vnc:44444";
-        map_dmi(vmem, 0, sizeof(vmem) - 1, VCML_ACCESS_READ);
-    }
+    typedef struct {
+        u8 offset;
+        u8 size;
+    } color_format;
 
-    virtual void run_test() override {
-        ASSERT_EQ(fb.resx, RESX) << "unexpect screen width";
-        ASSERT_EQ(fb.resy, RESY) << "unexpected screen height";
-        ASSERT_EQ(fb.stride(), RESX * 4) << "wrong stride";
-        ASSERT_EQ(fb.size(), RESX * RESY * 4) << "wrong size";
+    typedef struct {
+        u32 resx;
+        u32 resy;
+        u64 size;
+        color_format a;
+        color_format r;
+        color_format g;
+        color_format b;
+        vcml_endian endian;
+    } fbmode;
 
-        wait(1.0, SC_SEC);
+    fbmode fbmode_argb32(u32 width, u32 height);
+    fbmode fbmode_bgra32(u32 width, u32 height);
+    fbmode fbmode_rgb24(u32 width, u32 height);
+    fbmode fbmode_bgr24(u32 width, u32 height);
+    fbmode fbmode_rgb16(u32 width, u32 height);
+    fbmode fbmode_gray8(u32 width, u32 height);
 
-        EXPECT_EQ(fb.vptr(), vmem);
-    }
+}}
 
-};
-
-TEST(generic_memory, access) {
-    test_harness test("harness");
-    sc_core::sc_start();
-}
+#endif

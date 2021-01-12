@@ -103,21 +103,21 @@ namespace vcml { namespace virtio {
     }
 
     void input::config_update_absinfo() {
-        if (vncport == 0 || !touchpad)
+        if (display == "" || !touchpad)
             return;
 
-        auto vnc = ui::vnc::lookup(vncport);
+        auto disp = ui::display::lookup(display);
 
         switch (m_config.subsel) {
         case ABS_X:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = vnc->resx() - 1;
+            m_config.u.abs.max  = disp->resx() - 1;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
         case ABS_Y:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = vnc->resy() - 1;
+            m_config.u.abs.max  = disp->resy() - 1;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
@@ -329,9 +329,9 @@ namespace vcml { namespace virtio {
         m_prev_y(),
         touchpad("touchpad", true),
         keyboard("keyboard", true),
-        keymap("keymap", "us"),
         pollrate("pollrate", 1000),
-        vncport("vncport", 0),
+        keymap("keymap", "us"),
+        display("display", ""),
         VIRTIO_IN("VIRTIO_IN") {
         VIRTIO_IN.bind(*this);
 
@@ -342,12 +342,12 @@ namespace vcml { namespace virtio {
         m_key_listener = std::bind(&input::key_event, this, _1, _2);
         m_ptr_listener = std::bind(&input::ptr_event, this, _1, _2, _3);
 
-        if (vncport > 0) {
-            auto vnc = ui::vnc::lookup(vncport);
+        if (display != "") {
+            auto disp = ui::display::lookup(display);
             if (keyboard)
-                vnc->add_key_listener(m_key_listener);
+                disp->add_key_listener(m_key_listener, keymap);
             if (touchpad)
-                vnc->add_ptr_listener(m_ptr_listener);
+                disp->add_ptr_listener(m_ptr_listener);
         }
 
         if (keyboard || keyboard) {
@@ -373,13 +373,13 @@ namespace vcml { namespace virtio {
     }
 
     void input::end_of_simulation() {
-        if (vncport > 0) {
-            auto vnc = ui::vnc::lookup(vncport);
+        if (display != "") {
+            auto disp = ui::display::lookup(display);
             if (keyboard)
-                vnc->remove_key_listener(m_key_listener);
+                disp->remove_key_listener(m_key_listener);
             if (touchpad)
-                vnc->remove_ptr_listener(m_ptr_listener);
-            vnc->shutdown();
+                disp->remove_ptr_listener(m_ptr_listener);
+            disp->shutdown();
         }
     }
 

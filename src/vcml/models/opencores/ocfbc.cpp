@@ -144,7 +144,7 @@ namespace vcml { namespace opencores {
     }
 
     void ocfbc::create_framebuffer() {
-        if (vncport == 0)
+        if (display == "")
             return;
 
         u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
@@ -156,7 +156,7 @@ namespace vcml { namespace opencores {
             vram = OUT.lookup_dmi_ptr(area, VCML_ACCESS_READ);
         }
 
-        ui::vnc_fbmode mode;
+        ui::fbmode mode;
         // Below we should ideally just select the mode that suits our
         // display mode and pass our own model endianess. However, some
         // VNC clients seem to have trouble reading big endian data, and
@@ -193,24 +193,25 @@ namespace vcml { namespace opencores {
             VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
         }
 
-        auto vnc = ui::vnc::lookup(vncport);
+        auto disp = ui::display::lookup(display);
 
         // cannot use DMI with pseudocolor
         if ((vram == nullptr) || (m_pc)) {
             log_debug("copying vnc framebuffer from vram");
-            m_fb = vnc->setup_framebuffer(mode);
+            m_fb = new u8[mode.size];
+            disp->init(mode, m_fb);
         } else {
             log_debug("mapping vnc framebuffer into vram");
-            vnc->setup_framebuffer(mode, vram);
+            disp->init(mode, vram);
             m_fb = nullptr;
         }
     }
 
     void ocfbc::render_framebuffer() {
-        if (vncport == 0)
+        if (display == "")
             return;
 
-        ui::vnc::lookup(vncport)->render();
+        ui::display::lookup(display)->render();
     }
 
     void ocfbc::render() {
@@ -331,7 +332,7 @@ namespace vcml { namespace opencores {
         IN("IN"),
         OUT("OUT"),
         clock("clock", 60), // 60Hz
-        vncport("vncport", 0) {
+        display("display", "") {
 
         CTLR.allow_read_write();
         CTLR.write = &ocfbc::write_CTRL;
@@ -353,12 +354,13 @@ namespace vcml { namespace opencores {
     }
 
     ocfbc::~ocfbc() {
-        /* nothing to do */
+        if (m_fb != nullptr)
+            delete [] m_fb;
     }
 
     void ocfbc::end_of_simulation() {
-        if (vncport > 0)
-            ui::vnc::lookup(vncport)->shutdown();
+        if (display != "")
+            ui::display::lookup(display)->shutdown();
     }
 
 }}

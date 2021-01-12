@@ -87,8 +87,8 @@ namespace vcml { namespace opencores {
         IRQ("IRQ"),
         IN("IN"),
         keymap("keymap", "us"),
-        fifosize("fifosize", 16),
-        vncport("vncport", 0) {
+        display("display", ""),
+        fifosize("fifosize", 16) {
 
         KHR.allow_read_only();
         KHR.read = &ockbd::read_KHR;
@@ -97,9 +97,9 @@ namespace vcml { namespace opencores {
         using std::placeholders::_2;
         m_key_handler = std::bind(&ockbd::key_event, this, _1, _2);
 
-        if (vncport > 0) {
-            auto vnc = ui::vnc::lookup(vncport);
-            vnc->add_key_listener(m_key_handler);
+        if (display != "") {
+            auto disp = ui::display::lookup(display);
+            disp->add_key_listener(m_key_handler, keymap);
         }
     }
 
@@ -108,10 +108,10 @@ namespace vcml { namespace opencores {
     }
 
     void ockbd::end_of_simulation() {
-        if (vncport > 0) {
-            auto vnc = ui::vnc::lookup(vncport);
-            vnc->remove_key_listener(m_key_handler);
-            vnc->shutdown();
+        if (display != "") {
+            auto disp = ui::display::lookup(display);
+            disp->remove_key_listener(m_key_handler);
+            disp->shutdown();
         }
     }
 

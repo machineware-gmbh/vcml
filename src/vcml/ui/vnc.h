@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,43 +16,48 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "testing.h"
+#ifndef VCML_UI_VNC_H
+#define VCML_UI_VNC_H
 
-#define RESX 1280
-#define RESY  720
+#include "vcml/common/types.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/report.h"
 
-class test_harness: public test_base
-{
-public:
-    u8 vmem[RESX * RESY * 4];
-    generic::fbdev fb;
-    slave_socket IN;
+#include "vcml/logging/logger.h"
 
-    test_harness(const sc_core::sc_module_name& nm):
-        test_base(nm),
-        fb("fb", RESX, RESY),
-        IN("IN") {
-        fb.OUT.bind(IN);
-        fb.CLOCK.stub(60);
-        fb.RESET.stub();
-        fb.display = "vnc:44444";
-        map_dmi(vmem, 0, sizeof(vmem) - 1, VCML_ACCESS_READ);
-    }
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/fbmode.h"
+#include "vcml/ui/display.h"
 
-    virtual void run_test() override {
-        ASSERT_EQ(fb.resx, RESX) << "unexpect screen width";
-        ASSERT_EQ(fb.resy, RESY) << "unexpected screen height";
-        ASSERT_EQ(fb.stride(), RESX * 4) << "wrong stride";
-        ASSERT_EQ(fb.size(), RESX * RESY * 4) << "wrong size";
+#include <rfb/rfb.h>
 
-        wait(1.0, SC_SEC);
+namespace vcml { namespace ui {
 
-        EXPECT_EQ(fb.vptr(), vmem);
-    }
+    class vnc: public display
+    {
+    private:
+        u16 m_port;
+        atomic<bool> m_running;
+        rfbScreenInfo* m_screen;
+        thread m_thread;
 
-};
+    protected:
+        static void key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl);
+        static void ptr_func(int mask, int x, int y, rfbClientPtr cl);
 
-TEST(generic_memory, access) {
-    test_harness test("harness");
-    sc_core::sc_start();
-}
+        void run();
+
+    public:
+        u16 port() const { return m_port; }
+
+        vnc(u32 no);
+        virtual ~vnc();
+
+        virtual void init(const fbmode& mode, u8* fb) override;
+        virtual void render() override;
+        virtual void shutdown() override;
+    };
+
+}}
+
+#endif

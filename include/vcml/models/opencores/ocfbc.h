@@ -30,7 +30,7 @@
 #include "vcml/master_socket.h"
 
 #include "vcml/properties/property.h"
-#include "vcml/ui/vnc.h"
+#include "vcml/ui/display.h"
 
 namespace vcml { namespace opencores {
 
@@ -125,7 +125,7 @@ namespace vcml { namespace opencores {
         master_socket OUT;
 
         property<clock_t> clock;
-        property<u16>     vncport;
+        property<string> display;
 
         ocfbc(const sc_module_name& name);
         virtual ~ocfbc();

@@ -23,8 +23,8 @@ namespace vcml { namespace generic {
     void fbdev::update() {
         while (true) {
             wait_clock_cycle();
-            auto vnc = ui::vnc::lookup(vncport);
-            vnc->render();
+            auto disp = ui::display::lookup(display);
+            disp->render();
         }
     }
 
@@ -36,7 +36,7 @@ namespace vcml { namespace generic {
         addr("addr", 0),
         resx("resx", defx),
         resy("resy", defy),
-        vncport("vncport", 0),
+        display("display", ""),
         OUT("OUT") {
         VCML_ERROR_ON(resx == 0u, "resx cannot be zero");
         VCML_ERROR_ON(resy == 0u, "resy cannot be zero");
@@ -46,7 +46,7 @@ namespace vcml { namespace generic {
         m_stride = resx * 4;
         m_size = m_stride * resy;
 
-        if (vncport > 0) {
+        if (display != "") {
             SC_HAS_PROCESS(fbdev);
             SC_THREAD(update);
         }
@@ -66,7 +66,7 @@ namespace vcml { namespace generic {
         range vmem(addr, addr + m_size - 1);
         log_debug("video memory at %p..%p", vmem.start, vmem.end);
 
-        if (vncport == 0)
+        if (display == "")
             return;
 
         if (!allow_dmi) {
@@ -82,15 +82,15 @@ namespace vcml { namespace generic {
 
         log_debug("using DMI pointer %p", m_vptr);
 
-        auto vnc = ui::vnc::lookup(vncport);
+        auto disp = ui::display::lookup(display);
         auto mode = ui::fbmode_argb32(resx, resy);
-        vnc->setup_framebuffer(mode, m_vptr);
+        disp->init(mode, m_vptr);
     }
 
     void fbdev::end_of_simulation() {
         component::end_of_simulation();
-        auto vnc = ui::vnc::lookup(vncport);
-        vnc->shutdown();
+        auto disp = ui::display::lookup(display);
+        disp->shutdown();
     }
 
 }}

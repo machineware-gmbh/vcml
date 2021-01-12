@@ -69,6 +69,8 @@ set(sources
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
     ${src}/vcml/ui/keymap.cpp
+    ${src}/vcml/ui/fbmode.cpp
+    ${src}/vcml/ui/display.cpp
     ${src}/vcml/ui/vnc.cpp
     ${src}/vcml/elf.cpp
     ${src}/vcml/sbi.cpp
@@ -142,6 +144,7 @@ if(LIBVNC_FOUND)
     message(STATUS "Building with VNC support")
     target_compile_definitions(vcml PUBLIC HAVE_LIBVNC)
     target_include_directories(vcml SYSTEM PUBLIC ${LIBVNC_INCLUDE_DIRS})
+#   target_sources(vcml PUBLIC ${src}/vcml/ui/vnc.cpp)
     target_link_libraries(vcml PUBLIC ${LIBVNC_LIBRARIES})
 else()
     message(STATUS "Building without VNC support")

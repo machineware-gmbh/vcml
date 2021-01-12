@@ -24,7 +24,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/ui/keymap.h"
-#include "vcml/ui/vnc.h"
+#include "vcml/ui/display.h"
 
 #include "vcml/range.h"
 #include "vcml/module.h"
@@ -89,8 +89,8 @@ namespace vcml { namespace virtio {
 
         input_config m_config;
 
-        ui::vnc_key_listener m_key_listener;
-        ui::vnc_ptr_listener m_ptr_listener;
+        ui::key_listener m_key_listener;
+        ui::ptr_listener m_ptr_listener;
 
         bool m_shift;
         bool m_capsl;
@@ -144,9 +144,11 @@ namespace vcml { namespace virtio {
     public:
         property<bool> touchpad;
         property<bool> keyboard;
-        property<string> keymap;
+
         property<u64> pollrate;
-        property<u16> vncport;
+
+        property<string> keymap;
+        property<string> display;
 
         virtio_target_socket VIRTIO_IN;
 

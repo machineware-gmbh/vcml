@@ -25,7 +25,7 @@
 #include "vcml/common/thctl.h"
 
 #include "vcml/ui/keymap.h"
-#include "vcml/ui/vnc.h"
+#include "vcml/ui/display.h"
 
 #include "vcml/ports.h"
 #include "vcml/register.h"
@@ -40,7 +40,7 @@ namespace vcml { namespace opencores {
     private:
         queue<u8> m_key_fifo;
 
-        ui::vnc_key_listener m_key_handler;
+        ui::key_listener m_key_handler;
 
         void key_event(u32 key, bool down);
         void push_key(u8 code, bool down);
@@ -58,8 +58,8 @@ namespace vcml { namespace opencores {
         slave_socket IN;
 
         property<string> keymap;
+        property<string> display;
         property<size_t> fifosize;
-        property<u16> vncport;
 
         ockbd(const sc_module_name& name);
         virtual ~ockbd();

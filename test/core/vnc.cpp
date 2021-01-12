@@ -27,7 +27,7 @@ using namespace vcml::ui;
 TEST(vnc, fbmode) {
     u32 resx = 800;
     u32 resy = 600;
-    vnc_fbmode mode;
+    fbmode mode;
 
     mode = fbmode_argb32(resx, resy);
     EXPECT_EQ(mode.resx, resx);
@@ -64,17 +64,17 @@ TEST(vnc, server) {
     u16 port1 = 40000;
     u16 port2 = 40001;
 
-    shared_ptr<vnc> p1 = vnc::lookup(port1);
-    shared_ptr<vnc> p2 = vnc::lookup(port1);
-    shared_ptr<vnc> p3 = vnc::lookup(port2);
-    shared_ptr<vnc> p4 = vnc::lookup(port2);
-    shared_ptr<vnc> p5 = vnc::lookup(port2);
+    shared_ptr<display> p1 = display::lookup("vnc:40000");
+    shared_ptr<display> p2 = display::lookup("vnc:40000");
+    shared_ptr<display> p3 = display::lookup("vnc:40001");
+    shared_ptr<display> p4 = display::lookup("vnc:40001");
+    shared_ptr<display> p5 = display::lookup("vnc:40001");
 
-    EXPECT_EQ(p1->port(), port1);
-    EXPECT_EQ(p2->port(), port1);
-    EXPECT_EQ(p3->port(), port2);
-    EXPECT_EQ(p4->port(), port2);
-    EXPECT_EQ(p5->port(), port2);
+    EXPECT_EQ(p1->dispno(), port1);
+    EXPECT_EQ(p2->dispno(), port1);
+    EXPECT_EQ(p3->dispno(), port2);
+    EXPECT_EQ(p4->dispno(), port2);
+    EXPECT_EQ(p5->dispno(), port2);
 
     EXPECT_EQ(p1, p2);
     EXPECT_EQ(p3, p4);

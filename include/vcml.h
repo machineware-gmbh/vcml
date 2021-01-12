@@ -50,7 +50,8 @@
 #include "vcml/debugging/vspserver.h"
 
 #include "vcml/ui/keymap.h"
-#include "vcml/ui/vnc.h"
+#include "vcml/ui/fbmode.h"
+#include "vcml/ui/display.h"
 
 #include "vcml/elf.h"
 #include "vcml/range.h"

@@ -23,9 +23,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/ui/vnc.h"
 #include "vcml/component.h"
 #include "vcml/master_socket.h"
+
+#include "vcml/ui/display.h"
 
 namespace vcml { namespace generic {
 
@@ -47,7 +48,7 @@ namespace vcml { namespace generic {
         property<u32> resx;
         property<u32> resy;
 
-        property<u16> vncport;
+        property<string> display;
 
         master_socket OUT;
 
