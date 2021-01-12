@@ -77,6 +77,8 @@ namespace vcml { namespace virtio {
         property<u16> cols;
         property<u16> rows;
 
+        property<u64> pollrate;
+
         property<string> backends;
 
         virtio_target_socket VIRTIO_IN;

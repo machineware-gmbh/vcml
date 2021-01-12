@@ -60,8 +60,8 @@ namespace vcml { namespace virtio {
         }
 
         sc_time quantum = tlm_global_quantum::instance().get();
-        VCML_ERROR_ON(quantum == SC_ZERO_TIME, "no quantum specified");
-        next_trigger(quantum * 10);
+        sc_time polldelay(1.0 / pollrate, SC_SEC);
+        next_trigger(max(polldelay, quantum));
     }
 
     void console::identify(virtio_device_desc& desc) {
@@ -152,6 +152,7 @@ namespace vcml { namespace virtio {
         m_backends(),
         cols("cols", 0),
         rows("rows", 0),
+        pollrate("pollrate", 1000),
         backends("backends", "null"),
         VIRTIO_IN("VIRTIO_IN") {
         VIRTIO_IN.bind(*this);
