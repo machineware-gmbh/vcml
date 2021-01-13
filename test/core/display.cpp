@@ -24,7 +24,7 @@
 using namespace vcml;
 using namespace vcml::ui;
 
-TEST(vnc, fbmode) {
+TEST(display, fbmode) {
     u32 resx = 800;
     u32 resy = 600;
     fbmode mode;
@@ -60,7 +60,7 @@ TEST(vnc, fbmode) {
     EXPECT_EQ(mode.size, resx * resy * 1);
 }
 
-TEST(vnc, server) {
+TEST(display, server) {
     u16 port1 = 40000;
     u16 port2 = 40001;
 
