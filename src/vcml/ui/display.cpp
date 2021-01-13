@@ -22,6 +22,10 @@
 #include "vcml/ui/vnc.h"
 #endif
 
+#ifdef HAVE_SDL2
+#include "vcml/ui/sdl.h"
+#endif
+
 namespace vcml { namespace ui {
 
     unordered_map<string, shared_ptr<display>> display::displays = {
@@ -128,6 +132,14 @@ namespace vcml { namespace ui {
         if (id == "vnc") {
 #ifdef HAVE_LIBVNC
             disp.reset(new vnc(no));
+#else
+            disp.reset(new display("display", no));
+#endif
+        }
+
+        if (id == "sdl") {
+#ifdef HAVE_SDL2
+            disp.reset(new sdl(no));
 #else
             disp.reset(new display("display", no));
 #endif
