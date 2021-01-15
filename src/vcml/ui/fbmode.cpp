@@ -20,12 +20,27 @@
 
 namespace vcml { namespace ui {
 
+    const char* pixelformat_to_str(pixelformat fmt) {
+        switch (fmt) {
+        case FORMAT_ARGB32: return "FORMAT_ARGB32";
+        case FORMAT_BGRA32: return "FORMAT_BGRA32";
+        case FORMAT_RGB24:  return "FORMAT_RGB24";
+        case FORMAT_BGR24:  return "FORMAT_BGR24";
+        case FORMAT_RGB16:  return "FORMAT_RGB16";
+        case FORMAT_GRAY8:  return "FORMAT_GRAY8";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
     fbmode fbmode_argb32(u32 width, u32 height) {
         fbmode mode;
 
         mode.resx = width;
         mode.resy = height;
         mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_ARGB32;
 
         mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
 
@@ -46,6 +61,8 @@ namespace vcml { namespace ui {
         mode.resy = height;
         mode.size = 4ul * width * height;
 
+        mode.format = FORMAT_BGRA32;
+
         mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
 
         mode.a.offset =  0;
@@ -64,6 +81,8 @@ namespace vcml { namespace ui {
         mode.resx = width;
         mode.resy = height;
         mode.size = 3ul * width * height;
+
+        mode.format = FORMAT_RGB24;
 
         mode.a.size = 0;
         mode.a.offset = 0;
@@ -86,6 +105,8 @@ namespace vcml { namespace ui {
         mode.resy = height;
         mode.size = 3ul * width * height;
 
+        mode.format = FORMAT_BGR24;
+
         mode.a.size = 0;
         mode.a.offset = 0;
 
@@ -106,6 +127,8 @@ namespace vcml { namespace ui {
         mode.resx = width;
         mode.resy = height;
         mode.size = 2ul * width * height;
+
+        mode.format = FORMAT_RGB16;
 
         mode.a.size = 0;
         mode.a.offset = 0;
@@ -129,6 +152,8 @@ namespace vcml { namespace ui {
         mode.resx = width;
         mode.resy = height;
         mode.size = 1ul * width * height;
+
+        mode.format = FORMAT_GRAY8;
 
         mode.a.size = 0;
         mode.a.offset = 0;

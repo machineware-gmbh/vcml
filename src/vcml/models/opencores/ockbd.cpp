@@ -22,29 +22,12 @@
 
 namespace vcml { namespace opencores {
 
-    void ockbd::key_event(u32 key, bool down) {
-        const auto&  map = ui::keymap::lookup(keymap);
-        auto* info = map.lookup_symbol(key);
-        auto  keys = map.translate_symbol(key);
+    void ockbd::key_event(u32 key, u32 state) {
+        u8 scancode = (u8)(key & 0xff);
+        bool down = (state != ui::VCML_KEY_UP);
 
-        if (info == nullptr) {
-            if (down)
-                log_debug("no scancode for key 0x%x", key, key);
-            return;
-        }
-
-        if (down)
-            log_debug("found scancode for key 0x%x: %s", key, info->name);
-
-        for (auto key : keys)
-            push_key(key, down);
-    }
-
-    void ockbd::push_key(u8 scancode, bool down) {
         if (!down)
             scancode |= MOD_RELEASE;
-
-        thctl_enter_critical();
 
         if (m_key_fifo.size() < fifosize)
             m_key_fifo.push(scancode);
@@ -55,8 +38,6 @@ namespace vcml { namespace opencores {
             log_debug("setting IRQ");
 
         IRQ = !m_key_fifo.empty();
-
-        thctl_exit_critical();
     }
 
     u8 ockbd::read_KHR() {

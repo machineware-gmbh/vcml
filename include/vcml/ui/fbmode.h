@@ -23,19 +23,31 @@
 
 namespace vcml { namespace ui {
 
+    enum pixelformat {
+        FORMAT_ARGB32,
+        FORMAT_BGRA32,
+        FORMAT_RGB24,
+        FORMAT_BGR24,
+        FORMAT_RGB16,
+        FORMAT_GRAY8,
+    };
+
+    const char* pixelformat_to_str(pixelformat fmt);
+
     typedef struct {
         u8 offset;
         u8 size;
-    } color_format;
+    } color_channel;
 
     typedef struct {
         u32 resx;
         u32 resy;
         u64 size;
-        color_format a;
-        color_format r;
-        color_format g;
-        color_format b;
+        pixelformat format;
+        color_channel a;
+        color_channel r;
+        color_channel g;
+        color_channel b;
         vcml_endian endian;
     } fbmode;
 

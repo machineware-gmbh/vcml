@@ -30,33 +30,30 @@
 
 namespace vcml { namespace ui {
 
-    typedef function<void(u32, bool)>     key_listener;
-    typedef function<void(u32, u32, u32)> ptr_listener;
+    enum key_state : u32 {
+        VCML_KEY_UP = 0u,
+        VCML_KEY_DOWN = 1u,
+        VCML_KEY_HELD = 2u,
+    };
+
+    typedef function<void(u32, u32)> key_listener;
+    typedef function<void(u32, u32)> pos_listener;
 
     class display
     {
     private:
-        mutex  m_mutex;
         string m_name;
         string m_type;
         u32    m_dispno;
         fbmode m_mode;
         u8*    m_fb;
 
-        struct key_listener_info { // needs ctrl, lalt, etc?
-            key_listener* func;
-            string layout;
-        };
-
-        vector<key_listener_info> m_key_listener;
-        vector<ptr_listener*> m_ptr_listener;
-
     protected:
         static unordered_map<string, shared_ptr<display>> displays;
 
         display() = delete;
         display(const display&) = delete;
-        display(const string& type, u32 no);
+        display(const string& type, u32 nr);
 
     public:
         u32 resx() const { return m_mode.resx; }
@@ -78,14 +75,11 @@ namespace vcml { namespace ui {
         virtual void render();
         virtual void shutdown();
 
-        void add_key_listener(key_listener& l, const string& layout = "us");
-        void remove_key_listener(key_listener& listener);
+        virtual void add_key_listener(key_listener& l, const string& layout);
+        virtual void add_ptr_listener(pos_listener& p, key_listener& k);
 
-        void add_ptr_listener(ptr_listener& listener);
-        void remove_ptr_listener(ptr_listener& listener);
-
-        void notify_key_listeners(unsigned int key, bool down);
-        void notify_ptr_listeners(u32 buttons, u32 x, u32 y);
+        virtual void remove_key_listener(key_listener& l);
+        virtual void remove_ptr_listener(pos_listener& p, key_listener& k);
 
         static shared_ptr<display> lookup(const string& name);
     };

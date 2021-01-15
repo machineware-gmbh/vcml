@@ -36,18 +36,89 @@ namespace vcml { namespace ui {
         log_error(trim(str).c_str());
     }
 
-    void vnc::key_func(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
+    static void rfb_key_func(rfbBool down, rfbKeySym sym, rfbClientPtr cl) {
         int port = cl->screen->port;
         auto disp = display::lookup(mkstr("vnc:%d", port));
-        VCML_ERROR_ON(!disp, "no vnc server found for port %d", port);
-        disp->notify_key_listeners(key, down);
+        VCML_ERROR_ON(!disp, "no display found for port %d", port);
+        auto vnc_ = dynamic_cast<vnc*>(disp.get());
+        VCML_ERROR_ON(!vnc_, "no vnc server found for port %d", port);
+        vnc_->key_event((u32)sym, (bool)down);
     }
 
-    void vnc::ptr_func(int mask, int x, int y, rfbClientPtr cl) {
+    static void rfb_ptr_func(int mask, int x, int y, rfbClientPtr cl) {
         int port = cl->screen->port;
         auto disp = display::lookup(mkstr("vnc:%d", port));
-        VCML_ERROR_ON(!disp, "no vnc server found for port %d", port);
-        disp->notify_ptr_listeners(mask, x, y);
+        VCML_ERROR_ON(!disp, "no display found for port %d", port);
+        auto vnc_ = dynamic_cast<vnc*>(disp.get());
+        VCML_ERROR_ON(!vnc_, "no vnc server found for port %d", port);
+        vnc_->ptr_event((u32)mask, (u32)x, (u32)y);
+    }
+
+    void vnc::vnc_key_listener::notify(u32 sym, bool down) {
+        const auto& map = ui::keymap::lookup(layout);
+        auto info = map.lookup_symbol(sym);
+
+        u32 state = down ? VCML_KEY_DOWN : VCML_KEY_UP;
+        if (down && sym == prev_sym)
+            state = VCML_KEY_HELD;
+
+        if (info == nullptr) {
+            log_debug("no key code found for key 0x%x", sym);
+            return;
+        }
+
+        if (!info->is_special()) {
+            if (down && (shift ^ capsl) != info->shift)
+                notify_key(KEY_LEFTSHIFT, info->shift ^ capsl);
+            if (down && alt_l != info->l_alt)
+                notify_key(KEY_LEFTALT, info->l_alt);
+            if (down && alt_r != info->r_alt)
+                notify_key(KEY_RIGHTALT, info->r_alt);
+        }
+
+        notify_key(info->code, state);
+
+        if (!info->is_special()) {
+            if (down && (shift ^ capsl) != info->shift)
+                notify_key(KEY_LEFTSHIFT, !(info->shift ^ capsl));
+            if (down && alt_l != info->l_alt)
+                notify_key(KEY_LEFTALT, alt_l);
+            if (down && alt_r != info->r_alt)
+                notify_key(KEY_RIGHTALT, alt_r);
+        }
+
+        if (info->code == KEY_CAPSLOCK && down)
+            capsl = !capsl;
+        if (info->code == KEY_LEFTSHIFT || info->code == KEY_RIGHTSHIFT)
+            shift = down;
+        if (info->code == KEY_LEFTALT)
+            alt_l = down;
+        if (info->code == KEY_RIGHTALT)
+            alt_r = down;
+
+        prev_sym = down ? sym : -1;
+    }
+
+    void vnc::vnc_ptr_listener::notify(u32 buttons, u32 x, u32 y) {
+        u32 status = buttons & 0b111; // lclick, mclick, rclick
+        u32 change = status ^ prev_buttons;
+
+        if (change)
+            notify_btn(BTN_TOUCH, !prev_buttons);
+
+        if (change & (1u << 0))
+            notify_btn(BTN_TOOL_FINGER, (status >> 0) & 1u);
+        if (change & (1u << 1))
+            notify_btn(BTN_TOOL_TRIPLETAP, (status >> 1) & 1u);
+        if (change & (1u << 2))
+            notify_btn(BTN_TOOL_DOUBLETAP, (status >> 2) & 1u);
+
+        if (prev_x != x || prev_y != y)
+            notify_ptr(x, y);
+
+        prev_buttons = status;
+        prev_x = x;
+        prev_y = y;
     }
 
     void vnc::run() {
@@ -66,9 +137,10 @@ namespace vcml { namespace ui {
         display("vnc", no),
         m_port(no), // vnc port = display number
         m_running(true),
+        m_mutex(),
         m_screen(),
         m_thread() {
-        VCML_ERROR_ON(no != m_port, "invalid VNC port specified: %u", no);
+        VCML_ERROR_ON(no != (u32)m_port, "invalid port specified: %u", no);
 
         rfbLog = &rfb_log_func;
         rfbErr = &rfb_err_func;
@@ -76,8 +148,8 @@ namespace vcml { namespace ui {
         m_screen = rfbGetScreen(NULL, NULL, resx(), resy(), 8, 4, 4);
         m_screen->desktopName = name();
         m_screen->port = m_screen->ipv6port = m_port;
-        m_screen->kbdAddEvent = &vnc::key_func;
-        m_screen->ptrAddEvent = &vnc::ptr_func;
+        m_screen->kbdAddEvent = &rfb_key_func;
+        m_screen->ptrAddEvent = &rfb_ptr_func;
 
         rfbInitServer(m_screen);
 
@@ -128,7 +200,6 @@ namespace vcml { namespace ui {
         int x2 = resx() - 1;
         int y2 = resy() - 1;
         rfbMarkRectAsModified(m_screen, 0, 0, x2, y2);
-        display::render();
     }
 
     void vnc::shutdown() {
@@ -137,8 +208,52 @@ namespace vcml { namespace ui {
 
         m_running = false;
         m_thread.join();
+    }
 
-        display::shutdown();
+    void vnc::add_key_listener(key_listener& l, const string& layout) {
+        lock_guard<mutex> lock(m_mutex);
+
+        m_key_listener.push_back(vnc_key_listener(&l, layout));
+    }
+
+    void vnc::add_ptr_listener(pos_listener& ptr, key_listener& key) {
+        lock_guard<mutex> lock(m_mutex);
+
+        m_ptr_listener.push_back(vnc_ptr_listener(&ptr, &key));
+    }
+
+    void vnc::remove_key_listener(key_listener& l) {
+        lock_guard<mutex> lock(m_mutex);
+
+        stl_remove_erase_if(m_key_listener, [l](vnc_key_listener& vl) {
+            return vl.keyev == &l;
+        });
+    }
+
+    void vnc::remove_ptr_listener(pos_listener& p, key_listener& k) {
+        lock_guard<mutex> lock(m_mutex);
+
+        stl_remove_erase_if(m_ptr_listener, [p, k](vnc_ptr_listener& vl) {
+            return vl.ptrev == &p || vl.btnev == &k;
+        });
+    }
+
+    void vnc::key_event(u32 sym, bool down) {
+        lock_guard<mutex> lock(m_mutex);
+
+        thctl_enter_critical();
+        for (auto& listener : m_key_listener)
+            listener.notify(sym, down);
+        thctl_exit_critical();
+    }
+
+    void vnc::ptr_event(u32 mask, u32 x, u32 y) {
+        lock_guard<mutex> lock(m_mutex);
+
+        thctl_enter_critical();
+        for (auto& listener : m_ptr_listener)
+            listener.notify(mask, x, y);
+        thctl_exit_critical();
     }
 
 }}

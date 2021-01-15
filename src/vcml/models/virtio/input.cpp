@@ -164,91 +164,18 @@ namespace vcml { namespace virtio {
         }
     }
 
-    void input::key_event(u32 key, bool down) {
-        const auto& map = ui::keymap::lookup(keymap);
-        auto info = map.lookup_symbol(key);
-
-        u32 val = 0u;
-        if (down) { // handle up 0, down 1, repeat 2
-            val = (key == m_prev_symbol) ? 2u : 1u;
-            m_prev_symbol = key;
-        } else {
-            m_prev_symbol = -1;
-        }
-
-        if (info == nullptr) {
-            log_debug("no key code found for key 0x%x", key);
-            return;
-        }
-
-        lock_guard<mutex> lock(m_events_mutex);
-        if (!info->is_special()) {
-            if (down && (m_shift ^ m_capsl) != info->shift)
-                push_key(KEY_LEFTSHIFT, info->shift ^ m_capsl);
-            if (down && m_alt_l != info->l_alt)
-                push_key(KEY_LEFTALT, info->l_alt);
-            if (down && m_alt_r != info->r_alt)
-                push_key(KEY_RIGHTALT, info->r_alt);
-        }
-
-        push_key(info->code, val);
+    void input::key_event(u32 key, u32 state) {
+        push_key(key, state);
         push_sync();
-
-        if (!info->is_special()) {
-            size_t size = m_events.size();
-            if (down && (m_shift ^ m_capsl) != info->shift)
-                push_key(KEY_LEFTSHIFT, !(info->shift ^ m_capsl));
-            if (down && m_alt_l != info->l_alt)
-                push_key(KEY_LEFTALT, m_alt_l);
-            if (down && m_alt_r != info->r_alt)
-                push_key(KEY_RIGHTALT, m_alt_r);
-            if (size != m_events.size())
-                push_sync();
-        }
-
-        if (info->code == KEY_CAPSLOCK && down)
-            m_capsl = !m_capsl;
-        if (info->code == KEY_LEFTSHIFT || info->code == KEY_RIGHTSHIFT)
-            m_shift = down;
-        if (info->code == KEY_LEFTALT)
-            m_alt_l = down;
-        if (info->code == KEY_RIGHTALT)
-            m_alt_r = down;
     }
 
-    void input::ptr_event(u32 buttons, u32 x, u32 y) {
-        lock_guard<mutex> lock(m_events_mutex);
-
-        buttons &= 0b111; // lclick, mclick, rclick
-        size_t size = m_events.size();
-        u32 change = buttons ^ m_prev_btn;
-
-        if (change)
-            push_key(BTN_TOUCH, !m_prev_btn);
-
-        if (change & (1u << 0))
-            push_key(BTN_TOOL_FINGER,    (buttons >> 0) & 1u);
-        if (change & (1u << 1))
-            push_key(BTN_TOOL_TRIPLETAP, (buttons >> 1) & 1u);
-        if (change & (1u << 2))
-            push_key(BTN_TOOL_DOUBLETAP, (buttons >> 2) & 1u);
-
-        if (m_prev_x != x)
-            push_abs(ABS_X, x);
-        if (m_prev_y != y)
-            push_abs(ABS_Y, y);
-
-        if (m_events.size() != size)
-            push_sync();
-
-        m_prev_btn = buttons;
-        m_prev_x = x;
-        m_prev_y = y;
+    void input::ptr_event(u32 x, u32 y) {
+        push_abs(ABS_X, x);
+        push_abs(ABS_Y, y);
+        push_sync();
     }
 
     void input::update() {
-        lock_guard<mutex> lock(m_events_mutex);
-
         if (!m_events.empty() && !m_messages.empty()) {
             vq_message msg(m_messages.front());
             input_event event(m_events.front());
@@ -319,14 +246,6 @@ namespace vcml { namespace virtio {
         m_config(),
         m_key_listener(),
         m_ptr_listener(),
-        m_shift(),
-        m_capsl(),
-        m_alt_l(),
-        m_alt_r(),
-        m_prev_symbol(),
-        m_prev_btn(),
-        m_prev_x(),
-        m_prev_y(),
         touchpad("touchpad", true),
         keyboard("keyboard", true),
         pollrate("pollrate", 1000),
@@ -337,17 +256,16 @@ namespace vcml { namespace virtio {
 
         using std::placeholders::_1;
         using std::placeholders::_2;
-        using std::placeholders::_3;
 
         m_key_listener = std::bind(&input::key_event, this, _1, _2);
-        m_ptr_listener = std::bind(&input::ptr_event, this, _1, _2, _3);
+        m_ptr_listener = std::bind(&input::ptr_event, this, _1, _2);
 
         if (display != "") {
             auto disp = ui::display::lookup(display);
             if (keyboard)
                 disp->add_key_listener(m_key_listener, keymap);
             if (touchpad)
-                disp->add_ptr_listener(m_ptr_listener);
+                disp->add_ptr_listener(m_ptr_listener, m_key_listener);
         }
 
         if (keyboard || keyboard) {
@@ -362,12 +280,6 @@ namespace vcml { namespace virtio {
 
     void input::reset() {
         memset(&m_config, 0, sizeof(m_config));
-
-        m_prev_symbol = 0;
-        m_prev_btn = 0;
-        m_prev_x = 0;
-        m_prev_y = 0;
-
         m_messages = {};
         m_events = {};
     }
@@ -378,7 +290,7 @@ namespace vcml { namespace virtio {
             if (keyboard)
                 disp->remove_key_listener(m_key_listener);
             if (touchpad)
-                disp->remove_ptr_listener(m_ptr_listener);
+                disp->remove_ptr_listener(m_ptr_listener, m_key_listener);
             disp->shutdown();
         }
     }

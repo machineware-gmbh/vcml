@@ -32,15 +32,12 @@ namespace vcml { namespace ui {
         { "", shared_ptr<display>(new display("", 0)) } // no-op server
     };
 
-    display::display(const string& type, u32 no):
-        m_mutex(),
-        m_name(mkstr("%s:%u", type.c_str(), no)),
+    display::display(const string& type, u32 nr):
+        m_name(mkstr("%s:%u", type.c_str(), nr)),
         m_type(type),
-        m_dispno(no),
+        m_dispno(nr),
         m_mode(),
-        m_fb(nullptr),
-        m_key_listener(),
-        m_ptr_listener() {
+        m_fb(nullptr) {
     }
 
     display::~display() {
@@ -53,55 +50,27 @@ namespace vcml { namespace ui {
     }
 
     void display::render() {
-        // to be overloaded
+        // nothing to do
     }
 
     void display::shutdown() {
-        lock_guard<mutex> lock(m_mutex);
-        m_key_listener.clear();
-        m_ptr_listener.clear();
+        // nothing to do
     }
 
     void display::add_key_listener(key_listener& l, const string& layout) {
-        lock_guard<mutex> lock(m_mutex);
-        if (stl_contains_if(m_key_listener,
-            [l, layout](const key_listener_info& i) {
-            return i.func == &l && i.layout == layout; })) {
-            VCML_ERROR("key listener already registered");
-        }
-
-        m_key_listener.push_back({&l, layout});
+        // nothing to do
     }
 
-    void display::remove_key_listener(key_listener& listener) {
-        lock_guard<mutex> lock(m_mutex);
-        stl_remove_erase_if(m_key_listener, [listener](key_listener_info& i) {
-            return i.func == &listener;
-        });
+    void display::add_ptr_listener(pos_listener& p, key_listener& k) {
+        // nothing to do
     }
 
-    void display::add_ptr_listener(ptr_listener& listener) {
-        lock_guard<mutex> lock(m_mutex);
-        if (stl_contains(m_ptr_listener, &listener))
-            VCML_ERROR("pointer listener already registered");
-        m_ptr_listener.push_back(&listener);
+    void display::remove_key_listener(key_listener& l) {
+        // nothing to do
     }
 
-    void display::remove_ptr_listener(ptr_listener& listener) {
-        lock_guard<mutex> lock(m_mutex);
-        stl_remove_erase(m_ptr_listener, &listener);
-    }
-
-    void display::notify_key_listeners(unsigned int key, bool down) {
-        lock_guard<mutex> lock(m_mutex);
-        for (auto listener : m_key_listener)
-            (*listener.func)(key, down);
-    }
-
-    void display::notify_ptr_listeners(u32 buttons, u32 x, u32 y) {
-        lock_guard<mutex> lock(m_mutex);
-        for (auto listener : m_ptr_listener)
-            (*listener)(buttons, x, y);
+    void display::remove_ptr_listener(pos_listener& p, key_listener& k) {
+        // nothing to do
     }
 
     static bool parse_display(const string& name, string& id, u32& no) {

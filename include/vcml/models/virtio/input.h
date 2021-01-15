@@ -90,19 +90,8 @@ namespace vcml { namespace virtio {
         input_config m_config;
 
         ui::key_listener m_key_listener;
-        ui::ptr_listener m_ptr_listener;
+        ui::pos_listener m_ptr_listener;
 
-        bool m_shift;
-        bool m_capsl;
-        bool m_alt_l;
-        bool m_alt_r;
-
-        u32 m_prev_symbol;
-        u32 m_prev_btn;
-        u32 m_prev_x;
-        u32 m_prev_y;
-
-        mutex m_events_mutex;
         queue<input_event> m_events;
         queue<vq_message> m_messages;
 
@@ -127,8 +116,8 @@ namespace vcml { namespace virtio {
 
         void config_update();
 
-        void key_event(u32 code, bool state);
-        void ptr_event(u32 buttons, u32 x, u32 y);
+        void key_event(u32 key, u32 state);
+        void ptr_event(u32 x, u32 y);
 
         void update();
 

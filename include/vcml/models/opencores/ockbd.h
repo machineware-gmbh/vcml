@@ -42,8 +42,7 @@ namespace vcml { namespace opencores {
 
         ui::key_listener m_key_handler;
 
-        void key_event(u32 key, bool down);
-        void push_key(u8 code, bool down);
+        void key_event(u32 key, u32 down);
 
         u8 read_KHR();
 

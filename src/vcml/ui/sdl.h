@@ -37,7 +37,14 @@ namespace vcml { namespace ui {
     class sdl: public display
     {
     private:
-        SDL_Window* m_window;
+        u64 m_time_input;
+        u64 m_time_frame;
+        u64 m_time_sim;
+        u64 m_frames;
+
+        SDL_Window*   m_window;
+        SDL_Renderer* m_renderer;
+        SDL_Texture*  m_texture;
 
         void update();
 
