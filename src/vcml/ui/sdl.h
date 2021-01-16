@@ -48,6 +48,10 @@ namespace vcml { namespace ui {
 
         void update();
 
+        void notify_key(u32 keysym, bool down);
+        void notify_btn(SDL_MouseButtonEvent& event);
+        void notify_pos(SDL_MouseMotionEvent& event);
+
     public:
         sdl(u32 nr);
         virtual ~sdl();

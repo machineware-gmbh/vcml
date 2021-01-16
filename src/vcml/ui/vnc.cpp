@@ -20,6 +20,186 @@
 
 namespace vcml { namespace ui {
 
+    static const unordered_map<u32, u32> vnc_keysyms = {
+        { XK_0, KEYSYM_0 },
+        { XK_1, KEYSYM_1 },
+        { XK_2, KEYSYM_2 },
+        { XK_3, KEYSYM_3 },
+        { XK_4, KEYSYM_4 },
+        { XK_5, KEYSYM_5 },
+        { XK_6, KEYSYM_6 },
+        { XK_7, KEYSYM_7 },
+        { XK_8, KEYSYM_8 },
+        { XK_9, KEYSYM_9 },
+
+        { XK_A, KEYSYM_A },
+        { XK_B, KEYSYM_B },
+        { XK_C, KEYSYM_C },
+        { XK_D, KEYSYM_D },
+        { XK_E, KEYSYM_E },
+        { XK_F, KEYSYM_F },
+        { XK_G, KEYSYM_G },
+        { XK_H, KEYSYM_H },
+        { XK_I, KEYSYM_I },
+        { XK_J, KEYSYM_J },
+        { XK_K, KEYSYM_K },
+        { XK_L, KEYSYM_L },
+        { XK_M, KEYSYM_M },
+        { XK_N, KEYSYM_N },
+        { XK_O, KEYSYM_O },
+        { XK_P, KEYSYM_P },
+        { XK_Q, KEYSYM_Q },
+        { XK_R, KEYSYM_R },
+        { XK_S, KEYSYM_S },
+        { XK_T, KEYSYM_T },
+        { XK_U, KEYSYM_U },
+        { XK_V, KEYSYM_V },
+        { XK_W, KEYSYM_W },
+        { XK_X, KEYSYM_X },
+        { XK_Y, KEYSYM_Y },
+        { XK_Z, KEYSYM_Z },
+        { XK_a, KEYSYM_a },
+        { XK_b, KEYSYM_b },
+        { XK_c, KEYSYM_c },
+        { XK_d, KEYSYM_d },
+        { XK_e, KEYSYM_e },
+        { XK_f, KEYSYM_f },
+        { XK_g, KEYSYM_g },
+        { XK_h, KEYSYM_h },
+        { XK_i, KEYSYM_i },
+        { XK_j, KEYSYM_j },
+        { XK_k, KEYSYM_k },
+        { XK_l, KEYSYM_l },
+        { XK_m, KEYSYM_m },
+        { XK_n, KEYSYM_n },
+        { XK_o, KEYSYM_o },
+        { XK_p, KEYSYM_p },
+        { XK_q, KEYSYM_q },
+        { XK_r, KEYSYM_r },
+        { XK_s, KEYSYM_s },
+        { XK_t, KEYSYM_t },
+        { XK_u, KEYSYM_u },
+        { XK_v, KEYSYM_v },
+        { XK_w, KEYSYM_w },
+        { XK_x, KEYSYM_x },
+        { XK_y, KEYSYM_y },
+        { XK_z, KEYSYM_z },
+
+        { XK_exclam,       KEYSYM_EXCLAIM },
+        { XK_quotedbl,     KEYSYM_DBLQUOTE },
+        { XK_numbersign,   KEYSYM_HASH },
+        { XK_dollar,       KEYSYM_DOLLAR },
+        { XK_percent,      KEYSYM_PERCENT },
+        { XK_ampersand,    KEYSYM_AMPERSAND },
+        { XK_apostrophe,   KEYSYM_QUOTE },
+        { XK_parenleft,    KEYSYM_LEFTPAR },
+        { XK_parenright,   KEYSYM_RIGHTPAR },
+        { XK_asterisk,     KEYSYM_ASTERISK },
+        { XK_plus,         KEYSYM_PLUS },
+        { XK_comma,        KEYSYM_COMMA },
+        { XK_minus,        KEYSYM_MINUS },
+        { XK_period,       KEYSYM_DOT },
+        { XK_slash,        KEYSYM_SLASH },
+        { XK_colon,        KEYSYM_COLON },
+        { XK_semicolon,    KEYSYM_SEMICOLON },
+        { XK_less,         KEYSYM_LESS },
+        { XK_equal,        KEYSYM_EQUAL },
+        { XK_greater,      KEYSYM_GREATER },
+        { XK_question,     KEYSYM_QUESTION },
+        { XK_at,           KEYSYM_AT },
+        { XK_bracketleft,  KEYSYM_LEFTBRACKET },
+        { XK_backslash,    KEYSYM_BACKSLASH },
+        { XK_bracketright, KEYSYM_RIGHTBRACKET },
+        { XK_asciicircum,  KEYSYM_CARET },
+        { XK_underscore,   KEYSYM_UNDERSCORE },
+        { XK_quoteleft,    KEYSYM_BACKQUOTE },
+        { XK_braceleft,    KEYSYM_LEFTBRACE },
+        { XK_bar,          KEYSYM_PIPE },
+        { XK_braceright,   KEYSYM_RIGHTBRACE },
+        { XK_asciitilde,   KEYSYM_TILDE },
+
+        { XK_Escape,       KEYSYM_ESC },
+        { XK_Return,       KEYSYM_ENTER },
+        { XK_BackSpace,    KEYSYM_BACKSPACE },
+        { XK_space,        KEYSYM_SPACE },
+        { XK_Tab,          KEYSYM_TAB },
+        { XK_Shift_L,      KEYSYM_LEFTSHIFT },
+        { XK_Shift_R,      KEYSYM_RIGHTSHIFT },
+        { XK_Control_L,    KEYSYM_LEFTCTRL },
+        { XK_Control_R,    KEYSYM_RIGHTCTRL },
+        { XK_Alt_L,        KEYSYM_LEFTALT },
+        { XK_Alt_R,        KEYSYM_RIGHTALT },
+        { XK_Meta_L,       KEYSYM_LEFTMETA },
+        { XK_Meta_R,       KEYSYM_RIGHTMETA },
+        { XK_Menu,         KEYSYM_MENU },
+        { XK_Caps_Lock,    KEYSYM_CAPSLOCK },
+
+        { XK_F1,           KEYSYM_F1 },
+        { XK_F2,           KEYSYM_F2 },
+        { XK_F3,           KEYSYM_F3 },
+        { XK_F4,           KEYSYM_F4 },
+        { XK_F5,           KEYSYM_F5 },
+        { XK_F6,           KEYSYM_F6 },
+        { XK_F7,           KEYSYM_F7 },
+        { XK_F8,           KEYSYM_F8 },
+        { XK_F9,           KEYSYM_F9 },
+        { XK_F10,          KEYSYM_F10 },
+        { XK_F11,          KEYSYM_F11 },
+        { XK_F12,          KEYSYM_F12 },
+
+        { XK_Print,        KEYSYM_PRINT },
+        { XK_Scroll_Lock,  KEYSYM_SCROLLOCK },
+        { XK_Pause,        KEYSYM_PAUSE },
+
+        { XK_Insert,       KEYSYM_INSERT },
+        { XK_Delete,       KEYSYM_DELETE },
+        { XK_Home,         KEYSYM_HOME },
+        { XK_End,          KEYSYM_END },
+        { XK_Page_Up,      KEYSYM_PAGEUP },
+        { XK_Page_Down,    KEYSYM_PAGEDOWN },
+
+        { XK_Left,         KEYSYM_LEFT },
+        { XK_Right,        KEYSYM_RIGHT },
+        { XK_Up,           KEYSYM_UP },
+        { XK_Down,         KEYSYM_DOWN },
+
+        { XK_Num_Lock,     KEYSYM_NUMLOCK },
+        { XK_KP_0,         KEYSYM_KP0 },
+        { XK_KP_1,         KEYSYM_KP1 },
+        { XK_KP_2,         KEYSYM_KP2 },
+        { XK_KP_3,         KEYSYM_KP3 },
+        { XK_KP_4,         KEYSYM_KP4 },
+        { XK_KP_5,         KEYSYM_KP5 },
+        { XK_KP_6,         KEYSYM_KP6 },
+        { XK_KP_7,         KEYSYM_KP7 },
+        { XK_KP_8,         KEYSYM_KP8 },
+        { XK_KP_9,         KEYSYM_KP9 },
+        { XK_KP_Enter,     KEYSYM_KPENTER },
+        { XK_KP_Add,       KEYSYM_KPPLUS },
+        { XK_KP_Subtract,  KEYSYM_KPMINUS },
+        { XK_KP_Multiply,  KEYSYM_KPMUL },
+        { XK_KP_Divide,    KEYSYM_KPDIV },
+        { XK_KP_Separator, KEYSYM_KPDOT },
+        { XK_KP_Up,        KEYSYM_KPUP },
+        { XK_KP_Down,      KEYSYM_KPDOWN },
+        { XK_KP_Left,      KEYSYM_KPLEFT },
+        { XK_KP_Right,     KEYSYM_KPRIGHT },
+        { XK_KP_Home,      KEYSYM_KPHOME },
+        { XK_KP_End,       KEYSYM_KPEND },
+        { XK_KP_Page_Up,   KEYSYM_KPPAGEUP },
+        { XK_KP_Page_Down, KEYSYM_KPPAGEDOWN },
+        { XK_KP_Insert,    KEYSYM_KPINSERT },
+        { XK_KP_Delete,    KEYSYM_KPDELETE },
+    };
+
+    static u32 vnc_keysym_to_vcml_keysym(u32 keysym) {
+        log_warn("lookup 0x%x", keysym);
+        const auto it = vnc_keysyms.find(keysym);
+        if (it != vnc_keysyms.end())
+            return it->second;
+        return KEYSYM_NONE;
+    }
+
     static void rfb_log_func(const char* format, ...) {
         va_list args;
         va_start(args, format);
@@ -54,73 +234,6 @@ namespace vcml { namespace ui {
         vnc_->ptr_event((u32)mask, (u32)x, (u32)y);
     }
 
-    void vnc::vnc_key_listener::notify(u32 sym, bool down) {
-        const auto& map = ui::keymap::lookup(layout);
-        auto info = map.lookup_symbol(sym);
-
-        u32 state = down ? VCML_KEY_DOWN : VCML_KEY_UP;
-        if (down && sym == prev_sym)
-            state = VCML_KEY_HELD;
-
-        if (info == nullptr) {
-            log_debug("no key code found for key 0x%x", sym);
-            return;
-        }
-
-        if (!info->is_special()) {
-            if (down && (shift ^ capsl) != info->shift)
-                notify_key(KEY_LEFTSHIFT, info->shift ^ capsl);
-            if (down && alt_l != info->l_alt)
-                notify_key(KEY_LEFTALT, info->l_alt);
-            if (down && alt_r != info->r_alt)
-                notify_key(KEY_RIGHTALT, info->r_alt);
-        }
-
-        notify_key(info->code, state);
-
-        if (!info->is_special()) {
-            if (down && (shift ^ capsl) != info->shift)
-                notify_key(KEY_LEFTSHIFT, !(info->shift ^ capsl));
-            if (down && alt_l != info->l_alt)
-                notify_key(KEY_LEFTALT, alt_l);
-            if (down && alt_r != info->r_alt)
-                notify_key(KEY_RIGHTALT, alt_r);
-        }
-
-        if (info->code == KEY_CAPSLOCK && down)
-            capsl = !capsl;
-        if (info->code == KEY_LEFTSHIFT || info->code == KEY_RIGHTSHIFT)
-            shift = down;
-        if (info->code == KEY_LEFTALT)
-            alt_l = down;
-        if (info->code == KEY_RIGHTALT)
-            alt_r = down;
-
-        prev_sym = down ? sym : -1;
-    }
-
-    void vnc::vnc_ptr_listener::notify(u32 buttons, u32 x, u32 y) {
-        u32 status = buttons & 0b111; // lclick, mclick, rclick
-        u32 change = status ^ prev_buttons;
-
-        if (change)
-            notify_btn(BTN_TOUCH, !prev_buttons);
-
-        if (change & (1u << 0))
-            notify_btn(BTN_TOOL_FINGER, (status >> 0) & 1u);
-        if (change & (1u << 1))
-            notify_btn(BTN_TOOL_TRIPLETAP, (status >> 1) & 1u);
-        if (change & (1u << 2))
-            notify_btn(BTN_TOOL_DOUBLETAP, (status >> 2) & 1u);
-
-        if (prev_x != x || prev_y != y)
-            notify_ptr(x, y);
-
-        prev_buttons = status;
-        prev_x = x;
-        prev_y = y;
-    }
-
     void vnc::run() {
         log_debug("starting vnc server on port %d", m_screen->port);
 
@@ -136,6 +249,7 @@ namespace vcml { namespace ui {
     vnc::vnc(u32 no):
         display("vnc", no),
         m_port(no), // vnc port = display number
+        m_buttons(),
         m_running(true),
         m_mutex(),
         m_screen(),
@@ -210,50 +324,23 @@ namespace vcml { namespace ui {
         m_thread.join();
     }
 
-    void vnc::add_key_listener(key_listener& l, const string& layout) {
-        lock_guard<mutex> lock(m_mutex);
-
-        m_key_listener.push_back(vnc_key_listener(&l, layout));
-    }
-
-    void vnc::add_ptr_listener(pos_listener& ptr, key_listener& key) {
-        lock_guard<mutex> lock(m_mutex);
-
-        m_ptr_listener.push_back(vnc_ptr_listener(&ptr, &key));
-    }
-
-    void vnc::remove_key_listener(key_listener& l) {
-        lock_guard<mutex> lock(m_mutex);
-
-        stl_remove_erase_if(m_key_listener, [l](vnc_key_listener& vl) {
-            return vl.keyev == &l;
-        });
-    }
-
-    void vnc::remove_ptr_listener(pos_listener& p, key_listener& k) {
-        lock_guard<mutex> lock(m_mutex);
-
-        stl_remove_erase_if(m_ptr_listener, [p, k](vnc_ptr_listener& vl) {
-            return vl.ptrev == &p || vl.btnev == &k;
-        });
-    }
-
     void vnc::key_event(u32 sym, bool down) {
-        lock_guard<mutex> lock(m_mutex);
-
-        thctl_enter_critical();
-        for (auto& listener : m_key_listener)
-            listener.notify(sym, down);
-        thctl_exit_critical();
+        u32 symbol = vnc_keysym_to_vcml_keysym(sym);
+        if (symbol != KEYSYM_NONE)
+            notify_key(symbol, down);
     }
 
     void vnc::ptr_event(u32 mask, u32 x, u32 y) {
-        lock_guard<mutex> lock(m_mutex);
+        u32 change = mask ^ m_buttons;
+        if (change & BUTTON_LEFT)
+            notify_btn(BUTTON_LEFT, mask & BUTTON_LEFT);
+        if (change & BUTTON_MIDDLE)
+            notify_btn(BUTTON_MIDDLE, mask & BUTTON_MIDDLE);
+        if (change & BUTTON_RIGHT)
+            notify_btn(BUTTON_RIGHT, mask & BUTTON_RIGHT);
+        m_buttons = mask;
 
-        thctl_enter_critical();
-        for (auto& listener : m_ptr_listener)
-            listener.notify(mask, x, y);
-        thctl_exit_critical();
+        display::notify_pos(x, y);
     }
 
 }}
