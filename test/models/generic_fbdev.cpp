@@ -35,7 +35,7 @@ public:
         fb.OUT.bind(IN);
         fb.CLOCK.stub(60);
         fb.RESET.stub();
-        fb.display = "vnc:44444";
+        fb.display = "display:44444";
         map_dmi(vmem, 0, sizeof(vmem) - 1, VCML_ACCESS_READ);
     }
 
