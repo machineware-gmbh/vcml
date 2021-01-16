@@ -22,7 +22,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
-#include "vcml/common/thctl.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
 
