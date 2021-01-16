@@ -64,11 +64,11 @@ TEST(display, server) {
     u16 port1 = 40000;
     u16 port2 = 40001;
 
-    shared_ptr<display> p1 = display::lookup("vnc:40000");
-    shared_ptr<display> p2 = display::lookup("vnc:40000");
-    shared_ptr<display> p3 = display::lookup("vnc:40001");
-    shared_ptr<display> p4 = display::lookup("vnc:40001");
-    shared_ptr<display> p5 = display::lookup("vnc:40001");
+    shared_ptr<display> p1 = display::lookup("display:40000");
+    shared_ptr<display> p2 = display::lookup("display:40000");
+    shared_ptr<display> p3 = display::lookup("display:40001");
+    shared_ptr<display> p4 = display::lookup("display:40001");
+    shared_ptr<display> p5 = display::lookup("display:40001");
 
     EXPECT_EQ(p1->dispno(), port1);
     EXPECT_EQ(p2->dispno(), port1);
