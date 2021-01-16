@@ -59,6 +59,8 @@ namespace vcml { namespace ui {
         virtual void init(const fbmode& mode, u8* fb) override;
         virtual void render() override;
         virtual void shutdown() override;
+
+        static display* create(u32 nr);
     };
 
 }}

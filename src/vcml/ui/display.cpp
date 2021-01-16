@@ -124,10 +124,6 @@ namespace vcml { namespace ui {
         prev_y = y;
     }
 
-    unordered_map<string, shared_ptr<display>> display::displays = {
-        { "", shared_ptr<display>(new display("", 0)) } // no-op server
-    };
-
     display::display(const string& type, u32 nr):
         m_name(mkstr("%s:%u", type.c_str(), nr)),
         m_type(type),
@@ -206,51 +202,58 @@ namespace vcml { namespace ui {
         });
     }
 
-    static bool parse_display(const string& name, string& id, u32& no) {
+    static bool parse_display(const string& name, string& id, u32& nr) {
         auto it = name.rfind(":");
         if (it == string::npos)
             return false;
 
         id = name.substr(0, it);
-        no = from_string<u32>(name.substr(it + 1, string::npos));
-
+        nr = from_string<u32>(name.substr(it + 1, string::npos));
         return true;
     }
+
+    display* display::create(u32 nr) {
+        return new display("display", nr);
+    }
+
+    unordered_map<string, function<display*(u32)>> display::types = {
+            { "display", display::create },
+#ifdef HAVE_LIBVNC
+            { "vnc", vnc::create },
+#endif
+#ifdef HAVE_SDL2
+            { "sdl", sdl::create },
+#endif
+    };
+
+    unordered_map<string, shared_ptr<display>> display::displays = {
+        { "", shared_ptr<display>(new display("", 0)) } // no-op server
+    };
 
     shared_ptr<display> display::lookup(const string& name) {
         shared_ptr<display>& disp = displays[name];
         if (disp != nullptr)
             return disp;
 
-        u32 no;
+        u32 nr;
         string id;
 
-        if (!parse_display(name, id, no))
+        if (!parse_display(name, id, nr))
             VCML_ERROR("cannot parse display name: %s", name.c_str());
 
-        if (id == "display")
-            disp.reset(new display("display", no));
+        auto it = types.find(id);
+        if (it == types.end())
+            VCML_ERROR("unknown display type: %s", id.c_str());
 
-        if (id == "vnc") {
-#ifdef HAVE_LIBVNC
-            disp.reset(new vnc(no));
-#else
-            disp.reset(new display("display", no));
-#endif
-        }
-
-        if (id == "sdl") {
-#ifdef HAVE_SDL2
-            disp.reset(new sdl(no));
-#else
-            disp.reset(new display("display", no));
-#endif
-        }
-
-        if (disp == nullptr)
-            VCML_ERROR("display type '%s' not supported", id.c_str());
-
+        disp.reset(it->second(nr));
         return disp;
+    }
+
+    void display::register_display_type(const string& type,
+                                        function<display*(u32)> creator) {
+        if (stl_contains(types, type))
+            VCML_ERROR("display type '%s' already registered", type.c_str());
+        types.insert({type, creator});
     }
 
 }}

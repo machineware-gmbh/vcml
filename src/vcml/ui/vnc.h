@@ -50,7 +50,7 @@ namespace vcml { namespace ui {
     public:
         u16 port() const { return m_port; }
 
-        vnc(u32 no);
+        vnc(u32 nr);
         virtual ~vnc();
 
         virtual void init(const fbmode& mode, u8* fb) override;
@@ -59,6 +59,8 @@ namespace vcml { namespace ui {
 
         void key_event(u32 sym, bool down);
         void ptr_event(u32 mask, u32 x, u32 y);
+
+        static display* create(u32 nr);
     };
 
 }}

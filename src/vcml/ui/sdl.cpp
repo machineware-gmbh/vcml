@@ -400,4 +400,8 @@ namespace vcml { namespace ui {
         }
     }
 
+    display* sdl::create(u32 nr) {
+        return new sdl(nr);
+    }
+
 }}

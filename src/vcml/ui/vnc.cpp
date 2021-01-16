@@ -193,7 +193,6 @@ namespace vcml { namespace ui {
     };
 
     static u32 vnc_keysym_to_vcml_keysym(u32 keysym) {
-        log_warn("lookup 0x%x", keysym);
         const auto it = vnc_keysyms.find(keysym);
         if (it != vnc_keysyms.end())
             return it->second;
@@ -341,6 +340,10 @@ namespace vcml { namespace ui {
         m_buttons = mask;
 
         display::notify_pos(x, y);
+    }
+
+    display* vnc::create(u32 nr) {
+        return new vnc(nr);
     }
 
 }}

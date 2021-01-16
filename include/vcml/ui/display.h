@@ -93,7 +93,10 @@ namespace vcml { namespace ui {
         vector<ptr_listener_state> m_ptr_listeners;
 
     protected:
+        static unordered_map<string, function<display*(u32)>> types;
         static unordered_map<string, shared_ptr<display>> displays;
+
+        static display* create(u32 nr);
 
         display() = delete;
         display(const display&) = delete;
@@ -130,6 +133,8 @@ namespace vcml { namespace ui {
         virtual void remove_ptr_listener(pos_listener& p, key_listener& k);
 
         static shared_ptr<display> lookup(const string& name);
+        static void register_display_type(const string& type,
+                                          function<display*(u32)> create);
     };
 
 }}
