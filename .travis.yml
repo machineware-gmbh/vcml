@@ -8,6 +8,8 @@ addons:
   apt:
     packages:
       - libelf-dev
+      - libsdl2-dev
+      - libvncserver-dev
   coverity_scan:
     project:
       name: "janweinstock/vcml"

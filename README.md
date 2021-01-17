@@ -32,24 +32,30 @@ This is how to build and install them:
 
 2. Install `libelf` and `cmake`:
     ```
-    sudo apt-get install cmake libelf-dev  # Ubuntu
-    sudo yum install cmake3 libelf-dev     # Centos
-    ```
-    
-3. Install `libvncserver` (optional, needed if you want graphic output):
-    ```
-    sudo apt-get install libvncserver-dev  # Ubuntu
-    sudo yum install libvncserver-devel    # Centos
+    sudo apt-get install cmake libelf-dev         # Ubuntu
+    sudo yum install cmake3 elfutils-libelf-devel # Centos
     ```
 
-4. Chose directories for building and deployment:
+3. Install `libsdl2` (optional, needed if you want local graphic output):
+    ```
+    sudo apt-get install libsdl2-dev # Ubuntu
+    sudo yum install SDL2-devel      # Centos
+    ```
+
+4. Install `libvncserver` (optional, needed if you want remote graphic output):
+    ```
+    sudo apt-get install libvncserver-dev # Ubuntu
+    sudo yum install libvncserver-devel   # Centos
+    ```
+
+5. Chose directories for building and deployment:
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
     <build-dir>   location to store object files, e.g. /home/jan/vcml/BUILD
     <install-dir> output directory for binaries,  e.g. /opt/vcml
     ```
 
-5. Configure and build the project using `cmake`. During configuration you must
+6. Configure and build the project using `cmake`. During configuration you must
    state whether or not to build the utility programs and unit tests:
      * `-DVCML_BUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
      * `-DVCML_BUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
@@ -67,7 +73,7 @@ This is how to build and install them:
    If building with `-DVCML_BUILD_TESTS=ON` you can run all unit tests using
    `make test` within `<build-dir>`.
 
-6. After installation, the following new files should be present:
+7. After installation, the following new files should be present:
     ```
     <install-dir>/lib/libvcml.a   # library
     <install-dir>/include/vcml.h  # library header
@@ -75,7 +81,7 @@ This is how to build and install them:
     <install-dir>/bin/            # utility programs
     ```
 
-7. Update your environment so that other projects can reference your build:
+8. Update your environment so that other projects can reference your build:
     ```
     export VCML_HOME=<install-dir>
     ```
