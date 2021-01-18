@@ -250,6 +250,8 @@ namespace vcml { namespace ui {
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_CLOSE)
                     sc_stop();
+                if (event.window.event == SDL_WINDOWEVENT_EXPOSED)
+                    SDL_RenderPresent(m_renderer);
                 break;
 
             case SDL_KEYUP:
@@ -319,7 +321,8 @@ namespace vcml { namespace ui {
     }
 
     sdl::~sdl() {
-        VCML_ERROR_ON(m_window, "display %s not shut down", name());
+        if (m_window)
+            shutdown();
     }
 
     void sdl::init(const fbmode& mode, u8* fb) {
@@ -347,6 +350,9 @@ namespace vcml { namespace ui {
                                       SDL_TEXTUREACCESS_STREAMING, w, h);
         if (m_texture == nullptr)
             VCML_ERROR("cannot create SDL texture: %s", SDL_GetError());
+
+        SDL_RenderClear(m_renderer);
+        SDL_RenderPresent(m_renderer);
     }
 
     void sdl::render() {
