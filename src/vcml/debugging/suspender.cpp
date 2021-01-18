@@ -76,7 +76,7 @@ namespace vcml { namespace debugging {
         m_suspending(false),
         m_owner(sc_get_curr_simcontext()->active_object()) {
         if (m_owner != nullptr)
-            m_name = m_owner->name() + SC_HIERARCHY_CHAR + m_name;
+            m_name = mkstr("%s%c", m_owner->name(), SC_HIERARCHY_CHAR) + name;
 
         if (suspenders.empty())
             on_each_delta_cycle(&suspender::handle_requests);
