@@ -40,9 +40,9 @@ namespace vcml {
     public:
         const char*  message()  const { return m_message.c_str(); }
         const char*  origin()   const { return m_origin.c_str(); }
-        const double time()     const { return m_time; }
         const char*  file()     const { return m_file.c_str(); }
         int          line()     const { return m_line; }
+        double       time()     const { return m_time; }
 
         const vector<string> backtrace() const;
 

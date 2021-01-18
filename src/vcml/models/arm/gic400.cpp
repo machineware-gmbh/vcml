@@ -852,11 +852,11 @@ namespace vcml { namespace arm {
         HCR.bank(cpu) = val;
         m_parent->update(true);
         return val;
-    };
+    }
 
     u32 gic400::vifctrl::read_VTR() {
         return 0x90000000 | (NLR - 1);
-    };
+    }
 
     u32 gic400::vifctrl::write_LR(u32 val, unsigned int idx) {
         u8 cpu = current_cpu();
@@ -897,7 +897,7 @@ namespace vcml { namespace arm {
         m_parent->update(true);
 
         return val;
-    };
+    }
 
     u32 gic400::vifctrl::read_LR(unsigned int idx) {
         u8 cpu = current_cpu();

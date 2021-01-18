@@ -44,11 +44,7 @@ namespace vcml { namespace generic {
     }
 
     u64 simdev::read_HCLK() {
-        timespec ts = { 0 };
-        if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-            return 0;
-
-        return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+        return realtime_us();
     }
 
     u32 simdev::write_SOUT(u32 val) {

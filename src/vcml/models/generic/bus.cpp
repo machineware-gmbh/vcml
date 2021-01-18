@@ -216,14 +216,12 @@ namespace vcml { namespace generic {
                        other.addr.start, other.addr.end, other.peer.c_str());
         }
 
-        mapping mapping = {
-            .port = (int)port,
-            .addr = addr,
-            .offset = offset,
-            .peer = peer,
-        };
-
-        m_mappings.push_back(mapping);
+        mapping m;
+        m.port = (int)port;
+        m.addr = addr;
+        m.offset = offset;
+        m.peer = peer;
+        m_mappings.push_back(m);
     }
 
     void bus::map(unsigned int port, u64 start, u64 end, u64 offset,

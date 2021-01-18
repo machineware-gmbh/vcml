@@ -130,14 +130,14 @@ namespace vcml {
     }
 
     u64 realtime_us() {
-        struct timespec tp = { 0 };
+        struct timespec tp = {};
         if (clock_gettime(CLOCK_REALTIME, &tp))
             VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
         return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
     }
 
     u64 timestamp_us() {
-        struct timespec tp = { 0 };
+        struct timespec tp = {};
         if (clock_gettime(CLOCK_MONOTONIC, &tp))
             VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
         return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
@@ -146,7 +146,7 @@ namespace vcml {
     string call_origin() {
         pthread_t this_thread = pthread_self();
         if (this_thread != thctl_sysc_thread()) {
-            char buffer[16] = { 0 };
+            char buffer[16] = {};
             pthread_getname_np(this_thread, buffer, sizeof(buffer));
             return mkstr("pthread '%s'", buffer);
         }

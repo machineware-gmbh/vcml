@@ -457,7 +457,7 @@ namespace vcml { namespace opencores {
         IRQ("IRQ"),
         IN("IN"),
         OUT("OUT") {
-        int addr[6] = { 0 };
+        unsigned int addr[6] = { 0 };
         if (sscanf(mac.get().c_str(), "%x:%x:%x:%x:%x:%x",  addr + 0,
                    addr + 1, addr + 2, addr + 3, addr + 4, addr + 5) != 6) {
             VCML_ERROR("invalid MAC address specified: %s", mac.get().c_str());

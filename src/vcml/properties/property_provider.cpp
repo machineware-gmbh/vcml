@@ -46,11 +46,9 @@ namespace vcml {
     }
 
     void property_provider::add(const string& name, const string& value) {
-        struct value val = {
-            .value = value,
-            .uses = 0
-        };
-
+        struct value val;
+        val.value = value;
+        val.uses = 0;
         m_values[name] = val;
     }
 

@@ -60,7 +60,7 @@ namespace vcml { namespace generic {
     }
 
     void rtc1742::save_time() {
-        struct tm tinfo = { 0 };
+        struct tm tinfo = {};
         tinfo.tm_sec  = bcd2bin(SECONDS & 0x7F);
         tinfo.tm_min  = bcd2bin(MINUTES & 0x7F);
         tinfo.tm_hour = bcd2bin(HOUR & 0x3F);

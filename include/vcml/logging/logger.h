@@ -108,11 +108,11 @@ namespace vcml {
         va_end(args);                                            \
     }
 
-    VCML_DEFINE_LOG(log_error, LOG_ERROR);
-    VCML_DEFINE_LOG(log_warn, LOG_WARN);
-    VCML_DEFINE_LOG(log_warning, LOG_WARN);
-    VCML_DEFINE_LOG(log_info, LOG_INFO);
-    VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
+    VCML_DEFINE_LOG(log_error, LOG_ERROR)
+    VCML_DEFINE_LOG(log_warn, LOG_WARN)
+    VCML_DEFINE_LOG(log_warning, LOG_WARN)
+    VCML_DEFINE_LOG(log_info, LOG_INFO)
+    VCML_DEFINE_LOG(log_debug, LOG_DEBUG)
 #undef VCML_DEFINE_LOG
 
     inline void trace(const tlm_generic_payload& tx) {
