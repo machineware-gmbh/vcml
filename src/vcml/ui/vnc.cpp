@@ -271,7 +271,8 @@ namespace vcml { namespace ui {
     }
 
     vnc::~vnc() {
-        VCML_ERROR_ON(m_thread.joinable(), "vnc %s not shut down", name());
+        if (m_thread.joinable())
+            shutdown();
     }
 
     void vnc::init(const fbmode& mode, u8* fb)  {
