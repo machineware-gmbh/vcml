@@ -20,23 +20,24 @@
 
 #define RESX 1280
 #define RESY  720
+#define SIZE (RESX * RESY * 4)
 
 class test_harness: public test_base
 {
 public:
-    u8 vmem[RESX * RESY * 4];
     generic::fbdev fb;
-    slave_socket IN;
+    generic::memory vmem;
 
-    test_harness(const sc_core::sc_module_name& nm):
+    test_harness(const sc_module_name& nm):
         test_base(nm),
         fb("fb", RESX, RESY),
-        IN("IN") {
-        fb.OUT.bind(IN);
+        vmem("vmem", SIZE) {
+        vmem.CLOCK.stub();
+        vmem.RESET.stub();
         fb.CLOCK.stub(60);
         fb.RESET.stub();
-        fb.display = "display:44444";
-        map_dmi(vmem, 0, sizeof(vmem) - 1, VCML_ACCESS_READ);
+        fb.OUT.bind(vmem.IN);
+        fb.display = "display:0";
     }
 
     virtual void run_test() override {
@@ -47,12 +48,12 @@ public:
 
         wait(1.0, SC_SEC);
 
-        EXPECT_EQ(fb.vptr(), vmem);
+        EXPECT_EQ(fb.vptr(), vmem.get_data_ptr());
     }
 
 };
 
-TEST(generic_memory, access) {
+TEST(generic_fbdev, run) {
     test_harness test("harness");
     sc_core::sc_start();
 }
