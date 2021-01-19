@@ -84,6 +84,12 @@ namespace vcml { namespace virtio {
         m_queues.erase(it);
     }
 
+    void mmio::cleanup_virtqueues() {
+        for (auto it : m_queues)
+            delete it.second;
+        m_queues.clear();
+    }
+
     bool mmio::get(u32 vqid, vq_message& msg)  {
         if (!device_ready()) {
             log_warn("get: device not ready");
@@ -418,13 +424,13 @@ namespace vcml { namespace virtio {
     }
 
     mmio:: ~mmio() {
-        // nothing to do
+        cleanup_virtqueues();
     }
 
     void mmio::reset()  {
         peripheral::reset();
 
-        m_queues.clear();
+        cleanup_virtqueues();
 
         m_drv_features = 0ull;
         m_dev_features = 0ull;

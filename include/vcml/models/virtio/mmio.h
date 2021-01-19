@@ -47,6 +47,7 @@ namespace vcml { namespace virtio {
 
         void enable_virtqueue(u32 vqid);
         void disable_virtqueue(u32 vqid);
+        void cleanup_virtqueues();
 
         virtual bool get(u32 vqid, vq_message& msg) override;
         virtual bool put(u32 vqid, vq_message& msg) override;
