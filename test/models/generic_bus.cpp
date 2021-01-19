@@ -81,14 +81,20 @@ public:
         ASSERT_AE(OUT.readw<u32>(0x4000, data))
             << "bus reported success for reading from unmapped address";
 
-        ASSERT_EQ(OUT.dmi().get_entries().size(), 2)
-            << "bus did not forward DMI regions for both memories";
-        EXPECT_NE(OUT.dmi().get_entries()[0].get_start_address(),
-                  OUT.dmi().get_entries()[1].get_start_address())
-            << "bus forwarded overlapping DMI regions";
-        EXPECT_NE(OUT.dmi().get_entries()[0].get_dmi_ptr(),
-                  OUT.dmi().get_entries()[1].get_dmi_ptr())
-            << "bus forwarded overlapping DMI pointers";
+        tlm_dmi dmi;
+        EXPECT_TRUE(OUT.dmi().lookup(0x0000, 0x2000, TLM_READ_COMMAND, dmi))
+            << "bus did not forward DMI region of mem1";
+        EXPECT_TRUE(OUT.dmi().lookup(0x2000, 0x2000, TLM_READ_COMMAND, dmi))
+            << "bus did not forward DMI region of mem2";
+
+        if (OUT.dmi().get_entries().size() > 1) {
+            EXPECT_NE(OUT.dmi().get_entries()[0].get_start_address(),
+                      OUT.dmi().get_entries()[1].get_start_address())
+                << "bus forwarded overlapping DMI regions";
+            EXPECT_NE(OUT.dmi().get_entries()[0].get_dmi_ptr(),
+                      OUT.dmi().get_entries()[1].get_dmi_ptr())
+                << "bus forwarded overlapping DMI pointers";
+        }
 
         mem1.unmap_dmi(0, 0x1fff);
         ASSERT_EQ(OUT.dmi().get_entries().size(), 1)
