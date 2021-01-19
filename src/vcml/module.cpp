@@ -68,7 +68,8 @@ namespace vcml {
     }
 
     module::~module() {
-        // nothing to do
+        for (auto it : m_commands)
+            delete it.second;
     }
 
     void module::session_suspend() {
