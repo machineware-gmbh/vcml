@@ -46,6 +46,9 @@
 #include <mutex>
 #include <thread>
 
+#define VCML_DECL_PRINTF(strpos, argpos) \
+    __attribute__ ((format (printf, (strpos), (argpos))))
+
 namespace vcml {
 
     typedef uint8_t  u8;

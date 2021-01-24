@@ -161,7 +161,7 @@ namespace vcml {
             vcml::logger::log(r);
             return EXIT_FAILURE;
         } catch (std::exception& e) {
-            vcml::log_error(e.what());
+            vcml::log_error("%s", e.what());
             return EXIT_FAILURE;
         }
     }

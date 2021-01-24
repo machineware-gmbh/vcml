@@ -207,7 +207,7 @@ namespace vcml {
         }
 
         if (rs == TLM_INCOMPLETE_RESPONSE)
-            log_warn("got incomplete response from target at 0x%016llx", addr);
+            log_warn("got incomplete response from target at 0x%016lx", addr);
 
         if (bytes != nullptr)
             *bytes = size;

@@ -142,7 +142,7 @@ namespace vcml { namespace generic {
 
         vector<image_info> imagevec = images_from_string(images);
         for (auto ii : imagevec) {
-            log_debug("loading '%s' to 0x%08llx", ii.file.c_str(), ii.offset);
+            log_debug("loading '%s' to 0x%08lx", ii.file.c_str(), ii.offset);
             load(ii.file, ii.offset);
         }
     }
@@ -155,15 +155,15 @@ namespace vcml { namespace generic {
         }
 
         if (offset >= size) {
-            log_warn("offset %llu exceeds memsize %llu", offset, size.get());
+            log_warn("offset %lu exceeds memsize %lu", offset, size.get());
             return;
         }
 
         u64 nbytes = file.tellg();
         if (nbytes > size - offset) {
             nbytes = size - offset;
-            log_warn("image file '%s' to big, truncating after %llu bytes",
-                     nbytes, binary.c_str());
+            log_warn("image file '%s' to big, truncating after %lu bytes",
+                     binary.c_str(), nbytes);
         }
 
         file.seekg(0, std::ios::beg);

@@ -69,21 +69,21 @@ namespace vcml {
         command_base* get_command(const string& name);
         vector<command_base*> get_commands() const;
 
-#define VCML_DEFINE_LOG(log_name, level)                      \
-        inline void log_name(const char* format, ...) const { \
-            if (!logger::would_log(level) || level > loglvl)  \
-                return;                                       \
-            va_list args;                                     \
-            va_start(args, format);                           \
-            logger::log(level, name(), vmkstr(format, args)); \
-            va_end(args);                                     \
+#define VCML_DEFINE_LOG(fn, level)                                          \
+        inline void fn(const char* fmt, ...) const VCML_DECL_PRINTF(2, 3) { \
+            if (!logger::would_log(level) || level > loglvl)                \
+                return;                                                     \
+            va_list args;                                                   \
+            va_start(args, fmt);                                            \
+            logger::log(level, name(), vmkstr(fmt, args));                  \
+            va_end(args);                                                   \
         }
 
-        VCML_DEFINE_LOG(log_error, LOG_ERROR);
-        VCML_DEFINE_LOG(log_warn, LOG_WARN);
-        VCML_DEFINE_LOG(log_warning, LOG_WARN);
-        VCML_DEFINE_LOG(log_info, LOG_INFO);
-        VCML_DEFINE_LOG(log_debug, LOG_DEBUG);
+        VCML_DEFINE_LOG(log_error, LOG_ERROR)
+        VCML_DEFINE_LOG(log_warn, LOG_WARN)
+        VCML_DEFINE_LOG(log_warning, LOG_WARN)
+        VCML_DEFINE_LOG(log_info, LOG_INFO)
+        VCML_DEFINE_LOG(log_debug, LOG_DEBUG)
 #undef VCML_DEFINE_LOG
     };
 

@@ -204,7 +204,7 @@ namespace vcml { namespace ui {
         va_start(args, format);
         string str = vmkstr(format, args);
         va_end(args);
-        log_debug(trim(str).c_str());
+        log_debug("%s", trim(str).c_str());
     }
 
     static void rfb_err_func(const char* format, ...) {
@@ -212,7 +212,7 @@ namespace vcml { namespace ui {
         va_start(args, format);
         string str = vmkstr(format, args);
         va_end(args);
-        log_error(trim(str).c_str());
+        log_error("%s", trim(str).c_str());
     }
 
     static void rfb_key_func(rfbBool down, rfbKeySym sym, rfbClientPtr cl) {

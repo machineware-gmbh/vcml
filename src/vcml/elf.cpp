@@ -218,7 +218,7 @@ namespace vcml {
     }
 
     void elf::dump() {
-        log_info("%s has %d sections:\n", m_filename.c_str(),
+        log_info("%s has %zu sections:\n", m_filename.c_str(),
                  m_sections.size());
 
         static const char* endstr[] = { "little", "big", "unknown" };
@@ -226,8 +226,8 @@ namespace vcml {
         log_info("name     : %s\n", m_filename.c_str());
         log_info("entry    : 0x%08lx\n", m_entry);
         log_info("endian   : %s\n", endstr[m_endianess]);
-        log_info("sections : %d\n", m_sections.size());
-        log_info("symbols  : %d\n", m_symbols.size());
+        log_info("sections : %zu\n", m_sections.size());
+        log_info("symbols  : %zu\n", m_symbols.size());
 
         log_info("\nsections:\n");
         log_info("[nr] vaddr      paddr      size       name\n");
@@ -237,7 +237,7 @@ namespace vcml {
             log_info("[%2d] ", i);
             log_info("0x%08lx ", sec->get_virt_addr());
             log_info("0x%08lx ", sec->get_phys_addr());
-            log_info("0x%08x ", sec->get_size());
+            log_info("0x%08lx ", sec->get_size());
             log_info("%s\n", sec->get_name().c_str());
         }
 

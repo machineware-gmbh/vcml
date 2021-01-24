@@ -102,7 +102,7 @@ namespace vcml { namespace opencores {
     u32 ocspi::write_BAUDDIV(u32 val) {
         if (val != BAUDDIV) {
             unsigned int divider = val + 1;
-            log_debug("changed transmission speed to %u MHz", clock / divider);
+            log_debug("changed transmission speed to %lu Hz", clock / divider);
         }
 
         return val;

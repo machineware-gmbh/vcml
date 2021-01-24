@@ -99,6 +99,7 @@ namespace vcml {
     }
 
 #define VCML_DEFINE_LOG(name, level)                             \
+    void name(const char* format, ...) VCML_DECL_PRINTF(1, 2);   \
     inline void name(const char* format, ...) {                  \
         if (!logger::would_log(level))                           \
             return;                                              \

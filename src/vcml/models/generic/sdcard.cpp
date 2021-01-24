@@ -601,7 +601,7 @@ namespace vcml { namespace generic {
             break;
 
         case 12: // STOP_TRANSMISSION (SD/SPI)
-            log_debug("stopping transmission after %u blocks", m_numblk);
+            log_debug("stopping transmission after %zu blocks", m_numblk);
             m_state = TRANSFER;
             make_r1(tx);
             return SD_OK;

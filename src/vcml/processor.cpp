@@ -316,7 +316,7 @@ namespace vcml {
                 }
                 os << " " << disas;
             } else {
-                log_warn("debugger failed to read address 0x%016x", phys);
+                log_warn("debugger failed to read address 0x%016lx", phys);
                 os << "????????";
                 addr += 4;
             }

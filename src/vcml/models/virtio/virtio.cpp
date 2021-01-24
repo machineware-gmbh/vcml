@@ -312,7 +312,7 @@ namespace vcml { namespace virtio {
 
         while (true) {
             if (!desc->is_avail(m_wrap_get) || desc->is_used(m_wrap_get)) {
-                parent->log_warn("descriptor not available", __func__);
+                parent->log_warn("descriptor not available");
                 return false;
             }
 

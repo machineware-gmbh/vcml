@@ -262,7 +262,7 @@ namespace vcml { namespace debugging {
                 if (is_connected())
                     send_packet(response);
             } catch (vcml::report& r) {
-                log_debug(r.message()); // not an error, e.g. disconnect
+                log_debug("%s", r.message()); // not an error, e.g. disconnect
                 break;
             }
         } catch (vcml::report& r) {
@@ -286,7 +286,7 @@ namespace vcml { namespace debugging {
             logger::log(rep);
             return ERR_INTERNAL;
         } catch (std::exception& ex) {
-            log_warn(ex.what());
+            log_warn("%s", ex.what());
             return ERR_INTERNAL;
         }
     }

@@ -519,7 +519,7 @@ namespace vcml { namespace debugging {
             vcml::logger::log(rep);
             return ERR_INTERNAL;
         } catch (std::exception& ex) {
-            log_warn(ex.what());
+            log_warn("%s", ex.what());
             return ERR_INTERNAL;
         }
     }

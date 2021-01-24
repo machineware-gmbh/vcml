@@ -41,7 +41,7 @@ namespace vcml { namespace generic {
         // Otherwise we just fetch the current real time stamp from host.
         time_t now = sctime ? sysc_timestamp() : real_timestamp();
         struct tm* timeinfo = gmtime(&now);
-        log_debug("loading current time %llu (%s)", now, strtime(timeinfo));
+        log_debug("loading current time %lu (%s)", now, strtime(timeinfo));
 
         u8 osc = SECONDS & SECONDS_OSC; /* oscillator stop bit */
         u8 btb = DAY & DAY_BF;          /* battery indicator */
@@ -77,7 +77,7 @@ namespace vcml { namespace generic {
         m_real_timestamp = timegm(&tinfo);
         m_sysc_timestamp = sc_time_stamp();
 
-        log_debug("saving current time %llu (%s)", m_real_timestamp,
+        log_debug("saving current time %lu (%s)", m_real_timestamp,
                   strtime(&tinfo));
     }
 
@@ -94,8 +94,8 @@ namespace vcml { namespace generic {
 
         if (nbytes > size) {
             nbytes = size;
-            log_warn("image file '%s' to big, truncating after %llu bytes",
-                     nbytes, filename.c_str());
+            log_warn("image file '%s' to big, truncating after %lu bytes",
+                     filename.c_str(), nbytes);
         }
 
         file.seekg(0, std::ios::beg);

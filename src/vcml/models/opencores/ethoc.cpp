@@ -231,8 +231,7 @@ namespace vcml { namespace opencores {
                << (int)buffer[i] << " ";
         }
 
-        log_debug("sending packet:");
-        log_debug(ss.str().c_str());
+        log_debug("sending packet:\n%s", ss.str().c_str());
 
         bewrite(buffer, length);
         return true;
@@ -250,8 +249,7 @@ namespace vcml { namespace opencores {
                << (int)buffer[i] << " ";
         }
 
-        log_debug("received packet:");
-        log_debug(ss.str().c_str());
+        log_debug("received packet:\n%s", ss.str().c_str());
 
         // promiscuous mode disabled, check destination HW address
         if (!(MODER & MODER_PRO)) {
