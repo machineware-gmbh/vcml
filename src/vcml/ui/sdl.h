@@ -34,33 +34,65 @@
 
 namespace vcml { namespace ui {
 
-    class sdl: public display
-    {
-    private:
-        u64 m_time_input;
-        u64 m_time_frame;
-        u64 m_time_sim;
-        u64 m_frames;
-
-        SDL_Window*   m_window;
-        SDL_Renderer* m_renderer;
-        SDL_Texture*  m_texture;
-
-        void update();
+    struct sdl_client {
+        display*      disp;
+        SDL_Window*   window;
+        SDL_Renderer* renderer;
+        SDL_Texture*  texture;
+        u32           window_id;
+        u64           time_frame;
+        u64           time_sim;
+        u64           frames;
 
         void notify_key(u32 keysym, bool down);
         void notify_btn(SDL_MouseButtonEvent& event);
         void notify_pos(SDL_MouseMotionEvent& event);
 
+        void init_window();
+        void exit_window();
+        void draw_window();
+    };
+
+    class sdl
+    {
+    private:
+        mutex m_mutex;
+        thread m_uithread;
+        atomic<bool> m_running;
+        vector<sdl_client> m_clients;
+
+        sdl_client* find_by_window_id(u32 id);
+
+        void check_clients();
+        void poll_events();
+        void draw_windows();
+
+        void ui_run();
+
+        sdl() = default;
+        sdl(const sdl&) = delete;
+
     public:
-        sdl(u32 nr);
-        virtual ~sdl();
+        ~sdl();
+
+        void register_display(display* disp);
+        void unregister_display(display* disp);
+
+        static display* create(u32 nr);
+    };
+
+    class sdl_display: public display
+    {
+    private:
+        sdl& m_owner;
+
+    public:
+        sdl_display(u32 nr, sdl& owner);
+        virtual ~sdl_display();
 
         virtual void init(const fbmode& mode, u8* fb) override;
         virtual void render() override;
         virtual void shutdown() override;
-
-        static display* create(u32 nr);
     };
 
 }}

@@ -234,180 +234,286 @@ namespace vcml { namespace ui {
         }
     }
 
-    void sdl::update() {
-        if (!m_window)
+    void sdl_client::notify_key(u32 keysym, bool down) {
+        u32 symbol = sdl_keysym_to_vcml_keysym(keysym);
+        if (symbol != KEYSYM_NONE && disp != nullptr)
+            disp->notify_key(symbol, down);
+    }
+
+    void sdl_client::notify_btn(SDL_MouseButtonEvent& event) {
+        u32 button = sdl_button_to_vcml_button(event.button);
+        if (button != BUTTON_NONE && disp != nullptr)
+            disp->notify_btn(button, event.state == SDL_PRESSED);
+    }
+
+    void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
+        u32 x = event.x > 0 ? (u32)event.x : 0u;
+        u32 y = event.y > 0 ? (u32)event.y : 0u;
+        if (disp != nullptr)
+            disp->notify_pos(x, y);
+    }
+
+    void sdl_client::init_window() {
+        const char* name = disp->name();
+
+        const int w = (int)disp->resx();
+        const int h = (int)disp->resy();
+        const int x = SDL_WINDOWPOS_CENTERED;
+        const int y = SDL_WINDOWPOS_CENTERED;
+
+        window = SDL_CreateWindow(name, x, y, w, h, 0);
+        if (window == nullptr)
+            VCML_ERROR("cannot create SDL window: %s", SDL_GetError());
+
+        window_id = SDL_GetWindowID(window);
+        renderer = SDL_CreateRenderer(window, -1, 0);
+        if (renderer == nullptr)
+            VCML_ERROR("cannot create SDL renderer: %s", SDL_GetError());
+
+        if (SDL_RenderSetLogicalSize(renderer, w, h) < 0)
+            VCML_ERROR("cannot set renderer size: %s", SDL_GetError());
+
+        const u8 r = 7, g = 25, b = 42;
+        if (SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE) < 0)
+            VCML_ERROR("cannot set clear color: %s", SDL_GetError());
+
+        const int access = SDL_TEXTUREACCESS_STREAMING;
+        const int format = sdl_format_from_fbmode(disp->mode());
+        texture = SDL_CreateTexture(renderer, format, access, w, h);
+        if (texture == nullptr)
+            VCML_ERROR("cannot create SDL texture: %s", SDL_GetError());
+
+        SDL_RenderClear(renderer);
+        SDL_RenderPresent(renderer);
+    }
+
+    void sdl_client::exit_window() {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+            texture = nullptr;
+        }
+
+        if (renderer) {
+            SDL_DestroyRenderer(renderer);
+            renderer = nullptr;
+        }
+
+        if (window) {
+            SDL_DestroyWindow(window);
+            window = nullptr;
+        }
+    }
+
+    void sdl_client::draw_window() {
+        if (!disp || !window || !renderer || !texture)
             return;
 
-        if (realtime_us() - m_time_input < 10000) // 10ms
-            return;
+        SDL_Rect rect = {};
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = disp->resx();
+        rect.h = disp->resy();
 
+        int pitch = disp->framebuffer_size() / disp->resy();
+        const void* pixels = disp->framebuffer();
+
+        SDL_RenderClear(renderer);
+
+        if (pixels) {
+            SDL_UpdateTexture(texture, &rect, pixels, pitch);
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+        }
+
+        SDL_RenderPresent(renderer);
+        frames++;
+
+        // all times in microseconds
+        const u64 update_interval = 1000000;
+        u64 delta = realtime_us() - time_frame;
+        if (delta >= update_interval) {
+           u64 now = time_to_us(sc_time_stamp());
+           double rtf = (double)(now - time_sim) / delta;
+           double fps = (double)frames / (delta / 1e6);
+
+           const char* name = disp->name();
+           string caption = mkstr("%s %.1f fps %.2f rtf", name, fps, rtf);
+           SDL_SetWindowTitle(window, caption.c_str());
+
+           time_frame = realtime_us();
+           time_sim = now;
+           frames = 0;
+        }
+    }
+
+    sdl_client* sdl::find_by_window_id(u32 id) {
+        for (auto& it : m_clients)
+            if (it.window_id == id)
+                return &it;
+        return nullptr;
+    }
+
+    void sdl::check_clients() {
+        lock_guard<mutex> lock(m_mutex);
+        for (auto& client : m_clients) {
+            if (client.disp && !client.window)
+                client.init_window();
+            if (client.window && !client.disp)
+                client.exit_window();
+        }
+
+        stl_remove_erase_if(m_clients, [](const sdl_client& client) -> bool {
+            return client.disp == nullptr && client.window == nullptr;
+        });
+    }
+
+    void sdl::poll_events() {
         SDL_Event event = {};
         while (SDL_PollEvent(&event)) {
+            lock_guard<mutex> lock(m_mutex);
             switch (event.type) {
             case SDL_QUIT:
                 break;
 
-            case SDL_WINDOWEVENT:
+            case SDL_WINDOWEVENT: {
                 if (event.window.event == SDL_WINDOWEVENT_CLOSE)
                     sc_stop();
-                if (event.window.event == SDL_WINDOWEVENT_EXPOSED)
-                    SDL_RenderPresent(m_renderer);
-                break;
-
-            case SDL_KEYUP:
-            case SDL_KEYDOWN:
-                if (!sdl_sym_is_text(event.key.keysym))
-                    notify_key(event.key.keysym.sym, event.key.state);
-                break;
-
-            case SDL_TEXTINPUT:
-                for (const char* p = event.text.text; *p != '\0'; p++) {
-                    notify_key((u32)*p, true);
-                    notify_key((u32)*p, false);
-                }
-                break;
-
-            case SDL_MOUSEMOTION:
-                notify_pos(event.motion);
-                break;
-
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-                notify_btn(event.button);
-                break;
-
-            default:
+                auto client = find_by_window_id(event.window.windowID);
+                if (event.window.event == SDL_WINDOWEVENT_EXPOSED && client)
+                    client->draw_window();
                 break;
             }
+
+            case SDL_KEYUP:
+            case SDL_KEYDOWN: {
+                auto client = find_by_window_id(event.window.windowID);
+                if (client && !sdl_sym_is_text(event.key.keysym))
+                    client->notify_key(event.key.keysym.sym, event.key.state);
+                break;
+            }
+
+            case SDL_TEXTINPUT: {
+                auto client = find_by_window_id(event.window.windowID);
+                if (!client)
+                    break;
+
+                for (const char* p = event.text.text; *p != '\0'; p++) {
+                    client->notify_key((u32)*p, true);
+                    client->notify_key((u32)*p, false);
+                }
+
+                break;
+            }
+
+            case SDL_MOUSEMOTION: {
+                auto client = find_by_window_id(event.motion.windowID);
+                if (client)
+                    client->notify_pos(event.motion);
+                break;
+            }
+
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP: {
+                auto client = find_by_window_id(event.button.windowID);
+                if (client)
+                    client->notify_btn(event.button);
+                break;
+            }
+
+            default:
+               break;
+            }
         }
-
-        m_time_input = realtime_us();
     }
 
-    void sdl::notify_key(u32 keysym, bool down) {
-        u32 symbol = sdl_keysym_to_vcml_keysym(keysym);
-        if (symbol != KEYSYM_NONE)
-            display::notify_key(symbol, down);
+    void sdl::draw_windows() {
+        lock_guard<mutex> lock(m_mutex);
+        for (auto& client : m_clients)
+            client.draw_window();
     }
 
-    void sdl::notify_btn(SDL_MouseButtonEvent& event) {
-        u32 button = sdl_button_to_vcml_button(event.button);
-        if (button != BUTTON_NONE)
-            display::notify_btn(button, event.state == SDL_PRESSED);
-    }
-
-    void sdl::notify_pos(SDL_MouseMotionEvent& event) {
-        u32 x = event.x > 0 ? (u32)event.x : 0u;
-        u32 y = event.y > 0 ? (u32)event.y : 0u;
-        display::notify_pos(x, y);
-    }
-
-    sdl::sdl(u32 nr):
-        display("sdl", nr),
-        m_time_input(),
-        m_time_frame(),
-        m_time_sim(),
-        m_frames(),
-        m_window(nullptr),
-        m_renderer(nullptr),
-        m_texture(nullptr) {
-
+    void sdl::ui_run() {
         if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
             if (SDL_Init(SDL_INIT_VIDEO) < 0)
                 VCML_ERROR("cannot initialize SDL: %s", SDL_GetError());
         }
 
-        on_each_time_step(std::bind(&sdl::update, this));
+        while (m_running) {
+            check_clients();
+            poll_events();
+            draw_windows();
+        }
+
+        for (auto& client : m_clients) {
+            if (client.disp != nullptr) {
+                fprintf(stderr, "warning: display %s did not clean up",
+                        client.disp->name());
+            }
+
+            client.exit_window();
+        }
     }
 
     sdl::~sdl() {
-        if (m_window)
-            shutdown();
-    }
-
-    void sdl::init(const fbmode& mode, u8* fb) {
-        shutdown();
-
-        display::init(mode, fb);
-
-        int w = (int)resx();
-        int h = (int)resy();
-        int x = SDL_WINDOWPOS_CENTERED;
-        int y = SDL_WINDOWPOS_CENTERED;
-
-        m_window = SDL_CreateWindow(name(), x, y, w, h, 0);
-        if (m_window == nullptr)
-            VCML_ERROR("cannot create SDL window: %s", SDL_GetError());
-
-        m_renderer = SDL_CreateRenderer(m_window, -1, 0);
-        if (m_renderer == nullptr)
-            VCML_ERROR("cannot create SDL renderer: %s", SDL_GetError());
-
-        if (SDL_RenderSetLogicalSize(m_renderer, w, h) < 0)
-            VCML_ERROR("cannot set renderer size: %s", SDL_GetError());
-
-        m_texture = SDL_CreateTexture(m_renderer, sdl_format_from_fbmode(mode),
-                                      SDL_TEXTUREACCESS_STREAMING, w, h);
-        if (m_texture == nullptr)
-            VCML_ERROR("cannot create SDL texture: %s", SDL_GetError());
-
-        SDL_RenderClear(m_renderer);
-        SDL_RenderPresent(m_renderer);
-    }
-
-    void sdl::render() {
-        SDL_Rect rect;
-
-        rect.x = 0;
-        rect.y = 0;
-        rect.w = resx();
-        rect.h = resy();
-
-        int pitch = framebuffer_size() / resy();
-
-        SDL_UpdateTexture(m_texture, &rect, framebuffer(), pitch);
-        SDL_RenderClear(m_renderer);
-        SDL_RenderCopy(m_renderer, m_texture, nullptr, nullptr);
-        SDL_RenderPresent(m_renderer);
-
-        m_frames++;
-
-        // all times in microseconds
-        const u64 update_interval = 1000000;
-        u64 delta = realtime_us() - m_time_frame;
-        if (delta >= update_interval) {
-            u64 now = time_to_us(sc_time_stamp());
-            double rtf = (double)(now - m_time_sim) / delta;
-            double fps = (double)m_frames / (delta / 1e6);
-
-            string caption = mkstr("%s %.1f fps %.2f rtf", name(), fps, rtf);
-            SDL_SetWindowTitle(m_window, caption.c_str());
-
-            m_time_frame = realtime_us();
-            m_time_sim = now;
-            m_frames = 0;
+        if (m_uithread.joinable()) {
+            m_running = false;
+            m_uithread.join();
         }
     }
 
-    void sdl::shutdown() {
-        if (m_texture) {
-            SDL_DestroyTexture(m_texture);
-            m_texture = nullptr;
-        }
+    void sdl::register_display(display* disp) {
+        lock_guard<mutex> lock(m_mutex);
+        auto finder = [disp](const sdl_client& s) -> bool {
+            return s.disp == disp;
+        };
 
-        if (m_renderer) {
-            SDL_DestroyRenderer(m_renderer);
-            m_renderer = nullptr;
-        }
+        if (stl_contains_if(m_clients, finder))
+            VCML_ERROR("display %s already registered", disp->name());
 
-        if (m_window) {
-            SDL_DestroyWindow(m_window);
-            m_window = nullptr;
+        sdl_client client = {};
+        client.disp = disp;
+        m_clients.push_back(client);
+
+        if (!m_uithread.joinable()) {
+            m_running = true;
+            m_uithread = thread(std::bind(&sdl::ui_run, this));
+            set_thread_name(m_uithread, "sdl_ui_thread");
         }
+    }
+
+    void sdl::unregister_display(display* disp) {
+        lock_guard<mutex> lock(m_mutex);
+
+        for (sdl_client& client : m_clients)
+            if (client.disp == disp)
+                client.disp = nullptr;
     }
 
     display* sdl::create(u32 nr) {
-        return new sdl(nr);
+        static sdl instance;
+        return new sdl_display(nr, instance);
+    }
+
+    sdl_display::sdl_display(u32 nr, sdl& owner):
+        display("sdl", nr),
+        m_owner(owner) {
+    }
+
+    sdl_display::~sdl_display() {
+        shutdown();
+    }
+
+    void sdl_display::init(const fbmode& mode, u8* fb) {
+        shutdown();
+        display::init(mode, fb);
+        m_owner.register_display(this);
+    }
+
+    void sdl_display::render() {
+        // nothing
+    }
+
+    void sdl_display::shutdown() {
+        m_owner.unregister_display(this);
     }
 
 }}
