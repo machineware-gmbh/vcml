@@ -24,22 +24,36 @@
 namespace vcml { namespace ui {
 
     enum pixelformat {
-        FORMAT_ARGB32,
-        FORMAT_BGRA32,
-        FORMAT_RGB24,
-        FORMAT_BGR24,
-        FORMAT_RGB16,
+        // 32bit color formats
+        FORMAT_A8R8G8B8,
+        FORMAT_X8R8G8B8,
+        FORMAT_R8G8B8A8,
+        FORMAT_R8G8B8X8,
+        FORMAT_A8B8G8R8,
+        FORMAT_X8B8G8R8,
+        FORMAT_B8G8R8A8,
+        FORMAT_B8G8R8X8,
+
+        // 24bit color formats
+        FORMAT_R8G8B8,
+        FORMAT_B8G8R8,
+
+        // 16bit color formats
+        FORMAT_R5G6B5,
+        FORMAT_B5G6R5,
+
+        // 8 bit grayscale format
         FORMAT_GRAY8,
     };
 
     const char* pixelformat_to_str(pixelformat fmt);
 
-    typedef struct {
+    struct color_channel {
         u8 offset;
         u8 size;
-    } color_channel;
+    };
 
-    typedef struct {
+    struct fbmode {
         u32 resx;
         u32 resy;
         u64 size;
@@ -49,14 +63,26 @@ namespace vcml { namespace ui {
         color_channel g;
         color_channel b;
         vcml_endian endian;
-    } fbmode;
 
-    fbmode fbmode_argb32(u32 width, u32 height);
-    fbmode fbmode_bgra32(u32 width, u32 height);
-    fbmode fbmode_rgb24(u32 width, u32 height);
-    fbmode fbmode_bgr24(u32 width, u32 height);
-    fbmode fbmode_rgb16(u32 width, u32 height);
-    fbmode fbmode_gray8(u32 width, u32 height);
+        bool is_valid() const { return size > 0; }
+
+        static fbmode a8r8g8b8(u32 width, u32 height);
+        static fbmode x8r8g8b8(u32 width, u32 height);
+        static fbmode r8g8b8a8(u32 width, u32 height);
+        static fbmode r8g8b8x8(u32 width, u32 height);
+        static fbmode a8b8g8r8(u32 width, u32 height);
+        static fbmode x8b8g8r8(u32 width, u32 height);
+        static fbmode b8g8r8a8(u32 width, u32 height);
+        static fbmode b8g8r8x8(u32 width, u32 height);
+
+        static fbmode r8g8b8(u32 width, u32 height);
+        static fbmode b8g8r8(u32 width, u32 height);
+
+        static fbmode r5g6b5(u32 width, u32 height);
+        static fbmode b5g6r5(u32 width, u32 height);
+
+        static fbmode gray8(u32 width, u32 height);
+    };
 
 }}
 

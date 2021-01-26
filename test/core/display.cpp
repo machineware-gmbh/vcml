@@ -29,32 +29,32 @@ TEST(display, fbmode) {
     u32 resy = 600;
     fbmode mode;
 
-    mode = fbmode_argb32(resx, resy);
+    mode = fbmode::a8r8g8b8(resx, resy);
     EXPECT_EQ(mode.resx, resx);
     EXPECT_EQ(mode.resy, resy);
     EXPECT_EQ(mode.size, resx * resy * 4);
 
-    mode = fbmode_bgra32(resx, resy);
+    mode = fbmode::b8g8r8a8(resx, resy);
     EXPECT_EQ(mode.resx, resx);
     EXPECT_EQ(mode.resy, resy);
     EXPECT_EQ(mode.size, resx * resy * 4);
 
-    mode = fbmode_rgb24(resx, resy);
+    mode = fbmode::r8g8b8(resx, resy);
     EXPECT_EQ(mode.resx, resx);
     EXPECT_EQ(mode.resy, resy);
     EXPECT_EQ(mode.size, resx * resy * 3);
 
-    mode = fbmode_bgr24(resx, resy);
+    mode = fbmode::b8g8r8(resx, resy);
     EXPECT_EQ(mode.resx, resx);
     EXPECT_EQ(mode.resy, resy);
     EXPECT_EQ(mode.size, resx * resy * 3);
 
-    mode = fbmode_rgb16(resx, resy);
+    mode = fbmode::r5g6b5(resx, resy);
     EXPECT_EQ(mode.resx, resx);
     EXPECT_EQ(mode.resy, resy);
     EXPECT_EQ(mode.size, resx * resy * 2);
 
-    mode = fbmode_gray8(resx, resy);
+    mode = fbmode::gray8(resx, resy);
     EXPECT_EQ(mode.resx, resx);
     EXPECT_EQ(mode.resy, resy);
     EXPECT_EQ(mode.size, resx * resy * 1);

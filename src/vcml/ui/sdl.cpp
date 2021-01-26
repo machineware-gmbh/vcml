@@ -220,11 +220,20 @@ namespace vcml { namespace ui {
 
     static int sdl_format_from_fbmode(const fbmode& mode) {
         switch (mode.format) {
-        case FORMAT_ARGB32: return SDL_PIXELFORMAT_ARGB8888;
-        case FORMAT_BGRA32: return SDL_PIXELFORMAT_BGRA8888;
-        case FORMAT_RGB24: return SDL_PIXELFORMAT_RGB888;
-        case FORMAT_BGR24: return SDL_PIXELFORMAT_BGR888;
-        case FORMAT_RGB16: return SDL_PIXELFORMAT_RGB565;
+        case FORMAT_A8R8G8B8: return SDL_PIXELFORMAT_ARGB8888;
+        case FORMAT_X8R8G8B8: return SDL_PIXELFORMAT_RGB888;
+        case FORMAT_R8G8B8A8: return SDL_PIXELFORMAT_RGBA8888;
+        case FORMAT_R8G8B8X8: return SDL_PIXELFORMAT_RGBX8888;
+        case FORMAT_A8B8G8R8: return SDL_PIXELFORMAT_ARGB8888;
+        case FORMAT_X8B8G8R8: return SDL_PIXELFORMAT_BGR888;
+        case FORMAT_B8G8R8A8: return SDL_PIXELFORMAT_BGRA8888;
+        case FORMAT_B8G8R8X8: return SDL_PIXELFORMAT_BGRX8888;
+
+        case FORMAT_R8G8B8: return SDL_PIXELFORMAT_RGB24;
+        case FORMAT_B8G8R8: return SDL_PIXELFORMAT_BGR24;
+
+        case FORMAT_R5G6B5: return SDL_PIXELFORMAT_RGB565;
+        case FORMAT_B5G6R5: return SDL_PIXELFORMAT_BGR565;
 
         case FORMAT_GRAY8:
             VCML_ERROR("%s unsupported", pixelformat_to_str(mode.format));
@@ -503,7 +512,6 @@ namespace vcml { namespace ui {
     }
 
     void sdl_display::init(const fbmode& mode, u8* fb) {
-        shutdown();
         display::init(mode, fb);
         m_owner.register_display(this);
     }

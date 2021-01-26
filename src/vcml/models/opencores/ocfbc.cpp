@@ -165,27 +165,27 @@ namespace vcml { namespace opencores {
         // most of the time. Tested with RealVNC and Remmina.
         switch (m_bpp) {
         case 4: if (is_little_endian())
-                    mode = ui::fbmode_argb32(m_resx, m_resy);
+                    mode = ui::fbmode::a8r8g8b8(m_resx, m_resy);
                 else
-                    mode = ui::fbmode_bgra32(m_resx, m_resy);
+                    mode = ui::fbmode::b8g8r8a8(m_resx, m_resy);
                 mode.endian = VCML_ENDIAN_LITTLE;
                 break;
 
         case 3: if (is_little_endian())
-                    mode = ui::fbmode_rgb24(m_resx, m_resy);
+                    mode = ui::fbmode::r8g8b8(m_resx, m_resy);
                 else
-                    mode = ui::fbmode_bgr24(m_resx, m_resy);
+                    mode = ui::fbmode::b8g8r8(m_resx, m_resy);
                 mode.endian = VCML_ENDIAN_LITTLE;
                 break;
 
-        case 2: mode = ui::fbmode_rgb16(m_resx, m_resy);
+        case 2: mode = ui::fbmode::r5g6b5(m_resx, m_resy);
                 mode.endian = get_endian();
                 break;
 
         case 1: if (m_pc)
-                    mode = ui::fbmode_argb32(m_resx, m_resy);
+                    mode = ui::fbmode::a8r8g8b8(m_resx, m_resy);
                 else
-                    mode = ui::fbmode_gray8(m_resx, m_resy);
+                    mode = ui::fbmode::gray8(m_resx, m_resy);
                 mode.endian = VCML_ENDIAN_LITTLE;
                 break;
 

@@ -33,20 +33,20 @@ namespace vcml { namespace generic {
     class fbdev: public component
     {
     private:
-        u64 m_stride;
-        u64 m_size;
+        ui::fbmode m_mode;
         u8* m_vptr;
 
         void update();
 
     public:
-        u64 stride() const { return m_stride; }
-        u64 size()   const { return m_size; }
         u8* vptr()   const { return m_vptr; }
+        u64 size()   const { return m_mode.size; }
+        u64 stride() const { return size() / m_mode.resy; }
 
         property<u64> addr;
         property<u32> resx;
         property<u32> resy;
+        property<string> format;
 
         property<string> display;
 

@@ -22,25 +22,32 @@ namespace vcml { namespace ui {
 
     const char* pixelformat_to_str(pixelformat fmt) {
         switch (fmt) {
-        case FORMAT_ARGB32: return "FORMAT_ARGB32";
-        case FORMAT_BGRA32: return "FORMAT_BGRA32";
-        case FORMAT_RGB24:  return "FORMAT_RGB24";
-        case FORMAT_BGR24:  return "FORMAT_BGR24";
-        case FORMAT_RGB16:  return "FORMAT_RGB16";
-        case FORMAT_GRAY8:  return "FORMAT_GRAY8";
+        case FORMAT_A8R8G8B8: return "a8r8g8b8";
+        case FORMAT_X8R8G8B8: return "x8r8g8b8";
+        case FORMAT_R8G8B8A8: return "r8g8b8a8";
+        case FORMAT_R8G8B8X8: return "r8g8b8x8";
+        case FORMAT_A8B8G8R8: return "a8b8g8r8";
+        case FORMAT_X8B8G8R8: return "x8b8g8r8";
+        case FORMAT_B8G8R8A8: return "b8g8r8a8";
+        case FORMAT_B8G8R8X8: return "b8g8r8x8";
+        case FORMAT_R8G8B8:   return "r8g8b8";
+        case FORMAT_B8G8R8:   return "b8g8r8";
+        case FORMAT_R5G6B5:   return "r5g6b5";
+        case FORMAT_B5G6R5:   return "b5g6r5";
+        case FORMAT_GRAY8:    return "gray8";
         default:
-            return "UNKNOWN";
+            return "unknown";
         }
     }
 
-    fbmode fbmode_argb32(u32 width, u32 height) {
+    fbmode fbmode::a8r8g8b8(u32 width, u32 height) {
         fbmode mode;
 
         mode.resx = width;
         mode.resy = height;
         mode.size = 4ul * width * height;
 
-        mode.format = FORMAT_ARGB32;
+        mode.format = FORMAT_A8R8G8B8;
 
         mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
 
@@ -54,35 +61,14 @@ namespace vcml { namespace ui {
         return mode;
     }
 
-    fbmode fbmode_bgra32(u32 width, u32 height) {
+    fbmode fbmode::x8r8g8b8(u32 width, u32 height) {
         fbmode mode;
 
         mode.resx = width;
         mode.resy = height;
         mode.size = 4ul * width * height;
 
-        mode.format = FORMAT_BGRA32;
-
-        mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
-
-        mode.a.offset =  0;
-        mode.r.offset =  8;
-        mode.g.offset = 16;
-        mode.b.offset = 24;
-
-        mode.endian = host_endian();
-
-        return mode;
-    }
-
-    fbmode fbmode_rgb24(u32 width, u32 height) {
-        fbmode mode;
-
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 3ul * width * height;
-
-        mode.format = FORMAT_RGB24;
+        mode.format = FORMAT_X8R8G8B8;
 
         mode.a.size = 0;
         mode.a.offset = 0;
@@ -98,14 +84,169 @@ namespace vcml { namespace ui {
         return mode;
     }
 
-    fbmode fbmode_bgr24(u32 width, u32 height) {
+    fbmode fbmode::r8g8b8a8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_R8G8B8A8;
+
+        mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.r.offset = 24;
+        mode.g.offset = 16;
+        mode.b.offset =  8;
+        mode.a.offset =  0;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::r8g8b8x8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_X8R8G8B8;
+
+        mode.a.size = 0;
+        mode.a.offset = 0;
+
+        mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.r.offset = 24;
+        mode.g.offset = 16;
+        mode.b.offset =  8;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::a8b8g8r8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_A8B8G8R8;
+
+        mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.a.offset = 24;
+        mode.b.offset = 16;
+        mode.g.offset =  8;
+        mode.r.offset =  0;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::x8b8g8r8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_B8G8R8X8;
+
+        mode.a.size = 0;
+        mode.a.offset =  0;
+
+        mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.b.offset = 16;
+        mode.g.offset =  8;
+        mode.r.offset =  0;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::b8g8r8a8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_B8G8R8A8;
+
+        mode.a.size = mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.a.offset =  0;
+        mode.r.offset =  8;
+        mode.g.offset = 16;
+        mode.b.offset = 24;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::b8g8r8x8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 4ul * width * height;
+
+        mode.format = FORMAT_B8G8R8X8;
+
+        mode.a.size = 0;
+        mode.a.offset =  0;
+
+        mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.r.offset =  8;
+        mode.g.offset = 16;
+        mode.b.offset = 24;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::r8g8b8(u32 width, u32 height) {
         fbmode mode;
 
         mode.resx = width;
         mode.resy = height;
         mode.size = 3ul * width * height;
 
-        mode.format = FORMAT_BGR24;
+        mode.format = FORMAT_R8G8B8;
+
+        mode.a.size = 0;
+        mode.a.offset = 0;
+
+        mode.r.size = mode.g.size = mode.b.size = 8;
+
+        mode.r.offset = 16;
+        mode.g.offset =  8;
+        mode.b.offset =  0;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::b8g8r8(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 3ul * width * height;
+
+        mode.format = FORMAT_B8G8R8;
 
         mode.a.size = 0;
         mode.a.offset = 0;
@@ -121,14 +262,14 @@ namespace vcml { namespace ui {
         return mode;
     }
 
-    fbmode fbmode_rgb16(u32 width, u32 height) {
+    fbmode fbmode::r5g6b5(u32 width, u32 height) {
         fbmode mode;
 
         mode.resx = width;
         mode.resy = height;
         mode.size = 2ul * width * height;
 
-        mode.format = FORMAT_RGB16;
+        mode.format = FORMAT_R5G6B5;
 
         mode.a.size = 0;
         mode.a.offset = 0;
@@ -146,7 +287,32 @@ namespace vcml { namespace ui {
         return mode;
     }
 
-    fbmode fbmode_gray8(u32 width, u32 height) {
+    fbmode fbmode::b5g6r5(u32 width, u32 height) {
+        fbmode mode;
+
+        mode.resx = width;
+        mode.resy = height;
+        mode.size = 2ul * width * height;
+
+        mode.format = FORMAT_R5G6B5;
+
+        mode.a.size = 0;
+        mode.a.offset = 0;
+
+        mode.r.size = 5;
+        mode.g.size = 6;
+        mode.b.size = 5;
+
+        mode.r.offset = 0;
+        mode.g.offset = 5;
+        mode.b.offset = 11;
+
+        mode.endian = host_endian();
+
+        return mode;
+    }
+
+    fbmode fbmode::gray8(u32 width, u32 height) {
         fbmode mode;
 
         mode.resx = width;
