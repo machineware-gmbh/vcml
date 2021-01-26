@@ -249,6 +249,7 @@ namespace vcml { namespace ui {
         display("vnc", no),
         m_port(no), // vnc port = display number
         m_buttons(),
+        m_nullfb(),
         m_running(true),
         m_mutex(),
         m_screen(),
@@ -271,12 +272,14 @@ namespace vcml { namespace ui {
     }
 
     vnc::~vnc() {
-        if (m_thread.joinable())
-            shutdown();
+        shutdown();
     }
 
     void vnc::init(const fbmode& mode, u8* fb)  {
         display::init(mode, fb);
+
+        if (fb == nullptr)
+            fb = m_nullfb = new u8[mode.size]();
 
         m_screen->frameBuffer = (char*)fb;
 
@@ -317,6 +320,11 @@ namespace vcml { namespace ui {
     }
 
     void vnc::shutdown() {
+        if (m_nullfb)
+            delete [] m_nullfb;
+
+        m_nullfb = nullptr;
+
         if (!m_thread.joinable())
             return;
 
