@@ -28,6 +28,9 @@ namespace vcml {
 
     class system: public module
     {
+    private:
+        void timeout();
+
     public:
         property<string>  name;
         property<string>  desc;
