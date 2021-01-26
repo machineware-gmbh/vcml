@@ -268,7 +268,7 @@ namespace vcml { namespace virtio {
                 disp->add_ptr_listener(m_ptr_listener, m_key_listener);
         }
 
-        if (keyboard || keyboard) {
+        if (keyboard || touchpad) {
             SC_HAS_PROCESS(input);
             SC_METHOD(update);
         }
