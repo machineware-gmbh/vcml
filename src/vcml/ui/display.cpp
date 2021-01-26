@@ -137,6 +137,9 @@ namespace vcml { namespace ui {
     }
 
     void display::init(const fbmode& mode, u8* fbptr) {
+        if (has_framebuffer())
+            shutdown();
+
         m_mode = mode;
         m_fb = fbptr;
     }
@@ -184,10 +187,14 @@ namespace vcml { namespace ui {
 
     void display::add_key_listener(key_listener& l, const string& layout) {
         m_key_listeners.push_back(key_listener_state(&l, layout));
+        if (!has_framebuffer())
+            init(fbmode::a8r8g8b8(320, 200), nullptr);
     }
 
     void display::add_ptr_listener(pos_listener& p, key_listener& k) {
         m_ptr_listeners.push_back(ptr_listener_state(&p, &k));
+        if (!has_framebuffer())
+            init(fbmode::a8r8g8b8(320, 200), nullptr);
     }
 
     void display::remove_key_listener(key_listener& l) {

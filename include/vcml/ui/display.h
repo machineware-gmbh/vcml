@@ -114,8 +114,9 @@ namespace vcml { namespace ui {
 
         const fbmode& mode() const { return m_mode; }
 
-        u8* framebuffer()      const { return m_fb; }
-        u64 framebuffer_size() const { return m_mode.size; }
+        u8*  framebuffer()      const { return m_fb; }
+        u64  framebuffer_size() const { return m_mode.size; }
+        bool has_framebuffer()  const { return m_mode.size > 0; }
 
         virtual ~display();
 
