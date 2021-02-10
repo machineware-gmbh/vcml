@@ -34,6 +34,7 @@ namespace vcml {
     public:
         property<string>  name;
         property<string>  desc;
+        property<string>  config;
 
         property<bool>    backtrace;
 

@@ -34,6 +34,7 @@ namespace vcml {
         module(nm),
         name("name", progname()),
         desc("desc", progname()),
+        config("config", ""),
         backtrace("backtrace", true),
         session("session", 0),
         session_debug("session_debug", false),
@@ -45,6 +46,9 @@ namespace vcml {
 
         if (duration > SC_ZERO_TIME)
             SC_THREAD(timeout);
+
+        if (config.get().empty())
+            log_warn("no configuration specified, use -f <config>");
     }
 
     system::~system() {
