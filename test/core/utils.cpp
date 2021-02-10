@@ -25,6 +25,24 @@ TEST(utils, dirname) {
     EXPECT_EQ(vcml::dirname("nothing"), ".");
 }
 
+TEST(utils, filename) {
+    EXPECT_EQ(vcml::filename("/a/b/c.txt"), "c.txt");
+    EXPECT_EQ(vcml::filename("a/b/c.txt"), "c.txt");
+    EXPECT_EQ(vcml::filename("/a/b/c/"), "");
+    EXPECT_EQ(vcml::filename("nothing"), "nothing");
+}
+
+TEST(utils, filename_noext) {
+    EXPECT_EQ(vcml::filename_noext("/a/b/c.txt"), "c");
+    EXPECT_EQ(vcml::filename_noext("a/b/c.c.txt"), "c.c");
+    EXPECT_EQ(vcml::filename_noext("/a/b/c/"), "");
+    EXPECT_EQ(vcml::filename_noext("nothing"), "nothing");
+}
+
+TEST(utils, curr_dir) {
+    EXPECT_TRUE(vcml::curr_dir() != "");
+}
+
 namespace N {
 
     template<typename T>

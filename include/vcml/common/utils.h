@@ -24,18 +24,22 @@
 
 namespace vcml {
 
-    string dirname(const string& filename);
-    string tempdir();
+    string dirname(const string& path);
+    string filename(const string& path);
+    string filename_noext(const string& path);
+
+    string curr_dir();
+    string temp_dir();
 
     string progname();
     string username();
+
+    bool file_exists(const string& filename);
 
     double realtime();
 
     u64 realtime_us();
     u64 timestamp_us();
-
-    bool file_exists(const string& filename);
 
     size_t fd_peek(int fd, time_t timeout_ms = 0ull);
     size_t fd_read(int fd, void* buffer, size_t buflen);

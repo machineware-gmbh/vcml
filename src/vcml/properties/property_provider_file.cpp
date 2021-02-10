@@ -75,17 +75,18 @@ namespace vcml {
             vcml::replace(str, it.first, it.second);
     }
 
-    property_provider_file::property_provider_file(const string& filename):
+    property_provider_file::property_provider_file(const string& filepath):
         property_provider(),
-        m_filename(filename),
+        m_filename(filepath),
         m_replacements() {
-        m_replacements["$dir"] = dirname(filename);
+        m_replacements["$dir"] = dirname(filepath);
+        m_replacements["$cfg"] = filename_noext(filepath);
         m_replacements["$app"] = progname();
-        m_replacements["$tmp"] = tempdir();
+        m_replacements["$pwd"] = curr_dir();
+        m_replacements["$tmp"] = temp_dir();
         m_replacements["$usr"] = username();
         m_replacements["$pid"] = to_string(getpid());
-        m_replacements["$pwd"] = getenv("PWD");
-        parse_file(filename);
+        parse_file(filepath);
     }
 
     property_provider_file::~property_provider_file() {

@@ -28,19 +28,87 @@
 
 namespace vcml {
 
-    string dirname(const string& filename) {
+    string dirname(const string& path) {
 #ifdef _WIN32
         const char separator = '\\';
 #else
         const char separator = '/';
 #endif
+        size_t i = path.rfind(separator, path.length());
+        return (i == string::npos) ? "." : path.substr(0, i);
+    }
 
-        size_t i = filename.rfind(separator, filename.length());
-        return (i == string::npos) ? "." : filename.substr(0, i);
+    string filename(const string& path) {
+#ifdef _WIN32
+        const char separator = '\\';
+#else
+        const char separator = '/';
+#endif
+        size_t i = path.rfind(separator, path.length());
+        return (i == string::npos) ? path : path.substr(i + 1);
+    }
+
+    string filename_noext(const string& path) {
+        const string name = filename(path);
+        size_t i = name.rfind('.', path.length());
+        return (i == string::npos) ? name : name.substr(0, i);
+    }
+
+    string curr_dir() {
+        char path[PATH_MAX];
+        if (getcwd(path, sizeof(path)) != path)
+            VCML_ERROR("cannot read current directory: %s", strerror(errno));
+        return string(path);
+    }
+
+    string temp_dir() {
+#ifdef _WIN32
+        // ToDo: implement tempdir for windows
+#else
+        return "/tmp/";
+#endif
+    }
+
+    string progname() {
+        char path[PATH_MAX];
+        ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+
+        if (len == -1)
+            return "unknown";
+
+        path[len] = '\0';
+        return path;
+    }
+
+    string username() {
+        char uname[255];
+        if (getlogin_r(uname, sizeof(uname)))
+            return "unknown";
+        return uname;
     }
 
     bool file_exists(const string& filename) {
         return access(filename.c_str(), F_OK) != -1;
+    }
+
+    double realtime() {
+        struct timespec tp;
+        clock_gettime(CLOCK_REALTIME, &tp);
+        return tp.tv_sec + tp.tv_nsec * 1e-9;
+    }
+
+    u64 realtime_us() {
+        struct timespec tp = {};
+        if (clock_gettime(CLOCK_REALTIME, &tp))
+            VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
+        return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
+    }
+
+    u64 timestamp_us() {
+        struct timespec tp = {};
+        if (clock_gettime(CLOCK_MONOTONIC, &tp))
+            VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
+        return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
     }
 
     size_t fd_peek(int fd, time_t timeoutms) {
@@ -95,52 +163,6 @@ namespace vcml {
         }
 
         return written;
-    }
-
-    string tempdir() {
-#ifdef _WIN32
-        // ToDo: implement tempdir for windows
-#else
-        return "/tmp/";
-#endif
-    }
-
-    string progname() {
-        char path[PATH_MAX];
-        ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-
-        if (len == -1)
-            return "unknown";
-
-        path[len] = '\0';
-        return path;
-    }
-
-    string username() {
-        char uname[255];
-        if (getlogin_r(uname, sizeof(uname)))
-            return "unknown";
-        return uname;
-    }
-
-    double realtime() {
-        struct timespec tp;
-        clock_gettime(CLOCK_REALTIME, &tp);
-        return tp.tv_sec + tp.tv_nsec * 1e-9;
-    }
-
-    u64 realtime_us() {
-        struct timespec tp = {};
-        if (clock_gettime(CLOCK_REALTIME, &tp))
-            VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
-        return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
-    }
-
-    u64 timestamp_us() {
-        struct timespec tp = {};
-        if (clock_gettime(CLOCK_MONOTONIC, &tp))
-            VCML_ERROR("cannot read clock: %s (%d)", strerror(errno), errno);
-        return tp.tv_sec * 1000000ul + tp.tv_nsec / 1000ul;
     }
 
     string call_origin() {
