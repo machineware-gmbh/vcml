@@ -42,6 +42,7 @@ namespace vcml { namespace ui {
         u32    m_dispno;
         fbmode m_mode;
         u8*    m_fb;
+        u8*    m_nullfb;
 
         struct key_listener_state {
             key_listener* keyev;

@@ -129,7 +129,8 @@ namespace vcml { namespace ui {
         m_type(type),
         m_dispno(nr),
         m_mode(),
-        m_fb(nullptr) {
+        m_fb(nullptr),
+        m_nullfb(nullptr) {
     }
 
     display::~display() {
@@ -142,6 +143,9 @@ namespace vcml { namespace ui {
 
         m_mode = mode;
         m_fb = fbptr;
+
+        if (m_fb == nullptr)
+            m_fb = m_nullfb = new u8[mode.size]();
     }
 
     void display::render() {
@@ -149,7 +153,9 @@ namespace vcml { namespace ui {
     }
 
     void display::shutdown() {
-        // nothing to do
+        if (m_nullfb)
+            delete [] m_nullfb;
+        m_fb = m_nullfb = nullptr;
     }
 
     void display::notify_key(u32 keysym, bool down) {

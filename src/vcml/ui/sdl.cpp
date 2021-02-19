@@ -517,11 +517,12 @@ namespace vcml { namespace ui {
     }
 
     void sdl_display::render() {
-        // nothing
+        // nothing to do
     }
 
     void sdl_display::shutdown() {
         m_owner.unregister_display(this);
+        display::shutdown();
     }
 
 }}
