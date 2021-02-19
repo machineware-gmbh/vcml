@@ -29,7 +29,7 @@ public:
     vcml::u64 cycles;
 
     mock_processor(const sc_core::sc_module_name& nm):
-        vcml::processor(nm), cycles(0) {}
+        vcml::processor(nm, "mock"), cycles(0) {}
     virtual ~mock_processor() {}
 
     virtual vcml::u64 cycle_count() const override {

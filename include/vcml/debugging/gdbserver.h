@@ -22,10 +22,11 @@
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
+#include "vcml/common/bitops.h"
 
 #include "vcml/logging/logger.h"
 
-#include "vcml/debugging/gdbstub.h"
+#include "vcml/debugging/target.h"
 #include "vcml/debugging/rspserver.h"
 #include "vcml/debugging/suspender.h"
 
@@ -46,9 +47,11 @@ namespace vcml { namespace debugging {
                      private suspender
     {
     private:
-        gdbstub*   m_stub;
+        target*    m_target;
         gdb_status m_status;
         gdb_status m_default;
+
+        unordered_map<u64, const cpureg*> m_regmap;
 
         bool m_sync;
         int m_signal;
@@ -57,8 +60,7 @@ namespace vcml { namespace debugging {
 
         bool is_suspend_requested() const override;
 
-        bool access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size);
-        bool access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size);
+        const cpureg* lookup_cpureg(unsigned int gdbno);
 
         typedef string (gdbserver::*handler)(const char*);
         std::map<char, handler> m_handler;
@@ -112,7 +114,7 @@ namespace vcml { namespace debugging {
 
         gdbserver() = delete;
         gdbserver(const gdbserver&) = delete;
-        gdbserver(u16 port, gdbstub* stub, gdb_status status = GDB_STOPPED);
+        gdbserver(u16 port, target* stub, gdb_status status = GDB_STOPPED);
         virtual ~gdbserver();
 
         void simulate(unsigned int cycles);

@@ -65,6 +65,7 @@ set(sources
     ${src}/vcml/backends/backend_stdout.cpp
     ${src}/vcml/backends/backend_tcp.cpp
     ${src}/vcml/backends/backend_tap.cpp
+    ${src}/vcml/debugging/target.cpp
     ${src}/vcml/debugging/suspender.cpp
     ${src}/vcml/debugging/rspserver.cpp
     ${src}/vcml/debugging/gdbserver.cpp

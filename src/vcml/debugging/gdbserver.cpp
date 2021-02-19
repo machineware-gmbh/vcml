@@ -21,6 +21,13 @@
 
 namespace vcml { namespace debugging {
 
+    union gdb_u64 {
+        u64 val;
+        u8 ptr[8];
+
+        gdb_u64(): val() {}
+    };
+
     static inline int char2int(char c) {
         return ((c >= 'a') && (c <= 'f')) ? c - 'a' + 10 :
                ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 :
@@ -58,37 +65,11 @@ namespace vcml { namespace debugging {
         return m_status == GDB_STOPPED;
     }
 
-    bool gdbserver::access_pmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
-        try {
-            return iswr ? m_stub->async_write_mem(addr, buffer, size)
-                        : m_stub->async_read_mem(addr, buffer, size);
-        } catch (report& r) {
-            log_warn("gdb cannot access %lu bytes at address %lx: %s",
-                     size, addr, r.message());
-            return false;
-        }
-    }
-
-    bool gdbserver::access_vmem(bool iswr, u64 addr, u8 buffer[], u64 size) {
-        u64 page_size = 0;
-        if (!m_stub->async_page_size(page_size))
-            return access_pmem(iswr, addr, buffer, size);
-
-        u64 end = addr + size;
-        while (addr < end) {
-            u64 pa = 0;
-            u64 todo = min(end - addr, page_size - (addr % page_size));
-            if (m_stub->async_virt_to_phys(addr, pa)) {
-                access_pmem(iswr, pa, buffer, todo);
-            } else {
-                memset(buffer, 0xee, todo);
-            }
-
-            addr += todo;
-            buffer += todo;
-        }
-
-        return true;
+    const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
+        auto it = m_regmap.find(gdbno);
+        if (it == m_regmap.end())
+            return nullptr;
+        return it->second;
     }
 
     string gdbserver::handle_unknown(const char* command) {
@@ -151,117 +132,115 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_rcmd(const char* command) {
-        return m_stub->async_handle_rcmd(command);
+        string response;
+        if (!m_target->gdb_command(command, response))
+            return ERR_COMMAND;
+        return response;
     }
 
     string gdbserver::handle_reg_read(const char* command) {
-        unsigned int reg;
-        if (sscanf(command, "p%x", &reg) != 1) {
+        unsigned int regno;
+        if (sscanf(command, "p%x", &regno) != 1) {
             log_warn("malformed command '%s'", command);
             return ERR_COMMAND;
         }
 
-        u64 regsz = m_stub->async_register_width(reg);
-        if (regsz == 0)
+        const cpureg* reg = lookup_cpureg(regno);
+        if (reg == nullptr || !reg->is_readable())
             return "xxxxxxxx"; // respond with "contents unknown"
 
-        u8* buffer = new u8[regsz];
-        bool ok = m_stub->async_read_reg(reg, buffer, regsz);
+        u64 val = reg->read();
+        if (!m_target->is_host_endian())
+            memswap(&val, reg->size);
 
         stringstream ss;
         ss << std::hex << std::setfill('0');
-        for (unsigned int byte = 0; byte < regsz; byte++) {
-            if (ok) ss << std::setw(2) << (int)buffer[byte];
-            else    ss << "xx";
-        }
+        for (u32 shift = 0; shift < reg->width(); shift += 8)
+            ss << std::setw(2) << ((val >> shift) & 0xff);
 
-        delete [] buffer;
         return ss.str();
     }
 
     string gdbserver::handle_reg_write(const char* command) {
-        unsigned int reg;
-        if (sscanf(command, "P%x=", &reg) != 1) {
-            log_warn("malformed command '%s'", command);
+        gdb_u64 val;
+        unsigned int regno;
+
+        if (sscanf(command, "P%x=", &regno) != 1) {
+            log_warn("malformed command '%str'", command);
             return ERR_COMMAND;
         }
 
-        u64 regsz = m_stub->async_register_width(reg);
-        if (regsz == 0)
+        const cpureg* reg = lookup_cpureg(regno);
+        if (reg == nullptr) {
+            log_warn("unknown register id: %u", regno);
             return "OK";
+        }
 
-        const char* str = strchr(command, '=');
-        if (str == NULL) {
+        const char* str = strrchr(command, '=');
+        if (str == nullptr || strlen(str + 1) != reg->size  * 2) {
             log_warn("malformed command '%s'", command);
             return ERR_COMMAND;
         }
 
         str++; // step beyond '='
-        if (strlen(str) != regsz * 2) { // need two hex chars per byte
-            log_warn("malformed command '%s'", command);
-            return ERR_COMMAND;
+
+        for (u64 i = 0; i < reg->size; i++, str+= 2) {
+            if (sscanf(str, "%02hhx", val.ptr + i) != 1) {
+                log_warn("error parsing register value near %s", str);
+                return ERR_COMMAND;
+            }
         }
 
-        u8* buffer = new u8[regsz];
-        for (unsigned int byte = 0; byte < regsz; byte++, str += 2)
-            buffer[byte] = char2int(str[0]) << 4 | char2int(str[1]);
+        if (!m_target->is_host_endian())
+            memswap(val.ptr, reg->size);
 
-        bool ok = m_stub->async_write_reg(reg, buffer, regsz);
-        delete [] buffer;
-        if (!ok) {
-            log_warn("gdb cannot write register %u", reg);
-            return ERR_INTERNAL;
-        }
-
+        reg->write(val.val);
         return "OK";
     }
 
     string gdbserver::handle_reg_read_all(const char* command) {
-        u64 nregs = m_stub->async_num_registers();
         stringstream ss;
         ss << std::hex << std::setfill('0');
+        u64 nregs = m_regmap.size();
 
-        for (u64 reg = 0; reg < nregs; reg++) {
-            u64 regsz = m_stub->async_register_width(reg);
-            if (regsz == 0)
+        for (u64 regno = 0; regno < nregs; regno++) {
+            const cpureg* reg = lookup_cpureg(regno);
+            if (reg == nullptr || !reg->is_readable())
                 continue;
 
-            u8* buffer = new u8[regsz];
-            bool ok = m_stub->async_read_reg(reg, buffer, regsz);
-            for (u64 byte = 0; byte < regsz; byte++) {
-                if (ok) ss << std::setw(2) << (int)buffer[byte];
-                else    ss << "xx";
-            }
+            u64 val = reg->read();
+            if (!m_target->is_host_endian())
+                memswap(&val, reg->size);
 
-            delete [] buffer;
+            for (u32 shift = 0; shift < reg->width(); shift += 8)
+                ss << std::setw(2) << ((val >> shift) & 0xff);
         }
 
         return ss.str();
     }
 
     string gdbserver::handle_reg_write_all(const char* command) {
-        u64 nregs = m_stub->async_num_registers();
-        u64 bufsz = 0;
-        for (u64 reg = 0; reg < nregs; reg++)
-            bufsz += m_stub->async_register_width(reg) * 2;
-
+        u64 nregs = m_regmap.size();
         const char* str = command + 1;
-        if (strlen(str) != bufsz) {
-            log_warn("malformed command '%s'", command);
-            return ERR_COMMAND;
-        }
 
-        for (u64 reg = 0; reg < nregs; reg++) {
-            u64 regsz = m_stub->async_register_width(reg);
-            if (regsz == 0)
+        for (u64 regno = 0; regno < nregs; regno++) {
+            const cpureg* reg = m_target->find_cpureg(regno);
+            if (reg == nullptr || !reg->is_writeable())
                 continue;
 
-            u8* buffer = new u8[regsz];
-            for (u64 byte = 0; byte < regsz; byte++, str += 2)
-                buffer[byte] = char2int(str[0]) << 4 | char2int(str[1]);
-            if (!m_stub->async_write_reg(reg, buffer, regsz))
-                log_warn("gdb cannot write register %lu", reg);
-            delete [] buffer;
+            if (strlen(str) < reg->size * 2) {
+                log_warn("malformed command '%s'", command);
+                return ERR_COMMAND;
+            }
+
+            gdb_u64 val;
+            for (u64 byte = 0; byte < reg->size; byte++, str += 2)
+                sscanf(str, "%02hhx", val.ptr + byte);
+
+            if (!m_target->is_host_endian())
+                memswap(val.ptr, reg->size);
+
+            reg->write(val.val);
         }
 
         return "OK";
@@ -283,7 +262,7 @@ namespace vcml { namespace debugging {
         ss << std::hex << std::setfill('0');
 
         u8 buffer[BUFFER_SIZE];
-        if (!access_vmem(false, addr, buffer, size))
+        if (m_target->read_vmem_dbg(addr, buffer, size) != size)
             return ERR_UNKNOWN;
 
         for (unsigned int i = 0; i < size; i++)
@@ -316,7 +295,7 @@ namespace vcml { namespace debugging {
         for (unsigned int i = 0; i < size; i++)
             buffer[i] = str2int(data++, 2);
 
-        if (!access_vmem(true, addr, buffer, size))
+        if (m_target->write_vmem_dbg(addr, buffer, size) != size)
             return ERR_UNKNOWN;
 
         return "OK";
@@ -349,7 +328,7 @@ namespace vcml { namespace debugging {
         for (unsigned int i = 0; i < size; i++)
             buffer[i] = char_unescape(data);
 
-        if (!access_vmem(true, addr, buffer, size))
+        if (m_target->write_vmem_dbg(addr, buffer, size) != size)
             return ERR_UNKNOWN;
 
         return "OK";
@@ -366,23 +345,23 @@ namespace vcml { namespace debugging {
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
-            if (!m_stub->async_insert_breakpoint(addr))
+            if (!m_target->insert_breakpoint(addr))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_WRITE:
-            if (!m_stub->async_insert_watchpoint(mem, VCML_ACCESS_WRITE))
+            if (!m_target->insert_watchpoint(mem, VCML_ACCESS_WRITE))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_READ:
-            if (!m_stub->async_insert_watchpoint(mem, VCML_ACCESS_READ))
+            if (!m_target->insert_watchpoint(mem, VCML_ACCESS_READ))
                 return ERR_INTERNAL;
             break;
 
 
         case GDB_WATCHPOINT_ACCESS:
-            if (!m_stub->async_insert_watchpoint(mem, VCML_ACCESS_READ_WRITE))
+            if (!m_target->insert_watchpoint(mem, VCML_ACCESS_READ_WRITE))
                 return ERR_INTERNAL;
             break;
 
@@ -405,22 +384,22 @@ namespace vcml { namespace debugging {
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
-            if (!m_stub->async_remove_breakpoint(addr))
+            if (!m_target->remove_breakpoint(addr))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_WRITE:
-            if (!m_stub->async_remove_watchpoint(mem, VCML_ACCESS_WRITE))
+            if (!m_target->remove_watchpoint(mem, VCML_ACCESS_WRITE))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_READ:
-            if (!m_stub->async_remove_watchpoint(mem, VCML_ACCESS_READ))
+            if (!m_target->remove_watchpoint(mem, VCML_ACCESS_READ))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_ACCESS:
-            if (!m_stub->async_remove_watchpoint(mem, VCML_ACCESS_READ_WRITE))
+            if (!m_target->remove_watchpoint(mem, VCML_ACCESS_READ_WRITE))
                 return ERR_INTERNAL;
             break;
 
@@ -444,16 +423,28 @@ namespace vcml { namespace debugging {
         return "";
     }
 
-    gdbserver::gdbserver(u16 port, gdbstub* stub, gdb_status status):
+    gdbserver::gdbserver(u16 port, target* stub, gdb_status status):
         rspserver(port),
         suspender("gdbserver"),
-        m_stub(stub),
+        m_target(stub),
         m_status(status),
         m_default(status),
+        m_regmap(),
         m_sync(true),
         m_signal(-1),
         m_handler() {
         VCML_ERROR_ON(!stub, "no debug stub given");
+
+        vector<string> gdbregs;
+        m_target->gdb_collect_regs(gdbregs);
+        if (gdbregs.empty())
+            VCML_ERROR("target does not define any gdb registers");
+
+        for (auto gdbreg : gdbregs) {
+            const cpureg* reg = m_target->find_cpureg(gdbreg);
+            VCML_ERROR_ON(!reg, "register %s not found", gdbreg.c_str());
+            m_regmap.insert({m_regmap.size(), reg});
+        }
 
         m_handler['q'] = &gdbserver::handle_query;
 
@@ -497,14 +488,14 @@ namespace vcml { namespace debugging {
                 return;
 
             case GDB_STEPPING:
-                m_stub->gdb_simulate(1);
+                m_target->gdb_simulate(1);
                 notify(GDBSIG_TRAP);
                 cycles--;
                 break;
 
             case GDB_RUNNING:
             default:
-                m_stub->gdb_simulate(cycles);
+                m_target->gdb_simulate(cycles);
                 cycles = 0;
                 break;
             }

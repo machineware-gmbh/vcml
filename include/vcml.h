@@ -45,7 +45,7 @@
 
 #include "vcml/debugging/suspender.h"
 #include "vcml/debugging/rspserver.h"
-#include "vcml/debugging/gdbstub.h"
+#include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
 #include "vcml/debugging/vspserver.h"
 
