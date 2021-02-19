@@ -40,7 +40,6 @@ namespace vcml { namespace ui {
     private:
         u16 m_port;
         u32 m_buttons;
-        u8* m_nullfb;
         atomic<bool> m_running;
         mutex m_mutex;
         rfbScreenInfo* m_screen;

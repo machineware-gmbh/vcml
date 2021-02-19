@@ -234,6 +234,47 @@ namespace vcml { namespace ui {
     }
 
     void vnc::run() {
+        const fbmode& fbm = mode();
+        u8 thebits = fbm.a.offset + fbm.a.size;
+        thebits = max<u8>(thebits, fbm.r.size + fbm.r.offset);
+        thebits = max<u8>(thebits, fbm.g.size + fbm.g.offset);
+        thebits = max<u8>(thebits, fbm.b.size + fbm.b.offset);
+
+        u32 samples = 0;
+        if (fbm.a.size > 0)
+            samples++;
+        if (fbm.r.size > 0)
+            samples++;
+        if (fbm.g.size > 0)
+            samples++;
+        if (fbm.g.size > 0)
+            samples++;
+
+        m_screen = rfbGetScreen(nullptr, nullptr, fbm.resx, fbm.resy,
+                                fbm.r.size, samples, thebits / 8);
+
+        m_screen->frameBuffer = (char*)framebuffer();
+        m_screen->desktopName = name();
+        m_screen->port = m_screen->ipv6port = m_port;
+        m_screen->kbdAddEvent = &rfb_key_func;
+        m_screen->ptrAddEvent = &rfb_ptr_func;
+
+        rfbInitServer(m_screen);
+
+        rfbNewFramebuffer(m_screen, m_screen->frameBuffer, fbm.resx, fbm.resy,
+                          fbm.r.size, samples, thebits / 8);
+
+        m_screen->serverFormat.redShift   = fbm.r.offset;
+        m_screen->serverFormat.greenShift = fbm.g.offset;
+        m_screen->serverFormat.blueShift  = fbm.b.offset;
+
+        m_screen->serverFormat.redMax   = (1 << fbm.r.size) - 1;
+        m_screen->serverFormat.greenMax = (1 << fbm.g.size) - 1;
+        m_screen->serverFormat.blueMax  = (1 << fbm.b.size) - 1;
+
+        m_screen->serverFormat.bitsPerPixel = thebits;
+        m_screen->serverFormat.bigEndian = fbm.endian == VCML_ENDIAN_BIG;
+
         log_debug("starting vnc server on port %d", m_screen->port);
 
         while (m_running && rfbIsActive(m_screen))
@@ -249,8 +290,8 @@ namespace vcml { namespace ui {
         display("vnc", no),
         m_port(no), // vnc port = display number
         m_buttons(),
-        m_nullfb(),
-        m_running(true),
+
+        m_running(false),
         m_mutex(),
         m_screen(),
         m_thread() {
@@ -258,17 +299,6 @@ namespace vcml { namespace ui {
 
         rfbLog = &rfb_log_func;
         rfbErr = &rfb_err_func;
-
-        m_screen = rfbGetScreen(NULL, NULL, resx(), resy(), 8, 4, 4);
-        m_screen->desktopName = name();
-        m_screen->port = m_screen->ipv6port = m_port;
-        m_screen->kbdAddEvent = &rfb_key_func;
-        m_screen->ptrAddEvent = &rfb_ptr_func;
-
-        rfbInitServer(m_screen);
-
-        m_thread = thread(&vnc::run, this);
-        set_thread_name(m_thread, name());
     }
 
     vnc::~vnc() {
@@ -278,39 +308,9 @@ namespace vcml { namespace ui {
     void vnc::init(const fbmode& mode, u8* fb)  {
         display::init(mode, fb);
 
-        if (fb == nullptr)
-            fb = m_nullfb = new u8[mode.size]();
-
-        m_screen->frameBuffer = (char*)fb;
-
-        u8 thebits = mode.a.offset + mode.a.size;
-        thebits = max<u8>(thebits, mode.r.size + mode.r.offset);
-        thebits = max<u8>(thebits, mode.g.size + mode.g.offset);
-        thebits = max<u8>(thebits, mode.b.size + mode.b.offset);
-
-        u32 samples = 0;
-        if (mode.a.size > 0)
-            samples++;
-        if (mode.r.size > 0)
-            samples++;
-        if (mode.g.size > 0)
-            samples++;
-        if (mode.g.size > 0)
-            samples++;
-
-        rfbNewFramebuffer(m_screen, m_screen->frameBuffer, resx(), resy(),
-                          mode.r.size, samples, thebits / 8);
-
-        m_screen->serverFormat.redShift   = mode.r.offset;
-        m_screen->serverFormat.greenShift = mode.g.offset;
-        m_screen->serverFormat.blueShift  = mode.b.offset;
-
-        m_screen->serverFormat.redMax   = (1 << mode.r.size) - 1;
-        m_screen->serverFormat.greenMax = (1 << mode.g.size) - 1;
-        m_screen->serverFormat.blueMax  = (1 << mode.b.size) - 1;
-
-        m_screen->serverFormat.bitsPerPixel = thebits;
-        m_screen->serverFormat.bigEndian = mode.endian == VCML_ENDIAN_BIG;
+        m_running = true;
+        m_thread = thread(&vnc::run, this);
+        set_thread_name(m_thread, name());
     }
 
     void vnc::render() {
@@ -320,16 +320,12 @@ namespace vcml { namespace ui {
     }
 
     void vnc::shutdown() {
-        if (m_nullfb)
-            delete [] m_nullfb;
+        if (m_thread.joinable()) {
+            m_running = false;
+            m_thread.join();
+        }
 
-        m_nullfb = nullptr;
-
-        if (!m_thread.joinable())
-            return;
-
-        m_running = false;
-        m_thread.join();
+        display::shutdown();
     }
 
     void vnc::key_event(u32 sym, bool down) {
