@@ -55,7 +55,6 @@
 #include "vcml/ui/fbmode.h"
 #include "vcml/ui/display.h"
 
-#include "vcml/elf.h"
 #include "vcml/range.h"
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"
