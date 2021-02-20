@@ -280,6 +280,9 @@ namespace vcml {
             vector<string> symfiles = split(trim(symbols), ';');
             for (auto symfile : symfiles) {
                 symfile = trim(symfile);
+                if (symfile.empty())
+                    continue;
+
                 if (!file_exists(symfile)) {
                     log_warn("cannot open file '%s'", symfile.c_str());
                     continue;
