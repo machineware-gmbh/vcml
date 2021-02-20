@@ -92,49 +92,33 @@ namespace vcml {
     }
 
     bool processor::cmd_symbols(const vector<string>& args, ostream& os) {
-        if (m_symbols)
-            delete m_symbols;
+        if (!file_exists(args[0])) {
+            os << "File not found: " << args[0];
+            return false;
+        }
 
         try {
-            symbols = args[0];
-            m_symbols = new elf(symbols);
-            os << "Found " << m_symbols->get_num_symbols() << " symbols "
-               << "in file '" << symbols.str() << "'";
+            u64 n = load_symbols_from_elf(args[0]);
+            os << "Found " << n << " symbols in file '" << args[0] << "'";
+            return true;
         } catch (std::exception& e) {
-            symbols = "";
-            m_symbols = nullptr;
             os << e.what();
             return false;
         }
-
-        return true;
     }
 
     bool processor::cmd_lsym(const vector<string>& args, ostream& os) {
-        if (!m_symbols) {
+        const debugging::symtab& syms = target::symbols();
+        if (syms.empty()) {
             os << "No symbols loaded";
-            return false;
-        }
-
-        size_t nsym = m_symbols->get_num_symbols();
-        if (nsym == 0) {
-            os << "No symbols";
             return true;
         }
 
         os << "Listing symbols:";
-        for (size_t i = 0; i < nsym; i++) {
-            elf_symbol* sym = m_symbols->get_symbol(i);
-            if (sym->is_function())
-                os << "\nF ";
-            else if (sym->is_object())
-                os << "\nO ";
-            else
-                continue;
-
-            os << HEX(sym->get_virt_addr(), 16) << " "
-               << sym->get_name();
-        }
+        for (const auto& obj : syms.objects())
+            os << "\nO " << HEX(obj.virt_addr(), 16) << " " << obj.name();
+        for (const auto& func : syms.functions())
+            os << "\nF " << HEX(func.virt_addr(), 16) << " " << func.name();
 
         return true;
     }
@@ -168,12 +152,11 @@ namespace vcml {
 
         for (auto insn : disas) {
             os << "\n" << (insn.addr == program_counter() ? " > " : "   ");
-            if (m_symbols) {
-                elf_symbol* sym = m_symbols->find_function(insn.addr);
-                if (sym) {
-                    os << "[" << sym->get_name();
-                    u64 offset = insn.addr - sym->get_virt_addr();
-                    os << "+" << HEX(offset, 4) << "] ";
+            if (insn.sym != nullptr) {
+                u64 offset = insn.addr - insn.sym->virt_addr();
+                if (offset <= insn.sym->size()) {
+                    os << "[" << insn.sym->name() << "+"
+                       << HEX(offset, 4) << "] ";
                 }
             }
 
@@ -279,7 +262,6 @@ namespace vcml {
         target(name()),
         m_run_time(0),
         m_cycle_count(0),
-        m_symbols(nullptr),
         m_gdb(nullptr),
         m_irq_stats(),
         m_regprops(),
@@ -295,10 +277,16 @@ namespace vcml {
         SC_THREAD(processor_thread);
 
         if (!symbols.get().empty()) {
-            if (file_exists(symbols)) {
-                m_symbols = new elf(symbols);
-            } else {
-                log_warn("cannot open file '%s'", symbols.get().c_str());
+            vector<string> symfiles = split(trim(symbols), ';');
+            for (auto symfile : symfiles) {
+                symfile = trim(symfile);
+                if (!file_exists(symfile)) {
+                    log_warn("cannot open file '%s'", symfile.c_str());
+                    continue;
+                }
+
+                u64 n = load_symbols_from_elf(symfile);
+                log_debug("loaded %lu symbols from '%s'", n, symfile.c_str());
             }
         }
 
@@ -319,8 +307,6 @@ namespace vcml {
     processor::~processor() {
         if (m_gdb)
             delete m_gdb;
-        if (m_symbols)
-            delete m_symbols;
         for (auto reg : m_regprops)
             delete reg.second;
     }

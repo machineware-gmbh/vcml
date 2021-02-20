@@ -75,7 +75,6 @@ set(sources
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/fbmode.cpp
     ${src}/vcml/ui/display.cpp
-    ${src}/vcml/elf.cpp
     ${src}/vcml/sbi.cpp
     ${src}/vcml/dmi_cache.cpp
     ${src}/vcml/exmon.cpp

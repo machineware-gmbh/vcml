@@ -26,8 +26,8 @@ namespace vcml { namespace debugging {
        m_kind(SYMKIND_UNKNOWN),
        m_endian(ENDIAN_UNKNOWN),
        m_size(0),
-       m_phys(~0ull),
-       m_virt(~0ull) {
+       m_virt(~0ull),
+       m_phys(~0ull) {
     }
 
     symbol::symbol(const string& name, symkind kind, endianess endian, u64 sz,

@@ -213,6 +213,7 @@ namespace vcml { namespace debugging {
             if (is_big_endian())
                 memswap(&disas.insn, disas.size);
 
+            disas.sym = m_symbols.find_function(disas.addr);
             s.push_back(disas);
         }
 
@@ -245,6 +246,7 @@ namespace vcml { namespace debugging {
             if (is_big_endian())
                 memswap(&disas.insn, disas.size);
 
+            disas.sym = m_symbols.find_function(disas.addr);
             s.push_back(disas);
             ptr += disas.size;
         }

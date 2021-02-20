@@ -30,7 +30,6 @@
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
 
-#include "vcml/elf.h"
 #include "vcml/range.h"
 #include "vcml/ports.h"
 #include "vcml/component.h"
@@ -52,7 +51,6 @@ namespace vcml {
     private:
         double m_run_time;
         u64    m_cycle_count;
-        elf*   m_symbols;
 
         debugging::gdbserver* m_gdb;
 

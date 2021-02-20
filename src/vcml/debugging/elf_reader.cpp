@@ -203,7 +203,7 @@ namespace vcml { namespace debugging {
     u64 elf_reader::read_segment(const elf_segment& segment, u8* dest) {
         VCML_ERROR_ON(m_fd < 0, "ELF file '%s' not open", filename());
 
-        if (lseek(m_fd, segment.offset, SEEK_SET) != segment.offset)
+        if (lseek(m_fd, segment.offset, SEEK_SET) != (ssize_t)segment.offset)
             VCML_ERROR("cannot seek within ELF file '%s'", filename());
 
         if (fd_read(m_fd, dest, segment.filesz) != segment.filesz)

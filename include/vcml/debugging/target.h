@@ -27,6 +27,8 @@
 
 #include "vcml/range.h"
 
+#include "vcml/debugging/symtab.h"
+
 namespace vcml { namespace debugging {
 
     class target;
@@ -65,6 +67,7 @@ namespace vcml { namespace debugging {
         u64 insn;
         u64 addr;
         u64 size;
+        const symbol* sym;
     };
 
     class target
@@ -72,6 +75,7 @@ namespace vcml { namespace debugging {
     private:
         endianess m_endian;
         unordered_map<u64, cpureg> m_cpuregs;
+        symtab m_symbols;
 
         static unordered_map<string, target*> s_targets;
 
@@ -85,6 +89,9 @@ namespace vcml { namespace debugging {
         bool is_little_endian() const;
         bool is_big_endian() const;
         bool is_host_endian() const;
+
+        const symtab& symbols() const;
+        u64 load_symbols_from_elf(const string& file);
 
         target(const char* name);
         virtual ~target();
@@ -151,6 +158,14 @@ namespace vcml { namespace debugging {
 
     inline bool target::is_host_endian() const {
         return m_endian == host_endian();
+    }
+
+    inline const symtab& target::symbols() const {
+        return m_symbols;
+    }
+
+    inline u64 target::load_symbols_from_elf(const string& file) {
+        return m_symbols.load_elf(file);
     }
 
 }}
