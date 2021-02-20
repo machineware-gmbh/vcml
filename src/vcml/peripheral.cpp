@@ -43,7 +43,7 @@ namespace vcml {
         return true;
     }
 
-    peripheral::peripheral(const sc_module_name& nm, vcml_endian endian,
+    peripheral::peripheral(const sc_module_name& nm, endianess endian,
                            unsigned int rlatency, unsigned int wlatency):
         component(nm),
         m_current_cpu(SBI_NONE.cpuid),

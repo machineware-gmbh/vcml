@@ -62,7 +62,7 @@ namespace vcml { namespace ui {
         color_channel r;
         color_channel g;
         color_channel b;
-        vcml_endian endian;
+        endianess endian;
 
         bool is_valid() const { return size > 0; }
 

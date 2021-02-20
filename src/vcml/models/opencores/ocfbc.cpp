@@ -168,14 +168,14 @@ namespace vcml { namespace opencores {
                     mode = ui::fbmode::a8r8g8b8(m_resx, m_resy);
                 else
                     mode = ui::fbmode::b8g8r8a8(m_resx, m_resy);
-                mode.endian = VCML_ENDIAN_LITTLE;
+                mode.endian = ENDIAN_LITTLE;
                 break;
 
         case 3: if (is_little_endian())
                     mode = ui::fbmode::r8g8b8(m_resx, m_resy);
                 else
                     mode = ui::fbmode::b8g8r8(m_resx, m_resy);
-                mode.endian = VCML_ENDIAN_LITTLE;
+                mode.endian = ENDIAN_LITTLE;
                 break;
 
         case 2: mode = ui::fbmode::r5g6b5(m_resx, m_resy);
@@ -186,7 +186,7 @@ namespace vcml { namespace opencores {
                     mode = ui::fbmode::a8r8g8b8(m_resx, m_resy);
                 else
                     mode = ui::fbmode::gray8(m_resx, m_resy);
-                mode.endian = VCML_ENDIAN_LITTLE;
+                mode.endian = ENDIAN_LITTLE;
                 break;
 
         default:

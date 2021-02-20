@@ -273,7 +273,7 @@ namespace vcml { namespace ui {
         m_screen->serverFormat.blueMax  = (1 << fbm.b.size) - 1;
 
         m_screen->serverFormat.bitsPerPixel = thebits;
-        m_screen->serverFormat.bigEndian = fbm.endian == VCML_ENDIAN_BIG;
+        m_screen->serverFormat.bigEndian = fbm.endian == ENDIAN_BIG;
 
         log_debug("starting vnc server on port %d", m_screen->port);
 

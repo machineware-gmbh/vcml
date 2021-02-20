@@ -64,7 +64,7 @@ namespace vcml { namespace debugging {
     }
 
     target::target(const char* name):
-        m_endian(VCML_ENDIAN_UNKNOWN),
+        m_endian(ENDIAN_UNKNOWN),
         m_cpuregs() {
         auto it = s_targets.find(name);
         if (it != s_targets.end())

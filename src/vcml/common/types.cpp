@@ -23,8 +23,8 @@ namespace vcml {
 
     const char* endian_to_str(int endian) {
         switch (endian) {
-        case VCML_ENDIAN_LITTLE: return "little";
-        case VCML_ENDIAN_BIG: return "big";
+        case ENDIAN_LITTLE: return "little";
+        case ENDIAN_BIG: return "big";
         default:
             return "unknown";
         }
@@ -32,21 +32,21 @@ namespace vcml {
 
 }
 
-std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian) {
+std::istream& operator >> (std::istream& is, vcml::endianess& endian) {
     std::string str;
     is >> str;
     str = vcml::to_lower(str);
 
     if (str == "big")
-        endian = vcml::VCML_ENDIAN_BIG;
+        endian = vcml::ENDIAN_BIG;
     else if (str == "little")
-        endian = vcml::VCML_ENDIAN_LITTLE;
+        endian = vcml::ENDIAN_LITTLE;
     else
-        endian = vcml::VCML_ENDIAN_UNKNOWN;
+        endian = vcml::ENDIAN_UNKNOWN;
 
     return is;
 }
 
-std::ostream& operator << (std::ostream& os, vcml::vcml_endian& endian) {
+std::ostream& operator << (std::ostream& os, vcml::endianess& endian) {
     return os << vcml::endian_to_str(endian);
 }

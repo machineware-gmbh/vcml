@@ -124,10 +124,10 @@ namespace vcml {
     class elf
     {
     private:
-        string      m_filename;
-        vcml_endian m_endianess;
-        u64         m_entry;
-        bool        m_64bit;
+        string    m_filename;
+        endianess m_endianess;
+        u64       m_entry;
+        bool      m_64bit;
 
         vector<elf_section*> m_sections;
         vector<elf_symbol*>  m_symbols;
@@ -142,8 +142,8 @@ namespace vcml {
     public:
         const string& get_filename() const { return m_filename; }
 
-        vcml_endian get_endianess()   const { return m_endianess; }
-        u64         get_entry_point() const { return m_entry; }
+        endianess get_endianess()   const { return m_endianess; }
+        u64       get_entry_point() const { return m_entry; }
 
         bool is_64bit() const { return m_64bit; }
 

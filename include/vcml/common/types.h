@@ -187,25 +187,25 @@ namespace vcml {
         return is_set(a, VCML_ACCESS_WRITE);
     }
 
-    enum vcml_endian {
-        VCML_ENDIAN_UNKNOWN = 0,
-        VCML_ENDIAN_LITTLE = 1,
-        VCML_ENDIAN_BIG = 2,
+    enum endianess {
+        ENDIAN_UNKNOWN = 0,
+        ENDIAN_LITTLE = 1,
+        ENDIAN_BIG = 2,
     };
 
     const char* endian_to_str(int endian);
 
-    inline vcml_endian host_endian() {
+    inline endianess host_endian() {
         u32 test = 1;
         u8* p = reinterpret_cast<u8*>(&test);
-        if (p[0] == 1) return VCML_ENDIAN_LITTLE;
-        if (p[3] == 1) return VCML_ENDIAN_BIG;
-        return VCML_ENDIAN_UNKNOWN;
+        if (p[0] == 1) return ENDIAN_LITTLE;
+        if (p[3] == 1) return ENDIAN_BIG;
+        return ENDIAN_UNKNOWN;
     }
 
 }
 
-std::istream& operator >> (std::istream& is, vcml::vcml_endian& endian);
-std::ostream& operator << (std::ostream& os, vcml::vcml_endian& endian);
+std::istream& operator >> (std::istream& is, vcml::endianess& endian);
+std::ostream& operator << (std::ostream& os, vcml::endianess& endian);
 
 #endif

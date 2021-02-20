@@ -70,7 +70,7 @@ namespace vcml { namespace debugging {
     class target
     {
     private:
-        vcml_endian m_endian;
+        endianess m_endian;
         unordered_map<u64, cpureg> m_cpuregs;
 
         static unordered_map<string, target*> s_targets;
@@ -134,19 +134,19 @@ namespace vcml { namespace debugging {
     };
 
     inline void target::set_little_endian() {
-        m_endian = VCML_ENDIAN_LITTLE;
+        m_endian = ENDIAN_LITTLE;
     }
 
     inline void target::set_big_endian() {
-        m_endian = VCML_ENDIAN_BIG;
+        m_endian = ENDIAN_BIG;
     }
 
     inline bool target::is_little_endian() const {
-        return m_endian == VCML_ENDIAN_LITTLE;
+        return m_endian == ENDIAN_LITTLE;
     }
 
     inline bool target::is_big_endian() const {
-       return m_endian == VCML_ENDIAN_BIG;
+       return m_endian == ENDIAN_BIG;
     }
 
     inline bool target::is_host_endian() const {

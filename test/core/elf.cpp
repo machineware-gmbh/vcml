@@ -26,7 +26,7 @@ TEST(elf, main) {
     vcml::elf elf(path);
     EXPECT_EQ(elf.get_filename(), path);
     EXPECT_EQ(elf.get_entry_point(), 0x24e0);
-    EXPECT_EQ(elf.get_endianess(), VCML_ENDIAN_BIG);
+    EXPECT_EQ(elf.get_endianess(), ENDIAN_BIG);
 
     EXPECT_FALSE(elf.is_64bit());
 }
@@ -39,7 +39,7 @@ TEST(elf, sections) {
     vcml::elf elf(path);
     EXPECT_EQ(elf.get_filename(), path);
     EXPECT_EQ(elf.get_entry_point(), 0x24e0);
-    EXPECT_EQ(elf.get_endianess(), VCML_ENDIAN_BIG);
+    EXPECT_EQ(elf.get_endianess(), ENDIAN_BIG);
 
     EXPECT_FALSE(elf.is_64bit());
     EXPECT_FALSE(elf.get_sections().empty());

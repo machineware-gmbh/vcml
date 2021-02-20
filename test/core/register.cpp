@@ -42,7 +42,7 @@ public:
 
     mock_peripheral(const sc_core::sc_module_name& nm =
         sc_core::sc_gen_unique_name("mock_peripheral")):
-        vcml::peripheral(nm, vcml::VCML_ENDIAN_LITTLE, 1, 10),
+        vcml::peripheral(nm, vcml::ENDIAN_LITTLE, 1, 10),
         mock_peripheral_base(),
         test_reg_a("test_reg_a", 0x0, 0xffffffff),
         test_reg_b("test_reg_b", 0x4, 0xffffffff) {

@@ -27,7 +27,7 @@ class mock_peripheral: public vcml::peripheral
 {
 public:
     mock_peripheral(const sc_core::sc_module_name& nm = "mock_peripheral"):
-        vcml::peripheral(nm, vcml::VCML_ENDIAN_LITTLE, 1, 10) {
+        vcml::peripheral(nm, vcml::ENDIAN_LITTLE, 1, 10) {
         CLOCK.stub(100 * vcml::MHz);
         handle_clock_update(0, CLOCK.read());
     }

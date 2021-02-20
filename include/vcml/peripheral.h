@@ -41,7 +41,7 @@ namespace vcml {
     {
     private:
         int m_current_cpu;
-        vcml_endian m_endian;
+        endianess m_endian;
         vector<reg_base*> m_registers;
         vector<backend*> m_backends;
 
@@ -53,11 +53,11 @@ namespace vcml {
 
         property<string> backends;
 
-        vcml_endian get_endian() const { return m_endian; }
-        void set_endian(vcml_endian e) { m_endian = e; }
+        endianess get_endian() const { return m_endian; }
+        void set_endian(endianess e) { m_endian = e; }
 
-        void set_little_endian() { m_endian = VCML_ENDIAN_LITTLE; }
-        void set_big_endian()    { m_endian = VCML_ENDIAN_BIG; }
+        void set_little_endian() { m_endian = ENDIAN_LITTLE; }
+        void set_big_endian()    { m_endian = ENDIAN_BIG; }
 
         bool is_little_endian() const;
         bool is_big_endian() const;
@@ -69,7 +69,7 @@ namespace vcml {
         int  current_cpu() const      { return m_current_cpu; }
         void set_current_cpu(int cpu) { m_current_cpu = cpu; }
 
-        peripheral(const sc_module_name& nm, vcml_endian e = host_endian(),
+        peripheral(const sc_module_name& nm, endianess e = host_endian(),
                    unsigned int read_latency = 0,
                    unsigned int write_latency = 0);
         virtual ~peripheral();
@@ -110,11 +110,11 @@ namespace vcml {
     };
 
     inline bool peripheral::is_little_endian() const {
-        return m_endian == VCML_ENDIAN_LITTLE;
+        return m_endian == ENDIAN_LITTLE;
     }
 
     inline bool peripheral::is_big_endian() const {
-        return m_endian == VCML_ENDIAN_BIG;
+        return m_endian == ENDIAN_BIG;
     }
 
     inline bool peripheral::is_host_endian() const {

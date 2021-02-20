@@ -124,8 +124,8 @@ namespace vcml {
     template <typename EHDR, typename SHDR, typename SYM>
     void elf::init(Elf* e, EHDR* ehdr, SHDR* (*getshdr)(Elf_Scn*)) {
         switch (ehdr->e_ident[EI_DATA]) {
-        case ELFDATA2LSB: m_endianess = VCML_ENDIAN_LITTLE; break;
-        case ELFDATA2MSB: m_endianess = VCML_ENDIAN_BIG;    break;
+        case ELFDATA2LSB: m_endianess = ENDIAN_LITTLE; break;
+        case ELFDATA2MSB: m_endianess = ENDIAN_BIG;    break;
         default:
             VCML_ERROR("invalid endianess specified in ELF header");
             break;
