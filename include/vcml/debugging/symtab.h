@@ -22,6 +22,8 @@
 #include "vcml/common/types.h"
 #include "vcml/common/bitops.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/utils.h"
+
 #include "vcml/range.h"
 
 namespace vcml { namespace debugging {
@@ -81,6 +83,9 @@ namespace vcml { namespace debugging {
 
         size_t count_functions()  const { return m_functions.size(); }
         size_t count_objects()    const { return m_objects.size(); }
+
+        size_t count() const { return count_functions() + count_objects(); }
+        bool   empty() const { return count() == 0; }
 
         const symset& functions() const { return m_functions; }
         const symset& objects()   const { return m_objects; }

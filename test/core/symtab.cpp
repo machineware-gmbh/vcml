@@ -16,11 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-using namespace ::testing;
-
-#include "vcml.h"
-using namespace ::vcml;
+#include <testing.h>
 using namespace ::vcml::debugging;
 
 TEST(symbol, construct) {
@@ -173,4 +169,27 @@ TEST(symtab, removing) {
     syms.clear();
     EXPECT_EQ(syms.count_functions(), 0);
     EXPECT_EQ(syms.count_objects(), 0);
+}
+
+TEST(symtab, load_elf) {
+    symtab syms;
+    syms.load_elf(args[1] + "/elf.elf");
+
+    const symbol* global_a = syms.find_symbol("global_a");
+    ASSERT_TRUE(global_a != nullptr);
+    EXPECT_TRUE(global_a->is_object());
+    EXPECT_TRUE(global_a->is_little_endian());
+    EXPECT_EQ(global_a->size(), 4);
+
+    const symbol* global_b = syms.find_symbol("global_b");
+    ASSERT_TRUE(global_b != nullptr);
+    EXPECT_TRUE(global_b->is_object());
+    EXPECT_TRUE(global_b->is_little_endian());
+    EXPECT_EQ(global_b->size(), 8);
+
+    const symbol* func_a = syms.find_symbol("func_c");
+    ASSERT_TRUE(func_a != nullptr);
+    EXPECT_TRUE(func_a->is_function());
+    EXPECT_TRUE(func_a->is_little_endian());
+    EXPECT_EQ(func_a->size(), 18);
 }

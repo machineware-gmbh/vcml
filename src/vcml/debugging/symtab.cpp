@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/debugging/symtab.h"
+#include "vcml/debugging/elf_reader.h"
 
 namespace vcml { namespace debugging {
 
@@ -72,14 +73,14 @@ namespace vcml { namespace debugging {
         const symbol* result = find_function(name);
         if (result != nullptr)
             return result;
-        return find_symbol(name);
+        return find_object(name);
     }
 
     const symbol* symtab::find_symbol(u64 addr) const {
         const symbol* result = find_function(addr);
         if (result != nullptr)
             return result;
-        return find_symbol(addr);
+        return find_object(addr);
     }
 
     const symbol* symtab::find_function(const string& name) const {
@@ -126,7 +127,11 @@ namespace vcml { namespace debugging {
     }
 
     u64 symtab::load_elf(const string& filename) {
-        return 0;
+        if (!file_exists(filename))
+            return 0;
+
+        elf_reader loader(filename);
+        return loader.read_symbols(*this);
     }
 
     void symtab::insert_function(const symbol& sym) {
