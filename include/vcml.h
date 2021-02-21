@@ -92,6 +92,8 @@
 #include "vcml/models/generic/fbdev.h"
 #include "vcml/models/generic/throttle.h"
 
+#include "vcml/models/infra/loader.h"
+
 #include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"
 #include "vcml/models/virtio/rng.h"
