@@ -68,6 +68,7 @@ set(sources
     ${src}/vcml/debugging/symtab.cpp
     ${src}/vcml/debugging/target.cpp
     ${src}/vcml/debugging/elf_reader.cpp
+    ${src}/vcml/debugging/subscriber.cpp
     ${src}/vcml/debugging/suspender.cpp
     ${src}/vcml/debugging/rspserver.cpp
     ${src}/vcml/debugging/gdbserver.cpp

@@ -585,9 +585,4 @@ namespace vcml {
         simulate(cycles);
     }
 
-    void processor::gdb_notify(int signal) {
-        if (m_gdb)
-            m_gdb->notify(signal);
-    }
-
 }

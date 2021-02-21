@@ -138,7 +138,6 @@ namespace vcml {
 
         virtual bool gdb_command(const string& command, string& resp) override;
         virtual void gdb_simulate(unsigned int cycles) override;
-        virtual void gdb_notify(int signal) override;
     };
 
     template <typename T>

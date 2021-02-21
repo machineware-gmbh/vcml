@@ -59,6 +59,17 @@ namespace vcml { namespace debugging {
         resume();
     }
 
+    void gdbserver::notify(int signal) {
+        if (is_connected()) {
+            m_status = GDB_STOPPED;
+            m_signal = signal;
+        }
+    }
+
+    void gdbserver::notify(const breakpoint& bp) {
+        notify(SIGTRAP);
+    }
+
     bool gdbserver::is_suspend_requested() const {
         if (!m_sync)
             return false;
@@ -70,6 +81,12 @@ namespace vcml { namespace debugging {
         if (it == m_regmap.end())
             return nullptr;
         return it->second;
+    }
+
+    gdbserver::handler gdbserver::find_handler(const char* command) {
+        if (!stl_contains(m_handler, command[0]))
+            return &gdbserver::handle_unknown;
+        return m_handler.at(command[0]);
     }
 
     string gdbserver::handle_unknown(const char* command) {
@@ -345,7 +362,7 @@ namespace vcml { namespace debugging {
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
-            if (!m_target->insert_breakpoint(addr))
+            if (!m_target->insert_breakpoint(addr, this))
                 return ERR_INTERNAL;
             break;
 
@@ -384,7 +401,7 @@ namespace vcml { namespace debugging {
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
-            if (!m_target->remove_breakpoint(addr))
+            if (!m_target->remove_breakpoint(addr, this))
                 return ERR_INTERNAL;
             break;
 

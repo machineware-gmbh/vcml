@@ -29,6 +29,7 @@
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/rspserver.h"
 #include "vcml/debugging/suspender.h"
+#include "vcml/debugging/subscriber.h"
 
 namespace vcml { namespace debugging {
 
@@ -44,7 +45,8 @@ namespace vcml { namespace debugging {
     };
 
     class gdbserver: public rspserver,
-                     private suspender
+                     private suspender,
+                     private subscriber
     {
     private:
         target*    m_target;
@@ -57,8 +59,11 @@ namespace vcml { namespace debugging {
         int m_signal;
 
         void update_status(gdb_status status);
+        void notify(int signal);
 
-        bool is_suspend_requested() const override;
+        virtual void notify(const breakpoint& bp) override;
+
+        virtual bool is_suspend_requested() const override;
 
         const cpureg* lookup_cpureg(unsigned int gdbno);
 
@@ -118,25 +123,12 @@ namespace vcml { namespace debugging {
         virtual ~gdbserver();
 
         void simulate(unsigned int cycles);
-        void notify(int signal);
+
 
         virtual string handle_command(const string& command) override;
         virtual void   handle_connect(const char* peer) override;
         virtual void   handle_disconnect() override;
     };
-
-    inline void gdbserver::notify(int signal) {
-        if (is_connected()) {
-            m_status = GDB_STOPPED;
-            m_signal = signal;
-        }
-    }
-
-    inline gdbserver::handler gdbserver::find_handler(const char* command) {
-        if (!stl_contains(m_handler, command[0]))
-            return &gdbserver::handle_unknown;
-        return m_handler.at(command[0]);
-    }
 
 }}
 

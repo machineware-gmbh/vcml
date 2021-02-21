@@ -26,6 +26,7 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/debugging/symtab.h"
+#include "vcml/debugging/subscriber.h"
 
 namespace vcml { namespace debugging {
 
@@ -75,10 +76,17 @@ namespace vcml { namespace debugging {
         unordered_map<u64, cpureg> m_cpuregs;
         symtab m_symbols;
 
+        vector<breakpoint> m_breakpoints;
+
         static unordered_map<string, target*> s_targets;
 
     protected:
         virtual void define_cpuregs(const vector<cpureg>& regs);
+
+        virtual bool insert_breakpoint(u64 addr);
+        virtual bool remove_breakpoint(u64 addr);
+
+        void notify_breakpoint();
 
     public:
         void set_little_endian();
@@ -122,8 +130,8 @@ namespace vcml { namespace debugging {
         virtual bool disassemble(u64 addr, u64 count, vector<disassembly>& s);
         virtual bool disassemble(const range& addr, vector<disassembly>& s);
 
-        virtual bool insert_breakpoint(u64 addr);
-        virtual bool remove_breakpoint(u64 addr);
+        virtual bool insert_breakpoint(u64 addr, subscriber* s);
+        virtual bool remove_breakpoint(u64 addr, subscriber* s);
 
         virtual bool insert_watchpoint(const range& addr, vcml_access a);
         virtual bool remove_watchpoint(const range& addr, vcml_access a);
@@ -132,7 +140,6 @@ namespace vcml { namespace debugging {
         virtual bool gdb_command(const string& command, string& response);
 
         virtual void gdb_simulate(unsigned int cycles) = 0;
-        virtual void gdb_notify(int signal) = 0;
 
         static vector<target*> targets();
         static target* find(const char* name);

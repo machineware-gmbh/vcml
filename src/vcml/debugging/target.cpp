@@ -262,6 +262,49 @@ namespace vcml { namespace debugging {
         return false; // to be overloaded
     }
 
+    void target::notify_breakpoint() {
+        u64 pc = program_counter();
+        for (auto& bp : m_breakpoints)
+            if (bp.address() == pc)
+                bp.notify();
+    }
+
+    bool target::insert_breakpoint(u64 addr, subscriber* s) {
+        for (auto& bp : m_breakpoints) {
+            if (bp.address() == addr) {
+                bp.subscribe(s);
+                return true;
+            }
+        }
+
+        if (!insert_breakpoint(addr))
+            return false;
+
+        const symbol* func = m_symbols.find_function(addr);
+        breakpoint newbp(addr, func);
+        newbp.subscribe(s);
+        m_breakpoints.push_back(std::move(newbp));
+
+        return true;
+    }
+
+    bool target::remove_breakpoint(u64 addr, subscriber* s) {
+        auto it = std::find_if(m_breakpoints.begin(), m_breakpoints.end(),
+            [addr] (const breakpoint& bp) -> bool {
+                return bp.address() == addr;
+        });
+
+        if (it == m_breakpoints.end())
+            return false;
+
+        it->unsubscribe(s);
+        if (it->has_subscriber())
+            return true;
+
+        m_breakpoints.erase(it);
+        return remove_breakpoint(addr);
+    }
+
     bool target::insert_watchpoint(const range& addr, vcml_access a) {
         return false; // to be overloaded
     }
