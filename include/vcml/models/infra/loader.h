@@ -52,6 +52,9 @@ namespace vcml { namespace infra {
         VCML_KIND(loader);
 
         virtual void reset() override;
+
+    protected:
+        virtual void end_of_elaboration() override;
     };
 
 }}

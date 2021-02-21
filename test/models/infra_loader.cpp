@@ -47,13 +47,11 @@ public:
         dmem.CLOCK.bind(CLOCK);
         ibus.CLOCK.bind(CLOCK);
         dbus.CLOCK.bind(CLOCK);
-        CLOCK.stub(100 * MHz);
 
         imem.RESET.bind(RESET);
         dmem.RESET.bind(RESET);
         ibus.RESET.bind(RESET);
         dbus.RESET.bind(RESET);
-        RESET.stub();
     }
 
     virtual void run_test() override {

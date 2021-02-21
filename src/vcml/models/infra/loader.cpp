@@ -113,4 +113,11 @@ namespace vcml { namespace infra {
         log_debug("loaded %zu segments from %zu files", count, files.size());
     }
 
+    void loader::end_of_elaboration() {
+        if (!CLOCK.is_bound())
+            CLOCK.stub(100 * MHz);
+        if (!RESET.is_bound())
+            RESET.stub();
+    }
+
 }}
