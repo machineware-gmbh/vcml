@@ -80,7 +80,6 @@
 #include "vcml/models/generic/bus.h"
 #include "vcml/models/generic/memory.h"
 #include "vcml/models/generic/gpio.h"
-#include "vcml/models/generic/simdev.h"
 #include "vcml/models/generic/crossbar.h"
 #include "vcml/models/generic/uart8250.h"
 #include "vcml/models/generic/rtc1742.h"
@@ -90,9 +89,10 @@
 #include "vcml/models/generic/sdhci.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
-#include "vcml/models/generic/throttle.h"
 
 #include "vcml/models/infra/loader.h"
+#include "vcml/models/infra/simdev.h"
+#include "vcml/models/infra/throttle.h"
 
 #include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"

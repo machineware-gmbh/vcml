@@ -16,9 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/throttle.h"
+#include "vcml/models/infra/throttle.h"
 
-namespace vcml { namespace generic {
+namespace vcml { namespace infra {
 
     void throttle::update() {
         sc_time quantum = tlm::tlm_global_quantum::instance().get();

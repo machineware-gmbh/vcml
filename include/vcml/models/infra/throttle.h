@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_THROTTLE_H
-#define VCML_GENERIC_THROTTLE_H
+#ifndef VCML_INFRA_THROTTLE_H
+#define VCML_INFRA_THROTTLE_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
@@ -28,7 +28,7 @@
 #include "vcml/properties/property.h"
 #include "vcml/module.h"
 
-namespace vcml { namespace generic {
+namespace vcml { namespace infra {
 
     class throttle : public module
     {

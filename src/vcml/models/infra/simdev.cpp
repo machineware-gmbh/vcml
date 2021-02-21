@@ -16,9 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/simdev.h"
+#include "vcml/models/infra/simdev.h"
 
-namespace vcml { namespace generic {
+namespace vcml { namespace infra {
 
     u32 simdev::write_STOP(u32 val) {
         log_info("stopping simulation upon request (%u)", val);

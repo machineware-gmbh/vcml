@@ -20,8 +20,6 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
 * Documentation for VCML hardware models:
   * [Generic Memory](models/generic_mem.md)
   * [Generic Bus](models/generic_bus.md)
-  * [Simulation Device](models/generic_simdev.md)
-  * [Simulation Throttle](models/throttle.md)
   * [8250 UART](models/uart8250.md)
   * [DS1742 RTC](models/rtc1742.md)
   * [SDHCI](models/sdhci.md)
@@ -40,6 +38,8 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [RISC-V CLINT](models/riscv_clint.md)
   * [RISC-V PLIC](models/riscv_plic.md)
   * [Simulation Loader](models/infra_loader.md)
+  * [Simulation Device](models/infra_simdev.md)
+  * [Simulation Throttle](models/infra_throttle.md)
 
 ----
 Documentation January 2021
