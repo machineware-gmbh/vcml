@@ -66,6 +66,8 @@ namespace vcml { namespace debugging {
         u64 phys_addr() const { return m_phys; }
         u64 virt_addr() const { return m_virt; }
 
+        u64 offset(u64 virt) const { return virt - m_virt; }
+
         range memory() const { return { m_virt, m_virt + m_size - 1 }; }
     };
 

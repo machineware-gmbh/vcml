@@ -193,3 +193,28 @@ TEST(symtab, load_elf) {
     EXPECT_TRUE(func_a->is_little_endian());
     EXPECT_EQ(func_a->size(), 18);
 }
+
+TEST(symtab, find_with_offset) {
+    symtab syms;
+    syms.load_elf(args[1] + "/elf.elf");
+
+    ASSERT_FALSE(syms.empty());
+
+    auto funcs = syms.functions();
+    for (const symbol& func : funcs) {
+        for (u64 offset = 0; offset < func.size(); offset++) {
+            const symbol* other = syms.find_symbol(func.virt_addr() + offset);
+            ASSERT_FALSE(other == nullptr);
+            EXPECT_STREQ(other->name(), func.name());
+        }
+    }
+
+    auto objs = syms.objects();
+    for (const symbol& obj : objs) {
+        for (u64 offset = 0; offset < obj.size(); offset++) {
+            const symbol* other = syms.find_symbol(obj.virt_addr() + offset);
+            ASSERT_FALSE(other == nullptr);
+            EXPECT_STREQ(other->name(), obj.name());
+        }
+    }
+}

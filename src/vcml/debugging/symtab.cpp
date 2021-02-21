@@ -98,7 +98,8 @@ namespace vcml { namespace debugging {
 
         symbol upper("", SYMKIND_FUNCTION, ENDIAN_LITTLE, 0, addr, addr);
         auto it = m_functions.upper_bound(upper);
-        return &(*--it); // find first that is *not* greater than addr
+        const symbol& sym = *--it; // find first that is not greater than addr
+        return sym.memory().includes(addr) ? &sym : nullptr;
     }
 
     const symbol* symtab::find_object(const string& name) const {
@@ -116,7 +117,8 @@ namespace vcml { namespace debugging {
 
         symbol upper("", SYMKIND_OBJECT, ENDIAN_LITTLE, 0, addr, addr);
         auto it = m_objects.upper_bound(upper);
-        return &(*--it); // first that is *not* greater than addr
+        const symbol& sym = *--it; // find first that is not greater than addr
+        return sym.memory().includes(addr) ? &sym : nullptr;
     }
 
     void symtab::merge(const symtab& other) {
