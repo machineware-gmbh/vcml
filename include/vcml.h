@@ -28,6 +28,7 @@
 #include "vcml/common/thctl.h"
 #include "vcml/common/bitops.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/range.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/logging/log_file.h"
@@ -55,7 +56,6 @@
 #include "vcml/ui/fbmode.h"
 #include "vcml/ui/display.h"
 
-#include "vcml/range.h"
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"
 #include "vcml/ports.h"

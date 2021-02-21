@@ -22,8 +22,8 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/range.h"
 
-#include "vcml/range.h"
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 

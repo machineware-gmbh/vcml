@@ -22,6 +22,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/bitops.h"
+#include "vcml/common/range.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/backends/backend.h"
@@ -30,7 +31,6 @@
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
 
-#include "vcml/range.h"
 #include "vcml/ports.h"
 #include "vcml/component.h"
 #include "vcml/master_socket.h"

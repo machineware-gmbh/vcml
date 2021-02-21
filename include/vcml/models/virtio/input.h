@@ -22,15 +22,15 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/range.h"
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/display.h"
 
-#include "vcml/range.h"
-#include "vcml/module.h"
-
 #include "vcml/properties/property.h"
 #include "vcml/models/virtio/virtio.h"
+
+#include "vcml/module.h"
 
 namespace vcml { namespace virtio {
 

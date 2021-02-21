@@ -122,7 +122,6 @@ namespace vcml { namespace generic {
         tx.set_address(addr - dest.addr.start + dest.offset);
         auto& socket = OUT[dest.port];
 
-
         trace_fw(socket, tx, dt);
         socket->b_transport(tx, dt);
         trace_bw(socket, tx, dt);

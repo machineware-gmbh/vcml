@@ -23,8 +23,8 @@
 #include "vcml/common/bitops.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/range.h"
 
-#include "vcml/range.h"
 #include "vcml/module.h"
 
 namespace vcml { namespace virtio {

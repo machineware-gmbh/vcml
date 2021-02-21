@@ -22,8 +22,8 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/range.h"
 
-#include "vcml/range.h"
 #include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"

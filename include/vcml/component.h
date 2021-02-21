@@ -22,11 +22,11 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/range.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
-#include "vcml/range.h"
 #include "vcml/ports.h"
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"

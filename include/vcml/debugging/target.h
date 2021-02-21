@@ -22,11 +22,9 @@
 #include "vcml/common/types.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/bitops.h"
+#include "vcml/common/range.h"
 
 #include "vcml/logging/logger.h"
-
-#include "vcml/range.h"
-
 #include "vcml/debugging/symtab.h"
 
 namespace vcml { namespace debugging {

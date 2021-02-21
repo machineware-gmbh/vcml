@@ -23,8 +23,7 @@
 #include "vcml/common/bitops.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/utils.h"
-
-#include "vcml/range.h"
+#include "vcml/common/range.h"
 
 namespace vcml { namespace debugging {
 

@@ -22,8 +22,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
-
-#include "vcml/range.h"
+#include "vcml/common/range.h"
 
 namespace vcml {
 
