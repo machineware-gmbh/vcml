@@ -61,7 +61,14 @@ namespace vcml { namespace debugging {
         void update_status(gdb_status status);
         void notify(int signal);
 
-        virtual void notify(const breakpoint& bp) override;
+        virtual void notify_breakpoint_hit(const breakpoint& bp) override;
+
+        virtual void notify_watchpoint_read(const watchpoint& wp,
+                                            const range& addr) override;
+
+        virtual void notify_watchpoint_write(const watchpoint& wp,
+                                             const range& addr,
+                                             u64 newval) override;
 
         virtual bool is_suspend_requested() const override;
 

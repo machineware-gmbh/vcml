@@ -262,17 +262,36 @@ namespace vcml { namespace debugging {
         return false; // to be overloaded
     }
 
-    void target::notify_breakpoint() {
-        u64 pc = program_counter();
+    bool target::insert_watchpoint(const range& addr, vcml_access a) {
+        return false; // to be overloaded
+    }
+
+    bool target::remove_watchpoint(const range& addr, vcml_access a) {
+        return false; // to be overloaded
+    }
+
+    void target::notify_breakpoint_hit(u64 pc) {
         for (auto& bp : m_breakpoints)
             if (bp.address() == pc)
                 bp.notify();
     }
 
-    bool target::insert_breakpoint(u64 addr, subscriber* s) {
+    void target::notify_watchpoint_read(const range& addr) {
+        for (auto& wp : m_watchpoints)
+            if (wp.address().overlaps(addr))
+                wp.notify_read(addr);
+    }
+
+    void target::notify_watchpoint_write(const range& addr, u64 newval) {
+        for (auto& wp : m_watchpoints)
+            if (wp.address().overlaps(addr))
+                wp.notify_write(addr, newval);
+    }
+
+    bool target::insert_breakpoint(u64 addr, subscriber* subscr) {
         for (auto& bp : m_breakpoints) {
             if (bp.address() == addr) {
-                bp.subscribe(s);
+                bp.subscribe(subscr);
                 return true;
             }
         }
@@ -282,13 +301,13 @@ namespace vcml { namespace debugging {
 
         const symbol* func = m_symbols.find_function(addr);
         breakpoint newbp(addr, func);
-        newbp.subscribe(s);
+        newbp.subscribe(subscr);
         m_breakpoints.push_back(std::move(newbp));
 
         return true;
     }
 
-    bool target::remove_breakpoint(u64 addr, subscriber* s) {
+    bool target::remove_breakpoint(u64 addr, subscriber* subscr) {
         auto it = std::find_if(m_breakpoints.begin(), m_breakpoints.end(),
             [addr] (const breakpoint& bp) -> bool {
                 return bp.address() == addr;
@@ -297,20 +316,70 @@ namespace vcml { namespace debugging {
         if (it == m_breakpoints.end())
             return false;
 
-        it->unsubscribe(s);
-        if (it->has_subscriber())
+        it->unsubscribe(subscr);
+        if (it->has_subscribers())
             return true;
 
         m_breakpoints.erase(it);
         return remove_breakpoint(addr);
     }
 
-    bool target::insert_watchpoint(const range& addr, vcml_access a) {
-        return false; // to be overloaded
+    bool target::insert_watchpoint(const range& addr, vcml_access prot,
+                                   subscriber* subscr) {
+        auto wp = std::find_if(m_watchpoints.begin(), m_watchpoints.end(),
+            [addr] (const watchpoint& wp) -> bool {
+                return wp.address() == addr;
+        });
+
+        if (wp == m_watchpoints.end()) {
+            const symbol* obj = m_symbols.find_object(addr.start);
+            watchpoint newwp(addr, obj);
+            m_watchpoints.push_back(std::move(newwp));
+            wp = m_watchpoints.end() - 1;
+        }
+
+        if (is_read_allowed(prot)) {
+            if (!wp->has_read_subscribers())
+                if (!insert_watchpoint(addr, VCML_ACCESS_READ))
+                    return false;
+            wp->subscribe(VCML_ACCESS_READ, subscr);
+        }
+
+        if (is_write_allowed(prot)) {
+            if (!wp->has_write_subscribers())
+                if (!insert_watchpoint(addr, VCML_ACCESS_WRITE))
+                    return false;
+            wp->subscribe(VCML_ACCESS_WRITE, subscr);
+        }
+
+        return true;
     }
 
-    bool target::remove_watchpoint(const range& addr, vcml_access a) {
-        return false; // to be overloaded
+    bool target::remove_watchpoint(const range& addr, vcml_access prot,
+                                   subscriber* subscr) {
+        auto wp = std::find_if(m_watchpoints.begin(), m_watchpoints.end(),
+            [addr] (const watchpoint& wp) -> bool {
+                return wp.address() == addr;
+        });
+
+        if (wp == m_watchpoints.end())
+            return false;
+
+        if (is_read_allowed(prot)) {
+            wp->unsubscribe(VCML_ACCESS_READ, subscr);
+            if (!wp->has_read_subscribers())
+                if (!remove_watchpoint(addr, VCML_ACCESS_READ))
+                    return false;
+        }
+
+        if (is_write_allowed(prot)) {
+            wp->unsubscribe(VCML_ACCESS_WRITE, subscr);
+            if (!wp->has_write_subscribers())
+                if (!remove_watchpoint(addr, VCML_ACCESS_WRITE))
+                    return false;
+        }
+
+        return true;
     }
 
     void target::gdb_collect_regs(vector<string>& gdbregs) {

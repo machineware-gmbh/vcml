@@ -77,6 +77,7 @@ namespace vcml { namespace debugging {
         symtab m_symbols;
 
         vector<breakpoint> m_breakpoints;
+        vector<watchpoint> m_watchpoints;
 
         static unordered_map<string, target*> s_targets;
 
@@ -86,7 +87,12 @@ namespace vcml { namespace debugging {
         virtual bool insert_breakpoint(u64 addr);
         virtual bool remove_breakpoint(u64 addr);
 
-        void notify_breakpoint();
+        virtual bool insert_watchpoint(const range& addr, vcml_access prot);
+        virtual bool remove_watchpoint(const range& addr, vcml_access prot);
+
+        void notify_breakpoint_hit(u64 addr);
+        void notify_watchpoint_read(const range& addr);
+        void notify_watchpoint_write(const range& addr, u64 newval);
 
     public:
         void set_little_endian();
@@ -130,11 +136,14 @@ namespace vcml { namespace debugging {
         virtual bool disassemble(u64 addr, u64 count, vector<disassembly>& s);
         virtual bool disassemble(const range& addr, vector<disassembly>& s);
 
-        virtual bool insert_breakpoint(u64 addr, subscriber* s);
-        virtual bool remove_breakpoint(u64 addr, subscriber* s);
+        const vector<breakpoint>& breakpoints() const { return m_breakpoints; }
+        const vector<watchpoint>& watchpoints() const { return m_watchpoints; }
 
-        virtual bool insert_watchpoint(const range& addr, vcml_access a);
-        virtual bool remove_watchpoint(const range& addr, vcml_access a);
+        bool insert_breakpoint(u64 addr, subscriber* subscr);
+        bool remove_breakpoint(u64 addr, subscriber* subscr);
+
+        bool insert_watchpoint(const range& mem, vcml_access a, subscriber* s);
+        bool remove_watchpoint(const range& mem, vcml_access a, subscriber* s);
 
         virtual void gdb_collect_regs(vector<string>& gdbregs);
         virtual bool gdb_command(const string& command, string& response);

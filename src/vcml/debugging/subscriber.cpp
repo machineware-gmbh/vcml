@@ -20,6 +20,20 @@
 
 namespace vcml { namespace debugging {
 
+    void subscriber::notify_breakpoint_hit(const breakpoint& bp) {
+        // to be overloaded
+    }
+
+    void subscriber::notify_watchpoint_read(const watchpoint& wp,
+                                            const range& addr) {
+        // to be overloaded
+    }
+
+    void subscriber::notify_watchpoint_write(const watchpoint& wp,
+                                             const range& addr, u64 newval) {
+        // to be overloaded
+    }
+
     breakpoint::breakpoint(u64 addr, const symbol* func):
         m_addr(addr),
         m_count(0),
@@ -31,7 +45,7 @@ namespace vcml { namespace debugging {
         m_count++;
 
         for (subscriber* s : m_subscribers)
-            s->notify(*this);
+            s->notify_breakpoint_hit(*this);
     }
 
     bool breakpoint::subscribe(subscriber* s) {
@@ -48,6 +62,61 @@ namespace vcml { namespace debugging {
 
         stl_remove_erase(m_subscribers, s);
         return true;
+    }
+
+    watchpoint::watchpoint(const range& addr, const symbol* obj):
+        m_addr(addr),
+        m_count(0),
+        m_obj(obj),
+        m_subscribers_r(),
+        m_subscribers_w() {
+    }
+
+    void watchpoint::notify_read(const range& addr) {
+        m_count++;
+
+        for (subscriber* s : m_subscribers_r)
+            s->notify_watchpoint_read(*this, addr);
+    }
+
+    void watchpoint::notify_write(const range& addr, u64 newval) {
+        m_count++;
+
+        for (subscriber* s : m_subscribers_w)
+            s->notify_watchpoint_write(*this, addr, newval);
+    }
+
+    bool watchpoint::subscribe(vcml_access prot, subscriber* s) {
+        size_t subscriptions = 0;
+
+        if (is_read_allowed(prot) && !stl_contains(m_subscribers_r, s)) {
+            m_subscribers_r.push_back(s);
+            subscriptions++;
+        }
+
+        if (is_write_allowed(prot) && !stl_contains(m_subscribers_w, s)) {
+            m_subscribers_w.push_back(s);
+            subscriptions++;
+        }
+
+        return subscriptions > 0;
+    }
+
+    bool watchpoint::unsubscribe(vcml_access prot, subscriber* s) {
+        size_t subscriptions = 0;
+
+        if (is_read_allowed(prot) && stl_contains(m_subscribers_r, s)) {
+            stl_remove_erase(m_subscribers_r, s);
+            subscriptions--;
+        }
+
+        if (is_write_allowed(prot) && stl_contains(m_subscribers_w, s)) {
+            stl_remove_erase(m_subscribers_w, s);
+            subscriptions--;
+        }
+
+
+        return subscriptions > 0;
     }
 
 }}

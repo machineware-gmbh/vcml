@@ -66,7 +66,18 @@ namespace vcml { namespace debugging {
         }
     }
 
-    void gdbserver::notify(const breakpoint& bp) {
+    void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
+        notify(SIGTRAP);
+    }
+
+    void gdbserver::notify_watchpoint_read(const watchpoint& wp,
+                                           const range& addr) {
+        notify(SIGTRAP);
+    }
+
+    void gdbserver::notify_watchpoint_write(const watchpoint& wp,
+                                            const range& addr,
+                                            u64 newval) {
         notify(SIGTRAP);
     }
 
@@ -358,7 +369,7 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        const range mem(addr, addr + length - 1);
+        const range wp(addr, addr + length - 1);
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
@@ -367,18 +378,18 @@ namespace vcml { namespace debugging {
             break;
 
         case GDB_WATCHPOINT_WRITE:
-            if (!m_target->insert_watchpoint(mem, VCML_ACCESS_WRITE))
+            if (!m_target->insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_READ:
-            if (!m_target->insert_watchpoint(mem, VCML_ACCESS_READ))
+            if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ, this))
                 return ERR_INTERNAL;
             break;
 
 
         case GDB_WATCHPOINT_ACCESS:
-            if (!m_target->insert_watchpoint(mem, VCML_ACCESS_READ_WRITE))
+            if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
@@ -397,7 +408,7 @@ namespace vcml { namespace debugging {
             return ERR_COMMAND;
         }
 
-        const range mem(addr, addr + length - 1);
+        const range wp(addr, addr + length - 1);
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
@@ -406,17 +417,17 @@ namespace vcml { namespace debugging {
             break;
 
         case GDB_WATCHPOINT_WRITE:
-            if (!m_target->remove_watchpoint(mem, VCML_ACCESS_WRITE))
+            if (!m_target->remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_READ:
-            if (!m_target->remove_watchpoint(mem, VCML_ACCESS_READ))
+            if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_ACCESS:
-            if (!m_target->remove_watchpoint(mem, VCML_ACCESS_READ_WRITE))
+            if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
@@ -443,6 +454,7 @@ namespace vcml { namespace debugging {
     gdbserver::gdbserver(u16 port, target* stub, gdb_status status):
         rspserver(port),
         suspender("gdbserver"),
+        subscriber(),
         m_target(stub),
         m_status(status),
         m_default(status),

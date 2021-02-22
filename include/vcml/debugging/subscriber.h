@@ -28,13 +28,21 @@
 namespace vcml { namespace debugging {
 
     class breakpoint;
+    class watchpoint;
 
     class subscriber
     {
     public:
         virtual ~subscriber() {}
 
-        virtual void notify(const breakpoint& bp) = 0;
+        virtual void notify_breakpoint_hit(const breakpoint& bp);
+
+        virtual void notify_watchpoint_read(const watchpoint& wp,
+                                            const range& addr);
+
+        virtual void notify_watchpoint_write(const watchpoint& wp,
+                                             const range& addr,
+                                             u64 newval);
     };
 
     class breakpoint
@@ -48,10 +56,9 @@ namespace vcml { namespace debugging {
     public:
         u64 address() const { return m_addr; }
         u64 hit_count() const { return m_count; }
-
         const symbol* function() const { return m_func; }
 
-        bool has_subscriber() const { return !m_subscribers.empty(); }
+        bool has_subscribers() const { return !m_subscribers.empty(); }
 
         breakpoint(u64 addr, const symbol* func);
         breakpoint(const breakpoint&) = default;
@@ -61,6 +68,35 @@ namespace vcml { namespace debugging {
 
         bool subscribe(subscriber* s);
         bool unsubscribe(subscriber* s);
+    };
+
+    class watchpoint
+    {
+    private:
+        range m_addr;
+        u64 m_count;
+        const symbol* m_obj;
+
+        vector<subscriber*> m_subscribers_r;
+        vector<subscriber*> m_subscribers_w;
+
+    public:
+        u64 hit_count() const { return m_count; }
+        const range& address() const { return m_addr; }
+        const symbol* object() const { return m_obj; }
+
+        bool has_read_subscribers() const { return !m_subscribers_r.empty(); }
+        bool has_write_subscribers() const { return !m_subscribers_w.empty(); }
+
+        watchpoint(const range& addr, const symbol* obj);
+        watchpoint(const watchpoint&) = default;
+        virtual ~watchpoint() = default;
+
+        void notify_read(const range& addr);
+        void notify_write(const range& addr, u64 newval);
+
+        bool subscribe(vcml_access prot, subscriber* s);
+        bool unsubscribe(vcml_access prot, subscriber* s);
     };
 
 }}
