@@ -37,9 +37,9 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [ARM GIC400](models/arm_gic400.md)
   * [RISC-V CLINT](models/riscv_clint.md)
   * [RISC-V PLIC](models/riscv_plic.md)
-  * [Simulation Loader](models/infra_loader.md)
-  * [Simulation Device](models/infra_simdev.md)
-  * [Simulation Throttle](models/infra_throttle.md)
+  * [Simulation Loader](models/meta_loader.md)
+  * [Simulation Device](models/meta_simdev.md)
+  * [Simulation Throttle](models/meta_throttle.md)
 
 ----
 Documentation January 2021

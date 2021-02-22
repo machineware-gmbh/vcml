@@ -16,9 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/infra/loader.h"
+#include "vcml/models/meta/loader.h"
 
-namespace vcml { namespace infra {
+namespace vcml { namespace meta {
 
     bool loader::cmd_load_elf(const vector<string>& args, ostream& os) {
         if (!file_exists(args[0])) {

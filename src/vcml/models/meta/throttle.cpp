@@ -16,47 +16,46 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_MODELS_INFRA_LOADER_H
-#define VCML_MODELS_INFRA_LOADER_H
+#include "vcml/models/meta/throttle.h"
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
+namespace vcml { namespace meta {
 
-#include "vcml/debugging/elf_reader.h"
+    void throttle::update() {
+        sc_time quantum = tlm::tlm_global_quantum::instance().get();
+        sc_time interval = max(update_interval.get(), quantum);
+        next_trigger(interval);
 
-#include "vcml/component.h"
-#include "vcml/master_socket.h"
+        if (rtf > 0.0) {
+            u64 actual = realtime_us() - m_time_real;
+            u64 target = time_to_us(interval) / rtf;
 
-namespace vcml { namespace infra {
+            if (actual < target) {
+                usleep(target - actual);
+                if (!m_throttling)
+                    log_debug("throttling started");
+                m_throttling = true;
+            } else {
+                if (m_throttling)
+                    log_debug("throttling stopped");
+                m_throttling = false;
+            }
+        }
 
-    class loader: public component
-    {
-    private:
-        bool cmd_load_elf(const vector<string>& args, ostream& os);
+        m_time_real = realtime_us();
+    }
 
-        size_t load_elf(const string& filepath);
-        size_t load_elf_segment(debugging::elf_reader& reader,
-                                const debugging::elf_segment& segment);
+    throttle::throttle(const sc_module_name& nm):
+        module(nm),
+        m_throttling(false),
+        m_time_real(realtime_us()),
+        update_interval("update_interval", sc_time(10.0, SC_MS)),
+        rtf("rtf", 0.0) {
+        SC_HAS_PROCESS(throttle);
+        SC_METHOD(update);
+    }
 
-    public:
-        property<string> images;
-
-        master_socket INSN;
-        master_socket DATA;
-
-        loader(const sc_module_name& nm, const string& images = "");
-        virtual ~loader();
-        VCML_KIND(loader);
-
-        virtual void reset() override;
-
-    protected:
-        virtual void end_of_elaboration() override;
-    };
+    throttle::~throttle() {
+        // nothing to do
+    }
 
 }}
-
-#endif

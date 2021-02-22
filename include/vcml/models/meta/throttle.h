@@ -16,46 +16,39 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/infra/throttle.h"
+#ifndef VCML_META_THROTTLE_H
+#define VCML_META_THROTTLE_H
 
-namespace vcml { namespace infra {
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
+#include "vcml/common/utils.h"
 
-    void throttle::update() {
-        sc_time quantum = tlm::tlm_global_quantum::instance().get();
-        sc_time interval = max(update_interval.get(), quantum);
-        next_trigger(interval);
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+#include "vcml/module.h"
 
-        if (rtf > 0.0) {
-            u64 actual = realtime_us() - m_time_real;
-            u64 target = time_to_us(interval) / rtf;
+namespace vcml { namespace meta {
 
-            if (actual < target) {
-                usleep(target - actual);
-                if (!m_throttling)
-                    log_debug("throttling started");
-                m_throttling = true;
-            } else {
-                if (m_throttling)
-                    log_debug("throttling stopped");
-                m_throttling = false;
-            }
-        }
+    class throttle : public module
+    {
+    private:
+        bool m_throttling;
+        u64  m_time_real;
 
-        m_time_real = realtime_us();
-    }
+        void update();
 
-    throttle::throttle(const sc_module_name& nm):
-        module(nm),
-        m_throttling(false),
-        m_time_real(realtime_us()),
-        update_interval("update_interval", sc_time(10.0, SC_MS)),
-        rtf("rtf", 0.0) {
-        SC_HAS_PROCESS(throttle);
-        SC_METHOD(update);
-    }
+    public:
+        property<sc_time> update_interval;
+        property<double> rtf;
 
-    throttle::~throttle() {
-        // nothing to do
-    }
+        throttle(const sc_module_name& nm);
+        virtual ~throttle();
+        VCML_KIND(throttle);
+
+        bool is_throttling() const { return m_throttling; }
+    };
 
 }}
+
+#endif

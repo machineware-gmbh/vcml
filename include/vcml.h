@@ -91,9 +91,9 @@
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
 
-#include "vcml/models/infra/loader.h"
-#include "vcml/models/infra/simdev.h"
-#include "vcml/models/infra/throttle.h"
+#include "vcml/models/meta/loader.h"
+#include "vcml/models/meta/simdev.h"
+#include "vcml/models/meta/throttle.h"
 
 #include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"

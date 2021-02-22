@@ -27,7 +27,7 @@ public:
     generic::bus ibus;
     generic::bus dbus;
 
-    infra::loader loader;
+    meta::loader loader;
 
     loader_test(const sc_module_name& nm = sc_gen_unique_name("test")):
         test_base(nm),

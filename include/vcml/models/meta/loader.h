@@ -16,37 +16,45 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_INFRA_THROTTLE_H
-#define VCML_INFRA_THROTTLE_H
+#ifndef VCML_META_LOADER_H
+#define VCML_META_LOADER_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/strings.h"
 #include "vcml/common/utils.h"
 
-#include "vcml/logging/logger.h"
-#include "vcml/properties/property.h"
-#include "vcml/module.h"
+#include "vcml/debugging/elf_reader.h"
 
-namespace vcml { namespace infra {
+#include "vcml/component.h"
+#include "vcml/master_socket.h"
 
-    class throttle : public module
+namespace vcml { namespace meta {
+
+    class loader: public component
     {
     private:
-        bool m_throttling;
-        u64  m_time_real;
+        bool cmd_load_elf(const vector<string>& args, ostream& os);
 
-        void update();
+        size_t load_elf(const string& filepath);
+        size_t load_elf_segment(debugging::elf_reader& reader,
+                                const debugging::elf_segment& segment);
 
     public:
-        property<sc_time> update_interval;
-        property<double> rtf;
+        property<string> images;
 
-        throttle(const sc_module_name& nm);
-        virtual ~throttle();
-        VCML_KIND(throttle);
+        master_socket INSN;
+        master_socket DATA;
 
-        bool is_throttling() const { return m_throttling; }
+        loader(const sc_module_name& nm, const string& images = "");
+        virtual ~loader();
+        VCML_KIND(loader);
+
+        virtual void reset() override;
+
+    protected:
+        virtual void end_of_elaboration() override;
     };
 
 }}

@@ -105,9 +105,9 @@ set(sources
     ${src}/vcml/models/generic/sdhci.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
-    ${src}/vcml/models/infra/loader.cpp
-    ${src}/vcml/models/infra/simdev.cpp
-    ${src}/vcml/models/infra/throttle.cpp
+    ${src}/vcml/models/meta/loader.cpp
+    ${src}/vcml/models/meta/simdev.cpp
+    ${src}/vcml/models/meta/throttle.cpp
     ${src}/vcml/models/virtio/virtio.cpp
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/rng.cpp

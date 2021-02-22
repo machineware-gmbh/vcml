@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_INFRA_SIMDEV_H
-#define VCML_INFRA_SIMDEV_H
+#ifndef VCML_META_SIMDEV_H
+#define VCML_META_SIMDEV_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
@@ -29,7 +29,7 @@
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
-namespace vcml { namespace infra {
+namespace vcml { namespace meta {
 
     class simdev: public peripheral
     {
