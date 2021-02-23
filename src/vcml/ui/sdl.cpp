@@ -384,9 +384,12 @@ namespace vcml { namespace ui {
                 break;
 
             case SDL_WINDOWEVENT: {
-                if (event.window.event == SDL_WINDOWEVENT_CLOSE)
-                    sc_stop();
                 auto client = find_by_window_id(event.window.windowID);
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    SDL_HideWindow(client->window);
+                    sc_stop();
+                }
+
                 if (event.window.event == SDL_WINDOWEVENT_EXPOSED && client)
                     client->draw_window();
                 break;
@@ -450,15 +453,6 @@ namespace vcml { namespace ui {
             check_clients();
             poll_events();
             draw_windows();
-        }
-
-        for (auto& client : m_clients) {
-            if (client.disp != nullptr) {
-                fprintf(stderr, "warning: display %s did not clean up",
-                        client.disp->name());
-            }
-
-            client.exit_window();
         }
     }
 
