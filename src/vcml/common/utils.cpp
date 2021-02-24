@@ -166,11 +166,9 @@ namespace vcml {
     }
 
     string call_origin() {
-        pthread_t this_thread = pthread_self();
-        if (this_thread != thctl_sysc_thread()) {
-            char buffer[16] = {};
-            pthread_getname_np(this_thread, buffer, sizeof(buffer));
-            return mkstr("pthread '%s'", buffer);
+        if (!thctl_is_sysc_thread()) {
+            string name = get_thread_name();
+            return mkstr("thread '%s'", name.c_str());
         }
 
         sc_core::sc_simcontext* simc = sc_core::sc_get_curr_simcontext();
@@ -236,6 +234,23 @@ namespace vcml {
         free(dmbuf);
 
         return sv;
+    }
+
+    string get_thread_name(const thread& t) {
+#ifdef __linux__
+        std::thread::native_handle_type handle =
+            const_cast<std::thread&>(t).native_handle();
+        if (!t.joinable())
+            handle = (std::thread::native_handle_type)pthread_self();
+
+        char buffer[256] = {};
+        if (pthread_getname_np(handle, buffer, sizeof(buffer)) != 0)
+            return "unknown";
+
+        return buffer;
+#else
+        return "unknown";
+#endif
     }
 
     bool set_thread_name(thread& t, const string& name) {

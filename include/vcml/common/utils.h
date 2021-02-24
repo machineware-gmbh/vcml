@@ -48,7 +48,9 @@ namespace vcml {
     string call_origin();
     vector<string> backtrace(unsigned int frames = 63, unsigned int skip = 1);
 
-    bool set_thread_name(thread& t, const string& name);
+    string get_thread_name(const thread& t = std::thread());
+    bool   set_thread_name(thread& t, const string& name);
+
 
     bool is_debug_build();
 
