@@ -22,91 +22,96 @@
 
 namespace vcml {
 
-    static pthread_t thctl_init();
+    struct thctl {
+        std::thread::id sysc_thread;
+        std::thread::id curr_owner;
 
-    static pthread_t g_thctl_sysc_thread = pthread_self();
-    static pthread_t g_thctl_mutex_owner = thctl_init();
-    static pthread_mutex_t g_thctl_mutex = PTHREAD_MUTEX_INITIALIZER;
-    static pthread_cond_t g_thctl_notify = PTHREAD_COND_INITIALIZER;
+        std::mutex mutex;
+        std::atomic<size_t> nwaiting;
+        std::condition_variable_any notify;
 
-    static void thctl_cycle() {
-        thctl_exit_critical();
-        thctl_enter_critical();
+        thctl();
+        ~thctl() = default;
+
+        bool is_sysc_thread() const;
+        bool is_in_critical() const;
+
+        void enter_critical();
+        void exit_critical();
+
+        void suspend();
+    };
+
+    thctl::thctl():
+        sysc_thread(std::this_thread::get_id()),
+        curr_owner(sysc_thread),
+        mutex(),
+        nwaiting(0),
+        notify() {
+        mutex.lock();
+        on_each_delta_cycle(std::bind(&thctl::suspend, this));
     }
 
-    pthread_t thctl_sysc_thread() {
-        return g_thctl_sysc_thread;
+    inline bool thctl::is_sysc_thread() const {
+        return std::this_thread::get_id() == sysc_thread;
     }
+
+    inline bool thctl::is_in_critical() const {
+        return std::this_thread::get_id() == curr_owner;
+    }
+
+    inline void thctl::enter_critical() {
+        if (is_sysc_thread())
+            VCML_ERROR("SystemC thread must not enter critical sections");
+        if (is_in_critical())
+            VCML_ERROR("thread already in critical section");
+
+        nwaiting++;
+        mutex.lock();
+        curr_owner = std::this_thread::get_id();
+    }
+
+    inline void thctl::exit_critical() {
+        if (curr_owner != std::this_thread::get_id())
+            VCML_ERROR("thread not in critical section");
+
+        curr_owner = std::thread::id();
+        mutex.unlock();
+
+        if (--nwaiting == 0)
+            notify.notify_all();
+    }
+
+    void thctl::suspend() {
+        VCML_ERROR_ON(!is_sysc_thread(), "this is not the SystemC thread");
+        VCML_ERROR_ON(!is_in_critical(), "thread not in critical section");
+
+        if (nwaiting == 0)
+            return;
+
+        notify.wait(mutex, [&]() -> bool {
+            return nwaiting == 0;
+        });
+
+        curr_owner = sysc_thread;
+    }
+
+    thctl g_thctl;
 
     bool thctl_is_sysc_thread() {
-        return g_thctl_sysc_thread == pthread_self();
+        return g_thctl.is_sysc_thread();
+    }
+
+    bool thctl_is_in_critical() {
+        return g_thctl.is_in_critical();
     }
 
     void thctl_enter_critical() {
-        VCML_ERROR_ON(thctl_in_critical(),
-                      "thread already in critical section");
-        pthread_mutex_lock(&g_thctl_mutex);
-        g_thctl_mutex_owner = pthread_self();
+        g_thctl.enter_critical();
     }
 
     void thctl_exit_critical() {
-        VCML_ERROR_ON(!thctl_in_critical(), "thread not in critical section");
-        g_thctl_mutex_owner = 0;
-        pthread_mutex_unlock(&g_thctl_mutex);
-    }
-
-    bool thctl_in_critical() {
-        return g_thctl_mutex_owner == pthread_self();
-    }
-
-    void thctl_suspend() {
-        VCML_ERROR_ON(!thctl_is_sysc_thread(),
-                      "thctl_suspend must be called from SystemC thread");
-        VCML_ERROR_ON(!thctl_in_critical(), "thread not in critical section");
-
-        g_thctl_mutex_owner = 0;
-        int res = pthread_cond_wait(&g_thctl_notify, &g_thctl_mutex);
-        VCML_ERROR_ON(res != 0, "pthread_cond_wait: %s", strerror(res));
-        g_thctl_mutex_owner = pthread_self();
-    }
-
-    void thctl_resume() {
-        VCML_ERROR_ON(thctl_is_sysc_thread(),
-                      "SystemC thread cannot resume itself");
-        int res = pthread_cond_signal(&g_thctl_notify);
-        VCML_ERROR_ON(res != 0, "pthread_cond_signal: %s", strerror(res));
-    }
-
-#ifdef SNPS_VP_SC_VERSION
-    static void snps_enter_critical(void* unused) {
-        (void)unused;
-        thctl_enter_critical();
-    }
-
-    static void snps_exit_critical(void* unused) {
-        (void)unused;
-        thctl_exit_critical();
-    }
-#endif
-
-    static pthread_t thctl_init() {
-#ifdef SNPS_VP_SC_VERSION
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        simc->add_phase_callback(snps::sc::PCB_BEGIN_OF_EVALUATE_PHASE,
-                                 &snps_enter_critical);
-        simc->add_phase_callback(snps::sc::PCB_END_OF_EVALUATE_PHASE,
-                                 &snps_exit_critical);
-        return 0;
-#else
-
-        pthread_mutex_init(&g_thctl_mutex, nullptr);
-        pthread_cond_init(&g_thctl_notify, nullptr);
-        pthread_mutex_lock(&g_thctl_mutex);
-
-        on_each_delta_cycle(&thctl_cycle);
-
-        return pthread_self();
-#endif
+        g_thctl.exit_critical();
     }
 
 }

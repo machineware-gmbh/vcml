@@ -45,6 +45,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <condition_variable>
 
 #define VCML_DECL_PRINTF(strpos, argpos) \
     __attribute__ ((format (printf, (strpos), (argpos))))
