@@ -56,12 +56,27 @@ namespace vcml { namespace debugging {
             return;
 
         m_status = status;
-        resume();
+        switch (m_status) {
+        case GDB_STOPPED:
+            request_pause();
+            if (!thctl_is_sysc_thread())
+                wait_for_pause();
+            break;
+
+        case GDB_RUNNING:
+        case GDB_STEPPING:
+        case GDB_KILLED:
+            resume();
+            break;
+
+        default:
+            VCML_ERROR("illegal gdb status: %u", m_status);
+        }
     }
 
     void gdbserver::notify(int signal) {
         if (is_connected()) {
-            m_status = GDB_STOPPED;
+            update_status(GDB_STOPPED);
             m_signal = signal;
         }
     }
@@ -79,12 +94,6 @@ namespace vcml { namespace debugging {
                                             const range& addr,
                                             u64 newval) {
         notify(SIGTRAP);
-    }
-
-    bool gdbserver::is_suspend_requested() const {
-        if (!m_sync)
-            return false;
-        return m_status == GDB_STOPPED;
     }
 
     const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
@@ -110,9 +119,8 @@ namespace vcml { namespace debugging {
         while (m_status == GDB_STEPPING) {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
-                m_status = GDB_STOPPED;
                 m_signal = GDBSIG_TRAP;
-                wait_for_suspend();
+                update_status(GDB_STOPPED);
             }
         }
 
@@ -125,9 +133,8 @@ namespace vcml { namespace debugging {
         while (m_status == GDB_RUNNING) {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
-                m_status = GDB_STOPPED;
                 m_signal = GDBSIG_TRAP;
-                wait_for_suspend();
+                update_status(GDB_STOPPED);
             }
         }
 
@@ -497,6 +504,9 @@ namespace vcml { namespace debugging {
         m_handler['H'] = &gdbserver::handle_thread;
         m_handler['v'] = &gdbserver::handle_vcont;
         m_handler['?'] = &gdbserver::handle_exception;
+
+        if (m_status == GDB_STOPPED)
+            request_pause();
 
         run_async();
     }

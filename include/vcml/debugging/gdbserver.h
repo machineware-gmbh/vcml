@@ -70,8 +70,6 @@ namespace vcml { namespace debugging {
                                              const range& addr,
                                              u64 newval) override;
 
-        virtual bool is_suspend_requested() const override;
-
         const cpureg* lookup_cpureg(unsigned int gdbno);
 
         typedef string (gdbserver::*handler)(const char*);

@@ -28,33 +28,28 @@ namespace vcml { namespace debugging {
     {
     private:
         string m_name;
-        atomic<bool> m_suspending;
         sc_object* m_owner;
 
-        void handle_suspend_request();
-
-        static vector<suspender*> suspenders;
-
-        static void notify_suspend(sc_object* obj = nullptr);
-        static void notify_resume(sc_object* obj = nullptr);
-
     public:
-        const char* name()   const { return m_name.c_str(); }
-        bool is_suspending() const { return m_suspending; }
-        sc_object* owner()   const { return m_owner; }
+        const char* name() const { return m_name.c_str(); }
+        sc_object* owner() const { return m_owner; }
 
         suspender() = delete;
         explicit suspender(const string& nm);
         virtual ~suspender();
 
-        virtual bool is_suspend_requested() const = 0;
+        bool is_suspending() const;
 
-        void wait_for_suspend();
+        void request_pause();
+        void wait_for_pause();
+
+        void pause();
         void resume();
 
-        static void handle_requests();
-        static size_t count_requests();
+        static suspender* current();
+
         static bool simulation_suspended();
+        static void handle_requests();
     };
 
 }}

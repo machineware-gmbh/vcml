@@ -167,6 +167,8 @@ namespace vcml {
 
     using std::mutex;
     using std::lock_guard;
+    using std::condition_variable;
+    using std::condition_variable_any;
     using std::thread;
 
     inline bool is_set(int flags, int set) {

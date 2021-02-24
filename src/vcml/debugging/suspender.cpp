@@ -25,9 +25,68 @@
 
 namespace vcml { namespace debugging {
 
-    vector<suspender*> suspender::suspenders;
+    struct suspend_manager
+    {
+        mutable mutex sysc_lock;
+        condition_variable_any sysc_notify;
 
-    void suspender::notify_suspend(sc_object* obj) {
+        mutable mutex suspender_lock;
+        vector<suspender*> suspenders;
+
+        void request_pause(suspender* s);
+        void request_resume(suspender* s);
+
+        bool is_suspending(const suspender* s) const;
+
+        size_t count() const;
+
+        suspender* current() const;
+
+        void notify_suspend(sc_object* obj = nullptr);
+        void notify_resume(sc_object* obj = nullptr);
+
+        void handle_requests();
+
+        suspend_manager();
+    };
+
+    static suspend_manager g_manager;
+
+    void suspend_manager::request_pause(suspender* s) {
+        lock_guard<mutex> guard(suspender_lock);
+        stl_add_unique(suspenders, s);
+    }
+
+    void suspend_manager::request_resume(suspender* s) {
+        lock_guard<mutex> guard(suspender_lock);
+        stl_remove_erase(suspenders, s);
+        if (suspenders.empty())
+            sysc_notify.notify_all();
+    }
+
+    bool suspend_manager::is_suspending(const suspender* s) const {
+        lock_guard<mutex> guard(suspender_lock);
+        return stl_contains(suspenders, s);
+    }
+
+    size_t suspend_manager::count() const {
+        lock_guard<mutex> guard(suspender_lock);
+        return suspenders.size();
+    }
+
+    suspender* suspend_manager::current() const {
+        if (!sysc_lock.try_lock())
+            return nullptr;
+
+        sysc_lock.unlock();
+
+        lock_guard<mutex> guard(suspender_lock);
+        if (suspenders.empty())
+            return nullptr;
+        return suspenders.front();
+    }
+
+    void suspend_manager::notify_suspend(sc_object* obj) {
         const auto& children = obj ? obj->get_child_objects()
                                    : sc_core::sc_get_top_level_objects();
         for (auto child : children)
@@ -39,10 +98,9 @@ namespace vcml { namespace debugging {
         module* mod = dynamic_cast<module*>(obj);
         if (mod != nullptr)
             mod->session_suspend();
-
     }
 
-    void suspender::notify_resume(sc_object* obj) {
+    void suspend_manager::notify_resume(sc_object* obj) {
         const auto& children = obj ? obj->get_child_objects()
                                    : sc_core::sc_get_top_level_objects();
         for (auto child : children)
@@ -56,69 +114,71 @@ namespace vcml { namespace debugging {
             mod->session_resume();
     }
 
-    void suspender::handle_suspend_request() {
-        if (!is_suspend_requested())
+    void suspend_manager::handle_requests() {
+        if (count() == 0)
             return;
 
-        m_suspending = true;
         notify_suspend();
 
-        do {
-            thctl_suspend();
-        } while (is_suspend_requested());
+        sysc_notify.wait(sysc_lock, [&]() -> bool {
+            return count() == 0;
+        });
 
         notify_resume();
-        m_suspending = false;
+    }
+
+    suspend_manager::suspend_manager():
+        sysc_lock(),
+        sysc_notify(),
+        suspender_lock(),
+        suspenders() {
+        sysc_lock.lock();
     }
 
     suspender::suspender(const string& name):
         m_name(name),
-        m_suspending(false),
-        m_owner(sc_get_curr_simcontext()->active_object()) {
+        m_owner(hierarchy_top()) {
         if (m_owner != nullptr)
             m_name = mkstr("%s%c", m_owner->name(), SC_HIERARCHY_CHAR) + name;
-
-        if (suspenders.empty())
-            on_each_delta_cycle(&suspender::handle_requests);
-
-        suspenders.push_back(this);
     }
 
     suspender::~suspender() {
-        stl_remove_erase(suspenders, this);
+        if (is_suspending())
+            resume();
     }
 
-    void suspender::wait_for_suspend() {
-        VCML_ERROR_ON(thctl_is_sysc_thread(), "cannot block main thread");
-        VCML_ERROR_ON(!is_suspend_requested(), "no suspend requested");
+    bool suspender::is_suspending() const {
+        return g_manager.is_suspending(this);
+    }
 
-        while (!simulation_suspended());
-            // spin
+    void suspender::request_pause() {
+        g_manager.request_pause(this);
+    }
+
+    void suspender::wait_for_pause() {
+        VCML_ERROR_ON(thctl_is_sysc_thread(), "illegal attempt to block");
+        lock_guard<mutex> lock(g_manager.sysc_lock);
+    }
+
+    void suspender::pause() {
+        request_pause();
+        wait_for_pause();
     }
 
     void suspender::resume() {
-        //VCML_ERROR_ON(!is_suspending(), "illegal attempt to resume");
-        thctl_resume();
+        g_manager.request_resume(this);
     }
 
-    void suspender::handle_requests() {
-        for (suspender* s : suspenders)
-            s->handle_suspend_request();
-    }
-
-    size_t suspender::count_requests() {
-        size_t count = 0;
-        for (suspender* s : suspenders)
-            if (s->is_suspend_requested())
-                count++;
-        return count;
+    suspender* suspender::current() {
+        return g_manager.current();
     }
 
     bool suspender::simulation_suspended() {
-        for (suspender* s : suspenders)
-            if (s->is_suspending())
-                return true;
-        return false;
+        return current() != nullptr;
+    }
+
+    void suspender::handle_requests() {
+        g_manager.handle_requests();
     }
 
 }}
