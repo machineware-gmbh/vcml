@@ -159,36 +159,21 @@ namespace vcml { namespace ui {
     }
 
     void display::notify_key(u32 keysym, bool down) {
-        if (!thctl_is_sysc_thread())
-            thctl_enter_critical();
-
+        thctl_guard guard;
         for (auto& listener : m_key_listeners)
             listener.notify_key(keysym, down);
-
-        if (!thctl_is_sysc_thread())
-            thctl_exit_critical();
     }
 
     void display::notify_btn(u32 button, bool down) {
-        if (!thctl_is_sysc_thread())
-            thctl_enter_critical();
-
+        thctl_guard guard;
         for (auto& listener : m_ptr_listeners)
             listener.notify_btn(button, down);
-
-        if (!thctl_is_sysc_thread())
-            thctl_exit_critical();
     }
 
     void display::notify_pos(u32 x, u32 y) {
-        if (!thctl_is_sysc_thread())
-            thctl_enter_critical();
-
+        thctl_guard guard;
         for (auto& listener : m_ptr_listeners)
             listener.notify_pos(x, y);
-
-        if (!thctl_is_sysc_thread())
-            thctl_exit_critical();
     }
 
     void display::add_key_listener(key_listener& l, const string& layout) {
