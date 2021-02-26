@@ -277,7 +277,7 @@ namespace vcml { namespace ui {
 
         log_debug("starting vnc server on port %d", m_screen->port);
 
-        while (m_running && rfbIsActive(m_screen))
+        while (m_running && rfbIsActive(m_screen) && sc_is_running())
             rfbProcessEvents(m_screen, 1000);
 
         log_debug("terminating vnc server on port %d", m_screen->port);

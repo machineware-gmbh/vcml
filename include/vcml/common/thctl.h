@@ -20,6 +20,7 @@
 #define VCML_THCTL_H
 
 #include "vcml/common/types.h"
+#include "vcml/common/systemc.h"
 
 namespace vcml {
 
@@ -40,7 +41,9 @@ namespace vcml {
     };
 
     inline thctl_guard::thctl_guard():
-        m_locking(!thctl_is_sysc_thread() && !thctl_is_in_critical()) {
+        m_locking(sc_is_running() &&
+                  !thctl_is_sysc_thread() &&
+                  !thctl_is_in_critical()) {
         if (m_locking)
             thctl_enter_critical();
     }
