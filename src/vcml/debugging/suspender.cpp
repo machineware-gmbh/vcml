@@ -139,6 +139,8 @@ namespace vcml { namespace debugging {
         suspender_lock(),
         suspenders() {
         sysc_lock.lock();
+        auto fn = std::bind(&suspend_manager::handle_requests, this);
+        on_each_delta_cycle(fn);
     }
 
     suspender::suspender(const string& name):
