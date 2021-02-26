@@ -56,10 +56,8 @@ namespace vcml { namespace debugging {
         unordered_map<u64, const cpureg*> m_regmap;
 
         bool m_sync;
-        int m_signal;
 
         void update_status(gdb_status status);
-        void notify(int signal);
 
         virtual void notify_breakpoint_hit(const breakpoint& bp) override;
 
@@ -128,7 +126,6 @@ namespace vcml { namespace debugging {
         virtual ~gdbserver();
 
         void simulate(unsigned int cycles);
-
 
         virtual string handle_command(const string& command) override;
         virtual void   handle_connect(const char* peer) override;

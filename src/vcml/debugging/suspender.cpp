@@ -27,6 +27,8 @@ namespace vcml { namespace debugging {
 
     struct suspend_manager
     {
+        atomic<bool> m_is_suspended;
+
         mutable mutex sysc_lock;
         condition_variable_any sysc_notify;
 
@@ -36,6 +38,7 @@ namespace vcml { namespace debugging {
         void request_pause(suspender* s);
         void request_resume(suspender* s);
 
+        bool is_suspended() const { return m_is_suspended; }
         bool is_suspending(const suspender* s) const;
 
         size_t count() const;
@@ -118,6 +121,7 @@ namespace vcml { namespace debugging {
         if (count() == 0)
             return;
 
+        m_is_suspended = true;
         notify_suspend();
 
         sysc_notify.wait(sysc_lock, [&]() -> bool {
@@ -125,9 +129,11 @@ namespace vcml { namespace debugging {
         });
 
         notify_resume();
+        m_is_suspended = false;
     }
 
     suspend_manager::suspend_manager():
+        m_is_suspended(false),
         sysc_lock(),
         sysc_notify(),
         suspender_lock(),
@@ -136,6 +142,7 @@ namespace vcml { namespace debugging {
     }
 
     suspender::suspender(const string& name):
+        m_pcount(),
         m_name(name),
         m_owner(hierarchy_top()) {
         if (m_owner != nullptr)
@@ -151,22 +158,17 @@ namespace vcml { namespace debugging {
         return g_manager.is_suspending(this);
     }
 
-    void suspender::request_pause() {
-        g_manager.request_pause(this);
-    }
-
-    void suspender::wait_for_pause() {
-        VCML_ERROR_ON(thctl_is_sysc_thread(), "illegal attempt to block");
-        lock_guard<mutex> lock(g_manager.sysc_lock);
-    }
-
-    void suspender::pause() {
-        request_pause();
-        wait_for_pause();
+    void suspender::suspend() {
+        if (m_pcount++ == 0)
+            g_manager.request_pause(this);
+        if (!thctl_is_sysc_thread())
+            lock_guard<mutex> lock(g_manager.sysc_lock);
     }
 
     void suspender::resume() {
-        g_manager.request_resume(this);
+        if (--m_pcount == 0)
+            g_manager.request_resume(this);
+        VCML_ERROR_ON(m_pcount < 0, "unmatched resume");
     }
 
     suspender* suspender::current() {
@@ -174,7 +176,7 @@ namespace vcml { namespace debugging {
     }
 
     bool suspender::simulation_suspended() {
-        return current() != nullptr;
+        return g_manager.is_suspended();
     }
 
     void suspender::handle_requests() {

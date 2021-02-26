@@ -52,15 +52,15 @@ namespace vcml { namespace debugging {
     }
 
     void gdbserver::update_status(gdb_status status) {
+        if (!is_connected())
+            m_status = m_default;
+
         if (m_status == status)
             return;
 
-        m_status = status;
-        switch (m_status) {
+        switch (status) {
         case GDB_STOPPED:
-            request_pause();
-            if (!thctl_is_sysc_thread())
-                wait_for_pause();
+            suspend();
             break;
 
         case GDB_RUNNING:
@@ -70,30 +70,25 @@ namespace vcml { namespace debugging {
             break;
 
         default:
-            VCML_ERROR("illegal gdb status: %u", m_status);
+            VCML_ERROR("illegal gdb status: %u", status);
         }
-    }
 
-    void gdbserver::notify(int signal) {
-        if (is_connected()) {
-            update_status(GDB_STOPPED);
-            m_signal = signal;
-        }
+        m_status = status;
     }
 
     void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
-        notify(SIGTRAP);
+        update_status(GDB_STOPPED);
     }
 
     void gdbserver::notify_watchpoint_read(const watchpoint& wp,
                                            const range& addr) {
-        notify(SIGTRAP);
+        update_status(GDB_STOPPED);
     }
 
     void gdbserver::notify_watchpoint_write(const watchpoint& wp,
                                             const range& addr,
                                             u64 newval) {
-        notify(SIGTRAP);
+        update_status(GDB_STOPPED);
     }
 
     const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
@@ -119,12 +114,11 @@ namespace vcml { namespace debugging {
         while (m_status == GDB_STEPPING) {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
-                m_signal = GDBSIG_TRAP;
                 update_status(GDB_STOPPED);
             }
         }
 
-        return mkstr("S%02x", m_signal);
+        return mkstr("S%02x", GDBSIG_TRAP);
     }
 
     string gdbserver::handle_continue(const char* command) {
@@ -133,12 +127,11 @@ namespace vcml { namespace debugging {
         while (m_status == GDB_RUNNING) {
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
-                m_signal = GDBSIG_TRAP;
                 update_status(GDB_STOPPED);
             }
         }
 
-        return mkstr("S%02x", m_signal);
+        return mkstr("S%02x", GDBSIG_TRAP);
     }
 
     string gdbserver::handle_detach(const char* command) {
@@ -467,7 +460,6 @@ namespace vcml { namespace debugging {
         m_default(status),
         m_regmap(),
         m_sync(true),
-        m_signal(-1),
         m_handler() {
         VCML_ERROR_ON(!stub, "no debug stub given");
 
@@ -506,7 +498,7 @@ namespace vcml { namespace debugging {
         m_handler['?'] = &gdbserver::handle_exception;
 
         if (m_status == GDB_STOPPED)
-            request_pause();
+            suspend();
 
         run_async();
     }
@@ -528,7 +520,7 @@ namespace vcml { namespace debugging {
 
             case GDB_STEPPING:
                 m_target->gdb_simulate(1);
-                notify(GDBSIG_TRAP);
+                update_status(GDB_STOPPED);
                 cycles--;
                 break;
 

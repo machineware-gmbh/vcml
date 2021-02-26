@@ -21,14 +21,17 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/utils.h"
+#include "vcml/common/thctl.h"
 
 namespace vcml { namespace debugging {
 
     class suspender
     {
     private:
-        string m_name;
-        sc_object* m_owner;
+        atomic<int> m_pcount;
+        string      m_name;
+        sc_object*  m_owner;
 
     public:
         const char* name() const { return m_name.c_str(); }
@@ -40,10 +43,7 @@ namespace vcml { namespace debugging {
 
         bool is_suspending() const;
 
-        void request_pause();
-        void wait_for_pause();
-
-        void pause();
+        void suspend();
         void resume();
 
         static suspender* current();
