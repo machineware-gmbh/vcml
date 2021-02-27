@@ -20,20 +20,10 @@
 
 class suspender_test: public test_base, debugging::suspender
 {
-public:
-    bool done;
-
-    suspender_test(const sc_module_name& nm = "test"):
-        test_base(nm),
-        debugging::suspender("suspender"),
-        done(false) {
-    }
-
-    virtual void run_test() override {
-        EXPECT_EQ(owner(), this);
-        EXPECT_STREQ(suspender::name(), "test.suspender");
-
-        std::thread th([&]() -> void {
+private:
+    void test_resume() {
+        done = false;
+        std::thread t([&]() -> void {
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
@@ -56,9 +46,52 @@ public:
         while (!done)
             wait(1, SC_MS);
 
+        t.join();
+    }
+
+    void test_forced_resume() {
+        done = false;
+        std::thread t([&]() -> void {
+            EXPECT_FALSE(is_suspending());
+            EXPECT_EQ(debugging::suspender::current(), nullptr);
+
+            suspend();
+
+            EXPECT_TRUE(is_suspending());
+            EXPECT_EQ(debugging::suspender::current(),
+                      (debugging::suspender*)this);
+
+            done = true;
+
+            debugging::suspender::force_resume();
+
+            EXPECT_FALSE(is_suspending());
+            EXPECT_EQ(debugging::suspender::current(), nullptr);
+        });
+
+        while (!done)
+            wait(1, SC_MS);
+
         EXPECT_TRUE(done);
 
-        th.join();
+        t.join();
+    }
+
+public:
+    bool done;
+
+    suspender_test(const sc_module_name& nm = "test"):
+        test_base(nm),
+        debugging::suspender("suspender"),
+        done(false) {
+    }
+
+    virtual void run_test() override {
+        EXPECT_EQ(owner(), this);
+        EXPECT_STREQ(suspender::name(), "test.suspender");
+
+        test_resume();
+        test_forced_resume();
     }
 };
 

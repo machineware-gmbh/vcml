@@ -27,7 +27,7 @@ namespace vcml { namespace debugging {
 
     struct suspend_manager
     {
-        atomic<bool> m_is_suspended;
+        atomic<bool> is_suspended;
 
         mutable mutex sysc_lock;
         condition_variable_any sysc_notify;
@@ -38,12 +38,13 @@ namespace vcml { namespace debugging {
         void request_pause(suspender* s);
         void request_resume(suspender* s);
 
-        bool is_suspended() const { return m_is_suspended; }
         bool is_suspending(const suspender* s) const;
 
         size_t count() const;
 
         suspender* current() const;
+
+        void force_resume();
 
         void notify_suspend(sc_object* obj = nullptr);
         void notify_resume(sc_object* obj = nullptr);
@@ -89,6 +90,12 @@ namespace vcml { namespace debugging {
         return suspenders.front();
     }
 
+    void suspend_manager::force_resume() {
+        lock_guard<mutex> guard(suspender_lock);
+        suspenders.clear();
+        sysc_notify.notify_all();
+    }
+
     void suspend_manager::notify_suspend(sc_object* obj) {
         const auto& children = obj ? obj->get_child_objects()
                                    : sc_core::sc_get_top_level_objects();
@@ -121,7 +128,7 @@ namespace vcml { namespace debugging {
         if (count() == 0)
             return;
 
-        m_is_suspended = true;
+        is_suspended = true;
         notify_suspend();
 
         sysc_notify.wait(sysc_lock, [&]() -> bool {
@@ -129,11 +136,11 @@ namespace vcml { namespace debugging {
         });
 
         notify_resume();
-        m_is_suspended = false;
+        is_suspended = false;
     }
 
     suspend_manager::suspend_manager():
-        m_is_suspended(false),
+        is_suspended(false),
         sysc_lock(),
         sysc_notify(),
         suspender_lock(),
@@ -177,8 +184,12 @@ namespace vcml { namespace debugging {
         return g_manager.current();
     }
 
+    void suspender::force_resume() {
+        g_manager.force_resume();
+    }
+
     bool suspender::simulation_suspended() {
-        return g_manager.is_suspended();
+        return g_manager.is_suspended;
     }
 
     void suspender::handle_requests() {

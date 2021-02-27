@@ -47,7 +47,7 @@ namespace vcml { namespace debugging {
         void resume();
 
         static suspender* current();
-
+        static void force_resume();
         static bool simulation_suspended();
         static void handle_requests();
     };
