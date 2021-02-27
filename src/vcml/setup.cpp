@@ -147,6 +147,7 @@ namespace vcml {
     }
 
     int main(int argc, char** argv) {
+        int res = 0;
         setup s(argc, argv);
 
 #ifdef VCML_DEBUG
@@ -156,14 +157,21 @@ namespace vcml {
 #endif
 
         try {
-            return sc_core::sc_elab_and_sim(argc, argv);
+            res = sc_core::sc_elab_and_sim(argc, argv);
         } catch (vcml::report& r) {
             vcml::logger::log(r);
-            return EXIT_FAILURE;
+            res = EXIT_FAILURE;
         } catch (std::exception& e) {
             vcml::log_error("%s", e.what());
-            return EXIT_FAILURE;
+            res = EXIT_FAILURE;
         }
+
+        // at this point sc_is_running is false and no new critical sections
+        // should be entered, but we need to give those who are still waiting
+        // to execute a final chance to run
+        thctl_suspend();
+
+        return res;
     }
 
 }

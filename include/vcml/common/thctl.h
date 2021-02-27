@@ -29,6 +29,7 @@ namespace vcml {
 
     void thctl_enter_critical();
     void thctl_exit_critical();
+    void thctl_suspend();
 
     class thctl_guard
     {
@@ -41,9 +42,7 @@ namespace vcml {
     };
 
     inline thctl_guard::thctl_guard():
-        m_locking(sc_is_running() &&
-                  !thctl_is_sysc_thread() &&
-                  !thctl_is_in_critical()) {
+        m_locking(!thctl_is_sysc_thread() && !thctl_is_in_critical()) {
         if (m_locking)
             thctl_enter_critical();
     }
