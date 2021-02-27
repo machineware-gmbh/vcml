@@ -203,19 +203,6 @@ namespace vcml { namespace ui {
         KEYSYM_KPDELETE,
     };
 
-    enum key_state : u32 {
-        VCML_KEY_UP   = 0u,
-        VCML_KEY_DOWN = 1u,
-        VCML_KEY_HELD = 2u,
-    };
-
-    enum mouse_button : u32 {
-        BUTTON_NONE   = 0u,
-        BUTTON_LEFT   = 1u << 0,
-        BUTTON_MIDDLE = 1u << 1,
-        BUTTON_RIGHT  = 1u << 2,
-    };
-
     struct syminfo {
         u32  keysym; // vcml key symbol (check above)
         u32  code;   // linux key code (depends on keyboard layout)

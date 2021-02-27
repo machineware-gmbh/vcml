@@ -28,102 +28,6 @@
 
 namespace vcml { namespace ui {
 
-    void display::key_listener_state::notify_key(u32 sym, bool down) {
-        u32 state = down ? VCML_KEY_DOWN : VCML_KEY_UP;
-        if (down && sym == prev_sym)
-            state = VCML_KEY_HELD;
-
-        if (layout == "") {
-            dokey(sym, state);
-            return;
-        }
-
-        const auto& map = ui::keymap::lookup(layout);
-        auto info = map.lookup_symbol(sym);
-
-        if (info == nullptr) {
-            log_debug("no key code found for key 0x%x", sym);
-            return;
-        }
-
-        if (!info->is_special()) {
-            if (down && (shift_l ^ capsl) != info->shift)
-                dokey(KEY_LEFTSHIFT, info->shift ^ capsl);
-            if (down && (shift_r ^ capsl) != info->shift)
-                dokey(KEY_RIGHTSHIFT, info->shift ^ capsl);
-            if (down && alt_l != info->l_alt)
-                dokey(KEY_LEFTALT, info->l_alt);
-            if (down && alt_r != info->r_alt)
-                dokey(KEY_RIGHTALT, info->r_alt);
-        }
-
-        dokey(info->code, state);
-
-        if (!info->is_special()) {
-            if (down && (shift_l ^ capsl) != info->shift)
-                dokey(KEY_LEFTSHIFT, !(info->shift ^ capsl));
-            if (down && (shift_r ^ capsl) != info->shift)
-                dokey(KEY_RIGHTSHIFT, !(info->shift ^ capsl));
-            if (down && alt_l != info->l_alt)
-                dokey(KEY_LEFTALT, alt_l);
-            if (down && alt_r != info->r_alt)
-                dokey(KEY_RIGHTALT, alt_r);
-        }
-
-        if (info->code == KEY_CAPSLOCK && down)
-            capsl = !capsl;
-        if (info->code == KEY_LEFTSHIFT)
-            shift_l = down;
-        if (info->code == KEY_RIGHTSHIFT)
-            shift_r = down;
-        if (info->code == KEY_LEFTALT)
-            alt_l = down;
-        if (info->code == KEY_RIGHTALT)
-            alt_r = down;
-
-        prev_sym = down ? sym : -1;
-    }
-
-    void display::ptr_listener_state::notify_btn(u32 button, bool down) {
-        if (button == BUTTON_NONE)
-            return;
-
-        u32 state = buttons;
-        if (down)
-            state |=  (1u << (button - 1));
-        else
-            state &= ~(1u << (button - 1));
-
-        if (state == buttons)
-            return;
-
-        if (state && !buttons)
-            dobtn(BTN_TOUCH, VCML_KEY_DOWN);
-
-        u32 val = down ? VCML_KEY_DOWN : VCML_KEY_UP;
-
-        switch (button) {
-        case BUTTON_LEFT: (*btnev)(BTN_TOOL_FINGER, val); break;
-        case BUTTON_RIGHT: (*btnev)(BTN_TOOL_DOUBLETAP, val); break;
-        case BUTTON_MIDDLE: (*btnev)(BTN_TOOL_TRIPLETAP, val); break;
-        default:
-            break;
-        }
-
-        if (!state && buttons)
-            dobtn(BTN_TOUCH, VCML_KEY_UP);
-
-        buttons = state;
-    }
-
-    void display::ptr_listener_state::notify_pos(u32 x, u32 y) {
-        if (posev != nullptr && (x != prev_x || y != prev_y))
-            (*posev)(x, y);
-
-        prev_x = x;
-        prev_y = y;
-    }
-
     display::display(const string& type, u32 nr):
         m_name(mkstr("%s:%u", type.c_str(), nr)),
         m_type(type),
@@ -159,45 +63,38 @@ namespace vcml { namespace ui {
     }
 
     void display::notify_key(u32 keysym, bool down) {
-        thctl_guard guard;
-        for (auto& listener : m_key_listeners)
-            listener.notify_key(keysym, down);
+        for (keyboard* kb : m_keyboards)
+            kb->notify_key(keysym, down);
     }
 
     void display::notify_btn(u32 button, bool down) {
-        thctl_guard guard;
-        for (auto& listener : m_ptr_listeners)
-            listener.notify_btn(button, down);
+        for (ptrdev* ptr : m_pointers)
+            ptr->notify_btn(button, down);
     }
 
     void display::notify_pos(u32 x, u32 y) {
-        thctl_guard guard;
-        for (auto& listener : m_ptr_listeners)
-            listener.notify_pos(x, y);
+        for (ptrdev* ptr : m_pointers)
+            ptr->notify_pos(x, y);
     }
 
-    void display::add_key_listener(key_listener& l, const string& layout) {
-        m_key_listeners.push_back(key_listener_state(&l, layout));
+    void display::add_keyboard(keyboard* kb) {
+        m_keyboards.push_back(kb);
         if (!has_framebuffer())
             init(fbmode::a8r8g8b8(320, 200), nullptr);
     }
 
-    void display::add_ptr_listener(pos_listener& p, key_listener& k) {
-        m_ptr_listeners.push_back(ptr_listener_state(&p, &k));
+    void display::add_ptrdev(ptrdev* ptr) {
+        m_pointers.push_back(ptr);
         if (!has_framebuffer())
             init(fbmode::a8r8g8b8(320, 200), nullptr);
     }
 
-    void display::remove_key_listener(key_listener& l) {
-        stl_remove_erase_if(m_key_listeners, [l](key_listener_state& st) {
-            return st.keyev == &l;
-        });
+    void display::remove_keyboard(keyboard* kb) {
+        stl_remove_erase(m_keyboards, kb);
     }
 
-    void display::remove_ptr_listener(pos_listener& p, key_listener& k) {
-        stl_remove_erase_if(m_ptr_listeners, [p, k](ptr_listener_state& st) {
-            return st.posev == &p || st.btnev == &k;
-        });
+    void display::remove_ptrdev(ptrdev* ptr) {
+        stl_remove_erase(m_pointers, ptr);
     }
 
     static bool parse_display(const string& name, string& id, u32& nr) {

@@ -40,8 +40,9 @@ namespace vcml { namespace opencores {
     private:
         queue<u8> m_key_fifo;
 
-        ui::key_listener m_key_handler;
+        ui::keyboard m_keyboard;
 
+        void update();
         void key_event(u32 key, u32 down);
 
         u8 read_KHR();

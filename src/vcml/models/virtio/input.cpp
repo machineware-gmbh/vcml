@@ -176,6 +176,23 @@ namespace vcml { namespace virtio {
     }
 
     void input::update() {
+        ui::input_event event = {};
+        while (m_keyboard.pop_event(event)) {
+            push_key(event.key.code, event.key.state);
+            push_sync();
+        }
+
+        while (m_ptrdev.pop_event(event)) {
+            if (event.is_key()) {
+                push_key(event.key.code, event.key.state);
+                push_sync();
+            } else if (event.is_ptr()) {
+                push_abs(ABS_X, event.ptr.x);
+                push_abs(ABS_Y, event.ptr.y);
+                push_sync();
+            }
+        }
+
         if (!m_events.empty() && !m_messages.empty()) {
             vq_message msg(m_messages.front());
             input_event event(m_events.front());
@@ -244,8 +261,8 @@ namespace vcml { namespace virtio {
     input::input(const sc_module_name& nm):
         module(nm),
         m_config(),
-        m_key_listener(),
-        m_ptr_listener(),
+        m_keyboard(),
+        m_ptrdev(),
         touchpad("touchpad", true),
         keyboard("keyboard", true),
         pollrate("pollrate", 1000),
@@ -254,18 +271,14 @@ namespace vcml { namespace virtio {
         VIRTIO_IN("VIRTIO_IN") {
         VIRTIO_IN.bind(*this);
 
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-
-        m_key_listener = std::bind(&input::key_event, this, _1, _2);
-        m_ptr_listener = std::bind(&input::ptr_event, this, _1, _2);
+        m_keyboard.set_layout(keymap);
 
         if (display != "") {
             auto disp = ui::display::lookup(display);
             if (keyboard)
-                disp->add_key_listener(m_key_listener, keymap);
+                disp->add_keyboard(&m_keyboard);
             if (touchpad)
-                disp->add_ptr_listener(m_ptr_listener, m_key_listener);
+                disp->add_ptrdev(&m_ptrdev);
         }
 
         if (keyboard || touchpad) {
@@ -288,9 +301,9 @@ namespace vcml { namespace virtio {
         if (display != "") {
             auto disp = ui::display::lookup(display);
             if (keyboard)
-                disp->remove_key_listener(m_key_listener);
+                disp->remove_keyboard(&m_keyboard);
             if (touchpad)
-                disp->remove_ptr_listener(m_ptr_listener, m_key_listener);
+                disp->remove_ptrdev(&m_ptrdev);
             disp->shutdown();
         }
     }

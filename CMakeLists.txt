@@ -73,8 +73,9 @@ set(sources
     ${src}/vcml/debugging/rspserver.cpp
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
-    ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/fbmode.cpp
+    ${src}/vcml/ui/keymap.cpp
+    ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
     ${src}/vcml/sbi.cpp
     ${src}/vcml/dmi_cache.cpp

@@ -25,6 +25,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/debugging/suspender.h"
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/fbmode.h"

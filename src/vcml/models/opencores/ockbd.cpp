@@ -22,22 +22,29 @@
 
 namespace vcml { namespace opencores {
 
-    void ockbd::key_event(u32 key, u32 state) {
-        u8 scancode = (u8)(key & 0xff);
-        bool down = (state != ui::VCML_KEY_UP);
+    void ockbd::update() {
+        ui::input_event event;
+        while (m_keyboard.pop_event(event)) {
+            VCML_ERROR_ON(!event.is_key(), "illegal event from keyboard");
+            u8 scancode = (u8)(event.key.code & 0xff);
+            bool down = (event.key.state != ui::VCML_KEY_UP);
 
-        if (!down)
-            scancode |= MOD_RELEASE;
+            if (!down)
+                scancode |= MOD_RELEASE;
 
-        if (m_key_fifo.size() < fifosize)
-            m_key_fifo.push(scancode);
-        else if (down)
-            log_debug("FIFO full, dropping key 0x%x", scancode);
+            if (m_key_fifo.size() < fifosize)
+                m_key_fifo.push(scancode);
+            else
+                log_debug("FIFO full, dropping key");
+        }
 
         if (!IRQ && !m_key_fifo.empty())
             log_debug("setting IRQ");
 
         IRQ = !m_key_fifo.empty();
+
+        sc_time quantum = tlm_global_quantum::instance().get();
+        next_trigger(max(clock_cycle(), quantum));
     }
 
     u8 ockbd::read_KHR() {
@@ -63,24 +70,23 @@ namespace vcml { namespace opencores {
     ockbd::ockbd(const sc_module_name& nm):
         peripheral(nm),
         m_key_fifo(),
-        m_key_handler(),
+        m_keyboard(),
         KHR("KHR", 0x0, 0),
         IRQ("IRQ"),
         IN("IN"),
         keymap("keymap", "us"),
         display("display", ""),
         fifosize("fifosize", 16) {
+        m_keyboard.set_layout(keymap);
 
         KHR.allow_read_only();
         KHR.read = &ockbd::read_KHR;
 
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        m_key_handler = std::bind(&ockbd::key_event, this, _1, _2);
-
         if (display != "") {
             auto disp = ui::display::lookup(display);
-            disp->add_key_listener(m_key_handler, keymap);
+            disp->add_keyboard(&m_keyboard);
+            SC_HAS_PROCESS(ockbd);
+            SC_METHOD(update);
         }
     }
 
@@ -91,7 +97,7 @@ namespace vcml { namespace opencores {
     void ockbd::end_of_simulation() {
         if (display != "") {
             auto disp = ui::display::lookup(display);
-            disp->remove_key_listener(m_key_handler);
+            disp->remove_keyboard(&m_keyboard);
             disp->shutdown();
         }
     }

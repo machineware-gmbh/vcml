@@ -378,7 +378,6 @@ namespace vcml { namespace ui {
     void sdl::poll_events() {
         SDL_Event event = {};
         while (SDL_PollEvent(&event) && sc_is_running()) {
-            thctl_guard guard;
             lock_guard<mutex> lock(m_mutex);
             switch (event.type) {
             case SDL_QUIT:
@@ -389,6 +388,9 @@ namespace vcml { namespace ui {
                 if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
                     SDL_HideWindow(client->window);
                     sc_stop();
+
+                    if (debugging::suspender::simulation_suspended())
+                        debugging::suspender::force_resume();
                 }
 
                 if (event.window.event == SDL_WINDOWEVENT_EXPOSED && client)

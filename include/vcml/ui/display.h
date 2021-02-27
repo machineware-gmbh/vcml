@@ -28,11 +28,9 @@
 
 #include "vcml/ui/fbmode.h"
 #include "vcml/ui/keymap.h"
+#include "vcml/ui/input.h"
 
 namespace vcml { namespace ui {
-
-    typedef function<void(u32, u32)> key_listener;
-    typedef function<void(u32, u32)> pos_listener;
 
     class display
     {
@@ -44,55 +42,8 @@ namespace vcml { namespace ui {
         u8*    m_fb;
         u8*    m_nullfb;
 
-        struct key_listener_state {
-            key_listener* keyev;
-            string layout;
-
-            bool shift_l;
-            bool shift_r;
-            bool capsl;
-            bool alt_l;
-            bool alt_r;
-            u32 prev_sym;
-
-            bool shift() const { return shift_l | shift_r; }
-
-            void dokey(u32 key, u32 state) {
-                if (keyev != nullptr)
-                    (*keyev)(key, state);
-            }
-
-            key_listener_state(key_listener* k, const string& l): keyev(k),
-                layout(l), shift_l(), shift_r(), capsl(), alt_l(), alt_r(),
-                prev_sym() {
-            }
-
-            void notify_key(u32 sym, bool down);
-        };
-
-        struct ptr_listener_state {
-            key_listener* btnev;
-            pos_listener* posev;
-
-            u32 buttons;
-            u32 prev_x;
-            u32 prev_y;
-
-            void dobtn(u32 btn, u32 state) {
-                if (btnev != nullptr)
-                    (*btnev)(btn, state);
-            }
-
-            ptr_listener_state(pos_listener* pos, key_listener* btn):
-                btnev(btn), posev(pos), buttons(), prev_x(), prev_y() {
-            }
-
-            void notify_btn(u32 btn, bool down);
-            void notify_pos(u32 x, u32 y);
-        };
-
-        vector<key_listener_state> m_key_listeners;
-        vector<ptr_listener_state> m_ptr_listeners;
+        vector<keyboard*> m_keyboards;
+        vector<ptrdev*> m_pointers;
 
     protected:
         static unordered_map<string, function<display*(u32)>> types;
@@ -129,11 +80,11 @@ namespace vcml { namespace ui {
         virtual void notify_btn(u32 button, bool down);
         virtual void notify_pos(u32 x, u32 y);
 
-        virtual void add_key_listener(key_listener& l, const string& layout);
-        virtual void add_ptr_listener(pos_listener& p, key_listener& k);
+        virtual void add_keyboard(keyboard* kb);
+        virtual void add_ptrdev(ptrdev* ptr);
 
-        virtual void remove_key_listener(key_listener& l);
-        virtual void remove_ptr_listener(pos_listener& p, key_listener& k);
+        virtual void remove_keyboard(keyboard* kb);
+        virtual void remove_ptrdev(ptrdev* ptr);
 
         static shared_ptr<display> lookup(const string& name);
         static void register_display_type(const string& type,
