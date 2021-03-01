@@ -150,6 +150,10 @@ namespace vcml {
         if (virt)
             os << " (virtual)";
 
+        u64 maxsz = 0;
+        for (auto insn : disas)
+            maxsz = max(maxsz, insn.size);
+
         for (auto insn : disas) {
             os << "\n" << (insn.addr == program_counter() ? " > " : "   ");
             if (insn.sym != nullptr) {
@@ -160,7 +164,7 @@ namespace vcml {
                 }
             }
 
-            os << HEX(insn.addr, 16) << " ";
+            os << HEX(insn.addr, 16) << ": ";
 
             u64 phys = insn.addr;
             if (virt) {
@@ -170,7 +174,18 @@ namespace vcml {
                     os << "????????????????";
             }
 
-            os << HEX(insn.insn, insn.size * 2) << " " << insn.code;
+            os << "[";
+            for (u64 i = 0; i < insn.size; i++) {
+                os << HEX((int)insn.insn[i], 2);
+                if (i < insn.size - 1)
+                    os << " ";
+            }
+            os << "]";
+
+            for (u64 i = insn.size; i < maxsz; i++)
+                os << "   ";
+
+            os << " " << insn.code;
         }
 
         return true;

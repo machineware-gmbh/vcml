@@ -63,7 +63,7 @@ namespace vcml { namespace debugging {
 
     struct disassembly {
         string code;
-        u64 insn;
+        u8 insn[16];
         u64 addr;
         u64 size;
         const symbol* sym;
@@ -132,7 +132,7 @@ namespace vcml { namespace debugging {
         virtual u64 link_register();
         virtual u64 stack_pointer();
 
-        virtual bool disassemble(void* ibuf, u64& addr, string& code);
+        virtual bool disassemble(u8* ibuf, u64& addr, string& code);
         virtual bool disassemble(u64 addr, u64 count, vector<disassembly>& s);
         virtual bool disassemble(const range& addr, vector<disassembly>& s);
 

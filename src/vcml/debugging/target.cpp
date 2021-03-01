@@ -187,7 +187,7 @@ namespace vcml { namespace debugging {
         return 0; // to be overloaded
     }
 
-    bool target::disassemble(void* ibuf, u64& addr, string& code) {
+    bool target::disassemble(u8* ibuf, u64& addr, string& code) {
         return false; // to be overloaded
     }
 
@@ -197,21 +197,18 @@ namespace vcml { namespace debugging {
             disas.addr = addr;
 
             const u64 size = sizeof(disas.insn);
-            if (read_vmem_dbg(addr, &disas.insn, size) != size)
+            if (read_vmem_dbg(addr, disas.insn, size) != size)
                 break;
 
-            if (!disassemble(&disas.insn, addr, disas.code))
+            if (!disassemble(disas.insn, addr, disas.code))
                 break;
 
             disas.size = addr - disas.addr;
             VCML_ERROR_ON(disas.size == 0, "disassembler address stuck");
-            VCML_ERROR_ON(disas.size > 8, "insn size exceeds 8 byte limit");
+            VCML_ERROR_ON(disas.size > size, "instruction size exceeds limit");
 
-            if (disas.size < 8)
-                disas.insn &= bitmask(disas.size * 8);
-
-            if (is_big_endian())
-                memswap(&disas.insn, disas.size);
+            if (disas.size < size)
+                memset(disas.insn + disas.size, 0, size - disas.size);
 
             disas.sym = m_symbols.find_function(disas.addr);
             s.push_back(disas);
@@ -239,12 +236,11 @@ namespace vcml { namespace debugging {
                 break;
 
             disas.size = pos - disas.addr;
+            const u64 lim = sizeof(disas.insn);
             VCML_ERROR_ON(disas.size == 0, "disassembler address stuck");
-            VCML_ERROR_ON(disas.size > 8, "insn size exceeds 8 byte limit");
+            VCML_ERROR_ON(disas.size > lim, "insn size exceeds limit");
 
-            memcpy(&disas.insn, ptr, disas.size);
-            if (is_big_endian())
-                memswap(&disas.insn, disas.size);
+            memcpy(disas.insn, ptr, disas.size);
 
             disas.sym = m_symbols.find_function(disas.addr);
             s.push_back(disas);
