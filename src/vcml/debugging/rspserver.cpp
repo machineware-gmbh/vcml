@@ -58,16 +58,22 @@ namespace vcml { namespace debugging {
 
     void rspserver::send_char(char c) {
         VCML_ERROR_ON(m_fd == -1, "not connected");
-        if (send(m_fd, &c, sizeof(c), 0) != sizeof(c))
+        int res = send(m_fd, &c, sizeof(c), 0);
+        if (res < 0)
             VCML_REPORT("error sending data '%c': %s", c, strerror(errno));
+        if (res == 0)
+            VCML_REPORT("error sending data: disconnected");
     }
 
     char rspserver::recv_char() {
         VCML_ERROR_ON(m_fd == -1, "not connected");
 
         char ch = 0;
-        if (recv(m_fd, &ch, sizeof(ch), 0) != sizeof(ch))
+        int res = recv(m_fd, &ch, sizeof(ch), 0);
+        if (res < 0)
             VCML_REPORT("error receiving data: %s", strerror(errno));
+        if (res == 0)
+            VCML_REPORT("error receiving data: disconnected");
         return ch;
     }
 
@@ -200,8 +206,11 @@ namespace vcml { namespace debugging {
             return 0;
 
         char signal = 0;
-        if (recv(m_fd, &signal, 1, MSG_DONTWAIT) != 1)
+        int res = recv(m_fd, &signal, 1, MSG_DONTWAIT);
+        if (res < 0)
             VCML_ERROR("recv failed: %s", strerror(errno));
+        if (res == 0)
+            VCML_ERROR("recv failed: disconnected");
         return (int)signal;
     }
 
