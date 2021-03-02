@@ -143,7 +143,8 @@ namespace vcml {
             return false;
         }
 
-        os << "Disassembly of " << HEX(vstart, 16) << ".." << HEX(vend, 16);
+        os << "Disassembly of " << HEX(vstart, vstart > ~0u ? 16 : 8)
+           << ".." << HEX(vend, vend  > ~0u ? 16 : 8);
 
         u64 pgsz;
         bool virt = page_size(pgsz);
@@ -164,17 +165,17 @@ namespace vcml {
                 }
             }
 
-            os << HEX(insn.addr, 16) << ": ";
+            os << HEX(insn.addr, insn.addr > ~0u ? 16 : 8);
 
             u64 phys = insn.addr;
             if (virt) {
                 if (virt_to_phys(insn.addr, phys))
-                    os << HEX(phys, 16) << " ";
+                    os << " " << HEX(phys, phys > ~0u ? 16 : 8);
                 else
                     os << "????????????????";
             }
 
-            os << "[";
+            os << ": [";
             for (u64 i = 0; i < insn.size; i++) {
                 os << HEX((int)insn.insn[i], 2);
                 if (i < insn.size - 1)
