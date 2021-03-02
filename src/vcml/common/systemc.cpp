@@ -37,6 +37,12 @@ namespace vcml {
         return parent->get_attribute(name);
     }
 
+#if SYSTEMC_VERSION < 20140417
+    const sc_time SC_MAX_TIME = sc_time(~0ull, false);
+#else
+    const sc_time SC_MAX_TIME = sc_time::from_value(~0ull);
+#endif
+
     bool is_thread(sc_process_b* proc) {
         if (!thctl_is_sysc_thread())
             return false;

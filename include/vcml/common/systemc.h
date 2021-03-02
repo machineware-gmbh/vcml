@@ -63,6 +63,8 @@ namespace vcml {
     using sc_core::sc_time;
     using sc_core::sc_time_stamp;
 
+    extern const sc_core::sc_time SC_MAX_TIME;
+
     using sc_core::SC_ZERO_TIME;
     using sc_core::SC_SEC;
     using sc_core::SC_MS;
