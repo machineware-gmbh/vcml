@@ -24,6 +24,7 @@ as [`viper`](https://github.com/janweinstock/viper/), which enables you to:
 * View processor disassembly, memory content, bus memory maps, UART output, etc.
 * List and execute module commands
 
+<a href="https://raw.githubusercontent.com/janweinstock/viper/master/pictures/uart.png"><img src="https://raw.githubusercontent.com/janweinstock/viper/master/pictures/uart.png" alt="viper uart view, Windows" width="400" /></a>
 <a href="https://raw.githubusercontent.com/janweinstock/viper/master/pictures/smp2.png"><img src="https://raw.githubusercontent.com/janweinstock/viper/master/pictures/smp2.png" alt="viper smp cpu view, Ubuntu" width="400" /></a>
 
 ----
