@@ -16,6 +16,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [Properties](properties.md)
   * [Backends](backends.md)
   * [Peripherals](peripherals.md)
+  * [Session](session.md)
 
 * Documentation for VCML hardware models:
   * [Generic Memory](models/generic_mem.md)
