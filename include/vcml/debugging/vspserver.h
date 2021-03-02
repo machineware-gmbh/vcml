@@ -23,13 +23,17 @@
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+
 #include "vcml/debugging/rspserver.h"
+#include "vcml/debugging/suspender.h"
 
 namespace vcml { namespace debugging {
 
-    class vspserver: public rspserver {
+    class vspserver: public rspserver,
+                     private suspender {
     private:
-        string m_announce;
+        string  m_announce;
+        sc_time m_duration;
 
         string handle_none(const char* command);
         string handle_step(const char* command);
@@ -44,10 +48,8 @@ namespace vcml { namespace debugging {
         string handle_quit(const char* command);
         string handle_vers(const char* command);
 
-        void run_interruptible(const sc_time& duration);
-
-        void notify_suspend(sc_object* obj);
-        void notify_resume(sc_object* obj);
+        void resume_simulation(const sc_time& duration);
+        void force_quit();
 
     public:
         vspserver() = delete;
@@ -55,7 +57,6 @@ namespace vcml { namespace debugging {
         virtual ~vspserver();
 
         void start();
-        void interrupt();
         void cleanup();
 
         virtual void handle_connect(const char* peer) override;

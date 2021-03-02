@@ -52,18 +52,12 @@ namespace vcml { namespace debugging {
             duration = tlm::tlm_global_quantum::instance().get();
         }
 
-        run_interruptible(duration);
-
-        // Make sure we are still connected, since during an IO interrupt
-        // we may have disconnected due to a protocol error.
+        resume_simulation(duration);
         return is_connected() ? "OK" : "";
     }
 
     string vspserver::handle_cont(const char* command) {
-        run_interruptible(SC_ZERO_TIME);
-
-        // Make sure we are still connected, since during an IO interrupt
-        // we may have disconnected due to a protocol error.
+        resume_simulation(SC_MAX_TIME);
         return is_connected() ? "OK" : "";
     }
 
@@ -252,8 +246,7 @@ namespace vcml { namespace debugging {
     }
 
     string vspserver::handle_quit(const char* command) {
-        stop();
-        sc_stop();
+        force_quit();
         return "OK";
     }
 
@@ -268,70 +261,53 @@ namespace vcml { namespace debugging {
         return ss.str();
     }
 
-    static void do_interrupt(int fd, int event) {
-        VCML_ERROR_ON(session == nullptr, "interrupt on no session");
-        session->interrupt();
-    }
+    void vspserver::resume_simulation(const sc_time& duration) {
+        m_duration = duration;
+        resume();
 
-    void vspserver::run_interruptible(const sc_time& duration) {
-        thctl_enter_critical();
-        notify_resume(nullptr);
-        aio_notify(get_connection_fd(), &do_interrupt, AIO_ONCE);
-        if (duration != SC_ZERO_TIME)
-            sc_start(duration);
-        else
-            sc_start();
-        aio_cancel(get_connection_fd());
-        notify_suspend(nullptr);
-        thctl_exit_critical();
+        try {
+            while (!is_suspending()) {
+                int signal = recv_signal(100);
+                switch (signal) {
+                case 0x0:
+                    break;
 
-        switch (sc_core::sc_get_curr_simcontext()->sim_status()) {
-        case sc_core::SC_SIM_ERROR:
-            send_packet(ERR_INTERNAL);
+                case 'u': // update time
+                    send_packet(handle_time(nullptr));
+                    break;
+
+                case 'x': // quit
+                    force_quit();
+                    return;
+
+                case 'a': // pause
+                    sc_pause();
+                    return;
+
+                default:
+                    log_debug("received unknown signal 0x%x", signal);
+                    break;
+                }
+            }
+        } catch (...) {
+            sc_pause();
             disconnect();
-            stop();
-            break;
-        case sc_core::SC_SIM_USER_STOP:
-            send_packet("STOP");
-            disconnect();
-            stop();
-            break;
-        case sc_core::SC_SIM_OK:
-        default:
-            break;
         }
     }
 
-    void vspserver::notify_suspend(sc_object* obj) {
-        const auto& children = obj ? obj->get_child_objects()
-                                   : sc_core::sc_get_top_level_objects();
-        for (auto child : children)
-            notify_suspend(child);
+    void vspserver::force_quit() {
+        sc_stop();
 
-        if (obj == nullptr)
-            return;
+        if (is_connected())
+            disconnect();
 
-        module* mod = dynamic_cast<module*>(obj);
-        if (mod != nullptr)
-            mod->session_suspend();
-    }
-
-    void vspserver::notify_resume(sc_object* obj) {
-        const auto& children = obj ? obj->get_child_objects()
-                                   : sc_core::sc_get_top_level_objects();
-        for (auto child : children)
-            notify_resume(child);
-
-        if (obj == nullptr)
-            return;
-
-        module* mod = dynamic_cast<module*>(obj);
-        if (mod != nullptr)
-            mod->session_resume();
+        if (debugging::suspender::simulation_suspended())
+            debugging::suspender::force_resume();
     }
 
     vspserver::vspserver(u16 port):
         rspserver(port),
+        suspender("vspserver"),
         m_announce(temp_dir() + mkstr("vcml_session_%d", (int)port)) {
         VCML_ERROR_ON(session != nullptr, "vspserver already created");
         session = this;
@@ -350,6 +326,11 @@ namespace vcml { namespace debugging {
         register_handler("A", std::bind(&vspserver::handle_seta, this, _1));
         register_handler("x", std::bind(&vspserver::handle_quit, this, _1));
         register_handler("v", std::bind(&vspserver::handle_vers, this, _1));
+
+        // Create announce file
+        ofstream of(m_announce.c_str());
+        of << "localhost:" << std::dec << get_port() << ":" << username()
+           << ":" << progname() << std::endl;
     }
 
     vspserver::~vspserver() {
@@ -358,49 +339,30 @@ namespace vcml { namespace debugging {
     }
 
     void vspserver::start() {
-        cleanup();
-
-        // Create announce file
-        ofstream of(m_announce.c_str());
-        of << "localhost:" << std::dec << get_port() << ":" << username()
-           << ":" << progname() << std::endl;
+        run_async();
+        log_info("vspserver listening on port %d", (int)get_port());
 
         // Finish elaboration first before processing commands
         sc_start(SC_ZERO_TIME);
-        log_info("vspserver listening on port %d", (int)get_port());
+        suspend();
 
-        thctl_exit_critical();
-        run();
-    }
+        while (sc_is_running()) {
+            suspender::handle_requests();
+            if (!sc_is_running())
+                break;
 
-    void vspserver::interrupt() {
-        try {
-            int sig = recv_signal();
-            switch (sig) {
-            case 0x00: // terminate request
-            case  'x':
-                sc_stop();
-                return;
+            if (m_duration == SC_MAX_TIME)
+                sc_start();
+            else
+                sc_start(m_duration);
 
-            case 0x03: // interrupt request
-            case  'a':
-                sc_pause();
-                return;
-
-            case 0x42: // update request
-            case  'u':
-                send_packet(handle_time(nullptr));
-                aio_notify(get_connection_fd(), &do_interrupt, AIO_ONCE);
-                return;
-
-            default:
-                VCML_ERROR("invalid signal received: 0x%x", sig);
-            }
-
-        } catch (...) {
-            sc_pause();
-            disconnect();
+            if (sc_is_running())
+                suspend();
         }
+
+        if (is_connected())
+            disconnect();
+        stop();
     }
 
     void vspserver::cleanup() {
@@ -418,7 +380,8 @@ namespace vcml { namespace debugging {
     }
 
     void vspserver::handle_disconnect() {
-        log_info("vspserver listening on port %d", (int)get_port());
+        if (sc_is_running())
+            log_info("vspserver listening on port %d", (int)get_port());
     }
 
 }}
