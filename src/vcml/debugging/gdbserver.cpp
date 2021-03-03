@@ -53,7 +53,7 @@ namespace vcml { namespace debugging {
 
     void gdbserver::update_status(gdb_status status) {
         if (!is_connected())
-            m_status = m_default;
+            status = m_default;
 
         if (m_status == status)
             return;
@@ -143,6 +143,8 @@ namespace vcml { namespace debugging {
         disconnect();
         update_status(GDB_KILLED);
         sc_stop();
+        if (suspender::simulation_suspended())
+            suspender::force_resume();
         return "";
     }
 
@@ -553,6 +555,7 @@ namespace vcml { namespace debugging {
 
     void gdbserver::handle_disconnect() {
         log_debug("gdb disconnected");
+        log_debug("0x%x", m_default);
         update_status(m_default);
     }
 
