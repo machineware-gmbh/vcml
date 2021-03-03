@@ -44,8 +44,8 @@ namespace vcml { namespace debugging {
         struct sockaddr_in m_server;
         struct sockaddr_in m_client;
 
-        bool      m_running;
-        pthread_t m_thread;
+        bool   m_running;
+        thread m_thread;
 
         std::map<string, handler> m_handlers;
 

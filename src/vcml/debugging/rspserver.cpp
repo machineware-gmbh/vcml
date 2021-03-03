@@ -50,12 +50,6 @@ namespace vcml { namespace debugging {
         return hexchars[h & 0xf];
     }
 
-    static void* rsp_thread_func(void* arg) {
-        rspserver* server = (rspserver*)arg;
-        server->run();
-        return NULL;
-    }
-
     void rspserver::send_char(char c) {
         VCML_ERROR_ON(m_fd == -1, "not connected");
         int res = send(m_fd, &c, sizeof(c), 0);
@@ -100,8 +94,12 @@ namespace vcml { namespace debugging {
             m_fd_server = -1;
         }
 
-        if (m_thread)
-            pthread_cancel(m_thread);
+        m_running = false;
+        if (m_thread.joinable()) {
+            // needed to kick thread out of 'accept'
+            pthread_cancel(m_thread.native_handle());
+            m_thread.join();
+        }
     }
 
     void rspserver::send_packet(const char* format, ...) {
@@ -252,12 +250,9 @@ namespace vcml { namespace debugging {
     }
 
     void rspserver::run_async() {
-        if (pthread_create(&m_thread, NULL, &rsp_thread_func, this))
-            VCML_ERROR("failed to spawn rsp listener thread");
-
+        m_thread = thread(std::bind(&rspserver::run, this));
         stringstream ss; ss << "rsp_" << m_port;
-        if (pthread_setname_np(m_thread, ss.str().c_str()))
-            VCML_ERROR("failed to name rsp listener thread");
+        set_thread_name(m_thread, ss.str());
     }
 
     void rspserver::run() {
