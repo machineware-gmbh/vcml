@@ -555,7 +555,6 @@ namespace vcml { namespace debugging {
 
     void gdbserver::handle_disconnect() {
         log_debug("gdb disconnected");
-        log_debug("0x%x", m_default);
         update_status(m_default);
     }
 
