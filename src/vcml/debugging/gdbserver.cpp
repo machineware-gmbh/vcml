@@ -60,13 +60,19 @@ namespace vcml { namespace debugging {
 
         switch (status) {
         case GDB_STOPPED:
-            suspend();
+            m_target->halt();
             break;
 
         case GDB_RUNNING:
+            m_target->cont();
+            break;
+
         case GDB_STEPPING:
+            m_target->step();
+            break;
+
         case GDB_KILLED:
-            resume();
+            m_target->cont();
             break;
 
         default:
@@ -109,28 +115,30 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_step(const char* command) {
-        int signal = 0;
         update_status(GDB_STEPPING);
-        while (m_status == GDB_STEPPING) {
+        while (m_target->is_running()) {
+            int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
                 update_status(GDB_STOPPED);
             }
         }
 
+        update_status(GDB_STOPPED);
         return mkstr("S%02x", GDBSIG_TRAP);
     }
 
     string gdbserver::handle_continue(const char* command) {
-        int signal = 0;
         update_status(GDB_RUNNING);
-        while (m_status == GDB_RUNNING) {
+        while (m_target->is_running()) {
+            int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
                 update_status(GDB_STOPPED);
             }
         }
 
+        update_status(GDB_STOPPED);
         return mkstr("S%02x", GDBSIG_TRAP);
     }
 
@@ -455,7 +463,6 @@ namespace vcml { namespace debugging {
 
     gdbserver::gdbserver(u16 port, target* stub, gdb_status status):
         rspserver(port),
-        suspender("gdbserver"),
         subscriber(),
         m_target(stub),
         m_status(status),
@@ -500,39 +507,13 @@ namespace vcml { namespace debugging {
         m_handler['?'] = &gdbserver::handle_exception;
 
         if (m_status == GDB_STOPPED)
-            suspend();
+            m_target->halt();
 
         run_async();
     }
 
     gdbserver::~gdbserver() {
         /* nothing to do */
-    }
-
-    void gdbserver::simulate(unsigned int cycles) {
-        while (cycles > 0) {
-            suspender::handle_requests();
-
-            switch (m_status) {
-            case GDB_KILLED:
-                return;
-
-            case GDB_STOPPED:
-                return;
-
-            case GDB_STEPPING:
-                m_target->gdb_simulate(1);
-                update_status(GDB_STOPPED);
-                cycles--;
-                break;
-
-            case GDB_RUNNING:
-            default:
-                m_target->gdb_simulate(cycles);
-                cycles = 0;
-                break;
-            }
-        }
     }
 
     string gdbserver::handle_command(const string& command) {

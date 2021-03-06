@@ -167,11 +167,13 @@ namespace vcml { namespace debugging {
         return g_manager.is_suspending(this);
     }
 
-    void suspender::suspend() {
+    void suspender::suspend(bool wait) {
         if (m_pcount++ == 0)
             g_manager.request_pause(this);
-        if (!thctl_is_sysc_thread())
+
+        if (wait && !thctl_is_sysc_thread()) {
             lock_guard<mutex> lock(g_manager.sysc_lock);
+        }
     }
 
     void suspender::resume() {

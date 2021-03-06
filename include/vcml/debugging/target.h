@@ -23,10 +23,12 @@
 #include "vcml/common/thctl.h"
 #include "vcml/common/bitops.h"
 #include "vcml/common/range.h"
+#include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/debugging/symtab.h"
 #include "vcml/debugging/subscriber.h"
+#include "vcml/debugging/suspender.h"
 
 namespace vcml { namespace debugging {
 
@@ -69,12 +71,14 @@ namespace vcml { namespace debugging {
         const symbol* sym;
     };
 
-    class target
+    class target : private suspender
     {
     private:
         endianess m_endian;
         unordered_map<u64, cpureg> m_cpuregs;
         symtab m_symbols;
+
+        atomic<bool> m_stepping;
 
         vector<breakpoint> m_breakpoints;
         vector<watchpoint> m_watchpoints;
@@ -145,10 +149,15 @@ namespace vcml { namespace debugging {
         bool insert_watchpoint(const range& mem, vcml_access a, subscriber* s);
         bool remove_watchpoint(const range& mem, vcml_access a, subscriber* s);
 
+        void halt();
+        void step();
+        void cont();
+
+        bool is_running() const;
+        bool is_stepping() const;
+
         virtual void gdb_collect_regs(vector<string>& gdbregs);
         virtual bool gdb_command(const string& command, string& response);
-
-        virtual void gdb_simulate(unsigned int cycles) = 0;
 
         static vector<target*> targets();
         static target* find(const char* name);
@@ -180,6 +189,14 @@ namespace vcml { namespace debugging {
 
     inline u64 target::load_symbols_from_elf(const string& file) {
         return m_symbols.load_elf(file);
+    }
+
+    inline bool target::is_running() const {
+        return sc_is_running() && !is_suspending();
+    }
+
+    inline bool target::is_stepping() const {
+        return m_stepping;
     }
 
 }}

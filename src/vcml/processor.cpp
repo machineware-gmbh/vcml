@@ -215,26 +215,28 @@ namespace vcml {
 
             sc_time quantum = tlm_global_quantum::instance().get();
 
-            unsigned int num_cycles = 1;
-            if (quantum != SC_ZERO_TIME)
-                num_cycles = (quantum - local_time()) / clock_cycle();
-            if (num_cycles == 0)
-                num_cycles = 1;
+            unsigned int quantum_cycles = 1;
+            if (quantum > clock_cycle())
+                quantum_cycles = (quantum - local_time()) / clock_cycle();
 
-            double start = realtime();
-            if (m_gdb == nullptr) {
-                simulate(num_cycles);
-            } else {
-                m_gdb->simulate(num_cycles);
+            while (quantum_cycles > 0) {
+                while (!is_running()) {
+                    if (!sc_is_running() || m_gdb->is_killed())
+                        return;
+                    debugging::suspender::handle_requests();
+                }
 
-                if (m_gdb->is_killed())
-                    return;
+                if (is_stepping())
+                    quantum_cycles = 1;
 
-                if (m_gdb->is_stopped() && !gdb_sync)
-                    local_time() += clock_cycles(num_cycles);
+                double start = realtime();
+                simulate(quantum_cycles);
+                m_run_time += realtime() - start;
+
+                quantum_cycles -= quantum_cycles;
+                if (is_stepping())
+                    target::halt();
             }
-
-            m_run_time += realtime() - start;
 
             if (needs_sync())
                 sync();
@@ -582,23 +584,6 @@ namespace vcml {
 
     const char* processor::arch() {
         return cpuarch.get().c_str();
-    }
-
-    bool processor::gdb_command(const string& command, string& response) {
-        vector<string> args = split(command, ' ');
-        string cmdname = args[0];
-        args.erase(args.begin());
-
-        stringstream ss;
-        if (!execute(cmdname, args, ss))
-            return false;
-
-        response = ss.str();
-        return true;
-    }
-
-    void processor::gdb_simulate(unsigned int cycles) {
-        simulate(cycles);
     }
 
 }

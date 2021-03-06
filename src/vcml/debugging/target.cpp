@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/debugging/target.h"
+#include "vcml/module.h" // for gdb commands
 
 namespace vcml { namespace debugging {
 
@@ -64,8 +65,10 @@ namespace vcml { namespace debugging {
     }
 
     target::target(const char* name):
+        suspender(name),
         m_endian(ENDIAN_UNKNOWN),
-        m_cpuregs() {
+        m_cpuregs(),
+        m_stepping(false) {
         auto it = s_targets.find(name);
         if (it != s_targets.end())
             VCML_ERROR("debug target '%s' already exists", name);
@@ -378,12 +381,45 @@ namespace vcml { namespace debugging {
         return true;
     }
 
+    void target::halt() {
+        m_stepping = false;
+        if (!is_suspending())
+            suspend();
+    }
+
+    void target::step() {
+        VCML_ERROR_ON(is_running(), "target %s already running", id());
+        m_stepping = true;
+        if (is_suspending())
+            resume();
+    }
+
+    void target::cont() {
+        VCML_ERROR_ON(is_running(), "target %s already running", id());
+        m_stepping = false;
+        if (is_suspending())
+            resume();
+    }
+
     void target::gdb_collect_regs(vector<string>& gdbregs) {
         // to be overloaded
     }
 
     bool target::gdb_command(const string& command, string& response) {
-        return false; // to be overloaded
+        module* mod = dynamic_cast<module*>(owner());
+        if (mod == nullptr)
+            return false;
+
+        vector<string> args = split(command, ' ');
+        string cmdname = args[0];
+        args.erase(args.begin());
+
+        stringstream ss;
+        if (!mod->execute(cmdname, args, ss))
+            return false;
+
+        response = ss.str();
+        return true;
     }
 
     vector<target*> target::targets() {

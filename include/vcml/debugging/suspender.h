@@ -34,7 +34,7 @@ namespace vcml { namespace debugging {
         sc_object*  m_owner;
 
     public:
-        const char* name() const { return m_name.c_str(); }
+        const char* id() const { return m_name.c_str(); }
         sc_object* owner() const { return m_owner; }
 
         suspender() = delete;
@@ -43,7 +43,7 @@ namespace vcml { namespace debugging {
 
         bool is_suspending() const;
 
-        void suspend();
+        void suspend(bool wait = true);
         void resume();
 
         static suspender* current();

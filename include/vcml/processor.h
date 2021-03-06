@@ -135,9 +135,6 @@ namespace vcml {
         virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;
 
         virtual const char* arch() override;
-
-        virtual bool gdb_command(const string& command, string& resp) override;
-        virtual void gdb_simulate(unsigned int cycles) override;
     };
 
     template <typename T>

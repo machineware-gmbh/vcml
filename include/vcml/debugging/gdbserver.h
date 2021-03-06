@@ -28,7 +28,6 @@
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/rspserver.h"
-#include "vcml/debugging/suspender.h"
 #include "vcml/debugging/subscriber.h"
 
 namespace vcml { namespace debugging {
@@ -45,7 +44,6 @@ namespace vcml { namespace debugging {
     };
 
     class gdbserver: public rspserver,
-                     private suspender,
                      private subscriber
     {
     private:
@@ -124,8 +122,6 @@ namespace vcml { namespace debugging {
         gdbserver(const gdbserver&) = delete;
         gdbserver(u16 port, target* stub, gdb_status status = GDB_STOPPED);
         virtual ~gdbserver();
-
-        void simulate(unsigned int cycles);
 
         virtual string handle_command(const string& command) override;
         virtual void   handle_connect(const char* peer) override;
