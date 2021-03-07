@@ -383,22 +383,20 @@ namespace vcml { namespace debugging {
 
     void target::halt() {
         m_stepping = false;
-        if (!is_suspending())
+        if (is_running())
             suspend();
     }
 
     void target::step() {
         VCML_ERROR_ON(is_running(), "target %s already running", id());
         m_stepping = true;
-        if (is_suspending())
-            resume();
+        resume();
     }
 
     void target::cont() {
         VCML_ERROR_ON(is_running(), "target %s already running", id());
         m_stepping = false;
-        if (is_suspending())
-            resume();
+        resume();
     }
 
     void target::gdb_collect_regs(vector<string>& gdbregs) {
