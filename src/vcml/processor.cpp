@@ -213,33 +213,31 @@ namespace vcml {
             // check for standby requests
             wait_clock_reset();
 
-            sc_time quantum = tlm_global_quantum::instance().get();
+            do {
+                sc_time quantum = tlm_global_quantum::instance().get();
 
-            unsigned int quantum_cycles = 1;
-            if (quantum > clock_cycle())
-                quantum_cycles = (quantum - local_time()) / clock_cycle();
+                unsigned int num_cycles = 1;
+                if (quantum > clock_cycle() && quantum > local_time())
+                    num_cycles = (quantum - local_time()) / clock_cycle();
 
-            while (quantum_cycles > 0) {
-                while (!is_running()) {
-                    if (!sc_is_running() || m_gdb->is_killed())
-                        return;
+                while (!is_running())
                     debugging::suspender::handle_requests();
-                }
+
+                if (!sc_is_running())
+                    return;
 
                 if (is_stepping())
-                    quantum_cycles = 1;
+                    num_cycles = 1;
 
                 double start = realtime();
-                simulate(quantum_cycles);
+                simulate(num_cycles);
                 m_run_time += realtime() - start;
 
-                quantum_cycles -= quantum_cycles;
                 if (is_stepping())
                     target::halt();
-            }
+            } while (!needs_sync());
 
-            if (needs_sync())
-                sync();
+            sync();
 
             // check that local time advanced beyond quantum start time
             // if we fail here, we most likely have a broken cycle_count()
