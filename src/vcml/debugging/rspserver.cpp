@@ -92,8 +92,9 @@ namespace vcml { namespace debugging {
 
         disconnect();
         if (m_fd_server != -1) {
-            shutdown(m_fd_server, SHUT_RDWR);
+            int fd = m_fd_server;
             m_fd_server = -1;
+            shutdown(fd, SHUT_RDWR);
         }
 
         if (m_thread.joinable())
@@ -229,7 +230,12 @@ namespace vcml { namespace debugging {
             VCML_ERROR("listen for connections failed: %s", strerror(errno));
 
         socklen_t l = sizeof(m_client);
-        if ((m_fd = accept(m_fd_server, (struct sockaddr*)&m_client, &l)) < 0)
+        m_fd = accept(m_fd_server, (struct sockaddr*)&m_client, &l);
+
+        if (m_fd < 0 && m_fd_server < 0)
+            return; // shutdown while waiting for connections
+
+        if (m_fd < 0)
             VCML_ERROR("failed to accept connection: %s", strerror(errno));
 
         if (setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
@@ -241,8 +247,8 @@ namespace vcml { namespace debugging {
 
     void rspserver::disconnect() {
         if (m_fd != -1) {
-            shutdown(m_fd, SHUT_RDWR);
-            m_fd = -1;
+            int fd = m_fd; m_fd = -1;
+            shutdown(fd, SHUT_RDWR);
             handle_disconnect();
         }
     }

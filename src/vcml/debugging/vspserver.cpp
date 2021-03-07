@@ -297,6 +297,7 @@ namespace vcml { namespace debugging {
 
     void vspserver::force_quit() {
         sc_stop();
+        stop();
 
         if (is_connected())
             disconnect();
@@ -362,7 +363,6 @@ namespace vcml { namespace debugging {
 
         if (is_connected())
             disconnect();
-        stop();
     }
 
     void vspserver::cleanup() {
