@@ -16,7 +16,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <signal.h> // for SIGTRAP
 #include "vcml/debugging/gdbserver.h"
 
 namespace vcml { namespace debugging {
@@ -72,7 +71,10 @@ namespace vcml { namespace debugging {
             break;
 
         case GDB_KILLED:
-            m_target->cont();
+            stop();
+            disconnect();
+            if (m_status == GDB_STOPPED)
+                m_target->cont();
             break;
 
         default:
@@ -124,7 +126,11 @@ namespace vcml { namespace debugging {
             }
         }
 
-        update_status(GDB_STOPPED);
+        if (sc_is_running())
+            update_status(GDB_STOPPED);
+        else
+            update_status(GDB_KILLED);
+
         return mkstr("S%02x", GDBSIG_TRAP);
     }
 
@@ -138,7 +144,11 @@ namespace vcml { namespace debugging {
             }
         }
 
-        update_status(GDB_STOPPED);
+        if (sc_is_running())
+            update_status(GDB_STOPPED);
+        else
+            update_status(GDB_KILLED);
+
         return mkstr("S%02x", GDBSIG_TRAP);
     }
 
@@ -148,7 +158,6 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_kill(const char* command) {
-        disconnect();
         update_status(GDB_KILLED);
         sc_stop();
         if (suspender::simulation_suspended())
@@ -450,7 +459,7 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_exception(const char* command) {
-        return mkstr("S%02u", SIGTRAP);
+        return mkstr("S%02u", GDBSIG_TRAP);
     }
 
     string gdbserver::handle_thread(const char* command) {
@@ -536,7 +545,8 @@ namespace vcml { namespace debugging {
 
     void gdbserver::handle_disconnect() {
         log_debug("gdb disconnected");
-        update_status(m_default);
+        if (sc_is_running())
+            update_status(m_default);
     }
 
 }}
