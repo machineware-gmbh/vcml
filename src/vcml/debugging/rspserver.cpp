@@ -88,18 +88,16 @@ namespace vcml { namespace debugging {
     }
 
     rspserver::~rspserver() {
+        m_running = false;
+
         disconnect();
         if (m_fd_server != -1) {
-            ::close(m_fd_server);
+            shutdown(m_fd_server, SHUT_RDWR);
             m_fd_server = -1;
         }
 
-        m_running = false;
-        if (m_thread.joinable()) {
-            // needed to kick thread out of 'accept'
-            pthread_cancel(m_thread.native_handle());
+        if (m_thread.joinable())
             m_thread.join();
-        }
     }
 
     void rspserver::send_packet(const char* format, ...) {
@@ -243,7 +241,7 @@ namespace vcml { namespace debugging {
 
     void rspserver::disconnect() {
         if (m_fd != -1) {
-            close(m_fd);
+            shutdown(m_fd, SHUT_RDWR);
             m_fd = -1;
             handle_disconnect();
         }
