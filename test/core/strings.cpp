@@ -86,3 +86,17 @@ TEST(strings, replace) {
     EXPECT_EQ(s2, "/home/user/file.txt");
 }
 
+TEST(strings, contains) {
+    std::string s = "hello world";
+
+    EXPECT_TRUE(vcml::contains(s, "hello"));
+    EXPECT_TRUE(vcml::contains(s, "o wor"));
+    EXPECT_FALSE(vcml::contains(s, "wrold"));
+
+    EXPECT_TRUE(vcml::starts_with(s, "hell"));
+    EXPECT_FALSE(vcml::starts_with(s, "world"));
+
+    EXPECT_TRUE(vcml::ends_with(s, "world"));
+    EXPECT_FALSE(vcml::ends_with(s, "hello"));
+}
+

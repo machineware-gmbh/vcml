@@ -129,6 +129,20 @@ namespace vcml {
         return from_string<unsigned int>(str) > 0;
     }
 
+    static inline bool contains(const string& s, const string& search) {
+        return s.find(search) != std::string::npos;
+    }
+
+    static inline bool starts_with(const string& s, const string& prefix) {
+        return s.rfind(prefix, 0) == 0;
+    }
+
+    static bool ends_with(const string& s, const string& suffix) {
+        if (s.size() < suffix.size())
+            return false;
+        return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
+
 }
 
 #endif
