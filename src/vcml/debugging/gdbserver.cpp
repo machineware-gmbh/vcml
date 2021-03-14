@@ -542,7 +542,7 @@ namespace vcml { namespace debugging {
             if (feature.collect_regs(m_target, cpuregs)) {
                 log_debug("gdb feature %s is supported", feature.name);
                 for (const cpureg* reg : cpuregs)
-                    m_allregs.insert({m_allregs.size(), reg});
+                    m_allregs.insert({reg->regno, reg});
             } else {
                 log_debug("gdb feature %s is not supported", feature.name);
             }

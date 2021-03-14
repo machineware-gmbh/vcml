@@ -48,6 +48,7 @@ namespace vcml { namespace debugging {
 
         for (size_t i = 0; i < cpuregs.size(); i++) {
             os << "<reg name=\"" << registers[i] << "\""
+               << "  regnum=\"" << cpuregs[i]->regno << "\""
                << "  bitsize=\"" << cpuregs[i]->size * 8 << "\" />"
                << std::endl;
         }
