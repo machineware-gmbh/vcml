@@ -81,6 +81,11 @@ namespace vcml {
         return proc;
     }
 
+    bool sim_running() {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        return simc->get_status() <= sc_core::SC_RUNNING;
+    }
+
     void hierarchy_push(sc_module* mod) {
         sc_simcontext* simc = sc_get_curr_simcontext();
         VCML_ERROR_ON(!simc, "no simulation context");

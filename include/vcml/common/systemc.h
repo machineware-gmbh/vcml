@@ -113,7 +113,7 @@ namespace vcml {
     sc_process_b* current_thread();
     sc_process_b* current_method();
 
-    using sc_core::sc_is_running;
+    bool sim_running();
 
     using sc_core::sc_actions;
     using sc_core::sc_report;

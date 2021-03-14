@@ -347,9 +347,9 @@ namespace vcml { namespace debugging {
         sc_start(SC_ZERO_TIME);
         suspend();
 
-        while (sc_is_running()) {
+        while (sim_running()) {
             suspender::handle_requests();
-            if (!sc_is_running())
+            if (!sim_running())
                 break;
 
             if (m_duration == SC_MAX_TIME)
@@ -357,7 +357,7 @@ namespace vcml { namespace debugging {
             else
                 sc_start(m_duration);
 
-            if (sc_is_running())
+            if (sim_running())
                 suspend();
         }
 
@@ -380,7 +380,7 @@ namespace vcml { namespace debugging {
     }
 
     void vspserver::handle_disconnect() {
-        if (sc_is_running())
+        if (sim_running())
             log_info("vspserver listening on port %d", (int)get_port());
     }
 

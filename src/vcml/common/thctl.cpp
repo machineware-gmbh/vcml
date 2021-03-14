@@ -107,12 +107,12 @@ namespace vcml {
     }
 
     void thctl_enter_critical() {
-        if (sc_is_running())
+        if (sim_running())
             g_thctl.enter_critical();
     }
 
     void thctl_exit_critical() {
-        if (sc_is_running())
+        if (sim_running())
             g_thctl.exit_critical();
     }
 

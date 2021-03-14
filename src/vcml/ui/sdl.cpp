@@ -377,7 +377,7 @@ namespace vcml { namespace ui {
 
     void sdl::poll_events() {
         SDL_Event event = {};
-        while (SDL_PollEvent(&event) && sc_is_running()) {
+        while (SDL_PollEvent(&event) && sim_running()) {
             lock_guard<mutex> lock(m_mutex);
             switch (event.type) {
             case SDL_QUIT:
