@@ -57,7 +57,7 @@ namespace vcml { namespace debugging {
     static suspend_manager g_manager;
 
     void suspend_manager::request_pause(suspender* s) {
-        if (!sc_is_running())
+        if (!sim_running())
             VCML_ERROR("cannot suspend, simulation not running");
         lock_guard<mutex> guard(suspender_lock);
         stl_add_unique(suspenders, s);

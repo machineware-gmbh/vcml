@@ -78,7 +78,6 @@ namespace vcml {
 
         property<u16>  gdb_port;
         property<bool> gdb_wait;
-        property<bool> gdb_sync;
         property<bool> gdb_echo;
 
         in_port_list<bool> IRQ;

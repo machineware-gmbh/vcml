@@ -71,13 +71,14 @@ namespace vcml { namespace debugging {
         const symbol* sym;
     };
 
-    class target : private suspender
+    class target
     {
     private:
         endianess m_endian;
         unordered_map<u64, cpureg> m_cpuregs;
         symtab m_symbols;
 
+        suspender m_suspender;
         atomic<bool> m_stepping;
 
         vector<breakpoint> m_breakpoints;
@@ -156,9 +157,6 @@ namespace vcml { namespace debugging {
         bool is_running() const;
         bool is_stepping() const;
 
-        virtual void gdb_collect_regs(vector<string>& gdbregs);
-        virtual bool gdb_command(const string& command, string& response);
-
         static vector<target*> targets();
         static target* find(const char* name);
     };
@@ -192,7 +190,7 @@ namespace vcml { namespace debugging {
     }
 
     inline bool target::is_running() const {
-        return sc_is_running() && !is_suspending();
+        return sim_running() && !m_suspender.is_suspending();
     }
 
     inline bool target::is_stepping() const {

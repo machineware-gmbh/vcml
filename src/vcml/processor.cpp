@@ -223,7 +223,7 @@ namespace vcml {
                 while (!is_running())
                     debugging::suspender::handle_requests();
 
-                if (!sc_is_running())
+                if (!sim_running())
                     return;
 
                 if (is_stepping())
@@ -285,7 +285,6 @@ namespace vcml {
         symbols("symbols"),
         gdb_port("gdb_port", 0),
         gdb_wait("gdb_wait", false),
-        gdb_sync("gdb_sync", true),
         gdb_echo("gdb_echo", false),
         IRQ("IRQ"),
         INSN("INSN"),
@@ -420,9 +419,8 @@ namespace vcml {
                          (unsigned int)gdb_port.get());
             }
 
-            m_gdb = new debugging::gdbserver(gdb_port, this, status);
+            m_gdb = new debugging::gdbserver(gdb_port, *this, status);
             m_gdb->echo(gdb_echo);
-            m_gdb->sync(gdb_sync);
         }
     }
 

@@ -71,6 +71,7 @@ set(sources
     ${src}/vcml/debugging/subscriber.cpp
     ${src}/vcml/debugging/suspender.cpp
     ${src}/vcml/debugging/rspserver.cpp
+    ${src}/vcml/debugging/gdbarch.cpp
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
     ${src}/vcml/ui/fbmode.cpp

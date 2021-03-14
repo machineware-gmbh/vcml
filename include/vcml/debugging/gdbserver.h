@@ -27,6 +27,7 @@
 #include "vcml/logging/logger.h"
 
 #include "vcml/debugging/target.h"
+#include "vcml/debugging/gdbarch.h"
 #include "vcml/debugging/rspserver.h"
 #include "vcml/debugging/subscriber.h"
 
@@ -48,13 +49,14 @@ namespace vcml { namespace debugging {
                      private subscriber
     {
     private:
-        target*    m_target;
-        gdb_status m_status;
-        gdb_status m_default;
+        target&        m_target;
+        const gdbarch* m_target_arch;
+        string         m_target_xml;
+        gdb_status     m_status;
+        gdb_status     m_default;
 
-        unordered_map<u64, const cpureg*> m_regmap;
-
-        bool m_sync;
+        vector<const cpureg*> m_cpuregs;
+        unordered_map<u64, const cpureg*> m_allregs;
 
         void update_status(gdb_status status);
 
@@ -86,6 +88,7 @@ namespace vcml { namespace debugging {
 
         string handle_query(const char* command);
         string handle_rcmd(const char* command);
+        string handle_xfer(const char* command);
         string handle_step(const char* command);
         string handle_continue(const char* command);
         string handle_detach(const char* command);
@@ -117,11 +120,9 @@ namespace vcml { namespace debugging {
         bool is_running()  const { return m_status == GDB_RUNNING; }
         bool is_killed()   const { return m_status == GDB_KILLED; }
 
-        void sync(bool s = true) { m_sync = s; }
-
         gdbserver() = delete;
         gdbserver(const gdbserver&) = delete;
-        gdbserver(u16 port, target* stub, gdb_status status = GDB_STOPPED);
+        gdbserver(u16 port, target& stub, gdb_status status = GDB_STOPPED);
         virtual ~gdbserver();
 
         virtual string handle_command(const string& command) override;

@@ -137,7 +137,7 @@ namespace vcml {
         return s.rfind(prefix, 0) == 0;
     }
 
-    static bool ends_with(const string& s, const string& suffix) {
+    static inline bool ends_with(const string& s, const string& suffix) {
         if (s.size() < suffix.size())
             return false;
         return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;

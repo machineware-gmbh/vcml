@@ -65,9 +65,9 @@ namespace vcml { namespace debugging {
     }
 
     target::target(const char* name):
-        suspender(name),
         m_endian(ENDIAN_UNKNOWN),
         m_cpuregs(),
+        m_suspender("suspender"),
         m_stepping(false) {
         auto it = s_targets.find(name);
         if (it != s_targets.end())
@@ -92,9 +92,24 @@ namespace vcml { namespace debugging {
     }
 
     const cpureg* target::find_cpureg(const string& name) const {
-        for (auto& it : m_cpuregs)
-            if (it.second.name.compare(name) == 0)
+        if (name.empty())
+            return nullptr;
+
+        string lname = to_lower(name); // lookup is case-insensitive
+        bool grouped = name.rfind('/') != string::npos;
+
+        for (auto& it : m_cpuregs) {
+            string regname = to_lower(it.second.name);
+            if (!grouped) {
+                size_t l = regname.rfind('/');
+                if (l != string::npos && l < regname.length() - 1)
+                    regname = regname.substr(l + 1);
+            }
+
+            if (regname == lname)
                 return &it.second;
+        }
+
         return nullptr;
     }
 
@@ -384,40 +399,19 @@ namespace vcml { namespace debugging {
     void target::halt() {
         m_stepping = false;
         if (is_running())
-            suspend();
+            m_suspender.suspend();
     }
 
     void target::step() {
-        VCML_ERROR_ON(is_running(), "target %s already running", id());
+        VCML_ERROR_ON(is_running(), "target already running");
         m_stepping = true;
-        resume();
+        m_suspender.resume();
     }
 
     void target::cont() {
-        VCML_ERROR_ON(is_running(), "target %s already running", id());
+        VCML_ERROR_ON(is_running(), "target already running");
         m_stepping = false;
-        resume();
-    }
-
-    void target::gdb_collect_regs(vector<string>& gdbregs) {
-        // to be overloaded
-    }
-
-    bool target::gdb_command(const string& command, string& response) {
-        module* mod = dynamic_cast<module*>(owner());
-        if (mod == nullptr)
-            return false;
-
-        vector<string> args = split(command, ' ');
-        string cmdname = args[0];
-        args.erase(args.begin());
-
-        stringstream ss;
-        if (!mod->execute(cmdname, args, ss))
-            return false;
-
-        response = ss.str();
-        return true;
+        m_suspender.resume();
     }
 
     vector<target*> target::targets() {

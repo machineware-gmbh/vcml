@@ -50,6 +50,7 @@
 #include "vcml/debugging/subscriber.h"
 #include "vcml/debugging/suspender.h"
 #include "vcml/debugging/rspserver.h"
+#include "vcml/debugging/gdbarch.h"
 #include "vcml/debugging/gdbserver.h"
 #include "vcml/debugging/vspserver.h"
 

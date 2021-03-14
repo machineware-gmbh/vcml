@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/thctl.h"
 
@@ -34,7 +35,7 @@ namespace vcml { namespace debugging {
         sc_object*  m_owner;
 
     public:
-        const char* id() const { return m_name.c_str(); }
+        const char* name() const { return m_name.c_str(); }
         sc_object* owner() const { return m_owner; }
 
         suspender() = delete;

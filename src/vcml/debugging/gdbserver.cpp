@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/debugging/gdbserver.h"
+#include "vcml/module.h" // for commands
 
 namespace vcml { namespace debugging {
 
@@ -59,22 +60,22 @@ namespace vcml { namespace debugging {
 
         switch (status) {
         case GDB_STOPPED:
-            m_target->halt();
+            m_target.halt();
             break;
 
         case GDB_RUNNING:
-            m_target->cont();
+            m_target.cont();
             break;
 
         case GDB_STEPPING:
-            m_target->step();
+            m_target.step();
             break;
 
         case GDB_KILLED:
             stop();
             disconnect();
             if (m_status == GDB_STOPPED)
-                m_target->cont();
+                m_target.cont();
             break;
 
         default:
@@ -100,8 +101,8 @@ namespace vcml { namespace debugging {
     }
 
     const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
-        auto it = m_regmap.find(gdbno);
-        if (it == m_regmap.end())
+        auto it = m_allregs.find(gdbno);
+        if (it == m_allregs.end())
             return nullptr;
         return it->second;
     }
@@ -118,7 +119,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_step(const char* command) {
         update_status(GDB_STEPPING);
-        while (m_target->is_running()) {
+        while (m_target.is_running()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -126,7 +127,7 @@ namespace vcml { namespace debugging {
             }
         }
 
-        if (sc_is_running())
+        if (sim_running())
             update_status(GDB_STOPPED);
         else
             update_status(GDB_KILLED);
@@ -136,7 +137,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_continue(const char* command) {
         update_status(GDB_RUNNING);
-        while (m_target->is_running()) {
+        while (m_target.is_running()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -144,7 +145,7 @@ namespace vcml { namespace debugging {
             }
         }
 
-        if (sc_is_running())
+        if (sim_running())
             update_status(GDB_STOPPED);
         else
             update_status(GDB_KILLED);
@@ -166,23 +167,75 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_query(const char* command) {
-        if (strncmp(command, "qSupported", strlen("qSupported")) == 0)
-            return mkstr("PacketSize=%zx", PACKET_SIZE);
-        else if (strncmp(command, "qAttached", strlen("qAttached")) == 0)
+        if (strncmp(command, "qSupported", strlen("qSupported")) == 0) {
+            string features = mkstr("PacketSize=%zx;", PACKET_SIZE);
+            if (m_target_arch != nullptr)
+                features += "qXfer:features:read+;";
+            return features;
+        }
+
+        if (strncmp(command, "qAttached", strlen("qAttached")) == 0)
             return "1";
-        else if (strncmp(command, "qOffsets", strlen("qOffsets")) == 0)
+        if (strncmp(command, "qOffsets", strlen("qOffsets")) == 0)
             return "Text=0;Data=0;Bss=0";
-        else if (strncmp(command, "qRcmd", strlen("qRcmd")) == 0)
+        if (strncmp(command, "qRcmd", strlen("qRcmd")) == 0)
             return handle_rcmd(command);
-        else
-            return handle_unknown(command);
+        if (strncmp(command, "qXfer", strlen("qXfer")) == 0)
+            return handle_xfer(command);
+
+        return handle_unknown(command);
     }
 
     string gdbserver::handle_rcmd(const char* command) {
-        string response;
-        if (!m_target->gdb_command(command, response))
+        module* mod = dynamic_cast<module*>(&m_target);
+        if (mod == nullptr)
             return ERR_COMMAND;
-        return response;
+
+        vector<string> args = split(command, ' ');
+        string cmdname = args[0];
+        args.erase(args.begin());
+
+        stringstream ss;
+        if (!mod->execute(cmdname, args, ss))
+            return ERR_COMMAND;
+
+        return ss.str();
+    }
+
+    string gdbserver::handle_xfer(const char* command) {
+        vector<string> args = split(command, ':');
+        if (args.size() != 5)
+            return ERR_COMMAND;
+
+        string object = args[1];
+        string read   = args[2];
+        string annex  = args[3];
+
+        if (read != "read")
+            return ERR_COMMAND;
+
+        size_t offset = 0, length = 0;
+        if (sscanf(args[4].c_str(), "%zx,%zx", &offset, &length) != 2)
+            return ERR_COMMAND;
+
+        if (object == "features" && annex == "target.xml") {
+            if (m_target_xml.empty()) {
+                stringstream ss;
+                m_target_arch->write_xml(m_target, ss);
+                m_target_xml = ss.str();
+            }
+
+            if (length > m_target_xml.length())
+                length = m_target_xml.length();
+
+            if (offset > m_target_xml.length() - length)
+                return ERR_COMMAND;
+
+            bool more = offset + length < m_target_xml.length();
+            return (more ? "m" : "l") + m_target_xml.substr(offset, length);
+        }
+
+        return "";
     }
 
     string gdbserver::handle_reg_read(const char* command) {
@@ -197,7 +250,7 @@ namespace vcml { namespace debugging {
             return "xxxxxxxx"; // respond with "contents unknown"
 
         u64 val = reg->read();
-        if (!m_target->is_host_endian())
+        if (!m_target.is_host_endian())
             memswap(&val, reg->size);
 
         stringstream ss;
@@ -238,7 +291,7 @@ namespace vcml { namespace debugging {
             }
         }
 
-        if (!m_target->is_host_endian())
+        if (!m_target.is_host_endian())
             memswap(val.ptr, reg->size);
 
         reg->write(val.val);
@@ -248,15 +301,13 @@ namespace vcml { namespace debugging {
     string gdbserver::handle_reg_read_all(const char* command) {
         stringstream ss;
         ss << std::hex << std::setfill('0');
-        u64 nregs = m_regmap.size();
 
-        for (u64 regno = 0; regno < nregs; regno++) {
-            const cpureg* reg = lookup_cpureg(regno);
-            if (reg == nullptr || !reg->is_readable())
+        for (const cpureg* reg : m_cpuregs) {
+            if (!reg->is_readable())
                 continue;
 
             u64 val = reg->read();
-            if (!m_target->is_host_endian())
+            if (!m_target.is_host_endian())
                 memswap(&val, reg->size);
 
             for (u32 shift = 0; shift < reg->width(); shift += 8)
@@ -267,12 +318,9 @@ namespace vcml { namespace debugging {
     }
 
     string gdbserver::handle_reg_write_all(const char* command) {
-        u64 nregs = m_regmap.size();
         const char* str = command + 1;
-
-        for (u64 regno = 0; regno < nregs; regno++) {
-            const cpureg* reg = m_target->find_cpureg(regno);
-            if (reg == nullptr || !reg->is_writeable())
+        for (const cpureg* reg : m_cpuregs) {
+            if (!reg->is_writeable())
                 continue;
 
             if (strlen(str) < reg->size * 2) {
@@ -284,7 +332,7 @@ namespace vcml { namespace debugging {
             for (u64 byte = 0; byte < reg->size; byte++, str += 2)
                 sscanf(str, "%02hhx", val.ptr + byte);
 
-            if (!m_target->is_host_endian())
+            if (!m_target.is_host_endian())
                 memswap(val.ptr, reg->size);
 
             reg->write(val.val);
@@ -309,7 +357,7 @@ namespace vcml { namespace debugging {
         ss << std::hex << std::setfill('0');
 
         u8 buffer[BUFFER_SIZE];
-        if (m_target->read_vmem_dbg(addr, buffer, size) != size)
+        if (m_target.read_vmem_dbg(addr, buffer, size) != size)
             return ERR_UNKNOWN;
 
         for (unsigned int i = 0; i < size; i++)
@@ -342,7 +390,7 @@ namespace vcml { namespace debugging {
         for (unsigned int i = 0; i < size; i++)
             buffer[i] = str2int(data++, 2);
 
-        if (m_target->write_vmem_dbg(addr, buffer, size) != size)
+        if (m_target.write_vmem_dbg(addr, buffer, size) != size)
             return ERR_UNKNOWN;
 
         return "OK";
@@ -375,7 +423,7 @@ namespace vcml { namespace debugging {
         for (unsigned int i = 0; i < size; i++)
             buffer[i] = char_unescape(data);
 
-        if (m_target->write_vmem_dbg(addr, buffer, size) != size)
+        if (m_target.write_vmem_dbg(addr, buffer, size) != size)
             return ERR_UNKNOWN;
 
         return "OK";
@@ -392,23 +440,23 @@ namespace vcml { namespace debugging {
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
-            if (!m_target->insert_breakpoint(addr, this))
+            if (!m_target.insert_breakpoint(addr, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_WRITE:
-            if (!m_target->insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
+            if (!m_target.insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_READ:
-            if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ, this))
+            if (!m_target.insert_watchpoint(wp, VCML_ACCESS_READ, this))
                 return ERR_INTERNAL;
             break;
 
 
         case GDB_WATCHPOINT_ACCESS:
-            if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
+            if (!m_target.insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
@@ -431,22 +479,22 @@ namespace vcml { namespace debugging {
         switch (type) {
         case GDB_BREAKPOINT_SW:
         case GDB_BREAKPOINT_HW:
-            if (!m_target->remove_breakpoint(addr, this))
+            if (!m_target.remove_breakpoint(addr, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_WRITE:
-            if (!m_target->remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
+            if (!m_target.remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_READ:
-            if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ, this))
+            if (!m_target.remove_watchpoint(wp, VCML_ACCESS_READ, this))
                 return ERR_INTERNAL;
             break;
 
         case GDB_WATCHPOINT_ACCESS:
-            if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
+            if (!m_target.remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
                 return ERR_INTERNAL;
             break;
 
@@ -470,26 +518,34 @@ namespace vcml { namespace debugging {
         return "";
     }
 
-    gdbserver::gdbserver(u16 port, target* stub, gdb_status status):
+    gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
         rspserver(port),
         subscriber(),
         m_target(stub),
+        m_target_arch(gdbarch::lookup(m_target.arch())),
+        m_target_xml(),
         m_status(status),
         m_default(status),
-        m_regmap(),
-        m_sync(true),
+        m_cpuregs(),
+        m_allregs(),
         m_handler() {
-        VCML_ERROR_ON(!stub, "no debug stub given");
+        if (m_target_arch == nullptr)
+            VCML_ERROR("architecture %s not supported", m_target.arch());
 
-        vector<string> gdbregs;
-        m_target->gdb_collect_regs(gdbregs);
-        if (gdbregs.empty())
-            VCML_ERROR("target does not define any gdb registers");
+        if (!m_target_arch->collect_core_regs(m_target, m_cpuregs))
+            VCML_ERROR("target does not support %s", m_target.arch());
 
-        for (auto gdbreg : gdbregs) {
-            const cpureg* reg = m_target->find_cpureg(gdbreg);
-            VCML_ERROR_ON(!reg, "register %s not found", gdbreg.c_str());
-            m_regmap.insert({m_regmap.size(), reg});
+        log_debug("gdb architecture %s is supported", m_target.arch());
+
+        for (const auto& feature : m_target_arch->features) {
+            vector<const cpureg*> cpuregs;
+            if (feature.collect_regs(m_target, cpuregs)) {
+                log_debug("gdb feature %s is supported", feature.name);
+                for (const cpureg* reg : cpuregs)
+                    m_allregs.insert({m_allregs.size(), reg});
+            } else {
+                log_debug("gdb feature %s is not supported", feature.name);
+            }
         }
 
         m_handler['q'] = &gdbserver::handle_query;
@@ -516,7 +572,7 @@ namespace vcml { namespace debugging {
         m_handler['?'] = &gdbserver::handle_exception;
 
         if (m_status == GDB_STOPPED)
-            m_target->halt();
+            m_target.halt();
 
         run_async();
     }
@@ -545,7 +601,7 @@ namespace vcml { namespace debugging {
 
     void gdbserver::handle_disconnect() {
         log_debug("gdb disconnected");
-        if (sc_is_running())
+        if (sim_running())
             update_status(m_default);
     }
 

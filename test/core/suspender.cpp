@@ -88,7 +88,7 @@ public:
 
     virtual void run_test() override {
         EXPECT_EQ(owner(), this);
-        EXPECT_STREQ(suspender::id(), "test.suspender");
+        EXPECT_STREQ(suspender::name(), "test.suspender");
 
         test_resume();
         test_forced_resume();
