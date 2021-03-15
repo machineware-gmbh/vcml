@@ -113,53 +113,70 @@ namespace vcml { namespace debugging {
 
     const gdbarch gdbarch_aarch64("aarch64", "aarch64", "none", {
         { "org.gnu.gdb.aarch64.core", {
-              "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
-              "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
-              "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
-              "x24", "x25", "x26", "x27", "x28", "x29", "x30",
-              "sp", "pc", "cpsr" }},
+            "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
+            "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+            "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
+            "x24", "x25", "x26", "x27", "x28", "x29", "x30",
+            "sp", "pc", "cpsr" }},
         { "org.gnu.gdb.aarch64.fpu", {
-              "v0",  "v1",  "v2",  "v3",  "v4",  "v5",  "v6",  "v7",
-              "v8",  "v9",  "v10", "v11", "v12", "v13", "v14", "v15",
-              "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23",
-              "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31",
-              "fpsr", "fpcr" }},
+            "v0",  "v1",  "v2",  "v3",  "v4",  "v5",  "v6",  "v7",
+            "v8",  "v9",  "v10", "v11", "v12", "v13", "v14", "v15",
+            "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23",
+            "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31",
+            "fpsr", "fpcr" }},
+        { "org.gnu.gdb.aarch64.sve", {
+            "z0",  "z1",  "z2",  "z3",  "z4",  "z5",  "z6",  "z7",
+            "z8",  "z9",  "z10", "z11", "z12", "z13", "z14", "z15",
+            "z16", "z17", "z18", "z19", "z20", "z21", "z22", "z23",
+            "z24", "z25", "z26", "z27", "z28", "z29", "z30", "z31",
+            "p0",  "p1",  "p2",  "p3",  "p4",  "p5",  "p6",  "p7",
+            "p8",  "p9",  "p10", "p11", "p12", "p13", "p14", "p15",
+            "ffr", "vg" }},
+        { "org.gnu.gdb.aarch64.pauth", {
+            "pauth_dmask", "pauth_cmask" }},
     });
 
     const gdbarch gdbarch_arm("arm", "arm", "none", {
         { "org.gnu.gdb.arm.core", {
-              "r0", "r1", "r2",  "r3",  "r4",  "r5", "r6", "r7",
-              "r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc",
-              "cpsr" }},
+            "r0", "r1", "r2",  "r3",  "r4",  "r5", "r6", "r7",
+            "r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc",
+            "cpsr" }},
+        { "org.gnu.gdb.arm.m-profile", {
+            "r0", "r1", "r2",  "r3",  "r4",  "r5", "r6", "r7",
+            "r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc",
+            "xpsr" }},
+        { "org.gnu.gdb.arm.fpa", {
+            "f0",  "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
+            "fps" }},
         { "org.gnu.gdb.arm.vfp", {
-              "d0",  "d1",  "d2",  "d3",  "d4",  "d5",  "d6",  "d7",
-              "d8",  "d9",  "d10", "d11", "d12", "d13", "d14", "d15",
-              "fpscr" }},
+            "d0",  "d1",  "d2",  "d3",  "d4",  "d5",  "d6",  "d7",
+            "d8",  "d9",  "d10", "d11", "d12", "d13", "d14", "d15",
+            "fpscr" }},
     });
 
     const gdbarch gdbarch_or1k("or1k", "or1k", "none", {
         { "org.gnu.gdb.or1k.group0", {
-              "r0",  "r1",  "r2" , "r3",  "r4" , "r5",  "r6",  "r7",
-              "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
-              "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
-              "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",
-              "ppc", "npc", "sr" }},
+            "r0",  "r1",  "r2" , "r3",  "r4" , "r5",  "r6",  "r7",
+            "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
+            "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
+            "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",
+            "ppc", "npc", "sr" }},
     });
 
     const gdbarch gdbarch_riscv("riscv", "riscv", "none", {
         { "org.gnu.gdb.riscv.cpu", {
-              "zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
-              "s0",   "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
-              "a6",   "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
-              "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6", "pc" }},
+            "zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
+            "s0",   "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
+            "a6",   "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
+            "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6", "pc" }},
         { "org.gnu.gdb.riscv.fpu", {
-              "ft0", "ft1", "ft2",  "ft3",  "ft4", "ft5", "ft6",  "ft7",
-              "fs0", "fs1", "fa0",  "fa1",  "fa2", "fa3", "fa4",  "fa5",
-              "fa6", "fa7", "fs2",  "fs3",  "fs4", "fs5", "fs6",  "fs7",
-              "fs8", "fs9", "fs10", "fs11", "ft8", "ft9", "ft10", "ft11",
-              "fflags", "frm", "fcsr" }},
+            "ft0", "ft1", "ft2",  "ft3",  "ft4", "ft5", "ft6",  "ft7",
+            "fs0", "fs1", "fa0",  "fa1",  "fa2", "fa3", "fa4",  "fa5",
+            "fa6", "fa7", "fs2",  "fs3",  "fs4", "fs5", "fs6",  "fs7",
+            "fs8", "fs9", "fs10", "fs11", "ft8", "ft9", "ft10", "ft11",
+            "fflags", "frm", "fcsr" }},
         { "org.gnu.gdb.riscv.virtual", {
-              "priv" }},
+            "priv" }},
     });
 
 }}
