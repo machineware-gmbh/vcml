@@ -377,7 +377,7 @@ namespace vcml { namespace ui {
 
     void sdl::poll_events() {
         SDL_Event event = {};
-        while (SDL_PollEvent(&event) && sim_running()) {
+        while (SDL_WaitEventTimeout(&event, 1) && sim_running()) {
             lock_guard<mutex> lock(m_client_mtx);
             switch (event.type) {
             case SDL_QUIT:
@@ -448,7 +448,6 @@ namespace vcml { namespace ui {
 
     void sdl::ui_run() {
         if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
-            std::cout << "SDL INIT" << std::endl;
             if (SDL_Init(SDL_INIT_VIDEO) < 0)
                 VCML_ERROR("cannot initialize SDL: %s", SDL_GetError());
         }
