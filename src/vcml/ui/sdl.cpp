@@ -362,7 +362,7 @@ namespace vcml { namespace ui {
     }
 
     void sdl::check_clients() {
-        lock_guard<mutex> lock(m_mutex);
+        lock_guard<mutex> lock(m_client_mtx);
         for (auto& client : m_clients) {
             if (client.disp && !client.window)
                 client.init_window();
@@ -378,7 +378,7 @@ namespace vcml { namespace ui {
     void sdl::poll_events() {
         SDL_Event event = {};
         while (SDL_PollEvent(&event) && sim_running()) {
-            lock_guard<mutex> lock(m_mutex);
+            lock_guard<mutex> lock(m_client_mtx);
             switch (event.type) {
             case SDL_QUIT:
                 break;
@@ -441,57 +441,74 @@ namespace vcml { namespace ui {
     }
 
     void sdl::draw_windows() {
-        lock_guard<mutex> lock(m_mutex);
+        lock_guard<mutex> lock(m_client_mtx);
         for (auto& client : m_clients)
             client.draw_window();
     }
 
     void sdl::ui_run() {
         if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
+            std::cout << "SDL INIT" << std::endl;
             if (SDL_Init(SDL_INIT_VIDEO) < 0)
                 VCML_ERROR("cannot initialize SDL: %s", SDL_GetError());
         }
 
-        while (m_running) {
+        while (m_attached && sim_running()) {
             check_clients();
             poll_events();
             draw_windows();
         }
+
+        check_clients();
+        SDL_Quit();
     }
 
     sdl::~sdl() {
-        if (m_uithread.joinable()) {
-            m_running = false;
+        VCML_ERROR_ON(m_attached > 0, "displays still attached");
+        if (m_uithread.joinable())
             m_uithread.join();
-        }
     }
 
     void sdl::register_display(display* disp) {
-        lock_guard<mutex> lock(m_mutex);
+        lock_guard<mutex> attach_guard(m_attach_mtx);
         auto finder = [disp](const sdl_client& s) -> bool {
             return s.disp == disp;
         };
 
+        lock_guard<mutex> client_guard(m_client_mtx);
         if (stl_contains_if(m_clients, finder))
             VCML_ERROR("display %s already registered", disp->name());
 
         sdl_client client = {};
         client.disp = disp;
         m_clients.push_back(client);
+        m_attached++;
 
         if (!m_uithread.joinable()) {
-            m_running = true;
             m_uithread = thread(std::bind(&sdl::ui_run, this));
             set_thread_name(m_uithread, "sdl_ui_thread");
         }
     }
 
     void sdl::unregister_display(display* disp) {
-        lock_guard<mutex> lock(m_mutex);
+        lock_guard<mutex> attach_guard(m_attach_mtx);
 
-        for (sdl_client& client : m_clients)
-            if (client.disp == disp)
-                client.disp = nullptr;
+        if (m_attached > 0) {
+            lock_guard<mutex> client_guard(m_client_mtx);
+            auto finder = [disp](const sdl_client& s) -> bool {
+                return s.disp == disp;
+            };
+
+            auto it = std::find_if(m_clients.begin(), m_clients.end(), finder);
+            if (it ==  m_clients.end())
+                VCML_ERROR("cannot remove unknown display %s", disp->name());
+
+            it->disp = nullptr;
+            m_attached--;
+        }
+
+        if (m_uithread.joinable() && m_attached == 0)
+            m_uithread.join();
     }
 
     display* sdl::create(u32 nr) {
@@ -505,7 +522,7 @@ namespace vcml { namespace ui {
     }
 
     sdl_display::~sdl_display() {
-        shutdown();
+        // nothing to do
     }
 
     void sdl_display::init(const fbmode& mode, u8* fb) {

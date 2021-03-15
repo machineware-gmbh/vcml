@@ -57,9 +57,10 @@ namespace vcml { namespace ui {
     class sdl
     {
     private:
-        mutex m_mutex;
+        mutex m_attach_mtx;
+        mutex m_client_mtx;
         thread m_uithread;
-        atomic<bool> m_running;
+        atomic<int> m_attached;
         vector<sdl_client> m_clients;
 
         sdl_client* find_by_window_id(u32 id);

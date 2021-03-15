@@ -302,7 +302,7 @@ namespace vcml { namespace ui {
     }
 
     vnc::~vnc() {
-        shutdown();
+        // nothing to do
     }
 
     void vnc::init(const fbmode& mode, u8* fb)  {
