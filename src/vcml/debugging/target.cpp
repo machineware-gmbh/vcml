@@ -17,7 +17,6 @@
  ******************************************************************************/
 
 #include "vcml/debugging/target.h"
-#include "vcml/module.h" // for gdb commands
 
 namespace vcml { namespace debugging {
 
