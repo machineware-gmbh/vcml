@@ -89,16 +89,6 @@ namespace vcml { namespace generic {
         return true;
     }
 
-    u8* _align(u8* p, size_t align) {
-        return (u8*)(((std::uintptr_t)p + align) & ~(align - 1));
-    }
-
-    template <typename T>
-    T* malign(T* ptr, unsigned int align) {
-        const size_t mask = (1ull << align) - 1;
-        return (T*)(((u64)ptr + mask) & ~mask);
-    }
-
     memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
                    unsigned int alignment, unsigned int rl, unsigned int wl):
         peripheral(nm, host_endian(), rl, wl),
@@ -125,10 +115,10 @@ namespace vcml { namespace generic {
                                                 : VCML_ACCESS_READ_WRITE);
 
         register_command("load", 1, this, &memory::cmd_load,
-            "Load <binary> [off] to load the contents of file <binary> to " \
-            "relative offset [off] in memory (offset is zero if unspecified).");
+            "Load <binary> [off] to load the contents of file <binary> to "
+            "relative offset [off] in memory (off is zero if unspecified).");
         register_command("show", 2, this, &memory::cmd_show,
-            "Show memory contents between addresses [start] and [end]. " \
+            "Show memory contents between addresses [start] and [end]. "
             "Usage: show [start] [end]");
     }
 
@@ -138,7 +128,8 @@ namespace vcml { namespace generic {
     }
 
     void memory::reset() {
-        memset(m_memory, poison, size);
+        if (poison > 0)
+            memset(m_memory, poison, size);
 
         vector<image_info> imagevec = images_from_string(images);
         for (auto ii : imagevec) {
