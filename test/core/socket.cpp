@@ -70,20 +70,29 @@ TEST(socket, send) {
 
 TEST(socket, async) {
     vcml::socket server(0); server.accept_async();
+    std::cout << "1" << std::endl;
     vcml::socket client(server.host(), server.port());
 
     for (auto i : {1, 2, 3}) {
         const char* str = "Hello World";
         char buf[strlen(str) + 1] = {};
 
+        std::cout << "2" << std::endl;
         while (!server.is_connected());
+        std::cout << "3" << std::endl;
         server.send(str);
+        std::cout << "4" << std::endl;
         client.recv(buf, sizeof(buf) - 1);
+        std::cout << "5" << std::endl;
         EXPECT_EQ(strcmp(str, buf), 0);
 
         server.unlisten();
+        std::cout << "6" << std::endl;
         server.listen(0);
+        std::cout << "7" << std::endl;
         server.accept_async();
+        std::cout << "8" << std::endl;
         client.connect(server.host(), server.port());
+        std::cout << "9" << std::endl;
     }
 }
