@@ -69,14 +69,13 @@ TEST(socket, send) {
 }
 
 TEST(socket, async) {
-    vcml::socket server(0);
+    vcml::socket server(0); server.accept_async();
     vcml::socket client(server.host(), server.port());
 
-    for (auto i : {1, 2, 3, 4, 5}) {
+    for (auto i : {1, 2, 3}) {
         const char* str = "Hello World";
         char buf[strlen(str) + 1] = {};
 
-        server.accept_async();
         while (!server.is_connected());
         server.send(str);
         client.recv(buf, sizeof(buf) - 1);
@@ -84,6 +83,7 @@ TEST(socket, async) {
 
         server.unlisten();
         server.listen(0);
+        server.accept_async();
         client.connect(server.host(), server.port());
     }
 }
