@@ -63,7 +63,7 @@ private:
 
             done = true;
 
-            debugging::suspender::force_resume();
+            debugging::suspender::quit();
 
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
