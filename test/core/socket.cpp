@@ -78,7 +78,8 @@ TEST(socket, async) {
         char buf[strlen(str) + 1] = {};
 
         std::cout << "2" << std::endl;
-        while (!server.is_connected());
+        while (!server.is_connected())
+            usleep(100);
         std::cout << "3" << std::endl;
         server.send(str);
         std::cout << "4" << std::endl;

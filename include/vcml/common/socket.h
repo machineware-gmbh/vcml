@@ -29,12 +29,12 @@ namespace vcml {
     class socket
     {
     private:
-        u16    m_port;
-        string m_host;
-        string m_peer;
-        int    m_socket;
-        int    m_conn;
-        thread m_async;
+        u16         m_port;
+        string      m_host;
+        string      m_peer;
+        atomic<int> m_socket;
+        atomic<int> m_conn;
+        thread      m_async;
 
     public:
         u16         port() const { return m_port; }
