@@ -50,10 +50,8 @@ namespace vcml {
                 cleanup();
                 exit(EXIT_SUCCESS);
             } else {
-                sc_core::sc_stop();
                 m_stopped = true;
-                if (debugging::suspender::simulation_suspended())
-                    debugging::suspender::force_resume();
+                debugging::suspender::quit();
             }
         }
 

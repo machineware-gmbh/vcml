@@ -36,7 +36,7 @@ namespace vcml {
         desc("desc", progname()),
         config("config", ""),
         backtrace("backtrace", true),
-        session("session", 0),
+        session("session", -1),
         session_debug("session_debug", false),
         quantum("quantum", sc_time(1, SC_US)),
         duration("duration", SC_ZERO_TIME) {
@@ -57,7 +57,7 @@ namespace vcml {
 
     int system::run() {
         tlm::tlm_global_quantum::instance().set(quantum);
-        if (session > 0) {
+        if (session >= 0) {
             vcml::debugging::vspserver vspsession(session);
             vspsession.echo(session_debug);
             vspsession.start();

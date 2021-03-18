@@ -16,16 +16,13 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_RSP_H
-#define VCML_RSP_H
-
-#include <pthread.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
+#ifndef VCML_RSPSERVER_H
+#define VCML_RSPSERVER_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
+#include "vcml/common/socket.h"
 
 namespace vcml { namespace debugging {
 
@@ -36,34 +33,24 @@ namespace vcml { namespace debugging {
 
     private:
         bool m_echo;
-        u16  m_port;
-
-        int  m_fd;
-        int  m_fd_server;
-
-        struct sockaddr_in m_server;
-        struct sockaddr_in m_client;
+        u16 m_port;
+        socket m_sock;
 
         atomic<bool> m_running;
         thread m_thread;
 
         std::map<string, handler> m_handlers;
 
-        void send_char(char c);
-        char recv_char();
-
         // disabled
         rspserver();
         rspserver(const rspserver&);
 
     public:
-        u16 get_port() const { return m_port; }
+        u16 get_port() const { return m_sock.port(); }
 
-        int get_server_fd()     const { return m_fd_server; }
-        int get_connection_fd() const { return m_fd; }
 
-        bool is_connected() const { return m_fd > -1; }
-        bool is_listening() const { return m_fd_server > -1; }
+        bool is_connected() const { return m_sock.is_connected(); }
+        bool is_listening() const { return m_sock.is_listening(); }
 
         void echo(bool e = true) { m_echo = e; }
 

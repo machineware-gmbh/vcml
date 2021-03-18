@@ -387,10 +387,7 @@ namespace vcml { namespace ui {
                 auto client = find_by_window_id(event.window.windowID);
                 if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
                     SDL_HideWindow(client->window);
-                    sc_stop();
-
-                    if (debugging::suspender::simulation_suspended())
-                        debugging::suspender::force_resume();
+                    debugging::suspender::quit();
                 }
 
                 if (event.window.event == SDL_WINDOWEVENT_EXPOSED && client)

@@ -296,20 +296,17 @@ namespace vcml { namespace debugging {
     }
 
     void vspserver::force_quit() {
-        sc_stop();
         stop();
+        suspender::quit();
 
         if (is_connected())
             disconnect();
-
-        if (debugging::suspender::simulation_suspended())
-            debugging::suspender::force_resume();
     }
 
     vspserver::vspserver(u16 port):
         rspserver(port),
         suspender("vspserver"),
-        m_announce(temp_dir() + mkstr("vcml_session_%d", (int)port)) {
+        m_announce(temp_dir() + mkstr("vcml_session_%hu", get_port())) {
         VCML_ERROR_ON(session != nullptr, "vspserver already created");
         session = this;
         atexit(&cleanup_session);
@@ -341,7 +338,7 @@ namespace vcml { namespace debugging {
 
     void vspserver::start() {
         run_async();
-        log_info("vspserver listening on port %d", (int)get_port());
+        log_info("vspserver waiting on port %hu", get_port());
 
         // Finish elaboration first before processing commands
         sc_start(SC_ZERO_TIME);
@@ -381,7 +378,7 @@ namespace vcml { namespace debugging {
 
     void vspserver::handle_disconnect() {
         if (sim_running())
-            log_info("vspserver listening on port %d", (int)get_port());
+            log_info("vspserver waiting on port %hu", get_port());
     }
 
 }}

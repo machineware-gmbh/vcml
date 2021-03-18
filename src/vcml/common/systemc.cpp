@@ -83,7 +83,7 @@ namespace vcml {
 
     bool sim_running() {
         sc_simcontext* simc = sc_get_curr_simcontext();
-        return simc->get_status() <= sc_core::SC_RUNNING;
+        return simc->get_status() < sc_core::SC_STOPPED;
     }
 
     void hierarchy_push(sc_module* mod) {

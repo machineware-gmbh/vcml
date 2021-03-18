@@ -33,7 +33,7 @@ TEST(backend_tcp, connect) {
 
     vcml::u16 port = tcp->port;
 
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = ::socket(AF_INET, SOCK_STREAM, 0);
     ASSERT_FALSE(fd < 0);
 
     struct sockaddr_in serv_addr;
@@ -45,7 +45,8 @@ TEST(backend_tcp, connect) {
     ASSERT_EQ(connect(fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)), 0);
 
     ASSERT_TRUE(tcp->is_listening());
-    ASSERT_TRUE(tcp->is_connected());
+    while (!tcp->is_connected())
+        usleep(1);
 
     const char msg[] = "Hello World";
 

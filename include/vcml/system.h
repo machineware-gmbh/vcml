@@ -38,7 +38,7 @@ namespace vcml {
 
         property<bool>    backtrace;
 
-        property<u16>     session;
+        property<int>     session;
         property<bool>    session_debug;
 
         property<sc_time> quantum;

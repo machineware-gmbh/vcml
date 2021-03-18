@@ -76,7 +76,7 @@ namespace vcml {
         property<string> cpuarch;
         property<string> symbols;
 
-        property<u16>  gdb_port;
+        property<int>  gdb_port;
         property<bool> gdb_wait;
         property<bool> gdb_echo;
 

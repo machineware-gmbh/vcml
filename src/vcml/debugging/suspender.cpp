@@ -27,6 +27,7 @@ namespace vcml { namespace debugging {
 
     struct suspend_manager
     {
+        atomic<bool> is_quitting;
         atomic<bool> is_suspended;
 
         mutable mutex sysc_lock;
@@ -44,7 +45,7 @@ namespace vcml { namespace debugging {
 
         suspender* current() const;
 
-        void force_resume();
+        void quit();
 
         void notify_suspend(sc_object* obj = nullptr);
         void notify_resume(sc_object* obj = nullptr);
@@ -57,6 +58,8 @@ namespace vcml { namespace debugging {
     static suspend_manager g_manager;
 
     void suspend_manager::request_pause(suspender* s) {
+        if (is_quitting)
+            return;
         if (!sim_running())
             VCML_ERROR("cannot suspend, simulation not running");
         lock_guard<mutex> guard(suspender_lock);
@@ -92,8 +95,9 @@ namespace vcml { namespace debugging {
         return suspenders.front();
     }
 
-    void suspend_manager::force_resume() {
+    void suspend_manager::quit() {
         lock_guard<mutex> guard(suspender_lock);
+        is_quitting = true;
         suspenders.clear();
         sysc_notify.notify_all();
     }
@@ -127,6 +131,12 @@ namespace vcml { namespace debugging {
     }
 
     void suspend_manager::handle_requests() {
+        if (is_quitting) {
+            static std::once_flag once;
+            std::call_once(once, sc_stop);
+            return;
+        }
+
         if (count() == 0)
             return;
 
@@ -139,9 +149,12 @@ namespace vcml { namespace debugging {
 
         notify_resume();
         is_suspended = false;
+
+
     }
 
     suspend_manager::suspend_manager():
+        is_quitting(false),
         is_suspended(false),
         sysc_lock(),
         sysc_notify(),
@@ -188,8 +201,8 @@ namespace vcml { namespace debugging {
         return g_manager.current();
     }
 
-    void suspender::force_resume() {
-        g_manager.force_resume();
+    void suspender::quit() {
+        g_manager.quit();
     }
 
     bool suspender::simulation_suspended() {

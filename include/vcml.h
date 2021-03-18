@@ -27,6 +27,7 @@
 #include "vcml/common/aio.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/bitops.h"
+#include "vcml/common/socket.h"
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 

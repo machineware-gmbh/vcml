@@ -19,13 +19,7 @@
 #ifndef VCML_BACKEND_TCP_H
 #define VCML_BACKEND_TCP_H
 
-#include <unistd.h>
-#include <fcntl.h>
-
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-
+#include "vcml/common/socket.h"
 #include "vcml/backends/backend.h"
 
 namespace vcml {
@@ -33,34 +27,21 @@ namespace vcml {
     class backend_tcp: public backend
     {
     private:
-        int m_fd;
-        int m_fd_server;
-
-        struct sockaddr_in m_server;
-        struct sockaddr_in m_client;
-
-        void handle_accept(int fd, int events);
+        socket m_sock;
 
     public:
         property<u16> port;
 
-        static u16 default_port;
-
-        inline bool is_connected() const { return m_fd > -1; }
-        inline bool is_listening() const { return m_fd_server > -1; }
+        bool is_listening() const { return m_sock.is_listening(); }
+        bool is_connected() const { return m_sock.is_connected(); }
 
         backend_tcp(const sc_module_name& nm = "backend", u16 port = 0);
         virtual ~backend_tcp();
         VCML_KIND(backend_tcp);
 
-        void accept();
-        void accept_async();
-
-        void disconnect();
-
-        virtual size_t peek();
-        virtual size_t read(void* buf, size_t len);
-        virtual size_t write(const void* buf, size_t len);
+        virtual size_t peek() override;
+        virtual size_t read(void* buf, size_t len) override;
+        virtual size_t write(const void* buf, size_t len) override;
 
         static backend* create(const string& name);
     };

@@ -283,7 +283,7 @@ namespace vcml {
         m_regprops(),
         cpuarch("arch", cpuarch),
         symbols("symbols"),
-        gdb_port("gdb_port", 0),
+        gdb_port("gdb_port", -1),
         gdb_wait("gdb_wait", false),
         gdb_echo("gdb_echo", false),
         IRQ("IRQ"),
@@ -411,16 +411,18 @@ namespace vcml {
             stats.irq_longest = SC_ZERO_TIME;
         }
 
-        if (gdb_port > 0) {
-            debugging::gdb_status status = debugging::GDB_RUNNING;
-            if (gdb_wait) {
-                status = debugging::GDB_STOPPED;
-                log_info("waiting for GDB connection on port %u",
-                         (unsigned int)gdb_port.get());
-            }
+        if (gdb_port >= 0) {
+            debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
+                                                    : debugging::GDB_RUNNING;
 
             m_gdb = new debugging::gdbserver(gdb_port, *this, status);
             m_gdb->echo(gdb_echo);
+
+            if (gdb_port == 0)
+                gdb_port = m_gdb->get_port();
+
+            log_info("%s for GDB connection on port %hu",
+                     gdb_wait ? "waiting" : "listening", m_gdb->get_port());
         }
     }
 

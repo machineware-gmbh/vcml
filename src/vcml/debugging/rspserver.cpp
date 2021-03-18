@@ -50,52 +50,20 @@ namespace vcml { namespace debugging {
         return hexchars[h & 0xf];
     }
 
-    void rspserver::send_char(char c) {
-        VCML_ERROR_ON(m_fd == -1, "not connected");
-        int res = send(m_fd, &c, sizeof(c), 0);
-        if (res < 0)
-            VCML_REPORT("error sending data '%c': %s", c, strerror(errno));
-        if (res == 0)
-            VCML_REPORT("error sending data: disconnected");
-    }
-
-    char rspserver::recv_char() {
-        VCML_ERROR_ON(m_fd == -1, "not connected");
-
-        char ch = 0;
-        int res = recv(m_fd, &ch, sizeof(ch), 0);
-        if (res < 0)
-            VCML_REPORT("error receiving data: %s", strerror(errno));
-        if (res == 0)
-            VCML_REPORT("error receiving data: disconnected");
-        return ch;
-    }
-
     rspserver::rspserver(u16 port):
         m_echo(false),
-        m_port(port),
-        m_fd(-1),
-        m_fd_server(-1),
-        m_server(),
-        m_client(),
+        m_port(),
+        m_sock(port),
         m_running(false),
         m_thread() {
-        memset(&m_server, 0, sizeof(m_server));
-        memset(&m_client, 0, sizeof(m_client));
-        m_server.sin_family = AF_INET;
-        m_server.sin_addr.s_addr = INADDR_ANY;
-        m_server.sin_port = htons(m_port);
+        m_port = m_sock.port();
     }
 
     rspserver::~rspserver() {
         m_running = false;
 
         disconnect();
-        if (m_fd_server != -1) {
-            int fd = m_fd_server;
-            m_fd_server = -1;
-            shutdown(fd, SHUT_RDWR);
-        }
+        m_sock.unlisten();
 
         if (m_thread.joinable())
             m_thread.join();
@@ -109,7 +77,7 @@ namespace vcml { namespace debugging {
     }
 
     void rspserver::send_packet(const string& s) {
-        VCML_ERROR_ON(m_fd == -1, "no connection established");
+        VCML_ERROR_ON(!is_connected(), "no connection established");
 
         string esc = escape(s, "$#");
         int sum = checksum(esc.c_str());
@@ -119,7 +87,6 @@ namespace vcml { namespace debugging {
            << int2char((sum >> 0) & 0xf);
 
         char ack;
-        int len = ss.str().length();
         int attempts = 10;
 
         do {
@@ -132,24 +99,20 @@ namespace vcml { namespace debugging {
             if (m_echo)
                 log_debug("sending packet '%s'", ss.str().c_str());
 
-            if (send(m_fd, ss.str().c_str(), len, 0) != len) {
-                log_error("error sending packet: %s", strerror(errno));
-                disconnect();
-                return;
-            }
+            m_sock.send(ss.str());
+            ack = m_sock.recv_char();
 
-            ack = recv_char();
             if (m_echo)
                 log_debug("received ack '%c'", ack);
         } while (ack != '+');
     }
 
     string rspserver::recv_packet() {
-        VCML_ERROR_ON(m_fd == -1, "no connection established");
+        VCML_ERROR_ON(!is_connected(), "no connection established");
         unsigned int checksum = 0;
         stringstream ss;
         while (true) {
-            char ch = recv_char();
+            char ch = m_sock.recv_char();
             switch (ch) {
             case '$':
                 checksum = 0;
@@ -161,12 +124,12 @@ namespace vcml { namespace debugging {
                     log_debug("received packet '%s'", ss.str().c_str());
 
                 unsigned int refsum = 0;
-                refsum |= char2int(recv_char()) << 4;
-                refsum |= char2int(recv_char()) << 0;
+                refsum |= char2int(m_sock.recv_char()) << 4;
+                refsum |= char2int(m_sock.recv_char()) << 0;
 
                 if (refsum != checksum) {
                     log_debug("checksum mismatch %d != %d", refsum, checksum);
-                    send_char('-');
+                    m_sock.send_char('-');
                     checksum = 0;
                     ss.str("");
                     break;
@@ -175,13 +138,13 @@ namespace vcml { namespace debugging {
                 if (m_echo)
                     log_debug("sending ack '+'");
 
-                send_char('+');
+                m_sock.send_char('+');
                 return ss.str();
             }
 
             case '\\':
                 checksum = (checksum + ch) & 0xff;
-                ch = recv_char();
+                ch = m_sock.recv_char();
                 // no break
 
             default:
@@ -196,59 +159,23 @@ namespace vcml { namespace debugging {
     }
 
     int rspserver::recv_signal(time_t timeoutms) {
-        if (m_fd == -1)
+        if (!is_connected())
             return 0;
-
-        if (!fd_peek(m_fd, timeoutms))
+        if (!m_sock.peek(timeoutms))
             return 0;
-
-        char signal = 0;
-        int res = recv(m_fd, &signal, 1, MSG_DONTWAIT);
-        if (res < 0)
-            VCML_ERROR("recv failed: %s", strerror(errno));
-        if (res == 0)
-            VCML_ERROR("recv failed: disconnected");
-        return (int)signal;
+        return m_sock.recv_char();
     }
 
     void rspserver::listen() {
-        const int one = 1;
-
-        if (m_fd_server < 0) {
-            if ((m_fd_server = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-                VCML_ERROR("failed to create socket: %s", strerror(errno));
-
-            if (setsockopt(m_fd_server, SOL_SOCKET, SO_REUSEADDR,
-                           (const void*)&one, sizeof(one)))
-                VCML_ERROR("setsockopt failed: %s", strerror(errno));
-
-            if (bind(m_fd_server, (sockaddr*)&m_server, sizeof(m_server)))
-                VCML_ERROR("binding socket failed: %s", strerror(errno));
-        }
-
-        if (::listen(m_fd_server, 1))
-            VCML_ERROR("listen for connections failed: %s", strerror(errno));
-
-        socklen_t l = sizeof(m_client);
-        m_fd = accept(m_fd_server, (struct sockaddr*)&m_client, &l);
-
-        if (m_fd < 0 && m_fd_server < 0)
-            return; // shutdown while waiting for connections
-
-        if (m_fd < 0)
-            VCML_ERROR("failed to accept connection: %s", strerror(errno));
-
-        if (setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY,
-                       (const void*)&one, sizeof(one)) < 0)
-            VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(errno));
-
-        handle_connect(inet_ntoa(m_client.sin_addr));
+        m_sock.listen(m_port);
+        m_sock.accept();
+        m_sock.unlisten();
+        handle_connect(m_sock.peer());
     }
 
     void rspserver::disconnect() {
-        if (m_fd != -1) {
-            int fd = m_fd; m_fd = -1;
-            shutdown(fd, SHUT_RDWR);
+        if (m_sock.is_connected()) {
+            m_sock.disconnect();
             handle_disconnect();
         }
     }

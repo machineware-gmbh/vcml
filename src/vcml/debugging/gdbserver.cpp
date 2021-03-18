@@ -160,9 +160,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_kill(const char* command) {
         update_status(GDB_KILLED);
-        sc_stop();
-        if (suspender::simulation_suspended())
-            suspender::force_resume();
+        suspender::quit();
         return "";
     }
 

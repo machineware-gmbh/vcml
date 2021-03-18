@@ -48,6 +48,7 @@ set(sources
     ${src}/vcml/common/aio.cpp
     ${src}/vcml/common/thctl.cpp
     ${src}/vcml/common/bitops.cpp
+    ${src}/vcml/common/socket.cpp
     ${src}/vcml/common/systemc.cpp
     ${src}/vcml/logging/logger.cpp
     ${src}/vcml/logging/log_file.cpp
