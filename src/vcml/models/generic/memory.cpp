@@ -96,6 +96,7 @@ namespace vcml { namespace generic {
         m_memory(nullptr),
         size("size", sz),
         align("align", alignment),
+        discard_writes("discard_writes", false),
         readonly("readonly", read_only),
         images("images", ""),
         poison("poison", 0x00),
@@ -173,7 +174,9 @@ namespace vcml { namespace generic {
                                       const sideband& info) {
         if (addr.end >= size)
             return TLM_ADDRESS_ERROR_RESPONSE;
-        if (readonly && !info.is_debug)
+        if (!info.is_debug && discard_writes)
+            return TLM_OK_RESPONSE;
+        if (!info.is_debug && readonly)
             return TLM_COMMAND_ERROR_RESPONSE;
         memcpy(m_memory + addr.start, data, addr.length());
         return TLM_OK_RESPONSE;

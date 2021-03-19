@@ -45,6 +45,7 @@ namespace vcml { namespace generic {
     public:
         property<u64> size;
         property<unsigned int> align;
+        property<bool> discard_writes;
         property<bool> readonly;
         property<string> images;
         property<u8> poison;
