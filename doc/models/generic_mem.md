@@ -8,15 +8,15 @@ TLM Direct Memory Interface (DMI) to facilitate fast simulation.
 
 The model supports the following features:
 * `align=n` forces the bottom `n` bits of the underlying memory host address to
-  be zero. Use this if your CPU model requires DMI pointers to be aligned.
+  match a given guest address
 * `readonly=true`: used when modeling ROM memories; triggers a TLM command
   error upon attempts to write to memory
 * `discard_writes=true`: useful when modeling ROM memories that should
-  silently ignore write commands, but report no errors to the CPU model.
+  silently ignore write commands, but report no errors
 * `images=file_a@0;file_b@0x1000;`: semicolon-separated list of files to load
-  after a reset; useful for loading software binaries at start if simulation.
+  after a reset with their corresponding offsets
 * `poison=XX`: fills each memory cell with `XX` during reset (but before image
-  loading). Useful to detect memory errors.
+  loading). Useful for detecting memory errors.
 
 ----
 ## Properties
