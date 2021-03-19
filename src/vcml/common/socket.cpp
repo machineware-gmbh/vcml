@@ -203,10 +203,11 @@ namespace vcml {
     }
 
     void socket::send(const void* data, size_t size) {
-        VCML_ERROR_ON(!is_connected(), "not connected");
-
         if (m_async.joinable())
             m_async.join();
+
+        if (!is_connected())
+            VCML_REPORT("error receiving data: not connected");
 
         const u8* ptr = (const u8*)data;
         size_t n = 0;
@@ -225,10 +226,11 @@ namespace vcml {
     }
 
     void socket::recv(void* data, size_t size) {
-        VCML_ERROR_ON(!is_connected(), "not connected");
-
         if (m_async.joinable())
             m_async.join();
+
+        if (!is_connected())
+            VCML_REPORT("error receiving data: not connected");
 
         u8* ptr = (u8*)data;
         size_t n = 0;
