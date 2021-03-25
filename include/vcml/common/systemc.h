@@ -88,6 +88,14 @@ namespace vcml {
         return t.value() / sc_time(1.0, SC_SEC).value();
     }
 
+    inline sc_time time_from_value(u64 val) {
+#if SYSTEMC_VERSION < 20140417
+        return sc_time(val, false);
+#else
+        return sc_time::from_value(val);
+#endif
+    }
+
     VCML_TYPEINFO(sc_time);
 
     using sc_core::sc_start;
@@ -225,6 +233,10 @@ namespace vcml {
 
     void on_each_delta_cycle(function<void(void)> callback);
     void on_each_time_step(function<void(void)> callback);
+
+    void sc_async(const function<void(void)>& job);
+    void sc_progress(const sc_time& delta);
+    void sc_sync(const function<void(void)>& job);
 
 }
 

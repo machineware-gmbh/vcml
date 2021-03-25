@@ -37,11 +37,7 @@ namespace vcml {
         return parent->get_attribute(name);
     }
 
-#if SYSTEMC_VERSION < 20140417
-    const sc_time SC_MAX_TIME = sc_time(~0ull, false);
-#else
-    const sc_time SC_MAX_TIME = sc_time::from_value(~0ull);
-#endif
+    const sc_time SC_MAX_TIME = time_from_value(~0ull);
 
     bool is_thread(sc_process_b* proc) {
         if (!thctl_is_sysc_thread())
@@ -265,6 +261,62 @@ namespace vcml {
             g_cycle_helper = new cycle_helper();
 
         g_cycle_helper->tsteps.push_back(callback);
+    }
+
+    struct async_info {
+        atomic<bool> done;
+        atomic<u64> progress;
+        mutex jobmtx;
+        condition_variable_any jobvar;
+        queue<function<void(void)>> jobs;
+    };
+
+    __thread async_info* g_async = nullptr;
+
+    void sc_async(const function<void(void)>& job) {
+        async_info info;
+        info.done = false;
+        info.progress = 0;
+
+        // ToDo: reuse threads
+        thread t([&](void) -> void {
+            g_async = &info;
+            job();
+            g_async->done = true;
+            g_async = nullptr;
+        });
+
+        while (!info.done) {
+            u64 p = info.progress.exchange(0);
+            wait(sc_time::from_value(p));
+
+            if (info.jobmtx.try_lock()) {
+                while (!info.jobs.empty()) {
+                    info.jobs.front()();
+                    info.jobs.pop();
+                }
+
+                info.jobmtx.unlock();
+                info.jobvar.notify_all();
+            }
+        }
+
+        u64 p = info.progress.exchange(0);
+        if (p > 0)
+            wait(sc_time::from_value(p));
+
+        t.join();
+    }
+
+    void sc_progress(const sc_time& delta) {
+        VCML_ERROR_ON(!g_async, "no async thread");
+        g_async->progress += delta.value();
+    }
+
+    void sc_sync(const function<void(void)>& job) {
+        VCML_ERROR_ON(!g_async, "no async thread");
+        g_async->jobs.push(job);
+        g_async->jobvar.wait(g_async->jobmtx);
     }
 
 }
