@@ -90,7 +90,7 @@ namespace vcml {
 
     inline sc_time time_from_value(u64 val) {
 #if SYSTEMC_VERSION < 20140417
-        return sc_time(val, false);
+        return sc_time((sc_dt::uint64)val, false);
 #else
         return sc_time::from_value(val);
 #endif
