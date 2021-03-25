@@ -110,7 +110,7 @@ namespace vcml { namespace debugging {
 
 
         // list object commands
-        component* mod = dynamic_cast<component*>(obj);
+        module* mod = dynamic_cast<module*>(obj);
         if (mod != nullptr) {
             for (const command_base* cmd : mod->get_commands()) {
                 os << "<command"
