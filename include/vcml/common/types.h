@@ -23,9 +23,6 @@
 #error Please compile with c++11
 #endif
 
-#include <stdint.h>
-#include <time.h>
-
 #include <vector>
 #include <queue>
 #include <deque>
@@ -46,6 +43,10 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+
+#include <stdint.h>
+#include <time.h>
+#include <unistd.h>
 
 #define VCML_DECL_PRINTF(strpos, argpos) \
     __attribute__ ((format (printf, (strpos), (argpos))))

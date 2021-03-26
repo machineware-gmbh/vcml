@@ -288,7 +288,7 @@ namespace vcml {
 
         while (!info.done) {
             u64 p = info.progress.exchange(0);
-            wait(time_from_value(p));
+            sc_core::wait(time_from_value(p));
 
             if (info.jobmtx.try_lock()) {
                 while (!info.jobs.empty()) {
@@ -303,7 +303,7 @@ namespace vcml {
 
         u64 p = info.progress.exchange(0);
         if (p > 0)
-            wait(time_from_value(p));
+            sc_core::wait(time_from_value(p));
 
         t.join();
     }
