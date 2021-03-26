@@ -170,7 +170,8 @@ namespace vcml { namespace virtio {
     }
 
     console::~console() {
-        // nothing to do
+        for (backend* be : m_backends)
+            delete be;
     }
 
     void console::reset() {
