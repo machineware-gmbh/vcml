@@ -46,7 +46,7 @@ namespace vcml {
                 double avg = stats.irq_uptime.to_seconds() / stats.irq_count;
 
                 os << stats.irq_count << " events, "
-                   << "avg " << avg * 1e6 << "us, "
+                   << "avg " << avg * 1e6 << "us\\, "
                    << "max " << max * 1e6 << "us"
                    << std::endl;
             }
@@ -186,7 +186,7 @@ namespace vcml {
             for (u64 i = insn.size; i < maxsz; i++)
                 os << "   ";
 
-            os << " " << insn.code;
+            os << " " << escape(insn.code, ",");
         }
 
         return true;

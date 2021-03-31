@@ -24,6 +24,7 @@
 #include "vcml/component.h"
 
 #include "vcml/debugging/vspserver.h"
+#include "vcml/debugging/target.h"
 
 
 namespace vcml { namespace debugging {
@@ -112,6 +113,9 @@ namespace vcml { namespace debugging {
         // list object commands
         module* mod = dynamic_cast<module*>(obj);
         if (mod != nullptr) {
+            if (target::find(mod->name()))
+                os << "<target>" << mod->name() << "</target>";
+
             for (const command_base* cmd : mod->get_commands()) {
                 os << "<command"
                    << " name=\"" << xml_escape(cmd->name()) << "\""
@@ -166,8 +170,7 @@ namespace vcml { namespace debugging {
             stringstream ss;
             vector<string> cmdargs(args.begin() + 3, args.end());
             bool success = mod->execute(args[2], cmdargs, ss);
-            string resp = escape(ss.str(), ",");
-            return mkstr("%s,%s", success ? "OK" : "E", resp.c_str());
+            return mkstr("%s,%s", success ? "OK" : "E", ss.str().c_str());
         } catch (std::exception& e) {
             return mkstr("E,%s", escape(e.what(), ",").c_str());
         }
