@@ -116,9 +116,6 @@ namespace vcml { namespace virtio {
 
         void config_update();
 
-        void key_event(u32 key, u32 state);
-        void ptr_event(u32 x, u32 y);
-
         void update();
 
         virtual void identify(virtio_device_desc& desc) override;

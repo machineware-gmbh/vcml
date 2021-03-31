@@ -164,17 +164,6 @@ namespace vcml { namespace virtio {
         }
     }
 
-    void input::key_event(u32 key, u32 state) {
-        push_key(key, state);
-        push_sync();
-    }
-
-    void input::ptr_event(u32 x, u32 y) {
-        push_abs(ABS_X, x);
-        push_abs(ABS_Y, y);
-        push_sync();
-    }
-
     void input::update() {
         ui::input_event event = {};
         while (m_keyboard.pop_event(event)) {
