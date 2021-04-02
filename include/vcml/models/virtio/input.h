@@ -90,7 +90,7 @@ namespace vcml { namespace virtio {
         input_config m_config;
 
         ui::keyboard m_keyboard;
-        ui::ptrdev m_ptrdev;
+        ui::pointer m_pointer;
 
         queue<input_event> m_events;
         queue<vq_message> m_messages;

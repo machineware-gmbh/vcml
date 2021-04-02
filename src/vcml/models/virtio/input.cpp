@@ -171,7 +171,7 @@ namespace vcml { namespace virtio {
             push_sync();
         }
 
-        while (m_ptrdev.pop_event(event)) {
+        while (m_pointer.pop_event(event)) {
             if (event.is_key()) {
                 push_key(event.key.code, event.key.state);
                 push_sync();
@@ -250,8 +250,8 @@ namespace vcml { namespace virtio {
     input::input(const sc_module_name& nm):
         module(nm),
         m_config(),
-        m_keyboard(),
-        m_ptrdev(),
+        m_keyboard(name()),
+        m_pointer(name()),
         touchpad("touchpad", true),
         keyboard("keyboard", true),
         pollrate("pollrate", 1000),
@@ -267,7 +267,7 @@ namespace vcml { namespace virtio {
             if (keyboard)
                 disp->add_keyboard(&m_keyboard);
             if (touchpad)
-                disp->add_ptrdev(&m_ptrdev);
+                disp->add_pointer(&m_pointer);
         }
 
         if (keyboard || touchpad) {
@@ -292,7 +292,7 @@ namespace vcml { namespace virtio {
             if (keyboard)
                 disp->remove_keyboard(&m_keyboard);
             if (touchpad)
-                disp->remove_ptrdev(&m_ptrdev);
+                disp->remove_pointer(&m_pointer);
             disp->shutdown();
         }
     }

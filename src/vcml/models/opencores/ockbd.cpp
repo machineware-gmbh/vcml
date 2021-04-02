@@ -70,7 +70,7 @@ namespace vcml { namespace opencores {
     ockbd::ockbd(const sc_module_name& nm):
         peripheral(nm),
         m_key_fifo(),
-        m_keyboard(),
+        m_keyboard(name()),
         KHR("KHR", 0x0, 0),
         IRQ("IRQ"),
         IN("IN"),

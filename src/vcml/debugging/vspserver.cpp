@@ -25,7 +25,7 @@
 
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
-
+#include "vcml/ui/input.h"
 
 namespace vcml { namespace debugging {
 
@@ -113,9 +113,6 @@ namespace vcml { namespace debugging {
         // list object commands
         module* mod = dynamic_cast<module*>(obj);
         if (mod != nullptr) {
-            if (target::find(mod->name()))
-                os << "<target>" << mod->name() << "</target>";
-
             for (const command_base* cmd : mod->get_commands()) {
                 os << "<command"
                    << " name=\"" << xml_escape(cmd->name()) << "\""
@@ -143,8 +140,19 @@ namespace vcml { namespace debugging {
 
         stringstream ss;
         ss << "OK,<?xml version=\"1.0\" ?><hierarchy>";
+
         for (auto obj : sc_core::sc_get_top_level_objects())
             list_object(ss, obj);
+
+        for (auto tgt : debugging::target::targets())
+            ss << "<target>" << tgt->target_name() << "</target>";
+
+        for (auto kbd : ui::keyboard::keyboards())
+            ss << "<keyboard>" << kbd->input_name() << "</keyboard>";
+
+        for (auto ptr : ui::pointer::pointers())
+            ss << "<pointer>" << ptr->input_name() << "</pointer>";
+
         ss << "</hierarchy>";
         return ss.str();
     }

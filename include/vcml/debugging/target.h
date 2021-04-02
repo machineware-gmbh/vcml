@@ -74,6 +74,8 @@ namespace vcml { namespace debugging {
     class target
     {
     private:
+        string m_name;
+
         endianess m_endian;
         unordered_map<u64, cpureg> m_cpuregs;
         symtab m_symbols;
@@ -109,6 +111,8 @@ namespace vcml { namespace debugging {
 
         const symtab& symbols() const;
         u64 load_symbols_from_elf(const string& file);
+
+        const char* target_name() const { return m_name.c_str(); }
 
         target(const char* name);
         virtual ~target();

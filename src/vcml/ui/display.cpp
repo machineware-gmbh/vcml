@@ -68,12 +68,12 @@ namespace vcml { namespace ui {
     }
 
     void display::notify_btn(u32 button, bool down) {
-        for (ptrdev* ptr : m_pointers)
+        for (pointer* ptr : m_pointers)
             ptr->notify_btn(button, down);
     }
 
     void display::notify_pos(u32 x, u32 y) {
-        for (ptrdev* ptr : m_pointers)
+        for (pointer* ptr : m_pointers)
             ptr->notify_pos(x, y);
     }
 
@@ -83,7 +83,7 @@ namespace vcml { namespace ui {
             init(fbmode::a8r8g8b8(320, 200), nullptr);
     }
 
-    void display::add_ptrdev(ptrdev* ptr) {
+    void display::add_pointer(pointer* ptr) {
         m_pointers.push_back(ptr);
         if (!has_framebuffer())
             init(fbmode::a8r8g8b8(320, 200), nullptr);
@@ -93,7 +93,7 @@ namespace vcml { namespace ui {
         stl_remove_erase(m_keyboards, kb);
     }
 
-    void display::remove_ptrdev(ptrdev* ptr) {
+    void display::remove_pointer(pointer* ptr) {
         stl_remove_erase(m_pointers, ptr);
     }
 

@@ -41,7 +41,8 @@ namespace vcml { namespace ui {
         push_event(ev);
     }
 
-    input::input():
+    input::input(const char* name):
+        m_name(name),
         m_mutex(),
         m_events() {
     }
@@ -65,8 +66,8 @@ namespace vcml { namespace ui {
         return true;
     }
 
-    keyboard::keyboard(const string& layout):
-        input(),
+    keyboard::keyboard(const char* name, const string& layout):
+        input(name),
         m_shift_l(false),
         m_shift_r(false),
         m_capsl(false),
@@ -74,10 +75,13 @@ namespace vcml { namespace ui {
         m_alt_r(false),
         m_prev_sym(~0u),
         m_layout(layout) {
+        if (stl_contains(s_keyboards, string(name)))
+            VCML_ERROR("keyboard input device '%s' already exists", name);
+        s_keyboards[name] = this;
     }
 
     keyboard::~keyboard() {
-        // nothing to do
+        s_keyboards.erase(input_name());
     }
 
     void keyboard::notify_key(u32 sym, bool down) {
@@ -136,18 +140,35 @@ namespace vcml { namespace ui {
         m_prev_sym = down ? sym : -1;
     }
 
-    ptrdev::ptrdev():
-        input(),
+    unordered_map<string, keyboard*> keyboard::s_keyboards;
+
+    vector<keyboard*> keyboard::keyboards() {
+        vector<keyboard*> res;
+        res.reserve(s_keyboards.size());
+        for (auto it : s_keyboards)
+            res.push_back(it.second);
+        return std::move(res);
+    }
+    keyboard* keyboard::find(const char* name) {
+        auto it = s_keyboards.find(name);
+        return it != s_keyboards.end() ? it->second : nullptr;
+    }
+
+    pointer::pointer(const char* name):
+        input(name),
         m_buttons(),
         m_prev_x(),
         m_prev_y() {
+        if (stl_contains(s_pointers, string(name)))
+            VCML_ERROR("pointer input device '%s' already exists", name);
+        s_pointers[name] = this;
     }
 
-    ptrdev::~ptrdev() {
-        // nothing to do
+    pointer::~pointer() {
+        s_pointers.erase(input_name());
     }
 
-    void ptrdev::notify_btn(u32 button, bool down) {
+    void pointer::notify_btn(u32 button, bool down) {
         if (button == BUTTON_NONE)
             return;
 
@@ -179,12 +200,27 @@ namespace vcml { namespace ui {
         m_buttons = buttons;
     }
 
-    void ptrdev::notify_pos(u32 x, u32 y) {
+    void pointer::notify_pos(u32 x, u32 y) {
         if (x != m_prev_x || y != m_prev_y)
             push_ptr(x, y);
 
         m_prev_x = x;
         m_prev_y = y;
+    }
+
+    unordered_map<string, pointer*> pointer::s_pointers;
+
+    vector<pointer*> pointer::pointers() {
+        vector<pointer*> res;
+        res.reserve(s_pointers.size());
+        for (auto it : s_pointers)
+            res.push_back(it.second);
+        return std::move(res);
+    }
+
+    pointer* pointer::find(const char* name) {
+        auto it = s_pointers.find(name);
+        return it != s_pointers.end() ? it->second : nullptr;
     }
 
 }}

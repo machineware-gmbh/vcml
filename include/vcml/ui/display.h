@@ -43,7 +43,7 @@ namespace vcml { namespace ui {
         u8*    m_nullfb;
 
         vector<keyboard*> m_keyboards;
-        vector<ptrdev*> m_pointers;
+        vector<pointer*> m_pointers;
 
     protected:
         static unordered_map<string, function<display*(u32)>> types;
@@ -81,10 +81,10 @@ namespace vcml { namespace ui {
         virtual void notify_pos(u32 x, u32 y);
 
         virtual void add_keyboard(keyboard* kb);
-        virtual void add_ptrdev(ptrdev* ptr);
+        virtual void add_pointer(pointer* ptr);
 
         virtual void remove_keyboard(keyboard* kb);
-        virtual void remove_ptrdev(ptrdev* ptr);
+        virtual void remove_pointer(pointer* ptr);
 
         static shared_ptr<display> lookup(const string& name);
         static void register_display_type(const string& type,

@@ -68,6 +68,8 @@ namespace vcml { namespace ui {
     class input
     {
     private:
+        string m_name;
+
         mutable mutex m_mutex;
         queue<input_event> m_events;
 
@@ -77,7 +79,9 @@ namespace vcml { namespace ui {
         void push_ptr(u32 x, u32 y);
 
     public:
-        input();
+        const char* input_name() const { return m_name.c_str(); }
+
+        input(const char* name);
         virtual ~input();
 
         bool has_events() const;
@@ -95,6 +99,8 @@ namespace vcml { namespace ui {
         u32  m_prev_sym;
         string m_layout;
 
+        static unordered_map<string, keyboard*> s_keyboards;
+
     public:
         bool shift_l() const { return m_shift_l; }
         bool shift_r() const { return m_shift_r; }
@@ -109,13 +115,16 @@ namespace vcml { namespace ui {
         const char* layout() const { return m_layout.c_str(); }
         void set_layout(const string& layout) { m_layout = layout; }
 
-        keyboard(const string& layout = "");
+        keyboard(const char* name, const string& layout = "");
         virtual ~keyboard();
 
         void notify_key(u32 symbol, bool down);
+
+        static vector<keyboard*> keyboards();
+        static keyboard* find(const char* name);
     };
 
-    class ptrdev : public input
+    class pointer : public input
     {
     private:
         mutable mutex      m_mutex;
@@ -125,6 +134,8 @@ namespace vcml { namespace ui {
         u32 m_prev_x;
         u32 m_prev_y;
 
+        static unordered_map<string, pointer*> s_pointers;
+
     public:
         u32 x() const { return m_prev_x; }
         u32 y() const { return m_prev_y; }
@@ -133,11 +144,14 @@ namespace vcml { namespace ui {
         bool middle() const { return m_buttons & BUTTON_MIDDLE; }
         bool right()  const { return m_buttons & BUTTON_RIGHT; }
 
-        ptrdev();
-        virtual ~ptrdev();
+        pointer(const char* name);
+        virtual ~pointer();
 
         void notify_btn(u32 btn, bool down);
         void notify_pos(u32 x, u32 y);
+
+        static vector<pointer*> pointers();
+        static pointer* find(const char* name);
     };
 
 }}

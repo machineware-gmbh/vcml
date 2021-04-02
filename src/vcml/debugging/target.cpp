@@ -64,18 +64,18 @@ namespace vcml { namespace debugging {
     }
 
     target::target(const char* name):
+        m_name(name),
         m_endian(ENDIAN_UNKNOWN),
         m_cpuregs(),
         m_suspender("suspender"),
         m_stepping(false) {
-        auto it = s_targets.find(name);
-        if (it != s_targets.end())
+        if (stl_contains(s_targets, m_name))
             VCML_ERROR("debug target '%s' already exists", name);
-        s_targets[name] = this;
+        s_targets[m_name] = this;
     }
 
     target::~target() {
-        // nothing to do
+        s_targets.erase(m_name);
     }
 
     vector<cpureg> target::cpuregs() const {
@@ -414,7 +414,8 @@ namespace vcml { namespace debugging {
     }
 
     vector<target*> target::targets() {
-        vector<target*> res(s_targets.size());
+        vector<target*> res;
+        res.reserve(s_targets.size());
         for (auto it : s_targets)
             res.push_back(it.second);
         return std::move(res);
