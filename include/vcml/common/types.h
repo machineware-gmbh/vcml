@@ -31,6 +31,7 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <bitset>
 #include <iterator>
 #include <algorithm>
@@ -116,6 +117,7 @@ namespace vcml {
     using std::set;
     using std::unordered_set;
     using std::unordered_map;
+    using std::pair;
     using std::bitset;
 
     template <typename V, typename T>

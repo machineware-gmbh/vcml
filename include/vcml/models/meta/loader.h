@@ -25,6 +25,7 @@
 #include "vcml/common/strings.h"
 #include "vcml/common/utils.h"
 
+#include "vcml/debugging/loader.h"
 #include "vcml/debugging/elf_reader.h"
 
 #include "vcml/component.h"
@@ -32,15 +33,9 @@
 
 namespace vcml { namespace meta {
 
-    class loader: public component
+    class loader: public component,
+                  public debugging::loader
     {
-    private:
-        bool cmd_load_elf(const vector<string>& args, ostream& os);
-
-        size_t load_elf(const string& filepath);
-        size_t load_elf_segment(debugging::elf_reader& reader,
-                                const debugging::elf_segment& segment);
-
     public:
         property<string> images;
 
@@ -54,7 +49,15 @@ namespace vcml { namespace meta {
         virtual void reset() override;
 
     protected:
-        virtual void end_of_elaboration() override;
+        virtual u8* allocate_image(u64 size, u64 offset) override;
+        virtual u8* allocate_image(const debugging::elf_segment& seg,
+                                   u64 offset) override;
+
+        virtual void copy_image(const u8* img, u64 size, u64 offset) override;
+        virtual void copy_image(const u8* img, const debugging::elf_segment& s,
+                                u64 offset) override;
+
+        virtual void before_end_of_elaboration() override;
     };
 
 }}

@@ -22,45 +22,6 @@
 
 namespace vcml { namespace generic {
 
-    struct image_info {
-        string file;
-        u64 offset;
-    };
-
-    static vector<image_info> images_from_string(string s) {
-        vector<image_info> images;
-        s.erase(std::remove_if(s.begin(), s.end(), [] (unsigned char c) {
-            return isspace(c);
-        }), s.end());
-
-        vector<string> token = split(s, ';');
-        for (string cur : token) {
-            if (cur.empty())
-                continue;
-
-            vector<string> vec = split(cur, '@');
-            if (vec.empty())
-                continue;
-
-            string file = vec[0];
-            u64 off = vec.size() > 1 ? strtoull(vec[1].c_str(), NULL, 0) : 0;
-            images.push_back({file, off});
-        }
-
-        return images;
-    }
-
-    bool memory::cmd_load(const vector<string>& args, ostream& os) {
-        string binary = args[0];
-        u64 offset = 0ull;
-
-        if (args.size() > 1)
-            offset = strtoull(args[1].c_str(), NULL, 0);
-
-        load(binary, offset);
-        return true;
-    }
-
     bool memory::cmd_show(const vector<string>& args, ostream& os) {
         u64 start = strtoull(args[0].c_str(), NULL, 0);
         u64 end = strtoull(args[1].c_str(), NULL, 0);
@@ -89,9 +50,30 @@ namespace vcml { namespace generic {
         return true;
     }
 
+    u8* memory::allocate_image(u64 sz, u64 off) {
+        if (off >= size)
+            VCML_REPORT("offset 0x%lx exceeds memory size", off);
+
+        if (sz + off > size)
+            VCML_REPORT("image too big for memory");
+
+        return m_memory + off;
+    }
+
+    void memory::copy_image(const u8* image, u64 sz, u64 off) {
+        if (off >= size)
+            VCML_REPORT("offset 0x%lx exceeds memory size", off);
+
+        if (sz + off > size)
+            VCML_REPORT("image too big for memory");
+
+        memcpy(m_memory + off, image, sz);
+    }
+
     memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
                    unsigned int alignment, unsigned int rl, unsigned int wl):
         peripheral(nm, host_endian(), rl, wl),
+        debugging::loader(name()),
         m_base(nullptr),
         m_memory(nullptr),
         size("size", sz),
@@ -115,12 +97,9 @@ namespace vcml { namespace generic {
         map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
                                                 : VCML_ACCESS_READ_WRITE);
 
-        register_command("load", 1, this, &memory::cmd_load,
-            "Load <binary> [off] to load the contents of file <binary> to "
-            "relative offset [off] in memory (off is zero if unspecified).");
         register_command("show", 2, this, &memory::cmd_show,
-            "Show memory contents between addresses [start] and [end]. "
-            "Usage: show [start] [end]");
+            "show memory contents between addresses [start] and [end]. "
+            "usage: show [start] [end]");
     }
 
     memory::~memory() {
@@ -132,34 +111,7 @@ namespace vcml { namespace generic {
         if (poison > 0)
             memset(m_memory, poison, size);
 
-        vector<image_info> imagevec = images_from_string(images);
-        for (auto ii : imagevec) {
-            log_debug("loading '%s' to 0x%08lx", ii.file.c_str(), ii.offset);
-            load(ii.file, ii.offset);
-        }
-    }
-
-    void memory::load(const string& binary, u64 offset) {
-        ifstream file(binary.c_str(), std::ios::binary | std::ios::ate);
-        if (!file.is_open()) {
-            log_warn("cannot open file '%s'", binary.c_str());
-            return;
-        }
-
-        if (offset >= size) {
-            log_warn("offset %lu exceeds memsize %lu", offset, size.get());
-            return;
-        }
-
-        u64 nbytes = file.tellg();
-        if (nbytes > size - offset) {
-            nbytes = size - offset;
-            log_warn("image file '%s' to big, truncating after %lu bytes",
-                     binary.c_str(), nbytes);
-        }
-
-        file.seekg(0, std::ios::beg);
-        file.read((char*)(m_memory + offset), nbytes);
+        load_images(images);
     }
 
     tlm_response_status memory::read(const range& addr, void* data,

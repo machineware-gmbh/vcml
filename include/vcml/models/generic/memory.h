@@ -24,23 +24,27 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/debugging/loader.h"
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
 namespace vcml { namespace generic {
 
-    class memory: public peripheral
+    class memory: public peripheral,
+                  public debugging::loader
     {
     private:
         void* m_base;
         u8* m_memory;
 
-        // commands
-        bool cmd_load(const vector<string>& args, ostream& os);
         bool cmd_show(const vector<string>& args, ostream& os);
 
         memory();
         memory(const memory&);
+
+    protected:
+        virtual u8* allocate_image(u64 size, u64 offset) override;
+        virtual void copy_image(const u8* img, u64 size, u64 offset) override;
 
     public:
         property<u64> size;
@@ -60,8 +64,6 @@ namespace vcml { namespace generic {
         virtual ~memory();
         VCML_KIND(memory);
         virtual void reset();
-
-        void load(const string& binary, u64 offset = 0);
 
         virtual tlm_response_status read  (const range& addr, void* data,
                                            const sideband& info) override;
