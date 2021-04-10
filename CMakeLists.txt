@@ -59,13 +59,6 @@ set(sources
     ${src}/vcml/properties/property_provider_arg.cpp
     ${src}/vcml/properties/property_provider_env.cpp
     ${src}/vcml/properties/property_provider_file.cpp
-    ${src}/vcml/backends/backend.cpp
-    ${src}/vcml/backends/backend_null.cpp
-    ${src}/vcml/backends/backend_file.cpp
-    ${src}/vcml/backends/backend_term.cpp
-    ${src}/vcml/backends/backend_stdout.cpp
-    ${src}/vcml/backends/backend_tcp.cpp
-    ${src}/vcml/backends/backend_tap.cpp
     ${src}/vcml/debugging/symtab.cpp
     ${src}/vcml/debugging/target.cpp
     ${src}/vcml/debugging/elf_reader.cpp
@@ -75,6 +68,16 @@ set(sources
     ${src}/vcml/debugging/gdbarch.cpp
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
+    ${src}/vcml/serial/backend.cpp
+    ${src}/vcml/serial/backend_fd.cpp
+    ${src}/vcml/serial/backend_file.cpp
+    ${src}/vcml/serial/backend_tcp.cpp
+    ${src}/vcml/serial/backend_term.cpp
+    ${src}/vcml/serial/port.cpp
+    ${src}/vcml/net/client.cpp
+    ${src}/vcml/net/client_file.cpp
+    ${src}/vcml/net/client_tap.cpp
+    ${src}/vcml/net/adapter.cpp
     ${src}/vcml/ui/fbmode.cpp
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
@@ -94,6 +97,8 @@ set(sources
     ${src}/vcml/setup.cpp
     ${src}/vcml/spi.cpp
     ${src}/vcml/sd.cpp
+    ${src}/vcml/uart.cpp
+    ${src}/vcml/nic.cpp
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp

@@ -132,34 +132,46 @@ namespace vcml {
     }
 
     size_t fd_read(int fd, void* buffer, size_t buflen) {
-        if  (fd < 0 || buffer == nullptr || buflen == 0)
+        if (fd < 0 || buffer == nullptr || buflen == 0)
             return 0;
 
-        char* ptr = reinterpret_cast<char*>(buffer);
+        u8* ptr = reinterpret_cast<u8*>(buffer);
 
+        ssize_t len;
         size_t numread = 0;
+
         while (numread < buflen) {
-            ssize_t res = ::read(fd, ptr + numread, buflen - numread);
-            if (res <= 0)
+            do {
+                len = ::read(fd, ptr + numread, buflen - numread);
+            } while (len < 0 && errno == EINTR);
+
+            if (len <= 0)
                 return numread;
-            numread += res;
+
+            numread += len;
         }
 
         return numread;
     }
 
     size_t fd_write(int fd, const void* buffer, size_t buflen) {
-        if  (fd < 0 || buffer == nullptr || buflen == 0)
+        if (fd < 0 || buffer == nullptr || buflen == 0)
             return false;
 
-        const char* ptr = reinterpret_cast<const char*>(buffer);
+        const u8* ptr = reinterpret_cast<const u8*>(buffer);
 
+        ssize_t len;
         size_t written = 0;
+
         while (written < buflen) {
-            ssize_t res = ::write(fd, ptr + written, buflen - written);
-            if (res <= 0)
+            do {
+                len = ::write(fd, ptr + written, buflen - written);
+            } while (len < 0 && errno == EINTR);
+
+            if (len <= 0)
                 return written;
-            written += res;
+
+            written += len;
         }
 
         return written;

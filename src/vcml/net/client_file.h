@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,34 +16,34 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/common/utils.h"
-#include "vcml/backends/backend_stdout.h"
+#ifndef VCML_NET_BACKEND_FILE_H
+#define VCML_NET_BACKEND_FILE_H
 
-namespace vcml {
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
+#include "vcml/logging/logger.h"
+#include "vcml/net/client.h"
 
-    backend_stdout::backend_stdout(const sc_module_name& nm):
-        backend(nm) {
-        // nothing to do
-    }
+namespace vcml { namespace net {
 
-    backend_stdout::~backend_stdout() {
-        // nothing to do
-    }
+    class client_file: public client
+    {
+    private:
+        size_t m_count;
+        ofstream m_tx;
 
-    size_t backend_stdout::peek() {
-        return 0;
-    }
+    public:
+        client_file(const string& adapter, const string& tx);
+        virtual ~client_file();
 
-    size_t backend_stdout::read(void* buf, size_t len) {
-        return 0;
-    }
+        virtual bool recv_packet(vector<u8>& packet) override;
+        virtual void send_packet(const vector<u8>& packet) override;
 
-    size_t backend_stdout::write(const void* buf, size_t len) {
-        return fd_write(STDOUT_FILENO, buf, len);
-    }
+        static client* create(const string& adapter, const string& type);
+    };
 
-    backend* backend_stdout::create(const string& nm) {
-        return new backend_stdout(nm.c_str());
-    }
+}}
 
-}
+#endif

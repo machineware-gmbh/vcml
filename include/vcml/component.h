@@ -83,6 +83,8 @@ namespace vcml {
         sc_time clock_cycle() const;
         sc_time clock_cycles(u64 num) const;
 
+        double clock_hz() const;
+
         sc_time& local_time(sc_process_b* proc = nullptr);
         sc_time  local_time_stamp(sc_process_b* proc = nullptr);
 
@@ -123,6 +125,11 @@ namespace vcml {
 
     inline sc_time component::clock_cycles(u64 num) const {
         return clock_cycle() * num;
+    }
+
+    inline double component::clock_hz() const {
+        const sc_time c = clock_cycle();
+        return c == SC_ZERO_TIME ? 0.0 : sc_time(1.0, SC_SEC) / c;
     }
 
     inline const vector<master_socket*>& component::get_master_sockets() const {

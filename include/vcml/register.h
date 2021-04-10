@@ -26,7 +26,6 @@
 #include "vcml/common/range.h"
 
 #include "vcml/logging/logger.h"
-#include "vcml/backends/backend.h"
 #include "vcml/properties/property.h"
 
 #include "vcml/sbi.h"

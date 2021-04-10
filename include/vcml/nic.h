@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,34 +16,39 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_TCP_H
-#define VCML_BACKEND_TCP_H
+#ifndef VCML_NIC_H
+#define VCML_NIC_H
 
-#include "vcml/common/socket.h"
-#include "vcml/backends/backend.h"
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
+
+#include "vcml/net/adapter.h"
+#include "vcml/net/client.h"
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+
+#include "vcml/peripheral.h"
 
 namespace vcml {
 
-    class backend_tcp: public backend
+    class nic: public peripheral,
+               public net::adapter
     {
     private:
-        socket m_sock;
+        vector<net::client*> m_clients;
 
     public:
-        property<u16> port;
+        property<string> clients;
 
-        bool is_listening() const { return m_sock.is_listening(); }
-        bool is_connected() const { return m_sock.is_connected(); }
+        nic(const sc_module_name& nm, endianess e = host_endian(),
+            unsigned int read_latency = 0, unsigned int write_latency = 0);
+        virtual ~nic();
 
-        backend_tcp(const sc_module_name& nm = "backend", u16 port = 0);
-        virtual ~backend_tcp();
-        VCML_KIND(backend_tcp);
+        nic() = delete;
+        nic(const nic&) = delete;
 
-        virtual size_t peek() override;
-        virtual size_t read(void* buf, size_t len) override;
-        virtual size_t write(const void* buf, size_t len) override;
-
-        static backend* create(const string& name);
+        VCML_KIND(nic);
     };
 
 }

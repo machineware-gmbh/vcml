@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,27 +16,35 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_NULL_H
-#define VCML_BACKEND_NULL_H
+#ifndef VCML_SERIAL_BACKEND_TCP_H
+#define VCML_SERIAL_BACKEND_TCP_H
 
-#include "vcml/backends/backend.h"
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/socket.h"
 
-namespace vcml {
+#include "vcml/logging/logger.h"
+#include "vcml/serial/backend.h"
 
-    class backend_null: public backend
+namespace vcml { namespace serial {
+
+    class backend_tcp: public backend
     {
+    private:
+        socket m_socket;
+
     public:
-        explicit backend_null(const sc_module_name& name = "backend");
-        virtual ~backend_null();
-        VCML_KIND(backend_null);
+        backend_tcp(const string& serial, int port);
+        virtual ~backend_tcp();
 
-        virtual size_t peek();
-        virtual size_t read(void* buf, size_t len);
-        virtual size_t write(const void* buf, size_t len);
+        virtual bool peek() override;
+        virtual bool read(u8& val) override;
+        virtual void write(u8 val) override;
 
-        static backend* create(const string& name);
+        static backend* create(const string& port, const string& type);
     };
 
-}
+}}
 
 #endif

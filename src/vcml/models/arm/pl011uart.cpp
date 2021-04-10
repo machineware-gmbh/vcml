@@ -29,7 +29,7 @@ namespace vcml { namespace arm {
         }
 
         u8 val;
-        if (beread(val)) {
+        if (serial_in(val)) {
             if (m_fifo.size() < m_fifo_size)
                 m_fifo.push((u16)val);
             update();
@@ -82,8 +82,8 @@ namespace vcml { namespace arm {
 
         // Upper 8 bits of DR are used for encoding transmission errors, but
         // since those are not simulated, we just set them to zero.
-        u8 val8 = val & 0xFF;
-        bewrite(val8);
+        u8 val8 = (u8)val;
+        serial_out(val8);
         RIS |= RIS_TX;
         update();
         return val8;
@@ -148,7 +148,7 @@ namespace vcml { namespace arm {
     }
 
     pl011uart::pl011uart(const sc_module_name& nm):
-        peripheral(nm),
+        uart(nm),
         m_fifo_size(),
         m_fifo(),
         m_enable("enable"),

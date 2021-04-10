@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,35 +16,30 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_FILE_H
-#define VCML_BACKEND_FILE_H
+#ifndef VCML_NET_CLIENT_H
+#define VCML_NET_CLIENT_H
 
-#include "vcml/backends/backend.h"
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/strings.h"
 
-namespace vcml {
+namespace vcml { namespace net {
 
-    class backend_file: public backend
+    class client
     {
     private:
-        ifstream m_rx;
-        ofstream m_tx;
+        string m_adapter;
 
     public:
-        property<string> rx;
-        property<string> tx;
+        client(const string& adapter);
+        virtual ~client();
 
-        backend_file(const sc_module_name& name = "backend",
-                     const char* rx = nullptr, const char* tx = nullptr);
-        virtual ~backend_file();
-        VCML_KIND(backend_file);
+        virtual bool recv_packet(vector<u8>& packet) = 0;
+        virtual void send_packet(const vector<u8>& packet) = 0;
 
-        virtual size_t peek();
-        virtual size_t read(void* buf, size_t len);
-        virtual size_t write(const void* buf, size_t len);
-
-        static backend* create(const string& name);
+        static client* create(const string& adapter, const string& type);
     };
 
-}
+}}
 
 #endif

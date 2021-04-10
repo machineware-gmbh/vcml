@@ -43,8 +43,6 @@
 #include "vcml/properties/property_provider_env.h"
 #include "vcml/properties/property_provider_file.h"
 
-#include "vcml/backends/backend.h"
-
 #include "vcml/debugging/symtab.h"
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/elf_reader.h"
@@ -54,6 +52,12 @@
 #include "vcml/debugging/gdbarch.h"
 #include "vcml/debugging/gdbserver.h"
 #include "vcml/debugging/vspserver.h"
+
+#include "vcml/serial/backend.h"
+#include "vcml/serial/port.h"
+
+#include "vcml/net/client.h"
+#include "vcml/net/adapter.h"
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/fbmode.h"
@@ -72,6 +76,7 @@
 #include "vcml/slave_socket.h"
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
+#include "vcml/uart.h"
 #include "vcml/processor.h"
 #include "vcml/system.h"
 #include "vcml/setup.h"

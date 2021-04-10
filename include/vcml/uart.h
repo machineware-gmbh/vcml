@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,33 +16,44 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/backends/backend_null.h"
+#ifndef VCML_UART_H
+#define VCML_UART_H
+
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
+
+#include "vcml/serial/port.h"
+#include "vcml/serial/backend.h"
+
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+
+#include "vcml/peripheral.h"
 
 namespace vcml {
 
-    backend_null::backend_null(const sc_module_name& nm):
-        backend(nm) {
-        // nothing to do
-    }
+    class uart: public peripheral,
+                public serial::port
+    {
+    private:
+        vector<serial::backend*> m_backends;
 
-    backend_null::~backend_null() {
-        // nothing to do
-    }
+        bool cmd_history(const vector<string>& args, ostream& os);
 
-    size_t backend_null::peek() {
-        return 0;
-    }
+    public:
+        property<string> backends;
 
-    size_t backend_null::read(void* buf, size_t len) {
-        return 0;
-    }
+        uart(const sc_module_name& nm, endianess e = host_endian(),
+             unsigned int read_latency = 0, unsigned int write_latency = 0);
+        virtual ~uart();
 
-    size_t backend_null::write(const void* buf, size_t len) {
-        return len;
-    }
+        uart() = delete;
+        uart(const uart&) = delete;
 
-    backend* backend_null::create(const string& nm) {
-        return new backend_null(nm.c_str());
-    }
+        VCML_KIND(uart);
+    };
 
 }
+
+#endif

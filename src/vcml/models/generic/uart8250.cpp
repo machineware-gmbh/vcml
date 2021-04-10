@@ -20,21 +20,20 @@
 
 namespace vcml { namespace generic {
 
-    void uart8250::update_divisor() {
-        u32 divisor = m_divisor_msb << 8 | m_divisor_lsb;
-        if (divisor == 0) {
+    void uart8250::calibrate() {
+        if (m_divisor == 0) {
             log_warn("zero baud divisor specified, reverting to default");
-            divisor = clock / (16 * VCML_GENERIC_UART8250_DEFAULT_BAUD);
+            m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
         }
 
-        u32 baud = clock / (divisor * 16);
-        log_debug("setup divisor %u (%u baud)", divisor, baud);
+        u32 baud = clock_hz() / (m_divisor * 16);
+        log_debug("setup divisor %u (%u baud)", m_divisor, baud);
     }
 
     void uart8250::update() {
         u8 val;
 
-        if ((m_rx_fifo.size() < m_rx_size) && beread(val)) {
+        if ((m_rx_fifo.size() < m_rx_size) && serial_in(val)) {
             m_rx_fifo.push(val);
             LSR |= LSR_DR;
         }
@@ -42,7 +41,7 @@ namespace vcml { namespace generic {
         while (!m_tx_fifo.empty()) {
             val = m_tx_fifo.front();
             m_tx_fifo.pop();
-            bewrite(val);
+            serial_out(val);
 
             LSR |= LSR_THRE;
             if (m_tx_fifo.empty())
@@ -65,15 +64,14 @@ namespace vcml { namespace generic {
 
         // it does not make sense to poll multiple times during
         // a quantum, so if a quantum is set, only update once.
-        u32 divisor = m_divisor_msb << 8 | m_divisor_lsb;
-        sc_time cycle = sc_time(1.0 / clock, SC_SEC) * divisor;
+        sc_time cycle = clock_cycle() * m_divisor;
         sc_time quantum = tlm_global_quantum::instance().get();
         next_trigger(max(cycle, quantum));
     }
 
     u8 uart8250::read_RBR() {
         if (LCR & LCR_DLAB)
-            return m_divisor_lsb;
+            return m_divisor & 0xff;
 
         if (m_rx_fifo.empty())
             return 0;
@@ -94,7 +92,7 @@ namespace vcml { namespace generic {
 
     u8 uart8250::read_IER() {
         if (LCR & LCR_DLAB)
-            return m_divisor_msb;
+            return m_divisor >> 8;
         return IER;
     }
 
@@ -112,8 +110,8 @@ namespace vcml { namespace generic {
 
     u8 uart8250::write_THR(u8 val) {
         if (LCR & LCR_DLAB) {
-            m_divisor_lsb = val;
-            update_divisor();
+            m_divisor = deposit(m_divisor, 0, 8, val);
+            calibrate();
             return THR;
         }
 
@@ -123,14 +121,13 @@ namespace vcml { namespace generic {
             LSR &= ~LSR_THRE;
 
         update();
-
         return val;
     }
 
     u8 uart8250::write_IER(u8 val) {
         if (LCR & LCR_DLAB) {
-            m_divisor_msb = val;
-            update_divisor();
+            m_divisor = deposit(m_divisor, 8, 8, val);
+            calibrate();
             return IER;
         }
 
@@ -189,16 +186,13 @@ namespace vcml { namespace generic {
         return IIR;
     }
 
-    SC_HAS_PROCESS(uart8250);
-
     uart8250::uart8250(const sc_module_name& nm):
-        peripheral(nm),
+        uart(nm),
         m_rx_size(1),
         m_tx_size(1),
         m_rx_fifo(),
         m_tx_fifo(),
-        m_divisor_msb(0),
-        m_divisor_lsb(0),
+        m_divisor(1),
         THR("THR", 0x0, 0x00),
         IER("IER", 0x1, 0x00),
         IIR("IIR", 0x2, IIR_NOIP),
@@ -208,12 +202,7 @@ namespace vcml { namespace generic {
         MSR("MSR", 0x6, 0x00),
         SCR("SCR", 0x7, 0x00),
         IRQ("IRQ"),
-        IN("IN"),
-        clock("clock", 3686400) { // 3.6864MHz
-
-        u16 divider = clock / (16 * VCML_GENERIC_UART8250_DEFAULT_BAUD);
-        m_divisor_msb = divider >> 8;
-        m_divisor_lsb = divider & 0xf;
+        IN("IN") {
 
         THR.allow_read_write();
         THR.read = &uart8250::read_RBR;
@@ -235,11 +224,17 @@ namespace vcml { namespace generic {
         MSR.allow_read_write();
         SCR.allow_read_write();
 
+        SC_HAS_PROCESS(uart8250);
         SC_METHOD(poll);
     }
 
     uart8250::~uart8250() {
-        /* nothing to do */
+        // nothing to do
+    }
+
+    void uart8250::reset() {
+        uart::reset();
+        m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
     }
 
 }}

@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,32 +16,36 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_TAP_H
-#define VCML_BACKEND_TAP_H
+#ifndef VCML_SERIAL_BACKEND_H
+#define VCML_SERIAL_BACKEND_H
 
-#include "vcml/backends/backend.h"
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
 
-namespace vcml {
+namespace vcml { namespace serial {
 
-    class backend_tap: public backend
+    class backend
     {
     private:
-        int m_fd;
+        string m_serial;
 
     public:
-        property<int> devno;
+        const char* serial_port() const { return m_serial.c_str(); }
 
-        backend_tap(const sc_module_name& name = "backend", int devno = -1);
-        virtual ~backend_tap();
-        VCML_KIND(backend_tap);
+        backend(const string& port);
+        virtual ~backend();
 
-        virtual size_t peek();
-        virtual size_t read(void* buf, size_t len);
-        virtual size_t write(const void* buf, size_t len);
+        backend() = delete;
+        backend(const backend&) = delete;
+        backend(backend&&) = default;
 
-        static backend* create(const string& name);
+        virtual bool peek() = 0;
+        virtual bool read(u8& val) = 0;
+        virtual void write(u8 val) = 0;
+
+        static backend* create(const string& port, const string& type);
     };
 
-}
+}}
 
 #endif

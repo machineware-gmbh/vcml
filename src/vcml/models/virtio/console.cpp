@@ -21,22 +21,16 @@
 namespace vcml { namespace virtio {
 
     size_t console::rx_data_available() {
-        size_t count = 0;
-        for (backend* be : m_backends)
-            count += be->peek();
-        return count;
+        return serial_peek() ? 1u : 0u;
     }
 
-    size_t console::rx_data(void* data, size_t size) {
-        for (backend* be : m_backends)
-            if (be->peek())
-                return be->read(data, size);
-        return 0;
+    size_t console::rx_data(u8* data, size_t size) {
+        return serial_in(*data) ? 1u : 0u;
     }
 
-    size_t console::tx_data(const void* data, size_t size) {
-        for (backend* be : m_backends)
-            be->write(data, size);
+    size_t console::tx_data(const u8* data, size_t size) {
+        for (size_t i = 0; i < size; i++)
+            serial_out(data[i]);
         return size;
     }
 
@@ -141,37 +135,27 @@ namespace vcml { namespace virtio {
         if (addr.length() != sizeof(m_config.emerg_write))
             return false;
 
-        tx_data(ptr, 1);
+        tx_data((const u8*)ptr, 1);
         return true;
     }
 
     console::console(const sc_module_name& nm):
-        module(nm),
+        uart(nm),
         virtio_fw_transport_if(),
         m_config(),
-        m_backends(),
         cols("cols", 0),
         rows("rows", 0),
         pollrate("pollrate", 1000),
-        backends("backends", "null"),
         VIRTIO_IN("VIRTIO_IN") {
         VIRTIO_IN.bind(*this);
-
-        vector<string> types = split(backends.get(), ' ');
-        for (size_t i = 0; i < types.size(); i++) {
-            stringstream ss; ss << "backend" << i;
-            backend* be = backend::create(types[i], ss.str());
-            if (be != nullptr)
-                m_backends.push_back(be);
-        }
-
         SC_HAS_PROCESS(console);
         SC_METHOD(poll);
+        RESET.stub();
+        CLOCK.stub();
     }
 
     console::~console() {
-        for (backend* be : m_backends)
-            delete be;
+        // nothing to do
     }
 
     void console::reset() {

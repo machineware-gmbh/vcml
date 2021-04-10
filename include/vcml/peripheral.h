@@ -25,7 +25,6 @@
 #include "vcml/common/range.h"
 
 #include "vcml/logging/logger.h"
-#include "vcml/backends/backend.h"
 #include "vcml/properties/property.h"
 
 #include "vcml/sbi.h"
@@ -43,15 +42,12 @@ namespace vcml {
         int m_current_cpu;
         endianess m_endian;
         vector<reg_base*> m_registers;
-        vector<backend*> m_backends;
 
         bool cmd_mmap(const vector<string>& args, ostream& os);
 
     public:
         property<unsigned int> read_latency;
         property<unsigned int> write_latency;
-
-        property<string> backends;
 
         endianess get_endian() const { return m_endian; }
         void set_endian(endianess e) { m_endian = e; }
@@ -88,13 +84,6 @@ namespace vcml {
 
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
 
-        bool   bepeek();
-        size_t beread(void* buffer, size_t size);
-        size_t bewrite(const void* buffer, size_t size);
-
-        template <typename T> size_t beread(T& val);
-        template <typename T> size_t bewrite(const T& val);
-
         virtual unsigned int transport(tlm_generic_payload& tx,
                                        const sideband& info) override;
         virtual unsigned int receive(tlm_generic_payload& tx,
@@ -129,16 +118,6 @@ namespace vcml {
     template <typename T>
     inline T peripheral::from_host_endian(T val) const {
         return is_host_endian() ? val : bswap(val);
-    }
-
-    template <typename T>
-    inline size_t peripheral::beread(T& val) {
-        return beread(&val, sizeof(T));
-    }
-
-    template <typename T>
-    inline size_t peripheral::bewrite(const T& val) {
-        return bewrite(&val, sizeof(T));
     }
 
 }

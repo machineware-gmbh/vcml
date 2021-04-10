@@ -31,12 +31,14 @@
 #include "vcml/master_socket.h"
 #include "vcml/slave_socket.h"
 
+#include "vcml/nic.h"
+
 #define VCML_OPENCORES_ETHOC_NUMBD 128
 #define VCML_OPENCORES_ETHOC_CLK   20000000 // 20MHz
 
 namespace vcml { namespace opencores {
 
-    class ethoc: public peripheral
+    class ethoc: public nic
     {
     private:
         u8  m_mac[6];

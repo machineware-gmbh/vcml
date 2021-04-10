@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,27 +16,40 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_STDOUT_H
-#define VCML_BACKEND_STDOUT_H
-
-#include "vcml/backends/backend.h"
+#include "vcml/uart.h"
 
 namespace vcml {
 
-    class backend_stdout: public backend
-    {
-    public:
-        explicit backend_stdout(const sc_module_name& name = "backend");
-        virtual ~backend_stdout();
-        VCML_KIND(backend_stdout);
+    bool uart::cmd_history(const vector<string>& args, ostream& os) {
+        vector<u8> history;
+        fetch_history(history);
+        for (u8 val : history)
+            os << (int)val;
+        return true;
+    }
 
-        virtual size_t peek();
-        virtual size_t read(void* buf, size_t len);
-        virtual size_t write(const void* buf, size_t len);
+    uart::uart(const sc_module_name& nm, endianess e,
+        unsigned int read_latency, unsigned int write_latency):
+        peripheral(nm, e, read_latency, write_latency),
+        serial::port(name()),
+        m_backends(),
+        backends("backends", "") {
+        register_command("history", 0, this, &uart::cmd_history,
+            "show previously transmitted data from this UART");
 
-        static backend* create(const string& name);
-    };
+        vector<string> types = split(backends, ' ');
+        for  (auto type : types) {
+            auto be = serial::backend::create(name(), type);
+            if (be != nullptr)
+                m_backends.push_back(be);
+            else
+                log_warn("failed to create serial backend '%s'", type.c_str());
+        }
+    }
+
+    uart::~uart() {
+        for (auto backend : m_backends)
+            delete backend;
+    }
 
 }
-
-#endif

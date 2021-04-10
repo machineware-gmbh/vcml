@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,60 +16,46 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/backends/backend_tcp.h"
+#include "vcml/net/client_file.h"
 
-namespace vcml {
+namespace vcml { namespace net {
 
-    backend_tcp::backend_tcp(const sc_module_name& nm, u16 p):
-        backend(nm),
-        m_sock(),
-        port("port", p) {
-        m_sock.listen(port);
-        if (port == 0)
-            port = m_sock.port();
-        log_info("listening on port %hu", m_sock.port());
-        m_sock.accept_async();
+    client_file::client_file(const string& adapter, const string& tx):
+        client(adapter),
+        m_count(0),
+        m_tx(tx) {
+        if (!m_tx.good())
+            log_warn("failed to open file '%s'", tx.c_str());
     }
 
-    backend_tcp::~backend_tcp() {
+    client_file::~client_file() {
         // nothing to do
     }
 
-    size_t backend_tcp::peek() {
-        try {
-            return m_sock.peek();
-        } catch (...) {
-            m_sock.accept_async();
-            return 0;
+    bool client_file::recv_packet(vector<u8>& packet) {
+        return false;
+    }
+
+    void client_file::send_packet(const vector<u8>& packet) {
+        m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << ", "
+             << packet.size() << " bytes";
+
+        for (size_t i = 0; i < packet.size(); i++) {
+            m_tx << (i % 25 ? " " : "\n")
+                 << std::hex << std::setw(2) << std::setfill('0')
+                 << (int)packet[i] << std::dec;
         }
+
+        m_tx << std::endl << std::endl;
     }
 
-    size_t backend_tcp::read(void* buf, size_t len) {
-        try {
-            if (!m_sock.is_connected())
-                return 0;
-            m_sock.recv(buf, len);
-            return len;
-        } catch (...) {
-            m_sock.accept_async();
-            return 0;
-        }
+    client* client_file::create(const string& adapter, const string& type) {
+        string tx = adapter + ".tx";
+        vector<string> args = split(type, ':');
+        if (args.size() > 1)
+            tx = args[1];
+
+        return new client_file(adapter, tx);
     }
 
-    size_t backend_tcp::write(const void* buf, size_t len) {
-        try {
-            if (!m_sock.is_connected())
-                return 0;
-            m_sock.send(buf, len);
-            return len;
-        } catch (...) {
-            m_sock.accept_async();
-            return 0;
-        }
-    }
-
-    backend* backend_tcp::create(const string& nm) {
-        return new backend_tcp(nm.c_str());
-    }
-
-}
+}}

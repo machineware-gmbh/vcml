@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,49 +16,34 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BACKEND_TERM_H
-#define VCML_BACKEND_TERM_H
+#ifndef VCML_SERIAL_BACKEND_FILE_H
+#define VCML_SERIAL_BACKEND_FILE_H
 
-#include <signal.h>
-#include <termios.h>
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/logging/logger.h"
+#include "vcml/serial/backend.h"
 
-#include "vcml/backends/backend.h"
+namespace vcml { namespace serial {
 
-namespace vcml {
-
-    class backend_term: public backend
+    class backend_file: public backend
     {
     private:
-        int m_signal;
-        bool m_exit;
-        bool m_stopped;
-
-        termios m_termios;
-        double  m_time;
-
-        sighandler_t m_sigint;
-        sighandler_t m_sigstp;
-
-        static backend_term* singleton;
-        static void handle_signal(int sig);
-
-        void handle_sigstp(int sig);
-        void handle_sigint(int sig);
-
-        void cleanup();
+        ifstream m_rx;
+        ofstream m_tx;
 
     public:
-        explicit backend_term(const sc_module_name& name = "backend");
-        virtual ~backend_term();
-        VCML_KIND(backend_term);
+        backend_file(const string& port, const string& rx, const string& tx);
+        virtual ~backend_file();
 
-        virtual size_t peek();
-        virtual size_t read(void* buf, size_t len);
-        virtual size_t write(const void* buf, size_t len);
+        virtual bool peek() override;
+        virtual bool read(u8& val) override;
+        virtual void write(u8 val) override;
 
-        static backend* create(const string& name);
+        static backend* create(const string& serial, const string& type);
     };
 
-}
+
+}}
 
 #endif

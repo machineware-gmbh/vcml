@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,58 +24,70 @@
 #include <linux/if_tun.h>
 #include <unistd.h>
 #include <fcntl.h>
-
 #include <errno.h>
-#include <string.h>
 
-#include "vcml/common/utils.h"
-#include "vcml/backends/backend_tap.h"
+#include "vcml/net/client_tap.h"
 
-namespace vcml {
+namespace vcml { namespace net {
 
-    static int g_devno = 0;
-
-    backend_tap::backend_tap(const sc_module_name& nm, int no):
-        backend(nm),
-        m_fd(-1),
-        devno("devno", no ? no : g_devno++) {
+    client_tap::client_tap(const string& adapter, int devno):
+        client(adapter) {
         m_fd = open("/dev/net/tun", O_RDWR);
         VCML_REPORT_ON(m_fd < 0, "error opening tundev: %s", strerror(errno));
 
         struct ifreq ifr;
         memset(&ifr, 0, sizeof(ifr));
         ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-        snprintf(ifr.ifr_name, IFNAMSIZ, "tap%d", devno.get());
+        snprintf(ifr.ifr_name, IFNAMSIZ, "tap%d", devno);
 
         int err = ioctl(m_fd, TUNSETIFF, (void*)&ifr);
         VCML_REPORT_ON(err < 0, "error creating tapdev: %s", strerror(errno));
+        log_info("using tap device %s", ifr.ifr_name);
     }
 
-    backend_tap::~backend_tap() {
+    client_tap::~client_tap() {
+        if (m_fd >= 0)
+            close(m_fd);
+    }
+
+    bool client_tap::recv_packet(vector<u8>& packet) {
         if (m_fd < 0)
-            return;
+            return false;
 
-        close(m_fd);
+        if (!fd_peek(m_fd))
+            return false;
+
+        ssize_t len;
+        packet.resize(ETH_MAX_FRAME_SIZE);
+
+        do {
+            len = ::read(m_fd, packet.data(), packet.size());
+        } while (len < 0 && errno == EINTR);
+
+        if (len < 0) {
+            log_error("error reading tap device: %s", strerror(errno));
+            close(m_fd);
+            m_fd = -1;
+        }
+
+        if (len <= 0)
+            return false;
+
+        packet.resize(len);
+        return true;
     }
 
-    size_t backend_tap::peek() {
-        return m_fd < 0 ? 0 : fd_peek(m_fd);
+    void client_tap::send_packet(const vector<u8>& packet) {
+        if (m_fd >= 0)
+            fd_write(m_fd, packet.data(), packet.size());
     }
 
-    size_t backend_tap::read(void* buf, size_t len) {
-        if (m_fd < 0)
-            return 0;
-        return ::read(m_fd, buf, len);
+    client* client_tap::create(const string& adapter, const string& type) {
+        int devno = 0;
+        vector<string> args = split(type, ':');
+        if (args.size() > 1)
+            devno = from_string<int>(args[1]);
+        return new client_tap(adapter, devno);
     }
 
-    size_t backend_tap::write(const void* buf, size_t len) {
-        if (m_fd < 0)
-            return 0;
-        return fd_write(m_fd, buf, len);
-    }
-
-    backend* backend_tap::create(const string& nm) {
-        return new backend_tap(nm.c_str());
-    }
-
-}
+}}

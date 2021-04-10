@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/backends/backend_term.h"
+#include "vcml/serial/backend_term.h"
 #include "vcml/debugging/suspender.h"
 
-namespace vcml {
+namespace vcml { namespace serial {
 
     backend_term* backend_term::singleton = nullptr;
 
@@ -63,14 +63,14 @@ namespace vcml {
 
     void backend_term::cleanup() {
         signal(SIGINT, m_sigint);
-        signal(SIGINT, m_sigstp);
+        signal(SIGTSTP, m_sigstp);
 
         if (tcsetattr(STDIN_FILENO, TCSANOW, &m_termios) == -1)
             log_error("failed to reset terminal");
     }
 
-    backend_term::backend_term(const sc_module_name& nm):
-        backend(nm),
+    backend_term::backend_term(const string& port):
+        backend(port),
         m_signal(0),
         m_exit(false),
         m_stopped(false),
@@ -104,32 +104,31 @@ namespace vcml {
         singleton = nullptr;
     }
 
-    size_t backend_term::peek() {
+    bool backend_term::peek() {
         if (m_signal != 0)
-            return 1;
-        return fd_peek(STDOUT_FILENO);
+            return true;
+        return fd_peek(STDOUT_FILENO) > 0u;
     }
 
-    size_t backend_term::read(void* buf, size_t len) {
+    bool backend_term::read(u8& val) {
         if (m_signal != 0) {
-            unsigned char* ptr = reinterpret_cast<unsigned char*>(buf);
-            *ptr = static_cast<unsigned char>(m_signal);
+            val = (u8)m_signal;
             m_signal = 0;
-            return 1;
+            return true;
         }
 
-        ssize_t n = ::read(STDIN_FILENO, buf, 1);
-        if (n < 0)
-            VCML_REPORT("read failed: %s", strerror(errno));
-        return n;
+        if (!peek())
+            return false;
+
+        return fd_read(STDIN_FILENO, &val, sizeof(val)) == sizeof(val);
     }
 
-    size_t backend_term::write(const void* buf, size_t len) {
-        return fd_write(STDOUT_FILENO, buf, len);
+    void backend_term::write(u8 val) {
+        fd_write(STDOUT_FILENO, &val, sizeof(val));
     }
 
-    backend* backend_term::create(const string& nm) {
-        return new backend_term(nm.c_str());
+    backend* backend_term::create(const string& port, const string& type) {
+        return new backend_term(port);
     }
 
-}
+}}

@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,64 +16,77 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/backends/backend_file.h"
+#include "vcml/serial/backend_file.h"
 
-namespace vcml {
+namespace vcml { namespace serial {
 
-    backend_file::backend_file(const sc_module_name& nm, const char* rx_file,
-                               const char* tx_file):
-        backend(nm),
+    backend_file::backend_file(const string& port, const string& rx,
+                               const string& tx):
+        backend(port),
         m_rx(),
-        m_tx(),
-        rx("rx", rx_file ? rx_file : string(name()) + ".rx"),
-        tx("tx", tx_file ? tx_file : string(name()) + ".tx") {
-        if (!rx.get().empty()) {
-            m_rx.open(rx.get().c_str(), ifstream::binary | ifstream::in);
+        m_tx() {
+        if (!rx.empty()) {
+            m_rx.open(rx.c_str(), ifstream::binary | ifstream::in);
             if (!m_rx.good())
-                log_warn("failed to open file '%s'", rx.get().c_str());
+                log_warn("failed to open file '%s'", rx.c_str());
         }
 
-        if (!tx.get().empty()) {
-            m_tx.open(tx.get().c_str(),
-                      ofstream::binary | ofstream::app | ofstream::out);
+        if (!tx.empty()) {
+            auto mode = ofstream::binary | ofstream::app | ofstream::out;
+            m_tx.open(tx.c_str(), mode);
             if (!m_tx.good())
-                log_warn("failed to open file '%s'", tx.get().c_str());
+                log_warn("failed to open file '%s'", tx.c_str());
         }
     }
 
     backend_file::~backend_file() {
-        /* nothing to do */
+        // nothing to do
     }
 
-    size_t backend_file::peek() {
+    bool backend_file::peek() {
         if (!m_rx.is_open() || !m_rx.good())
-            return 0;
+            return false;
 
         size_t pos = m_rx.tellg();
         m_rx.seekg(0, m_rx.end);
         size_t end = m_rx.tellg();
         m_rx.seekg(pos, m_rx.beg);
 
-        return end - pos;
+        return pos < end;
     }
 
-    size_t backend_file::read(void* buf, size_t len) {
+    bool backend_file::read(u8& val) {
         if (!m_rx.is_open() || !m_rx.good())
-            return 0;
-        m_rx.read(reinterpret_cast<char*>(buf), len);
-        return m_rx.gcount();
+            return false;
+
+        m_rx.read(reinterpret_cast<char*>(&val), sizeof(val));
+        return m_rx.gcount() > 0u;
     }
 
-    size_t backend_file::write(const void* buf, size_t len) {
-        if (!m_tx.is_open() || !m_tx.good())
-            return 0;
-        m_tx.write(reinterpret_cast<const char*>(buf), len);
-        m_tx.flush();
-        return len;
+    void backend_file::write(u8 val) {
+        if (m_tx.is_open() && m_tx.good()) {
+            m_tx.write(reinterpret_cast<const char*>(&val), sizeof(val));
+            m_tx.flush();
+        }
     }
 
-    backend* backend_file::create(const string& nm) {
-        return new backend_file(nm.c_str());
+    backend* backend_file::create(const string& serial, const string& type) {
+        string rx = serial + ".rx";
+        string tx = serial + ".tx";
+
+        vector<string> args = split(type, ':');
+
+        if (args.size() == 2) {
+            rx = args[1] + ".rx";
+            tx = args[1] + ".tx";
+        }
+
+        if (args.size() >= 3) {
+            rx = args[1];
+            tx = args[2];
+        }
+
+        return new backend_file(serial, rx, tx);
     }
 
-}
+}}

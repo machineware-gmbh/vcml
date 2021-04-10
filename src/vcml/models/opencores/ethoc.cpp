@@ -217,8 +217,8 @@ namespace vcml { namespace opencores {
             return false;
         }
 
-        unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
-        tlm_response_status rs = OUT.read(addr, buffer, length);
+        vector<u8> buffer(length);
+        tlm_response_status rs = OUT.read(addr, buffer.data(), buffer.size());
         if (failed(rs)) {
             log_warn("tx error  %s while reading from 0x%08x",
                      tlm_response_to_str(rs), addr);
@@ -232,42 +232,41 @@ namespace vcml { namespace opencores {
         }
 
         log_debug("sending packet:\n%s", ss.str().c_str());
+        send_packet(buffer);
 
-        bewrite(buffer, length);
         return true;
     }
 
     bool ethoc::rx_packet(u32 addr, u32& size) {
-        unsigned char buffer[ETH_MAX_PACKET_LEN] = { 0 };
-        size_t length = beread(buffer, sizeof(buffer));
-        if (length == 0)
+        vector<u8> packet;
+        if (!recv_packet(packet))
             return true;
 
         stringstream ss;
-        for (unsigned int i = 0; i < length; i++) {
+        for (u8 data : packet) {
             ss << std::hex << std::setw(2) << std::setfill('0')
-               << (int)buffer[i] << " ";
+               << (int)data << " ";
         }
 
         log_debug("received packet:\n%s", ss.str().c_str());
 
         // promiscuous mode disabled, check destination HW address
         if (!(MODER & MODER_PRO)) {
-            if ((memcmp(buffer, m_mac, ETH_ALEN) != 0) &&
-                (memcmp(buffer, bcast, ETH_ALEN) != 0)) {
+            if ((memcmp(packet.data(), m_mac, ETH_ALEN) != 0) &&
+                (memcmp(packet.data(), bcast, ETH_ALEN) != 0)) {
                 log_debug("ignoring broadcast packet");
                 return true; // packet not for us
             }
         }
 
-        tlm_response_status rs = OUT.write(addr, buffer, length);
+        tlm_response_status rs = OUT.write(addr, packet.data(), packet.size());
         if (failed(rs)) {
             log_warn("rx error %s while writing to 0x%08x",
                      tlm_response_to_str(rs), addr);
             return false;
         }
 
-        size = (u32)length;
+        size = (u32)packet.size();
         return true;
     }
 
@@ -420,7 +419,7 @@ namespace vcml { namespace opencores {
     }
 
     ethoc::ethoc(const sc_module_name &nm):
-        peripheral(nm),
+        nic(nm),
         m_mac(),
         m_tx_idx(0),
         m_rx_idx(VCML_OPENCORES_ETHOC_NUMBD / 2),

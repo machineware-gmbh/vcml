@@ -27,13 +27,12 @@
 #include "vcml/ports.h"
 #include "vcml/command.h"
 #include "vcml/register.h"
-#include "vcml/component.h"
-#include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
+#include "vcml/uart.h"
 
 namespace vcml { namespace arm {
 
-    class pl011uart: public peripheral
+    class pl011uart: public uart
     {
     private:
         unsigned int m_fifo_size;

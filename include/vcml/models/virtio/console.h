@@ -24,14 +24,12 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/module.h"
-#include "vcml/backends/backend.h"
-
+#include "vcml/uart.h"
 #include "vcml/models/virtio/virtio.h"
 
 namespace vcml { namespace virtio {
 
-    class console : public module,
+    class console : public uart,
                     private virtio_fw_transport_if
     {
     private:
@@ -55,12 +53,11 @@ namespace vcml { namespace virtio {
             u32 emerg_write;
         } m_config;
 
-        vector<backend*> m_backends;
         queue<vq_message> m_fifo;
 
         size_t rx_data_available();
-        size_t rx_data(void* data, size_t len);
-        size_t tx_data(const void* data, size_t len);
+        size_t rx_data(u8* data, size_t len);
+        size_t tx_data(const u8* data, size_t len);
 
         void poll();
 
@@ -78,8 +75,6 @@ namespace vcml { namespace virtio {
         property<u16> rows;
 
         property<u64> pollrate;
-
-        property<string> backends;
 
         virtio_target_socket VIRTIO_IN;
 

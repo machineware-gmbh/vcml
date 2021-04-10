@@ -25,6 +25,8 @@
 
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
+#include "vcml/serial/port.h"
+#include "vcml/net/adapter.h"
 #include "vcml/ui/input.h"
 
 namespace vcml { namespace debugging {
@@ -152,6 +154,12 @@ namespace vcml { namespace debugging {
 
         for (auto ptr : ui::pointer::pointers())
             ss << "<pointer>" << ptr->input_name() << "</pointer>";
+
+        for (auto serial : serial::port::all())
+            ss << "<serial>" << serial->port_name() << "</serial>";
+
+        for (auto adapter : net::adapter::all())
+            ss << "<adapter>" << adapter->adapter_name() << "</adapter>";
 
         ss << "</hierarchy>";
         return ss.str();
