@@ -120,7 +120,7 @@ namespace vcml { namespace ui {
 
         void notify_key(u32 symbol, bool down);
 
-        static vector<keyboard*> keyboards();
+        static vector<keyboard*> all();
         static keyboard* find(const char* name);
     };
 
@@ -150,7 +150,7 @@ namespace vcml { namespace ui {
         void notify_btn(u32 btn, bool down);
         void notify_pos(u32 x, u32 y);
 
-        static vector<pointer*> pointers();
+        static vector<pointer*> all();
         static pointer* find(const char* name);
     };
 

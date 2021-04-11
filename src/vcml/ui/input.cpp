@@ -142,7 +142,7 @@ namespace vcml { namespace ui {
 
     unordered_map<string, keyboard*> keyboard::s_keyboards;
 
-    vector<keyboard*> keyboard::keyboards() {
+    vector<keyboard*> keyboard::all() {
         vector<keyboard*> res;
         res.reserve(s_keyboards.size());
         for (auto it : s_keyboards)
@@ -210,7 +210,7 @@ namespace vcml { namespace ui {
 
     unordered_map<string, pointer*> pointer::s_pointers;
 
-    vector<pointer*> pointer::pointers() {
+    vector<pointer*> pointer::all() {
         vector<pointer*> res;
         res.reserve(s_pointers.size());
         for (auto it : s_pointers)

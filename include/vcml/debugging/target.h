@@ -161,7 +161,7 @@ namespace vcml { namespace debugging {
         bool is_running() const;
         bool is_stepping() const;
 
-        static vector<target*> targets();
+        static vector<target*> all();
         static target* find(const char* name);
     };
 

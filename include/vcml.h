@@ -44,8 +44,9 @@
 #include "vcml/properties/property_provider_file.h"
 
 #include "vcml/debugging/symtab.h"
-#include "vcml/debugging/target.h"
 #include "vcml/debugging/elf_reader.h"
+#include "vcml/debugging/target.h"
+#include "vcml/debugging/loader.h"
 #include "vcml/debugging/subscriber.h"
 #include "vcml/debugging/suspender.h"
 #include "vcml/debugging/rspserver.h"

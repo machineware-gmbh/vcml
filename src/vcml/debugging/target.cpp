@@ -413,7 +413,7 @@ namespace vcml { namespace debugging {
         m_suspender.resume();
     }
 
-    vector<target*> target::targets() {
+    vector<target*> target::all() {
         vector<target*> res;
         res.reserve(s_targets.size());
         for (auto it : s_targets)

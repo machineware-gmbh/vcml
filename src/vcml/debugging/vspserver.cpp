@@ -25,6 +25,7 @@
 
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
+#include "vcml/debugging/loader.h"
 #include "vcml/serial/port.h"
 #include "vcml/net/adapter.h"
 #include "vcml/ui/input.h"
@@ -146,13 +147,16 @@ namespace vcml { namespace debugging {
         for (auto obj : sc_core::sc_get_top_level_objects())
             list_object(ss, obj);
 
-        for (auto tgt : debugging::target::targets())
+        for (auto tgt : debugging::target::all())
             ss << "<target>" << tgt->target_name() << "</target>";
 
-        for (auto kbd : ui::keyboard::keyboards())
+        for (auto loader : debugging::loader::all())
+            ss << "<loader>" << loader->loader_name() << "</loader>";
+
+        for (auto kbd : ui::keyboard::all())
             ss << "<keyboard>" << kbd->input_name() << "</keyboard>";
 
-        for (auto ptr : ui::pointer::pointers())
+        for (auto ptr : ui::pointer::all())
             ss << "<pointer>" << ptr->input_name() << "</pointer>";
 
         for (auto serial : serial::port::all())
