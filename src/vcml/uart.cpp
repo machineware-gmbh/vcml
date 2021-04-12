@@ -24,7 +24,7 @@ namespace vcml {
         vector<u8> history;
         fetch_history(history);
         for (u8 val : history)
-            os << (int)val;
+            os << (char)val;
         return true;
     }
 
