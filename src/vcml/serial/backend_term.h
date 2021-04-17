@@ -53,7 +53,7 @@ namespace vcml { namespace serial {
         void cleanup();
 
     public:
-        backend_term(const string& serial);
+        backend_term(const string& port);
         virtual ~backend_term();
 
         virtual bool peek() override;

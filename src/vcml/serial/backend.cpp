@@ -26,48 +26,48 @@
 
 namespace vcml { namespace serial {
 
-    backend::backend(const string& serial):
-        m_serial(serial) {
-        auto port = port::find(serial);
-        VCML_ERROR_ON(!port, "serial port not found: %s", serial.c_str());
-        port->attach(this);
+    backend::backend(const string& port):
+        m_port(port),
+        m_type("unknown") {
+        auto serial = port::find(port);
+        VCML_ERROR_ON(!serial, "serial port not found: %s", port.c_str());
+        serial->attach(this);
     }
 
     backend::~backend() {
-        auto port = port::find(m_serial);
+        auto port = port::find(m_port);
         if (port)
             port->detach(this);
     }
 
-    typedef function<backend*(const string&, const string&)> construct;
-    static const unordered_map<string, construct> g_backends = {
-        { "file", backend_file::create },
-        { "tcp", backend_tcp::create },
-        { "stderr", backend_fd::create },
-        { "stdout", backend_fd::create },
-        { "term", backend_term::create },
-    };
-
     backend* backend::create(const string& port, const string& type) {
         string kind = type.substr(0, type.find(":"));
+        typedef function<backend*(const string&, const string&)> construct;
+        static const unordered_map<string, construct> backends = {
+            { "file", backend_file::create },
+            { "tcp", backend_tcp::create },
+            { "stderr", backend_fd::create },
+            { "stdout", backend_fd::create },
+            { "term", backend_term::create },
+        };
 
-        auto it = g_backends.find(kind);
-        if (it == g_backends.end()) {
+        auto it = backends.find(kind);
+        if (it == backends.end()) {
             stringstream ss;
-            log_warn("unknown serial backend '%s'", type.c_str());
-            log_warn("the following backend types are known:");
-            for (auto avail : g_backends)
-                log_warn("  %s", avail.first.c_str());
-            return nullptr;
+            ss << "unknown serial backend '" << type << "'" << std::endl
+               << "the following backend types are known:";
+            for (auto avail : backends)
+                ss << " " << avail.first;
+            ss << std::endl;
+            VCML_REPORT(ss.str().c_str());
         }
 
         try {
             return it->second(port, type);
         } catch (std::exception& ex) {
-            log_warn("%s: %s", type.c_str(), ex.what());
-            return nullptr;
+            VCML_REPORT("%s: %s", type.c_str(), ex.what());
         } catch (...) {
-            return nullptr;
+            VCML_REPORT("%s: unknown error", type.c_str());
         }
     }
 

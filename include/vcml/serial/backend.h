@@ -27,17 +27,21 @@ namespace vcml { namespace serial {
     class backend
     {
     private:
-        string m_serial;
+        string m_port;
+
+    protected:
+        string m_type;
 
     public:
-        const char* serial_port() const { return m_serial.c_str(); }
-
         backend(const string& port);
         virtual ~backend();
 
         backend() = delete;
         backend(const backend&) = delete;
         backend(backend&&) = default;
+
+        const char* port() const { return m_port.c_str(); }
+        const char* type() const { return m_type.c_str(); }
 
         virtual bool peek() = 0;
         virtual bool read(u8& val) = 0;

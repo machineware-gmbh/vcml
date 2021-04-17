@@ -24,6 +24,7 @@ namespace vcml { namespace serial {
         backend(serial),
         m_socket(port) {
         m_socket.accept_async();
+        m_type = mkstr("tcp:%hu", m_socket.port());
         log_info("listening on port %hu", m_socket.port());
     }
 

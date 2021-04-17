@@ -35,6 +35,8 @@ namespace vcml { namespace serial {
         socket m_socket;
 
     public:
+        u16 port() const { return m_socket.port(); }
+
         backend_tcp(const string& serial, int port);
         virtual ~backend_tcp();
 

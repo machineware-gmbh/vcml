@@ -21,7 +21,7 @@
 namespace vcml { namespace serial {
 
     backend_file::backend_file(const string& port, const string& rx,
-                               const string& tx):
+        const string& tx):
         backend(port),
         m_rx(),
         m_tx() {
@@ -37,6 +37,8 @@ namespace vcml { namespace serial {
             if (!m_tx.good())
                 log_warn("failed to open file '%s'", tx.c_str());
         }
+
+        m_type = mkstr("file:%s:%s", rx.c_str(), tx.c_str());
     }
 
     backend_file::~backend_file() {
@@ -70,9 +72,9 @@ namespace vcml { namespace serial {
         }
     }
 
-    backend* backend_file::create(const string& serial, const string& type) {
-        string rx = serial + ".rx";
-        string tx = serial + ".tx";
+    backend* backend_file::create(const string& port, const string& type) {
+        string rx = port + ".rx";
+        string tx = port + ".tx";
 
         vector<string> args = split(type, ':');
 
@@ -86,7 +88,7 @@ namespace vcml { namespace serial {
             tx = args[2];
         }
 
-        return new backend_file(serial, rx, tx);
+        return new backend_file(port, rx, tx);
     }
 
 }}

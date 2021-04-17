@@ -34,6 +34,8 @@ namespace vcml { namespace serial {
         int m_fd;
 
     public:
+        int fd() const { return m_fd; }
+
         backend_fd(const string& port, int fd);
         virtual ~backend_fd();
 
@@ -41,7 +43,7 @@ namespace vcml { namespace serial {
         virtual bool read(u8& val) override;
         virtual void write(u8 val) override;
 
-        static backend* create(const string& serial, const string& type);
+        static backend* create(const string& port, const string& type);
     };
 
 }}

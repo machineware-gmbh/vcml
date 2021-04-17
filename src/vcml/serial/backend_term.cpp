@@ -97,6 +97,8 @@ namespace vcml { namespace serial {
 
         m_sigint = signal(SIGINT, &backend_term::handle_signal);
         m_sigstp = signal(SIGTSTP, &backend_term::handle_signal);
+
+        m_type = "term";
     }
 
     backend_term::~backend_term() {
