@@ -43,6 +43,8 @@ namespace vcml { namespace net {
         int err = ioctl(m_fd, TUNSETIFF, (void*)&ifr);
         VCML_REPORT_ON(err < 0, "error creating tapdev: %s", strerror(errno));
         log_info("using tap device %s", ifr.ifr_name);
+
+        m_type = mkstr("tap:%d", devno);
     }
 
     client_tap::~client_tap() {

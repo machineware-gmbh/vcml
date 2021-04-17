@@ -17,44 +17,131 @@
  ******************************************************************************/
 
 #include "vcml/net/adapter.h"
-#include "vcml/net/client.h"
+#include "vcml/module.h"
 
 namespace vcml { namespace net {
 
     unordered_map<string, adapter*> adapter::s_adapters;
 
-    adapter::adapter(const string& name):
-        m_name(name) {
-        if (stl_contains(s_adapters, name))
-            VCML_ERROR("network adapter '%s' already exists", name.c_str());
-        s_adapters[name] = this;
+    bool adapter::cmd_create_client(const vector<string>& args, ostream& os) {
+        string type = args[0];
+
+        try {
+            client* c = client::create(m_name, type);
+            m_clients[m_next_id] = c;
+            os << "created backend " << m_next_id;
+            m_next_id++;
+            return true;
+        } catch (std::exception& ex) {
+            os << "error creating backend " << type << ":" << ex.what();
+            return false;
+        }
+    }
+
+    bool adapter::cmd_destroy_client(const vector<string>& args, ostream& os) {
+        for (string arg : args) {
+            int id = from_string<int>(arg);
+            if (id < 0) {
+                for (auto it : m_clients)
+                    delete it.second;
+                m_clients.clear();
+                return true;
+            }
+
+            auto it = m_clients.find(id);
+            if (it == m_clients.end()) {
+                os << "invalid client id: " << id;
+                return false;
+            }
+
+            delete it->second;
+            m_clients.erase(it);
+        }
+
+        return true;
+    }
+
+    bool adapter::cmd_list_clients(const vector<string>& args, ostream& os) {
+        if (args.empty()) {
+            for (auto it : m_clients)
+                os << it.first << ": " << it.second->type() << ",";
+            return true;
+        }
+
+        for (string arg : args) {
+            size_t id = from_string<size_t>(arg);
+            auto it = m_clients.find(id);
+
+            os << id << ": ";
+            os << (it == m_clients.end() ? "none" : it->second->type());
+            os << ",";
+        }
+
+        return true;
+    }
+
+    adapter::adapter():
+        m_name(),
+        m_next_id(),
+        m_clients(),
+        m_listener(),
+        clients("clients", "") {
+        module* host = dynamic_cast<module*>(hierarchy_top());
+        VCML_ERROR_ON(!host, "serial port declared outside module");
+        m_name = host->name();
+
+        if (stl_contains(s_adapters, m_name))
+            VCML_ERROR("network adapter '%s' already exists", m_name.c_str());
+        s_adapters[m_name] = this;
+
+        vector<string> types = split(clients, ' ');
+        for  (auto type : types) {
+            try {
+                client* c = client::create(m_name, type);
+                m_clients[m_next_id++] = c;
+            } catch (std::exception& ex) {
+                log_warn("error creating %s: %s", type.c_str(), ex.what());
+            }
+        }
+
+        host->register_command("create_client", 1, this,
+            &adapter::cmd_create_client, "creates a new net client for this "
+            "adapter of given type, usage: create_client <type>");
+        host->register_command("destroy_client", 1, this,
+            &adapter::cmd_destroy_client, "destroys the net clients of this "
+            "adapter with the specified IDs, usage: destroy_client <ID>...");
+        host->register_command("list_clients", 0, this,
+            &adapter::cmd_list_clients, "lists all known clients of this "
+            "network adapter");
     }
 
     adapter::~adapter() {
+        for (auto it : m_clients)
+            delete it.second;
         s_adapters.erase(m_name);
     }
 
     void adapter::attach(client* cl) {
-        if (stl_contains(m_clients, cl))
+        if (stl_contains(m_listener, cl))
             VCML_ERROR("attempt to attach client twice");
-        m_clients.push_back(cl);
+        m_listener.push_back(cl);
     }
 
     void adapter::detach(client* cl) {
-        if (!stl_contains(m_clients, cl))
+        if (!stl_contains(m_listener, cl))
             VCML_ERROR("attempt to detach unknown client");
-        stl_remove_erase(m_clients, cl);
+        stl_remove_erase(m_listener, cl);
     }
 
     bool adapter::recv_packet(vector<u8>& packet) {
-        for (client* cl : m_clients)
+        for (client* cl : m_listener)
             if (cl->recv_packet(packet))
                 return true;
         return false;
     }
 
     void adapter::send_packet(const vector<u8>& packet) {
-        for (client* cl : m_clients)
+        for (client* cl : m_listener)
             cl->send_packet(packet);
     }
 

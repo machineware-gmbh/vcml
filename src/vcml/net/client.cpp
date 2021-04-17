@@ -24,7 +24,8 @@
 namespace vcml { namespace net {
 
     client::client(const string& adapter):
-        m_adapter(adapter) {
+        m_adapter(adapter),
+        m_type("unknown") {
         auto a = adapter::find(adapter);
         VCML_ERROR_ON(!a, "network adapter not found: %s", adapter.c_str());
         a->attach(this);
@@ -36,32 +37,30 @@ namespace vcml { namespace net {
             a->detach(this);
     }
 
-    typedef function<client*(const string&, const string&)> construct;
-    static const unordered_map<string, construct> g_clients = {
-        { "file", client_file::create },
-        { "tap", client_tap::create },
-    };
-
-    client* client::create(const string& port, const string& type) {
+    client* client::create(const string& adapter, const string& type) {
         string kind = type.substr(0, type.find(":"));
+        typedef function<client*(const string&, const string&)> construct;
+        static const unordered_map<string, construct> clients = {
+            { "file", client_file::create },
+            { "tap", client_tap::create },
+        };
 
-        auto it = g_clients.find(kind);
-        if (it == g_clients.end()) {
+        auto it = clients.find(kind);
+        if (it == clients.end()) {
             stringstream ss;
             log_warn("unknown network client '%s'", type.c_str());
             log_warn("the following client types are known:");
-            for (auto avail : g_clients)
+            for (auto avail : clients)
                 log_warn("  %s", avail.first.c_str());
             return nullptr;
         }
-
-        try {
-            return it->second(port, type);
+        try
+        {
+            return it->second(adapter, type);
         } catch (std::exception& ex) {
-            log_warn("%s: %s", type.c_str(), ex.what());
-            return nullptr;
+            VCML_REPORT("%s: %s", type.c_str(), ex.what());
         } catch (...) {
-            return nullptr;
+            VCML_REPORT("%s: unknown error", type.c_str());
         }
     }
 

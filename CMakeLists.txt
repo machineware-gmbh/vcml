@@ -98,7 +98,6 @@ set(sources
     ${src}/vcml/setup.cpp
     ${src}/vcml/spi.cpp
     ${src}/vcml/sd.cpp
-    ${src}/vcml/nic.cpp
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp

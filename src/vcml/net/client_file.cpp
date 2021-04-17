@@ -26,6 +26,7 @@ namespace vcml { namespace net {
         m_tx(tx) {
         if (!m_tx.good())
             log_warn("failed to open file '%s'", tx.c_str());
+        m_type = mkstr("file:%s", tx.c_str());
     }
 
     client_file::~client_file() {

@@ -30,7 +30,13 @@ namespace vcml { namespace net {
     private:
         string m_adapter;
 
+    protected:
+        string m_type;
+
     public:
+        const char* adapter_name() const { return m_adapter.c_str(); }
+        const char* type() const { return m_type.c_str(); }
+
         client(const string& adapter);
         virtual ~client();
 

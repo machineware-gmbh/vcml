@@ -419,7 +419,8 @@ namespace vcml { namespace opencores {
     }
 
     ethoc::ethoc(const sc_module_name &nm):
-        nic(nm),
+        peripheral(nm),
+        net::adapter(),
         m_mac(),
         m_tx_idx(0),
         m_rx_idx(VCML_OPENCORES_ETHOC_NUMBD / 2),
