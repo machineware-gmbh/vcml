@@ -329,7 +329,8 @@ namespace vcml { namespace debugging {
     vspserver::vspserver(u16 port):
         rspserver(port),
         suspender("vspserver"),
-        m_announce(temp_dir() + mkstr("vcml_session_%hu", get_port())) {
+        m_announce(temp_dir() + mkstr("vcml_session_%hu", get_port())),
+        m_duration() {
         VCML_ERROR_ON(session != nullptr, "vspserver already created");
         session = this;
         atexit(&cleanup_session);
