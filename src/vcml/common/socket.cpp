@@ -63,12 +63,12 @@ namespace vcml {
 
         m_socket = ::socket(AF_INET, SOCK_STREAM, 0);
         if (m_socket < 0)
-            VCML_ERROR("failed to create socket: %s", strerror(errno));
+            VCML_REPORT("failed to create socket: %s", strerror(errno));
 
         const int one = 1;
         if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR,
                        (const void*)&one, sizeof(one))) {
-            VCML_ERROR("setsockopt failed: %s", strerror(errno));
+            VCML_REPORT("setsockopt failed: %s", strerror(errno));
         }
 
         if (port > 0) {
@@ -77,13 +77,13 @@ namespace vcml {
             addr.sin_addr.s_addr = INADDR_ANY;
             addr.sin_port = htons(port);
             if (::bind(m_socket, (sockaddr*)&addr, sizeof(addr))) {
-                VCML_ERROR("binding socket to port %hu failed: %s", port,
-                           strerror(errno));
+                VCML_REPORT("binding socket to port %hu failed: %s", port,
+                            strerror(errno));
             }
         }
 
         if (::listen(m_socket, 1))
-            VCML_ERROR("listen for connections failed: %s", strerror(errno));
+            VCML_REPORT("listen for connections failed: %s", strerror(errno));
 
         sockaddr_in addr = {};
         socklen_t len = sizeof(addr);
