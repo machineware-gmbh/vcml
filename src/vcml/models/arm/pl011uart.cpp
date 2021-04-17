@@ -148,7 +148,8 @@ namespace vcml { namespace arm {
     }
 
     pl011uart::pl011uart(const sc_module_name& nm):
-        uart(nm),
+        peripheral(nm),
+        serial::port(),
         m_fifo_size(),
         m_fifo(),
         m_enable("enable"),

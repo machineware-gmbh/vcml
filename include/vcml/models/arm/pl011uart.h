@@ -24,15 +24,18 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/serial/port.h"
+
 #include "vcml/ports.h"
 #include "vcml/command.h"
 #include "vcml/register.h"
 #include "vcml/slave_socket.h"
-#include "vcml/uart.h"
+#include "vcml/peripheral.h"
 
 namespace vcml { namespace arm {
 
-    class pl011uart: public uart
+    class pl011uart: public peripheral,
+                     protected serial::port
     {
     private:
         unsigned int m_fifo_size;

@@ -187,7 +187,8 @@ namespace vcml { namespace generic {
     }
 
     uart8250::uart8250(const sc_module_name& nm):
-        uart(nm),
+        peripheral(nm),
+        serial::port(),
         m_rx_size(1),
         m_tx_size(1),
         m_rx_fifo(),
@@ -233,7 +234,7 @@ namespace vcml { namespace generic {
     }
 
     void uart8250::reset() {
-        uart::reset();
+        peripheral::reset();
         m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
     }
 

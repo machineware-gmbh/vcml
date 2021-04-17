@@ -140,7 +140,8 @@ namespace vcml { namespace virtio {
     }
 
     console::console(const sc_module_name& nm):
-        uart(nm),
+        module(nm),
+        serial::port(),
         virtio_fw_transport_if(),
         m_config(),
         cols("cols", 0),
@@ -150,8 +151,6 @@ namespace vcml { namespace virtio {
         VIRTIO_IN.bind(*this);
         SC_HAS_PROCESS(console);
         SC_METHOD(poll);
-        RESET.stub();
-        CLOCK.stub();
     }
 
     console::~console() {

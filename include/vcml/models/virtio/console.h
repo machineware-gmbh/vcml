@@ -24,12 +24,15 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/uart.h"
+#include "vcml/serial/port.h"
+
+#include "vcml/module.h"
 #include "vcml/models/virtio/virtio.h"
 
 namespace vcml { namespace virtio {
 
-    class console : public uart,
+    class console : public module,
+                    protected serial::port,
                     private virtio_fw_transport_if
     {
     private:

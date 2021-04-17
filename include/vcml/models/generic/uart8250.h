@@ -30,11 +30,12 @@
 #include "vcml/command.h"
 #include "vcml/register.h"
 #include "vcml/slave_socket.h"
-#include "vcml/uart.h"
+#include "vcml/peripheral.h"
 
 namespace vcml { namespace generic {
 
-    class uart8250: public uart
+    class uart8250: public peripheral,
+                    protected serial::port
     {
     private:
         const size_t m_rx_size;

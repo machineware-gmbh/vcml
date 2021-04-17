@@ -69,11 +69,11 @@ set(sources
     ${src}/vcml/debugging/gdbarch.cpp
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
-    ${src}/vcml/serial/backend.cpp
     ${src}/vcml/serial/backend_fd.cpp
     ${src}/vcml/serial/backend_file.cpp
     ${src}/vcml/serial/backend_tcp.cpp
     ${src}/vcml/serial/backend_term.cpp
+    ${src}/vcml/serial/backend.cpp
     ${src}/vcml/serial/port.cpp
     ${src}/vcml/net/client.cpp
     ${src}/vcml/net/client_file.cpp
@@ -98,7 +98,6 @@ set(sources
     ${src}/vcml/setup.cpp
     ${src}/vcml/spi.cpp
     ${src}/vcml/sd.cpp
-    ${src}/vcml/uart.cpp
     ${src}/vcml/nic.cpp
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp

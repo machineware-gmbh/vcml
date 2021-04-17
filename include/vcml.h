@@ -77,7 +77,6 @@
 #include "vcml/slave_socket.h"
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/uart.h"
 #include "vcml/processor.h"
 #include "vcml/system.h"
 #include "vcml/setup.h"
