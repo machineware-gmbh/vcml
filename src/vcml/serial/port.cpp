@@ -17,45 +17,146 @@
  ******************************************************************************/
 
 #include "vcml/serial/port.h"
+#include "vcml/module.h"
 
 namespace vcml { namespace serial {
 
     unordered_map<string, port*> port::s_ports;
 
-    port::port(const string& name):
-        m_name(name),
+    bool port::cmd_create_backend(const vector<string>& args, ostream& os) {
+        string type = args[0];
+
+        try {
+            backend* b = backend::create(m_name, type);
+            m_backends[m_next_id] = b;
+            os << "created backend " << m_next_id;
+            m_next_id++;
+            return true;
+        } catch (std::exception& ex) {
+            os << "error creating backend " << type << ":" << ex.what();
+            return false;
+        }
+    }
+
+    bool port::cmd_destroy_backend(const vector<string>& args, ostream& os) {
+        for (string arg : args) {
+            int id = from_string<int>(arg);
+            if (id < 0) {
+                for (auto it : m_backends)
+                    delete it.second;
+                m_backends.clear();
+                return true;
+            }
+
+            auto it = m_backends.find(id);
+            if (it == m_backends.end()) {
+                os << "invalid backend id: " << id;
+                return false;
+            }
+
+            delete it->second;
+            m_backends.erase(it);
+        }
+
+        return true;
+    }
+
+    bool port::cmd_list_backends(const vector<string>& args, ostream& os) {
+        if (args.empty()) {
+            for (auto it : m_backends)
+                os << it.first << ": " << it.second->type() << ",";
+            return true;
+        }
+
+        for (string arg : args) {
+            size_t id = from_string<size_t>(arg);
+            auto it = m_backends.find(id);
+
+            os << id << ": ";
+            os << (it == m_backends.end() ? "none" : it->second->type());
+            os << ",";
+        }
+
+        return true;
+    }
+
+    bool port::cmd_history(const vector<string>& args, ostream& os) {
+        vector<u8> history;
+        fetch_history(history);
+        for (u8 val : history) {
+            if (val == ',')
+                os << '\\'; // escape commas
+            os << (char)val;
+        }
+
+        return true;
+    }
+
+    port::port():
+        m_name(),
         m_hist(),
-        m_backends() {
-        if (stl_contains(s_ports, name))
-            VCML_ERROR("serial port '%s' already exists", name.c_str());
-        s_ports[name] = this;
+        m_next_id(),
+        m_backends(),
+        m_listeners(),
+        backends("backends", "") {
+        module* host = dynamic_cast<module*>(hierarchy_top());
+        VCML_ERROR_ON(!host, "serial port declared outside module");
+        m_name = host->name();
+
+        if (stl_contains(s_ports, m_name))
+            VCML_ERROR("serial port '%s' already exists", m_name.c_str());
+        s_ports[m_name] = this;
+
+        vector<string> types = split(backends, ' ');
+        for  (auto type : types) {
+            try {
+                backend* b = backend::create(m_name, type);
+                m_backends[m_next_id++] = b;
+            } catch (std::exception& ex) {
+                log_warn("error creating %s: %s", type.c_str(), ex.what());
+            }
+        }
+
+        host->register_command("create_backend", 1, this,
+            &port::cmd_create_backend, "creates a new serial backend for this "
+            "port of given type, usage: create_backend <type>");
+        host->register_command("destroy_backend", 1, this,
+            &port::cmd_destroy_backend, "destroys the serial backends of this "
+            "port with the specified IDs, usage: destroy_backend <ID> [ID]..");
+        host->register_command("list_backends", 0, this,
+            &port::cmd_list_backends, "lists all known backends of this port");
+        host->register_command("history", 0, this, &port::cmd_history,
+            "show previously transmitted data from this serial port");
     }
 
     port::~port() {
+        for (auto it : m_backends)
+            delete it.second;
+
         s_ports.erase(m_name);
     }
 
     void port::attach(backend* b) {
-        if (stl_contains(m_backends, b))
+        if (stl_contains(m_listeners, b))
             VCML_ERROR("attempt to attach backend twice");
-        m_backends.push_back(b);
+        m_listeners.push_back(b);
     }
 
     void port::detach(backend* b) {
-        if (!stl_contains(m_backends, b))
+        if (!stl_contains(m_listeners, b))
             VCML_ERROR("attempt to detach unknown backend");
-        stl_remove_erase(m_backends, b);
+        stl_remove_erase(m_listeners, b);
     }
 
     bool port::serial_peek() {
-        for (backend* b : m_backends)
+        for (backend* b : m_listeners)
             if (b->peek())
                 return true;
         return false;
     }
 
     bool port::serial_in(u8& val) {
-        for (backend* b : m_backends)
+        for (backend* b : m_listeners)
             if (b->read(val))
                 return true;
         return false;
@@ -63,7 +164,7 @@ namespace vcml { namespace serial {
 
     void port::serial_out(u8 val) {
         m_hist.insert(val);
-        for (backend* b : m_backends)
+        for (backend* b : m_listeners)
             b->write(val);
     }
 

@@ -20,9 +20,11 @@
 #define VCML_SERIAL_PORT_H
 
 #include "vcml/common/types.h"
-#include "vcml/common/strings.h"
 #include "vcml/common/report.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
 
+#include "vcml/properties/property.h"
 #include "vcml/serial/backend.h"
 
 namespace vcml { namespace serial {
@@ -31,8 +33,7 @@ namespace vcml { namespace serial {
     {
     private:
         template <unsigned int N>
-        struct history
-        {
+        struct history {
             std::array<u8, N> data;
             size_t count;
             size_t wrptr;
@@ -46,14 +47,24 @@ namespace vcml { namespace serial {
 
         string m_name;
         history<4096> m_hist;
-        vector<backend*> m_backends;
+
+        size_t m_next_id;
+        std::map<int, backend*> m_backends;
+        std::vector<backend*> m_listeners;
+
+        bool cmd_create_backend(const vector<string>& args, ostream& os);
+        bool cmd_destroy_backend(const vector<string>& args, ostream& os);
+        bool cmd_list_backends(const vector<string>& args, ostream& os);
+        bool cmd_history(const vector<string>& args, ostream& os);
 
         static unordered_map<string, port*> s_ports;
 
     public:
+        property<string> backends;
+
         const char* port_name() const { return m_name.c_str(); }
 
-        port(const string& name);
+        port();
         virtual ~port();
 
         void attach(backend* b);
