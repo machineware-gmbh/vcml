@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/debugging/target.h"
+#include "vcml/module.h"
 
 namespace vcml { namespace debugging {
 
@@ -63,14 +64,18 @@ namespace vcml { namespace debugging {
         }
     }
 
-    target::target(const char* name):
-        m_name(name),
+    target::target():
+        m_name(),
         m_endian(ENDIAN_UNKNOWN),
         m_cpuregs(),
         m_suspender("suspender"),
         m_stepping(false) {
+        module* host = dynamic_cast<module*>(hierarchy_top());
+        VCML_ERROR_ON(!host, "debug target declared outside module");
+        m_name = host->name();
+
         if (stl_contains(s_targets, m_name))
-            VCML_ERROR("debug target '%s' already exists", name);
+            VCML_ERROR("debug target '%s' already exists", m_name.c_str());
         s_targets[m_name] = this;
     }
 

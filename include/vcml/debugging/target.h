@@ -114,7 +114,7 @@ namespace vcml { namespace debugging {
 
         const char* target_name() const { return m_name.c_str(); }
 
-        target(const char* name);
+        target();
         virtual ~target();
 
         vector<cpureg> cpuregs() const;
