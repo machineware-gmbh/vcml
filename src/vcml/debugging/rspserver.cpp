@@ -98,7 +98,10 @@ namespace vcml { namespace debugging {
                 log_debug("sending packet '%s'", ss.str().c_str());
 
             m_sock.send(ss.str());
-            ack = m_sock.recv_char();
+
+            do {
+                ack = m_sock.recv_char();
+            } while (ack != '+' && ack != '-');
 
             if (m_echo)
                 log_debug("received ack '%c'", ack);
