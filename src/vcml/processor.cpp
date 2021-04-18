@@ -214,17 +214,14 @@ namespace vcml {
             wait_clock_reset();
 
             do {
-                sc_time quantum = tlm_global_quantum::instance().get();
-
-                unsigned int num_cycles = 1;
-                if (quantum > clock_cycle() && quantum > local_time())
-                    num_cycles = (quantum - local_time()) / clock_cycle();
-
-                while (!is_running())
-                    debugging::suspender::handle_requests();
-
+                debugging::suspender::handle_requests();
                 if (!sim_running())
                     return;
+
+                unsigned int num_cycles = 1;
+                sc_time quantum = tlm_global_quantum::instance().get();
+                if (quantum > clock_cycle() && quantum > local_time())
+                    num_cycles = (quantum - local_time()) / clock_cycle();
 
                 if (is_stepping())
                     num_cycles = 1;
@@ -275,7 +272,7 @@ namespace vcml {
 
     processor::processor(const sc_module_name& nm, const string& cpuarch):
         component(nm),
-        target(name()),
+        target(),
         m_run_time(0),
         m_cycle_count(0),
         m_gdb(nullptr),
