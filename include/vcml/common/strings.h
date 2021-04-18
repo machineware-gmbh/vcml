@@ -143,6 +143,14 @@ namespace vcml {
         return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
     }
 
+    static inline bool is_number(const string& s) {
+        if (s.empty())
+            return false;
+        if (starts_with(s, "0x"))
+            return true;
+        return std::all_of(s.begin(), s.end(), isdigit);
+    }
+
 }
 
 #endif
