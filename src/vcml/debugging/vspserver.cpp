@@ -39,6 +39,10 @@ namespace vcml { namespace debugging {
             session->cleanup();
     }
 
+    vspserver* vspserver::instance() {
+        return session;
+    }
+
     string vspserver::handle_none(const char* command) {
         return "";
     }

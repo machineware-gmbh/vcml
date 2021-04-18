@@ -61,6 +61,8 @@ namespace vcml { namespace debugging {
 
         virtual void handle_connect(const char* peer) override;
         virtual void handle_disconnect() override;
+
+        static vspserver* instance();
     };
 
 }}
