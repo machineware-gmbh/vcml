@@ -37,6 +37,8 @@ namespace vcml { namespace debugging {
         socket m_sock;
 
         atomic<bool> m_running;
+
+        mutex m_mutex;
         thread m_thread;
 
         std::map<string, handler> m_handlers;
@@ -47,7 +49,6 @@ namespace vcml { namespace debugging {
 
     public:
         u16 get_port() const { return m_sock.port(); }
-
 
         bool is_connected() const { return m_sock.is_connected(); }
         bool is_listening() const { return m_sock.is_listening(); }

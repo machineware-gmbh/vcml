@@ -53,7 +53,9 @@ namespace vcml { namespace debugging {
         m_port(),
         m_sock(port),
         m_running(false),
-        m_thread() {
+        m_mutex(),
+        m_thread(),
+        m_handlers() {
         m_port = m_sock.port();
     }
 
@@ -86,6 +88,7 @@ namespace vcml { namespace debugging {
 
         char ack;
         int attempts = 10;
+        lock_guard<mutex> lock(m_mutex);
 
         do {
             if (attempts-- == 0) {
@@ -109,9 +112,11 @@ namespace vcml { namespace debugging {
     }
 
     string rspserver::recv_packet() {
+        lock_guard<mutex> lock(m_mutex);
         VCML_ERROR_ON(!is_connected(), "no connection established");
         unsigned int checksum = 0;
         stringstream ss;
+
         while (true) {
             char ch = m_sock.recv_char();
             switch (ch) {
@@ -160,6 +165,8 @@ namespace vcml { namespace debugging {
     }
 
     int rspserver::recv_signal(time_t timeoutms) {
+        lock_guard<mutex> lock(m_mutex);
+
         if (!is_connected())
             return 0;
         if (!m_sock.peek(timeoutms))
