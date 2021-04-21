@@ -231,7 +231,7 @@ namespace vcml {
                 m_run_time += realtime() - start;
 
                 if (is_stepping())
-                    target::halt();
+                    notify_singlestep();
             } while (!needs_sync());
 
             sync();

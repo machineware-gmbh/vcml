@@ -20,6 +20,10 @@
 
 namespace vcml { namespace debugging {
 
+    void subscriber::notify_step_complete(target& tgt) {
+        // to be overloaded
+    }
+
     void subscriber::notify_breakpoint_hit(const breakpoint& bp) {
         // to be overloaded
     }
@@ -34,7 +38,11 @@ namespace vcml { namespace debugging {
         // to be overloaded
     }
 
-    breakpoint::breakpoint(u64 addr, const symbol* func):
+    static u64 g_next_id = 0;
+
+    breakpoint::breakpoint(target& tgt, u64 addr, const symbol* func):
+        m_target(tgt),
+        m_id(g_next_id++),
         m_addr(addr),
         m_count(0),
         m_func(func),
@@ -64,7 +72,9 @@ namespace vcml { namespace debugging {
         return true;
     }
 
-    watchpoint::watchpoint(const range& addr, const symbol* obj):
+    watchpoint::watchpoint(target& tgt, const range& addr, const symbol* obj):
+        m_target(tgt),
+        m_id(g_next_id++),
         m_addr(addr),
         m_count(0),
         m_obj(obj),

@@ -80,11 +80,10 @@ namespace vcml { namespace debugging {
         unordered_map<u64, cpureg> m_cpuregs;
         symtab m_symbols;
 
-        suspender m_suspender;
-        atomic<bool> m_stepping;
+        vector<subscriber*> m_steppers;
 
-        vector<breakpoint> m_breakpoints;
-        vector<watchpoint> m_watchpoints;
+        vector<breakpoint*> m_breakpoints;
+        vector<watchpoint*> m_watchpoints;
 
         static unordered_map<string, target*> s_targets;
 
@@ -145,8 +144,8 @@ namespace vcml { namespace debugging {
         virtual bool disassemble(u64 addr, u64 count, vector<disassembly>& s);
         virtual bool disassemble(const range& addr, vector<disassembly>& s);
 
-        const vector<breakpoint>& breakpoints() const { return m_breakpoints; }
-        const vector<watchpoint>& watchpoints() const { return m_watchpoints; }
+        const vector<breakpoint*>& breakpoints() const;
+        const vector<watchpoint*>& watchpoints() const;
 
         bool insert_breakpoint(u64 addr, subscriber* subscr);
         bool remove_breakpoint(u64 addr, subscriber* subscr);
@@ -154,12 +153,9 @@ namespace vcml { namespace debugging {
         bool insert_watchpoint(const range& mem, vcml_access a, subscriber* s);
         bool remove_watchpoint(const range& mem, vcml_access a, subscriber* s);
 
-        void halt();
-        void step();
-        void cont();
-
-        bool is_running() const;
         bool is_stepping() const;
+        void request_singlestep(subscriber* subscr);
+        void notify_singlestep();
 
         static vector<target*> all();
         static target* find(const char* name);
@@ -193,12 +189,20 @@ namespace vcml { namespace debugging {
         return m_symbols.load_elf(file);
     }
 
-    inline bool target::is_running() const {
-        return sim_running() && !m_suspender.is_suspending();
+    inline const vector<breakpoint*>& target::breakpoints() const {
+        return m_breakpoints;
+    }
+
+    inline const vector<watchpoint*>& target::watchpoints() const {
+        return m_watchpoints;
     }
 
     inline bool target::is_stepping() const {
-        return m_stepping;
+        return !m_steppers.empty();
+    }
+
+    inline void target::request_singlestep(subscriber* subscr) {
+        stl_add_unique(m_steppers, subscr);
     }
 
 }}

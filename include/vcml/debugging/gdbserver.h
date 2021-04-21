@@ -29,6 +29,7 @@
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbarch.h"
 #include "vcml/debugging/rspserver.h"
+#include "vcml/debugging/suspender.h"
 #include "vcml/debugging/subscriber.h"
 
 namespace vcml { namespace debugging {
@@ -46,7 +47,8 @@ namespace vcml { namespace debugging {
     };
 
     class gdbserver: public rspserver,
-                     private subscriber
+                     private subscriber,
+                     private suspender
     {
     private:
         target&        m_target;
@@ -59,6 +61,8 @@ namespace vcml { namespace debugging {
         unordered_map<u64, const cpureg*> m_allregs;
 
         void update_status(gdb_status status);
+
+        virtual void notify_step_complete(target& tgt) override;
 
         virtual void notify_breakpoint_hit(const breakpoint& bp) override;
 

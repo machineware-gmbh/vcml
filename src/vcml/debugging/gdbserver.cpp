@@ -60,22 +60,23 @@ namespace vcml { namespace debugging {
 
         switch (status) {
         case GDB_STOPPED:
-            m_target.halt();
+            suspend();
             break;
 
         case GDB_RUNNING:
-            m_target.cont();
+            resume();
             break;
 
         case GDB_STEPPING:
-            m_target.step();
+            m_target.request_singlestep(this);
+            resume();
             break;
 
         case GDB_KILLED:
             stop();
             disconnect();
             if (m_status == GDB_STOPPED)
-                m_target.cont();
+                resume();
             break;
 
         default:
@@ -83,6 +84,10 @@ namespace vcml { namespace debugging {
         }
 
         m_status = status;
+    }
+
+    void gdbserver::notify_step_complete(target& tgt) {
+        update_status(GDB_STOPPED);
     }
 
     void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
@@ -119,7 +124,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_step(const char* command) {
         update_status(GDB_STEPPING);
-        while (m_target.is_running()) {
+        while (!is_suspending()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -137,7 +142,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_continue(const char* command) {
         update_status(GDB_RUNNING);
-        while (m_target.is_running()) {
+        while (!is_suspending()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -519,6 +524,7 @@ namespace vcml { namespace debugging {
     gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
         rspserver(port),
         subscriber(),
+        suspender(mkstr("gdbserver_%hu", port)),
         m_target(stub),
         m_target_arch(gdbarch::lookup(m_target.arch())),
         m_target_xml(),
@@ -570,7 +576,7 @@ namespace vcml { namespace debugging {
         m_handler['?'] = &gdbserver::handle_exception;
 
         if (m_status == GDB_STOPPED)
-            m_target.halt();
+            suspend();
 
         run_async();
     }
