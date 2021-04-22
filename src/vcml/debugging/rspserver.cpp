@@ -167,11 +167,15 @@ namespace vcml { namespace debugging {
     int rspserver::recv_signal(time_t timeoutms) {
         lock_guard<mutex> lock(m_mutex);
 
-        if (!is_connected())
-            return 0;
-        if (!m_sock.peek(timeoutms))
-            return 0;
-        return m_sock.recv_char();
+        try {
+            if (!is_connected())
+                return 0;
+            if (!m_sock.peek(timeoutms))
+                return 0;
+            return m_sock.recv_char();
+        } catch (...) {
+            return -1;
+        }
     }
 
     void rspserver::listen() {
@@ -210,7 +214,6 @@ namespace vcml { namespace debugging {
             }
         } catch (vcml::report& r) {
             logger::log(r);
-            return;
         }
     }
 
