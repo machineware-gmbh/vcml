@@ -124,7 +124,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_step(const char* command) {
         update_status(GDB_STEPPING);
-        while (!is_suspending()) {
+        while (sim_running() && is_stepping()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
@@ -142,7 +142,7 @@ namespace vcml { namespace debugging {
 
     string gdbserver::handle_continue(const char* command) {
         update_status(GDB_RUNNING);
-        while (!is_suspending()) {
+        while (sim_running() && is_running()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
                 log_debug("received signal 0x%x", signal);
