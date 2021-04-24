@@ -59,7 +59,7 @@ namespace vcml { namespace serial {
             for (auto avail : backends)
                 ss << " " << avail.first;
             ss << std::endl;
-            VCML_REPORT(ss.str().c_str());
+            VCML_REPORT("%s", ss.str().c_str());
         }
 
         try {

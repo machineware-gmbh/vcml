@@ -35,7 +35,7 @@ namespace vcml {
     using std::ostringstream;
     using std::istringstream;
 
-    string mkstr(const char* format, ...);
+    string mkstr(const char* format, ...) VCML_DECL_PRINTF(1, 2);
     string vmkstr(const char* format, va_list args);
     string concat(const string& a, const string& b);
     string trim(const string& s);

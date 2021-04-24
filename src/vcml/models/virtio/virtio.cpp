@@ -141,9 +141,9 @@ namespace vcml { namespace virtio {
         }
 
         vq_log_debug("created split virtqueue %u with size %u", id, limit);
-        vq_log_debug("  descriptors at %p -> %p", addr_desc, m_desc);
-        vq_log_debug("  driver ring at %p -> %p", addr_driver, m_avail);
-        vq_log_debug("  device ring at %p -> %p", addr_device, m_used);
+        vq_log_debug("  descriptors at 0x%lx -> %p", addr_desc, m_desc);
+        vq_log_debug("  driver ring at 0x%lx -> %p", addr_driver, m_avail);
+        vq_log_debug("  device ring at 0x%lx -> %p", addr_device, m_used);
     }
 
     split_virtqueue::~split_virtqueue() {
@@ -262,13 +262,17 @@ namespace vcml { namespace virtio {
         }
 
         vq_log_debug("created packed virtqueue %u with size %u", id, limit);
-        vq_log_debug("  descriptors at %p -> %p", addr_desc, m_desc);
+        vq_log_debug("  descriptors at 0x%lx -> %p", addr_desc, m_desc);
 
-        if (m_driver)
-            vq_log_debug("  driver events at %p -> %p", addr_driver, m_driver);
+        if (m_driver) {
+            vq_log_debug("  driver events at 0x%lx -> %p",
+                         addr_driver, m_driver);
+        }
 
-        if (m_device)
-            vq_log_debug("  device events at %p -> %p", addr_device, m_device);
+        if (m_device) {
+            vq_log_debug("  device events at 0x%lx -> %p",
+                         addr_device, m_device);
+        }
     }
 
     packed_virtqueue::~packed_virtqueue() {
