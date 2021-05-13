@@ -46,6 +46,23 @@ TEST(socket, connect) {
     vcml::socket client(server.host(), server.port());
 
     server.accept();
+    EXPECT_FALSE(client.is_ipv4());
+    EXPECT_TRUE(client.is_ipv6());
+    client.send_char('x');
+    EXPECT_GT(server.peek(), 0);
+    EXPECT_EQ(server.recv_char(), 'x');
+    server.send_char('y');
+    EXPECT_GT(client.peek(), 0);
+    EXPECT_EQ(client.recv_char(), 'y');
+}
+
+TEST(socket, connect_v4) {
+    vcml::socket server(0);
+    vcml::socket client("localhost", server.port());
+
+    server.accept();
+    EXPECT_TRUE(client.is_ipv4());
+    EXPECT_FALSE(client.is_ipv6());
     client.send_char('x');
     EXPECT_GT(server.peek(), 0);
     EXPECT_EQ(server.recv_char(), 'x');

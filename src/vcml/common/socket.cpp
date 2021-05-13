@@ -17,6 +17,9 @@
  ******************************************************************************/
 
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -28,23 +31,32 @@ namespace vcml {
     socket::socket():
         m_port(0),
         m_host(),
+        m_peer(),
+        m_ipv6(),
         m_socket(-1),
-        m_conn(-1) {
+        m_conn(-1),
+        m_async() {
     }
 
     socket::socket(u16 port):
         m_port(0),
         m_host(),
+        m_peer(),
+        m_ipv6(),
         m_socket(-1),
-        m_conn(-1) {
+        m_conn(-1),
+        m_async() {
         listen(port);
     }
 
     socket::socket(const string& host, u16 port):
         m_port(0),
         m_host(),
+        m_peer(),
+        m_ipv6(),
         m_socket(-1),
-        m_conn(-1) {
+        m_conn(-1),
+        m_async() {
         connect(host, port);
     }
 
@@ -61,21 +73,27 @@ namespace vcml {
 
         unlisten();
 
-        m_socket = ::socket(AF_INET, SOCK_STREAM, 0);
+        m_socket = ::socket(AF_INET6, SOCK_STREAM, 0);
         if (m_socket < 0)
             VCML_REPORT("failed to create socket: %s", strerror(errno));
 
-        const int one = 1;
+        const int yes = 1, no = 0;
         if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR,
-                       (const void*)&one, sizeof(one))) {
-            VCML_REPORT("setsockopt failed: %s", strerror(errno));
+                       (const void*)&yes, sizeof(yes))) {
+            VCML_REPORT("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
         }
 
+        if (setsockopt(m_socket, IPPROTO_IPV6, IPV6_V6ONLY,
+                       (const void*)&no, sizeof(no))) {
+            VCML_REPORT("setsockopt IPV6_V6ONLY failed: %s", strerror(errno));
+        }
+
+
         if (port > 0) {
-            sockaddr_in addr = {};
-            addr.sin_family = AF_INET;
-            addr.sin_addr.s_addr = INADDR_ANY;
-            addr.sin_port = htons(port);
+            sockaddr_in6 addr = {};
+            addr.sin6_family = AF_INET6;
+            addr.sin6_addr = in6addr_any;
+            addr.sin6_port = htons(port);
             if (::bind(m_socket, (sockaddr*)&addr, sizeof(addr))) {
                 VCML_REPORT("binding socket to port %hu failed: %s", port,
                             strerror(errno));
@@ -85,13 +103,15 @@ namespace vcml {
         if (::listen(m_socket, 1))
             VCML_REPORT("listen for connections failed: %s", strerror(errno));
 
-        sockaddr_in addr = {};
+        sockaddr_in6 addr = {};
         socklen_t len = sizeof(addr);
         if (getsockname(m_socket, (struct sockaddr *)&addr, &len) < 0)
             VCML_ERROR("getsockname failed: %s", strerror(errno));
 
-        m_host = mkstr("%s", inet_ntoa(addr.sin_addr));
-        m_port = ntohs(addr.sin_port);
+        char str[INET6_ADDRSTRLEN] = {};
+        inet_ntop(addr.sin6_family, &addr.sin6_addr, str, INET6_ADDRSTRLEN);
+        m_host = mkstr("%s", str);
+        m_port = ntohs(addr.sin6_port);
         VCML_ERROR_ON(m_port == 0, "port cannot be zero");
     }
 
@@ -114,7 +134,7 @@ namespace vcml {
         if (is_connected())
             disconnect();
 
-        sockaddr_in addr = {};
+        sockaddr_in6 addr = {};
         socklen_t len = sizeof(addr);
         m_conn = ::accept(m_socket, (struct sockaddr*)&addr, &len);
 
@@ -124,13 +144,19 @@ namespace vcml {
         if (m_conn < 0)
             VCML_ERROR("failed to accept connection: %s", strerror(errno));
 
+        if (addr.sin6_family != AF_INET && addr.sin6_family != AF_INET6)
+            VCML_ERROR("accept: protocol family %d", addr.sin6_family);
+        m_ipv6 = addr.sin6_family == AF_INET6;
+
         const int one = 1;
         if (setsockopt(m_conn, IPPROTO_TCP, TCP_NODELAY,
                        (const void*)&one, sizeof(one)) < 0) {
             VCML_ERROR("setsockopt TCP_NODELAY failed: %s", strerror(errno));
         }
 
-        m_peer = mkstr("%s", inet_ntoa(addr.sin_addr));
+        char str[INET6_ADDRSTRLEN] = {};
+        inet_ntop(addr.sin6_family, &addr.sin6_addr, str, INET6_ADDRSTRLEN);
+        m_peer = mkstr("%s:%hu", str, ntohs(addr.sin6_port));
     }
 
     void socket::accept_async() {
@@ -150,23 +176,28 @@ namespace vcml {
         if (is_connected())
             disconnect();
 
-        m_conn = ::socket(AF_INET, SOCK_STREAM, 0);
+        string pstr = to_string(port);
+
+        struct addrinfo hint = {};
+        hint.ai_family = AF_UNSPEC;
+        hint.ai_socktype = SOCK_STREAM;
+
+        struct addrinfo* res;
+        int err = getaddrinfo(host.c_str(), pstr.c_str(), &hint, &res);
+        VCML_REPORT_ON(err, "getaddrinfo failed: %s", gai_strerror(err));
+        if (res->ai_family != AF_INET && res->ai_family != AF_INET6)
+            VCML_ERROR("getaddrinfo: protocol family %d", res->ai_family);
+
+        m_ipv6 = res->ai_family == AF_INET6;
+        m_conn = ::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (m_conn < 0)
-            VCML_ERROR("failed to create socket: %s", strerror(errno));
+            VCML_REPORT("failed to create socket: %s", strerror(errno));
 
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-
-        int err = inet_pton(AF_INET, host.c_str(), &addr.sin_addr);
-        if (err == 0)
-            VCML_REPORT("host address invalid: %s", host.c_str());
-        if (err < 0)
-            VCML_REPORT("host lookup failed: %s", strerror(errno));
-
-        if (::connect(m_conn, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+        if (::connect(m_conn, res->ai_addr, res->ai_addrlen) < 0)
             VCML_REPORT("connect failed: %s", strerror(errno));
+
+        m_peer = mkstr("%s:%hu", host.c_str(), port);
+        freeaddrinfo(res);
     }
 
     void socket::disconnect() {
