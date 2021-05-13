@@ -136,7 +136,6 @@ set(sources
 
 add_library(vcml ${sources})
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
-target_compile_features(vcml PUBLIC cxx_std_11)
 target_compile_definitions(vcml PUBLIC $<$<CONFIG:DEBUG>:VCML_DEBUG>)
 
 target_include_directories(vcml PUBLIC ${inc})
