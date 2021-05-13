@@ -63,7 +63,7 @@ install:
 
 before_script:
   - mkdir BUILD && cd BUILD
-  - cmake .. -DVCML_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=$BUILD
+  - cmake .. -DCMAKE_CXX_FLAGS="-std=c++11" -DVCML_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=$BUILD
 
 script:
   - make -j 4 && ctest --output-on-failure
