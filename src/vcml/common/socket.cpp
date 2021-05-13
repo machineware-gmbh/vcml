@@ -269,10 +269,14 @@ namespace vcml {
         if (m_conn < 0)
             VCML_REPORT("failed to create socket: %s", strerror(errno));
 
+        m_peer = socket_addr(res->ai_addr).peer();
+        printf("connecting to %s\n", m_peer.c_str());
+
         if (::connect(m_conn, res->ai_addr, res->ai_addrlen) < 0)
             VCML_REPORT("connect failed: %s", strerror(errno));
 
-        m_peer = socket_addr(res->ai_addr).peer();
+        printf("connected to %s\n", m_peer.c_str());
+
         freeaddrinfo(res);
     }
 
