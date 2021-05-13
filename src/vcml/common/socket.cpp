@@ -275,8 +275,6 @@ namespace vcml {
         if (::connect(m_conn, res->ai_addr, res->ai_addrlen) < 0)
             VCML_REPORT("connect failed: %s", strerror(errno));
 
-        printf("connected to %s\n", m_peer.c_str());
-
         freeaddrinfo(res);
     }
 
