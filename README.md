@@ -101,7 +101,7 @@ for type in "DEBUG" "RELEASE"; do
     install="$home/BUILD/$type"
     build="$home/BUILD/$type/BUILD"
     mkdir -p $build && cd $build
-    cmake -DCMAKE_BUILD_TYPE=$type -DCMAKE_INSTALL_PREFIX=$install $home
+    cmake -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_BUILD_TYPE=$type -DCMAKE_INSTALL_PREFIX=$install $home
     make install
 done
 ```
