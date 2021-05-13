@@ -312,22 +312,49 @@ namespace vcml { namespace debugging {
                 wp->notify_write(addr, newval);
     }
 
-    bool target::insert_breakpoint(u64 addr, subscriber* subscr) {
-        for (auto& bp : m_breakpoints) {
+    const breakpoint* target::lookup_breakpoint(u64 addr) {
+        for (auto& bp : m_breakpoints)
+            if (bp->address() == addr)
+                return bp;
+        return nullptr;
+    }
+
+    const breakpoint* target::insert_breakpoint(u64 addr, subscriber* subscr) {
+        for (auto& bp : m_breakpoints)
             if (bp->address() == addr) {
                 bp->subscribe(subscr);
-                return true;
+                return bp;
             }
-        }
 
         if (!insert_breakpoint(addr))
-            return false;
+            return nullptr;
 
         const symbol* func = m_symbols.find_function(addr);
         breakpoint* newbp = new breakpoint(*this, addr, func);
         newbp->subscribe(subscr);
         m_breakpoints.push_back(newbp);
+        return newbp;
+    }
 
+    bool target::remove_breakpoint(const breakpoint* bp, subscriber* subscr) {
+        if (bp == nullptr)
+            return false;
+
+        auto it = std::find(m_breakpoints.begin(), m_breakpoints.end(), bp);
+        if (it == m_breakpoints.end())
+            return false;
+
+        if (!(*it)->unsubscribe(subscr))
+            return false;
+
+        if ((*it)->has_subscribers())
+            return true;
+
+        if (!remove_breakpoint((*it)->address()))
+            return false;
+
+        delete *it;
+        m_breakpoints.erase(it);
         return true;
     }
 
@@ -340,7 +367,9 @@ namespace vcml { namespace debugging {
         if (it == m_breakpoints.end())
             return false;
 
-        (*it)->unsubscribe(subscr);
+        if (!(*it)->unsubscribe(subscr))
+            return false;
+
         if ((*it)->has_subscribers())
             return true;
 
@@ -427,7 +456,7 @@ namespace vcml { namespace debugging {
         return std::move(res);
     }
 
-    target* target::find(const char* name) {
+    target* target::find(const string& name) {
         auto it = s_targets.find(name);
         return it != s_targets.end() ? it->second : nullptr;
     }

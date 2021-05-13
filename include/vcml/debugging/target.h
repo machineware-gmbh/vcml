@@ -147,7 +147,9 @@ namespace vcml { namespace debugging {
         const vector<breakpoint*>& breakpoints() const;
         const vector<watchpoint*>& watchpoints() const;
 
-        bool insert_breakpoint(u64 addr, subscriber* subscr);
+        const breakpoint* lookup_breakpoint(u64 addr);
+        const breakpoint* insert_breakpoint(u64 addr, subscriber* subscr);
+        bool remove_breakpoint(const breakpoint* bp, subscriber* subscr);
         bool remove_breakpoint(u64 addr, subscriber* subscr);
 
         bool insert_watchpoint(const range& mem, vcml_access a, subscriber* s);
@@ -158,7 +160,7 @@ namespace vcml { namespace debugging {
         void notify_singlestep();
 
         static vector<target*> all();
-        static target* find(const char* name);
+        static target* find(const string& name);
     };
 
     inline void target::set_little_endian() {

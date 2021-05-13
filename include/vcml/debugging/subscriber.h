@@ -60,8 +60,7 @@ namespace vcml { namespace debugging {
         vector<subscriber*> m_subscribers;
 
     public:
-        target& owner() { return m_target; }
-        const target& owner() const { return m_target; }
+        target& owner() const { return m_target; }
 
         u64 id() const { return m_id; }
         u64 address() const { return m_addr; }

@@ -49,24 +49,27 @@ namespace vcml { namespace debugging {
 
     string vspserver::handle_step(const char* command) {
         vector<string> args = split(command, ',');
-        sc_time duration, next;
-        if (args.size() > 1) { // step duration passed as argument
-            stringstream ss(args[1]);
-            double t; ss >> t;
-            duration = sc_time(t, SC_SEC);
-        } else if (sc_get_curr_simcontext()->next_time(next)) { // next event
-            duration = next - sc_time_stamp();
-        } else { // step entire quantum
-            duration = tlm::tlm_global_quantum::instance().get();
-        }
+        if (args.size() < 2)
+            return mkstr("E,insufficient arguments %zu", args.size());
 
-        resume_simulation(duration);
-        return is_connected() ? "OK" : "";
+        target* tgt = target::find(args[1]);
+        if (tgt == nullptr)
+            return mkstr("E,no such target: %s", tgt->target_name());
+
+        tgt->request_singlestep(this);
+        resume_simulation(SC_MAX_TIME);
+        return mkstr("OK,%s", m_stop_reason.c_str());
     }
 
     string vspserver::handle_cont(const char* command) {
-        resume_simulation(SC_MAX_TIME);
-        return is_connected() ? "OK" : "";
+        vector<string> args = split(command, ',');
+        sc_time duration = SC_MAX_TIME;
+
+        if (args.size() > 1)
+            duration = from_string<sc_time>(args[1]);
+
+        resume_simulation(duration);
+        return mkstr("OK,%s", m_stop_reason.c_str());
     }
 
     static string xml_escape(const string& s) {
@@ -177,7 +180,7 @@ namespace vcml { namespace debugging {
         vector<string> args = split(command, ',');
 
         if (args.size() < 3)
-            return mkstr("E,insufficient arguments %d", args.size());
+            return mkstr("E,insufficient arguments %zu", args.size());
 
         string name = args[1];
         sc_object* obj = find_object(name);
@@ -214,7 +217,7 @@ namespace vcml { namespace debugging {
     string vspserver::handle_wrgq(const char* command) {
         vector<string> args = split(command, ',');
         if (args.size() < 2)
-            return mkstr("E,insufficient arguments %d", args.size());
+            return mkstr("E,insufficient arguments %zu", args.size());
 
         stringstream ss(args[1]);
         u64 t; ss >> t;
@@ -228,7 +231,7 @@ namespace vcml { namespace debugging {
     string vspserver::handle_geta(const char* command) {
         vector<string> args = split(command, ',');
         if (args.size() < 2)
-            return mkstr("E,insufficient arguments %d", args.size());
+            return mkstr("E,insufficient arguments %zu", args.size());
 
         string name = args[1];
         sc_attr_base* attr = find_attribute(name);
@@ -245,7 +248,7 @@ namespace vcml { namespace debugging {
     string vspserver::handle_seta(const char* command) {
         vector<string> args = split(command, ',');
         if (args.size() < 3)
-            return mkstr("E,insufficient arguments %d", args.size());
+            return mkstr("E,insufficient arguments %zu", args.size());
 
         string name = args[1];
         vector<string> values(args.begin() + 2, args.end());
@@ -288,6 +291,51 @@ namespace vcml { namespace debugging {
         return ss.str();
     }
 
+    string vspserver::handle_mkbp(const char* command) {
+        vector<string> args = split(command, ',');
+        if (args.size() < 3)
+            return mkstr("E,insufficient arguments %zu", args.size());
+
+        target* tgt = target::find(args[1]);
+        if (tgt == nullptr)
+            return mkstr("E,no such target: %s", args[1].c_str());
+
+        u64 addr;
+        if (is_number(args[2]))
+            addr = from_string<u64>(args[2]);
+        else {
+            const symbol* sym = tgt->symbols().find_symbol(args[2]);
+            if (sym == nullptr)
+                return mkstr("E,no address or symbol: %s", args[2].c_str());
+            addr = sym->virt_addr();
+        }
+
+        const breakpoint* bp = tgt->insert_breakpoint(addr, this);
+        if (bp == nullptr)
+            return mkstr("E,failed to insert breakpoint at 0x%lx", addr);
+
+        m_breakpoints[bp->id()] = bp;
+        return mkstr("OK,inserted breakpoint %lu", bp->id());
+    }
+
+    string vspserver::handle_rmbp(const char* command) {
+        vector<string> args = split(command, ',');
+        if (args.size() < 2)
+            return mkstr("E,insufficient arguments %zu", args.size());
+
+        u64 bpid = from_string<u64>(args[1]);
+        auto it = m_breakpoints.find(bpid);
+        if (it == m_breakpoints.end())
+            return mkstr("E,invalid breakpoint id: %lu", bpid);
+
+        target& tgt = it->second->owner();
+        if (!tgt.remove_breakpoint(it->second, this))
+            return mkstr("E,model rejected breakpoint deletion");
+
+        m_breakpoints.erase(it);
+        return "OK";
+    }
+
     void vspserver::resume_simulation(const sc_time& duration) {
         m_duration = duration;
         resume();
@@ -308,7 +356,7 @@ namespace vcml { namespace debugging {
                     return;
 
                 case 'a': // pause
-                    sc_pause();
+                    pause_simulation("user");
                     return;
 
                 default:
@@ -322,6 +370,11 @@ namespace vcml { namespace debugging {
         }
     }
 
+    void vspserver::pause_simulation(const string& reason) {
+        m_stop_reason = reason;
+        sc_pause();
+    }
+
     void vspserver::force_quit() {
         stop();
         suspender::quit();
@@ -330,10 +383,31 @@ namespace vcml { namespace debugging {
             disconnect();
     }
 
+    void vspserver::notify_step_complete(target& tgt) {
+        pause_simulation(mkstr("target:%s", tgt.target_name()));
+    }
+
+    void vspserver::notify_breakpoint_hit(const breakpoint& bp) {
+        pause_simulation(mkstr("breakpoint:%lu", bp.id()));
+    }
+
+    void vspserver::notify_watchpoint_read(const watchpoint& wp,
+                                           const range& addr) {
+        pause_simulation(mkstr("rwatchpoint:%lu", wp.id()));
+    }
+
+    void vspserver::notify_watchpoint_write(const watchpoint& wp,
+                                            const range& addr,
+                                            u64 newval) {
+        pause_simulation(mkstr("wwatchpoint:%lu", wp.id()));
+    }
+
     vspserver::vspserver(u16 port):
         rspserver(port),
         suspender("vspserver"),
+        subscriber(),
         m_announce(temp_dir() + mkstr("vcml_session_%hu", get_port())),
+        m_stop_reason(),
         m_duration() {
         VCML_ERROR_ON(session != nullptr, "vspserver already created");
         session = this;
@@ -352,6 +426,8 @@ namespace vcml { namespace debugging {
         register_handler("A", std::bind(&vspserver::handle_seta, this, _1));
         register_handler("x", std::bind(&vspserver::handle_quit, this, _1));
         register_handler("v", std::bind(&vspserver::handle_vers, this, _1));
+        register_handler("b", std::bind(&vspserver::handle_mkbp, this, _1));
+        register_handler("r", std::bind(&vspserver::handle_rmbp, this, _1));
 
         // Create announce file
         ofstream of(m_announce.c_str());
