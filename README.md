@@ -26,7 +26,7 @@ This is how to build and install them:
     export SYSTEMC_HOME=`pwd`
     export TARGET_ARCH=linux64
     mkdir BUILD && cd BUILD
-    ../configure --prefix=$SYSTEMC_HOME --enable-optimize --enable-static CXXFLAGS="-std=c++11"
+    ../configure --prefix=$SYSTEMC_HOME --enable-optimize --enable-static
     make -j 4 && make install
     ```
 
