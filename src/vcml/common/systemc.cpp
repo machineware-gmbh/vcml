@@ -178,8 +178,10 @@ namespace vcml {
     #define DECL_TRACE_METHOD_B(t) \
         virtual void trace(const t& object, const string& n, int w) override {}
 
+#if SYSTEMC_VERSION >= 20171012
         DECL_TRACE_METHOD_A(sc_event)
         DECL_TRACE_METHOD_A(sc_time)
+#endif
 
         DECL_TRACE_METHOD_A(bool)
         DECL_TRACE_METHOD_A(sc_dt::sc_bit)
@@ -218,8 +220,8 @@ namespace vcml {
                            const std::string& name,
                            const char** enum_literals ) override {}
         virtual void write_comment(const std::string& comment) override {}
-        virtual void set_time_unit(double v, 
-			   sc_core::sc_time_unit tu) override {}
+        virtual void set_time_unit(double v,
+                                   sc_core::sc_time_unit tu) override {}
 
         vector<function<void(void)>> deltas;
         vector<function<void(void)>> tsteps;
