@@ -45,7 +45,6 @@ set(sources
     ${src}/vcml/common/utils.cpp
     ${src}/vcml/common/strings.cpp
     ${src}/vcml/common/version.cpp
-    ${src}/vcml/common/aio.cpp
     ${src}/vcml/common/thctl.cpp
     ${src}/vcml/common/bitops.cpp
     ${src}/vcml/common/socket.cpp

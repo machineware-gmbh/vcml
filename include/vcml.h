@@ -24,7 +24,6 @@
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
 #include "vcml/common/version.h"
-#include "vcml/common/aio.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/bitops.h"
 #include "vcml/common/socket.h"

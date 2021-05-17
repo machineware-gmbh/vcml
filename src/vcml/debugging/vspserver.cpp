@@ -16,7 +16,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/common/aio.h"
 #include "vcml/common/thctl.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/systemc.h"
