@@ -103,7 +103,7 @@ namespace vcml { namespace debugging {
             }
         }
 
-        return std::move(segments);
+        return segments;
     }
 
     template <typename T, typename ELF>

@@ -147,7 +147,7 @@ namespace vcml { namespace ui {
         res.reserve(s_keyboards.size());
         for (auto it : s_keyboards)
             res.push_back(it.second);
-        return std::move(res);
+        return res;
     }
     keyboard* keyboard::find(const char* name) {
         auto it = s_keyboards.find(name);
@@ -215,7 +215,7 @@ namespace vcml { namespace ui {
         res.reserve(s_pointers.size());
         for (auto it : s_pointers)
             res.push_back(it.second);
-        return std::move(res);
+        return res;
     }
 
     pointer* pointer::find(const char* name) {

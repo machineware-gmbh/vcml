@@ -155,7 +155,7 @@ namespace vcml { namespace net {
         all.reserve(s_adapters.size());
         for (auto it : s_adapters)
             all.push_back(it.second);
-        return std::move(all);
+        return all;
     }
 
 }}

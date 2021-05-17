@@ -72,7 +72,7 @@ namespace vcml { namespace debugging {
             images.push_back({file, type, offset});
         }
 
-        return std::move(images);
+        return images;
     }
 
     bool loader::cmd_load(const vector<string>& args, ostream& os) {
@@ -247,7 +247,7 @@ namespace vcml { namespace debugging {
         all.reserve(s_loaders.size());
         for (auto it : s_loaders)
             all.push_back(it.second);
-        return std::move(all);
+        return all;
     }
 
 }}

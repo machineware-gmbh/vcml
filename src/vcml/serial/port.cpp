@@ -178,7 +178,7 @@ namespace vcml { namespace serial {
         all.reserve(s_ports.size());
         for (auto it : s_ports)
             all.push_back(it.second);
-        return std::move(all);
+        return all;
     }
 
 }}

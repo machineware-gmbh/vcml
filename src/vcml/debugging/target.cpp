@@ -93,7 +93,7 @@ namespace vcml { namespace debugging {
         vector<cpureg> regs;
         for (auto& reg : m_cpuregs)
             regs.push_back(reg.second);
-        return std::move(regs);
+        return regs;
     }
 
     const cpureg* target::find_cpureg(u64 regno) const {
@@ -453,7 +453,7 @@ namespace vcml { namespace debugging {
         res.reserve(s_targets.size());
         for (auto it : s_targets)
             res.push_back(it.second);
-        return std::move(res);
+        return res;
     }
 
     target* target::find(const string& name) {
