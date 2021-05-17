@@ -226,9 +226,9 @@ namespace vcml {
     using tlm_utils::simple_target_socket;
     using tlm_utils::simple_target_socket_tagged;
 
-#define VCML_KIND(name)                \
-    virtual const char* kind() const { \
-        return "vcml::" #name;         \
+#define VCML_KIND(name)                         \
+    virtual const char* kind() const override { \
+        return "vcml::" #name;                  \
     }
 
     void on_each_delta_cycle(function<void(void)> callback);
@@ -242,5 +242,8 @@ namespace vcml {
 
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
 
+namespace sc_core {
+    std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
+}
 
 #endif

@@ -63,7 +63,7 @@ namespace vcml { namespace generic {
         VCML_KIND(crossbar);
 
     protected:
-        virtual void end_of_elaboration();
+        virtual void end_of_elaboration() override;
     };
 
     inline u64 crossbar::idx(unsigned int from, unsigned int to) const {

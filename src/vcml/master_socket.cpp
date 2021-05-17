@@ -28,8 +28,6 @@ namespace vcml {
 
     master_socket::master_socket(const char* nm, component* host):
         simple_initiator_socket<master_socket, 64>(nm),
-        m_free(true),
-        m_free_ev(concat(nm, "_free").c_str()),
         m_tx(),
         m_txd(),
         m_sbi(SBI_NONE),

@@ -53,7 +53,7 @@ namespace vcml {
         socket(const string& host, u16 port);
         virtual ~socket();
 
-        socket(socket&&) = default;
+        socket(socket&&) = delete;
         socket(const socket&) = delete;
         socket& operator = (const socket&) = delete;
 

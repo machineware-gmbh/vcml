@@ -35,7 +35,7 @@ namespace vcml {
     public:
         property_base(const char* name, sc_module* parent = nullptr);
         virtual ~property_base();
-        VCML_KIND(property_base);
+        virtual const char* kind() const { return "vcml::property"; }
 
         property_base() = delete;
         property_base(const property_base&) = delete;

@@ -153,20 +153,20 @@ namespace vcml {
         return r;
     }
 
-}
+    inline std::istream& operator >> (std::istream& is, vcml::range& r) {
+        is >> r.start;
+        is >> r.end;
+        return is;
+    }
 
-inline std::istream& operator >> (std::istream& is, vcml::range& r) {
-    is >> r.start;
-    is >> r.end;
-    return is;
-}
+    inline std::ostream& operator << (std::ostream& os, const vcml::range& r) {
+        int n = (r.start > std::numeric_limits<vcml::u32>::max() ||
+                 r.end   > std::numeric_limits<vcml::u32>::max()) ? 16 : 8;
+        os <<  "0x" << std::hex << std::setw(n) << std::setfill('0') << r.start
+           << " 0x" << std::hex << std::setw(n) << std::setfill('0') << r.end;
+        return os;
+    }
 
-inline std::ostream& operator << (std::ostream& os, const vcml::range& r) {
-    int n = (r.start > std::numeric_limits<vcml::u32>::max() ||
-             r.end   > std::numeric_limits<vcml::u32>::max()) ? 16 : 8;
-    os <<  "0x" << std::hex << std::setw(n) << std::setfill('0') << r.start
-       << " 0x" << std::hex << std::setw(n) << std::setfill('0') << r.end;
-    return os;
 }
 
 #endif

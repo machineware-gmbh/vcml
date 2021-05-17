@@ -63,7 +63,7 @@ namespace vcml { namespace generic {
                unsigned int write_latency = 0);
         virtual ~memory();
         VCML_KIND(memory);
-        virtual void reset();
+        virtual void reset() override;
 
         virtual tlm_response_status read  (const range& addr, void* data,
                                            const sideband& info) override;

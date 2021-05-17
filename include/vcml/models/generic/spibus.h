@@ -55,7 +55,7 @@ namespace vcml { namespace generic {
         spibus(const sc_module_name& nm);
         virtual ~spibus();
         VCML_KIND(spibus);
-        virtual void reset();
+        virtual void reset() override;
 
         bool is_valid(unsigned int port) const;
         bool is_active(unsigned int port) const;

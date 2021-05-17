@@ -79,7 +79,7 @@ namespace vcml {
         sd_initiator_socket();
         explicit sd_initiator_socket(const char* name);
         VCML_KIND(sd_initiator_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
     };
 
     class sd_target_socket:
@@ -90,7 +90,7 @@ namespace vcml {
         sd_target_socket();
         explicit sd_target_socket(const char* name);
         VCML_KIND(sd_target_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
     };
 
     class sd_initiator_stub: public module, protected sd_bw_transport_if

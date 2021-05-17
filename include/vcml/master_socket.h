@@ -34,9 +34,6 @@ namespace vcml {
     class master_socket: public simple_initiator_socket<master_socket, 64>
     {
     private:
-        bool m_free;
-        sc_event m_free_ev;
-
         tlm_generic_payload m_tx;
         tlm_generic_payload m_txd;
 

@@ -179,7 +179,7 @@ namespace vcml { namespace generic {
 
         sdcard(const sc_module_name& name);
         virtual ~sdcard();
-        virtual void reset();
+        virtual void reset() override;
         VCML_KIND(sdcard);
 
         bool is_sdhc() const { return m_ocr & OCR_CCS; }

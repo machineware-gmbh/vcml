@@ -153,7 +153,7 @@ namespace vcml { namespace arm {
         virtual ~pl011uart();
         VCML_KIND(arm::pl011uart);
 
-        virtual void reset();
+        virtual void reset() override;
     };
 
 }}

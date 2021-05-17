@@ -52,7 +52,7 @@ namespace vcml { namespace generic {
         gpio(const sc_module_name& name);
         virtual ~gpio();
         VCML_KIND(gpio);
-        virtual void reset();
+        virtual void reset() override;
 
         virtual void end_of_elaboration() override;
     };

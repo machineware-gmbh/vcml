@@ -73,7 +73,7 @@ namespace vcml { namespace opencores {
         ocspi(const sc_module_name& name);
         virtual ~ocspi();
         VCML_KIND(ocspi);
-        virtual void reset();
+        virtual void reset() override;
 
         void trace_in(u8 val) const;
         void trace_out(u8 val) const;

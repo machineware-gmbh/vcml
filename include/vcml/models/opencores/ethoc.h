@@ -277,7 +277,7 @@ namespace vcml { namespace opencores {
         virtual ~ethoc();
         VCML_KIND(ethoc);
 
-        virtual void reset();
+        virtual void reset() override;
 
         void set_mac_addr(u8 addr[6]);
     };

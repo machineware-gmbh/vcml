@@ -172,11 +172,11 @@ namespace vcml {
     class cycle_helper: public sc_core::sc_trace_file
     {
     public:
-    #define DECL_TRACE_METHOD_A(tp) \
-        virtual void trace(const tp& object, const string& nm) {}
+    #define DECL_TRACE_METHOD_A(t) \
+        virtual void trace(const t& object, const string& n) override {}
 
-    #define DECL_TRACE_METHOD_B(tp) \
-        virtual void trace(const tp& object,const string& nm, int w) {}
+    #define DECL_TRACE_METHOD_B(t) \
+        virtual void trace(const t& object, const string& n, int w) override {}
 
         DECL_TRACE_METHOD_A(sc_event)
         DECL_TRACE_METHOD_A(sc_time)
@@ -216,9 +216,10 @@ namespace vcml {
 
         virtual void trace(const unsigned int& object,
                            const std::string& name,
-                           const char** enum_literals ) {};
-        virtual void write_comment(const std::string& comment) {};
-        virtual void set_time_unit(double v, sc_core::sc_time_unit tu) {}
+                           const char** enum_literals ) override {}
+        virtual void write_comment(const std::string& comment) override {}
+        virtual void set_time_unit(double v, 
+			   sc_core::sc_time_unit tu) override {}
 
         vector<function<void(void)>> deltas;
         vector<function<void(void)>> tsteps;
@@ -321,6 +322,7 @@ namespace vcml {
 
 }
 
+namespace sc_core {
 std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
     std::string str; is >> str;
     str = vcml::to_lower(str);
@@ -343,4 +345,5 @@ std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
         t = sc_core::sc_time(value, true);
 
     return is;
+}
 }

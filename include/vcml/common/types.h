@@ -156,6 +156,7 @@ namespace vcml {
             v.push_back(t);
     }
 
+    using std::istream;
     using std::ostream;
     using std::fstream;
     using std::ifstream;
