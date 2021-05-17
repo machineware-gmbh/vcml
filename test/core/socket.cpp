@@ -71,7 +71,8 @@ TEST(socket, connect_v4) {
 
 TEST(socket, send) {
     const char* str = "Hello World";
-    char buf[strlen(str) + 1] = {};
+    char buf[strlen(str) + 1];
+    memset(buf, 0, strlen(str) + 1);
 
     vcml::socket server(0);
     vcml::socket client(server.host(), server.port());
@@ -89,7 +90,8 @@ TEST(socket, async) {
 
     for (auto i : {1, 2, 3}) {
         const char* str = "Hello World";
-        char buf[strlen(str) + 1] = {};
+        char buf[strlen(str) + 1];
+        memset(buf, 0, strlen(str) + 1);
 
         server.listen(0);
         server.accept_async();

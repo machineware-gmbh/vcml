@@ -403,7 +403,7 @@ namespace vcml { namespace virtio {
         explicit virtio_initiator_socket(const char* name);
         virtual ~virtio_initiator_socket();
         VCML_KIND(virtio_initiator_socket);
-        virtual sc_type_index get_protocol_types() const override;
+        virtual sc_type_index get_protocol_types() const;
         virtual void stub();
     };
 
@@ -420,7 +420,7 @@ namespace vcml { namespace virtio {
         explicit virtio_target_socket(const char* name);
         virtual ~virtio_target_socket();
         VCML_KIND(virtio_target_socket);
-        virtual sc_type_index get_protocol_types() const override;
+        virtual sc_type_index get_protocol_types() const;
         virtual void stub();
     };
 

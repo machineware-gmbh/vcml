@@ -43,7 +43,7 @@ namespace vcml {
         spi_initiator_socket();
         explicit spi_initiator_socket(const char* name);
         VCML_KIND(spi_initiator_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const override;
+        virtual sc_core::sc_type_index get_protocol_types() const;
     };
 
     class spi_target_socket:
@@ -54,7 +54,7 @@ namespace vcml {
         spi_target_socket();
         explicit spi_target_socket(const char* name);
         VCML_KIND(spi_target_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const override;
+        virtual sc_core::sc_type_index get_protocol_types() const;
     };
 
     class spi_initiator_stub: public module, protected spi_bw_transport_if

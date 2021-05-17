@@ -72,7 +72,7 @@ public:
         return tx.get_data_length();
     }
 
-    void run_test() {
+    void run_test() override {
         u64 data = 0;
         EXPECT_OK(TEST1_OUT64.readw(0x1234, data));
         EXPECT_EQ(data, ~0ull);
