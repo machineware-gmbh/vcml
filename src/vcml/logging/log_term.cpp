@@ -41,11 +41,11 @@ namespace vcml {
     }
 
     const char* log_term::colors[NUM_LOG_LEVELS] = {
-        [LOG_ERROR] = "\x1B[31m", // red
-        [LOG_WARN]  = "\x1B[33m", // yellow
-        [LOG_INFO]  = "\x1B[32m", // green
-        [LOG_DEBUG] = "\x1B[36m", // blue
-        [LOG_TRACE] = "\x1B[35m"  // magenta
+        /* [LOG_ERROR] = */ "\x1B[31m", // red
+        /* [LOG_WARN]  = */ "\x1B[33m", // yellow
+        /* [LOG_INFO]  = */ "\x1B[32m", // green
+        /* [LOG_DEBUG] = */ "\x1B[36m", // blue
+        /* [LOG_TRACE] = */ "\x1B[35m"  // magenta
     };
 
     const char* log_term::reset = "\x1B[0m";

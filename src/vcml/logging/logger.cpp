@@ -31,19 +31,19 @@ namespace vcml {
     size_t logger::trace_name_length = 20;
 
     const char* logger::prefix[NUM_LOG_LEVELS] = {
-            [LOG_ERROR] = "E",
-            [LOG_WARN]  = "W",
-            [LOG_INFO]  = "I",
-            [LOG_DEBUG] = "D",
-            [LOG_TRACE] = "T"
+            /* [LOG_ERROR] = */ "E",
+            /* [LOG_WARN]  = */ "W",
+            /* [LOG_INFO]  = */ "I",
+            /* [LOG_DEBUG] = */ "D",
+            /* [LOG_TRACE] = */ "T"
     };
 
     const char* logger::desc[NUM_LOG_LEVELS] = {
-            [LOG_ERROR] = "error",
-            [LOG_WARN]  = "warning",
-            [LOG_INFO]  = "info",
-            [LOG_DEBUG] = "debug",
-            [LOG_TRACE] = "trace"
+            /* [LOG_ERROR] = */ "error",
+            /* [LOG_WARN]  = */ "warning",
+            /* [LOG_INFO]  = */ "info",
+            /* [LOG_DEBUG] = */ "debug",
+            /* [LOG_TRACE] = */ "trace"
     };
 
     void logger::print_prefix(ostream& os, log_level lvl, const sc_time& t) {
@@ -175,21 +175,22 @@ namespace vcml {
         print_trace(false, org, tx, dt);
     }
 
+    ostream& operator << (ostream& os, const log_level& lvl) {
+        if (lvl < LOG_ERROR || lvl > LOG_TRACE)
+            return os << "unknown log level";
+        return os << logger::desc[lvl];
+    }
+
+    istream& operator >> (istream& is, log_level& lvl) {
+        string s; is >> s;
+        lvl = NUM_LOG_LEVELS;
+        for (int i = LOG_ERROR; i < NUM_LOG_LEVELS; i++)
+            if (s == logger::desc[i])
+                lvl = (log_level)i;
+        if (lvl == vcml::NUM_LOG_LEVELS)
+            is.setstate(std::ios::failbit);
+        return is;
+    }
+
 }
 
-std::ostream& operator << (std::ostream& os, const vcml::log_level& lvl) {
-    if (lvl < vcml::LOG_ERROR || lvl > vcml::LOG_TRACE)
-        return os << "unknown log level";
-    return os << vcml::logger::desc[lvl];
-}
-
-std::istream& operator >> (std::istream& is, vcml::log_level& lvl) {
-    std::string s; is >> s;
-    lvl = vcml::NUM_LOG_LEVELS;
-    for (int i = vcml::LOG_ERROR; i < vcml::NUM_LOG_LEVELS; i++)
-        if (s == vcml::logger::desc[i])
-            lvl = (vcml::log_level)i;
-    if (lvl == vcml::NUM_LOG_LEVELS)
-        is.setstate(std::ios::failbit);
-    return is;
-}

@@ -38,6 +38,9 @@ namespace vcml {
 
     VCML_TYPEINFO(log_level);
 
+    ostream& operator << (ostream& os, const log_level& lvl);
+    istream& operator >> (istream& is, log_level& lvl);
+
     class logger
     {
     private:
@@ -129,8 +132,5 @@ namespace vcml {
     }
 
 }
-
-std::ostream& operator << (std::ostream& os, const vcml::log_level& lvl);
-std::istream& operator >> (std::istream& is, vcml::log_level& lvl);
 
 #endif
