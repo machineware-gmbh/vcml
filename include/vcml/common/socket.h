@@ -60,7 +60,7 @@ namespace vcml {
         void listen(u16 port);
         void unlisten();
 
-        void accept();
+        bool accept();
         void accept_async();
 
         void connect(const string& host, u16 port);

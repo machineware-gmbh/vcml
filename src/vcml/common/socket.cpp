@@ -214,7 +214,7 @@ namespace vcml {
         m_port = 0;
     }
 
-    void socket::accept() {
+    bool socket::accept() {
         if (is_connected())
             disconnect();
 
@@ -223,7 +223,7 @@ namespace vcml {
         m_conn = ::accept(m_socket, &addr.base, &len);
 
         if (m_conn < 0 && m_socket < 0)
-            return; // shutdown while waiting for connections
+            return false; // shutdown while waiting for connections
 
         if (m_conn < 0)
             VCML_ERROR("failed to accept connection: %s", strerror(errno));
@@ -232,6 +232,7 @@ namespace vcml {
 
         m_ipv6 = addr.is_ipv6();
         m_peer = mkstr("%s:%hu", addr.host().c_str(), addr.port());
+        return true;
     }
 
     void socket::accept_async() {
