@@ -218,7 +218,6 @@ namespace vcml { namespace debugging {
     }
 
     void rspserver::stop() {
-        VCML_ERROR_ON(!m_running, "server not running");
         m_running = false;
     }
 

@@ -55,6 +55,9 @@ namespace vcml { namespace debugging {
         if (!is_connected())
             status = m_default;
 
+        if (!sim_running())
+            status = GDB_KILLED;
+
         if (m_status == status)
             return;
 
@@ -127,16 +130,12 @@ namespace vcml { namespace debugging {
         while (sim_running() && is_stepping()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
-                log_debug("received signal 0x%x", signal);
-                update_status(GDB_STOPPED);
+                log_debug("received signal %d", signal);
+                break;
             }
         }
 
-        if (sim_running())
-            update_status(GDB_STOPPED);
-        else
-            update_status(GDB_KILLED);
-
+        update_status(GDB_STOPPED);
         return mkstr("S%02x", GDBSIG_TRAP);
     }
 
@@ -145,16 +144,12 @@ namespace vcml { namespace debugging {
         while (sim_running() && is_running()) {
             int signal = 0;
             if ((signal = recv_signal(100))) {
-                log_debug("received signal 0x%x", signal);
-                update_status(GDB_STOPPED);
+                log_debug("received signal %d", signal);
+                break;
             }
         }
 
-        if (sim_running())
-            update_status(GDB_STOPPED);
-        else
-            update_status(GDB_KILLED);
-
+        update_status(GDB_STOPPED);
         return mkstr("S%02x", GDBSIG_TRAP);
     }
 
