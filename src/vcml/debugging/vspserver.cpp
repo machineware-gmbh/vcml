@@ -337,7 +337,9 @@ namespace vcml { namespace debugging {
 
     void vspserver::resume_simulation(const sc_time& duration) {
         m_duration = duration;
-        resume();
+
+        if (is_suspending())
+            resume();
 
         try {
             while (!is_suspending()) {
@@ -401,11 +403,11 @@ namespace vcml { namespace debugging {
         pause_simulation(mkstr("wwatchpoint:%lu", wp.id()));
     }
 
-    vspserver::vspserver(u16 port):
-        rspserver(port),
+    vspserver::vspserver(u16 server_port):
+        rspserver(server_port),
         suspender("vspserver"),
         subscriber(),
-        m_announce(temp_dir() + mkstr("vcml_session_%hu", get_port())),
+        m_announce(temp_dir() + mkstr("vcml_session_%hu", port())),
         m_stop_reason(),
         m_duration() {
         VCML_ERROR_ON(session != nullptr, "vspserver already created");
@@ -430,18 +432,19 @@ namespace vcml { namespace debugging {
 
         // Create announce file
         ofstream of(m_announce.c_str());
-        of << "localhost:" << std::dec << get_port() << ":" << username()
+        of << "localhost:" << std::dec << port() << ":" << username()
            << ":" << progname() << std::endl;
     }
 
     vspserver::~vspserver() {
+        shutdown();
         cleanup();
         session = nullptr;
     }
 
     void vspserver::start() {
         run_async();
-        log_info("vspserver waiting on port %hu", get_port());
+        log_info("vspserver waiting on port %hu", port());
 
         // Finish elaboration first before processing commands
         sc_start(SC_ZERO_TIME);
@@ -481,7 +484,7 @@ namespace vcml { namespace debugging {
 
     void vspserver::handle_disconnect() {
         if (sim_running())
-            log_info("vspserver waiting on port %hu", get_port());
+            log_info("vspserver waiting on port %hu", port());
     }
 
 }}

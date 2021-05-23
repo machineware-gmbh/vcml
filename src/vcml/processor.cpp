@@ -416,10 +416,10 @@ namespace vcml {
             m_gdb->echo(gdb_echo);
 
             if (gdb_port == 0)
-                gdb_port = m_gdb->get_port();
+                gdb_port = m_gdb->port();
 
             log_info("%s for GDB connection on port %hu",
-                     gdb_wait ? "waiting" : "listening", m_gdb->get_port());
+                     gdb_wait ? "waiting" : "listening", m_gdb->port());
         }
     }
 

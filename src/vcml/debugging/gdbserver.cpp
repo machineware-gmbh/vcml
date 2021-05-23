@@ -577,7 +577,7 @@ namespace vcml { namespace debugging {
     }
 
     gdbserver::~gdbserver() {
-        /* nothing to do */
+        shutdown();
     }
 
     string gdbserver::handle_command(const string& command) {

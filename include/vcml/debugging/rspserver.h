@@ -48,7 +48,7 @@ namespace vcml { namespace debugging {
         rspserver(const rspserver&);
 
     public:
-        u16 get_port() const { return m_sock.port(); }
+        u16 port() const { return m_port; }
 
         bool is_connected() const { return m_sock.is_connected(); }
         bool is_listening() const { return m_sock.is_listening(); }
@@ -69,6 +69,7 @@ namespace vcml { namespace debugging {
         void run_async();
         void run();
         void stop();
+        void shutdown();
 
         virtual string handle_command(const string& command);
         virtual void   handle_connect(const char* peer);

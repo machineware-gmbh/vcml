@@ -60,13 +60,8 @@ namespace vcml { namespace debugging {
     }
 
     rspserver::~rspserver() {
-        m_running = false;
-
-        disconnect();
-        m_sock.unlisten();
-
         if (m_thread.joinable())
-            m_thread.join();
+            VCML_ERROR("rspserver still running");
     }
 
     void rspserver::send_packet(const char* format, ...) {
@@ -180,15 +175,18 @@ namespace vcml { namespace debugging {
 
     void rspserver::listen() {
         m_sock.listen(m_port);
-        m_sock.accept();
-        m_sock.unlisten();
-        handle_connect(m_sock.peer());
+        if (m_sock.accept()) {
+            m_sock.unlisten();
+            if (m_running)
+                handle_connect(m_sock.peer());
+        }
     }
 
     void rspserver::disconnect() {
         if (m_sock.is_connected()) {
             m_sock.disconnect();
-            handle_disconnect();
+            if (m_running)
+                handle_disconnect();
         }
     }
 
@@ -219,6 +217,18 @@ namespace vcml { namespace debugging {
 
     void rspserver::stop() {
         m_running = false;
+    }
+
+    void rspserver::shutdown() {
+        stop();
+
+        if (m_sock.is_listening())
+            m_sock.unlisten();
+        if (m_sock.is_connected())
+            m_sock.disconnect();
+
+        if (m_thread.joinable())
+            m_thread.join();
     }
 
     string rspserver::handle_command(const string& command) {
