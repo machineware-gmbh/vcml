@@ -185,7 +185,7 @@ namespace vcml {
 
         sc_core::sc_simcontext* simc = sc_core::sc_get_curr_simcontext();
         if (simc) {
-            sc_process_b* proc = sc_get_current_process_b();
+            sc_process_b* proc = current_process();
             if (proc) {
                 sc_object* parent = proc->get_parent_object();
                 return parent ? parent->name() : proc->name();

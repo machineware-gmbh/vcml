@@ -111,17 +111,7 @@ namespace vcml {
     using sc_core::sc_get_curr_simcontext;
 
     using sc_core::sc_event;
-
     using sc_core::sc_process_b;
-    using sc_core::sc_get_current_process_b;
-
-    bool is_thread(sc_process_b* proc = nullptr);
-    bool is_method(sc_process_b* proc = nullptr);
-
-    sc_process_b* current_thread();
-    sc_process_b* current_method();
-
-    bool sim_running();
 
     using sc_core::sc_actions;
     using sc_core::sc_report;
@@ -237,6 +227,17 @@ namespace vcml {
     void sc_async(const function<void(void)>& job);
     void sc_progress(const sc_time& delta);
     void sc_sync(const function<void(void)>& job);
+
+    bool sc_is_async();
+
+    bool is_thread(sc_process_b* proc = nullptr);
+    bool is_method(sc_process_b* proc = nullptr);
+
+    sc_process_b* current_process();
+    sc_process_b* current_thread();
+    sc_process_b* current_method();
+
+    bool sim_running();
 
 }
 

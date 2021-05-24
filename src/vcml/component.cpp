@@ -138,7 +138,8 @@ namespace vcml {
 
     sc_time& component::local_time(sc_process_b* proc) {
         if (proc == nullptr)
-            proc = sc_get_current_process_b();
+            proc = current_process();
+
         if (!stl_contains(m_offsets, proc))
              m_offsets[proc] = SC_ZERO_TIME;
 
@@ -153,7 +154,7 @@ namespace vcml {
 
     bool component::needs_sync(sc_process_b* proc) {
         if (proc == nullptr)
-            proc = sc_get_current_process_b();
+            proc = current_process();
         if (!is_thread(proc))
             return false;
 
@@ -163,7 +164,7 @@ namespace vcml {
 
     void component::sync(sc_process_b* proc) {
         if (proc == nullptr)
-            proc = sc_get_current_process_b();
+            proc = current_process();
         if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
             VCML_ERROR("attempt to sync outside of SC_THREAD process");
 
@@ -229,7 +230,8 @@ namespace vcml {
         sc_time t1 = sc_time_stamp();
         unsigned int bytes = transport(tx, tx_get_sbi(tx) | SBI_DEBUG);
         sc_time t2 = sc_time_stamp();
-        VCML_ERROR_ON(t1 != t2, "time advance during debug call");
+        if (thctl_is_sysc_thread() && t1 != t2)
+            VCML_ERROR("time advance during debug call");
         return bytes;
     }
 

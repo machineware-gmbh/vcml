@@ -39,49 +39,6 @@ namespace vcml {
 
     const sc_time SC_MAX_TIME = time_from_value(~0ull);
 
-    bool is_thread(sc_process_b* proc) {
-        if (!thctl_is_sysc_thread())
-            return false;
-        if (proc == nullptr)
-            proc = sc_get_current_process_b();
-        if (proc == nullptr)
-            return false;
-        return proc->proc_kind() == sc_core::SC_THREAD_PROC_;
-    }
-
-    bool is_method(sc_process_b* proc) {
-        if (!thctl_is_sysc_thread())
-            return false;
-        if (proc == nullptr)
-            proc = sc_get_current_process_b();
-        if (proc == nullptr)
-            return false;
-        return proc->proc_kind() == sc_core::SC_METHOD_PROC_;
-    }
-
-    sc_process_b* current_thread() {
-        if (!thctl_is_sysc_thread())
-            return nullptr;
-        sc_process_b* proc = sc_get_current_process_b();
-        if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
-            return nullptr;
-        return proc;
-    }
-
-    sc_process_b* current_method() {
-        if (!thctl_is_sysc_thread())
-            return nullptr;
-        sc_process_b* proc = sc_get_current_process_b();
-        if (proc == nullptr || proc->proc_kind() != sc_core::SC_METHOD_PROC_)
-            return nullptr;
-        return proc;
-    }
-
-    bool sim_running() {
-        sc_simcontext* simc = sc_get_curr_simcontext();
-        return simc->get_status() < sc_core::SC_STOPPED;
-    }
-
     void hierarchy_push(sc_module* mod) {
         sc_simcontext* simc = sc_get_curr_simcontext();
         VCML_ERROR_ON(!simc, "no simulation context");
@@ -272,6 +229,7 @@ namespace vcml {
         mutex jobmtx;
         condition_variable_any jobvar;
         queue<function<void(void)>> jobs;
+        sc_process_b* process;
     };
 
     __thread async_info* g_async = nullptr;
@@ -280,6 +238,10 @@ namespace vcml {
         async_info info;
         info.done = false;
         info.progress = 0;
+        info.process = current_process();
+
+        if (!is_thread(info.process))
+            VCML_ERROR("sc_async outside sc_thread process");
 
         // ToDo: reuse threads
         thread t([&](void) -> void {
@@ -294,6 +256,9 @@ namespace vcml {
             sc_core::wait(time_from_value(p));
 
             if (info.jobmtx.try_lock()) {
+                u64 p = info.progress.exchange(0);
+                sc_core::wait(time_from_value(p));
+
                 while (!info.jobs.empty()) {
                     info.jobs.front()();
                     info.jobs.pop();
@@ -317,35 +282,98 @@ namespace vcml {
     }
 
     void sc_sync(const function<void(void)>& job) {
-        VCML_ERROR_ON(!g_async, "no async thread");
-        g_async->jobs.push(job);
-        g_async->jobvar.wait(g_async->jobmtx);
+        if (thctl_is_sysc_thread()) {
+            job();
+            return;
+        }
+
+        if (g_async != nullptr) {
+            g_async->jobs.push(job);
+            while (!g_async->jobs.empty())
+                g_async->jobvar.wait(g_async->jobmtx);
+            return;
+        }
+
+        VCML_ERROR("no systemc or async thread");
+    }
+
+    bool sc_is_async() {
+        return g_async != nullptr;
+    }
+
+    bool is_thread(sc_process_b* proc) {
+        if (!thctl_is_sysc_thread())
+            return false;
+        if (proc == nullptr)
+            proc = current_process();
+        if (proc == nullptr)
+            return false;
+        return proc->proc_kind() == sc_core::SC_THREAD_PROC_;
+    }
+
+    bool is_method(sc_process_b* proc) {
+        if (!thctl_is_sysc_thread())
+            return false;
+        if (proc == nullptr)
+            proc = current_process();
+        if (proc == nullptr)
+            return false;
+        return proc->proc_kind() == sc_core::SC_METHOD_PROC_;
+    }
+
+    sc_process_b* current_process() {
+        if (g_async)
+            return g_async->process;
+        if (!thctl_is_sysc_thread())
+            return nullptr;
+        return sc_core::sc_get_current_process_b();
+    }
+
+    sc_process_b* current_thread() {
+        sc_process_b* proc = current_process();
+        if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
+            return nullptr;
+        return proc;
+    }
+
+    sc_process_b* current_method() {
+        sc_process_b* proc = current_process();
+        if (proc == nullptr || proc->proc_kind() != sc_core::SC_METHOD_PROC_)
+            return nullptr;
+        return proc;
+    }
+
+    bool sim_running() {
+        sc_simcontext* simc = sc_get_curr_simcontext();
+        return simc->get_status() < sc_core::SC_STOPPED;
     }
 
 }
 
 namespace sc_core {
-std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
-    std::string str; is >> str;
-    str = vcml::to_lower(str);
 
-    char* endptr = nullptr;
-    sc_dt::uint64 value = strtoul(str.c_str(), &endptr, 0);
-    double fval = value;
+    std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
+        std::string str; is >> str;
+        str = vcml::to_lower(str);
 
-    if (strcmp(endptr, "ps") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_PS);
-    else if (strcmp(endptr, "ns") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_NS);
-    else if (strcmp(endptr, "us") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_US);
-    else if (strcmp(endptr, "ms") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_MS);
-    else if (strcmp(endptr, "s") == 0)
-        t = sc_core::sc_time(fval, sc_core::SC_SEC);
-    else // raw value, not part of ieee1666!
-        t = sc_core::sc_time(value, true);
+        char* endptr = nullptr;
+        sc_dt::uint64 value = strtoul(str.c_str(), &endptr, 0);
+        double fval = value;
 
-    return is;
-}
+        if (strcmp(endptr, "ps") == 0)
+            t = sc_core::sc_time(fval, sc_core::SC_PS);
+        else if (strcmp(endptr, "ns") == 0)
+            t = sc_core::sc_time(fval, sc_core::SC_NS);
+        else if (strcmp(endptr, "us") == 0)
+            t = sc_core::sc_time(fval, sc_core::SC_US);
+        else if (strcmp(endptr, "ms") == 0)
+            t = sc_core::sc_time(fval, sc_core::SC_MS);
+        else if (strcmp(endptr, "s") == 0)
+            t = sc_core::sc_time(fval, sc_core::SC_SEC);
+        else // raw value, not part of ieee1666!
+            t = sc_core::sc_time(value, true);
+
+        return is;
+    }
+
 }
