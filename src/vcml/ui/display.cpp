@@ -113,6 +113,8 @@ namespace vcml { namespace ui {
 
     unordered_map<string, function<display*(u32)>> display::types = {
             { "display", display::create },
+            { "null", display::create },
+            { "none", display::create },
 #ifdef HAVE_LIBVNC
             { "vnc", vnc::create },
 #endif
