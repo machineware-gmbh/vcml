@@ -226,17 +226,7 @@ namespace vcml {
 
     void sc_async(function<void(void)> job);
     void sc_progress(const sc_time& delta);
-    void sc_call(function<void(void)> job);
-
-    template <typename LAMBDA>
-    decltype(auto) sc_sync(LAMBDA job) {
-        decltype(job()) result;
-        function<void(void)> fn = [&]() { result = job(); };
-        sc_call(fn);
-        return result;
-    }
-
-
+    void sc_sync(function<void(void)> job);
 
     bool sc_is_async();
 

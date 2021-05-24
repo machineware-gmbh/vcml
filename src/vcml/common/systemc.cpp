@@ -281,7 +281,7 @@ namespace vcml {
         g_async->progress += delta.value();
     }
 
-    void sc_call(function<void(void)> job) {
+    void sc_sync(function<void(void)> job) {
         if (thctl_is_sysc_thread()) {
             job();
             return;
