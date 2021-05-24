@@ -23,6 +23,7 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
+#include "vcml/common/thctl.h"
 
 #include "vcml/sbi.h"
 #include "vcml/dmi_cache.h"

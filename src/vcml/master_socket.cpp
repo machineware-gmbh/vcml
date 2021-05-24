@@ -105,7 +105,9 @@ namespace vcml {
             sc_time t1 = sc_time_stamp();
             bytes = (*this)->transport_dbg(tx);
             sc_time t2 = sc_time_stamp();
-            VCML_ERROR_ON(t1 != t2, "time advanced during debug call");
+
+            if (thctl_is_sysc_thread() && t1 != t2)
+                VCML_ERROR("time advanced during debug call");
         } else {
             if (!is_thread())
                 VCML_ERROR("non-debug TLM access outside SC_THREAD forbidden");
