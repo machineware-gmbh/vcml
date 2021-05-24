@@ -234,7 +234,7 @@ namespace vcml {
 
     __thread async_info* g_async = nullptr;
 
-    void sc_async(const function<void(void)>& job) {
+    void sc_async(function<void(void)> job) {
         async_info info;
         info.done = false;
         info.progress = 0;
@@ -281,7 +281,7 @@ namespace vcml {
         g_async->progress += delta.value();
     }
 
-    void sc_sync(const function<void(void)>& job) {
+    void sc_call(function<void(void)> job) {
         if (thctl_is_sysc_thread()) {
             job();
             return;

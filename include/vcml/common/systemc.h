@@ -224,9 +224,19 @@ namespace vcml {
     void on_each_delta_cycle(function<void(void)> callback);
     void on_each_time_step(function<void(void)> callback);
 
-    void sc_async(const function<void(void)>& job);
+    void sc_async(function<void(void)> job);
     void sc_progress(const sc_time& delta);
-    void sc_sync(const function<void(void)>& job);
+    void sc_call(function<void(void)> job);
+
+    template <typename LAMBDA>
+    decltype(auto) sc_sync(LAMBDA job) {
+        decltype(job()) result;
+        function<void(void)> fn = [&]() { result = job(); };
+        sc_call(fn);
+        return result;
+    }
+
+
 
     bool sc_is_async();
 
