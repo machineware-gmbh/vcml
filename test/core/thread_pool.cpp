@@ -41,7 +41,7 @@ TEST(thread_pool, run) {
 }
 
 TEST(thread_pool, spawn) {
-    const size_t n = 4;
+    const size_t n = std::thread::hardware_concurrency();
     std::atomic<u64> active(0);
     auto job = [&]() {
         active++;
@@ -55,6 +55,6 @@ TEST(thread_pool, spawn) {
     while (thread_pool::instance().jobs())
         usleep(1000);
 
-    EXPECT_EQ(thread_pool::instance().workers(), 4) << "pool did not grow";
+    EXPECT_EQ(thread_pool::instance().workers(), n) << "pool did not grow";
 }
 
