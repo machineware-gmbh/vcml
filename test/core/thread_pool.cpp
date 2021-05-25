@@ -41,13 +41,19 @@ TEST(thread_pool, run) {
 }
 
 TEST(thread_pool, spawn) {
-    auto job = []() { usleep(10000); };
-    size_t n = 4;
+    const size_t n = 4;
+    std::atomic<u64> active(0);
+    auto job = [&]() {
+        active++;
+        while (active != n)
+            usleep(1000);
+    };
+
     for (size_t i = 0; i < n; i++)
         thread_pool::instance().run(job);
 
     while (thread_pool::instance().jobs())
-        usleep(100);
+        usleep(1000);
 
     EXPECT_EQ(thread_pool::instance().workers(), 4) << "pool did not grow";
 }
