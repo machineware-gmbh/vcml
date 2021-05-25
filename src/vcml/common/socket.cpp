@@ -259,22 +259,29 @@ namespace vcml {
         hint.ai_socktype = SOCK_STREAM;
         hint.ai_protocol = IPPROTO_TCP;
 
-        addrinfo* res;
-        int err = getaddrinfo(host.c_str(), pstr.c_str(), &hint, &res);
+        addrinfo* ai;
+        int err = getaddrinfo(host.c_str(), pstr.c_str(), &hint, &ai);
         VCML_REPORT_ON(err, "getaddrinfo failed: %s", gai_strerror(err));
-        if (res->ai_family != AF_INET && res->ai_family != AF_INET6)
-            VCML_ERROR("getaddrinfo: protocol family %d", res->ai_family);
+        if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
+            VCML_ERROR("getaddrinfo: protocol family %d", ai->ai_family);
 
-        m_ipv6 = res->ai_family == AF_INET6;
-        m_conn = ::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        if (m_conn < 0)
-            VCML_REPORT("failed to create socket: %s", strerror(errno));
+        for (; ai != nullptr; ai = ai->ai_next) {
+            m_conn = ::socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+            if (m_conn < 0)
+                VCML_REPORT("failed to create socket: %s", strerror(errno));
 
-        if (::connect(m_conn, res->ai_addr, res->ai_addrlen) < 0)
-            VCML_REPORT("connect failed: %s", strerror(errno));
+            if (::connect(m_conn, ai->ai_addr, ai->ai_addrlen) < 0) {
+                close(m_conn);
+                continue;
+            }
 
-        m_peer = socket_addr(res->ai_addr).peer();
-        freeaddrinfo(res);
+            m_ipv6 = ai->ai_family == AF_INET6;
+            m_peer = socket_addr(ai->ai_addr).peer();
+            break;
+        }
+
+        freeaddrinfo(ai);
+        VCML_REPORT_ON(m_peer.empty(), "connect failed: %s", strerror(errno));
     }
 
     void socket::disconnect() {
