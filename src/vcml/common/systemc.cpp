@@ -18,6 +18,7 @@
 
 #include "vcml/common/systemc.h"
 #include "vcml/common/thctl.h"
+#include "vcml/common/thread_pool.h"
 
 namespace vcml {
 
@@ -243,8 +244,7 @@ namespace vcml {
         if (!is_thread(info.process))
             VCML_ERROR("sc_async outside sc_thread process");
 
-        // ToDo: reuse threads
-        thread t([&](void) -> void {
+        thread_pool::instance().run([&](void) -> void {
             g_async = &info;
             job();
             g_async->done = true;
@@ -256,9 +256,6 @@ namespace vcml {
             sc_core::wait(time_from_value(p));
 
             if (info.jobmtx.try_lock()) {
-                u64 p = info.progress.exchange(0);
-                sc_core::wait(time_from_value(p));
-
                 while (!info.jobs.empty()) {
                     info.jobs.front()();
                     info.jobs.pop();
@@ -272,8 +269,6 @@ namespace vcml {
         u64 p = info.progress.exchange(0);
         if (p > 0)
             sc_core::wait(time_from_value(p));
-
-        t.join();
     }
 
     void sc_progress(const sc_time& delta) {
