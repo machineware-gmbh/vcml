@@ -18,7 +18,6 @@
 
 #include "vcml/common/systemc.h"
 #include "vcml/common/thctl.h"
-#include "vcml/common/thread_pool.h"
 
 namespace vcml {
 
@@ -200,10 +199,10 @@ namespace vcml {
 
     void cycle_helper::cycle(bool delta_cycle) {
         if (delta_cycle) {
-            for (auto func : deltas)
+            for (auto& func : deltas)
                 func();
         } else {
-            for (auto func : tsteps)
+            for (auto& func : tsteps)
                 func();
         }
     }
@@ -224,72 +223,123 @@ namespace vcml {
         g_cycle_helper->tsteps.push_back(callback);
     }
 
-    struct async_info {
-        atomic<bool> done;
-        atomic<u64> progress;
-        mutex jobmtx;
-        condition_variable_any jobvar;
-        queue<function<void(void)>> jobs;
+    __thread struct async_worker* g_async = nullptr;
+
+    struct async_worker
+    {
         sc_process_b* process;
-    };
 
-    __thread async_info* g_async = nullptr;
+        atomic<bool> alive;
+        atomic<bool> working;
+        function<void(void)> task;
 
-    void sc_async(function<void(void)> job) {
-        async_info info;
-        info.done = false;
-        info.progress = 0;
-        info.process = current_process();
+        atomic<u64> progress;
+        atomic<function<void(void)>*> request;
 
-        if (!is_thread(info.process))
-            VCML_ERROR("sc_async outside sc_thread process");
+        mutex mtx;
+        condition_variable_any notify;
+        thread worker;
 
-        thread_pool::instance().run([&](void) -> void {
-            g_async = &info;
-            job();
-            g_async->done = true;
-            g_async = nullptr;
-        });
-
-        while (!info.done) {
-            u64 p = info.progress.exchange(0);
-            sc_core::wait(time_from_value(p));
-
-            if (info.jobmtx.try_lock()) {
-                while (!info.jobs.empty()) {
-                    info.jobs.front()();
-                    info.jobs.pop();
-                }
-
-                info.jobmtx.unlock();
-                info.jobvar.notify_all();
-            }
+        async_worker():
+            process(current_thread()),
+            alive(true),
+            working(false),
+            task(),
+            progress(0),
+            request(nullptr),
+            mtx(),
+            notify(),
+            worker(std::bind(&async_worker::work, this)) {
+            VCML_ERROR_ON(!process, "async worker declared outside SC_THREAD");
+            static size_t count = 0;
+            set_thread_name(worker, mkstr("vcml_async_%zu", count++));
         }
 
-        u64 p = info.progress.exchange(0);
-        if (p > 0)
-            sc_core::wait(time_from_value(p));
+        ~async_worker() {
+            alive = false;
+            notify.notify_all();
+            worker.detach();
+        }
+
+        void work() {
+            g_async = this;
+
+            mtx.lock();
+            while (alive) {
+                while (alive && !working)
+                    notify.wait(mtx);
+
+                if (!alive)
+                    break;
+
+                task();
+                working = false;
+            }
+
+            g_async = nullptr;
+        }
+
+        static void yield() {
+#if defined(__x86_64__)
+            asm volatile ("pause" ::: "memory");
+#elif defined(__aarch64__)
+            asm volatile ("yield" ::: "memory");
+#endif
+        }
+
+        void run_async(function<void(void)>& job) {
+            mtx.lock();
+            task = job;
+            working = true;
+            mtx.unlock();
+            notify.notify_all();
+
+            while (working) {
+                u64 p = progress.exchange(0);
+                sc_core::wait(time_from_value(p));
+
+                if (request) {
+                    (*request)();
+                    request = nullptr;
+                }
+            }
+
+            u64 p = progress.exchange(0);
+            if (p > 0)
+                sc_core::wait(time_from_value(p));
+        }
+
+        void run_sync(function<void(void)> job) {
+            g_async->request = &job;
+            while (g_async->request)
+                yield();
+        }
+
+        static async_worker& lookup() {
+            static unordered_map<sc_process_b*, async_worker> workers;
+            return workers[current_thread()];
+        }
+    };
+
+    void sc_async(function<void(void)> job) {
+        VCML_ERROR_ON(!is_thread(), "sc_async must be called from SC_THREAD");
+        async_worker& worker = async_worker::lookup();
+        worker.run_async(job);
     }
 
     void sc_progress(const sc_time& delta) {
-        VCML_ERROR_ON(!g_async, "no async thread");
+        VCML_ERROR_ON(!g_async, "no async thread to progress");
         g_async->progress += delta.value();
     }
 
     void sc_sync(function<void(void)> job) {
         if (thctl_is_sysc_thread()) {
-            job();
-            return;
+           job();
+        } else if (g_async != nullptr) {
+            g_async->run_sync(job);
+        } else {
+            VCML_ERROR("not on systemc or async thread");
         }
-
-        if (g_async != nullptr) {
-            g_async->jobs.push(job);
-            while (!g_async->jobs.empty())
-                g_async->jobvar.wait(g_async->jobmtx);
-            return;
-        }
-
-        VCML_ERROR("no systemc or async thread");
     }
 
     bool sc_is_async() {
