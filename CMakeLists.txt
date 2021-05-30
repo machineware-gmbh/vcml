@@ -49,7 +49,6 @@ set(sources
     ${src}/vcml/common/bitops.cpp
     ${src}/vcml/common/socket.cpp
     ${src}/vcml/common/systemc.cpp
-    ${src}/vcml/common/thread_pool.cpp
     ${src}/vcml/logging/logger.cpp
     ${src}/vcml/logging/log_file.cpp
     ${src}/vcml/logging/log_stream.cpp
