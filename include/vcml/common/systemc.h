@@ -31,6 +31,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/report.h"
+#include "vcml/common/utils.h"
 
 #if (SYSTEMC_VERSION < 20140408)
 inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
