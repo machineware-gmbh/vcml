@@ -227,7 +227,8 @@ namespace vcml {
 
     struct async_worker
     {
-        sc_process_b* process;
+        const size_t id;
+        sc_process_b* const process;
 
         atomic<bool> alive;
         atomic<bool> working;
@@ -240,8 +241,9 @@ namespace vcml {
         condition_variable_any notify;
         thread worker;
 
-        async_worker():
-            process(current_thread()),
+        async_worker(size_t _id, sc_process_b* _proc):
+            id(_id),
+            process(_proc),
             alive(true),
             working(false),
             task(),
@@ -250,9 +252,8 @@ namespace vcml {
             mtx(),
             notify(),
             worker(std::bind(&async_worker::work, this)) {
-            VCML_ERROR_ON(!process, "async worker declared outside SC_THREAD");
-            static size_t count = 0;
-            set_thread_name(worker, mkstr("vcml_async_%zu", count++));
+            VCML_ERROR_ON(!process, "invalid parent process");
+            set_thread_name(worker, mkstr("vcml_async_%zu", id));
         }
 
         ~async_worker() {
@@ -315,15 +316,27 @@ namespace vcml {
                 yield();
         }
 
-        static async_worker& lookup() {
+        static async_worker& lookup(sc_process_b* thread) {
+            VCML_ERROR_ON(!thread, "invalid thread");
+
             static unordered_map<sc_process_b*, async_worker> workers;
-            return workers[current_thread()];
+
+            auto it = workers.find(thread);
+            if (it != workers.end())
+                return it->second;
+
+            size_t id = workers.size();
+            auto entry = workers.emplace(std::piecewise_construct,
+                                         std::forward_as_tuple(thread),
+                                         std::forward_as_tuple(id, thread));
+            return entry.first->second;
         }
     };
 
     void sc_async(function<void(void)> job) {
-        VCML_ERROR_ON(!is_thread(), "sc_async must be called from SC_THREAD");
-        async_worker& worker = async_worker::lookup();
+        auto thread = current_thread();
+        VCML_ERROR_ON(!thread, "sc_async must be called from SC_THREAD");
+        async_worker& worker = async_worker::lookup(thread);
         worker.run_async(job);
     }
 
