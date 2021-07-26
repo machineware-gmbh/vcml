@@ -1,0 +1,86 @@
+#!/bin/bash -e
+
+url="http://www.accellera.org/images/downloads/standards/systemc/"
+
+prefix=$PWD
+version=2.3.3
+debug=no
+optimize=no
+
+help() {
+    echo "$(basename "$0") [options] -- download and build SystemC"
+    echo "  -h|--help     show this help text"
+    echo "  -p|--prefix   prefix installation path (default: $prefix)"
+    echo "  -v|--version  specify SystemC version  (default: $version)"
+    echo "  -d|--debug    build with debug symbols (default: $debug)"
+    echo "  -o|--optimize build optimized code     (default: $optimize)"
+}
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -p|--prefix) prefix="$2"; shift;;
+        -v|--version) version="$2"; shift;;
+        -d|--debug) debug=yes;;
+        -o|--optimize) optimize=yes;;
+        -h) help; exit 0;;
+        *) echo "Unknown parameter passed: $1"; help; exit 1;;
+    esac
+    shift
+done
+
+case $version in
+    2.3.0a);;
+    2.3.1a);;
+    2.3.2);;
+    2.3.3);;
+    *) echo "Unknown SystemC version: $version"; exit 1;;
+esac
+
+mkdir -p $prefix
+
+prefix=$(realpath $prefix)
+home=$prefix/systemc/$version
+build=$home/BUILD
+src=systemc-$version
+flags="--enable-static --disable-shared"
+
+echo ""
+echo "+----------------------------------------------------------------------"
+echo "| prefix:   " $prefix
+echo "| build:    " $build
+echo "| version:  " $version
+echo "| debug:    " $debug
+echo "| optimize: " $optimize
+echo "+----------------------------------------------------------------------"
+echo ""
+
+if [ $debug == "yes" ]; then
+    flags+=" --enable-debug"
+else
+    flags+=" --disable-debug"
+fi
+
+if [ $optimize == "yes" ]; then
+    flags+=" --enable-optimize"
+else
+    flags+=" --disable-optimize"
+fi
+
+mkdir -p $home && cd $home
+
+if [ ! -d $src ]; then
+    test -f $src.tar.gz || wget $url/$src.tar.gz
+    tar -xzf $src.tar.gz
+fi
+
+if [ ! -d $build ]; then
+    mkdir -p $build && cd $build
+    ../$src/configure --prefix=$home $flags
+fi
+
+make -C $build -j $(nproc)
+make -C $build install
+
+echo ""
+echo "SYSTEMC_HOME $home"
+

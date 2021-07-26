@@ -1,0 +1,54 @@
+name: cmake
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_TYPE: Release
+  TARGET_ARCH: linux64
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+          systemc: [ 2.3.0a, 2.3.1a, 2.3.2, 2.3.3 ]
+
+    name: Build - SystemC ${{matrix.systemc}}
+
+    env:
+      SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
+
+    step:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: Setup Libraries
+      run: sudo apt-get install libelf-dev libsdl2-dev libvncserver-dev
+
+    - name: Cache SystemC
+      id: cache-systemc
+      uses: actions/cache@v2
+      with:
+        path: ${{github.workspace}}/systemc
+        key: cache-systemc-${{matrix.systemc}}-${{runner.os}}
+
+    - name: Download SystemC
+      if: steps.cache-systemc.outputs.cache-hit != 'true'
+      run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
+
+    - name: Configure
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
