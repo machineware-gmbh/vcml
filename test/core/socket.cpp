@@ -43,7 +43,7 @@ TEST(socket, rehost) {
 
 TEST(socket, connect) {
     vcml::socket server(0);
-    vcml::socket client(server.host(), server.port());
+    vcml::socket client("::1", server.port());
 
     server.accept();
     client.send_char('x');
@@ -56,7 +56,7 @@ TEST(socket, connect) {
 
 TEST(socket, connect_v4) {
     vcml::socket server(0);
-    vcml::socket client("localhost", server.port());
+    vcml::socket client("127.0.0.1", server.port());
 
     server.accept();
     EXPECT_TRUE(client.is_ipv4());
