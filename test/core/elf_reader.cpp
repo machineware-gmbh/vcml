@@ -37,12 +37,12 @@ TEST(elf_reader, segments) {
     vector<elf_segment> segments = reader.segments();
     EXPECT_EQ(segments.size(), 2);
 
-    EXPECT_EQ(segments[0].size, 1176);
+    EXPECT_EQ(segments[0].size, 0x498);
     EXPECT_TRUE(segments[0].r);
     EXPECT_FALSE(segments[0].w);
     EXPECT_TRUE(segments[0].x);
 
-    EXPECT_EQ(segments[1].size, 12);
+    EXPECT_EQ(segments[1].size, 0x10);
     EXPECT_TRUE(segments[1].r);
     EXPECT_TRUE(segments[1].w);
     EXPECT_FALSE(segments[1].x);

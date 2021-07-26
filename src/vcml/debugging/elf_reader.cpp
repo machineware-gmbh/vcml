@@ -20,7 +20,7 @@
 #include <fcntl.h>
 #include <libelf.h>
 
-#include <vcml/debugging/elf_reader.h>
+#include "vcml/debugging/elf_reader.h"
 
 namespace vcml { namespace debugging {
 
@@ -98,8 +98,8 @@ namespace vcml { namespace debugging {
                 bool r = hdr->p_flags & PF_R;
                 bool w = hdr->p_flags & PF_W;
                 bool x = hdr->p_flags & PF_X;
-                segments.push_back({hdr->p_vaddr, hdr->p_paddr, hdr->p_filesz,
-                                    hdr->p_memsz, hdr->p_offset, r, w, x});
+                segments.push_back({hdr->p_vaddr, hdr->p_paddr, hdr->p_memsz,
+                                    hdr->p_filesz, hdr->p_offset, r, w, x});
             }
         }
 
