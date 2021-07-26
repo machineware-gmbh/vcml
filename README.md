@@ -8,8 +8,8 @@ features, such as TLM sockets, Interrupt ports, I/O peripherals and registers.
 Based on these design primitives, TLM models for frequently deployed components
 are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
-[![Build Status](https://travis-ci.org/janweinstock/vcml.svg?branch=master)](https://travis-ci.org/janweinstock/vcml)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/18906/badge.svg)](https://scan.coverity.com/projects/janweinstock-vcml)
+[![Build Status](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml/badge.svg)](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml)
+[![Lint Status](https://github.com/janweinstock/vcml/actions/workflows/lint.yml/badge.svg)](https://github.com/janweinstock/vcml/actions/workflows/lint.yml)
 
 ----
 ## Build & Installation
