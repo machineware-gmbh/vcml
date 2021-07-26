@@ -23,7 +23,7 @@ jobs:
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
 
-    step:
+    steps:
     - name: Checkout
       uses: actions/checkout@v2
       with:
