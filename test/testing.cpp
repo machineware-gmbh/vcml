@@ -50,6 +50,7 @@ vector<string> args;
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
+    ::vcml::report::report_segfaults();
     for (int i = 0; i < argc; i++)
         args.push_back(argv[i]);
     return RUN_ALL_TESTS();
