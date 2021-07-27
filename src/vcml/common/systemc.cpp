@@ -257,9 +257,11 @@ namespace vcml {
         }
 
         ~async_worker() {
-            alive = false;
-            notify.notify_all();
-            worker.detach();
+            if (worker.joinable()) {
+                alive = false;
+                notify.notify_all();
+                worker.join();
+            }
         }
 
         void work() {
