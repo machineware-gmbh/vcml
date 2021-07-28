@@ -1,5 +1,25 @@
 #!/bin/bash -e
 
+ ##############################################################################
+ #                                                                            #
+ # Copyright 2021 Jan Henrik Weinstock                                        #
+ #                                                                            #
+ # Licensed under the Apache License, Version 2.0 (the "License");            #
+ # you may not use this file except in compliance with the License.           #
+ # You may obtain a copy of the License at                                    #
+ #                                                                            #
+ #     http://www.apache.org/licenses/LICENSE-2.0                             #
+ #                                                                            #
+ # Unless required by applicable law or agreed to in writing, software        #
+ # distributed under the License is distributed on an "AS IS" BASIS,          #
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+ # See the License for the specific language governing permissions and        #
+ # limitations under the License.                                             #
+ #                                                                            #
+ ##############################################################################
+
+root="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
+
 url="http://www.accellera.org/images/downloads/standards/systemc/"
 
 prefix=$PWD
@@ -66,11 +86,20 @@ else
     flags+=" --disable-optimize"
 fi
 
+if [ -n "$(find /usr/include -name 'valgrind.h' 2>/dev/null)" ]; then
+    export CXXFLAGS="$CXXFLAGS -DHAVE_VALGRIND_H"
+fi
+
 mkdir -p $home && cd $home
 
 if [ ! -d $src ]; then
     test -f $src.tar.gz || wget $url/$src.tar.gz
     tar -xzf $src.tar.gz
+
+    for p in $(ls $root/patches/systemc-$version-*.patch); do
+        echo "applying $p"
+        (cd $src && patch -p1 <$p)
+    done
 fi
 
 if [ ! -d $build ]; then

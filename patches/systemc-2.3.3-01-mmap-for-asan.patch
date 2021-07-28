@@ -1,0 +1,34 @@
+diff -aruN 2.3.3/src/sysc/kernel/sc_cor_qt.cpp 2.3.3-asan-fix/src/sysc/kernel/sc_cor_qt.cpp
+--- 2.3.3/src/sysc/kernel/sc_cor_qt.cpp	2021-07-28 10:35:25.970461533 +0200
++++ 2.3.3-asan-fix/src/sysc/kernel/sc_cor_qt.cpp	2021-07-28 10:46:22.241280298 +0200
+@@ -173,7 +173,8 @@
+     sc_cor_qt* cor = new sc_cor_qt();
+     cor->m_pkg = this;
+     cor->m_stack_size = stack_size;
+-    cor->m_stack = new char[cor->m_stack_size];
++    cor->m_stack = mmap(NULL, cor->m_stack_size, PROT_READ | PROT_WRITE,
++                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+     void* sto = stack_align( cor->m_stack, QUICKTHREADS_STKALIGN,
+                              &cor->m_stack_size );
+     cor->m_sp = QUICKTHREADS_SP(sto, cor->m_stack_size - QUICKTHREADS_STKALIGN);
+diff -aruN 2.3.3/src/sysc/kernel/sc_cor_qt.h 2.3.3-asan-fix/src/sysc/kernel/sc_cor_qt.h
+--- 2.3.3/src/sysc/kernel/sc_cor_qt.h	2021-07-28 10:35:25.970461533 +0200
++++ 2.3.3-asan-fix/src/sysc/kernel/sc_cor_qt.h	2021-07-28 11:00:10.428070067 +0200
+@@ -33,6 +33,8 @@
+ 
+ #if !defined(_WIN32) && !defined(WIN32) && !defined(WIN64)  && !defined(SC_USE_PTHREADS)
+ 
++#include <sys/mman.h> // for munmap
++
+ #include "sysc/kernel/sc_cor.h"
+ #include "sysc/packages/qt/qt.h"
+ 
+@@ -59,7 +61,7 @@
+ 
+     // destructor
+     virtual ~sc_cor_qt()
+-        { delete[] (char*) m_stack; }
++        { munmap(m_stack, m_stack_size); }
+ 
+     // switch stack protection on/off
+     virtual void stack_protect( bool enable );
