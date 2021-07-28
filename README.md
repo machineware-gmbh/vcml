@@ -9,6 +9,7 @@ Based on these design primitives, TLM models for frequently deployed components
 are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
 [![Build Status](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml)
+[![ASAN Status](https://github.com/janweinstock/vcml/actions/workflows/asan.yml/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/asan.yml)
 [![Lint Status](https://github.com/janweinstock/vcml/actions/workflows/lint.yml/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/lint.yml)
 
 ----
