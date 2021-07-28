@@ -1,0 +1,68 @@
+#!/bin/bash -e
+
+ ##############################################################################
+ #                                                                            #
+ # Copyright 2021 Jan Henrik Weinstock                                        #
+ #                                                                            #
+ # Licensed under the Apache License, Version 2.0 (the "License");            #
+ # you may not use this file except in compliance with the License.           #
+ # You may obtain a copy of the License at                                    #
+ #                                                                            #
+ #     http://www.apache.org/licenses/LICENSE-2.0                             #
+ #                                                                            #
+ # Unless required by applicable law or agreed to in writing, software        #
+ # distributed under the License is distributed on an "AS IS" BASIS,          #
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+ # See the License for the specific language governing permissions and        #
+ # limitations under the License.                                             #
+ #                                                                            #
+ ##############################################################################
+
+root="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
+configs=$1
+systemc=2.3.3
+
+[ -z "$configs" ] && configs="DEBUG RELEASE ASAN"
+
+echo "+----------------------------------------------------------------------"
+echo "| VCML Setup"
+echo "|======================================================================"
+echo "| root:     " $root
+echo "| configs:  " $configs
+if [ -d "$SYSTEMC_HOME" ]; then
+    echo "| systemc:  " $SYSTEMC_HOME
+else
+    echo "| systemc:  " $systemc
+fi
+echo "+----------------------------------------------------------------------"
+
+for config in $configs; do (
+    prefix=$(pwd)/BUILD/$config
+    build=$prefix/.CMAKE
+    mkdir -p $build
+
+    if [ $config == "ASAN" ]; then
+        export CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+        export LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+    fi
+
+    if [ ! -d "$SYSTEMC_HOME" ]; then
+        if [ "$config" == "RELEASE" ]; then
+            $root/utils/setup-systemc -v $systemc -p $build --optimize
+        else
+            $root/utils/setup-systemc -v $systemc -p $build --debug
+        fi
+
+        export SYSTEMC_HOME=$build/systemc/$systemc
+        export TARGET_ARCH=linux64
+        cp -r $SYSTEMC_HOME/include $prefix
+        cp -r $SYSTEMC_HOME/lib-$TARGET_ARCH $prefix
+        rm -rf $prefix/lib-$TARGET_ARCH/pkgconfig
+        rm -rf $prefix/lib-$TARGET_ARCH/libsystemc.la
+    fi
+
+    cmake -B $build -G Ninja -DCMAKE_BUILD_TYPE=$type \
+          -DCMAKE_INSTALL_PREFIX=$prefix -DVCML_BUILD_TESTS=ON $root
+    cmake --build $build --config $config -j $(nproc)
+    cmake --build $build --config $config -j $(nproc) -- install
+) done
