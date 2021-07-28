@@ -170,7 +170,7 @@ else()
     message(STATUS "Building without VNC support")
 endif()
 
-install(TARGETS vcml DESTINATION lib)
+install(TARGETS vcml DESTINATION lib-$ENV{TARGET_ARCH})
 install(DIRECTORY ${inc}/ DESTINATION include)
 install(DIRECTORY ${gen}/ DESTINATION include)
 
