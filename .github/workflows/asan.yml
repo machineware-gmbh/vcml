@@ -9,6 +9,7 @@ on:
 env:
   BUILD_TYPE: Debug
   TARGET_ARCH: linux64
+  ASAN_OPTIONS: verbosity=1
   CXXFLAGS: -fsanitize=address -fno-omit-frame-pointer
   LDFLAGS: -fsanitize=address -fno-omit-frame-pointer
 
@@ -57,5 +58,5 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+      run: ctest -C ${{env.BUILD_TYPE}} --verbose
 
