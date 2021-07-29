@@ -28,7 +28,7 @@ find_library(LIBZ_LIBRARIES NAMES z "libz.a"
 list(APPEND LIBELF_LIBRARIES ${LIBZ_LIBRARIES})
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBELF DEFAULT_MSG
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibELF DEFAULT_MSG
                                   LIBELF_LIBRARIES
                                   LIBELF_INCLUDE_DIRS)
 

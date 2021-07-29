@@ -23,7 +23,7 @@ find_library(LIBVNC_LIBRARIES NAMES "libvncserver.so"
              HINTS $ENV{LIBVNC_HOME}/lib /usr/lib /lib)
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBVNC DEFAULT_MSG
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibVNC DEFAULT_MSG
                                   LIBVNC_LIBRARIES
                                   LIBVNC_INCLUDE_DIRS)
 
