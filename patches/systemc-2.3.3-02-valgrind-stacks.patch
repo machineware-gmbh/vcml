@@ -1,7 +1,7 @@
 diff -aruN 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.cpp 2.3.3-02-valgrind/src/sysc/kernel/sc_cor_qt.cpp
---- 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.cpp	2021-07-28 10:46:22.241280298 +0200
-+++ 2.3.3-02-valgrind/src/sysc/kernel/sc_cor_qt.cpp	2021-07-28 11:17:28.398980253 +0200
-@@ -175,6 +175,9 @@
+--- 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.cpp	2021-07-29 19:54:05.265259317 +0200
++++ 2.3.3-02-valgrind/src/sysc/kernel/sc_cor_qt.cpp	2021-07-29 19:55:54.101255480 +0200
+@@ -196,6 +196,9 @@
      cor->m_stack_size = stack_size;
      cor->m_stack = mmap(NULL, cor->m_stack_size, PROT_READ | PROT_WRITE,
                          MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -12,8 +12,8 @@ diff -aruN 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.cpp 2.3.3-02-valgrind/src
                               &cor->m_stack_size );
      cor->m_sp = QUICKTHREADS_SP(sto, cor->m_stack_size - QUICKTHREADS_STKALIGN);
 diff -aruN 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.h 2.3.3-02-valgrind/src/sysc/kernel/sc_cor_qt.h
---- 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.h	2021-07-28 11:00:10.428070067 +0200
-+++ 2.3.3-02-valgrind/src/sysc/kernel/sc_cor_qt.h	2021-07-28 11:51:30.424547262 +0200
+--- 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.h	2021-07-29 19:55:16.669260145 +0200
++++ 2.3.3-02-valgrind/src/sysc/kernel/sc_cor_qt.h	2021-07-29 19:55:23.953259215 +0200
 @@ -35,6 +35,10 @@
  
  #include <sys/mman.h> // for munmap
@@ -25,28 +25,24 @@ diff -aruN 2.3.3-01-asan-fix/src/sysc/kernel/sc_cor_qt.h 2.3.3-02-valgrind/src/s
  #include "sysc/kernel/sc_cor.h"
  #include "sysc/packages/qt/qt.h"
  
-@@ -57,11 +61,18 @@
+@@ -57,10 +61,16 @@
      // constructor
      sc_cor_qt()
  	: m_stack_size( 0 ), m_stack( 0 ), m_sp( 0 ), m_pkg( 0 )
 +#ifdef HAVE_VALGRIND_H
-+	, m_vgid( 0 )
++        , m_vgid( 0 )
 +#endif
  	{}
  
      // destructor
--    virtual ~sc_cor_qt()
--        { munmap(m_stack, m_stack_size); }
-+    virtual ~sc_cor_qt() {
+     virtual ~sc_cor_qt() {
 +#ifdef HAVE_VALGRIND_H
 +        VALGRIND_STACK_DEREGISTER(m_vgid);
 +#endif
-+        munmap(m_stack, m_stack_size);
-+    }
- 
-     // switch stack protection on/off
-     virtual void stack_protect( bool enable );
-@@ -74,6 +85,10 @@
+         if (m_stack)
+             munmap(m_stack, m_stack_size);
+     }
+@@ -76,6 +86,10 @@
  
      sc_cor_pkg_qt* m_pkg;         // the creating coroutine package
  
