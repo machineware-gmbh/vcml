@@ -44,6 +44,7 @@ for config in $configs; do (
     if [ $config == "ASAN" ]; then
         export CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer"
         export LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+        config="DEBUG"
     fi
 
     if [ ! -d "$SYSTEMC_HOME" ]; then
@@ -61,7 +62,7 @@ for config in $configs; do (
         rm -rf $prefix/lib-$TARGET_ARCH/libsystemc.la
     fi
 
-    cmake -B $build -G Ninja -DCMAKE_BUILD_TYPE=$type \
+    cmake -B $build -DCMAKE_BUILD_TYPE=$config \
           -DCMAKE_INSTALL_PREFIX=$prefix -DVCML_BUILD_TESTS=ON $root
     cmake --build $build --config $config -j $(nproc)
     cmake --build $build --config $config -j $(nproc) -- install
