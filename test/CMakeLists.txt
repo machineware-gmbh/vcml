@@ -16,10 +16,13 @@
  #                                                                            #
  ##############################################################################
 
+if (NOT TARGET gtest OR NOT TARGET gmock)
+    add_subdirectory(googletest EXCLUDE_FROM_ALL)
+endif()
+
 add_library(testing testing.cpp)
 target_include_directories(testing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(testing vcml gtest gmock)
 
-add_subdirectory(googletest EXCLUDE_FROM_ALL)
 add_subdirectory(core)
 add_subdirectory(models)
