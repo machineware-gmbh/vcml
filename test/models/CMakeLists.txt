@@ -19,7 +19,7 @@
 macro(model_test test)
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} testing)
-    add_test(NAME models/${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME models/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
     set_tests_properties(models/${test} PROPERTIES TIMEOUT 4)
 endmacro()
 

@@ -48,6 +48,23 @@ void test_base::before_end_of_elaboration() {
 
 vector<string> args;
 
+string get_resource_path(const string& name) {
+    if (args.size() < 2) {
+        ADD_FAILURE() << "test resource path information not provided";
+        std::abort();
+    }
+
+    string res_dir = args[1];
+    if (!file_exists(res_dir)) {
+        ADD_FAILURE() << "test resource path does not exist: " << res_dir;
+        std::abort();
+    }
+
+    string resource = args[1] + "/" + name;
+    EXPECT_TRUE(file_exists(resource)) << "resource " << name << " not found";
+    return resource;
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::vcml::report::report_segfaults();

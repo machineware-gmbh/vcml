@@ -173,7 +173,7 @@ TEST(symtab, removing) {
 
 TEST(symtab, load_elf) {
     symtab syms;
-    syms.load_elf(args[1] + "/elf.elf");
+    syms.load_elf(get_resource_path("elf.elf"));
 
     const symbol* global_a = syms.find_symbol("global_a");
     ASSERT_TRUE(global_a != nullptr);
@@ -196,7 +196,7 @@ TEST(symtab, load_elf) {
 
 TEST(symtab, find_with_offset) {
     symtab syms;
-    syms.load_elf(args[1] + "/elf.elf");
+    syms.load_elf(get_resource_path("elf.elf"));
 
     ASSERT_FALSE(syms.empty());
 

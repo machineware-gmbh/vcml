@@ -20,7 +20,7 @@ macro(core_test test)
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} testing)
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    add_test(NAME core/${test} COMMAND ${test} ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME core/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
     set_tests_properties(core/${test} PROPERTIES TIMEOUT 4)
 endmacro()
 

@@ -56,4 +56,6 @@ protected:
 
 extern vector<string> args;
 
+string get_resource_path(const string& name);
+
 #endif

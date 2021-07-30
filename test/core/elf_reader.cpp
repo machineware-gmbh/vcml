@@ -21,7 +21,7 @@
 using namespace vcml::debugging;
 
 TEST(elf_reader, init) {
-    elf_reader reader(args[1] + "/elf.elf");
+    elf_reader reader(get_resource_path("elf.elf"));
 
     EXPECT_TRUE(reader.is_little_endian());
     EXPECT_EQ(reader.entry(), 0x4001a0);
@@ -30,7 +30,7 @@ TEST(elf_reader, init) {
 }
 
 TEST(elf_reader, segments) {
-    elf_reader reader(args[1] + "/elf.elf");
+    elf_reader reader(get_resource_path("elf.elf"));
 
     EXPECT_TRUE(reader.is_little_endian());
 
