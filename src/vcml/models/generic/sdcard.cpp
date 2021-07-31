@@ -447,10 +447,10 @@ namespace vcml { namespace generic {
             capacity = imgsz;
             log_debug("capacity set to image size %zu bytes", imgsz);
         } else if (capacity > imgsz) {
-            log_warning("capacity too big for image, truncating");
+            log_warn("capacity too big for image, truncating");
             capacity = imgsz & ~0x3ff; // round down to kB boundary
         } else if (capacity < imgsz) {
-            log_warning("image larger than capacity, truncating");
+            log_warn("image larger than capacity, truncating");
         }
     }
 

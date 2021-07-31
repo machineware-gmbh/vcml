@@ -162,14 +162,14 @@ namespace vcml { namespace generic {
 
             // check if target gave more DMI space than it has address space
             if (s < dest.addr.start) {
-                log_warning("truncating DMI start from 0x%016lx to 0x%016lx",
-                            s, dest.addr.start);
+                log_warn("truncating DMI start from 0x%016lx to 0x%016lx",
+                         s, dest.addr.start);
                 s = dest.addr.start;
             }
 
             if (e > dest.addr.end) {
-                log_warning("truncating DMI end from 0x%016lx to 0x%016lx",
-                            e, dest.addr.end);
+                log_warn("truncating DMI end from 0x%016lx to 0x%016lx",
+                         e, dest.addr.end);
                 e = dest.addr.end;
             }
 

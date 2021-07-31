@@ -90,7 +90,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::read_ISENABLER_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ISER) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ISER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -101,7 +101,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::write_ISENABLER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ISER) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ISER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -152,7 +152,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::read_ICENABLER_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICER) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ICER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -163,7 +163,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::write_ICENABLER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICER) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ICER) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -204,7 +204,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::read_ISPENDR_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ISPR) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ISPR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -214,7 +214,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::write_ISPENDR_PPI(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ISPR) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ISPR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -248,7 +248,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::read_ICPENDR_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -258,7 +258,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::write_ICPENDR_PPI(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -292,7 +292,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::read_ISACTIVER_PPI() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ISACTIVER0) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ISACTIVER0) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -320,7 +320,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::write_ICACTIVER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(ICAR) invalid cpu %d, assuming 0", cpu);
+            log_warn("(ICAR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -346,7 +346,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::read_ITARGETS_PPI(unsigned int idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(INTT) invalid cpu %d, assuming 0", cpu);
+            log_warn("(INTT) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -393,7 +393,7 @@ namespace vcml { namespace arm {
     u32 gic400::distif::write_SGIR(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(SCTL) invalid cpu %d, assuming 0", cpu);
+            log_warn("(SCTL) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -415,7 +415,7 @@ namespace vcml { namespace arm {
             targets = 1 << cpu;
             break;
         default:
-            log_warning("bad SGI target filter");
+            log_warn("bad SGI target filter");
             break;
         }
 
@@ -435,7 +435,7 @@ namespace vcml { namespace arm {
     u8 gic400::distif::write_SPENDSGIR(u8 value, unsigned int idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(SGIS) invalid cpu %d, assuming 0", cpu);
+            log_warn("(SGIS) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -453,7 +453,7 @@ namespace vcml { namespace arm {
     u8 gic400::distif::write_CPENDSGIR(u8 value, unsigned int idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(SGIC) invalid cpu %d, assuming 0", cpu);
+            log_warn("(SGIC) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -683,7 +683,7 @@ namespace vcml { namespace arm {
     u32 gic400::cpuif::write_EOIR(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(EOIR) invalid cpu %d, assuming 0", cpu);
+            log_warn("(EOIR) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -692,7 +692,7 @@ namespace vcml { namespace arm {
 
         unsigned int irq = val & 0x3FF; // interrupt id stored in bits [9..0]
         if (irq >= m_parent->get_irq_num()) {
-            log_warning("(EOI) invalid irq %d ignored", irq);
+            log_warn("(EOI) invalid irq %d ignored", irq);
             return 0;
         }
 
@@ -720,7 +720,7 @@ namespace vcml { namespace arm {
     u32 gic400::cpuif::read_IAR() {
         int cpu = current_cpu();
         if (cpu < 0) {
-            log_warning("(IACK) invalid cpu %d, assuming 0", cpu);
+            log_warn("(IACK) invalid cpu %d, assuming 0", cpu);
             cpu = 0;
         }
 
@@ -1049,7 +1049,7 @@ namespace vcml { namespace arm {
         u32 irq = val & 0x1FF;
 
         if (irq >= m_parent->get_irq_num()) {
-            log_warning("(EOI) invalid irq %d ignored", irq);
+            log_warn("(EOI) invalid irq %d ignored", irq);
             return 0;
         }
 

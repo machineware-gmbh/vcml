@@ -139,7 +139,7 @@ namespace vcml { namespace generic {
         bool valid_binding = true;
         for (auto port : GPIO) {
             if (port.first > 31) {
-                log_warning("GPIO index out of bounds: %u", port.first);
+                log_warn("GPIO index out of bounds: %u", port.first);
                 valid_binding = false;
             }
         }

@@ -89,7 +89,7 @@ namespace vcml { namespace opencores {
 
     u32 ocspi::write_CONTROL(u32 val) {
         if (val >= 4) {
-            log_warning("invalid mode specified SPI%u", val);
+            log_warn("invalid mode specified SPI%u", val);
             val = 0;
         }
 
