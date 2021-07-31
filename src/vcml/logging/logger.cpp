@@ -26,6 +26,7 @@ namespace vcml {
     bool logger::print_time_stamp = true;
     bool logger::print_delta_cycle = false;
     bool logger::print_sender = true;
+    bool logger::print_source = false;
     bool logger::print_backtrace = true;
 
     size_t logger::trace_name_length = 20;
@@ -64,15 +65,7 @@ namespace vcml {
     }
 
     ostream& operator << (ostream& os, const logmsg& msg) {
-        stringstream prefix;
-        logger::print_prefix(prefix, msg);
-
-        if (!msg.lines.empty()) {
-            for (size_t i = 0; i < msg.lines.size() - 1; i++)
-                os << prefix.str() << " " << msg.lines[i] << std::endl;
-            os << prefix.str() << " " << msg.lines.back();
-        }
-
+        logger::print_logmsg(os, msg);
         return os;
     }
 
@@ -160,10 +153,13 @@ namespace vcml {
                 ss << "#" << i << ": " << bt[i] << std::endl;
         }
 
-        ss << rep.message() << std::endl;
-        ss << "(from " << rep.file() << ":" << rep.line() << ")";
+        ss << rep.message();
 
+        // always force printing of source locations of reports
+        bool print = print_source;
+        print_source = true;
         publish(LOG_ERROR, rep.origin(), ss.str(), rep.file(), rep.line());
+        print_source = print;
     }
 
     void logger::trace(const string& sender, const string& trace_message,
@@ -218,6 +214,28 @@ namespace vcml {
 
         if (print_sender && !msg.sender.empty())
             os << " " << msg.sender << ":";
+    }
+
+    void logger::print_logmsg(ostream& os, const logmsg& msg) {
+        stringstream prefix;
+        logger::print_prefix(prefix, msg);
+
+        if (!msg.lines.empty()) {
+            for (size_t i = 0; i < msg.lines.size() - 1; i++)
+                os << prefix.str() << " " << msg.lines[i] << std::endl;
+            os << prefix.str() << " " << msg.lines.back();
+        }
+
+        if (print_source) {
+            os << " (from ";
+            if (msg.source.file && strlen(msg.source.file))
+                os << msg.source.file;
+            else
+                os << "<unknown>";
+            if (msg.source.line > -1)
+                os << ":" << msg.source.line;
+            os << ")";
+        }
     }
 
 }

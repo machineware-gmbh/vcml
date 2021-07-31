@@ -122,9 +122,11 @@ namespace vcml {
         static bool print_time_stamp;
         static bool print_delta_cycle;
         static bool print_sender;
+        static bool print_source;
         static bool print_backtrace;
 
         static void print_prefix(ostream& os, const logmsg& msg);
+        static void print_logmsg(ostream& os, const logmsg& msg);
 
         static size_t trace_name_length;
 
