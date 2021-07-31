@@ -82,7 +82,7 @@ namespace vcml {
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
         m_host->hierarchy_push();
-        string nm = concat(name(), "_adapter");
+        string nm = concat(basename(), "_adapter");
         adapter_type* adapter = new adapter_type(nm.c_str());
         m_host->hierarchy_pop();
 
@@ -102,7 +102,7 @@ namespace vcml {
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
         m_host->hierarchy_push();
-        string nm = concat(name(), "_adapter");
+        string nm = concat(basename(), "_adapter");
         adapter_type* adapter = new adapter_type(nm.c_str());
         m_host->hierarchy_pop();
 
