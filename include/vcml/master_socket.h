@@ -26,6 +26,7 @@
 #include "vcml/common/thctl.h"
 
 #include "vcml/sbi.h"
+#include "vcml/stubs.h"
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 #include "vcml/adapters.h"
@@ -42,6 +43,7 @@ namespace vcml {
 
         dmi_cache m_dmi_cache;
 
+        target_stub* m_stub;
         sc_module* m_adapter;
         component* m_host;
 
@@ -107,6 +109,8 @@ namespace vcml {
 
         template <unsigned int WIDTH>
         void bind(tlm_target_socket<WIDTH>& other);
+
+        void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
 
         void trace_fw(const tlm_generic_payload& tx, const sc_time& dt) const;
         void trace_bw(const tlm_generic_payload& tx, const sc_time& dt) const;

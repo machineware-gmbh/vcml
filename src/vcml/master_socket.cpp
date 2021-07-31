@@ -32,6 +32,7 @@ namespace vcml {
         m_txd(),
         m_sbi(SBI_NONE),
         m_dmi_cache(),
+        m_stub(nullptr),
         m_adapter(nullptr),
         m_host(host) {
         if (m_host == nullptr) {
@@ -50,6 +51,8 @@ namespace vcml {
     master_socket::~master_socket() {
         if (m_adapter != nullptr)
             delete m_adapter;
+        if (m_stub != nullptr)
+            delete m_stub;
     }
 
     u8* master_socket::lookup_dmi_ptr(const range& addr, vcml_access acs) {
@@ -212,6 +215,15 @@ namespace vcml {
         if (bytes != nullptr)
             *bytes = size;
         return rs;
+    }
+
+    void master_socket::stub(tlm_response_status resp) {
+        VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
+        m_host->hierarchy_push();
+        string nm = concat(basename(), "_stub");
+        m_stub = new target_stub(nm.c_str(), resp);
+        m_host->hierarchy_pop();
+        base_type::bind(m_stub->IN);
     }
 
 }

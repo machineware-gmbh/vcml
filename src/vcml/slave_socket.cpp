@@ -75,6 +75,7 @@ namespace vcml {
         m_free_ev(concat(nm, "_free").c_str()),
         m_dmi_cache(),
         m_exmon(),
+        m_stub(nullptr),
         m_adapter(nullptr),
         m_host(host) {
         if (m_host == nullptr) {
@@ -91,6 +92,8 @@ namespace vcml {
     slave_socket::~slave_socket() {
         if (m_adapter != nullptr)
             delete m_adapter;
+        if (m_stub != nullptr)
+            delete m_stub;
     }
 
     void slave_socket::unmap_dmi(u64 start, u64 end) {
@@ -115,6 +118,15 @@ namespace vcml {
             (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
                                                dmi.get_end_address());
         }
+    }
+
+    void slave_socket::stub() {
+        VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
+        m_host->hierarchy_push();
+        string nm = concat(basename(), "_stub");
+        m_stub = new initiator_stub(nm.c_str());
+        m_host->hierarchy_pop();
+        m_stub->OUT.bind(*this);
     }
 
 }

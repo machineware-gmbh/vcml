@@ -29,19 +29,21 @@
 #include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 #include "vcml/adapters.h"
+#include "vcml/stubs.h"
 
 namespace vcml {
 
     class slave_socket: public simple_target_socket<slave_socket, 64>
     {
     private:
-        int        m_curr;
-        int        m_next;
-        sc_event   m_free_ev;
-        dmi_cache  m_dmi_cache;
-        exmon      m_exmon;
-        sc_module* m_adapter;
-        component* m_host;
+        int             m_curr;
+        int             m_next;
+        sc_event        m_free_ev;
+        dmi_cache       m_dmi_cache;
+        exmon           m_exmon;
+        initiator_stub* m_stub;
+        sc_module*      m_adapter;
+        component*      m_host;
 
         void b_transport(tlm_generic_payload& tx, sc_time& dt);
         unsigned int transport_dbg(tlm_generic_payload& tx);
@@ -67,6 +69,8 @@ namespace vcml {
 
         template <unsigned int WIDTH>
         void bind(tlm_target_socket<WIDTH>& other);
+
+        void stub();
 
         void trace_fw(const tlm_generic_payload& tx, const sc_time& dt) const;
         void trace_bw(const tlm_generic_payload& tx, const sc_time& dt) const;
