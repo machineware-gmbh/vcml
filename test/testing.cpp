@@ -46,6 +46,30 @@ void test_base::before_end_of_elaboration() {
         RESET.stub();
 }
 
+static void systemc_report_handler(const sc_report& r, const sc_actions& a) {
+    // To disable a report manually during testing, use:
+    //     sc_report_handler::set_actions(SC_ID_<name>, SC_DO_NOTHING);
+    if (a == SC_DO_NOTHING)
+        return;
+
+    switch (r.get_severity()) {
+    case SC_INFO:
+        break;
+
+    case SC_FATAL:
+    case SC_ERROR:
+    case SC_WARNING:
+    default:
+        // pass on any report we got from SystemC (warning, error, fatal)
+        // to googletest; this catches SystemC things we do not want, like
+        // sc_stop being called twice, duplicate module names, etc.
+        ADD_FAILURE() << r.what();
+        break;
+    }
+
+    ::sc_core::sc_report_handler::default_handler(r, a);
+}
+
 vector<string> args;
 
 string get_resource_path(const string& name) {
@@ -65,15 +89,16 @@ string get_resource_path(const string& name) {
     return resource;
 }
 
-int main(int argc, char** argv) {
+extern "C" int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::vcml::report::report_segfaults();
+    ::sc_core::sc_report_handler::set_handler(systemc_report_handler);
     for (int i = 0; i < argc; i++)
         args.push_back(argv[i]);
-    return RUN_ALL_TESTS();
+
+    return sc_core::sc_elab_and_sim(argc, argv);
 }
 
-int sc_main(int argc, char** argv) {
-    EXPECT_TRUE(false) << "sc_main called";
-    return EXIT_FAILURE;
+extern "C" int sc_main(int argc, char** argv) {
+    return RUN_ALL_TESTS();
 }
