@@ -21,9 +21,12 @@
 class suspender_test: public test_base, debugging::suspender
 {
 private:
+    std::thread t0;
+    std::thread t1;
+
     void test_resume() {
         done = false;
-        std::thread t([&]() -> void {
+        t0 = std::thread([&]() -> void {
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
@@ -45,13 +48,10 @@ private:
 
         while (!done)
             wait(1, SC_MS);
-
-        t.join();
     }
 
     void test_forced_resume() {
-        done = false;
-        std::thread t([&]() -> void {
+        t1 = std::thread([&]() -> void {
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
@@ -61,20 +61,16 @@ private:
             EXPECT_EQ(debugging::suspender::current(),
                       (debugging::suspender*)this);
 
-            done = true;
-
+            // schedule an sc_stop on main thread
             debugging::suspender::quit();
 
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
         });
 
-        while (!done)
+        // cannot leave this loop, except with suspender::quit() from t1!
+        while (true)
             wait(1, SC_MS);
-
-        EXPECT_TRUE(done);
-
-        t.join();
     }
 
 public:
@@ -84,6 +80,13 @@ public:
         test_base(nm),
         debugging::suspender("suspender"),
         done(false) {
+    }
+
+    virtual ~suspender_test() {
+        if (t0.joinable())
+            t0.join();
+        if (t1.joinable())
+            t1.join();
     }
 
     virtual void run_test() override {
