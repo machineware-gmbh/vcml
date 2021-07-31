@@ -87,7 +87,7 @@ namespace vcml { namespace generic {
         VCML_ERROR_ON(align >= 64u, "requested alignment too big");
 
         const int perms = PROT_READ | PROT_WRITE;
-        const int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+        const int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
 
         std::uintptr_t extra = (1ull << align) - 1;
         m_base = mmap(0, size + extra, perms, flags, -1, 0);
