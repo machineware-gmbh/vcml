@@ -26,7 +26,8 @@ using namespace ::testing;
 class mock_peripheral: public vcml::peripheral
 {
 public:
-    mock_peripheral(const sc_core::sc_module_name& nm = "mock_peripheral"):
+    mock_peripheral(const sc_core::sc_module_name& nm =
+            sc_core::sc_gen_unique_name("mock_peripheral")):
         vcml::peripheral(nm, vcml::ENDIAN_LITTLE, 1, 10) {
         CLOCK.stub(100 * vcml::MHz);
         handle_clock_update(0, CLOCK.read());
