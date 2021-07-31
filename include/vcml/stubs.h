@@ -29,7 +29,7 @@ namespace vcml {
                           protected tlm::tlm_bw_transport_if<>
     {
     public:
-        tlm_initiator_socket<> OUT;
+        tlm_initiator_socket<64> OUT;
 
         initiator_stub() = delete;
         initiator_stub(const initiator_stub&) = delete;
@@ -55,7 +55,7 @@ namespace vcml {
         tlm_response_status m_response;
 
     public:
-        tlm_target_socket<> IN;
+        tlm_target_socket<64> IN;
 
         target_stub() = delete;
         target_stub(const target_stub&) = delete;
