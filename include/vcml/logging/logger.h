@@ -41,14 +41,37 @@ namespace vcml {
     ostream& operator << (ostream& os, const log_level& lvl);
     istream& operator >> (istream& is, log_level& lvl);
 
+    struct logmsg {
+        log_level level;
+        sc_time   time;
+        u64       cycle;
+        string    sender;
+
+        struct {
+            const char* file;
+            int         line;
+
+        } source;
+
+        vector<string> lines;
+    };
+
+    ostream& operator << (ostream& os, const logmsg& msg);
+
+    typedef function<bool(const logmsg& msg)> log_filter;
+
     class logger
     {
     private:
         log_level m_min;
         log_level m_max;
 
+        vector<log_filter> m_filters;
+
         void register_logger();
         void unregister_logger();
+
+        bool check_filters(const logmsg& msg) const;
 
         // disabled
         logger(const logger&);
@@ -56,36 +79,52 @@ namespace vcml {
 
         static vector<logger*> loggers[NUM_LOG_LEVELS];
 
-        static void print_prefix(ostream& os, log_level lvl, const sc_time& t);
-        static void print_trace(bool forward, const string& org,
-                                const tlm_generic_payload& tx,
-                                const sc_time& dt);
-
     public:
         inline void set_level(log_level max);
         void set_level(log_level min, log_level max);
+
+        void filter(log_filter filter);
+        void filter_time(const sc_time& t0, const sc_time& t1);
+        void filter_cycle(u64 start, u64 end);
+        void filter_source(const string& file, int line = -1);
 
         logger();
         logger(log_level max);
         logger(log_level min, log_level max);
         virtual ~logger();
 
-        virtual void log_line(log_level lvl, const char* line) = 0;
+        virtual void write_log(const logmsg& msg) = 0;
 
         static bool would_log(log_level lvl);
 
-        static void log(log_level lvl, const string& org, const string& msg);
+        static void publish(log_level level,
+                            const string& sender,
+                            const string& message,
+                            const char* file = nullptr,
+                            int line = -1);
+
+        static void publish(const logmsg& msg);
+
         static void log(const report& rep);
 
-        static void trace_fw(const string& org, const tlm_generic_payload& tx,
-                             const sc_time& dt);
-        static void trace_bw(const string& org, const tlm_generic_payload& tx,
-                             const sc_time& dt);
+        static void trace(const string& sender,
+                          const string& trace_message,
+                          const sc_time& dt = SC_ZERO_TIME);
+
+        static void trace_fw(const string& sender,
+                             const tlm_generic_payload& tx,
+                             const sc_time& dt = SC_ZERO_TIME);
+
+        static void trace_bw(const string& sender,
+                             const tlm_generic_payload& tx,
+                             const sc_time& dt = SC_ZERO_TIME);
 
         static bool print_time_stamp;
         static bool print_delta_cycle;
-        static bool print_origin;
+        static bool print_sender;
         static bool print_backtrace;
+
+        static void print_prefix(ostream& os, const logmsg& msg);
 
         static size_t trace_name_length;
 
@@ -101,35 +140,75 @@ namespace vcml {
         return !loggers[lvl].empty();
     }
 
-#define VCML_DEFINE_LOG(name, level)                             \
-    void name(const char* format, ...) VCML_DECL_PRINTF(1, 2);   \
-    inline void name(const char* format, ...) {                  \
-        if (!logger::would_log(level))                           \
-            return;                                              \
-        va_list args;                                            \
-        va_start(args, format);                                  \
-        logger::log(level, call_origin(), vmkstr(format, args)); \
-        va_end(args);                                            \
+    inline void logger::filter(log_filter filter) {
+        m_filters.push_back(filter);
     }
 
-    VCML_DEFINE_LOG(log_error, LOG_ERROR)
-    VCML_DEFINE_LOG(log_warn, LOG_WARN)
-    VCML_DEFINE_LOG(log_warning, LOG_WARN)
-    VCML_DEFINE_LOG(log_info, LOG_INFO)
-    VCML_DEFINE_LOG(log_debug, LOG_DEBUG)
-#undef VCML_DEFINE_LOG
-
-    inline void trace(const tlm_generic_payload& tx) {
-        if (!logger::would_log(LOG_TRACE))
-            return;
-        logger::log(LOG_TRACE, call_origin(), tlm_transaction_to_str(tx));
+    inline void logger::filter_time(const sc_time& t0, const sc_time& t1) {
+        filter([t0, t1](const logmsg& msg) -> bool {
+            return msg.time >= t0 && msg.time < t1;
+        });
     }
 
-    inline void trace_errors(const tlm_generic_payload& tx) {
-        if (!logger::would_log(LOG_TRACE) || tx.is_response_ok())
-            return;
-        logger::log(LOG_TRACE, call_origin(), tlm_transaction_to_str(tx));
+    inline void logger::filter_cycle(u64 start, u64 end) {
+        filter([start, end](const logmsg& msg) -> bool {
+            return msg.cycle >= start && msg.cycle < end;
+        });
     }
+
+    inline void logger::filter_source(const string& file, int line) {
+        filter([file, line](const logmsg& msg) -> bool {
+            if (!ends_with(msg.source.file, file))
+                return false;
+            if (line != -1 && msg.source.line != line)
+                return false;
+            return true;
+        });
+    }
+
+    // VCML_OMIT_LOGGING_SOURCE: define this to remove the log_XXX macros and
+    // replace them instead with first-grade functions. However, this will also
+    // remove log message source information.
+#ifndef VCML_OMIT_LOGGING_SOURCE
+    static void log_tagged(log_level level, const char* file, int line,
+                           const char* format, ...) VCML_DECL_PRINTF(4, 5);
+
+    static inline void log_tagged(log_level lvl, const char* file, int line,
+                                  const char* fmt, ...) {
+        if (logger::would_log(lvl)) {
+            va_list args; va_start(args, fmt);
+            logger::publish(lvl, call_origin(), vmkstr(fmt, args), file, line);
+            va_end(args);
+        }
+    }
+
+#define log_error(...) \
+    log_tagged(::vcml::LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
+#define log_warn(...) \
+    log_tagged(::vcml::LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
+#define log_info(...) \
+    log_tagged(::vcml::LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
+#define log_debug(...) \
+    log_tagged(::vcml::LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
+
+#else
+
+#define VCML_GEN_LOGFN(name, level)                                           \
+    static void name(const char* format, ...) VCML_DECL_PRINTF(1, 2);         \
+    static inline void name(const char* fmt, ...) {                           \
+        if (logger::would_log(level)) {                                       \
+            va_list args; va_start(args, fmt);                                \
+            logger::publish(level, call_origin(), vmkstr(fmt, args));         \
+            va_end(args);                                                     \
+        }                                                                     \
+    }
+
+    VCML_GEN_LOGFN(log_error, ::vcml::LOG_ERROR)
+    VCML_GEN_LOGFN(log_warn,  ::vcml::LOG_WARN)
+    VCML_GEN_LOGFN(log_info,  ::vcml::LOG_INFO)
+    VCML_GEN_LOGFN(log_debug, ::vcml::LOG_DEBUG)
+#undef VCML_GEN_LOGFN
+#endif
 
 }
 

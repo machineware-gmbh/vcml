@@ -37,7 +37,7 @@ namespace vcml {
         log_term(bool use_cerr = true);
         virtual ~log_term();
 
-        virtual void log_line(log_level lvl, const char* line);
+        virtual void write_log(const logmsg& msg) override;
 
         static const char* colors[NUM_LOG_LEVELS];
         static const char* reset;

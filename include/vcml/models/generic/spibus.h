@@ -87,12 +87,12 @@ namespace vcml { namespace generic {
 
     inline void spibus::trace_in(u8 val) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::log(LOG_TRACE, name(), mkstr(">> 0x%02x", val));
+            logger::trace(name(), mkstr(">> 0x%02x", val));
     }
 
     inline void spibus::trace_out(u8 val) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::log(LOG_TRACE, name(), mkstr("<< 0x%02x", val));
+            logger::trace(name(), mkstr("<< 0x%02x", val));
     }
 
 }}

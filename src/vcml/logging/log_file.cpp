@@ -30,8 +30,8 @@ namespace vcml {
         // nothing to do
     }
 
-    void log_file::log_line(log_level lvl, const char* line) {
-        m_file << line << std::endl;
+    void log_file::write_log(const logmsg& msg) {
+        m_file << msg << std::endl;
     }
 
 }

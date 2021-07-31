@@ -88,26 +88,22 @@ namespace vcml { namespace generic {
 
     inline void spi2sd::trace_in(u8 val) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::log(LOG_TRACE, name(), mkstr(">> 0x%02x", val));
+            logger::trace(name(), mkstr(">> 0x%02x", val));
     }
 
     inline void spi2sd::trace_out(u8 val) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::log(LOG_TRACE, name(), mkstr("<< 0x%02x", val));
+            logger::trace(name(), mkstr("<< 0x%02x", val));
     }
 
     inline void spi2sd::trace_in(sd_command& tx) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {
-            logger::log(LOG_TRACE, name(),
-                        mkstr(">> %s", sd_cmd_str(tx).c_str()));
-        }
+        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
+            logger::trace(name(), mkstr(">> %s", sd_cmd_str(tx).c_str()));
     }
 
     inline void spi2sd::trace_out(sd_command& tx) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {
-            logger::log(LOG_TRACE, name(),
-                        mkstr("<< %s", sd_cmd_str(tx).c_str()));
-        }
+        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
+            logger::trace(name(), mkstr("<< %s", sd_cmd_str(tx).c_str()));
     }
 
 }}

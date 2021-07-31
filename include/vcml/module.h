@@ -69,22 +69,31 @@ namespace vcml {
         command_base* get_command(const string& name);
         vector<command_base*> get_commands() const;
 
-#define VCML_DEFINE_LOG(fn, level)                                          \
-        inline void fn(const char* fmt, ...) const VCML_DECL_PRINTF(2, 3) { \
-            if (!logger::would_log(level) || level > loglvl)                \
-                return;                                                     \
-            va_list args;                                                   \
-            va_start(args, fmt);                                            \
-            logger::log(level, name(), vmkstr(fmt, args));                  \
-            va_end(args);                                                   \
+#ifndef VCML_OMIT_LOGGING_SOURCE
+        void log_tagged(log_level lvl, const char* file, int line,
+                        const char* format, ...) const VCML_DECL_PRINTF(5, 6) {
+            if (lvl <= loglvl && logger::would_log(lvl)) {
+                va_list args; va_start(args, format);
+                logger::publish(lvl, name(), vmkstr(format, args), file, line);
+                va_end(args);
+            }
+        }
+#else
+#define VCML_GEN_LOGFN(func, lvl)                                             \
+        void func(const char* format, ...) const VCML_DECL_PRINTF(2, 3) {     \
+            if (lvl <= loglvl && logger::would_log(lvl)) {                    \
+                va_list args; va_start(args, format);                         \
+                logger::publish(lvl, name(), vmkstr(format, args));           \
+                va_end(args);                                                 \
+            }                                                                 \
         }
 
-        VCML_DEFINE_LOG(log_error, LOG_ERROR)
-        VCML_DEFINE_LOG(log_warn, LOG_WARN)
-        VCML_DEFINE_LOG(log_warning, LOG_WARN)
-        VCML_DEFINE_LOG(log_info, LOG_INFO)
-        VCML_DEFINE_LOG(log_debug, LOG_DEBUG)
-#undef VCML_DEFINE_LOG
+        VCML_GEN_LOGFN(log_error, ::vcml::LOG_ERROR)
+        VCML_GEN_LOGFN(log_warn, ::vcml::LOG_WARN)
+        VCML_GEN_LOGFN(log_info, ::vcml::LOG_INFO)
+        VCML_GEN_LOGFN(log_debug, ::vcml::LOG_DEBUG)
+#undef VCML_GEN_LOGFN
+#endif
     };
 
     inline void module::hierarchy_push() {

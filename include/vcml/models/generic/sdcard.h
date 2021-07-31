@@ -200,15 +200,15 @@ namespace vcml { namespace generic {
 
     inline void sdcard::trace_in(sd_command& tx, bool appcmd) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {
-            logger::log(LOG_TRACE, name(), mkstr(">> %s",
-                        sd_cmd_str(tx, appcmd).c_str()));
+            string msg = mkstr(">> %s", sd_cmd_str(tx, appcmd).c_str());
+            logger::trace(name(), msg);
         }
     }
 
     inline void sdcard::trace_out(sd_command& tx, bool appcmd) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {
-            logger::log(LOG_TRACE, name(), mkstr("<< %s",
-                        sd_cmd_str(tx, appcmd).c_str()));
+            string msg = mkstr("<< %s", sd_cmd_str(tx, appcmd).c_str());
+            logger::trace(name(), msg);
         }
     }
 

@@ -23,15 +23,15 @@ namespace vcml {
     log_stream::log_stream(ostream& o):
         logger(LOG_ERROR, LOG_DEBUG),
         os(o) {
-        /* nothing to do */
+        // nothing to do
     }
 
     log_stream::~log_stream() {
-        /* nothing to do */
+        // nothing to do
     }
 
-    void log_stream::log_line(log_level lvl, const char* line) {
-        os << line << std::endl;
+    void log_stream::write_log(const logmsg& msg) {
+        os << msg << std::endl;
     }
 
 }

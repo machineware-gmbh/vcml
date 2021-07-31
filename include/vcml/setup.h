@@ -60,8 +60,8 @@ namespace vcml {
         setup(int argc, char** argv);
         virtual ~setup();
 
-        bool log_debug() const { return m_log_debug; }
-        bool log_stdout() const { return m_log_stdout; }
+        bool is_logging_debug() const { return m_log_debug; }
+        bool is_logging_stdout() const { return m_log_stdout; }
         bool trace_stdout() const { return m_trace_stdout; }
 
         const vector<string>& log_files() const { return m_log_files; }

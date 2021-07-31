@@ -34,7 +34,7 @@ namespace vcml {
         log_file(const string& filename);
         virtual ~log_file();
 
-        virtual void log_line(log_level lvl, const char* line);
+        virtual void write_log(const logmsg& msg) override;
     };
 
 }

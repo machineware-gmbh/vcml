@@ -31,10 +31,10 @@ namespace vcml {
         // nothing to do
     }
 
-    void log_term::log_line(log_level lvl, const char* line) {
+    void log_term::write_log(const logmsg& msg) {
         if (m_use_colors)
-            m_os << colors[lvl];
-        m_os << line;
+            m_os << colors[msg.level];
+        m_os << msg;
         if (m_use_colors)
             m_os << reset;
         m_os << std::endl;
