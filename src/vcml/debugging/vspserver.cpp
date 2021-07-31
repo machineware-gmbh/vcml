@@ -473,8 +473,8 @@ namespace vcml { namespace debugging {
             return;
 
         if (remove(m_announce.c_str())) {
-            log_warning("failed to remove file '%s': %s", m_announce.c_str(),
-                        strerror(errno));
+            log_warn("failed to remove file '%s': %s", m_announce.c_str(),
+                     strerror(errno));
         }
     }
 

@@ -108,7 +108,7 @@ namespace vcml { namespace arm {
 
     u32 syscon::write_SYS_CFGCTRL(u32 val) {
         if (val & (1 << 31))
-            log_warning("SYS_CFGCTRL write trigger action not implemented");
+            log_warn("SYS_CFGCTRL write trigger action not implemented");
         return val & ~((3 << 18) | (1 << 31));
     }
 

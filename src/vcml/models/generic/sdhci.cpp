@@ -272,7 +272,7 @@ namespace vcml { namespace generic {
 
     u32 sdhci::read_BUFFER_DATA_PORT() {
         if (!(PRESENT_STATE & BUFFER_READ_ENABLE)) {
-            log_warning("reading BUFFER_DATA_PORT not allowed");
+            log_warn("reading BUFFER_DATA_PORT not allowed");
             return BUFFER_DATA_PORT;
         }
 
@@ -299,7 +299,7 @@ namespace vcml { namespace generic {
 
     u32 sdhci::write_BUFFER_DATA_PORT(u32 val) {
         if (!(PRESENT_STATE & BUFFER_WRITE_ENABLE)) {
-            log_warning("writing BUFFER_DATA_PORT not allowed");
+            log_warn("writing BUFFER_DATA_PORT not allowed");
             return BUFFER_DATA_PORT;
         }
 
