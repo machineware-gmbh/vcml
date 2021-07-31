@@ -25,37 +25,54 @@
 
 namespace vcml {
 
-    class initiator_stub: public sc_module
+    class initiator_stub: public sc_module,
+                          protected tlm::tlm_bw_transport_if<>
     {
-    private:
-        initiator_stub();
-        initiator_stub(const initiator_stub&);
-
-        void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
-
     public:
-        simple_initiator_socket<initiator_stub> OUT;
+        tlm_initiator_socket<> OUT;
 
-        initiator_stub(const sc_module_name&);
-        virtual ~initiator_stub();
+        initiator_stub() = delete;
+        initiator_stub(const initiator_stub&) = delete;
+        initiator_stub(initiator_stub&&) = delete;
+
+        initiator_stub(const sc_module_name& name);
+        virtual ~initiator_stub() = default;
         VCML_KIND(initiator_stub);
+
+    protected:
+        virtual tlm::tlm_sync_enum nb_transport_bw(tlm_generic_payload& tx,
+                                                   tlm::tlm_phase& phase,
+                                                   sc_time& t);
+
+        virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start,
+                                               sc_dt::uint64 end);
     };
 
-    class target_stub: public sc_module
+    class target_stub: public sc_module,
+                       protected tlm::tlm_fw_transport_if<>
     {
     private:
-        target_stub();
-        target_stub(const target_stub&);
-
-        void b_transport(tlm_generic_payload&, sc_time&);
-        unsigned int transport_dbg(tlm_generic_payload&);
+        tlm_response_status m_response;
 
     public:
-        simple_target_socket<target_stub> IN;
+        tlm_target_socket<> IN;
 
-        target_stub(const sc_module_name&);
-        virtual ~target_stub();
+        target_stub() = delete;
+        target_stub(const target_stub&) = delete;
+        target_stub(target_stub&&) = delete;
+
+        target_stub(const sc_module_name& name,
+                    tlm_response_status response = TLM_ADDRESS_ERROR_RESPONSE);
+        virtual ~target_stub() = default;
         VCML_KIND(target_stub);
+
+    protected:
+        virtual void b_transport(tlm_generic_payload& tx, sc_time& t);
+        virtual unsigned int transport_dbg(tlm_generic_payload& tx);
+        virtual bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
+        virtual tlm::tlm_sync_enum nb_transport_fw(tlm_generic_payload& tx,
+                                                   tlm::tlm_phase& phase,
+                                                   sc_time& t);
     };
 
 }

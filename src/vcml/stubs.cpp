@@ -20,41 +20,48 @@
 
 namespace vcml {
 
-    void initiator_stub::invalidate_direct_mem_ptr(sc_dt::uint64 start,
-                                                   sc_dt::uint64 end) {
-        /* nothing to do */
-    }
-
     initiator_stub::initiator_stub(const sc_module_name& nm):
         sc_module(nm),
+        tlm::tlm_bw_transport_if<>(),
         OUT("OUT") {
-        OUT.register_invalidate_direct_mem_ptr(this,
-                &initiator_stub::invalidate_direct_mem_ptr);
+        OUT.bind(*this);
     }
 
-    initiator_stub::~initiator_stub() {
-        /* nothing to do */
+    tlm::tlm_sync_enum initiator_stub::nb_transport_bw(tlm_generic_payload& tx,
+        tlm::tlm_phase& phase, sc_time& t) {
+        return tlm::TLM_COMPLETED;
     }
 
-    target_stub::target_stub(const sc_module_name& nm):
+    void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end) {
+        // nothing to do
+    }
+
+    target_stub::target_stub(const sc_module_name& nm, tlm_response_status r):
         sc_module(nm),
+        m_response(r),
         IN("IN") {
-        IN.register_b_transport(this, &target_stub::b_transport);
-        IN.register_transport_dbg(this, &target_stub::transport_dbg);
-    }
-
-    target_stub::~target_stub() {
-        /* nothing to do */
+        IN.bind(*this);
     }
 
     void target_stub::b_transport(tlm_generic_payload& tx, sc_time& t) {
-        tx.set_response_status(TLM_OK_RESPONSE);
+        tx.set_response_status(m_response);
     }
 
-    unsigned int target_stub::transport_dbg(tlm_generic_payload& trans) {
-        sc_time zero_delay;
-        b_transport(trans, zero_delay);
-        return trans.is_response_ok() ? trans.get_data_length() : 0;
+    unsigned int target_stub::transport_dbg(tlm_generic_payload& tx) {
+        tx.set_response_status(m_response);
+        return tx.is_response_ok() ? tx.get_data_length() : 0;
+    }
+
+    bool target_stub::get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& d) {
+        d.allow_read_write();
+        d.set_start_address(0x0);
+        d.set_end_address((sc_dt::uint64)-1);
+        return false;
+    }
+
+    tlm::tlm_sync_enum target_stub::nb_transport_fw(tlm_generic_payload& tx,
+        tlm::tlm_phase& phase, sc_time& t) {
+        return tlm::TLM_COMPLETED;
     }
 
 }
