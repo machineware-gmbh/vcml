@@ -32,7 +32,8 @@ namespace vcml {
         return tlm::TLM_COMPLETED;
     }
 
-    void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end) {
+    void initiator_stub::invalidate_direct_mem_ptr(sc_dt::uint64 start,
+                                                   sc_dt::uint64 end) {
         // nothing to do
     }
 
