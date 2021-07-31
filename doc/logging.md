@@ -98,16 +98,28 @@ int sc_main(int argc, char** argv) {
 }
 ```
 
+Log printing is customizable to a certain extent, by setting the following
+static print control variables of `vcml::logger::print_xxx` before or during
+simulation:
+
+| Print control       | Description                                 | Default |
+|---------------------|---------------------------------------------|---------|
+| `print_time_stamp`  | Print the SystemC time of the log message   | `true`  |
+| `print_delta_cycle` | Print the delta-cycle of the log message    | `false` |
+| `print_sender`      | Print sending process or module             | `true`  |
+| `print_source`      | Print the source location of the log call   | `false` |
+| `print_backtrace`   | Print backtraces for logged reports         | `true`  |
+
 It is also possible to create your own logger if you need to process VCML log
 messages in a customizable way. To define a custom logger, derive from
-`vcml::logger` and override `vcml::logger::log_line`:
+`vcml::logger` and override `vcml::logger::write_log`:
 
 ```
 class my_logger: public vcml::logger {
 public:
     my_logger() ...
     virtual ~my_logger() ...
-    virtual void log_line(vcml::log_level lvl, const char* line);
+    virtual void log_line(const logmsg& msg);
 };
 ```
 
