@@ -113,7 +113,6 @@ namespace vcml { namespace opencores {
 
     ocspi::ocspi(const sc_module_name& nm):
         peripheral(nm),
-        m_shift_reg(0xff),
         m_txe_irq(false),
         m_txr_irq(false),
         RXDATA("RXDATA", 0x0, 0),

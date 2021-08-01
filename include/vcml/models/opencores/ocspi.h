@@ -36,7 +36,6 @@ namespace vcml { namespace opencores {
     class ocspi: public peripheral, public spi_bw_transport_if
     {
     private:
-        u8 m_shift_reg;
         bool m_txe_irq;
         bool m_txr_irq;
 
