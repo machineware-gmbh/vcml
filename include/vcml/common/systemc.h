@@ -172,19 +172,29 @@ namespace vcml {
     using tlm::TLM_BURST_ERROR_RESPONSE;
     using tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE;
 
-    inline bool success(tlm_response_status status) {
-        return status == TLM_OK_RESPONSE;
+    template <typename T>
+    inline bool success(const T& t) {
+        return true;
     }
 
-    inline bool success(const tlm_generic_payload& tx) {
-        return success(tx.get_response_status());
+    template <typename T>
+    inline bool failed(const T& t) {
+        return false;
+    }
+
+    inline bool success(tlm_response_status status) {
+        return status == TLM_OK_RESPONSE;
     }
 
     inline bool failed(tlm_response_status status) {
         return status != TLM_OK_RESPONSE;
     }
 
-    inline bool failed(const tlm_generic_payload& tx) {
+    template <> inline bool success(const tlm_generic_payload& tx) {
+        return success(tx.get_response_status());
+    }
+
+    template <> inline bool failed(const tlm_generic_payload& tx) {
         return failed(tx.get_response_status());
     }
 
