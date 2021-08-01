@@ -102,12 +102,9 @@ namespace vcml {
     template <typename T>
     void in_port<T>::stub(const T& retval) {
         VCML_ERROR_ON(is_stubbed(), "%s already stubbed", sc_in<T>::name());
-
-        sc_simcontext* simc = sc_object::simcontext();
-        simc->hierarchy_push(m_parent);
+        hierarchy_guard guard(m_parent);
         m_stub = new stub_signal<T>(this, retval);
         sc_in<T>::bind(*m_stub);
-        simc->hierarchy_pop();
     }
 
     template <typename T>
@@ -214,17 +211,17 @@ namespace vcml {
     void out_port<T>::stub() {
         VCML_ERROR_ON(is_stubbed(), "%s already stubbed", sc_out<T>::name());
 
-        sc_simcontext* simc = sc_object::simcontext();
-        simc->hierarchy_push(m_parent);
+        hierarchy_guard guard(m_parent);
         m_stub = new stub_signal<T>(this);
         sc_out<T>::bind(*m_stub);
-        simc->hierarchy_pop();
     }
 
     template <class PORT>
-    class port_list: public sc_module
+    class port_list
     {
     private:
+        string m_name;
+        sc_module* m_parent;
         std::map<unsigned int, PORT*> m_ports;
 
     public:
@@ -235,10 +232,8 @@ namespace vcml {
 
         port_list() = delete;
         port_list(const port_list<PORT>&) = delete;
-        port_list(const sc_module_name& nm);
+        port_list(const string& nm);
         virtual ~port_list();
-
-        VCML_KIND(port_list);
 
         iterator begin() { return m_ports.begin(); }
         iterator end()   { return m_ports.end(); }
@@ -252,10 +247,12 @@ namespace vcml {
     };
 
     template <class PORT>
-    port_list<PORT>::port_list(const sc_module_name& nm):
-        sc_module(nm),
+    port_list<PORT>::port_list(const string& nm):
+        m_name(nm),
+        m_parent(hierarchy_top()),
         m_ports() {
-        /* nothing to do */
+        VCML_ERROR_ON(nm.empty(), "port list name cannot be empty");
+        VCML_ERROR_ON(!m_parent, "port list declared outside module");
     }
 
     template <class PORT>
@@ -274,18 +271,14 @@ namespace vcml {
         if (exists(idx))
             return *m_ports[idx];
 
-        stringstream ss;
-        ss << "PORT" << idx;
-        sc_core::sc_get_curr_simcontext()->hierarchy_push(this);
-        PORT* port = new PORT(ss.str().c_str());
-        sc_core::sc_get_curr_simcontext()->hierarchy_pop();
-        m_ports[idx] = port;
-        return *port;
+        hierarchy_guard guard(m_parent);
+        string port_name = mkstr("%s%u", m_name.c_str(), idx);
+        return *(m_ports[idx] = new PORT(port_name.c_str()));
     }
 
     template <class PORT>
     const PORT& port_list<PORT>::operator [] (unsigned int idx) const {
-        VCML_ERROR_ON(!exists(idx), "PORT%u does not exist", idx);
+        VCML_ERROR_ON(!exists(idx), "port %u does not exist", idx);
         return *m_ports.at(idx);
     }
 
