@@ -242,10 +242,14 @@ namespace vcml {
 
 }
 
-std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
 
 namespace sc_core {
     std::istream& operator >> (std::istream& is, sc_core::sc_time& t);
+}
+
+namespace tlm {
+    std::ostream& operator << (std::ostream& os, tlm_response_status sts);
+    std::ostream& operator << (std::ostream& os, const tlm_generic_payload&);
 }
 
 #endif

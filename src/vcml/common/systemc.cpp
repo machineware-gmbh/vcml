@@ -412,7 +412,7 @@ namespace vcml {
 
 namespace sc_core {
 
-    std::istream& operator >> (std::istream& is, sc_core::sc_time& t) {
+    std::istream& operator >> (std::istream& is, sc_time& t) {
         std::string str; is >> str;
         str = vcml::to_lower(str);
 
@@ -421,19 +421,34 @@ namespace sc_core {
         double fval = value;
 
         if (strcmp(endptr, "ps") == 0)
-            t = sc_core::sc_time(fval, sc_core::SC_PS);
+            t = sc_time(fval, sc_core::SC_PS);
         else if (strcmp(endptr, "ns") == 0)
-            t = sc_core::sc_time(fval, sc_core::SC_NS);
+            t = sc_time(fval, sc_core::SC_NS);
         else if (strcmp(endptr, "us") == 0)
-            t = sc_core::sc_time(fval, sc_core::SC_US);
+            t = sc_time(fval, sc_core::SC_US);
         else if (strcmp(endptr, "ms") == 0)
-            t = sc_core::sc_time(fval, sc_core::SC_MS);
+            t = sc_time(fval, sc_core::SC_MS);
         else if (strcmp(endptr, "s") == 0)
-            t = sc_core::sc_time(fval, sc_core::SC_SEC);
+            t = sc_time(fval, sc_core::SC_SEC);
         else // raw value, not part of ieee1666!
-            t = sc_core::sc_time(value, true);
+            t = sc_time(value, true);
 
         return is;
+    }
+
+}
+
+namespace tlm {
+
+    std::ostream& operator << (std::ostream& os, tlm_response_status status) {
+        os << ::vcml::tlm_response_to_str(status);
+        return os;
+    }
+
+    std::ostream& operator << (std::ostream& os,
+        const tlm_generic_payload& payload) {
+        os << ::vcml::tlm_transaction_to_str(payload);
+        return os;
     }
 
 }
