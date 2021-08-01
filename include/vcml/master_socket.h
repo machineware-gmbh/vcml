@@ -111,9 +111,6 @@ namespace vcml {
         void bind(tlm_target_socket<WIDTH>& other);
 
         void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
-
-        void trace_fw(const tlm_generic_payload& tx, const sc_time& dt) const;
-        void trace_bw(const tlm_generic_payload& tx, const sc_time& dt) const;
     };
 
     inline void master_socket::set_cpuid(int cpuid) {
@@ -203,20 +200,6 @@ namespace vcml {
     template <>
     inline void master_socket::bind<64>(tlm_target_socket<64>& other) {
         base_type::bind(other);
-    }
-
-    inline void master_socket::trace_fw(const tlm_generic_payload& tx,
-                                        const sc_time& dt) const {
-        if (!m_host->trace_errors && m_host->loglvl >= LOG_TRACE)
-            logger::trace_fw(name(), tx, dt);
-    }
-
-    inline void master_socket::trace_bw(const tlm_generic_payload& tx,
-                                        const sc_time& dt) const {
-        if ((!m_host->trace_errors || failed(tx)) &&
-            m_host->loglvl >= LOG_TRACE) {
-            logger::trace_bw(name(), tx, dt);
-        }
     }
 
     static inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd,

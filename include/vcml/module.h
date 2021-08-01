@@ -94,6 +94,13 @@ namespace vcml {
         VCML_GEN_LOGFN(log_debug, ::vcml::LOG_DEBUG)
 #undef VCML_GEN_LOGFN
 #endif
+
+        template <typename PAYLOAD>
+        void trace_fw(const string& port, const PAYLOAD& tx,
+                      const sc_time& dt = SC_ZERO_TIME);
+        template <typename PAYLOAD>
+        void trace_bw(const string& port, const PAYLOAD& tx,
+                      const sc_time& dt = SC_ZERO_TIME);
     };
 
     inline void module::hierarchy_push() {
@@ -121,6 +128,20 @@ namespace vcml {
         if (!stl_contains(m_commands, name))
             return nullptr;
         return m_commands[name];
+    }
+
+    template <typename PAYLOAD>
+    inline void module::trace_fw(const string& port, const PAYLOAD& tx,
+                                 const sc_time& dt) {
+        if (!trace_errors && loglvl >= LOG_TRACE)
+            logger::trace_fw(port, tx, dt);
+    }
+
+    template <typename PAYLOAD>
+    inline void module::trace_bw(const string& port, const PAYLOAD& tx,
+                                 const sc_time& dt) {
+        if ((!trace_errors || failed(tx)) && loglvl >= LOG_TRACE)
+            logger::trace_bw(port, tx, dt);
     }
 
 }

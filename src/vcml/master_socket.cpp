@@ -121,9 +121,9 @@ namespace vcml {
             sc_time& offset = m_host->local_time();
             sc_time local = sc_time_stamp() + offset;
 
-            trace_fw(tx, offset);
+            m_host->trace_fw(name(), tx, offset);
             (*this)->b_transport(tx, offset);
-            trace_bw(tx, offset);
+            m_host->trace_bw(name(), tx, offset);
 
             sc_time now = sc_time_stamp() + offset;
             VCML_ERROR_ON(now < local, "b_transport time went backwards");
