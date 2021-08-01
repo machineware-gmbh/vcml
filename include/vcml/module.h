@@ -95,11 +95,11 @@ namespace vcml {
 #undef VCML_GEN_LOGFN
 #endif
 
-        template <typename PAYLOAD>
-        void trace_fw(const string& port, const PAYLOAD& tx,
+        template <typename PORT, typename PAYLOAD>
+        void trace_fw(const PORT& port, const PAYLOAD& tx,
                       const sc_time& dt = SC_ZERO_TIME);
-        template <typename PAYLOAD>
-        void trace_bw(const string& port, const PAYLOAD& tx,
+        template <typename PORT, typename PAYLOAD>
+        void trace_bw(const PORT& port, const PAYLOAD& tx,
                       const sc_time& dt = SC_ZERO_TIME);
     };
 
@@ -130,18 +130,18 @@ namespace vcml {
         return m_commands[name];
     }
 
-    template <typename PAYLOAD>
-    inline void module::trace_fw(const string& port, const PAYLOAD& tx,
+    template <typename PORT, typename PAYLOAD>
+    inline void module::trace_fw(const PORT& port, const PAYLOAD& tx,
                                  const sc_time& dt) {
         if (!trace_errors && loglvl >= LOG_TRACE)
-            logger::trace_fw(port, tx, dt);
+            logger::trace_fw(port.name(), tx, dt);
     }
 
-    template <typename PAYLOAD>
-    inline void module::trace_bw(const string& port, const PAYLOAD& tx,
+    template <typename PORT, typename PAYLOAD>
+    inline void module::trace_bw(const PORT& port, const PAYLOAD& tx,
                                  const sc_time& dt) {
         if ((!trace_errors || failed(tx)) && loglvl >= LOG_TRACE)
-            logger::trace_bw(port, tx, dt);
+            logger::trace_bw(port.name(), tx, dt);
     }
 
 }

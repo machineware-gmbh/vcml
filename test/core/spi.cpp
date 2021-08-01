@@ -18,9 +18,7 @@
 
 #include "testing.h"
 
-class spi_harness: public test_base,
-                   public spi_fw_transport_if,
-                   public spi_bw_transport_if
+class spi_harness: public test_base, public spi_host
 {
 public:
     spi_initiator_socket SPI_OUT;
@@ -28,16 +26,14 @@ public:
 
     spi_harness(const sc_module_name& nm):
         test_base(nm),
-        spi_fw_transport_if(),
-        spi_bw_transport_if(),
+        spi_host(),
         SPI_OUT("SPI_OUT"),
         SPI_IN("SPI_IN") {
-        SPI_OUT.bind(*this);
-        SPI_IN.bind(*this);
         SPI_OUT.bind(SPI_IN);
     }
 
-    virtual void spi_transport(spi_payload& spi) override {
+    virtual void spi_transport(const spi_target_socket& socket,
+                               spi_payload& spi) override {
         spi.miso = 2 * spi.mosi;
     }
 

@@ -38,10 +38,10 @@ namespace vcml { namespace opencores {
 
         spi_payload spi(val);
 
-        trace_fw(spi);
+        trace_fw(SPI_OUT, spi);
         SPI_OUT->spi_transport(spi);
         RXDATA = spi.miso;
-        trace_bw(spi);
+        trace_bw(SPI_OUT, spi);
 
         STATUS |= STATUS_TXR;
         if (m_txr_irq && !IRQ) {
@@ -124,7 +124,6 @@ namespace vcml { namespace opencores {
         IN("IN"),
         SPI_OUT("SPI_OUT"),
         clock("clock", 50000000) { /* 50 MHz default clock */
-        SPI_OUT.bind(*this);
 
         RXDATA.allow_read_only();
         RXDATA.read = &ocspi::read_RXDATA;

@@ -21,7 +21,7 @@
 namespace vcml {
 
     void slave_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
-        m_host->trace_fw(name(), tx, dt);
+        m_host->trace_fw(*this, tx, dt);
 
         int self = m_next++;
         while (self != m_curr)
@@ -46,7 +46,7 @@ namespace vcml {
         m_curr++;
         m_free_ev.notify();
 
-        m_host->trace_bw(name(), tx, dt);
+        m_host->trace_bw(*this, tx, dt);
     }
 
     unsigned int slave_socket::transport_dbg(tlm_generic_payload& tx){

@@ -923,7 +923,7 @@ namespace vcml { namespace generic {
         m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND | APP_CMD);
         m_curcmd = tx.opcode;
 
-        trace_fw(tx);
+        trace_fw(SD_IN, tx);
         sd_status result = do_command(tx);
 
         switch (result) {
@@ -970,7 +970,7 @@ namespace vcml { namespace generic {
             break;
         }
 
-        trace_bw(tx);
+        trace_bw(SD_IN, tx);
         return result;
     }
 

@@ -73,21 +73,7 @@ namespace vcml { namespace opencores {
         virtual ~ocspi();
         VCML_KIND(ocspi);
         virtual void reset() override;
-
-        void trace_fw(const spi_payload& spi) const;
-        void trace_bw(const spi_payload& spi) const;
     };
-
-    inline void ocspi::trace_fw(const spi_payload& spi) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(SPI_OUT.name(), spi);
-    }
-
-    inline void ocspi::trace_bw(const spi_payload& spi) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(SPI_OUT.name(), spi);
-    }
-
 
 }}
 

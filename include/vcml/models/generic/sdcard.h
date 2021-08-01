@@ -188,24 +188,11 @@ namespace vcml { namespace generic {
         virtual sd_status sd_transport(sd_command& tx) override;
         virtual sd_tx_status sd_data_read(u8& val) override;
         virtual sd_rx_status sd_data_write(u8 val) override;
-
-        void trace_fw(sd_command& tx) const;
-        void trace_bw(sd_command& tx) const;
     };
 
     inline void sdcard::update_status() {
         m_status &= ~(0xf << 9);
         m_status |= m_state << 9;
-    }
-
-    inline void sdcard::trace_fw(sd_command& tx) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(SD_IN.name(), tx);
-    }
-
-    inline void sdcard::trace_bw(sd_command& tx) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(SD_IN.name(), tx);
     }
 
 }}

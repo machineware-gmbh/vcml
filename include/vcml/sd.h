@@ -60,6 +60,27 @@ namespace vcml {
         bool spi;
     };
 
+    inline bool success(sd_status sts) {
+        return sts == SD_OK || sts == SD_OK_TX_RDY || sts == SD_OK_RX_RDY;
+    }
+
+    inline bool failed(sd_status status) {
+        return !success(status);
+    }
+
+    template <> inline bool success(const sd_command& cmd) {
+        return true;
+    }
+
+    template <> inline bool failed(const sd_command& cmd) {
+        return false;
+    }
+
+    const char* sd_cmd_str(u8 opcode, bool appcmd = false);
+    string sd_cmd_str(const sd_command& tx);
+
+    ostream& operator << (ostream& os, const sd_command& tx);
+
     class sd_fw_transport_if: public sc_core::sc_interface
     {
     public:
@@ -116,11 +137,6 @@ namespace vcml {
         virtual ~sd_target_stub();
         VCML_KIND(sd_target_stub);
     };
-
-    const char* sd_cmd_str(u8 opcode, bool appcmd = false);
-    string sd_cmd_str(const sd_command& tx);
-
-    ostream& operator << (ostream& os, const sd_command& tx);
 
 }
 

@@ -22,12 +22,10 @@ namespace vcml { namespace generic {
 
     spibus::spibus(const sc_module_name& nm):
         component(nm),
-        spi_fw_transport_if(),
-        spi_bw_transport_if(),
+        spi_host(),
         SPI_IN("SPI_IN"),
         SPI_OUT("SPI_OUT"),
         CS("CS") {
-        SPI_IN.bind(*this);
     }
 
     spibus::~spibus() {
@@ -64,19 +62,11 @@ namespace vcml { namespace generic {
         return !m_csmode.at(port);
     }
 
-    void spibus::spi_transport(spi_payload& spi) {
-        trace_fw(SPI_IN.name(), spi);
-
+    void spibus::spi_transport(const spi_target_socket&, spi_payload& spi) {
         for (auto port : CS) {
-            if (is_active(port.first)) {
-                auto& spi_out = SPI_OUT[port.first];
-                trace_fw(spi_out.name(), spi);
-                spi_out->spi_transport(spi);
-                trace_bw(spi_out.name(), spi);
-            }
+            if (is_active(port.first))
+                SPI_OUT[port.first].transport(spi);
         }
-
-        trace_bw(SPI_IN.name(), spi);
     }
 
     unsigned int spibus::next_free() const {
@@ -93,7 +83,6 @@ namespace vcml { namespace generic {
     unsigned int spibus::bind(spi_target_socket& target, sc_signal<bool>& cs,
                               bool cs_active_high) {
         unsigned int port = next_free();
-        SPI_OUT[port].bind(*this);
         SPI_OUT[port].bind(target);
         CS[port].bind(cs);
         m_csmode[port] = cs_active_high;

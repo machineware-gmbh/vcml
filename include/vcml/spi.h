@@ -34,6 +34,18 @@ namespace vcml {
 
     ostream& operator << (ostream& os, const spi_payload& spi);
 
+    class spi_initiator_socket;
+    class spi_target_socket;
+    class spi_initiator_stub;
+    class spi_target_stub;
+
+    class spi_host
+    {
+    public:
+        virtual ~spi_host() = default;
+        virtual void spi_transport(const spi_target_socket&, spi_payload&) = 0;
+    };
+
     class spi_fw_transport_if: public sc_core::sc_interface
     {
     public:
@@ -44,26 +56,42 @@ namespace vcml {
         /* empty interface */
     };
 
-    class spi_initiator_socket:
+    class spi_initiator_socket: private spi_bw_transport_if,
         public tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
                                               spi_bw_transport_if, 1,
                                               sc_core::SC_ONE_OR_MORE_BOUND> {
+    private:
+        module* m_parent;
+        spi_target_stub* m_stub;
+
     public:
         spi_initiator_socket();
         explicit spi_initiator_socket(const char* name);
+        virtual ~spi_initiator_socket();
         VCML_KIND(spi_initiator_socket);
         virtual sc_core::sc_type_index get_protocol_types() const;
+        void transport(spi_payload& spi);
+        void stub();
     };
 
-    class spi_target_socket:
+    class spi_target_socket: private spi_fw_transport_if,
         public tlm::tlm_base_target_socket<1, spi_fw_transport_if,
                                               spi_bw_transport_if, 1,
                                               sc_core::SC_ONE_OR_MORE_BOUND> {
+    private:
+        module* m_parent;
+        spi_host* m_host;
+        spi_initiator_stub* m_stub;
+
+        virtual void spi_transport(spi_payload& spi) override;
+
     public:
         spi_target_socket();
         explicit spi_target_socket(const char* name);
+        virtual ~spi_target_socket();
         VCML_KIND(spi_target_socket);
         virtual sc_core::sc_type_index get_protocol_types() const;
+        void stub();
     };
 
     class spi_initiator_stub: public module, protected spi_bw_transport_if

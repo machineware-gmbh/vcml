@@ -31,7 +31,7 @@
 namespace vcml { namespace generic {
 
     class spi2sd: public component,
-                  public spi_fw_transport_if,
+                  public spi_host,
                   public sd_bw_transport_if {
     private:
         enum token {
@@ -77,34 +77,9 @@ namespace vcml { namespace generic {
         virtual ~spi2sd();
         VCML_KIND(spi2sd);
 
-        virtual void spi_transport(spi_payload& spi) override;
-
-        void trace_fw(const spi_payload& spi) const;
-        void trace_bw(const spi_payload& spi) const;
-
-        void trace_fw(const sd_command& cmd) const;
-        void trace_bw(const sd_command& cmd) const;
+        virtual void spi_transport(const spi_target_socket& socket,
+                                   spi_payload& spi) override;
     };
-
-    inline void spi2sd::trace_fw(const spi_payload& spi) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(SPI_IN.name(), spi);
-    }
-
-    inline void spi2sd::trace_bw(const spi_payload& spi) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(SPI_IN.name(), spi);
-    }
-
-    inline void spi2sd::trace_fw(const sd_command& cmd) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(SD_OUT.name(), cmd);
-    }
-
-    inline void spi2sd::trace_bw(const sd_command& cmd) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(SD_OUT.name(), cmd);
-    }
 
 }}
 

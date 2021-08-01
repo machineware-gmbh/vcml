@@ -35,8 +35,7 @@ namespace vcml { namespace generic {
     typedef port_list<spi_initiator_socket> spi_initiator_list;
 
     class spibus: public component,
-                  public spi_fw_transport_if,
-                  public spi_bw_transport_if {
+                  public spi_host {
     private:
         std::map<unsigned int, bool> m_csmode;
 
@@ -63,16 +62,14 @@ namespace vcml { namespace generic {
         void set_active_high(unsigned int port, bool set = true);
         void set_active_low(unsigned int port, bool set = true);
 
-        virtual void spi_transport(spi_payload& spi) override;
+        virtual void spi_transport(const spi_target_socket& socket,
+                                   spi_payload& spi) override;
 
         unsigned int next_free() const;
 
         void bind(spi_initiator_socket& initiator);
         unsigned int bind(spi_target_socket& target, sc_signal<bool>& cs,
                           bool cs_active_high = true);
-
-        void trace_fw(const string& port, const spi_payload& spi) const;
-        void trace_bw(const string& port, const spi_payload& spi) const;
     };
 
     inline void spibus::set_active_high(unsigned int port, bool set) {
@@ -81,18 +78,6 @@ namespace vcml { namespace generic {
 
     inline void spibus::set_active_low(unsigned int port, bool set) {
         m_csmode[port] = !set;
-    }
-
-    inline void spibus::trace_fw(const string& port,
-                                 const spi_payload& spi) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(port, spi);
-    }
-
-    inline void spibus::trace_bw(const string& port,
-                                 const spi_payload& spi) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(port, spi);
     }
 
 }}

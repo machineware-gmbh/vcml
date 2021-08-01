@@ -52,9 +52,9 @@ namespace vcml { namespace generic {
             return 0xff;
 
         case DO_COMMAND:
-            trace_fw(m_cmd);
+            trace_fw(SD_OUT, m_cmd);
             m_status = SD_OUT->sd_transport(m_cmd);
-            trace_bw(m_cmd);
+            trace_bw(SD_OUT, m_cmd);
             m_rspbytes = 0;
             m_state = DO_RESPONSE;
             return 0xff;
@@ -126,7 +126,7 @@ namespace vcml { namespace generic {
 
     spi2sd::spi2sd(const sc_module_name& nm):
         component(nm),
-        spi_fw_transport_if(),
+        spi_host(),
         sd_bw_transport_if(),
         m_state(IDLE),
         m_argbytes(0),
@@ -135,7 +135,6 @@ namespace vcml { namespace generic {
         m_status(),
         SPI_IN("SPI_IN"),
         SD_OUT("SD_OUT") {
-        SPI_IN.bind(*this);
         SD_OUT.bind(*this);
     }
 
@@ -143,10 +142,9 @@ namespace vcml { namespace generic {
         // nothing to do
     }
 
-    void spi2sd::spi_transport(spi_payload& spi) {
-        trace_fw(spi);
+    void spi2sd::spi_transport(const spi_target_socket& socket,
+                               spi_payload& spi) {
         spi.miso = do_spi_transport(spi.mosi);
-        trace_bw(spi);
     }
 
 }}
