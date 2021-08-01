@@ -77,31 +77,31 @@ namespace vcml { namespace generic {
         virtual ~spi2sd();
         VCML_KIND(spi2sd);
 
-        virtual u8 spi_transport(u8 val) override;
+        virtual void spi_transport(spi_payload& spi) override;
 
-        void trace_fw(u8 val) const;
-        void trace_bw(u8 val) const;
+        void trace_fw(const spi_payload& spi) const;
+        void trace_bw(const spi_payload& spi) const;
 
-        void trace_fw(sd_command& cmd) const;
-        void trace_bw(sd_command& cmd) const;
+        void trace_fw(const sd_command& cmd) const;
+        void trace_bw(const sd_command& cmd) const;
     };
 
-    inline void spi2sd::trace_fw(u8 val) const {
+    inline void spi2sd::trace_fw(const spi_payload& spi) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(SPI_IN.name(), mkstr("[%02hhx]", val));
+            logger::trace_fw(SPI_IN.name(), spi);
     }
 
-    inline void spi2sd::trace_bw(u8 val) const {
+    inline void spi2sd::trace_bw(const spi_payload& spi) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(SPI_IN.name(), mkstr("[%02hhx]", val));
+            logger::trace_bw(SPI_IN.name(), spi);
     }
 
-    inline void spi2sd::trace_fw(sd_command& cmd) const {
+    inline void spi2sd::trace_fw(const sd_command& cmd) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
             logger::trace_fw(SD_OUT.name(), cmd);
     }
 
-    inline void spi2sd::trace_bw(sd_command& cmd) const {
+    inline void spi2sd::trace_bw(const sd_command& cmd) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
             logger::trace_bw(SD_OUT.name(), cmd);
     }

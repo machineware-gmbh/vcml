@@ -20,6 +20,11 @@
 
 namespace vcml {
 
+    ostream& operator << (ostream& os, const spi_payload& spi) {
+        os << mkstr("[mosi: 0x%02hhx miso: 0x%02hhx]", spi.mosi, spi.miso);
+        return os;
+    }
+
     spi_initiator_socket::spi_initiator_socket():
         tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
                                           spi_bw_transport_if, 1,
@@ -64,9 +69,8 @@ namespace vcml {
     }
 
 
-    u8 spi_target_stub::spi_transport(u8 val) {
-        log_debug("received 0x%02x", (unsigned int)val);
-        return 0xff;
+    void spi_target_stub::spi_transport(spi_payload& payload) {
+        log_debug("received 0x%02hhx", payload.mosi);
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):

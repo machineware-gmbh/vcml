@@ -16,62 +16,42 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
-#include "vcml.h"
+#include "testing.h"
 
-class initiator: public vcml::component, public vcml::spi_bw_transport_if
+class spi_harness: public test_base,
+                   public spi_fw_transport_if,
+                   public spi_bw_transport_if
 {
 public:
-    SC_HAS_PROCESS(initiator);
-    vcml::spi_initiator_socket OUT;
+    spi_initiator_socket SPI_OUT;
+    spi_target_socket SPI_IN;
 
-    void run() {
+    spi_harness(const sc_module_name& nm):
+        test_base(nm),
+        spi_fw_transport_if(),
+        spi_bw_transport_if(),
+        SPI_OUT("SPI_OUT"),
+        SPI_IN("SPI_IN") {
+        SPI_OUT.bind(*this);
+        SPI_IN.bind(*this);
+        SPI_OUT.bind(SPI_IN);
+    }
+
+    virtual void spi_transport(spi_payload& spi) override {
+        spi.miso = 2 * spi.mosi;
+    }
+
+    virtual void run_test() override {
         for (vcml::u8 i = 0; i < 10; i++) {
             wait(1, sc_core::SC_SEC);
-            EXPECT_EQ(2 * i, OUT->spi_transport(i));
+            spi_payload spi(i);
+            SPI_OUT->spi_transport(spi);
+            EXPECT_EQ(spi.miso, spi.mosi * 2);
         }
-
-        sc_core::sc_stop();
     }
-
-    initiator(const sc_core::sc_module_name& nm):
-        vcml::component(nm), OUT("OUT") {
-        OUT.bind(*this);
-        SC_THREAD(run);
-        CLOCK.stub();
-        RESET.stub();
-    }
-
-    virtual ~initiator() {
-        /* nothing to do */
-    }
-};
-
-class target: public vcml::component, public vcml::spi_fw_transport_if
-{
-public:
-    vcml::spi_target_socket IN;
-
-    target(const sc_core::sc_module_name& nm):
-        vcml::component(nm), IN("IN") {
-        IN.bind(*this);
-        CLOCK.stub();
-        RESET.stub();
-    }
-
-    virtual ~target() {
-        /* nothing to do */
-    }
-
-    virtual vcml::u8 spi_transport(vcml::u8 data) override {
-        return 2 * data;
-    }
-
 };
 
 TEST(spi, sockets) {
-    initiator spi_i("SPI_I");
-    target spi_t("SPI_T");
-    spi_i.OUT.bind(spi_t.IN);
+    spi_harness test("test");
     sc_core::sc_start();
 }

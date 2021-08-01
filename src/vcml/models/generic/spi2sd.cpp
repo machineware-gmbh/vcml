@@ -33,21 +33,21 @@ namespace vcml { namespace generic {
         return 0xff;
     }
 
-    u8 spi2sd::do_spi_transport(u8 val) {
+    u8 spi2sd::do_spi_transport(u8 mosi) {
         switch (m_state) {
         case IDLE:
-            if (val <= 0x7f)
-                return new_command(val);
+            if (mosi <= 0x7f)
+                return new_command(mosi);
             return 0xff;
 
         case READ_ARGUMENT:
-            m_cmd.argument = (m_cmd.argument << 8) | val;
+            m_cmd.argument = (m_cmd.argument << 8) | mosi;
             if (++m_argbytes == sizeof(m_cmd.argument))
                 m_state = READ_CHECKSUM;
             return 0xff;
 
         case READ_CHECKSUM:
-            m_cmd.crc = val;
+            m_cmd.crc = mosi;
             m_state = DO_COMMAND;
             return 0xff;
 
@@ -72,16 +72,16 @@ namespace vcml { namespace generic {
             return 0xff;
 
         case TX_STANDBY:
-            if (val <= 0x7f)
-                return new_command(val);
+            if (mosi <= 0x7f)
+                return new_command(mosi);
             m_state = TX_SENDING;
             return SPITX_GO;
 
         case TX_SENDING:
-            if (val <= 0x7f)
-                return new_command(val);
+            if (mosi <= 0x7f)
+                return new_command(mosi);
 
-            switch (SD_OUT->sd_data_read(val)) {
+            switch (SD_OUT->sd_data_read(mosi)) {
             case SDTX_OK: break;
             case SDTX_OK_BLK_DONE: m_state = TX_STANDBY; break;
             case SDTX_OK_COMPLETE: m_state = IDLE;       break;
@@ -89,13 +89,13 @@ namespace vcml { namespace generic {
             default: VCML_ERROR("card returned status error");
             }
 
-            return val;
+            return mosi;
 
         case RX_STANDBY:
-            if (val <= 0x7f)
-                return new_command(val);
+            if (mosi <= 0x7f)
+                return new_command(mosi);
 
-            switch (val) {
+            switch (mosi) {
             case SPIRX_STOP: m_state = IDLE;         break;
             case SPIRX_GO:   m_state = RX_RECORDING; break;
             case SPITX_GO:   m_state = RX_RECORDING; break;
@@ -105,7 +105,7 @@ namespace vcml { namespace generic {
             return 0xff;
 
         case RX_RECORDING:
-            switch (SD_OUT->sd_data_write(val)) {
+            switch (SD_OUT->sd_data_write(mosi)) {
             case SDRX_OK: break;
             case SDRX_OK_BLK_DONE: m_state = RX_STANDBY; return SPIRX_OK;
             case SDRX_OK_COMPLETE: m_state = IDLE;       return SPIRX_OK;
@@ -140,14 +140,13 @@ namespace vcml { namespace generic {
     }
 
     spi2sd::~spi2sd() {
-        /* nothing to do */
+        // nothing to do
     }
 
-    u8 spi2sd::spi_transport(u8 val) {
-        trace_fw(val);
-        u8 response = do_spi_transport(val);
-        trace_bw(response);
-        return response;
+    void spi2sd::spi_transport(spi_payload& spi) {
+        trace_fw(spi);
+        spi.miso = do_spi_transport(spi.mosi);
+        trace_bw(spi);
     }
 
 }}

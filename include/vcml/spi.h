@@ -25,10 +25,19 @@
 
 namespace vcml {
 
+    struct spi_payload {
+        u8 mosi;
+        u8 miso;
+
+        spi_payload(u8 init): mosi(init), miso() {}
+    };
+
+    ostream& operator << (ostream& os, const spi_payload& spi);
+
     class spi_fw_transport_if: public sc_core::sc_interface
     {
     public:
-        virtual u8 spi_transport(u8 val) = 0;
+        virtual void spi_transport(spi_payload& spi) = 0;
     };
 
     class spi_bw_transport_if: public sc_core::sc_interface {
@@ -69,7 +78,7 @@ namespace vcml {
     class spi_target_stub: public module, protected spi_fw_transport_if
     {
     protected:
-        virtual u8 spi_transport(u8 val) override;
+        virtual void spi_transport(spi_payload& payload) override;
 
     public:
         spi_target_socket SPI_IN;

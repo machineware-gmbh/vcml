@@ -40,8 +40,6 @@ namespace vcml { namespace generic {
     private:
         std::map<unsigned int, bool> m_csmode;
 
-        u8 do_spi_transport(u8 val);
-
         // disabled
         spibus();
         spibus(const spibus&);
@@ -65,7 +63,7 @@ namespace vcml { namespace generic {
         void set_active_high(unsigned int port, bool set = true);
         void set_active_low(unsigned int port, bool set = true);
 
-        virtual u8 spi_transport(u8 val) override;
+        virtual void spi_transport(spi_payload& spi) override;
 
         unsigned int next_free() const;
 
@@ -73,8 +71,8 @@ namespace vcml { namespace generic {
         unsigned int bind(spi_target_socket& target, sc_signal<bool>& cs,
                           bool cs_active_high = true);
 
-        void trace_fw(const string& port, u8 val) const;
-        void trace_bw(const string& port, u8 val) const;
+        void trace_fw(const string& port, const spi_payload& spi) const;
+        void trace_bw(const string& port, const spi_payload& spi) const;
     };
 
     inline void spibus::set_active_high(unsigned int port, bool set) {
@@ -85,14 +83,16 @@ namespace vcml { namespace generic {
         m_csmode[port] = !set;
     }
 
-    inline void spibus::trace_fw(const string& port, u8 val) const {
+    inline void spibus::trace_fw(const string& port,
+                                 const spi_payload& spi) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_fw(port, mkstr("[%02hhx]", val));
+            logger::trace_fw(port, spi);
     }
 
-    inline void spibus::trace_bw(const string& port, u8 val) const {
+    inline void spibus::trace_bw(const string& port,
+                                 const spi_payload& spi) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace_bw(port, mkstr("[%02hhx]", val));
+            logger::trace_bw(port, spi);
     }
 
 }}

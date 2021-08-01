@@ -20,21 +20,6 @@
 
 namespace vcml { namespace generic {
 
-    u8 spibus::do_spi_transport(u8 val) {
-        u8 result = 0xff;
-
-        for (auto port : CS) {
-            if (is_active(port.first)) {
-                auto& spi_out = SPI_OUT[port.first];
-                trace_fw(spi_out.name(), val);
-                result = spi_out->spi_transport(val);
-                trace_bw(spi_out.name(), result);
-            }
-        }
-
-        return result;
-    }
-
     spibus::spibus(const sc_module_name& nm):
         component(nm),
         spi_fw_transport_if(),
@@ -79,11 +64,19 @@ namespace vcml { namespace generic {
         return !m_csmode.at(port);
     }
 
-    u8 spibus::spi_transport(u8 val) {
-        trace_fw(SPI_IN.name(), val);
-        u8 result = do_spi_transport(val);
-        trace_bw(SPI_IN.name(), result);
-        return result;
+    void spibus::spi_transport(spi_payload& spi) {
+        trace_fw(SPI_IN.name(), spi);
+
+        for (auto port : CS) {
+            if (is_active(port.first)) {
+                auto& spi_out = SPI_OUT[port.first];
+                trace_fw(spi_out.name(), spi);
+                spi_out->spi_transport(spi);
+                trace_bw(spi_out.name(), spi);
+            }
+        }
+
+        trace_bw(SPI_IN.name(), spi);
     }
 
     unsigned int spibus::next_free() const {
