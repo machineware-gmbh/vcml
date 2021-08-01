@@ -153,6 +153,19 @@ namespace vcml {
                                      const sideband& info) {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
+        unsigned int width = tx.get_streaming_width();
+
+        // no streaming support
+        if (width && width != tx.get_data_length()) {
+            tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
+            return 0;
+        }
+
+        // no byte-enable support
+        if (tx.get_byte_enable_ptr() || tx.get_byte_enable_length()) {
+            tx.set_response_status(TLM_BYTE_ENABLE_ERROR_RESPONSE);
+            return 0;
+        }
 
         set_current_cpu(info.cpuid);
 

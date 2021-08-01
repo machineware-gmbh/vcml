@@ -40,57 +40,70 @@ namespace vcml {
         m_host->remove_register(this);
     }
 
-    unsigned int reg_base::receive(tlm_generic_payload& tx,
-                                   const sideband& info) {
-        VCML_ERROR_ON(!m_range.overlaps(tx), "invalid register access");
-        range addr = m_range.intersect(tx);
-
-        if (addr.length() == 0) {
-            tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
-            return 0;
-        }
-
-        if (tx.get_streaming_width() != tx.get_data_length()) {
-            tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
-            return 0;
-        }
-
-        if (tx.get_byte_enable_ptr() || tx.get_byte_enable_length()) {
-            tx.set_response_status(TLM_BYTE_ENABLE_ERROR_RESPONSE);
-            return 0;
-        }
-
+    void reg_base::do_receive(tlm_generic_payload& tx, const sideband& info) {
         if (tx.is_read() && !is_readable() && !info.is_debug) {
             tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-            return 0;
+            return;
         }
 
         if (tx.is_write() && !is_writeable() && !info.is_debug) {
             tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-            return 0;
+            return;
         }
 
         if (!info.is_debug && tx.is_read() && m_rsync)
             m_host->sync();
 
-        unsigned char* ptr = tx.get_data_ptr() + addr.start - tx.get_address();
+        unsigned char* ptr = tx.get_data_ptr();
         if (m_host->get_endian() != host_endian()) // i.e. if big endian
-            memswap(ptr, addr.length());
+            memswap(ptr, tx.get_data_length());
 
         if (tx.is_read())
-            do_read(addr, ptr);
+            do_read(tx, ptr);
         if (tx.is_write())
-            do_write(addr, ptr);
+            do_write(tx, ptr);
 
         if (m_host->get_endian() != host_endian()) // i.e. swap back
-            memswap(ptr, addr.length());
+            memswap(ptr, tx.get_data_length());
 
         tx.set_response_status(TLM_OK_RESPONSE);
 
         if (!info.is_debug && tx.is_write() && m_wsync)
             m_host->sync();
+    }
 
-        return addr.length();
+    unsigned int reg_base::receive(tlm_generic_payload& tx,
+                                   const sideband& info) {
+        u64 addr = tx.get_address();
+        u64 size = tx.get_data_length();
+        u64 strw = tx.get_streaming_width();
+        u8* data = tx.get_data_ptr();
+
+        VCML_ERROR_ON(strw != size, "invalid transaction streaming setup");
+        VCML_ERROR_ON(!m_range.overlaps(tx), "invalid register access");
+
+        range span = m_range.intersect(tx);
+
+        tx.set_address(span.start - m_range.start);
+        tx.set_data_ptr(data + span.start - addr);
+        tx.set_streaming_width(span.length());
+        tx.set_data_length(span.length());
+
+        bool is_tracing = m_host->loglvl >= LOG_TRACE;
+        if (is_tracing && !m_host->trace_errors)
+            logger::trace_fw(name(), tx);
+
+        do_receive(tx, info);
+
+        if (is_tracing && (!m_host->trace_errors || failed(tx)))
+            logger::trace_bw(name(), tx);
+
+        tx.set_address(addr);
+        tx.set_data_length(size);
+        tx.set_streaming_width(strw);
+        tx.set_data_ptr(data);
+
+        return tx.is_response_ok() ? span.length() : 0;
     }
 
 }

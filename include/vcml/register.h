@@ -46,6 +46,8 @@ namespace vcml {
         bool        m_wsync;
         peripheral* m_host;
 
+        void do_receive(tlm_generic_payload& tx, const sideband& info);
+
     public:
         u64 get_address() const { return m_range.start; }
         u64 get_size() const { return m_range.length(); }
@@ -273,8 +275,8 @@ namespace vcml {
         unsigned char* dest = (unsigned char*)ptr;
 
         while (addr.start <= addr.end) {
-            u64 idx  = (addr.start - get_address()) / sizeof(DATA);
-            u64 off  = (addr.start - get_address()) % sizeof(DATA);
+            u64 idx  = addr.start / sizeof(DATA);
+            u64 off  = addr.start % sizeof(DATA);
             u64 size = min(addr.length(), (u64)sizeof(DATA));
 
             DATA val = current_bank(idx);
@@ -300,8 +302,8 @@ namespace vcml {
         const unsigned char* src = (const unsigned char*)data;
 
         while (addr.start <= addr.end) {
-            u64 idx  = (addr.start - get_address()) / sizeof(DATA);
-            u64 off  = (addr.start - get_address()) % sizeof(DATA);
+            u64 idx  = addr.start / sizeof(DATA);
+            u64 off  = addr.start % sizeof(DATA);
             u64 size = min(addr.length(), (u64)sizeof(DATA));
 
             DATA val = current_bank(idx);
