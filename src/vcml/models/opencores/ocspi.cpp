@@ -38,10 +38,8 @@ namespace vcml { namespace opencores {
 
         spi_payload spi(val);
 
-        trace_fw(SPI_OUT, spi);
-        SPI_OUT->spi_transport(spi);
+        SPI_OUT.transport(spi);
         RXDATA = spi.miso;
-        trace_bw(SPI_OUT, spi);
 
         STATUS |= STATUS_TXR;
         if (m_txr_irq && !IRQ) {
