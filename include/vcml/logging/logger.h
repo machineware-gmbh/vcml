@@ -212,7 +212,10 @@ namespace vcml {
             ss << string(trace_curr_indent, ' ') << ">> ";
         } else {
             ss << string(trace_curr_indent, ' ') << "<< ";
-            trace_curr_indent -= trace_indent_incr;
+            if (trace_curr_indent >= trace_indent_incr)
+                trace_curr_indent -= trace_indent_incr;
+            else
+                trace_curr_indent = 0;
         }
 
         ss << tx;
