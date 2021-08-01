@@ -36,9 +36,9 @@ namespace vcml { namespace opencores {
         STATUS &= ~STATUS_TXR;
         STATUS &= ~STATUS_TXE;
 
-        trace_out(val);
+        trace_fw(val);
         RXDATA = SPI_OUT->spi_transport(val);
-        trace_in(m_shift_reg);
+        trace_bw(m_shift_reg);
 
         STATUS |= STATUS_TXR;
         if (m_txr_irq && !IRQ) {

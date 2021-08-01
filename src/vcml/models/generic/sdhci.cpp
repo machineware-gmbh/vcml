@@ -205,6 +205,7 @@ namespace vcml { namespace generic {
         set_present_state(COMMAND_INHIBIT_CMD);
 
         m_cmd.spi = false;
+        m_cmd.appcmd = false;
         m_cmd.opcode = (val & 0x3f00) >> 8;
         m_cmd.argument = ARG;
         m_cmd.crc = calc_crc7();

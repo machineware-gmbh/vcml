@@ -159,20 +159,25 @@ namespace vcml {
 
 #define HEXW(w) std::hex << std::setw(w) << std::setfill('0')
 
-    string sd_cmd_str(const sd_command& tx, bool appcmd) {
+    string sd_cmd_str(const sd_command& tx) {
         stringstream ss; u8 op = tx.opcode;
-        ss << (appcmd ? "ACMD" : "CMD") << std::dec << (unsigned int)tx.opcode;
-        ss << " '" << sd_cmd_str(op, appcmd) << "'";
+        ss << (tx.appcmd ? "ACMD" : "CMD") << std::dec << (int)tx.opcode;
+        ss << " '" << sd_cmd_str(op, tx.appcmd) << "'";
         ss << " (" << HEXW(8) << tx.argument << ")";
 
         if (tx.resp_len > 0) {
             ss << " resp = { ";
             for (unsigned int i = 0; i < tx.resp_len; i++)
-                ss << HEXW(2) << (unsigned int)tx.response[i] << " ";
+                ss << HEXW(2) << (int)tx.response[i] << " ";
             ss << "}" << std::dec;
         }
 
         return ss.str();
+    }
+
+    ostream& operator << (ostream& os, const sd_command& tx) {
+        os << sd_cmd_str(tx);
+        return os;
     }
 
 }

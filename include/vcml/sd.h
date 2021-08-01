@@ -56,6 +56,7 @@ namespace vcml {
         u8   crc;
         u8   response[17];
         u32  resp_len;
+        bool appcmd;
         bool spi;
     };
 
@@ -117,7 +118,9 @@ namespace vcml {
     };
 
     const char* sd_cmd_str(u8 opcode, bool appcmd = false);
-    string sd_cmd_str(const sd_command& tx, bool appcmd = false);
+    string sd_cmd_str(const sd_command& tx);
+
+    ostream& operator << (ostream& os, const sd_command& tx);
 
 }
 

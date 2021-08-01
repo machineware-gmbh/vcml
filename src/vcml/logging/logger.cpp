@@ -30,6 +30,8 @@ namespace vcml {
     bool logger::print_backtrace = true;
 
     size_t logger::trace_name_length = 20;
+    size_t logger::trace_indent_incr = 1;
+    size_t logger::trace_curr_indent = 0;
 
     const char* logger::prefix[NUM_LOG_LEVELS] = {
             /* [LOG_ERROR] = */ "E",
@@ -67,6 +69,20 @@ namespace vcml {
     ostream& operator << (ostream& os, const logmsg& msg) {
         logger::print_logmsg(os, msg);
         return os;
+    }
+
+    logmsg::logmsg(log_level _level, const string& _sender):
+        level(_level),
+        time(sc_time_stamp()),
+        time_offset(SC_ZERO_TIME),
+        cycle(sc_delta_count()),
+        sender(_sender),
+        source({"", -1}),
+        lines() {
+        sc_object* obj = find_object(sender.c_str());
+        component* comp = dynamic_cast<component*>(obj);
+        if (comp && is_thread())
+            time_offset = comp->local_time();
     }
 
     void logger::register_logger() {
@@ -121,24 +137,14 @@ namespace vcml {
 
     void logger::publish(log_level level, const string& sender,
                          const string& message, const char* file, int line) {
-        logmsg msg;
-        msg.level = level;
-        msg.time = sc_time_stamp();
-        msg.cycle = sc_delta_count();
-        msg.source.file = file ? file : "";
-        msg.source.line = line;
-        msg.sender = sender;
+        logmsg msg(level, sender);
         msg.lines = split(message, '\n');
 
-        sc_object* obj = find_object(sender.c_str());
-        component* comp = dynamic_cast<component*>(obj);
-        if (comp && is_thread())
-            msg.time += comp->local_time();
+        if (file != nullptr) {
+            msg.source.file = file;
+            msg.source.line = line;
+        }
 
-        publish(msg);
-    }
-
-    void logger::publish(const logmsg& msg) {
         for (auto& logger : loggers[msg.level])
             if (logger->check_filters(msg))
                 logger->write_log(msg);
@@ -162,47 +168,13 @@ namespace vcml {
         print_source = print;
     }
 
-    void logger::trace(const string& sender, const string& trace_message,
-                       const sc_time& dt) {
-        logmsg msg;
-        msg.level = LOG_TRACE;
-        msg.time = sc_time_stamp() + dt;
-        msg.cycle = sc_delta_count();
-        msg.source.file = "";
-        msg.source.line = -1;
-        msg.sender = sender;
-
-        stringstream ss;
-        if (!msg.sender.empty()) {
-            if (trace_name_length < msg.sender.length())
-                trace_name_length = msg.sender.length();
-            for (size_t i = msg.sender.length(); i < trace_name_length; i++)
-                ss << " ";
-        }
-
-        ss << trace_message;
-        msg.lines.push_back(ss.str());
-        publish(msg);
-    }
-
-    void logger::trace_fw(const string& org, const tlm_generic_payload& tx,
-                          const sc_time& dt) {
-        if (would_log(LOG_TRACE))
-            trace(org, ">> " + tlm_transaction_to_str(tx), dt);
-    }
-
-    void logger::trace_bw(const string& org, const tlm_generic_payload& tx,
-                          const sc_time& dt) {
-        if (would_log(LOG_TRACE))
-            trace(org, "<< " + tlm_transaction_to_str(tx), dt);
-    }
-
     void logger::print_prefix(ostream& os, const logmsg& msg) {
         os << "[" << vcml::logger::prefix[msg.level];
 
         if (print_time_stamp) {
-            u64 seconds = time_to_ns(msg.time) / 1000000000ull;
-            u64 nanosec = time_to_ns(msg.time) % 1000000000ull;
+            sc_time time = msg.time + msg.time_offset;
+            u64 seconds = time_to_ns(time) / 1000000000ull;
+            u64 nanosec = time_to_ns(time) % 1000000000ull;
             os << " " << std::dec << seconds
                << "." << std::setw(9) << std::setfill('0') << nanosec;
         }
@@ -212,8 +184,15 @@ namespace vcml {
 
         os << "]";
 
-        if (print_sender && !msg.sender.empty())
+        if (print_sender && !msg.sender.empty()) {
             os << " " << msg.sender << ":";
+            if (msg.level == LOG_TRACE) {
+                if (trace_name_length < msg.sender.length())
+                    trace_name_length = msg.sender.length();
+                if (trace_name_length > msg.sender.length())
+                    os << string(trace_name_length - msg.sender.length(), ' ');
+            }
+        }
     }
 
     void logger::print_logmsg(ostream& os, const logmsg& msg) {

@@ -189,8 +189,8 @@ namespace vcml { namespace generic {
         virtual sd_tx_status sd_data_read(u8& val) override;
         virtual sd_rx_status sd_data_write(u8 val) override;
 
-        void trace_in(sd_command& tx, bool appcmd) const;
-        void trace_out(sd_command& tx, bool appcmd) const;
+        void trace_fw(sd_command& tx) const;
+        void trace_bw(sd_command& tx) const;
     };
 
     inline void sdcard::update_status() {
@@ -198,18 +198,14 @@ namespace vcml { namespace generic {
         m_status |= m_state << 9;
     }
 
-    inline void sdcard::trace_in(sd_command& tx, bool appcmd) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {
-            string msg = mkstr(">> %s", sd_cmd_str(tx, appcmd).c_str());
-            logger::trace(name(), msg);
-        }
+    inline void sdcard::trace_fw(sd_command& tx) const {
+        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
+            logger::trace_fw(SD_IN.name(), tx);
     }
 
-    inline void sdcard::trace_out(sd_command& tx, bool appcmd) const {
-        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE) {
-            string msg = mkstr("<< %s", sd_cmd_str(tx, appcmd).c_str());
-            logger::trace(name(), msg);
-        }
+    inline void sdcard::trace_bw(sd_command& tx) const {
+        if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
+            logger::trace_bw(SD_IN.name(), tx);
     }
 
 }}

@@ -905,15 +905,14 @@ namespace vcml { namespace generic {
         if (!check_crc7(tx))
             return SD_ERR_CRC;
 
-        if (!(m_status & APP_CMD))
+        if (tx.appcmd)
+            return do_application_command(tx);
+        else
             return do_normal_command(tx);
-
-        m_status &= ~APP_CMD;
-        return do_application_command(tx);
     }
 
     sd_status sdcard::sd_transport(sd_command& tx) {
-        bool appcmd = (m_status & APP_CMD);
+        tx.appcmd = (m_status & APP_CMD);
         tx.resp_len = 0;
 
         if (m_state == SENDING || m_state == RECEIVING) {
@@ -921,10 +920,10 @@ namespace vcml { namespace generic {
             update_status();
         }
 
-        m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND);
+        m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND | APP_CMD);
         m_curcmd = tx.opcode;
 
-        trace_in(tx, appcmd);
+        trace_fw(tx);
         sd_status result = do_command(tx);
 
         switch (result) {
@@ -963,7 +962,7 @@ namespace vcml { namespace generic {
             m_state = m_state < TRANSFER ? IDLE : TRANSFER;
             make_r1(tx);
             update_status();
-            log_debug("illegal command %s", sd_cmd_str(tx, appcmd).c_str());
+            log_debug("illegal command %s", sd_cmd_str(tx).c_str());
             break;
 
         default:
@@ -971,7 +970,7 @@ namespace vcml { namespace generic {
             break;
         }
 
-        trace_out(tx, appcmd);
+        trace_bw(tx);
         return result;
     }
 

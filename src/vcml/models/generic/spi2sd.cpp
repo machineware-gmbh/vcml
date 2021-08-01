@@ -22,6 +22,7 @@ namespace vcml { namespace generic {
 
     u8 spi2sd::new_command(u8 val) {
         m_cmd.spi = true;
+        m_cmd.appcmd = false;
         m_cmd.opcode = val & 0x3f;
         m_cmd.argument = 0;
         m_cmd.resp_len = 0;
@@ -51,7 +52,9 @@ namespace vcml { namespace generic {
             return 0xff;
 
         case DO_COMMAND:
+            trace_fw(m_cmd);
             m_status = SD_OUT->sd_transport(m_cmd);
+            trace_bw(m_cmd);
             m_rspbytes = 0;
             m_state = DO_RESPONSE;
             return 0xff;
@@ -141,9 +144,9 @@ namespace vcml { namespace generic {
     }
 
     u8 spi2sd::spi_transport(u8 val) {
-        trace_in(val);
+        trace_fw(val);
         u8 response = do_spi_transport(val);
-        trace_out(response);
+        trace_bw(response);
         return response;
     }
 

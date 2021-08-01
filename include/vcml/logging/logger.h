@@ -36,6 +36,11 @@ namespace vcml {
         NUM_LOG_LEVELS
     };
 
+    enum trace_direction : bool {
+        TRACE_FW = true,
+        TRACE_BW = false,
+    };
+
     VCML_TYPEINFO(log_level);
 
     ostream& operator << (ostream& os, const log_level& lvl);
@@ -44,6 +49,7 @@ namespace vcml {
     struct logmsg {
         log_level level;
         sc_time   time;
+        sc_time   time_offset;
         u64       cycle;
         string    sender;
 
@@ -54,6 +60,21 @@ namespace vcml {
         } source;
 
         vector<string> lines;
+
+        logmsg(log_level _level, const string& _sender);
+    };
+
+    template <typename PAYLOAD>
+    struct trace_msg : public logmsg {
+        trace_direction direction;
+        const PAYLOAD& payload;
+
+        trace_msg(const string& _sender, trace_direction _direction,
+                  const PAYLOAD& _payload):
+            logmsg(LOG_TRACE, _sender),
+            direction(_direction),
+            payload(_payload) {
+        }
     };
 
     ostream& operator << (ostream& os, const logmsg& msg);
@@ -77,6 +98,7 @@ namespace vcml {
         logger(const logger&);
         logger& operator = (const logger&);
 
+        static size_t trace_curr_indent;
         static vector<logger*> loggers[NUM_LOG_LEVELS];
 
     public:
@@ -95,6 +117,9 @@ namespace vcml {
 
         virtual void write_log(const logmsg& msg) = 0;
 
+        template <typename PAYLOAD>
+        void write_trace(const trace_msg<PAYLOAD>& msg);
+
         static bool would_log(log_level lvl);
 
         static void publish(log_level level,
@@ -103,20 +128,18 @@ namespace vcml {
                             const char* file = nullptr,
                             int line = -1);
 
-        static void publish(const logmsg& msg);
-
         static void log(const report& rep);
 
-        static void trace(const string& sender,
-                          const string& trace_message,
-                          const sc_time& dt = SC_ZERO_TIME);
+        template <typename PAYLOAD>
+        static void trace(trace_direction direction, const string& sender,
+                          const PAYLOAD& tx, const sc_time& dt = SC_ZERO_TIME);
 
-        static void trace_fw(const string& sender,
-                             const tlm_generic_payload& tx,
+        template <typename PAYLOAD>
+        static void trace_fw(const string& sender, const PAYLOAD& tx,
                              const sc_time& dt = SC_ZERO_TIME);
 
-        static void trace_bw(const string& sender,
-                             const tlm_generic_payload& tx,
+        template <typename PAYLOAD>
+        static void trace_bw(const string& sender, const PAYLOAD& tx,
                              const sc_time& dt = SC_ZERO_TIME);
 
         static bool print_time_stamp;
@@ -125,10 +148,11 @@ namespace vcml {
         static bool print_source;
         static bool print_backtrace;
 
+        static size_t trace_name_length;
+        static size_t trace_indent_incr;
+
         static void print_prefix(ostream& os, const logmsg& msg);
         static void print_logmsg(ostream& os, const logmsg& msg);
-
-        static size_t trace_name_length;
 
         static const char* prefix[NUM_LOG_LEVELS];
         static const char* desc[NUM_LOG_LEVELS];
@@ -140,6 +164,11 @@ namespace vcml {
 
     inline bool logger::would_log(log_level lvl) {
         return !loggers[lvl].empty();
+    }
+
+    template <typename PAYLOAD>
+    inline void logger::write_trace(const trace_msg<PAYLOAD>& msg) {
+        write_log(msg);
     }
 
     inline void logger::filter(log_filter filter) {
@@ -166,6 +195,43 @@ namespace vcml {
                 return false;
             return true;
         });
+    }
+
+    template <typename PAYLOAD>
+    inline void logger::trace(trace_direction direction, const string& sender,
+                              const PAYLOAD& tx, const sc_time& dt) {
+        if (!would_log(LOG_TRACE))
+            return;
+
+        trace_msg<PAYLOAD> msg(sender, direction, tx);
+        msg.time_offset = dt;
+
+        stringstream ss;
+        if (direction == TRACE_FW) {
+            trace_curr_indent += trace_indent_incr;
+            ss << string(trace_curr_indent, ' ') << ">> ";
+        } else {
+            ss << string(trace_curr_indent, ' ') << "<< ";
+            trace_curr_indent -= trace_indent_incr;
+        }
+
+        ss << tx;
+        msg.lines.push_back(ss.str());
+
+        for (auto logger : loggers[LOG_TRACE])
+            logger->write_trace(msg);
+    }
+
+    template <typename PAYLOAD>
+    inline void logger::trace_fw(const string& sender, const PAYLOAD& tx,
+                                 const sc_time& dt) {
+        trace(TRACE_FW, sender, tx, dt);
+    }
+
+    template <typename PAYLOAD>
+    inline void logger::trace_bw(const string& sender, const PAYLOAD& tx,
+                                 const sc_time& dt) {
+        trace(TRACE_BW, sender, tx, dt);
     }
 
     // VCML_OMIT_LOGGING_SOURCE: define this to remove the log_XXX macros and

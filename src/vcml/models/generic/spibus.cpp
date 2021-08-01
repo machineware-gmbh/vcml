@@ -24,8 +24,12 @@ namespace vcml { namespace generic {
         u8 result = 0xff;
 
         for (auto port : CS) {
-            if (is_active(port.first))
-                result = SPI_OUT[port.first]->spi_transport(val);
+            if (is_active(port.first)) {
+                auto& spi_out = SPI_OUT[port.first];
+                trace_fw(spi_out.name(), val);
+                result = spi_out->spi_transport(val);
+                trace_bw(spi_out.name(), result);
+            }
         }
 
         return result;
@@ -76,9 +80,9 @@ namespace vcml { namespace generic {
     }
 
     u8 spibus::spi_transport(u8 val) {
-        trace_in(val);
+        trace_fw(SPI_IN.name(), val);
         u8 result = do_spi_transport(val);
-        trace_out(result);
+        trace_bw(SPI_IN.name(), result);
         return result;
     }
 

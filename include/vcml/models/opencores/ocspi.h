@@ -75,19 +75,20 @@ namespace vcml { namespace opencores {
         VCML_KIND(ocspi);
         virtual void reset() override;
 
-        void trace_in(u8 val) const;
-        void trace_out(u8 val) const;
+        void trace_fw(u8 val) const;
+        void trace_bw(u8 val) const;
     };
 
-    inline void ocspi::trace_in(u8 val) const {
+    inline void ocspi::trace_fw(u8 val) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace(name(), mkstr("<< 0x%02x", val));
+            logger::trace_fw(SPI_OUT.name(), mkstr("[%02hhx]", val));
     }
 
-    inline void ocspi::trace_out(u8 val) const {
+    inline void ocspi::trace_bw(u8 val) const {
         if (logger::would_log(LOG_TRACE) && loglvl >= LOG_TRACE)
-            logger::trace(name(), mkstr(">> 0x%02x", val));
+            logger::trace_bw(SPI_OUT.name(), mkstr("[%02hhx]", val));
     }
+
 
 }}
 
