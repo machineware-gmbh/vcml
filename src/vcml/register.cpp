@@ -51,9 +51,6 @@ namespace vcml {
             return;
         }
 
-        if (!info.is_debug && tx.is_read() && m_rsync)
-            m_host->sync();
-
         unsigned char* ptr = tx.get_data_ptr();
         if (m_host->get_endian() != host_endian()) // i.e. if big endian
             memswap(ptr, tx.get_data_length());
@@ -67,9 +64,6 @@ namespace vcml {
             memswap(ptr, tx.get_data_length());
 
         tx.set_response_status(TLM_OK_RESPONSE);
-
-        if (!info.is_debug && tx.is_write() && m_wsync)
-            m_host->sync();
     }
 
     unsigned int reg_base::receive(tlm_generic_payload& tx,
@@ -89,14 +83,21 @@ namespace vcml {
         tx.set_streaming_width(span.length());
         tx.set_data_length(span.length());
 
+        if (!info.is_debug) {
+            if (tx.is_read() && m_rsync)
+                m_host->sync();
+            if (tx.is_write() && m_wsync)
+                m_host->sync();
+        }
+
         bool is_tracing = m_host->loglvl >= LOG_TRACE;
         if (is_tracing && !m_host->trace_errors)
-            logger::trace_fw(name(), tx);
+            logger::trace_fw(name(), tx, m_host->local_time());
 
         do_receive(tx, info);
 
         if (is_tracing && (!m_host->trace_errors || failed(tx)))
-            logger::trace_bw(name(), tx);
+            logger::trace_bw(name(), tx, m_host->local_time());
 
         tx.set_address(addr);
         tx.set_data_length(size);
