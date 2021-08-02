@@ -137,7 +137,7 @@ namespace vcml { namespace generic {
         u16 sd_bufpos = 0;
 
         while (sd_bufpos <= ((BLOCK_SIZE & 0x0fff) + 2)) {
-            switch (SD_OUT->sd_data_read(m_buffer[sd_bufpos++])) {
+            switch (SD_OUT.read_data(m_buffer[sd_bufpos++])) {
             case SDTX_OK:
                 break;
 
@@ -160,7 +160,7 @@ namespace vcml { namespace generic {
         u16 sd_bufpos = 0;
 
         while (sd_bufpos <= ((BLOCK_SIZE & 0x0fff) + 2)) {
-            switch (SD_OUT->sd_data_write(m_buffer[sd_bufpos++])) {
+            switch (SD_OUT.write_data(m_buffer[sd_bufpos++])) {
             case SDRX_OK:
                 break;
 
@@ -210,6 +210,7 @@ namespace vcml { namespace generic {
         m_cmd.argument = ARG;
         m_cmd.crc = calc_crc7();
         m_cmd.resp_len = 0;
+        m_cmd.status = SD_INCOMPLETE;
 
         if (m_cmd.opcode == 17 || m_cmd.opcode == 18)
             set_present_state(READ_TRANSFER_ACTIVE);
@@ -217,11 +218,11 @@ namespace vcml { namespace generic {
         if (m_cmd.opcode == 24 || m_cmd.opcode == 25)
             set_present_state(WRITE_TRANSFER_ACTIVE);
 
-        m_status = SD_OUT->sd_transport(m_cmd);
+        SD_OUT->sd_transport(m_cmd);
         store_response();
         set_present_state(~COMMAND_INHIBIT_CMD);
 
-        switch (m_status) {
+        switch (m_cmd.status) {
         case SD_OK:
             break;
 
@@ -261,7 +262,7 @@ namespace vcml { namespace generic {
             break;
 
         default:
-             VCML_ERROR("invalid sd_status %d", m_status);
+             VCML_ERROR("invalid sd_status %d", m_cmd.status);
         }
 
         if ((val & 0x0001) && (val & 0x0002))
@@ -399,9 +400,9 @@ namespace vcml { namespace generic {
             // normally the boundary should be 512K-12 bytes, i.e. 524276 bytes
             boundary = (4096 << ((BLOCK_SIZE & 0x7000) >> 12)) - 12;
 
-            if (m_status == SD_OK_TX_RDY) {
+            if (m_cmd.status == SD_OK_TX_RDY) {
                 rs = dma_read(boundary);
-            } else if (m_status == SD_OK_RX_RDY) {
+            } else if (m_cmd.status == SD_OK_RX_RDY) {
                 rs = dma_write(boundary);
             } else {
                 VCML_ERROR("illegal state for DMA command");
@@ -423,7 +424,7 @@ namespace vcml { namespace generic {
 
         while (true) {
             if (offset + blksz >= boundary) {
-                // this is never happens with Linux...
+                // this never happens with Linux...
                 VCML_ERROR("SDMA boundary exceeded, not implemented");
             }
 
@@ -484,7 +485,6 @@ namespace vcml { namespace generic {
     sdhci::sdhci(const sc_module_name& nm):
         peripheral(nm),
         m_cmd(),
-        m_status(),
         m_bufptr(0),
         m_dma_start("dma_start"),
         SDMA_SYSTEM_ADDRESS     ("SDMA_SYSTEM_ADDRESS",     0x000, 0x00000000),
@@ -604,8 +604,6 @@ namespace vcml { namespace generic {
 
         SC_HAS_PROCESS(sdhci);
         SC_THREAD(dma_thread);
-
-        SD_OUT.bind(*this);
     }
 
     sdhci::~sdhci() {

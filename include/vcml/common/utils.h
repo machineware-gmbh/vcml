@@ -54,15 +54,15 @@ namespace vcml {
 
     bool is_debug_build();
 
-    class stream_state_guard
+    class stream_guard
     {
     private:
         std::ostream& m_os;
         std::ios::fmtflags m_flags;
-        stream_state_guard() = delete;
+        stream_guard() = delete;
     public:
-        stream_state_guard(ostream& os): m_os(os), m_flags(os.flags()) {}
-        ~stream_state_guard() { m_os.flags(m_flags); }
+        stream_guard(ostream& os): m_os(os), m_flags(os.flags()) {}
+        ~stream_guard() { m_os.flags(m_flags); }
     };
 
 }

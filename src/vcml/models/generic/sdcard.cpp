@@ -846,135 +846,7 @@ namespace vcml { namespace generic {
         return SD_ERR_ILLEGAL;
     }
 
-    sdcard::sdcard(const sc_module_name& nm):
-        component(nm),
-        sd_fw_transport_if(),
-        m_spi(false),
-        m_do_crc(true),
-        m_blklen(SDHC_BLKLEN),
-        m_image(),
-        m_status(0),
-        m_hvs(0),
-        m_rca(0),
-        m_ocr(),
-        m_cid(),
-        m_csd(),
-        m_scr(),
-        m_sts(),
-        m_swf(),
-        m_bufptr(nullptr),
-        m_bufend(nullptr),
-        m_buffer(),
-        m_curcmd(),
-        m_curoff(),
-        m_numblk(),
-        m_state(IDLE),
-        capacity("capacity", 0),
-        image("image", ""),
-        readonly("readonly", false),
-        SD_IN("SD_IN") {
-        SD_IN.bind(*this);
-
-        init_image();
-
-        init_ocr();
-        init_cid();
-        init_csd();
-        init_scr();
-        init_sts();
-    }
-
-    sdcard::~sdcard() {
-        /* nothing to do */
-    }
-
-    void sdcard::reset() {
-        m_status = 0;
-        m_state = IDLE;
-
-        init_ocr();
-        init_cid();
-        init_csd();
-        init_scr();
-        init_sts();
-
-        component::reset();
-    }
-
-    sd_status sdcard::do_command(sd_command& tx) {
-        if (!check_crc7(tx))
-            return SD_ERR_CRC;
-
-        if (tx.appcmd)
-            return do_application_command(tx);
-        else
-            return do_normal_command(tx);
-    }
-
-    sd_status sdcard::sd_transport(sd_command& tx) {
-        tx.appcmd = (m_status & APP_CMD);
-        tx.resp_len = 0;
-
-        if (m_state == SENDING || m_state == RECEIVING) {
-            m_state = TRANSFER;
-            update_status();
-        }
-
-        m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND | APP_CMD);
-        m_curcmd = tx.opcode;
-
-        trace_fw(SD_IN, tx);
-        sd_status result = do_command(tx);
-
-        switch (result) {
-        case SD_OK:
-            update_status();
-            break;
-
-        case SD_OK_TX_RDY:
-            update_status();
-            VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
-            break;
-
-        case SD_OK_RX_RDY:
-            update_status();
-            VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
-            break;
-
-        case SD_ERR_CRC:
-            m_status |= COM_CRC_ERROR;
-            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
-            make_r1(tx);
-            update_status();
-            log_debug("command checksum error");
-            break;
-
-        case SD_ERR_ARG:
-            m_status |= OUT_OF_RANGE;
-            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
-            make_r1(tx);
-            update_status();
-            log_debug("command argument out of range 0x%08x", tx.argument);
-            break;
-
-        case SD_ERR_ILLEGAL:
-            m_status |= ILLEGAL_COMMAND;
-            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
-            make_r1(tx);
-            update_status();
-            log_debug("illegal command %s", sd_cmd_str(tx).c_str());
-            break;
-
-        default:
-            VCML_ERROR("invalid response code from command handler");
-            break;
-        }
-
-        trace_bw(SD_IN, tx);
-        return result;
-    }
-
-    sd_tx_status sdcard::sd_data_read(u8& val) {
+    sd_status_tx sdcard::do_data_read(u8& val) {
         val = 0xff;
 
         if (m_state != SENDING) {
@@ -1007,7 +879,7 @@ namespace vcml { namespace generic {
         return SDTX_OK;
     }
 
-    sd_rx_status sdcard::sd_data_write(u8 val) {
+    sd_status_rx sdcard::do_data_write(u8 val) {
         if (m_state != RECEIVING) {
             log_debug("attempt to write to card that is not receiving");
             return SDRX_ERR_ILLEGAL;
@@ -1056,6 +928,136 @@ namespace vcml { namespace generic {
 
         setup_rx_blk(offset); // continue writing
         return SDRX_OK_BLK_DONE;
+    }
+
+    sdcard::sdcard(const sc_module_name& nm):
+        component(nm),
+        sd_host(),
+        m_spi(false),
+        m_do_crc(true),
+        m_blklen(SDHC_BLKLEN),
+        m_image(),
+        m_status(0),
+        m_hvs(0),
+        m_rca(0),
+        m_ocr(),
+        m_cid(),
+        m_csd(),
+        m_scr(),
+        m_sts(),
+        m_swf(),
+        m_bufptr(nullptr),
+        m_bufend(nullptr),
+        m_buffer(),
+        m_curcmd(),
+        m_curoff(),
+        m_numblk(),
+        m_state(IDLE),
+        capacity("capacity", 0),
+        image("image", ""),
+        readonly("readonly", false),
+        SD_IN("SD_IN") {
+
+        init_image();
+
+        init_ocr();
+        init_cid();
+        init_csd();
+        init_scr();
+        init_sts();
+    }
+
+    sdcard::~sdcard() {
+        /* nothing to do */
+    }
+
+    void sdcard::reset() {
+        m_status = 0;
+        m_state = IDLE;
+
+        init_ocr();
+        init_cid();
+        init_csd();
+        init_scr();
+        init_sts();
+
+        component::reset();
+    }
+
+    sd_status sdcard::do_command(sd_command& tx) {
+        if (!check_crc7(tx))
+            return SD_ERR_CRC;
+
+        if (tx.appcmd)
+            return do_application_command(tx);
+        else
+            return do_normal_command(tx);
+    }
+
+    void sdcard::sd_transport(const sd_target_socket& socket, sd_command& tx) {
+        tx.appcmd = (m_status & APP_CMD);
+        tx.resp_len = 0;
+
+        if (m_state == SENDING || m_state == RECEIVING) {
+            m_state = TRANSFER;
+            update_status();
+        }
+
+        m_status &= ~(COM_CRC_ERROR | ILLEGAL_COMMAND | APP_CMD);
+        m_curcmd = tx.opcode;
+
+        tx.status = do_command(tx);
+
+        switch (tx.status) {
+        case SD_OK:
+            update_status();
+            break;
+
+        case SD_OK_TX_RDY:
+            update_status();
+            VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
+            break;
+
+        case SD_OK_RX_RDY:
+            update_status();
+            VCML_ERROR_ON(tx.resp_len == 0, "invalid response from handler");
+            break;
+
+        case SD_ERR_CRC:
+            m_status |= COM_CRC_ERROR;
+            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
+            make_r1(tx);
+            update_status();
+            log_debug("command checksum error");
+            break;
+
+        case SD_ERR_ARG:
+            m_status |= OUT_OF_RANGE;
+            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
+            make_r1(tx);
+            update_status();
+            log_debug("command argument out of range 0x%08x", tx.argument);
+            break;
+
+        case SD_ERR_ILLEGAL:
+            m_status |= ILLEGAL_COMMAND;
+            m_state = m_state < TRANSFER ? IDLE : TRANSFER;
+            make_r1(tx);
+            update_status();
+            log_debug("illegal command %s", to_string(tx).c_str());
+            break;
+
+        default:
+            VCML_ERROR("invalid response code from command handler");
+            break;
+        }
+    }
+
+    void sdcard::sd_transport(const sd_target_socket& socket, sd_data& tx) {
+        if (tx.mode == SD_READ)
+            tx.status.read = do_data_read(tx.data);
+        if (tx.mode == SD_WRITE)
+            tx.status.write = do_data_write(tx.data);
     }
 
 }}

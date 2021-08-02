@@ -30,7 +30,7 @@
 namespace vcml { namespace generic {
 
     class sdcard: public component,
-                  public sd_fw_transport_if {
+                  public sd_host {
     private:
         bool    m_spi;
         bool    m_do_crc;
@@ -104,6 +104,9 @@ namespace vcml { namespace generic {
         sd_status do_command(sd_command& tx);
         sd_status do_normal_command(sd_command& tx);
         sd_status do_application_command(sd_command& tx);
+
+        sd_status_tx do_data_read(u8& val);
+        sd_status_rx do_data_write(u8 val);
 
         // disabled
         sdcard();
@@ -185,9 +188,10 @@ namespace vcml { namespace generic {
         bool is_sdhc() const { return m_ocr & OCR_CCS; }
         bool is_sdsc() const { return !is_sdhc(); }
 
-        virtual sd_status sd_transport(sd_command& tx) override;
-        virtual sd_tx_status sd_data_read(u8& val) override;
-        virtual sd_rx_status sd_data_write(u8 val) override;
+        virtual void sd_transport(const sd_target_socket& socket,
+                                  sd_command& cmd) override;
+        virtual void sd_transport(const sd_target_socket& socket,
+                                  sd_data& data) override;
     };
 
     inline void sdcard::update_status() {

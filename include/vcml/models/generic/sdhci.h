@@ -33,7 +33,7 @@
 
 namespace vcml { namespace generic {
 
-    class sdhci: public peripheral, public sd_bw_transport_if
+    class sdhci: public peripheral
     {
     private:
         enum reset_kind {
@@ -77,7 +77,7 @@ namespace vcml { namespace generic {
         };
 
         sd_command m_cmd;
-        sd_status  m_status;
+        //sd_status  m_status;
 
         u16 m_bufptr;
         u8 m_buffer[514]; // 512 block length + 2 bytes CRC

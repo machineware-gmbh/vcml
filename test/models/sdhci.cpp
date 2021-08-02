@@ -18,7 +18,7 @@
 
 #include "testing.h"
 
-class mock_sdcard: public component, public sd_fw_transport_if
+class mock_sdcard: public component, public sd_host
 {
 public:
     sd_target_socket SD_IN;
@@ -26,12 +26,22 @@ public:
     mock_sdcard(const sc_module_name& nm):
         component(nm),
         SD_IN("SD_IN") {
-        SD_IN.bind(*this);
     }
 
-    MOCK_METHOD1(sd_transport, sd_status(sd_command&));
-    MOCK_METHOD1(sd_data_read, sd_tx_status(u8&));
-    MOCK_METHOD1(sd_data_write, sd_rx_status(u8));
+    MOCK_METHOD1(test_transport, sd_status(sd_command&));
+    MOCK_METHOD1(test_data_read, sd_status_tx(u8&));
+    MOCK_METHOD1(test_data_write, sd_status_rx(u8));
+
+    virtual void sd_transport(const sd_target_socket& s, sd_command& tx) {
+        tx.status = test_transport(tx);
+    }
+
+    virtual void sd_transport(const sd_target_socket& s, sd_data& tx) {
+        if (tx.mode == SD_READ)
+            tx.status.read = test_data_read(tx.data);
+        if (tx.mode == SD_WRITE)
+            tx.status.write = test_data_write(tx.data);
+    }
 };
 
 class sdhci_harness: public test_base
@@ -95,9 +105,10 @@ public:
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
+        cmd.status = SD_INCOMPLETE;
 
-        EXPECT_CALL(sdcard, sd_transport(_))
-            .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK)));
+        EXPECT_CALL(sdcard, test_transport(_))
+            .WillOnce(::testing::DoAll(SetArgReferee<0>(cmd), Return(SD_OK)));
 
 
         ASSERT_OK(OUT.writew<u32>(0x08, 0x00000000))
@@ -149,11 +160,12 @@ public:
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
+        cmd.status = SD_INCOMPLETE;
 
-        EXPECT_CALL(sdcard, sd_transport(_))
+        EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_TX_RDY)));
 
-        EXPECT_CALL(sdcard, sd_data_read(_))
+        EXPECT_CALL(sdcard, test_data_read(_))
             .WillOnce(DoAll(SetArgReferee<0>(0x01), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0X02), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x03), Return(SDTX_OK)))
@@ -249,14 +261,15 @@ public:
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
+        cmd.status = SD_INCOMPLETE;
 
-        EXPECT_CALL(sdcard, sd_transport(_))
+        EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_RX_RDY)));
 
         u8 test_sd_mem[16];
         memset(test_sd_mem, 0, sizeof(test_sd_mem));
 
-        EXPECT_CALL(sdcard, sd_data_write(_))
+        EXPECT_CALL(sdcard, test_data_write(_))
             .WillOnce(DoAll(SaveArg<0>(&test_sd_mem[0]), Return(SDRX_OK)))
             .WillOnce(DoAll(SaveArg<0>(&test_sd_mem[1]), Return(SDRX_OK)))
             .WillOnce(DoAll(SaveArg<0>(&test_sd_mem[2]), Return(SDRX_OK)))
@@ -352,11 +365,12 @@ public:
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
+        cmd.status = SD_INCOMPLETE;
 
-        EXPECT_CALL(sdcard, sd_transport(_))
+        EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_TX_RDY)));
 
-        EXPECT_CALL(sdcard, sd_data_read(_))
+        EXPECT_CALL(sdcard, test_data_read(_))
             .WillOnce(DoAll(SetArgReferee<0>(0x01),Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0X02),Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x03),Return(SDTX_OK)))
@@ -431,13 +445,14 @@ public:
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
+        cmd.status = SD_INCOMPLETE;
 
-        EXPECT_CALL(sdcard, sd_transport(_))
+        EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_RX_RDY)));
 
         memset(test_sd_mem, 0, sizeof(test_sd_mem)); // reset buffer
 
-        EXPECT_CALL(sdcard, sd_data_write(_))
+        EXPECT_CALL(sdcard, test_data_write(_))
             .WillOnce(DoAll(SaveArg<0>(&test_sd_mem[0]), Return(SDRX_OK)))
             .WillOnce(DoAll(SaveArg<0>(&test_sd_mem[1]), Return(SDRX_OK)))
             .WillOnce(DoAll(SaveArg<0>(&test_sd_mem[2]), Return(SDRX_OK)))

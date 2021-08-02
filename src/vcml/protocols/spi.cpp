@@ -129,7 +129,9 @@ namespace vcml {
     }
 
     void spi_target_stub::spi_transport(spi_payload& payload) {
+        trace_fw(SPI_IN, payload);
         // nothing to do
+        trace_bw(SPI_IN, payload);
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):

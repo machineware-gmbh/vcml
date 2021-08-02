@@ -32,8 +32,7 @@
 namespace vcml { namespace generic {
 
     class spi2sd: public component,
-                  public spi_host,
-                  public sd_bw_transport_if {
+                  public spi_host {
     private:
         enum token {
             SPITX_GO      = 0b11111110, // reading and single-block writing
@@ -61,7 +60,6 @@ namespace vcml { namespace generic {
         size_t     m_argbytes;
         size_t     m_rspbytes;
         sd_command m_cmd;
-        sd_status  m_status;
 
         u8 new_command(u8 val);
         u8 do_spi_transport(u8 val);
