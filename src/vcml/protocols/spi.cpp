@@ -128,9 +128,8 @@ namespace vcml {
         // nothing to do
     }
 
-
     void spi_target_stub::spi_transport(spi_payload& payload) {
-        log_debug("received 0x%02hhx", payload.mosi);
+        // nothing to do
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):
