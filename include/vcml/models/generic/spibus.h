@@ -25,8 +25,8 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
+#include "vcml/protocols/spi.h"
 
-#include "vcml/spi.h"
 #include "vcml/ports.h"
 #include "vcml/component.h"
 

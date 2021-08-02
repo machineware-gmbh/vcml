@@ -29,7 +29,7 @@
 #include "vcml/slave_socket.h"
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/sd.h"
+#include "vcml/protocols/sd.h"
 
 namespace vcml { namespace generic {
 

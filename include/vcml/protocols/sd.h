@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SD_H
-#define VCML_SD_H
+#ifndef VCML_PROTOCOLS_SD_H
+#define VCML_PROTOCOLS_SD_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/systemc.h"

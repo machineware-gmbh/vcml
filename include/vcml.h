@@ -63,6 +63,9 @@
 #include "vcml/ui/fbmode.h"
 #include "vcml/ui/display.h"
 
+#include "vcml/protocols/spi.h"
+#include "vcml/protocols/sd.h"
+
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"
 #include "vcml/ports.h"
@@ -79,8 +82,6 @@
 #include "vcml/processor.h"
 #include "vcml/system.h"
 #include "vcml/setup.h"
-#include "vcml/spi.h"
-#include "vcml/sd.h"
 
 #include "vcml/models/generic/clock.h"
 #include "vcml/models/generic/reset.h"

@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/spi.h"
+#include "vcml/protocols/spi.h"
 
 namespace vcml {
 

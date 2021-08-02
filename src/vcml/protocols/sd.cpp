@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/sd.h"
+#include "vcml/protocols/sd.h"
 
 namespace vcml {
 

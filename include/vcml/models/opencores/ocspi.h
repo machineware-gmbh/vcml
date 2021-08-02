@@ -23,17 +23,17 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/spi.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/spi.h"
+
 #include "vcml/ports.h"
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 
-#include "vcml/properties/property.h"
-
 namespace vcml { namespace opencores {
 
-    class ocspi: public peripheral, public spi_bw_transport_if
+    class ocspi: public peripheral
     {
     private:
         bool m_txe_irq;

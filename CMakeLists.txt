@@ -82,6 +82,8 @@ set(sources
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
+    ${src}/vcml/protocols/spi.cpp
+    ${src}/vcml/protocols/sd.cpp
     ${src}/vcml/sbi.cpp
     ${src}/vcml/dmi_cache.cpp
     ${src}/vcml/exmon.cpp
@@ -95,8 +97,6 @@ set(sources
     ${src}/vcml/processor.cpp
     ${src}/vcml/system.cpp
     ${src}/vcml/setup.cpp
-    ${src}/vcml/spi.cpp
-    ${src}/vcml/sd.cpp
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp

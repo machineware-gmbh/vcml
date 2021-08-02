@@ -24,8 +24,9 @@
 #include "vcml/common/bitops.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/spi.h"
-#include "vcml/sd.h"
+#include "vcml/protocols/spi.h"
+#include "vcml/protocols/sd.h"
+
 #include "vcml/component.h"
 
 namespace vcml { namespace generic {

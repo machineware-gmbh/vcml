@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SPI_H
-#define VCML_SPI_H
+#ifndef VCML_PROTOCOLS_SPI_H
+#define VCML_PROTOCOLS_SPI_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/systemc.h"
@@ -42,6 +42,7 @@ namespace vcml {
     class spi_host
     {
     public:
+        spi_host() = default;
         virtual ~spi_host() = default;
         virtual void spi_transport(const spi_target_socket&, spi_payload&) = 0;
     };
