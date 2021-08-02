@@ -39,9 +39,6 @@ namespace vcml { namespace opencores {
         bool m_txe_irq;
         bool m_txr_irq;
 
-        u8 read_RXDATA();
-        u8 read_TXDATA();
-
         u8 write_TXDATA(u8 val);
         u8 write_STATUS(u8 val);
         u32 write_CONTROL(u32 val);

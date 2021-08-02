@@ -20,16 +20,6 @@
 
 namespace vcml { namespace opencores {
 
-    u8 ocspi::read_RXDATA() {
-        log_debug("read RXDATA = %02x", (unsigned int)RXDATA);
-        return RXDATA;
-    }
-
-    u8 ocspi::read_TXDATA() {
-        log_debug("read TXDATA = %02x", (unsigned int)TXDATA);
-        return TXDATA;
-    }
-
     u8 ocspi::write_TXDATA(u8 val) {
         TXDATA = RXDATA.get();
 
@@ -123,11 +113,11 @@ namespace vcml { namespace opencores {
         SPI_OUT("SPI_OUT"),
         clock("clock", 50000000) { /* 50 MHz default clock */
 
+        RXDATA.sync_always();
         RXDATA.allow_read_only();
-        RXDATA.read = &ocspi::read_RXDATA;
 
+        TXDATA.sync_always();
         TXDATA.allow_read_write();
-        TXDATA.read = &ocspi::read_TXDATA;
         TXDATA.write = &ocspi::write_TXDATA;
 
         STATUS.allow_read_write();
