@@ -84,6 +84,7 @@ set(sources
     ${src}/vcml/ui/display.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
+    ${src}/vcml/protocols/virtio.cpp
     ${src}/vcml/sbi.cpp
     ${src}/vcml/dmi_cache.cpp
     ${src}/vcml/exmon.cpp
@@ -114,7 +115,6 @@ set(sources
     ${src}/vcml/models/meta/loader.cpp
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp
-    ${src}/vcml/models/virtio/virtio.cpp
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/rng.cpp
     ${src}/vcml/models/virtio/console.cpp

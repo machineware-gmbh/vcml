@@ -28,7 +28,7 @@
 #include "vcml/ui/display.h"
 
 #include "vcml/properties/property.h"
-#include "vcml/models/virtio/virtio.h"
+#include "vcml/protocols/virtio.h"
 
 #include "vcml/module.h"
 

@@ -25,9 +25,9 @@
 #include "vcml/common/range.h"
 
 #include "vcml/serial/port.h"
+#include "vcml/protocols/virtio.h"
 
 #include "vcml/module.h"
-#include "vcml/models/virtio/virtio.h"
 
 namespace vcml { namespace virtio {
 

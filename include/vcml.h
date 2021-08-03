@@ -65,6 +65,7 @@
 
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
+#include "vcml/protocols/virtio.h"
 
 #include "vcml/sbi.h"
 #include "vcml/exmon.h"
@@ -102,7 +103,6 @@
 #include "vcml/models/meta/simdev.h"
 #include "vcml/models/meta/throttle.h"
 
-#include "vcml/models/virtio/virtio.h"
 #include "vcml/models/virtio/mmio.h"
 #include "vcml/models/virtio/rng.h"
 #include "vcml/models/virtio/console.h"

@@ -24,14 +24,14 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/virtio.h"
+
 #include "vcml/ports.h"
 #include "vcml/command.h"
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
 #include "vcml/slave_socket.h"
 #include "vcml/master_socket.h"
-
-#include "vcml/models/virtio/virtio.h"
 
 namespace vcml { namespace virtio {
 

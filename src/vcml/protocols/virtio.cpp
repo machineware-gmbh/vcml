@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/virtio/virtio.h"
+#include "vcml/protocols/virtio.h"
 
 #define vq_log_debug(...)                              \
         parent->log_debug("vq%u.%s: %s", id, __func__, \

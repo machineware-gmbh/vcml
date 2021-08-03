@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_VIRTIO_H
-#define VCML_VIRTIO_H
+#ifndef VCML_PROTOCOLS_VIRTIO_H
+#define VCML_PROTOCOLS_VIRTIO_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/bitops.h"
