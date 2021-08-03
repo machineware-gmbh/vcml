@@ -42,9 +42,38 @@ namespace vcml {
     class spi_host
     {
     public:
+        friend class spi_initiator_socket;
+        friend class spi_target_socket;
+
+        typedef vector<spi_initiator_socket*> spi_initiator_sockets;
+        typedef vector<spi_target_socket*> spi_target_sockets;
+
+        const spi_initiator_sockets get_spi_initiator_sockets() const {
+            return m_initiator_sockets;
+        }
+
+        const spi_target_sockets get_spi_target_sockets() const {
+            return m_target_sockets;
+        }
+
+        spi_initiator_sockets get_spi_initiator_sockets() {
+            return m_initiator_sockets;
+        }
+
+        spi_target_sockets get_spi_target_sockets() {
+            return m_target_sockets;
+        }
+
+        const spi_target_sockets get_spi_target_sockets(address_space) const;
+        spi_target_sockets get_spi_target_sockets(address_space);
+
         spi_host() = default;
         virtual ~spi_host() = default;
         virtual void spi_transport(const spi_target_socket&, spi_payload&) = 0;
+
+    private:
+        spi_initiator_sockets m_initiator_sockets;
+        spi_target_sockets m_target_sockets;
     };
 
     class spi_fw_transport_if: public sc_core::sc_interface
@@ -54,20 +83,25 @@ namespace vcml {
     };
 
     class spi_bw_transport_if: public sc_core::sc_interface {
-        /* empty interface */
+        // empty interface
     };
 
-    class spi_initiator_socket: private spi_bw_transport_if,
-        public tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
-                                              spi_bw_transport_if, 1,
-                                              sc_core::SC_ONE_OR_MORE_BOUND> {
+    typedef tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
+        spi_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+        spi_base_initiator_socket;
+
+    typedef tlm::tlm_base_target_socket<1, spi_fw_transport_if,
+        spi_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+        spi_base_target_socket;
+
+    class spi_initiator_socket: public spi_base_initiator_socket,
+                                private spi_bw_transport_if {
     private:
         module* m_parent;
         spi_target_stub* m_stub;
 
     public:
-        spi_initiator_socket();
-        explicit spi_initiator_socket(const char* name);
+        spi_initiator_socket(const char* name);
         virtual ~spi_initiator_socket();
         VCML_KIND(spi_initiator_socket);
         virtual sc_core::sc_type_index get_protocol_types() const;
@@ -75,10 +109,8 @@ namespace vcml {
         void stub();
     };
 
-    class spi_target_socket: private spi_fw_transport_if,
-        public tlm::tlm_base_target_socket<1, spi_fw_transport_if,
-                                              spi_bw_transport_if, 1,
-                                              sc_core::SC_ONE_OR_MORE_BOUND> {
+    class spi_target_socket: public spi_base_target_socket,
+                             private spi_fw_transport_if {
     private:
         module* m_parent;
         spi_host* m_host;
@@ -87,15 +119,15 @@ namespace vcml {
         virtual void spi_transport(spi_payload& spi) override;
 
     public:
-        spi_target_socket();
-        explicit spi_target_socket(const char* name);
+        const address_space as;
+        spi_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~spi_target_socket();
         VCML_KIND(spi_target_socket);
         virtual sc_core::sc_type_index get_protocol_types() const;
         void stub();
     };
 
-    class spi_initiator_stub: public module, protected spi_bw_transport_if
+    class spi_initiator_stub: public module
     {
     public:
         spi_initiator_socket SPI_OUT;
@@ -104,10 +136,11 @@ namespace vcml {
         VCML_KIND(spi_initiator_stub);
     };
 
-    class spi_target_stub: public module, protected spi_fw_transport_if
+    class spi_target_stub: public module, public spi_host
     {
     protected:
-        virtual void spi_transport(spi_payload& payload) override;
+        virtual void spi_transport(const spi_target_socket& socket,
+                                   spi_payload& spi) override;
 
     public:
         spi_target_socket SPI_IN;

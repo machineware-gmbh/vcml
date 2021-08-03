@@ -25,29 +25,42 @@ namespace vcml {
         return os;
     }
 
-    spi_initiator_socket::spi_initiator_socket():
-        spi_bw_transport_if(),
-        tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
-                                          spi_bw_transport_if, 1,
-                                          sc_core::SC_ONE_OR_MORE_BOUND>(),
-        m_parent(dynamic_cast<module*>(get_parent_object())),
-        m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        bind(*(spi_bw_transport_if*)this);
+    const spi_host::spi_target_sockets
+    spi_host::get_spi_target_sockets(address_space as) const {
+        spi_target_sockets sockets;
+        for (auto& socket : m_target_sockets)
+            if (socket->as == as)
+                sockets.push_back(socket);
+        return sockets;
+    }
+
+    spi_host::spi_target_sockets
+    spi_host::get_spi_target_sockets(address_space as) {
+        spi_target_sockets sockets;
+        for (auto& socket : m_target_sockets)
+            if (socket->as == as)
+                sockets.push_back(socket);
+        return sockets;
     }
 
     spi_initiator_socket::spi_initiator_socket(const char* nm):
+        spi_base_initiator_socket(nm),
         spi_bw_transport_if(),
-        tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
-                                          spi_bw_transport_if, 1,
-                                          sc_core::SC_ONE_OR_MORE_BOUND>(nm),
         m_parent(dynamic_cast<module*>(get_parent_object())),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(*(spi_bw_transport_if*)this);
+
+        spi_host* host = dynamic_cast<spi_host*>(get_parent_object());
+        if (host != nullptr)
+            host->m_initiator_sockets.push_back(this);
     }
 
     spi_initiator_socket::~spi_initiator_socket() {
+        spi_host* host = dynamic_cast<spi_host*>(get_parent_object());
+        if (host != nullptr)
+            stl_remove_erase(host->m_initiator_sockets, this);
+
         if (m_stub != nullptr)
             delete m_stub;
     }
@@ -75,29 +88,15 @@ namespace vcml {
         m_parent->trace_bw(*this, spi);
     }
 
-    spi_target_socket::spi_target_socket():
+    spi_target_socket::spi_target_socket(const char* nm, address_space a):
+        spi_base_target_socket(nm),
         spi_fw_transport_if(),
-        tlm::tlm_base_target_socket<1, spi_fw_transport_if,
-                                       spi_bw_transport_if, 1,
-                                       sc_core::SC_ONE_OR_MORE_BOUND>(),
         m_parent(dynamic_cast<module*>(get_parent_object())),
         m_host(dynamic_cast<spi_host*>(get_parent_object())),
-        m_stub(nullptr) {
+        m_stub(nullptr), as(a) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside spi_host", name());
-        bind(*(spi_fw_transport_if*)this);
-    }
-
-    spi_target_socket::spi_target_socket(const char* nm):
-        spi_fw_transport_if(),
-        tlm::tlm_base_target_socket<1, spi_fw_transport_if,
-                                       spi_bw_transport_if, 1,
-                                       sc_core::SC_ONE_OR_MORE_BOUND>(nm),
-        m_parent(dynamic_cast<module*>(get_parent_object())),
-        m_host(dynamic_cast<spi_host*>(get_parent_object())),
-        m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        VCML_ERROR_ON(!m_host, "%s declared outside spi_host", name());
+        m_host->m_target_sockets.push_back(this);
         bind(*(spi_fw_transport_if*)this);
     }
 
@@ -119,26 +118,24 @@ namespace vcml {
 
     spi_initiator_stub::spi_initiator_stub(const sc_module_name& nm):
         module(nm),
-        spi_bw_transport_if(),
         SPI_OUT("SPI_OUT") {
-        SPI_OUT.bind(*this);
     }
 
     spi_initiator_stub::~spi_initiator_stub() {
         // nothing to do
     }
 
-    void spi_target_stub::spi_transport(spi_payload& payload) {
-        trace_fw(SPI_IN, payload);
+    void spi_target_stub::spi_transport(const spi_target_socket& socket,
+                                        spi_payload& spi) {
+        trace_fw(SPI_IN, spi);
         // nothing to do
-        trace_bw(SPI_IN, payload);
+        trace_bw(SPI_IN, spi);
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):
         module(nm),
-        spi_fw_transport_if(),
+        spi_host(),
         SPI_IN("SPI_IN") {
-        SPI_IN.bind(*this);
     }
 
     spi_target_stub::~spi_target_stub() {

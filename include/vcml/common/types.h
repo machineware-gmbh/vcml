@@ -210,6 +210,12 @@ namespace vcml {
         return ENDIAN_UNKNOWN;
     }
 
+    typedef unsigned int address_space;
+
+    enum vcml_address_space : address_space {
+        VCML_AS_DEFAULT = 0,
+    };
+
 }
 
 std::istream& operator >> (std::istream& is, vcml::endianess& endian);
