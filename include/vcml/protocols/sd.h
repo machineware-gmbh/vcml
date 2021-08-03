@@ -113,7 +113,6 @@ namespace vcml {
         }
     }
 
-
     const char* sd_status_str(sd_status status);
     const char* sd_status_str(sd_status_tx status);
     const char* sd_status_str(sd_status_rx status);
@@ -130,11 +129,40 @@ namespace vcml {
     class sd_host
     {
     public:
+        friend class sd_initiator_socket;
+        friend class sd_target_socket;
+
+        typedef vector<sd_initiator_socket*> sd_initiator_sockets;
+        typedef vector<sd_target_socket*> sd_target_sockets;
+
+        const sd_initiator_sockets get_sd_initiator_sockets() const {
+            return m_initiator_sockets;
+        }
+
+        const sd_target_sockets get_sd_target_sockets() const {
+            return m_target_sockets;
+        }
+
+        sd_initiator_sockets get_sd_initiator_sockets() {
+            return m_initiator_sockets;
+        }
+
+        sd_target_sockets get_sd_target_sockets() {
+            return m_target_sockets;
+        }
+
+        const sd_target_sockets get_sd_target_sockets(address_space) const;
+        sd_target_sockets get_sd_target_sockets(address_space);
+
         sd_host() = default;
         virtual ~sd_host() = default;
 
         virtual void sd_transport(const sd_target_socket&, sd_command&) = 0;
         virtual void sd_transport(const sd_target_socket&, sd_data&) = 0;
+
+    private:
+        sd_initiator_sockets m_initiator_sockets;
+        sd_target_sockets m_target_sockets;
     };
 
     class sd_fw_transport_if: public sc_core::sc_interface
@@ -148,16 +176,22 @@ namespace vcml {
         // empty interface
     };
 
-    class sd_initiator_socket: protected sd_bw_transport_if,
-        public tlm::tlm_base_initiator_socket<1, sd_fw_transport_if,
-                                              sd_bw_transport_if, 1,
-                                              sc_core::SC_ONE_OR_MORE_BOUND> {
+    typedef tlm::tlm_base_initiator_socket<1, sd_fw_transport_if,
+        sd_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+        sd_base_initiator_socket;
+
+    typedef tlm::tlm_base_target_socket<1, sd_fw_transport_if,
+        sd_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+        sd_base_target_socket;
+
+    class sd_initiator_socket: public sd_base_initiator_socket,
+                               protected sd_bw_transport_if {
     private:
         module* m_parent;
+        sd_host* m_host;
         sd_target_stub* m_stub;
 
     public:
-        sd_initiator_socket();
         explicit sd_initiator_socket(const char* name);
         virtual ~sd_initiator_socket();
 
@@ -173,10 +207,9 @@ namespace vcml {
         void stub();
     };
 
-    class sd_target_socket: protected sd_fw_transport_if,
-        public tlm::tlm_base_target_socket<1, sd_fw_transport_if,
-                                              sd_bw_transport_if, 1,
-                                              sc_core::SC_ONE_OR_MORE_BOUND> {
+    class sd_target_socket: public sd_base_target_socket,
+                            protected sd_fw_transport_if
+    {
     private:
         module* m_parent;
         sd_host* m_host;
@@ -186,8 +219,8 @@ namespace vcml {
         virtual void sd_transport(sd_data& data) override;
 
     public:
-        sd_target_socket();
-        explicit sd_target_socket(const char* name);
+        const address_space as;
+        sd_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~sd_target_socket();
 
         VCML_KIND(sd_target_socket);
@@ -196,7 +229,7 @@ namespace vcml {
         void stub();
     };
 
-    class sd_initiator_stub: public module, protected sd_bw_transport_if
+    class sd_initiator_stub: public module
     {
     public:
         sd_initiator_socket SD_OUT;
@@ -205,11 +238,13 @@ namespace vcml {
         VCML_KIND(sd_initiator_stub);
     };
 
-    class sd_target_stub: public module, protected sd_fw_transport_if
+    class sd_target_stub: public module, public sd_host
     {
     protected:
-        virtual void sd_transport(sd_command& cmd) override;
-        virtual void sd_transport(sd_data& data) override;
+        virtual void sd_transport(const sd_target_socket& socket,
+                                  sd_command& cmd) override;
+        virtual void sd_transport(const sd_target_socket& socket,
+                                  sd_data& data) override;
 
     public:
         sd_target_socket SD_IN;

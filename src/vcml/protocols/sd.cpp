@@ -170,29 +170,40 @@ namespace vcml {
         return os;
     }
 
-    sd_initiator_socket::sd_initiator_socket():
-        sd_bw_transport_if(),
-        tlm::tlm_base_initiator_socket<1, sd_fw_transport_if,
-                                          sd_bw_transport_if, 1,
-                                          sc_core::SC_ONE_OR_MORE_BOUND>(),
-        m_parent(dynamic_cast<module*>(get_parent_object())),
-        m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        bind(*(sd_bw_transport_if*)this);
+    const sd_host::sd_target_sockets
+    sd_host::get_sd_target_sockets(address_space as) const {
+        sd_target_sockets sockets;
+        for (auto& socket : m_target_sockets)
+            if (socket->as == as)
+                sockets.push_back(socket);
+        return sockets;
+    }
+
+    sd_host::sd_target_sockets
+    sd_host::get_sd_target_sockets(address_space as) {
+        sd_target_sockets sockets;
+        for (auto& socket : m_target_sockets)
+            if (socket->as == as)
+                sockets.push_back(socket);
+        return sockets;
     }
 
     sd_initiator_socket::sd_initiator_socket(const char* nm):
-        tlm::tlm_base_initiator_socket<1, sd_fw_transport_if,
-                                          sd_bw_transport_if, 1,
-                                          sc_core::SC_ONE_OR_MORE_BOUND>(nm),
+        sd_base_initiator_socket(nm),
+        sd_bw_transport_if(),
         m_parent(dynamic_cast<module*>(get_parent_object())),
+        m_host(dynamic_cast<sd_host*>(get_parent_object())),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(*(sd_bw_transport_if*)this);
+        if (m_host)
+            m_host->m_initiator_sockets.push_back(this);
     }
 
     sd_initiator_socket::~sd_initiator_socket() {
-        if (m_stub != nullptr)
+        if (m_host)
+            stl_remove_erase(m_host->m_initiator_sockets, this);
+        if (m_stub)
             delete m_stub;
     }
 
@@ -250,32 +261,20 @@ namespace vcml {
         m_parent->trace_bw(*this, tx);
     }
 
-    sd_target_socket::sd_target_socket():
-        tlm::tlm_base_target_socket<1, sd_fw_transport_if,
-                                       sd_bw_transport_if, 1,
-                                       sc_core::SC_ONE_OR_MORE_BOUND>(),
+    sd_target_socket::sd_target_socket(const char* nm, address_space a):
+        sd_base_target_socket(nm),
         m_parent(dynamic_cast<module*>(get_parent_object())),
         m_host(dynamic_cast<sd_host*>(get_parent_object())),
-        m_stub(nullptr) {
+        m_stub(nullptr), as(a) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        VCML_ERROR_ON(!m_host, "%s declared outside spi_host", name());
-        bind(*(sd_fw_transport_if*)this);
-    }
-
-    sd_target_socket::sd_target_socket(const char* nm):
-        tlm::tlm_base_target_socket<1, sd_fw_transport_if,
-                                       sd_bw_transport_if, 1,
-                                       sc_core::SC_ONE_OR_MORE_BOUND>(nm),
-        m_parent(dynamic_cast<module*>(get_parent_object())),
-        m_host(dynamic_cast<sd_host*>(get_parent_object())),
-        m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        VCML_ERROR_ON(!m_host, "%s declared outside spi_host", name());
+        VCML_ERROR_ON(!m_host, "%s declared outside sd_host", name());
+        m_host->m_target_sockets.push_back(this);
         bind(*(sd_fw_transport_if*)this);
     }
 
     sd_target_socket::~sd_target_socket() {
-        if (m_stub != nullptr)
+        stl_remove_erase(m_host->m_target_sockets, this);
+        if (m_stub)
             delete m_stub;
     }
 
@@ -292,19 +291,19 @@ namespace vcml {
 
     sd_initiator_stub::sd_initiator_stub(const sc_module_name& nm):
         module(nm),
-        sd_bw_transport_if(),
         SD_OUT("SD_OUT") {
-        SD_OUT.bind(*this);
     }
 
-    void sd_target_stub::sd_transport(sd_command& tx) {
+    void sd_target_stub::sd_transport(const sd_target_socket& socket,
+                                      sd_command& tx) {
         trace_fw(SD_IN, tx);
         tx.resp_len = 0;
         tx.status = SD_OK;
         trace_bw(SD_IN, tx);
     }
 
-    void sd_target_stub::sd_transport(sd_data& tx) {
+    void sd_target_stub::sd_transport(const sd_target_socket& socket,
+                                      sd_data& tx) {
         trace_fw(SD_IN, tx);
         if (tx.mode == SD_READ)
             tx.status.read = SDTX_ERR_ILLEGAL;
@@ -315,9 +314,8 @@ namespace vcml {
 
     sd_target_stub::sd_target_stub(const sc_module_name& nm):
         module(nm),
-        sd_fw_transport_if(),
+        sd_host(),
         SD_IN("SD_IN") {
-        SD_IN.bind(*this);
     }
 
 }
