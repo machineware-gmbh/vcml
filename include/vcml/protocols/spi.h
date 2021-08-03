@@ -98,6 +98,7 @@ namespace vcml {
                                 private spi_bw_transport_if {
     private:
         module* m_parent;
+        spi_host* m_host;
         spi_target_stub* m_stub;
 
     public:

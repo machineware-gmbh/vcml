@@ -47,21 +47,18 @@ namespace vcml {
         spi_base_initiator_socket(nm),
         spi_bw_transport_if(),
         m_parent(dynamic_cast<module*>(get_parent_object())),
+        m_host(dynamic_cast<spi_host*>(get_parent_object())),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(*(spi_bw_transport_if*)this);
-
-        spi_host* host = dynamic_cast<spi_host*>(get_parent_object());
-        if (host != nullptr)
-            host->m_initiator_sockets.push_back(this);
+        if (m_host)
+            m_host->m_initiator_sockets.push_back(this);
     }
 
     spi_initiator_socket::~spi_initiator_socket() {
-        spi_host* host = dynamic_cast<spi_host*>(get_parent_object());
-        if (host != nullptr)
-            stl_remove_erase(host->m_initiator_sockets, this);
-
-        if (m_stub != nullptr)
+        if (m_host)
+            stl_remove_erase(m_host->m_initiator_sockets, this);
+        if (m_stub)
             delete m_stub;
     }
 
@@ -101,7 +98,8 @@ namespace vcml {
     }
 
     spi_target_socket::~spi_target_socket() {
-        if (m_stub != nullptr)
+        stl_remove_erase(m_host->m_target_sockets, this);
+        if (m_stub)
             delete m_stub;
     }
 
