@@ -21,7 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/systemc.h"
-#include "vcml/component.h"
+#include "vcml/module.h"
 
 namespace vcml {
 
