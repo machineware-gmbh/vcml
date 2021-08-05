@@ -237,9 +237,11 @@ namespace vcml {
                 simcontext()->add_trace_file(this);
         }
 
-        virtual void simulation_phase_callback() {
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
+        virtual void simulation_phase_callback() override {
             cycle(simcontext()->get_status() == sc_core::SC_END_OF_UPDATE);
         }
+#endif
 
         virtual ~cycle_helper() {
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
