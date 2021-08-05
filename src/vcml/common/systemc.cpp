@@ -242,7 +242,7 @@ namespace vcml {
         }
 
         virtual ~cycle_helper() {
-#if SYSTEMC_VERSION >= SYSTEMC_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
             if (!use_phase_callbacks)
                 sc_get_curr_simcontext()->remove_trace_file(this);
 #endif
