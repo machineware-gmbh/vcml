@@ -153,29 +153,7 @@ namespace vcml { namespace generic {
 
         template <typename T>
         T* create_socket(unsigned int idx);
-
-        template <typename T>
-        void trace_fw(const T& socket, const tlm_generic_payload& tx,
-                      const sc_time& dt) const;
-
-        template <typename T>
-        void trace_bw(const T& socket, const tlm_generic_payload& tx,
-                      const sc_time& dt) const;
     };
-
-    template <typename T>
-    inline void bus::trace_fw(const T& s, const tlm_generic_payload& tx,
-                              const sc_time& dt) const {
-        if (loglvl >= LOG_TRACE && !trace_errors)
-            logger::trace_fw(s.name(), tx, dt);
-    }
-
-    template <typename T>
-    inline void bus::trace_bw(const T& s, const tlm_generic_payload& tx,
-                              const sc_time& dt) const {
-        if (loglvl >= LOG_TRACE && (!trace_errors || failed(tx)))
-            logger::trace_bw(s.name(), tx, dt);
-    }
 
     template <typename T>
     inline T& bus_ports<T>::operator[] (unsigned int idx) {
