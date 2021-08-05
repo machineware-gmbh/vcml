@@ -34,6 +34,7 @@ public:
 
     virtual void run_test() override {
         std::thread t1([&]() -> void {
+            ASSERT_FALSE(thctl_is_sysc_thread());
             thctl_guard lock;
             crit_count++;
             usleep(1000);
@@ -43,6 +44,7 @@ public:
         });
 
         std::thread t2([&]() -> void {
+            ASSERT_FALSE(thctl_is_sysc_thread());
             thctl_guard lock;
             crit_count++;
             usleep(1000);
@@ -51,6 +53,7 @@ public:
             crit_count--;
         });
 
+        ASSERT_TRUE(thctl_is_sysc_thread());
         EXPECT_FALSE(crit1_done);
         EXPECT_FALSE(crit2_done);
         EXPECT_EQ(crit_count, 0);
