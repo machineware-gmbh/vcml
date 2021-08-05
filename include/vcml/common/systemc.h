@@ -33,7 +33,12 @@
 #include "vcml/common/report.h"
 #include "vcml/common/utils.h"
 
-#if (SYSTEMC_VERSION < 20140408)
+#define SYSTEMC_VERSION_2_3_0a    20120701
+#define SYSTEMC_VERSION_2_3_1a    20140417
+#define SYSTEMC_VERSION_2_3_2     20171012
+#define SYSTEMC_VERSION_2_3_3     20181013
+
+#if SYSTEMC_VERSION < SYSTEMC_2_3_1a
 inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
                                     const sc_core::sc_time& t2 ) {
     sc_core::sc_time tmp(t1.value() % t2.value(), false);
@@ -41,7 +46,7 @@ inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
 }
 #endif
 
-#if (SYSTEMC_VERSION < 20171012)
+#if SYSTEMC_VERSION < SYSTEMC_2_3_2
 #include <typeindex>
 namespace sc_core {
     typedef std::type_index sc_type_index;
@@ -90,7 +95,7 @@ namespace vcml {
     }
 
     inline sc_time time_from_value(u64 val) {
-#if SYSTEMC_VERSION < 20140417
+#if SYSTEMC_VERSION < SYSTEMC_2_3_1a
         return sc_time((sc_dt::uint64)val, false);
 #else
         return sc_time::from_value(val);
@@ -102,7 +107,7 @@ namespace vcml {
     using sc_core::sc_start;
     using sc_core::sc_stop;
 
-    #if (SYSTEMC_VERSION < 20120701)
+    #if SYSTEMC_VERSION < SYSTEMC_2_3_0a
     #   define sc_pause sc_stop
     #else
     using sc_core::sc_pause;
@@ -183,11 +188,11 @@ namespace vcml {
     }
 
     inline bool success(tlm_response_status status) {
-        return status == TLM_OK_RESPONSE;
+        return status > TLM_INCOMPLETE_RESPONSE;
     }
 
     inline bool failed(tlm_response_status status) {
-        return status != TLM_OK_RESPONSE;
+        return status < TLM_INCOMPLETE_RESPONSE;
     }
 
     template <> inline bool success(const tlm_generic_payload& tx) {
@@ -232,6 +237,8 @@ namespace vcml {
         return "vcml::" #name;                  \
     }
 
+    bool kernel_has_phase_callbacks();
+
     void on_each_delta_cycle(function<void(void)> callback);
     void on_each_time_step(function<void(void)> callback);
 
@@ -251,7 +258,6 @@ namespace vcml {
     bool sim_running();
 
 }
-
 
 namespace sc_core {
     std::istream& operator >> (std::istream& is, sc_core::sc_time& t);

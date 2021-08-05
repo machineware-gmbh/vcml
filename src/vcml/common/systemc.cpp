@@ -125,8 +125,45 @@ namespace vcml {
         return ss.str();
     }
 
+#if SYSTEMC_VERSION >= SYSTEMC_2_3_1a
+    static inline bool __kernel_has_phase_callbacks() {
+        class callbacks_tester: public sc_object
+        {
+        public:
+            sc_actions previous;
+            callbacks_tester(): sc_object("$$$vcml_phase_callback_tester$$$"),
+                previous(sc_core::sc_report_handler::set_actions(
+                    sc_core::SC_ID_PHASE_CALLBACKS_UNSUPPORTED_,
+                    sc_core::SC_THROW)) {
+                register_simulation_phase_callback(sc_core::SC_END_OF_UPDATE);
+            }
+
+            ~callbacks_tester() {
+                sc_core::sc_report_handler::set_actions(
+                    sc_core::SC_ID_PHASE_CALLBACKS_UNSUPPORTED_, previous);
+            }
+        };
+
+        try {
+            callbacks_tester t;
+            return true;
+        } catch (sc_core::sc_report& r) {
+            return false;
+        }
+    }
+#endif
+
+    bool kernel_has_phase_callbacks() {
+#if SYSTEMC_VERSION < SYSTEMC_2_3_1a
+        return false;
+#else
+        static bool has_callbacks = __kernel_has_phase_callbacks();
+        return has_callbacks;
+#endif
+    }
+
     // we just need this class to have something that is called every cycle...
-    class cycle_helper: public sc_core::sc_trace_file
+    class cycle_helper: public sc_core::sc_trace_file, private sc_object
     {
     public:
     #define DECL_TRACE_METHOD_A(t) \
@@ -135,7 +172,7 @@ namespace vcml {
     #define DECL_TRACE_METHOD_B(t) \
         virtual void trace(const t& object, const string& n, int w) override {}
 
-#if SYSTEMC_VERSION >= 20171012
+#if SYSTEMC_VERSION >= SYSTEMC_2_3_2
         DECL_TRACE_METHOD_A(sc_event)
         DECL_TRACE_METHOD_A(sc_time)
 #endif
@@ -180,17 +217,35 @@ namespace vcml {
         virtual void set_time_unit(double v,
                                    sc_core::sc_time_unit tu) override {}
 
+        const bool use_phase_callbacks;
+
         vector<function<void(void)>> deltas;
         vector<function<void(void)>> tsteps;
 
-        cycle_helper(): deltas(), tsteps() {
-            sc_get_curr_simcontext()->add_trace_file(this);
+        cycle_helper():
+            sc_core::sc_trace_file(),
+            sc_core::sc_object("$$$vcml_cycle_helper$$$"),
+            use_phase_callbacks(kernel_has_phase_callbacks()),
+            deltas(), tsteps() {
+#if SYSTEMC_VERSION >= SYSTEMC_2_3_1a
+            if (use_phase_callbacks) {
+                register_simulation_phase_callback(
+                    sc_core::SC_END_OF_UPDATE | sc_core::SC_BEFORE_TIMESTEP);
+            }
+#endif
+            if (!use_phase_callbacks)
+                simcontext()->add_trace_file(this);
+        }
+
+        virtual void simulation_phase_callback() {
+            cycle(simcontext()->get_status() == sc_core::SC_END_OF_UPDATE);
         }
 
         virtual ~cycle_helper() {
-    #if SYSTEMC_VERSION >= 20140417
-            sc_get_curr_simcontext()->remove_trace_file(this);
-    #endif
+#if SYSTEMC_VERSION >= SYSTEMC_2_3_1a
+            if (!use_phase_callbacks)
+                sc_get_curr_simcontext()->remove_trace_file(this);
+#endif
         }
 
     protected:
@@ -207,20 +262,18 @@ namespace vcml {
         }
     }
 
-    static cycle_helper* g_cycle_helper = nullptr;
+    static void on_each_helper(function<void(void)> callback, bool delta) {
+        static cycle_helper helper;
+        auto& list = delta ? helper.deltas : helper.tsteps;
+        list.push_back(callback);
+    }
 
     void on_each_delta_cycle(function<void(void)> callback) {
-        if (g_cycle_helper == nullptr)
-            g_cycle_helper = new cycle_helper();
-
-        g_cycle_helper->deltas.push_back(callback);
+        on_each_helper(callback, true);
     }
 
     void on_each_time_step(function<void(void)> callback) {
-        if (g_cycle_helper == nullptr)
-            g_cycle_helper = new cycle_helper();
-
-        g_cycle_helper->tsteps.push_back(callback);
+        on_each_helper(callback, false);
     }
 
     __thread struct async_worker* g_async = nullptr;
@@ -405,7 +458,14 @@ namespace vcml {
 
     bool sim_running() {
         sc_simcontext* simc = sc_get_curr_simcontext();
-        return simc->get_status() < sc_core::SC_STOPPED;
+        switch (simc->get_status()) {
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
+        case sc_core::SC_END_OF_UPDATE: return true;
+        case sc_core::SC_BEFORE_TIMESTEP: return true;
+#endif
+        default:
+            return simc->get_status() < sc_core::SC_STOPPED;
+        }
     }
 
 }
