@@ -34,8 +34,7 @@
 
 namespace vcml { namespace virtio {
 
-    class input : public module,
-                  private virtio_fw_transport_if
+    class input : public module, public virtio_device
     {
     private:
         enum virtqueues : int {

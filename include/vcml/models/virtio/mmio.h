@@ -35,7 +35,7 @@
 
 namespace vcml { namespace virtio {
 
-    class mmio : public peripheral, private virtio_bw_transport_if
+    class mmio : public peripheral, public virtio_controller
     {
     private:
         u64 m_drv_features;
@@ -48,6 +48,8 @@ namespace vcml { namespace virtio {
         void enable_virtqueue(u32 vqid);
         void disable_virtqueue(u32 vqid);
         void cleanup_virtqueues();
+
+        virtual void invalidate_dmi(u64 start, u64 end) override;
 
         virtual bool get(u32 vqid, vq_message& msg) override;
         virtual bool put(u32 vqid, vq_message& msg) override;

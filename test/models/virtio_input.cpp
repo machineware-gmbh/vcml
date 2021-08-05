@@ -77,7 +77,7 @@ public:
         ASSERT_EQ(data, 2);
 
         ASSERT_OK(OUT.readw(INPUT_DEVID, data));
-        ASSERT_EQ(data, virtio::VIRTIO_DEVICE_INPUT);
+        ASSERT_EQ(data, VIRTIO_DEVICE_INPUT);
 
         ASSERT_OK(OUT.readw(INPUT_STATUS, data));
         ASSERT_EQ(data, 0);

@@ -249,6 +249,7 @@ namespace vcml { namespace virtio {
 
     input::input(const sc_module_name& nm):
         module(nm),
+        virtio_device(),
         m_config(),
         m_keyboard(name()),
         m_pointer(name()),
@@ -258,7 +259,6 @@ namespace vcml { namespace virtio {
         keymap("keymap", "us"),
         display("display", ""),
         VIRTIO_IN("VIRTIO_IN") {
-        VIRTIO_IN.bind(*this);
 
         m_keyboard.set_layout(keymap);
 

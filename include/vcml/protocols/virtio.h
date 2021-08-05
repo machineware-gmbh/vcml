@@ -27,7 +27,21 @@
 
 #include "vcml/module.h"
 
-namespace vcml { namespace virtio {
+namespace vcml {
+
+    enum virtio_status : int {
+        VIRTIO_INCOMPLETE   =  0,
+        VIRTIO_OK           =  1,
+        VIRTIO_ERR_INDIRECT = -1,
+        VIRTIO_ERR_NODMI    = -2,
+        VIRTIO_ERR_CHAIN    = -3,
+        VIRTIO_ERR_DESC     = -4,
+    };
+
+    const char* virtio_status_str(virtio_status status);
+
+    inline bool success(virtio_status sts) { return sts > 0; }
+    inline bool failed(virtio_status sts)  { return sts < 0; }
 
     enum virtio_devices : u32 {
         VIRTIO_DEVICE_NONE    = 0,
@@ -84,23 +98,26 @@ namespace vcml { namespace virtio {
         virtqueues.clear();
     }
 
+    typedef function<u8*(u64, u64, vcml_access)> virtio_dmifn;
+
     struct vq_message {
+        virtio_dmifn dmi;
+        virtio_status status;
+
         u32 index;
 
         u32 length_in;
         u32 length_out;
 
         struct vq_buffer {
-            u64 phys_addr;
-            u8* host_addr;
+            u64 addr;
             u32 size;
         };
 
         vector<vq_buffer> in;
         vector<vq_buffer> out;
 
-        void append(u64 addr, u8* ptr, u32 sz, bool iswr);
-        void clear();
+        void append(u64 addr, u32 sz, bool iswr);
 
         u32 ndescs() const { return in.size() + out.size(); }
         u32 length() const { return length_in + length_out; }
@@ -121,22 +138,14 @@ namespace vcml { namespace virtio {
         size_t copy_in(T& data, size_t offset = 0);
     };
 
-    inline void vq_message::append(u64 addr, u8* ptr, u32 sz, bool iswr) {
+    inline void vq_message::append(u64 addr, u32 sz, bool iswr) {
         if (iswr) {
-            out.push_back({addr, ptr, sz});
+            out.push_back({addr, sz});
             length_out += sz;
         } else {
-            in.push_back({addr, ptr, sz});
+            in.push_back({addr, sz});
             length_in += sz;
         }
-    }
-
-    inline void vq_message::clear() {
-        index = -1;
-        length_in = 0;
-        length_out = 0;
-        in.clear();
-        out.clear();
     }
 
     template <typename T>
@@ -159,10 +168,25 @@ namespace vcml { namespace virtio {
         return copy_in(data.data(), data.size(), offset);
     }
 
-    typedef function<u8*(u64, u64, vcml_access)> virtio_dmifn;
+    template <> inline bool success(const vq_message& msg) {
+        return success(msg.status);
+    }
+
+    template <> inline bool failed(const vq_message& msg) {
+        return failed(msg.status);
+    }
+
+    ostream& operator << (ostream& os, const vq_message& msg);
 
     class virtqueue
     {
+    private:
+        string m_name;
+
+    protected:
+        virtual virtio_status do_get(vq_message& msg) = 0;
+        virtual virtio_status do_put(vq_message& msg) = 0;
+
     public:
         const u32 id;
         const u32 limit;
@@ -176,18 +200,49 @@ namespace vcml { namespace virtio {
 
         bool notify;
 
-        virtio_dmifn lookup_dmi_ptr;
+        virtio_dmifn dmi;
 
         module* parent;
+
+        const char* name() const { return m_name.c_str(); }
 
         virtqueue() = delete;
         virtqueue(const virtqueue&) = delete;
         virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
         virtual ~virtqueue();
 
-        virtual bool good() = 0;
-        virtual bool get(vq_message& msg) = 0;
-        virtual bool put(vq_message& msg) = 0;
+
+        virtual bool validate() = 0;
+        virtual void invalidate(const range& mem) = 0;
+
+        bool get(vq_message& msg);
+        bool put(vq_message& msg);
+
+#ifndef VCML_OMIT_LOGGING_SOURCE
+        void log_tagged(log_level lvl, const char* file, int line,
+                        const char* format, ...) const VCML_DECL_PRINTF(5, 6) {
+            if (lvl <= parent->loglvl && logger::would_log(lvl)) {
+                va_list args; va_start(args, format);
+                logger::publish(lvl, name(), vmkstr(format, args), file, line);
+                va_end(args);
+            }
+        }
+#else
+#define VCML_GEN_LOGFN(func, lvl)                                             \
+        void func(const char* format, ...) const VCML_DECL_PRINTF(2, 3) {     \
+            if (lvl <= loglvl && logger::would_log(lvl)) {                    \
+                va_list args; va_start(args, format);                         \
+                logger::publish(lvl, name(), vmkstr(format, args));           \
+                va_end(args);                                                 \
+            }                                                                 \
+        }
+
+        VCML_GEN_LOGFN(log_error, ::vcml::LOG_ERROR)
+        VCML_GEN_LOGFN(log_warn, ::vcml::LOG_WARN)
+        VCML_GEN_LOGFN(log_info, ::vcml::LOG_INFO)
+        VCML_GEN_LOGFN(log_debug, ::vcml::LOG_DEBUG)
+#undef VCML_GEN_LOGFN
+#endif
     };
 
     class split_virtqueue : public virtqueue
@@ -252,9 +307,26 @@ namespace vcml { namespace virtio {
         u16* m_avail_ev;
 
         u8* lookup_desc_ptr(vq_desc* desc) {
-            return lookup_dmi_ptr(desc->addr, desc->len, desc->is_write() ?
+            return dmi(desc->addr, desc->len, desc->is_write() ?
                                   VCML_ACCESS_WRITE : VCML_ACCESS_READ);
         }
+
+        u64 descsz() const {
+            return sizeof(vq_desc) * size;
+        }
+
+        u64 drvsz() const {
+            u64 availsz = sizeof(vq_avail) + sizeof(m_avail->ring[0]) * size;
+            return has_event_idx ? availsz + sizeof(*m_used_ev) : availsz;
+        }
+
+        u64 devsz() const {
+            u64 usedsz = sizeof(vq_used) + sizeof(m_used->ring[0]) * size;
+            return has_event_idx ? usedsz + sizeof(*m_avail_ev) : usedsz;
+        }
+
+        virtual virtio_status do_get(vq_message& msg) override;
+        virtual virtio_status do_put(vq_message& msg) override;
 
     public:
         split_virtqueue() = delete;
@@ -262,9 +334,8 @@ namespace vcml { namespace virtio {
         split_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
         virtual ~split_virtqueue();
 
-        virtual bool good() override;
-        virtual bool get(vq_message& msg) override;
-        virtual bool put(vq_message& msg) override;
+        virtual bool validate() override;
+        virtual void invalidate(const range& mem) override;
     };
 
     class packed_virtqueue : public virtqueue
@@ -337,9 +408,16 @@ namespace vcml { namespace virtio {
         bool m_wrap_put;
 
         u8* lookup_desc_ptr(vq_desc* desc) {
-            return lookup_dmi_ptr(desc->addr, desc->len, desc->is_write() ?
+            return dmi(desc->addr, desc->len, desc->is_write() ?
                                   VCML_ACCESS_WRITE : VCML_ACCESS_READ);
         }
+
+        u64 dscsz() const { return sizeof(vq_desc) * size; }
+        u64 drvsz() const { return sizeof(vq_event); }
+        u64 devsz() const { return sizeof(vq_event); }
+
+        virtual virtio_status do_get(vq_message& msg) override;
+        virtual virtio_status do_put(vq_message& msg) override;
 
     public:
         packed_virtqueue() = delete;
@@ -347,14 +425,41 @@ namespace vcml { namespace virtio {
         packed_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
         virtual ~packed_virtqueue();
 
-        virtual bool good() override;
-        virtual bool get(vq_message& msg) override;
-        virtual bool put(vq_message& msg) override;
+        virtual bool validate() override;
+        virtual void invalidate(const range& mem) override;
+    };
+
+    class virtio_device
+    {
+    public:
+        virtual ~virtio_device() = default;
+
+        virtual void identify(virtio_device_desc& desc) = 0;
+        virtual bool notify(u32 vqid) = 0;
+
+        virtual void read_features(u64& features) = 0;
+        virtual bool write_features(u64 features) = 0;
+
+        virtual bool read_config(const range& addr, void* data) = 0;
+        virtual bool write_config(const range& addr, const void* data) = 0;
+    };
+
+    class virtio_controller
+    {
+    public:
+        virtual ~virtio_controller() = default;
+
+        virtual bool put(u32 vqid, vq_message& msg) = 0;
+        virtual bool get(u32 vqid, vq_message& msg) = 0;
+
+        virtual bool notify() = 0;
     };
 
     class virtio_fw_transport_if: public sc_core::sc_interface
     {
     public:
+        typedef vq_message protocol_types;
+
         virtio_fw_transport_if() = default;
         virtual ~virtio_fw_transport_if() {}
 
@@ -371,6 +476,8 @@ namespace vcml { namespace virtio {
     class virtio_bw_transport_if: public sc_core::sc_interface
     {
     public:
+        typedef vq_message protocol_types;
+
         virtio_bw_transport_if() = default;
         virtual ~virtio_bw_transport_if() {}
 
@@ -390,16 +497,25 @@ namespace vcml { namespace virtio {
                                         sc_core::SC_ONE_OR_MORE_BOUND>
         virtio_base_target_socket;
 
-    class virtio_initiator_socket: public virtio_base_initiator_socket
+    class virtio_initiator_stub;
+    class virtio_target_stub;
+
+    class virtio_initiator_socket: public virtio_base_initiator_socket,
+                                   private virtio_bw_transport_if
     {
     private:
-        sc_module* m_parent;
-        sc_module* m_stub;
+        module* m_parent;
+        virtio_controller* m_controller;
+        virtio_target_stub* m_stub;
+
+        virtual bool put(u32 vqid, vq_message& msg);
+        virtual bool get(u32 vqid, vq_message& msg);
+
+        virtual bool notify();
 
     public:
         bool is_stubbed() const { return m_stub != nullptr; }
 
-        virtio_initiator_socket();
         explicit virtio_initiator_socket(const char* name);
         virtual ~virtio_initiator_socket();
         VCML_KIND(virtio_initiator_socket);
@@ -407,16 +523,26 @@ namespace vcml { namespace virtio {
         virtual void stub();
     };
 
-    class virtio_target_socket: public virtio_base_target_socket
+    class virtio_target_socket: public virtio_base_target_socket,
+                                private virtio_fw_transport_if
     {
     private:
-        sc_module* m_parent;
-        sc_module* m_stub;
+        module* m_parent;
+        virtio_device* m_device;
+        virtio_initiator_stub* m_stub;
+
+        virtual void identify(virtio_device_desc& desc);
+        virtual bool notify(u32 vqid);
+
+        virtual void read_features(u64& features);
+        virtual bool write_features(u64 features);
+
+        virtual bool read_config(const range& addr, void* data);
+        virtual bool write_config(const range& addr, const void* data);
 
     public:
         bool is_stubbed() const { return m_stub != nullptr; }
 
-        virtio_target_socket();
         explicit virtio_target_socket(const char* name);
         virtual ~virtio_target_socket();
         VCML_KIND(virtio_target_socket);
@@ -424,7 +550,7 @@ namespace vcml { namespace virtio {
         virtual void stub();
     };
 
-    class virtio_initiator_stub: public module, private virtio_bw_transport_if
+    class virtio_initiator_stub: public module, public virtio_controller
     {
     private:
         virtual bool put(u32 vqid, vq_message& msg) override;
@@ -441,7 +567,7 @@ namespace vcml { namespace virtio {
         VCML_KIND(virtio_initiator_stub);
     };
 
-    class virtio_target_stub: public module, private virtio_fw_transport_if
+    class virtio_target_stub: public module, public virtio_device
     {
     private:
         virtual void identify(virtio_device_desc& desc) override;
@@ -463,6 +589,6 @@ namespace vcml { namespace virtio {
         VCML_KIND(virtio_target_stub);
     };
 
-}}
+}
 
 #endif

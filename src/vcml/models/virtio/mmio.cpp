@@ -60,7 +60,7 @@ namespace vcml { namespace virtio {
         else
             q = m_queues[vqid] = new split_virtqueue(qd, dmifn);
 
-        if (!q->good()) {
+        if (!q->validate()) {
             log_warn("failed to enable virtqueue %u", vqid);
             STATUS = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
         }
@@ -88,6 +88,11 @@ namespace vcml { namespace virtio {
         for (auto it : m_queues)
             delete it.second;
         m_queues.clear();
+    }
+
+    void mmio::invalidate_dmi(u64 start, u64 end) {
+        for (auto vq : m_queues)
+            vq.second->invalidate({start, end});
     }
 
     bool mmio::get(u32 vqid, vq_message& msg)  {
@@ -309,7 +314,7 @@ namespace vcml { namespace virtio {
 
     mmio::mmio(const sc_module_name& nm):
         peripheral(nm),
-        virtio_bw_transport_if(),
+        virtio_controller(),
         m_drv_features(),
         m_dev_features(),
         m_queues(),
@@ -342,7 +347,6 @@ namespace vcml { namespace virtio {
         IN("IN"),
         OUT("OUT"),
         VIRTIO_OUT("VIRTIO_OUT") {
-        VIRTIO_OUT.bind(*this);
 
         MAGIC.sync_never();
         MAGIC.allow_read_only();

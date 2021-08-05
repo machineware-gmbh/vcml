@@ -23,10 +23,14 @@ TEST(virtio, msgcopy) {
     const char* s2 = "def";
     char* s3 = strdup("abcdefg");
 
-    virtio::vq_message msg;
-    msg.in.push_back({0, (u8*)s1, (u32)strlen(s1)});
-    msg.in.push_back({0, (u8*)s2, (u32)strlen(s2)});
-    msg.out.push_back({0, (u8*)s3, (u32)strlen(s3)});
+    vq_message msg;
+    msg.dmi = [](u64 addr, u32 size, vcml_access a) -> u8* {
+        return (u8*)addr; // guest addr == host addr for this test
+    };
+
+    msg.append((uintptr_t)s1, strlen(s1), false);
+    msg.append((uintptr_t)s2, strlen(s2), false);
+    msg.append((uintptr_t)s3, strlen(s3), true);
 
     size_t n = 0;
     char s4[7] = { 0 };

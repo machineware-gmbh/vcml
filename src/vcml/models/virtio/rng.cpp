@@ -70,10 +70,9 @@ namespace vcml { namespace virtio {
 
     rng::rng(const sc_module_name& nm):
         module(nm),
-        virtio_fw_transport_if(),
+        virtio_device(),
         m_seed(0),
         VIRTIO_IN("VIRTIO_IN") {
-        VIRTIO_IN.bind(*this);
     }
 
     rng::~rng() {

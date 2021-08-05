@@ -141,14 +141,13 @@ namespace vcml { namespace virtio {
 
     console::console(const sc_module_name& nm):
         module(nm),
+        virtio_device(),
         serial::port(),
-        virtio_fw_transport_if(),
         m_config(),
         cols("cols", 0),
         rows("rows", 0),
         pollrate("pollrate", 1000),
         VIRTIO_IN("VIRTIO_IN") {
-        VIRTIO_IN.bind(*this);
         SC_HAS_PROCESS(console);
         SC_METHOD(poll);
     }
