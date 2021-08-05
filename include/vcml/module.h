@@ -96,6 +96,9 @@ namespace vcml {
 #endif
 
         template <typename PORT, typename PAYLOAD>
+        void trace(trace_direction dir, const PORT& port, const PAYLOAD& tx,
+                   const sc_time& dt = SC_ZERO_TIME);
+        template <typename PORT, typename PAYLOAD>
         void trace_fw(const PORT& port, const PAYLOAD& tx,
                       const sc_time& dt = SC_ZERO_TIME);
         template <typename PORT, typename PAYLOAD>
@@ -131,17 +134,31 @@ namespace vcml {
     }
 
     template <typename PORT, typename PAYLOAD>
+    inline void module::trace(trace_direction dir, const PORT& port,
+                              const PAYLOAD& tx, const sc_time& dt) {
+        if (loglvl < LOG_TRACE || !logger::would_log(LOG_TRACE))
+            return;
+
+        if (trace_errors) {
+            if (!failed(tx))
+                return;
+            dir = (dir != TRACE_FW) ? dir : TRACE_FW_NOINDENT;
+            dir = (dir != TRACE_BW) ? dir : TRACE_BW_NOINDENT;
+        }
+
+        logger::trace(dir, port, tx, dt);
+    }
+
+    template <typename PORT, typename PAYLOAD>
     inline void module::trace_fw(const PORT& port, const PAYLOAD& tx,
                                  const sc_time& dt) {
-        if (!trace_errors && loglvl >= LOG_TRACE)
-            logger::trace_fw(port.name(), tx, dt);
+        trace(TRACE_FW, port, tx, dt);
     }
 
     template <typename PORT, typename PAYLOAD>
     inline void module::trace_bw(const PORT& port, const PAYLOAD& tx,
                                  const sc_time& dt) {
-        if ((!trace_errors || failed(tx)) && loglvl >= LOG_TRACE)
-            logger::trace_bw(port.name(), tx, dt);
+        trace(TRACE_BW, port, tx, dt);
     }
 
 }

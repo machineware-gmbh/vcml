@@ -36,9 +36,11 @@ namespace vcml {
         NUM_LOG_LEVELS
     };
 
-    enum trace_direction : bool {
-        TRACE_FW = true,
-        TRACE_BW = false,
+    enum trace_direction : int {
+        TRACE_FW = 1,
+        TRACE_FW_NOINDENT = 2,
+        TRACE_BW = -1,
+        TRACE_BW_NOINDENT = -2,
     };
 
     VCML_TYPEINFO(log_level);
@@ -130,16 +132,16 @@ namespace vcml {
 
         static void log(const report& rep);
 
-        template <typename PAYLOAD>
-        static void trace(trace_direction direction, const string& sender,
+        template <typename SENDER, typename PAYLOAD>
+        static void trace(trace_direction direction, const SENDER& sender,
                           const PAYLOAD& tx, const sc_time& dt = SC_ZERO_TIME);
 
-        template <typename PAYLOAD>
-        static void trace_fw(const string& sender, const PAYLOAD& tx,
+        template <typename SENDER, typename PAYLOAD>
+        static void trace_fw(const SENDER& sender, const PAYLOAD& tx,
                              const sc_time& dt = SC_ZERO_TIME);
 
-        template <typename PAYLOAD>
-        static void trace_bw(const string& sender, const PAYLOAD& tx,
+        template <typename SENDER, typename PAYLOAD>
+        static void trace_bw(const SENDER& sender, const PAYLOAD& tx,
                              const sc_time& dt = SC_ZERO_TIME);
 
         static bool print_time_stamp;
@@ -197,42 +199,45 @@ namespace vcml {
         });
     }
 
-    template <typename PAYLOAD>
-    inline void logger::trace(trace_direction direction, const string& sender,
+    template <typename SENDER, typename PAYLOAD>
+    inline void logger::trace(trace_direction direction, const SENDER& sender,
                               const PAYLOAD& tx, const sc_time& dt) {
         if (!would_log(LOG_TRACE))
             return;
 
-        trace_msg<PAYLOAD> msg(sender, direction, tx);
+        trace_msg<PAYLOAD> msg(sender.name(), direction, tx);
         msg.time_offset = dt;
 
         stringstream ss;
-        if (direction == TRACE_FW) {
+        if (direction == TRACE_FW)
             trace_curr_indent += trace_indent_incr;
+        if (direction >= TRACE_FW)
             ss << string(trace_curr_indent, ' ') << ">> ";
-        } else {
+        if (direction <= TRACE_BW)
             ss << string(trace_curr_indent, ' ') << "<< ";
+        if (direction == TRACE_BW) {
             if (trace_curr_indent >= trace_indent_incr)
                 trace_curr_indent -= trace_indent_incr;
             else
                 trace_curr_indent = 0;
         }
 
-        ss << tx;
-        msg.lines.push_back(ss.str());
+        vector<string> lines = split(to_string(tx), '\n');
+        for (auto line : lines)
+            msg.lines.push_back(ss.str() + line);
 
         for (auto logger : loggers[LOG_TRACE])
             logger->write_trace(msg);
     }
 
-    template <typename PAYLOAD>
-    inline void logger::trace_fw(const string& sender, const PAYLOAD& tx,
+    template <typename SENDER, typename PAYLOAD>
+    inline void logger::trace_fw(const SENDER& sender, const PAYLOAD& tx,
                                  const sc_time& dt) {
         trace(TRACE_FW, sender, tx, dt);
     }
 
-    template <typename PAYLOAD>
-    inline void logger::trace_bw(const string& sender, const PAYLOAD& tx,
+    template <typename SENDER, typename PAYLOAD>
+    inline void logger::trace_bw(const SENDER& sender, const PAYLOAD& tx,
                                  const sc_time& dt) {
         trace(TRACE_BW, sender, tx, dt);
     }

@@ -92,12 +92,12 @@ namespace vcml {
 
         bool is_tracing = m_host->loglvl >= LOG_TRACE;
         if (is_tracing && !m_host->trace_errors)
-            logger::trace_fw(name(), tx, m_host->local_time());
+            logger::trace_fw(*this, tx, m_host->local_time());
 
         do_receive(tx, info);
 
         if (is_tracing && (!m_host->trace_errors || failed(tx)))
-            logger::trace_bw(name(), tx, m_host->local_time());
+            logger::trace_bw(*this, tx, m_host->local_time());
 
         tx.set_address(addr);
         tx.set_data_length(size);
