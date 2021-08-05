@@ -165,15 +165,24 @@ namespace vcml {
         sd_target_sockets m_target_sockets;
     };
 
+    struct sd_protocol_types {
+        typedef sd_command command_payload;
+        typedef sd_data data_payload;
+    };
+
     class sd_fw_transport_if: public sc_core::sc_interface
     {
     public:
+        typedef sd_protocol_types protocol_types;
+
         virtual void sd_transport(sd_command& cmd) = 0;
         virtual void sd_transport(sd_data& data) = 0;
     };
 
-    class sd_bw_transport_if: public sc_core::sc_interface {
-        // empty interface
+    class sd_bw_transport_if: public sc_core::sc_interface
+    {
+    public:
+        typedef sd_protocol_types protocol_types;
     };
 
     typedef tlm::tlm_base_initiator_socket<1, sd_fw_transport_if,

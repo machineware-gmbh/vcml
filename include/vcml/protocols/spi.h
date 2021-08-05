@@ -79,11 +79,14 @@ namespace vcml {
     class spi_fw_transport_if: public sc_core::sc_interface
     {
     public:
+        typedef spi_payload protocol_types;
         virtual void spi_transport(spi_payload& spi) = 0;
     };
 
-    class spi_bw_transport_if: public sc_core::sc_interface {
-        // empty interface
+    class spi_bw_transport_if: public sc_core::sc_interface
+    {
+    public:
+        typedef spi_payload protocol_types;
     };
 
     typedef tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,

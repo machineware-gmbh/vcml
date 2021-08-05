@@ -191,8 +191,8 @@ namespace vcml {
     sd_initiator_socket::sd_initiator_socket(const char* nm):
         sd_base_initiator_socket(nm),
         sd_bw_transport_if(),
-        m_parent(dynamic_cast<module*>(get_parent_object())),
-        m_host(dynamic_cast<sd_host*>(get_parent_object())),
+        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_host(dynamic_cast<sd_host*>(hierarchy_top())),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(*(sd_bw_transport_if*)this);
@@ -263,8 +263,8 @@ namespace vcml {
 
     sd_target_socket::sd_target_socket(const char* nm, address_space a):
         sd_base_target_socket(nm),
-        m_parent(dynamic_cast<module*>(get_parent_object())),
-        m_host(dynamic_cast<sd_host*>(get_parent_object())),
+        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_host(dynamic_cast<sd_host*>(hierarchy_top())),
         m_stub(nullptr), as(a) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside sd_host", name());
