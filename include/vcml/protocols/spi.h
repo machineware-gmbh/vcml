@@ -105,10 +105,14 @@ namespace vcml {
         spi_target_stub* m_stub;
 
     public:
+        bool is_stubbed() const { return m_stub != nullptr; }
+
         spi_initiator_socket(const char* name);
         virtual ~spi_initiator_socket();
         VCML_KIND(spi_initiator_socket);
+
         virtual sc_core::sc_type_index get_protocol_types() const;
+
         void transport(spi_payload& spi);
         void stub();
     };
@@ -124,6 +128,7 @@ namespace vcml {
 
     public:
         const address_space as;
+        bool is_stubbed() const { return m_stub != nullptr; }
         spi_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~spi_target_socket();
         VCML_KIND(spi_target_socket);

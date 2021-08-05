@@ -201,6 +201,8 @@ namespace vcml {
         sd_target_stub* m_stub;
 
     public:
+        bool is_stubbed() const { return m_stub != nullptr; }
+
         explicit sd_initiator_socket(const char* name);
         virtual ~sd_initiator_socket();
 
@@ -229,6 +231,9 @@ namespace vcml {
 
     public:
         const address_space as;
+
+        bool is_stubbed() const { return m_stub != nullptr; }
+
         sd_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~sd_target_socket();
 
