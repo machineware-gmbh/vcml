@@ -78,7 +78,7 @@ namespace vcml {
     template <typename T>
     in_port<T>::in_port(const char* nm):
         sc_core::sc_in<T>(nm),
-        m_parent(dynamic_cast<sc_module*>(sc_object::get_parent_object())),
+        m_parent(hierarchy_top()),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s outside module", sc_in<T>::name());
     }
@@ -149,7 +149,7 @@ namespace vcml {
         sc_core::sc_out<T>(nm),
         m_state(false),
         m_update(concat(this->basename(), "_update_ev").c_str()),
-        m_parent(dynamic_cast<sc_module*>(sc_object::get_parent_object())),
+        m_parent(hierarchy_top()),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s outside module", sc_out<T>::name());
 
