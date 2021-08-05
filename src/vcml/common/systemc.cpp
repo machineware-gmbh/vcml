@@ -125,7 +125,7 @@ namespace vcml {
         return ss.str();
     }
 
-#if SYSTEMC_VERSION >= SYSTEMC_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
     static inline bool __kernel_has_phase_callbacks() {
         class callbacks_tester: public sc_object
         {
@@ -154,7 +154,7 @@ namespace vcml {
 #endif
 
     bool kernel_has_phase_callbacks() {
-#if SYSTEMC_VERSION < SYSTEMC_2_3_1a
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
         return false;
 #else
         static bool has_callbacks = __kernel_has_phase_callbacks();
@@ -172,7 +172,7 @@ namespace vcml {
     #define DECL_TRACE_METHOD_B(t) \
         virtual void trace(const t& object, const string& n, int w) override {}
 
-#if SYSTEMC_VERSION >= SYSTEMC_2_3_2
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_2
         DECL_TRACE_METHOD_A(sc_event)
         DECL_TRACE_METHOD_A(sc_time)
 #endif
@@ -227,7 +227,7 @@ namespace vcml {
             sc_core::sc_object("$$$vcml_cycle_helper$$$"),
             use_phase_callbacks(kernel_has_phase_callbacks()),
             deltas(), tsteps() {
-#if SYSTEMC_VERSION >= SYSTEMC_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
             if (use_phase_callbacks) {
                 register_simulation_phase_callback(
                     sc_core::SC_END_OF_UPDATE | sc_core::SC_BEFORE_TIMESTEP);

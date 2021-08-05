@@ -38,7 +38,7 @@
 #define SYSTEMC_VERSION_2_3_2     20171012
 #define SYSTEMC_VERSION_2_3_3     20181013
 
-#if SYSTEMC_VERSION < SYSTEMC_2_3_1a
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
 inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
                                     const sc_core::sc_time& t2 ) {
     sc_core::sc_time tmp(t1.value() % t2.value(), false);
@@ -46,7 +46,7 @@ inline sc_core::sc_time operator % (const sc_core::sc_time& t1,
 }
 #endif
 
-#if SYSTEMC_VERSION < SYSTEMC_2_3_2
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_2
 #include <typeindex>
 namespace sc_core {
     typedef std::type_index sc_type_index;
@@ -95,7 +95,7 @@ namespace vcml {
     }
 
     inline sc_time time_from_value(u64 val) {
-#if SYSTEMC_VERSION < SYSTEMC_2_3_1a
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
         return sc_time((sc_dt::uint64)val, false);
 #else
         return sc_time::from_value(val);
@@ -107,7 +107,7 @@ namespace vcml {
     using sc_core::sc_start;
     using sc_core::sc_stop;
 
-    #if SYSTEMC_VERSION < SYSTEMC_2_3_0a
+    #if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_0a
     #   define sc_pause sc_stop
     #else
     using sc_core::sc_pause;
