@@ -33,7 +33,7 @@ namespace vcml { namespace virtio {
 
     class console : public module,
                     public virtio_device,
-                    protected serial::port
+                    public serial::port
     {
     private:
         enum virtqueues : int {

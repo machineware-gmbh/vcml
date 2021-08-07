@@ -70,6 +70,9 @@ namespace vcml { namespace serial {
         void attach(backend* b);
         void detach(backend* b);
 
+        int  create_backend(const string& type);
+        bool destroy_backend(int id);
+
         void fetch_history(vector<u8>& hist);
         void clear_history();
 

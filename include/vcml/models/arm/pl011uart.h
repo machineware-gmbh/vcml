@@ -33,7 +33,7 @@
 namespace vcml { namespace arm {
 
     class pl011uart: public peripheral,
-                     protected serial::port
+                     public serial::port
     {
     private:
         unsigned int m_fifo_size;

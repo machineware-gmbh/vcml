@@ -33,7 +33,7 @@
 namespace vcml { namespace generic {
 
     class uart8250: public peripheral,
-                    protected serial::port
+                    public serial::port
     {
     private:
         const size_t m_rx_size;

@@ -24,16 +24,12 @@ namespace vcml { namespace serial {
     unordered_map<string, port*> port::s_ports;
 
     bool port::cmd_create_backend(const vector<string>& args, ostream& os) {
-        string type = args[0];
-
         try {
-            backend* b = backend::create(m_name, type);
-            m_backends[m_next_id] = b;
-            os << "created backend " << m_next_id;
-            m_next_id++;
+            int id = create_backend(args[0]);
+            os << "created backend " << id;
             return true;
         } catch (std::exception& ex) {
-            os << "error creating backend " << type << ":" << ex.what();
+            os << "error creating backend " << args[0] << ":" << ex.what();
             return false;
         }
     }
@@ -48,14 +44,8 @@ namespace vcml { namespace serial {
                 return true;
             }
 
-            auto it = m_backends.find(id);
-            if (it == m_backends.end()) {
+            if (!destroy_backend(id))
                 os << "invalid backend id: " << id;
-                return false;
-            }
-
-            delete it->second;
-            m_backends.erase(it);
         }
 
         return true;
@@ -110,8 +100,7 @@ namespace vcml { namespace serial {
         vector<string> types = split(backends, ' ');
         for  (auto type : types) {
             try {
-                backend* b = backend::create(m_name, type);
-                m_backends[m_next_id++] = b;
+                create_backend(type);
             } catch (std::exception& ex) {
                 log_warn("error creating %s: %s", type.c_str(), ex.what());
             }
@@ -153,6 +142,21 @@ namespace vcml { namespace serial {
             if (b->peek())
                 return true;
         return false;
+    }
+
+    int port::create_backend(const string& type) {
+        m_backends[m_next_id] = backend::create(m_name, type);
+        return m_next_id++;
+    }
+
+    bool port::destroy_backend(int id) {
+        auto it = m_backends.find(id);
+        if (it == m_backends.end())
+            return false;
+
+        delete it->second;
+        m_backends.erase(it);
+        return true;
     }
 
     bool port::serial_in(u8& val) {
