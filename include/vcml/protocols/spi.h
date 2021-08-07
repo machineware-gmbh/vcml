@@ -48,23 +48,14 @@ namespace vcml {
         typedef vector<spi_initiator_socket*> spi_initiator_sockets;
         typedef vector<spi_target_socket*> spi_target_sockets;
 
-        const spi_initiator_sockets get_spi_initiator_sockets() const {
+        const spi_initiator_sockets& get_spi_initiator_sockets() const {
             return m_initiator_sockets;
         }
 
-        const spi_target_sockets get_spi_target_sockets() const {
+        const spi_target_sockets& get_spi_target_sockets() const {
             return m_target_sockets;
         }
 
-        spi_initiator_sockets get_spi_initiator_sockets() {
-            return m_initiator_sockets;
-        }
-
-        spi_target_sockets get_spi_target_sockets() {
-            return m_target_sockets;
-        }
-
-        const spi_target_sockets get_spi_target_sockets(address_space) const;
         spi_target_sockets get_spi_target_sockets(address_space);
 
         spi_host() = default;

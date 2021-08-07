@@ -25,15 +25,6 @@ namespace vcml {
         return os;
     }
 
-    const spi_host::spi_target_sockets
-    spi_host::get_spi_target_sockets(address_space as) const {
-        spi_target_sockets sockets;
-        for (auto& socket : m_target_sockets)
-            if (socket->as == as)
-                sockets.push_back(socket);
-        return sockets;
-    }
-
     spi_host::spi_target_sockets
     spi_host::get_spi_target_sockets(address_space as) {
         spi_target_sockets sockets;

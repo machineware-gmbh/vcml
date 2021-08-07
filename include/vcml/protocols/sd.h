@@ -135,23 +135,14 @@ namespace vcml {
         typedef vector<sd_initiator_socket*> sd_initiator_sockets;
         typedef vector<sd_target_socket*> sd_target_sockets;
 
-        const sd_initiator_sockets get_sd_initiator_sockets() const {
+        const sd_initiator_sockets& get_sd_initiator_sockets() const {
             return m_initiator_sockets;
         }
 
-        const sd_target_sockets get_sd_target_sockets() const {
+        const sd_target_sockets& get_sd_target_sockets() const {
             return m_target_sockets;
         }
 
-        sd_initiator_sockets get_sd_initiator_sockets() {
-            return m_initiator_sockets;
-        }
-
-        sd_target_sockets get_sd_target_sockets() {
-            return m_target_sockets;
-        }
-
-        const sd_target_sockets get_sd_target_sockets(address_space) const;
         sd_target_sockets get_sd_target_sockets(address_space);
 
         sd_host() = default;

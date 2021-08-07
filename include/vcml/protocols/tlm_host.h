@@ -47,9 +47,6 @@ namespace vcml {
         const vector<tlm_initiator_socket*>& get_tlm_initiator_sockets() const;
         const vector<tlm_target_socket*>& get_tlm_target_sockets() const;
 
-        vector<tlm_initiator_socket*>& get_tlm_initiator_sockets();
-        vector<tlm_target_socket*>& get_tlm_target_sockets();
-
         tlm_initiator_socket* find_tlm_initiator_socket(const string&) const;
         tlm_target_socket* find_tlm_target_socket(const string& name) const;
 
@@ -105,16 +102,6 @@ namespace vcml {
 
     inline const vector<tlm_target_socket*>&
     tlm_host::get_tlm_target_sockets() const {
-        return m_target_sockets;
-    }
-
-    inline vector<tlm_initiator_socket*>&
-    tlm_host::get_tlm_initiator_sockets() {
-        return m_initiator_sockets;
-    }
-
-    inline vector<tlm_target_socket*>&
-    tlm_host::get_tlm_target_sockets() {
         return m_target_sockets;
     }
 

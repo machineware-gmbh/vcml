@@ -170,15 +170,6 @@ namespace vcml {
         return os;
     }
 
-    const sd_host::sd_target_sockets
-    sd_host::get_sd_target_sockets(address_space as) const {
-        sd_target_sockets sockets;
-        for (auto& socket : m_target_sockets)
-            if (socket->as == as)
-                sockets.push_back(socket);
-        return sockets;
-    }
-
     sd_host::sd_target_sockets
     sd_host::get_sd_target_sockets(address_space as) {
         sd_target_sockets sockets;
