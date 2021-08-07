@@ -60,7 +60,7 @@ public:
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-                                   const tlm_sbi& info) override {
+        const tlm_sbi& info, address_space as) override {
         EXPECT_EQ(tx.get_address(), addr)
             << "received wrong address";
         EXPECT_EQ(tx.get_data_length(), sizeof(data))

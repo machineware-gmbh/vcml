@@ -33,8 +33,8 @@ public:
         handle_clock_update(0, CLOCK.read());
     }
 
-    MOCK_METHOD3(read, vcml::tlm_response_status(const vcml::range&, void*, const vcml::tlm_sbi&));
-    MOCK_METHOD3(write, vcml::tlm_response_status(const vcml::range&, const void*, const vcml::tlm_sbi&));
+    MOCK_METHOD(tlm::tlm_response_status, read, (const vcml::range&, void*, const vcml::tlm_sbi&, vcml::address_space), (override));
+    MOCK_METHOD(tlm::tlm_response_status, write, (const vcml::range&, const void*, const vcml::tlm_sbi&, vcml::address_space), (override));
 };
 
 TEST(peripheral, transporting) {
@@ -47,18 +47,18 @@ TEST(peripheral, transporting) {
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, 4);
 
-    EXPECT_CALL(mock, read(vcml::range(tx), buffer, vcml::SBI_NONE)).WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
-    EXPECT_CALL(mock, write(_,_,_)).Times(0);
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
+    EXPECT_CALL(mock, read(vcml::range(tx), buffer, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
+    EXPECT_CALL(mock, write(_,_,_,_)).Times(0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.read_latency);
 
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, 4);
 
-    EXPECT_CALL(mock, read(_,_,_)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE)).WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
+    EXPECT_CALL(mock, read(_,_,_,_)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency);
 }
@@ -72,19 +72,19 @@ TEST(peripheral, transporting_debug) {
 
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, 16);
-    EXPECT_CALL(mock, read(vcml::range(tx), buffer, vcml::SBI_DEBUG)).Times(1);
+    EXPECT_CALL(mock, read(vcml::range(tx), buffer, vcml::SBI_DEBUG, vcml::VCML_AS_DEFAULT)).Times(1);
 
-    EXPECT_CALL(mock, write(_,_,_)).Times(0);
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_DEBUG), 0);
+    EXPECT_CALL(mock, write(_,_,_,_)).Times(0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_DEBUG, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, sc_core::SC_ZERO_TIME);
 
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, 16);
 
-    EXPECT_CALL(mock, read(_,_,_)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_DEBUG));
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_DEBUG), 0);
+    EXPECT_CALL(mock, read(_,_,_,_)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_DEBUG, vcml::VCML_AS_DEFAULT));
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_DEBUG, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, sc_core::SC_ZERO_TIME);
 }
@@ -102,9 +102,9 @@ TEST(peripheral, transport_streaming) {
     tx.set_streaming_width(1);
     npulses = tx.get_data_length() / tx.get_streaming_width();
 
-    EXPECT_CALL(mock, read(_,_,_)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(tx), _, vcml::SBI_NONE)).Times(npulses);
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
+    EXPECT_CALL(mock, read(_,_,_,_)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(tx), _, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(npulses);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(local, cycle *  mock.write_latency * npulses);
 
     local = sc_core::SC_ZERO_TIME;
@@ -112,9 +112,9 @@ TEST(peripheral, transport_streaming) {
     tx.set_streaming_width(2);
     npulses = tx.get_data_length() / tx.get_streaming_width();
 
-    EXPECT_CALL(mock, read(vcml::range(tx), _, vcml::SBI_NONE)).Times(npulses);
-    EXPECT_CALL(mock, write(_,_,_)).Times(0);
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
+    EXPECT_CALL(mock, read(vcml::range(tx), _, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(npulses);
+    EXPECT_CALL(mock, write(_,_,_,_)).Times(0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(local, cycle *  mock.read_latency * npulses);
 }
 
@@ -131,17 +131,17 @@ TEST(peripheral, transporting_byte_enable) {
     tx.set_byte_enable_length(4);
     tx.set_byte_enable_ptr(byte_enable);
 
-    EXPECT_CALL(mock, read(_,_,_)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 0, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(5, 5), buffer + 1, vcml::SBI_NONE)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 2, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(8, 8), buffer + 4, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(9, 9), buffer + 5, vcml::SBI_NONE)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(10, 10), buffer + 6, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(11, 11), buffer + 7, vcml::SBI_NONE)).Times(0);
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
+    EXPECT_CALL(mock, read(_,_,_,_)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 0, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(5, 5), buffer + 1, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 2, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(8, 8), buffer + 4, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(9, 9), buffer + 5, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(10, 10), buffer + 6, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(11, 11), buffer + 7, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency);
 }
@@ -162,15 +162,15 @@ TEST(peripheral, transporting_byte_enable_with_streaming) {
     tx.set_streaming_width(4);
     npulses = tx.get_data_length() / tx.get_streaming_width();
 
-    EXPECT_CALL(mock, read(_,_,_)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 0, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 4, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 2, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 6, vcml::SBI_NONE));
-    EXPECT_CALL(mock, write(vcml::range(5, 5), buffer + 1, vcml::SBI_NONE)).Times(0);
-    EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE)).Times(0);
-    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE), 0);
+    EXPECT_CALL(mock, read(_,_,_,_)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 0, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 4, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 2, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 6, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT));
+    EXPECT_CALL(mock, write(vcml::range(5, 5), buffer + 1, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT)).Times(0);
+    EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency * npulses);
 }

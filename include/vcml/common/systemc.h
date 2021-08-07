@@ -30,6 +30,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/report.h"
 #include "vcml/common/utils.h"
 
@@ -199,6 +200,28 @@ namespace vcml {
 
     template <> inline bool failed(const tlm_generic_payload& tx) {
         return failed(tx.get_response_status());
+    }
+
+    inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd, u64 addr,
+        void* data, unsigned int size) {
+        tx.set_command(cmd);
+        tx.set_address(addr);
+        tx.set_data_ptr(reinterpret_cast<unsigned char*>(data));
+        tx.set_data_length(size);
+        tx.set_streaming_width(size);
+        tx.set_byte_enable_ptr(nullptr);
+        tx.set_byte_enable_length(0);
+        tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
+        tx.set_dmi_allowed(false);
+    }
+
+    inline u64 tx_size(const tlm_generic_payload& tx) {
+        u64 size = tx.get_streaming_width();
+        return size > 0? size : tx.get_data_length();
+    }
+
+    inline u64 tx_width(const tlm_generic_payload& tx) {
+        return ffs((u64)tx.get_address() + tx_size(tx));
     }
 
     const char* tlm_response_to_str(tlm_response_status status);

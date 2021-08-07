@@ -17,29 +17,8 @@
  ******************************************************************************/
 
 #include "vcml/component.h"
-#include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {
-
-    void component::register_socket(tlm_initiator_socket* socket) {
-        if (stl_contains(m_master_sockets, socket))
-            VCML_ERROR("socket '%s' already registered", socket->name());
-        m_master_sockets.push_back(socket);
-    }
-
-    void component::register_socket(tlm_target_socket* socket) {
-        if (stl_contains(m_slave_sockets, socket))
-            VCML_ERROR("socket '%s' already registered", socket->name());
-        m_slave_sockets.push_back(socket);
-    }
-
-    void component::unregister_socket(tlm_initiator_socket* socket) {
-        stl_remove_erase(m_master_sockets, socket);
-    }
-
-    void component::unregister_socket(tlm_target_socket* socket) {
-        stl_remove_erase(m_slave_sockets, socket);
-    }
 
     bool component::cmd_reset(const vector<string>& args, ostream& os) {
         do_reset();
@@ -56,15 +35,13 @@ namespace vcml {
         }
     }
 
-    SC_HAS_PROCESS(component);
-
     void component::clock_handler() {
         clock_t newclk = CLOCK.read();
         if (newclk == m_curclk)
             return;
 
         if (newclk <= 0) {
-            for (auto socket : m_slave_sockets)
+            for (auto socket : get_tlm_target_sockets())
                 socket->invalidate_dmi();
         }
 
@@ -80,13 +57,11 @@ namespace vcml {
 
     component::component(const sc_module_name& nm, bool dmi):
         module(nm),
+        tlm_host(dmi),
         m_curclk(),
-        m_offsets(),
-        m_master_sockets(),
-        m_slave_sockets(),
-        allow_dmi("allow_dmi", dmi),
         CLOCK("CLOCK"),
         RESET("RESET") {
+        SC_HAS_PROCESS(component);
         SC_METHOD(clock_handler);
         sensitive << CLOCK;
         dont_initialize();
@@ -103,7 +78,7 @@ namespace vcml {
     }
 
     void component::reset() {
-        for (auto socket : m_slave_sockets)
+        for (auto socket : get_tlm_target_sockets())
             socket->invalidate_dmi();
     }
 
@@ -135,127 +110,17 @@ namespace vcml {
         return sc_time(1.0 / CLOCK.read(), SC_SEC);
     }
 
-    sc_time& component::local_time(sc_process_b* proc) {
-        if (proc == nullptr)
-            proc = current_process();
-
-        if (!stl_contains(m_offsets, proc))
-             m_offsets[proc] = SC_ZERO_TIME;
-
-        sc_time& local = m_offsets[proc];
-        update_local_time(local);
-        return local;
-    }
-
-    sc_time component::local_time_stamp(sc_process_b* proc) {
-        return sc_time_stamp() + local_time(proc);
-    }
-
-    bool component::needs_sync(sc_process_b* proc) {
-        if (proc == nullptr)
-            proc = current_process();
-        if (!is_thread(proc))
-            return false;
-
-        sc_time quantum = tlm::tlm_global_quantum::instance().get();
-        return local_time(proc) >= quantum;
-    }
-
-    void component::sync(sc_process_b* proc) {
-        if (proc == nullptr)
-            proc = current_process();
-        if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
-            VCML_ERROR("attempt to sync outside of SC_THREAD process");
-
-        sc_time& offset = local_time(proc);
-        wait(offset);
-        offset = SC_ZERO_TIME;
-    }
-
-    tlm_initiator_socket* component::get_master_socket(const string& name) const {
-        for (auto socket : m_master_sockets)
-            if (name == socket->name())
-                return socket;
-        return nullptr;
-    }
-
-    tlm_target_socket* component::get_slave_socket(const string& name) const {
-        for (auto socket : m_slave_sockets)
-            if (name == socket->name())
-                return socket;
-        return nullptr;
-    }
-
-    void component::map_dmi(const tlm_dmi& dmi) {
-        for (auto socket : m_slave_sockets)
-            socket->map_dmi(dmi);
-    }
-
-    void component::map_dmi(unsigned char* p, u64 start, u64 end, vcml_access a,
-                            const sc_time& read_latency,
-                            const sc_time& write_latency) {
-        tlm_dmi dmi;
-        dmi.set_dmi_ptr(p);
-        dmi.set_start_address(start);
-        dmi.set_end_address(end);
-        dmi.set_read_latency(read_latency);
-        dmi.set_write_latency(write_latency);
-        dmi_set_access(dmi, a);
-        map_dmi(dmi);
-    }
-
-    void component::unmap_dmi(u64 start, u64 end) {
-        for (auto socket : m_slave_sockets)
-            socket->unmap_dmi(start, end);
-    }
-
-    void component::remap_dmi(const sc_time& rdlat, const sc_time& wrlat) {
-        for (auto socket : m_slave_sockets)
-            socket->remap_dmi(rdlat, wrlat);
-    }
-
-    void component::b_transport(tlm_target_socket* origin, tlm_generic_payload& tx,
-                                sc_time& dt) {
-        wait_clock_reset();
-
-        sc_process_b* proc = current_thread();
-        m_offsets[proc] = dt;
-        transport(tx, tx_get_sbi(tx));
-        dt = m_offsets[proc];
-    }
-
-    unsigned int component::transport_dbg(tlm_target_socket* origin,
-                                          tlm_generic_payload& tx) {
-        sc_time t1 = sc_time_stamp();
-        unsigned int bytes = transport(tx, tx_get_sbi(tx) | SBI_DEBUG);
-        sc_time t2 = sc_time_stamp();
-        if (thctl_is_sysc_thread() && t1 != t2)
-            VCML_ERROR("time advance during debug call");
-        return bytes;
-    }
-
-    bool component::get_direct_mem_ptr(tlm_target_socket* origin,
-                                       const tlm_generic_payload& tx,
-                                       tlm_dmi& dmi) {
-        return true;
-    }
-
-    void component::invalidate_direct_mem_ptr(tlm_initiator_socket* origin,
-                                             u64 start, u64 end) {
-        invalidate_dmi(start, end);
+    unsigned int component::transport(tlm_target_socket& socket,
+        tlm_generic_payload& tx, const tlm_sbi& sideband) {
+        if (!sideband.is_debug)
+            wait_clock_reset();
+        return transport(tx, sideband, socket.as);
     }
 
     unsigned int component::transport(tlm_generic_payload& tx,
-                                      const tlm_sbi& info) {
-        return 0; // to be overloaded
-    }
-
-    void component::invalidate_dmi(u64 start, u64 end) {
+        const tlm_sbi& sideband, address_space as) {
         // to be overloaded
-    }
-
-    void component::update_local_time(sc_time& local_time) {
-        // to be overloaded
+        return 0;
     }
 
     void component::handle_clock_update(clock_t oldclk, clock_t newclk) {

@@ -21,26 +21,26 @@
 namespace vcml {
 
     void tlm_initiator_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
-                                                      sc_dt::uint64 end) {
+                                                         sc_dt::uint64 end) {
         unmap_dmi(start, end);
-        m_host->invalidate_direct_mem_ptr(this, start, end);
+        m_host->invalidate_direct_mem_ptr(*this, start, end);
     }
 
-    tlm_initiator_socket::tlm_initiator_socket(const char* nm, component* host):
+    tlm_initiator_socket::tlm_initiator_socket(const char* nm):
         simple_initiator_socket<tlm_initiator_socket, 64>(nm),
         m_tx(),
         m_txd(),
         m_sbi(SBI_NONE),
         m_dmi_cache(),
         m_stub(nullptr),
-        m_adapter(nullptr),
-        m_host(host) {
-        if (m_host == nullptr) {
-            m_host = dynamic_cast<component*>(get_parent_object());
-            VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
-        }
+        m_host(dynamic_cast<tlm_host*>(hierarchy_top())),
+        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_adapter(nullptr) {
+        VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
+        VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
 
         m_host->register_socket(this);
+
         register_invalidate_direct_mem_ptr(this,
                 &tlm_initiator_socket::invalidate_direct_mem_ptr);
 
@@ -55,31 +55,31 @@ namespace vcml {
             delete m_stub;
     }
 
-    u8* tlm_initiator_socket::lookup_dmi_ptr(const range& addr, vcml_access acs) {
+    u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access a) {
         if (!m_host->allow_dmi)
             return nullptr;
 
         tlm_dmi dmi;
-        if (m_dmi_cache.lookup(addr, acs, dmi))
-            return dmi_get_ptr(dmi, addr.start);
+        if (m_dmi_cache.lookup(mem, a, dmi))
+            return dmi_get_ptr(dmi, mem.start);
 
         tlm_generic_payload tx;
-        tlm_command cmd = tlm_command_from_access(acs);
-        tx_setup(tx, cmd, addr.start, nullptr, addr.length());
+        tlm_command cmd = tlm_command_from_access(a);
+        tx_setup(tx, cmd, mem.start, nullptr, mem.length());
         if (!(*this)->get_direct_mem_ptr(tx, dmi))
             return nullptr;
 
         map_dmi(dmi);
 
         // Re-check permission for RW requests
-        if (!dmi_check_access(dmi, acs))
+        if (!dmi_check_access(dmi, a))
             return nullptr;
 
         // Granted DMI region might be smaller
-        if (!addr.inside(dmi))
+        if (!mem.inside(dmi))
             return nullptr;
 
-        return dmi_get_ptr(dmi, addr.start);
+        return dmi_get_ptr(dmi, mem.start);
     }
 
     unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
@@ -121,9 +121,9 @@ namespace vcml {
             sc_time& offset = m_host->local_time();
             sc_time local = sc_time_stamp() + offset;
 
-            m_host->trace_fw(*this, tx, offset);
+            m_parent->trace_fw(*this, tx, offset);
             (*this)->b_transport(tx, offset);
-            m_host->trace_bw(*this, tx, offset);
+            m_parent->trace_bw(*this, tx, offset);
 
             sc_time now = sc_time_stamp() + offset;
             VCML_ERROR_ON(now < local, "b_transport time went backwards");
@@ -216,13 +216,13 @@ namespace vcml {
 
     void tlm_initiator_socket::stub(tlm_response_status r) {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-        hierarchy_guard guard(m_host);
+        hierarchy_guard guard(m_parent);
         m_stub = new tlm_target_stub(concat(basename(), "_stub").c_str(), r);
         base_type::bind(m_stub->IN);
     }
 
     void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
-        m_host->trace_fw(*this, tx, dt);
+        m_parent->trace_fw(*this, tx, dt);
 
         int self = m_next++;
         while (self != m_curr)
@@ -238,7 +238,7 @@ namespace vcml {
             tx.set_dmi_allowed(true);
 
         if (m_exmon.update(tx)) {
-            m_host->b_transport(this, tx, dt);
+            m_host->b_transport(*this, tx, dt);
         } else {
             tx.set_dmi_allowed(false);
             tx.set_response_status(tlm::TLM_OK_RESPONSE);
@@ -247,14 +247,14 @@ namespace vcml {
         m_curr++;
         m_free_ev.notify();
 
-        m_host->trace_bw(*this, tx, dt);
+        m_parent->trace_bw(*this, tx, dt);
     }
 
     unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx){
-        return m_host->transport_dbg(this, tx);
+        return m_host->transport_dbg(*this, tx);
     }
 
-    bool tlm_target_socket::get_direct_mem_ptr(tlm_generic_payload& tx,
+    bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx,
                                           tlm_dmi& dmi) {
         dmi.allow_read_write();
         dmi.set_start_address(0);
@@ -263,13 +263,13 @@ namespace vcml {
         if (!m_dmi_cache.lookup(tx, dmi))
             return false;
 
-        if (!m_host->get_direct_mem_ptr(this, tx, dmi))
+        if (!m_host->get_direct_mem_ptr(*this, tx, dmi))
             return false;
 
         return m_exmon.override_dmi(tx, dmi);
     }
 
-    tlm_target_socket::tlm_target_socket(const char* nm, component* host):
+    tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
         simple_target_socket<tlm_target_socket, 64>(nm),
         m_curr(0),
         m_next(0),
@@ -277,20 +277,22 @@ namespace vcml {
         m_dmi_cache(),
         m_exmon(),
         m_stub(nullptr),
+        m_host(dynamic_cast<tlm_host*>(hierarchy_top())),
+        m_parent(dynamic_cast<module*>(hierarchy_top())),
         m_adapter(nullptr),
-        m_host(host) {
-        if (m_host == nullptr) {
-            m_host = dynamic_cast<component*>(get_parent_object());
-            VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
-        }
+        as(a) {
+        VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
 
         m_host->register_socket(this);
+
         register_b_transport(this, &tlm_target_socket::b_transport);
         register_transport_dbg(this, &tlm_target_socket::transport_dbg);
-        register_get_direct_mem_ptr(this, &tlm_target_socket::get_direct_mem_ptr);
+        register_get_direct_mem_ptr(this, &tlm_target_socket::get_dmi_ptr);
     }
 
     tlm_target_socket::~tlm_target_socket() {
+        if (m_host != nullptr)
+            m_host->unregister_socket(this);
         if (m_adapter != nullptr)
             delete m_adapter;
         if (m_stub != nullptr)
@@ -323,7 +325,7 @@ namespace vcml {
 
     void tlm_target_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-        hierarchy_guard guard(m_host);
+        hierarchy_guard guard(m_parent);
         m_stub = new tlm_initiator_stub(concat(basename(), "_stub").c_str());
         m_stub->OUT.bind(*this);
     }

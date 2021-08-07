@@ -88,14 +88,14 @@ namespace vcml {
     }
 
     void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
-                             vcml_access acs) {
+        vcml_access acs) {
         const sc_time rlat = clock_cycles(read_latency);
         const sc_time wlat = clock_cycles(write_latency);
         component::map_dmi(ptr, start, end, acs, rlat, wlat);
     }
 
     unsigned int peripheral::transport(tlm_generic_payload& tx,
-                                       const tlm_sbi& info) {
+        const tlm_sbi& info, address_space as) {
         sc_dt::uint64 addr = tx.get_address();
         unsigned char* ptr = tx.get_data_ptr();
         unsigned int length = tx.get_data_length();
@@ -118,19 +118,18 @@ namespace vcml {
             if (be_ptr == nullptr) {
                 tx.set_data_ptr(ptr + pulse * streaming_width);
                 tx.set_data_length(streaming_width);
-                nbytes += receive(tx, info);
+                nbytes += receive(tx, info, as);
             } else {
                 for (unsigned int byte = 0; byte < streaming_width; byte++) {
-                    if (be_ptr[be_index++ % be_length] == 0x00)
-                        continue;
-
-                    tx.set_address(addr + byte);
-                    tx.set_data_ptr(ptr + pulse * streaming_width + byte);
-                    tx.set_data_length(1);
-                    tx.set_streaming_width(1);
-                    tx.set_byte_enable_ptr(nullptr);
-                    tx.set_byte_enable_length(0);
-                    nbytes += receive(tx, info);
+                    if (be_ptr[be_index++ % be_length]) {
+                        tx.set_address(addr + byte);
+                        tx.set_data_ptr(ptr + pulse * streaming_width + byte);
+                        tx.set_data_length(1);
+                        tx.set_streaming_width(1);
+                        tx.set_byte_enable_ptr(nullptr);
+                        tx.set_byte_enable_length(0);
+                        nbytes += receive(tx, info, as);
+                    }
                 }
             }
         }
@@ -150,7 +149,7 @@ namespace vcml {
     }
 
     unsigned int peripheral::receive(tlm_generic_payload& tx,
-                                     const tlm_sbi& info) {
+        const tlm_sbi& info, address_space as) {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
         unsigned int width = tx.get_streaming_width();
@@ -182,9 +181,9 @@ namespace vcml {
         tlm_response_status rs = TLM_OK_RESPONSE;
         const range addr(tx);
         if (tx.is_read())
-            rs = read(addr, tx.get_data_ptr(), info);
+            rs = read(addr, tx.get_data_ptr(), info, as);
         if (tx.is_write())
-            rs = write(addr, tx.get_data_ptr(), info);
+            rs = write(addr, tx.get_data_ptr(), info, as);
 
         if (rs == TLM_INCOMPLETE_RESPONSE)
             rs = TLM_ADDRESS_ERROR_RESPONSE;
@@ -193,8 +192,18 @@ namespace vcml {
     }
 
     tlm_response_status peripheral::read(const range& addr, void* data,
-                                         const tlm_sbi& info) {
+        const tlm_sbi& info, address_space as) {
+        return read(addr, data, info); // to be overloaded
+    }
+
+    tlm_response_status peripheral::read(const range& addr, void* data,
+        const tlm_sbi& info) {
         return TLM_INCOMPLETE_RESPONSE; // to be overloaded
+    }
+
+    tlm_response_status peripheral::write(const range& addr, const void* data,
+        const tlm_sbi& info, address_space as) {
+        return write(addr, data, info); // to be overloaded
     }
 
     tlm_response_status peripheral::write(const range& addr, const void* data,

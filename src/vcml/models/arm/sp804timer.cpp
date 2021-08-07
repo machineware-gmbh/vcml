@@ -198,25 +198,25 @@ namespace vcml { namespace arm {
     }
 
     unsigned int sp804timer::receive(tlm_generic_payload& tx,
-                                     const tlm_sbi& info) {
+        const tlm_sbi& info, address_space as) {
         u64 addr = tx.get_address();
 
         // coverity[unsigned_compare]
         if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
             tx.set_address(addr - TIMER1_START);
-            unsigned int bytes = TIMER1.receive(tx, info);
+            unsigned int bytes = TIMER1.receive(tx, info, as);
             tx.set_address(addr);
             return bytes;
         }
 
         if ((addr >= TIMER2_START) && (addr <= TIMER2_END)) {
             tx.set_address(addr - TIMER2_START);
-            unsigned int bytes = TIMER2.receive(tx, info);
+            unsigned int bytes = TIMER2.receive(tx, info, as);
             tx.set_address(addr);
             return bytes;
         }
 
-        return peripheral::receive(tx, info);
+        return peripheral::receive(tx, info, as);
     }
 
     void sp804timer::reset() {

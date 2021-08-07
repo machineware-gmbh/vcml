@@ -84,14 +84,22 @@ namespace vcml {
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
 
         virtual unsigned int transport(tlm_generic_payload& tx,
-                                       const tlm_sbi& info) override;
-        virtual unsigned int receive(tlm_generic_payload& tx,
-                                     const tlm_sbi& info);
+                                       const tlm_sbi& info,
+                                       address_space as) override;
 
-        virtual tlm_response_status read  (const range& addr, void* data,
-                                           const tlm_sbi& info);
-        virtual tlm_response_status write (const range& addr, const void* data,
-                                           const tlm_sbi& info);
+        virtual unsigned int receive(tlm_generic_payload& tx,
+                                     const tlm_sbi& info,
+                                     address_space as);
+
+        virtual tlm_response_status read(const range& addr, void* data,
+                                         const tlm_sbi& info, address_space);
+        virtual tlm_response_status read(const range& addr, void* data,
+                                         const tlm_sbi& info);
+
+        virtual tlm_response_status write(const range& addr, const void* data,
+                                          const tlm_sbi& info, address_space);
+        virtual tlm_response_status write(const range& addr, const void* data,
+                                          const tlm_sbi& info);
 
         virtual void handle_clock_update(clock_t oldclk,
                                          clock_t newclk) override;

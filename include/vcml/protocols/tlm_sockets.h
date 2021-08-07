@@ -30,8 +30,9 @@
 #include "vcml/protocols/tlm_stubs.h"
 #include "vcml/protocols/tlm_adapters.h"
 #include "vcml/protocols/tlm_dmi_cache.h"
+#include "vcml/protocols/tlm_host.h"
 
-#include "vcml/component.h"
+#include "vcml/module.h"
 
 namespace vcml {
 
@@ -40,14 +41,12 @@ namespace vcml {
     private:
         tlm_generic_payload m_tx;
         tlm_generic_payload m_txd;
-
-        tlm_sbi m_sbi;
-
-        tlm_dmi_cache m_dmi_cache;
-
-        tlm_target_stub* m_stub;
-        sc_module* m_adapter;
-        component* m_host;
+        tlm_sbi             m_sbi;
+        tlm_dmi_cache       m_dmi_cache;
+        tlm_target_stub*    m_stub;
+        tlm_host*           m_host;
+        module*             m_parent;
+        module*             m_adapter;
 
         void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
 
@@ -59,7 +58,7 @@ namespace vcml {
         void set_level(int level);
 
         tlm_initiator_socket() = delete;
-        tlm_initiator_socket(const char* name, component* host = nullptr);
+        tlm_initiator_socket(const char* name);
         virtual ~tlm_initiator_socket();
 
         VCML_KIND(tlm_initiator_socket);
@@ -143,12 +142,13 @@ namespace vcml {
     }
 
     inline tlm_response_status tlm_initiator_socket::read(u64 addr, void* data,
-            unsigned int size, const tlm_sbi& info, unsigned int* bytes) {
+        unsigned int size, const tlm_sbi& info, unsigned int* bytes) {
         return access(TLM_READ_COMMAND, addr, data, size, info, bytes);
     }
 
-    inline tlm_response_status tlm_initiator_socket::write(u64 addr, const void* data,
-            unsigned int size, const tlm_sbi& info, unsigned int* bytes) {
+    inline tlm_response_status tlm_initiator_socket::write(u64 addr,
+        const void* data, unsigned int size, const tlm_sbi& info,
+        unsigned int* bytes) {
         void* ptr = const_cast<void*>(data);
         return access(TLM_WRITE_COMMAND, addr, ptr, size, info, bytes);
     }
@@ -160,21 +160,19 @@ namespace vcml {
     }
 
     template <typename T>
-    inline tlm_response_status tlm_initiator_socket::writew(u64 addr, const T& data,
-            const tlm_sbi& info, unsigned int* nbytes) {
+    inline tlm_response_status tlm_initiator_socket::writew(u64 addr,
+        const T& data, const tlm_sbi& info, unsigned int* nbytes) {
         return write(addr, &data, sizeof(T), info, nbytes);
     }
 
-    template <unsigned int WIDTH>
-    inline void tlm_initiator_socket::bind(tlm::tlm_initiator_socket<WIDTH>& other) {
+    template <unsigned int WIDTH> inline void
+    tlm_initiator_socket::bind(tlm::tlm_initiator_socket<WIDTH>& other) {
         typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
-        m_host->hierarchy_push();
+        hierarchy_guard guard(m_parent);
         string nm = concat(basename(), "_adapter");
         adapter_type* adapter = new adapter_type(nm.c_str());
-        m_host->hierarchy_pop();
-
         base_type::bind(adapter->IN);
         adapter->OUT.bind(other);
         m_adapter = adapter;
@@ -192,11 +190,9 @@ namespace vcml {
         typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
-        m_host->hierarchy_push();
+        hierarchy_guard guard(m_parent);
         string nm = concat(basename(), "_adapter");
         adapter_type* adapter = new adapter_type(nm.c_str());
-        m_host->hierarchy_pop();
-
         base_type::bind(adapter->IN);
         adapter->OUT.bind(other);
         m_adapter = adapter;
@@ -208,44 +204,34 @@ namespace vcml {
         base_type::bind(other);
     }
 
-    inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd, u64 addr,
-                         void* data, unsigned int size) {
-        tx.set_command(cmd);
-        tx.set_address(addr);
-        tx.set_data_ptr(reinterpret_cast<unsigned char*>(data));
-        tx.set_data_length(size);
-        tx.set_streaming_width(size);
-        tx.set_byte_enable_ptr(nullptr);
-        tx.set_byte_enable_length(0);
-        tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
-        tx.set_dmi_allowed(false);
-    }
-
     class tlm_target_socket: public simple_target_socket<tlm_target_socket, 64>
     {
     private:
-        int           m_curr;
-        int           m_next;
-        sc_event      m_free_ev;
-        tlm_dmi_cache m_dmi_cache;
-        tlm_exmon     m_exmon;
+        int                 m_curr;
+        int                 m_next;
+        sc_event            m_free_ev;
+        tlm_dmi_cache       m_dmi_cache;
+        tlm_exmon           m_exmon;
         tlm_initiator_stub* m_stub;
-        sc_module*    m_adapter;
-        component*    m_host;
+        tlm_host*           m_host;
+        module*             m_parent;
+        module*             m_adapter;
 
         void b_transport(tlm_generic_payload& tx, sc_time& dt);
         unsigned int transport_dbg(tlm_generic_payload& tx);
-        bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
+        bool get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
 
     public:
+        const address_space as;
+
         tlm_target_socket() = delete;
-        tlm_target_socket(const char* name, component* host = nullptr);
+        tlm_target_socket(const char* name, address_space a = VCML_AS_DEFAULT);
         virtual ~tlm_target_socket();
 
         VCML_KIND(tlm_target_socket);
 
         tlm_dmi_cache& dmi()   { return m_dmi_cache; }
-        tlm_exmon&     exmem() { return m_exmon; }
+        tlm_exmon&     exmon() { return m_exmon; }
 
         void map_dmi(const tlm_dmi& dmi);
         void unmap_dmi(u64 start, u64 end);
@@ -270,7 +256,7 @@ namespace vcml {
         typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
-        hierarchy_guard guard(m_host);
+        hierarchy_guard guard(m_parent);
         string nm = concat(basename(), "_adapter");
         adapter_type* adapter = new adapter_type(nm.c_str());
         tgt.bind(adapter->IN);
@@ -284,21 +270,21 @@ namespace vcml {
     }
 
     template <unsigned int WIDTH>
-    inline void tlm_target_socket::bind(tlm::tlm_target_socket<WIDTH>& other) {
+    inline void tlm_target_socket::bind(tlm::tlm_target_socket<WIDTH>& s) {
         typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
-        hierarchy_guard guard(m_host);
+        hierarchy_guard guard(m_parent);
         string nm = concat(basename(), "_adapter");
         adapter_type* adapter = new adapter_type(nm.c_str());
-        other.bind(adapter->IN);
+        s.bind(adapter->IN);
         adapter->OUT.bind(*this);
         m_adapter = adapter;
     }
 
     template <>
-    inline void tlm_target_socket::bind<64>(tlm::tlm_target_socket<64>& other) {
-        base_type::bind(other);
+    inline void tlm_target_socket::bind<64>(tlm::tlm_target_socket<64>& s) {
+        base_type::bind(s);
     }
 
 }

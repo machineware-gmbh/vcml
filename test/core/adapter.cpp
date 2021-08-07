@@ -62,7 +62,7 @@ public:
     }
 
     unsigned int transport(tlm_generic_payload& tx,
-                           const tlm_sbi& sbi) override {
+        const tlm_sbi& sbi, address_space as) override {
         EXPECT_TRUE(tx.is_read());
         EXPECT_EQ(tx.get_address(), 0x1234);
         EXPECT_EQ(tx.get_data_length(), 8u) << "mop";

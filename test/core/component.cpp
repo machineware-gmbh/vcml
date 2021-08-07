@@ -51,7 +51,8 @@ public:
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-                                   const tlm_sbi& sbi) override {
+        const tlm_sbi& sbi, address_space as) override {
+        EXPECT_EQ(as, VCML_AS_DEFAULT);
         EXPECT_EQ(tx.get_address(), 0x0);
         EXPECT_EQ(tx.get_data_length(), 4);
         EXPECT_NE(tx.get_data_ptr(), nullptr);

@@ -22,11 +22,14 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/bitops.h"
+
+#include "vcml/module.h"
 
 namespace vcml {
 
     template <unsigned int WIDTH_IN, unsigned int WIDTH_OUT>
-    class tlm_bus_width_adapter: public sc_module
+    class tlm_bus_width_adapter: public module
     {
     public:
         typedef tlm_bus_width_adapter<WIDTH_IN, WIDTH_OUT> this_type;
@@ -36,7 +39,7 @@ namespace vcml {
         tlm_bus_width_adapter() = delete;
 
         tlm_bus_width_adapter(const sc_module_name& nm):
-            sc_module(nm),
+            module(nm),
             IN("IN"),
             OUT("OUT") {
             IN.register_b_transport(this, &this_type::b_transport);
@@ -47,23 +50,34 @@ namespace vcml {
                 &this_type::invalidate_direct_mem_ptr);
         }
 
-        virtual ~tlm_bus_width_adapter() {
-            // nothing to do
-        }
+        virtual ~tlm_bus_width_adapter() = default;
 
         VCML_KIND(tlm_bus_width_adapter);
 
     private:
         void b_transport(tlm_generic_payload& tx, sc_time& t) {
-            OUT->b_transport(tx, t);
+            trace_fw(OUT, tx, t);
+
+            // make sure our transaction fits into 32/64bit
+            if (tx_width(tx) <= WIDTH_OUT)
+                OUT->b_transport(tx, t);
+            else
+                tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+
+            trace_bw(OUT, tx, t);
         }
 
         unsigned int transport_dbg(tlm_generic_payload& tx) {
-            return OUT->transport_dbg(tx);
+            if (tx_width(tx) <= WIDTH_OUT)
+                return OUT->transport_dbg(tx);
+            tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+            return 0;
         }
 
         bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
-            return OUT->get_direct_mem_ptr(tx, dmi);
+            if (tx_width(tx) <= WIDTH_OUT)
+                return OUT->get_direct_mem_ptr(tx, dmi);
+            return false;
         }
 
         void invalidate_direct_mem_ptr(sc_dt::uint64 s, sc_dt::uint64 e) {

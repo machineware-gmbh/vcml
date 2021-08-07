@@ -27,34 +27,17 @@
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
-#include "vcml/protocols/tlm_sbi.h"
-#include "vcml/protocols/tlm_exmon.h"
-#include "vcml/protocols/tlm_dmi_cache.h"
+#include "vcml/protocols/tlm.h"
 
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
 namespace vcml {
 
-    class tlm_initiator_socket;
-    class tlm_target_socket;
-
-    class component: public module
+    class component: public module, public tlm_host
     {
-        friend class tlm_initiator_socket;
-        friend class tlm_target_socket;
     private:
         clock_t m_curclk;
-        std::unordered_map<sc_process_b*, sc_time> m_offsets;
-
-        vector<tlm_initiator_socket*> m_master_sockets;
-        vector<tlm_target_socket*> m_slave_sockets;
-
-        void register_socket(tlm_initiator_socket* socket);
-        void register_socket(tlm_target_socket* socket);
-
-        void unregister_socket(tlm_initiator_socket* socket);
-        void unregister_socket(tlm_target_socket* socket);
 
         bool cmd_reset(const vector<string>& args, ostream& os);
 
@@ -64,8 +47,6 @@ namespace vcml {
         void reset_handler();
 
     public:
-        property<bool> allow_dmi;
-
         in_port<clock_t> CLOCK;
         in_port<bool>    RESET;
 
@@ -86,41 +67,14 @@ namespace vcml {
 
         double clock_hz() const;
 
-        sc_time& local_time(sc_process_b* proc = nullptr);
-        sc_time  local_time_stamp(sc_process_b* proc = nullptr);
-
-        bool needs_sync(sc_process_b* proc = nullptr);
-        void sync(sc_process_b* proc = nullptr);
-
-        const vector<tlm_initiator_socket*>& get_master_sockets() const;
-        const vector<tlm_target_socket*>& get_slave_sockets() const;
-
-        tlm_initiator_socket* get_master_socket(const string& name) const;
-        tlm_target_socket* get_slave_socket(const string& name) const;
-
-        void map_dmi(const tlm_dmi& dmi);
-        void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a,
-                     const sc_time& read_latency = SC_ZERO_TIME,
-                     const sc_time& write_latency = SC_ZERO_TIME);
-        void unmap_dmi(const tlm_dmi& dmi);
-        void unmap_dmi(u64 start, u64 end);
-        void remap_dmi(const sc_time& rdlat, const sc_time& wrlat);
-
-        virtual void b_transport(tlm_target_socket* origin, tlm_generic_payload& tx,
-                                 sc_time& dt);
-        virtual unsigned int transport_dbg(tlm_target_socket* origin,
-                                           tlm_generic_payload& tx);
-        virtual bool get_direct_mem_ptr(tlm_target_socket* origin,
-                                        const tlm_generic_payload& tx,
-                                        tlm_dmi& dmi);
-        virtual void invalidate_direct_mem_ptr(tlm_initiator_socket* origin,
-                                               u64 start, u64 end);
+        virtual unsigned int transport(tlm_target_socket& socket,
+                                       tlm_generic_payload& tx,
+                                       const tlm_sbi& sideband) override;
 
         virtual unsigned int transport(tlm_generic_payload& tx,
-                                       const tlm_sbi& info);
-        virtual void invalidate_dmi(u64 start, u64 end);
+                                       const tlm_sbi& sideband,
+                                       address_space as);
 
-        virtual void update_local_time(sc_time& local_time);
         virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
     };
 
@@ -131,18 +85,6 @@ namespace vcml {
     inline double component::clock_hz() const {
         const sc_time c = clock_cycle();
         return c == SC_ZERO_TIME ? 0.0 : sc_time(1.0, SC_SEC) / c;
-    }
-
-    inline const vector<tlm_initiator_socket*>& component::get_master_sockets() const {
-        return m_master_sockets;
-    }
-
-    inline const vector<tlm_target_socket*>& component::get_slave_sockets() const {
-        return m_slave_sockets;
-    }
-
-    inline void component::unmap_dmi(const tlm_dmi& dmi) {
-        unmap_dmi(dmi.get_start_address(), dmi.get_end_address());
     }
 
 }
