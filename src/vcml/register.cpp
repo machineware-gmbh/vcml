@@ -40,7 +40,7 @@ namespace vcml {
         m_host->remove_register(this);
     }
 
-    void reg_base::do_receive(tlm_generic_payload& tx, const sideband& info) {
+    void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
         if (tx.is_read() && !is_readable() && !info.is_debug) {
             tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
             return;
@@ -67,7 +67,7 @@ namespace vcml {
     }
 
     unsigned int reg_base::receive(tlm_generic_payload& tx,
-                                   const sideband& info) {
+                                   const tlm_sbi& info) {
         u64 addr = tx.get_address();
         u64 size = tx.get_data_length();
         u64 strw = tx.get_streaming_width();

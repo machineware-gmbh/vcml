@@ -23,9 +23,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace generic {
 
@@ -36,7 +37,7 @@ namespace vcml { namespace generic {
 
     public:
         reg<hwrng, u32> RNG;
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         property<bool> pseudo;
         property<u32> seed;

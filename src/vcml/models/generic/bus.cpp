@@ -188,9 +188,8 @@ namespace vcml { namespace generic {
                 u64 s = m.addr.start + start - m.offset;
                 u64 e = m.addr.start + end - m.offset;
 
-                bus_ports<tlm_target_socket<64> >::iterator it;
-                for (it = IN.begin(); it != IN.end(); it++)
-                    (*it->second)->invalidate_direct_mem_ptr(s, e);
+                for (auto& it : IN)
+                    (*it.second)->invalidate_direct_mem_ptr(s, e);
             }
         }
     }
@@ -238,22 +237,22 @@ namespace vcml { namespace generic {
         m_default.peer = peer;
     }
 
-    unsigned int bus::bind(tlm_initiator_socket<64>& socket) {
+    unsigned int bus::bind(tlm::tlm_initiator_socket<64>& socket) {
         unsigned int port = IN.next_idx();
         socket.bind(IN[port]);
         return port;
     }
 
-    unsigned int bus::bind(tlm_target_socket<64>& socket, const range& addr,
-                           u64 offset) {
+    unsigned int bus::bind(tlm::tlm_target_socket<64>& socket,
+        const range& addr, u64 offset) {
         unsigned int port = OUT.next_idx();
         map(port, addr, offset, socket.name());
         OUT[port].bind(socket);
         return port;
     }
 
-    unsigned int bus::bind(tlm_target_socket<64>& socket, u64 start,
-                                  u64 end, u64 offset) {
+    unsigned int bus::bind(tlm::tlm_target_socket<64>& socket, u64 start,
+        u64 end, u64 offset) {
         return bind(socket, range(start, end), offset);
     }
 

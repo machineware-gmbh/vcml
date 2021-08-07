@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2021 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,18 +16,18 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/master_socket.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {
 
-    void master_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
-                                                  sc_dt::uint64 end) {
+    void tlm_initiator_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
+                                                      sc_dt::uint64 end) {
         unmap_dmi(start, end);
         m_host->invalidate_direct_mem_ptr(this, start, end);
     }
 
-    master_socket::master_socket(const char* nm, component* host):
-        simple_initiator_socket<master_socket, 64>(nm),
+    tlm_initiator_socket::tlm_initiator_socket(const char* nm, component* host):
+        simple_initiator_socket<tlm_initiator_socket, 64>(nm),
         m_tx(),
         m_txd(),
         m_sbi(SBI_NONE),
@@ -42,20 +42,20 @@ namespace vcml {
 
         m_host->register_socket(this);
         register_invalidate_direct_mem_ptr(this,
-                &master_socket::invalidate_direct_mem_ptr);
+                &tlm_initiator_socket::invalidate_direct_mem_ptr);
 
         m_tx.set_extension(new sbiext());
         m_txd.set_extension(new sbiext());
     }
 
-    master_socket::~master_socket() {
+    tlm_initiator_socket::~tlm_initiator_socket() {
         if (m_adapter != nullptr)
             delete m_adapter;
         if (m_stub != nullptr)
             delete m_stub;
     }
 
-    u8* master_socket::lookup_dmi_ptr(const range& addr, vcml_access acs) {
+    u8* tlm_initiator_socket::lookup_dmi_ptr(const range& addr, vcml_access acs) {
         if (!m_host->allow_dmi)
             return nullptr;
 
@@ -82,8 +82,8 @@ namespace vcml {
         return dmi_get_ptr(dmi, addr.start);
     }
 
-    unsigned int master_socket::send(tlm_generic_payload& tx,
-                                     const sideband& info) try {
+    unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
+                                     const tlm_sbi& info) try {
         unsigned int   bytes = 0;
         unsigned int   size  = tx.get_data_length();
         unsigned int   width = tx.get_streaming_width();
@@ -150,9 +150,8 @@ namespace vcml {
         throw;
     }
 
-    tlm_response_status master_socket::access_dmi(tlm_command cmd, u64 addr,
-                                                  void* data, unsigned int size,
-                                                  const sideband& info) {
+    tlm_response_status tlm_initiator_socket::access_dmi(tlm_command cmd,
+        u64 addr, void* data, unsigned int size, const tlm_sbi& info) {
         if (info.is_nodmi || info.is_excl)
             return TLM_INCOMPLETE_RESPONSE;
 
@@ -182,10 +181,8 @@ namespace vcml {
         return TLM_OK_RESPONSE;
     }
 
-    tlm_response_status master_socket::access(tlm_command cmd, u64 addr,
-                                              void* data, unsigned int size,
-                                              const sideband& info,
-                                              unsigned int* bytes) {
+    tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
+        void* data, unsigned int size, const tlm_sbi& info, unsigned int* b) {
 
         tlm_response_status rs = TLM_INCOMPLETE_RESPONSE;
 
@@ -212,18 +209,124 @@ namespace vcml {
         if (rs == TLM_INCOMPLETE_RESPONSE)
             log_warn("got incomplete response from target at 0x%016lx", addr);
 
-        if (bytes != nullptr)
-            *bytes = size;
+        if (b != nullptr)
+            *b = size;
         return rs;
     }
 
-    void master_socket::stub(tlm_response_status resp) {
+    void tlm_initiator_socket::stub(tlm_response_status r) {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-        m_host->hierarchy_push();
-        string nm = concat(basename(), "_stub");
-        m_stub = new target_stub(nm.c_str(), resp);
-        m_host->hierarchy_pop();
+        hierarchy_guard guard(m_host);
+        m_stub = new tlm_target_stub(concat(basename(), "_stub").c_str(), r);
         base_type::bind(m_stub->IN);
     }
 
+    void tlm_slave_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
+        m_host->trace_fw(*this, tx, dt);
+
+        int self = m_next++;
+        while (self != m_curr)
+            sc_core::wait(m_free_ev);
+
+        if (tx_is_excl(tx) && tx.is_read()) {
+            unmap_dmi(tx.get_address(),
+                      tx.get_address() + tx.get_data_length() - 1);
+        }
+
+        tlm_dmi dmi;
+        if (m_dmi_cache.lookup(tx, dmi))
+            tx.set_dmi_allowed(true);
+
+        if (m_exmon.update(tx)) {
+            m_host->b_transport(this, tx, dt);
+        } else {
+            tx.set_dmi_allowed(false);
+            tx.set_response_status(tlm::TLM_OK_RESPONSE);
+        }
+
+        m_curr++;
+        m_free_ev.notify();
+
+        m_host->trace_bw(*this, tx, dt);
+    }
+
+    unsigned int tlm_slave_socket::transport_dbg(tlm_generic_payload& tx){
+        return m_host->transport_dbg(this, tx);
+    }
+
+    bool tlm_slave_socket::get_direct_mem_ptr(tlm_generic_payload& tx,
+                                          tlm_dmi& dmi) {
+        dmi.allow_read_write();
+        dmi.set_start_address(0);
+        dmi.set_end_address((sc_dt::uint64)-1);
+
+        if (!m_dmi_cache.lookup(tx, dmi))
+            return false;
+
+        if (!m_host->get_direct_mem_ptr(this, tx, dmi))
+            return false;
+
+        return m_exmon.override_dmi(tx, dmi);
+    }
+
+    tlm_slave_socket::tlm_slave_socket(const char* nm, component* host):
+        simple_target_socket<tlm_slave_socket, 64>(nm),
+        m_curr(0),
+        m_next(0),
+        m_free_ev(concat(nm, "_free").c_str()),
+        m_dmi_cache(),
+        m_exmon(),
+        m_stub(nullptr),
+        m_adapter(nullptr),
+        m_host(host) {
+        if (m_host == nullptr) {
+            m_host = dynamic_cast<component*>(get_parent_object());
+            VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
+        }
+
+        m_host->register_socket(this);
+        register_b_transport(this, &tlm_slave_socket::b_transport);
+        register_transport_dbg(this, &tlm_slave_socket::transport_dbg);
+        register_get_direct_mem_ptr(this, &tlm_slave_socket::get_direct_mem_ptr);
+    }
+
+    tlm_slave_socket::~tlm_slave_socket() {
+        if (m_adapter != nullptr)
+            delete m_adapter;
+        if (m_stub != nullptr)
+            delete m_stub;
+    }
+
+    void tlm_slave_socket::unmap_dmi(u64 start, u64 end) {
+        m_dmi_cache.invalidate(start, end);
+        (*this)->invalidate_direct_mem_ptr(start, end);
+    }
+
+    void tlm_slave_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
+        for (auto dmi : m_dmi_cache.get_entries()) {
+            if (dmi.get_read_latency() != rd ||
+                dmi.get_write_latency() != wr) {
+                (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
+                                                   dmi.get_end_address());
+                dmi.set_read_latency(rd);
+                dmi.set_write_latency(wr);
+            }
+        }
+    }
+
+    void tlm_slave_socket::invalidate_dmi() {
+        for (auto dmi : m_dmi_cache.get_entries()) {
+            (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
+                                               dmi.get_end_address());
+        }
+    }
+
+    void tlm_slave_socket::stub() {
+        VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
+        hierarchy_guard guard(m_host);
+        m_stub = new tlm_initiator_stub(concat(basename(), "_stub").c_str());
+        m_stub->OUT.bind(*this);
+    }
+
 }
+

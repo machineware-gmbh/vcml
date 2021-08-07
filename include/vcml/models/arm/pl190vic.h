@@ -24,12 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
-#include "vcml/component.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 #define VCML_ARM_PL190VIC_NVEC (16)
 #define VCML_ARM_PL190VIC_NIRQ (32)
@@ -80,7 +78,7 @@ namespace vcml { namespace arm {
         reg<pl190vic, u32, 4> PID; // Peripheral ID registers
         reg<pl190vic, u32, 4> CID; // Cell ID registers
 
-        slave_socket  IN;
+        tlm_slave_socket  IN;
 
         in_port_list<bool>  IRQ_IN;
         out_port_list<bool> IRQ_OUT;

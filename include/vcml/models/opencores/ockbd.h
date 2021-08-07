@@ -27,12 +27,11 @@
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/display.h"
 
-#include "vcml/ports.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
-
 #include "vcml/properties/property.h"
+#include "vcml/protocols/tlm.h"
+
+#include "vcml/ports.h"
+#include "vcml/peripheral.h"
 
 namespace vcml { namespace opencores {
 
@@ -55,7 +54,7 @@ namespace vcml { namespace opencores {
         reg<ockbd, u8> KHR;
 
         out_port<bool> IRQ;
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         property<string> keymap;
         property<string> display;

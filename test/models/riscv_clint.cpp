@@ -21,7 +21,7 @@
 class clint_stim: public test_base
 {
 public:
-    master_socket OUT;
+    tlm_initiator_socket OUT;
 
     sc_in<bool> IRQ_SW_0;
     sc_in<bool> IRQ_SW_1;

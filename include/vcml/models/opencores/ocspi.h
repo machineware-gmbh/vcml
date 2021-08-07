@@ -24,12 +24,11 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/properties/property.h"
+#include "vcml/protocols/tlm.h"
 #include "vcml/protocols/spi.h"
 
 #include "vcml/ports.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace opencores {
 
@@ -61,7 +60,7 @@ namespace vcml { namespace opencores {
 
         out_port<bool> IRQ;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
         spi_initiator_socket SPI_OUT;
 
         property<clock_t> clock;

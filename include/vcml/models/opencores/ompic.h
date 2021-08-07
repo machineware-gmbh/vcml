@@ -24,11 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace opencores {
 
@@ -59,7 +58,7 @@ namespace vcml { namespace opencores {
         reg<ompic, u32>** STATUS;
 
         out_port_list<bool> IRQ;
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         ompic(const sc_core::sc_module_name& name, unsigned int num_cores);
         virtual ~ompic();

@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SBI_H
-#define VCML_SBI_H
+#ifndef VCML_PROTOCOLS_TLM_SBI_H
+#define VCML_PROTOCOLS_TLM_SBI_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
@@ -25,7 +25,7 @@
 
 namespace vcml {
 
-    struct sideband {
+    struct tlm_sbi {
         union {
             struct {
                 bool is_debug:1;
@@ -42,80 +42,80 @@ namespace vcml {
             u64 code;
         };
 
-        sideband() = default;
-        sideband(const sideband&) = default;
-        sideband(sideband&&) = default;
+        tlm_sbi() = default;
+        tlm_sbi(const tlm_sbi&) = default;
+        tlm_sbi(tlm_sbi&&) = default;
 
-        sideband(bool debug, bool nodmi, bool sync, bool insn, bool excl,
+        tlm_sbi(bool debug, bool nodmi, bool sync, bool insn, bool excl,
                  bool lock, int cpu = 0, int lvl = 0):
              is_debug(debug), is_nodmi(nodmi), is_sync(sync), is_insn(insn),
              is_excl(excl), is_lock(lock), cpuid(cpu), level(lvl) {
         }
 
-        sideband& operator  = (const sideband& other);
-        sideband& operator &= (const sideband& other);
-        sideband& operator |= (const sideband& other);
+        tlm_sbi& operator  = (const tlm_sbi& other);
+        tlm_sbi& operator &= (const tlm_sbi& other);
+        tlm_sbi& operator |= (const tlm_sbi& other);
 
-        sideband operator & (const sideband& other) const;
-        sideband operator | (const sideband& other) const;
+        tlm_sbi operator & (const tlm_sbi& other) const;
+        tlm_sbi operator | (const tlm_sbi& other) const;
 
-        bool operator == (const sideband& other) const;
-        bool operator != (const sideband& other) const;
+        bool operator == (const tlm_sbi& other) const;
+        bool operator != (const tlm_sbi& other) const;
     };
 
-    static_assert(sizeof(sideband) == sizeof(u64), "sideband too large");
+    static_assert(sizeof(tlm_sbi) == sizeof(u64), "sideband too large");
 
-    inline sideband& sideband::operator  = (const sideband& other) {
+    inline tlm_sbi& tlm_sbi::operator  = (const tlm_sbi& other) {
         code = other.code;
         return *this;
     }
 
-    inline sideband& sideband::operator &= (const sideband& other) {
+    inline tlm_sbi& tlm_sbi::operator &= (const tlm_sbi& other) {
         code &= other.code;
         return *this;
     }
 
-    inline sideband& sideband::operator |= (const sideband& other) {
+    inline tlm_sbi& tlm_sbi::operator |= (const tlm_sbi& other) {
         code |= other.code;
         return *this;
     }
 
-    inline sideband sideband::operator & (const sideband& other) const {
-        sideband result(*this);
+    inline tlm_sbi tlm_sbi::operator & (const tlm_sbi& other) const {
+        tlm_sbi result(*this);
         return result &= other;
     }
 
-    inline sideband sideband::operator | (const sideband& other) const {
-        sideband result(*this);
+    inline tlm_sbi tlm_sbi::operator | (const tlm_sbi& other) const {
+        tlm_sbi result(*this);
         return result |= other;
     }
 
-    inline bool sideband::operator == (const sideband& other) const {
+    inline bool tlm_sbi::operator == (const tlm_sbi& other) const {
         return code == other.code;
     }
 
-    inline bool sideband::operator != (const sideband& other) const {
+    inline bool tlm_sbi::operator != (const tlm_sbi& other) const {
         return code != other.code;
     }
 
-    const sideband SBI_NONE  = { false, false, false, false, false, false };
-    const sideband SBI_DEBUG = { true,  false, false, false, false, false };
-    const sideband SBI_NODMI = { false, true,  false, false, false, false };
-    const sideband SBI_SYNC  = { false, false, true,  false, false, false };
-    const sideband SBI_INSN  = { false, false, false, true,  false, false };
-    const sideband SBI_EXCL  = { false, false, false, false, true,  false };
-    const sideband SBI_LOCK  = { false, false, false, false, false, true  };
+    const tlm_sbi SBI_NONE  = { false, false, false, false, false, false };
+    const tlm_sbi SBI_DEBUG = { true,  false, false, false, false, false };
+    const tlm_sbi SBI_NODMI = { false, true,  false, false, false, false };
+    const tlm_sbi SBI_SYNC  = { false, false, true,  false, false, false };
+    const tlm_sbi SBI_INSN  = { false, false, false, true,  false, false };
+    const tlm_sbi SBI_EXCL  = { false, false, false, false, true,  false };
+    const tlm_sbi SBI_LOCK  = { false, false, false, false, false, true  };
 
-    inline sideband SBI_CPUID(int cpu) {
-        return sideband(false, false, false, false, false, false, cpu, 0);
+    inline tlm_sbi SBI_CPUID(int cpu) {
+        return tlm_sbi(false, false, false, false, false, false, cpu, 0);
     }
 
-    inline sideband SBI_LEVEL(int lvl) {
-        return sideband(false, false, false, false, false, false, 0, lvl);
+    inline tlm_sbi SBI_LEVEL(int lvl) {
+        return tlm_sbi(false, false, false, false, false, false, 0, lvl);
     }
 
     class sbiext: public tlm_extension<sbiext>,
-                  public sideband {
+                  public tlm_sbi {
     public:
         sbiext() = default;
 
@@ -127,7 +127,7 @@ namespace vcml {
         return tx.get_extension<sbiext>() != nullptr;
     }
 
-    inline const sideband& tx_get_sbi(const tlm_generic_payload& tx) {
+    inline const tlm_sbi& tx_get_sbi(const tlm_generic_payload& tx) {
         return tx_has_sbi(tx) ? *tx.get_extension<sbiext>() : SBI_NONE;
     }
 
@@ -163,7 +163,7 @@ namespace vcml {
         return tx_get_sbi(tx).level;
     }
 
-    void tx_set_sbi(tlm_generic_payload& tx, const sideband& info);
+    void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info);
     void tx_set_cpuid(tlm_generic_payload& tx, int id);
     void tx_set_level(tlm_generic_payload& tx, int lvl);
 

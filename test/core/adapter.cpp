@@ -21,18 +21,18 @@
 class test_harness: public test_base
 {
 public:
-    master_socket            TEST1_OUT64;
-    slave_socket             TEST1_IN64;
-    tlm_initiator_socket<32> TEST1_OUT32;
-    tlm_target_socket<32>    TEST1_IN32;
+    vcml::tlm_initiator_socket    TEST1_OUT64;
+    vcml::tlm_slave_socket        TEST1_IN64;
+    tlm::tlm_initiator_socket<32> TEST1_OUT32;
+    tlm::tlm_target_socket<32>    TEST1_IN32;
 
-    master_socket            TEST2_OUT64;
-    tlm_initiator_socket<32> TEST2_OUT32;
-    slave_socket             TEST2_IN64;
+    vcml::tlm_initiator_socket    TEST2_OUT64;
+    tlm::tlm_initiator_socket<32> TEST2_OUT32;
+    vcml::tlm_slave_socket        TEST2_IN64;
 
-    master_socket            TEST3_OUT64;
-    tlm_target_socket<32>    TEST3_IN32;
-    slave_socket             TEST3_IN64;
+    vcml::tlm_initiator_socket    TEST3_OUT64;
+    tlm::tlm_target_socket<32>    TEST3_IN32;
+    vcml::tlm_slave_socket        TEST3_IN64;
 
     test_harness(const sc_module_name& nm):
         test_base(nm),
@@ -62,7 +62,7 @@ public:
     }
 
     unsigned int transport(tlm_generic_payload& tx,
-                           const sideband& sbi) override {
+                           const tlm_sbi& sbi) override {
         EXPECT_TRUE(tx.is_read());
         EXPECT_EQ(tx.get_address(), 0x1234);
         EXPECT_EQ(tx.get_data_length(), 8u) << "mop";

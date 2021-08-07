@@ -23,14 +23,14 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/ports.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
-#include "vcml/master_socket.h"
-
 #include "vcml/properties/property.h"
+#include "vcml/protocols/tlm.h"
 #include "vcml/ui/display.h"
+
+#include "vcml/ports.h"
+#include "vcml/peripheral.h"
+
+
 
 namespace vcml { namespace opencores {
 
@@ -60,9 +60,9 @@ namespace vcml { namespace opencores {
         u32 write_VTIM(u32 val);
 
         virtual tlm_response_status read(const range& addr, void* data,
-                                         const sideband& info) override;
+                                         const tlm_sbi& info) override;
         virtual tlm_response_status write(const range& addr, const void* data,
-                                          const sideband& info) override;
+                                          const tlm_sbi& info) override;
 
         sc_event m_enable;
 
@@ -121,8 +121,8 @@ namespace vcml { namespace opencores {
 
         out_port<bool> IRQ;
 
-        slave_socket IN;
-        master_socket OUT;
+        tlm_slave_socket IN;
+        tlm_initiator_socket OUT;
 
         property<clock_t> clock;
         property<string> display;

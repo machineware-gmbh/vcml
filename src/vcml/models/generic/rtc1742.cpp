@@ -141,7 +141,7 @@ namespace vcml { namespace generic {
     }
 
     tlm_response_status rtc1742::read(const range& addr, void* ptr,
-                                      const sideband& info) {
+                                      const tlm_sbi& info) {
         if (!addr.inside(m_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
         memcpy(ptr, m_nvmem + addr.start, addr.length());
@@ -149,7 +149,7 @@ namespace vcml { namespace generic {
     }
 
     tlm_response_status rtc1742::write(const range& addr, const void* ptr,
-                                       const sideband& info) {
+                                       const tlm_sbi& info) {
         if (!addr.inside(m_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
         memcpy(m_nvmem + addr.start, ptr, addr.length());

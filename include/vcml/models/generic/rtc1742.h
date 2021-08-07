@@ -24,11 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace generic {
 
@@ -55,9 +54,9 @@ namespace vcml { namespace generic {
         bool cmd_battery(const vector<string>& args, ostream& os);
 
         virtual tlm_response_status read(const range& addr, void* ptr,
-                                         const sideband& info) override;
+                                         const tlm_sbi& info) override;
         virtual tlm_response_status write(const range& addr, const void* ptr,
-                                         const sideband& info) override;
+                                         const tlm_sbi& info) override;
 
         u8 write_CONTROL(u8 val);
 
@@ -94,7 +93,7 @@ namespace vcml { namespace generic {
         reg<rtc1742, u8> MONTH;
         reg<rtc1742, u8> YEAR;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         property<bool> sctime;
         property<string> nvmem;

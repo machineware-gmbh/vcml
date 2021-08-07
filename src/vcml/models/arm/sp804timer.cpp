@@ -198,7 +198,7 @@ namespace vcml { namespace arm {
     }
 
     unsigned int sp804timer::receive(tlm_generic_payload& tx,
-                                     const sideband& info) {
+                                     const tlm_sbi& info) {
         u64 addr = tx.get_address();
 
         // coverity[unsigned_compare]

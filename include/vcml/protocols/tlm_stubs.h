@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_STUBS_H
-#define VCML_STUBS_H
+#ifndef VCML_PROTOCOLS_TLM_STUBS_H
+#define VCML_PROTOCOLS_TLM_STUBS_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
@@ -25,19 +25,19 @@
 
 namespace vcml {
 
-    class initiator_stub: public sc_module,
-                          protected tlm::tlm_bw_transport_if<>
+    class tlm_initiator_stub: public sc_module,
+                              protected tlm::tlm_bw_transport_if<>
     {
     public:
-        tlm_initiator_socket<64> OUT;
+        tlm::tlm_initiator_socket<64> OUT;
 
-        initiator_stub() = delete;
-        initiator_stub(const initiator_stub&) = delete;
-        initiator_stub(initiator_stub&&) = delete;
+        tlm_initiator_stub() = delete;
+        tlm_initiator_stub(const tlm_initiator_stub&) = delete;
+        tlm_initiator_stub(tlm_initiator_stub&&) = delete;
 
-        initiator_stub(const sc_module_name& name);
-        virtual ~initiator_stub() = default;
-        VCML_KIND(initiator_stub);
+        tlm_initiator_stub(const sc_module_name& name);
+        virtual ~tlm_initiator_stub() = default;
+        VCML_KIND(tlm_initiator_stub);
 
     protected:
         virtual tlm::tlm_sync_enum nb_transport_bw(tlm_generic_payload& tx,
@@ -48,23 +48,23 @@ namespace vcml {
                                                sc_dt::uint64 end);
     };
 
-    class target_stub: public sc_module,
-                       protected tlm::tlm_fw_transport_if<>
+    class tlm_target_stub: public sc_module,
+                           protected tlm::tlm_fw_transport_if<>
     {
     private:
         tlm_response_status m_response;
 
     public:
-        tlm_target_socket<64> IN;
+        tlm::tlm_target_socket<64> IN;
 
-        target_stub() = delete;
-        target_stub(const target_stub&) = delete;
-        target_stub(target_stub&&) = delete;
+        tlm_target_stub() = delete;
+        tlm_target_stub(const tlm_target_stub&) = delete;
+        tlm_target_stub(tlm_target_stub&&) = delete;
 
-        target_stub(const sc_module_name& name,
+        tlm_target_stub(const sc_module_name& name,
                     tlm_response_status response = TLM_ADDRESS_ERROR_RESPONSE);
-        virtual ~target_stub() = default;
-        VCML_KIND(target_stub);
+        virtual ~tlm_target_stub() = default;
+        VCML_KIND(tlm_target_stub);
 
     protected:
         virtual void b_transport(tlm_generic_payload& tx, sc_time& t);

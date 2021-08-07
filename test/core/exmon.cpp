@@ -21,8 +21,8 @@ using namespace ::testing;
 
 #include "vcml.h"
 
-TEST(exmon, locking) {
-    vcml::exmon mon;
+TEST(tlm_exmon, locking) {
+    vcml::tlm_exmon mon;
 
     mon.add_lock(0, {100, 200});
     mon.add_lock(1, {300, 400});
@@ -32,8 +32,8 @@ TEST(exmon, locking) {
     EXPECT_TRUE(mon.get_locks().empty());
 }
 
-TEST(exmon, update) {
-    vcml::exmon mon;
+TEST(tlm_exmon, update) {
+    vcml::tlm_exmon mon;
 
     vcml::sbiext ex1, ex2;
     ex1.cpuid = 1; ex1.is_excl = true;
@@ -71,8 +71,8 @@ TEST(exmon, update) {
     tx.clear_extension(&ex1);
 }
 
-TEST(exmon, dmi) {
-    vcml::exmon mon;
+TEST(tlm_exmon, dmi) {
+    vcml::tlm_exmon mon;
 
     mon.add_lock(0, {100, 199});
     mon.add_lock(1, {300, 399});

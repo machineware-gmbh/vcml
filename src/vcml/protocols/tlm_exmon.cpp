@@ -16,34 +16,25 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/exmon.h"
+#include "vcml/protocols/tlm_exmon.h"
 
 namespace vcml {
 
-    exmon::exmon():
-        m_locks() {
-        /* nothing to do */
-    }
-
-    exmon::~exmon() {
-        /* nothing to do */
-    }
-
-    bool exmon::has_lock(int cpu, const range& r) const {
+    bool tlm_exmon::has_lock(int cpu, const range& r) const {
         for (auto lock : m_locks)
             if (lock.cpu == cpu && lock.addr.includes(r))
                 return true;
         return false;
     }
 
-    bool exmon::add_lock(int cpu, const range& r) {
+    bool tlm_exmon::add_lock(int cpu, const range& r) {
         assert(cpu >= 0);
         break_locks(cpu);
         m_locks.push_back({cpu, r});
         return true;
     }
 
-    void exmon::break_locks(int cpu) {
+    void tlm_exmon::break_locks(int cpu) {
         assert(cpu >= 0);
         m_locks.erase(std::remove_if(m_locks.begin(), m_locks.end(),
             [cpu] (const exlock& lock) -> bool {
@@ -51,14 +42,14 @@ namespace vcml {
         }), m_locks.end());
     }
 
-    void exmon::break_locks(const range& r) {
+    void tlm_exmon::break_locks(const range& r) {
         m_locks.erase(std::remove_if(m_locks.begin(), m_locks.end(),
             [r] (const exlock& lock) -> bool {
                 return lock.addr.overlaps(r);
         }), m_locks.end());
     }
 
-    bool exmon::update(tlm_generic_payload& tx) {
+    bool tlm_exmon::update(tlm_generic_payload& tx) {
         for (auto lock : m_locks)
             if (lock.addr.overlaps(tx))
                 tx.set_dmi_allowed(false);
@@ -79,7 +70,7 @@ namespace vcml {
         return proceed;
     }
 
-    bool exmon::override_dmi(const tlm_generic_payload& tx, tlm_dmi& dmi) {
+    bool tlm_exmon::override_dmi(const tlm_generic_payload& tx, tlm_dmi& dmi) {
         for (auto lock : m_locks) {
             if (lock.addr.includes(tx.get_address())) {
                 dmi.set_start_address(0);

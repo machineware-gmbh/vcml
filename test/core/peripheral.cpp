@@ -33,8 +33,8 @@ public:
         handle_clock_update(0, CLOCK.read());
     }
 
-    MOCK_METHOD3(read, vcml::tlm_response_status(const vcml::range&, void*, const vcml::sideband&));
-    MOCK_METHOD3(write, vcml::tlm_response_status(const vcml::range&, const void*, const vcml::sideband&));
+    MOCK_METHOD3(read, vcml::tlm_response_status(const vcml::range&, void*, const vcml::tlm_sbi&));
+    MOCK_METHOD3(write, vcml::tlm_response_status(const vcml::range&, const void*, const vcml::tlm_sbi&));
 };
 
 TEST(peripheral, transporting) {

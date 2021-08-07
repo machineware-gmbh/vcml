@@ -145,7 +145,7 @@ namespace vcml { namespace virtio {
     }
 
     tlm_response_status mmio::read(const range& addr, void* data,
-                                   const sideband& info)  {
+                                   const tlm_sbi& info)  {
         const range& regbase = CONFIG_GEN.get_range();
         if (addr.start <= regbase.end && addr.end > regbase.end)
             return TLM_ADDRESS_ERROR_RESPONSE;
@@ -156,7 +156,7 @@ namespace vcml { namespace virtio {
     }
 
     tlm_response_status mmio::write(const range& addr, const void* data,
-                                    const sideband& info)  {
+                                    const tlm_sbi& info)  {
         if (STATUS & VIRTIO_STATUS_DRIVER_OK) {
             log_warn("attempt to change configuration after initialization");
             return TLM_COMMAND_ERROR_RESPONSE;

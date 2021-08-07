@@ -16,50 +16,13 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_META_LOADER_H
-#define VCML_META_LOADER_H
+#ifndef VCML_PROTOCOLS_TLM_H
+#define VCML_PROTOCOLS_TLM_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-
-#include "vcml/debugging/loader.h"
-#include "vcml/debugging/elf_reader.h"
-#include "vcml/protocols/tlm.h"
-
-#include "vcml/component.h"
-
-namespace vcml { namespace meta {
-
-    class loader: public component,
-                  public debugging::loader
-    {
-    public:
-        property<string> images;
-
-        tlm_initiator_socket INSN;
-        tlm_initiator_socket DATA;
-
-        loader(const sc_module_name& nm, const string& images = "");
-        virtual ~loader();
-        VCML_KIND(loader);
-
-        virtual void reset() override;
-
-    protected:
-        virtual u8* allocate_image(u64 size, u64 offset) override;
-        virtual u8* allocate_image(const debugging::elf_segment& seg,
-                                   u64 offset) override;
-
-        virtual void copy_image(const u8* img, u64 size, u64 offset) override;
-        virtual void copy_image(const u8* img, const debugging::elf_segment& s,
-                                u64 offset) override;
-
-        virtual void before_end_of_elaboration() override;
-    };
-
-}}
+#include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_dmi_cache.h"
+#include "vcml/protocols/tlm_adapters.h"
+#include "vcml/protocols/tlm_stubs.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 #endif

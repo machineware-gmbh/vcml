@@ -23,10 +23,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/component.h"
-#include "vcml/master_socket.h"
-
+#include "vcml/protocols/tlm.h"
 #include "vcml/ui/display.h"
+
+#include "vcml/component.h"
 
 namespace vcml { namespace generic {
 
@@ -50,7 +50,7 @@ namespace vcml { namespace generic {
 
         property<string> display;
 
-        master_socket OUT;
+        tlm_initiator_socket OUT;
 
         fbdev() = delete;
         fbdev(const sc_module_name& nm, u32 width = 1280, u32 height = 720);

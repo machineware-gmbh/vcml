@@ -24,12 +24,11 @@
 #include "vcml/common/bitops.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/ports.h"
-#include "vcml/master_socket.h"
-#include "vcml/slave_socket.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
+#include "vcml/protocols/tlm.h"
 #include "vcml/protocols/sd.h"
+
+#include "vcml/ports.h"
+#include "vcml/peripheral.h"
 
 namespace vcml { namespace generic {
 
@@ -150,8 +149,8 @@ namespace vcml { namespace generic {
 
         out_port<bool> IRQ;
 
-        slave_socket IN;
-        master_socket OUT;
+        tlm_slave_socket IN;
+        tlm_initiator_socket OUT;
 
         sd_initiator_socket SD_OUT;
 

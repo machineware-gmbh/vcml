@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_ADAPTERS_H
-#define VCML_ADAPTERS_H
+#ifndef VCML_PROTOCOLS_TLM_ADAPTERS_H
+#define VCML_PROTOCOLS_TLM_ADAPTERS_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
@@ -26,16 +26,16 @@
 namespace vcml {
 
     template <unsigned int WIDTH_IN, unsigned int WIDTH_OUT>
-    class bus_width_adapter: public sc_module
+    class tlm_bus_width_adapter: public sc_module
     {
     public:
-        typedef bus_width_adapter<WIDTH_IN, WIDTH_OUT> this_type;
-        tlm_utils::simple_target_socket<bus_width_adapter, WIDTH_IN> IN;
-        tlm_utils::simple_initiator_socket<bus_width_adapter, WIDTH_OUT> OUT;
+        typedef tlm_bus_width_adapter<WIDTH_IN, WIDTH_OUT> this_type;
+        simple_target_socket<tlm_bus_width_adapter, WIDTH_IN> IN;
+        simple_initiator_socket<tlm_bus_width_adapter, WIDTH_OUT> OUT;
 
-        bus_width_adapter() = delete;
+        tlm_bus_width_adapter() = delete;
 
-        bus_width_adapter(const sc_module_name& nm):
+        tlm_bus_width_adapter(const sc_module_name& nm):
             sc_module(nm),
             IN("IN"),
             OUT("OUT") {
@@ -47,11 +47,11 @@ namespace vcml {
                 &this_type::invalidate_direct_mem_ptr);
         }
 
-        virtual ~bus_width_adapter() {
+        virtual ~tlm_bus_width_adapter() {
             // nothing to do
         }
 
-        VCML_KIND(bus_width_adapter);
+        VCML_KIND(tlm_bus_width_adapter);
 
     private:
         void b_transport(tlm_generic_payload& tx, sc_time& t) {

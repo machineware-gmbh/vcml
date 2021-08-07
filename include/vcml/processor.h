@@ -26,13 +26,13 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
+#include "vcml/protocols/tlm.h"
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
 
 #include "vcml/ports.h"
 #include "vcml/component.h"
-#include "vcml/master_socket.h"
 
 namespace vcml {
 
@@ -81,8 +81,8 @@ namespace vcml {
 
         in_port_list<bool> IRQ;
 
-        master_socket INSN;
-        master_socket DATA;
+        tlm_initiator_socket INSN;
+        tlm_initiator_socket DATA;
 
         processor(const sc_module_name& name, const string& cpu_arch);
         virtual ~processor();
@@ -113,7 +113,7 @@ namespace vcml {
         inline tlm_response_status write (u64 addr, const T& data);
 
     protected:
-        void log_bus_error(const master_socket& socket, vcml_access accss,
+        void log_bus_error(const tlm_initiator_socket& socket, vcml_access accss,
                            tlm_response_status rs, u64 addr, u64 size);
 
         virtual void interrupt(unsigned int irq, bool set);

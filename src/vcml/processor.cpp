@@ -56,7 +56,7 @@ namespace vcml {
     }
 
     bool processor::cmd_read(const vector<string>& args, ostream& os) {
-        master_socket& socket = (args[0] == "INSN") ? INSN : DATA;
+        tlm_initiator_socket& socket = (args[0] == "INSN") ? INSN : DATA;
         u64 start = strtoull(args[1].c_str(), NULL, 0);
         u64 end   = strtoull(args[2].c_str(), NULL, 0);
         u64 size  = end - start;
@@ -355,7 +355,7 @@ namespace vcml {
         return true;
     }
 
-    void processor::log_bus_error(const master_socket& socket, vcml_access acs,
+    void processor::log_bus_error(const tlm_initiator_socket& socket, vcml_access acs,
                                   tlm_response_status rs, u64 addr, u64 size) {
         string op;
         switch (acs) {

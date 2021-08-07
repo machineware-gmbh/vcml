@@ -95,7 +95,7 @@ namespace vcml {
     }
 
     unsigned int peripheral::transport(tlm_generic_payload& tx,
-                                       const sideband& info) {
+                                       const tlm_sbi& info) {
         sc_dt::uint64 addr = tx.get_address();
         unsigned char* ptr = tx.get_data_ptr();
         unsigned int length = tx.get_data_length();
@@ -150,7 +150,7 @@ namespace vcml {
     }
 
     unsigned int peripheral::receive(tlm_generic_payload& tx,
-                                     const sideband& info) {
+                                     const tlm_sbi& info) {
         unsigned int bytes = 0;
         unsigned int nregs = 0;
         unsigned int width = tx.get_streaming_width();
@@ -193,12 +193,12 @@ namespace vcml {
     }
 
     tlm_response_status peripheral::read(const range& addr, void* data,
-                                         const sideband& info) {
+                                         const tlm_sbi& info) {
         return TLM_INCOMPLETE_RESPONSE; // to be overloaded
     }
 
     tlm_response_status peripheral::write(const range& addr, const void* data,
-                                          const sideband& info) {
+                                          const tlm_sbi& info) {
         return TLM_INCOMPLETE_RESPONSE; // to be overloaded
     }
 

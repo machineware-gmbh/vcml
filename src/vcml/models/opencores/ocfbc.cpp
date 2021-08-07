@@ -124,7 +124,7 @@ namespace vcml { namespace opencores {
     }
 
     tlm_response_status ocfbc::read(const range& addr, void* ptr,
-                                    const sideband& info) {
+                                    const tlm_sbi& info) {
         if (!addr.inside(m_palette_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
 
@@ -134,7 +134,7 @@ namespace vcml { namespace opencores {
     }
 
     tlm_response_status ocfbc::write(const range& addr, const void* ptr,
-                                     const sideband& info) {
+                                     const tlm_sbi& info) {
         if (!addr.inside(m_palette_addr))
             return TLM_ADDRESS_ERROR_RESPONSE;
 

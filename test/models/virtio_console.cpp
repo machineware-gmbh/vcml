@@ -25,7 +25,7 @@ public:
     generic::memory mem;
     virtio::mmio    virtio;
     virtio::console virtio_console;
-    master_socket   OUT;
+    tlm_initiator_socket   OUT;
     sc_in<bool>     IRQ;
     sc_signal<bool> irq;
 

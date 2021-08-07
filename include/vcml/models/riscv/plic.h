@@ -24,11 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace riscv {
 
@@ -84,7 +83,7 @@ namespace vcml { namespace riscv {
         in_port_list<bool>  IRQS;
         out_port_list<bool> IRQT;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         plic(const sc_module_name& nm);
         virtual ~plic();

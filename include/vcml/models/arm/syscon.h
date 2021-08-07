@@ -24,12 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
-#include "vcml/component.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 #define VCML_ARM_SYSCON_CLOCK24MHZ (24000000)
 
@@ -82,7 +80,7 @@ namespace vcml { namespace arm {
         reg<syscon, u32> SYS_CFGCTRL;
         reg<syscon, u32> SYS_CFGSTAT;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         syscon(const sc_module_name& name);
         virtual ~syscon();

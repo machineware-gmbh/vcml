@@ -22,7 +22,7 @@ class test_harness: public test_base
 {
 public:
     generic::memory mem;
-    master_socket OUT;
+    tlm_initiator_socket OUT;
 
     test_harness(const sc_core::sc_module_name& nm):
         test_base(nm),

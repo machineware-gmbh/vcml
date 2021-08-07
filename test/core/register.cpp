@@ -281,7 +281,7 @@ TEST(registers, banking) {
 
     tlm::tlm_generic_payload tx;
     vcml::sbiext bank;
-    vcml::sideband bank1, bank2;
+    vcml::tlm_sbi bank1, bank2;
     const vcml::u8 val1 = 0xab;
     const vcml::u8 val2 = 0xcd;
     unsigned char buffer;

@@ -24,11 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace riscv {
 
@@ -46,7 +45,7 @@ namespace vcml { namespace riscv {
 
         reg<simdev, u32> FINISH;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         simdev() = delete;
         simdev(const simdev&) = delete;

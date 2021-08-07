@@ -17,28 +17,27 @@
  ******************************************************************************/
 
 #include "vcml/component.h"
-#include "vcml/master_socket.h"
-#include "vcml/slave_socket.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {
 
-    void component::register_socket(master_socket* socket) {
+    void component::register_socket(tlm_initiator_socket* socket) {
         if (stl_contains(m_master_sockets, socket))
             VCML_ERROR("socket '%s' already registered", socket->name());
         m_master_sockets.push_back(socket);
     }
 
-    void component::register_socket(slave_socket* socket) {
+    void component::register_socket(tlm_slave_socket* socket) {
         if (stl_contains(m_slave_sockets, socket))
             VCML_ERROR("socket '%s' already registered", socket->name());
         m_slave_sockets.push_back(socket);
     }
 
-    void component::unregister_socket(master_socket* socket) {
+    void component::unregister_socket(tlm_initiator_socket* socket) {
         stl_remove_erase(m_master_sockets, socket);
     }
 
-    void component::unregister_socket(slave_socket* socket) {
+    void component::unregister_socket(tlm_slave_socket* socket) {
         stl_remove_erase(m_slave_sockets, socket);
     }
 
@@ -173,14 +172,14 @@ namespace vcml {
         offset = SC_ZERO_TIME;
     }
 
-    master_socket* component::get_master_socket(const string& name) const {
+    tlm_initiator_socket* component::get_master_socket(const string& name) const {
         for (auto socket : m_master_sockets)
             if (name == socket->name())
                 return socket;
         return nullptr;
     }
 
-    slave_socket* component::get_slave_socket(const string& name) const {
+    tlm_slave_socket* component::get_slave_socket(const string& name) const {
         for (auto socket : m_slave_sockets)
             if (name == socket->name())
                 return socket;
@@ -215,7 +214,7 @@ namespace vcml {
             socket->remap_dmi(rdlat, wrlat);
     }
 
-    void component::b_transport(slave_socket* origin, tlm_generic_payload& tx,
+    void component::b_transport(tlm_slave_socket* origin, tlm_generic_payload& tx,
                                 sc_time& dt) {
         wait_clock_reset();
 
@@ -225,7 +224,7 @@ namespace vcml {
         dt = m_offsets[proc];
     }
 
-    unsigned int component::transport_dbg(slave_socket* origin,
+    unsigned int component::transport_dbg(tlm_slave_socket* origin,
                                           tlm_generic_payload& tx) {
         sc_time t1 = sc_time_stamp();
         unsigned int bytes = transport(tx, tx_get_sbi(tx) | SBI_DEBUG);
@@ -235,19 +234,19 @@ namespace vcml {
         return bytes;
     }
 
-    bool component::get_direct_mem_ptr(slave_socket* origin,
+    bool component::get_direct_mem_ptr(tlm_slave_socket* origin,
                                        const tlm_generic_payload& tx,
                                        tlm_dmi& dmi) {
         return true;
     }
 
-    void component::invalidate_direct_mem_ptr(master_socket* origin,
+    void component::invalidate_direct_mem_ptr(tlm_initiator_socket* origin,
                                              u64 start, u64 end) {
         invalidate_dmi(start, end);
     }
 
     unsigned int component::transport(tlm_generic_payload& tx,
-                                      const sideband& info) {
+                                      const tlm_sbi& info) {
         return 0; // to be overloaded
     }
 

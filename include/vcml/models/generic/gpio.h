@@ -23,10 +23,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/slave_socket.h"
 #include "vcml/peripheral.h"
-#include "vcml/register.h"
 
 namespace vcml { namespace generic {
 
@@ -47,7 +47,7 @@ namespace vcml { namespace generic {
         reg<gpio, u32> DATA;
 
         out_port_list<bool> GPIO;
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         gpio(const sc_module_name& name);
         virtual ~gpio();

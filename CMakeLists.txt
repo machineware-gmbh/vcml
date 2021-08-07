@@ -82,19 +82,18 @@ set(sources
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
+    ${src}/vcml/protocols/tlm_sbi.cpp
+    ${src}/vcml/protocols/tlm_exmon.cpp
+    ${src}/vcml/protocols/tlm_dmi_cache.cpp
+    ${src}/vcml/protocols/tlm_stubs.cpp
+    ${src}/vcml/protocols/tlm_sockets.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
     ${src}/vcml/protocols/virtio.cpp
-    ${src}/vcml/sbi.cpp
-    ${src}/vcml/dmi_cache.cpp
-    ${src}/vcml/exmon.cpp
     ${src}/vcml/module.cpp
     ${src}/vcml/component.cpp
-    ${src}/vcml/master_socket.cpp
-    ${src}/vcml/slave_socket.cpp
     ${src}/vcml/register.cpp
     ${src}/vcml/peripheral.cpp
-    ${src}/vcml/stubs.cpp
     ${src}/vcml/processor.cpp
     ${src}/vcml/system.cpp
     ${src}/vcml/setup.cpp

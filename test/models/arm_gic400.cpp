@@ -21,10 +21,10 @@
 class gic400_stim: public test_base
 {
 public:
-    master_socket DISTIF_OUT;
-    master_socket CPUIF_OUT;
-    master_socket VIFCTRL_OUT;
-    master_socket VCPUIF_OUT;
+    tlm_initiator_socket DISTIF_OUT;
+    tlm_initiator_socket CPUIF_OUT;
+    tlm_initiator_socket VIFCTRL_OUT;
+    tlm_initiator_socket VCPUIF_OUT;
 
     sc_vector<sc_out<bool>> PPI_OUT;
     sc_vector<sc_out<bool>> SPI_OUT;

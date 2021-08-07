@@ -21,7 +21,7 @@
 class pl011_stim: public test_base
 {
 public:
-    master_socket OUT;
+    tlm_initiator_socket OUT;
 
     sc_out<bool> RESET_OUT;
 

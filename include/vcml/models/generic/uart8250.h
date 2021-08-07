@@ -24,12 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
 #include "vcml/serial/port.h"
 
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
-#include "vcml/slave_socket.h"
 #include "vcml/peripheral.h"
 
 namespace vcml { namespace generic {
@@ -123,7 +121,7 @@ namespace vcml { namespace generic {
         reg<uart8250, u8> SCR; // scratch register
 
         out_port<bool> IRQ;
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         uart8250(const sc_module_name& name);
         virtual ~uart8250();

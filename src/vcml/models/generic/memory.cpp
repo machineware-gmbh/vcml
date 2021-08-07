@@ -115,7 +115,7 @@ namespace vcml { namespace generic {
     }
 
     tlm_response_status memory::read(const range& addr, void* data,
-                                     const sideband& info) {
+                                     const tlm_sbi& info) {
         if (addr.end >= size)
             return TLM_ADDRESS_ERROR_RESPONSE;
         memcpy(data, m_memory + addr.start, addr.length());
@@ -123,7 +123,7 @@ namespace vcml { namespace generic {
     }
 
     tlm_response_status memory::write(const range& addr, const void* data,
-                                      const sideband& info) {
+                                      const tlm_sbi& info) {
         if (addr.end >= size)
             return TLM_ADDRESS_ERROR_RESPONSE;
         if (!info.is_debug && discard_writes)

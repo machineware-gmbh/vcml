@@ -25,7 +25,7 @@ public:
     generic::memory mem2;
     generic::bus bus;
 
-    master_socket OUT;
+    tlm_initiator_socket OUT;
 
     bus_harness(const sc_module_name& nm):
         test_base(nm),

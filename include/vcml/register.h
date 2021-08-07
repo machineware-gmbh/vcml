@@ -27,11 +27,7 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
-
-#include "vcml/sbi.h"
-#include "vcml/dmi_cache.h"
-#include "vcml/component.h"
-#include "vcml/register.h"
+#include "vcml/protocols/tlm.h"
 
 namespace vcml {
 
@@ -46,7 +42,7 @@ namespace vcml {
         bool        m_wsync;
         peripheral* m_host;
 
-        void do_receive(tlm_generic_payload& tx, const sideband& info);
+        void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
     public:
         u64 get_address() const { return m_range.start; }
@@ -81,7 +77,7 @@ namespace vcml {
 
         virtual void reset() = 0;
 
-        unsigned int receive(tlm_generic_payload& tx, const sideband& info);
+        unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
         virtual void do_read(const range& addr, void* ptr) = 0;
         virtual void do_write(const range& addr, const void* ptr) = 0;

@@ -156,8 +156,6 @@ namespace vcml {
     using sc_core::sc_type_index;
 
     using tlm::tlm_global_quantum;
-    using tlm::tlm_initiator_socket;
-    using tlm::tlm_target_socket;
     using tlm::tlm_generic_payload;
     using tlm::tlm_dmi;
     using tlm::tlm_extension;

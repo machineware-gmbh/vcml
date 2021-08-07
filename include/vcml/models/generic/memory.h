@@ -25,8 +25,9 @@
 #include "vcml/common/range.h"
 
 #include "vcml/debugging/loader.h"
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace generic {
 
@@ -54,7 +55,7 @@ namespace vcml { namespace generic {
         property<string> images;
         property<u8> poison;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         u8* get_data_ptr() const { return m_memory; }
 
@@ -66,9 +67,9 @@ namespace vcml { namespace generic {
         virtual void reset() override;
 
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           const sideband& info) override;
+                                           const tlm_sbi& info) override;
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           const sideband& info) override;
+                                           const tlm_sbi& info) override;
     };
 
 }}

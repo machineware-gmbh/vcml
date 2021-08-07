@@ -53,7 +53,7 @@ public:
 
     sc_signal<bool> irq_sig;
 
-    master_socket OUT;
+    tlm_initiator_socket OUT;
 
     sdhci_harness(const sc_module_name& nm):
         test_base(nm),

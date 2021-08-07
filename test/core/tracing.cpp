@@ -43,8 +43,8 @@ public:
     u64 addr;
     u32 data;
 
-    master_socket OUT;
-    slave_socket IN;
+    tlm_initiator_socket OUT;
+    tlm_slave_socket IN;
 
     test_harness(const sc_module_name& nm):
         test_base(nm),
@@ -60,7 +60,7 @@ public:
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-                                   const sideband& info) override {
+                                   const tlm_sbi& info) override {
         EXPECT_EQ(tx.get_address(), addr)
             << "received wrong address";
         EXPECT_EQ(tx.get_data_length(), sizeof(data))

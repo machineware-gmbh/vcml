@@ -24,14 +24,11 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
-#include "vcml/master_socket.h"
 
 namespace vcml { namespace virtio {
 
@@ -57,9 +54,9 @@ namespace vcml { namespace virtio {
         virtual bool notify() override;
 
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           const sideband& info) override;
+                                           const tlm_sbi& info) override;
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           const sideband& info) override;
+                                           const tlm_sbi& info) override;
 
         u8* lookup_dmi_ptr(u64 addr, vcml_access acs);
 
@@ -138,8 +135,8 @@ namespace vcml { namespace virtio {
 
         out_port<bool> IRQ;
 
-        slave_socket IN;
-        master_socket OUT;
+        tlm_slave_socket IN;
+        tlm_initiator_socket OUT;
         virtio_initiator_socket VIRTIO_OUT;
 
         mmio(const sc_module_name& nm);

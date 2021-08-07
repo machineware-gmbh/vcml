@@ -21,7 +21,7 @@
 class plic_stim: public test_base
 {
 public:
-    master_socket OUT;
+    tlm_initiator_socket OUT;
 
     sc_in<bool> IRQT1;
     sc_in<bool> IRQT2;

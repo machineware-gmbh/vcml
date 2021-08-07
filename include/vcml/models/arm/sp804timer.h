@@ -24,12 +24,10 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
-#include "vcml/component.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace arm {
 
@@ -125,7 +123,7 @@ namespace vcml { namespace arm {
         reg<sp804timer, u32, 4> PID; // Peripheral ID Register
         reg<sp804timer, u32, 4> CID; // Cell ID Register
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         sc_out<bool>   IRQ1;
         sc_out<bool>   IRQ2;
@@ -136,7 +134,7 @@ namespace vcml { namespace arm {
         VCML_KIND(arm::sp804timer);
 
         virtual unsigned int receive(tlm_generic_payload& tx,
-                                     const sideband& info) override;
+                                     const tlm_sbi& info) override;
         virtual void reset() override;
     };
 

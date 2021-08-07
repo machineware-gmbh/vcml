@@ -26,9 +26,8 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
+#include "vcml/protocols/tlm.h"
 
-#include "vcml/sbi.h"
-#include "vcml/dmi_cache.h"
 #include "vcml/component.h"
 #include "vcml/register.h"
 
@@ -85,14 +84,14 @@ namespace vcml {
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
 
         virtual unsigned int transport(tlm_generic_payload& tx,
-                                       const sideband& info) override;
+                                       const tlm_sbi& info) override;
         virtual unsigned int receive(tlm_generic_payload& tx,
-                                     const sideband& info);
+                                     const tlm_sbi& info);
 
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           const sideband& info);
+                                           const tlm_sbi& info);
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           const sideband& info);
+                                           const tlm_sbi& info);
 
         virtual void handle_clock_update(clock_t oldclk,
                                          clock_t newclk) override;

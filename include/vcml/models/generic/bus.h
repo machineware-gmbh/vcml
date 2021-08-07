@@ -86,8 +86,8 @@ namespace vcml { namespace generic {
     class bus: public component
     {
     public:
-        typedef tlm_initiator_socket<64> initiator_socket;
-        typedef tlm_target_socket<64> target_socket;
+        typedef tlm::tlm_initiator_socket<64> initiator_socket;
+        typedef tlm::tlm_target_socket<64> target_socket;
 
     private:
         bool cmd_mmap(const vector<string>& args, ostream& os);

@@ -24,15 +24,11 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
-#include "vcml/peripheral.h"
-#include "vcml/master_socket.h"
-#include "vcml/slave_socket.h"
-#include "vcml/peripheral.h"
-
 #include "vcml/net/adapter.h"
+#include "vcml/protocols/tlm.h"
+
+#include "vcml/ports.h"
+#include "vcml/peripheral.h"
 
 #define VCML_OPENCORES_ETHOC_NUMBD 128
 #define VCML_OPENCORES_ETHOC_CLK   20000000 // 20MHz
@@ -92,9 +88,9 @@ namespace vcml { namespace opencores {
         u32 read_MAC_ADDR1();
 
         virtual tlm_response_status read  (const range& addr, void* data,
-                                           const sideband& info) override;
+                                           const tlm_sbi& info) override;
         virtual tlm_response_status write (const range& addr, const void* data,
-                                           const sideband& info) override;
+                                           const tlm_sbi& info) override;
 
         // Disabled
         ethoc();
@@ -270,8 +266,8 @@ namespace vcml { namespace opencores {
         property<string> mac;
 
         out_port<bool> IRQ;
-        slave_socket IN;
-        master_socket OUT;
+        tlm_slave_socket IN;
+        tlm_initiator_socket OUT;
 
         ethoc(const sc_module_name& name);
         virtual ~ethoc();

@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/dmi_cache.h"
+#include "vcml/protocols/tlm_dmi_cache.h"
 
 namespace vcml {
 
@@ -52,17 +52,17 @@ namespace vcml {
     }
 
 
-    dmi_cache::dmi_cache():
+    tlm_dmi_cache::tlm_dmi_cache():
         m_limit(16),
         m_entries() {
         /* nothing to do */
     }
 
-    dmi_cache::~dmi_cache() {
+    tlm_dmi_cache::~tlm_dmi_cache() {
         /* nothing to do */
     }
 
-    void dmi_cache::insert(const tlm_dmi& dmi) {
+    void tlm_dmi_cache::insert(const tlm_dmi& dmi) {
         tlm_dmi merged(dmi);
         while (true) {
             vector<tlm_dmi>::iterator it = std::find_if(m_entries.begin(),
@@ -83,11 +83,11 @@ namespace vcml {
             m_entries.resize(m_limit);
     }
 
-    void dmi_cache::invalidate(u64 start, u64 end) {
+    void tlm_dmi_cache::invalidate(u64 start, u64 end) {
         invalidate(range(start, end));
     }
 
-    void dmi_cache::invalidate(const range& r) {
+    void tlm_dmi_cache::invalidate(const range& r) {
         vector<tlm_dmi> entries(m_entries.rbegin(), m_entries.rend());
         m_entries.clear();
 
@@ -113,7 +113,7 @@ namespace vcml {
         }
     }
 
-    bool dmi_cache::lookup(const range& r, vcml_access a, tlm_dmi& out) {
+    bool tlm_dmi_cache::lookup(const range& r, vcml_access a, tlm_dmi& out) {
         for (unsigned int i = 0; i < m_entries.size(); i++) {
             if (r.inside(m_entries[i]) && dmi_check_access(m_entries[i], a)) {
                 std::swap(m_entries[i], m_entries[0]);
@@ -121,6 +121,7 @@ namespace vcml {
                 return true;
             }
         }
+
         return false;
     }
 

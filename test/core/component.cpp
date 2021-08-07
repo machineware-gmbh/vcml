@@ -33,8 +33,8 @@ using namespace vcml;
 class test_component: public component
 {
 public:
-    slave_socket IN;
-    master_socket OUT;
+    tlm_slave_socket IN;
+    tlm_initiator_socket OUT;
 
     test_component(const sc_module_name& nm):
         component(nm),
@@ -51,7 +51,7 @@ public:
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-                                   const sideband& sbi) override {
+                                   const tlm_sbi& sbi) override {
         EXPECT_EQ(tx.get_address(), 0x0);
         EXPECT_EQ(tx.get_data_length(), 4);
         EXPECT_NE(tx.get_data_ptr(), nullptr);

@@ -23,7 +23,7 @@ using namespace ::testing;
 
 TEST(dmi, insert) {
     unsigned char dummy;
-    vcml::dmi_cache cache;
+    vcml::tlm_dmi_cache cache;
     tlm::tlm_dmi dmi;
 
     dmi.allow_read_write();
@@ -68,7 +68,7 @@ TEST(dmi, insert) {
 
 TEST(dmi, invalidate) {
     unsigned char dummy;
-    vcml::dmi_cache cache;
+    vcml::tlm_dmi_cache cache;
     tlm::tlm_dmi dmi;
 
     dmi.allow_read_write();
@@ -100,7 +100,7 @@ TEST(dmi, invalidate) {
 
 TEST(dmi, lookup) {
     unsigned char dummy;
-    vcml::dmi_cache cache;
+    vcml::tlm_dmi_cache cache;
     tlm::tlm_dmi dmi, dmi2;
 
     dmi.allow_read();

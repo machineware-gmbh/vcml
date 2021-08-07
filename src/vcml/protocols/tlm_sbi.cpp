@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2019 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,48 +16,39 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_EXMON_H
-#define VCML_EXMON_H
-
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
-
-#include "vcml/sbi.h"
-#include "vcml/dmi_cache.h"
+#include "vcml/protocols/tlm_sbi.h"
 
 namespace vcml {
 
-    struct exlock {
-        int cpu;
-        range addr;
-    };
+    tlm_extension_base* sbiext::clone() const {
+        return new sbiext(*this);
+    }
 
-    class exmon
-    {
-    private:
-        vector<exlock> m_locks;
+    void sbiext::copy_from(const tlm_extension_base& ext) {
+        VCML_ERROR_ON(typeid(this) != typeid(ext), "cannot copy extension");
+        const sbiext& other = (const sbiext&)ext;
+        code = other.code;
+    }
 
-    public:
-        inline const vector<exlock> get_locks() const {
-            return m_locks;
-        }
+    void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info) {
+        if (!tx_has_sbi(tx) && info == SBI_NONE)
+            return;
+        if (!tx_has_sbi(tx))
+            tx.set_extension<sbiext>(new sbiext());
+        sbiext* ext = tx.get_extension<sbiext>();
+        ext->code = info.code;
+    }
 
-        exmon();
-        virtual ~exmon();
+    void tx_set_cpuid(tlm_generic_payload& tx, int id) {
+        tlm_sbi info; info.cpuid = id;
+        VCML_ERROR_ON(info.cpuid != id, "coreid too large");
+        tx_set_sbi(tx, SBI_NONE | info);
+    }
 
-        bool has_lock(int cpu, const range& r) const;
-        bool add_lock(int cpu, const range& r);
-
-        void break_locks(int cpu);
-        void break_locks(const range& r);
-
-        bool update(tlm_generic_payload& tx);
-
-        bool override_dmi(const tlm_generic_payload& tx, tlm_dmi& dmi);
-    };
+    void tx_set_level(tlm_generic_payload& tx, int lvl) {
+        tlm_sbi info; info.level = lvl;
+        VCML_ERROR_ON(info.level != lvl, "privlvl too large");
+        tx_set_sbi(tx, SBI_NONE | info);
+    }
 
 }
-
-#endif

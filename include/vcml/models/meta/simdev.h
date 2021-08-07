@@ -23,11 +23,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
+#include "vcml/protocols/tlm.h"
+
 #include "vcml/ports.h"
-#include "vcml/command.h"
-#include "vcml/register.h"
 #include "vcml/peripheral.h"
-#include "vcml/slave_socket.h"
 
 namespace vcml { namespace meta {
 
@@ -67,7 +66,7 @@ namespace vcml { namespace meta {
         // random
         reg<simdev, u32> PRNG;
 
-        slave_socket IN;
+        tlm_slave_socket IN;
 
         simdev(const sc_module_name& name);
         virtual ~simdev();
