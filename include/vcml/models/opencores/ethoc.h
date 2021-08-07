@@ -36,7 +36,7 @@
 namespace vcml { namespace opencores {
 
     class ethoc: public peripheral,
-                 protected net::adapter
+                 public net::adapter
     {
     private:
         u8  m_mac[6];

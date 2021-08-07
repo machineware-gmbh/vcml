@@ -24,16 +24,12 @@ namespace vcml { namespace net {
     unordered_map<string, adapter*> adapter::s_adapters;
 
     bool adapter::cmd_create_client(const vector<string>& args, ostream& os) {
-        string type = args[0];
-
         try {
-            client* c = client::create(m_name, type);
-            m_clients[m_next_id] = c;
-            os << "created backend " << m_next_id;
-            m_next_id++;
+            int id = create_client(args[0]);
+            os << "created client " << id;
             return true;
         } catch (std::exception& ex) {
-            os << "error creating backend " << type << ":" << ex.what();
+            os << "error creating backend " << args[0] << ":" << ex.what();
             return false;
         }
     }
@@ -48,14 +44,10 @@ namespace vcml { namespace net {
                 return true;
             }
 
-            auto it = m_clients.find(id);
-            if (it == m_clients.end()) {
+            if (!destroy_client(id)) {
                 os << "invalid client id: " << id;
                 return false;
             }
-
-            delete it->second;
-            m_clients.erase(it);
         }
 
         return true;
@@ -97,8 +89,7 @@ namespace vcml { namespace net {
         vector<string> types = split(clients, ' ');
         for  (auto type : types) {
             try {
-                client* c = client::create(m_name, type);
-                m_clients[m_next_id++] = c;
+                create_client(type);
             } catch (std::exception& ex) {
                 log_warn("error creating %s: %s", type.c_str(), ex.what());
             }
@@ -131,6 +122,21 @@ namespace vcml { namespace net {
         if (!stl_contains(m_listener, cl))
             VCML_ERROR("attempt to detach unknown client");
         stl_remove_erase(m_listener, cl);
+    }
+
+    int adapter::create_client(const string& type) {
+        m_clients[m_next_id] = client::create(m_name, type);
+        return m_next_id++;
+    }
+
+    bool adapter::destroy_client(int id) {
+        auto it = m_clients.find(id);
+        if (it == m_clients.end())
+            return false;
+
+        delete it->second;
+        m_clients.erase(it);
+        return true;
     }
 
     bool adapter::recv_packet(vector<u8>& packet) {

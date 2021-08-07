@@ -53,8 +53,11 @@ namespace vcml { namespace net {
         adapter();
         virtual ~adapter();
 
-        void attach(client* backend);
-        void detach(client* backend);
+        void attach(client* client);
+        void detach(client* client);
+
+        int  create_client(const string& type);
+        bool destroy_client(int id);
 
         bool recv_packet(vector<u8>& packet);
         void send_packet(const vector<u8>& packet);
