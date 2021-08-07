@@ -20,6 +20,7 @@
 #define VCML_PROTOCOLS_TLM_H
 
 #include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_exmon.h"
 #include "vcml/protocols/tlm_dmi_cache.h"
 #include "vcml/protocols/tlm_adapters.h"
 #include "vcml/protocols/tlm_stubs.h"
