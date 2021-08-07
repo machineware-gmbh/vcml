@@ -123,7 +123,7 @@ namespace vcml { namespace arm {
         reg<sp804timer, u32, 4> PID; // Peripheral ID Register
         reg<sp804timer, u32, 4> CID; // Cell ID Register
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         sc_out<bool>   IRQ1;
         sc_out<bool>   IRQ2;

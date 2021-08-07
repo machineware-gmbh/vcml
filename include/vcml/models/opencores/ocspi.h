@@ -60,7 +60,7 @@ namespace vcml { namespace opencores {
 
         out_port<bool> IRQ;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
         spi_initiator_socket SPI_OUT;
 
         property<clock_t> clock;

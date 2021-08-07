@@ -37,7 +37,7 @@ namespace vcml { namespace generic {
 
     public:
         reg<hwrng, u32> RNG;
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         property<bool> pseudo;
         property<u32> seed;

@@ -60,7 +60,7 @@ namespace vcml { namespace riscv {
         out_port_list<bool> IRQ_SW;
         out_port_list<bool> IRQ_TIMER;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         clint(const sc_module_name& nm);
         virtual ~clint();

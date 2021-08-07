@@ -93,7 +93,7 @@ namespace vcml { namespace generic {
         reg<rtc1742, u8> MONTH;
         reg<rtc1742, u8> YEAR;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         property<bool> sctime;
         property<string> nvmem;

@@ -66,7 +66,7 @@ namespace vcml { namespace meta {
         // random
         reg<simdev, u32> PRNG;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         simdev(const sc_module_name& name);
         virtual ~simdev();

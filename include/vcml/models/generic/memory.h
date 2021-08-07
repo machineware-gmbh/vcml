@@ -55,7 +55,7 @@ namespace vcml { namespace generic {
         property<string> images;
         property<u8> poison;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         u8* get_data_ptr() const { return m_memory; }
 

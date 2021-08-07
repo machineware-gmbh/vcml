@@ -22,17 +22,17 @@ class test_harness: public test_base
 {
 public:
     vcml::tlm_initiator_socket    TEST1_OUT64;
-    vcml::tlm_slave_socket        TEST1_IN64;
+    vcml::tlm_target_socket       TEST1_IN64;
     tlm::tlm_initiator_socket<32> TEST1_OUT32;
     tlm::tlm_target_socket<32>    TEST1_IN32;
 
     vcml::tlm_initiator_socket    TEST2_OUT64;
     tlm::tlm_initiator_socket<32> TEST2_OUT32;
-    vcml::tlm_slave_socket        TEST2_IN64;
+    vcml::tlm_target_socket       TEST2_IN64;
 
     vcml::tlm_initiator_socket    TEST3_OUT64;
     tlm::tlm_target_socket<32>    TEST3_IN32;
-    vcml::tlm_slave_socket        TEST3_IN64;
+    vcml::tlm_target_socket       TEST3_IN64;
 
     test_harness(const sc_module_name& nm):
         test_base(nm),

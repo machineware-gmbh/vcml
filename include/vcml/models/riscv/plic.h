@@ -83,7 +83,7 @@ namespace vcml { namespace riscv {
         in_port_list<bool>  IRQS;
         out_port_list<bool> IRQT;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         plic(const sc_module_name& nm);
         virtual ~plic();

@@ -33,7 +33,7 @@ using namespace vcml;
 class test_component: public component
 {
 public:
-    tlm_slave_socket IN;
+    tlm_target_socket IN;
     tlm_initiator_socket OUT;
 
     test_component(const sc_module_name& nm):

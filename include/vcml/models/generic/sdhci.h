@@ -149,7 +149,7 @@ namespace vcml { namespace generic {
 
         out_port<bool> IRQ;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
         tlm_initiator_socket OUT;
 
         sd_initiator_socket SD_OUT;

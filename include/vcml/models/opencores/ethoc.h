@@ -266,7 +266,7 @@ namespace vcml { namespace opencores {
         property<string> mac;
 
         out_port<bool> IRQ;
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
         tlm_initiator_socket OUT;
 
         ethoc(const sc_module_name& name);

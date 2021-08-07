@@ -45,7 +45,7 @@ namespace vcml { namespace riscv {
 
         reg<simdev, u32> FINISH;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         simdev() = delete;
         simdev(const simdev&) = delete;

@@ -221,7 +221,7 @@ namespace vcml {
         base_type::bind(m_stub->IN);
     }
 
-    void tlm_slave_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
+    void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
         m_host->trace_fw(*this, tx, dt);
 
         int self = m_next++;
@@ -250,11 +250,11 @@ namespace vcml {
         m_host->trace_bw(*this, tx, dt);
     }
 
-    unsigned int tlm_slave_socket::transport_dbg(tlm_generic_payload& tx){
+    unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx){
         return m_host->transport_dbg(this, tx);
     }
 
-    bool tlm_slave_socket::get_direct_mem_ptr(tlm_generic_payload& tx,
+    bool tlm_target_socket::get_direct_mem_ptr(tlm_generic_payload& tx,
                                           tlm_dmi& dmi) {
         dmi.allow_read_write();
         dmi.set_start_address(0);
@@ -269,8 +269,8 @@ namespace vcml {
         return m_exmon.override_dmi(tx, dmi);
     }
 
-    tlm_slave_socket::tlm_slave_socket(const char* nm, component* host):
-        simple_target_socket<tlm_slave_socket, 64>(nm),
+    tlm_target_socket::tlm_target_socket(const char* nm, component* host):
+        simple_target_socket<tlm_target_socket, 64>(nm),
         m_curr(0),
         m_next(0),
         m_free_ev(concat(nm, "_free").c_str()),
@@ -285,24 +285,24 @@ namespace vcml {
         }
 
         m_host->register_socket(this);
-        register_b_transport(this, &tlm_slave_socket::b_transport);
-        register_transport_dbg(this, &tlm_slave_socket::transport_dbg);
-        register_get_direct_mem_ptr(this, &tlm_slave_socket::get_direct_mem_ptr);
+        register_b_transport(this, &tlm_target_socket::b_transport);
+        register_transport_dbg(this, &tlm_target_socket::transport_dbg);
+        register_get_direct_mem_ptr(this, &tlm_target_socket::get_direct_mem_ptr);
     }
 
-    tlm_slave_socket::~tlm_slave_socket() {
+    tlm_target_socket::~tlm_target_socket() {
         if (m_adapter != nullptr)
             delete m_adapter;
         if (m_stub != nullptr)
             delete m_stub;
     }
 
-    void tlm_slave_socket::unmap_dmi(u64 start, u64 end) {
+    void tlm_target_socket::unmap_dmi(u64 start, u64 end) {
         m_dmi_cache.invalidate(start, end);
         (*this)->invalidate_direct_mem_ptr(start, end);
     }
 
-    void tlm_slave_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
+    void tlm_target_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
         for (auto dmi : m_dmi_cache.get_entries()) {
             if (dmi.get_read_latency() != rd ||
                 dmi.get_write_latency() != wr) {
@@ -314,14 +314,14 @@ namespace vcml {
         }
     }
 
-    void tlm_slave_socket::invalidate_dmi() {
+    void tlm_target_socket::invalidate_dmi() {
         for (auto dmi : m_dmi_cache.get_entries()) {
             (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
                                                dmi.get_end_address());
         }
     }
 
-    void tlm_slave_socket::stub() {
+    void tlm_target_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
         hierarchy_guard guard(m_host);
         m_stub = new tlm_initiator_stub(concat(basename(), "_stub").c_str());

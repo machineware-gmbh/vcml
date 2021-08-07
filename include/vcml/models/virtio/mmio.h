@@ -135,7 +135,7 @@ namespace vcml { namespace virtio {
 
         out_port<bool> IRQ;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
         tlm_initiator_socket OUT;
         virtio_initiator_socket VIRTIO_OUT;
 

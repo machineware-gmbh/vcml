@@ -58,7 +58,7 @@ namespace vcml { namespace opencores {
         reg<ompic, u32>** STATUS;
 
         out_port_list<bool> IRQ;
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         ompic(const sc_core::sc_module_name& name, unsigned int num_cores);
         virtual ~ompic();

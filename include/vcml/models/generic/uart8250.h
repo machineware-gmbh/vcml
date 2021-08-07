@@ -121,7 +121,7 @@ namespace vcml { namespace generic {
         reg<uart8250, u8> SCR; // scratch register
 
         out_port<bool> IRQ;
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         uart8250(const sc_module_name& name);
         virtual ~uart8250();

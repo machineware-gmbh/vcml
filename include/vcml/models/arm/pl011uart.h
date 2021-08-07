@@ -140,7 +140,7 @@ namespace vcml { namespace arm {
         reg<pl011uart, u32, 4> PID; // Peripheral ID Register
         reg<pl011uart, u32, 4> CID; // Cell ID Register
 
-        tlm_slave_socket   IN;
+        tlm_target_socket   IN;
         out_port<bool> IRQ;
 
         bool is_enabled()    const { return CR & CR_UARTEN; }

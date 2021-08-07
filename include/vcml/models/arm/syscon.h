@@ -80,7 +80,7 @@ namespace vcml { namespace arm {
         reg<syscon, u32> SYS_CFGCTRL;
         reg<syscon, u32> SYS_CFGSTAT;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         syscon(const sc_module_name& name);
         virtual ~syscon();

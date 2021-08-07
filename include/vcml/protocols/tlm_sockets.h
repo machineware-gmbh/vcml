@@ -221,7 +221,7 @@ namespace vcml {
         tx.set_dmi_allowed(false);
     }
 
-    class tlm_slave_socket: public simple_target_socket<tlm_slave_socket, 64>
+    class tlm_target_socket: public simple_target_socket<tlm_target_socket, 64>
     {
     private:
         int           m_curr;
@@ -238,11 +238,11 @@ namespace vcml {
         bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
 
     public:
-        tlm_slave_socket() = delete;
-        tlm_slave_socket(const char* name, component* host = nullptr);
-        virtual ~tlm_slave_socket();
+        tlm_target_socket() = delete;
+        tlm_target_socket(const char* name, component* host = nullptr);
+        virtual ~tlm_target_socket();
 
-        VCML_KIND(tlm_slave_socket);
+        VCML_KIND(tlm_target_socket);
 
         tlm_dmi_cache& dmi()   { return m_dmi_cache; }
         tlm_exmon&     exmem() { return m_exmon; }
@@ -261,12 +261,12 @@ namespace vcml {
         void stub();
     };
 
-    inline void tlm_slave_socket::map_dmi(const tlm_dmi& dmi) {
+    inline void tlm_target_socket::map_dmi(const tlm_dmi& dmi) {
         m_dmi_cache.insert(dmi);
     }
 
     template <unsigned int WIDTH>
-    inline void tlm_slave_socket::bind(tlm::tlm_initiator_socket<WIDTH>& tgt) {
+    inline void tlm_target_socket::bind(tlm::tlm_initiator_socket<WIDTH>& tgt) {
         typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
@@ -279,12 +279,12 @@ namespace vcml {
     }
 
     template <>
-    inline void tlm_slave_socket::bind<64>(tlm::tlm_initiator_socket<64>& s) {
+    inline void tlm_target_socket::bind<64>(tlm::tlm_initiator_socket<64>& s) {
         base_type::bind(s);
     }
 
     template <unsigned int WIDTH>
-    inline void tlm_slave_socket::bind(tlm_target_socket<WIDTH>& other) {
+    inline void tlm_target_socket::bind(tlm::tlm_target_socket<WIDTH>& other) {
         typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
         VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
 
@@ -297,7 +297,7 @@ namespace vcml {
     }
 
     template <>
-    inline void tlm_slave_socket::bind<64>(tlm_target_socket<64>& other) {
+    inline void tlm_target_socket::bind<64>(tlm::tlm_target_socket<64>& other) {
         base_type::bind(other);
     }
 

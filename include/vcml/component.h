@@ -37,24 +37,24 @@
 namespace vcml {
 
     class tlm_initiator_socket;
-    class tlm_slave_socket;
+    class tlm_target_socket;
 
     class component: public module
     {
         friend class tlm_initiator_socket;
-        friend class tlm_slave_socket;
+        friend class tlm_target_socket;
     private:
         clock_t m_curclk;
         std::unordered_map<sc_process_b*, sc_time> m_offsets;
 
         vector<tlm_initiator_socket*> m_master_sockets;
-        vector<tlm_slave_socket*> m_slave_sockets;
+        vector<tlm_target_socket*> m_slave_sockets;
 
         void register_socket(tlm_initiator_socket* socket);
-        void register_socket(tlm_slave_socket* socket);
+        void register_socket(tlm_target_socket* socket);
 
         void unregister_socket(tlm_initiator_socket* socket);
-        void unregister_socket(tlm_slave_socket* socket);
+        void unregister_socket(tlm_target_socket* socket);
 
         bool cmd_reset(const vector<string>& args, ostream& os);
 
@@ -93,10 +93,10 @@ namespace vcml {
         void sync(sc_process_b* proc = nullptr);
 
         const vector<tlm_initiator_socket*>& get_master_sockets() const;
-        const vector<tlm_slave_socket*>& get_slave_sockets() const;
+        const vector<tlm_target_socket*>& get_slave_sockets() const;
 
         tlm_initiator_socket* get_master_socket(const string& name) const;
-        tlm_slave_socket* get_slave_socket(const string& name) const;
+        tlm_target_socket* get_slave_socket(const string& name) const;
 
         void map_dmi(const tlm_dmi& dmi);
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a,
@@ -106,11 +106,11 @@ namespace vcml {
         void unmap_dmi(u64 start, u64 end);
         void remap_dmi(const sc_time& rdlat, const sc_time& wrlat);
 
-        virtual void b_transport(tlm_slave_socket* origin, tlm_generic_payload& tx,
+        virtual void b_transport(tlm_target_socket* origin, tlm_generic_payload& tx,
                                  sc_time& dt);
-        virtual unsigned int transport_dbg(tlm_slave_socket* origin,
+        virtual unsigned int transport_dbg(tlm_target_socket* origin,
                                            tlm_generic_payload& tx);
-        virtual bool get_direct_mem_ptr(tlm_slave_socket* origin,
+        virtual bool get_direct_mem_ptr(tlm_target_socket* origin,
                                         const tlm_generic_payload& tx,
                                         tlm_dmi& dmi);
         virtual void invalidate_direct_mem_ptr(tlm_initiator_socket* origin,
@@ -137,7 +137,7 @@ namespace vcml {
         return m_master_sockets;
     }
 
-    inline const vector<tlm_slave_socket*>& component::get_slave_sockets() const {
+    inline const vector<tlm_target_socket*>& component::get_slave_sockets() const {
         return m_slave_sockets;
     }
 

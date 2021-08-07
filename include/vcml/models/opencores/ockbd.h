@@ -54,7 +54,7 @@ namespace vcml { namespace opencores {
         reg<ockbd, u8> KHR;
 
         out_port<bool> IRQ;
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
 
         property<string> keymap;
         property<string> display;

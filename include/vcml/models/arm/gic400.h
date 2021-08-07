@@ -187,7 +187,7 @@ namespace vcml { namespace arm {
 
             reg<distif, u32, 4>  CIDR; // Component ID register
 
-            tlm_slave_socket IN;
+            tlm_target_socket IN;
 
             distif(const sc_module_name& nm);
             virtual ~distif();
@@ -239,7 +239,7 @@ namespace vcml { namespace arm {
             reg<cpuif, u32, 4> CIDR; // Component ID register
             reg<cpuif, u32> DIR;     // Deactivate interrupt register
 
-            tlm_slave_socket IN;
+            tlm_target_socket IN;
 
             cpuif(const sc_module_name& nm);
             virtual ~cpuif();
@@ -272,7 +272,7 @@ namespace vcml { namespace arm {
             reg<vifctrl, u32> APR;     // Active Priorities Register
             reg<vifctrl, u32, 64> LR;  // List registers
 
-            tlm_slave_socket IN;
+            tlm_target_socket IN;
 
             u8 get_irq_priority(unsigned int cpu, unsigned int irq);
             // list register state control
@@ -325,7 +325,7 @@ namespace vcml { namespace arm {
             reg<vcpuif, u32, 4> APR;   // Active Priorities registers
             reg<vcpuif, u32>    IIDR;  // Interface Identification register
 
-            tlm_slave_socket IN;
+            tlm_target_socket IN;
 
             vcpuif(const sc_module_name& nm, vifctrl* vifctrl);
             virtual ~vcpuif();

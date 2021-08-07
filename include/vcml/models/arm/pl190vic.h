@@ -78,7 +78,7 @@ namespace vcml { namespace arm {
         reg<pl190vic, u32, 4> PID; // Peripheral ID registers
         reg<pl190vic, u32, 4> CID; // Cell ID registers
 
-        tlm_slave_socket  IN;
+        tlm_target_socket  IN;
 
         in_port_list<bool>  IRQ_IN;
         out_port_list<bool> IRQ_OUT;

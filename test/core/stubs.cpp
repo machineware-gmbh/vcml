@@ -22,7 +22,7 @@ class test_harness: public test_base
 {
 public:
     tlm_initiator_socket OUT;
-    tlm_slave_socket IN;
+    tlm_target_socket IN;
 
     test_harness(const sc_module_name& nm):
         test_base(nm),

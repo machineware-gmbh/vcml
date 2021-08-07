@@ -121,7 +121,7 @@ namespace vcml { namespace opencores {
 
         out_port<bool> IRQ;
 
-        tlm_slave_socket IN;
+        tlm_target_socket IN;
         tlm_initiator_socket OUT;
 
         property<clock_t> clock;
