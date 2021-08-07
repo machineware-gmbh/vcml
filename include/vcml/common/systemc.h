@@ -217,7 +217,7 @@ namespace vcml {
 
     inline u64 tx_size(const tlm_generic_payload& tx) {
         u64 size = tx.get_streaming_width();
-        return size > 0? size : tx.get_data_length();
+        return size > 0 ? size : tx.get_data_length();
     }
 
     inline u64 tx_width(const tlm_generic_payload& tx) {

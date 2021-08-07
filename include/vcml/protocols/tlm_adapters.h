@@ -57,27 +57,16 @@ namespace vcml {
     private:
         void b_transport(tlm_generic_payload& tx, sc_time& t) {
             trace_fw(OUT, tx, t);
-
-            // make sure our transaction fits into 32/64bit
-            if (tx_width(tx) <= WIDTH_OUT)
-                OUT->b_transport(tx, t);
-            else
-                tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
-
+            OUT->b_transport(tx, t);
             trace_bw(OUT, tx, t);
         }
 
         unsigned int transport_dbg(tlm_generic_payload& tx) {
-            if (tx_width(tx) <= WIDTH_OUT)
-                return OUT->transport_dbg(tx);
-            tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
-            return 0;
+            return OUT->transport_dbg(tx);
         }
 
         bool get_direct_mem_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
-            if (tx_width(tx) <= WIDTH_OUT)
-                return OUT->get_direct_mem_ptr(tx, dmi);
-            return false;
+            return OUT->get_direct_mem_ptr(tx, dmi);
         }
 
         void invalidate_direct_mem_ptr(sc_dt::uint64 s, sc_dt::uint64 e) {

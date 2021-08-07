@@ -182,36 +182,62 @@ namespace vcml {
     }
 
     tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
-        void* data, unsigned int size, const tlm_sbi& info, unsigned int* b) {
-
-        tlm_response_status rs = TLM_INCOMPLETE_RESPONSE;
+        void* data, unsigned int size, const tlm_sbi& info, unsigned int* sz) {
 
         // TLM protocol sanity checking
         if (!info.is_debug && !is_thread())
             VCML_ERROR("non-debug TLM access outside SC_THREAD forbidden");
 
         // check if we are allowed to do a DMI access on that address
-        if ((cmd != TLM_IGNORE_COMMAND) && (m_host->allow_dmi))
-            rs = access_dmi(cmd, addr, data, size, info);
-
-        // if DMI was not successful, send a regular transaction
-        if (rs == TLM_INCOMPLETE_RESPONSE) {
-            tlm_generic_payload& tx = info.is_debug ? m_txd : m_tx;
-            tx_setup(tx, cmd, addr, data, size);
-            size = send(tx, info);
-            rs = tx.get_response_status();
-
-            // transport_dbg does not change response status
-            if (rs == TLM_INCOMPLETE_RESPONSE && info.is_debug)
-                rs = TLM_OK_RESPONSE;
+        if (cmd != TLM_IGNORE_COMMAND && m_host->allow_dmi) {
+            if (success(access_dmi(cmd, addr, data, size, info))) {
+                if (sz != nullptr)
+                    *sz = size;
+                return TLM_OK_RESPONSE;
+            }
         }
 
-        if (rs == TLM_INCOMPLETE_RESPONSE)
-            log_warn("got incomplete response from target at 0x%016lx", addr);
+        // if DMI was not successful, send a regular transaction; debug
+        // transactions can be arbitrarily wide; none debug transactions
+        // must be split up if they are wider than socket bus width.
 
-        if (b != nullptr)
-            *b = size;
-        return rs;
+        if (info.is_debug) {
+            tx_setup(m_txd, cmd, addr, data, size);
+            size = send(m_txd, info);
+            tlm_response_status rs = m_txd.get_response_status();
+
+            // transport_dbg does not always change response status
+            if (rs == TLM_INCOMPLETE_RESPONSE)
+                rs = TLM_OK_RESPONSE;
+
+            if (sz != nullptr)
+                *sz = size;
+
+            return rs;
+        }
+
+        unsigned int done = 0;
+        while (done < size) {
+            unsigned int burstsz = min(size - done, get_bus_width() / 8);
+            tx_setup(m_tx, cmd, addr + done, (u8*)data + done, burstsz);
+
+            unsigned int bytes = send(m_tx, info);
+            done += bytes;
+
+            if (m_tx.get_response_status() == TLM_INCOMPLETE_RESPONSE) {
+                m_parent->log_warn("received incomplete response from target "
+                                   "at 0x%016lx", addr);
+                break;
+            }
+
+            if (bytes == 0 || failed(m_tx))
+                break;
+        }
+
+        if (sz != nullptr)
+            *sz = done;
+
+        return m_tx.get_response_status();
     }
 
     void tlm_initiator_socket::stub(tlm_response_status r) {
@@ -223,6 +249,12 @@ namespace vcml {
 
     void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
         m_parent->trace_fw(*this, tx, dt);
+
+        if (tx_size(tx) > get_bus_width() / 8) {
+            tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
+            m_parent->trace_bw(*this, tx, dt);
+            return;
+        }
 
         int self = m_next++;
         while (self != m_curr)
@@ -250,7 +282,7 @@ namespace vcml {
         m_parent->trace_bw(*this, tx, dt);
     }
 
-    unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx){
+    unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx) {
         return m_host->transport_dbg(*this, tx);
     }
 
