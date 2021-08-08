@@ -71,7 +71,7 @@ namespace vcml {
             VCML_ERROR("register %s already assigned", reg->name());
 
         for (auto r : m_registers)
-            if (r->get_range().overlaps(reg->get_range()))
+            if (r->get_range().overlaps(reg->get_range()) && reg->as == r->as)
                 VCML_ERROR("register address space already in use");
 
         m_registers.push_back(reg);
@@ -169,7 +169,7 @@ namespace vcml {
         set_current_cpu(info.cpuid);
 
         for (auto reg : m_registers)
-            if (reg->get_range().overlaps(tx)) {
+            if (reg->get_range().overlaps(tx) && reg->as == as) {
                 bytes += reg->receive(tx, info);
                 nregs ++;
             }

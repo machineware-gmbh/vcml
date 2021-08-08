@@ -363,3 +363,62 @@ TEST(registers, operators) {
     EXPECT_EQ(mock.test_reg_b += 1, 2u);
     EXPECT_EQ(mock.test_reg_a -= 1, 4u);
 }
+
+enum : vcml::address_space {
+    VCML_AS_TEST1 = vcml::VCML_AS_DEFAULT + 1,
+    VCML_AS_TEST2 = vcml::VCML_AS_DEFAULT + 2,
+};
+
+class mock_peripheral_as: public vcml::peripheral {
+public:
+    vcml::reg<mock_peripheral_as, u32> test_reg_a;
+    vcml::reg<mock_peripheral_as, u32> test_reg_b;
+
+    mock_peripheral_as(const sc_core::sc_module_name& nm =
+        sc_core::sc_gen_unique_name("mock_peripheral_as")):
+        vcml::peripheral(nm, vcml::ENDIAN_LITTLE, 1, 10),
+        test_reg_a(VCML_AS_TEST1, "test_reg_a", 0x0, 0xffffffff),
+        test_reg_b(VCML_AS_TEST2, "test_reg_b", 0x0, 0xffffffff) {
+        test_reg_b.allow_read_write();
+        test_reg_b.allow_read_write();
+        CLOCK.stub(100 * vcml::MHz);
+        RESET.stub();
+        handle_clock_update(0, CLOCK.read());
+    }
+
+    unsigned int test_transport(tlm::tlm_generic_payload& tx,
+        vcml::address_space as) {
+        return transport(tx, vcml::SBI_NONE, as);
+    }
+
+};
+
+TEST(registers, address_spaces) {
+    // reg_a and reg_b both live at 0x0, but in different address spaces
+    mock_peripheral_as mock;
+
+    tlm::tlm_generic_payload tx;
+    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
+    vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
+
+    // writes to default address space should get lost in the void
+    EXPECT_EQ(mock.test_transport(tx, vcml::VCML_AS_DEFAULT), 0);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffff);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffff);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
+    mock.reset();
+
+    // writes to VCML_AS_TEST1 should only change reg_a
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST1), 4);
+    EXPECT_EQ(mock.test_reg_a, 0x44332211);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffff);
+    EXPECT_TRUE(tx.is_response_ok());
+    mock.reset();
+
+    // writes to VCML_AS_TEST2 should only change reg_b
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST2), 4);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffff);
+    EXPECT_EQ(mock.test_reg_b, 0x44332211);
+    EXPECT_TRUE(tx.is_response_ok());
+    mock.reset();
+}

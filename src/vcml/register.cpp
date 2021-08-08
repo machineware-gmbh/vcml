@@ -21,17 +21,14 @@
 
 namespace vcml {
 
-    reg_base::reg_base(const char* nm, u64 addr, u64 size, peripheral* host):
+    reg_base::reg_base(address_space a, const char* nm, u64 addr, u64 size):
         sc_object(nm),
         m_range(addr, addr + size - 1),
         m_access(VCML_ACCESS_READ_WRITE),
         m_rsync(false),
         m_wsync(false),
-        m_host(host)
-    {
-        if (m_host == nullptr)
-            m_host = dynamic_cast<peripheral*>(get_parent_object());
-
+        m_host(dynamic_cast<peripheral*>(hierarchy_top())),
+        as(a) {
         VCML_ERROR_ON(!m_host, "register '%s' declared outside peripheral", nm);
         m_host->add_register(this);
     }
@@ -90,14 +87,9 @@ namespace vcml {
                 m_host->sync();
         }
 
-        bool is_tracing = m_host->loglvl >= LOG_TRACE;
-        if (is_tracing && !m_host->trace_errors)
-            logger::trace_fw(*this, tx, m_host->local_time());
-
+        m_host->trace_fw(*this, tx, m_host->local_time());
         do_receive(tx, info);
-
-        if (is_tracing && (!m_host->trace_errors || failed(tx)))
-            logger::trace_bw(*this, tx, m_host->local_time());
+        m_host->trace_fw(*this, tx, m_host->local_time());
 
         tx.set_address(addr);
         tx.set_data_length(size);

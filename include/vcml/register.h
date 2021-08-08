@@ -45,6 +45,8 @@ namespace vcml {
         void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
     public:
+        const address_space as;
+
         u64 get_address() const { return m_range.start; }
         u64 get_size() const { return m_range.length(); }
         const range& get_range() const { return m_range; }
@@ -70,7 +72,7 @@ namespace vcml {
 
         peripheral* get_host() { return m_host; }
 
-        reg_base(const char* nm, u64 addr, u64 size, peripheral* h = nullptr);
+        reg_base(address_space as, const char* nm, u64 addr, u64 size);
         virtual ~reg_base();
 
         VCML_KIND(reg_base);
@@ -132,8 +134,8 @@ namespace vcml {
 
         const char* name() const { return sc_core::sc_object::name(); }
 
-        reg(const char* nm, u64 addr, DATA init = DATA(),
-            HOST* host = nullptr);
+        reg(const char* name, u64 addr, DATA init = DATA());
+        reg(address_space as, const char* name, u64 addr, DATA init = DATA());
         virtual ~reg();
         reg() = delete;
 
@@ -228,10 +230,10 @@ namespace vcml {
     }
 
     template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>::reg(const char* n, u64 addr, DATA def, HOST* h):
-        reg_base(n, addr, N * sizeof(DATA), h),
-        property<DATA, N>(n, def, h),
-        m_host(h),
+    reg<HOST, DATA, N>::reg(const char* nm, u64 addr, DATA def):
+        reg_base(VCML_AS_DEFAULT, nm, addr, N * sizeof(DATA)),
+        property<DATA, N>(nm, def),
+        m_host(dynamic_cast<HOST*>(get_host())),
         m_banked(false),
         m_init(),
         m_banks(),
@@ -243,9 +245,26 @@ namespace vcml {
         for (unsigned int i = 0; i < N; i++)
             m_init[i] = property<DATA, N>::get(i);
 
-        if (m_host == nullptr)
-            m_host = dynamic_cast<HOST*>(get_host());
-        VCML_ERROR_ON(!m_host, "invalid host specified for register %s", n);
+        VCML_ERROR_ON(!m_host, "invalid host specified for register %s", nm);
+    }
+
+    template <class HOST, typename DATA, const unsigned int N>
+    reg<HOST, DATA, N>::reg(address_space a, const char* nm, u64 addr, DATA d):
+        reg_base(a, nm, addr, N * sizeof(DATA)),
+        property<DATA, N>(nm, d),
+        m_host(dynamic_cast<HOST*>(get_host())),
+        m_banked(false),
+        m_init(),
+        m_banks(),
+        read(nullptr),
+        write(nullptr),
+        tag(0),
+        tagged_read(nullptr),
+        tagged_write(nullptr) {
+        for (unsigned int i = 0; i < N; i++)
+            m_init[i] = property<DATA, N>::get(i);
+
+        VCML_ERROR_ON(!m_host, "invalid host specified for register %s", nm);
     }
 
     template <class HOST, typename DATA, const unsigned int N>
