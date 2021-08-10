@@ -66,7 +66,7 @@ namespace vcml {
             val = trim(val);
 
             replace(val);
-            add(key, val);
+            insert(key, val);
         }
     }
 
@@ -76,7 +76,7 @@ namespace vcml {
     }
 
     broker_file::broker_file(const string& filepath):
-        broker(),
+        broker(filepath, PRIO_CFGFILE),
         m_filename(filepath),
         m_replacements() {
         m_replacements["$dir"] = dirname(filepath);

@@ -21,7 +21,7 @@
 namespace vcml {
 
     broker_arg::broker_arg(int argc, char** argv):
-        broker() {
+        broker("cmdline", PRIO_CMDLINE) {
 
         int i = 1;
         while (++i < argc) {
@@ -38,7 +38,7 @@ namespace vcml {
                 string key = arg.substr(0, separator);
                 string val = arg.substr(separator + 1);
 
-                add(key, val);
+                insert(key, val);
             }
         }
     }

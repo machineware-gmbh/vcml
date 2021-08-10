@@ -21,23 +21,24 @@
 
 namespace vcml {
 
-    bool broker::lookup(const string& name, string& value) {
-        if (!stl_contains(m_values, name))
-            return false;
+    struct priority_compare {
+        bool operator() (const broker* a, const broker* b) const {
+            return a->priority > b->priority;
+        }
+    };
 
-        struct value& val = m_values[name];
-        value = val.value;
-        val.uses++;
-        return true;
-    }
+    static set<broker*, priority_compare> brokers;
 
-    broker::broker():
-        m_values() {
-        register_provider(this);
+
+    broker::broker(const string& nm, int prio):
+        m_name(nm),
+        m_values(),
+        priority(prio) {
+        brokers.insert(this);
     }
 
     broker::~broker() {
-        unregister_provider(this);
+        brokers.erase(this);
 
         for (auto val: m_values) {
             if (val.second.uses == 0)
@@ -45,29 +46,34 @@ namespace vcml {
         }
     }
 
-    void broker::add(const string& name, const string& value) {
+    bool broker::provides(const string& name) const {
+        return stl_contains(m_values, name);
+    }
+
+    bool broker::lookup(const string& name, string& value) {
+        if (!stl_contains(m_values, name))
+            return false;
+
+        auto& val = m_values[name];
+        value = val.value;
+        val.uses++;
+        return true;
+    }
+
+    template <>
+    void broker::insert(const string& name, const string& value) {
         struct value val;
         val.value = value;
         val.uses = 0;
         m_values[name] = val;
     }
 
-    list<broker*> broker::brokers;
-
-    void broker::register_provider(broker* p) {
-        if (!stl_contains(brokers, p))
-            brokers.push_front(p);
-    }
-
-    void broker::unregister_provider(broker* p) {
-        stl_remove_erase(brokers, p);
-    }
-
-    bool broker::init(const string& name, string& value) {
-        bool found = false;
-        for (auto provider : brokers)
-            found |= provider->lookup(name, value);
-        return found;
+    template <>
+    broker* broker::init(const string& name, string& value) {
+        for (auto broker : brokers)
+            if (broker->lookup(name, value))
+                return broker;
+        return nullptr;
     }
 
 }

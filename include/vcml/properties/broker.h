@@ -26,31 +26,57 @@ namespace vcml {
 
     class broker
     {
-    private:
+    protected:
         struct value {
             string value;
             int uses;
         };
 
+        string m_name;
         std::map<string, struct value> m_values;
 
-        virtual bool lookup(const string& name, string& value);
-
     public:
-        broker();
+        enum : int {
+            PRIO_DEFAULT = 0,
+            PRIO_CFGFILE = 10,
+            PRIO_ENVIRON = 100,
+            PRIO_CMDLINE = 1000,
+        };
+
+        const int priority;
+
+                const char* name() const { return m_name.c_str(); }
+        virtual const char* kind() const { return "vcml::broker"; }
+
+        broker(const string& name, int priority = PRIO_DEFAULT);
         virtual ~broker();
 
-        void add(const string& name, const string& value);
+        virtual bool provides(const string& name) const;
+        virtual bool lookup(const string& name, string& value);
 
-    private:
-        static list<broker*> brokers;
+        template <typename T>
+        void insert(const string& name, const T& value);
 
-        static void register_provider(broker* provider);
-        static void unregister_provider(broker* provider);
-
-    public:
-        static bool init(const string& name, string& value);
+        template <typename T>
+        static broker* init(const string& name, T& value);
     };
+
+    template <typename T>
+    inline void broker::insert(const string& name, const T& value) {
+        insert(name, to_string(value));
+    }
+
+    template <typename T>
+    inline broker* broker::init(const string& name, T& value) {
+        string str;
+        broker* brkr = broker::init(name, str);
+        if (brkr != nullptr)
+            value = from_string<T>(str);
+        return brkr;
+    }
+
+    template <>
+    broker* broker::init(const string& name, string& value);
 
 }
 

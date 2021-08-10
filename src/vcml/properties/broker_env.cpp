@@ -22,12 +22,12 @@
 namespace vcml {
 
     broker_env::broker_env():
-        broker() {
-        /* nothing to do */
+        broker("environment", PRIO_ENVIRON) {
+        // nothing to do
     }
 
     broker_env::~broker_env() {
-        /* nothing to do */
+        // nothing to do
     }
 
     bool broker_env::lookup(const string& key, string& val)
