@@ -16,35 +16,42 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/properties/property_provider_arg.h"
+#ifndef VCML_BROKER_H
+#define VCML_BROKER_H
+
+#include "vcml/common/types.h"
+#include "vcml/common/strings.h"
 
 namespace vcml {
 
-    property_provider_arg::property_provider_arg(int argc, char** argv):
-        property_provider() {
+    class broker
+    {
+    private:
+        struct value {
+            string value;
+            int uses;
+        };
 
-        int i = 1;
-        while (++i < argc) {
-            if ((strcmp(argv[i - 1], "--config") == 0) ||
-                (strcmp(argv[i - 1],       "-c") == 0)) {
+        std::map<string, struct value> m_values;
 
-                string arg(argv[i++]);
-                string::size_type separator = arg.find('=');
+        virtual bool lookup(const string& name, string& value);
 
-                //if (separator == arg.npos)
-                //    log_warning("missing '=' in property '%s'", arg.c_str());
+    public:
+        broker();
+        virtual ~broker();
 
-                // this will cause val=key if separator was missing
-                string key = arg.substr(0, separator);
-                string val = arg.substr(separator + 1);
+        void add(const string& name, const string& value);
 
-                add(key, val);
-            }
-        }
-    }
+    private:
+        static list<broker*> brokers;
 
-    property_provider_arg::~property_provider_arg() {
-        // nothing to do
-    }
+        static void register_provider(broker* provider);
+        static void unregister_provider(broker* provider);
+
+    public:
+        static bool init(const string& name, string& value);
+    };
 
 }
+
+#endif

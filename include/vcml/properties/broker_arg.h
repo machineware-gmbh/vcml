@@ -16,40 +16,19 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PROPERTY_PROVIDER_H
-#define VCML_PROPERTY_PROVIDER_H
+#ifndef VCML_BROKER_ARG_H
+#define VCML_BROKER_ARG_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
+#include "vcml/properties/broker.h"
 
 namespace vcml {
 
-    class property_provider
+    class broker_arg: public broker
     {
-    private:
-        struct value {
-            string value;
-            int uses;
-        };
-
-        std::map<string, struct value> m_values;
-
-        virtual bool lookup(const string& name, string& value);
-
     public:
-        property_provider();
-        virtual ~property_provider();
-
-        void add(const string& name, const string& value);
-
-    private:
-        static list<property_provider*> providers;
-
-        static void register_provider(property_provider* provider);
-        static void unregister_provider(property_provider* provider);
-
-    public:
-        static bool init(const string& name, string& value);
+        broker_arg() = delete;
+        broker_arg(int argc, char** argv);
+        virtual ~broker_arg();
     };
 
 }

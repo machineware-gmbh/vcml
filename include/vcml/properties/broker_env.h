@@ -16,19 +16,21 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PROPERTY_PROVIDER_ARG_H
-#define VCML_PROPERTY_PROVIDER_ARG_H
+#ifndef VCML_BROKER_ENV_H
+#define VCML_BROKER_ENV_H
 
-#include "vcml/properties/property_provider.h"
+#include "vcml/properties/broker.h"
 
 namespace vcml {
 
-    class property_provider_arg: public property_provider
+    class broker_env: public broker
     {
+    private:
+        virtual bool lookup(const string& name, string& value);
+
     public:
-        property_provider_arg() = delete;
-        property_provider_arg(int argc, char** argv);
-        virtual ~property_provider_arg();
+        broker_env();
+        virtual ~broker_env();
     };
 
 }

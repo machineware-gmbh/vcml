@@ -16,23 +16,35 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PROPERTY_PROVIDER_ENV_H
-#define VCML_PROPERTY_PROVIDER_ENV_H
-
-#include "vcml/properties/property_provider.h"
+#include "vcml/properties/broker_arg.h"
 
 namespace vcml {
 
-    class property_provider_env: public property_provider
-    {
-    private:
-        virtual bool lookup(const string& name, string& value);
+    broker_arg::broker_arg(int argc, char** argv):
+        broker() {
 
-    public:
-        property_provider_env();
-        virtual ~property_provider_env();
-    };
+        int i = 1;
+        while (++i < argc) {
+            if ((strcmp(argv[i - 1], "--config") == 0) ||
+                (strcmp(argv[i - 1],       "-c") == 0)) {
+
+                string arg(argv[i++]);
+                string::size_type separator = arg.find('=');
+
+                //if (separator == arg.npos)
+                //    log_warning("missing '=' in property '%s'", arg.c_str());
+
+                // this will cause val=key if separator was missing
+                string key = arg.substr(0, separator);
+                string val = arg.substr(separator + 1);
+
+                add(key, val);
+            }
+        }
+    }
+
+    broker_arg::~broker_arg() {
+        // nothing to do
+    }
 
 }
-
-#endif

@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/properties/property_provider.h"
+#include "vcml/properties/broker.h"
 #include "vcml/logging/logger.h"
 
 namespace vcml {
 
-    bool property_provider::lookup(const string& name, string& value) {
+    bool broker::lookup(const string& name, string& value) {
         if (!stl_contains(m_values, name))
             return false;
 
@@ -31,12 +31,12 @@ namespace vcml {
         return true;
     }
 
-    property_provider::property_provider():
+    broker::broker():
         m_values() {
         register_provider(this);
     }
 
-    property_provider::~property_provider() {
+    broker::~broker() {
         unregister_provider(this);
 
         for (auto val: m_values) {
@@ -45,27 +45,27 @@ namespace vcml {
         }
     }
 
-    void property_provider::add(const string& name, const string& value) {
+    void broker::add(const string& name, const string& value) {
         struct value val;
         val.value = value;
         val.uses = 0;
         m_values[name] = val;
     }
 
-    list<property_provider*> property_provider::providers;
+    list<broker*> broker::brokers;
 
-    void property_provider::register_provider(property_provider* p) {
-        if (!stl_contains(providers, p))
-            providers.push_front(p);
+    void broker::register_provider(broker* p) {
+        if (!stl_contains(brokers, p))
+            brokers.push_front(p);
     }
 
-    void property_provider::unregister_provider(property_provider* p) {
-        stl_remove_erase(providers, p);
+    void broker::unregister_provider(broker* p) {
+        stl_remove_erase(brokers, p);
     }
 
-    bool property_provider::init(const string& name, string& value) {
+    bool broker::init(const string& name, string& value) {
         bool found = false;
-        for (auto provider : providers)
+        for (auto provider : brokers)
             found |= provider->lookup(name, value);
         return found;
     }

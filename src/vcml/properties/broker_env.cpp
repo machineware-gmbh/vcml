@@ -17,20 +17,20 @@
  ******************************************************************************/
 
 #include "vcml/common/systemc.h" // for SC_HIERARCHY_CHAR
-#include "vcml/properties/property_provider_env.h"
+#include "vcml/properties/broker_env.h"
 
 namespace vcml {
 
-    property_provider_env::property_provider_env():
-        property_provider() {
+    broker_env::broker_env():
+        broker() {
         /* nothing to do */
     }
 
-    property_provider_env::~property_provider_env() {
+    broker_env::~broker_env() {
         /* nothing to do */
     }
 
-    bool property_provider_env::lookup(const string& key, string& val)
+    bool broker_env::lookup(const string& key, string& val)
     {
         string nm = key;
         std::replace(nm.begin(), nm.end(), SC_HIERARCHY_CHAR, '_');

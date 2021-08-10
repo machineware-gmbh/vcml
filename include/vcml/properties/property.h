@@ -26,7 +26,7 @@
 #include "vcml/logging/logger.h"
 
 #include "vcml/properties/property_base.h"
-#include "vcml/properties/property_provider.h"
+#include "vcml/properties/broker.h"
 
 namespace vcml {
 
@@ -119,7 +119,7 @@ namespace vcml {
             m_value[i] = m_defval;
 
         string init;
-        if (property_provider::init(name(), init))
+        if (broker::init(name(), init))
             str(init);
     }
 

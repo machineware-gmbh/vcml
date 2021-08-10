@@ -64,7 +64,7 @@ TEST(property, init) {
     };
 
     int argc = sizeof(argv) / sizeof(argv[0]);
-    vcml::property_provider_arg provider(argc, const_cast<char**>(argv));
+    vcml::broker_arg broker(argc, const_cast<char**>(argv));
 
     test_component test("test");
     EXPECT_EQ((std::string)test.prop_str, "hello world");

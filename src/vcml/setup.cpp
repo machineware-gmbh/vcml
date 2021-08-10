@@ -92,7 +92,7 @@ namespace vcml {
         m_trace_files(),
         m_config_files(),
         m_loggers(),
-        m_providers() {
+        m_brokers() {
         VCML_ERROR_ON(s_instance != nullptr, "setup already created");
         s_instance = this;
 
@@ -126,17 +126,17 @@ namespace vcml {
             m_loggers.push_back(tracer);
         }
 
-        m_providers.push_back(new property_provider_arg(argc, argv));
-        m_providers.push_back(new property_provider_env());
+        m_brokers.push_back(new broker_arg(argc, argv));
+        m_brokers.push_back(new broker_env());
 
         for (string file : m_config_files)
-            m_providers.push_back(new property_provider_file(file));
+            m_brokers.push_back(new broker_file(file));
     }
 
     setup::~setup() {
         s_instance = nullptr;
 
-        for (auto provider : m_providers)
+        for (auto provider : m_brokers)
             delete provider;
         for (auto logger : m_loggers)
             delete logger;

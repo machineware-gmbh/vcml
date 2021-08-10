@@ -54,10 +54,10 @@ set(sources
     ${src}/vcml/logging/log_stream.cpp
     ${src}/vcml/logging/log_term.cpp
     ${src}/vcml/properties/property_base.cpp
-    ${src}/vcml/properties/property_provider.cpp
-    ${src}/vcml/properties/property_provider_arg.cpp
-    ${src}/vcml/properties/property_provider_env.cpp
-    ${src}/vcml/properties/property_provider_file.cpp
+    ${src}/vcml/properties/broker.cpp
+    ${src}/vcml/properties/broker_arg.cpp
+    ${src}/vcml/properties/broker_env.cpp
+    ${src}/vcml/properties/broker_file.cpp
     ${src}/vcml/debugging/symtab.cpp
     ${src}/vcml/debugging/target.cpp
     ${src}/vcml/debugging/elf_reader.cpp

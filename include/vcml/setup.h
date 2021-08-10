@@ -29,10 +29,10 @@
 #include "vcml/logging/log_stream.h"
 
 #include "vcml/properties/property.h"
-#include "vcml/properties/property_provider.h"
-#include "vcml/properties/property_provider_arg.h"
-#include "vcml/properties/property_provider_env.h"
-#include "vcml/properties/property_provider_file.h"
+#include "vcml/properties/broker.h"
+#include "vcml/properties/broker_arg.h"
+#include "vcml/properties/broker_env.h"
+#include "vcml/properties/broker_file.h"
 
 namespace vcml {
 
@@ -49,7 +49,7 @@ namespace vcml {
         vector<string>  m_config_files;
 
         vector<logger*> m_loggers;
-        vector<property_provider*> m_providers;
+        vector<broker*> m_brokers;
 
         bool parse_command_line(int argc, char** argv);
 

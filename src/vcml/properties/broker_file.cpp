@@ -17,11 +17,11 @@
  ******************************************************************************/
 
 #include "vcml/logging/logger.h"
-#include "vcml/properties/property_provider_file.h"
+#include "vcml/properties/broker_file.h"
 
 namespace vcml {
 
-    void property_provider_file::parse_file(const string& filename) {
+    void broker_file::parse_file(const string& filename) {
         int lno = 0;
         string line, buffer = "";
         ifstream file(filename.c_str());
@@ -70,13 +70,13 @@ namespace vcml {
         }
     }
 
-    void property_provider_file::replace(string& str) {
+    void broker_file::replace(string& str) {
         for (auto it : m_replacements)
             vcml::replace(str, it.first, it.second);
     }
 
-    property_provider_file::property_provider_file(const string& filepath):
-        property_provider(),
+    broker_file::broker_file(const string& filepath):
+        broker(),
         m_filename(filepath),
         m_replacements() {
         m_replacements["$dir"] = dirname(filepath);
@@ -89,7 +89,7 @@ namespace vcml {
         parse_file(filepath);
     }
 
-    property_provider_file::~property_provider_file() {
+    broker_file::~broker_file() {
         // nothing to do
     }
 

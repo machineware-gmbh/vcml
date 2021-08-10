@@ -16,14 +16,14 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PROPERTY_PROVIDER_FILE_H
-#define VCML_PROPERTY_PROVIDER_FILE_H
+#ifndef VCML_BROKER_FILE_H
+#define VCML_BROKER_FILE_H
 
-#include "vcml/properties/property_provider.h"
+#include "vcml/properties/broker.h"
 
 namespace vcml {
 
-    class property_provider_file: public property_provider
+    class broker_file: public broker
     {
     private:
         string m_filename;
@@ -33,9 +33,9 @@ namespace vcml {
         void replace(string& str);
 
     public:
-        property_provider_file() = delete;
-        property_provider_file(const string& filename);
-        virtual ~property_provider_file();
+        broker_file() = delete;
+        broker_file(const string& filename);
+        virtual ~broker_file();
     };
 
 }
