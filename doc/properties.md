@@ -8,13 +8,13 @@ the `size` property of memories or the `backends` property of peripherals. Both
 of them can be adapted during simulation start to suit different needs, e.g.
 testing out larger or smaller memories. To find out which models expose which
 properties check out the corresponding section from their documentation.
-Properties can be provided with values using *Property Providers*:
+Properties can be provided with values using *Property Brokers*:
 
-* `vcml::property_provider_file`: property values are retrieved from a text file.
+* `vcml::broker_file`: property values are retrieved from a text file.
 
-* `vcml::property_provider_arg`: property values are taken from the command line
+* `vcml::broker_arg`: property values are taken from the command line
 
-* `vcml::property_provider_env`: property values are retrieved from environment
+* `vcml::broker_env`: property values are retrieved from environment
 variables.
 
 ----
@@ -102,7 +102,7 @@ std::istream& operator >> (std::istream& is, my_data_type& val) {
 }
 ```
 
-If you do not want to use property providers, you can still initialize your
+If you do not want to use property brokers, you can still initialize your
 property directly from a string using `vcml::property<T>::str(string s)`, e.g.
 `my_property.str("17")` assigns the integer value `17` to `my_property`. Note
 that commas have a special meaning within initialization strings (see Array
@@ -157,30 +157,31 @@ my_property.str("my\\,string\\,with\\,commas");
 ```
 
 ----
-## Property Providers
-Property Providers are used to assign values to properties. Fundamentally, a
-Property Provider is a key value store, where the keys are the names of the
+## Property Brokers
+Property Brokers are used to assign values to properties. Fundamentally, a
+Property Broker is a key value store, where the keys are the names of the
 properties and the values are their corresponding values in string form. This
-functionality is provided within the `vcml::property_provider` base class that
-is used by all property providers.
+functionality is provided within the `vcml::broker` base class that is used by
+all property brokers.
 
-All property providers are kept in a list which is used by all properties while
-looking for an initialization value. New providers are added to the front of
-this list: **the earlier the provider is created in your program, the higher
-its priority for assigning property values**. Newly created properties iterate
+All property brokers are kept in a list which is used by all properties while
+looking for an initialization value. New providers are added in descending
+priority order of the brokers: **higher priority brokers override property
+initializations by lower priority brokers**. Newly created properties iterate
 over this list front to back and ask each encountered provider for an
 initialization value by passing its full name. This process stops once all
-of the providers have been asked, with the last provided value being reported
+of the providers have been asked, with the first provided value being reported
 back. If no provider had a suitable initialization value, the property uses its
 default value specified in its constructor.
 
-VCML includes a set of default property providers that you can use to assign
+VCML includes a set of default property brokers that you can use to assign
 values to properties. They are presented in the following.
 
+----
 ### Configuration via Files
-`vcml::property_provider_file` opens a text file it is given via its constructor
-and opens it for reading. While reading, it skips over empty lines and lines
-starting with '#' (comments), looking for the following syntax:
+`vcml::broker_file` opens a text file it is given via its constructor and opens
+it for reading. While reading, it skips over empty lines and lines starting
+with '#' (comments), looking for the following syntax:
 
 ```
 full.name.of.property = value_of_property   # this comment is ignored
@@ -194,17 +195,22 @@ full.name.of.property = \
 ```
 
 Within configuration files, you can use a few variables which will be replaced
-by the provider with its runtime values:
+by the broker with its runtime values:
 
-| Variable | Description                         |
-| -------- | ----------------------------------- |
-| `$dir`   | Directory of the configuration file |
-| `...`    | *to be extended in the future*      |
+| Variable | Description                           |
+| -------- | ------------------------------------- |
+| `$dir`   | Directory of the configuration file   |
+| `$cfg`   | Configuration file name (without ext) |
+| `$app`   | Full path of simulation binary        |
+| `$pwd`   | Current working directory             |
+| `$tmp`   | Directory for temporary files         |
+| `$usr`   | User that started the simulation      |
+| `$pid`   | PID of the simulation process         |
 
 ----
 ### Configuration via the Command Line
-`vcml::property_provider_arg` takes `argc` and `argv` from `sc_main` and looks
-for configuration arguments. A configuration argument is introduced using `-c`
+`vcml::broker_arg` takes `argc` and `argv` from `sc_main` and looks for
+configuration arguments. A configuration argument is introduced using `-c`
 followed by a key value pair `name=value`. Example:
 
 ```
@@ -216,8 +222,8 @@ the property `str_prop` of the same module with `hello world`.
 
 ----
 ### Configuration via the Environment
-`vcml::property_provider_env` looks for environment variables that are suitable
-for initializing properties. To be eligible, the environment variable must be
+`vcml::broker_env` looks for environment variables that are suitable for
+initializing properties. To be eligible, the environment variable must be
 named according to the full name of the property it initializes, having dots `.`
 replaced with underscores `_`:
 
@@ -231,17 +237,17 @@ would also receive that value.
 
 ----
 ### Configuration using Custom Providers
-All custom property providers should inherit from `vcml::property_provider`.
+All custom property brokers should inherit from `vcml::broker`.
 Afterwards, two options exist for providing initialization values:
 
-* via the key value store: using the `add_key(string key, string val)` method
+* via the key value store: using the `define(string key, string val)` method
 new entries can be added to the key value store that will be assigned to
 properties automatically.
 
-* via overriding the method
-`bool property_provider::lookup(string name, string& val)`, which will be called for
-every property requesting an initialization value. This method should return
-`true` when a suitable value has been found and `false` otherwise.
+* via overriding the method `bool broker::lookup(const string key, string& val)`,
+which will be called for every property requesting an initialization value.
+This method should return `true` when a suitable value has been found and
+`false` otherwise.
 
 ----
-Documentation updated December 2018
+Documentation updated December 2021
