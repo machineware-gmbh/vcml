@@ -143,7 +143,7 @@ TEST(logging, hierarchy) {
     logger.set_level(vcml::LOG_DEBUG);
 
     vcml::broker broker("test");
-    broker.insert("mock1.loglvl", "debug");
+    broker.define("mock1.loglvl", "debug");
 
     mock_component comp("mock1");
     EXPECT_EQ(comp.loglvl.get(), vcml::LOG_DEBUG);
