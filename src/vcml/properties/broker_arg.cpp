@@ -38,7 +38,7 @@ namespace vcml {
                 string key = arg.substr(0, separator);
                 string val = arg.substr(separator + 1);
 
-                insert(key, val);
+                define(key, val);
             }
         }
     }

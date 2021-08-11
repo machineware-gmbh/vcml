@@ -36,6 +36,7 @@ namespace vcml {
         broker_file() = delete;
         broker_file(const string& filename);
         virtual ~broker_file();
+        VCML_KIND(broker_file);
     };
 
 }

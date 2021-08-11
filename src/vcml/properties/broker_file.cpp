@@ -66,7 +66,7 @@ namespace vcml {
             val = trim(val);
 
             replace(val);
-            insert(key, val);
+            define(key, val);
         }
     }
 

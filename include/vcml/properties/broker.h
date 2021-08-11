@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
 
 namespace vcml {
 
@@ -51,32 +52,36 @@ namespace vcml {
         broker(const string& name, int priority = PRIO_DEFAULT);
         virtual ~broker();
 
-        virtual bool provides(const string& name) const;
-        virtual bool lookup(const string& name, string& value);
+        virtual bool lookup(const string& key, string& value);
+
+        virtual bool defines(const string& key) const;
 
         template <typename T>
-        void insert(const string& name, const T& value);
+        void define(const string& key, const T& value);
 
         template <typename T>
-        static broker* init(const string& name, T& value);
+        static broker* init(const string& key, T& value);
+
+        static vector<pair<string, broker*>> collect_unused();
+        static void report_unused();
     };
 
     template <typename T>
-    inline void broker::insert(const string& name, const T& value) {
-        insert(name, to_string(value));
+    inline void broker::define(const string& key, const T& value) {
+        define(key, to_string(value));
     }
 
     template <typename T>
-    inline broker* broker::init(const string& name, T& value) {
+    inline broker* broker::init(const string& key, T& value) {
         string str;
-        broker* brkr = broker::init(name, str);
+        broker* brkr = broker::init(key, str);
         if (brkr != nullptr)
             value = from_string<T>(str);
         return brkr;
     }
 
     template <>
-    broker* broker::init(const string& name, string& value);
+    broker* broker::init(const string& key, string& value);
 
 }
 

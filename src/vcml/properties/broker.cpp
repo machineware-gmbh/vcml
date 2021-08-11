@@ -27,53 +27,78 @@ namespace vcml {
         }
     };
 
-    static set<broker*, priority_compare> brokers;
-
+    static set<broker*, priority_compare> g_brokers;
 
     broker::broker(const string& nm, int prio):
         m_name(nm),
         m_values(),
         priority(prio) {
-        brokers.insert(this);
+        g_brokers.insert(this);
     }
 
     broker::~broker() {
-        brokers.erase(this);
-
-        for (auto val: m_values) {
-            if (val.second.uses == 0)
-                log_warn("unused property '%s'", val.first.c_str());
-        }
+        g_brokers.erase(this);
     }
 
-    bool broker::provides(const string& name) const {
-        return stl_contains(m_values, name);
-    }
-
-    bool broker::lookup(const string& name, string& value) {
-        if (!stl_contains(m_values, name))
+    bool broker::lookup(const string& key, string& value) {
+        if (!stl_contains(m_values, key))
             return false;
 
-        auto& val = m_values[name];
+        auto& val = m_values[key];
         value = val.value;
         val.uses++;
         return true;
     }
 
+    bool broker::defines(const string& key) const {
+        return stl_contains(m_values, key);
+    }
+
     template <>
-    void broker::insert(const string& name, const string& value) {
+    void broker::define(const string& key, const string& value) {
         struct value val;
         val.value = value;
         val.uses = 0;
-        m_values[name] = val;
+        m_values[key] = val;
     }
 
     template <>
     broker* broker::init(const string& name, string& value) {
-        for (auto broker : brokers)
+        for (auto broker : g_brokers)
             if (broker->lookup(name, value))
                 return broker;
         return nullptr;
     }
 
+    vector<pair<string, broker*>> broker::collect_unused() {
+        vector<pair<string, broker*>> unused;
+        for (auto& brkr : g_brokers) {
+            for (auto& value : brkr->m_values)
+                if (value.second.uses == 0)
+                    unused.push_back({value.first, brkr});
+        }
+
+        for (auto& brkr : g_brokers) {
+            for (auto& value : brkr->m_values) {
+                if (value.second.uses > 0) {
+                    stl_remove_erase_if(unused,
+                    [&](const pair<string, broker*>& entry) -> bool {
+                        return entry.first == value.first;
+                    });
+                }
+            }
+        }
+
+        return unused;
+    }
+
+    void broker::report_unused() {
+        auto unused = collect_unused();
+        if (unused.empty())
+            return;
+
+        log_warn("unused properties:");
+        for (auto& prop : unused)
+            log_warn("  %s (%s)", prop.first.c_str(), prop.second->name());
+    }
 }

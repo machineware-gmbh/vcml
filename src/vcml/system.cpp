@@ -56,6 +56,7 @@ namespace vcml {
     }
 
     int system::run() {
+        broker::report_unused();
         tlm::tlm_global_quantum::instance().set(quantum);
         if (session >= 0) {
             vcml::debugging::vspserver vspsession(session);

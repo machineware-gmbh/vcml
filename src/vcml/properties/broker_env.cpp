@@ -16,7 +16,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/common/systemc.h" // for SC_HIERARCHY_CHAR
 #include "vcml/properties/broker_env.h"
 
 namespace vcml {
@@ -30,9 +29,14 @@ namespace vcml {
         // nothing to do
     }
 
-    bool broker_env::lookup(const string& key, string& val)
-    {
-        string nm = key;
+    bool broker_env::defines(const string& name) const {
+        string nm = name;
+        std::replace(nm.begin(), nm.end(), SC_HIERARCHY_CHAR, '_');
+        return std::getenv(nm.c_str()) != nullptr;
+    }
+
+    bool broker_env::lookup(const string& name, string& val) {
+        string nm = name;
         std::replace(nm.begin(), nm.end(), SC_HIERARCHY_CHAR, '_');
 
         const char* env = std::getenv(nm.c_str());

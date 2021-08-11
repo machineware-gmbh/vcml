@@ -25,12 +25,13 @@ namespace vcml {
 
     class broker_env: public broker
     {
-    private:
-        virtual bool lookup(const string& name, string& value);
-
     public:
         broker_env();
         virtual ~broker_env();
+        VCML_KIND(broker_env);
+
+        virtual bool defines(const string& name) const override;
+        virtual bool lookup(const string& name, string& value) override;
     };
 
 }
