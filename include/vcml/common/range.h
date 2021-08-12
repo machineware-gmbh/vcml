@@ -89,21 +89,17 @@ namespace vcml {
     }
 
     inline range::range(): start(0), end(0) {
-        /* nothing to do */
+        // nothing to do
     }
 
     inline range::range(u64 s, u64 e): start(s), end(e) {
-        VCML_ERROR_ON(s > e, "invalid range specified: %016lx..%016lx", s, e);
+        // allow zero-sized ranges
+        VCML_ERROR_ON(e + 1 < s, "invalid range: %016lx..%016lx", s, e);
     }
 
     inline range::range(const tlm_generic_payload& tx):
         start(tx.get_address()),
-        end(tx.get_address() + tx.get_streaming_width() - 1) {
-        if (tx.get_streaming_width() == 0) {
-            end = tx.get_address() + tx.get_data_length() - 1;
-            if (tx.get_data_length() == 0)
-                end = start;
-        }
+        end(tx.get_address() + tx_size(tx) - 1) {
     }
 
     inline range::range(const tlm_dmi& dmi):
