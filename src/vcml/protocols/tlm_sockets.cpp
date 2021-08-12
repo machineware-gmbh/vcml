@@ -260,21 +260,21 @@ namespace vcml {
         while (self != m_curr)
             sc_core::wait(m_free_ev);
 
-        if (tx_is_excl(tx) && tx.is_read()) {
-            unmap_dmi(tx.get_address(),
-                      tx.get_address() + tx.get_data_length() - 1);
+        if (tx_is_excl(tx) && tx.is_read())
+            unmap_dmi(tx);
+
+        tx.set_dmi_allowed(false);
+
+        if (m_host->allow_dmi) {
+            tlm_dmi dmi;
+            if (m_dmi_cache.lookup(tx, dmi))
+                tx.set_dmi_allowed(true);
         }
 
-        tlm_dmi dmi;
-        if (m_dmi_cache.lookup(tx, dmi))
-            tx.set_dmi_allowed(true);
-
-        if (m_exmon.update(tx)) {
+        if (m_exmon.update(tx))
             m_host->b_transport(*this, tx, dt);
-        } else {
-            tx.set_dmi_allowed(false);
-            tx.set_response_status(tlm::TLM_OK_RESPONSE);
-        }
+        else
+            tx.set_response_status(TLM_OK_RESPONSE);
 
         m_curr++;
         m_free_ev.notify();
@@ -291,6 +291,9 @@ namespace vcml {
         dmi.allow_read_write();
         dmi.set_start_address(0);
         dmi.set_end_address((sc_dt::uint64)-1);
+
+        if (!m_host->allow_dmi)
+            return false;
 
         if (!m_dmi_cache.lookup(tx, dmi))
             return false;
