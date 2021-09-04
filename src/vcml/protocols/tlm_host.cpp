@@ -106,7 +106,7 @@ namespace vcml {
             VCML_ERROR("attempt to sync outside of SC_THREAD process");
 
         sc_time& offset = local_time(proc);
-        wait(offset);
+        sc_core::wait(offset);
         offset = SC_ZERO_TIME;
     }
 
