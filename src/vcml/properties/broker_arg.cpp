@@ -20,7 +20,7 @@
 
 namespace vcml {
 
-    broker_arg::broker_arg(int argc, char** argv):
+    broker_arg::broker_arg(int argc, const char* const* argv):
         broker("cmdline", PRIO_CMDLINE) {
 
         int i = 1;

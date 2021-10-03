@@ -27,7 +27,7 @@ namespace vcml {
     {
     public:
         broker_arg() = delete;
-        broker_arg(int argc, char** argv);
+        broker_arg(int argc, const char* const* argv);
         virtual ~broker_arg();
         VCML_KIND(broker_arg);
     };
