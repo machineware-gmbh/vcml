@@ -90,6 +90,7 @@ set(sources
     ${src}/vcml/protocols/tlm_sockets.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
+    ${src}/vcml/protocols/pci.cpp
     ${src}/vcml/protocols/virtio.cpp
     ${src}/vcml/module.cpp
     ${src}/vcml/component.cpp
@@ -112,6 +113,8 @@ set(sources
     ${src}/vcml/models/generic/sdhci.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/generic/pci_device.cpp
+    ${src}/vcml/models/generic/pci_host.cpp
     ${src}/vcml/models/meta/loader.cpp
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp

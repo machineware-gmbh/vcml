@@ -66,6 +66,7 @@
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
+#include "vcml/protocols/pci.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"
@@ -92,6 +93,8 @@
 #include "vcml/models/generic/sdhci.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
+#include "vcml/models/generic/pci_host.h"
+#include "vcml/models/generic/pci_device.h"
 
 #include "vcml/models/meta/loader.h"
 #include "vcml/models/meta/simdev.h"
