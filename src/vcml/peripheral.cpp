@@ -70,9 +70,12 @@ namespace vcml {
         if (stl_contains(m_registers, reg))
             VCML_ERROR("register %s already assigned", reg->name());
 
-        for (auto r : m_registers)
+        for (auto r : m_registers) {
             if (r->get_range().overlaps(reg->get_range()) && reg->as == r->as)
-                VCML_ERROR("register address space already in use");
+                VCML_ERROR("address space of register %s (%d: %s) already in "
+                           "use by register %s", reg->name(), reg->as,
+                           to_string(reg->get_range()).c_str(), r->name());
+        }
 
         m_registers.push_back(reg);
         std::sort(m_registers.begin(), m_registers.end(),
