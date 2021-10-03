@@ -278,6 +278,83 @@ namespace vcml {
 
     bool sim_running();
 
+    template <typename SOCKET, const size_t LIMIT = SIZE_MAX>
+    class socket_array
+    {
+    public:
+        typedef unordered_map<size_t, SOCKET*> map_type;
+        typedef unordered_map<const SOCKET*, size_t> revmap_type;
+        typedef typename map_type::iterator iterator;
+        typedef typename map_type::const_iterator const_iterator;
+
+    private:
+        string m_name;
+        size_t m_next;
+        address_space m_space;
+        sc_module* m_parent;
+        map_type m_sockets;
+        revmap_type m_ids;
+
+        SOCKET& lookup(size_t idx) {
+            SOCKET*& socket = m_sockets[idx];
+            if (socket)
+                return *socket;
+
+            VCML_ERROR_ON(idx >= LIMIT, "socket out of bounds: %zu", idx);
+            hierarchy_guard guard(m_parent);
+            string nm = mkstr("%s[%zu]", m_name.c_str(), idx);
+            socket = new SOCKET(nm.c_str(), m_space);
+            m_ids[socket] = idx;
+            return *socket;
+        }
+
+    public:
+        const char* name() const { return m_name.c_str(); }
+
+        socket_array(const char* nm, address_space as = VCML_AS_DEFAULT):
+            m_name(nm), m_next(0), m_space(as),
+            m_parent(hierarchy_top()), m_sockets() {
+            VCML_ERROR_ON(!m_parent, "port_array outside sc_module");
+        }
+
+        virtual ~socket_array() {
+            for (auto socket : m_sockets)
+                delete socket.second;
+        }
+
+        iterator begin() { return m_sockets.begin(); }
+        iterator end()   { return m_sockets.end(); }
+
+        const_iterator begin() const { return m_sockets.cbegin(); }
+        const_iterator end()   const { return m_sockets.cend(); }
+
+        SOCKET& operator[] (size_t idx) { return lookup(idx); }
+        const SOCKET& operator[] (size_t idx) const {
+            VCML_ERROR_ON(!exists(idx), "socket %zu not found", idx);
+            return *m_sockets[idx];
+        }
+
+        const char* name() { return m_name.c_str(); }
+        size_t count() const { return m_sockets.size(); }
+        bool exists(size_t idx) const { return stl_contains(m_sockets, idx); }
+        size_t next_index() const { return m_next; }
+        SOCKET& next() { return operator [] (next_index()); }
+
+        size_t index_of(const SOCKET& socket) const {
+            auto it = m_ids.find(&socket);
+            if (it == m_ids.end())
+                VCML_ERROR("socket %s not part of %s", socket.name(), name());
+            return it->second;
+        }
+
+        set<size_t> all_keys() const {
+            set<size_t> keys;
+            for (const auto& socket : m_sockets)
+                keys.insert(socket.first);
+            return keys;
+        }
+    };
+
 }
 
 namespace sc_core {
