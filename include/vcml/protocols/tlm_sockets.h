@@ -58,7 +58,7 @@ namespace vcml {
         void set_level(int level);
 
         tlm_initiator_socket() = delete;
-        tlm_initiator_socket(const char* name);
+        tlm_initiator_socket(const char* n, address_space a = VCML_AS_DEFAULT);
         virtual ~tlm_initiator_socket();
 
         VCML_KIND(tlm_initiator_socket);
@@ -291,6 +291,12 @@ namespace vcml {
     inline void tlm_target_socket::bind<64>(tlm::tlm_target_socket<64>& s) {
         base_type::bind(s);
     }
+
+    template <const size_t MAX = SIZE_MAX>
+    using tlm_initiator_socket_array = socket_array<tlm_initiator_socket, MAX>;
+
+    template <const size_t MAX = SIZE_MAX>
+    using tlm_target_socket_array = socket_array<tlm_target_socket, MAX>;
 
 }
 

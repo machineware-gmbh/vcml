@@ -26,7 +26,8 @@ namespace vcml {
         m_host->invalidate_direct_mem_ptr(*this, start, end);
     }
 
-    tlm_initiator_socket::tlm_initiator_socket(const char* nm):
+    tlm_initiator_socket::tlm_initiator_socket(const char* nm,
+        address_space space):
         simple_initiator_socket<tlm_initiator_socket, 64>(nm),
         m_tx(),
         m_txd(),
