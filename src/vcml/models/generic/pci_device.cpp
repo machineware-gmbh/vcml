@@ -111,16 +111,19 @@ namespace vcml { namespace generic {
         PCI_DEVICE_ID(PCI_AS_CFG, "PCI_DEVICE_ID", 0x2, cfg.device_id),
         PCI_COMMAND(PCI_AS_CFG, "PCI_COMMAND", 0x4, 0),
         PCI_STATUS(PCI_AS_CFG, "PCI_STATUS", 0x6, PCI_STATUS_INIT(cfg.pcie)),
-        PCI_REV_ID(PCI_AS_CFG, "PCI_REV_ID", 0x8, cfg.revision_id),
+        PCI_CLASS(PCI_AS_CFG, "PCI_CLASS", 0x8, cfg.class_code),
+        PCI_CACHE_LINE(PCI_AS_CFG, "PCI_CACHE_LINE", 0xc, 0),
+        PCI_LATENCY_TIMER(PCI_AS_CFG, "PCI_LATENCY_TIMER", 0xd, 0),
         PCI_HEADER_TYPE(PCI_AS_CFG, "PCI_HEADER_TYPE", 0xe, 0),
+        PCI_BIST(PCI_AS_CFG, "PCI_BIST", 0xf, 0),
         PCI_BAR(PCI_AS_CFG, "PCI_BAR", 0x10, PCI_BAR_UNMAPPED),
         PCI_SUBVENDOR_ID(PCI_AS_CFG,"PCI_SUBVENDOR_ID",0x2c, cfg.subvendor_id),
         PCI_SUBDEVICE_ID(PCI_AS_CFG,"PCI_SUBDEVICE_ID",0x2e, cfg.subsystem_id),
         PCI_CAP_PTR(PCI_AS_CFG, "PCI_CAP_PTR", 0x34, 0),
         PCI_INT_LINE(PCI_AS_CFG, "PCI_INT_LINE", 0x3c, 0),
         PCI_INT_PIN(PCI_AS_CFG, "PCI_INT_PIN", 0x3d, cfg.int_pin),
-        PCI_MIN_GRANT(PCI_AS_CFG, "PCI_MIN_GRANT", 0x3e, cfg.min_grant),
-        PCI_MAX_LATENCY(PCI_AS_CFG, "PCI_MAX_LATENCY", 0x3f, cfg.max_latency),
+        PCI_MIN_GRANT(PCI_AS_CFG, "PCI_MIN_GRANT", 0x3e, pci_min_grant(cfg)),
+        PCI_MAX_LATENCY(PCI_AS_CFG, "PCI_MAX_LATENCY", 0x3f, pci_max_lat(cfg)),
         PCIE_XCAP(PCI_AS_CFG, "PCIE_XCAP", 0x100, 0),
         pci_cap_ptr(0),
         pci_cap_off(64),
@@ -143,11 +146,20 @@ namespace vcml { namespace generic {
         PCI_STATUS.sync_always();
         PCI_STATUS.write = &pci_device::write_STATUS;
 
-        PCI_REV_ID.allow_read_only();
-        PCI_REV_ID.sync_never();
+        PCI_CLASS.allow_read_only();
+        PCI_CLASS.sync_never();
+
+        PCI_CACHE_LINE.allow_read_write();
+        PCI_CACHE_LINE.sync_never();
+
+        PCI_LATENCY_TIMER.allow_read_write();
+        PCI_LATENCY_TIMER.sync_never();
 
         PCI_HEADER_TYPE.allow_read_only();
         PCI_HEADER_TYPE.sync_never();
+
+        PCI_BIST.allow_read_write();
+        PCI_BIST.sync_always();
 
         PCI_BAR.allow_read_write();
         PCI_BAR.sync_always();

@@ -114,8 +114,11 @@ namespace vcml { namespace generic {
         reg<pci_device, u16> PCI_DEVICE_ID;
         reg<pci_device, u16> PCI_COMMAND;
         reg<pci_device, u16> PCI_STATUS;
-        reg<pci_device, u8 > PCI_REV_ID;
+        reg<pci_device, u32> PCI_CLASS;
+        reg<pci_device, u8 > PCI_CACHE_LINE;
+        reg<pci_device, u8 > PCI_LATENCY_TIMER;
         reg<pci_device, u8 > PCI_HEADER_TYPE;
+        reg<pci_device, u8 > PCI_BIST;
         reg<pci_device, u32, PCI_NUM_BARS> PCI_BAR;
         reg<pci_device, u16> PCI_SUBVENDOR_ID;
         reg<pci_device, u16> PCI_SUBDEVICE_ID;

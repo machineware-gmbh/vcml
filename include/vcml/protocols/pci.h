@@ -142,11 +142,7 @@ namespace vcml {
         u16     device_id;
         u16     subvendor_id;
         u16     subsystem_id;
-        u8      class_code;
-        u8      subclass;
-        u8      prog_if;
-        u8      revision_id;
-        u8      cache_line_size;
+        u32     class_code;
         u8      latency_timer;
         u8      max_latency;
         u8      min_grant;
@@ -154,6 +150,18 @@ namespace vcml {
         bool    msi;
         u16     msi_control;
     };
+
+    constexpr u32 pci_class_code(u8 code, u8 subclass, u8 prog, u8 rev) {
+        return (u32)code << 24 | (u32)subclass << 16 | (u32)prog << 8 | rev;
+    }
+
+    constexpr u8 pci_max_lat(const pci_config& cfg) {
+        return cfg.pcie ? 0u : cfg.max_latency;
+    }
+
+    constexpr u8 pci_min_grant(const pci_config& cfg) {
+        return cfg.pcie ? 0u : cfg.min_grant;
+    }
 
     enum pci_cap_id : u8 {
         PCI_CAPABILITY_PM   = 0x1,
