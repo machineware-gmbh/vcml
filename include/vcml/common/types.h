@@ -52,6 +52,9 @@
 #define VCML_DECL_PRINTF(strpos, argpos) \
     __attribute__ ((format (printf, (strpos), (argpos))))
 
+#define VCML_DECL_PACKED \
+    __attribute__ ((packed))
+
 namespace vcml {
 
     typedef uint8_t  u8;
@@ -113,6 +116,7 @@ namespace vcml {
     using std::list;
     using std::queue;
     using std::deque;
+    using std::array;
     using std::vector;
     using std::set;
     using std::unordered_set;
