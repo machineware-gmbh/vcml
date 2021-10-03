@@ -37,6 +37,9 @@ using namespace ::vcml;
 #define EXPECT_AE(tlmcall) EXPECT_EQ(tlmcall, TLM_ADDRESS_ERROR_RESPONSE)
 #define EXPECT_CE(tlmcall) EXPECT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
 
+#define EXPECT_SUCCESS(fn) EXPECT_TRUE(vcml::success(fn))
+#define EXPECT_FAILURE(fn) EXPECT_TRUE(vcml::failure(fn))
+
 class test_base: public component
 {
 private:
