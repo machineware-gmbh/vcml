@@ -80,8 +80,8 @@ public:
         data = 0x1234;
 
         vector<const char*> expected = {
-            ">> WR 0x0000000000000420 [34 12 00 00] (TLM_INCOMPLETE_RESPONSE)",
-            "<< WR 0x0000000000000420 [34 12 00 00] (TLM_OK_RESPONSE)",
+            ">> WR 0x00000420 [34 12 00 00] (TLM_INCOMPLETE_RESPONSE)",
+            "<< WR 0x00000420 [34 12 00 00] (TLM_OK_RESPONSE)",
         };
 
         for (auto trace : expected)

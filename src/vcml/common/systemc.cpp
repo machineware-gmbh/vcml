@@ -98,7 +98,7 @@ namespace vcml {
         // address
         ss << "0x";
         ss << std::hex;
-        ss.width(16);
+        ss.width(tx.get_address() > ~0u ? 16 : 8);
         ss.fill('0');
         ss << tx.get_address();
 
