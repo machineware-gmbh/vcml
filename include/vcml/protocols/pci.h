@@ -147,8 +147,6 @@ namespace vcml {
         u8      max_latency;
         u8      min_grant;
         pci_irq int_pin;
-        bool    msi;
-        u16     msi_control;
     };
 
     constexpr u32 pci_class_code(u8 code, u8 subclass, u8 prog, u8 rev) {
@@ -167,6 +165,32 @@ namespace vcml {
         PCI_CAPABILITY_PM   = 0x1,
         PCI_CAPABILITY_MSI  = 0x5,
         PCI_CAPABILITY_MSIX = 0x11,
+    };
+
+    enum pci_pm_caps : u16 {
+        PCI_PM_CAP_VER_1_1   = 2 << 0,
+        PCI_PM_CAP_VER_1_2   = 3 << 0,
+        PCI_PM_CAP_PME_CLOCK = 1 << 3,
+        PCI_PM_CAP_DSI       = 1 << 5,
+        PCI_PM_CAP_AUX_POWER = 7 << 6,
+        PCI_PM_CAP_CAP_D1    = 1 << 9,
+        PCI_PM_CAP_CAP_D2    = 1 << 10,
+        PCI_PM_CAP_DME_D0    = 1 << 11,
+        PCI_PM_CAP_DME_D1    = 1 << 12,
+        PCI_PM_CAP_DME_D2    = 1 << 13,
+        PCI_PM_CAP_DME_D3H   = 1 << 14,
+        PCI_PM_CAP_DME_D3C   = 1 << 15,
+    };
+
+    enum pci_pm_control : u32 {
+        PCI_PM_CTRL_PSTATE_D0  = 0,
+        PCI_PM_CTRL_PSTATE_D1  = 1,
+        PCI_PM_CTRL_PSTATE_D2  = 2,
+        PCI_PM_CTRL_PSTATE_D3H = 3,
+        PCI_PM_CTRL_PME_ENABLE = 1 << 8,
+        PCI_PM_CTRL_DATA_SEL   = 15 << 9,
+        PCI_PM_CTRL_DATA_SCALE = 3 << 13,
+        PCI_PM_CTRL_PME        = 1 << 15,
     };
 
     enum pci_msi_control : u16 {

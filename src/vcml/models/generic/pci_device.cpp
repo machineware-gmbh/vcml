@@ -50,6 +50,23 @@ namespace vcml { namespace generic {
             delete CAP_NEXT;
     }
 
+    pci_cap_pm::pci_cap_pm(pci_device* dev, u16 caps):
+        pci_capability(dev, PCI_CAPABILITY_PM),
+        PM_CAPS(),
+        PM_CTRL() {
+
+        PM_CAPS = dev->new_cap_reg_ro<u16>("PCI_PM_CAPS", caps);
+        PM_CTRL = dev->new_cap_reg_rw<u32>("PCI_PM_CTRL", 0);
+        PM_CTRL->write = &pci_device::write_PM_CTRL;
+    }
+
+    pci_cap_pm::~pci_cap_pm() {
+        if (PM_CAPS)
+            delete PM_CAPS;
+        if (PM_CTRL)
+            delete PM_CTRL;
+    }
+
     void pci_cap_msi::set_pending(unsigned int vector, bool set) {
         if (!MSI_PENDING)
             return;
@@ -71,7 +88,7 @@ namespace vcml { namespace generic {
         MSI_MASK(),
         MSI_PENDING() {
         MSI_CONTROL = dev->new_cap_reg_rw<u16>("PCI_CAP_MSI_CONTROL", control);
-        MSI_CONTROL->write = &pci_device::write_MSI_CONTROL;
+        MSI_CONTROL->write = &pci_device::write_MSI_CTRL;
         MSI_ADDR = dev->new_cap_reg_rw<u32>("PCI_CAP_MSI_ADDR", 0);
         MSI_ADDR->write = &pci_device::write_MSI_ADDR;
 
@@ -129,6 +146,7 @@ namespace vcml { namespace generic {
         pci_cap_off(64),
         m_bars(),
         m_irq(PCI_IRQ_NONE),
+        m_pm(nullptr),
         m_msi(nullptr),
         m_msi_notify("msi_notify") {
 
@@ -184,13 +202,6 @@ namespace vcml { namespace generic {
         PCIE_XCAP.allow_read_only();
         PCIE_XCAP.sync_never();
 
-        SC_HAS_PROCESS(pci_device);
-
-        if (cfg.msi) {
-            m_msi = new pci_cap_msi(this, cfg.msi_control);
-            SC_THREAD(msi_process);
-        }
-
         for (u32 i = 0; i < PCI_NUM_BARS; i++) {
             m_bars[i].barno = i;
             m_bars[i].size = 0;
@@ -229,6 +240,18 @@ namespace vcml { namespace generic {
         m_bars[barno].is_prefetch = is_prefetch;
         m_bars[barno].addr_lo = PCI_BAR_UNMAPPED & ~(size - 1);
         m_bars[barno].addr_hi = is_64 ? PCI_BAR_UNMAPPED : 0u;
+    }
+
+    void pci_device::declare_pm_cap(u16 pm_caps) {
+        VCML_ERROR_ON(m_pm, "PCI_CAP_PM already declared");
+        m_pm = new pci_cap_pm(this, pm_caps);
+    }
+
+    void pci_device::declare_msi_cap(u16 msi_ctrl) {
+        VCML_ERROR_ON(m_msi, "PCI_CAP_MSI already declared");
+        m_msi = new pci_cap_msi(this, msi_ctrl);
+        SC_HAS_PROCESS(pci_device);
+        SC_THREAD(msi_process);
     }
 
     void pci_device::interrupt(bool state, unsigned int vector) {
@@ -329,7 +352,14 @@ namespace vcml { namespace generic {
         return PCI_STATUS & ~(val & mask);
     }
 
-    u16 pci_device::write_MSI_CONTROL(u16 val) {
+    u32 pci_device::write_PM_CTRL(u32 val) {
+        u32 mask = PCI_PM_CTRL_PSTATE_D3H;
+        if (!(val & PCI_PM_CTRL_PME))
+            mask |= PCI_PM_CTRL_PME_ENABLE;
+        return (*m_pm->PM_CTRL & ~mask) | (val & mask);
+    }
+
+    u16 pci_device::write_MSI_CTRL(u16 val) {
         size_t num_vectors = (val & PCI_MSI_QSIZE) >> 4;
         if (num_vectors > m_msi->max_vectors()) {
             log_warn("exceeding max MSI vectors %zu", num_vectors);

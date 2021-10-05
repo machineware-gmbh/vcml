@@ -40,6 +40,14 @@ namespace vcml { namespace generic {
         virtual ~pci_capability();
     };
 
+    struct pci_cap_pm : pci_capability {
+        reg<pci_device, u16>* PM_CAPS;
+        reg<pci_device, u32>* PM_CTRL;
+
+        pci_cap_pm(pci_device* dev, u16 caps);
+        virtual ~pci_cap_pm();
+    };
+
     struct pci_cap_msi : pci_capability {
         reg<pci_device, u16>* MSI_CONTROL;
         reg<pci_device, u32>* MSI_ADDR;
@@ -72,6 +80,7 @@ namespace vcml { namespace generic {
     class pci_device: public peripheral, public pci_target
     {
         friend class pci_capability;
+        friend class pci_cap_pm;
         friend class pci_cap_msi;
     public:
          enum pci_command_bits : u16 {
@@ -136,6 +145,9 @@ namespace vcml { namespace generic {
 
         void declare_bar(int barno, u64 size, u32 type);
 
+        void declare_pm_cap(u16 pm_caps);
+        void declare_msi_cap(u16 msi_ctrl);
+
         void interrupt(bool state, unsigned int vector = 0);
         void raise_irq(unsigned int vector = 0) { interrupt(true, vector); }
         void lower_irq(unsigned int vector = 0) { interrupt(false, vector); }
@@ -168,6 +180,7 @@ namespace vcml { namespace generic {
     private:
         pci_bar m_bars[PCI_NUM_BARS];
         pci_irq m_irq;
+        pci_cap_pm* m_pm;
         pci_cap_msi* m_msi;
         sc_event m_msi_notify;
 
@@ -181,7 +194,9 @@ namespace vcml { namespace generic {
         u16 write_COMMAND(u16 val);
         u16 write_STATUS(u16 val);
 
-        u16 write_MSI_CONTROL(u16 val);
+        u32 write_PM_CTRL(u32 val);
+
+        u16 write_MSI_CTRL(u16 val);
         u32 write_MSI_ADDR(u32 val);
         u32 write_MSI_MASK(u32 val);
 

@@ -29,8 +29,6 @@ static const pci_config TEST_CONFIG = {
     /* max_latency     = */ 0,
     /* min_grant       = */ 0,
     /* int_pin         = */ PCI_IRQ_A,
-    /* msi             = */ true,
-    /* msi_control     = */ PCI_MSI_VECTOR | PCI_MSI_QMASK32,
 };
 
 enum : u64 {
@@ -96,6 +94,7 @@ public:
         TEST_REG_IO.write = &pci_test_device::write_TEST_REG_IO;
         declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
+        declare_pm_cap(PCI_PM_CAP_VER_1_1);
     }
 
     virtual ~pci_test_device() = default;
