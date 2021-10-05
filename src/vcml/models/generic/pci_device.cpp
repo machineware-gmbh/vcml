@@ -209,6 +209,8 @@ namespace vcml { namespace generic {
     }
 
     pci_device::~pci_device() {
+        if (m_pm)
+            delete m_pm;
         if (m_msi)
             delete m_msi;
     }
