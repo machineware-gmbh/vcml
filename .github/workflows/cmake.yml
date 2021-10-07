@@ -48,7 +48,7 @@ jobs:
       run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
 
     - name: Configure
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
+      run: CXXFLAGS="-Wall -Werror" cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)

@@ -39,7 +39,7 @@ MATCHER_P(match_level, level, "matches level of log message") {
 }
 
 MATCHER_P(match_lines, count, "matches log message line count") {
-    return arg.lines.size() == count;
+    return arg.lines.size() == (size_t)count;
 }
 
 MATCHER_P(match_sender, name, "matches log message sender") {

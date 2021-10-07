@@ -403,22 +403,22 @@ TEST(registers, address_spaces) {
 
     // writes to default address space should get lost in the void
     EXPECT_EQ(mock.test_transport(tx, vcml::VCML_AS_DEFAULT), 0);
-    EXPECT_EQ(mock.test_reg_a, 0xffffffff);
-    EXPECT_EQ(mock.test_reg_b, 0xffffffff);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     mock.reset();
 
     // writes to VCML_AS_TEST1 should only change reg_a
     EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST1), 4);
-    EXPECT_EQ(mock.test_reg_a, 0x44332211);
-    EXPECT_EQ(mock.test_reg_b, 0xffffffff);
+    EXPECT_EQ(mock.test_reg_a, 0x44332211u);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_TRUE(tx.is_response_ok());
     mock.reset();
 
     // writes to VCML_AS_TEST2 should only change reg_b
     EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST2), 4);
-    EXPECT_EQ(mock.test_reg_a, 0xffffffff);
-    EXPECT_EQ(mock.test_reg_b, 0x44332211);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
+    EXPECT_EQ(mock.test_reg_b, 0x44332211u);
     EXPECT_TRUE(tx.is_response_ok());
     mock.reset();
 }

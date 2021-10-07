@@ -88,7 +88,7 @@ TEST(socket, async) {
     vcml::socket server;
     vcml::socket client;
 
-    for (auto i : {1, 2, 3}) {
+    for (int i = 1; i < 4; i++) {
         const char* str = "Hello World";
         char buf[strlen(str) + 1];
         memset(buf, 0, strlen(str) + 1);
