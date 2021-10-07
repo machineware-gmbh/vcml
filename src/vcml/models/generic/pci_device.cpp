@@ -384,7 +384,7 @@ namespace vcml { namespace generic {
     }
 
     void pci_device::update_bars() {
-        for (int barno = 0; barno < PCI_NUM_BARS; barno++) {
+        for (unsigned int barno = 0; barno < PCI_NUM_BARS; barno++) {
             pci_bar* bar = m_bars + barno;
             if (bar->size == 0)
                 continue;
