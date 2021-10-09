@@ -89,7 +89,7 @@ namespace vcml {
 
         m_host->trace_fw(*this, tx, m_host->local_time());
         do_receive(tx, info);
-        m_host->trace_fw(*this, tx, m_host->local_time());
+        m_host->trace_bw(*this, tx, m_host->local_time());
 
         tx.set_address(addr);
         tx.set_data_length(size);
