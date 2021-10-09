@@ -207,6 +207,19 @@ namespace vcml {
         PCI_MSI_VECTOR  = 1 << 8,
     };
 
+    enum pci_msix_control : u16 {
+        PCI_MSIX_ENABLE          = 1 << 15,
+        PCI_MSIX_TABLE_SIZE_MASK = 0x7ff,
+    };
+
+    enum pci_msix_table : u32 {
+        PCI_MSIX_PENDING  = 1 << 0,
+        PCI_MSIX_MASKED   = 1 << 1,
+        PCI_MSIX_DATA     = 0,
+        PCI_MSIX_ADDR     = 1,
+        PCI_MSIX_BIR_MASK = 7,
+    };
+
     class pci_initiator_socket;
     class pci_target_socket;
     class pci_initiator_stub;

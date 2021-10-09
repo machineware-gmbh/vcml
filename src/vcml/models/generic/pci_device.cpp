@@ -120,6 +120,104 @@ namespace vcml { namespace generic {
             delete MSI_PENDING;
     }
 
+    void pci_cap_msix::set_masked(unsigned int vector, bool set) {
+        if (set)
+            msix_table[vector].addr |= PCI_MSIX_MASKED;
+        else
+            msix_table[vector].addr &= ~PCI_MSIX_MASKED;
+    }
+
+    void pci_cap_msix::set_pending(unsigned int vector, bool set) {
+        if (set)
+            msix_table[vector].addr |= PCI_MSIX_PENDING;
+        else
+            msix_table[vector].addr &= ~PCI_MSIX_PENDING;
+    }
+
+    pci_cap_msix::pci_cap_msix(pci_device* dev, u32 b, size_t nvec, u32 off):
+        pci_capability(dev, PCI_CAPABILITY_MSIX),
+        mem(off, off + nvec * sizeof(msix_entry) - 1),
+        bar(b),
+        bar_as(PCI_AS_BAR0 + bar),
+        num_vectors(nvec),
+        msix_table(),
+        MSIX_CONTROL(),
+        MSIX_ADDR_HI(),
+        MSIX_BIR_OFF() {
+        VCML_ERROR_ON(bar < 0 || bar > PCI_NUM_BARS, "invalid BAR specified");
+        VCML_ERROR_ON(!dev->m_bars[bar].size, "BAR%u not declared", bar);
+
+        if (dev->m_bars[bar].size < (nvec * 8) + off)
+            VCML_ERROR("MSIX vector table does not fit into BAR%d", bar);
+
+        u16 ctrl = (nvec - 1) & PCI_MSIX_TABLE_SIZE_MASK;
+        u32 boff = (bar & PCI_MSIX_BIR_MASK) | (off & ~PCI_MSIX_BIR_MASK);
+
+        if (ctrl != (nvec - 1))
+            VCML_ERROR("too many MSIX vectors: %zu", nvec);
+
+        msix_table = new msix_entry[nvec];
+
+        MSIX_CONTROL = dev->new_cap_reg_rw<u16>("PCI_CAP_MSIX_CONTROL", ctrl);
+        MSIX_CONTROL->write = &pci_device::write_MSIX_CTRL;
+        MSIX_ADDR_HI = dev->new_cap_reg_rw("PCI_CAP_MSIX_ADDR_HI", 0u);
+        MSIX_BIR_OFF = dev->new_cap_reg_ro("PCI_CAP_MSIX_BIR", boff);
+    }
+
+    pci_cap_msix::~pci_cap_msix() {
+        if (msix_table)
+            delete [] msix_table;
+        if (MSIX_CONTROL)
+            delete MSIX_CONTROL;
+        if (MSIX_ADDR_HI)
+            delete MSIX_ADDR_HI;
+        if (MSIX_BIR_OFF)
+            delete MSIX_BIR_OFF;
+    }
+
+    void pci_cap_msix::reset() {
+        for (size_t vector = 0; vector < num_vectors; vector++) {
+            msix_table[vector].data = 0;
+            msix_table[vector].addr = PCI_MSIX_MASKED;
+        }
+    }
+
+    tlm_response_status pci_cap_msix::read_table(const range& addr,
+        void* data) {
+        if (addr.length() != 4 || addr.start % 4)
+            return TLM_BURST_ERROR_RESPONSE;
+
+        unsigned int vector = (addr.start - mem.start) / sizeof(msix_entry);
+        unsigned int offset = (addr.start - mem.start) % sizeof(msix_entry);
+        VCML_ERROR_ON(vector > num_vectors, "read out of bounds");
+
+        if (offset == 0)
+            *(u32*)data = msix_table[vector].data;
+        else
+            *(u32*)data = msix_table[vector].addr;
+
+        return TLM_OK_RESPONSE;
+    }
+
+    tlm_response_status pci_cap_msix::write_table(const range& addr,
+        const void* data) {
+        if (addr.length() != 4 || addr.start % 4)
+            return TLM_BURST_ERROR_RESPONSE;
+
+        unsigned int vector = (addr.start - mem.start) / sizeof(msix_entry);
+        unsigned int offset = (addr.start - mem.start) % sizeof(msix_entry);
+        VCML_ERROR_ON(vector > num_vectors, "read out of bounds");
+
+        if (offset == 0)
+            msix_table[vector].data = *(u32*)data;
+        else {
+            msix_table[vector].addr &= PCI_MSIX_PENDING;
+            msix_table[vector].addr |= *(u32*)data & ~PCI_MSIX_PENDING;
+        }
+
+        return TLM_OK_RESPONSE;
+    }
+
     pci_device::pci_device(const sc_module_name& nm, const pci_config& cfg):
         peripheral(nm),
         pci_target(),
@@ -213,6 +311,8 @@ namespace vcml { namespace generic {
             delete m_pm;
         if (m_msi)
             delete m_msi;
+        if (m_msix)
+            delete m_msix;
     }
 
     void pci_device::reset() {
@@ -224,9 +324,27 @@ namespace vcml { namespace generic {
         }
 
         update_bars();
+
+        if (m_msix)
+            m_msix->reset();
     }
 
-    void pci_device::declare_bar(int barno, u64 size, u32 type) {
+    tlm_response_status pci_device::read(const range& addr, void* data,
+        const tlm_sbi& info, address_space as) {
+        if (m_msix && m_msix->bar_as == as && addr.overlaps(m_msix->mem))
+            return m_msix->read_table(addr, data);
+        return peripheral::read(addr, data, info, as);
+    }
+
+    tlm_response_status pci_device::write(const range& addr, const void* data,
+        const tlm_sbi& info, address_space as) {
+        if (m_msix && m_msix->bar_as == as && addr.overlaps(m_msix->mem))
+            return m_msix->write_table(addr, data);
+        return peripheral::write(addr, data, info, as);
+    }
+
+
+    void pci_device::pci_declare_bar(int barno, u64 size, u32 type) {
         bool is_io = type & PCI_BAR_IO;
         bool is_64 = type & PCI_BAR_64;
         bool is_prefetch = type & PCI_BAR_PREFETCH;
@@ -244,24 +362,32 @@ namespace vcml { namespace generic {
         m_bars[barno].addr_hi = is_64 ? PCI_BAR_UNMAPPED : 0u;
     }
 
-    void pci_device::declare_pm_cap(u16 pm_caps) {
+    void pci_device::pci_declare_pm_cap(u16 pm_caps) {
         VCML_ERROR_ON(m_pm, "PCI_CAP_PM already declared");
         m_pm = new pci_cap_pm(this, pm_caps);
     }
 
-    void pci_device::declare_msi_cap(u16 msi_ctrl) {
+    void pci_device::pci_declare_msi_cap(u16 msi_ctrl) {
         VCML_ERROR_ON(m_msi, "PCI_CAP_MSI already declared");
         m_msi = new pci_cap_msi(this, msi_ctrl);
         SC_HAS_PROCESS(pci_device);
         SC_THREAD(msi_process);
     }
 
-    void pci_device::interrupt(bool state, unsigned int vector) {
-        if (msi_enabled()) {
+    void pci_device::pci_declare_msix_cap(u32 bar, size_t nvec, u32 offset) {
+        VCML_ERROR_ON(m_msix, "PCI_CAP_MSIX already declared");
+        m_msix = new pci_cap_msix(this, bar, nvec, offset);
+        SC_HAS_PROCESS(pci_device);
+        SC_THREAD(msix_process);
+    }
+
+    void pci_device::pci_interrupt(bool state, unsigned int vector) {
+        if (msix_enabled())
+            msix_interrupt(state, vector);
+        else if (msi_enabled())
             msi_interrupt(state, vector);
-        } else {
-            legacy_interrupt(state);
-        }
+        else
+            pci_legacy_interrupt(state);
     }
 
     void pci_device::msi_interrupt(bool state, unsigned int vector) {
@@ -275,7 +401,18 @@ namespace vcml { namespace generic {
             m_msi_notify.notify(SC_ZERO_TIME);
     }
 
-    void pci_device::legacy_interrupt(bool state) {
+    void pci_device::msix_interrupt(bool state, unsigned int vector) {
+        VCML_ERROR_ON(!m_msix, "not capable of sending MSIXs");
+        if (!msix_enabled() || !(PCI_COMMAND & PCI_COMMAND_MMIO))
+            return;
+
+        m_msix->set_pending(vector, state);
+
+        if (!m_msix->is_masked(vector) && m_msix->is_pending(vector))
+            m_msix_notify.notify(SC_ZERO_TIME);
+    }
+
+    void pci_device::pci_legacy_interrupt(bool state) {
         if (state)
             PCI_STATUS |= PCI_STATUS_IRQ;
         else
@@ -311,6 +448,31 @@ namespace vcml { namespace generic {
                 if (m_msi->is_pending(vec) && !m_msi->is_masked(vec)) {
                     m_msi->set_pending(vec, false);
                     msi_send(vec);
+                }
+            }
+        }
+    }
+
+    void pci_device::msix_send(unsigned int vector) {
+        if (vector >= m_msix->num_vectors)
+            VCML_ERROR("MSIX vector out of bounds: %u", vector);
+
+        const u64 mask = PCI_MSIX_PENDING | PCI_MSIX_MASKED;
+        u32 msix_data = m_msix->msix_table[vector].data;
+        u64 msix_addr = (u64)(m_msix->msix_table[vector].addr & ~mask) |
+                        (u64)*m_msix->MSIX_ADDR_HI << 32;
+
+        if (!pci_dma_write(msix_addr, sizeof(msix_data), &msix_data))
+            log_warn("DMA error while sending MSIX%u", vector);
+    }
+
+    void pci_device::msix_process() {
+        while (true) {
+            wait(m_msix_notify);
+            for (unsigned int vec = 0; vec < m_msix->num_vectors; vec++) {
+                if (m_msix->is_pending(vec) && !m_msix->is_masked(vec)) {
+                    m_msix->set_pending(vec, false);
+                    msix_send(vec);
                 }
             }
         }
@@ -383,6 +545,11 @@ namespace vcml { namespace generic {
         return *m_msi->MSI_MASK;
     }
 
+    u16 pci_device::write_MSIX_CTRL(u16 val) {
+        const u64 mask = PCI_MSIX_ENABLE;
+        return (*m_msix->MSIX_CONTROL & ~mask) | (val & mask);
+    }
+
     void pci_device::update_bars() {
         for (unsigned int barno = 0; barno < PCI_NUM_BARS; barno++) {
             pci_bar* bar = m_bars + barno;
@@ -433,12 +600,12 @@ namespace vcml { namespace generic {
             return;
 
         if (m_irq != PCI_IRQ_NONE)
-            pci_interrupt(m_irq, false);
+            pci_target::pci_interrupt(m_irq, false);
 
         m_irq = irq;
 
         if (m_irq != PCI_IRQ_NONE)
-            pci_interrupt(m_irq, true);
+            pci_target::pci_interrupt(m_irq, true);
     }
 
 }}

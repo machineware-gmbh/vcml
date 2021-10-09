@@ -77,11 +77,50 @@ namespace vcml { namespace generic {
         virtual ~pci_cap_msi();
     };
 
+    struct pci_cap_msix : pci_capability {
+        const range mem;
+        const u32 bar;
+        const address_space bar_as;
+        const size_t num_vectors;
+
+        struct msix_entry {
+            u32 data;
+            u32 addr;
+        }* msix_table;
+
+        reg<pci_device, u16>* MSIX_CONTROL;
+        reg<pci_device, u32>* MSIX_ADDR_HI;
+        reg<pci_device, u32>* MSIX_BIR_OFF;
+
+        bool is_enabled() const {
+            return *MSIX_CONTROL & PCI_MSIX_ENABLE;
+        }
+
+        bool is_masked(unsigned int vector) const {
+            return msix_table[vector].addr & PCI_MSIX_MASKED;
+        }
+
+        bool is_pending(unsigned int vector) const {
+            return msix_table[vector].addr & PCI_MSIX_PENDING;
+        }
+
+        void set_masked(unsigned int vector, bool set = true);
+        void set_pending(unsigned int vector, bool set = true);
+
+        pci_cap_msix(pci_device* dev, u32 bar, size_t nvec, u32 offset = 0);
+        virtual ~pci_cap_msix();
+        void reset();
+
+        tlm_response_status read_table(const range& addr, void* data);
+        tlm_response_status write_table(const range& addr, const void* data);
+    };
+
     class pci_device: public peripheral, public pci_target
     {
         friend class pci_capability;
         friend class pci_cap_pm;
         friend class pci_cap_msi;
+        friend class pci_cap_msix;
     public:
          enum pci_command_bits : u16 {
             PCI_COMMAND_IO         = 1 << 0,
@@ -143,19 +182,29 @@ namespace vcml { namespace generic {
         VCML_KIND(pci_device);
         virtual void reset() override;
 
-        void declare_bar(int barno, u64 size, u32 type);
+        virtual tlm_response_status read(const range& addr, void* data,
+            const tlm_sbi& info, address_space as) override;
 
-        void declare_pm_cap(u16 pm_caps);
-        void declare_msi_cap(u16 msi_ctrl);
+        virtual tlm_response_status write(const range& addr, const void* data,
+            const tlm_sbi& info, address_space as) override;
 
-        void interrupt(bool state, unsigned int vector = 0);
-        void raise_irq(unsigned int vector = 0) { interrupt(true, vector); }
-        void lower_irq(unsigned int vector = 0) { interrupt(false, vector); }
+        void pci_declare_bar(int barno, u64 size, u32 type);
+
+        void pci_declare_pm_cap(u16 pm_caps);
+        void pci_declare_msi_cap(u16 msi_ctrl);
+        void pci_declare_msix_cap(u32 bar, size_t num_vectors, u32 offset = 0);
+
+        void pci_interrupt(bool state, unsigned int vector = 0);
+        void pci_raise_irq(unsigned int vec = 0) { pci_interrupt(true, vec); }
+        void pci_lower_irq(unsigned int vec = 0) { pci_interrupt(false, vec); }
+
+        bool msix_enabled() { return m_msix && m_msix->is_enabled(); }
+        void msix_interrupt(bool state, unsigned int vector);
 
         bool msi_enabled() { return m_msi && m_msi->is_enabled(); }
         void msi_interrupt(bool state, unsigned int vector);
 
-        void legacy_interrupt(bool state);
+        void pci_legacy_interrupt(bool state);
 
     protected:
         u8 pci_cap_ptr;
@@ -182,10 +231,15 @@ namespace vcml { namespace generic {
         pci_irq m_irq;
         pci_cap_pm* m_pm;
         pci_cap_msi* m_msi;
+        pci_cap_msix* m_msix;
         sc_event m_msi_notify;
+        sc_event m_msix_notify;
 
         void msi_send(unsigned int vector);
         void msi_process();
+
+        void msix_send(unsigned int vector);
+        void msix_process();
 
         u8 read_CAP_PTR() { return pci_cap_ptr; }
 
@@ -199,6 +253,8 @@ namespace vcml { namespace generic {
         u16 write_MSI_CTRL(u16 val);
         u32 write_MSI_ADDR(u32 val);
         u32 write_MSI_MASK(u32 val);
+
+        u16 write_MSIX_CTRL(u16 val);
 
         void update_bars();
         void update_irqs();

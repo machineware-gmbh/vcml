@@ -35,6 +35,7 @@ enum : u64 {
     TEST_REG_OFFSET    = 0x0,
     TEST_REG_IO_OFF    = 0x4,
     TEST_IRQ_VECTOR    = 5,
+    TEST_MSIX_NVEC     = 512,
 
     PCI_VENDOR_OFFSET  = 0x0,
     PCI_DEVICE_OFFSET  = 0x2,
@@ -42,6 +43,7 @@ enum : u64 {
     PCI_BAR0_OFFSET    = 0x10,
     PCI_BAR1_OFFSET    = 0x14,
     PCI_BAR2_OFFSET    = 0x18,
+    PCI_BAR3_OFFSET    = 0x1c,
     PCI_CAP_OFFSET     = 0x34,
 
     PCI_MSI_CTRL_OFF   = 0x2,
@@ -50,16 +52,24 @@ enum : u64 {
     PCI_MSI_MASK_OFF   = 0xc,
     PCI_MSI_PEND_OFF   = 0x10,
 
+    PCI_MSIX_CTRL_OFF  = 0x2,
+    PCI_MSIX_ADDR_OFF  = 0x4,
+    PCI_MSIX_BIR_OFF   = 0x8,
+
     // MMIO space:
     //   0x00000 .. 0x0ffff: PCI CFG area
     //   0x10000 .. 0x1ffff: PCI MMIO area
+    //   0x20000 .. 0x20fff: PCI MMIO area (for MSI-X table)
     //   0x40000 .. 0xfffff: PCI MSI area
     MMAP_PCI_CFG_ADDR  = 0x0,
     MMAP_PCI_CFG_SIZE  = 0x10000,
-    MMAP_PCI_MMIO_ADDR = 0x100010000,
+    MMAP_PCI_MMIO_ADDR = 0x10000,
     MMAP_PCI_MMIO_SIZE = 0x1000,
     MMAP_PCI_MSI_ADDR  = 0x40000,
     MMAP_PCI_MSI_SIZE  = 0xc0000,
+
+    MMAP_PCI_MSIX_TABLE_ADDR = 0x20000,
+    MMAP_PCI_MSIX_TABLE_SIZE = 0x1000,
 
     // IO space:
     //   0x02000 .. 0x02fff: PCI IO area
@@ -76,9 +86,9 @@ public:
 
     u32 write_TEST_REG_IO(u32 val) {
         if (val == 0x1234)
-            interrupt(true, TEST_IRQ_VECTOR);
+            pci_interrupt(true, TEST_IRQ_VECTOR);
         if (val == 0)
-            interrupt(false, TEST_IRQ_VECTOR);
+            pci_interrupt(false, TEST_IRQ_VECTOR);
         return val;
     }
 
@@ -92,10 +102,12 @@ public:
         TEST_REG_IO.allow_read_write();
         TEST_REG_IO.sync_always();
         TEST_REG_IO.write = &pcie_test_device::write_TEST_REG_IO;
-        declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
-        declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
-        declare_pm_cap(PCI_PM_CAP_VER_1_2);
-        declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_QMASK32);
+        pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
+        pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
+        pci_declare_bar(3, MMAP_PCI_MSIX_TABLE_SIZE, PCI_BAR_MMIO);
+        pci_declare_pm_cap(PCI_PM_CAP_VER_1_2);
+        pci_declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_QMASK32);
+        pci_declare_msix_cap(3, TEST_MSIX_NVEC);
     }
 
     virtual ~pcie_test_device() = default;
@@ -146,7 +158,7 @@ public:
         const range MMAP_PCI_CFG(MMAP_PCI_CFG_ADDR,
             MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
         const range MMAP_PCI_MMIO(MMAP_PCI_MMIO_ADDR,
-            MMAP_PCI_MMIO_ADDR + MMAP_PCI_MMIO_SIZE - 1);
+            MMAP_PCI_MSIX_TABLE_ADDR + MMAP_PCI_MSIX_TABLE_SIZE - 1);
         const range MMAP_PCI_IO(MMAP_PCI_IO_ADDR,
             MMAP_PCI_IO_ADDR + MMAP_PCI_IO_SIZE - 1);
 
@@ -189,12 +201,28 @@ public:
             << "failed to read PCIe config at offset " << std::hex << addr;
     }
 
+    u8 find_cap(u8 cap_id) {
+        u8 cap, cap_off;
+        pcie_read_cfg(0, PCI_CAP_OFFSET, cap_off);
+        while (cap_off != 0) {
+            pcie_read_cfg(0, cap_off, cap);
+            if (cap == cap_id)
+                return cap_off;
+            pcie_read_cfg(0, cap_off + 1, cap_off);
+        }
+
+        return 0;
+    }
+
     virtual void run_test() override {
         u16 vendor_id = 0, device_id = 0;
         pcie_read_cfg(0, PCI_VENDOR_OFFSET, vendor_id);
         pcie_read_cfg(0, PCI_DEVICE_OFFSET, device_id);
-        EXPECT_EQ(vendor_id, TEST_CONFIG.vendor_id) << "no vendor at slot 0";
-        EXPECT_EQ(device_id, TEST_CONFIG.device_id) << "no device at slot 0";
+        ASSERT_EQ(vendor_id, TEST_CONFIG.vendor_id) << "no vendor at slot 0";
+        ASSERT_EQ(device_id, TEST_CONFIG.device_id) << "no device at slot 0";
+        ASSERT_TRUE(find_cap(PCI_CAPABILITY_PM)) << "cannot find PM cap";
+        ASSERT_TRUE(find_cap(PCI_CAPABILITY_MSI)) << "cannot find MSI cap";
+        ASSERT_TRUE(find_cap(PCI_CAPABILITY_MSIX)) << "cannot find MSIX cap";
 
         u32 nodev = 0;
         pcie_read_cfg(1, PCI_VENDOR_OFFSET, nodev);
@@ -235,10 +263,8 @@ public:
         u32 bar2 = MMAP_PCI_IO_ADDR | PCI_BAR_IO;
         pcie_write_cfg(0, PCI_BAR2_OFFSET, bar2);
 
-        u8 cap_off, cap_id;
-        pcie_read_cfg(0, PCI_CAP_OFFSET, cap_off);
-        pcie_read_cfg(0, cap_off, cap_id);
-        EXPECT_EQ(cap_id, PCI_CAPABILITY_MSI) << "MSI capability not present";
+        u8 cap_off = find_cap(PCI_CAPABILITY_MSI);
+        ASSERT_NE(cap_off, 0) << "MSI capability not found";
 
         pcie_write_cfg(0, cap_off + PCI_MSI_ADDR_OFF, (u32)MMAP_PCI_MSI_ADDR);
         pcie_write_cfg(0, cap_off + PCI_MSI_DATA_OFF, (u16)0xa00);
@@ -252,13 +278,13 @@ public:
 
         // write bar2 offset 4 (TEST_REG_IO) to trigger MSI interrupt
         EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
-            << "BAR0 setup failed: cannot read BAR2 range";
+            << "BAR2 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
         EXPECT_EQ(msi_data, 0xa00 | TEST_IRQ_VECTOR) << "MSI did not arrive";
         EXPECT_EQ(msi_addr, MMAP_PCI_MSI_ADDR) << "MSI did not arrive";
 
         EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
-            << "BAR0 setup failed: cannot read BAR2 range";
+            << "BAR2 setup failed: cannot read BAR2 range";
 
         //
         // test MSI masking
@@ -280,6 +306,51 @@ public:
 
         EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
             << "BAR0 setup failed: cannot read BAR2 range";
+
+        msi_control &= ~PCI_MSI_ENABLE;
+        pcie_write_cfg(0, cap_off + PCI_MSI_CTRL_OFF, msi_control);
+
+        //
+        // test MSI-X interrupt
+        //
+        u8 msix_off = find_cap(PCI_CAPABILITY_MSIX);
+        ASSERT_TRUE(msix_off) << "could not find MSIX capability";
+        u16 msix_ctrl;
+        pcie_read_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
+        EXPECT_EQ(msix_ctrl, TEST_MSIX_NVEC - 1);
+        pcie_write_cfg<u32>(0, msix_off + PCI_MSIX_ADDR_OFF,
+                            (u64)MMAP_PCI_MSI_ADDR >> 32);
+        pcie_write_cfg(0, msix_off + PCI_MSIX_BIR_OFF, 5);
+        msix_ctrl |= PCI_MSIX_ENABLE;
+        pcie_write_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
+
+        u64 bar3 = MMAP_PCI_MSIX_TABLE_ADDR | PCI_BAR_MMIO;
+        pcie_write_cfg(0, PCI_BAR3_OFFSET, (u32)bar3);
+
+        msi_addr = msi_data = 0;
+        u64 msix_table_addr = MMAP_PCI_MSIX_TABLE_ADDR + TEST_IRQ_VECTOR * 8;
+        u32 msix_addr, msix_data;
+        EXPECT_OK(MMIO.readw(msix_table_addr + 0, msix_data))
+            << "cannot read MSIX vector table";
+        EXPECT_OK(MMIO.readw(msix_table_addr + 4, msix_addr))
+            << "cannot read MSIX vector table";
+        EXPECT_EQ(msix_addr, PCI_MSIX_MASKED)
+            << "MSIX vector table addr entry corrupted";
+        EXPECT_EQ(msix_data, 0)
+            << "MSIX vector table data entry corrupted";
+        msix_addr = MMAP_PCI_MSI_ADDR + PCI_MSIX_PENDING;
+        msix_data = 1234567;
+        EXPECT_OK(MMIO.writew(msix_table_addr + 0, msix_data))
+            << "cannot write MSIX vector table";
+        EXPECT_OK(MMIO.writew(msix_table_addr + 4, msix_addr))
+            << "cannot write MSIX vector table";
+
+        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
+            << "BAR2 setup failed: cannot read BAR2 range";
+        wait_clock_cycle();
+        EXPECT_EQ(msi_addr, msix_addr & ~PCI_MSIX_PENDING)
+            << "got wrong MSIX address";
+        EXPECT_EQ(msi_data, msix_data) << "got wrong MSIX data";
 
         //
         // test resetting bar0 & bar2
