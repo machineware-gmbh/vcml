@@ -246,7 +246,9 @@ namespace vcml { namespace generic {
         m_irq(PCI_IRQ_NONE),
         m_pm(nullptr),
         m_msi(nullptr),
-        m_msi_notify("msi_notify") {
+        m_msix(nullptr),
+        m_msi_notify("msi_notify"),
+        m_msix_notify("msix_notify") {
 
         PCI_VENDOR_ID.allow_read_only();
         PCI_VENDOR_ID.sync_never();
