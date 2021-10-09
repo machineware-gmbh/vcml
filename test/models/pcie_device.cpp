@@ -198,7 +198,7 @@ public:
     void pcie_write_cfg(u64 devno, u64 offset, T data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
         ASSERT_OK(MMIO.writew(addr, data))
-            << "failed to read PCIe config at offset " << std::hex << addr;
+            << "failed to write PCIe config at offset " << std::hex << addr;
     }
 
     u8 find_cap(u8 cap_id) {
@@ -320,7 +320,9 @@ public:
         EXPECT_EQ(msix_ctrl, TEST_MSIX_NVEC - 1);
         pcie_write_cfg<u32>(0, msix_off + PCI_MSIX_ADDR_OFF,
                             (u64)MMAP_PCI_MSI_ADDR >> 32);
-        pcie_write_cfg(0, msix_off + PCI_MSIX_BIR_OFF, 5);
+        u32 bir;
+        pcie_read_cfg(0, msix_off + PCI_MSIX_BIR_OFF, bir);
+        EXPECT_EQ(bir, 3) << "MSIX BIR not pointing to BAR3";
         msix_ctrl |= PCI_MSIX_ENABLE;
         pcie_write_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
 

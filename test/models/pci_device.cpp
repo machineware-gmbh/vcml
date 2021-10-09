@@ -202,7 +202,7 @@ public:
     void pci_write_cfg(u64 devno, u64 offset, T data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
         ASSERT_OK(MMIO.writew(addr, data))
-            << "failed to read PCI config at offset " << std::hex << addr;
+            << "failed to write PCI config at offset " << std::hex << addr;
     }
 
     virtual void run_test() override {
