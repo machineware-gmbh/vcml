@@ -107,6 +107,7 @@ namespace vcml { namespace generic {
         pci.command = pci_translate_command(tx.get_command());
         pci.response = PCI_RESP_INCOMPLETE;
         pci.space = (pci_address_space)space;
+        pci.debug = sideband.is_debug;
         pci.addr = tx.get_address();
         pci.size = size;
         pci.data = 0;
