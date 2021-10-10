@@ -113,7 +113,7 @@ public:
     virtual ~pcie_test_device() = default;
 };
 
-class pci_test: public test_base
+class pcie_test: public test_base
 {
 public:
     generic::bus MMIO_BUS;
@@ -140,7 +140,7 @@ public:
         return tx.get_data_length();
     }
 
-    pci_test(const sc_module_name& nm):
+    pcie_test(const sc_module_name& nm):
         test_base(nm),
         MMIO_BUS("MMIO_BUS"),
         IO_BUS("IO_BUS"),
@@ -373,6 +373,6 @@ TEST(pci, simulate) {
     broker_arg broker(sc_argc(), sc_argv());
     log_term logger;
     logger.set_level(LOG_TRACE);
-    pci_test test("pcie");
+    pcie_test test("pcie");
     sc_core::sc_start();
 }
