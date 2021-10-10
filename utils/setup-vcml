@@ -19,7 +19,7 @@
  ##############################################################################
 
 root="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
-configs=$1
+configs=$@
 systemc=2.3.3
 
 [ -z "$configs" ] && configs="DEBUG RELEASE ASAN"
@@ -41,12 +41,6 @@ for config in $configs; do (
     build=$prefix/.CMAKE
     mkdir -p $build
 
-    if [ $config == "ASAN" ]; then
-        export CXXFLAGS="$CXXFLAGS -fsanitize=address -fno-omit-frame-pointer"
-        export LDFLAGS="$LDFLAGS -fsanitize=address -fno-omit-frame-pointer"
-        config="DEBUG"
-    fi
-
     if [ ! -d "$SYSTEMC_HOME" ]; then
         if [ "$config" == "RELEASE" ]; then
             $root/utils/setup-systemc -v $systemc -p $build --optimize
@@ -62,8 +56,27 @@ for config in $configs; do (
         rm -rf $prefix/lib-$TARGET_ARCH/libsystemc.la
     fi
 
-    CXXFLAGS="$CXXFLAGS -Wall -Werror" cmake -B $build              \
-          -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX=$prefix \
+    if [ $config == "ASAN" ]; then
+        SAN_CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+        SAN_LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+        config="RelWithDebInfo"
+    fi
+
+    if [ $config == "USAN" ]; then
+        SAN_CXXFLAGS="-fsanitize=undefined -fno-omit-frame-pointer"
+        SAN_LDFLAGS="-fsanitize=undefined -fno-omit-frame-pointer"
+        config="RelWithDebInfo"
+    fi
+
+    if [ $config == "TSAN" ]; then
+        SAN_CXXFLAGS="-fsanitize=thread -fno-omit-frame-pointer"
+        SAN_LDFLAGS="-fsanitize=thread -fno-omit-frame-pointer"
+        config="RelWithDebInfo"
+    fi
+
+    CXXFLAGS="$CXXFLAGS $SAN_CXXFLAGS -Wall -Werror"                          \
+    LDFLAGS="$LDFLAGS $SAN_LDFLAGS"                                           \
+    cmake -B $build -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX=$prefix \
           -DVCML_BUILD_TESTS=ON $root
     cmake --build $build --config $config -j $(nproc)
     cmake --build $build --config $config -j $(nproc) -- install
