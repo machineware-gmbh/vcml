@@ -7,11 +7,10 @@ on:
     branches: [ master ]
 
 env:
-  BUILD_TYPE: Debug
+  BUILD_TYPE: RelWithDebInfo
   TARGET_ARCH: linux64
   ASAN_OPTIONS: verbosity=1
-  CXXFLAGS: -fsanitize=address -fno-omit-frame-pointer
-  LDFLAGS: -fsanitize=address -fno-omit-frame-pointer
+  TSAN_OPTIONS: verbosity=1
 
 jobs:
   build:
@@ -20,9 +19,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          systemc: [ 2.3.3 ]
+        systemc: [ 2.3.3 ]
+        sanitizer: [ address, thread, undefined ]
 
-    name: ASAN - SystemC ${{matrix.systemc}}
+    name: ${{matrix.sanitizer}} sanitizer
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
@@ -52,6 +52,9 @@ jobs:
 
     - name: Configure
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
+      env:
+        CXXFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer
+        LDFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)
