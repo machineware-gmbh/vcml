@@ -163,7 +163,7 @@ namespace vcml {
     }
 
     // we just need this class to have something that is called every cycle...
-    class cycle_helper: public sc_core::sc_trace_file, private sc_object
+    class helper_module: public sc_core::sc_trace_file, private sc_module
     {
     public:
     #define DECL_TRACE_METHOD_A(t) \
@@ -222,11 +222,58 @@ namespace vcml {
         vector<function<void(void)>> deltas;
         vector<function<void(void)>> tsteps;
 
-        cycle_helper():
+        struct timer_compare {
+            inline bool
+            operator() (const timer::event* a, const timer::event* b) const {
+                return a->timeout > b->timeout;
+            }
+        };
+
+        sc_event timeout_event;
+        std::priority_queue<timer::event*, vector<timer::event*>,
+                            timer_compare> timers;
+
+        void update_timer() {
+            if (timers.empty()) {
+                timeout_event.cancel();
+                return;
+            }
+
+            sc_time next_timeout = timers.top()->timeout;
+            timeout_event.notify(next_timeout - sc_time_stamp());
+        }
+
+        void run_timer() {
+            const sc_time now = sc_time_stamp();
+            while (!timers.empty()) {
+                timer::event* event = timers.top();
+                if (event->timeout > now)
+                    break;
+
+                if (event->timeout < now)
+                    VCML_ERROR("missed timer event");
+
+                timers.pop();
+                if (event->owner)
+                    event->owner->trigger();
+                delete event;
+            }
+
+            update_timer();
+        }
+
+        void add_timer(timer::event* ev) {
+            thctl_guard guard;
+            timers.push(ev);
+            update_timer();
+        }
+
+        helper_module(const sc_module_name& nm):
             sc_core::sc_trace_file(),
-            sc_core::sc_object("$$$vcml_cycle_helper$$$"),
+            sc_core::sc_module(nm),
             use_phase_callbacks(kernel_has_phase_callbacks()),
-            deltas(), tsteps() {
+            deltas(), tsteps(),
+            timeout_event("timeout_ev"), timers() {
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
             if (use_phase_callbacks) {
                 register_simulation_phase_callback(
@@ -235,6 +282,11 @@ namespace vcml {
 #endif
             if (!use_phase_callbacks)
                 simcontext()->add_trace_file(this);
+
+            SC_HAS_PROCESS(helper_module);
+            SC_METHOD(run_timer);
+            sensitive << timeout_event;
+            dont_initialize();
         }
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
@@ -243,18 +295,23 @@ namespace vcml {
         }
 #endif
 
-        virtual ~cycle_helper() {
+        virtual ~helper_module() {
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
             if (!use_phase_callbacks)
                 sc_get_curr_simcontext()->remove_trace_file(this);
 #endif
         }
 
+        static helper_module& instance() {
+            static helper_module helper("$$$vcml_helper_module$$$");
+            return helper;
+        }
+
     protected:
         virtual void cycle(bool delta_cycle) override;
     };
 
-    void cycle_helper::cycle(bool delta_cycle) {
+    void helper_module::cycle(bool delta_cycle) {
         if (delta_cycle) {
             for (auto& func : deltas)
                 func();
@@ -264,18 +321,44 @@ namespace vcml {
         }
     }
 
-    static void on_each_helper(function<void(void)> callback, bool delta) {
-        static cycle_helper helper;
-        auto& list = delta ? helper.deltas : helper.tsteps;
-        list.push_back(callback);
-    }
-
     void on_each_delta_cycle(function<void(void)> callback) {
-        on_each_helper(callback, true);
+        helper_module& helper = helper_module::instance();
+        helper.deltas.push_back(callback);
     }
 
     void on_each_time_step(function<void(void)> callback) {
-        on_each_helper(callback, false);
+        helper_module& helper = helper_module::instance();
+        helper.tsteps.push_back(callback);
+    }
+
+    timer::timer(function<void(timer&)> cb):
+        m_triggers(0), m_timeout(), m_event(nullptr), m_cb(std::move(cb)) {
+    }
+
+    timer::~timer() {
+        cancel();
+    }
+
+    void timer::trigger() {
+        m_event = nullptr;
+        m_triggers++;
+        m_cb(*this);
+    }
+
+    void timer::cancel() {
+        if (m_event) {
+            m_event->owner = nullptr;
+            m_event = nullptr;
+        }
+    }
+
+    void timer::reset(const sc_time& delta) {
+        cancel();
+
+        m_event = new event;
+        m_event->owner = this;
+        m_event->timeout = m_timeout = sc_time_stamp() + delta;
+        helper_module::instance().add_timer(m_event);
     }
 
     __thread struct async_worker* g_async = nullptr;

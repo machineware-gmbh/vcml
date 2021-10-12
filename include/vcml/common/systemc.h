@@ -68,6 +68,7 @@ namespace vcml {
     using sc_core::sc_delta_count;
 
     using sc_core::sc_time;
+    using sc_core::sc_time_unit;
     using sc_core::sc_time_stamp;
 
     extern const sc_core::sc_time SC_MAX_TIME;
@@ -93,6 +94,22 @@ namespace vcml {
 
     inline u64 time_to_sec(const sc_time& t) {
         return t.value() / sc_time(1.0, SC_SEC).value();
+    }
+
+    inline u64 time_stamp_ns() {
+        return time_to_ns(sc_time_stamp());
+    }
+
+    inline u64 time_stamp_us() {
+        return time_to_us(sc_time_stamp());
+    }
+
+    inline u64 time_stamp_ms() {
+        return time_to_ms(sc_time_stamp());
+    }
+
+    inline u64 time_stamp_sec() {
+        return time_to_sec(sc_time_stamp());
     }
 
     inline sc_time time_from_value(u64 val) {
@@ -262,6 +279,37 @@ namespace vcml {
 
     void on_each_delta_cycle(function<void(void)> callback);
     void on_each_time_step(function<void(void)> callback);
+
+    class timer
+    {
+    public:
+        struct event {
+            timer* owner;
+            sc_time timeout;
+        };
+
+        size_t count() const { return m_triggers; }
+        const sc_time& timeout() const { return m_timeout; }
+
+        timer(function<void(timer&)> cb);
+        timer(const sc_time& delta, function<void(timer&)> cb):
+            timer(cb) { reset(delta); }
+        timer(double t, sc_time_unit tu, function<void(timer&)> cb):
+            timer(cb) { reset(t, tu); }
+        ~timer();
+
+        void trigger();
+        void cancel();
+
+        void reset(double t, sc_time_unit tu) { reset(sc_time(t, tu)); }
+        void reset(const sc_time& delta);
+
+    private:
+        size_t m_triggers;
+        sc_time m_timeout;
+        event* m_event;
+        function<void(timer&)> m_cb;
+    };
 
     void sc_async(function<void(void)> job);
     void sc_progress(const sc_time& delta);
