@@ -16,10 +16,16 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/net/adapter.h"
+
 #include "vcml/net/client.h"
 #include "vcml/net/client_file.h"
 #include "vcml/net/client_tap.h"
-#include "vcml/net/adapter.h"
+
+#ifdef HAVE_LIBSLIRP
+#include "vcml/net/client_slirp.h"
+#endif
+
 
 namespace vcml { namespace net {
 
@@ -43,6 +49,9 @@ namespace vcml { namespace net {
         static const unordered_map<string, construct> clients = {
             { "file", client_file::create },
             { "tap", client_tap::create },
+#ifdef HAVE_LIBSLIRP
+            { "slirp", client_slirp::create },
+#endif
         };
 
         auto it = clients.find(kind);
