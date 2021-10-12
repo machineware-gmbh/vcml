@@ -53,8 +53,8 @@ jobs:
     - name: Configure
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
       env:
-        CXXFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer
-        LDFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer
+        CXXFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer -fno-var-tracking
+        LDFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer -fno-var-tracking
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)

@@ -20,7 +20,8 @@
 
 root="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
 configs=$@
-systemc=2.3.3
+systemc="2.3.3"
+san_flags="-fno-omit-frame-pointer -fno-var-tracking"
 
 [ -z "$configs" ] && configs="DEBUG RELEASE ASAN"
 
@@ -57,20 +58,20 @@ for config in $configs; do (
     fi
 
     if [ $config == "ASAN" ]; then
-        SAN_CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer"
-        SAN_LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+        SAN_CXXFLAGS="-fsanitize=address $san_flags"
+        SAN_LDFLAGS="-fsanitize=address $san_flags"
         config="RelWithDebInfo"
     fi
 
     if [ $config == "USAN" ]; then
-        SAN_CXXFLAGS="-fsanitize=undefined -fno-omit-frame-pointer"
-        SAN_LDFLAGS="-fsanitize=undefined -fno-omit-frame-pointer"
+        SAN_CXXFLAGS="-fsanitize=undefined $san_flags"
+        SAN_LDFLAGS="-fsanitize=undefined $san_flags"
         config="RelWithDebInfo"
     fi
 
     if [ $config == "TSAN" ]; then
-        SAN_CXXFLAGS="-fsanitize=thread -fno-omit-frame-pointer"
-        SAN_LDFLAGS="-fsanitize=thread -fno-omit-frame-pointer"
+        SAN_CXXFLAGS="-fsanitize=thread $san_flags"
+        SAN_LDFLAGS="-fsanitize=thread $san_flags"
         config="RelWithDebInfo"
     fi
 
