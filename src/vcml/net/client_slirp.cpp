@@ -248,7 +248,7 @@ namespace vcml { namespace net {
     client* client_slirp::create(const string& adapter, const string& type) {
         unsigned int netid = 0;
         if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
-            VCML_ERROR("slirp: cannot parse %s", type.c_str());
+            netid = 0;
 
         static unordered_map<unsigned int, shared_ptr<slirp_network>> networks;
         auto& network = networks[netid];
