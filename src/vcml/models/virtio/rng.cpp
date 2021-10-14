@@ -35,7 +35,7 @@ namespace vcml { namespace virtio {
             log_debug("received message from virtqueue %u with %u bytes",
                       vqid, msg.length());
 
-            vector<u8> random(msg.length_out);
+            vector<u8> random(msg.length_out());
             for (auto& elem : random)
                 elem = rand_r(&m_seed);
 

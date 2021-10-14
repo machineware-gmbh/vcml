@@ -99,7 +99,7 @@ namespace vcml {
         os << "VIRTMSG@" << msg.index << " [";
         if (!msg.in.empty()) {
             os << "in: " << msg.in.size() << " descriptors | "
-               << msg.length_in << " bytes total";
+               << msg.length_in() << " bytes total";
         }
 
         if (!msg.in.empty() && !msg.out.empty())
@@ -107,7 +107,7 @@ namespace vcml {
 
         if (!msg.out.empty()) {
             os << "out: " << msg.out.size() << " descriptors | "
-               << msg.length_out << " bytes total";
+               << msg.length_out() << " bytes total";
         }
 
         os << "] (" << virtio_status_str(msg.status) << ")";
@@ -151,8 +151,6 @@ namespace vcml {
         msg.dmi = dmi;
         msg.status = VIRTIO_INCOMPLETE;
         msg.index = -1;
-        msg.length_in = 0;
-        msg.length_out = 0;
         msg.in.clear();
         msg.out.clear();
 
@@ -286,7 +284,7 @@ namespace vcml {
                 return VIRTIO_ERR_NODMI;
             }
 
-            if (!desc->is_write() && msg.length_out)
+            if (!desc->is_write() && msg.length_out() > 0)
                 log_warn("invalid descriptor order");
 
             msg.append(desc->addr, desc->len, desc->is_write());
@@ -436,7 +434,7 @@ namespace vcml {
                 return VIRTIO_ERR_NODMI;
             }
 
-            if (!desc->is_write() && msg.length_out)
+            if (!desc->is_write() && msg.length_out() > 0)
                 log_warn("invalid descriptor order");
 
             msg.append(desc->addr, desc->len, desc->is_write());

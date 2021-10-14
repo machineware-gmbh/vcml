@@ -106,9 +106,6 @@ namespace vcml {
 
         u32 index;
 
-        u32 length_in;
-        u32 length_out;
-
         struct vq_buffer {
             u64 addr;
             u32 size;
@@ -118,9 +115,13 @@ namespace vcml {
         vector<vq_buffer> out;
 
         void append(u64 addr, u32 sz, bool iswr);
+        void trim(u32 max_len);
 
+        u32 length_in() const;
+        u32 length_out() const;
+
+        u32 length() const { return length_in() + length_out(); }
         u32 ndescs() const { return in.size() + out.size(); }
-        u32 length() const { return length_in + length_out; }
 
         size_t copy_out(const void* ptr, size_t sz, size_t offset = 0);
         size_t copy_in(void* ptr, size_t sz, size_t offset = 0);
@@ -139,13 +140,35 @@ namespace vcml {
     };
 
     inline void vq_message::append(u64 addr, u32 sz, bool iswr) {
-        if (iswr) {
+        if (iswr)
             out.push_back({addr, sz});
-            length_out += sz;
-        } else {
+        else
             in.push_back({addr, sz});
-            length_in += sz;
+    }
+
+    inline void vq_message::trim(u32 max_len) {
+        for (auto& buf : out) {
+            if (buf.size > max_len) {
+                buf.size = max_len;
+                max_len = 0;
+            } else {
+                max_len -= buf.size;
+            }
         }
+    }
+
+    inline u32 vq_message::length_in() const {
+        u32 length = 0;
+        for (const auto& buf : in)
+            length += buf.size;
+        return length;
+    }
+
+    inline u32 vq_message::length_out() const {
+        u32 length = 0;
+        for (const auto& buf : out)
+            length += buf.size;
+        return length;
     }
 
     template <typename T>

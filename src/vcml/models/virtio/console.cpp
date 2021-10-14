@@ -38,7 +38,7 @@ namespace vcml { namespace virtio {
         size_t rxbytes = rx_data_available();
         while (rxbytes > 0 && !m_fifo.empty()) {
             vq_message msg(m_fifo.front());
-            vector<u8> chars(msg.length_out);
+            vector<u8> chars(msg.length_out());
 
             size_t nread = 0;
             while (rxbytes > 0 && nread < chars.size()) {
@@ -48,6 +48,7 @@ namespace vcml { namespace virtio {
             }
 
             msg.copy_out(chars);
+            msg.trim(nread);
 
             if (VIRTIO_IN->put(VIRTQUEUE_DATA_RX, msg))
                 m_fifo.pop();
@@ -78,7 +79,7 @@ namespace vcml { namespace virtio {
 
             switch (vqid) {
             case VIRTQUEUE_DATA_TX: {
-                vector<u8> chars(msg.length_in);
+                vector<u8> chars(msg.length_in());
                 msg.copy_in(chars);
                 tx_data(chars.data(), chars.size());
                 break;
