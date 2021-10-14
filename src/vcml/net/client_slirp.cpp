@@ -229,7 +229,7 @@ namespace vcml { namespace net {
     }
 
     bool client_slirp::recv_packet(vector<u8>& packet) {
-        if (m_network)
+        if (m_packets.empty() && m_network)
             m_network->poll();
 
         if (m_packets.empty())
