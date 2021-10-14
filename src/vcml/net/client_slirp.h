@@ -29,19 +29,42 @@
 
 namespace vcml { namespace net {
 
-    class client_slirp: public client
+    class client_slirp;
+
+    class slirp_network
     {
     private:
         SlirpConfig m_config;
         Slirp* m_slirp;
 
-        queue<vector<u8>> m_packets;
+        set<client_slirp*> m_clients;
 
     public:
-        client_slirp(const string& adapter, SlirpConfig cfg);
+        slirp_network(unsigned int id);
+        virtual ~slirp_network();
+
+        void poll();
+
+        void send_packet(const u8* ptr, size_t len);
+        void recv_packet(const u8* ptr, size_t len);
+
+        void register_client(client_slirp* client);
+        void unregister_client(client_slirp* client);
+    };
+
+    class client_slirp: public client
+    {
+    private:
+        shared_ptr<slirp_network> m_network;
+        queue<shared_ptr<vector<u8>>> m_packets;
+
+    public:
+        client_slirp(const string& ada, const shared_ptr<slirp_network>& net);
         virtual ~client_slirp();
 
-        void insert_packet(const u8* ptr, size_t len);
+        void disconnect() { m_network = nullptr; }
+
+        void queue_packet(shared_ptr<vector<u8>> packet);
 
         virtual bool recv_packet(vector<u8>& packet) override;
         virtual void send_packet(const vector<u8>& packet) override;
