@@ -158,6 +158,11 @@ namespace vcml {
         return code << 8 | rev;
     }
 
+    enum pci_vendor_device_ids : u32 {
+        PCI_VENDOR_QUMRANET = 0x1af4,
+        PCI_DEVICE_VIRTIO   = 0x1040,
+    };
+
 }
 
 #endif

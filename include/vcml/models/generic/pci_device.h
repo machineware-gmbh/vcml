@@ -33,19 +33,36 @@ namespace vcml { namespace generic {
     class pci_device;
 
     struct pci_capability {
+        const string name;
+        vector<reg_base*> registers;
+        pci_device* device;
+
         reg<pci_device, u8>* CAP_ID;
         reg<pci_device, u8>* CAP_NEXT;
 
-        pci_capability(pci_device* dev, pci_cap_id cap_id);
+        pci_capability(const string& nm, pci_cap_id cap_id);
         virtual ~pci_capability();
+
+        template <typename T, typename HOST = pci_device>
+        reg<HOST, T>* new_cap_reg(const string& nm, T v, vcml_access rw);
+
+        template <typename T, typename HOST = pci_device>
+        reg<HOST, T>* new_cap_reg_ro(const string& nm, T val) {
+            return new_cap_reg<T, HOST>(nm, val, VCML_ACCESS_READ);
+        }
+
+        template <typename T, typename HOST = pci_device>
+        reg<HOST, T>* new_cap_reg_rw(const string& nm, T val) {
+            return new_cap_reg<T, HOST>(nm, val, VCML_ACCESS_READ_WRITE);
+        }
     };
 
     struct pci_cap_pm : pci_capability {
         reg<pci_device, u16>* PM_CAPS;
         reg<pci_device, u32>* PM_CTRL;
 
-        pci_cap_pm(pci_device* dev, u16 caps);
-        virtual ~pci_cap_pm();
+        pci_cap_pm(const string& nm, u16 caps);
+        virtual ~pci_cap_pm() = default;
     };
 
     struct pci_cap_msi : pci_capability {
@@ -73,8 +90,8 @@ namespace vcml { namespace generic {
 
         void set_pending(unsigned int vector, bool set = true);
 
-        pci_cap_msi(pci_device* dev, u16 msi_control);
-        virtual ~pci_cap_msi();
+        pci_cap_msi(const string& nm, u16 msi_control);
+        virtual ~pci_cap_msi() = default;
     };
 
     struct pci_cap_msix : pci_capability {
@@ -107,8 +124,9 @@ namespace vcml { namespace generic {
         void set_masked(unsigned int vector, bool set = true);
         void set_pending(unsigned int vector, bool set = true);
 
-        pci_cap_msix(pci_device* dev, u32 bar, size_t nvec, u32 offset = 0);
-        virtual ~pci_cap_msix();
+        pci_cap_msix(const string& nm, u32 bar, size_t nvec,
+                     u32 offset = 0);
+        virtual ~pci_cap_msix() = default;
         void reset();
 
         tlm_response_status read_table(const range& addr, void* data);
@@ -206,23 +224,10 @@ namespace vcml { namespace generic {
 
         void pci_legacy_interrupt(bool state);
 
-    protected:
         u8 pci_cap_ptr;
         u8 pci_cap_off;
 
-        template <typename T>
-        reg<pci_device, T>* new_cap_reg(const string& nm, T v, vcml_access rw);
-
-        template <typename T>
-        reg<pci_device, T>* new_cap_reg_ro(const string& nm, T val) {
-            return new_cap_reg<T>(nm, val, VCML_ACCESS_READ);
-        }
-
-        template <typename T>
-        reg<pci_device, T>* new_cap_reg_rw(const string& nm, T val) {
-            return new_cap_reg<T>(nm, val, VCML_ACCESS_READ_WRITE);
-        }
-
+    protected:
         virtual void pci_transport(pci_target_socket& socket,
                                    pci_payload& tx) override;
 
@@ -260,19 +265,22 @@ namespace vcml { namespace generic {
         void update_irqs();
     };
 
-    template <typename T>
-    reg<pci_device, T>* pci_device::new_cap_reg(const string& nm, T defval,
+    template <typename T, typename HOST>
+    reg<HOST, T>* pci_capability::new_cap_reg(const string& regnm, T val,
         vcml_access rw) {
-        hierarchy_guard guard(this);
-        reg<pci_device, T>* r = new reg<pci_device, T>(PCI_AS_CFG, nm.c_str(),
-                                                       pci_cap_off, defval);
+        hierarchy_guard guard(device);
+        string rname = mkstr("%s_%s", name.c_str(), regnm.c_str());
+        reg<pci_device, T>* r = new reg<HOST, T>(PCI_AS_CFG, rname.c_str(),
+                                                 device->pci_cap_off, val);
         if (is_write_allowed(rw))
             r->sync_always();
         else
             r->sync_never();
         r->set_access(rw);
-        pci_cap_off += r->size();
-        VCML_ERROR_ON(pci_cap_off >= 0x100, "out of PCI config space memory");
+        registers.push_back(r);
+        device->pci_cap_off += r->size();
+        if (device->pci_cap_off > 0x100)
+            VCML_ERROR("out of PCI config space memory");
         return r;
     }
 

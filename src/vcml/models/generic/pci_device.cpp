@@ -20,51 +20,30 @@
 
 namespace vcml { namespace generic {
 
-    const char* pci_cap_str(pci_cap_id id) {
-        switch (id) {
-        case PCI_CAPABILITY_PM: return "PCI_CAP_PM";
-        case PCI_CAPABILITY_MSI: return "PCI_CAP_MSI";
-        case PCI_CAPABILITY_MSIX: return "PCI_CAP_MSIX";
-        default:
-            VCML_ERROR("unknown capability id %d", (int)id);
-        }
-    }
-
-    pci_capability::pci_capability(pci_device* dev, pci_cap_id cap_id):
+    pci_capability::pci_capability(const string& nm, pci_cap_id cap_id):
+        name(std::move(nm)),
+        registers(),
+        device(dynamic_cast<pci_device*>(hierarchy_top())),
         CAP_ID(),
         CAP_NEXT() {
-        u8 prev_ptr = dev->pci_cap_ptr;
-        dev->pci_cap_ptr = dev->pci_cap_off;
+        VCML_ERROR_ON(!device, "PCI capability declared outside pci device");
+        u8 prev_ptr = device->pci_cap_ptr;
+        device->pci_cap_ptr = device->pci_cap_off;
 
-        string name_id = mkstr("%s_ID", pci_cap_str(cap_id));
-        string name_next = mkstr("%s_NEXT", pci_cap_str(cap_id));
-
-        CAP_ID = dev->new_cap_reg_ro<u8>(name_id, cap_id);
-        CAP_NEXT = dev->new_cap_reg_ro<u8>(name_next, prev_ptr);
+        CAP_ID = new_cap_reg_ro<u8>("CAP_ID", cap_id);
+        CAP_NEXT = new_cap_reg_ro<u8>("CAP_NEXT", prev_ptr);
     }
 
     pci_capability::~pci_capability() {
-        if (CAP_ID)
-            delete CAP_ID;
-        if (CAP_NEXT)
-            delete CAP_NEXT;
+        for (reg_base* reg : registers)
+            delete reg;
     }
 
-    pci_cap_pm::pci_cap_pm(pci_device* dev, u16 caps):
-        pci_capability(dev, PCI_CAPABILITY_PM),
-        PM_CAPS(),
-        PM_CTRL() {
-
-        PM_CAPS = dev->new_cap_reg_ro<u16>("PCI_PM_CAPS", caps);
-        PM_CTRL = dev->new_cap_reg_rw<u32>("PCI_PM_CTRL", 0);
+    pci_cap_pm::pci_cap_pm(const string& nm, u16 caps):
+        pci_capability(nm, PCI_CAPABILITY_PM), PM_CAPS(), PM_CTRL() {
+        PM_CAPS = new_cap_reg_ro<u16>("PCI_PM_CAPS", caps);
+        PM_CTRL = new_cap_reg_rw<u32>("PCI_PM_CTRL", 0);
         PM_CTRL->write = &pci_device::write_PM_CTRL;
-    }
-
-    pci_cap_pm::~pci_cap_pm() {
-        if (PM_CAPS)
-            delete PM_CAPS;
-        if (PM_CTRL)
-            delete PM_CTRL;
     }
 
     void pci_cap_msi::set_pending(unsigned int vector, bool set) {
@@ -79,45 +58,30 @@ namespace vcml { namespace generic {
             *MSI_PENDING &= ~mask;
     }
 
-    pci_cap_msi::pci_cap_msi(pci_device* dev, u16 control):
-        pci_capability(dev, PCI_CAPABILITY_MSI),
+    pci_cap_msi::pci_cap_msi(const string& nm, u16 control):
+        pci_capability(nm, PCI_CAPABILITY_MSI),
         MSI_CONTROL(),
         MSI_ADDR(),
         MSI_ADDR_HI(),
         MSI_DATA(),
         MSI_MASK(),
         MSI_PENDING() {
-        MSI_CONTROL = dev->new_cap_reg_rw<u16>("PCI_CAP_MSI_CONTROL", control);
+        MSI_CONTROL = new_cap_reg_rw<u16>("MSI_CONTROL", control);
         MSI_CONTROL->write = &pci_device::write_MSI_CTRL;
-        MSI_ADDR = dev->new_cap_reg_rw<u32>("PCI_CAP_MSI_ADDR", 0);
+        MSI_ADDR = new_cap_reg_rw<u32>("MSI_ADDR", 0);
         MSI_ADDR->write = &pci_device::write_MSI_ADDR;
 
         if (control & PCI_MSI_64BIT)
-            MSI_ADDR_HI = dev->new_cap_reg_rw<u32>("PCI_CAP_MSI_ADDR_HI", 0);
+            MSI_ADDR_HI = new_cap_reg_rw<u32>("MSI_ADDR_HI", 0);
 
-        MSI_DATA = dev->new_cap_reg_rw<u16>("PCI_CAP_MSI_DATA", 0);
-        dev->pci_cap_off += 2; // reserved space
+        MSI_DATA = new_cap_reg_rw<u16>("MSI_DATA", 0);
+        device->pci_cap_off += 2; // reserved space
 
         if (control & PCI_MSI_VECTOR) {
-            MSI_MASK = dev->new_cap_reg_rw<u32>("PCI_CAP_MSI_MASK", 0);
+            MSI_MASK = new_cap_reg_rw<u32>("MSI_MASK", 0);
             MSI_MASK->write = &pci_device::write_MSI_MASK;
-            MSI_PENDING = dev->new_cap_reg_ro<u32>("PCI_CAP_MSI_PENDING", 0);
+            MSI_PENDING = new_cap_reg_ro<u32>("MSI_PENDING", 0);
         }
-    }
-
-    pci_cap_msi::~pci_cap_msi() {
-        if (MSI_CONTROL)
-            delete MSI_CONTROL;
-        if (MSI_ADDR)
-            delete MSI_ADDR;
-        if (MSI_ADDR_HI)
-            delete MSI_ADDR_HI;
-        if (MSI_DATA)
-            delete MSI_DATA;
-        if (MSI_MASK)
-            delete MSI_MASK;
-        if (MSI_PENDING)
-            delete MSI_PENDING;
     }
 
     void pci_cap_msix::set_masked(unsigned int vector, bool set) {
@@ -134,10 +98,11 @@ namespace vcml { namespace generic {
             msix_table[vector].addr &= ~PCI_MSIX_PENDING;
     }
 
-    pci_cap_msix::pci_cap_msix(pci_device* dev, u32 b, size_t nvec, u32 off):
-        pci_capability(dev, PCI_CAPABILITY_MSIX),
+    pci_cap_msix::pci_cap_msix(const string& nm, u32 bar_idx,
+        size_t nvec, u32 off):
+        pci_capability(nm, PCI_CAPABILITY_MSIX),
         mem(off, off + nvec * sizeof(msix_entry) - 1),
-        bar(b),
+        bar(bar_idx),
         bar_as(PCI_AS_BAR0 + bar),
         num_vectors(nvec),
         msix_table(),
@@ -145,9 +110,9 @@ namespace vcml { namespace generic {
         MSIX_ADDR_HI(),
         MSIX_BIR_OFF() {
         VCML_ERROR_ON(bar < 0 || bar > PCI_NUM_BARS, "invalid BAR specified");
-        VCML_ERROR_ON(!dev->m_bars[bar].size, "BAR%u not declared", bar);
+        VCML_ERROR_ON(!device->m_bars[bar].size, "BAR%u not declared", bar);
 
-        if (dev->m_bars[bar].size < (nvec * 8) + off)
+        if (device->m_bars[bar].size < (nvec * 8) + off)
             VCML_ERROR("MSIX vector table does not fit into BAR%d", bar);
 
         u16 ctrl = (nvec - 1) & PCI_MSIX_TABLE_SIZE_MASK;
@@ -158,21 +123,10 @@ namespace vcml { namespace generic {
 
         msix_table = new msix_entry[nvec];
 
-        MSIX_CONTROL = dev->new_cap_reg_rw<u16>("PCI_CAP_MSIX_CONTROL", ctrl);
+        MSIX_CONTROL = new_cap_reg_rw<u16>("MSIX_CONTROL", ctrl);
         MSIX_CONTROL->write = &pci_device::write_MSIX_CTRL;
-        MSIX_ADDR_HI = dev->new_cap_reg_rw("PCI_CAP_MSIX_ADDR_HI", 0u);
-        MSIX_BIR_OFF = dev->new_cap_reg_ro("PCI_CAP_MSIX_BIR", boff);
-    }
-
-    pci_cap_msix::~pci_cap_msix() {
-        if (msix_table)
-            delete [] msix_table;
-        if (MSIX_CONTROL)
-            delete MSIX_CONTROL;
-        if (MSIX_ADDR_HI)
-            delete MSIX_ADDR_HI;
-        if (MSIX_BIR_OFF)
-            delete MSIX_BIR_OFF;
+        MSIX_ADDR_HI = new_cap_reg_rw<u32>("MSIX_ADDR_HI", 0u);
+        MSIX_BIR_OFF = new_cap_reg_ro<u32>("MSIX_BIR", boff);
     }
 
     void pci_cap_msix::reset() {
@@ -365,20 +319,23 @@ namespace vcml { namespace generic {
     }
 
     void pci_device::pci_declare_pm_cap(u16 pm_caps) {
+        hierarchy_guard guard(this);
         VCML_ERROR_ON(m_pm, "PCI_CAP_PM already declared");
-        m_pm = new pci_cap_pm(this, pm_caps);
+        m_pm = new pci_cap_pm("PCI_CAP_PM", pm_caps);
     }
 
     void pci_device::pci_declare_msi_cap(u16 msi_ctrl) {
+        hierarchy_guard guard(this);
         VCML_ERROR_ON(m_msi, "PCI_CAP_MSI already declared");
-        m_msi = new pci_cap_msi(this, msi_ctrl);
+        m_msi = new pci_cap_msi("PCI_CAP_MSI", msi_ctrl);
         SC_HAS_PROCESS(pci_device);
         SC_THREAD(msi_process);
     }
 
     void pci_device::pci_declare_msix_cap(u32 bar, size_t nvec, u32 offset) {
+        hierarchy_guard guard(this);
         VCML_ERROR_ON(m_msix, "PCI_CAP_MSIX already declared");
-        m_msix = new pci_cap_msix(this, bar, nvec, offset);
+        m_msix = new pci_cap_msix("PCI_CAP_MSIX", bar, nvec, offset);
         SC_HAS_PROCESS(pci_device);
         SC_THREAD(msix_process);
     }
