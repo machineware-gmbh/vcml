@@ -63,6 +63,7 @@ namespace vcml { namespace virtio {
         reset();
         desc.device_id = VIRTIO_DEVICE_CONSOLE;
         desc.vendor_id = VIRTIO_VENDOR_VCML;
+        desc.pci_class = PCI_CLASS_COMM_OTHER;
 
         desc.request_virtqueue(VIRTQUEUE_DATA_RX, 32);
         desc.request_virtqueue(VIRTQUEUE_DATA_TX, 32);

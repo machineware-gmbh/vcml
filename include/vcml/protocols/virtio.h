@@ -25,6 +25,8 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/pci_ids.h"
+
 #include "vcml/module.h"
 
 namespace vcml {
@@ -83,6 +85,8 @@ namespace vcml {
     struct virtio_device_desc {
         u32 device_id;
         u32 vendor_id;
+        u32 pci_class;
+
         std::map<u32, virtio_queue_desc> virtqueues;
 
         void request_virtqueue(u32 id, u32 max_size) {

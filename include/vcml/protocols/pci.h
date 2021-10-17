@@ -24,6 +24,8 @@
 #include "vcml/common/systemc.h"
 #include "vcml/module.h"
 
+#include "vcml/protocols/pci_ids.h"
+
 namespace vcml {
 
     enum pci_address_space : address_space {
@@ -148,10 +150,6 @@ namespace vcml {
         u8      min_grant;
         pci_irq int_pin;
     };
-
-    constexpr u32 pci_class_code(u8 code, u8 subclass, u8 prog, u8 rev) {
-        return (u32)code << 24 | (u32)subclass << 16 | (u32)prog << 8 | rev;
-    }
 
     constexpr u8 pci_max_lat(const pci_config& cfg) {
         return cfg.pcie ? 0u : cfg.max_latency;

@@ -211,6 +211,8 @@ namespace vcml { namespace virtio {
 
         desc.vendor_id = VIRTIO_VENDOR_VCML;
         desc.device_id = VIRTIO_DEVICE_INPUT;
+        desc.pci_class = keyboard ? PCI_CLASS_INPUT_KEYBOARD
+                                  : PCI_CLASS_INPUT_OTHER;
         desc.request_virtqueue(VIRTQUEUE_EVENT, 8);
         desc.request_virtqueue(VIRTQUEUE_STATUS, 8);
     }
