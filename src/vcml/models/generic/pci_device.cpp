@@ -190,7 +190,7 @@ namespace vcml { namespace generic {
         PCI_LATENCY_TIMER(PCI_AS_CFG, "PCI_LATENCY_TIMER", 0xd, 0),
         PCI_HEADER_TYPE(PCI_AS_CFG, "PCI_HEADER_TYPE", 0xe, 0),
         PCI_BIST(PCI_AS_CFG, "PCI_BIST", 0xf, 0),
-        PCI_BAR(PCI_AS_CFG, "PCI_BAR", 0x10, PCI_BAR_UNMAPPED),
+        PCI_BAR(PCI_AS_CFG, "PCI_BAR", 0x10, 0),
         PCI_SUBVENDOR_ID(PCI_AS_CFG,"PCI_SUBVENDOR_ID",0x2c, cfg.subvendor_id),
         PCI_SUBDEVICE_ID(PCI_AS_CFG,"PCI_SUBDEVICE_ID",0x2e, cfg.subsystem_id),
         PCI_CAP_PTR(PCI_AS_CFG, "PCI_CAP_PTR", 0x34, 0),
@@ -521,11 +521,6 @@ namespace vcml { namespace generic {
                 continue;
 
             PCI_BAR[barno] &= bar->mask();
-
-            if (!(PCI_COMMAND & PCI_COMMAND_IO) && bar->is_io)
-                PCI_BAR[barno] = PCI_BAR_UNMAPPED;
-            if (!(PCI_COMMAND & PCI_COMMAND_MMIO) && !bar->is_io)
-                PCI_BAR[barno] = PCI_BAR_UNMAPPED;
             if (bar->is_io)
                 PCI_BAR[barno] |= PCI_BAR_IO;
             if (bar->is_64bit)
@@ -536,20 +531,23 @@ namespace vcml { namespace generic {
             u64 addr = PCI_BAR[barno] & bar->mask();
             if (bar->is_64bit)
                 addr |= (u64)PCI_BAR[barno + 1] << 32;
+            if (!(PCI_COMMAND & PCI_COMMAND_IO) && bar->is_io)
+                addr = PCI_BAR_UNMAPPED;
+            if (!(PCI_COMMAND & PCI_COMMAND_MMIO) && !bar->is_io)
+                addr = PCI_BAR_UNMAPPED;
 
-            u32 lo = bar->addr_lo;
-            bar->addr = addr;
-
-            if (lo == bar->addr_lo)
+            if (addr == bar->addr)
                 continue;
 
-            if (bar->addr_lo == (PCI_BAR_UNMAPPED & bar->mask())) {
+            bar->addr = addr;
+
+            if (bar->addr == PCI_BAR_UNMAPPED) {
                 log_debug("unmapping BAR%d", barno);
                 pci_bar_unmap(barno);
             } else {
                 log_debug("mapping BAR%d to %s 0x%lx..0x%lx", barno,
                           bar->is_io ? "IO" : "MMIO", bar->addr,
-                          bar->addr + bar->size -1);
+                          bar->addr + bar->size - 1);
                 pci_bar_map(m_bars[barno]);
             }
         }
