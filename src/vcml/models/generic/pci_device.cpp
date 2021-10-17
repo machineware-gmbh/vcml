@@ -129,6 +129,11 @@ namespace vcml { namespace generic {
         MSIX_BIR_OFF = new_cap_reg_ro<u32>("MSIX_BIR", boff);
     }
 
+    pci_cap_msix::~pci_cap_msix() {
+        if (msix_table)
+            delete [] msix_table;
+    }
+
     void pci_cap_msix::reset() {
         for (size_t vector = 0; vector < num_vectors; vector++) {
             msix_table[vector].data = 0;

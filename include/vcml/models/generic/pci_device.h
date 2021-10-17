@@ -126,7 +126,7 @@ namespace vcml { namespace generic {
 
         pci_cap_msix(const string& nm, u32 bar, size_t nvec,
                      u32 offset = 0);
-        virtual ~pci_cap_msix() = default;
+        virtual ~pci_cap_msix();
         void reset();
 
         tlm_response_status read_table(const range& addr, void* data);
