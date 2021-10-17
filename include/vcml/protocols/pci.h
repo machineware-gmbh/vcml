@@ -160,9 +160,11 @@ namespace vcml {
     }
 
     enum pci_cap_id : u8 {
-        PCI_CAPABILITY_PM   = 0x1,
-        PCI_CAPABILITY_MSI  = 0x5,
-        PCI_CAPABILITY_MSIX = 0x11,
+        PCI_CAPABILITY_PM     = 0x01,
+        PCI_CAPABILITY_MSI    = 0x05,
+        PCI_CAPABILITY_VENDOR = 0x09,
+        PCI_CAPABILITY_PCIE   = 0x10,
+        PCI_CAPABILITY_MSIX   = 0x11,
     };
 
     enum pci_pm_caps : u16 {
