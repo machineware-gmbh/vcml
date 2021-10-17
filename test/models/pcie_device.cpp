@@ -189,14 +189,14 @@ public:
 
     template <typename T>
     void pcie_read_cfg(u64 devno, u64 offset, T& data) {
-        u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
+        u64 addr = MMAP_PCI_CFG_ADDR + devno * 4096 + offset;
         ASSERT_OK(MMIO.readw(addr, data))
             << "failed to read PCIe config at offset " << std::hex << addr;
     }
 
     template <typename T>
     void pcie_write_cfg(u64 devno, u64 offset, T data) {
-        u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
+        u64 addr = MMAP_PCI_CFG_ADDR + devno * 4096 + offset;
         ASSERT_OK(MMIO.writew(addr, data))
             << "failed to write PCIe config at offset " << std::hex << addr;
     }

@@ -27,9 +27,9 @@ namespace vcml { namespace generic {
     }
 
     static void pcie_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
-        offset = (addr & 0xff) | (addr >> 16 & 0xf00);
-        devfn = (addr >> 8) & 0xff;
-        bus = (addr >> 16) & 0xff;
+        offset = addr & 0xff;
+        devfn = (addr >> 12) & 0xff;
+        bus = (addr >> 20) & 0x1ff;
     }
 
     static pci_address_space pci_target_space(int bar) {
