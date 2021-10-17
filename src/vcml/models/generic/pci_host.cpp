@@ -126,10 +126,6 @@ namespace vcml { namespace generic {
 
         case PCI_AS_CFG:
             pci_transport_cfg(pci);
-            if (pci.is_address_error()) {
-                pci.response = PCI_RESP_SUCCESS;
-                pci.data = 0;
-            }
             break;
 
         default:
@@ -160,17 +156,28 @@ namespace vcml { namespace generic {
 
     void pci_host::pci_transport_cfg(pci_payload& tx) {
         u32 bus, devno, offset;
-        if (pcie)
-            pcie_decode_cfg(tx.addr, bus, devno, offset);
-        else
-            pci_decode_cfg(tx.addr, bus, devno, offset);
+        u64 addr = tx.addr;
 
-        if (PCI_OUT.exists(devno)) {
-            tx.addr = offset;
-            PCI_OUT[devno].transport(tx);
-        } else {
-            tx.data = ~0u;
+        if (pcie)
+            pcie_decode_cfg(addr, bus, devno, offset);
+        else
+            pci_decode_cfg(addr, bus, devno, offset);
+
+        // not an error to access nonexistent devices or buses
+        if (bus != 0 || !PCI_OUT.exists(devno)) {
             tx.response = PCI_RESP_SUCCESS;
+            tx.data = ~0u;
+            return;
+        }
+
+        tx.addr = offset;
+        PCI_OUT[devno].transport(tx);
+        tx.addr = addr;
+
+        // treat nonexistent registers as reserved memory
+        if (tx.is_address_error()) {
+            tx.response = PCI_RESP_SUCCESS;
+            tx.data = 0;
         }
     }
 
