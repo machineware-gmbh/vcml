@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/range.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/systemc.h"
 
 #include "vcml/peripheral.h"
@@ -95,30 +96,35 @@ namespace vcml { namespace generic {
     };
 
     struct pci_cap_msix : pci_capability {
-        const range mem;
+        const range tbl;
+        const range bpa;
         const u32 bar;
         const address_space bar_as;
         const size_t num_vectors;
 
         struct msix_entry {
+            u64 addr;
             u32 data;
-            u32 addr;
+            u32 ctrl;
         }* msix_table;
 
+        u32* msix_pba;
+
         reg<pci_device, u16>* MSIX_CONTROL;
-        reg<pci_device, u32>* MSIX_ADDR_HI;
         reg<pci_device, u32>* MSIX_BIR_OFF;
+        reg<pci_device, u32>* MSIX_PBA_OFF;
 
         bool is_enabled() const {
             return *MSIX_CONTROL & PCI_MSIX_ENABLE;
         }
 
         bool is_masked(unsigned int vector) const {
-            return msix_table[vector].addr & PCI_MSIX_MASKED;
+            return (*MSIX_CONTROL & PCI_MSIX_ALL_MASKED) ||
+                   (msix_table[vector].ctrl & PCI_MSIX_MASKED);
         }
 
         bool is_pending(unsigned int vector) const {
-            return msix_table[vector].addr & PCI_MSIX_PENDING;
+            return (msix_pba[vector / 32] >> (vector % 32)) & 1;
         }
 
         void set_masked(unsigned int vector, bool set = true);
@@ -260,6 +266,16 @@ namespace vcml { namespace generic {
         u32 write_MSI_MASK(u32 val);
 
         u16 write_MSIX_CTRL(u16 val);
+
+        u16 read_MSIX_CTRL() {
+            log_warn("MSIX_CTRL = 0x%04hx", m_msix->MSIX_CONTROL->get());
+            return m_msix->MSIX_CONTROL->get();
+        }
+
+        u32 read_BIR_OFF() {
+            log_warn("MSIX_BIR  = 0x%08x", m_msix->MSIX_BIR_OFF->get());
+            return m_msix->MSIX_BIR_OFF->get();
+        }
 
         void update_bars();
         void update_irqs();

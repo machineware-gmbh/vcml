@@ -35,7 +35,7 @@ enum : u64 {
     TEST_REG_OFFSET    = 0x0,
     TEST_REG_IO_OFF    = 0x4,
     TEST_IRQ_VECTOR    = 5,
-    TEST_MSIX_NVEC     = 512,
+    TEST_MSIX_NVEC     = 128,
 
     PCI_VENDOR_OFFSET  = 0x0,
     PCI_DEVICE_OFFSET  = 0x2,
@@ -53,8 +53,8 @@ enum : u64 {
     PCI_MSI_PEND_OFF   = 0x10,
 
     PCI_MSIX_CTRL_OFF  = 0x2,
-    PCI_MSIX_ADDR_OFF  = 0x4,
-    PCI_MSIX_BIR_OFF   = 0x8,
+    PCI_MSIX_BIR_OFF   = 0x4,
+    PCI_MSIX_PBA_OFF   = 0x8,
 
     // MMIO space:
     //   0x00000 .. 0x0ffff: PCI CFG area
@@ -318,11 +318,12 @@ public:
         u16 msix_ctrl;
         pcie_read_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
         EXPECT_EQ(msix_ctrl, TEST_MSIX_NVEC - 1);
-        pcie_write_cfg<u32>(0, msix_off + PCI_MSIX_ADDR_OFF,
-                            (u64)MMAP_PCI_MSI_ADDR >> 32);
-        u32 bir;
+
+        u32 bir, pba, pba_expect = TEST_MSIX_NVEC * 16 | 3;
         pcie_read_cfg(0, msix_off + PCI_MSIX_BIR_OFF, bir);
         EXPECT_EQ(bir, 3) << "MSIX BIR not pointing to BAR3";
+        pcie_read_cfg(0, msix_off + PCI_MSIX_PBA_OFF, pba);
+        EXPECT_EQ(pba, pba_expect) << "MSIX PBA not pointing to BAR3";
         msix_ctrl |= PCI_MSIX_ENABLE;
         pcie_write_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
 
@@ -330,28 +331,37 @@ public:
         pcie_write_cfg(0, PCI_BAR3_OFFSET, (u32)bar3);
 
         msi_addr = msi_data = 0;
-        u64 msix_table_addr = MMAP_PCI_MSIX_TABLE_ADDR + TEST_IRQ_VECTOR * 8;
-        u32 msix_addr, msix_data;
-        EXPECT_OK(MMIO.readw(msix_table_addr + 0, msix_data))
+        u64 msix_table_addr = MMAP_PCI_MSIX_TABLE_ADDR + TEST_IRQ_VECTOR * 16;
+        u32 msix_addr, msix_data, msix_mask;
+        EXPECT_OK(MMIO.readw(msix_table_addr + 0, msix_addr))
             << "cannot read MSIX vector table";
-        EXPECT_OK(MMIO.readw(msix_table_addr + 4, msix_addr))
+        EXPECT_OK(MMIO.readw(msix_table_addr + 8, msix_data))
             << "cannot read MSIX vector table";
-        EXPECT_EQ(msix_addr, PCI_MSIX_MASKED)
+        EXPECT_OK(MMIO.readw(msix_table_addr + 12, msix_mask))
+            << "cannot read MSIX vector table";
+        EXPECT_EQ(msix_addr & 3, 0)
             << "MSIX vector table addr entry corrupted";
         EXPECT_EQ(msix_data, 0)
             << "MSIX vector table data entry corrupted";
-        msix_addr = MMAP_PCI_MSI_ADDR + PCI_MSIX_PENDING;
+        EXPECT_EQ(msix_mask, PCI_MSIX_MASKED)
+            << "MSIX vector table mask entry corrupted";
+        msix_addr = MMAP_PCI_MSI_ADDR + 0x44;
         msix_data = 1234567;
-        EXPECT_OK(MMIO.writew(msix_table_addr + 0, msix_data))
+        EXPECT_OK(MMIO.writew(msix_table_addr + 0, msix_addr + 3))
             << "cannot write MSIX vector table";
-        EXPECT_OK(MMIO.writew(msix_table_addr + 4, msix_addr))
+        EXPECT_OK(MMIO.writew(msix_table_addr + 8, msix_data))
             << "cannot write MSIX vector table";
-
         EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
             << "BAR2 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
-        EXPECT_EQ(msi_addr, msix_addr & ~PCI_MSIX_PENDING)
-            << "got wrong MSIX address";
+        EXPECT_EQ(msi_addr, 0) << "got MSIX address despite masked";
+        EXPECT_EQ(msi_data, 0) << "got MSIX data despite masked";
+
+        msix_mask = ~PCI_MSIX_MASKED; // trigger MSI by unmasking
+        EXPECT_OK(MMIO.writew(msix_table_addr + 12, msix_mask))
+            << "cannot write MSIX vector table";
+        wait_clock_cycle();
+        EXPECT_EQ(msi_addr, msix_addr) << "got wrong MSIX address";
         EXPECT_EQ(msi_data, msix_data) << "got wrong MSIX data";
 
         //

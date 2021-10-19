@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/range.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/systemc.h"
 #include "vcml/module.h"
 
@@ -209,15 +210,13 @@ namespace vcml {
 
     enum pci_msix_control : u16 {
         PCI_MSIX_ENABLE          = 1 << 15,
-        PCI_MSIX_TABLE_SIZE_MASK = 0x7ff,
+        PCI_MSIX_ALL_MASKED      = 1 << 14,
+        PCI_MSIX_TABLE_SIZE_MASK = bitmask(11),
     };
 
     enum pci_msix_table : u32 {
-        PCI_MSIX_PENDING  = 1 << 0,
-        PCI_MSIX_MASKED   = 1 << 1,
-        PCI_MSIX_DATA     = 0,
-        PCI_MSIX_ADDR     = 1,
-        PCI_MSIX_BIR_MASK = 7,
+        PCI_MSIX_MASKED   = 1 << 0,
+        PCI_MSIX_BIR_MASK = bitmask(3),
     };
 
     class pci_initiator_socket;
