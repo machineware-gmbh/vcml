@@ -82,13 +82,13 @@ public:
         ASSERT_OK(OUT.readw(RNG_STATUS, data));
         ASSERT_EQ(data, 0);
 
-        data = virtio::mmio::VIRTIO_STATUS_ACKNOWLEDGE |
-               virtio::mmio::VIRTIO_STATUS_DRIVER |
-               virtio::mmio::VIRTIO_STATUS_FEATURES_OK;
+        data = VIRTIO_STATUS_ACKNOWLEDGE |
+               VIRTIO_STATUS_DRIVER |
+               VIRTIO_STATUS_FEATURES_OK;
         ASSERT_OK(OUT.writew(RNG_STATUS, data));
 
         ASSERT_OK(OUT.readw(RNG_STATUS, data));
-        ASSERT_TRUE(data & virtio::mmio::VIRTIO_STATUS_FEATURES_OK);
+        ASSERT_TRUE(data & VIRTIO_STATUS_FEATURES_OK);
 
         data = 0;
         ASSERT_OK(OUT.writew(RNG_VQ_SEL, data));

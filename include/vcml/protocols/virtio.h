@@ -72,6 +72,40 @@ namespace vcml {
         VIRTIO_F_NOTIFICATION_DATA  = 1ull << 38,
     };
 
+    enum virtio_vectors : u16 {
+        VIRTIO_NO_VECTOR = 0xffff,
+    };
+
+    enum virtio_device_status : u32 {
+        VIRTIO_STATUS_ACKNOWLEDGE        = 1u << 0,
+        VIRTIO_STATUS_DRIVER             = 1u << 1,
+        VIRTIO_STATUS_DRIVER_OK          = 1u << 2,
+        VIRTIO_STATUS_FEATURES_OK        = 1u << 3,
+        VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1u << 6,
+        VIRTIO_STATUS_FAILED             = 1u << 7,
+
+        VIRTIO_STATUS_FEATURE_CHECK      = VIRTIO_STATUS_ACKNOWLEDGE |
+                                           VIRTIO_STATUS_DRIVER      |
+                                           VIRTIO_STATUS_FEATURES_OK,
+        VIRTIO_STATUS_DEVICE_READY       = VIRTIO_STATUS_ACKNOWLEDGE |
+                                           VIRTIO_STATUS_DRIVER      |
+                                           VIRTIO_STATUS_FEATURES_OK |
+                                           VIRTIO_STATUS_DRIVER_OK,
+
+        VIRTIO_STATUS_MASK               = bitmask(8),
+    };
+
+    enum virtio_irq_status : u32 {
+        VIRTIO_IRQSTATUS_VQUEUE = 1u << 0,
+        VIRTIO_IRQSTATUS_CONFIG = 1u << 1,
+
+        VIRTIO_IRQSTATUS_MASK   = bitmask(2, 0),
+    };
+
+    enum virtio_virtqueue_ids : u32 {
+        VIRTQUEUE_MAX = 1024,
+    };
+
     struct virtio_queue_desc {
         u32  id;
         u32  limit;
@@ -79,7 +113,13 @@ namespace vcml {
         u64  desc;
         u64  driver;
         u64  device;
+        u16  vector;
         bool has_event_idx;
+
+        virtio_queue_desc(u32 qid, u32 sz):
+            id(qid), limit(sz), size(sz), desc(0), driver(0), device(0),
+            vector(VIRTIO_NO_VECTOR), has_event_idx(false) {
+        }
     };
 
     struct virtio_device_desc {
@@ -90,7 +130,7 @@ namespace vcml {
         std::map<u32, virtio_queue_desc> virtqueues;
 
         void request_virtqueue(u32 id, u32 max_size) {
-            virtqueues.insert({id, {id, max_size, 0, 0, 0, 0, false} });
+            virtqueues.insert({id, virtio_queue_desc(id, max_size)});
         }
 
         void reset();
@@ -226,6 +266,8 @@ namespace vcml {
         const bool has_event_idx;
 
         bool notify;
+
+        u16 vector;
 
         virtio_dmifn dmi;
 

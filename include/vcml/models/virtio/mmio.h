@@ -79,36 +79,6 @@ namespace vcml { namespace virtio {
         property<bool> use_packed_queues;
         property<bool> use_strong_barriers;
 
-        enum mmio_status_bits : u32 {
-            VIRTIO_STATUS_ACKNOWLEDGE        = 1u << 0,
-            VIRTIO_STATUS_DRIVER             = 1u << 1,
-            VIRTIO_STATUS_DRIVER_OK          = 1u << 2,
-            VIRTIO_STATUS_FEATURES_OK        = 1u << 3,
-            VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1u << 6,
-            VIRTIO_STATUS_FAILED             = 1u << 7,
-
-            VIRTIO_STATUS_FEATURE_CHECK      = VIRTIO_STATUS_ACKNOWLEDGE |
-                                               VIRTIO_STATUS_DRIVER      |
-                                               VIRTIO_STATUS_FEATURES_OK,
-            VIRTIO_STATUS_DEVICE_READY       = VIRTIO_STATUS_ACKNOWLEDGE |
-                                               VIRTIO_STATUS_DRIVER      |
-                                               VIRTIO_STATUS_FEATURES_OK |
-                                               VIRTIO_STATUS_DRIVER_OK,
-
-            VIRTIO_STATUS_MASK               = bitmask(8),
-        };
-
-        enum mmio_irq_status_bits : u32 {
-            VIRTIO_IRQSTATUS_VQUEUE = 1u << 0,
-            VIRTIO_IRQSTATUS_CONFIG = 1u << 1,
-
-            VIRTIO_IRQSTATUS_MASK   = bitmask(2, 0),
-        };
-
-        enum mmio_virtqueue_ids : u32 {
-            VIRTQUEUE_MAX = 1024,
-        };
-
         reg<mmio, u32> MAGIC;
         reg<mmio, u32> VERSION;
         reg<mmio, u32> DEVICE_ID;

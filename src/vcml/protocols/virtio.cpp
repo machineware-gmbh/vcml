@@ -137,6 +137,7 @@ namespace vcml {
         addr_device(desc.device),
         has_event_idx(desc.has_event_idx),
         notify(false),
+        vector(VIRTIO_NO_VECTOR),
         dmi(dmi),
         parent(dynamic_cast<module*>(hierarchy_top())) {
         VCML_ERROR_ON(!parent, "virtqueue created outside module");
@@ -184,12 +185,8 @@ namespace vcml {
         m_used(nullptr),
         m_used_ev(nullptr),
         m_avail_ev(nullptr) {
-        if (!addr_desc || !addr_driver || !addr_device) {
+        if (!addr_desc || !addr_driver || !addr_device)
             log_warn("invalid virtqueue ring addresses");
-            return;
-        }
-
-
     }
 
     split_virtqueue::~split_virtqueue() {
@@ -333,10 +330,8 @@ namespace vcml {
         m_device(nullptr),
         m_wrap_get(true),
         m_wrap_put(true) {
-        if (!addr_desc || !addr_driver || !addr_device) {
+        if (!addr_desc || !addr_driver || !addr_device)
             log_warn("invalid virtqueue ring addresses");
-            return;
-        }
     }
 
     packed_virtqueue::~packed_virtqueue() {
