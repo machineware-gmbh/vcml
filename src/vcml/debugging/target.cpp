@@ -97,7 +97,7 @@ namespace vcml { namespace debugging {
     }
 
     const cpureg* target::find_cpureg(u64 regno) const {
-        auto& it = m_cpuregs.find(regno);
+        auto it = m_cpuregs.find(regno);
         return it != m_cpuregs.end() ? &(it->second) : nullptr;
     }
 
