@@ -373,7 +373,7 @@ namespace vcml { namespace debugging {
 
     void vspserver::pause_simulation(const string& reason) {
         m_stop_reason = reason;
-        sc_pause();
+        suspend();
     }
 
     void vspserver::force_quit() {
