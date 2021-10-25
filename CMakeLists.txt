@@ -120,6 +120,7 @@ set(sources
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp
     ${src}/vcml/models/virtio/mmio.cpp
+    ${src}/vcml/models/virtio/pci.cpp
     ${src}/vcml/models/virtio/rng.cpp
     ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp

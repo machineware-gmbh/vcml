@@ -67,6 +67,7 @@
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/pci.h"
+#include "vcml/protocols/pci_ids.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"
@@ -101,6 +102,7 @@
 #include "vcml/models/meta/throttle.h"
 
 #include "vcml/models/virtio/mmio.h"
+#include "vcml/models/virtio/pci.h"
 #include "vcml/models/virtio/rng.h"
 #include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
