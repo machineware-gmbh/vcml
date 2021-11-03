@@ -83,6 +83,7 @@ set(sources
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
+    ${src}/vcml/ui/console.cpp
     ${src}/vcml/protocols/tlm_sbi.cpp
     ${src}/vcml/protocols/tlm_exmon.cpp
     ${src}/vcml/protocols/tlm_dmi_cache.cpp
