@@ -24,7 +24,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/ui/display.h"
+#include "vcml/ui/console.h"
 
 #include "vcml/component.h"
 
@@ -33,6 +33,7 @@ namespace vcml { namespace generic {
     class fbdev: public component
     {
     private:
+        ui::console m_console;
         ui::fbmode m_mode;
         u8* m_vptr;
 
@@ -47,8 +48,6 @@ namespace vcml { namespace generic {
         property<u32> resx;
         property<u32> resy;
         property<string> format;
-
-        property<string> display;
 
         tlm_initiator_socket OUT;
 

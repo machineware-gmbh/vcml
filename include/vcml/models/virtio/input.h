@@ -26,6 +26,7 @@
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/display.h"
+#include "vcml/ui/console.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/protocols/virtio.h"
@@ -90,6 +91,7 @@ namespace vcml { namespace virtio {
 
         ui::keyboard m_keyboard;
         ui::pointer m_pointer;
+        ui::console m_console;
 
         queue<input_event> m_events;
         queue<vq_message> m_messages;
@@ -133,7 +135,6 @@ namespace vcml { namespace virtio {
         property<u64> pollrate;
 
         property<string> keymap;
-        property<string> display;
 
         virtio_target_socket VIRTIO_IN;
 

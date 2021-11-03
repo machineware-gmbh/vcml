@@ -99,7 +99,7 @@ namespace vcml { namespace opencores {
             m_bpp  = OCFBC_BPP(val);
             m_pc   = (val & CTLR_PC) == CTLR_PC;
 
-            create_framebuffer();
+            create();
         }
 
         return val;
@@ -143,8 +143,8 @@ namespace vcml { namespace opencores {
         return TLM_OK_RESPONSE;
     }
 
-    void ocfbc::create_framebuffer() {
-        if (display == "")
+    void ocfbc::create() {
+        if (!m_console.has_display())
             return;
 
         u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
@@ -193,25 +193,16 @@ namespace vcml { namespace opencores {
             VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
         }
 
-        auto disp = ui::display::lookup(display);
-
         // cannot use DMI with pseudocolor
-        if ((vram == nullptr) || (m_pc)) {
+        if (!vram || m_pc) {
             log_debug("copying vnc framebuffer from vram");
             m_fb = new u8[mode.size];
-            disp->init(mode, m_fb);
+            m_console.setup(mode, m_fb);
         } else {
             log_debug("mapping vnc framebuffer into vram");
-            disp->init(mode, vram);
+            m_console.setup(mode, vram);
             m_fb = nullptr;
         }
-    }
-
-    void ocfbc::render_framebuffer() {
-        if (display == "")
-            return;
-
-        ui::display::lookup(display)->render();
     }
 
     void ocfbc::render() {
@@ -282,7 +273,7 @@ namespace vcml { namespace opencores {
             IRQ = true; // VSYNC interrupt
         }
 
-        render_framebuffer(); // output image
+        m_console.render(); // output image
     }
 
     void ocfbc::update() {
@@ -331,8 +322,7 @@ namespace vcml { namespace opencores {
         IRQ("IRQ"),
         IN("IN"),
         OUT("OUT"),
-        clock("clock", 60), // 60Hz
-        display("display", "") {
+        clock("clock", 60) { // 60Hz
 
         CTLR.allow_read_write();
         CTLR.write = &ocfbc::write_CTRL;
@@ -359,8 +349,8 @@ namespace vcml { namespace opencores {
     }
 
     void ocfbc::end_of_simulation() {
-        if (display != "")
-            ui::display::lookup(display)->shutdown();
+        m_console.shutdown();
+        peripheral::end_of_simulation();
     }
 
 }}

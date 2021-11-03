@@ -37,7 +37,7 @@ public:
         fb.CLOCK.stub(60);
         fb.RESET.stub();
         fb.OUT.bind(vmem.IN);
-        fb.display = "display:0";
+        fb.displays = "display:0";
     }
 
     virtual void run_test() override {

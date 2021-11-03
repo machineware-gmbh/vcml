@@ -25,7 +25,7 @@
 #include "vcml/common/thctl.h"
 
 #include "vcml/ui/keymap.h"
-#include "vcml/ui/display.h"
+#include "vcml/ui/console.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/protocols/tlm.h"
@@ -35,11 +35,13 @@
 
 namespace vcml { namespace opencores {
 
-    class ockbd: public peripheral {
+    class ockbd: public peripheral
+    {
     private:
         queue<u8> m_key_fifo;
 
         ui::keyboard m_keyboard;
+        ui::console m_console;
 
         void update();
         void key_event(u32 key, u32 down);
@@ -57,7 +59,6 @@ namespace vcml { namespace opencores {
         tlm_target_socket IN;
 
         property<string> keymap;
-        property<string> display;
         property<size_t> fifosize;
 
         ockbd(const sc_module_name& name);

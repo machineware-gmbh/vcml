@@ -25,12 +25,10 @@
 
 #include "vcml/properties/property.h"
 #include "vcml/protocols/tlm.h"
-#include "vcml/ui/display.h"
+#include "vcml/ui/console.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
-
-
 
 namespace vcml { namespace opencores {
 
@@ -41,6 +39,8 @@ namespace vcml { namespace opencores {
             PALETTE_ADDR = 0x800,
             PALETTE_SIZE = 0x200 // 2x 256x4bytes
         };
+
+        ui::console m_console;
 
         const range m_palette_addr;
         u32  m_palette[PALETTE_SIZE];
@@ -66,9 +66,7 @@ namespace vcml { namespace opencores {
 
         sc_event m_enable;
 
-        void create_framebuffer();
-        void render_framebuffer();
-
+        void create();
         void render();
         void update();
 
@@ -125,7 +123,6 @@ namespace vcml { namespace opencores {
         tlm_initiator_socket OUT;
 
         property<clock_t> clock;
-        property<string> display;
 
         ocfbc(const sc_module_name& name);
         virtual ~ocfbc();

@@ -58,8 +58,8 @@ namespace vcml { namespace opencores {
         u8 key = m_key_fifo.front();
         m_key_fifo.pop();
 
-        log_debug("cpu fetched key 0x%x from KHR, %d keys remaining",
-                  (int)key, (int)m_key_fifo.size());
+        log_debug("cpu fetched key 0x%hhx from KHR, %zu keys remaining",
+                  key, m_key_fifo.size());
         if (IRQ && m_key_fifo.empty())
             log_debug("clearing IRQ");
 
@@ -71,20 +71,19 @@ namespace vcml { namespace opencores {
         peripheral(nm),
         m_key_fifo(),
         m_keyboard(name()),
+        m_console(),
         KHR("KHR", 0x0, 0),
         IRQ("IRQ"),
         IN("IN"),
         keymap("keymap", "us"),
-        display("display", ""),
         fifosize("fifosize", 16) {
         m_keyboard.set_layout(keymap);
 
         KHR.allow_read_only();
         KHR.read = &ockbd::read_KHR;
 
-        if (display != "") {
-            auto disp = ui::display::lookup(display);
-            disp->add_keyboard(&m_keyboard);
+        if (m_console.has_display()) {
+            m_console.notify(m_keyboard);
             SC_HAS_PROCESS(ockbd);
             SC_METHOD(update);
         }
@@ -95,11 +94,8 @@ namespace vcml { namespace opencores {
     }
 
     void ockbd::end_of_simulation() {
-        if (display != "") {
-            auto disp = ui::display::lookup(display);
-            disp->remove_keyboard(&m_keyboard);
-            disp->shutdown();
-        }
+        m_console.shutdown();
+        peripheral::end_of_simulation();
     }
 
 }}

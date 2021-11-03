@@ -103,21 +103,19 @@ namespace vcml { namespace virtio {
     }
 
     void input::config_update_absinfo() {
-        if (display == "" || !touchpad)
+        if (!m_console.has_display() || !touchpad)
             return;
-
-        auto disp = ui::display::lookup(display);
 
         switch (m_config.subsel) {
         case ABS_X:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = disp->resx() - 1;
+            m_config.u.abs.max  = m_console.resx() - 1;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
         case ABS_Y:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = disp->resy() - 1;
+            m_config.u.abs.max  = m_console.resy() - 1;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
@@ -255,22 +253,19 @@ namespace vcml { namespace virtio {
         m_config(),
         m_keyboard(name()),
         m_pointer(name()),
+        m_console(),
         touchpad("touchpad", true),
         keyboard("keyboard", true),
         pollrate("pollrate", 1000),
         keymap("keymap", "us"),
-        display("display", ""),
         VIRTIO_IN("VIRTIO_IN") {
 
         m_keyboard.set_layout(keymap);
 
-        if (display != "") {
-            auto disp = ui::display::lookup(display);
-            if (keyboard)
-                disp->add_keyboard(&m_keyboard);
-            if (touchpad)
-                disp->add_pointer(&m_pointer);
-        }
+        if (keyboard)
+            m_console.notify(m_keyboard);
+        if (touchpad)
+            m_console.notify(m_pointer);
 
         if (keyboard || touchpad) {
             SC_HAS_PROCESS(input);
@@ -289,14 +284,8 @@ namespace vcml { namespace virtio {
     }
 
     void input::end_of_simulation() {
-        if (display != "") {
-            auto disp = ui::display::lookup(display);
-            if (keyboard)
-                disp->remove_keyboard(&m_keyboard);
-            if (touchpad)
-                disp->remove_pointer(&m_pointer);
-            disp->shutdown();
-        }
+        module::end_of_simulation();
+        m_console.shutdown();
     }
 
 }}
