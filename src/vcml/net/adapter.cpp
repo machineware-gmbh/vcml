@@ -91,7 +91,7 @@ namespace vcml { namespace net {
             try {
                 create_client(type);
             } catch (std::exception& ex) {
-                log_warn("error creating %s: %s", type.c_str(), ex.what());
+                log_warn("%s", ex.what());
             }
         }
 

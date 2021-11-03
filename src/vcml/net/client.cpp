@@ -57,12 +57,13 @@ namespace vcml { namespace net {
         auto it = clients.find(kind);
         if (it == clients.end()) {
             stringstream ss;
-            log_warn("unknown network client '%s'", type.c_str());
-            log_warn("the following client types are known:");
+            ss << "unknown network client '" << type << "'" << std::endl
+               << "the following network clients are known:" << std::endl;
             for (auto avail : clients)
-                log_warn("  %s", avail.first.c_str());
-            return nullptr;
+                ss << "  " << avail.first;
+            VCML_REPORT("%s", ss.str().c_str());
         }
+
         try
         {
             return it->second(adapter, type);

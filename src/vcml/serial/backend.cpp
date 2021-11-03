@@ -55,10 +55,9 @@ namespace vcml { namespace serial {
         if (it == backends.end()) {
             stringstream ss;
             ss << "unknown serial backend '" << type << "'" << std::endl
-               << "the following backend types are known:";
+               << "the following backends are known:" << std::endl;
             for (auto avail : backends)
-                ss << " " << avail.first;
-            ss << std::endl;
+                ss << "  " << avail.first;
             VCML_REPORT("%s", ss.str().c_str());
         }
 

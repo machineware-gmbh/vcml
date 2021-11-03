@@ -102,7 +102,7 @@ namespace vcml { namespace serial {
             try {
                 create_backend(type);
             } catch (std::exception& ex) {
-                log_warn("error creating %s: %s", type.c_str(), ex.what());
+                log_warn("%s", ex.what());
             }
         }
 
