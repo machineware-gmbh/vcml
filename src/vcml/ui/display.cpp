@@ -112,9 +112,7 @@ namespace vcml { namespace ui {
     }
 
     unordered_map<string, function<display*(u32)>> display::types = {
-            { "display", display::create },
             { "null", display::create },
-            { "none", display::create },
 #ifdef HAVE_LIBVNC
             { "vnc", vnc::create },
 #endif
@@ -133,14 +131,19 @@ namespace vcml { namespace ui {
             return disp;
 
         u32 nr;
-        string id;
+        string type;
 
-        if (!parse_display(name, id, nr))
+        if (!parse_display(name, type, nr))
             VCML_ERROR("cannot parse display name: %s", name.c_str());
 
-        auto it = types.find(id);
-        if (it == types.end())
-            VCML_ERROR("unknown display type: %s", id.c_str());
+        auto it = types.find(type);
+        if (it == types.end()) {
+            stringstream ss;
+            ss << "unknown display '" << type << "', available displays:";
+            for (auto avail : types)
+                ss << " " << avail.first;
+            VCML_REPORT("%s", ss.str().c_str());
+        }
 
         disp.reset(it->second(nr));
         return disp;
