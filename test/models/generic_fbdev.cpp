@@ -37,11 +37,10 @@ public:
         fb.CLOCK.stub(60);
         fb.RESET.stub();
         fb.OUT.bind(vmem.IN);
-        fb.displays = "display:0";
     }
 
     virtual void run_test() override {
-        ASSERT_EQ(fb.resx, RESX) << "unexpect screen width";
+        ASSERT_EQ(fb.resx, RESX) << "unexpected screen width";
         ASSERT_EQ(fb.resy, RESY) << "unexpected screen height";
         ASSERT_EQ(fb.stride(), RESX * 4) << "wrong stride";
         ASSERT_EQ(fb.size(), RESX * RESY * 4) << "wrong size";
