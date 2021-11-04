@@ -90,6 +90,7 @@ set(sources
     ${src}/vcml/protocols/tlm_stubs.cpp
     ${src}/vcml/protocols/tlm_host.cpp
     ${src}/vcml/protocols/tlm_sockets.cpp
+    ${src}/vcml/protocols/irq.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
     ${src}/vcml/protocols/pci.cpp

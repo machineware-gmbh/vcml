@@ -65,6 +65,7 @@
 #include "vcml/ui/console.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/pci.h"
