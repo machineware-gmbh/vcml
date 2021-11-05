@@ -27,8 +27,8 @@ namespace vcml {
         return os;
     }
 
-    irq_host::irq_target_sockets
-    irq_host::get_irq_target_sockets(address_space as) const {
+    irq_target::irq_target_sockets
+    irq_target::get_irq_target_sockets(address_space as) const {
         irq_target_sockets sockets;
         for (auto& socket : m_target_sockets)
             if (socket->as == as)
@@ -47,12 +47,11 @@ namespace vcml {
 
     irq_initiator_socket::irq_initiator_socket(const char* nm):
         irq_base_initiator_socket(nm),
-        irq_bw_transport_if(),
         m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_host(dynamic_cast<irq_host*>(hierarchy_top())),
-        m_stub(nullptr), m_state() {
+        m_host(dynamic_cast<irq_target*>(hierarchy_top())),
+        m_stub(nullptr), m_state(), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        bind(*(irq_bw_transport_if*)this);
+        bind(m_transport);
         if (m_host)
             m_host->m_initiator_sockets.push_back(this);
     }
@@ -62,10 +61,6 @@ namespace vcml {
             stl_remove_erase(m_host->m_initiator_sockets, this);
         if (m_stub)
             delete m_stub;
-    }
-
-    sc_core::sc_type_index irq_initiator_socket::get_protocol_types() const {
-        return typeid(irq_fw_transport_if);
     }
 
     void irq_initiator_socket::stub() {
@@ -121,25 +116,20 @@ namespace vcml {
     }
 
     irq_target_socket::irq_target_socket(const char* nm, address_space _as):
-        irq_base_target_socket(nm),
-        irq_fw_transport_if(), as(_as),
+        irq_base_target_socket(nm), as(_as),
         m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_host(dynamic_cast<irq_host*>(hierarchy_top())),
-        m_stub(nullptr) {
+        m_host(dynamic_cast<irq_target*>(hierarchy_top())),
+        m_stub(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside irq_host", name());
         m_host->m_target_sockets.push_back(this);
-        bind(*(irq_fw_transport_if*)this);
+        bind(m_transport);
     }
 
     irq_target_socket::~irq_target_socket() {
         stl_remove_erase(m_host->m_target_sockets, this);
         if (m_stub)
             delete m_stub;
-    }
-
-    sc_core::sc_type_index irq_target_socket::get_protocol_types() const {
-        return typeid(irq_bw_transport_if);
     }
 
     void irq_target_socket::stub() {
@@ -167,7 +157,7 @@ namespace vcml {
 
     irq_target_stub::irq_target_stub(const sc_module_name& nm):
         module(nm),
-        irq_host(),
+        irq_target(),
         IRQ_IN("IRQ_IN") {
     }
 

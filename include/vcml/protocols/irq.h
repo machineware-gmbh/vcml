@@ -56,7 +56,7 @@ namespace vcml {
     class irq_initiator_stub;
     class irq_target_stub;
 
-    class irq_host
+    class irq_target
     {
     public:
         friend class irq_initiator_socket;
@@ -70,8 +70,8 @@ namespace vcml {
 
         irq_target_sockets get_irq_target_sockets(address_space as) const;
 
-        irq_host() = default;
-        virtual ~irq_host() = default;
+        irq_target() = default;
+        virtual ~irq_target() = default;
 
         virtual void irq_transport(const irq_target_socket&, irq_payload&) = 0;
 
@@ -80,26 +80,56 @@ namespace vcml {
         irq_target_sockets m_target_sockets;
     };
 
-    inline const irq_host::irq_initiator_sockets&
-    irq_host::get_irq_initiator_sockets() const {
+    inline const irq_target::irq_initiator_sockets&
+    irq_target::get_irq_initiator_sockets() const {
         return m_initiator_sockets;
     }
 
-    inline const irq_host::irq_target_sockets&
-    irq_host::get_irq_target_sockets() const {
+    inline const irq_target::irq_target_sockets&
+    irq_target::get_irq_target_sockets() const {
         return m_target_sockets;
     }
 
     typedef tlm::tlm_base_initiator_socket<1, irq_fw_transport_if,
         irq_bw_transport_if, 0, sc_core::SC_ONE_OR_MORE_BOUND>
-        irq_base_initiator_socket;
+        irq_base_initiator_socket_b;
 
     typedef tlm::tlm_base_target_socket<1, irq_fw_transport_if,
         irq_bw_transport_if, 0, sc_core::SC_ONE_OR_MORE_BOUND>
-        irq_base_target_socket;
+        irq_base_target_socket_b;
 
-    class irq_initiator_socket: public irq_base_initiator_socket,
-                                private irq_bw_transport_if {
+    class irq_base_initiator_socket : public irq_base_initiator_socket_b
+    {
+    public:
+        irq_base_initiator_socket(const char* nm):
+            irq_base_initiator_socket_b(nm) {
+        }
+
+        virtual ~irq_base_initiator_socket() = default;
+        VCML_KIND(irq_base_initiator_socket);
+
+        virtual sc_core::sc_type_index get_protocol_types() const {
+            return typeid(irq_bw_transport_if);
+        }
+    };
+
+    class irq_base_target_socket : public irq_base_target_socket_b
+    {
+    public:
+        irq_base_target_socket(const char* nm):
+            irq_base_target_socket_b(nm) {
+        }
+
+        virtual ~irq_base_target_socket() = default;
+        VCML_KIND(irq_base_target_socket);
+
+        virtual sc_core::sc_type_index get_protocol_types() const {
+            return typeid(irq_fw_transport_if);
+        }
+    };
+
+    class irq_initiator_socket: public irq_base_initiator_socket
+    {
     public:
         struct irq_state_tracker {
             irq_initiator_socket* parent;
@@ -113,7 +143,6 @@ namespace vcml {
         irq_initiator_socket(const char* name);
         virtual ~irq_initiator_socket();
         VCML_KIND(irq_initiator_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
         void stub();
 
         void interrupt(bool state = true, irq_vector vector = IRQ_NO_VECTOR);
@@ -127,28 +156,45 @@ namespace vcml {
 
     private:
         module* m_parent;
-        irq_host* m_host;
+        irq_target* m_host;
         irq_target_stub* m_stub;
         unordered_map<irq_vector, irq_state_tracker> m_state;
+
+        struct irq_bw_transport : public irq_bw_transport_if {
+            irq_initiator_socket* socket;
+            irq_bw_transport(irq_initiator_socket* s):
+                irq_bw_transport_if(), socket(s) {
+            }
+        } m_transport;
     };
 
-    class irq_target_socket: public irq_base_target_socket,
-                             private irq_fw_transport_if {
+    class irq_target_socket: public irq_base_target_socket
+    {
     public:
         const address_space as;
         bool is_stubbed() const { return m_stub != nullptr; }
         irq_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~irq_target_socket();
         VCML_KIND(irq_target_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
         void stub();
 
     private:
         module* m_parent;
-        irq_host* m_host;
+        irq_target* m_host;
         irq_initiator_stub* m_stub;
 
-        virtual void irq_transport(irq_payload& irq) override;
+        struct irq_fw_transport : public irq_fw_transport_if {
+            irq_target_socket* socket;
+            irq_fw_transport(irq_target_socket* s):
+                irq_fw_transport_if(), socket(s) {
+            }
+
+            virtual void irq_transport(irq_payload& irq) override {
+                socket->irq_transport(irq);
+            }
+        } m_transport;
+
+        void irq_transport(irq_payload& irq);
     };
 
     template <const size_t MAX = SIZE_MAX>
@@ -166,7 +212,7 @@ namespace vcml {
         VCML_KIND(irq_initiator_stub);
     };
 
-    class irq_target_stub: public module, public irq_host
+    class irq_target_stub: public module, public irq_target
     {
     protected:
         virtual void irq_transport(const irq_target_socket& socket,

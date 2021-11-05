@@ -27,7 +27,8 @@ TEST(irq, to_string) {
     std::cout << irq << std::endl;
 }
 
-class irq_test_harness: public test_base, public irq_host
+
+class irq_test_harness : public test_base, public irq_target
 {
 public:
     unsigned int irq_no;
@@ -35,25 +36,40 @@ public:
     unordered_set<unsigned int> irq_source;
 
     irq_initiator_socket OUT;
+    irq_initiator_socket OUT2;
     irq_target_socket_array<> IN;
+
+    // for testing hierarchical binding
+    irq_base_initiator_socket H_OUT;
+    irq_base_target_socket H_IN;
 
     irq_test_harness(const sc_module_name& nm):
         test_base(nm),
-        irq_host(),
+        irq_target(),
         irq_no(),
         irq_state(),
         irq_source(),
         OUT("OUT"),
-        IN("IN") {
+        OUT2("OUT2"),
+        IN("IN"),
+        H_OUT("H_OUT"),
+        H_IN("H_IN") {
         OUT.bind(IN[0]);
-        OUT.bind(IN[1]);
+
+        // check hierarchical binding: OUT -> H_OUT -> H_IN -> IN[1]
+        OUT.bind(H_OUT);
+        H_IN.bind(IN[1]);
+        H_OUT.bind(H_IN);
+
+        // check stubbing
+        OUT2.stub();
         IN[2].stub();
 
         auto initiators = get_irq_initiator_sockets();
         auto targets = get_irq_target_sockets();
         auto sockets = get_irq_target_sockets(0);
 
-        EXPECT_EQ(initiators.size(), 1) << "irq initiators did not register";
+        EXPECT_EQ(initiators.size(), 2) << "irq initiators did not register";
         EXPECT_EQ(targets.size(), 3) << "irq targets did not register";
         EXPECT_FALSE(sockets.empty()) << "irq targets in wrong address space";
 
