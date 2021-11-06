@@ -27,6 +27,7 @@
 #include "vcml/component.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 #include "vcml/protocols/pci.h"
 
 namespace vcml { namespace generic {
@@ -60,10 +61,10 @@ namespace vcml { namespace generic {
 
         pci_initiator_socket_array<256> PCI_OUT;
 
-        out_port<bool> IRQ_A;
-        out_port<bool> IRQ_B;
-        out_port<bool> IRQ_C;
-        out_port<bool> IRQ_D;
+        irq_initiator_socket IRQ_A;
+        irq_initiator_socket IRQ_B;
+        irq_initiator_socket IRQ_C;
+        irq_initiator_socket IRQ_D;
 
         pci_host(const sc_module_name& nm, bool express = true);
         virtual ~pci_host();

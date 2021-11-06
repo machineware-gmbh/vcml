@@ -19,7 +19,8 @@
 #include "testing.h"
 
 test_base::test_base(const sc_module_name& nm):
-    component(nm) {
+    component(nm),
+    irq_target() {
     SC_HAS_PROCESS(test_base);
     SC_THREAD(run);
 }
@@ -44,6 +45,10 @@ void test_base::before_end_of_elaboration() {
         CLOCK.stub(100 * MHz);
     if (!RESET.is_bound())
         RESET.stub();
+}
+
+void test_base::irq_transport(const irq_target_socket& s, irq_payload& tx) {
+    // ignored
 }
 
 static void systemc_report_handler(const sc_report& r, const sc_actions& a) {

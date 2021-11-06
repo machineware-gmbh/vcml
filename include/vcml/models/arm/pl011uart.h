@@ -26,6 +26,7 @@
 
 #include "vcml/serial/port.h"
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -140,8 +141,8 @@ namespace vcml { namespace arm {
         reg<pl011uart, u32, 4> PID; // Peripheral ID Register
         reg<pl011uart, u32, 4> CID; // Cell ID Register
 
-        tlm_target_socket   IN;
-        out_port<bool> IRQ;
+        tlm_target_socket    IN;
+        irq_initiator_socket IRQ;
 
         bool is_enabled()    const { return CR & CR_UARTEN; }
         bool is_rx_enabled() const { return CR & CR_RXE; }

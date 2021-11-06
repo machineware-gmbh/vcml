@@ -24,7 +24,9 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/properties/property.h"
+
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 #include "vcml/protocols/spi.h"
 
 #include "vcml/ports.h"
@@ -58,8 +60,7 @@ namespace vcml { namespace opencores {
         reg<ocspi, u32> CONTROL;
         reg<ocspi, u32> BAUDDIV;
 
-        out_port<bool> IRQ;
-
+        irq_initiator_socket IRQ;
         tlm_target_socket IN;
         spi_initiator_socket SPI_OUT;
 

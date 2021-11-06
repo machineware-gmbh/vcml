@@ -26,15 +26,14 @@ public:
     tlm_initiator_socket VIFCTRL_OUT;
     tlm_initiator_socket VCPUIF_OUT;
 
-    sc_vector<sc_out<bool>> PPI_OUT;
-    sc_vector<sc_out<bool>> SPI_OUT;
+    sc_vector<irq_initiator_socket> PPI_OUT;
+    sc_vector<irq_initiator_socket> SPI_OUT;
 
-    sc_vector<sc_in<bool>> FIRQ_IN;
-    sc_vector<sc_in<bool>> NIRQ_IN;
+    sc_vector<irq_target_socket> FIRQ_IN;
+    sc_vector<irq_target_socket> NIRQ_IN;
 
-    sc_vector<sc_in<bool>> VFIRQ_IN;
-    sc_vector<sc_in<bool>> VNIRQ_IN;
-
+    sc_vector<irq_target_socket> VFIRQ_IN;
+    sc_vector<irq_target_socket> VNIRQ_IN;
 
     gic400_stim(const sc_module_name& nm):
         test_base(nm),
@@ -676,23 +675,16 @@ TEST(gic400, gic400) {
     stim.VCPUIF_OUT.bind(gic400.VCPUIF.IN);
 
     for (int cpu = 0; cpu < 2; cpu++) {
-        gic400.FIQ_OUT[cpu].bind(firqs[cpu]);
-        gic400.IRQ_OUT[cpu].bind(nirqs[cpu]);
-        gic400.VFIQ_OUT[cpu].bind(vfirqs[cpu]);
-        gic400.VIRQ_OUT[cpu].bind(vnirqs[cpu]);
-        gic400.SPI_IN[cpu].bind(spis[cpu]);
-        gic400.ppi_in(cpu, 0).bind(ppis[cpu]);
+        gic400.FIQ_OUT[cpu].bind(stim.FIRQ_IN[cpu]);
+        gic400.IRQ_OUT[cpu].bind(stim.NIRQ_IN[cpu]);
+        gic400.VFIQ_OUT[cpu].bind(stim.VFIRQ_IN[cpu]);
+        gic400.VIRQ_OUT[cpu].bind(stim.VNIRQ_IN[cpu]);
+        stim.SPI_OUT[cpu].bind(gic400.SPI_IN[cpu]);
+        stim.PPI_OUT[cpu].bind(gic400.ppi_in(cpu, 0));
 
-        stim.FIRQ_IN[cpu].bind(firqs[cpu]);
-        stim.NIRQ_IN[cpu].bind(nirqs[cpu]);
-        stim.VFIRQ_IN[cpu].bind(vfirqs[cpu]);
-        stim.VNIRQ_IN[cpu].bind(vnirqs[cpu]);
-        stim.SPI_OUT[cpu].bind(spis[cpu]);
-        stim.PPI_OUT[cpu].bind(ppis[cpu]);
     }
-    stim.SPI_OUT[2].bind(spis[2]);
-    gic400.SPI_IN[10].bind(spis[2]);
 
+    stim.SPI_OUT[2].bind(gic400.SPI_IN[10]);
 
     sc_core::sc_start();
 }

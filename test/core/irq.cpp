@@ -28,7 +28,7 @@ TEST(irq, to_string) {
 }
 
 
-class irq_test_harness : public test_base, public irq_target
+class irq_test_harness : public test_base
 {
 public:
     unsigned int irq_no;
@@ -45,7 +45,6 @@ public:
 
     irq_test_harness(const sc_module_name& nm):
         test_base(nm),
-        irq_target(),
         irq_no(),
         irq_state(),
         irq_source(),

@@ -69,7 +69,7 @@ namespace vcml { namespace riscv {
             port->write(mtime >= mcomp);
 
             if (mtime >= mcomp)
-                log_debug("triggering hart %u timer interrupt", it.first);
+                log_debug("triggering hart %zu timer interrupt", it.first);
             else
                 m_trigger.notify(clock_cycles(mcomp - mtime));
         }

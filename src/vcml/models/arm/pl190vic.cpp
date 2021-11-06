@@ -44,18 +44,6 @@ namespace vcml { namespace arm {
         }
     }
 
-    void pl190vic::irq_handler(unsigned int irq) {
-        if (IRQ_IN[irq].read()) {
-            m_ext_irq = m_ext_irq | (1 << irq);
-            log_debug("setting IRQ %d", irq);
-        } else {
-            m_ext_irq = m_ext_irq & ~(1 << irq);
-            log_debug("cleared IRQ %d", irq);
-        }
-
-        update();
-    }
-
     u32 pl190vic::write_INTE(u32 val) {
         INTE |= val; // set hardware interrupt
         update();
@@ -152,8 +140,6 @@ namespace vcml { namespace arm {
 
         PID.allow_read_only();
         CID.allow_read_only();
-
-        reset();
     }
 
     pl190vic::~pl190vic() {
@@ -168,24 +154,20 @@ namespace vcml { namespace arm {
             CID[i] = (VCML_ARM_PL190VIC_CID >> (i * 8)) & 0xFF;
     }
 
-    void pl190vic::end_of_elaboration() {
-        for (auto irq : IRQ_IN) {
-            if (irq.first >= VCML_ARM_PL190VIC_NIRQ) {
-                VCML_ERROR("max number of connected IRQs (%d) exceeded",
-                           VCML_ARM_PL190VIC_NIRQ);
-            }
+    void pl190vic::irq_transport(const irq_target_socket& socket,
+        irq_payload& irq) {
+        unsigned int nirq = IRQ_IN.index_of(socket);
+        const u32 mask = 1 << nirq;
 
-            stringstream ss;
-            ss << "irq_handler_" << irq.first;
-
-            sc_spawn_options opts;
-            opts.spawn_method();
-            opts.set_sensitivity(irq.second);
-            opts.dont_initialize();
-
-            sc_spawn(sc_bind(&pl190vic::irq_handler, this, irq.first),
-                     sc_gen_unique_name(ss.str().c_str()), &opts);
+        if (irq.active) {
+            m_ext_irq |= mask;
+            log_debug("setting IRQ %u", nirq);
+        } else {
+            m_ext_irq &= ~mask;
+            log_debug("cleared IRQ %u", nirq);
         }
+
+        update();
     }
 
 }}

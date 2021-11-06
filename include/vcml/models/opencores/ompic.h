@@ -25,6 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -57,7 +58,7 @@ namespace vcml { namespace opencores {
         reg<ompic, u32>** CONTROL;
         reg<ompic, u32>** STATUS;
 
-        out_port_list<bool> IRQ;
+        irq_initiator_socket_array<> IRQ;
         tlm_target_socket IN;
 
         ompic(const sc_core::sc_module_name& name, unsigned int num_cores);

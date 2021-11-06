@@ -51,8 +51,6 @@ public:
     generic::memory mem;
     mock_sdcard sdcard;
 
-    sc_signal<bool> irq_sig;
-
     tlm_initiator_socket OUT;
 
     sdhci_harness(const sc_module_name& nm):
@@ -77,7 +75,7 @@ public:
         sdhci.OUT.bind(mem.IN);
 
         // IRQ Mapping
-        sdhci.IRQ.bind(irq_sig);
+        sdhci.IRQ.stub();
     }
 
     virtual ~sdhci_harness() {

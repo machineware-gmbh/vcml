@@ -26,7 +26,9 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
+
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
@@ -46,6 +48,7 @@ namespace vcml {
     };
 
     class processor: public component,
+                     public irq_target,
                      protected debugging::target {
     private:
         double m_run_time;
@@ -69,8 +72,6 @@ namespace vcml {
 
         void processor_thread();
 
-        void irq_handler(unsigned int irq);
-
     public:
         property<string> cpuarch;
         property<string> symbols;
@@ -79,7 +80,7 @@ namespace vcml {
         property<bool> gdb_wait;
         property<bool> gdb_echo;
 
-        in_port_list<bool> IRQ;
+        irq_target_socket_array<> IRQ;
 
         tlm_initiator_socket INSN;
         tlm_initiator_socket DATA;
@@ -113,10 +114,15 @@ namespace vcml {
         inline tlm_response_status write (u64 addr, const T& data);
 
     protected:
-        void log_bus_error(const tlm_initiator_socket& socket, vcml_access accss,
+        void log_bus_error(const tlm_initiator_socket& socket, vcml_access rwx,
                            tlm_response_status rs, u64 addr, u64 size);
 
+        virtual void irq_transport(const irq_target_socket& socket,
+            irq_payload& irq) override;
+
+        virtual void interrupt(unsigned int irq, bool set, irq_vector vector);
         virtual void interrupt(unsigned int irq, bool set);
+
         virtual void simulate(unsigned int cycles) = 0;
         virtual void update_local_time(sc_time& local_time) override;
         virtual void end_of_elaboration() override;

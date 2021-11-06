@@ -41,12 +41,13 @@ namespace vcml {
             return state;
 
         active = state;
-        parent->interrupt(state, vector);
+        parent->irq_transport(*this);
         return active;
     }
 
-    irq_initiator_socket::irq_initiator_socket(const char* nm):
-        irq_base_initiator_socket(nm),
+    irq_initiator_socket::irq_initiator_socket(const char* nm,
+        address_space as):
+        irq_base_initiator_socket(nm, as),
         m_parent(dynamic_cast<module*>(hierarchy_top())),
         m_host(dynamic_cast<irq_target*>(hierarchy_top())),
         m_stub(nullptr), m_state(), m_transport(this) {
@@ -70,26 +71,20 @@ namespace vcml {
         bind(m_stub->IRQ_IN);
     }
 
-    void irq_initiator_socket::interrupt(bool state, irq_vector vector) {
-        irq_payload irq;
-        irq.active = state;
-        irq.vector = vector;
-        interrupt(irq);
+    bool irq_initiator_socket::read(irq_vector vector) const {
+        return m_state.count(vector) ? m_state.at(vector) : false;
     }
 
-    void irq_initiator_socket::interrupt(irq_payload& irq) {
-        m_parent->trace_fw(*this, irq);
-        for (int i = 0; i < size(); i++)
-            get_interface(i)->irq_transport(irq);
-        m_parent->trace_bw(*this, irq);
+    void irq_initiator_socket::write(bool state, irq_vector vector) {
+        (*this)[vector] = state;
     }
 
     void irq_initiator_socket::raise_irq(irq_vector vector) {
-        interrupt(true, vector);
+        write(true, vector);
     }
 
     void irq_initiator_socket::lower_irq(irq_vector vector) {
-        interrupt(false, vector);
+        write(false, vector);
     }
 
     irq_initiator_socket& irq_initiator_socket::operator = (bool set) {
@@ -109,17 +104,28 @@ namespace vcml {
         return m_state[vector] = state;
     }
 
-    void irq_target_socket::irq_transport(irq_payload& irq) {
+    void irq_initiator_socket::irq_transport(irq_payload& irq) {
         m_parent->trace_fw(*this, irq);
-        m_host->irq_transport(*this, irq);
+        for (int i = 0; i < size(); i++)
+            get_interface(i)->irq_transport(irq);
         m_parent->trace_bw(*this, irq);
     }
 
+    void irq_target_socket::irq_transport(irq_payload& irq) {
+        m_parent->trace_fw(*this, irq);
+        m_state[irq.vector] = irq.active;
+        m_host->irq_transport(*this, irq);
+        m_parent->trace_bw(*this, irq);
+
+        if (m_event)
+            m_event->notify();
+    }
+
     irq_target_socket::irq_target_socket(const char* nm, address_space _as):
-        irq_base_target_socket(nm), as(_as),
+        irq_base_target_socket(nm, _as),
         m_parent(dynamic_cast<module*>(hierarchy_top())),
         m_host(dynamic_cast<irq_target*>(hierarchy_top())),
-        m_stub(nullptr), m_transport(this) {
+        m_event(nullptr), m_stub(nullptr), m_state(), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside irq_host", name());
         m_host->m_target_sockets.push_back(this);
@@ -130,6 +136,8 @@ namespace vcml {
         stl_remove_erase(m_host->m_target_sockets, this);
         if (m_stub)
             delete m_stub;
+        if (m_event)
+            delete m_event;
     }
 
     void irq_target_socket::stub() {
@@ -137,6 +145,19 @@ namespace vcml {
         hierarchy_guard guard(m_parent);
         m_stub = new irq_initiator_stub(mkstr("%s_stub", basename()).c_str());
         m_stub->IRQ_OUT.bind(*this);
+    }
+
+    const sc_event& irq_target_socket::default_event() {
+        if (!m_event) {
+            hierarchy_guard guard(m_parent);
+            m_event = new sc_event("change_event");
+        }
+
+        return *m_event;
+    }
+
+    bool irq_target_socket::read(irq_vector vector) const {
+        return m_state.count(vector) ? m_state.at(vector) : false;
     }
 
     irq_initiator_stub::irq_initiator_stub(const sc_module_name& nm):

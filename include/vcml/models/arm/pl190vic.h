@@ -25,6 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -36,7 +37,7 @@
 
 namespace vcml { namespace arm {
 
-    class pl190vic: public peripheral
+    class pl190vic: public peripheral, public irq_target
     {
     private:
         u32  m_ext_irq;
@@ -44,7 +45,6 @@ namespace vcml { namespace arm {
         bool m_vect_int;
 
         void update();
-        void irq_handler(unsigned int irq);
 
         u32 write_INTE(u32 val);
         u32 write_IECR(u32 val);
@@ -78,18 +78,19 @@ namespace vcml { namespace arm {
         reg<pl190vic, u32, 4> PID; // Peripheral ID registers
         reg<pl190vic, u32, 4> CID; // Cell ID registers
 
-        tlm_target_socket  IN;
+        tlm_target_socket IN;
 
-        in_port_list<bool>  IRQ_IN;
-        out_port_list<bool> IRQ_OUT;
-        out_port_list<bool> FIQ_OUT;
+        irq_target_socket_array<VCML_ARM_PL190VIC_NIRQ> IRQ_IN;
+        irq_initiator_socket_array<> IRQ_OUT;
+        irq_initiator_socket_array<> FIQ_OUT;
 
         pl190vic(const sc_module_name& nm);
         virtual ~pl190vic();
         VCML_KIND(arm::pl190vic);
 
         virtual void reset() override;
-        virtual void end_of_elaboration() override;
+        virtual void irq_transport(const irq_target_socket& socket,
+                                   irq_payload& irq) override;
     };
 
 }}

@@ -28,13 +28,16 @@ class mock_processor: public vcml::processor
 public:
     vcml::u64 cycles;
 
+    vcml::irq_initiator_socket IRQ0;
+    vcml::irq_initiator_socket IRQ1;
+
     MOCK_METHOD2(interrupt, void(unsigned int,bool));
     MOCK_METHOD1(simulate2, void(unsigned int));
     MOCK_METHOD0(reset, void(void));
     MOCK_METHOD2(handle_clock_update, void(clock_t,clock_t));
 
     mock_processor(const sc_core::sc_module_name& nm):
-        vcml::processor(nm, "mock"), cycles(0) {}
+        vcml::processor(nm, "mock"), cycles(0), IRQ0("IRQ0"), IRQ1("IRQ1") {}
     virtual ~mock_processor() {}
 
     virtual vcml::u64 cycle_count() const override {
@@ -56,9 +59,6 @@ TEST(processor, processor) {
     sc_core::sc_signal<clock_t> clk("CLK");
     sc_core::sc_signal<bool> rst("RST");
 
-    sc_core::sc_signal<bool> irq0("IRQ0");
-    sc_core::sc_signal<bool> irq1("IRQ1");
-
     vcml::generic::memory imem("IMEM", 0x1000);
     vcml::generic::memory dmem("DMEM", 0x1000);
 
@@ -73,8 +73,8 @@ TEST(processor, processor) {
 
     cpu.INSN.bind(imem.IN);
     cpu.DATA.bind(dmem.IN);
-    cpu.IRQ[0].bind(irq0);
-    cpu.IRQ[1].bind(irq1);
+    cpu.IRQ[0].bind(cpu.IRQ0);
+    cpu.IRQ[1].bind(cpu.IRQ1);
 
     vcml::clock_t defclk = 1 * vcml::kHz;
     clk.write(defclk);
@@ -101,27 +101,35 @@ TEST(processor, processor) {
 
 
     // test processor::interrupt
-    irq0.write(true);
     EXPECT_CALL(cpu, interrupt(0, true)).Times(1);
+    cpu.IRQ0 = true;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
-    irq0.write(false);
     EXPECT_CALL(cpu, interrupt(0, false)).Times(1);
+    cpu.IRQ0 = false;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
-    irq1.write(true);
     EXPECT_CALL(cpu, interrupt(1, true)).Times(1);
+    cpu.IRQ1 = true;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
-    irq1.write(false);
     EXPECT_CALL(cpu, interrupt(1, false)).Times(1);
+    cpu.IRQ1 = false;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
-
+    vcml::irq_stats stats[2];
+    cpu.get_irq_stats(0, stats[0]);
+    cpu.get_irq_stats(1, stats[1]);
+    EXPECT_EQ(stats[0].irq_count, 1);
+    EXPECT_EQ(stats[1].irq_count, 1);
+    EXPECT_EQ(stats[0].irq_uptime, quantum);
+    EXPECT_EQ(stats[1].irq_uptime, quantum);
+    EXPECT_FALSE(stats[0].irq_status);
+    EXPECT_FALSE(stats[1].irq_status);
 
     // test processor::reset
     rst.write(true);

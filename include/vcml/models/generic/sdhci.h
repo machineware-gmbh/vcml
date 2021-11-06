@@ -25,6 +25,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 #include "vcml/protocols/sd.h"
 
 #include "vcml/ports.h"
@@ -147,8 +148,7 @@ namespace vcml { namespace generic {
 
         property<bool> dma_enabled;
 
-        out_port<bool> IRQ;
-
+        irq_initiator_socket IRQ;
         tlm_target_socket IN;
         tlm_initiator_socket OUT;
 

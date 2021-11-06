@@ -23,11 +23,11 @@ class clint_stim: public test_base
 public:
     tlm_initiator_socket OUT;
 
-    sc_in<bool> IRQ_SW_0;
-    sc_in<bool> IRQ_SW_1;
+    irq_target_socket IRQ_SW_0;
+    irq_target_socket IRQ_SW_1;
 
-    sc_in<bool> IRQ_TIMER_0;
-    sc_in<bool> IRQ_TIMER_1;
+    irq_target_socket IRQ_TIMER_0;
+    irq_target_socket IRQ_TIMER_1;
 
     clint_stim(const sc_module_name& nm):
         test_base(nm),
@@ -103,12 +103,6 @@ public:
 };
 
 TEST(clint, clint) {
-    sc_signal<bool> irq_sw_0("irq_sw_0");
-    sc_signal<bool> irq_sw_1("irq_sw_1");
-
-    sc_signal<bool> irq_timer_0("irq_timer_0");
-    sc_signal<bool> irq_timer_1("irq_timer_1");
-
     sc_signal<clock_t> clk("clk_100mhz");
 
     clint_stim stim("STIM");
@@ -124,17 +118,11 @@ TEST(clint, clint) {
 
     stim.OUT.bind(clint.IN);
 
-    clint.IRQ_SW[0].bind(irq_sw_0);
-    clint.IRQ_SW[1].bind(irq_sw_1);
+    clint.IRQ_SW[0].bind(stim.IRQ_SW_0);
+    clint.IRQ_SW[1].bind(stim.IRQ_SW_1);
 
-    clint.IRQ_TIMER[0].bind(irq_timer_0);
-    clint.IRQ_TIMER[1].bind(irq_timer_1);
-
-    stim.IRQ_SW_0.bind(irq_sw_0);
-    stim.IRQ_SW_1.bind(irq_sw_1);
-
-    stim.IRQ_TIMER_0.bind(irq_timer_0);
-    stim.IRQ_TIMER_1.bind(irq_timer_1);
+    clint.IRQ_TIMER[0].bind(stim.IRQ_TIMER_0);
+    clint.IRQ_TIMER[1].bind(stim.IRQ_TIMER_1);
 
     sc_core::sc_start();
 }

@@ -23,11 +23,12 @@ class virtio_rng_stim: public test_base
 public:
     generic::bus    bus;
     generic::memory mem;
+
     virtio::mmio    virtio;
     virtio::console virtio_console;
-    tlm_initiator_socket   OUT;
-    sc_in<bool>     IRQ;
-    sc_signal<bool> irq;
+
+    tlm_initiator_socket OUT;
+    irq_target_socket    IRQ;
 
     virtio_rng_stim(const sc_module_name& nm = sc_gen_unique_name("stim")):
         test_base(nm),
@@ -36,8 +37,7 @@ public:
         virtio("virtio"),
         virtio_console("virtio_input"),
         OUT("OUT"),
-        IRQ("IRQ"),
-        irq("irq") {
+        IRQ("IRQ") {
 
         virtio.VIRTIO_OUT.bind(virtio_console.VIRTIO_IN);
 
@@ -47,8 +47,7 @@ public:
         bus.bind(OUT);
         bus.bind(virtio.OUT);
 
-        virtio.IRQ.bind(irq);
-        IRQ.bind(irq);
+        virtio.IRQ.bind(IRQ);
 
         bus.CLOCK.bind(CLOCK);
         mem.CLOCK.bind(CLOCK);

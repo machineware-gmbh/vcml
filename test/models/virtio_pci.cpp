@@ -34,12 +34,10 @@ public:
     generic::pci_host PCI_ROOT;
     virtio::pci VIRTIO_PCI;
 
-    sc_signal<bool> IRQ[4];
-
-    sc_in<bool> INT_A;
-    sc_in<bool> INT_B;
-    sc_in<bool> INT_C;
-    sc_in<bool> INT_D;
+    irq_target_socket INT_A;
+    irq_target_socket INT_B;
+    irq_target_socket INT_C;
+    irq_target_socket INT_D;
 
     virtio_pci_test(const sc_module_name& nm):
         test_base(nm),
@@ -47,7 +45,6 @@ public:
         MMIO_BUS("MMIO_BUS"),
         PCI_ROOT("PCI_ROOT", false),
         VIRTIO_PCI("VIRTIO_PCI"),
-        IRQ(),
         INT_A("INT_A"),
         INT_B("INT_B"),
         INT_C("INT_C"),
@@ -65,15 +62,10 @@ public:
         MMIO_BUS.bind(PCI_ROOT.CFG_IN, MMAP_PCI_CFG);
         MMIO_BUS.bind(PCI_ROOT.MMIO_IN[0], MMAP_PCI_MMIO, MMAP_PCI_MMIO_ADDR);
 
-        PCI_ROOT.IRQ_A.bind(IRQ[0]);
-        PCI_ROOT.IRQ_B.bind(IRQ[1]);
-        PCI_ROOT.IRQ_C.bind(IRQ[2]);
-        PCI_ROOT.IRQ_D.bind(IRQ[3]);
-
-        INT_A.bind(IRQ[0]);
-        INT_B.bind(IRQ[1]);
-        INT_C.bind(IRQ[2]);
-        INT_D.bind(IRQ[3]);
+        PCI_ROOT.IRQ_A.bind(INT_A);
+        PCI_ROOT.IRQ_B.bind(INT_B);
+        PCI_ROOT.IRQ_C.bind(INT_C);
+        PCI_ROOT.IRQ_D.bind(INT_D);
 
         MMIO_BUS.CLOCK.stub(100 * MHz);
         PCI_ROOT.CLOCK.stub(100 * MHz);

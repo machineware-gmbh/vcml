@@ -40,7 +40,7 @@ using namespace ::vcml;
 #define EXPECT_SUCCESS(fn) EXPECT_TRUE(vcml::success(fn))
 #define EXPECT_FAILURE(fn) EXPECT_TRUE(vcml::failure(fn))
 
-class test_base: public component
+class test_base: public component, public irq_target
 {
 private:
     void run();
@@ -55,6 +55,7 @@ public:
 
 protected:
     void before_end_of_elaboration() override;
+    virtual void irq_transport(const irq_target_socket&, irq_payload&) override;
 };
 
 extern vector<string> args;

@@ -1143,8 +1143,8 @@ namespace vcml { namespace arm {
         CPUIF("cpuif"),
         VIFCTRL("vifctrl"),
         VCPUIF("vcpuif", &VIFCTRL),
-        PPI_IN("PPI_IN"),
-        SPI_IN("SPI_IN"),
+        PPI_IN("PPI_IN", IRQ_AS_PPI),
+        SPI_IN("SPI_IN", IRQ_AS_SPI),
         FIQ_OUT("FIQ_OUT"),
         IRQ_OUT("IRQ_OUT"),
         VFIQ_OUT("VFIQ_OUT"),
@@ -1282,58 +1282,14 @@ namespace vcml { namespace arm {
         return 0;
     }
 
-    void gic400::ppi_handler(unsigned int cpu, unsigned int irq) {
-        unsigned int idx = irq - NSGI + cpu * NPPI;
-        unsigned int mask = 1 << cpu;
-
-        bool irq_level = PPI_IN[idx].read();
-        set_irq_level(irq, irq_level, mask);
-        set_irq_signaled(irq, false, gic400::ALL_CPU);
-        if (get_irq_trigger(irq) == EDGE && irq_level)
-            set_irq_pending(irq, true, mask);
-
-        update();
-    }
-
-    void gic400::spi_handler(unsigned int irq) {
-        unsigned int idx = irq - NPRIV;
-        unsigned int target_cpu = DISTIF.ITARGETS_SPI[idx];
-
-        bool irq_level = SPI_IN[idx].read();
-        set_irq_level(irq, irq_level, gic400::ALL_CPU);
-        set_irq_signaled(irq, false, gic400::ALL_CPU);
-        if (get_irq_trigger(irq) == EDGE && irq_level)
-            set_irq_pending(irq, true, target_cpu);
-
-        update();
-    }
-
     void gic400::end_of_elaboration() {
         m_cpu_num = 0;
         m_irq_num = NPRIV;
 
         // determine the number of processors from the connected IRQs
         for (auto cpu : IRQ_OUT)
-            m_cpu_num = max(m_cpu_num, cpu.first + 1);
+            m_cpu_num = max<unsigned int>(m_cpu_num, cpu.first + 1);
 
-        // register handlers for each private peripheral interrupt
-        for (auto ppi : PPI_IN) {
-            unsigned int cpu = ppi.first / NPPI;
-            unsigned int irq = ppi.first % NPPI
-                               + NSGI;
-            stringstream ss;
-            ss << "cpu_" << cpu << "_ppi_" << irq << "_handler";
-
-            sc_spawn_options opts;
-            opts.spawn_method();
-            opts.set_sensitivity(ppi.second);
-            opts.dont_initialize();
-
-            sc_spawn(sc_bind(&gic400::ppi_handler, this, cpu, irq),
-                     ss.str().c_str(), &opts);
-        }
-
-        // register handlers for each SPI
         for (auto spi : SPI_IN) {
             unsigned int irq = spi.first + NPRIV;
 
@@ -1342,22 +1298,55 @@ namespace vcml { namespace arm {
 
             if (irq >= m_irq_num)
                 m_irq_num = irq + 1;
-
-            stringstream ss;
-            ss << "spi_" << irq << "_handler";
-
-
-            sc_spawn_options opts;
-            opts.spawn_method();
-            opts.set_sensitivity(spi.second);
-            opts.dont_initialize();
-
-            sc_spawn(sc_bind(&gic400::spi_handler, this, irq),
-                     ss.str().c_str(), &opts);
         }
 
         log_debug("found %u cpus with %u irqs in total", m_cpu_num, m_irq_num);
         DISTIF.setup(m_cpu_num, m_irq_num);
     }
 
+    void gic400::irq_transport(const irq_target_socket& socket,
+                               irq_payload& irq) {
+        switch (socket.as) {
+        case IRQ_AS_PPI: {
+            unsigned int cpu = PPI_IN.index_of(socket) / NCPU;
+            unsigned int idx = PPI_IN.index_of(socket) % NCPU;
+            handle_ppi(cpu, idx, irq);
+            break;
+        }
+
+        case IRQ_AS_SPI: {
+            unsigned int idx = SPI_IN.index_of(socket);
+            handle_spi(idx, irq);
+            break;
+        }
+
+        default:
+            VCML_ERROR("illegal interrupt space: %d", (int)socket.as);
+        }
+    }
+
+    void gic400::handle_ppi(unsigned int cpu, unsigned int idx,
+                            irq_payload& tx) {
+        unsigned int irq = NSGI + idx;
+        unsigned int mask = 1 << cpu;
+
+        set_irq_level(irq, tx.active, mask);
+        set_irq_signaled(irq, false, gic400::ALL_CPU);
+        if (get_irq_trigger(irq) == EDGE && tx.active)
+            set_irq_pending(irq, true, mask);
+
+        update();
+    }
+
+    void gic400::handle_spi(unsigned int idx, irq_payload& tx) {
+        unsigned int irq = NPRIV + idx;
+        unsigned int target_cpu = DISTIF.ITARGETS_SPI[idx];
+
+        set_irq_level(irq, tx.active, gic400::ALL_CPU);
+        set_irq_signaled(irq, false, gic400::ALL_CPU);
+        if (get_irq_trigger(irq) == EDGE && tx.active)
+            set_irq_pending(irq, true, target_cpu);
+
+        update();
+    }
 }}

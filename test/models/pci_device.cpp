@@ -113,12 +113,10 @@ public:
     tlm_initiator_socket IO;
     tlm_target_socket MSI;
 
-    sc_signal<bool> IRQ[4];
-
-    sc_in<bool> INT_A;
-    sc_in<bool> INT_B;
-    sc_in<bool> INT_C;
-    sc_in<bool> INT_D;
+    irq_target_socket INT_A;
+    irq_target_socket INT_B;
+    irq_target_socket INT_C;
+    irq_target_socket INT_D;
 
     u64 msi_addr;
     u32 msi_data;
@@ -143,7 +141,6 @@ public:
         MMIO("MMIO"),
         IO("IO"),
         MSI("MSI"),
-        IRQ(),
         INT_A("INT_A"),
         INT_B("INT_B"),
         INT_C("INT_C"),
@@ -170,15 +167,10 @@ public:
         IO_BUS.bind(IO);
         IO_BUS.bind(PCI_ROOT.IO_IN[0], MMAP_PCI_IO, MMAP_PCI_IO_ADDR);
 
-        PCI_ROOT.IRQ_A.bind(IRQ[0]);
-        PCI_ROOT.IRQ_B.bind(IRQ[1]);
-        PCI_ROOT.IRQ_C.bind(IRQ[2]);
-        PCI_ROOT.IRQ_D.bind(IRQ[3]);
-
-        INT_A.bind(IRQ[0]);
-        INT_B.bind(IRQ[1]);
-        INT_C.bind(IRQ[2]);
-        INT_D.bind(IRQ[3]);
+        PCI_ROOT.IRQ_A.bind(INT_A);
+        PCI_ROOT.IRQ_B.bind(INT_B);
+        PCI_ROOT.IRQ_C.bind(INT_C);
+        PCI_ROOT.IRQ_D.bind(INT_D);
 
         MMIO_BUS.CLOCK.stub(100 * MHz);
         IO_BUS.CLOCK.stub(100 * MHz);

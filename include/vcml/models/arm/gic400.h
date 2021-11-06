@@ -26,15 +26,22 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml { namespace arm {
 
-    class gic400: public peripheral
+    class gic400: public peripheral, public irq_target
     {
     public:
+        enum irq_as : address_space {
+            IRQ_AS_SGI,
+            IRQ_AS_PPI,
+            IRQ_AS_SPI,
+        };
+
         static const unsigned int NCPU  = 8; // max supported CPUs
         static const unsigned int NVCPU = 8; // max supported virtual CPUs
 
@@ -42,6 +49,7 @@ namespace vcml { namespace arm {
         static const unsigned int NRES  = 4;
         static const unsigned int NSGI  = 16;
         static const unsigned int NPPI  = 16;
+        static const unsigned int NSPI  = 988;
         static const unsigned int NREGS = NIRQ + NRES;
         static const unsigned int NPRIV = NSGI + NPPI;
 
@@ -338,14 +346,16 @@ namespace vcml { namespace arm {
         vifctrl VIFCTRL;
         vcpuif VCPUIF;
 
-        in_port_list<bool>  PPI_IN;
-        in_port_list<bool>  SPI_IN;
-        out_port_list<bool> FIQ_OUT;
-        out_port_list<bool> IRQ_OUT;
-        out_port_list<bool> VFIQ_OUT;
-        out_port_list<bool> VIRQ_OUT;
+        irq_target_socket_array<NPPI * NCPU> PPI_IN;
+        irq_target_socket_array<NSPI> SPI_IN;
 
-        sc_in<bool>& ppi_in(unsigned int cpu, unsigned int irq);
+        irq_initiator_socket_array<NCPU> FIQ_OUT;
+        irq_initiator_socket_array<NCPU> IRQ_OUT;
+
+        irq_initiator_socket_array<NVCPU> VFIQ_OUT;
+        irq_initiator_socket_array<NVCPU> VIRQ_OUT;
+
+        irq_target_socket& ppi_in(unsigned int cpu, unsigned int irq);
 
         unsigned int get_irq_num() const { return m_irq_num; }
         unsigned int get_cpu_num() const { return m_cpu_num; }
@@ -385,18 +395,21 @@ namespace vcml { namespace arm {
         void update(bool virt = false);
 
         virtual void end_of_elaboration() override;
+        virtual void irq_transport(const irq_target_socket& socket,
+                                   irq_payload& tx) override;
+
+        void handle_ppi(unsigned int cpu, unsigned int idx, irq_payload& irq);
+        void handle_spi(unsigned int idx, irq_payload& irq);
 
     private:
         unsigned int m_irq_num;
         unsigned int m_cpu_num;
 
         irq_state m_irq_state[NIRQ+NRES];
-
-        void ppi_handler(unsigned int cpu, unsigned int irq);
-        void spi_handler(unsigned int irq);
     };
 
-    inline sc_in<bool>& gic400::ppi_in(unsigned int cpu, unsigned int irq) {
+    inline irq_target_socket&
+    gic400::ppi_in(unsigned int cpu, unsigned int irq) {
         return PPI_IN[cpu * NPPI + irq];
     }
 

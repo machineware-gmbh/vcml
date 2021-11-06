@@ -23,11 +23,11 @@ class plic_stim: public test_base
 public:
     tlm_initiator_socket OUT;
 
-    sc_in<bool> IRQT1;
-    sc_in<bool> IRQT2;
+    irq_target_socket IRQT1;
+    irq_target_socket IRQT2;
 
-    sc_out<bool> IRQS1;
-    sc_out<bool> IRQS2;
+    irq_initiator_socket IRQS1;
+    irq_initiator_socket IRQS2;
 
     plic_stim(const sc_module_name& nm):
         test_base(nm),
@@ -109,12 +109,6 @@ public:
 };
 
 TEST(plic, plic) {
-    sc_signal<bool> irqs1("irqs1");
-    sc_signal<bool> irqs2("irqs2");
-
-    sc_signal<bool> irqt1("irqt1");
-    sc_signal<bool> irqt2("irqt2");
-
     sc_signal<clock_t> clk("clk");
 
     plic_stim stim("STIM");
@@ -132,17 +126,11 @@ TEST(plic, plic) {
 
     stim.OUT.bind(plic.IN);
 
-    plic.IRQS[1].bind(irqs1);
-    plic.IRQS[2].bind(irqs2);
+    plic.IRQT[1].bind(stim.IRQT1);
+    plic.IRQT[2].bind(stim.IRQT2);
 
-    plic.IRQT[1].bind(irqt1);
-    plic.IRQT[2].bind(irqt2);
-
-    stim.IRQS1.bind(irqs1);
-    stim.IRQS2.bind(irqs2);
-
-    stim.IRQT1.bind(irqt1);
-    stim.IRQT2.bind(irqt2);
+    stim.IRQS1.bind(plic.IRQS[1]);
+    stim.IRQS2.bind(plic.IRQS[2]);
 
     sc_core::sc_start();
 }

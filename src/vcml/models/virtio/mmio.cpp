@@ -343,9 +343,9 @@ namespace vcml { namespace virtio {
         QUEUE_DEVICE_LO     ("QUEUE_DEVICE_LO",     0xa0, 0),
         QUEUE_DEVICE_HI     ("QUEUE_DEVICE_HI",     0xa4, 0),
         CONFIG_GEN          ("CONFIG_GEN",          0xfc, 0),
-        IRQ("IRQ"),
         IN("IN"),
         OUT("OUT"),
+        IRQ("IRQ"),
         VIRTIO_OUT("VIRTIO_OUT") {
 
         MAGIC.sync_never();

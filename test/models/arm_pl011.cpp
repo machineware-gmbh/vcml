@@ -25,7 +25,7 @@ public:
 
     sc_out<bool> RESET_OUT;
 
-    sc_in<bool> IRQ_IN;
+    irq_target_socket IRQ_IN;
 
     pl011_stim(const sc_module_name& nm):
         test_base(nm),
@@ -86,7 +86,6 @@ public:
 };
 
 TEST(arm_pl011, main) {
-    sc_signal<bool> irq("irq");
     sc_signal<bool> rst("reset");
     sc_signal<clock_t> clk("clock");
 
@@ -100,11 +99,11 @@ TEST(arm_pl011, main) {
     stim.RESET_OUT.bind(rst);
     stim.CLOCK.bind(clk);
     stim.RESET.bind(rst);
-    stim.IRQ_IN.bind(irq);
+
 
     pl011.CLOCK.bind(clk);
     pl011.RESET.bind(rst);
-    pl011.IRQ.bind(irq);
+    pl011.IRQ.bind(stim.IRQ_IN);
 
     sc_core::sc_start();
 }

@@ -25,6 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"
@@ -103,10 +104,9 @@ namespace vcml { namespace virtio {
         reg<mmio, u32> QUEUE_DEVICE_HI;
         reg<mmio, u32> CONFIG_GEN;
 
-        out_port<bool> IRQ;
-
         tlm_target_socket IN;
         tlm_initiator_socket OUT;
+        irq_initiator_socket IRQ;
         virtio_initiator_socket VIRTIO_OUT;
 
         mmio(const sc_module_name& nm);

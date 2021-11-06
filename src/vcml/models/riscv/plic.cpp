@@ -173,15 +173,6 @@ namespace vcml { namespace riscv {
         return value;
     }
 
-    void plic::irq_handler(unsigned int irqno) {
-        VCML_ERROR_ON(!IRQS.exists(irqno), "invalid irq %u", irqno);
-
-        bool state = IRQS[irqno].read();
-        log_debug("irq %u %s", irqno, state ? "set" : "cleared");
-
-        update();
-    }
-
     void plic::update() {
         for (auto ctx : IRQT) {
             ctx.second->write(false);
@@ -194,7 +185,7 @@ namespace vcml { namespace riscv {
                     && irq_priority(irq.first) > th) {
 
                     ctx.second->write(true);
-                    log_debug("forwarding irq %u to context %u", irq.first,
+                    log_debug("forwarding irq %zu to context %zu", irq.first,
                               ctx.first);
                 }
             }
@@ -203,6 +194,7 @@ namespace vcml { namespace riscv {
 
     plic::plic(const sc_module_name& nm):
         peripheral(nm),
+        irq_target(),
         m_claims(),
         m_contexts(),
         PRIORITY("PRIORITY", 0x0, 0),
@@ -237,22 +229,17 @@ namespace vcml { namespace riscv {
 
     void plic::end_of_elaboration() {
         for (auto ctx : IRQT) {
-            string nm = mkstr("CONTEXT%u", ctx.first);
+            string nm = mkstr("CONTEXT%zu", ctx.first);
             m_contexts[ctx.first] = new context(nm.c_str(), ctx.first);
         }
 
-        for (auto irq : IRQS) {
-            VCML_ERROR_ON(irq.first == 0, "irq0 must not be used");
+        VCML_ERROR_ON(IRQS.exists(0), "irq0 must not be used");
+    }
 
-            string nm = "irq_handler_" + to_string(irq.first);
-
-            sc_spawn_options opts;
-            opts.spawn_method();
-            opts.set_sensitivity(irq.second);
-            opts.dont_initialize();
-            sc_spawn(sc_bind(&plic::irq_handler, this, irq.first),
-                     sc_gen_unique_name(nm.c_str()), &opts);
-        }
+    void plic::irq_transport(const irq_target_socket& sock, irq_payload& irq) {
+        unsigned int irqno = IRQS.index_of(sock);
+        log_debug("irq %u %s", irqno, irq.active ? "set" : "cleared");
+        update();
     }
 
 }}

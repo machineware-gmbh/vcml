@@ -25,6 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -57,8 +58,8 @@ namespace vcml { namespace riscv {
         reg<clint, u64, NHARTS> MTIMECMP;
         reg<clint, u64> MTIME;
 
-        out_port_list<bool> IRQ_SW;
-        out_port_list<bool> IRQ_TIMER;
+        irq_initiator_socket_array<NHARTS> IRQ_SW;
+        irq_initiator_socket_array<NHARTS> IRQ_TIMER;
 
         tlm_target_socket IN;
 

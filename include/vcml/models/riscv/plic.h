@@ -25,13 +25,14 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml { namespace riscv {
 
-    class plic: public peripheral
+    class plic: public peripheral, public irq_target
     {
     public:
         static const int NIRQ = 1024;
@@ -68,8 +69,6 @@ namespace vcml { namespace riscv {
         u32 write_THRESHOLD(u32 value, unsigned int ctxno);
         u32 write_COMPLETE(u32 value, unsigned int ctxno);
 
-        void irq_handler(unsigned int irqno);
-
         void update();
 
         // disabled
@@ -80,8 +79,8 @@ namespace vcml { namespace riscv {
         reg<plic, u32, NIRQ> PRIORITY;
         reg<plic, u32, NIRQ / 32> PENDING;
 
-        in_port_list<bool>  IRQS;
-        out_port_list<bool> IRQT;
+        irq_target_socket_array<NIRQ> IRQS;
+        irq_initiator_socket_array<NCTX> IRQT;
 
         tlm_target_socket IN;
 
@@ -93,6 +92,8 @@ namespace vcml { namespace riscv {
 
     protected:
         virtual void end_of_elaboration() override;
+        virtual void irq_transport(const irq_target_socket& socket,
+            irq_payload& irq) override;
     };
 
 }}

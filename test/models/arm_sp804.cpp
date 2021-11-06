@@ -25,9 +25,9 @@ public:
 
     sc_out<bool> RESET_OUT;
 
-    sc_in<bool> IRQ1;
-    sc_in<bool> IRQ2;
-    sc_in<bool> IRQC;
+    irq_target_socket IRQ1;
+    irq_target_socket IRQ2;
+    irq_target_socket IRQC;
 
     sp804_stim(const sc_module_name& nm):
         test_base(nm),
@@ -61,7 +61,7 @@ public:
               arm::sp804timer::timer::CONTROL_32BIT;
         EXPECT_OK(OUT.writew(TIMER1_CONTROL, val)) << "cannot write CONTROL";
 
-        wait(IRQC.value_changed_event());
+        wait(IRQC.default_event());
 
         EXPECT_TRUE(IRQ1) << "irq1 did not fire";
         EXPECT_TRUE(IRQC) << "irqc did not propagate from irq1";
@@ -109,16 +109,12 @@ TEST(sp804timer, main) {
     stim.CLOCK.bind(clk);
     stim.RESET.bind(rst);
 
-    stim.IRQ1.bind(irq1);
-    stim.IRQ2.bind(irq2);
-    stim.IRQC.bind(irqc);
-
     sp804.CLOCK.bind(clk);
     sp804.RESET.bind(rst);
 
-    sp804.IRQ1.bind(irq1);
-    sp804.IRQ2.bind(irq2);
-    sp804.IRQC.bind(irqc);
+    sp804.IRQ1.bind(stim.IRQ1);
+    sp804.IRQ2.bind(stim.IRQ2);
+    sp804.IRQC.bind(stim.IRQC);
 
     sc_core::sc_start();
 }

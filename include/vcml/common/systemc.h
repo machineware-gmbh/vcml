@@ -379,7 +379,7 @@ namespace vcml {
         SOCKET& operator[] (size_t idx) { return lookup(idx); }
         const SOCKET& operator[] (size_t idx) const {
             VCML_ERROR_ON(!exists(idx), "socket %zu not found", idx);
-            return *m_sockets[idx];
+            return *m_sockets.at(idx);
         }
 
         const char* name() { return m_name.c_str(); }

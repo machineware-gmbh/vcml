@@ -28,7 +28,9 @@
 #include "vcml/ui/console.h"
 
 #include "vcml/properties/property.h"
+
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -55,7 +57,7 @@ namespace vcml { namespace opencores {
     public:
         reg<ockbd, u8> KHR;
 
-        out_port<bool> IRQ;
+        irq_initiator_socket IRQ;
         tlm_target_socket IN;
 
         property<string> keymap;

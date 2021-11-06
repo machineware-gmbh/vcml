@@ -25,6 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 #include "vcml/serial/port.h"
 
 #include "vcml/ports.h"
@@ -120,7 +121,7 @@ namespace vcml { namespace generic {
         reg<uart8250, u8> MSR; // modem status register
         reg<uart8250, u8> SCR; // scratch register
 
-        out_port<bool> IRQ;
+        irq_initiator_socket IRQ;
         tlm_target_socket IN;
 
         uart8250(const sc_module_name& name);

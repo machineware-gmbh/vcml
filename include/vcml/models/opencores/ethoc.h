@@ -25,7 +25,9 @@
 #include "vcml/common/range.h"
 
 #include "vcml/net/adapter.h"
+
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/irq.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -265,7 +267,7 @@ namespace vcml { namespace opencores {
         property<clock_t> clock;
         property<string> mac;
 
-        out_port<bool> IRQ;
+        irq_initiator_socket IRQ;
         tlm_target_socket IN;
         tlm_initiator_socket OUT;
 
