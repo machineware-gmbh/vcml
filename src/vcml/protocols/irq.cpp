@@ -50,7 +50,7 @@ namespace vcml {
         irq_base_initiator_socket(nm, as),
         m_parent(dynamic_cast<module*>(hierarchy_top())),
         m_host(dynamic_cast<irq_target*>(hierarchy_top())),
-        m_stub(nullptr), m_state(), m_transport(this) {
+        m_stub(nullptr), m_state(), m_event(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(m_transport);
         if (m_host)
@@ -62,6 +62,8 @@ namespace vcml {
             stl_remove_erase(m_host->m_initiator_sockets, this);
         if (m_stub)
             delete m_stub;
+        if (m_event)
+            delete m_event;
     }
 
     void irq_initiator_socket::stub() {
@@ -69,6 +71,15 @@ namespace vcml {
         hierarchy_guard guard(m_parent);
         m_stub = new irq_target_stub(mkstr("%s_stub", basename()).c_str());
         bind(m_stub->IRQ_IN);
+    }
+
+    const sc_event& irq_initiator_socket::default_event() {
+        if (m_event == nullptr) {
+            hierarchy_guard guard(m_parent);
+            m_event = new sc_event(mkstr("%s_ev", basename()).c_str());
+        }
+
+        return *m_event;
     }
 
     bool irq_initiator_socket::read(irq_vector vector) const {
@@ -109,6 +120,8 @@ namespace vcml {
         for (int i = 0; i < size(); i++)
             get_interface(i)->irq_transport(irq);
         m_parent->trace_bw(*this, irq);
+        if (m_event)
+            m_event->notify(SC_ZERO_TIME);
     }
 
     void irq_target_socket::irq_transport(irq_payload& irq) {
@@ -116,18 +129,17 @@ namespace vcml {
         m_state[irq.vector] = irq.active;
         m_host->irq_transport(*this, irq);
         m_parent->trace_bw(*this, irq);
-
         if (m_event)
-            m_event->notify();
+            m_event->notify(SC_ZERO_TIME);
     }
 
     irq_target_socket::irq_target_socket(const char* nm, address_space _as):
         irq_base_target_socket(nm, _as),
         m_parent(dynamic_cast<module*>(hierarchy_top())),
         m_host(dynamic_cast<irq_target*>(hierarchy_top())),
-        m_event(nullptr), m_stub(nullptr), m_state(), m_transport(this) {
+        m_stub(nullptr), m_state(), m_event(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-        VCML_ERROR_ON(!m_host, "%s declared outside irq_host", name());
+        VCML_ERROR_ON(!m_host, "%s declared outside irq_target", name());
         m_host->m_target_sockets.push_back(this);
         bind(m_transport);
     }
@@ -148,9 +160,9 @@ namespace vcml {
     }
 
     const sc_event& irq_target_socket::default_event() {
-        if (!m_event) {
+        if (m_event == nullptr) {
             hierarchy_guard guard(m_parent);
-            m_event = new sc_event("change_event");
+            m_event = new sc_event(mkstr("%s_ev", basename()).c_str());
         }
 
         return *m_event;
@@ -163,10 +175,6 @@ namespace vcml {
     irq_initiator_stub::irq_initiator_stub(const sc_module_name& nm):
         module(nm),
         IRQ_OUT("IRQ_OUT") {
-    }
-
-    irq_initiator_stub::~irq_initiator_stub() {
-        // nothing to do
     }
 
     void irq_target_stub::irq_transport(const irq_target_socket& socket,
@@ -182,8 +190,29 @@ namespace vcml {
         IRQ_IN("IRQ_IN") {
     }
 
-    irq_target_stub::~irq_target_stub() {
-        // nothing to do
+    irq_initiator_adapter::irq_initiator_adapter(const sc_module_name& nm):
+        module(nm),
+        IRQ_IN("IRQ_IN"),
+        IRQ_OUT("IRQ_OUT") {
+        SC_HAS_PROCESS(irq_initiator_adapter);
+        SC_METHOD(update);
+        sensitive << IRQ_IN;
+    }
+
+    void irq_initiator_adapter::update() {
+        IRQ_OUT.write(IRQ_IN.read(), IRQ_NO_VECTOR);
+    }
+
+    irq_target_adapter::irq_target_adapter(const sc_module_name& nm):
+        module(nm),
+        irq_target(),
+        IRQ_IN("IRQ_IN"),
+        IRQ_OUT("IRQ_OUT") {
+    }
+
+    void irq_target_adapter::irq_transport(const irq_target_socket& socket,
+        irq_payload& irq) {
+        IRQ_OUT = irq.active;
     }
 
 }
