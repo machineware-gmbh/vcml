@@ -220,8 +220,15 @@ namespace vcml {
 
                 unsigned int num_cycles = 1;
                 sc_time quantum = tlm_global_quantum::instance().get();
-                if (quantum > clock_cycle() && quantum > local_time())
-                    num_cycles = (quantum - local_time()) / clock_cycle();
+                if (quantum > clock_cycle() && quantum > local_time()) {
+                    sc_time time_left = quantum - local_time();
+                    num_cycles = time_left / clock_cycle();
+
+                    // if there will be less than one clock_cycle left
+                    // in the current quantum -> do one more instruction
+                    if (time_left % clock_cycle() != SC_ZERO_TIME)
+                        ++num_cycles;
+                }
 
                 if (is_stepping())
                     num_cycles = 1;
