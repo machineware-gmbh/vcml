@@ -1308,8 +1308,8 @@ namespace vcml { namespace arm {
                                irq_payload& irq) {
         switch (socket.as) {
         case IRQ_AS_PPI: {
-            unsigned int cpu = PPI_IN.index_of(socket) / NCPU;
-            unsigned int idx = PPI_IN.index_of(socket) % NCPU;
+            unsigned int cpu = PPI_IN.index_of(socket) / NPPI;
+            unsigned int idx = PPI_IN.index_of(socket) % NPPI;
             handle_ppi(cpu, idx, irq);
             break;
         }
