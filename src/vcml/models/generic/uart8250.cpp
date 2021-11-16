@@ -206,19 +206,19 @@ namespace vcml { namespace generic {
         IN("IN") {
 
         THR.allow_read_write();
-        THR.read = &uart8250::read_RBR;
-        THR.write = &uart8250::write_THR;
+        THR.on_read(&uart8250::read_RBR);
+        THR.on_write(&uart8250::write_THR);
 
         IER.allow_read_write();
-        IER.read = &uart8250::read_IER;
-        IER.write = &uart8250::write_IER;
+        IER.on_read(&uart8250::read_IER);
+        IER.on_write(&uart8250::write_IER);
 
         IIR.allow_read_write();
-        IIR.read = &uart8250::read_IIR;
-        IIR.write = &uart8250::write_FCR;
+        IIR.on_read(&uart8250::read_IIR);
+        IIR.on_write(&uart8250::write_FCR);
 
         LCR.allow_read_write();
-        LCR.write = &uart8250::write_LCR;
+        LCR.on_write(&uart8250::write_LCR);
 
         LSR.allow_read_only();
         MCR.allow_read_write();

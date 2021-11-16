@@ -111,40 +111,40 @@ namespace vcml { namespace generic {
 
     public:
         // Common SDHCI registers
-        reg<sdhci, u32> SDMA_SYSTEM_ADDRESS;
-        reg<sdhci, u16> BLOCK_SIZE;
-        reg<sdhci, u16> BLOCK_COUNT_16BIT;
+        reg<u32> SDMA_SYSTEM_ADDRESS;
+        reg<u16> BLOCK_SIZE;
+        reg<u16> BLOCK_COUNT_16BIT;
 
-        reg<sdhci, u32> ARG;
-        reg<sdhci, u16> TRANSFER_MODE;
-        reg<sdhci, u16> CMD;
+        reg<u32> ARG;
+        reg<u16> TRANSFER_MODE;
+        reg<u16> CMD;
 
-        reg<sdhci, u32, 4> RESPONSE;
+        reg<u32, 4> RESPONSE;
 
-        reg<sdhci, u32> BUFFER_DATA_PORT;
+        reg<u32> BUFFER_DATA_PORT;
 
-        reg<sdhci, u32> PRESENT_STATE;
-        reg<sdhci, u8>  HOST_CONTROL_1;
-        reg<sdhci, u8>  POWER_CTRL;
-        reg<sdhci, u16> CLOCK_CTRL;
-        reg<sdhci, u8>  TIMEOUT_CTRL;
-        reg<sdhci, u8>  SOFTWARE_RESET;
+        reg<u32> PRESENT_STATE;
+        reg<u8>  HOST_CONTROL_1;
+        reg<u8>  POWER_CTRL;
+        reg<u16> CLOCK_CTRL;
+        reg<u8>  TIMEOUT_CTRL;
+        reg<u8>  SOFTWARE_RESET;
 
-        reg<sdhci, u16> NORMAL_INT_STAT;
-        reg<sdhci, u16> ERROR_INT_STAT;
-        reg<sdhci, u16> NORMAL_INT_STAT_ENABLE;
-        reg<sdhci, u16> ERROR_INT_STAT_ENABLE;
-        reg<sdhci, u16> NORMAL_INT_SIG_ENABLE;
-        reg<sdhci, u16> ERROR_INT_SIG_ENABLE;
+        reg<u16> NORMAL_INT_STAT;
+        reg<u16> ERROR_INT_STAT;
+        reg<u16> NORMAL_INT_STAT_ENABLE;
+        reg<u16> ERROR_INT_STAT_ENABLE;
+        reg<u16> NORMAL_INT_SIG_ENABLE;
+        reg<u16> ERROR_INT_SIG_ENABLE;
 
-        reg<sdhci, u32, 2> CAPABILITIES;
-        reg<sdhci, u32> MAX_CURR_CAP;
+        reg<u32, 2> CAPABILITIES;
+        reg<u32> MAX_CURR_CAP;
 
-        reg<sdhci, u16> HOST_CONTROLLER_VERSION;
+        reg<u16> HOST_CONTROLLER_VERSION;
 
         // Controller specific registers
-        reg<sdhci, u16> F_SDH30_AHB_CONFIG;
-        reg<sdhci, u32> F_SDH30_ESD_CONTROL;
+        reg<u16> F_SDH30_AHB_CONFIG;
+        reg<u32> F_SDH30_ESD_CONTROL;
 
         property<bool> dma_enabled;
 

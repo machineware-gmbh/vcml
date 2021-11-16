@@ -51,20 +51,20 @@ namespace vcml { namespace meta {
 
     public:
         // simulation control
-        reg<simdev, u32> STOP;
-        reg<simdev, u32> EXIT;
-        reg<simdev, u32> ABRT;
+        reg<u32> STOP;
+        reg<u32> EXIT;
+        reg<u32> ABRT;
 
         // timing
-        reg<simdev, u64> SCLK;
-        reg<simdev, u64> HCLK;
+        reg<u64> SCLK;
+        reg<u64> HCLK;
 
         // output
-        reg<simdev, u32> SOUT;
-        reg<simdev, u32> SERR;
+        reg<u32> SOUT;
+        reg<u32> SERR;
 
         // random
-        reg<simdev, u32> PRNG;
+        reg<u32> PRNG;
 
         tlm_target_socket IN;
 

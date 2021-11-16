@@ -50,12 +50,12 @@ namespace vcml { namespace virtio {
     class pci;
 
     struct pci_cap_virtio : pci_capability {
-        reg<pci_device,  u8>* CAP_LEN;
-        reg<pci_device,  u8>* CFG_TYPE;
-        reg<pci_device,  u8>* BAR;
-        reg<pci_device, u32>* OFFSET;
-        reg<pci_device, u32>* LENGTH;
-        reg<pci_device, u32>* NOTIFY_MULT;
+        reg< u8>* CAP_LEN;
+        reg< u8>* CFG_TYPE;
+        reg< u8>* BAR;
+        reg<u32>* OFFSET;
+        reg<u32>* LENGTH;
+        reg<u32>* NOTIFY_MULT;
 
         pci_cap_virtio(const string& nm, u8 type, u8 bar, u32 offset,
                        u32 length, u32 mult);
@@ -131,24 +131,24 @@ namespace vcml { namespace virtio {
             return (pci_address_space)(PCI_AS_BAR0 + msix_bar);
         }
 
-        reg<pci, u32> DEVICE_FEATURE_SEL;
-        reg<pci, u32> DEVICE_FEATURE;
-        reg<pci, u32> DRIVER_FEATURE_SEL;
-        reg<pci, u32> DRIVER_FEATURE;
-        reg<pci, u16> MSIX_CONFIG;
-        reg<pci, u16> NUM_QUEUES;
-        reg<pci,  u8> DEVICE_STATUS;
-        reg<pci,  u8> CONFIG_GEN;
-        reg<pci, u16> QUEUE_SEL;
-        reg<pci, u16> QUEUE_SIZE;
-        reg<pci, u16> QUEUE_MSIX_VECTOR;
-        reg<pci, u16> QUEUE_ENABLE;
-        reg<pci, u16> QUEUE_NOTIFY_OFF;
-        reg<pci, u64> QUEUE_DESC;
-        reg<pci, u64> QUEUE_DRIVER;
-        reg<pci, u64> QUEUE_DEVICE;
-        reg<pci, u32> QUEUE_NOTIFY;
-        reg<pci, u32> IRQ_STATUS;
+        reg<u32> DEVICE_FEATURE_SEL;
+        reg<u32> DEVICE_FEATURE;
+        reg<u32> DRIVER_FEATURE_SEL;
+        reg<u32> DRIVER_FEATURE;
+        reg<u16> MSIX_CONFIG;
+        reg<u16> NUM_QUEUES;
+        reg< u8> DEVICE_STATUS;
+        reg< u8> CONFIG_GEN;
+        reg<u16> QUEUE_SEL;
+        reg<u16> QUEUE_SIZE;
+        reg<u16> QUEUE_MSIX_VECTOR;
+        reg<u16> QUEUE_ENABLE;
+        reg<u16> QUEUE_NOTIFY_OFF;
+        reg<u64> QUEUE_DESC;
+        reg<u64> QUEUE_DRIVER;
+        reg<u64> QUEUE_DEVICE;
+        reg<u32> QUEUE_NOTIFY;
+        reg<u32> IRQ_STATUS;
 
         pci_target_socket PCI_IN;
         virtio_initiator_socket VIRTIO_OUT;

@@ -80,7 +80,7 @@ namespace vcml { namespace opencores {
         m_keyboard.set_layout(keymap);
 
         KHR.allow_read_only();
-        KHR.read = &ockbd::read_KHR;
+        KHR.on_read(&ockbd::read_KHR);
 
         if (m_console.has_display()) {
             m_console.notify(m_keyboard);

@@ -43,31 +43,31 @@ namespace vcml { namespace riscv {
             static const u64 BASE = 0x200000;
             static const u64 SIZE = 0x001000;
 
-            reg<plic, u32>* ENABLED[NIRQ / 32];
-            reg<plic, u32> THRESHOLD;
-            reg<plic, u32> CLAIM;
+            reg<u32>* ENABLED[NIRQ / 32];
+            reg<u32> THRESHOLD;
+            reg<u32> CLAIM;
 
-            context(const string& nm, unsigned int id);
+            context(const string& nm, size_t id);
             ~context();
         };
 
         u32 m_claims[NIRQ];
         context* m_contexts[NCTX];
 
-        bool is_pending(unsigned int irqno) const;
-        bool is_claimed(unsigned int irqno) const;
-        bool is_enabled(unsigned int irqno, unsigned int ctxno) const;
+        bool is_pending(size_t irqno) const;
+        bool is_claimed(size_t irqno) const;
+        bool is_enabled(size_t irqno, size_t ctxno) const;
 
-        u32 irq_priority(unsigned int irqno) const;
-        u32 ctx_threshold(unsigned int ctxno) const;
+        u32 irq_priority(size_t irqno) const;
+        u32 ctx_threshold(size_t ctxno) const;
 
-        u32 read_PENDING(unsigned int regno);
-        u32 read_CLAIM(unsigned int ctxno);
+        u32 read_PENDING(size_t regno);
+        u32 read_CLAIM(size_t ctxno);
 
-        u32 write_PRIORITY(u32 value, unsigned int irqno);
-        u32 write_ENABLED(u32 value, unsigned int regno);
-        u32 write_THRESHOLD(u32 value, unsigned int ctxno);
-        u32 write_COMPLETE(u32 value, unsigned int ctxno);
+        u32 write_PRIORITY(u32 value, size_t irqno);
+        u32 write_ENABLED(u32 value, size_t regno);
+        u32 write_THRESHOLD(u32 value, size_t ctxno);
+        u32 write_COMPLETE(u32 value, size_t ctxno);
 
         void update();
 
@@ -76,8 +76,8 @@ namespace vcml { namespace riscv {
         plic(const plic&);
 
     public:
-        reg<plic, u32, NIRQ> PRIORITY;
-        reg<plic, u32, NIRQ / 32> PENDING;
+        reg<u32, NIRQ> PRIORITY;
+        reg<u32, NIRQ / 32> PENDING;
 
         irq_target_socket_array<NIRQ> IRQS;
         irq_initiator_socket_array<NCTX> IRQT;

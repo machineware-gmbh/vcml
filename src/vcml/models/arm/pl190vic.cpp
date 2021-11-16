@@ -79,7 +79,7 @@ namespace vcml { namespace arm {
         return VADDR;
     }
 
-    u32 pl190vic::write_VCTRL(u32 val, unsigned int idx) {
+    u32 pl190vic::write_VCTRL(u32 val, size_t idx) {
         return val & VCTRL_M;
     }
 
@@ -115,28 +115,28 @@ namespace vcml { namespace arm {
         INTS.allow_read_write();
 
         INTE.allow_read_write();
-        INTE.write = &pl190vic::write_INTE;
+        INTE.on_write(&pl190vic::write_INTE);
 
         IECR.allow_read_write();
-        IECR.write = &pl190vic::write_IECR;
+        IECR.on_write(&pl190vic::write_IECR);
 
         SINT.allow_read_write();
-        SINT.write = &pl190vic::write_SINT;
+        SINT.on_write(&pl190vic::write_SINT);
 
         SICR.allow_write_only();
-        SICR.write = &pl190vic::write_SICR;
+        SICR.on_write(&pl190vic::write_SICR);
 
         PROT.allow_read_write(); // not implemented
 
         ADDR.allow_read_write();
-        ADDR.write = &pl190vic::write_ADDR;
+        ADDR.on_write(&pl190vic::write_ADDR);
 
         DEFA.allow_read_write();
 
         VADDR.allow_read_write();
 
         VCTRL.allow_read_write();
-        VCTRL.tagged_write = &pl190vic::write_VCTRL;
+        VCTRL.on_write(&pl190vic::write_VCTRL);
 
         PID.allow_read_only();
         CID.allow_read_only();

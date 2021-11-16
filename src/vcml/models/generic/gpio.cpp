@@ -113,8 +113,8 @@ namespace vcml { namespace generic {
         GPIO("PORTS"),
         IN("IN") {
         DATA.allow_read_write();
-        DATA.read = &gpio::read_DATA;
-        DATA.write = &gpio::write_DATA;
+        DATA.on_read(&gpio::read_DATA);
+        DATA.on_write(&gpio::write_DATA);
 
         register_command("status", 0, this, &gpio::cmd_status,
                          "reports the status of all GPIO lines");

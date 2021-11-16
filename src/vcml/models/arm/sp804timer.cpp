@@ -111,31 +111,31 @@ namespace vcml { namespace arm {
 
         LOAD.sync_always();
         LOAD.allow_read_write();
-        LOAD.write = &timer::write_LOAD;
+        LOAD.on_write(&timer::write_LOAD);
 
         VALUE.sync_always();
         VALUE.allow_read_only();
-        VALUE.read = &timer::read_VALUE;
+        VALUE.on_read(&timer::read_VALUE);
 
         CONTROL.sync_always();
         CONTROL.allow_read_write();
-        CONTROL.write = &timer::write_CONTROL;
+        CONTROL.on_write(&timer::write_CONTROL);
 
         INTCLR.sync_always();
         INTCLR.allow_write_only();
-        INTCLR.write = &timer::write_INTCLR;
+        INTCLR.on_write(&timer::write_INTCLR);
 
         RIS.sync_always();
         RIS.allow_read_only();
-        RIS.read = &timer::read_RIS;
+        RIS.on_read(&timer::read_RIS);
 
         MIS.sync_always();
         MIS.allow_read_only();
-        MIS.read = &timer::read_MIS;
+        MIS.on_read(&timer::read_MIS);
 
         BGLOAD.sync_always();
         BGLOAD.allow_read_write();
-        BGLOAD.write = &timer::write_BGLOAD;
+        BGLOAD.on_write(&timer::write_BGLOAD);
 
         SC_METHOD(trigger);
         sensitive << m_ev;

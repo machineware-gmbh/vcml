@@ -83,13 +83,13 @@ namespace vcml { namespace arm {
                 CTLR_PRESCALE_M = 3,
             };
 
-            reg<timer, u32> LOAD;    // Load register
-            reg<timer, u32> VALUE;   // Current Value register
-            reg<timer, u32> CONTROL; // Timer Control register
-            reg<timer, u32> INTCLR;  // Interrupt Clear register
-            reg<timer, u32> RIS;     // Raw Interrupt Status register
-            reg<timer, u32> MIS;     // Masked Interrupt Status register
-            reg<timer, u32> BGLOAD;  // Background Load register
+            reg<u32> LOAD;    // Load register
+            reg<u32> VALUE;   // Current Value register
+            reg<u32> CONTROL; // Timer Control register
+            reg<u32> INTCLR;  // Interrupt Clear register
+            reg<u32> RIS;     // Raw Interrupt Status register
+            reg<u32> MIS;     // Masked Interrupt Status register
+            reg<u32> BGLOAD;  // Background Load register
 
             irq_initiator_socket IRQ;
 
@@ -119,11 +119,11 @@ namespace vcml { namespace arm {
         timer TIMER1;
         timer TIMER2;
 
-        reg<sp804timer, u32> ITCR;   // Integration Test Control Register
-        reg<sp804timer, u32> ITOP;   // Integration Test OutPut set register
+        reg<u32> ITCR;   // Integration Test Control Register
+        reg<u32> ITOP;   // Integration Test OutPut set register
 
-        reg<sp804timer, u32, 4> PID; // Peripheral ID Register
-        reg<sp804timer, u32, 4> CID; // Cell ID Register
+        reg<u32, 4> PID; // Peripheral ID Register
+        reg<u32, 4> CID; // Cell ID Register
 
         tlm_target_socket IN;
 

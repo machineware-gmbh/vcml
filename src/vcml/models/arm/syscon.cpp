@@ -39,33 +39,33 @@ namespace vcml { namespace arm {
         SYS_ID.allow_read_only();
 
         LOCKVAL.allow_read_write();
-        LOCKVAL.write = &syscon::write_LOCKVAL;
+        LOCKVAL.on_write(&syscon::write_LOCKVAL);
 
         CFGDATA0.allow_read_write();
         CFGDATA1.allow_read_write();
 
         FLAGS_S.allow_read_write();
-        FLAGS_S.write = &syscon::write_FLAGS_S;
+        FLAGS_S.on_write(&syscon::write_FLAGS_S);
         FLAGS_C.allow_read_write();
-        FLAGS_C.write = &syscon::write_FLAGS_C;
+        FLAGS_C.on_write(&syscon::write_FLAGS_C);
 
         NVFLAGS_S.allow_read_write();
-        NVFLAGS_S.write = &syscon::write_NVFLAGS_S;
+        NVFLAGS_S.on_write(&syscon::write_NVFLAGS_S);
         NVFLAGS_C.allow_read_write();
-        NVFLAGS_C.write = &syscon::write_NVFLAGS_C;
+        NVFLAGS_C.on_write(&syscon::write_NVFLAGS_C);
 
         CLCK24.allow_read_only();
-        CLCK24.read = &syscon::read_CLCK24;
+        CLCK24.on_read(&syscon::read_CLCK24);
 
         PROC_ID.allow_read_write();
 
         SYS_CFGDATA.allow_read_write();
 
         SYS_CFGCTRL.allow_read_write();
-        SYS_CFGCTRL.write = &syscon::write_SYS_CFGCTRL;
+        SYS_CFGCTRL.on_write(&syscon::write_SYS_CFGCTRL);
 
         SYS_CFGSTAT.allow_read_write();
-        SYS_CFGSTAT.write = &syscon::write_SYS_CFGSTAT;
+        SYS_CFGSTAT.on_write(&syscon::write_SYS_CFGSTAT);
     }
 
     syscon::~syscon() {

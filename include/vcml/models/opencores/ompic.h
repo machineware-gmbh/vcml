@@ -40,10 +40,10 @@ namespace vcml { namespace opencores {
         u32* m_control;
         u32* m_status;
 
-        u32 read_STATUS(unsigned int);
-        u32 read_CONTROL(unsigned int);
+        u32 read_STATUS(size_t core_idx);
+        u32 read_CONTROL(size_t core_idx);
 
-        u32 write_CONTROL(unsigned int, u32);
+        u32 write_CONTROL(u32 val, size_t core_idx);
 
         // Disabled
         ompic();
@@ -55,8 +55,8 @@ namespace vcml { namespace opencores {
             CTRL_IRQ_ACK = 1 << 31
         };
 
-        reg<ompic, u32>** CONTROL;
-        reg<ompic, u32>** STATUS;
+        reg<u32>** CONTROL;
+        reg<u32>** STATUS;
 
         irq_initiator_socket_array<> IRQ;
         tlm_target_socket IN;

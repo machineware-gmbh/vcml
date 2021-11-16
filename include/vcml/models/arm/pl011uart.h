@@ -123,23 +123,23 @@ namespace vcml { namespace arm {
             CR_RXE    = 1 <<  9  // Receive Enable
         };
 
-        reg<pl011uart, u16> DR;   // Data Register
-        reg<pl011uart,  u8> RSR;  // Receive Status Register
-        reg<pl011uart, u16> FR;   // Flag Register
-        reg<pl011uart,  u8> ILPR; // IrDA Low-Power Counter Register
-        reg<pl011uart, u16> IBRD; // Integer Baud Rate Register
-        reg<pl011uart, u16> FBRD; // Fractional Baud Rate Register
-        reg<pl011uart,  u8> LCR;  // Line Control Register
-        reg<pl011uart, u16> CR;   // Control Register
-        reg<pl011uart, u16> IFLS; // Interrupt FIFO Level select
-        reg<pl011uart, u16> IMSC; // Interrupt Mask Set/Clear Register
-        reg<pl011uart, u16> RIS;  // Raw Interrupt Status
-        reg<pl011uart, u16> MIS;  // Masked Interrupt Status
-        reg<pl011uart, u16> ICR;  // Interrupt Clear Register
-        reg<pl011uart, u16> DMAC; // DMA Control
+        reg<u16> DR;   // Data Register
+        reg< u8> RSR;  // Receive Status Register
+        reg<u16> FR;   // Flag Register
+        reg< u8> ILPR; // IrDA Low-Power Counter Register
+        reg<u16> IBRD; // Integer Baud Rate Register
+        reg<u16> FBRD; // Fractional Baud Rate Register
+        reg< u8> LCR;  // Line Control Register
+        reg<u16> CR;   // Control Register
+        reg<u16> IFLS; // Interrupt FIFO Level select
+        reg<u16> IMSC; // Interrupt Mask Set/Clear Register
+        reg<u16> RIS;  // Raw Interrupt Status
+        reg<u16> MIS;  // Masked Interrupt Status
+        reg<u16> ICR;  // Interrupt Clear Register
+        reg<u16> DMAC; // DMA Control
 
-        reg<pl011uart, u32, 4> PID; // Peripheral ID Register
-        reg<pl011uart, u32, 4> CID; // Cell ID Register
+        reg<u32, 4> PID; // Peripheral ID Register
+        reg<u32, 4> CID; // Cell ID Register
 
         tlm_target_socket    IN;
         irq_initiator_socket IRQ;

@@ -441,7 +441,7 @@ namespace vcml { namespace virtio {
 
         DEVICE_FEATURE_SEL.sync_never();
         DEVICE_FEATURE_SEL.allow_read_write();
-        DEVICE_FEATURE_SEL.write = &pci::write_DEVICE_FEATURE_SEL;
+        DEVICE_FEATURE_SEL.on_write(&pci::write_DEVICE_FEATURE_SEL);
 
         DEVICE_FEATURE.sync_never();
         DEVICE_FEATURE.allow_read_only();
@@ -451,7 +451,7 @@ namespace vcml { namespace virtio {
 
         DRIVER_FEATURE.sync_never();
         DRIVER_FEATURE.allow_read_write();
-        DRIVER_FEATURE.write = &pci::write_DRIVER_FEATURE;
+        DRIVER_FEATURE.on_write(&pci::write_DRIVER_FEATURE);
 
         MSIX_CONFIG.sync_never();
         MSIX_CONFIG.allow_read_write();
@@ -461,7 +461,7 @@ namespace vcml { namespace virtio {
 
         DEVICE_STATUS.sync_always();
         DEVICE_STATUS.allow_read_write();
-        DEVICE_STATUS.write = &pci::write_DEVICE_STATUS;
+        DEVICE_STATUS.on_write(&pci::write_DEVICE_STATUS);
 
         CONFIG_GEN.sync_always();
         CONFIG_GEN.allow_read_only();
@@ -471,45 +471,45 @@ namespace vcml { namespace virtio {
 
         QUEUE_SIZE.sync_never();
         QUEUE_SIZE.allow_read_write();
-        QUEUE_SIZE.read = &pci::read_QUEUE_SIZE;
-        QUEUE_SIZE.write = &pci::write_QUEUE_SIZE;
+        QUEUE_SIZE.on_read(&pci::read_QUEUE_SIZE);
+        QUEUE_SIZE.on_write(&pci::write_QUEUE_SIZE);
 
         QUEUE_MSIX_VECTOR.sync_never();
         QUEUE_MSIX_VECTOR.allow_read_write();
-        QUEUE_MSIX_VECTOR.read = &pci::read_QUEUE_MSIX_VECTOR;
-        QUEUE_MSIX_VECTOR.write = &pci::write_QUEUE_MSIX_VECTOR;
+        QUEUE_MSIX_VECTOR.on_read(&pci::read_QUEUE_MSIX_VECTOR);
+        QUEUE_MSIX_VECTOR.on_write(&pci::write_QUEUE_MSIX_VECTOR);
 
         QUEUE_ENABLE.sync_never();
         QUEUE_ENABLE.allow_read_write();
-        QUEUE_ENABLE.write = &pci::write_QUEUE_ENABLE;
+        QUEUE_ENABLE.on_write(&pci::write_QUEUE_ENABLE);
 
         QUEUE_NOTIFY_OFF.sync_never();
         QUEUE_NOTIFY_OFF.allow_read_write();
-        QUEUE_NOTIFY_OFF.read = &pci::read_QUEUE_NOTIFY_OFF;
-        QUEUE_NOTIFY_OFF.write = &pci::write_QUEUE_NOTIFY_OFF;
+        QUEUE_NOTIFY_OFF.on_read(&pci::read_QUEUE_NOTIFY_OFF);
+        QUEUE_NOTIFY_OFF.on_write(&pci::write_QUEUE_NOTIFY_OFF);
 
         QUEUE_DESC.sync_never();
         QUEUE_DESC.allow_read_write();
-        QUEUE_DESC.read = &pci::read_QUEUE_DESC;
-        QUEUE_DESC.write = &pci::write_QUEUE_DESC;
+        QUEUE_DESC.on_read(&pci::read_QUEUE_DESC);
+        QUEUE_DESC.on_write(&pci::write_QUEUE_DESC);
 
         QUEUE_DRIVER.sync_never();
         QUEUE_DRIVER.allow_read_write();
-        QUEUE_DRIVER.read = &pci::read_QUEUE_DRIVER;
-        QUEUE_DRIVER.write = &pci::write_QUEUE_DRIVER;
+        QUEUE_DRIVER.on_read(&pci::read_QUEUE_DRIVER);
+        QUEUE_DRIVER.on_write(&pci::write_QUEUE_DRIVER);
 
         QUEUE_DEVICE.sync_never();
         QUEUE_DEVICE.allow_read_write();
-        QUEUE_DEVICE.read = &pci::read_QUEUE_DEVICE;
-        QUEUE_DEVICE.write = &pci::write_QUEUE_DEVICE;
+        QUEUE_DEVICE.on_read(&pci::read_QUEUE_DEVICE);
+        QUEUE_DEVICE.on_write(&pci::write_QUEUE_DEVICE);
 
         QUEUE_NOTIFY.sync_always();
         QUEUE_NOTIFY.allow_read_write();
-        QUEUE_NOTIFY.write = &pci::write_QUEUE_NOTIFY;
+        QUEUE_NOTIFY.on_write(&pci::write_QUEUE_NOTIFY);
 
         IRQ_STATUS.sync_always();
         IRQ_STATUS.allow_read_write();
-        IRQ_STATUS.read = &pci::read_IRQ_STATUS;
+        IRQ_STATUS.on_read(&pci::read_IRQ_STATUS);
 
         pci_declare_bar(virtio_bar, 0x4000, PCI_BAR_MMIO | PCI_BAR_64);
 

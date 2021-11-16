@@ -43,7 +43,7 @@ namespace vcml { namespace riscv {
             FINISH_RESET = 0x7777,
         };
 
-        reg<simdev, u32> FINISH;
+        reg<u32> FINISH;
 
         tlm_target_socket IN;
 

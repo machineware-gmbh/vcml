@@ -111,13 +111,13 @@ namespace vcml { namespace opencores {
             STAT_HC1A   = 1 << 24, /* hardware cursor 1 available */
         };
 
-        reg<ocfbc, u32> CTLR;
-        reg<ocfbc, u32> STAT;
-        reg<ocfbc, u32> HTIM;
-        reg<ocfbc, u32> VTIM;
-        reg<ocfbc, u32> HVLEN;
-        reg<ocfbc, u32> VBARA;
-        reg<ocfbc, u32> VBARB;
+        reg<u32> CTLR;
+        reg<u32> STAT;
+        reg<u32> HTIM;
+        reg<u32> VTIM;
+        reg<u32> HVLEN;
+        reg<u32> VBARA;
+        reg<u32> VBARB;
 
         irq_initiator_socket IRQ;
         tlm_target_socket IN;

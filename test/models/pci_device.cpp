@@ -71,8 +71,8 @@ class pci_test_device: public generic::pci_device
 {
 public:
     pci_target_socket PCI_IN;
-    reg<pci_test_device, u32> TEST_REG;
-    reg<pci_test_device, u32> TEST_REG_IO;
+    reg<u32> TEST_REG;
+    reg<u32> TEST_REG_IO;
 
     u32 write_TEST_REG_IO(u32 val) {
         if (val == 0x1234)
@@ -91,7 +91,7 @@ public:
         TEST_REG.sync_always();
         TEST_REG_IO.allow_read_write();
         TEST_REG_IO.sync_always();
-        TEST_REG_IO.write = &pci_test_device::write_TEST_REG_IO;
+        TEST_REG_IO.on_write(&pci_test_device::write_TEST_REG_IO);
         pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
         pci_declare_pm_cap(PCI_PM_CAP_VER_1_1);

@@ -122,7 +122,7 @@ namespace vcml { namespace arm {
         return ISENABLER_PPI;
     }
 
-    u32 gic400::distif::read_ISENABLER_SPI(unsigned int idx) {
+    u32 gic400::distif::read_ISENABLER_SPI(size_t idx) {
         u32 value = 0;
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
@@ -133,7 +133,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_ISENABLER_SPI(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ISENABLER_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i)) {
@@ -179,7 +179,7 @@ namespace vcml { namespace arm {
         return ICENABLER_PPI;
     }
 
-    u32 gic400::distif::read_ICENABLER_SPI(unsigned int idx) {
+    u32 gic400::distif::read_ICENABLER_SPI(size_t idx) {
         u32 value = 0;
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
@@ -190,7 +190,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_ICENABLER_SPI(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ICENABLER_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -230,11 +230,11 @@ namespace vcml { namespace arm {
         return ISPENDR_PPI;
     }
 
-    u32 gic400::distif::read_SSPR(unsigned int idx) {
+    u32 gic400::distif::read_SSPR(size_t idx) {
         return spi_pending_mask(idx);
     }
 
-    u32 gic400::distif::write_SSPR(u32 value, unsigned int idx) {
+    u32 gic400::distif::write_SSPR(u32 value, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (value & (1 << i))
@@ -274,11 +274,11 @@ namespace vcml { namespace arm {
         return ICPENDR_SPI;
     }
 
-    u32 gic400::distif::read_ICPENDR_SPI(unsigned int idx) {
+    u32 gic400::distif::read_ICPENDR_SPI(size_t idx) {
         return spi_pending_mask(idx);
     }
 
-    u32 gic400::distif::write_ICPENDR_SPI(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ICPENDR_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -306,7 +306,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::read_ISACTIVER_SPI(unsigned int idx) {
+    u32 gic400::distif::read_ISACTIVER_SPI(size_t idx) {
         u32 value = 0;
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
@@ -333,7 +333,7 @@ namespace vcml { namespace arm {
         return 0;
     }
 
-    u32 gic400::distif::write_ICACTIVER_SPI(u32 val, unsigned int idx) {
+    u32 gic400::distif::write_ICACTIVER_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -343,7 +343,7 @@ namespace vcml { namespace arm {
         return 0;
     }
 
-    u32 gic400::distif::read_ITARGETS_PPI(unsigned int idx) {
+    u32 gic400::distif::read_ITARGETS_PPI(size_t idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(INTT) invalid cpu %d, assuming 0", cpu);
@@ -372,7 +372,7 @@ namespace vcml { namespace arm {
         return ICFGR_PPI;
     }
 
-    u32 gic400::distif::write_ICFGR_SPI(u32 value, unsigned int idx) {
+    u32 gic400::distif::write_ICFGR_SPI(u32 value, size_t idx) {
         ICFGR_SPI[idx] = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
 
         unsigned int irq = NPRIV + idx * 16;
@@ -432,7 +432,7 @@ namespace vcml { namespace arm {
     }
 
 
-    u8 gic400::distif::write_SPENDSGIR(u8 value, unsigned int idx) {
+    u8 gic400::distif::write_SPENDSGIR(u8 value, size_t idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(SGIS) invalid cpu %d, assuming 0", cpu);
@@ -450,7 +450,7 @@ namespace vcml { namespace arm {
         return SPENDSGIR;
     }
 
-    u8 gic400::distif::write_CPENDSGIR(u8 value, unsigned int idx) {
+    u8 gic400::distif::write_CPENDSGIR(u8 value, size_t idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(SGIC) invalid cpu %d, assuming 0", cpu);
@@ -502,11 +502,11 @@ namespace vcml { namespace arm {
 
         CTLR.sync_on_write();
         CTLR.allow_read_write();
-        CTLR.write = &distif::write_CTLR;
+        CTLR.on_write(&distif::write_CTLR);
 
         TYPER.sync_never();
         TYPER.allow_read_only();
-        TYPER.read = &distif::read_TYPER;
+        TYPER.on_read(&distif::read_TYPER);
 
         IIDR.sync_never();
         IIDR.allow_read_only();
@@ -514,64 +514,64 @@ namespace vcml { namespace arm {
         ISENABLER_PPI.set_banked();
         ISENABLER_PPI.sync_always();
         ISENABLER_PPI.allow_read_write();
-        ISENABLER_PPI.read = &distif::read_ISENABLER_PPI;
-        ISENABLER_PPI.write = &distif::write_ISENABLER_PPI;
+        ISENABLER_PPI.on_read(&distif::read_ISENABLER_PPI);
+        ISENABLER_PPI.on_write(&distif::write_ISENABLER_PPI);
 
         ISENABLER_SPI.sync_always();
         ISENABLER_SPI.allow_read_write();
-        ISENABLER_SPI.tagged_read = &distif::read_ISENABLER_SPI;
-        ISENABLER_SPI.tagged_write = &distif::write_ISENABLER_SPI;
+        ISENABLER_SPI.on_read(&distif::read_ISENABLER_SPI);
+        ISENABLER_SPI.on_write(&distif::write_ISENABLER_SPI);
 
         ICENABLER_PPI.set_banked();
         ICENABLER_PPI.sync_always();
         ICENABLER_PPI.allow_read_write();
-        ICENABLER_PPI.read = &distif::read_ICENABLER_PPI;
-        ICENABLER_PPI.write = &distif::write_ICENABLER_PPI;
+        ICENABLER_PPI.on_read(&distif::read_ICENABLER_PPI);
+        ICENABLER_PPI.on_write(&distif::write_ICENABLER_PPI);
 
         ICENABLER_SPI.sync_always();
         ICENABLER_SPI.allow_read_write();
-        ICENABLER_SPI.tagged_read = &distif::read_ICENABLER_SPI;
-        ICENABLER_SPI.tagged_write = &distif::write_ICENABLER_SPI;
+        ICENABLER_SPI.on_read(&distif::read_ICENABLER_SPI);
+        ICENABLER_SPI.on_write(&distif::write_ICENABLER_SPI);
 
         ISPENDR_PPI.set_banked();
         ISPENDR_PPI.sync_always();
         ISPENDR_PPI.allow_read_write();
-        ISPENDR_PPI.read = &distif::read_ISPENDR_PPI;
-        ISPENDR_PPI.write = &distif::write_ISPENDR_PPI;
+        ISPENDR_PPI.on_read(&distif::read_ISPENDR_PPI);
+        ISPENDR_PPI.on_write(&distif::write_ISPENDR_PPI);
 
         ISPENDR_SPI.sync_always();
         ISPENDR_SPI.allow_read_write();
-        ISPENDR_SPI.tagged_read = &distif::read_SSPR;
-        ISPENDR_SPI.tagged_write = &distif::write_SSPR;
+        ISPENDR_SPI.on_read(&distif::read_SSPR);
+        ISPENDR_SPI.on_write(&distif::write_SSPR);
 
         ICPENDR_PPI.set_banked();
         ICPENDR_PPI.sync_always();
         ICPENDR_PPI.allow_read_write();
-        ICPENDR_PPI.read = &distif::read_ICPENDR_PPI;
-        ICPENDR_PPI.write = &distif::write_ICPENDR_PPI;
+        ICPENDR_PPI.on_read(&distif::read_ICPENDR_PPI);
+        ICPENDR_PPI.on_write(&distif::write_ICPENDR_PPI);
 
         ICPENDR_SPI.sync_always();
         ICPENDR_SPI.allow_read_write();
-        ICPENDR_SPI.tagged_read = &distif::read_ICPENDR_SPI;
-        ICPENDR_SPI.tagged_write = &distif::write_ICPENDR_SPI;
+        ICPENDR_SPI.on_read(&distif::read_ICPENDR_SPI);
+        ICPENDR_SPI.on_write(&distif::write_ICPENDR_SPI);
 
         ISACTIVER_PPI.set_banked();
         ISACTIVER_PPI.allow_read_only();
         ISACTIVER_PPI.sync_on_read();
-        ISACTIVER_PPI.read = &distif::read_ISACTIVER_PPI;
+        ISACTIVER_PPI.on_read(&distif::read_ISACTIVER_PPI);
 
         ISACTIVER_SPI.allow_read_only();
         ISACTIVER_SPI.sync_on_read();
-        ISACTIVER_SPI.tagged_read = &distif::read_ISACTIVER_SPI;
+        ISACTIVER_SPI.on_read(&distif::read_ISACTIVER_SPI);
 
         ICACTIVER_PPI.set_banked();
         ICACTIVER_PPI.sync_on_write();
         ICACTIVER_PPI.allow_read_write();
-        ICACTIVER_PPI.write = &distif::write_ICACTIVER_PPI;
+        ICACTIVER_PPI.on_write(&distif::write_ICACTIVER_PPI);
 
         ICACTIVER_SPI.sync_on_write();
         ICACTIVER_SPI.allow_read_write();
-        ICACTIVER_SPI.tagged_write = &distif::write_ICACTIVER_SPI;
+        ICACTIVER_SPI.on_write(&distif::write_ICACTIVER_SPI);
 
         IPRIORITY_SGI.set_banked();
         IPRIORITY_SGI.sync_never();
@@ -587,7 +587,7 @@ namespace vcml { namespace arm {
         ITARGETS_PPI.set_banked();
         ITARGETS_PPI.sync_always();
         ITARGETS_PPI.allow_read_write();
-        ITARGETS_PPI.tagged_read = &distif::read_ITARGETS_PPI;
+        ITARGETS_PPI.on_read(&distif::read_ITARGETS_PPI);
 
         ITARGETS_SPI.sync_always();
         ITARGETS_SPI.allow_read_write();
@@ -597,26 +597,26 @@ namespace vcml { namespace arm {
 
         ICFGR_PPI.sync_on_write();
         ICFGR_PPI.allow_read_write();
-        ICFGR_PPI.write = &distif::write_ICFGR;
+        ICFGR_PPI.on_write(&distif::write_ICFGR);
 
         ICFGR_SPI.sync_on_write();
         ICFGR_SPI.allow_read_write();
-        ICFGR_SPI.tagged_write = &distif::write_ICFGR_SPI;
+        ICFGR_SPI.on_write(&distif::write_ICFGR_SPI);
 
         SGIR.set_banked();
         SGIR.allow_write_only();
         SGIR.sync_on_write();
-        SGIR.write = &distif::write_SGIR;
+        SGIR.on_write(&distif::write_SGIR);
 
         SPENDSGIR.set_banked();
         SPENDSGIR.sync_always();
         SPENDSGIR.allow_read_write();
-        SPENDSGIR.tagged_write = &distif::write_SPENDSGIR;
+        SPENDSGIR.on_write(&distif::write_SPENDSGIR);
 
         CPENDSGIR.set_banked();
         CPENDSGIR.sync_always();
         CPENDSGIR.allow_read_write();
-        CPENDSGIR.tagged_write = &distif::write_CPENDSGIR;
+        CPENDSGIR.on_write(&distif::write_CPENDSGIR);
 
         CIDR.allow_read_only();
         CIDR.sync_never();
@@ -779,27 +779,27 @@ namespace vcml { namespace arm {
         CTLR.set_banked();
         CTLR.sync_always();
         CTLR.allow_read_write();
-        CTLR.write = &cpuif::write_CTLR;
+        CTLR.on_write(&cpuif::write_CTLR);
 
         PMR.set_banked();
         PMR.sync_always();
         PMR.allow_read_write();
-        PMR.write = &cpuif::write_PMR;
+        PMR.on_write(&cpuif::write_PMR);
 
         BPR.set_banked();
         BPR.sync_always();
         BPR.allow_read_write();
-        BPR.write = &cpuif::write_BPR;
+        BPR.on_write(&cpuif::write_BPR);
 
         IAR.set_banked();
         IAR.allow_read_only();
         IAR.sync_on_read();
-        IAR.read = &cpuif::read_IAR;
+        IAR.on_read(&cpuif::read_IAR);
 
         EOIR.set_banked();
         EOIR.allow_write_only();
         EOIR.sync_on_write();
-        EOIR.write = &cpuif::write_EOIR;
+        EOIR.on_write(&cpuif::write_EOIR);
 
         RPR.set_banked();
         RPR.sync_never();
@@ -858,7 +858,7 @@ namespace vcml { namespace arm {
         return 0x90000000 | (NLR - 1);
     }
 
-    u32 gic400::vifctrl::write_LR(u32 val, unsigned int idx) {
+    u32 gic400::vifctrl::write_LR(u32 val, size_t idx) {
         u8 cpu = current_cpu();
         u8 state = (val >> 28) & 0b11;
         u8 hw = (val >> 31) & 0b1;
@@ -899,7 +899,7 @@ namespace vcml { namespace arm {
         return val;
     }
 
-    u32 gic400::vifctrl::read_LR(unsigned int idx) {
+    u32 gic400::vifctrl::read_LR(size_t idx) {
         u8 cpu = current_cpu();
 
         // update pending and active bit
@@ -985,23 +985,23 @@ namespace vcml { namespace arm {
 
         HCR.set_banked();
         HCR.allow_read_write();
-        HCR.write = &vifctrl::write_HCR;
+        HCR.on_write(&vifctrl::write_HCR);
 
         VTR.allow_read_only();
-        VTR.read = &vifctrl::read_VTR;
+        VTR.on_read(&vifctrl::read_VTR);
 
         LR.set_banked();
         LR.allow_read_write();
-        LR.tagged_write = &vifctrl::write_LR;
-        LR.tagged_read = &vifctrl::read_LR;
+        LR.on_write(&vifctrl::write_LR);
+        LR.on_read(&vifctrl::read_LR);
 
         VMCR.allow_read_write();
-        VMCR.read = &vifctrl::read_VMCR;
-        VMCR.write = &vifctrl::write_VMCR;
+        VMCR.on_read(&vifctrl::read_VMCR);
+        VMCR.on_write(&vifctrl::write_VMCR);
 
         APR.set_banked();
         APR.allow_read_write();
-        APR.write = &vifctrl::write_APR;
+        APR.on_write(&vifctrl::write_APR);
     }
 
     gic400::vifctrl::~vifctrl() {
@@ -1098,22 +1098,22 @@ namespace vcml { namespace arm {
 
         CTLR.set_banked();
         CTLR.allow_read_write();
-        CTLR.write = &vcpuif::write_CTLR;
+        CTLR.on_write(&vcpuif::write_CTLR);
 
         PMR.set_banked();
         PMR.allow_read_write();
 
         BPR.set_banked();
         BPR.allow_read_write();
-        BPR.write = &vcpuif::write_BPR;
+        BPR.on_write(&vcpuif::write_BPR);
 
         IAR.set_banked();
         IAR.allow_read_only();
-        IAR.read = &vcpuif::read_IAR;
+        IAR.on_read(&vcpuif::read_IAR);
 
         EOIR.set_banked();
         EOIR.allow_write_only();
-        EOIR.write = &vcpuif::write_EOIR;
+        EOIR.on_write(&vcpuif::write_EOIR);
 
         RPR.set_banked();
 

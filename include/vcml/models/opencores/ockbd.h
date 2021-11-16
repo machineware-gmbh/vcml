@@ -55,7 +55,7 @@ namespace vcml { namespace opencores {
         ockbd(const ockbd&);
 
     public:
-        reg<ockbd, u8> KHR;
+        reg<u8> KHR;
 
         irq_initiator_socket IRQ;
         tlm_target_socket IN;

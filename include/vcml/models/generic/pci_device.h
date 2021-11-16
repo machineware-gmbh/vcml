@@ -38,41 +38,41 @@ namespace vcml { namespace generic {
         vector<reg_base*> registers;
         pci_device* device;
 
-        reg<pci_device, u8>* CAP_ID;
-        reg<pci_device, u8>* CAP_NEXT;
+        reg<u8>* CAP_ID;
+        reg<u8>* CAP_NEXT;
 
         pci_capability(const string& nm, pci_cap_id cap_id);
         virtual ~pci_capability();
 
-        template <typename T, typename HOST = pci_device>
-        reg<HOST, T>* new_cap_reg(const string& nm, T v, vcml_access rw);
+        template <typename T>
+        reg<T>* new_cap_reg(const string& nm, T v, vcml_access rw);
 
-        template <typename T, typename HOST = pci_device>
-        reg<HOST, T>* new_cap_reg_ro(const string& nm, T val) {
-            return new_cap_reg<T, HOST>(nm, val, VCML_ACCESS_READ);
+        template <typename T>
+        reg<T>* new_cap_reg_ro(const string& nm, T val) {
+            return new_cap_reg<T>(nm, val, VCML_ACCESS_READ);
         }
 
-        template <typename T, typename HOST = pci_device>
-        reg<HOST, T>* new_cap_reg_rw(const string& nm, T val) {
-            return new_cap_reg<T, HOST>(nm, val, VCML_ACCESS_READ_WRITE);
+        template <typename T>
+        reg<T>* new_cap_reg_rw(const string& nm, T val) {
+            return new_cap_reg<T>(nm, val, VCML_ACCESS_READ_WRITE);
         }
     };
 
     struct pci_cap_pm : pci_capability {
-        reg<pci_device, u16>* PM_CAPS;
-        reg<pci_device, u32>* PM_CTRL;
+        reg<u16>* PM_CAPS;
+        reg<u32>* PM_CTRL;
 
         pci_cap_pm(const string& nm, u16 caps);
         virtual ~pci_cap_pm() = default;
     };
 
     struct pci_cap_msi : pci_capability {
-        reg<pci_device, u16>* MSI_CONTROL;
-        reg<pci_device, u32>* MSI_ADDR;
-        reg<pci_device, u32>* MSI_ADDR_HI;
-        reg<pci_device, u16>* MSI_DATA;
-        reg<pci_device, u32>* MSI_MASK;
-        reg<pci_device, u32>* MSI_PENDING;
+        reg<u16>* MSI_CONTROL;
+        reg<u32>* MSI_ADDR;
+        reg<u32>* MSI_ADDR_HI;
+        reg<u16>* MSI_DATA;
+        reg<u32>* MSI_MASK;
+        reg<u32>* MSI_PENDING;
 
         size_t max_vectors() const { return 1u << ((*MSI_CONTROL >> 1) & 7); }
         size_t num_vectors() const { return 1u << ((*MSI_CONTROL >> 4) & 7); }
@@ -110,9 +110,9 @@ namespace vcml { namespace generic {
 
         u32* msix_pba;
 
-        reg<pci_device, u16>* MSIX_CONTROL;
-        reg<pci_device, u32>* MSIX_BIR_OFF;
-        reg<pci_device, u32>* MSIX_PBA_OFF;
+        reg<u16>* MSIX_CONTROL;
+        reg<u32>* MSIX_BIR_OFF;
+        reg<u32>* MSIX_PBA_OFF;
 
         bool is_enabled() const {
             return *MSIX_CONTROL & PCI_MSIX_ENABLE;
@@ -182,24 +182,24 @@ namespace vcml { namespace generic {
 
         property<bool> pcie;
 
-        reg<pci_device, u16> PCI_VENDOR_ID;
-        reg<pci_device, u16> PCI_DEVICE_ID;
-        reg<pci_device, u16> PCI_COMMAND;
-        reg<pci_device, u16> PCI_STATUS;
-        reg<pci_device, u32> PCI_CLASS;
-        reg<pci_device, u8 > PCI_CACHE_LINE;
-        reg<pci_device, u8 > PCI_LATENCY_TIMER;
-        reg<pci_device, u8 > PCI_HEADER_TYPE;
-        reg<pci_device, u8 > PCI_BIST;
-        reg<pci_device, u32, PCI_NUM_BARS> PCI_BAR;
-        reg<pci_device, u16> PCI_SUBVENDOR_ID;
-        reg<pci_device, u16> PCI_SUBDEVICE_ID;
-        reg<pci_device, u8 > PCI_CAP_PTR;
-        reg<pci_device, u8 > PCI_INT_LINE;
-        reg<pci_device, u8 > PCI_INT_PIN;
-        reg<pci_device, u8 > PCI_MIN_GRANT;
-        reg<pci_device, u8 > PCI_MAX_LATENCY;
-        reg<pci_device, u32> PCIE_XCAP;
+        reg<u16> PCI_VENDOR_ID;
+        reg<u16> PCI_DEVICE_ID;
+        reg<u16> PCI_COMMAND;
+        reg<u16> PCI_STATUS;
+        reg<u32> PCI_CLASS;
+        reg<u8 > PCI_CACHE_LINE;
+        reg<u8 > PCI_LATENCY_TIMER;
+        reg<u8 > PCI_HEADER_TYPE;
+        reg<u8 > PCI_BIST;
+        reg<u32, PCI_NUM_BARS> PCI_BAR;
+        reg<u16> PCI_SUBVENDOR_ID;
+        reg<u16> PCI_SUBDEVICE_ID;
+        reg<u8 > PCI_CAP_PTR;
+        reg<u8 > PCI_INT_LINE;
+        reg<u8 > PCI_INT_PIN;
+        reg<u8 > PCI_MIN_GRANT;
+        reg<u8 > PCI_MAX_LATENCY;
+        reg<u32> PCIE_XCAP;
 
         pci_device(const sc_module_name& name, const pci_config& config);
         virtual ~pci_device();
@@ -254,7 +254,7 @@ namespace vcml { namespace generic {
 
         u8 read_CAP_PTR() { return pci_cap_ptr; }
 
-        u32 write_BAR(u32 val, u32 barno);
+        u32 write_BAR(u32 val, size_t barno);
 
         u16 write_COMMAND(u16 val);
         u16 write_STATUS(u16 val);
@@ -281,13 +281,13 @@ namespace vcml { namespace generic {
         void update_irqs();
     };
 
-    template <typename T, typename HOST>
-    reg<HOST, T>* pci_capability::new_cap_reg(const string& regnm, T val,
+    template <typename T>
+    reg<T>* pci_capability::new_cap_reg(const string& regnm, T val,
         vcml_access rw) {
         hierarchy_guard guard(device);
         string rname = mkstr("%s_%s", name.c_str(), regnm.c_str());
-        reg<pci_device, T>* r = new reg<HOST, T>(PCI_AS_CFG, rname.c_str(),
-                                                 device->pci_cap_off, val);
+        reg<T>* r = new reg<T>(PCI_AS_CFG, rname.c_str(),
+                                           device->pci_cap_off, val);
         if (is_write_allowed(rw))
             r->sync_always();
         else

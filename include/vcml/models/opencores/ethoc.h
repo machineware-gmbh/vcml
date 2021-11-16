@@ -242,27 +242,27 @@ namespace vcml { namespace opencores {
             TXCTRL_TXPAUSERQ   = 1 << 16, /* TX pause request */
         };
 
-        reg<ethoc, u32> MODER;         /* mode register */
-        reg<ethoc, u32> INT_SOURCE;    /* interrupt source register */
-        reg<ethoc, u32> INT_MASK;      /* interrupt mask register */
-        reg<ethoc, u32> IPGT;          /* back to back inter-packet gap */
-        reg<ethoc, u32> IPGR1;         /* non back to back inter-packet gap 1 */
-        reg<ethoc, u32> IPGR2;         /* non back to back inter-packet gap 2 */
-        reg<ethoc, u32> PACKETLEN;     /* packet length */
-        reg<ethoc, u32> COLLCONF;      /* collision/retry configuration */
-        reg<ethoc, u32> TX_BD_NUM;     /* transmit buffer descriptor number */
-        reg<ethoc, u32> CTRLMODER;     /* control module mode register */
-        reg<ethoc, u32> MIIMODER;      /* MII mode register */
-        reg<ethoc, u32> MIICOMMAND;    /* MII command register */
-        reg<ethoc, u32> MIIADDRESS;    /* MII address register */
-        reg<ethoc, u32> MIITX_DATA;    /* MII transmit data */
-        reg<ethoc, u32> MIIRX_DATA;    /* MII receive data */
-        reg<ethoc, u32> MIISTATUS;     /* MII status register */
-        reg<ethoc, u32> MAC_ADDR0;     /* MAC address 0 */
-        reg<ethoc, u32> MAC_ADDR1;     /* MAC address 1 */
-        reg<ethoc, u32> ETH_HASH0_ADR; /* HASH0 register */
-        reg<ethoc, u32> ETH_HASH1_ADR; /* HASH1 register */
-        reg<ethoc, u32> ETH_TXCTRL;    /* transmit control register */
+        reg<u32> MODER;         /* mode register */
+        reg<u32> INT_SOURCE;    /* interrupt source register */
+        reg<u32> INT_MASK;      /* interrupt mask register */
+        reg<u32> IPGT;          /* back to back inter-packet gap */
+        reg<u32> IPGR1;         /* non back to back inter-packet gap 1 */
+        reg<u32> IPGR2;         /* non back to back inter-packet gap 2 */
+        reg<u32> PACKETLEN;     /* packet length */
+        reg<u32> COLLCONF;      /* collision/retry configuration */
+        reg<u32> TX_BD_NUM;     /* transmit buffer descriptor number */
+        reg<u32> CTRLMODER;     /* control module mode register */
+        reg<u32> MIIMODER;      /* MII mode register */
+        reg<u32> MIICOMMAND;    /* MII command register */
+        reg<u32> MIIADDRESS;    /* MII address register */
+        reg<u32> MIITX_DATA;    /* MII transmit data */
+        reg<u32> MIIRX_DATA;    /* MII receive data */
+        reg<u32> MIISTATUS;     /* MII status register */
+        reg<u32> MAC_ADDR0;     /* MAC address 0 */
+        reg<u32> MAC_ADDR1;     /* MAC address 1 */
+        reg<u32> ETH_HASH0_ADR; /* HASH0 register */
+        reg<u32> ETH_HASH1_ADR; /* HASH1 register */
+        reg<u32> ETH_TXCTRL;    /* transmit control register */
 
         property<clock_t> clock;
         property<string> mac;

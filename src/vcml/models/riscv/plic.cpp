@@ -20,26 +20,26 @@
 
 namespace vcml { namespace riscv {
 
-    plic::context::context(const string& nm, unsigned int no):
+    plic::context::context(const string& nm, size_t no):
         ENABLED(),
-        THRESHOLD(mkstr("CTX%u_THRESHOLD", no).c_str(), BASE + no * SIZE + 0),
-        CLAIM(mkstr("CTX%u_CLAIM", no).c_str(), BASE + no * SIZE + 4) {
+        THRESHOLD(mkstr("CTX%zu_THRESHOLD", no).c_str(), BASE + no * SIZE + 0),
+        CLAIM(mkstr("CTX%zu_CLAIM", no).c_str(), BASE + no * SIZE + 4) {
 
         THRESHOLD.allow_read_write();
-        THRESHOLD.tagged_write = &plic::write_THRESHOLD;
+        THRESHOLD.on_write(&plic::write_THRESHOLD);
         THRESHOLD.tag = no;
 
         CLAIM.allow_read_write();
-        CLAIM.tagged_read = &plic::read_CLAIM;
-        CLAIM.tagged_write = &plic::write_COMPLETE;
+        CLAIM.on_read(&plic::read_CLAIM);
+        CLAIM.on_write(&plic::write_COMPLETE);
         CLAIM.tag = no;
 
-        for (unsigned int regno = 0; regno < NIRQ / 32; regno++) {
-            string rnm = mkstr("CTX%u_ENABLED%u", no, regno);
+        for (size_t regno = 0; regno < NIRQ / 32; regno++) {
+            string rnm = mkstr("CTX%zu_ENABLED%zu", no, regno);
             unsigned int gid = no * NIRQ / 32 + regno;
-            ENABLED[regno] = new reg<plic, u32>(rnm.c_str(), 0x2000 + gid * 4);
+            ENABLED[regno] = new reg<u32>(rnm.c_str(), 0x2000 + gid * 4);
             ENABLED[regno]->allow_read_write();
-            ENABLED[regno]->tagged_write = &plic::write_ENABLED;
+            ENABLED[regno]->on_write(&plic::write_ENABLED);
             ENABLED[regno]->tag = gid;
         }
     }
@@ -49,8 +49,8 @@ namespace vcml { namespace riscv {
             delete reg;
     }
 
-    bool plic::is_pending(unsigned int irqno) const {
-        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %d", irqno);
+    bool plic::is_pending(size_t irqno) const {
+        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
 
         if (irqno == 0)
             return false;
@@ -61,14 +61,14 @@ namespace vcml { namespace riscv {
         return IRQS[irqno].read();
     }
 
-    bool plic::is_claimed(unsigned int irqno) const {
-        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %u", irqno);
+    bool plic::is_claimed(size_t irqno) const {
+        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
         return m_claims[irqno] < NCTX;
     }
 
-    bool plic::is_enabled(unsigned int irqno, unsigned int ctxno) const {
-        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %u", irqno);
-        VCML_ERROR_ON(ctxno >= NCTX, "invalid context %u", ctxno);
+    bool plic::is_enabled(size_t irqno, size_t ctxno) const {
+        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
+        VCML_ERROR_ON(ctxno >= NCTX, "invalid context %zu", ctxno);
 
         if (irqno == 0)
             return false;
@@ -82,23 +82,23 @@ namespace vcml { namespace riscv {
         return (m_contexts[ctxno]->ENABLED[regno]->get() >> shift) & 0b1;
     }
 
-    u32 plic::irq_priority(unsigned int irqno) const {
+    u32 plic::irq_priority(size_t irqno) const {
         if (irqno == 0) {
-            log_debug("attempt to read priority of invalid irq%u\n", irqno);
+            log_debug("attempt to read priority of invalid irq%zu\n", irqno);
             return 0;
         }
 
         return PRIORITY.get(irqno);
     }
 
-    u32 plic::ctx_threshold(unsigned int ctxno) const {
+    u32 plic::ctx_threshold(size_t ctxno) const {
         context* ctx = m_contexts[ctxno];
         if (ctx == nullptr)
             return 0u;
         return ctx->THRESHOLD;
     }
 
-    u32 plic::read_PENDING(unsigned int regno) {
+    u32 plic::read_PENDING(size_t regno) {
         unsigned int irqbase = regno * 32;
 
         u32 pending = 0u;
@@ -113,7 +113,7 @@ namespace vcml { namespace riscv {
         return pending;
     }
 
-    u32 plic::read_CLAIM(unsigned int ctxno) {
+    u32 plic::read_CLAIM(size_t ctxno) {
         unsigned int irq = 0;
         unsigned int threshold = ctx_threshold(ctxno);
 
@@ -130,20 +130,20 @@ namespace vcml { namespace riscv {
         if (irq > 0)
             m_claims[irq] = ctxno;
 
-        log_debug("context %u claims irq %u", ctxno, irq);
+        log_debug("context %zu claims irq %u", ctxno, irq);
 
         update();
 
         return irq;
     }
 
-    u32 plic::write_PRIORITY(u32 value, unsigned int irqno) {
+    u32 plic::write_PRIORITY(u32 value, size_t irqno) {
         PRIORITY.get(irqno) = value;
         update();
         return value;
     }
 
-    u32 plic::write_ENABLED(u32 value, unsigned int regno) {
+    u32 plic::write_ENABLED(u32 value, size_t regno) {
         unsigned int ctxno = regno / (NIRQ / 32);
         unsigned int subno = regno % (NIRQ / 32);
         m_contexts[ctxno]->ENABLED[subno]->set(value);
@@ -151,21 +151,21 @@ namespace vcml { namespace riscv {
         return value;
     }
 
-    u32 plic::write_THRESHOLD(u32 value, unsigned int ctxno) {
+    u32 plic::write_THRESHOLD(u32 value, size_t ctxno) {
         m_contexts[ctxno]->THRESHOLD = value;
         update();
         return value;
     }
 
-    u32 plic::write_COMPLETE(u32 value, unsigned int ctxno) {
+    u32 plic::write_COMPLETE(u32 value, size_t ctxno) {
         unsigned int irq = value;
         if (value >= NIRQ) {
-            log_warn("context %u completes illegal irq %u", ctxno, irq);
+            log_warn("context %zu completes illegal irq %u", ctxno, irq);
             return value;
         }
 
         if (m_claims[irq] != ctxno)
-            log_debug("context %u completes unclaimed irq %u", ctxno, value);
+            log_debug("context %zu completes unclaimed irq %u", ctxno, value);
 
         m_claims[irq] = ~0u;
         update();
@@ -203,10 +203,10 @@ namespace vcml { namespace riscv {
         IRQT("IRQT"),
         IN("IN") {
         PRIORITY.allow_read_write();
-        PRIORITY.tagged_write = &plic::write_PRIORITY;
+        PRIORITY.on_write(&plic::write_PRIORITY);
 
         PENDING.allow_read_only();
-        PENDING.tagged_read = &plic::read_PENDING;
+        PENDING.on_read(&plic::read_PENDING);
 
         for (unsigned int ctx = 0; ctx < NCTX; ctx++)
             m_contexts[ctx] = nullptr;

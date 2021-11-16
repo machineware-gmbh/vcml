@@ -54,7 +54,7 @@ namespace vcml { namespace riscv {
         IN("IN") {
         FINISH.sync_always();
         FINISH.allow_read_write();
-        FINISH.write = &simdev::write_FINISH;
+        FINISH.on_write(&simdev::write_FINISH);
     }
 
     simdev::~simdev() {

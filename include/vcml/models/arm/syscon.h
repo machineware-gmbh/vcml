@@ -66,19 +66,19 @@ namespace vcml { namespace arm {
             LOCKVAL_M    = 0x7fff
         };
 
-        reg<syscon, u32> SYS_ID;
-        reg<syscon, u16> LOCKVAL;
-        reg<syscon, u32> CFGDATA0;
-        reg<syscon, u32> CFGDATA1;
-        reg<syscon, u32> FLAGS_S;
-        reg<syscon, u32> FLAGS_C;
-        reg<syscon, u32> NVFLAGS_S;
-        reg<syscon, u32> NVFLAGS_C;
-        reg<syscon, u32> CLCK24;
-        reg<syscon, u32> PROC_ID;
-        reg<syscon, u32> SYS_CFGDATA;
-        reg<syscon, u32> SYS_CFGCTRL;
-        reg<syscon, u32> SYS_CFGSTAT;
+        reg<u32> SYS_ID;
+        reg<u16> LOCKVAL;
+        reg<u32> CFGDATA0;
+        reg<u32> CFGDATA1;
+        reg<u32> FLAGS_S;
+        reg<u32> FLAGS_C;
+        reg<u32> NVFLAGS_S;
+        reg<u32> NVFLAGS_C;
+        reg<u32> CLCK24;
+        reg<u32> PROC_ID;
+        reg<u32> SYS_CFGDATA;
+        reg<u32> SYS_CFGCTRL;
+        reg<u32> SYS_CFGSTAT;
 
         tlm_target_socket IN;
 

@@ -40,9 +40,9 @@ namespace vcml { namespace riscv {
 
         u64 get_cycles() const;
 
-        u32 read_MSIP(unsigned int hart);
-        u32 write_MSIP(u32 val, unsigned int hart);
-        u64 write_MTIMECMP(u64 val, unsigned int hart);
+        u32 read_MSIP(size_t hart);
+        u32 write_MSIP(u32 val, size_t hart);
+        u64 write_MTIMECMP(u64 val, size_t hart);
         u64 read_MTIME();
 
         void update_timer();
@@ -54,9 +54,9 @@ namespace vcml { namespace riscv {
     public:
         static const int NHARTS = 4095;
 
-        reg<clint, u32, NHARTS> MSIP;
-        reg<clint, u64, NHARTS> MTIMECMP;
-        reg<clint, u64> MTIME;
+        reg<u32, NHARTS> MSIP;
+        reg<u64, NHARTS> MTIMECMP;
+        reg<u64> MTIME;
 
         irq_initiator_socket_array<NHARTS> IRQ_SW;
         irq_initiator_socket_array<NHARTS> IRQ_TIMER;

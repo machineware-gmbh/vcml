@@ -84,14 +84,14 @@ namespace vcml { namespace generic {
             DAY_FT      = 1 << 6,   /* frequency test */
         };
 
-        reg<rtc1742, u8> CONTROL;
-        reg<rtc1742, u8> SECONDS;
-        reg<rtc1742, u8> MINUTES;
-        reg<rtc1742, u8> HOUR;
-        reg<rtc1742, u8> DAY;
-        reg<rtc1742, u8> DATE;
-        reg<rtc1742, u8> MONTH;
-        reg<rtc1742, u8> YEAR;
+        reg<u8> CONTROL;
+        reg<u8> SECONDS;
+        reg<u8> MINUTES;
+        reg<u8> HOUR;
+        reg<u8> DAY;
+        reg<u8> DATE;
+        reg<u8> MONTH;
+        reg<u8> YEAR;
 
         tlm_target_socket IN;
 

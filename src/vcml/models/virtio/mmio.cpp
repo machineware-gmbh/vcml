@@ -356,29 +356,29 @@ namespace vcml { namespace virtio {
 
         DEVICE_ID.sync_never();
         DEVICE_ID.allow_read_only();
-        DEVICE_ID.read = &mmio::read_DEVICE_ID;
+        DEVICE_ID.on_read(&mmio::read_DEVICE_ID);
 
         VENDOR_ID.sync_never();
         VENDOR_ID.allow_read_only();
-        VENDOR_ID.read = &mmio::read_VENDOR_ID;
+        VENDOR_ID.on_read(&mmio::read_VENDOR_ID);
 
         DEVICE_FEATURES.sync_never();
         DEVICE_FEATURES.allow_read_only();
 
         DEVICE_FEATURES_SEL.sync_never();
         DEVICE_FEATURES_SEL.allow_write_only();
-        DEVICE_FEATURES_SEL.write = &mmio::write_DEVICE_FEATURES_SEL;
+        DEVICE_FEATURES_SEL.on_write(&mmio::write_DEVICE_FEATURES_SEL);
 
         DRIVER_FEATURES.sync_never();
         DRIVER_FEATURES.allow_write_only();
-        DRIVER_FEATURES.write = &mmio::write_DRIVER_FEATURES;
+        DRIVER_FEATURES.on_write(&mmio::write_DRIVER_FEATURES);
 
         DRIVER_FEATURES_SEL.sync_never();
         DRIVER_FEATURES_SEL.allow_write_only();
 
         QUEUE_SEL.sync_never();
         QUEUE_SEL.allow_write_only();
-        QUEUE_SEL.write = &mmio::write_QUEUE_SEL;
+        QUEUE_SEL.on_write(&mmio::write_QUEUE_SEL);
 
         QUEUE_NUM_MAX.sync_never();
         QUEUE_NUM_MAX.allow_read_only();
@@ -388,22 +388,22 @@ namespace vcml { namespace virtio {
 
         QUEUE_READY.sync_never();
         QUEUE_READY.allow_read_write();
-        QUEUE_READY.write = &mmio::write_QUEUE_READY;
+        QUEUE_READY.on_write(&mmio::write_QUEUE_READY);
 
         QUEUE_NOTIFY.sync_always();
         QUEUE_NOTIFY.allow_write_only();
-        QUEUE_NOTIFY.write = &mmio::write_QUEUE_NOTIFY;
+        QUEUE_NOTIFY.on_write(&mmio::write_QUEUE_NOTIFY);
 
         INTERRUPT_STATUS.sync_always();
         INTERRUPT_STATUS.allow_read_only();
 
         INTERRUPT_ACK.sync_always();
         INTERRUPT_ACK.allow_write_only();
-        INTERRUPT_ACK.write = &mmio::write_INTERRRUPT_ACK;
+        INTERRUPT_ACK.on_write(&mmio::write_INTERRRUPT_ACK);
 
         STATUS.sync_always();
         STATUS.allow_read_write();
-        STATUS.write = &mmio::write_STATUS;
+        STATUS.on_write(&mmio::write_STATUS);
 
         QUEUE_DESC_LO.sync_never();
         QUEUE_DESC_LO.allow_write_only();

@@ -173,12 +173,12 @@ namespace vcml { namespace arm {
         IRQ("IRQ") {
         DR.sync_always();
         DR.allow_read_write();
-        DR.read = &pl011uart::read_DR;
-        DR.write = &pl011uart::write_DR;
+        DR.on_read(&pl011uart::read_DR);
+        DR.on_write(&pl011uart::write_DR);
 
         RSR.sync_always();
         RSR.allow_read_write();
-        RSR.write = &pl011uart::write_RSR;
+        RSR.on_write(&pl011uart::write_RSR);
 
         FR.sync_always();
         FR.allow_read_only();
@@ -188,27 +188,27 @@ namespace vcml { namespace arm {
 
         IBRD.sync_always();
         IBRD.allow_read_write();
-        IBRD.write = &pl011uart::write_IBRD;
+        IBRD.on_write(&pl011uart::write_IBRD);
 
         FBRD.sync_always();
         FBRD.allow_read_write();
-        FBRD.write = &pl011uart::write_FBRD;
+        FBRD.on_write(&pl011uart::write_FBRD);
 
         LCR.sync_always();
         LCR.allow_read_write();
-        LCR.write = &pl011uart::write_LCR;
+        LCR.on_write(&pl011uart::write_LCR);
 
         CR.sync_always();
         CR.allow_read_write();
-        CR.write = &pl011uart::write_CR;
+        CR.on_write(&pl011uart::write_CR);
 
         IFLS.sync_always();
         IFLS.allow_read_write();
-        IFLS.write = &pl011uart::write_IFLS;
+        IFLS.on_write(&pl011uart::write_IFLS);
 
         IMSC.sync_always();
         IMSC.allow_read_write();
-        IMSC.write = &pl011uart::write_IMSC;
+        IMSC.on_write(&pl011uart::write_IMSC);
 
         RIS.sync_always();
         RIS.allow_read_only();
@@ -218,7 +218,7 @@ namespace vcml { namespace arm {
 
         ICR.sync_always();
         ICR.allow_write_only();
-        ICR.write = &pl011uart::write_ICR;
+        ICR.on_write(&pl011uart::write_ICR);
 
         DMAC.sync_never();
         DMAC.allow_read_write(); // not implemented

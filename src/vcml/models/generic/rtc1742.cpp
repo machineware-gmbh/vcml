@@ -200,7 +200,7 @@ namespace vcml { namespace generic {
             load_nvram(nvmem);
 
         CONTROL.allow_read_write();
-        CONTROL.write = &rtc1742::write_CONTROL;
+        CONTROL.on_write(&rtc1742::write_CONTROL);
 
         SECONDS.allow_read_write();
         MINUTES.allow_read_write();

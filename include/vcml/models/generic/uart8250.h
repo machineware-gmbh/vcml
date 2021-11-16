@@ -112,14 +112,14 @@ namespace vcml { namespace generic {
             FCR_IT14 = 3 << 6, // IRQ trigger threshold at 14 bytes
         };
 
-        reg<uart8250, u8> THR; // transmit hold / receive buffer
-        reg<uart8250, u8> IER; // interrupt enable register
-        reg<uart8250, u8> IIR; // interrupt identify register
-        reg<uart8250, u8> LCR; // line control register
-        reg<uart8250, u8> MCR; // modem control register
-        reg<uart8250, u8> LSR; // line status register
-        reg<uart8250, u8> MSR; // modem status register
-        reg<uart8250, u8> SCR; // scratch register
+        reg<u8> THR; // transmit hold / receive buffer
+        reg<u8> IER; // interrupt enable register
+        reg<u8> IIR; // interrupt identify register
+        reg<u8> LCR; // line control register
+        reg<u8> MCR; // modem control register
+        reg<u8> LSR; // line status register
+        reg<u8> MSR; // modem status register
+        reg<u8> SCR; // scratch register
 
         irq_initiator_socket IRQ;
         tlm_target_socket IN;

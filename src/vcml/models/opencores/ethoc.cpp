@@ -471,16 +471,16 @@ namespace vcml { namespace opencores {
         SC_THREAD(rx_process);
 
         MODER.allow_read_write();
-        MODER.write = &ethoc::write_MODER;
+        MODER.on_write(&ethoc::write_MODER);
 
         INT_SOURCE.allow_read_write();
-        INT_SOURCE.write = &ethoc::write_INT_SOURCE;
+        INT_SOURCE.on_write(&ethoc::write_INT_SOURCE);
 
         INT_MASK.allow_read_write();
-        INT_MASK.write = &ethoc::write_INT_MASK;
+        INT_MASK.on_write(&ethoc::write_INT_MASK);
 
         TX_BD_NUM.allow_read_write();
-        TX_BD_NUM.write = &ethoc::write_TX_BD_NUM;
+        TX_BD_NUM.on_write(&ethoc::write_TX_BD_NUM);
 
         IPGT.allow_read_write();
         IPGR1.allow_read_write();
@@ -491,7 +491,7 @@ namespace vcml { namespace opencores {
         MIIMODER.allow_read_write();
 
         MIICOMMAND.allow_read_write();
-        MIICOMMAND.write = &ethoc::write_MIICOMMAND;
+        MIICOMMAND.on_write(&ethoc::write_MIICOMMAND);
 
         MIIADDRESS.allow_read_write();
         MIITX_DATA.allow_read_write();
@@ -499,12 +499,12 @@ namespace vcml { namespace opencores {
         MIISTATUS.allow_read_only();
 
         MAC_ADDR0.allow_read_write();
-        MAC_ADDR0.write = &ethoc::write_MAC_ADDR0;
-        MAC_ADDR0.read = &ethoc::read_MAC_ADDR0;
+        MAC_ADDR0.on_write(&ethoc::write_MAC_ADDR0);
+        MAC_ADDR0.on_read(&ethoc::read_MAC_ADDR0);
 
         MAC_ADDR1.allow_read_write();
-        MAC_ADDR1.write = &ethoc::write_MAC_ADDR1;
-        MAC_ADDR1.read = &ethoc::read_MAC_ADDR1;
+        MAC_ADDR1.on_write(&ethoc::write_MAC_ADDR1);
+        MAC_ADDR1.on_read(&ethoc::read_MAC_ADDR1);
 
         ETH_HASH0_ADR.allow_read_write();
         ETH_HASH1_ADR.allow_read_write();

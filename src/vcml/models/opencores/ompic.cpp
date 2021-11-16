@@ -23,23 +23,23 @@
 
 namespace vcml { namespace opencores {
 
-    u32 ompic::read_STATUS(unsigned int core_id) {
-        VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
-        u32 val = m_status[core_id];
-        if (IRQ[core_id].read())
+    u32 ompic::read_STATUS(size_t core_idx) {
+        VCML_ERROR_ON(core_idx >= m_num_cores, "core_id >= num_cores");
+        u32 val = m_status[core_idx];
+        if (IRQ[core_idx].read())
             val |= CTRL_IRQ_GEN;
         return val;
     }
 
-    u32 ompic::read_CONTROL(unsigned int core_id) {
-        VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
-        return m_control[core_id];
+    u32 ompic::read_CONTROL(size_t core_idx) {
+        VCML_ERROR_ON(core_idx >= m_num_cores, "core_id >= num_cores");
+        return m_control[core_idx];
     }
 
-    u32 ompic::write_CONTROL(u32 val, unsigned int core_id) {
-        VCML_ERROR_ON(core_id >= m_num_cores, "core_id >= num_cores");
+    u32 ompic::write_CONTROL(u32 val, size_t core_idx) {
+        VCML_ERROR_ON(core_idx >= m_num_cores, "core_id >= num_cores");
 
-        u32 self = static_cast<uint32_t>(core_id);
+        u32 self = static_cast<uint32_t>(core_idx);
         u32 dest = OMPIC_DEST(val);
         u32 data = OMPIC_DATA(val);
 
@@ -51,7 +51,7 @@ namespace vcml { namespace opencores {
             return 0;
         }
 
-        m_control[core_id] = val;
+        m_control[core_idx] = val;
         if (val & CTRL_IRQ_GEN) {
             m_status[dest] = self << 16 | data;
             log_debug("cpu%d triggers interrupt on cpu%d (data: 0x%04x)",
@@ -82,8 +82,8 @@ namespace vcml { namespace opencores {
         IN("IN") {
         VCML_ERROR_ON(num_cores == 0, "number of cores must not be zero");
 
-        CONTROL = new reg<ompic, u32>*[m_num_cores];
-        STATUS  = new reg<ompic, u32>*[m_num_cores];
+        CONTROL = new reg<u32>*[m_num_cores];
+        STATUS  = new reg<u32>*[m_num_cores];
 
         m_control = new uint32_t[m_num_cores]();
         m_status  = new uint32_t[m_num_cores]();
@@ -93,18 +93,18 @@ namespace vcml { namespace opencores {
             ss.str("");
             ss << "CONTROL" << core;
 
-            CONTROL[core] = new reg<ompic, u32>(ss.str().c_str(), core * 8);
+            CONTROL[core] = new reg<u32>(ss.str().c_str(), core * 8);
             CONTROL[core]->allow_read_write();
-            CONTROL[core]->tagged_read  = &ompic::read_CONTROL;
-            CONTROL[core]->tagged_write = &ompic::write_CONTROL;
+            CONTROL[core]->on_read(&ompic::read_CONTROL);
+            CONTROL[core]->on_write(&ompic::write_CONTROL);
             CONTROL[core]->tag = core;
 
             ss.str("");
             ss << "STATUS" << core;
 
-            STATUS[core] = new reg<ompic, u32>(ss.str().c_str(), core * 8 + 4);
+            STATUS[core] = new reg<u32>(ss.str().c_str(), core * 8 + 4);
             STATUS[core]->allow_read_only();
-            STATUS[core]->tagged_read = &ompic::read_STATUS;
+            STATUS[core]->on_read(&ompic::read_STATUS);
             STATUS[core]->tag = core;
         }
     }

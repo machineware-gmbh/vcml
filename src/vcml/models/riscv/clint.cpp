@@ -25,27 +25,27 @@ namespace vcml { namespace riscv {
         return delta / clock_cycle();
     }
 
-    u32 clint::read_MSIP(unsigned int hart) {
+    u32 clint::read_MSIP(size_t hart) {
         if (!IRQ_SW.exists(hart))
             return 0;
 
         return IRQ_SW[hart].read() ? 1 : 0;
     }
 
-    u32 clint::write_MSIP(u32 val, unsigned int hart) {
+    u32 clint::write_MSIP(u32 val, size_t hart) {
         if (!IRQ_SW.exists(hart))
             return 0;
 
         const u32 mask = 1u << 0;
         val &= mask;
 
-        log_debug("%sing interrupt on hart %u", val ? "sett" : "clear", hart);
+        log_debug("%sing interrupt on hart %zu", val ? "sett" : "clear", hart);
 
         IRQ_SW[hart].write(val != 0);
         return val;
     }
 
-    u64 clint::write_MTIMECMP(u64 val, unsigned int hart) {
+    u64 clint::write_MTIMECMP(u64 val, size_t hart) {
         if (!IRQ_TIMER.exists(hart))
             return 0;
 
@@ -88,16 +88,16 @@ namespace vcml { namespace riscv {
 
         MSIP.sync_always();
         MSIP.allow_read_write();
-        MSIP.tagged_read = &clint::read_MSIP;
-        MSIP.tagged_write = &clint::write_MSIP;
+        MSIP.on_read(&clint::read_MSIP);
+        MSIP.on_write(&clint::write_MSIP);
 
         MTIMECMP.sync_on_write();
         MTIMECMP.allow_read_write();
-        MTIMECMP.tagged_write = &clint::write_MTIMECMP;
+        MTIMECMP.on_write(&clint::write_MTIMECMP);
 
         MTIME.sync_on_read();
         MTIME.allow_read_only();
-        MTIME.read = &clint::read_MTIME;
+        MTIME.on_read(&clint::read_MTIME);
 
         SC_METHOD(update_timer);
         sensitive << m_trigger;

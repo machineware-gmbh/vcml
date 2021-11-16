@@ -47,6 +47,8 @@ namespace vcml {
     public:
         const address_space as;
 
+        size_t tag;
+
         u64 get_address() const { return m_range.start; }
         u64 get_size() const { return m_range.length(); }
         const range& get_range() const { return m_range; }
@@ -70,7 +72,8 @@ namespace vcml {
         void sync_always() { m_rsync = m_wsync = true; }
         void sync_never() { m_rsync = m_wsync = false; }
 
-        peripheral* get_host() { return m_host; }
+        peripheral* get_host() const { return m_host; }
+        int current_cpu() const;
 
         reg_base(address_space as, const char* nm, u64 addr, u64 size);
         virtual ~reg_base();
@@ -93,32 +96,32 @@ namespace vcml {
         return m_access == VCML_ACCESS_WRITE;
     }
 
-    template <class HOST, typename DATA, const unsigned int N = 1>
-    class reg: public reg_base,
-               public property<DATA, N>
+    template <typename DATA, size_t N = 1>
+    class reg: public reg_base, public property<DATA, N>
     {
-    private:
-        HOST* m_host;
-        bool m_banked;
-        DATA m_init[N];
-        std::map<int, DATA*> m_banks;
-
-        void init_bank(int bank);
-
     public:
-        typedef DATA (HOST::*readfunc)  (void);
-        typedef DATA (HOST::*writefunc) (DATA);
+        typedef std::function<DATA(void)> readfn;
+        typedef std::function<DATA(DATA)> writefn;
+        typedef std::function<DATA(size_t)> readfn_tagged;
+        typedef std::function<DATA(DATA, size_t)> writefn_tagged;
 
-        readfunc read;
-        writefunc write;
+        void on_read(const readfn& rd) { m_read = rd; }
+        void on_read(const readfn_tagged& rd) { m_read_tagged = rd; }
 
-        typedef DATA (HOST::*tagged_readfunc)  (unsigned int);
-        typedef DATA (HOST::*tagged_writefunc) (DATA, unsigned int);
+        template <typename HOST>
+        void on_read(DATA (HOST::*rd)(void), HOST* host = nullptr);
 
-        unsigned int tag;
+        template <typename HOST>
+        void on_read(DATA (HOST::*rd)(size_t), HOST* host = nullptr);
 
-        tagged_readfunc tagged_read;
-        tagged_writefunc tagged_write;
+        void on_write(const writefn& wr) { m_write = wr; }
+        void on_write(const writefn_tagged& wr) { m_write_tagged = wr; }
+
+        template <typename HOST>
+        void on_write(DATA (HOST::*wr)(DATA), HOST* host = nullptr);
+
+        template <typename HOST>
+        void on_write(DATA (HOST::*wr)(DATA, size_t), HOST* h = nullptr);
 
         bool is_banked() const { return m_banked; }
         void set_banked(bool set = true) { m_banked = set; }
@@ -126,11 +129,11 @@ namespace vcml {
         const DATA& bank(int bank) const;
         DATA& bank(int bank);
 
-        const DATA& bank(int bank, unsigned int idx) const;
-        DATA& bank(int bank, unsigned int idx);
+        const DATA& bank(int bank, size_t idx) const;
+        DATA& bank(int bank, size_t idx);
 
-        const DATA& current_bank(unsigned int idx = 0) const;
-        DATA& current_bank(unsigned int idx = 0);
+        const DATA& current_bank(size_t idx = 0) const;
+        DATA& current_bank(size_t idx = 0);
 
         const char* name() const { return sc_core::sc_object::name(); }
 
@@ -148,60 +151,101 @@ namespace vcml {
 
         operator DATA() const;
 
-        const DATA& operator [] (unsigned int idx) const;
-        DATA& operator [] (unsigned int idx);
+        const DATA& operator [] (size_t idx) const;
+        DATA& operator [] (size_t idx);
 
         DATA operator ++ (int);
         DATA operator -- (int);
 
-        reg<HOST, DATA, N>& operator ++ ();
-        reg<HOST, DATA, N>& operator -- ();
+        reg<DATA, N>& operator ++ ();
+        reg<DATA, N>& operator -- ();
 
-        template <typename T> reg<HOST, DATA, N>& operator =  (T value);
-        template <typename T> reg<HOST, DATA, N>& operator |= (T value);
-        template <typename T> reg<HOST, DATA, N>& operator &= (T value);
-        template <typename T> reg<HOST, DATA, N>& operator ^= (T value);
-        template <typename T> reg<HOST, DATA, N>& operator += (T value);
-        template <typename T> reg<HOST, DATA, N>& operator -= (T value);
-        template <typename T> reg<HOST, DATA, N>& operator *= (T value);
-        template <typename T> reg<HOST, DATA, N>& operator /= (T value);
+        template <typename T> reg<DATA, N>& operator =  (const T& value);
+        template <typename T> reg<DATA, N>& operator |= (const T& value);
+        template <typename T> reg<DATA, N>& operator &= (const T& value);
+        template <typename T> reg<DATA, N>& operator ^= (const T& value);
+        template <typename T> reg<DATA, N>& operator += (const T& value);
+        template <typename T> reg<DATA, N>& operator -= (const T& value);
+        template <typename T> reg<DATA, N>& operator *= (const T& value);
+        template <typename T> reg<DATA, N>& operator /= (const T& value);
 
-        template <typename T> bool operator == (T other) const;
-        template <typename T> bool operator != (T other) const;
-        template <typename T> bool operator <= (T other) const;
-        template <typename T> bool operator >= (T other) const;
-        template <typename T> bool operator  < (T other) const;
-        template <typename T> bool operator  > (T other) const;
+        template <typename T> bool operator == (const T& other) const;
+        template <typename T> bool operator != (const T& other) const;
+        template <typename T> bool operator <= (const T& other) const;
+        template <typename T> bool operator >= (const T& other) const;
+        template <typename T> bool operator  < (const T& other) const;
+        template <typename T> bool operator  > (const T& other) const;
 
         template <typename F> DATA get_bitfield(F field);
         template <typename F, typename T> void set_bitfield(F field, T val);
+
+    private:
+        bool m_banked;
+        DATA m_init[N];
+        std::map<int, DATA*> m_banks;
+
+        readfn m_read;
+        writefn m_write;
+        readfn_tagged m_read_tagged;
+        writefn_tagged m_write_tagged;
+
+        void init_bank(int bank);
     };
 
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::init_bank(int bank) {
-        VCML_ERROR_ON(!m_banked, "cannot create banks in register %s", name());
-
-        if (bank == 0 || stl_contains(m_banks, bank))
-            return;
-
-        m_banks[bank] = new DATA[N];
-        for (unsigned int i = 0; i < N; i++)
-            m_banks[bank][i] = m_init[i];
+    template <typename DATA, size_t N>
+    template <typename H>
+    void reg<DATA, N>::on_read(DATA (H::*rd)(void), H* host) {
+        if (host == nullptr)
+            host = dynamic_cast<H*>(get_host());
+        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        readfn fn = std::bind(rd, host);
+        on_read(fn);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    const DATA& reg<HOST, DATA, N>::bank(int bk) const {
+    template <typename DATA, size_t N>
+    template <typename HOST>
+    void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
+        if (host == nullptr)
+            host = dynamic_cast<HOST*>(get_host());
+        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        readfn_tagged fn = std::bind(rd, host, std::placeholders::_1);
+        on_read(fn);
+    }
+
+    template <typename DATA, size_t N>
+    template <typename HOST>
+    void reg<DATA, N>::on_write(DATA (HOST::*wr)(DATA), HOST* host) {
+        if (host == nullptr)
+            host = dynamic_cast<HOST*>(get_host());
+        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        writefn fn = std::bind(wr, host, std::placeholders::_1);
+        on_write(fn);
+    }
+
+    template <typename DATA, size_t N>
+    template <typename HOST>
+    void reg<DATA, N>::on_write(DATA (HOST::*wr)(DATA, size_t), HOST* host) {
+        if (host == nullptr)
+            host = dynamic_cast<HOST*>(get_host());
+        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        writefn_tagged fn = std::bind(wr, host, std::placeholders::_1,
+                                      std::placeholders::_2);
+        on_write(fn);
+    }
+
+    template <typename DATA, size_t N>
+    const DATA& reg<DATA, N>::bank(int bk) const {
         return bank(bk, 0);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    DATA& reg<HOST, DATA, N>::bank(int bk) {
+    template <typename DATA, size_t N>
+    DATA& reg<DATA, N>::bank(int bk) {
         return bank(bk, 0);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    const DATA& reg<HOST, DATA, N>::bank(int bk,  unsigned int idx) const {
-        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+    template <typename DATA, size_t N>
+    const DATA& reg<DATA, N>::bank(int bk, size_t idx) const {
+        VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
         if (bk == 0 || !m_banked)
             return property<DATA, N>::get(idx);
         if (!stl_contains(m_banks, bk))
@@ -209,9 +253,9 @@ namespace vcml {
         return m_banks.at(bk)[idx];
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    DATA& reg<HOST, DATA, N>::bank(int bk, unsigned int idx) {
-        VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+    template <typename DATA, size_t N>
+    DATA& reg<DATA, N>::bank(int bk, size_t idx) {
+        VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
         if (bk == 0 || !m_banked)
             return property<DATA, N>::get(idx);
         if (!stl_contains(m_banks, bk))
@@ -219,63 +263,55 @@ namespace vcml {
         return m_banks[bk][idx];
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    const DATA& reg<HOST, DATA, N>::current_bank(unsigned int idx) const {
-        return bank(m_host->current_cpu(), idx);
+    template <typename DATA, size_t N>
+    const DATA& reg<DATA, N>::current_bank(size_t idx) const {
+        return bank(current_cpu(), idx);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    DATA& reg<HOST, DATA, N>::current_bank(unsigned int idx) {
-        return bank(m_host->current_cpu(), idx);
+    template <typename DATA, size_t N>
+    DATA& reg<DATA, N>::current_bank(size_t idx) {
+        return bank(current_cpu(), idx);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>::reg(const char* nm, u64 addr, DATA def):
+    template <typename DATA, size_t N>
+    reg<DATA, N>::reg(const char* nm, u64 addr, DATA def):
         reg_base(VCML_AS_DEFAULT, nm, addr, N * sizeof(DATA)),
         property<DATA, N>(nm, def),
-        m_host(dynamic_cast<HOST*>(get_host())),
         m_banked(false),
         m_init(),
         m_banks(),
-        read(nullptr),
-        write(nullptr),
-        tag(0),
-        tagged_read(nullptr),
-        tagged_write(nullptr) {
-        for (unsigned int i = 0; i < N; i++)
+        m_read(),
+        m_write(),
+        m_read_tagged(),
+        m_write_tagged() {
+        for (size_t i = 0; i < N; i++)
             m_init[i] = property<DATA, N>::get(i);
-
-        VCML_ERROR_ON(!m_host, "invalid host specified for register %s", nm);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>::reg(address_space a, const char* nm, u64 addr, DATA d):
+    template <typename DATA, size_t N>
+    reg<DATA, N>::reg(address_space a, const char* nm, u64 addr, DATA d):
         reg_base(a, nm, addr, N * sizeof(DATA)),
         property<DATA, N>(nm, d),
-        m_host(dynamic_cast<HOST*>(get_host())),
         m_banked(false),
         m_init(),
         m_banks(),
-        read(nullptr),
-        write(nullptr),
-        tag(0),
-        tagged_read(nullptr),
-        tagged_write(nullptr) {
-        for (unsigned int i = 0; i < N; i++)
+        m_read(),
+        m_write(),
+        m_read_tagged(),
+        m_write_tagged() {
+        for (size_t i = 0; i < N; i++)
             m_init[i] = property<DATA, N>::get(i);
-
-        VCML_ERROR_ON(!m_host, "invalid host specified for register %s", nm);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>::~reg() {
+    template <typename DATA, size_t N>
+    reg<DATA, N>::~reg() {
         for (auto bank : m_banks)
             delete [] bank.second;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::reset() {
-        for (unsigned int i = 0; i < N; i++)
+    template <typename DATA, size_t N>
+    void reg<DATA, N>::reset() {
+        for (size_t i = 0; i < N; i++)
             property<DATA, N>::set(m_init[i], i);
 
         for (auto bank : m_banks) {
@@ -284,8 +320,8 @@ namespace vcml {
         }
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::do_read(const range& txaddr,  void* ptr) {
+    template <typename DATA, size_t N>
+    void reg<DATA, N>::do_read(const range& txaddr, void* ptr) {
         range addr(txaddr);
         unsigned char* dest = (unsigned char*)ptr;
 
@@ -296,10 +332,10 @@ namespace vcml {
 
             DATA val = current_bank(idx);
 
-            if (tagged_read != nullptr)
-                val = (m_host->*tagged_read)(N > 1 ? idx : tag);
-            else if (read != nullptr)
-                val = (m_host->*read)();
+            if (m_read_tagged)
+                val = m_read_tagged(N > 1 ? idx : tag);
+            else if (m_read)
+                val = m_read();
 
             current_bank(idx) = val;
 
@@ -311,8 +347,8 @@ namespace vcml {
         }
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    void reg<HOST, DATA, N>::do_write(const range& txaddr, const void* data) {
+    template <typename DATA, size_t N>
+    void reg<DATA, N>::do_write(const range& txaddr, const void* data) {
         range addr(txaddr);
         const unsigned char* src = (const unsigned char*)data;
 
@@ -326,10 +362,10 @@ namespace vcml {
             unsigned char* ptr = (unsigned char*)&val + off;
             memcpy(ptr, src, size);
 
-            if (tagged_write != nullptr)
-                val = (m_host->*tagged_write)(val, N > 1 ? idx : tag);
-            else if (write != nullptr)
-                val = (m_host->*write)(val);
+            if (m_write_tagged)
+                val = m_write_tagged(val, N > 1 ? idx : tag);
+            else if (m_write)
+                val = m_write(val);
 
             current_bank(idx) = val;
 
@@ -338,178 +374,191 @@ namespace vcml {
         }
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>::operator DATA() const {
+    template <typename DATA, size_t N>
+    reg<DATA, N>::operator DATA() const {
         return current_bank();
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    const DATA& reg<HOST, DATA, N>::operator [] (unsigned int idx) const {
+    template <typename DATA, size_t N>
+    const DATA& reg<DATA, N>::operator [] (size_t idx) const {
         return current_bank(idx);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    DATA& reg<HOST, DATA, N>::operator [] (unsigned int idx) {
+    template <typename DATA, size_t N>
+    DATA& reg<DATA, N>::operator [] (size_t idx) {
         return current_bank(idx);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    DATA reg<HOST, DATA, N>::operator ++ (int unused) {
+    template <typename DATA, size_t N>
+    DATA reg<DATA, N>::operator ++ (int unused) {
         (void) unused;
         DATA result = current_bank();
 
-        for (unsigned int i = 0; i < N; i++)
+        for (size_t i = 0; i < N; i++)
             ++current_bank(i);
 
         return result;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    DATA reg<HOST, DATA, N>::operator -- (int unused) {
+    template <typename DATA, size_t N>
+    DATA reg<DATA, N>::operator -- (int unused) {
         (void) unused;
         DATA result = current_bank();
 
-        for (unsigned int i = 0; i < N; i++)
+        for (size_t i = 0; i < N; i++)
             --current_bank(i);
 
         return result;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator ++ () {
-        for (unsigned int i = 0; i < N; i++)
+    template <typename DATA, size_t N>
+    reg<DATA, N>& reg<DATA, N>::operator ++ () {
+        for (size_t i = 0; i < N; i++)
             current_bank(i)++;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator -- () {
-        for (unsigned int i = 0; i < N; i++)
+    template <typename DATA, size_t N>
+    reg<DATA, N>& reg<DATA, N>::operator -- () {
+        for (size_t i = 0; i < N; i++)
             current_bank(i)--;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator = (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator = (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) = value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator |= (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator |= (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) |= value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator &= (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator &= (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) &= value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator ^= (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator ^= (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) ^= value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator += (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator += (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) += value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator -= (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator -= (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) -= value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator *= (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator *= (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) *= value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    reg<HOST, DATA, N>& reg<HOST, DATA, N>::operator /= (T value) {
-        for (unsigned int i = 0; i < N; i++)
+    reg<DATA, N>& reg<DATA, N>::operator /= (const T& value) {
+        for (size_t i = 0; i < N; i++)
             current_bank(i) /= value;
         return *this;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator == (T other) const {
-        for (unsigned int i = 0; i < N; i++)
+    inline bool reg<DATA, N>::operator == (const T& other) const {
+        for (size_t i = 0; i < N; i++)
             if (current_bank(i) != other)
                 return false;
         return true;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator < (T other) const {
-        for (unsigned int i = 0; i < N; i++)
+    inline bool reg<DATA, N>::operator < (const T& other) const {
+        for (size_t i = 0; i < N; i++)
             if (current_bank(i) >= other)
                 return false;
         return true;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator > (T other) const {
-        for (unsigned int i = 0; i < N; i++)
+    inline bool reg<DATA, N>::operator > (const T& other) const {
+        for (size_t i = 0; i < N; i++)
             if (current_bank(i) <= other)
                 return false;
         return true;
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator != (T other) const {
+    inline bool reg<DATA, N>::operator != (const T& other) const {
         return !operator == (other);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator <= (T other) const {
+    inline bool reg<DATA, N>::operator <= (const T& other) const {
         return !operator > (other);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename T>
-    inline bool reg<HOST, DATA, N>::operator >= (T other) const {
+    inline bool reg<DATA, N>::operator >= (const T& other) const {
         return !operator < (other);
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename F>
-    inline DATA reg<HOST, DATA, N>::get_bitfield(F field) {
+    inline DATA reg<DATA, N>::get_bitfield(F field) {
         return get_bitfield(field, current_bank());
     }
 
-    template <class HOST, typename DATA, const unsigned int N>
+    template <typename DATA, size_t N>
     template <typename F, typename T>
-    inline void reg<HOST, DATA, N>::set_bitfield(F field, T val) {
-        for (unsigned int i = 0; i < N; i++)
+    inline void reg<DATA, N>::set_bitfield(F field, T val) {
+        for (size_t i = 0; i < N; i++)
             set_bitfield(field, current_bank(i));
     }
+
+    template <typename DATA, size_t N>
+    void reg<DATA, N>::init_bank(int bank) {
+        VCML_ERROR_ON(!m_banked, "cannot create banks in register %s", name());
+
+        if (bank == 0 || stl_contains(m_banks, bank))
+            return;
+
+        m_banks[bank] = new DATA[N];
+        for (size_t i = 0; i < N; i++)
+            m_banks[bank][i] = m_init[i];
+    }
+
 }
 
 #define VCML_LOG_REG_BIT_CHANGE(bit, reg, val) do {               \

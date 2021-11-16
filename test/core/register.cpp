@@ -27,8 +27,8 @@ using ::vcml::u32;
 
 class mock_peripheral: public vcml::peripheral {
 public:
-    vcml::reg<mock_peripheral, u32> test_reg_a;
-    vcml::reg<mock_peripheral, u32> test_reg_b;
+    vcml::reg<u32> test_reg_a;
+    vcml::reg<u32> test_reg_b;
 
     MOCK_METHOD(u32, reg_read, ());
     MOCK_METHOD(u32, reg_write, (u32));
@@ -39,8 +39,8 @@ public:
         test_reg_a("test_reg_a", 0x0, 0xffffffff),
         test_reg_b("test_reg_b", 0x4, 0xffffffff) {
         test_reg_b.allow_read_write();
-        test_reg_b.read = &mock_peripheral::reg_read;
-        test_reg_b.write = &mock_peripheral::reg_write;
+        test_reg_b.on_read(&mock_peripheral::reg_read);
+        test_reg_b.on_write(&mock_peripheral::reg_write);
         CLOCK.stub(100 * vcml::MHz);
         RESET.stub();
         handle_clock_update(0, CLOCK.read());
@@ -371,8 +371,8 @@ enum : vcml::address_space {
 
 class mock_peripheral_as: public vcml::peripheral {
 public:
-    vcml::reg<mock_peripheral_as, u32> test_reg_a;
-    vcml::reg<mock_peripheral_as, u32> test_reg_b;
+    vcml::reg<u32> test_reg_a;
+    vcml::reg<u32> test_reg_b;
 
     mock_peripheral_as(const sc_core::sc_module_name& nm =
         sc_core::sc_gen_unique_name("mock_peripheral_as")):

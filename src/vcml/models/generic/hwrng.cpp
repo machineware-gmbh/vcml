@@ -50,7 +50,7 @@ namespace vcml { namespace generic {
 
         RNG.allow_read_only();
         RNG.sync_never();
-        RNG.read = &hwrng::read_RNG;
+        RNG.on_read(&hwrng::read_RNG);
 
         reset();
     }

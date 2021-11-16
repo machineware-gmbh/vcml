@@ -119,81 +119,81 @@ namespace vcml { namespace arm {
             u32 read_ISENABLER_PPI();
             u32 write_ISENABLER_PPI(u32 value);
 
-            u32 read_ISENABLER_SPI(unsigned int idx);
-            u32 write_ISENABLER_SPI(u32 value, unsigned int idx);
+            u32 read_ISENABLER_SPI(size_t idx);
+            u32 write_ISENABLER_SPI(u32 value, size_t idx);
 
             u32 read_ICENABLER_PPI();
             u32 write_ICENABLER_PPI(u32 value);
 
-            u32 read_ICENABLER_SPI(unsigned int idx);
-            u32 write_ICENABLER_SPI(u32 value, unsigned int idx);
+            u32 read_ICENABLER_SPI(size_t idx);
+            u32 write_ICENABLER_SPI(u32 value, size_t idx);
 
             u32 read_ISPENDR_PPI();
             u32 write_ISPENDR_PPI(u32 value);
 
-            u32 read_SSPR(unsigned int idx);
-            u32 write_SSPR(u32 value, unsigned int idx);
+            u32 read_SSPR(size_t idx);
+            u32 write_SSPR(u32 value, size_t idx);
 
             u32 read_ICPENDR_PPI();
             u32 write_ICPENDR_PPI(u32 value);
 
-            u32 read_ICPENDR_SPI(unsigned int cpu_id);
-            u32 write_ICPENDR_SPI(u32 value, unsigned int idx);
+            u32 read_ICPENDR_SPI(size_t cpu_id);
+            u32 write_ICPENDR_SPI(u32 value, size_t idx);
 
             u32 read_ISACTIVER_PPI();
-            u32 read_ISACTIVER_SPI(unsigned int idx);
+            u32 read_ISACTIVER_SPI(size_t idx);
 
             u32 write_ICACTIVER_PPI(u32 value);
-            u32 write_ICACTIVER_SPI(u32 value, unsigned int idx);
+            u32 write_ICACTIVER_SPI(u32 value, size_t idx);
 
-            u32 read_ITARGETS_PPI(unsigned int idx);
+            u32 read_ITARGETS_PPI(size_t idx);
 
             u32 write_ICFGR(u32 value);
-            u32 write_ICFGR_SPI(u32 value, unsigned int idx);
+            u32 write_ICFGR_SPI(u32 value, size_t idx);
 
             u32 write_SGIR(u32 value);
-            u8  write_SPENDSGIR(u8 value, unsigned int idx);
-            u8  write_CPENDSGIR(u8 value, unsigned int idx);
+            u8  write_SPENDSGIR(u8 value, size_t idx);
+            u8  write_CPENDSGIR(u8 value, size_t idx);
 
         public:
             bitfield<0,1> CTLR_ENABLE;
 
-            reg<distif, u32>     CTLR;  // Distributor Control register
-            reg<distif, u32>     TYPER; // IRQ Controller Type register
-            reg<distif, u32>     IIDR;  // Implementer Identification register
+            reg<u32>     CTLR;  // Distributor Control register
+            reg<u32>     TYPER; // IRQ Controller Type register
+            reg<u32>     IIDR;  // Implementer Identification register
 
-            reg<distif, u32>     ISENABLER_PPI; // IRQ Set Enable register
-            reg<distif, u32, 31> ISENABLER_SPI; // SPI Set Enable register
-            reg<distif, u32>     ICENABLER_PPI; // IRQ Clear Enable register
-            reg<distif, u32, 31> ICENABLER_SPI; // SPI Clear Enable register
+            reg<u32>     ISENABLER_PPI; // IRQ Set Enable register
+            reg<u32, 31> ISENABLER_SPI; // SPI Set Enable register
+            reg<u32>     ICENABLER_PPI; // IRQ Clear Enable register
+            reg<u32, 31> ICENABLER_SPI; // SPI Clear Enable register
 
-            reg<distif, u32>     ISPENDR_PPI; // IRQ Set Pending register
-            reg<distif, u32, 31> ISPENDR_SPI; // SPI Set Pending register
-            reg<distif, u32>     ICPENDR_PPI; // IRQ Clear Pending register
-            reg<distif, u32, 31> ICPENDR_SPI; // SPI Clear Pending register
+            reg<u32>     ISPENDR_PPI; // IRQ Set Pending register
+            reg<u32, 31> ISPENDR_SPI; // SPI Set Pending register
+            reg<u32>     ICPENDR_PPI; // IRQ Clear Pending register
+            reg<u32, 31> ICPENDR_SPI; // SPI Clear Pending register
 
-            reg<distif, u32>     ISACTIVER_PPI; // INT Active register
-            reg<distif, u32, 31> ISACTIVER_SPI; // SPI Active register
+            reg<u32>     ISACTIVER_PPI; // INT Active register
+            reg<u32, 31> ISACTIVER_SPI; // SPI Active register
 
-            reg<distif, u32>     ICACTIVER_PPI; // INT Clear Active register
-            reg<distif, u32, 31> ICACTIVER_SPI; // SPI Clear Active register
+            reg<u32>     ICACTIVER_PPI; // INT Clear Active register
+            reg<u32, 31> ICACTIVER_SPI; // SPI Clear Active register
 
-            reg<distif, u8, 16>  IPRIORITY_SGI; // SGI Priority register
-            reg<distif, u8, 16>  IPRIORITY_PPI; // PPI Priority register
-            reg<distif, u8, 988> IPRIORITY_SPI; // SPI Priority register
+            reg<u8, 16>  IPRIORITY_SGI; // SGI Priority register
+            reg<u8, 16>  IPRIORITY_PPI; // PPI Priority register
+            reg<u8, 988> IPRIORITY_SPI; // SPI Priority register
 
-            reg<distif, u32, 8>  ITARGETS_PPI; // INT Target register
-            reg<distif, u8, 988> ITARGETS_SPI; // SPI Target register
+            reg<u32, 8>  ITARGETS_PPI; // INT Target register
+            reg<u8, 988> ITARGETS_SPI; // SPI Target register
 
-            reg<distif, u32>     ICFGR_SGI; // SGI Configuration register
-            reg<distif, u32>     ICFGR_PPI; // PPI Configuration register
-            reg<distif, u32, 62> ICFGR_SPI; // SPI Configuration register
+            reg<u32>     ICFGR_SGI; // SGI Configuration register
+            reg<u32>     ICFGR_PPI; // PPI Configuration register
+            reg<u32, 62> ICFGR_SPI; // SPI Configuration register
 
-            reg<distif, u32>     SGIR;      // SGI Control register
-            reg<distif, u8, 16>  CPENDSGIR; // SGI Clear Pending register
-            reg<distif, u8, 16>  SPENDSGIR; // SGI Set Pending register
+            reg<u32>     SGIR;      // SGI Control register
+            reg<u8, 16>  CPENDSGIR; // SGI Clear Pending register
+            reg<u8, 16>  SPENDSGIR; // SGI Set Pending register
 
-            reg<distif, u32, 4>  CIDR; // Component ID register
+            reg<u32, 4>  CIDR; // Component ID register
 
             tlm_target_socket IN;
 
@@ -233,19 +233,19 @@ namespace vcml { namespace arm {
         public:
             bitfield<0,1> CTLR_ENABLE;
 
-            reg<cpuif, u32>    CTLR;  // CPU Control register
-            reg<cpuif, u32>    PMR;   // IRQ Priority Mask register
-            reg<cpuif, u32>    BPR;   // Binary Point register
-            reg<cpuif, u32>    IAR;   // Interrupt Acknowledge register
-            reg<cpuif, u32>    EOIR;  // End Of Interrupt register
-            reg<cpuif, u32>    RPR;   // Running Priority register
-            reg<cpuif, u32>    HPPIR; // Highest Pending IRQ register
-            reg<cpuif, u32>    ABPR;  // Alias Binary Point register
-            reg<cpuif, u32, 4> APR;   // Active Priorities registers
-            reg<cpuif, u32>    IIDR;  // Interface Identification register
+            reg<u32>    CTLR;  // CPU Control register
+            reg<u32>    PMR;   // IRQ Priority Mask register
+            reg<u32>    BPR;   // Binary Point register
+            reg<u32>    IAR;   // Interrupt Acknowledge register
+            reg<u32>    EOIR;  // End Of Interrupt register
+            reg<u32>    RPR;   // Running Priority register
+            reg<u32>    HPPIR; // Highest Pending IRQ register
+            reg<u32>    ABPR;  // Alias Binary Point register
+            reg<u32, 4> APR;   // Active Priorities registers
+            reg<u32>    IIDR;  // Interface Identification register
 
-            reg<cpuif, u32, 4> CIDR; // Component ID register
-            reg<cpuif, u32> DIR;     // Deactivate interrupt register
+            reg<u32, 4> CIDR; // Component ID register
+            reg<u32> DIR;     // Deactivate interrupt register
 
             tlm_target_socket IN;
 
@@ -263,8 +263,8 @@ namespace vcml { namespace arm {
 
             u32 write_HCR(u32 val);
             u32 read_VTR();
-            u32 write_LR(u32 val, unsigned int idx);
-            u32 read_LR(unsigned int idx);
+            u32 write_LR(u32 val, size_t idx);
+            u32 read_LR(size_t idx);
             u32 write_VMCR(u32 val);
             u32 read_VMCR();
             u32 write_APR(u32 val);
@@ -274,11 +274,11 @@ namespace vcml { namespace arm {
             vifctrl(const vifctrl&);
 
         public:
-            reg<vifctrl, u32> HCR;     // Hypervisor Control register
-            reg<vifctrl, u32> VTR;     // VGIC Type register
-            reg<vifctrl, u32> VMCR;    // Virtual Machine Control register
-            reg<vifctrl, u32> APR;     // Active Priorities Register
-            reg<vifctrl, u32, 64> LR;  // List registers
+            reg<u32> HCR;     // Hypervisor Control register
+            reg<u32> VTR;     // VGIC Type register
+            reg<u32> VMCR;    // Virtual Machine Control register
+            reg<u32> APR;     // Active Priorities Register
+            reg<u32, 64> LR;  // List registers
 
             tlm_target_socket IN;
 
@@ -323,15 +323,15 @@ namespace vcml { namespace arm {
             vcpuif(const sc_module_name& nm);
 
         public:
-            reg<vcpuif, u32>    CTLR;  // CPU Control register
-            reg<vcpuif, u32>    PMR;   // IRQ Priority Mask register
-            reg<vcpuif, u32>    BPR;   // Binary Point register
-            reg<vcpuif, u32>    IAR;   // IRQ Acknowledge register
-            reg<vcpuif, u32>    EOIR;  // End of Interrupt register
-            reg<vcpuif, u32>    RPR;   // Running Priority register
-            reg<vcpuif, u32>    HPPIR; // High. Priority Pending Interrupt reg.
-            reg<vcpuif, u32, 4> APR;   // Active Priorities registers
-            reg<vcpuif, u32>    IIDR;  // Interface Identification register
+            reg<u32>    CTLR;  // CPU Control register
+            reg<u32>    PMR;   // IRQ Priority Mask register
+            reg<u32>    BPR;   // Binary Point register
+            reg<u32>    IAR;   // IRQ Acknowledge register
+            reg<u32>    EOIR;  // End of Interrupt register
+            reg<u32>    RPR;   // Running Priority register
+            reg<u32>    HPPIR; // High. Priority Pending Interrupt reg.
+            reg<u32, 4> APR;   // Active Priorities registers
+            reg<u32>    IIDR;  // Interface Identification register
 
             tlm_target_socket IN;
 

@@ -535,15 +535,15 @@ namespace vcml { namespace generic {
 
         CMD.sync_on_write();
         CMD.allow_read_write();
-        CMD.write = &sdhci::write_CMD;
+        CMD.on_write(&sdhci::write_CMD);
 
         RESPONSE.sync_never();
         RESPONSE.allow_read_only();
 
         BUFFER_DATA_PORT.sync_always();
         BUFFER_DATA_PORT.allow_read_write();
-        BUFFER_DATA_PORT.read = &sdhci::read_BUFFER_DATA_PORT;
-        BUFFER_DATA_PORT.write = &sdhci::write_BUFFER_DATA_PORT;
+        BUFFER_DATA_PORT.on_read(&sdhci::read_BUFFER_DATA_PORT);
+        BUFFER_DATA_PORT.on_write(&sdhci::write_BUFFER_DATA_PORT);
 
         PRESENT_STATE.sync_never();
         PRESENT_STATE.allow_read_only();
@@ -556,22 +556,22 @@ namespace vcml { namespace generic {
 
         CLOCK_CTRL.sync_on_write();
         CLOCK_CTRL.allow_read_write();
-        CLOCK_CTRL.write = &sdhci::write_CLOCK_CTRL;
+        CLOCK_CTRL.on_write(&sdhci::write_CLOCK_CTRL);
 
         TIMEOUT_CTRL.sync_never();
         TIMEOUT_CTRL.allow_read_write();
 
         SOFTWARE_RESET.sync_on_write();
         SOFTWARE_RESET.allow_read_write();
-        SOFTWARE_RESET.write = &sdhci::write_SOFTWARE_RESET;
+        SOFTWARE_RESET.on_write(&sdhci::write_SOFTWARE_RESET);
 
         NORMAL_INT_STAT.sync_on_write();
         NORMAL_INT_STAT.allow_read_write();
-        NORMAL_INT_STAT.write = &sdhci::write_NORMAL_INT_STAT;
+        NORMAL_INT_STAT.on_write(&sdhci::write_NORMAL_INT_STAT);
 
         ERROR_INT_STAT.sync_on_write();
         ERROR_INT_STAT.allow_read_write();
-        ERROR_INT_STAT.write = &sdhci::write_ERROR_INT_STAT;
+        ERROR_INT_STAT.on_write(&sdhci::write_ERROR_INT_STAT);
 
         NORMAL_INT_STAT_ENABLE.sync_never();
         NORMAL_INT_STAT_ENABLE.allow_read_write();
@@ -587,7 +587,7 @@ namespace vcml { namespace generic {
 
         CAPABILITIES.sync_always();
         CAPABILITIES.allow_read_only();
-        CAPABILITIES.read = &sdhci::read_CAPABILITIES;
+        CAPABILITIES.on_read(&sdhci::read_CAPABILITIES);
         CAPABILITIES[0] = CAPABILITY_VALUES_0;
 
         MAX_CURR_CAP.sync_never();

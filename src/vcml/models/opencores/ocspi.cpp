@@ -118,16 +118,16 @@ namespace vcml { namespace opencores {
 
         TXDATA.sync_always();
         TXDATA.allow_read_write();
-        TXDATA.write = &ocspi::write_TXDATA;
+        TXDATA.on_write(&ocspi::write_TXDATA);
 
         STATUS.allow_read_write();
-        STATUS.write = &ocspi::write_STATUS;
+        STATUS.on_write(&ocspi::write_STATUS);
 
         CONTROL.allow_read_write();
-        CONTROL.write = &ocspi::write_CONTROL;
+        CONTROL.on_write(&ocspi::write_CONTROL);
 
         BAUDDIV.allow_read_write();
-        BAUDDIV.write = &ocspi::write_BAUDDIV;
+        BAUDDIV.on_write(&ocspi::write_BAUDDIV);
     }
 
     ocspi::~ocspi() {

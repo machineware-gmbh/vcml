@@ -43,7 +43,7 @@ namespace vcml { namespace generic {
         pci_capability(nm, PCI_CAPABILITY_PM), PM_CAPS(), PM_CTRL() {
         PM_CAPS = new_cap_reg_ro<u16>("CAPS", caps);
         PM_CTRL = new_cap_reg_rw<u32>("CTRL", 0);
-        PM_CTRL->write = &pci_device::write_PM_CTRL;
+        PM_CTRL->on_write(&pci_device::write_PM_CTRL);
     }
 
     void pci_cap_msi::set_pending(unsigned int vector, bool set) {
@@ -67,9 +67,9 @@ namespace vcml { namespace generic {
         MSI_MASK(),
         MSI_PENDING() {
         MSI_CONTROL = new_cap_reg_rw<u16>("MSI_CONTROL", control);
-        MSI_CONTROL->write = &pci_device::write_MSI_CTRL;
+        MSI_CONTROL->on_write(&pci_device::write_MSI_CTRL);
         MSI_ADDR = new_cap_reg_rw<u32>("MSI_ADDR", 0);
-        MSI_ADDR->write = &pci_device::write_MSI_ADDR;
+        MSI_ADDR->on_write(&pci_device::write_MSI_ADDR);
 
         if (control & PCI_MSI_64BIT)
             MSI_ADDR_HI = new_cap_reg_rw<u32>("ADDR_HI", 0);
@@ -79,7 +79,7 @@ namespace vcml { namespace generic {
 
         if (control & PCI_MSI_VECTOR) {
             MSI_MASK = new_cap_reg_rw<u32>("MASK", 0);
-            MSI_MASK->write = &pci_device::write_MSI_MASK;
+            MSI_MASK->on_write(&pci_device::write_MSI_MASK);
             MSI_PENDING = new_cap_reg_ro<u32>("PENDING", 0);
         }
     }
@@ -133,7 +133,7 @@ namespace vcml { namespace generic {
         msix_pba = new u32[(nvec + 31) / 32];
 
         MSIX_CONTROL = new_cap_reg_rw<u16>("CONTROL", ctrl);
-        MSIX_CONTROL->write = &pci_device::write_MSIX_CTRL;
+        MSIX_CONTROL->on_write(&pci_device::write_MSIX_CTRL);
         MSIX_BIR_OFF = new_cap_reg_ro<u32>("BIR", tbl_off);
         MSIX_PBA_OFF = new_cap_reg_ro<u32>("PBA", pba_off);
     }
@@ -226,11 +226,11 @@ namespace vcml { namespace generic {
 
         PCI_COMMAND.allow_read_write();
         PCI_COMMAND.sync_always();
-        PCI_COMMAND.write = &pci_device::write_COMMAND;
+        PCI_COMMAND.on_write(&pci_device::write_COMMAND);
 
         PCI_STATUS.allow_read_write();
         PCI_STATUS.sync_always();
-        PCI_STATUS.write = &pci_device::write_STATUS;
+        PCI_STATUS.on_write(&pci_device::write_STATUS);
 
         PCI_CLASS.allow_read_only();
         PCI_CLASS.sync_never();
@@ -249,7 +249,7 @@ namespace vcml { namespace generic {
 
         PCI_BAR.allow_read_write();
         PCI_BAR.sync_always();
-        PCI_BAR.tagged_write = &pci_device::write_BAR;
+        PCI_BAR.on_write(&pci_device::write_BAR);
 
         PCI_SUBVENDOR_ID.allow_read_only();
         PCI_SUBVENDOR_ID.sync_never();
@@ -259,7 +259,7 @@ namespace vcml { namespace generic {
 
         PCI_CAP_PTR.allow_read_only();
         PCI_CAP_PTR.sync_never();
-        PCI_CAP_PTR.read = &pci_device::read_CAP_PTR;
+        PCI_CAP_PTR.on_read(&pci_device::read_CAP_PTR);
 
         PCI_INT_LINE.allow_read_write();
         PCI_INT_LINE.sync_always();
@@ -449,7 +449,7 @@ namespace vcml { namespace generic {
         }
     }
 
-    u32 pci_device::write_BAR(u32 val, u32 barno) {
+    u32 pci_device::write_BAR(u32 val, size_t barno) {
         PCI_BAR[barno] = val;
         update_bars();
         return PCI_BAR[barno];

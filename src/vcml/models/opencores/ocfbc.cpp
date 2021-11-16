@@ -325,17 +325,17 @@ namespace vcml { namespace opencores {
         clock("clock", 60) { // 60Hz
 
         CTLR.allow_read_write();
-        CTLR.write = &ocfbc::write_CTRL;
+        CTLR.on_write(&ocfbc::write_CTRL);
 
         STAT.allow_read_write();
-        STAT.read = &ocfbc::read_STAT;
-        STAT.write = &ocfbc::write_STAT;
+        STAT.on_read(&ocfbc::read_STAT);
+        STAT.on_write(&ocfbc::write_STAT);
 
         HTIM.allow_read_write();
-        HTIM.write = &ocfbc::write_HTIM;
+        HTIM.on_write(&ocfbc::write_HTIM);
 
         VTIM.allow_read_write();
-        VTIM.write = &ocfbc::write_VTIM;
+        VTIM.on_write(&ocfbc::write_VTIM);
 
         SC_THREAD(update);
 

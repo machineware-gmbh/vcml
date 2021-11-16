@@ -76,28 +76,28 @@ namespace vcml { namespace meta {
         IN("IN") {
 
         STOP.allow_read_write();
-        STOP.write = &simdev::write_STOP;
+        STOP.on_write(&simdev::write_STOP);
 
         EXIT.allow_read_write();
-        EXIT.write = &simdev::write_EXIT;
+        EXIT.on_write(&simdev::write_EXIT);
 
         ABRT.allow_read_write();
-        ABRT.write = &simdev::write_ABRT;
+        ABRT.on_write(&simdev::write_ABRT);
 
         SCLK.allow_read_write();
-        SCLK.read = &simdev::read_SCLK;
+        SCLK.on_read(&simdev::read_SCLK);
 
         HCLK.allow_read_write();
-        HCLK.read = &simdev::read_HCLK;
+        HCLK.on_read(&simdev::read_HCLK);
 
         SOUT.allow_read_write();
-        SOUT.write = &simdev::write_SOUT;
+        SOUT.on_write(&simdev::write_SOUT);
 
         SERR.allow_read_write();
-        SERR.write = &simdev::write_SERR;
+        SERR.on_write(&simdev::write_SERR);
 
         PRNG.allow_read_write();
-        PRNG.read = &simdev::read_PRNG;
+        PRNG.on_read(&simdev::read_PRNG);
     }
 
     simdev::~simdev() {

@@ -54,11 +54,11 @@ namespace vcml { namespace opencores {
             STATUS_TXR = 1 << 1, /* transfer ready */
         };
 
-        reg<ocspi, u8> RXDATA;
-        reg<ocspi, u8> TXDATA;
-        reg<ocspi, u8> STATUS;
-        reg<ocspi, u32> CONTROL;
-        reg<ocspi, u32> BAUDDIV;
+        reg<u8> RXDATA;
+        reg<u8> TXDATA;
+        reg<u8> STATUS;
+        reg<u32> CONTROL;
+        reg<u32> BAUDDIV;
 
         irq_initiator_socket IRQ;
         tlm_target_socket IN;
