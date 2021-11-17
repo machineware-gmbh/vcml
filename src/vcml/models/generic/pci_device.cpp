@@ -23,7 +23,7 @@ namespace vcml { namespace generic {
     pci_capability::pci_capability(const string& nm, pci_cap_id cap_id):
         name(std::move(nm)),
         registers(),
-        device(dynamic_cast<pci_device*>(hierarchy_top())),
+        device(hierarchy_search<pci_device>()),
         CAP_ID(),
         CAP_NEXT() {
         VCML_ERROR_ON(!device, "PCI capability declared outside pci device");

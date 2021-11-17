@@ -37,7 +37,7 @@ namespace vcml {
     spi_initiator_socket::spi_initiator_socket(const char* nm):
         spi_base_initiator_socket(nm),
         spi_bw_transport_if(),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
         m_host(dynamic_cast<spi_host*>(hierarchy_top())),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
@@ -79,8 +79,8 @@ namespace vcml {
     spi_target_socket::spi_target_socket(const char* nm, address_space a):
         spi_base_target_socket(nm),
         spi_fw_transport_if(),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_host(dynamic_cast<spi_host*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
+        m_host(hierarchy_search<spi_host>()),
         m_stub(nullptr), as(a) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside spi_host", name());

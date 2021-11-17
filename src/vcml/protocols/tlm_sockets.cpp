@@ -34,8 +34,8 @@ namespace vcml {
         m_sbi(SBI_NONE),
         m_dmi_cache(),
         m_stub(nullptr),
-        m_host(dynamic_cast<tlm_host*>(hierarchy_top())),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_host(hierarchy_search<tlm_host>()),
+        m_parent(hierarchy_search<module>()),
         m_adapter(nullptr) {
         VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
         VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
@@ -313,8 +313,8 @@ namespace vcml {
         m_dmi_cache(),
         m_exmon(),
         m_stub(nullptr),
-        m_host(dynamic_cast<tlm_host*>(hierarchy_top())),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_host(hierarchy_search<tlm_host>()),
+        m_parent(hierarchy_search<module>()),
         m_adapter(nullptr),
         as(a) {
         VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);

@@ -78,7 +78,7 @@ namespace vcml { namespace net {
         m_clients(),
         m_listener(),
         clients("clients", "") {
-        module* host = dynamic_cast<module*>(hierarchy_top());
+        module* host = hierarchy_search<module>();
         VCML_ERROR_ON(!host, "serial port declared outside module");
         m_name = host->name();
 

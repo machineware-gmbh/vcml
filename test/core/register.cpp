@@ -422,3 +422,62 @@ TEST(registers, address_spaces) {
     EXPECT_TRUE(tx.is_response_ok());
     mock.reset();
 }
+
+class lambda_test : public vcml::peripheral
+{
+public:
+    vcml::reg<u32> REG;
+    lambda_test(const sc_core::sc_module_name& nm):
+        vcml::peripheral(nm),
+        REG("REG", 0) {
+        REG.allow_read_only();
+        REG.on_read([&]() -> vcml::u32 {
+            return 0x42;
+        });
+    };
+
+    virtual ~lambda_test() = default;
+};
+
+TEST(registers, lambda) {
+    lambda_test test("lambda");
+
+    u32 data = 0;
+    tlm::tlm_generic_payload tx;
+    vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &data, sizeof(data));
+    test.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT);
+    EXPECT_TRUE(tx.is_response_ok());
+    EXPECT_EQ(data, 0x42);
+}
+
+class hierarchy_test : public vcml::peripheral
+{
+public:
+    class wrapper : public sc_core::sc_module
+    {
+    public:
+        vcml::reg<vcml::u64> TEST_REG;
+
+        wrapper(const sc_core::sc_module_name& nm):
+            sc_core::sc_module(nm), TEST_REG("TEST_REG", 0) {
+        }
+
+        virtual ~wrapper() = default;
+    };
+
+    wrapper W;
+
+    hierarchy_test(const sc_core::sc_module_name& nm):
+        vcml::peripheral(nm),
+        W("W") {
+    }
+};
+
+TEST(registers, hierarchy) {
+    hierarchy_test H("H");
+    EXPECT_STREQ(H.W.TEST_REG.name(), "H.W.TEST_REG");
+    std::vector<vcml::reg_base*> regs = H.get_registers();
+    ASSERT_FALSE(regs.empty());
+    EXPECT_STREQ(regs[0]->name(), "H.W.TEST_REG");
+    EXPECT_EQ(regs[0], (vcml::reg_base*)&H.W.TEST_REG);
+}

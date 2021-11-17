@@ -72,7 +72,7 @@ namespace vcml { namespace debugging {
         m_steppers(),
         m_breakpoints(),
         m_watchpoints() {
-        module* host = dynamic_cast<module*>(hierarchy_top());
+        module* host = hierarchy_search<module>();
         VCML_ERROR_ON(!host, "debug target declared outside module");
         m_name = host->name();
 

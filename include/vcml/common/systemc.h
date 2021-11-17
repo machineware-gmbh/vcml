@@ -153,6 +153,20 @@ namespace vcml {
     sc_module* hierarchy_pop();
     sc_module* hierarchy_top();
 
+    template <typename MODULE = sc_core::sc_object>
+    inline MODULE* hierarchy_search(sc_object* start = nullptr) {
+        if (start == nullptr)
+            start = hierarchy_top();
+
+        for (sc_object* obj = start; obj; obj = obj->get_parent_object()) {
+            MODULE* module = dynamic_cast<MODULE*>(obj);
+            if (module)
+                return module;
+        }
+
+        return nullptr;
+    }
+
     class hierarchy_guard
     {
     private:

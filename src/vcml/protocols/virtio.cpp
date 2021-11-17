@@ -139,7 +139,7 @@ namespace vcml {
         notify(false),
         vector(VIRTIO_NO_VECTOR),
         dmi(dmi),
-        parent(dynamic_cast<module*>(hierarchy_top())) {
+        parent(hierarchy_search<module>()) {
         VCML_ERROR_ON(!parent, "virtqueue created outside module");
         m_name = mkstr("%s.VQ%u", parent->name(), id);
     }
@@ -521,8 +521,8 @@ namespace vcml {
     virtio_initiator_socket::virtio_initiator_socket(const char* nm):
         virtio_base_initiator_socket(nm),
         virtio_bw_transport_if(),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_controller(dynamic_cast<virtio_controller*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
+        m_controller(hierarchy_search<virtio_controller>()),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_controller, "%s has no virtio_controller", name());
@@ -571,8 +571,8 @@ namespace vcml {
 
     virtio_target_socket::virtio_target_socket(const char* nm):
         virtio_base_target_socket(nm),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_device(dynamic_cast<virtio_device*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
+        m_device(hierarchy_search<virtio_device>()),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_device, "%s has no virtio_device", name());

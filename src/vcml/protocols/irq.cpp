@@ -48,7 +48,7 @@ namespace vcml {
     irq_initiator_socket::irq_initiator_socket(const char* nm,
         address_space as):
         irq_base_initiator_socket(nm, as),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
         m_host(dynamic_cast<irq_target*>(hierarchy_top())),
         m_stub(nullptr), m_state(), m_event(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
@@ -135,8 +135,8 @@ namespace vcml {
 
     irq_target_socket::irq_target_socket(const char* nm, address_space _as):
         irq_base_target_socket(nm, _as),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_host(dynamic_cast<irq_target*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
+        m_host(hierarchy_search<irq_target>()),
         m_stub(nullptr), m_state(), m_event(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside irq_target", name());

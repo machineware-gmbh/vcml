@@ -249,7 +249,7 @@ namespace vcml {
     template <class PORT>
     port_list<PORT>::port_list(const string& nm):
         m_name(nm),
-        m_parent(hierarchy_top()),
+        m_parent(hierarchy_search<sc_module>()),
         m_ports() {
         VCML_ERROR_ON(nm.empty(), "port list name cannot be empty");
         VCML_ERROR_ON(!m_parent, "port list declared outside module");

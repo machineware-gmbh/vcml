@@ -31,7 +31,7 @@ namespace vcml {
         m_access(VCML_ACCESS_READ_WRITE),
         m_rsync(false),
         m_wsync(false),
-        m_host(dynamic_cast<peripheral*>(hierarchy_top())),
+        m_host(hierarchy_search<peripheral>()),
         as(a),
         tag() {
         VCML_ERROR_ON(!m_host, "register '%s' declared outside peripheral", nm);

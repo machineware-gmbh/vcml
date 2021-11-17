@@ -193,11 +193,11 @@ namespace vcml {
     };
 
     template <typename DATA, size_t N>
-    template <typename H>
-    void reg<DATA, N>::on_read(DATA (H::*rd)(void), H* host) {
+    template <typename HOST>
+    void reg<DATA, N>::on_read(DATA (HOST::*rd)(void), HOST* host) {
         if (host == nullptr)
-            host = dynamic_cast<H*>(get_host());
-        VCML_ERROR_ON(!host, "host cannot be nullptr");
+            host = dynamic_cast<HOST*>(get_host());
+        VCML_ERROR_ON(!host, "read callback has no host");
         readfn fn = std::bind(rd, host);
         on_read(fn);
     }
@@ -207,7 +207,7 @@ namespace vcml {
     void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
         if (host == nullptr)
             host = dynamic_cast<HOST*>(get_host());
-        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        VCML_ERROR_ON(!host, "tagged read callback has no host");
         readfn_tagged fn = std::bind(rd, host, std::placeholders::_1);
         on_read(fn);
     }
@@ -217,7 +217,7 @@ namespace vcml {
     void reg<DATA, N>::on_write(DATA (HOST::*wr)(DATA), HOST* host) {
         if (host == nullptr)
             host = dynamic_cast<HOST*>(get_host());
-        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        VCML_ERROR_ON(!host, "write callback has no host");
         writefn fn = std::bind(wr, host, std::placeholders::_1);
         on_write(fn);
     }
@@ -227,7 +227,7 @@ namespace vcml {
     void reg<DATA, N>::on_write(DATA (HOST::*wr)(DATA, size_t), HOST* host) {
         if (host == nullptr)
             host = dynamic_cast<HOST*>(get_host());
-        VCML_ERROR_ON(!host, "host cannot be nullptr");
+        VCML_ERROR_ON(!host, "tagged write callback has no host");
         writefn_tagged fn = std::bind(wr, host, std::placeholders::_1,
                                       std::placeholders::_2);
         on_write(fn);

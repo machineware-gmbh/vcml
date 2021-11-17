@@ -213,8 +213,8 @@ namespace vcml {
     pci_initiator_socket::pci_initiator_socket(const char* nm, address_space a):
         pci_base_initiator_socket(nm),
         pci_bw_transport_if(),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_initiator(dynamic_cast<pci_initiator*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
+        m_initiator(hierarchy_search<pci_initiator>()),
         m_stub(nullptr) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_initiator, "%s outside pci_initiator", name());
@@ -256,8 +256,8 @@ namespace vcml {
     pci_target_socket::pci_target_socket(const char* nm, address_space space):
         pci_base_target_socket(nm),
         pci_fw_transport_if(),
-        m_parent(dynamic_cast<module*>(hierarchy_top())),
-        m_target(dynamic_cast<pci_target*>(hierarchy_top())),
+        m_parent(hierarchy_search<module>()),
+        m_target(hierarchy_search<pci_target>()),
         m_stub(nullptr),
         port_as(space) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
