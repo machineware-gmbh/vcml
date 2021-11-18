@@ -4,8 +4,8 @@ VCML peripherals serve as the starting point for developing custom I/O
 peripheral models. Themselves based on `vcml::component`, `vcml::peripheral` add
 a set of convenience functions frequently needed, such as endianness conversion
 and access (read and write) callback functions. However, their most important
-asset is their capability to host `vcml::register`, an extended version of
-regular [Properties](properties.md) that can be used to model memory mapped I/O
+asset is their capability to host `vcml::reg`, an extended version of regular
+[Properties](properties.md) that can be used to model memory mapped I/O
 registers. Since peripherals are also [Components](components.md), they also
 inherit their capabilities, e.g., [Logging and Tracing](logging.md), command
 facilities, and have access to master and slave sockets. Below you can find an
@@ -41,13 +41,12 @@ Registers represent memory mapped I/O registers that need to react to read and
 write events to model the behaviour of their corresponding model. Fundamentally,
 they are [Properties](properties.md) and can be initialized similarly.
 Their size is determined from their data type, e.g. to model a 32 bit register,
-you can use `vcml::register<HOST, uint32_t>`. Here, `HOST` refers to the class
-of the peripheral that will host your register. You can control allowed access
-modes via one of the following:
+you can use `vcml::reg<uint32_t>`. You can control allowed access modes via one
+of the following:
 
-* `register::allow_read()`: read-only access
-* `register::allow_write()`: write-only access
-* `register::alow_read_write()`: allow read and write access
+* `reg::allow_read_only()`: read-only access
+* `reg::allow_write_only()`: write-only access
+* `reg::alow_read_write()`: allow read and write access
 
 If an access attempt is performed that is not permitted (e.g. writing a
 read-only register), the peripheral automatically returns
@@ -61,7 +60,7 @@ add a register to your peripheral model, you can use the following example code:
 class my_peripheral: public vcml::peripheral {
 public:
     vcml::slave_socket IN;
-    vcml::register<my_peripheral, vcml::u32> REG;
+    vcml::reg<vcml::u32> REG;
 
     my_peripheral(const sc_core::sc_module_name& nm):
         vcml::peripheral(nm),
@@ -74,15 +73,15 @@ public:
 
 In order to react to read and write requests, you need to assign a callback
 function that can be called whenever an access is detected. The signatures of
-read and write callbacks for a register of type `vcml::register<T>` are
-`T read_reg()` and `T write_reg(T val)`, respectively. You can assign these
-during the constructor of your peripheral:
+read and write callbacks for a register of type `vcml::reg<T>` are `T read_reg()`
+and `T write_reg(T val)`, respectively. You can assign these during the
+constructor of your peripheral:
 
 ```
 class my_peripheral: public vcml::peripheral {
 public:
     vcml::slave_socket IN;
-    vcml::register<my_peripheral, vcml::u32> REG;
+    vcml::reg<vcml::u32> REG;
 
     u32 read_REG() {
         return REG; // here you can modify REG before returning its value
@@ -97,8 +96,13 @@ public:
         IN("IN"),
         REG("REG", 0x100, 0){
         REG.allow_read_write();
-        REG.read = &my_peripheral::read_REG;
-        REG.write = &my_peripheral::write_REG;
+        REG.on_read(&my_peripheral::read_REG);
+        REG.on_write(&my_peripheral::write_REG);
+
+        // you can also use c++ lambdas:
+        REG.on_read([&]() -> vcml::u32 {
+            return 1234;
+        });
     }
 };
 ```
@@ -131,17 +135,16 @@ change this behaviour.
 Registers can also be used to hold an array of values. This is useful for
 example when you need to model a set of registers that all behave in the same
 way and only differ by their address offset. To declare an array register you
-can use `vcml::register<HOST, TYPE, N>` to add an array register to `HOST` that
-holds `N` elements of `TYPE`. Note that access privileges can only be set for
-the entire array, i.e. all registers will be marked read-only when you call
-`allow_read()`. Individual register values can be accessed using the `[]`
-operator and the type used for indexing is `unsigned int`.
-Initialization is done using comma separated lists, similarly to how it is done
-with array properties.
+can use `vcml::reg<TYPE, N>` to add an array register that holds `N` elements of
+`TYPE`. Note that access privileges can only be set for the entire array, i.e.
+all registers will be marked read-only when you call `allow_read()`. Individual
+register values can be accessed using the `[]` operator and the type used for
+indexing is `size_t`. Initialization is done using comma separated lists,
+similarly to how it is done with array properties.
 
 Addresses are computed automatically based on the array index and base data
 type. The following example illustrates this for an array register of type
-`vcml::register<my_peripheral, uin32_t, 4>` mapped to address `0x1000`:
+`vcml::reg<uin32_t, 4>` mapped to address `0x1000`:
 
 | Index | Offset | Address            | Accessible via |
 | ----- | -------| ------------------ | -------------- |
@@ -160,13 +163,13 @@ for an example of an indexed register:
 class my_peripheral: public vcml::peripheral {
 public:
     vcml::slave_socket IN;
-    vcml::register<my_peripheral, vcml::u32, 4> REG;
+    vcml::reg<vcml::u32, 4> REG;
 
-    u32 read_REG(unsigned int idx) {
+    u32 read_REG(size_t idx) {
         return REG[idx]; // here you can modify reg before returning its value
     }
 
-    u32 write_REG(u32 val, unsigned int idx) {
+    u32 write_REG(u32 val, size_t idx) {
         return val; // value returned here will be assigned to REG[idx]
     }
 
@@ -175,13 +178,13 @@ public:
         IN("IN"),
         REG("REG", 0x100, 0){
         REG.allow_read_write();
-        REG.tagged_read = &my_peripheral::read_REG;
-        REG.tagged_write = &my_peripheral::write_REG;
+        REG.on_read(&my_peripheral::read_REG);
+        REG.on_write(&my_peripheral::write_REG);
     }
 };
 ```
 
-Note that you can also use `tagged_read` and `tagged_write` for scalar
+Note that you can also use the `size_t` indexed callback functions for scalar
 registers. In this case, the value of `my_register.tag` will be passed as `idx`.
 
 ----
@@ -204,12 +207,15 @@ my_peripheral.REG.set_banked();
 ```
 
 Afterwards, you can access the individual banks using
-`vmcl::register::bank(int bank)`:
+`vmcl::reg::bank(int bank)`:
 
 ```
 std::cout << my_peripheral.REG.bank(1) << std::endl;
 my_peripheral.REG.bank(1) = 0;
 ```
+
+To access elements of banked array registers, you can use
+`vcml::reg::bank(int bank, size_t index)`.
 
 During read and write callbacks, bank switching is performed automatically.
 Therefore, modifying `REG` during a callback will only affect the bank of the
@@ -218,41 +224,4 @@ access using `int register::current_bank()`. Accesses that do not expose a bank
 id will use bank id `-1` when accessing banked registers.
 
 ----
-## Backends
-Many peripherals will probably need to communicate with the host machine in
-order to do their job. For example, an UART might want to send out characters
-to be displayed in the host console, or an Ethernet PHY might need access to
-the host network in order to send a TCP/IP packet. Serial communication like
-this can be handled using the [Backend](backends.md) subsystem of VCML.
-Peripherals offer a straightforward way to access backends and abstract away
-most intricacies:
-
-1. All peripherals have a `backends` property. This is a whitespace separated
-list of backends that will automatically be instantiated for that peripheral.
-2. To interact with backends, a set of `be*` functions is provided:
-
-```
-                      bool   bepeek();
-                      size_t beread(void* buffer, size_t size);
-template <typename T> size_t beread(T& val);
-                      size_t bewrite(const void* buffer, size_t size);
-template <typename T> size_t bewrite(const T& val);
-```
-
-* The `bepeek` function returns `true`, if at least one backend has data
-available for reading. Otherwise it returns `false`.
-
-* The `beread` functions will read up to `size` or `sizeof(T)` from the first
-backend that has data available. The number of bytes actually read is returned.
-
-* The `bewrite` functions will write `size` or `sizeof(T)` from `buffer` or
-`val` to all backends. It always returns `size` or `sizeof(T)`.
-
-Note that in this context, it is not necessary to define what *reading* from or
-*writing* to backends actually means beyond *input* and *output*, respectively.
-Instead, the actual behaviour is defined by each backend individually and is
-explained [here](backends.md). This enables separation of model code from UI
-code.
-
-----
-Documentation update December 2018
+Documentation update November 2021
