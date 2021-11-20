@@ -173,8 +173,13 @@ namespace vcml {
         sc_module* m_owner;
 
     public:
-        hierarchy_guard(sc_module* owner): m_owner(owner) {
-            hierarchy_push(owner);
+        hierarchy_guard(sc_module* owner):
+            m_owner(owner ? owner : hierarchy_top()) {
+            hierarchy_push(m_owner);
+        }
+
+        hierarchy_guard(sc_object* obj):
+            hierarchy_guard(hierarchy_search<sc_module>(obj)) {
         }
 
         ~hierarchy_guard() {

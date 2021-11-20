@@ -36,6 +36,43 @@ namespace vcml {
         return sockets;
     }
 
+    irq_base_initiator_socket::irq_base_initiator_socket(const char* nm,
+        address_space as):
+        irq_base_initiator_socket_b(nm),
+        m_stub(nullptr) {
+    }
+
+    irq_base_initiator_socket::~irq_base_initiator_socket() {
+        if (m_stub)
+            delete m_stub;
+    }
+
+    void irq_base_initiator_socket::stub() {
+        VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+        hierarchy_guard guard(this);
+        m_stub = new irq_target_stub(mkstr("%s_stub", basename()).c_str());
+        bind(m_stub->IRQ_IN);
+    }
+
+    irq_base_target_socket::irq_base_target_socket(const char* nm,
+        address_space space):
+        irq_base_target_socket_b(nm),
+        m_stub(nullptr),
+        as(space) {
+    }
+
+    irq_base_target_socket::~irq_base_target_socket() {
+        if (m_stub != nullptr)
+            delete m_stub;
+    }
+
+    void irq_base_target_socket::stub() {
+        VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+        hierarchy_guard guard(this);
+        m_stub = new irq_initiator_stub(mkstr("%s_stub", basename()).c_str());
+        m_stub->IRQ_OUT.bind(*this);
+    }
+
     bool irq_initiator_socket::irq_state_tracker::operator = (bool state) {
         if (state == active)
             return state;
@@ -50,7 +87,7 @@ namespace vcml {
         irq_base_initiator_socket(nm, as),
         m_parent(hierarchy_search<module>()),
         m_host(dynamic_cast<irq_target*>(hierarchy_top())),
-        m_stub(nullptr), m_state(), m_event(nullptr), m_transport(this) {
+        m_state(), m_event(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(m_transport);
         if (m_host)
@@ -60,17 +97,8 @@ namespace vcml {
     irq_initiator_socket::~irq_initiator_socket() {
         if (m_host)
             stl_remove_erase(m_host->m_initiator_sockets, this);
-        if (m_stub)
-            delete m_stub;
         if (m_event)
             delete m_event;
-    }
-
-    void irq_initiator_socket::stub() {
-        VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
-        m_stub = new irq_target_stub(mkstr("%s_stub", basename()).c_str());
-        bind(m_stub->IRQ_IN);
     }
 
     const sc_event& irq_initiator_socket::default_event() {
@@ -137,7 +165,7 @@ namespace vcml {
         irq_base_target_socket(nm, _as),
         m_parent(hierarchy_search<module>()),
         m_host(hierarchy_search<irq_target>()),
-        m_stub(nullptr), m_state(), m_event(nullptr), m_transport(this) {
+        m_state(), m_event(nullptr), m_transport(this) {
         VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_host, "%s declared outside irq_target", name());
         m_host->m_target_sockets.push_back(this);
@@ -146,17 +174,8 @@ namespace vcml {
 
     irq_target_socket::~irq_target_socket() {
         stl_remove_erase(m_host->m_target_sockets, this);
-        if (m_stub)
-            delete m_stub;
         if (m_event)
             delete m_event;
-    }
-
-    void irq_target_socket::stub() {
-        VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
-        m_stub = new irq_initiator_stub(mkstr("%s_stub", basename()).c_str());
-        m_stub->IRQ_OUT.bind(*this);
     }
 
     const sc_event& irq_target_socket::default_event() {
