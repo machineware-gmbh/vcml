@@ -105,6 +105,10 @@ namespace vcml { namespace debugging {
     }
 
     static void list_object(ostream& os, sc_object* obj) {
+        // hide object names starting with $$$
+        if (strncmp("$$$", obj->basename(), 3) == 0)
+            return;
+
         os << "<object"
            << " name=\"" << xml_escape(obj->basename()) << "\""
            << " kind=\"" << xml_escape(obj->kind()) << "\">";
@@ -342,7 +346,7 @@ namespace vcml { namespace debugging {
             resume();
 
         try {
-            while (!is_suspending()) {
+            while (!is_suspending() && sim_running()) {
                 int signal = recv_signal(100);
                 switch (signal) {
                 case 0x0:
