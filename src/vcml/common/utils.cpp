@@ -238,10 +238,8 @@ namespace vcml {
 
             int status = 0;
             char* res = abi::__cxa_demangle(func, dmbuf, &dmbufsz, &status);
-            if (status == 0) {
-                sv[i-skip] = string(res) + "+" + string(offset);
-                dmbuf = res; // dmbuf might get reallocated
-            }
+            if (status == 0)
+                sv[i-skip] = string(dmbuf = res) + "+" + string(offset);
         }
 
         free(names);
