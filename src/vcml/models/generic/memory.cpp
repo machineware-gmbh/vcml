@@ -16,8 +16,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <sys/mman.h>
-
 #include "vcml/models/generic/memory.h"
 
 namespace vcml { namespace generic {
@@ -57,7 +55,7 @@ namespace vcml { namespace generic {
         if (sz + off > size)
             VCML_REPORT("image too big for memory");
 
-        return m_memory + off;
+        return m_memory.data() + off;
     }
 
     void memory::copy_image(const u8* image, u64 sz, u64 off) {
@@ -67,35 +65,34 @@ namespace vcml { namespace generic {
         if (sz + off > size)
             VCML_REPORT("image too big for memory");
 
-        memcpy(m_memory + off, image, sz);
+        memcpy(m_memory.data() + off, image, sz);
     }
 
     memory::memory(const sc_module_name& nm, u64 sz, bool read_only,
-                   unsigned int alignment, unsigned int rl, unsigned int wl):
+                   alignment al, unsigned int rl, unsigned int wl):
         peripheral(nm, host_endian(), rl, wl),
         debugging::loader(name()),
-        m_base(nullptr),
-        m_memory(nullptr),
+        m_memory(),
         size("size", sz),
-        align("align", alignment),
+        align("align", al),
         discard_writes("discard_writes", false),
         readonly("readonly", read_only),
         images("images", ""),
         poison("poison", 0x00),
         IN("IN") {
         VCML_ERROR_ON(size == 0u, "memory size cannot be 0");
-        VCML_ERROR_ON(align >= 64u, "requested alignment too big");
+        VCML_ERROR_ON(al > VCML_ALIGN_1G, "requested alignment too big");
 
-        const int perms = PROT_READ | PROT_WRITE;
-        const int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
+        m_memory.init(size, align);
+        m_memory.set_read_latency(read_cycles());
+        m_memory.set_write_latency(write_cycles());
 
-        std::uintptr_t extra = (1ull << align) - 1;
-        m_base = mmap(0, size + extra, perms, flags, -1, 0);
-        VCML_ERROR_ON(m_base == MAP_FAILED, "mmap failed: %s", strerror(errno));
-        m_memory = (u8*)(((std::uintptr_t)m_base + extra) & ~extra);
+        if (readonly)
+            m_memory.allow_read_only();
+        if (discard_writes)
+            m_memory.discard_writes();
 
-        map_dmi(m_memory, 0, size - 1, readonly ? VCML_ACCESS_READ
-                                                : VCML_ACCESS_READ_WRITE);
+        map_dmi(m_memory);
 
         register_command("show", 2, this, &memory::cmd_show,
             "show memory contents between addresses [start] and [end]. "
@@ -103,35 +100,24 @@ namespace vcml { namespace generic {
     }
 
     memory::~memory() {
-        if (m_base)
-            munmap(m_base, size);
+        // nothing to do
     }
 
     void memory::reset() {
         if (poison > 0)
-            memset(m_memory, poison, size);
+            memset(m_memory.data(), poison, size);
 
         load_images(images);
     }
 
     tlm_response_status memory::read(const range& addr, void* data,
                                      const tlm_sbi& info) {
-        if (addr.end >= size)
-            return TLM_ADDRESS_ERROR_RESPONSE;
-        memcpy(data, m_memory + addr.start, addr.length());
-        return TLM_OK_RESPONSE;
+        return m_memory.read(addr, data, info.is_debug);
     }
 
     tlm_response_status memory::write(const range& addr, const void* data,
                                       const tlm_sbi& info) {
-        if (addr.end >= size)
-            return TLM_ADDRESS_ERROR_RESPONSE;
-        if (!info.is_debug && discard_writes)
-            return TLM_OK_RESPONSE;
-        if (!info.is_debug && readonly)
-            return TLM_COMMAND_ERROR_RESPONSE;
-        memcpy(m_memory + addr.start, data, addr.length());
-        return TLM_OK_RESPONSE;
+        return m_memory.write(addr, data, info.is_debug);
     }
 
 }}

@@ -35,8 +35,7 @@ namespace vcml { namespace generic {
                   public debugging::loader
     {
     private:
-        void* m_base;
-        u8* m_memory;
+        tlm_memory m_memory;
 
         bool cmd_show(const vector<string>& args, ostream& os);
 
@@ -49,7 +48,7 @@ namespace vcml { namespace generic {
 
     public:
         property<u64> size;
-        property<unsigned int> align;
+        property<alignment> align;
         property<bool> discard_writes;
         property<bool> readonly;
         property<string> images;
@@ -57,10 +56,10 @@ namespace vcml { namespace generic {
 
         tlm_target_socket IN;
 
-        u8* get_data_ptr() const { return m_memory; }
+        u8* get_data_ptr() const { return m_memory.data(); }
 
         memory(const sc_module_name& name, u64 size, bool read_only = false,
-               unsigned int alignment = 0, unsigned int read_latency = 0,
+               alignment al = VCML_ALIGN_NONE, unsigned int read_latency = 0,
                unsigned int write_latency = 0);
         virtual ~memory();
         VCML_KIND(memory);
