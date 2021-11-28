@@ -90,11 +90,16 @@ namespace vcml {
         stl_remove_erase(m_registers, reg);
     }
 
+    void peripheral::map_dmi(const tlm_dmi& dmi) {
+        tlm_dmi copy(dmi);
+        copy.set_read_latency(read_cycles());
+        copy.set_write_latency(write_cycles());
+        tlm_host::map_dmi(copy);
+    }
+
     void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
         vcml_access acs) {
-        const sc_time rlat = clock_cycles(read_latency);
-        const sc_time wlat = clock_cycles(write_latency);
-        component::map_dmi(ptr, start, end, acs, rlat, wlat);
+        tlm_host::map_dmi(ptr, start, end, acs, read_cycles(), write_cycles());
     }
 
     unsigned int peripheral::transport(tlm_generic_payload& tx,

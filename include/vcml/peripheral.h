@@ -48,6 +48,9 @@ namespace vcml {
         property<unsigned int> read_latency;
         property<unsigned int> write_latency;
 
+        sc_time read_cycles()  const { return clock_cycles(read_latency); }
+        sc_time write_cycles() const { return clock_cycles(write_latency); }
+
         endianess get_endian() const { return m_endian; }
         void set_endian(endianess e) { m_endian = e; }
 
@@ -81,6 +84,7 @@ namespace vcml {
 
         vector<reg_base*> get_registers() const { return m_registers; }
 
+        void map_dmi(const tlm_dmi& dmi);
         void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
 
         virtual unsigned int transport(tlm_generic_payload& tx,
