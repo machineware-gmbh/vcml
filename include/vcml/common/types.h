@@ -198,13 +198,14 @@ namespace vcml {
         return is_set(a, VCML_ACCESS_WRITE);
     }
 
-    enum endianess {
+    typedef enum vcml_endianess {
         ENDIAN_UNKNOWN = 0,
         ENDIAN_LITTLE = 1,
         ENDIAN_BIG = 2,
-    };
+    } endianess;
 
-    const char* endian_to_str(int endian);
+    istream& operator >> (istream& is, endianess& e);
+    ostream& operator << (ostream& os, endianess  e);
 
     inline endianess host_endian() {
         u32 test = 1;
@@ -220,9 +221,39 @@ namespace vcml {
         VCML_AS_DEFAULT = 0,
     };
 
-}
+    typedef enum vcml_alignment {
+        VCML_ALIGN_NONE =  0,
+        VCML_ALIGN_1K   = 10,
+        VCML_ALIGN_2K   = 11,
+        VCML_ALIGN_4K   = 12,
+        VCML_ALIGN_8K   = 13,
+        VCML_ALIGN_16K  = 14,
+        VCML_ALIGN_32K  = 15,
+        VCML_ALIGN_64K  = 16,
+        VCML_ALIGN_128K = 17,
+        VCML_ALIGN_256K = 18,
+        VCML_ALIGN_512K = 19,
+        VCML_ALIGN_1M   = 20,
+        VCML_ALIGN_2M   = 21,
+        VCML_ALIGN_4M   = 22,
+        VCML_ALIGN_8M   = 23,
+        VCML_ALIGN_16M  = 24,
+        VCML_ALIGN_32M  = 25,
+        VCML_ALIGN_64M  = 26,
+        VCML_ALIGN_128M = 27,
+        VCML_ALIGN_256M = 28,
+        VCML_ALIGN_512M = 29,
+        VCML_ALIGN_1G   = 30,
+    } alignment;
 
-std::istream& operator >> (std::istream& is, vcml::endianess& endian);
-std::ostream& operator << (std::ostream& os, vcml::endianess& endian);
+    istream& operator >> (istream& is, alignment& a);
+    ostream& operator << (ostream& os, alignment  a);
+
+    template <typename T>
+    constexpr bool is_aligned(T addr, alignment a) {
+        return ((u64)addr & ((1ull << a) - 1)) == 0;
+    }
+
+}
 
 #endif

@@ -17,36 +17,70 @@
  ******************************************************************************/
 
 #include "vcml/common/types.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/strings.h"
 
 namespace vcml {
 
-    const char* endian_to_str(int endian) {
-        switch (endian) {
-        case ENDIAN_LITTLE: return "little";
-        case ENDIAN_BIG: return "big";
+    istream& operator >> (istream& is, endianess& endian) {
+        std::string str;
+        is >> str;
+        str = vcml::to_lower(str);
+
+        if (str == "big")
+            endian = ENDIAN_BIG;
+        else if (str == "little")
+            endian = ENDIAN_LITTLE;
+        else
+            endian = ENDIAN_UNKNOWN;
+
+        return is;
+    }
+
+    ostream& operator << (ostream& os, endianess e) {
+        switch (e) {
+        case ENDIAN_LITTLE: return os << "little";
+        case ENDIAN_BIG: return os << "big";
         default:
-            return "unknown";
+            return os << "unknown";
         }
+    }
+
+    istream& operator >> (istream& is, alignment& a) {
+        string s;
+        is >> s;
+        if (s.empty()) {
+            a = VCML_ALIGN_NONE;
+            return is;
+        }
+
+        char* endp;
+        u64 val = strtoull(s.c_str(), &endp, 0);
+        a = (alignment)ctz(val);
+
+        switch (*endp) {
+        case 'k': case 'K': a = (alignment)(a + 10); break;
+        case 'm': case 'M': a = (alignment)(a + 20); break;
+        case 'g': case 'G': a = (alignment)(a + 30); break;
+        default:
+            a = VCML_ALIGN_NONE;
+            break;
+        }
+
+        return is;
+    }
+
+    ostream& operator << (ostream& os, alignment a) {
+        if (a == VCML_ALIGN_NONE)
+            return os << "unaligned" << std::endl;
+        if (a >= 30)
+            return os << (1ull << (a - 30)) << "G";
+        if (a >= 20)
+            return os << (1ull << (a - 20)) << "M";
+        if (a >= 10)
+            return os << (1ull << (a - 10)) << "k";
+        return os << (1ull << a);
     }
 
 }
 
-std::istream& operator >> (std::istream& is, vcml::endianess& endian) {
-    std::string str;
-    is >> str;
-    str = vcml::to_lower(str);
-
-    if (str == "big")
-        endian = vcml::ENDIAN_BIG;
-    else if (str == "little")
-        endian = vcml::ENDIAN_LITTLE;
-    else
-        endian = vcml::ENDIAN_UNKNOWN;
-
-    return is;
-}
-
-std::ostream& operator << (std::ostream& os, vcml::endianess& endian) {
-    return os << vcml::endian_to_str(endian);
-}
