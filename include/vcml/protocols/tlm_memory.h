@@ -37,7 +37,7 @@ namespace vcml {
 
     public:
         u8*    data() const { return get_dmi_ptr(); }
-        size_t size() const { return get_end_address() + 1; }
+        size_t size() const;
 
         void allow_read_only()  { allow_read(); }
         void allow_write_only() { allow_write(); }
@@ -64,6 +64,10 @@ namespace vcml {
         u8  operator [] (size_t offset) const;
         u8& operator [] (size_t offset);
     };
+
+    inline size_t tlm_memory::size() const {
+        return get_end_address() - get_start_address() + 1;
+    }
 
     inline u8 tlm_memory::operator [] (size_t offset) const {
         VCML_ERROR_ON(data() == nullptr, "memory not initialized");
