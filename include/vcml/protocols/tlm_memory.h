@@ -32,19 +32,17 @@ namespace vcml {
     {
     private:
         void*  m_base;
-        u8*    m_data;
         size_t m_size;
-        size_t m_real_size;
-        bool   m_discard_writes;
+        bool   m_discard;
 
     public:
-        u8*    data() const { return m_data; }
-        size_t size() const { return m_size; }
+        u8*    data() const { return get_dmi_ptr(); }
+        size_t size() const { return get_end_address() + 1; }
 
         void allow_read_only()  { allow_read(); }
         void allow_write_only() { allow_write(); }
 
-        void discard_writes(bool set = true) { m_discard_writes = set; }
+        void discard_writes(bool discard = true) { m_discard = discard; }
 
         tlm_memory();
         tlm_memory(size_t size, alignment al = VCML_ALIGN_NONE);
@@ -68,15 +66,15 @@ namespace vcml {
     };
 
     inline u8 tlm_memory::operator [] (size_t offset) const {
-        VCML_ERROR_ON(m_data == nullptr, "memory not initialized");
-        VCML_ERROR_ON(offset >= m_size, "offset out of bounds: %zu", offset);
-        return m_data[offset];
+        VCML_ERROR_ON(data() == nullptr, "memory not initialized");
+        VCML_ERROR_ON(offset >= size(), "offset out of bounds: %zu", offset);
+        return data()[offset];
     }
 
     inline u8& tlm_memory::operator [] (size_t offset) {
-        VCML_ERROR_ON(m_data == nullptr, "memory not initialized");
-        VCML_ERROR_ON(offset >= m_size, "offset out of bounds: %zu", offset);
-        return m_data[offset];
+        VCML_ERROR_ON(data() == nullptr, "memory not initialized");
+        VCML_ERROR_ON(offset >= size(), "offset out of bounds: %zu", offset);
+        return data()[offset];
     }
 
 }
