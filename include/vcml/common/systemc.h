@@ -296,6 +296,9 @@ namespace vcml {
 
     bool kernel_has_phase_callbacks();
 
+    void on_end_of_elaboration(function<void(void)> callback);
+    void on_start_of_simulation(function<void(void)> callback);
+
     void on_each_delta_cycle(function<void(void)> callback);
     void on_each_time_step(function<void(void)> callback);
 

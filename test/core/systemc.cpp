@@ -45,6 +45,10 @@ TEST(systemc, time) {
 TEST(systemc, callback) {
     sc_report_handler::set_actions(SC_ID_NO_SC_START_ACTIVITY_, SC_DO_NOTHING);
 
+    unsigned int elab_calls = 0, start_calls = 0;
+    on_end_of_elaboration([&elab_calls]() { elab_calls++; });
+    on_start_of_simulation([&start_calls]() { start_calls++; });
+
     unsigned int delta_calls = 0, time_calls = 0;
     on_each_delta_cycle([&delta_calls]() { delta_calls++; });
     on_each_time_step([&time_calls]() { time_calls++; });
@@ -73,4 +77,7 @@ TEST(systemc, callback) {
 #else
     EXPECT_EQ(time_calls, 2);
 #endif
+
+    EXPECT_EQ(elab_calls, 1);
+    EXPECT_EQ(start_calls, 1);
 }

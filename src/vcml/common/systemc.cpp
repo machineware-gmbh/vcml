@@ -219,6 +219,9 @@ namespace vcml {
 
         const bool use_phase_callbacks;
 
+        vector<function<void(void)>> end_of_elab;
+        vector<function<void(void)>> start_of_sim;
+
         vector<function<void(void)>> deltas;
         vector<function<void(void)>> tsteps;
 
@@ -272,7 +275,7 @@ namespace vcml {
             sc_core::sc_trace_file(),
             sc_core::sc_module(nm),
             use_phase_callbacks(kernel_has_phase_callbacks()),
-            deltas(), tsteps(),
+            end_of_elab(), start_of_sim(), deltas(), tsteps(),
             timeout_event("timeout_ev"), timers() {
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
             if (use_phase_callbacks) {
@@ -291,7 +294,17 @@ namespace vcml {
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
         virtual void simulation_phase_callback() override {
-            cycle(simcontext()->get_status() == sc_core::SC_END_OF_UPDATE);
+            switch (simcontext()->get_status()) {
+            case sc_core::SC_END_OF_UPDATE:
+                cycle(true);
+                break;
+            case sc_core::SC_BEFORE_TIMESTEP:
+                cycle(false);
+                break;
+
+            default:
+                break;
+            }
         }
 #endif
 
@@ -308,17 +321,35 @@ namespace vcml {
         }
 
     protected:
-        virtual void cycle(bool delta_cycle) override;
-    };
+        virtual void cycle(bool delta_cycle) override {
+            if (delta_cycle) {
+                for (auto& func : deltas)
+                    func();
+            } else {
+                for (auto& func : tsteps)
+                    func();
+            }
+        }
 
-    void helper_module::cycle(bool delta_cycle) {
-        if (delta_cycle) {
-            for (auto& func : deltas)
-                func();
-        } else {
-            for (auto& func : tsteps)
+        virtual void end_of_elaboration() override {
+            for (auto& func : end_of_elab)
                 func();
         }
+
+        virtual void start_of_simulation() override {
+            for (auto& func : start_of_sim)
+                func();
+        }
+    };
+
+    void on_end_of_elaboration(function<void(void)> callback) {
+        helper_module& helper = helper_module::instance();
+        helper.end_of_elab.push_back(callback);
+    }
+
+    void on_start_of_simulation(function<void(void)> callback) {
+        helper_module& helper = helper_module::instance();
+        helper.start_of_sim.push_back(callback);
     }
 
     void on_each_delta_cycle(function<void(void)> callback) {
@@ -459,17 +490,16 @@ namespace vcml {
         static async_worker& lookup(sc_process_b* thread) {
             VCML_ERROR_ON(!thread, "invalid thread");
 
-            static unordered_map<sc_process_b*, async_worker> workers;
+            typedef unordered_map<sc_process_b*, shared_ptr<async_worker>> map;
+            static map workers;
 
             auto it = workers.find(thread);
             if (it != workers.end())
-                return it->second;
+                return *it->second.get();
 
             size_t id = workers.size();
-            auto entry = workers.emplace(std::piecewise_construct,
-                                         std::forward_as_tuple(thread),
-                                         std::forward_as_tuple(id, thread));
-            return entry.first->second;
+            auto worker = std::make_shared<async_worker>(id, thread);
+            return *(workers[thread] = worker);
         }
     };
 
