@@ -29,6 +29,7 @@
 #include "vcml/common/socket.h"
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
+#include "vcml/common/aio.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/logging/log_file.h"

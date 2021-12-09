@@ -67,10 +67,14 @@ namespace vcml { namespace serial {
 
         if (tcsetattr(STDIN_FILENO, TCSANOW, &m_termios) == -1)
             log_error("failed to reset terminal");
+
+        aio_cancel(STDIN_FILENO);
     }
 
     backend_term::backend_term(const string& port):
         backend(port),
+        m_fifo_mtx(),
+        m_fifo(),
         m_signal(0),
         m_exit(false),
         m_stopped(false),
@@ -80,6 +84,8 @@ namespace vcml { namespace serial {
         m_sigstp() {
         VCML_REPORT_ON(singleton, "multiple terminal backends requested");
         singleton = this;
+
+        m_type = "term";
 
         if (!isatty(STDIN_FILENO))
             VCML_REPORT("not a terminal");
@@ -98,7 +104,13 @@ namespace vcml { namespace serial {
         m_sigint = signal(SIGINT, &backend_term::handle_signal);
         m_sigstp = signal(SIGTSTP, &backend_term::handle_signal);
 
-        m_type = "term";
+        aio_notify(STDIN_FILENO, [&](int fd) -> void {
+            u8 data;
+            if (fd_read(fd, &data, sizeof(data)) == sizeof(data)) {
+                lock_guard<mutex> guard(m_fifo_mtx);
+                m_fifo.push(data);
+            }
+        });
     }
 
     backend_term::~backend_term() {
@@ -107,9 +119,7 @@ namespace vcml { namespace serial {
     }
 
     bool backend_term::peek() {
-        if (m_signal != 0)
-            return true;
-        return fd_peek(STDOUT_FILENO) > 0u;
+        return m_signal != 0 || !m_fifo.empty();
     }
 
     bool backend_term::read(u8& val) {
@@ -122,7 +132,11 @@ namespace vcml { namespace serial {
         if (!peek())
             return false;
 
-        return fd_read(STDIN_FILENO, &val, sizeof(val)) == sizeof(val);
+        std::lock_guard<mutex> guard(m_fifo_mtx);
+        val = m_fifo.front();
+        m_fifo.pop();
+
+        return true;
     }
 
     void backend_term::write(u8 val) {

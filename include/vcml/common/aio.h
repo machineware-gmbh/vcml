@@ -16,58 +16,20 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SERIAL_BACKEND_TERM_H
-#define VCML_SERIAL_BACKEND_TERM_H
-
-#include <signal.h>
-#include <termios.h>
-#include <fcntl.h>
+#ifndef VCML_AIO_H
+#define VCML_AIO_H
 
 #include "vcml/common/types.h"
-#include "vcml/common/utils.h"
 #include "vcml/common/report.h"
-#include "vcml/common/aio.h"
+#include "vcml/common/utils.h"
 
-#include "vcml/logging/logger.h"
-#include "vcml/serial/backend.h"
+namespace vcml {
 
-namespace vcml { namespace serial {
+    typedef function<void(int)> aio_handler;
 
-    class backend_term: public backend
-    {
-    private:
-        mutex m_fifo_mtx;
-        queue<u8> m_fifo;
+    void aio_notify(int fd, aio_handler handler);
+    void aio_cancel(int fd);
 
-        int m_signal;
-        bool m_exit;
-        bool m_stopped;
-
-        termios m_termios;
-        double  m_time;
-
-        sighandler_t m_sigint;
-        sighandler_t m_sigstp;
-
-        static backend_term* singleton;
-        static void handle_signal(int sig);
-
-        void handle_sigstp(int sig);
-        void handle_sigint(int sig);
-
-        void cleanup();
-
-    public:
-        backend_term(const string& port);
-        virtual ~backend_term();
-
-        virtual bool peek() override;
-        virtual bool read(u8& val) override;
-        virtual void write(u8 val) override;
-
-        static backend* create(const string& port, const string& type);
-    };
-
-}}
+}
 
 #endif
