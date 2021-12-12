@@ -16,65 +16,34 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_CLIENT_SLIRP_H
-#define VCML_NET_CLIENT_SLIRP_H
+#ifndef VCML_NET_BACKEND_H
+#define VCML_NET_BACKEND_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
-#include "vcml/logging/logger.h"
-#include "vcml/net/client.h"
-
-#include <libslirp.h>
-#include <libslirp-version.h>
+#include "vcml/common/strings.h"
 
 namespace vcml { namespace net {
 
-    class client_slirp;
-
-    class slirp_network
+    class backend
     {
     private:
-        SlirpConfig m_config;
-        Slirp* m_slirp;
+        string m_adapter;
 
-        set<client_slirp*> m_clients;
-
-        atomic<bool> m_running;
-        thread m_thread;
-
-        void slirp_thread();
+    protected:
+        string m_type;
 
     public:
-        slirp_network(unsigned int id);
-        virtual ~slirp_network();
+        const char* adapter_name() const { return m_adapter.c_str(); }
+        const char* type() const { return m_type.c_str(); }
 
-        void send_packet(const u8* ptr, size_t len);
-        void recv_packet(const u8* ptr, size_t len);
+        backend(const string& adapter);
+        virtual ~backend();
 
-        void register_client(client_slirp* client);
-        void unregister_client(client_slirp* client);
-    };
+        virtual bool recv_packet(vector<u8>& packet) = 0;
+        virtual void send_packet(const vector<u8>& packet) = 0;
 
-    class client_slirp: public client
-    {
-    private:
-        shared_ptr<slirp_network> m_network;
-
-        mutable mutex m_packets_mtx;
-        queue<shared_ptr<vector<u8>>> m_packets;
-
-    public:
-        client_slirp(const string& ada, const shared_ptr<slirp_network>& net);
-        virtual ~client_slirp();
-
-        void disconnect() { m_network = nullptr; }
-
-        void queue_packet(shared_ptr<vector<u8>> packet);
-
-        virtual bool recv_packet(vector<u8>& packet) override;
-        virtual void send_packet(const vector<u8>& packet) override;
-
-        static client* create(const string& adapter, const string& type);
+        static backend* create(const string& adapter, const string& type);
     };
 
 }}

@@ -16,32 +16,33 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_FILE_H
-#define VCML_NET_BACKEND_FILE_H
+#ifndef VCML_NET_BACKEND_TAP_H
+#define VCML_NET_BACKEND_TAP_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
 #include "vcml/logging/logger.h"
-#include "vcml/net/client.h"
+#include "vcml/net/backend.h"
 
 namespace vcml { namespace net {
 
-    class client_file: public client
+    class backend_tap: public backend
     {
     private:
-        size_t m_count;
-        ofstream m_tx;
+        int m_fd;
+
+        enum : size_t {
+            ETH_MAX_FRAME_SIZE = 1522,
+        };
 
     public:
-        client_file(const string& adapter, const string& tx);
-        virtual ~client_file();
+        backend_tap(const string& adapter, int devno);
+        virtual ~backend_tap();
 
         virtual bool recv_packet(vector<u8>& packet) override;
         virtual void send_packet(const vector<u8>& packet) override;
 
-        static client* create(const string& adapter, const string& type);
+        static backend* create(const string& name, const string& type);
     };
 
 }}

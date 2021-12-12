@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/net/client_slirp.h"
+#include "vcml/net/backend_slirp.h"
 
 #include <poll.h>
 
@@ -217,17 +217,17 @@ namespace vcml { namespace net {
         slirp_input(m_slirp, ptr, len);
     }
 
-    void slirp_network::register_client(client_slirp* client) {
+    void slirp_network::register_client(backend_slirp* client) {
         m_clients.insert(client);
     }
 
-    void slirp_network::unregister_client(client_slirp* client) {
+    void slirp_network::unregister_client(backend_slirp* client) {
         m_clients.erase(client);
     }
 
-    client_slirp::client_slirp(const string& adapter,
+    backend_slirp::backend_slirp(const string& adapter,
         const shared_ptr<slirp_network>& network):
-        client(adapter),
+        backend(adapter),
         m_network(network),
         m_packets_mtx(),
         m_packets() {
@@ -235,17 +235,17 @@ namespace vcml { namespace net {
         m_network->register_client(this);
     }
 
-    client_slirp::~client_slirp() {
+    backend_slirp::~backend_slirp() {
         if (m_network)
             m_network->unregister_client(this);
     }
 
-    void client_slirp::queue_packet(shared_ptr<vector<u8>> packet) {
+    void backend_slirp::queue_packet(shared_ptr<vector<u8>> packet) {
         lock_guard<mutex> guard(m_packets_mtx);
         m_packets.push(packet);
     }
 
-    bool client_slirp::recv_packet(vector<u8>& packet) {
+    bool backend_slirp::recv_packet(vector<u8>& packet) {
         if (m_packets.empty())
             return false;
 
@@ -257,12 +257,12 @@ namespace vcml { namespace net {
         return true;
     }
 
-    void client_slirp::send_packet(const vector<u8>& packet) {
+    void backend_slirp::send_packet(const vector<u8>& packet) {
         if (m_network)
             m_network->recv_packet(packet.data(), packet.size());
     }
 
-    client* client_slirp::create(const string& adapter, const string& type) {
+    backend* backend_slirp::create(const string& adapter, const string& type) {
         unsigned int netid = 0;
         if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
             netid = 0;
@@ -271,7 +271,7 @@ namespace vcml { namespace net {
         auto& network = networks[netid];
         if (network == nullptr)
             network = std::make_shared<slirp_network>(netid);
-        return new client_slirp(adapter, network);
+        return new backend_slirp(adapter, network);
     }
 
 }}

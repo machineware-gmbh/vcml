@@ -112,20 +112,20 @@ namespace vcml { namespace net {
         s_adapters.erase(m_name);
     }
 
-    void adapter::attach(client* cl) {
+    void adapter::attach(backend* cl) {
         if (stl_contains(m_listener, cl))
             VCML_ERROR("attempt to attach client twice");
         m_listener.push_back(cl);
     }
 
-    void adapter::detach(client* cl) {
+    void adapter::detach(backend* cl) {
         if (!stl_contains(m_listener, cl))
             VCML_ERROR("attempt to detach unknown client");
         stl_remove_erase(m_listener, cl);
     }
 
     int adapter::create_client(const string& type) {
-        m_clients[m_next_id] = client::create(m_name, type);
+        m_clients[m_next_id] = backend::create(m_name, type);
         return m_next_id++;
     }
 
@@ -140,14 +140,14 @@ namespace vcml { namespace net {
     }
 
     bool adapter::recv_packet(vector<u8>& packet) {
-        for (client* cl : m_listener)
+        for (backend* cl : m_listener)
             if (cl->recv_packet(packet))
                 return true;
         return false;
     }
 
     void adapter::send_packet(const vector<u8>& packet) {
-        for (client* cl : m_listener)
+        for (backend* cl : m_listener)
             cl->send_packet(packet);
     }
 

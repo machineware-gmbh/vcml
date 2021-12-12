@@ -76,9 +76,9 @@ set(sources
     ${src}/vcml/serial/backend_term.cpp
     ${src}/vcml/serial/backend.cpp
     ${src}/vcml/serial/port.cpp
-    ${src}/vcml/net/client.cpp
-    ${src}/vcml/net/client_file.cpp
-    ${src}/vcml/net/client_tap.cpp
+    ${src}/vcml/net/backend.cpp
+    ${src}/vcml/net/backend_file.cpp
+    ${src}/vcml/net/backend_tap.cpp
     ${src}/vcml/net/adapter.cpp
     ${src}/vcml/ui/fbmode.cpp
     ${src}/vcml/ui/keymap.cpp
@@ -183,7 +183,7 @@ if(LIBSLIRP_FOUND)
     message(STATUS "Building with SLIRP support")
     target_compile_definitions(vcml PRIVATE HAVE_LIBSLIRP)
     target_include_directories(vcml SYSTEM PRIVATE ${LIBSLIRP_INCLUDE_DIRS})
-    target_sources(vcml PRIVATE ${src}/vcml/net/client_slirp.cpp)
+    target_sources(vcml PRIVATE ${src}/vcml/net/backend_slirp.cpp)
     target_link_libraries(vcml PUBLIC ${LIBSLIRP_LIBRARIES})
 else()
     message(STATUS "Building without SLIRP support")

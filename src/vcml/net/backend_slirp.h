@@ -16,54 +16,65 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_ADAPTER_H
-#define VCML_NET_ADAPTER_H
+#ifndef VCML_NET_BACKEND_SLIRP_H
+#define VCML_NET_BACKEND_SLIRP_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
-#include "vcml/common/strings.h"
-
-#include "vcml/properties/property.h"
-
+#include "vcml/logging/logger.h"
 #include "vcml/net/backend.h"
+
+#include <libslirp.h>
+#include <libslirp-version.h>
 
 namespace vcml { namespace net {
 
-    class backend;
+    class backend_slirp;
 
-    class adapter
+    class slirp_network
     {
     private:
-        string m_name;
-        size_t m_next_id;
-        std::map<size_t, backend*> m_clients;
-        vector<backend*> m_listener;
+        SlirpConfig m_config;
+        Slirp* m_slirp;
 
-        bool cmd_create_client(const vector<string>& args, ostream& os);
-        bool cmd_destroy_client(const vector<string>& args, ostream& os);
-        bool cmd_list_clients(const vector<string>& args, ostream& os);
+        set<backend_slirp*> m_clients;
 
-        static unordered_map<string, adapter*> s_adapters;
+        atomic<bool> m_running;
+        thread m_thread;
+
+        void slirp_thread();
 
     public:
-        property<string> clients;
+        slirp_network(unsigned int id);
+        virtual ~slirp_network();
 
-        const char* adapter_name() const { return m_name.c_str(); }
+        void send_packet(const u8* ptr, size_t len);
+        void recv_packet(const u8* ptr, size_t len);
 
-        adapter();
-        virtual ~adapter();
+        void register_client(backend_slirp* client);
+        void unregister_client(backend_slirp* client);
+    };
 
-        void attach(backend* client);
-        void detach(backend* client);
+    class backend_slirp: public backend
+    {
+    private:
+        shared_ptr<slirp_network> m_network;
 
-        int  create_client(const string& type);
-        bool destroy_client(int id);
+        mutable mutex m_packets_mtx;
+        queue<shared_ptr<vector<u8>>> m_packets;
 
-        bool recv_packet(vector<u8>& packet);
-        void send_packet(const vector<u8>& packet);
+    public:
+        backend_slirp(const string& ada, const shared_ptr<slirp_network>& net);
+        virtual ~backend_slirp();
 
-        static adapter* find(const string& name);
-        static vector<adapter*> all();
+        void disconnect() { m_network = nullptr; }
+
+        void queue_packet(shared_ptr<vector<u8>> packet);
+
+        virtual bool recv_packet(vector<u8>& packet) override;
+        virtual void send_packet(const vector<u8>& packet) override;
+
+        static backend* create(const string& adapter, const string& type);
     };
 
 }}

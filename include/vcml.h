@@ -57,7 +57,7 @@
 #include "vcml/serial/backend.h"
 #include "vcml/serial/port.h"
 
-#include "vcml/net/client.h"
+#include "vcml/net/backend.h"
 #include "vcml/net/adapter.h"
 
 #include "vcml/ui/keymap.h"
