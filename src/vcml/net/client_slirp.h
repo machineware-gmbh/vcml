@@ -39,11 +39,14 @@ namespace vcml { namespace net {
 
         set<client_slirp*> m_clients;
 
+        atomic<bool> m_running;
+        thread m_thread;
+
+        void slirp_thread();
+
     public:
         slirp_network(unsigned int id);
         virtual ~slirp_network();
-
-        void poll();
 
         void send_packet(const u8* ptr, size_t len);
         void recv_packet(const u8* ptr, size_t len);
@@ -56,6 +59,8 @@ namespace vcml { namespace net {
     {
     private:
         shared_ptr<slirp_network> m_network;
+
+        mutable mutex m_packets_mtx;
         queue<shared_ptr<vector<u8>>> m_packets;
 
     public:
