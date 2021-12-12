@@ -76,7 +76,6 @@ namespace vcml { namespace serial {
         void fetch_history(vector<u8>& hist);
         void clear_history();
 
-        bool serial_peek();
         bool serial_in(u8& val);
         void serial_out(u8 val);
 

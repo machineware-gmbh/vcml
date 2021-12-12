@@ -43,7 +43,6 @@ namespace vcml { namespace serial {
         const char* port() const { return m_port.c_str(); }
         const char* type() const { return m_type.c_str(); }
 
-        virtual bool peek() = 0;
         virtual bool read(u8& val) = 0;
         virtual void write(u8 val) = 0;
 

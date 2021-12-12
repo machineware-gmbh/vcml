@@ -58,7 +58,6 @@ namespace vcml { namespace virtio {
 
         queue<vq_message> m_fifo;
 
-        size_t rx_data_available();
         size_t rx_data(u8* data, size_t len);
         size_t tx_data(const u8* data, size_t len);
 

@@ -137,13 +137,6 @@ namespace vcml { namespace serial {
         stl_remove_erase(m_listeners, b);
     }
 
-    bool port::serial_peek() {
-        for (backend* b : m_listeners)
-            if (b->peek())
-                return true;
-        return false;
-    }
-
     int port::create_backend(const string& type) {
         m_backends[m_next_id] = backend::create(m_name, type);
         return m_next_id++;

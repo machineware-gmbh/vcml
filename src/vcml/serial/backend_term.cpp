@@ -118,10 +118,6 @@ namespace vcml { namespace serial {
         singleton = nullptr;
     }
 
-    bool backend_term::peek() {
-        return m_signal != 0 || !m_fifo.empty();
-    }
-
     bool backend_term::read(u8& val) {
         if (m_signal != 0) {
             val = (u8)m_signal;
@@ -129,10 +125,10 @@ namespace vcml { namespace serial {
             return true;
         }
 
-        if (!peek())
+        if (m_fifo.empty())
             return false;
 
-        std::lock_guard<mutex> guard(m_fifo_mtx);
+        lock_guard<mutex> guard(m_fifo_mtx);
         val = m_fifo.front();
         m_fifo.pop();
 

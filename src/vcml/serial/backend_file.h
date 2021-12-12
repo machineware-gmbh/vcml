@@ -36,7 +36,6 @@ namespace vcml { namespace serial {
         backend_file(const string& port, const string& rx, const string& tx);
         virtual ~backend_file();
 
-        virtual bool peek() override;
         virtual bool read(u8& val) override;
         virtual void write(u8 val) override;
 

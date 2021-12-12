@@ -45,18 +45,6 @@ namespace vcml { namespace serial {
         // nothing to do
     }
 
-    bool backend_file::peek() {
-        if (!m_rx.is_open() || !m_rx.good())
-            return false;
-
-        size_t pos = m_rx.tellg();
-        m_rx.seekg(0, m_rx.end);
-        size_t end = m_rx.tellg();
-        m_rx.seekg(pos, m_rx.beg);
-
-        return pos < end;
-    }
-
     bool backend_file::read(u8& val) {
         if (!m_rx.is_open() || !m_rx.good())
             return false;

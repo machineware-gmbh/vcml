@@ -32,21 +32,11 @@ namespace vcml { namespace serial {
         // nothing to do
     }
 
-    bool backend_tcp::peek() {
-        try {
-            if (!m_socket.is_connected())
-                return false;
-            return m_socket.peek() > 0;
-        } catch (...) {
-            m_socket.accept_async();
-            return false;
-        }
-    }
-
     bool backend_tcp::read(u8& val) {
         try {
-            if (!peek())
+            if (!m_socket.is_connected() || !m_socket.peek())
                 return false;
+
             m_socket.recv(&val, sizeof(val));
             return true;
         } catch (...) {

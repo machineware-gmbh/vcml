@@ -20,12 +20,11 @@
 
 namespace vcml { namespace virtio {
 
-    size_t console::rx_data_available() {
-        return serial_peek() ? 1u : 0u;
-    }
-
     size_t console::rx_data(u8* data, size_t size) {
-        return serial_in(*data) ? 1u : 0u;
+        for (size_t count = 0; count < size; count++)
+            if (!serial_in(*data++))
+                return count;
+        return size;
     }
 
     size_t console::tx_data(const u8* data, size_t size) {
@@ -35,17 +34,13 @@ namespace vcml { namespace virtio {
     }
 
     void console::poll() {
-        size_t rxbytes = rx_data_available();
-        while (rxbytes > 0 && !m_fifo.empty()) {
+        while (!m_fifo.empty()) {
             vq_message msg(m_fifo.front());
             vector<u8> chars(msg.length_out());
 
-            size_t nread = 0;
-            while (rxbytes > 0 && nread < chars.size()) {
-                nread += rx_data(chars.data() + nread,
-                                 min(chars.size() - nread, rxbytes));
-                rxbytes = rx_data_available();
-            }
+            size_t nread = rx_data(chars.data(), chars.size());
+            if (nread == 0)
+                break;
 
             msg.copy_out(chars);
             msg.trim(nread);

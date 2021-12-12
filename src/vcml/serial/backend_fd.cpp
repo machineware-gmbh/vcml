@@ -35,10 +35,6 @@ namespace vcml { namespace serial {
         // nothing to do
     }
 
-    bool backend_fd::peek() {
-        return false;
-    }
-
     bool backend_fd::read(u8& val) {
         return false;
     }
