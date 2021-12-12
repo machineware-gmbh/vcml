@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
+#include "vcml/common/aio.h"
 #include "vcml/logging/logger.h"
 #include "vcml/net/backend.h"
 
@@ -31,15 +32,12 @@ namespace vcml { namespace net {
     private:
         int m_fd;
 
-        enum : size_t {
-            ETH_MAX_FRAME_SIZE = 1522,
-        };
+        void close_tap();
 
     public:
         backend_tap(const string& adapter, int devno);
         virtual ~backend_tap();
 
-        virtual bool recv_packet(vector<u8>& packet) override;
         virtual void send_packet(const vector<u8>& packet) override;
 
         static backend* create(const string& name, const string& type);

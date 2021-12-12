@@ -228,9 +228,7 @@ namespace vcml { namespace net {
     backend_slirp::backend_slirp(const string& adapter,
         const shared_ptr<slirp_network>& network):
         backend(adapter),
-        m_network(network),
-        m_packets_mtx(),
-        m_packets() {
+        m_network(network) {
         VCML_ERROR_ON(!m_network, "no network");
         m_network->register_client(this);
     }
@@ -238,23 +236,6 @@ namespace vcml { namespace net {
     backend_slirp::~backend_slirp() {
         if (m_network)
             m_network->unregister_client(this);
-    }
-
-    void backend_slirp::queue_packet(shared_ptr<vector<u8>> packet) {
-        lock_guard<mutex> guard(m_packets_mtx);
-        m_packets.push(packet);
-    }
-
-    bool backend_slirp::recv_packet(vector<u8>& packet) {
-        if (m_packets.empty())
-            return false;
-
-        lock_guard<mutex> guard(m_packets_mtx);
-        shared_ptr<vector<u8>> top = m_packets.front();
-        m_packets.pop();
-
-        packet = *top.get();
-        return true;
     }
 
     void backend_slirp::send_packet(const vector<u8>& packet) {

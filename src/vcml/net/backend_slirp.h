@@ -60,18 +60,12 @@ namespace vcml { namespace net {
     private:
         shared_ptr<slirp_network> m_network;
 
-        mutable mutex m_packets_mtx;
-        queue<shared_ptr<vector<u8>>> m_packets;
-
     public:
         backend_slirp(const string& ada, const shared_ptr<slirp_network>& net);
         virtual ~backend_slirp();
 
         void disconnect() { m_network = nullptr; }
 
-        void queue_packet(shared_ptr<vector<u8>> packet);
-
-        virtual bool recv_packet(vector<u8>& packet) override;
         virtual void send_packet(const vector<u8>& packet) override;
 
         static backend* create(const string& adapter, const string& type);

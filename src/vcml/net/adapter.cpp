@@ -77,7 +77,7 @@ namespace vcml { namespace net {
         m_next_id(),
         m_clients(),
         m_listener(),
-        clients("clients", "") {
+        backends("backends", "") {
         module* host = hierarchy_search<module>();
         VCML_ERROR_ON(!host, "serial port declared outside module");
         m_name = host->name();
@@ -86,7 +86,7 @@ namespace vcml { namespace net {
             VCML_ERROR("network adapter '%s' already exists", m_name.c_str());
         s_adapters[m_name] = this;
 
-        vector<string> types = split(clients, ' ');
+        vector<string> types = split(backends, ' ');
         for  (auto type : types) {
             try {
                 create_client(type);

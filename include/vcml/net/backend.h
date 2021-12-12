@@ -33,6 +33,9 @@ namespace vcml { namespace net {
     protected:
         string m_type;
 
+        mutable mutex m_packets_mtx;
+        queue<shared_ptr<vector<u8>>> m_packets;
+
     public:
         const char* adapter_name() const { return m_adapter.c_str(); }
         const char* type() const { return m_type.c_str(); }
@@ -40,8 +43,10 @@ namespace vcml { namespace net {
         backend(const string& adapter);
         virtual ~backend();
 
-        virtual bool recv_packet(vector<u8>& packet) = 0;
-        virtual void send_packet(const vector<u8>& packet) = 0;
+        void queue_packet(shared_ptr<vector<u8>> packet);
+
+        virtual bool recv_packet(vector<u8>& packet);
+        virtual void send_packet(const vector<u8>& packet);
 
         static backend* create(const string& adapter, const string& type);
     };

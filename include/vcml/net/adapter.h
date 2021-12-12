@@ -46,7 +46,7 @@ namespace vcml { namespace net {
         static unordered_map<string, adapter*> s_adapters;
 
     public:
-        property<string> clients;
+        property<string> backends;
 
         const char* adapter_name() const { return m_name.c_str(); }
 

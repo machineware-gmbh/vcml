@@ -42,6 +42,27 @@ namespace vcml { namespace net {
             a->detach(this);
     }
 
+    void backend::queue_packet(shared_ptr<vector<u8>> packet) {
+        lock_guard<mutex> guard(m_packets_mtx);
+        m_packets.push(packet);
+    }
+
+    bool backend::recv_packet(vector<u8>& packet) {
+        if (m_packets.empty())
+            return false;
+
+        lock_guard<mutex> guard(m_packets_mtx);
+        shared_ptr<vector<u8>> top = m_packets.front();
+        m_packets.pop();
+
+        packet = *top.get();
+        return true;
+    }
+
+    void backend::send_packet(const vector<u8>& packet) {
+        // to be overloaded
+    }
+
     backend* backend::create(const string& adapter, const string& type) {
         string kind = type.substr(0, type.find(":"));
         typedef function<backend*(const string&, const string&)> construct;
@@ -63,8 +84,7 @@ namespace vcml { namespace net {
             VCML_REPORT("%s", ss.str().c_str());
         }
 
-        try
-        {
+        try {
             return it->second(adapter, type);
         } catch (std::exception& ex) {
             VCML_REPORT("%s: %s", type.c_str(), ex.what());
