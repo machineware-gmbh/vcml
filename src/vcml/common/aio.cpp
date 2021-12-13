@@ -57,7 +57,7 @@ namespace vcml {
                 }
 
                 int ret = poll(polls.data(), polls.size(), timeout_ms);
-                VCML_ERROR_ON(ret < 0, "aio error: %s", strerror(ret));
+                VCML_ERROR_ON(ret < 0, "aio error: %s", strerror(errno));
 
                 if (ret > 0 && m_running) {
                     lock_guard<mutex> guard(m_mtx);
