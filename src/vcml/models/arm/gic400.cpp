@@ -700,6 +700,7 @@ namespace vcml { namespace arm {
             log_debug("(EOI) cpu %d eois irq %d", cpu, irq);
             set_current_irq(cpu, m_prev_irq[irq][cpu]);
             m_parent->set_irq_active(irq, false, 1 << cpu);
+            m_parent->update();
             return 0;
         }
 
