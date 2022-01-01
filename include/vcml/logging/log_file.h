@@ -21,11 +21,11 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
-#include "vcml/logging/logger.h"
+#include "vcml/logging/publisher.h"
 
 namespace vcml {
 
-    class log_file: public logger
+    class log_file: public publisher
     {
     private:
         ofstream m_file;
@@ -34,7 +34,7 @@ namespace vcml {
         log_file(const string& filename);
         virtual ~log_file();
 
-        virtual void write_log(const logmsg& msg) override;
+        virtual void publish(const logmsg& msg) override;
     };
 
 }

@@ -27,18 +27,18 @@ MATCHER_P(match_trace, msg, "matches if trace message contains string") {
     return arg.lines[0].find(msg) != std::string::npos;
 }
 
-class mock_logger: public vcml::logger
+class mock_publisher: public vcml::publisher
 {
 public:
-    mock_logger(): vcml::logger(vcml::LOG_ERROR, vcml::LOG_INFO) {}
-    MOCK_METHOD(void, write_log, (const vcml::logmsg&), (override));
+    mock_publisher(): vcml::publisher(vcml::LOG_ERROR, vcml::LOG_INFO) {}
+    MOCK_METHOD(void, publish, (const vcml::logmsg&), (override));
 };
 
 class test_harness: public test_base
 {
 public:
     vcml::log_term term;
-    mock_logger mock;
+    mock_publisher mock;
 
     u64 addr;
     u32 data;
@@ -85,7 +85,7 @@ public:
         };
 
         for (auto trace : expected)
-            EXPECT_CALL(mock, write_log(match_trace(trace))).Times(2);
+            EXPECT_CALL(mock, publish(match_trace(trace))).Times(2);
         EXPECT_OK(OUT.writew(addr, data)) << "failed to send transaction";
     }
 };

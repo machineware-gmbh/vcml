@@ -20,11 +20,11 @@
 #define VCML_LOG_STREAM_H
 
 #include "vcml/common/types.h"
-#include "vcml/logging/logger.h"
+#include "vcml/logging/publisher.h"
 
 namespace vcml {
 
-    class log_stream: public logger
+    class log_stream: public publisher
     {
     protected:
         ostream& os;
@@ -33,7 +33,7 @@ namespace vcml {
         log_stream(ostream& os);
         virtual ~log_stream();
 
-        virtual void write_log(const logmsg& msg) override;
+        virtual void publish(const logmsg& msg) override;
     };
 
 }

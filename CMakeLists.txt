@@ -52,6 +52,7 @@ set(sources
     ${src}/vcml/common/socket.cpp
     ${src}/vcml/common/systemc.cpp
     ${src}/vcml/logging/logger.cpp
+    ${src}/vcml/logging/publisher.cpp
     ${src}/vcml/logging/log_file.cpp
     ${src}/vcml/logging/log_stream.cpp
     ${src}/vcml/logging/log_term.cpp

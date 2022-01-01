@@ -21,7 +21,7 @@
 namespace vcml {
 
     log_stream::log_stream(ostream& o):
-        logger(LOG_ERROR, LOG_DEBUG),
+        publisher(LOG_ERROR, LOG_DEBUG),
         os(o) {
         // nothing to do
     }
@@ -30,7 +30,7 @@ namespace vcml {
         // nothing to do
     }
 
-    void log_stream::write_log(const logmsg& msg) {
+    void log_stream::publish(const logmsg& msg) {
         os << msg << std::endl;
     }
 

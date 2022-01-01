@@ -245,11 +245,8 @@ namespace vcml {
 
     ostream& operator << (ostream& os, const vq_message& msg);
 
-    class virtqueue
+    class virtqueue : public sc_object
     {
-    private:
-        string m_name;
-
     protected:
         virtual virtio_status do_get(vq_message& msg) = 0;
         virtual virtio_status do_put(vq_message& msg) = 0;
@@ -273,7 +270,7 @@ namespace vcml {
 
         module* parent;
 
-        const char* name() const { return m_name.c_str(); }
+        logger log;
 
         virtqueue() = delete;
         virtqueue(const virtqueue&) = delete;
@@ -286,32 +283,6 @@ namespace vcml {
 
         bool get(vq_message& msg);
         bool put(vq_message& msg);
-
-#ifndef VCML_OMIT_LOGGING_SOURCE
-        void log_tagged(log_level lvl, const char* file, int line,
-                        const char* format, ...) const VCML_DECL_PRINTF(5, 6) {
-            if (lvl <= parent->loglvl && logger::would_log(lvl)) {
-                va_list args; va_start(args, format);
-                logger::publish(lvl, name(), vmkstr(format, args), file, line);
-                va_end(args);
-            }
-        }
-#else
-#define VCML_GEN_LOGFN(func, lvl)                                             \
-        void func(const char* format, ...) const VCML_DECL_PRINTF(2, 3) {     \
-            if (lvl <= loglvl && logger::would_log(lvl)) {                    \
-                va_list args; va_start(args, format);                         \
-                logger::publish(lvl, name(), vmkstr(format, args));           \
-                va_end(args);                                                 \
-            }                                                                 \
-        }
-
-        VCML_GEN_LOGFN(log_error, ::vcml::LOG_ERROR)
-        VCML_GEN_LOGFN(log_warn, ::vcml::LOG_WARN)
-        VCML_GEN_LOGFN(log_info, ::vcml::LOG_INFO)
-        VCML_GEN_LOGFN(log_debug, ::vcml::LOG_DEBUG)
-#undef VCML_GEN_LOGFN
-#endif
     };
 
     class split_virtqueue : public virtqueue

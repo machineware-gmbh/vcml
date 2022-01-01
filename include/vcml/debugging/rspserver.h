@@ -24,6 +24,8 @@
 #include "vcml/common/report.h"
 #include "vcml/common/socket.h"
 
+#include "vcml/logging/logger.h"
+
 namespace vcml { namespace debugging {
 
     class rspserver
@@ -33,8 +35,10 @@ namespace vcml { namespace debugging {
 
     private:
         bool m_echo;
-        u16 m_port;
         socket m_sock;
+        u16 m_port;
+
+        string m_name;
 
         atomic<bool> m_running;
 
@@ -48,7 +52,10 @@ namespace vcml { namespace debugging {
         rspserver(const rspserver&);
 
     public:
+        logger log;
+
         u16 port() const { return m_port; }
+        const char* name() const { return m_name.c_str(); }
 
         bool is_connected() const { return m_sock.is_connected(); }
         bool is_listening() const { return m_sock.is_listening(); }

@@ -46,7 +46,7 @@ namespace vcml {
                 m_log_debug = !m_log_debug;
 
             } else if (!strcmp(arg, "--log-delta")) {
-                logger::print_delta_cycle = !logger::print_delta_cycle;
+                publisher::print_delta_cycle = !publisher::print_delta_cycle;
 
             } else if (!strcmp(arg, "--log") || !strcmp(arg, "-l")) {
                 if (i >= argc - 1 || *argv[i+1] == '-')
@@ -91,7 +91,7 @@ namespace vcml {
         m_log_files(),
         m_trace_files(),
         m_config_files(),
-        m_loggers(),
+        m_publishers(),
         m_brokers() {
         VCML_ERROR_ON(s_instance != nullptr, "setup already created");
         s_instance = this;
@@ -103,27 +103,27 @@ namespace vcml {
         log_level max = m_log_debug ? LOG_DEBUG : LOG_INFO;
 
         for (string file : m_log_files) {
-            logger* log = new log_file(file);
-            log->set_level(min, max);
-            m_loggers.push_back(log);
+            publisher* pub = new log_file(file);
+            pub->set_level(min, max);
+            m_publishers.push_back(pub);
         }
 
         if (m_log_stdout || m_log_files.empty()) {
-            logger* log = new log_term(true);
-            log->set_level(min, max);
-            m_loggers.push_back(log);
+            publisher* pub = new log_term(true);
+            pub->set_level(min, max);
+            m_publishers.push_back(pub);
         }
 
         for (string file : m_trace_files) {
-            logger* tracer = new log_file(file);
+            publisher* tracer = new log_file(file);
             tracer->set_level(LOG_TRACE, LOG_TRACE);
-            m_loggers.push_back(tracer);
+            m_publishers.push_back(tracer);
         }
 
         if (m_trace_stdout) {
-            logger* tracer = new log_term(true);
+            publisher* tracer = new log_term(true);
             tracer->set_level(LOG_TRACE, LOG_TRACE);
-            m_loggers.push_back(tracer);
+            m_publishers.push_back(tracer);
         }
 
         m_brokers.push_back(new broker_arg(argc, argv));
@@ -136,10 +136,10 @@ namespace vcml {
     setup::~setup() {
         s_instance = nullptr;
 
-        for (auto provider : m_brokers)
-            delete provider;
-        for (auto logger : m_loggers)
-            delete logger;
+        for (auto broker : m_brokers)
+            delete broker;
+        for (auto pub : m_publishers)
+            delete pub;
     }
 
     setup* setup::instance() {
@@ -158,11 +158,11 @@ namespace vcml {
 
         try {
             res = sc_core::sc_elab_and_sim(argc, argv);
-        } catch (vcml::report& r) {
-            vcml::logger::log(r);
+        } catch (vcml::report& rep) {
+            log.error(rep);
             res = EXIT_FAILURE;
-        } catch (std::exception& e) {
-            vcml::log_error("%s", e.what());
+        } catch (std::exception& ex) {
+            log.error(ex);
             res = EXIT_FAILURE;
         }
 
@@ -175,6 +175,7 @@ namespace vcml {
     }
 
 }
+
 extern "C" int main(int argc, char** argv) __attribute__ ((weak));
 extern "C" int main(int argc, char** argv) {
     return vcml::main(argc, argv);

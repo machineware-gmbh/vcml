@@ -32,6 +32,7 @@
 #include "vcml/common/aio.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/logging/publisher.h"
 #include "vcml/logging/log_file.h"
 #include "vcml/logging/log_stream.h"
 #include "vcml/logging/log_term.h"

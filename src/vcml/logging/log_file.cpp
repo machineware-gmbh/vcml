@@ -21,7 +21,7 @@
 namespace vcml {
 
     log_file::log_file(const string& filename):
-        logger(LOG_ERROR, LOG_DEBUG),
+        publisher(LOG_ERROR, LOG_DEBUG),
         m_file(filename.c_str(), std::ios_base::out) {
         // nothing to do
     }
@@ -30,7 +30,7 @@ namespace vcml {
         // nothing to do
     }
 
-    void log_file::write_log(const logmsg& msg) {
+    void log_file::publish(const logmsg& msg) {
         m_file << msg << std::endl;
     }
 

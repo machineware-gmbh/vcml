@@ -24,6 +24,7 @@
 #include "vcml/common/thctl.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/logging/publisher.h"
 #include "vcml/logging/log_term.h"
 #include "vcml/logging/log_file.h"
 #include "vcml/logging/log_stream.h"
@@ -43,13 +44,13 @@ namespace vcml {
         bool m_log_stdout;
         bool m_trace_stdout;
 
-        vector<string>  m_args;
-        vector<string>  m_log_files;
-        vector<string>  m_trace_files;
-        vector<string>  m_config_files;
+        vector<string> m_args;
+        vector<string> m_log_files;
+        vector<string> m_trace_files;
+        vector<string> m_config_files;
 
-        vector<logger*> m_loggers;
-        vector<broker*> m_brokers;
+        vector<publisher*> m_publishers;
+        vector<broker*>    m_brokers;
 
         bool parse_command_line(int argc, char** argv);
 

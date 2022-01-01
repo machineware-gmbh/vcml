@@ -20,11 +20,11 @@
 #define VCML_LOG_TERM_H
 
 #include "vcml/common/types.h"
-#include "vcml/logging/logger.h"
+#include "vcml/logging/publisher.h"
 
 namespace vcml {
 
-    class log_term: public logger
+    class log_term: public publisher
     {
     private:
         bool     m_use_colors;
@@ -37,7 +37,7 @@ namespace vcml {
         log_term(bool use_cerr = true);
         virtual ~log_term();
 
-        virtual void write_log(const logmsg& msg) override;
+        virtual void publish(const logmsg& msg) override;
 
         static const char* colors[NUM_LOG_LEVELS];
         static const char* reset;

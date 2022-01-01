@@ -58,7 +58,8 @@ namespace vcml {
         sc_module(nm),
         m_commands(),
         trace_errors("trace_errors", false),
-        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()) {
+        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()),
+        log(this) {
         register_command("clist", 0, this, &module::cmd_clist,
                          "returns a list of supported commands");
         register_command("cinfo", 1, this, &module::cmd_cinfo,

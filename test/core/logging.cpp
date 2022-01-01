@@ -52,69 +52,67 @@ MATCHER(match_source, "checks if log message source information makes sense") {
            arg.source.line != -1;
 }
 
-class mock_logger: public vcml::logger
+class mock_publisher: public vcml::publisher
 {
 public:
-    mock_logger(): vcml::logger(vcml::LOG_ERROR, vcml::LOG_INFO) {}
-    MOCK_METHOD(void, write_log, (const vcml::logmsg&), (override));
+    mock_publisher(): vcml::publisher(vcml::LOG_ERROR, vcml::LOG_INFO) {}
+    MOCK_METHOD(void, publish, (const vcml::logmsg&), (override));
 };
 
-TEST(logging, levels) {
+TEST(publisher, levels) {
     vcml::log_term cons;
-    mock_logger logger;
-    EXPECT_CALL(logger, write_log(match_level(vcml::LOG_INFO))).Times(1);
+    mock_publisher publisher;
+    EXPECT_CALL(publisher, publish(match_level(vcml::LOG_INFO))).Times(1);
     vcml::log_info("this is an informational message");
 
-    logger.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
+    publisher.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
     cons.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
-    EXPECT_TRUE(vcml::logger::would_log(vcml::LOG_ERROR));
-    EXPECT_TRUE(vcml::logger::would_log(vcml::LOG_WARN));
-    EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_INFO));
-    EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_DEBUG));
-    EXPECT_CALL(logger, write_log(_)).Times(0);
+    EXPECT_TRUE(vcml::publisher::would_publish(vcml::LOG_ERROR));
+    EXPECT_TRUE(vcml::publisher::would_publish(vcml::LOG_WARN));
+    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_INFO));
+    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_DEBUG));
+    EXPECT_CALL(publisher, publish(_)).Times(0);
     vcml::log_info("this is an informational message");
 
-    EXPECT_CALL(logger, write_log(match_level(vcml::LOG_ERROR))).Times(1);
-    EXPECT_CALL(logger, write_log(match_level(vcml::LOG_WARN))).Times(1);
+    EXPECT_CALL(publisher, publish(match_level(vcml::LOG_ERROR))).Times(1);
+    EXPECT_CALL(publisher, publish(match_level(vcml::LOG_WARN))).Times(1);
     vcml::log_error("this is an error message");
     vcml::log_warn("this is a warning message");
 
-    logger.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
+    publisher.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
     cons.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
-    EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_ERROR));
-    EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_WARN));
-    EXPECT_FALSE(vcml::logger::would_log(vcml::LOG_INFO));
-    EXPECT_TRUE(vcml::logger::would_log(vcml::LOG_DEBUG));
-    EXPECT_CALL(logger, write_log(match_level(vcml::LOG_DEBUG))).Times(1);
+    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_ERROR));
+    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_WARN));
+    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_INFO));
+    EXPECT_TRUE(vcml::publisher::would_publish(vcml::LOG_DEBUG));
+    EXPECT_CALL(publisher, publish(match_level(vcml::LOG_DEBUG))).Times(1);
     vcml::log_debug("this is a debug message");
     vcml::log_info("this is an informational message");
     vcml::log_error("this is an error message");
     vcml::log_warn("this is a warning message");
 
-    EXPECT_CALL(logger, write_log(match_lines(3))).Times(1);
+    EXPECT_CALL(publisher, publish(match_lines(3))).Times(1);
     vcml::log_debug("multi\nline\nmessage");
 
-#ifndef VCML_OMIT_LOGGING_SOURCE
-    EXPECT_CALL(logger, write_log(match_source())).Times(1);
+    EXPECT_CALL(publisher, publish(match_source())).Times(1);
     vcml::log_debug("does this message hold source info?");
-#endif
 }
 
 TEST(logging, component) {
     vcml::log_term cons;
-    mock_logger logger;
+    mock_publisher publisher;
 
     cons.set_level(vcml::LOG_DEBUG);
-    logger.set_level(vcml::LOG_DEBUG);
+    publisher.set_level(vcml::LOG_DEBUG);
 
     vcml::component comp("mock");
     comp.loglvl = vcml::LOG_WARN;
 
-    EXPECT_CALL(logger, write_log(match_level(vcml::LOG_WARN))).Times(1);
+    EXPECT_CALL(publisher, publish(match_level(vcml::LOG_WARN))).Times(1);
     comp.log_warn("this is a warning message");
     comp.log_debug("this debug message should be filtered out");
 
-    EXPECT_CALL(logger, write_log(match_sender(comp.name()))).Times(4);
+    EXPECT_CALL(publisher, publish(match_sender(comp.name()))).Times(4);
     comp.loglvl = vcml::LOG_DEBUG;
     comp.log_debug("debug message");
     comp.log_info("info message");
@@ -137,10 +135,10 @@ public:
 
 TEST(logging, hierarchy) {
     vcml::log_term cons;
-    mock_logger logger;
+    mock_publisher publisher;
 
     cons.set_level(vcml::LOG_DEBUG);
-    logger.set_level(vcml::LOG_DEBUG);
+    publisher.set_level(vcml::LOG_DEBUG);
 
     vcml::broker broker("test");
     broker.define("mock1.loglvl", "debug");
@@ -148,8 +146,8 @@ TEST(logging, hierarchy) {
     mock_component comp("mock1");
     EXPECT_EQ(comp.loglvl.get(), vcml::LOG_DEBUG);
     EXPECT_EQ(comp.subcomp.loglvl.get(), vcml::LOG_DEBUG);
-    EXPECT_CALL(logger, write_log(match_sender(comp.name()))).Times(1);
-    EXPECT_CALL(logger, write_log(match_sender(comp.subcomp.name()))).Times(1);
+    EXPECT_CALL(publisher, publish(match_sender(comp.name()))).Times(1);
+    EXPECT_CALL(publisher, publish(match_sender(comp.subcomp.name()))).Times(1);
     comp.log_debug("top level debug message");
     comp.subcomp.log_debug("sub level debug message");
 
@@ -160,8 +158,8 @@ TEST(logging, hierarchy) {
 
 TEST(logging, reporting) {
     vcml::log_term cons;
-    mock_logger logger;
-    vcml::report rep("This is an error message", __FILE__, __LINE__);
-    EXPECT_CALL(logger, write_log(match_level(vcml::LOG_ERROR))).Times(1);
-    vcml::logger::log(rep);
+    mock_publisher publisher;
+    vcml::report rep("This is an error report", __FILE__, __LINE__);
+    EXPECT_CALL(publisher, publish(match_level(vcml::LOG_ERROR))).Times(1);
+    vcml::log.error(rep);
 }

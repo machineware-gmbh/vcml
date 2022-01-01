@@ -21,7 +21,7 @@
 namespace vcml {
 
     ostream& operator << (ostream& os, const irq_payload& irq) {
-        os << (irq.active ? "+" : "-") << "IRQ";
+        os << "IRQ" << (irq.active ? "+" : "-");
         if (irq.vector != IRQ_NO_VECTOR)
             os << ":" << irq.vector;
         return os;

@@ -46,6 +46,8 @@ namespace vcml {
         property<bool> trace_errors;
         property<log_level> loglvl;
 
+        logger log;
+
         module() = delete;
         module(const module&) = delete;
         module(const sc_module_name& nm);
@@ -68,32 +70,6 @@ namespace vcml {
 
         command_base* get_command(const string& name);
         vector<command_base*> get_commands() const;
-
-#ifndef VCML_OMIT_LOGGING_SOURCE
-        void log_tagged(log_level lvl, const char* file, int line,
-                        const char* format, ...) const VCML_DECL_PRINTF(5, 6) {
-            if (lvl <= loglvl && logger::would_log(lvl)) {
-                va_list args; va_start(args, format);
-                logger::publish(lvl, name(), vmkstr(format, args), file, line);
-                va_end(args);
-            }
-        }
-#else
-#define VCML_GEN_LOGFN(func, lvl)                                             \
-        void func(const char* format, ...) const VCML_DECL_PRINTF(2, 3) {     \
-            if (lvl <= loglvl && logger::would_log(lvl)) {                    \
-                va_list args; va_start(args, format);                         \
-                logger::publish(lvl, name(), vmkstr(format, args));           \
-                va_end(args);                                                 \
-            }                                                                 \
-        }
-
-        VCML_GEN_LOGFN(log_error, ::vcml::LOG_ERROR)
-        VCML_GEN_LOGFN(log_warn, ::vcml::LOG_WARN)
-        VCML_GEN_LOGFN(log_info, ::vcml::LOG_INFO)
-        VCML_GEN_LOGFN(log_debug, ::vcml::LOG_DEBUG)
-#undef VCML_GEN_LOGFN
-#endif
 
         template <typename PORT, typename PAYLOAD>
         void trace(trace_direction dir, const PORT& port, const PAYLOAD& tx,
@@ -136,7 +112,7 @@ namespace vcml {
     template <typename PORT, typename PAYLOAD>
     inline void module::trace(trace_direction dir, const PORT& port,
                               const PAYLOAD& tx, const sc_time& dt) {
-        if (loglvl < LOG_TRACE || !logger::would_log(LOG_TRACE))
+        if (loglvl < LOG_TRACE || !publisher::would_publish(LOG_TRACE))
             return;
 
         if (trace_errors) {
@@ -146,7 +122,7 @@ namespace vcml {
             dir = (dir != TRACE_BW) ? dir : TRACE_BW_NOINDENT;
         }
 
-        logger::trace(dir, port, tx, dt);
+        publisher::trace(dir, port, tx, dt);
     }
 
     template <typename PORT, typename PAYLOAD>

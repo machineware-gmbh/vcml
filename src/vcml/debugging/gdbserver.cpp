@@ -585,10 +585,10 @@ namespace vcml { namespace debugging {
             handler func = find_handler(command.c_str());
             return (this->*func)(command.c_str());
         } catch (report& rep) {
-            vcml::logger::log(rep);
+            log.warn(rep);
             return ERR_INTERNAL;
         } catch (std::exception& ex) {
-            log_warn("%s", ex.what());
+            log.warn(ex);
             return ERR_INTERNAL;
         }
     }

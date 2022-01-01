@@ -145,9 +145,10 @@ namespace vcml {
 
         return bytes;
     } catch (report& rep) {
-        logger::log(rep);
+        m_parent->log.error(rep);
         throw;
     } catch (std::exception& ex) {
+        m_parent->log.error(ex);
         throw;
     }
 

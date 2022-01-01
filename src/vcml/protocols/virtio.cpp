@@ -128,7 +128,7 @@ namespace vcml {
     }
 
     virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi):
-        m_name(),
+        sc_object(mkstr("VQ%u", desc.id).c_str()),
         id(desc.id),
         limit(desc.limit),
         size(desc.size),
@@ -139,9 +139,9 @@ namespace vcml {
         notify(false),
         vector(VIRTIO_NO_VECTOR),
         dmi(dmi),
-        parent(hierarchy_search<module>()) {
+        parent(hierarchy_search<module>()),
+        log(this) {
         VCML_ERROR_ON(!parent, "virtqueue created outside module");
-        m_name = mkstr("%s.VQ%u", parent->name(), id);
     }
 
     virtqueue::~virtqueue() {

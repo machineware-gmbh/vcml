@@ -21,7 +21,7 @@
 namespace vcml {
 
     log_term::log_term(bool use_cerr):
-        logger(LOG_ERROR, LOG_DEBUG),
+        publisher(LOG_ERROR, LOG_DEBUG),
         m_use_colors(isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)),
         m_os(use_cerr ? std::cerr : std::cout) {
         // nothing to do
@@ -31,7 +31,7 @@ namespace vcml {
         // nothing to do
     }
 
-    void log_term::write_log(const logmsg& msg) {
+    void log_term::publish(const logmsg& msg) {
         if (m_use_colors)
             m_os << colors[msg.level];
         m_os << msg;

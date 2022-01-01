@@ -50,13 +50,14 @@ namespace vcml { namespace debugging {
 
     rspserver::rspserver(u16 port):
         m_echo(false),
-        m_port(),
         m_sock(port),
+        m_port(m_sock.port()),
+        m_name(mkstr("rsp_%hu", m_port)),
         m_running(false),
         m_mutex(),
         m_thread(),
-        m_handlers() {
-        m_port = m_sock.port();
+        m_handlers(),
+        log(m_name) {
     }
 
     rspserver::~rspserver() {
@@ -192,8 +193,7 @@ namespace vcml { namespace debugging {
 
     void rspserver::run_async() {
         m_thread = thread(std::bind(&rspserver::run, this));
-        stringstream ss; ss << "rsp_" << m_port;
-        set_thread_name(m_thread, ss.str());
+        set_thread_name(m_thread, m_name);
     }
 
     void rspserver::run() {
@@ -211,7 +211,7 @@ namespace vcml { namespace debugging {
                 break;
             }
         } catch (vcml::report& r) {
-            logger::log(r);
+            log.error(r);
         }
     }
 
@@ -238,10 +238,10 @@ namespace vcml { namespace debugging {
                 return ""; // empty response means command not supported
             return m_handlers[op](command.c_str());
         } catch (report& rep) {
-            logger::log(rep);
+            log.error(rep);
             return ERR_INTERNAL;
         } catch (std::exception& ex) {
-            log_warn("%s", ex.what());
+            log.error(ex);
             return ERR_INTERNAL;
         }
     }
