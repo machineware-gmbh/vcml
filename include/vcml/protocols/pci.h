@@ -377,6 +377,10 @@ namespace vcml {
         void stub();
     };
 
+    constexpr size_t pci_devno(size_t dev, size_t fn = 0) {
+        return (dev & 31u) << 3 | (fn & 7u);
+    }
+
     template <const size_t MAX = SIZE_MAX>
     using pci_initiator_socket_array = socket_array<pci_initiator_socket, MAX>;
 
