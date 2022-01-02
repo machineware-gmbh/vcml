@@ -20,14 +20,14 @@
 
 namespace vcml { namespace generic {
 
-    static void pci_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
+    static void cam_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
         offset = addr & 0xff;
         devfn = (addr >> 8) & 0xff;
         bus = (addr >> 16) & 0xff;
     }
 
-    static void pcie_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
-        offset = addr & 0xff;
+    static void ecam_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
+        offset = addr & 0xfff;
         devfn = (addr >> 12) & 0xff;
         bus = (addr >> 20) & 0x1ff;
     }
@@ -159,9 +159,9 @@ namespace vcml { namespace generic {
         u64 addr = tx.addr;
 
         if (pcie)
-            pcie_decode_cfg(addr, bus, devno, offset);
+            ecam_decode_cfg(addr, bus, devno, offset);
         else
-            pci_decode_cfg(addr, bus, devno, offset);
+            cam_decode_cfg(addr, bus, devno, offset);
 
         // not an error to access nonexistent devices or buses
         if (bus != 0 || !PCI_OUT.exists(devno)) {
