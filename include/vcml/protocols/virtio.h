@@ -139,6 +139,7 @@ namespace vcml {
     inline void virtio_device_desc::reset() {
         device_id = 0;
         vendor_id = 0;
+        pci_class = PCI_CLASS_OTHERS;
         virtqueues.clear();
     }
 

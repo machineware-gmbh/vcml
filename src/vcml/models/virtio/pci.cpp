@@ -513,15 +513,15 @@ namespace vcml { namespace virtio {
 
         pci_declare_bar(virtio_bar, 0x4000, PCI_BAR_MMIO | PCI_BAR_64);
 
-        if (msix_vectors) {
-            pci_declare_bar(msix_bar, 0x1000, PCI_BAR_MMIO);
-            pci_declare_msix_cap(msix_bar, msix_vectors, 0);
-        }
-
         virtio_declare_common_cap(virtio_bar, 0x0000, 0x1000);
         virtio_declare_notify_cap(virtio_bar, 0x1000, 0x1000, 0);
         virtio_declare_isr_cap   (virtio_bar, 0x2000, 0x1000);
         virtio_declare_device_cap(virtio_bar, 0x3000, 0x1000);
+
+        if (msix_vectors) {
+            pci_declare_bar(msix_bar, 0x1000, PCI_BAR_MMIO);
+            pci_declare_msix_cap(msix_bar, msix_vectors, 0);
+        }
     }
 
     pci::~pci() {
@@ -544,6 +544,8 @@ namespace vcml { namespace virtio {
 
         m_drv_features = 0ull;
         m_dev_features = 0ull;
+
+        m_device.reset();
 
         VIRTIO_OUT->identify(m_device);
         VIRTIO_OUT->read_features(m_dev_features);
