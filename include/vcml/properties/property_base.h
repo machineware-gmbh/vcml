@@ -30,10 +30,11 @@ namespace vcml {
     {
     private:
         string     m_base;
-        sc_module* m_parent;
+        sc_object* m_parent;
 
     public:
-        property_base(const char* name, sc_module* parent = nullptr);
+        property_base(const char* name);
+        property_base(sc_object* parent, const char* name);
         virtual ~property_base();
         virtual const char* kind() const { return "vcml::property"; }
 
@@ -41,8 +42,8 @@ namespace vcml {
         property_base(const property_base&) = delete;
         property_base& operator = (const property_base&) = delete;
 
-        const char* basename()   const { return m_base.c_str(); }
-        sc_module*  get_module() const { return m_parent; }
+        const char* basename() const { return m_base.c_str(); }
+        sc_object*  parent()   const { return m_parent; }
 
         virtual void reset() = 0;
 

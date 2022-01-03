@@ -41,7 +41,8 @@ namespace vcml {
         mutable string m_str;
 
     public:
-        property(const char* nm, const T& def = T(), sc_module* mod = nullptr);
+        property(const char* nm, const T& def = T());
+        property(sc_object* parent, const char* nm, const T& def = T());
         virtual ~property();
         VCML_KIND(property);
 
@@ -99,8 +100,18 @@ namespace vcml {
     };
 
     template <typename T, const unsigned int N>
-    property<T, N>::property(const char* nm, const T& def, sc_module* m):
-        property_base(nm, m),
+    property<T, N>::property(const char* nm, const T& def):
+        property_base(nm),
+        m_value(),
+        m_defval(def),
+        m_inited(false),
+        m_str("") {
+        property<T, N>::reset();
+    }
+
+    template <typename T, const unsigned int N>
+    property<T, N>::property(sc_object* parent, const char* nm, const T& def):
+        property_base(parent, nm),
         m_value(),
         m_defval(def),
         m_inited(false),

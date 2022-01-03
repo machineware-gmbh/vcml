@@ -20,29 +20,25 @@
 
 namespace vcml {
 
-    static sc_module* find_parent(sc_module* parent) {
-        if (parent)
-            return parent;
-
-        return sc_get_curr_simcontext()->hierarchy_curr();
-    }
-
-    static string gen_hierarchy_name(const char* nm, sc_module* parent) {
-        parent = find_parent(parent);
-        if (parent == nullptr)
-            return nm;
-
+    static string gen_hierarchy_name(const char* nm, sc_object* parent) {
         stringstream ss;
-        ss << parent->name() << SC_HIERARCHY_CHAR << nm;
-        return ss.str();
 
+        if (parent)
+            ss << parent->name() << SC_HIERARCHY_CHAR;
+
+        ss << nm;
+        return ss.str();
     }
 
-    property_base::property_base(const char* nm, sc_module* parent):
+    property_base::property_base(const char* nm):
+        property_base(hierarchy_top(), nm) {
+    }
+
+    property_base::property_base(sc_object* parent, const char* nm):
         sc_attr_base(gen_hierarchy_name(nm, parent)),
         m_base(nm),
-        m_parent(find_parent(parent)) {
-        VCML_ERROR_ON(!m_parent, "property '%s' declared outside module", nm);
+        m_parent(parent) {
+        VCML_ERROR_ON(!m_parent, "property '%s' has no parent object", nm);
         m_parent->add_attribute(*this);
     }
 
