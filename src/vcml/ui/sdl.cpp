@@ -496,8 +496,8 @@ namespace vcml { namespace ui {
             };
 
             auto it = std::find_if(m_clients.begin(), m_clients.end(), finder);
-            if (it ==  m_clients.end())
-                VCML_ERROR("cannot remove unknown display %s", disp->name());
+            if (it == m_clients.end())
+                return;
 
             it->disp = nullptr;
             m_attached--;
