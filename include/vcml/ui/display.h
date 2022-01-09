@@ -73,6 +73,7 @@ namespace vcml { namespace ui {
         virtual ~display();
 
         virtual void init(const fbmode& mode, u8* fbptr);
+        virtual void render(u32 x, u32 y, u32 w, u32 h);
         virtual void render();
         virtual void shutdown();
 

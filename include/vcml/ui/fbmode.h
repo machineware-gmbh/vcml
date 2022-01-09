@@ -20,6 +20,7 @@
 #define VCML_UI_FBMODE_H
 
 #include "vcml/common/types.h"
+#include "vcml/common/strings.h"
 
 namespace vcml { namespace ui {
 
@@ -56,15 +57,26 @@ namespace vcml { namespace ui {
     struct fbmode {
         u32 resx;
         u32 resy;
-        u64 size;
+
+        size_t bpp;
+        size_t stride;
+        size_t size;
+
         pixelformat format;
+
         color_channel a;
         color_channel r;
         color_channel g;
         color_channel b;
+
         endianess endian;
 
         bool is_valid() const { return size > 0; }
+
+        bool operator == (const fbmode& other) const;
+        bool operator != (const fbmode& other) const;
+
+        string to_string() const;
 
         static fbmode a8r8g8b8(u32 width, u32 height);
         static fbmode x8r8g8b8(u32 width, u32 height);
@@ -83,6 +95,17 @@ namespace vcml { namespace ui {
 
         static fbmode gray8(u32 width, u32 height);
     };
+
+    inline bool fbmode::operator == (const fbmode& other) const {
+        return resx == other.resx &&  resy == other.resy &&
+               format == other.format && endian == other.endian;
+    }
+
+    inline bool fbmode::operator != (const fbmode& other) const {
+        return !operator == (other);
+    }
+
+    ostream& operator << (ostream& os, const fbmode& mode);
 
 }}
 

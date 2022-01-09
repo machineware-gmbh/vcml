@@ -52,6 +52,10 @@ namespace vcml { namespace ui {
             m_fb = m_nullfb = new u8[mode.size]();
     }
 
+    void display::render(u32 x, u32 y, u32 w, u32 h) {
+        // nothing to do
+    }
+
     void display::render() {
         // nothing to do
     }

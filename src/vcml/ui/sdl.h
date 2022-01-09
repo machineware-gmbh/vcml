@@ -93,6 +93,7 @@ namespace vcml { namespace ui {
         virtual ~sdl_display();
 
         virtual void init(const fbmode& mode, u8* fb) override;
+        virtual void render(u32 x, u32 y, u32 w, u32 h) override;
         virtual void render() override;
         virtual void shutdown() override;
     };

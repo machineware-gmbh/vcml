@@ -526,6 +526,10 @@ namespace vcml { namespace ui {
         m_owner.register_display(this);
     }
 
+    void sdl_display::render(u32 x, u32 y, u32 w, u32 h) {
+        // nothing to do
+    }
+
     void sdl_display::render() {
         // nothing to do
     }

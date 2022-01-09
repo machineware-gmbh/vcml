@@ -40,6 +40,8 @@ namespace vcml { namespace ui {
     private:
         u16 m_port;
         u32 m_buttons;
+        u32 m_ptr_x;
+        u32 m_ptr_y;
         atomic<bool> m_running;
         mutex m_mutex;
         rfbScreenInfo* m_screen;
@@ -54,6 +56,7 @@ namespace vcml { namespace ui {
         virtual ~vnc();
 
         virtual void init(const fbmode& mode, u8* fb) override;
+        virtual void render(u32 x, u32 y, u32 w, u32 h) override;
         virtual void render() override;
         virtual void shutdown() override;
 

@@ -235,10 +235,6 @@ namespace vcml { namespace ui {
 
     void vnc::run() {
         const fbmode& fbm = mode();
-        u8 thebits = fbm.a.offset + fbm.a.size;
-        thebits = max<u8>(thebits, fbm.r.size + fbm.r.offset);
-        thebits = max<u8>(thebits, fbm.g.size + fbm.g.offset);
-        thebits = max<u8>(thebits, fbm.b.size + fbm.b.offset);
 
         u32 samples = 0;
         if (fbm.a.size > 0)
@@ -251,7 +247,7 @@ namespace vcml { namespace ui {
             samples++;
 
         m_screen = rfbGetScreen(nullptr, nullptr, fbm.resx, fbm.resy,
-                                fbm.r.size, samples, thebits / 8);
+                                fbm.r.size, samples, fbm.bpp);
 
         m_screen->frameBuffer = (char*)framebuffer();
         m_screen->desktopName = name();
@@ -262,7 +258,7 @@ namespace vcml { namespace ui {
         rfbInitServer(m_screen);
 
         rfbNewFramebuffer(m_screen, m_screen->frameBuffer, fbm.resx, fbm.resy,
-                          fbm.r.size, samples, thebits / 8);
+                          fbm.r.size, samples, fbm.bpp);
 
         m_screen->serverFormat.redShift   = fbm.r.offset;
         m_screen->serverFormat.greenShift = fbm.g.offset;
@@ -272,7 +268,7 @@ namespace vcml { namespace ui {
         m_screen->serverFormat.greenMax = (1 << fbm.g.size) - 1;
         m_screen->serverFormat.blueMax  = (1 << fbm.b.size) - 1;
 
-        m_screen->serverFormat.bitsPerPixel = thebits;
+        m_screen->serverFormat.bitsPerPixel = fbm.bpp * 8;
         m_screen->serverFormat.bigEndian = fbm.endian == ENDIAN_BIG;
 
         log_debug("starting vnc server on port %d", m_screen->port);
@@ -290,7 +286,8 @@ namespace vcml { namespace ui {
         display("vnc", no),
         m_port(no), // vnc port = display number
         m_buttons(),
-
+        m_ptr_x(),
+        m_ptr_y(),
         m_running(false),
         m_mutex(),
         m_screen(),
@@ -313,10 +310,17 @@ namespace vcml { namespace ui {
         set_thread_name(m_thread, name());
     }
 
+    void vnc::render(u32 x, u32 y, u32 w, u32 h) {
+        if (x + w > resx())
+            w = resx() - x;
+        if (y + h > resy())
+            h = resy() - y;
+
+        rfbMarkRectAsModified(m_screen, x, y, x + w, y + h);
+    }
+
     void vnc::render() {
-        int x2 = resx() - 1;
-        int y2 = resy() - 1;
-        rfbMarkRectAsModified(m_screen, 0, 0, x2, y2);
+        render(0, 0, resx(), resy());
     }
 
     void vnc::shutdown() {
@@ -334,17 +338,27 @@ namespace vcml { namespace ui {
             notify_key(symbol, down);
     }
 
+    enum vnc_buttons : u32 {
+        VNC_BTN_LEFT   = 1 << 0,
+        VNC_BTN_MIDDLE = 1 << 1,
+        VNC_BTN_RIGHT  = 1 << 2,
+    };
+
     void vnc::ptr_event(u32 mask, u32 x, u32 y) {
         u32 change = mask ^ m_buttons;
-        if (change & BUTTON_LEFT)
-            notify_btn(BUTTON_LEFT, mask & BUTTON_LEFT);
-        if (change & BUTTON_MIDDLE)
-            notify_btn(BUTTON_MIDDLE, mask & BUTTON_MIDDLE);
-        if (change & BUTTON_RIGHT)
-            notify_btn(BUTTON_RIGHT, mask & BUTTON_RIGHT);
+        if (change & VNC_BTN_LEFT)
+            notify_btn(BUTTON_LEFT, mask & VNC_BTN_LEFT);
+        if (change & VNC_BTN_MIDDLE)
+            notify_btn(BUTTON_MIDDLE, mask & VNC_BTN_MIDDLE);
+        if (change & VNC_BTN_RIGHT)
+            notify_btn(BUTTON_RIGHT, mask & VNC_BTN_RIGHT);
         m_buttons = mask;
 
-        display::notify_pos(x, y);
+        if (m_ptr_x != x || m_ptr_y != y) {
+            display::notify_pos(x, y);
+            m_ptr_x = x;
+            m_ptr_y = y;
+        }
     }
 
     display* vnc::create(u32 nr) {

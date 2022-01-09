@@ -58,6 +58,11 @@ namespace vcml { namespace ui {
             disp->init(mode, fbptr);
     }
 
+    void console::render(u32 x, u32 y, u32 w, u32 h) {
+        for (auto& disp : m_displays)
+            disp->render(x, y, w, h);
+    }
+
     void console::render() {
         for (auto& disp : m_displays)
             disp->render();

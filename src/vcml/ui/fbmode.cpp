@@ -40,12 +40,21 @@ namespace vcml { namespace ui {
         }
     }
 
+    string fbmode::to_string() const {
+        const char* fmt = pixelformat_to_str(format);
+        const char* end = endian == ENDIAN_BIG ? "BE" : "LE";
+        return mkstr("%ux%u %s %s", resx, resy, fmt, end);
+    }
+
     fbmode fbmode::a8r8g8b8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_A8R8G8B8;
 
@@ -64,17 +73,19 @@ namespace vcml { namespace ui {
     fbmode fbmode::x8r8g8b8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_X8R8G8B8;
 
         mode.a.size = 0;
-        mode.a.offset = 0;
-
         mode.r.size = mode.g.size = mode.b.size = 8;
 
+        mode.a.offset = 24;
         mode.r.offset = 16;
         mode.g.offset =  8;
         mode.b.offset =  0;
@@ -87,9 +98,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::r8g8b8a8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_R8G8B8A8;
 
@@ -108,20 +122,22 @@ namespace vcml { namespace ui {
     fbmode fbmode::r8g8b8x8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_X8R8G8B8;
 
         mode.a.size = 0;
-        mode.a.offset = 0;
-
         mode.r.size = mode.g.size = mode.b.size = 8;
 
         mode.r.offset = 24;
         mode.g.offset = 16;
         mode.b.offset =  8;
+        mode.a.offset =  0;
 
         mode.endian = host_endian();
 
@@ -131,9 +147,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::a8b8g8r8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_A8B8G8R8;
 
@@ -152,17 +171,19 @@ namespace vcml { namespace ui {
     fbmode fbmode::x8b8g8r8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_B8G8R8X8;
 
         mode.a.size = 0;
-        mode.a.offset =  0;
-
         mode.r.size = mode.g.size = mode.b.size = 8;
 
+        mode.a.offset = 24;
         mode.b.offset = 16;
         mode.g.offset =  8;
         mode.r.offset =  0;
@@ -175,9 +196,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::b8g8r8a8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_B8G8R8A8;
 
@@ -196,14 +220,17 @@ namespace vcml { namespace ui {
     fbmode fbmode::b8g8r8x8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 4ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 4ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_B8G8R8X8;
 
         mode.a.size = 0;
-        mode.a.offset =  0;
+        mode.a.offset = 0;
 
         mode.r.size = mode.g.size = mode.b.size = 8;
 
@@ -219,9 +246,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::r8g8b8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 3ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 3ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_R8G8B8;
 
@@ -242,9 +272,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::b8g8r8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 3ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 3ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_B8G8R8;
 
@@ -265,9 +298,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::r5g6b5(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 2ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 2ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_R5G6B5;
 
@@ -290,9 +326,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::b5g6r5(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 2ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 2ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_R5G6B5;
 
@@ -315,9 +354,12 @@ namespace vcml { namespace ui {
     fbmode fbmode::gray8(u32 width, u32 height) {
         fbmode mode;
 
-        mode.resx = width;
-        mode.resy = height;
-        mode.size = 1ul * width * height;
+        mode.resx   = width;
+        mode.resy   = height;
+
+        mode.bpp    = 1ul;
+        mode.stride = mode.bpp * width;
+        mode.size   = mode.stride * height;
 
         mode.format = FORMAT_GRAY8;
 
@@ -335,6 +377,10 @@ namespace vcml { namespace ui {
         mode.endian = host_endian();
 
         return mode;
+    }
+
+    ostream& operator << (ostream& os, const fbmode& mode) {
+        return os << mode.to_string();
     }
 
 }}

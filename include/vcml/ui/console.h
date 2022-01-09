@@ -56,6 +56,7 @@ namespace vcml { namespace ui {
         void notify(pointer& ptr);
 
         void setup(const fbmode& mode, u8* fbptr);
+        void render(u32 x, u32 y, u32 w, u32 h);
         void render();
         void shutdown();
     };
