@@ -70,10 +70,9 @@ namespace vcml { namespace virtio {
             }
 
             if (touchpad) {
-                events.set(BTN_TOUCH);
-                events.set(BTN_TOOL_FINGER);
-                events.set(BTN_TOOL_DOUBLETAP);
-                events.set(BTN_TOOL_TRIPLETAP);
+                events.set(BTN_LEFT);
+                events.set(BTN_RIGHT);
+                events.set(BTN_MIDDLE);
             }
 
             break;
@@ -103,19 +102,16 @@ namespace vcml { namespace virtio {
     }
 
     void input::config_update_absinfo() {
-        if (!m_console.has_display() || !touchpad)
-            return;
-
         switch (m_config.subsel) {
         case ABS_X:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = m_console.resx() - 1;
+            m_config.u.abs.max  = xmax;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
         case ABS_Y:
             m_config.u.abs.min  = 0;
-            m_config.u.abs.max  = m_console.resy() - 1;
+            m_config.u.abs.max  = ymax;
             m_config.size = sizeof(m_config.u.abs);
             break;
 
@@ -174,8 +170,12 @@ namespace vcml { namespace virtio {
                 push_key(event.key.code, event.key.state);
                 push_sync();
             } else if (event.is_ptr()) {
-                push_abs(ABS_X, event.ptr.x);
-                push_abs(ABS_Y, event.ptr.y);
+                size_t x = (event.ptr.x * xmax) / m_console.resx();
+                size_t y = (event.ptr.y * ymax) / m_console.resy();
+                VCML_ERROR_ON(x != (u32)x, "pointer out of range");
+                VCML_ERROR_ON(y != (u32)y, "pointer out of range");
+                push_abs(ABS_X, x);
+                push_abs(ABS_Y, y);
                 push_sync();
             }
         }
@@ -258,6 +258,8 @@ namespace vcml { namespace virtio {
         keyboard("keyboard", true),
         pollrate("pollrate", 1000),
         keymap("keymap", "us"),
+        xmax("xmax", 0x7fff),
+        ymax("ymax", 0x7fff),
         VIRTIO_IN("VIRTIO_IN") {
 
         m_keyboard.set_layout(keymap);

@@ -187,9 +187,9 @@ namespace vcml { namespace ui {
         u32 val = down ? VCML_KEY_DOWN : VCML_KEY_UP;
 
         switch (button) {
-        case BUTTON_LEFT: push_key(BTN_TOOL_FINGER, val); break;
-        case BUTTON_RIGHT: push_key(BTN_TOOL_DOUBLETAP, val); break;
-        case BUTTON_MIDDLE: push_key(BTN_TOOL_TRIPLETAP, val); break;
+        case BUTTON_LEFT: push_key(BTN_LEFT, val); break;
+        case BUTTON_RIGHT: push_key(BTN_RIGHT, val); break;
+        case BUTTON_MIDDLE: push_key(BTN_MIDDLE, val); break;
         default:
             break;
         }

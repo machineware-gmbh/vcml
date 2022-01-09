@@ -129,12 +129,15 @@ namespace vcml { namespace virtio {
         virtual bool write_config(const range& addr, const void* ptr) override;
 
     public:
-        property<bool> touchpad;
-        property<bool> keyboard;
+        const property<bool> touchpad;
+        const property<bool> keyboard;
 
-        property<u64> pollrate;
+        const property<u64> pollrate;
 
-        property<string> keymap;
+        const property<string> keymap;
+
+        const property<size_t> xmax;
+        const property<size_t> ymax;
 
         virtio_target_socket VIRTIO_IN;
 
