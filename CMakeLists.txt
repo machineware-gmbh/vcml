@@ -51,6 +51,7 @@ set(sources
     ${src}/vcml/common/bitops.cpp
     ${src}/vcml/common/socket.cpp
     ${src}/vcml/common/systemc.cpp
+    ${src}/vcml/common/library.cpp
     ${src}/vcml/logging/logger.cpp
     ${src}/vcml/logging/publisher.cpp
     ${src}/vcml/logging/log_file.cpp
@@ -159,6 +160,7 @@ target_link_libraries(vcml PUBLIC ${LIBELF_LIBRARIES})
 target_link_libraries(vcml PUBLIC -rdynamic)
 target_link_libraries(vcml PUBLIC -pthread)
 target_link_libraries(vcml PUBLIC -lrt)
+target_link_libraries(vcml PUBLIC -ldl)
 
 if(SDL2_FOUND)
     message(STATUS "Building with SDL support")
