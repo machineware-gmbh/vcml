@@ -42,24 +42,14 @@ namespace vcml {
         return true;
     }
 
-    log_level module::default_log_level() const {
-        sc_object* obj = get_parent_object();
-        while (obj != nullptr) {
-            module* comp = dynamic_cast<module*>(obj);
-            if (comp)
-                return comp->loglvl;
-            obj = obj->get_parent_object();
-        }
-
-        return LOG_INFO;
-    }
-
     module::module(const sc_module_name& nm):
         sc_module(nm),
         m_commands(),
         trace_errors("trace_errors", false),
-        loglvl("loglvl", trace_errors ? LOG_TRACE : default_log_level()),
+        loglvl("loglvl", trace_errors ? LOG_TRACE : LOG_INFO),
         log(this) {
+        trace_errors.inherit_default();
+        loglvl.inherit_default();
         register_command("clist", 0, this, &module::cmd_clist,
                          "returns a list of supported commands");
         register_command("cinfo", 1, this, &module::cmd_cinfo,

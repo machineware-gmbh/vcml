@@ -71,6 +71,8 @@ namespace vcml {
         const T& get_default() const;
         void set_default(const T& defval);
 
+        void inherit_default();
+
         operator T() const;
         T operator ~ () const;
 
@@ -130,7 +132,7 @@ namespace vcml {
             m_value[i] = m_defval;
 
         string init;
-        if (broker::init(name(), init))
+        if (broker::init(fullname(), init))
             str(init);
     }
 
@@ -232,6 +234,23 @@ namespace vcml {
         m_defval = defval;
         if (!m_inited)
             set(defval);
+    }
+
+    template <typename T, const unsigned int N>
+    inline void property<T,N>::inherit_default() {
+        if (m_inited)
+            return;
+
+        const property<T,N>* prop = nullptr;
+        const sc_object* obj = parent()->get_parent_object();
+        for (; obj && !prop; obj = obj->get_parent_object()) {
+            const auto* attr = obj->attr_cltn()[name()];
+            if (attr != nullptr)
+                prop = dynamic_cast<const property<T,N>*>(attr);
+        }
+
+        if (prop != nullptr)
+            set_default(prop->get());
     }
 
     template <typename T, const unsigned int N>

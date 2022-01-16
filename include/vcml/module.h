@@ -40,8 +40,6 @@ namespace vcml {
         bool cmd_cinfo(const vector<string>& args, ostream& os);
         bool cmd_abort(const vector<string>& args, ostream& os);
 
-        log_level default_log_level() const;
-
     public:
         property<bool> trace_errors;
         property<log_level> loglvl;
