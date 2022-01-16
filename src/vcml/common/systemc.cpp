@@ -34,7 +34,7 @@ namespace vcml {
         if (parent == nullptr)
             return nullptr;
 
-        return parent->get_attribute(name);
+        return parent->get_attribute(name.substr(pos + 1));
     }
 
     const sc_time SC_MAX_TIME = time_from_value(~0ull);

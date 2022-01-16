@@ -35,9 +35,9 @@ namespace vcml {
     }
 
     property_base::property_base(sc_object* parent, const char* nm):
-        sc_attr_base(gen_hierarchy_name(nm, parent)),
-        m_base(nm),
-        m_parent(parent) {
+        sc_attr_base(nm),
+        m_parent(parent),
+        m_fullname(gen_hierarchy_name(nm, parent)) {
         VCML_ERROR_ON(!m_parent, "property '%s' has no parent object", nm);
         m_parent->add_attribute(*this);
     }

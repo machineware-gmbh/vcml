@@ -29,8 +29,8 @@ namespace vcml {
     class property_base: public sc_attr_base
     {
     private:
-        string     m_base;
         sc_object* m_parent;
+        string     m_fullname;
 
     public:
         property_base(const char* name);
@@ -42,8 +42,9 @@ namespace vcml {
         property_base(const property_base&) = delete;
         property_base& operator = (const property_base&) = delete;
 
-        const char* basename() const { return m_base.c_str(); }
         sc_object*  parent()   const { return m_parent; }
+        const char* basename() const { return name().c_str(); }
+        const char* fullname() const { return m_fullname.c_str(); }
 
         virtual void reset() = 0;
 
