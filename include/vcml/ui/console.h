@@ -24,7 +24,7 @@
 #include "vcml/common/report.h"
 #include "vcml/common/thctl.h"
 
-#include "vcml/ui/fbmode.h"
+#include "vcml/ui/video.h"
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/input.h"
 #include "vcml/ui/display.h"
@@ -46,8 +46,8 @@ namespace vcml { namespace ui {
 
         bool has_display() const { return !m_displays.empty(); }
 
-        u32 resx() const;
-        u32 resy() const;
+        u32 xres() const;
+        u32 yres() const;
 
         console();
         virtual ~console();
@@ -55,18 +55,18 @@ namespace vcml { namespace ui {
         void notify(keyboard& kbd);
         void notify(pointer& ptr);
 
-        void setup(const fbmode& mode, u8* fbptr);
+        void setup(const videomode& mode, u8* fbptr);
         void render(u32 x, u32 y, u32 w, u32 h);
         void render();
         void shutdown();
     };
 
-    inline u32 console::resx() const {
-        return m_displays.empty() ? 0u : (*m_displays.begin())->resx();
+    inline u32 console::xres() const {
+        return m_displays.empty() ? 0u : (*m_displays.begin())->xres();
     }
 
-    inline u32 console::resy() const {
-        return m_displays.empty() ? 0u : (*m_displays.begin())->resy();
+    inline u32 console::yres() const {
+        return m_displays.empty() ? 0u : (*m_displays.begin())->yres();
     }
 
 }}

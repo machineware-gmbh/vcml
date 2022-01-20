@@ -34,7 +34,7 @@ namespace vcml { namespace generic {
     {
     private:
         ui::console m_console;
-        ui::fbmode m_mode;
+        ui::videomode m_mode;
         u8* m_vptr;
 
         void update();
@@ -42,11 +42,11 @@ namespace vcml { namespace generic {
     public:
         u8* vptr()   const { return m_vptr; }
         u64 size()   const { return m_mode.size; }
-        u64 stride() const { return size() / m_mode.resy; }
+        u64 stride() const { return size() / m_mode.yres; }
 
         property<u64> addr;
-        property<u32> resx;
-        property<u32> resy;
+        property<u32> xres;
+        property<u32> yres;
         property<string> format;
 
         tlm_initiator_socket OUT;

@@ -24,39 +24,39 @@
 using namespace vcml;
 using namespace vcml::ui;
 
-TEST(display, fbmode) {
+TEST(display, videomode) {
     u32 resx = 800;
     u32 resy = 600;
-    fbmode mode;
+    videomode mode;
 
-    mode = fbmode::a8r8g8b8(resx, resy);
-    EXPECT_EQ(mode.resx, resx);
-    EXPECT_EQ(mode.resy, resy);
+    mode = videomode::a8r8g8b8(resx, resy);
+    EXPECT_EQ(mode.xres, resx);
+    EXPECT_EQ(mode.yres, resy);
     EXPECT_EQ(mode.size, resx * resy * 4);
 
-    mode = fbmode::b8g8r8a8(resx, resy);
-    EXPECT_EQ(mode.resx, resx);
-    EXPECT_EQ(mode.resy, resy);
+    mode = videomode::b8g8r8a8(resx, resy);
+    EXPECT_EQ(mode.xres, resx);
+    EXPECT_EQ(mode.yres, resy);
     EXPECT_EQ(mode.size, resx * resy * 4);
 
-    mode = fbmode::r8g8b8(resx, resy);
-    EXPECT_EQ(mode.resx, resx);
-    EXPECT_EQ(mode.resy, resy);
+    mode = videomode::r8g8b8(resx, resy);
+    EXPECT_EQ(mode.xres, resx);
+    EXPECT_EQ(mode.yres, resy);
     EXPECT_EQ(mode.size, resx * resy * 3);
 
-    mode = fbmode::b8g8r8(resx, resy);
-    EXPECT_EQ(mode.resx, resx);
-    EXPECT_EQ(mode.resy, resy);
+    mode = videomode::b8g8r8(resx, resy);
+    EXPECT_EQ(mode.xres, resx);
+    EXPECT_EQ(mode.yres, resy);
     EXPECT_EQ(mode.size, resx * resy * 3);
 
-    mode = fbmode::r5g6b5(resx, resy);
-    EXPECT_EQ(mode.resx, resx);
-    EXPECT_EQ(mode.resy, resy);
+    mode = videomode::r5g6b5(resx, resy);
+    EXPECT_EQ(mode.xres, resx);
+    EXPECT_EQ(mode.yres, resy);
     EXPECT_EQ(mode.size, resx * resy * 2);
 
-    mode = fbmode::gray8(resx, resy);
-    EXPECT_EQ(mode.resx, resx);
-    EXPECT_EQ(mode.resy, resy);
+    mode = videomode::gray8(resx, resy);
+    EXPECT_EQ(mode.xres, resx);
+    EXPECT_EQ(mode.yres, resy);
     EXPECT_EQ(mode.size, resx * resy * 1);
 }
 

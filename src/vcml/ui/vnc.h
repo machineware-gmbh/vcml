@@ -27,7 +27,7 @@
 #include "vcml/logging/logger.h"
 
 #include "vcml/ui/keymap.h"
-#include "vcml/ui/fbmode.h"
+#include "vcml/ui/video.h"
 #include "vcml/ui/display.h"
 
 #include <rfb/rfb.h>
@@ -55,7 +55,7 @@ namespace vcml { namespace ui {
         vnc(u32 nr);
         virtual ~vnc();
 
-        virtual void init(const fbmode& mode, u8* fb) override;
+        virtual void init(const videomode& mode, u8* fb) override;
         virtual void render(u32 x, u32 y, u32 w, u32 h) override;
         virtual void render() override;
         virtual void shutdown() override;

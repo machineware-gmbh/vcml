@@ -218,7 +218,7 @@ namespace vcml { namespace ui {
         }
     }
 
-    static int sdl_format_from_fbmode(const fbmode& mode) {
+    static int sdl_format_from_fbmode(const videomode& mode) {
         switch (mode.format) {
         case FORMAT_A8R8G8B8: return SDL_PIXELFORMAT_ARGB8888;
         case FORMAT_X8R8G8B8: return SDL_PIXELFORMAT_RGB888;
@@ -265,8 +265,8 @@ namespace vcml { namespace ui {
     void sdl_client::init_window() {
         const char* name = disp->name();
 
-        const int w = (int)disp->resx();
-        const int h = (int)disp->resy();
+        const int w = (int)disp->xres();
+        const int h = (int)disp->yres();
         const int x = SDL_WINDOWPOS_CENTERED;
         const int y = SDL_WINDOWPOS_CENTERED;
 
@@ -320,10 +320,10 @@ namespace vcml { namespace ui {
         SDL_Rect rect = {};
         rect.x = 0;
         rect.y = 0;
-        rect.w = disp->resx();
-        rect.h = disp->resy();
+        rect.w = disp->xres();
+        rect.h = disp->yres();
 
-        int pitch = disp->framebuffer_size() / disp->resy();
+        int pitch = disp->framebuffer_size() / disp->yres();
         const void* pixels = disp->framebuffer();
 
         SDL_RenderClear(renderer);
@@ -521,7 +521,7 @@ namespace vcml { namespace ui {
         // nothing to do
     }
 
-    void sdl_display::init(const fbmode& mode, u8* fb) {
+    void sdl_display::init(const videomode& mode, u8* fb) {
         display::init(mode, fb);
         m_owner.register_display(this);
     }

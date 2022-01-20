@@ -170,8 +170,8 @@ namespace vcml { namespace virtio {
                 push_key(event.key.code, event.key.state);
                 push_sync();
             } else if (event.is_ptr()) {
-                size_t x = (event.ptr.x * xmax) / m_console.resx();
-                size_t y = (event.ptr.y * ymax) / m_console.resy();
+                size_t x = (event.ptr.x * xmax) / m_console.xres();
+                size_t y = (event.ptr.y * ymax) / m_console.yres();
                 VCML_ERROR_ON(x != (u32)x, "pointer out of range");
                 VCML_ERROR_ON(y != (u32)y, "pointer out of range");
                 push_abs(ABS_X, x);

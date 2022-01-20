@@ -234,7 +234,7 @@ namespace vcml { namespace ui {
     }
 
     void vnc::run() {
-        const fbmode& fbm = mode();
+        const videomode& fbm = mode();
 
         u32 samples = 0;
         if (fbm.a.size > 0)
@@ -246,7 +246,7 @@ namespace vcml { namespace ui {
         if (fbm.g.size > 0)
             samples++;
 
-        m_screen = rfbGetScreen(nullptr, nullptr, fbm.resx, fbm.resy,
+        m_screen = rfbGetScreen(nullptr, nullptr, fbm.xres, fbm.yres,
                                 fbm.r.size, samples, fbm.bpp);
 
         m_screen->frameBuffer = (char*)framebuffer();
@@ -257,7 +257,7 @@ namespace vcml { namespace ui {
 
         rfbInitServer(m_screen);
 
-        rfbNewFramebuffer(m_screen, m_screen->frameBuffer, fbm.resx, fbm.resy,
+        rfbNewFramebuffer(m_screen, m_screen->frameBuffer, fbm.xres, fbm.yres,
                           fbm.r.size, samples, fbm.bpp);
 
         m_screen->serverFormat.redShift   = fbm.r.offset;
@@ -302,7 +302,7 @@ namespace vcml { namespace ui {
         // nothing to do
     }
 
-    void vnc::init(const fbmode& mode, u8* fb)  {
+    void vnc::init(const videomode& mode, u8* fb)  {
         display::init(mode, fb);
 
         m_running = true;
@@ -311,16 +311,16 @@ namespace vcml { namespace ui {
     }
 
     void vnc::render(u32 x, u32 y, u32 w, u32 h) {
-        if (x + w > resx())
-            w = resx() - x;
-        if (y + h > resy())
-            h = resy() - y;
+        if (x + w > xres())
+            w = xres() - x;
+        if (y + h > yres())
+            h = yres() - y;
 
         rfbMarkRectAsModified(m_screen, x, y, x + w, y + h);
     }
 
     void vnc::render() {
-        render(0, 0, resx(), resy());
+        render(0, 0, xres(), yres());
     }
 
     void vnc::shutdown() {

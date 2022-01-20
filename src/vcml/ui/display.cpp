@@ -41,7 +41,7 @@ namespace vcml { namespace ui {
         // nothing to do
     }
 
-    void display::init(const fbmode& mode, u8* fbptr) {
+    void display::init(const videomode& mode, u8* fbptr) {
         if (has_framebuffer())
             shutdown();
 
@@ -84,13 +84,13 @@ namespace vcml { namespace ui {
     void display::add_keyboard(keyboard* kb) {
         m_keyboards.push_back(kb);
         if (!has_framebuffer())
-            init(fbmode::a8r8g8b8(320, 200), nullptr);
+            init(videomode::a8r8g8b8(320, 200), nullptr);
     }
 
     void display::add_pointer(pointer* ptr) {
         m_pointers.push_back(ptr);
         if (!has_framebuffer())
-            init(fbmode::a8r8g8b8(320, 200), nullptr);
+            init(videomode::a8r8g8b8(320, 200), nullptr);
     }
 
     void display::remove_keyboard(keyboard* kb) {

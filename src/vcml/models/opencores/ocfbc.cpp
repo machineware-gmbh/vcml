@@ -94,8 +94,8 @@ namespace vcml { namespace opencores {
             log_debug("device enabled, video ram at 0x%08x", VBARA.get());
             m_enable.notify(SC_ZERO_TIME);
 
-            m_resx = (HTIM & 0xffff) + 1;
-            m_resy = (VTIM & 0xffff) + 1;
+            m_xres = (HTIM & 0xffff) + 1;
+            m_yres = (VTIM & 0xffff) + 1;
             m_bpp  = OCFBC_BPP(val);
             m_pc   = (val & CTLR_PC) == CTLR_PC;
 
@@ -148,7 +148,7 @@ namespace vcml { namespace opencores {
             return;
 
         u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
-        u32 size = m_resx * m_resy * m_bpp;
+        u32 size = m_xres * m_yres * m_bpp;
         u8* vram = nullptr;
 
         if (allow_dmi) {
@@ -156,7 +156,7 @@ namespace vcml { namespace opencores {
             vram = OUT.lookup_dmi_ptr(area, VCML_ACCESS_READ);
         }
 
-        ui::fbmode mode;
+        ui::videomode mode;
         // Below we should ideally just select the mode that suits our
         // display mode and pass our own model endianess. However, some
         // VNC clients seem to have trouble reading big endian data, and
@@ -165,27 +165,27 @@ namespace vcml { namespace opencores {
         // most of the time. Tested with RealVNC and Remmina.
         switch (m_bpp) {
         case 4: if (is_little_endian())
-                    mode = ui::fbmode::a8r8g8b8(m_resx, m_resy);
+                    mode = ui::videomode::a8r8g8b8(m_xres, m_yres);
                 else
-                    mode = ui::fbmode::b8g8r8a8(m_resx, m_resy);
+                    mode = ui::videomode::b8g8r8a8(m_xres, m_yres);
                 mode.endian = ENDIAN_LITTLE;
                 break;
 
         case 3: if (is_little_endian())
-                    mode = ui::fbmode::r8g8b8(m_resx, m_resy);
+                    mode = ui::videomode::r8g8b8(m_xres, m_yres);
                 else
-                    mode = ui::fbmode::b8g8r8(m_resx, m_resy);
+                    mode = ui::videomode::b8g8r8(m_xres, m_yres);
                 mode.endian = ENDIAN_LITTLE;
                 break;
 
-        case 2: mode = ui::fbmode::r5g6b5(m_resx, m_resy);
+        case 2: mode = ui::videomode::r5g6b5(m_xres, m_yres);
                 mode.endian = get_endian();
                 break;
 
         case 1: if (m_pc)
-                    mode = ui::fbmode::a8r8g8b8(m_resx, m_resy);
+                    mode = ui::videomode::a8r8g8b8(m_xres, m_yres);
                 else
-                    mode = ui::fbmode::gray8(m_resx, m_resy);
+                    mode = ui::videomode::gray8(m_xres, m_yres);
                 mode.endian = ENDIAN_LITTLE;
                 break;
 
@@ -210,12 +210,12 @@ namespace vcml { namespace opencores {
             tlm_response_status rs;
 
             u32 burstsz = OCFBC_VBL(CTLR);
-            u32 linesz = m_resx * m_bpp;
+            u32 linesz = m_xres * m_bpp;
 
             u8 linebuf[linesz];
             u8* fb = m_fb;
 
-            for (u32 y = 0; y < m_resy; y++) {
+            for (u32 y = 0; y < m_yres; y++) {
                 // burst-read one horizontal line of pixels into buffer
                 for (u32 x = 0; x < linesz; x += burstsz) {
                     u32 base = (STAT & STAT_AVMP) ? VBARB : VBARA;
@@ -295,7 +295,7 @@ namespace vcml { namespace opencores {
     }
 
     bool ocfbc::cmd_info(const vector<string>& args, ostream& os) {
-        os << "resolution:  " << m_resx << "x" << m_resy
+        os << "resolution:  " << m_xres << "x" << m_yres
            << "@" << clock.get() << "Hz" << std::endl
            << "framebuffer: " << (m_fb ? "copied" : "mapped") << std::endl
            << "interrupt:   " << (IRQ.read() ? "set" : "cleared") << std::endl;
@@ -307,8 +307,8 @@ namespace vcml { namespace opencores {
         m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
         m_palette(),
         m_fb(nullptr),
-        m_resx(0),
-        m_resy(0),
+        m_xres(0),
+        m_yres(0),
         m_bpp(0),
         m_pc(false),
         m_enable("enabled"),

@@ -21,8 +21,14 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/report.h"
 
 namespace vcml { namespace ui {
+
+    struct color_channel {
+        u8 offset; // offset in bits
+        u8 size;   // size in bits
+    };
 
     enum pixelformat {
         // 32bit color formats
@@ -47,16 +53,16 @@ namespace vcml { namespace ui {
         FORMAT_GRAY8,
     };
 
-    const char* pixelformat_to_str(pixelformat fmt);
+    const char*   pixelformat_to_str(pixelformat fmt);
+    size_t        pixelformat_bpp(pixelformat fmt);
+    color_channel pixelformat_a(pixelformat fmt);
+    color_channel pixelformat_r(pixelformat fmt);
+    color_channel pixelformat_g(pixelformat fmt);
+    color_channel pixelformat_b(pixelformat fmt);
 
-    struct color_channel {
-        u8 offset;
-        u8 size;
-    };
-
-    struct fbmode {
-        u32 resx;
-        u32 resy;
+    struct videomode {
+        u32 xres;
+        u32 yres;
 
         size_t bpp;
         size_t stride;
@@ -69,43 +75,50 @@ namespace vcml { namespace ui {
         color_channel g;
         color_channel b;
 
+        bool grayscale;
         endianess endian;
+
+        videomode();
+        videomode(pixelformat fmt, u32 xres, u32 yres);
+        videomode(const videomode& other) = default;
+        videomode(videomode&& other) = default;
+        videomode& operator = (const videomode&) = default;
 
         bool is_valid() const { return size > 0; }
 
-        bool operator == (const fbmode& other) const;
-        bool operator != (const fbmode& other) const;
+        bool operator == (const videomode& other) const;
+        bool operator != (const videomode& other) const;
 
         string to_string() const;
 
-        static fbmode a8r8g8b8(u32 width, u32 height);
-        static fbmode x8r8g8b8(u32 width, u32 height);
-        static fbmode r8g8b8a8(u32 width, u32 height);
-        static fbmode r8g8b8x8(u32 width, u32 height);
-        static fbmode a8b8g8r8(u32 width, u32 height);
-        static fbmode x8b8g8r8(u32 width, u32 height);
-        static fbmode b8g8r8a8(u32 width, u32 height);
-        static fbmode b8g8r8x8(u32 width, u32 height);
+        static videomode a8r8g8b8(u32 width, u32 height);
+        static videomode x8r8g8b8(u32 width, u32 height);
+        static videomode r8g8b8a8(u32 width, u32 height);
+        static videomode r8g8b8x8(u32 width, u32 height);
+        static videomode a8b8g8r8(u32 width, u32 height);
+        static videomode x8b8g8r8(u32 width, u32 height);
+        static videomode b8g8r8a8(u32 width, u32 height);
+        static videomode b8g8r8x8(u32 width, u32 height);
 
-        static fbmode r8g8b8(u32 width, u32 height);
-        static fbmode b8g8r8(u32 width, u32 height);
+        static videomode r8g8b8(u32 width, u32 height);
+        static videomode b8g8r8(u32 width, u32 height);
 
-        static fbmode r5g6b5(u32 width, u32 height);
-        static fbmode b5g6r5(u32 width, u32 height);
+        static videomode r5g6b5(u32 width, u32 height);
+        static videomode b5g6r5(u32 width, u32 height);
 
-        static fbmode gray8(u32 width, u32 height);
+        static videomode gray8(u32 width, u32 height);
     };
 
-    inline bool fbmode::operator == (const fbmode& other) const {
-        return resx == other.resx &&  resy == other.resy &&
+    inline bool videomode::operator == (const videomode& other) const {
+        return xres == other.xres &&  yres == other.yres &&
                format == other.format && endian == other.endian;
     }
 
-    inline bool fbmode::operator != (const fbmode& other) const {
+    inline bool videomode::operator != (const videomode& other) const {
         return !operator == (other);
     }
 
-    ostream& operator << (ostream& os, const fbmode& mode);
+    ostream& operator << (ostream& os, const videomode& mode);
 
 }}
 

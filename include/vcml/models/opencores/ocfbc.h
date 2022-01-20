@@ -49,8 +49,8 @@ namespace vcml { namespace opencores {
 
         u8*  m_fb;
 
-        u32  m_resx;
-        u32  m_resy;
+        u32  m_xres;
+        u32  m_yres;
         u32  m_bpp;
         bool m_pc;
 

@@ -18,9 +18,9 @@
 
 #include "testing.h"
 
-#define RESX 1280
-#define RESY  720
-#define SIZE (RESX * RESY * 4)
+#define XRES 1280
+#define YRES  720
+#define SIZE (XRES * YRES * 4)
 
 class test_harness: public test_base
 {
@@ -30,7 +30,7 @@ public:
 
     test_harness(const sc_module_name& nm):
         test_base(nm),
-        fb("fb", RESX, RESY),
+        fb("fb", XRES, YRES),
         vmem("vmem", SIZE) {
         vmem.CLOCK.stub();
         vmem.RESET.stub();
@@ -40,10 +40,10 @@ public:
     }
 
     virtual void run_test() override {
-        ASSERT_EQ(fb.resx, RESX) << "unexpected screen width";
-        ASSERT_EQ(fb.resy, RESY) << "unexpected screen height";
-        ASSERT_EQ(fb.stride(), RESX * 4) << "wrong stride";
-        ASSERT_EQ(fb.size(), RESX * RESY * 4) << "wrong size";
+        ASSERT_EQ(fb.xres, XRES) << "unexpected screen width";
+        ASSERT_EQ(fb.yres, YRES) << "unexpected screen height";
+        ASSERT_EQ(fb.stride(), XRES * 4) << "wrong stride";
+        ASSERT_EQ(fb.size(), XRES * YRES * 4) << "wrong size";
 
         wait(1.0, SC_SEC);
 

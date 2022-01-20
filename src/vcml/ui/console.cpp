@@ -53,7 +53,7 @@ namespace vcml { namespace ui {
             disp->add_pointer(&ptr);
     }
 
-    void console::setup(const fbmode& mode, u8* fbptr) {
+    void console::setup(const videomode& mode, u8* fbptr) {
         for (auto& disp : m_displays)
             disp->init(mode, fbptr);
     }

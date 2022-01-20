@@ -32,21 +32,21 @@ namespace vcml { namespace generic {
         m_mode(),
         m_vptr(nullptr),
         addr("addr", 0),
-        resx("resx", defx),
-        resy("resy", defy),
+        xres("xres", defx),
+        yres("yres", defy),
         format("format", "a8r8g8b8"),
         OUT("OUT") {
-        VCML_ERROR_ON(resx == 0u, "resx cannot be zero");
-        VCML_ERROR_ON(resy == 0u, "resy cannot be zero");
-        VCML_ERROR_ON(resx > 8192u, "resx out of bounds %u", resx.get());
-        VCML_ERROR_ON(resy > 8192u, "resy out of bounds %u", resy.get());
+        VCML_ERROR_ON(xres == 0u, "xres cannot be zero");
+        VCML_ERROR_ON(yres == 0u, "yres cannot be zero");
+        VCML_ERROR_ON(xres > 8192u, "xres out of bounds %u", xres.get());
+        VCML_ERROR_ON(yres > 8192u, "yres out of bounds %u", yres.get());
 
-        const unordered_map<string, ui::fbmode> modes = {
-            { "r5g6b5",   ui::fbmode::r5g6b5(resx, resy)   },
-            { "r8g8b8",   ui::fbmode::r8g8b8(resx, resy)   },
-            { "x8r8g8b8", ui::fbmode::x8r8g8b8(resx, resy) },
-            { "a8r8g8b8", ui::fbmode::a8r8g8b8(resx, resy) },
-            { "a8b8g8r8", ui::fbmode::a8b8g8r8(resx, resy) },
+        const unordered_map<string, ui::videomode> modes = {
+            { "r5g6b5",   ui::videomode::r5g6b5(xres, yres)   },
+            { "r8g8b8",   ui::videomode::r8g8b8(xres, yres)   },
+            { "x8r8g8b8", ui::videomode::x8r8g8b8(xres, yres) },
+            { "a8r8g8b8", ui::videomode::a8r8g8b8(xres, yres) },
+            { "a8b8g8r8", ui::videomode::a8b8g8r8(xres, yres) },
         };
 
         auto it = modes.find(to_lower(format));
@@ -55,7 +55,7 @@ namespace vcml { namespace generic {
 
         if (!m_mode.is_valid()) {
             log_warn("invalid color format: %s", format.get().c_str());
-            m_mode = ui::fbmode::a8r8g8b8(resx, resy);
+            m_mode = ui::videomode::a8r8g8b8(xres, yres);
         }
 
         if (m_console.has_display()) {

@@ -82,7 +82,7 @@ set(sources
     ${src}/vcml/net/backend_file.cpp
     ${src}/vcml/net/backend_tap.cpp
     ${src}/vcml/net/adapter.cpp
-    ${src}/vcml/ui/fbmode.cpp
+    ${src}/vcml/ui/video.cpp
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
