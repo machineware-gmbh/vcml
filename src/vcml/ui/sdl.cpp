@@ -355,9 +355,9 @@ namespace vcml { namespace ui {
     }
 
     sdl_client* sdl::find_by_window_id(u32 id) {
-        for (auto& it : m_clients)
-            if (it.window_id == id)
-                return &it;
+        for (size_t i = 0; i < m_clients.size(); i++)
+            if (m_clients[i].window_id == id)
+                return &m_clients[i];
         return nullptr;
     }
 
