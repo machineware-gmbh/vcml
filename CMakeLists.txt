@@ -17,7 +17,7 @@
  ##############################################################################
 
 cmake_minimum_required(VERSION 3.8)
-project(vcml VERSION 2020.09.27 LANGUAGES C CXX)
+project(vcml VERSION 2022.01.25 LANGUAGES C CXX)
 
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
@@ -27,7 +27,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
 find_package(LibVNC)
-find_package(LibSLIRP) 
+find_package(LibSLIRP)
 find_package(SDL2)
 
 include(GenVersionHeader)
