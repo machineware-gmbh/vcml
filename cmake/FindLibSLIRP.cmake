@@ -16,18 +16,21 @@
  #                                                                            #
  ##############################################################################
 
-find_path(LIBSLIRP_INCLUDE_DIRS NAMES "libslirp.h"
-          HINTS $ENV{LIBSLIRP_HOME}/include/slirp /usr/include/slirp)
+find_package(PkgConfig QUIET)
+pkg_check_modules(PKGCFG_SLIRP QUIET slirp)
 
-find_library(LIBSLIRP_LIBRARIES NAMES "libslirp.so"
-             HINTS $ENV{LIBVNC_HOME}/lib /usr/lib /lib)
+find_path(LIBSLIRP_INCLUDE_DIRS NAMES "libslirp.h"
+          HINTS $ENV{LIBSLIRP_HOME}/include/slirp ${PKGCFG_SLIRP_INCLUDE_DIRS})
+
+find_library(LIBSLIRP_LIBRARIES NAMES "slirp"
+             HINTS $ENV{LIBSLIRP_HOME}/lib ${PKGCFG_SLIRP_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibSLIRP DEFAULT_MSG
-                                  LIBSLIRP_LIBRARIES
-                                  LIBSLIRP_INCLUDE_DIRS)
+find_package_handle_standard_args(LibSLIRP
+    REQUIRED_VARS LIBSLIRP_INCLUDE_DIRS LIBSLIRP_LIBRARIES
+    VERSION_VAR   PKGCFG_SLIRP_VERSION)
 
-mark_as_advanced(LIBVNC_INCLUDE_DIRS LIBVNC_LIBRARIES)
+mark_as_advanced(LIBSLIRP_INCLUDE_DIRS LIBSLIRP_LIBRARIES)
 
 #message(STATUS "LIBSLIRP_FOUND        " ${LIBSLIRP_FOUND})
 #message(STATUS "LIBSLIRP_INCLUDE_DIRS " ${LIBSLIRP_INCLUDE_DIRS})

@@ -16,21 +16,19 @@
  #                                                                            #
  ##############################################################################
 
+find_package(PkgConfig QUIET)
+pkg_check_modules(PKGCFG_LIBELF QUIET libelf)
+
 find_path(LIBELF_INCLUDE_DIRS NAMES "libelf.h"
-          HINTS $ENV{LIBELF_HOME}/include /usr/include)
+          HINTS $ENV{LIBELF_HOME}/include ${PKGCFG_LIBELF_INCLUDE_DIRS})
 
-find_library(LIBELF_LIBRARIES NAMES elf "libelf.a"
-             HINTS $ENV{LIBELF_HOME}/lib /usr/lib /lib)
-
-find_library(LIBZ_LIBRARIES NAMES z "libz.a"
-             HINTS $ENV{LIBZ_HOME}/lib /usr/lib /lib)
-
-list(APPEND LIBELF_LIBRARIES ${LIBZ_LIBRARIES})
+find_library(LIBELF_LIBRARIES NAMES elf "elf"
+             HINTS $ENV{LIBELF_HOME}/lib ${PKGCFG_LIBELF_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibELF DEFAULT_MSG
-                                  LIBELF_LIBRARIES
-                                  LIBELF_INCLUDE_DIRS)
+find_package_handle_standard_args(LibELF
+    REQUIRED_VARS LIBELF_INCLUDE_DIRS LIBELF_LIBRARIES
+    VERSION_VAR   PKGCFG_LIBELF_VERSION)
 
 mark_as_advanced(LIBELF_INCLUDE_DIRS LIBELF_LIBRARIES)
 

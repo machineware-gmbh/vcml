@@ -16,16 +16,19 @@
  #                                                                            #
  ##############################################################################
 
-find_path(LIBVNC_INCLUDE_DIRS NAMES "rfb/rfb.h"
-          HINTS $ENV{LIBVNC_HOME}/include /usr/include)
+find_package(PkgConfig QUIET)
+pkg_check_modules(PKGCFG_VNC QUIET libvncserver)
 
-find_library(LIBVNC_LIBRARIES NAMES "libvncserver.so"
-             HINTS $ENV{LIBVNC_HOME}/lib /usr/lib /lib)
+find_path(LIBVNC_INCLUDE_DIRS NAMES "rfb/rfb.h"
+          HINTS $ENV{LIBVNC_HOME}/include ${PKGCFG_VNC_INCLUDE_DIRS})
+
+find_library(LIBVNC_LIBRARIES NAMES "vncserver"
+             HINTS $ENV{LIBVNC_HOME}/lib ${PKGCFG_VNC_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibVNC DEFAULT_MSG
-                                  LIBVNC_LIBRARIES
-                                  LIBVNC_INCLUDE_DIRS)
+find_package_handle_standard_args(LibVNC
+    REQUIRED_VARS LIBVNC_INCLUDE_DIRS LIBVNC_LIBRARIES
+    VERSION_VAR   PKGCFG_VNC_VERSION)
 
 mark_as_advanced(LIBVNC_INCLUDE_DIRS LIBVNC_LIBRARIES)
 
