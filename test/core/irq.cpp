@@ -152,8 +152,7 @@ public:
 
 TEST(irq, sockets) {
     broker_arg broker(sc_argc(), sc_argv());
-    log_term logger;
-    logger.set_level(LOG_TRACE);
+    tracer_term tracer;
     irq_test_harness test("irq");
     sc_core::sc_start();
 }

@@ -25,6 +25,7 @@
 #include "vcml/common/systemc.h"
 #include "vcml/module.h"
 
+#include "vcml/protocols/base.h"
 #include "vcml/protocols/pci_ids.h"
 
 namespace vcml {
@@ -319,18 +320,15 @@ namespace vcml {
         virtual void  pci_interrupt(pci_irq irq, bool state) = 0;
     };
 
-    typedef tlm::tlm_base_initiator_socket<1, pci_fw_transport_if,
-        pci_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_initiator_socket<pci_fw_transport_if, pci_bw_transport_if>
         pci_base_initiator_socket;
 
-    typedef tlm::tlm_base_target_socket<1, pci_fw_transport_if,
-        pci_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_target_socket<pci_fw_transport_if, pci_bw_transport_if>
         pci_base_target_socket;
 
     class pci_initiator_socket: public pci_base_initiator_socket,
                                 protected pci_bw_transport_if {
     private:
-        module* m_parent;
         pci_initiator* m_initiator;
         pci_target_stub* m_stub;
 
@@ -358,15 +356,12 @@ namespace vcml {
     class pci_target_socket: public pci_base_target_socket,
                              protected pci_fw_transport_if {
     private:
-        module* m_parent;
         pci_target* m_target;
         pci_initiator_stub* m_stub;
 
         virtual void pci_transport(pci_payload& tx) override;
 
     public:
-        const address_space port_as;
-
         bool is_stubbed() const { return m_stub != nullptr; }
 
         pci_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);

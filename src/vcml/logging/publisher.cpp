@@ -29,16 +29,11 @@ namespace vcml {
     bool publisher::print_source = false;
     bool publisher::print_backtrace = true;
 
-    size_t publisher::trace_name_length = 20;
-    size_t publisher::trace_indent_incr = 1;
-    size_t publisher::trace_curr_indent = 0;
-
     const char* publisher::prefix[NUM_LOG_LEVELS] = {
             /* [LOG_ERROR] = */ "E",
             /* [LOG_WARN]  = */ "W",
             /* [LOG_INFO]  = */ "I",
             /* [LOG_DEBUG] = */ "D",
-            /* [LOG_TRACE] = */ "T"
     };
 
     const char* publisher::desc[NUM_LOG_LEVELS] = {
@@ -46,11 +41,10 @@ namespace vcml {
             /* [LOG_WARN]  = */ "warning",
             /* [LOG_INFO]  = */ "info",
             /* [LOG_DEBUG] = */ "debug",
-            /* [LOG_TRACE] = */ "trace"
     };
 
     ostream& operator << (ostream& os, const log_level& lvl) {
-        if (lvl < LOG_ERROR || lvl > LOG_TRACE)
+        if (lvl < LOG_ERROR || lvl > LOG_DEBUG)
             return os << "unknown log level";
         return os << publisher::desc[lvl];
     }
@@ -181,11 +175,8 @@ namespace vcml {
         publish(level, sender, msg);
     }
 
-    void publisher::print_prefix(ostream& os, const logmsg& msg) {
-        os << "[" << publisher::prefix[msg.level];
-
+    void publisher::print_timing(ostream& os, const sc_time& time, u64 delta) {
         if (print_time_stamp) {
-            sc_time time = msg.time + msg.time_offset;
             u64 seconds = time_to_ns(time) / 1000000000ull;
             u64 nanosec = time_to_ns(time) % 1000000000ull;
             os << " " << std::dec << seconds
@@ -193,19 +184,16 @@ namespace vcml {
         }
 
         if (print_delta_cycle)
-            os << " <" << msg.cycle << ">";
+            os << " <" << delta << ">";
+    }
 
+    void publisher::print_prefix(ostream& os, const logmsg& msg) {
+        os << "[" << publisher::prefix[msg.level];
+        print_timing(os, msg.time + msg.time_offset, msg.cycle);
         os << "]";
 
-        if (print_sender && !msg.sender.empty()) {
+        if (print_sender && !msg.sender.empty())
             os << " " << msg.sender << ":";
-            if (msg.level == LOG_TRACE) {
-                if (trace_name_length < msg.sender.length())
-                    trace_name_length = msg.sender.length();
-                if (trace_name_length > msg.sender.length())
-                    os << string(trace_name_length - msg.sender.length(), ' ');
-            }
-        }
     }
 
     void publisher::print_logmsg(ostream& os, const logmsg& msg) {

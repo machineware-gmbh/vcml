@@ -26,6 +26,8 @@
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
+#include "vcml/protocols/base.h"
+
 namespace vcml {
 
     typedef size_t irq_vector;
@@ -93,12 +95,10 @@ namespace vcml {
         return m_target_sockets;
     }
 
-    typedef tlm::tlm_base_initiator_socket<1, irq_fw_transport_if,
-        irq_bw_transport_if, 0, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef multi_initiator_socket<irq_fw_transport_if, irq_bw_transport_if>
         irq_base_initiator_socket_b;
 
-    typedef tlm::tlm_base_target_socket<1, irq_fw_transport_if,
-        irq_bw_transport_if, 0, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef multi_target_socket<irq_fw_transport_if, irq_bw_transport_if>
         irq_base_target_socket_b;
 
     class irq_base_initiator_socket: public irq_base_initiator_socket_b
@@ -125,8 +125,6 @@ namespace vcml {
         irq_initiator_stub* m_stub;
 
     public:
-        const address_space as;
-
         irq_base_target_socket(const char*, address_space = VCML_AS_DEFAULT);
         virtual ~irq_base_target_socket();
         VCML_KIND(irq_base_target_socket);
@@ -173,7 +171,6 @@ namespace vcml {
         irq_state_tracker& operator [] (irq_vector vector);
 
     private:
-        module* m_parent;
         irq_target* m_host;
         unordered_map<irq_vector, irq_state_tracker> m_state;
         sc_event* m_event;
@@ -201,7 +198,6 @@ namespace vcml {
         operator bool () const { return read(IRQ_NO_VECTOR); }
 
     private:
-        module* m_parent;
         irq_target* m_host;
         unordered_map<irq_vector, bool> m_state;
         sc_event* m_event;

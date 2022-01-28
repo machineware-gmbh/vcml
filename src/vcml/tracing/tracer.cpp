@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,38 +16,41 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/logging/log_term.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/logging/publisher.h"
 
 namespace vcml {
 
-    log_term::log_term(bool use_cerr):
-        publisher(LOG_ERROR, LOG_DEBUG),
-        m_use_colors(isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)),
-        m_os(use_cerr ? std::cerr : std::cout) {
-        // nothing to do
+    const char* protocol_name(protocol_kind kind) {
+        switch (kind) {
+        case PROTO_TLM:    return "TLM";
+        case PROTO_IRQ:    return "IRQ";
+        case PROTO_PCI:    return "PCI";
+        case PROTO_SPI:    return "SPI";
+        case PROTO_SD:     return "SD";
+        case PROTO_VIRTIO: return "VIRTIO";
+        default:
+            return "unknown protocol";
+        }
     }
 
-    log_term::~log_term() {
-        // nothing to do
+    tracer::tracer() {
+        all().insert(this);
     }
 
-    void log_term::publish(const logmsg& msg) {
-        if (m_use_colors)
-            m_os << colors[msg.level];
-        m_os << msg;
-        if (m_use_colors)
-            m_os << reset;
-        m_os << std::endl;
+    tracer::~tracer() {
+        all().erase(this);
     }
 
-    const char* log_term::colors[NUM_LOG_LEVELS] = {
-        /* [LOG_ERROR] = */ "\x1B[31m", // red
-        /* [LOG_WARN]  = */ "\x1B[33m", // yellow
-        /* [LOG_INFO]  = */ "\x1B[32m", // green
-        /* [LOG_DEBUG] = */ "\x1B[36m", // blue
-    };
+    void tracer::print_timing(ostream& os, const sc_time& time, u64 delta) {
+        // use same formatting as logger
+        publisher::print_timing(os, time, delta);
+    }
 
-    const char* log_term::reset = "\x1B[0m";
+    unordered_set<tracer*>& tracer::all() {
+        static unordered_set<tracer*> tracers;
+        return tracers;
+    }
 
 }
 

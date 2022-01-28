@@ -115,15 +115,13 @@ namespace vcml {
         }
 
         for (string file : m_trace_files) {
-            publisher* tracer = new log_file(file);
-            tracer->set_level(LOG_TRACE, LOG_TRACE);
-            m_publishers.push_back(tracer);
+            tracer* t = new tracer_file(file);
+            m_tracers.push_back(t);
         }
 
         if (m_trace_stdout) {
-            publisher* tracer = new log_term(true);
-            tracer->set_level(LOG_TRACE, LOG_TRACE);
-            m_publishers.push_back(tracer);
+            tracer* t = new tracer_term(true);
+            m_tracers.push_back(t);
         }
 
         m_brokers.push_back(new broker_arg(argc, argv));
@@ -138,6 +136,10 @@ namespace vcml {
 
         for (auto broker : m_brokers)
             delete broker;
+
+        for (auto tracer : m_tracers)
+            delete tracer;
+
         for (auto pub : m_publishers)
             delete pub;
     }

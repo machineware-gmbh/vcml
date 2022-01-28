@@ -26,7 +26,7 @@ namespace vcml {
         case VIRTIO_OK:           return "VIRTIO_OK";
         case VIRTIO_ERR_INDIRECT: return "VIRTIO_ERR_INDIRECT";
         case VIRTIO_ERR_NODMI:    return "VIRTIO_ERR_NODMI";
-        case VIRTIO_ERR_CHAIN:    return " VIRTIO_ERR_CHAIN";
+        case VIRTIO_ERR_CHAIN:    return "VIRTIO_ERR_CHAIN";
         case VIRTIO_ERR_DESC:     return "VIRTIO_ERR_DESC";
         default:
             return "unknown";
@@ -163,7 +163,7 @@ namespace vcml {
         if (msg.status == VIRTIO_INCOMPLETE)
             return false;
 
-        parent->trace(TRACE_FW_NOINDENT, *this, msg);
+        parent->record(TRACE_FW_NOINDENT, *this, msg);
         return success(msg);
     }
 
@@ -171,7 +171,7 @@ namespace vcml {
         if (!validate())
             return false;
 
-        parent->trace(TRACE_BW_NOINDENT, *this, msg);
+        parent->record(TRACE_BW_NOINDENT, *this, msg);
         msg.status = do_put(msg);
         return success(msg);
     }

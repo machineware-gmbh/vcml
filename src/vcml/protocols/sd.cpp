@@ -179,13 +179,11 @@ namespace vcml {
         return sockets;
     }
 
-    sd_initiator_socket::sd_initiator_socket(const char* nm):
-        sd_base_initiator_socket(nm),
+    sd_initiator_socket::sd_initiator_socket(const char* nm, address_space as):
+        sd_base_initiator_socket(nm, as),
         sd_bw_transport_if(),
-        m_parent(hierarchy_search<module>()),
         m_host(dynamic_cast<sd_host*>(hierarchy_top())),
         m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(*(sd_bw_transport_if*)this);
         if (m_host)
             m_host->m_initiator_sockets.push_back(this);
@@ -203,15 +201,15 @@ namespace vcml {
     }
 
     void sd_initiator_socket::transport(sd_command& cmd) {
-        m_parent->trace_fw(*this, cmd);
+        trace_fw(cmd);
         (*this)->sd_transport(cmd);
-        m_parent->trace_bw(*this, cmd);
+        trace_bw(cmd);
     }
 
     void sd_initiator_socket::transport(sd_data& data) {
-        m_parent->trace_fw(*this, data);
+        //trace_fw(data);
         (*this)->sd_transport(data);
-        m_parent->trace_bw(*this, data);
+        //trace_bw(data);
     }
 
     sd_status_tx sd_initiator_socket::read_data(u8& data) {
@@ -235,29 +233,27 @@ namespace vcml {
 
     void sd_initiator_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
+        hierarchy_guard guard(this);
         m_stub = new sd_target_stub(mkstr("%s_stub", basename()).c_str());
         bind(m_stub->SD_IN);
     }
 
     void sd_target_socket::sd_transport(sd_command& tx) {
-        m_parent->trace_fw(*this, tx);
+        trace_fw(tx);
         m_host->sd_transport(*this, tx);
-        m_parent->trace_bw(*this, tx);
+        trace_bw(tx);
     }
 
     void sd_target_socket::sd_transport(sd_data& tx) {
-        m_parent->trace_fw(*this, tx);
+        //trace_fw(tx);
         m_host->sd_transport(*this, tx);
-        m_parent->trace_bw(*this, tx);
+        //trace_bw(tx);
     }
 
     sd_target_socket::sd_target_socket(const char* nm, address_space a):
-        sd_base_target_socket(nm),
-        m_parent(hierarchy_search<module>()),
+        sd_base_target_socket(nm, a),
         m_host(hierarchy_search<sd_host>()),
-        m_stub(nullptr), as(a) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
+        m_stub(nullptr) {
         VCML_ERROR_ON(!m_host, "%s declared outside sd_host", name());
         m_host->m_target_sockets.push_back(this);
         bind(*(sd_fw_transport_if*)this);
@@ -275,7 +271,7 @@ namespace vcml {
 
     void sd_target_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
+        hierarchy_guard guard(this);
         m_stub = new sd_initiator_stub(mkstr("%s_stub", basename()).c_str());
         m_stub->SD_OUT.bind(*this);
     }
@@ -286,21 +282,17 @@ namespace vcml {
     }
 
     void sd_target_stub::sd_transport(const sd_target_socket& socket,
-                                      sd_command& tx) {
-        trace_fw(SD_IN, tx);
+        sd_command& tx) {
         tx.resp_len = 0;
         tx.status = SD_OK;
-        trace_bw(SD_IN, tx);
     }
 
     void sd_target_stub::sd_transport(const sd_target_socket& socket,
-                                      sd_data& tx) {
-        trace_fw(SD_IN, tx);
+        sd_data& tx) {
         if (tx.mode == SD_READ)
             tx.status.read = SDTX_ERR_ILLEGAL;
         else
             tx.status.write = SDRX_OK;
-        trace_bw(SD_IN, tx);
     }
 
     sd_target_stub::sd_target_stub(const sc_module_name& nm):

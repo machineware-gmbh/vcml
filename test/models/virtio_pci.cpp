@@ -122,8 +122,7 @@ public:
 
 TEST(virtio, pci) {
     broker_arg broker(sc_argc(), sc_argv());
-    log_term logger;
-    logger.set_level(LOG_TRACE);
+    tracer_term tracer;
     virtio_pci_test test("virtio_pci");
     sc_core::sc_start();
 }

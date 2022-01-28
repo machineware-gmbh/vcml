@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2018 Jan Henrik Weinstock                                        *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,38 +16,43 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/logging/log_term.h"
+#ifndef VCML_TRACER_FILE_H
+#define VCML_TRACER_FILE_H
+
+#include "vcml/common/types.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/utils.h"
+#include "vcml/common/report.h"
+#include "vcml/common/systemc.h"
+
+#include "vcml/tracing/tracer.h"
 
 namespace vcml {
 
-    log_term::log_term(bool use_cerr):
-        publisher(LOG_ERROR, LOG_DEBUG),
-        m_use_colors(isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)),
-        m_os(use_cerr ? std::cerr : std::cout) {
-        // nothing to do
-    }
+    class tracer_file : public tracer
+    {
+    private:
+        string m_filename;
+        ofstream m_stream;
 
-    log_term::~log_term() {
-        // nothing to do
-    }
+        template <typename PAYLOAD>
+        void do_trace(const entry<PAYLOAD>& msg);
 
-    void log_term::publish(const logmsg& msg) {
-        if (m_use_colors)
-            m_os << colors[msg.level];
-        m_os << msg;
-        if (m_use_colors)
-            m_os << reset;
-        m_os << std::endl;
-    }
+    public:
+        const char* filename() const { return m_filename.c_str(); }
 
-    const char* log_term::colors[NUM_LOG_LEVELS] = {
-        /* [LOG_ERROR] = */ "\x1B[31m", // red
-        /* [LOG_WARN]  = */ "\x1B[33m", // yellow
-        /* [LOG_INFO]  = */ "\x1B[32m", // green
-        /* [LOG_DEBUG] = */ "\x1B[36m", // blue
+        virtual void trace(const entry<tlm_generic_payload>&) override;
+        virtual void trace(const entry<irq_payload>&) override;
+        virtual void trace(const entry<pci_payload>&) override;
+        virtual void trace(const entry<spi_payload>&) override;
+        virtual void trace(const entry<sd_command>&) override;
+        virtual void trace(const entry<sd_data>&) override;
+        virtual void trace(const entry<vq_message>&) override;
+
+        tracer_file(const string& filename);
+        virtual ~tracer_file();
     };
-
-    const char* log_term::reset = "\x1B[0m";
 
 }
 
+#endif

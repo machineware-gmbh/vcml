@@ -38,6 +38,10 @@
 #include "vcml/logging/log_stream.h"
 #include "vcml/logging/log_term.h"
 
+#include "vcml/tracing/tracer.h"
+#include "vcml/tracing/tracer_file.h"
+#include "vcml/tracing/tracer_term.h"
+
 #include "vcml/properties/property_base.h"
 #include "vcml/properties/property.h"
 #include "vcml/properties/broker.h"

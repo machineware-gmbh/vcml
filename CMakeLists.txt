@@ -57,6 +57,9 @@ set(sources
     ${src}/vcml/logging/log_file.cpp
     ${src}/vcml/logging/log_stream.cpp
     ${src}/vcml/logging/log_term.cpp
+    ${src}/vcml/tracing/tracer.cpp
+    ${src}/vcml/tracing/tracer_file.cpp
+    ${src}/vcml/tracing/tracer_term.cpp
     ${src}/vcml/properties/property_base.cpp
     ${src}/vcml/properties/broker.cpp
     ${src}/vcml/properties/broker_arg.cpp

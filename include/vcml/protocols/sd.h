@@ -23,6 +23,8 @@
 #include "vcml/common/systemc.h"
 #include "vcml/module.h"
 
+#include "vcml/protocols/base.h"
+
 namespace vcml {
 
     enum sd_status : int {
@@ -176,25 +178,23 @@ namespace vcml {
         typedef sd_protocol_types protocol_types;
     };
 
-    typedef tlm::tlm_base_initiator_socket<1, sd_fw_transport_if,
-        sd_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_initiator_socket<sd_fw_transport_if, sd_bw_transport_if>
         sd_base_initiator_socket;
 
-    typedef tlm::tlm_base_target_socket<1, sd_fw_transport_if,
-        sd_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_target_socket<sd_fw_transport_if, sd_bw_transport_if>
         sd_base_target_socket;
 
     class sd_initiator_socket: public sd_base_initiator_socket,
                                protected sd_bw_transport_if {
     private:
-        module* m_parent;
         sd_host* m_host;
         sd_target_stub* m_stub;
 
     public:
         bool is_stubbed() const { return m_stub != nullptr; }
 
-        explicit sd_initiator_socket(const char* name);
+        explicit sd_initiator_socket(const char* name,
+                                     address_space as = VCML_AS_DEFAULT);
         virtual ~sd_initiator_socket();
 
         VCML_KIND(sd_initiator_socket);
@@ -213,7 +213,6 @@ namespace vcml {
                             protected sd_fw_transport_if
     {
     private:
-        module* m_parent;
         sd_host* m_host;
         sd_initiator_stub* m_stub;
 
@@ -221,8 +220,6 @@ namespace vcml {
         virtual void sd_transport(sd_data& data) override;
 
     public:
-        const address_space as;
-
         bool is_stubbed() const { return m_stub != nullptr; }
 
         sd_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);

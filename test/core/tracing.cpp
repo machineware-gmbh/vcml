@@ -18,27 +18,29 @@
 
 #include "testing.h"
 
-
-MATCHER_P(match_trace, msg, "matches if trace message contains string") {
-    if (arg.level != LOG_TRACE)
-        return false;
-    if (arg.lines.size() != 1)
-        return false;
-    return arg.lines[0].find(msg) != std::string::npos;
+MATCHER_P3(match_trace, dir, addr, data, "matches trace entry") {
+    return arg.kind == PROTO_TLM && arg.dir == dir &&
+           !arg.error && arg.payload.get_address() == addr &&
+           arg.payload.get_data_length() == 4 &&
+           memcmp(arg.payload.get_data_ptr(), &data, 4) == 0;
 }
 
-class mock_publisher: public vcml::publisher
+MATCHER_P(match_trace_error, err, "matches if trace has error set") {
+    return arg.error == err && is_backward_trace(arg.dir);
+}
+
+class mock_tracer: public vcml::tracer
 {
 public:
-    mock_publisher(): vcml::publisher(vcml::LOG_ERROR, vcml::LOG_INFO) {}
-    MOCK_METHOD(void, publish, (const vcml::logmsg&), (override));
+    mock_tracer(): tracer() {}
+    MOCK_METHOD(void, trace, (const tracer::entry<tlm_generic_payload>&), (override));
 };
 
 class test_harness: public test_base
 {
 public:
-    vcml::log_term term;
-    mock_publisher mock;
+    tracer_term term;
+    mock_tracer mock;
 
     u64 addr;
     u32 data;
@@ -55,12 +57,15 @@ public:
         OUT("OUT"),
         IN("IN") {
         OUT.bind(IN);
-        term.set_level(LOG_TRACE);
-        mock.set_level(LOG_TRACE);
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx,
         const tlm_sbi& info, address_space as) override {
+        if (tx.get_address() == 0) {
+            tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+            return 0;
+        }
+
         EXPECT_EQ(tx.get_address(), addr)
             << "received wrong address";
         EXPECT_EQ(tx.get_data_length(), sizeof(data))
@@ -75,18 +80,27 @@ public:
     }
 
     virtual void run_test() override {
-        loglvl = LOG_TRACE;
         addr = 0x420;
         data = 0x1234;
 
-        vector<const char*> expected = {
-            ">> WR 0x00000420 [34 12 00 00] (TLM_INCOMPLETE_RESPONSE)",
-            "<< WR 0x00000420 [34 12 00 00] (TLM_OK_RESPONSE)",
-        };
+        OUT.trace = true;
+        OUT.trace_errors = false;
 
-        for (auto trace : expected)
-            EXPECT_CALL(mock, publish(match_trace(trace))).Times(2);
+        EXPECT_CALL(mock, trace(match_trace(TRACE_FW, addr, data)));
+        EXPECT_CALL(mock, trace(match_trace(TRACE_BW, addr, data)));
         EXPECT_OK(OUT.writew(addr, data)) << "failed to send transaction";
+
+        OUT.trace = false;
+        OUT.trace_errors = false;
+
+        EXPECT_CALL(mock, trace(_)).Times(0);
+        EXPECT_OK(OUT.writew(addr, data)) << "failed to send transaction";
+
+        OUT.trace = false;
+        OUT.trace_errors = true;
+
+        EXPECT_CALL(mock, trace(match_trace_error(true))).Times(1);
+        EXPECT_AE(OUT.writew(0, data)) << "did not get an address error";
     }
 };
 

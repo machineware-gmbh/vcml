@@ -210,13 +210,11 @@ namespace vcml {
         m_initiator->pci_interrupt(*this, irq, state);
     }
 
-    pci_initiator_socket::pci_initiator_socket(const char* nm, address_space a):
-        pci_base_initiator_socket(nm),
+    pci_initiator_socket::pci_initiator_socket(const char* n, address_space a):
+        pci_base_initiator_socket(n, a),
         pci_bw_transport_if(),
-        m_parent(hierarchy_search<module>()),
         m_initiator(hierarchy_search<pci_initiator>()),
         m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         VCML_ERROR_ON(!m_initiator, "%s outside pci_initiator", name());
         bind(*(pci_bw_transport_if*)this);
         if (m_initiator)
@@ -235,32 +233,29 @@ namespace vcml {
     }
 
     void pci_initiator_socket::transport(pci_payload& tx) {
-        m_parent->trace_fw(*this, tx);
+        trace_fw(tx);
         (*this)->pci_transport(tx);
-        m_parent->trace_bw(*this, tx);
+        trace_bw(tx);
     }
 
     void pci_initiator_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
+        hierarchy_guard guard(this);
         m_stub = new pci_target_stub(mkstr("%s_stub", basename()).c_str());
         bind(m_stub->PCI_IN);
     }
 
     void pci_target_socket::pci_transport(pci_payload& tx) {
-        m_parent->trace_fw(*this, tx);
+        trace_fw(tx);
         m_target->pci_transport(*this, tx);
-        m_parent->trace_bw(*this, tx);
+        trace_bw(tx);
     }
 
     pci_target_socket::pci_target_socket(const char* nm, address_space space):
-        pci_base_target_socket(nm),
+        pci_base_target_socket(nm, space),
         pci_fw_transport_if(),
-        m_parent(hierarchy_search<module>()),
         m_target(hierarchy_search<pci_target>()),
-        m_stub(nullptr),
-        port_as(space) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
+        m_stub(nullptr) {
         VCML_ERROR_ON(!m_target, "%s outside pci_target", name());
         bind(*(pci_fw_transport_if*)this);
         if (m_target)
@@ -280,7 +275,7 @@ namespace vcml {
 
     void pci_target_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
+        hierarchy_guard guard(this);
         m_stub = new pci_initiator_stub(mkstr("%s_stub", basename()).c_str());
         m_stub->PCI_OUT.bind(*this);
     }
@@ -323,9 +318,7 @@ namespace vcml {
 
     void pci_target_stub::pci_transport(pci_target_socket& socket,
         pci_payload& tx) {
-        trace_fw(socket, tx);
         // nothing to do
-        trace_bw(socket, tx);
     }
 
     pci_target_stub::pci_target_stub(const sc_module_name& nm):

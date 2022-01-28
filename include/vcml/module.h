@@ -25,6 +25,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/tracing/tracer.h"
 #include "vcml/properties/property.h"
 
 #include "vcml/command.h"
@@ -41,6 +42,7 @@ namespace vcml {
         bool cmd_abort(const vector<string>& args, ostream& os);
 
     public:
+        property<bool> trace;
         property<bool> trace_errors;
         property<log_level> loglvl;
 
@@ -69,15 +71,17 @@ namespace vcml {
         command_base* get_command(const string& name);
         vector<command_base*> get_commands() const;
 
-        template <typename PORT, typename PAYLOAD>
-        void trace(trace_direction dir, const PORT& port, const PAYLOAD& tx,
-                   const sc_time& dt = SC_ZERO_TIME);
-        template <typename PORT, typename PAYLOAD>
-        void trace_fw(const PORT& port, const PAYLOAD& tx,
-                      const sc_time& dt = SC_ZERO_TIME);
-        template <typename PORT, typename PAYLOAD>
-        void trace_bw(const PORT& port, const PAYLOAD& tx,
-                      const sc_time& dt = SC_ZERO_TIME);
+        template <typename PAYLOAD>
+        void record(trace_direction, const sc_object&, const PAYLOAD& tx,
+                    const sc_time& t = SC_ZERO_TIME) const;
+
+        template <typename PAYLOAD>
+        void trace_fw(const sc_object& port, const PAYLOAD& tx,
+                      const sc_time& t = SC_ZERO_TIME) const;
+
+        template <typename PAYLOAD>
+        void trace_bw(const sc_object& port, const PAYLOAD& tx,
+                      const sc_time& t = SC_ZERO_TIME) const;
     };
 
     inline void module::hierarchy_push() {
@@ -107,32 +111,23 @@ namespace vcml {
         return m_commands[name];
     }
 
-    template <typename PORT, typename PAYLOAD>
-    inline void module::trace(trace_direction dir, const PORT& port,
-                              const PAYLOAD& tx, const sc_time& dt) {
-        if (loglvl < LOG_TRACE || !publisher::would_publish(LOG_TRACE))
-            return;
-
-        if (trace_errors) {
-            if (!failed(tx))
-                return;
-            dir = (dir != TRACE_FW) ? dir : TRACE_FW_NOINDENT;
-            dir = (dir != TRACE_BW) ? dir : TRACE_BW_NOINDENT;
-        }
-
-        publisher::trace(dir, port, tx, dt);
+    template <typename PAYLOAD>
+    void module::record(trace_direction dir, const sc_object& port,
+        const PAYLOAD& tx, const sc_time& t) const {
+        if (trace || (trace_errors && is_backward_trace(dir) && failed(tx)))
+            tracer::record(dir, port, tx, t);
     }
 
-    template <typename PORT, typename PAYLOAD>
-    inline void module::trace_fw(const PORT& port, const PAYLOAD& tx,
-                                 const sc_time& dt) {
-        trace(TRACE_FW, port, tx, dt);
+    template <typename PAYLOAD>
+    void module::trace_fw(const sc_object& port, const PAYLOAD& tx,
+        const sc_time& t) const {
+        record(TRACE_FW, port, tx, t);
     }
 
-    template <typename PORT, typename PAYLOAD>
-    inline void module::trace_bw(const PORT& port, const PAYLOAD& tx,
-                                 const sc_time& dt) {
-        trace(TRACE_BW, port, tx, dt);
+    template <typename PAYLOAD>
+    void module::trace_bw(const sc_object& port, const PAYLOAD& tx,
+        const sc_time& t) const {
+        record(TRACE_BW, port, tx, t);
     }
 
 }

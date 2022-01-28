@@ -45,9 +45,11 @@ namespace vcml {
     module::module(const sc_module_name& nm):
         sc_module(nm),
         m_commands(),
+        trace("trace", false),
         trace_errors("trace_errors", false),
-        loglvl("loglvl", trace_errors ? LOG_TRACE : LOG_INFO),
+        loglvl("loglvl", LOG_INFO),
         log(this) {
+        trace.inherit_default();
         trace_errors.inherit_default();
         loglvl.inherit_default();
         register_command("clist", 0, this, &module::cmd_clist,

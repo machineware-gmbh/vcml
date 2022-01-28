@@ -31,7 +31,6 @@ TEST(logging, operators) {
     ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_WARN);
     ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_INFO);
     ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_DEBUG);
-    ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_TRACE);
 }
 
 MATCHER_P(match_level, level, "matches level of log message") {

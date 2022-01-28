@@ -381,8 +381,7 @@ public:
 
 TEST(pci, simulate) {
     broker_arg broker(sc_argc(), sc_argv());
-    log_term logger;
-    logger.set_level(LOG_TRACE);
+    tracer_term tracer;
     pcie_test test("pcie");
     sc_core::sc_start();
 }

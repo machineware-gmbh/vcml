@@ -23,6 +23,8 @@
 #include "vcml/common/systemc.h"
 #include "vcml/module.h"
 
+#include "vcml/protocols/base.h"
+
 namespace vcml {
 
     struct spi_payload {
@@ -80,25 +82,22 @@ namespace vcml {
         typedef spi_payload protocol_types;
     };
 
-    typedef tlm::tlm_base_initiator_socket<1, spi_fw_transport_if,
-        spi_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_initiator_socket<spi_fw_transport_if, spi_bw_transport_if>
         spi_base_initiator_socket;
 
-    typedef tlm::tlm_base_target_socket<1, spi_fw_transport_if,
-        spi_bw_transport_if, 1, sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_target_socket<spi_fw_transport_if, spi_bw_transport_if>
         spi_base_target_socket;
 
     class spi_initiator_socket: public spi_base_initiator_socket,
                                 private spi_bw_transport_if {
     private:
-        module* m_parent;
         spi_host* m_host;
         spi_target_stub* m_stub;
 
     public:
         bool is_stubbed() const { return m_stub != nullptr; }
 
-        spi_initiator_socket(const char* name);
+        spi_initiator_socket(const char* nm, address_space = VCML_AS_DEFAULT);
         virtual ~spi_initiator_socket();
         VCML_KIND(spi_initiator_socket);
 
@@ -111,14 +110,12 @@ namespace vcml {
     class spi_target_socket: public spi_base_target_socket,
                              private spi_fw_transport_if {
     private:
-        module* m_parent;
         spi_host* m_host;
         spi_initiator_stub* m_stub;
 
         virtual void spi_transport(spi_payload& spi) override;
 
     public:
-        const address_space as;
         bool is_stubbed() const { return m_stub != nullptr; }
         spi_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~spi_target_socket();

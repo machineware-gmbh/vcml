@@ -20,6 +20,18 @@
 
 namespace vcml {
 
+    void tlm_initiator_socket::trace_fw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace)
+            tracer::record(TRACE_FW, *this, tx, t);
+    }
+
+    void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace || (trace_errors && failed(tx)))
+            tracer::record(TRACE_BW, *this, tx, t);
+    }
+
     void tlm_initiator_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
                                                          sc_dt::uint64 end) {
         unmap_dmi(start, end);
@@ -36,9 +48,16 @@ namespace vcml {
         m_stub(nullptr),
         m_host(hierarchy_search<tlm_host>()),
         m_parent(hierarchy_search<module>()),
-        m_adapter(nullptr) {
+        m_adapter(nullptr),
+        trace(this, "trace", false),
+        trace_errors(this, "trace_errors", false),
+        allow_dmi(this, "allow_dmi", true) {
         VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
         VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
+
+        trace.inherit_default();
+        trace_errors.inherit_default();
+        allow_dmi.inherit_default();
 
         m_host->register_socket(this);
 
@@ -57,7 +76,7 @@ namespace vcml {
     }
 
     u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access a) {
-        if (!m_host->allow_dmi)
+        if (!allow_dmi)
             return nullptr;
 
         tlm_dmi dmi;
@@ -122,9 +141,9 @@ namespace vcml {
             sc_time& offset = m_host->local_time();
             sc_time local = sc_time_stamp() + offset;
 
-            m_parent->trace_fw(*this, tx, offset);
+            trace_fw(tx, offset);
             (*this)->b_transport(tx, offset);
-            m_parent->trace_bw(*this, tx, offset);
+            trace_bw(tx, offset);
 
             sc_time now = sc_time_stamp() + offset;
             VCML_ERROR_ON(now < local, "b_transport time went backwards");
@@ -137,7 +156,7 @@ namespace vcml {
         if (info.is_excl && !tx_is_excl(tx))
             bytes = 0;
 
-        if (m_host->allow_dmi && tx.is_dmi_allowed()) {
+        if (allow_dmi && tx.is_dmi_allowed()) {
             tlm_dmi dmi;
             if ((*this)->get_direct_mem_ptr(tx, dmi))
                 map_dmi(dmi);
@@ -191,7 +210,7 @@ namespace vcml {
             VCML_ERROR("non-debug TLM access outside SC_THREAD forbidden");
 
         // check if we are allowed to do a DMI access on that address
-        if (cmd != TLM_IGNORE_COMMAND && m_host->allow_dmi) {
+        if (cmd != TLM_IGNORE_COMMAND && allow_dmi) {
             if (success(access_dmi(cmd, addr, data, size, info))) {
                 if (sz != nullptr)
                     *sz = size;
@@ -249,12 +268,24 @@ namespace vcml {
         base_type::bind(m_stub->IN);
     }
 
+    void tlm_target_socket::trace_fw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace)
+            tracer::record(TRACE_FW, *this, tx, t);
+    }
+
+    void tlm_target_socket::trace_bw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace || (trace_errors && failed(tx)))
+            tracer::record(TRACE_BW, *this, tx, t);
+    }
+
     void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
-        m_parent->trace_fw(*this, tx, dt);
+        trace_fw(tx, dt);
 
         if (tx_size(tx) > get_bus_width() / 8) {
             tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
-            m_parent->trace_bw(*this, tx, dt);
+            trace_bw(tx, dt);
             return;
         }
 
@@ -267,7 +298,7 @@ namespace vcml {
 
         tx.set_dmi_allowed(false);
 
-        if (m_host->allow_dmi) {
+        if (allow_dmi) {
             tlm_dmi dmi;
             if (m_dmi_cache.lookup(tx, dmi))
                 tx.set_dmi_allowed(true);
@@ -281,7 +312,7 @@ namespace vcml {
         m_curr++;
         m_free_ev.notify();
 
-        m_parent->trace_bw(*this, tx, dt);
+        trace_bw(tx, dt);
     }
 
     unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx) {
@@ -294,7 +325,7 @@ namespace vcml {
         dmi.set_start_address(0);
         dmi.set_end_address((sc_dt::uint64)-1);
 
-        if (!m_host->allow_dmi)
+        if (!allow_dmi)
             return false;
 
         if (!m_dmi_cache.lookup(tx, dmi))
@@ -317,8 +348,15 @@ namespace vcml {
         m_host(hierarchy_search<tlm_host>()),
         m_parent(hierarchy_search<module>()),
         m_adapter(nullptr),
+        trace(this, "trace", false),
+        trace_errors(this, "trace_errros", false),
+        allow_dmi(this, "allow_dmi", true),
         as(a) {
         VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
+
+        trace.inherit_default();
+        trace_errors.inherit_default();
+        allow_dmi.inherit_default();
 
         m_host->register_socket(this);
 
@@ -368,4 +406,3 @@ namespace vcml {
     }
 
 }
-

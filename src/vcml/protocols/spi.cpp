@@ -34,13 +34,11 @@ namespace vcml {
         return sockets;
     }
 
-    spi_initiator_socket::spi_initiator_socket(const char* nm):
-        spi_base_initiator_socket(nm),
+    spi_initiator_socket::spi_initiator_socket(const char* nm, address_space a):
+        spi_base_initiator_socket(nm, a),
         spi_bw_transport_if(),
-        m_parent(hierarchy_search<module>()),
         m_host(dynamic_cast<spi_host*>(hierarchy_top())),
         m_stub(nullptr) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
         bind(*(spi_bw_transport_if*)this);
         if (m_host)
             m_host->m_initiator_sockets.push_back(this);
@@ -58,31 +56,29 @@ namespace vcml {
     }
 
     void spi_initiator_socket::transport(spi_payload& spi) {
-        m_parent->trace_fw(*this, spi);
+        trace_fw(spi);
         (*this)->spi_transport(spi);
-        m_parent->trace_bw(*this, spi);
+        trace_bw(spi);
     }
 
     void spi_initiator_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
+        hierarchy_guard guard(this);
         m_stub = new spi_target_stub(mkstr("%s_stub", basename()).c_str());
         bind(m_stub->SPI_IN);
     }
 
     void spi_target_socket::spi_transport(spi_payload& spi) {
-        m_parent->trace_fw(*this, spi);
+        trace_fw(spi);
         m_host->spi_transport(*this, spi);
-        m_parent->trace_bw(*this, spi);
+        trace_bw(spi);
     }
 
-    spi_target_socket::spi_target_socket(const char* nm, address_space a):
-        spi_base_target_socket(nm),
+    spi_target_socket::spi_target_socket(const char* nm, address_space as):
+        spi_base_target_socket(nm, as),
         spi_fw_transport_if(),
-        m_parent(hierarchy_search<module>()),
         m_host(hierarchy_search<spi_host>()),
-        m_stub(nullptr), as(a) {
-        VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
+        m_stub(nullptr) {
         VCML_ERROR_ON(!m_host, "%s declared outside spi_host", name());
         m_host->m_target_sockets.push_back(this);
         bind(*(spi_fw_transport_if*)this);
@@ -100,7 +96,7 @@ namespace vcml {
 
     void spi_target_socket::stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-        hierarchy_guard guard(m_parent);
+        hierarchy_guard guard(this);
         m_stub = new spi_initiator_stub(mkstr("%s_stub", basename()).c_str());
         m_stub->SPI_OUT.bind(*this);
     }
@@ -115,10 +111,8 @@ namespace vcml {
     }
 
     void spi_target_stub::spi_transport(const spi_target_socket& socket,
-                                        spi_payload& spi) {
-        trace_fw(SPI_IN, spi);
+        spi_payload& spi) {
         // nothing to do
-        trace_bw(SPI_IN, spi);
     }
 
     spi_target_stub::spi_target_stub(const sc_module_name& nm):

@@ -32,6 +32,8 @@
 #include "vcml/protocols/tlm_dmi_cache.h"
 #include "vcml/protocols/tlm_host.h"
 
+#include "vcml/properties/property.h"
+#include "vcml/tracing/tracer.h"
 #include "vcml/module.h"
 
 namespace vcml {
@@ -50,7 +52,14 @@ namespace vcml {
 
         void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
 
+        void trace_fw(const tlm_generic_payload& tx, const sc_time& t);
+        void trace_bw(const tlm_generic_payload& tx, const sc_time& t);
+
     public:
+        property<bool> trace;
+        property<bool> trace_errors;
+        property<bool> allow_dmi;
+
         int  get_cpuid() const  { return m_sbi.cpuid; }
         int  get_level() const  { return m_sbi.level; }
 
@@ -217,11 +226,18 @@ namespace vcml {
         module*             m_parent;
         module*             m_adapter;
 
+        void trace_fw(const tlm_generic_payload& tx, const sc_time& t);
+        void trace_bw(const tlm_generic_payload& tx, const sc_time& t);
+
         void b_transport(tlm_generic_payload& tx, sc_time& dt);
         unsigned int transport_dbg(tlm_generic_payload& tx);
         bool get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
 
     public:
+        property<bool> trace;
+        property<bool> trace_errors;
+        property<bool> allow_dmi;
+
         const address_space as;
 
         tlm_target_socket() = delete;

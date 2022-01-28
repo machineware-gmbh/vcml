@@ -32,15 +32,7 @@ namespace vcml {
         LOG_WARN,
         LOG_INFO,
         LOG_DEBUG,
-        LOG_TRACE,
         NUM_LOG_LEVELS
-    };
-
-    enum trace_direction : int {
-        TRACE_FW = 1,
-        TRACE_FW_NOINDENT = 2,
-        TRACE_BW = -1,
-        TRACE_BW_NOINDENT = -2,
     };
 
     VCML_TYPEINFO(log_level);
@@ -66,19 +58,6 @@ namespace vcml {
         logmsg(log_level _level, const string& _sender);
     };
 
-    template <typename PAYLOAD>
-    struct trace_msg : public logmsg {
-        trace_direction direction;
-        const PAYLOAD& payload;
-
-        trace_msg(const string& _sender, trace_direction _direction,
-                  const PAYLOAD& _payload):
-            logmsg(LOG_TRACE, _sender),
-            direction(_direction),
-            payload(_payload) {
-        }
-    };
-
     ostream& operator << (ostream& os, const logmsg& msg);
 
     typedef function<bool(const logmsg& msg)> log_filter;
@@ -100,7 +79,6 @@ namespace vcml {
         publisher(const publisher&);
         publisher& operator = (const publisher&);
 
-        static size_t trace_curr_indent;
         static vector<publisher*> publishers[NUM_LOG_LEVELS];
 
     public:
@@ -133,22 +111,7 @@ namespace vcml {
                             const string& sender,
                             const report& rep);
 
-        template <typename PAYLOAD>
-        void publish(const trace_msg<PAYLOAD>& msg);
-
         virtual void publish(const logmsg& msg) = 0;
-
-        template <typename SENDER, typename PAYLOAD>
-        static void trace(trace_direction dir, const SENDER& sender,
-                          const PAYLOAD& tx, const sc_time& dt = SC_ZERO_TIME);
-
-        template <typename SENDER, typename PAYLOAD>
-        static void trace_fw(const SENDER& sender, const PAYLOAD& tx,
-                             const sc_time& dt = SC_ZERO_TIME);
-
-        template <typename SENDER, typename PAYLOAD>
-        static void trace_bw(const SENDER& sender, const PAYLOAD& tx,
-                             const sc_time& dt = SC_ZERO_TIME);
 
         static bool print_time_stamp;
         static bool print_delta_cycle;
@@ -156,9 +119,7 @@ namespace vcml {
         static bool print_source;
         static bool print_backtrace;
 
-        static size_t trace_name_length;
-        static size_t trace_indent_incr;
-
+        static void print_timing(ostream& os, const sc_time& time, u64 delta);
         static void print_prefix(ostream& os, const logmsg& msg);
         static void print_logmsg(ostream& os, const logmsg& msg);
 
@@ -173,11 +134,6 @@ namespace vcml {
     inline bool publisher::would_publish(log_level lvl) {
         VCML_ERROR_ON(lvl >= NUM_LOG_LEVELS, "illegal log level %u", lvl);
         return !publishers[lvl].empty();
-    }
-
-    template <typename PAYLOAD>
-    inline void publisher::publish(const trace_msg<PAYLOAD>& msg) {
-        publish((logmsg)msg);
     }
 
     inline void publisher::filter(log_filter filter) {
@@ -204,49 +160,6 @@ namespace vcml {
                 return false;
             return true;
         });
-    }
-
-    template <typename SENDER, typename PAYLOAD>
-    inline void publisher::trace(trace_direction dir, const SENDER& sender,
-        const PAYLOAD& tx, const sc_time& dt) {
-        if (!would_publish(LOG_TRACE))
-            return;
-
-        trace_msg<PAYLOAD> msg(sender.name(), dir, tx);
-        msg.time_offset = dt;
-
-        stringstream ss;
-        if (dir == TRACE_FW)
-            trace_curr_indent += trace_indent_incr;
-        if (dir >= TRACE_FW)
-            ss << string(trace_curr_indent, ' ') << ">> ";
-        if (dir <= TRACE_BW)
-            ss << string(trace_curr_indent, ' ') << "<< ";
-        if (dir == TRACE_BW) {
-            if (trace_curr_indent >= trace_indent_incr)
-                trace_curr_indent -= trace_indent_incr;
-            else
-                trace_curr_indent = 0;
-        }
-
-        vector<string> lines = split(to_string(tx), '\n');
-        for (auto line : lines)
-            msg.lines.push_back(ss.str() + line);
-
-        for (auto pub : publishers[LOG_TRACE])
-            pub->publish(msg);
-    }
-
-    template <typename SENDER, typename PAYLOAD>
-    inline void publisher::trace_fw(const SENDER& sender, const PAYLOAD& tx,
-        const sc_time& dt) {
-        trace(TRACE_FW, sender, tx, dt);
-    }
-
-    template <typename SENDER, typename PAYLOAD>
-    inline void publisher::trace_bw(const SENDER& sender, const PAYLOAD& tx,
-        const sc_time& dt) {
-        trace(TRACE_BW, sender, tx, dt);
     }
 
 }

@@ -29,6 +29,10 @@
 #include "vcml/logging/log_file.h"
 #include "vcml/logging/log_stream.h"
 
+#include "vcml/tracing/tracer.h"
+#include "vcml/tracing/tracer_file.h"
+#include "vcml/tracing/tracer_term.h"
+
 #include "vcml/properties/property.h"
 #include "vcml/properties/broker.h"
 #include "vcml/properties/broker_arg.h"
@@ -50,6 +54,7 @@ namespace vcml {
         vector<string> m_config_files;
 
         vector<publisher*> m_publishers;
+        vector<tracer*>    m_tracers;
         vector<broker*>    m_brokers;
 
         bool parse_command_line(int argc, char** argv);
