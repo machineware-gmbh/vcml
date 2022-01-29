@@ -28,7 +28,7 @@
 namespace vcml {
 
     template <typename PAYLOAD>
-    void tracer_file::do_trace(const entry<PAYLOAD>& msg) {
+    void tracer_file::do_trace(const activity<PAYLOAD>& msg) {
         vector<string> lines = split(to_string(msg.payload), '\n');
         for (const string& line : lines) {
             m_stream << "[" << protocol_name(msg.kind);
@@ -45,31 +45,31 @@ namespace vcml {
         }
     }
 
-    void tracer_file::trace(const entry<tlm_generic_payload>& msg) {
+    void tracer_file::trace(const activity<tlm_generic_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_file::trace(const entry<irq_payload>& msg) {
+    void tracer_file::trace(const activity<irq_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_file::trace(const entry<pci_payload>& msg) {
+    void tracer_file::trace(const activity<pci_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_file::trace(const entry<spi_payload>& msg) {
+    void tracer_file::trace(const activity<spi_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_file::trace(const entry<sd_command>& msg) {
+    void tracer_file::trace(const activity<sd_command>& msg) {
         do_trace(msg);
     }
 
-    void tracer_file::trace(const entry<sd_data>& msg) {
+    void tracer_file::trace(const activity<sd_data>& msg) {
         do_trace(msg);
     }
 
-    void tracer_file::trace(const entry<vq_message>& msg) {
+    void tracer_file::trace(const activity<vq_message>& msg) {
         do_trace(msg);
     }
 

@@ -20,18 +20,6 @@
 
 namespace vcml {
 
-    void tlm_initiator_socket::trace_fw(const tlm_generic_payload& tx,
-        const sc_time& t) {
-        if (trace)
-            tracer::record(TRACE_FW, *this, tx, t);
-    }
-
-    void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
-        const sc_time& t) {
-        if (trace || (trace_errors && failed(tx)))
-            tracer::record(TRACE_BW, *this, tx, t);
-    }
-
     void tlm_initiator_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
                                                          sc_dt::uint64 end) {
         unmap_dmi(start, end);
@@ -266,18 +254,6 @@ namespace vcml {
         hierarchy_guard guard(m_parent);
         m_stub = new tlm_target_stub(concat(basename(), "_stub").c_str(), r);
         base_type::bind(m_stub->IN);
-    }
-
-    void tlm_target_socket::trace_fw(const tlm_generic_payload& tx,
-        const sc_time& t) {
-        if (trace)
-            tracer::record(TRACE_FW, *this, tx, t);
-    }
-
-    void tlm_target_socket::trace_bw(const tlm_generic_payload& tx,
-        const sc_time& t) {
-        if (trace || (trace_errors && failed(tx)))
-            tracer::record(TRACE_BW, *this, tx, t);
     }
 
     void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {

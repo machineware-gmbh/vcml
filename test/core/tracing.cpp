@@ -33,7 +33,7 @@ class mock_tracer: public vcml::tracer
 {
 public:
     mock_tracer(): tracer() {}
-    MOCK_METHOD(void, trace, (const tracer::entry<tlm_generic_payload>&), (override));
+    MOCK_METHOD(void, trace, (const tracer::activity<tlm_generic_payload>&), (override));
 };
 
 class test_harness: public test_base

@@ -43,7 +43,7 @@ namespace vcml {
     static const char* term_reset = "\x1B[0m";
 
     template <typename PAYLOAD>
-    void tracer_term::do_trace(const entry<PAYLOAD>& msg) {
+    void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
         if (m_colors)
             m_os << colors[msg.kind];
 
@@ -85,31 +85,31 @@ namespace vcml {
         }
     }
 
-    void tracer_term::trace(const entry<tlm_generic_payload>& msg) {
+    void tracer_term::trace(const activity<tlm_generic_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_term::trace(const entry<irq_payload>& msg) {
+    void tracer_term::trace(const activity<irq_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_term::trace(const entry<pci_payload>& msg) {
+    void tracer_term::trace(const activity<pci_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_term::trace(const entry<spi_payload>& msg) {
+    void tracer_term::trace(const activity<spi_payload>& msg) {
         do_trace(msg);
     }
 
-    void tracer_term::trace(const entry<sd_command>& msg) {
+    void tracer_term::trace(const activity<sd_command>& msg) {
         do_trace(msg);
     }
 
-    void tracer_term::trace(const entry<sd_data>& msg) {
+    void tracer_term::trace(const activity<sd_data>& msg) {
         do_trace(msg);
     }
 
-    void tracer_term::trace(const entry<vq_message>& msg) {
+    void tracer_term::trace(const activity<vq_message>& msg) {
         do_trace(msg);
     }
 

@@ -123,6 +123,18 @@ namespace vcml {
         void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
     };
 
+    inline void tlm_initiator_socket::trace_fw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace)
+            tracer::record(TRACE_FW, *this, tx, t);
+    }
+
+    inline void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace || (trace_errors && failed(tx)))
+            tracer::record(TRACE_BW, *this, tx, t);
+    }
+
     inline void tlm_initiator_socket::set_cpuid(int cpuid) {
         m_sbi.cpuid = cpuid;
         VCML_ERROR_ON(m_sbi.cpuid != cpuid, "cpuid too large");
@@ -263,6 +275,18 @@ namespace vcml {
 
         void stub();
     };
+
+    inline void tlm_target_socket::trace_fw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace)
+            tracer::record(TRACE_FW, *this, tx, t);
+    }
+
+    inline void tlm_target_socket::trace_bw(const tlm_generic_payload& tx,
+        const sc_time& t) {
+        if (trace || (trace_errors && failed(tx)))
+            tracer::record(TRACE_BW, *this, tx, t);
+    }
 
     inline void tlm_target_socket::map_dmi(const tlm_dmi& dmi) {
         m_dmi_cache.insert(dmi);

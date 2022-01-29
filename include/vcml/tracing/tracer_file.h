@@ -36,18 +36,18 @@ namespace vcml {
         ofstream m_stream;
 
         template <typename PAYLOAD>
-        void do_trace(const entry<PAYLOAD>& msg);
+        void do_trace(const activity<PAYLOAD>& msg);
 
     public:
         const char* filename() const { return m_filename.c_str(); }
 
-        virtual void trace(const entry<tlm_generic_payload>&) override;
-        virtual void trace(const entry<irq_payload>&) override;
-        virtual void trace(const entry<pci_payload>&) override;
-        virtual void trace(const entry<spi_payload>&) override;
-        virtual void trace(const entry<sd_command>&) override;
-        virtual void trace(const entry<sd_data>&) override;
-        virtual void trace(const entry<vq_message>&) override;
+        virtual void trace(const activity<tlm_generic_payload>&) override;
+        virtual void trace(const activity<irq_payload>&) override;
+        virtual void trace(const activity<pci_payload>&) override;
+        virtual void trace(const activity<spi_payload>&) override;
+        virtual void trace(const activity<sd_command>&) override;
+        virtual void trace(const activity<sd_data>&) override;
+        virtual void trace(const activity<vq_message>&) override;
 
         tracer_file(const string& filename);
         virtual ~tracer_file();

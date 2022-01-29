@@ -91,7 +91,7 @@ namespace vcml {
     {
     public:
         template <typename PAYLOAD>
-        struct entry {
+        struct activity {
             protocol_kind kind;
             trace_direction dir;
             bool error;
@@ -101,13 +101,13 @@ namespace vcml {
             const u64 cycle;
         };
 
-        virtual void trace(const entry<tlm_generic_payload>&) {}
-        virtual void trace(const entry<irq_payload>&) {}
-        virtual void trace(const entry<pci_payload>&) {}
-        virtual void trace(const entry<spi_payload>&) {}
-        virtual void trace(const entry<sd_command>&) {}
-        virtual void trace(const entry<sd_data>&) {}
-        virtual void trace(const entry<vq_message>&) {}
+        virtual void trace(const activity<tlm_generic_payload>&) {}
+        virtual void trace(const activity<irq_payload>&) {}
+        virtual void trace(const activity<pci_payload>&) {}
+        virtual void trace(const activity<spi_payload>&) {}
+        virtual void trace(const activity<sd_command>&) {}
+        virtual void trace(const activity<sd_data>&) {}
+        virtual void trace(const activity<vq_message>&) {}
 
         tracer();
         virtual ~tracer();
@@ -115,22 +115,28 @@ namespace vcml {
         template <typename PAYLOAD>
         static void record(trace_direction dir, const sc_object& port,
             const PAYLOAD& payload, const sc_time& t = SC_ZERO_TIME) {
-            const tracer::entry<PAYLOAD> msg = {
-                kind:    protocol<PAYLOAD>::kind,
-                dir:     dir,
-                error:   failed(payload),
-                port:    port,
-                payload: payload,
-                t:       t + sc_time_stamp(),
-                cycle:   sc_delta_count(),
-            };
+            auto& tracers = tracer::all();
+            if (!tracers.empty()) {
+                const tracer::activity<PAYLOAD> msg = {
+                    kind:    protocol<PAYLOAD>::kind,
+                    dir:     dir,
+                    error:   failed(payload),
+                    port:    port,
+                    payload: payload,
+                    t:       t + sc_time_stamp(),
+                    cycle:   sc_delta_count(),
+                };
 
-            for (tracer* tr : tracer::all())
-                tr->trace(msg);
+                for (tracer* tr : tracers)
+                    tr->trace(msg);
+            }
         }
 
+        static bool any() { return !all().empty(); }
+
+    protected:
         template <typename PAYLOAD>
-        static void print_timing(ostream& os, const entry<PAYLOAD>& msg) {
+        static void print_timing(ostream& os, const activity<PAYLOAD>& msg) {
             print_timing(os, msg.t, msg.cycle);
         }
 
