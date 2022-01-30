@@ -21,6 +21,14 @@
 
 namespace vcml { namespace net {
 
+    ostream& operator << (ostream& os, const mac_addr& addr) {
+        stream_guard guard(os);
+        os << std::hex << std::setw(2) << std::setfill('0') << (int)addr[0];
+        for (int i = 1; i < 6; i++)
+            os << ":" << std::setw(2) << std::setfill('0') << (int)addr[i];
+        return os;
+    }
+
     unordered_map<string, adapter*> adapter::s_adapters;
 
     bool adapter::cmd_create_client(const vector<string>& args, ostream& os) {

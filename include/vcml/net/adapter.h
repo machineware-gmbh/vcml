@@ -29,6 +29,37 @@
 
 namespace vcml { namespace net {
 
+    struct mac_addr {
+        array<u8, 6> bytes;
+
+        mac_addr() = default;
+        mac_addr(mac_addr&&) = default;
+        mac_addr(const mac_addr&) = default;
+        mac_addr& operator = (const mac_addr&) = default;
+
+        mac_addr(u8, u8, u8, u8, u8, u8);
+
+        u8& operator [] (size_t i) { return bytes.at(i); }
+        u8  operator [] (size_t i) const { return bytes.at(i); }
+
+        bool operator == (const mac_addr&) const;
+        bool operator != (const mac_addr&) const;
+    };
+
+    inline mac_addr::mac_addr(u8 a, u8 b, u8 c, u8 d, u8 e, u8 f):
+        bytes({a, b, c, d, e, f}) {
+    }
+
+    inline bool mac_addr::operator == (const mac_addr& other) const {
+        return bytes == other.bytes;
+    }
+
+    inline bool mac_addr::operator != (const mac_addr& other) const {
+        return !(bytes == other.bytes);
+    }
+
+    ostream& operator << (ostream& os, const mac_addr& addr);
+
     class backend;
 
     class adapter
