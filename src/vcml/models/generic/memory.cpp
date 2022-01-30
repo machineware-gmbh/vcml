@@ -105,7 +105,7 @@ namespace vcml { namespace generic {
 
     void memory::reset() {
         if (poison > 0)
-            memset(m_memory.data(), poison, size);
+            m_memory.fill(poison);
 
         load_images(images);
     }

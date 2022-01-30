@@ -83,6 +83,14 @@ namespace vcml {
         tlm_dmi::init();
     }
 
+    tlm_response_status tlm_memory::fill(u8 data, bool debug) {
+        if (!is_write_allowed() && !debug)
+            return m_discard ? TLM_OK_RESPONSE : TLM_COMMAND_ERROR_RESPONSE;
+
+        fill(data);
+        return TLM_OK_RESPONSE;
+    }
+
     tlm_response_status
     tlm_memory::read(const range& addr, void* dest, bool debug) {
         if (addr.end >= m_size)

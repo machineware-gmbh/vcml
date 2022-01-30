@@ -52,12 +52,21 @@ namespace vcml {
 
         void init(size_t size, alignment al);
         void free();
+        void fill(u8 data);
+
+        tlm_response_status fill(u8 data, bool debug);
 
         tlm_response_status
         read(const range& addr, void* dest, bool debug = false);
 
         tlm_response_status
         write(const range& addr, const void* dest, bool debug = false);
+
+        template <typename T>
+        tlm_response_status read(u64 addr, T& data, bool debug = false);
+
+        template <typename T>
+        tlm_response_status write(u64 addr, const T& data, bool debug = false);
 
         void transport(tlm_generic_payload& tx, const tlm_sbi& sbi);
 
@@ -67,6 +76,20 @@ namespace vcml {
 
     inline size_t tlm_memory::size() const {
         return get_end_address() - get_start_address() + 1;
+    }
+
+    inline void tlm_memory::fill(u8 val) {
+        memset(data(), val, size());
+    }
+
+    template <typename T>
+    tlm_response_status tlm_memory::read(u64 addr, T& data, bool dbg) {
+        return read({addr, addr + sizeof(data) - 1}, &data, dbg);
+    }
+
+    template <typename T>
+    tlm_response_status tlm_memory::write(u64 addr, const T& data, bool dbg) {
+        return write({addr, addr + sizeof(data) - 1}, &data, dbg);
     }
 
     inline u8 tlm_memory::operator [] (size_t offset) const {
