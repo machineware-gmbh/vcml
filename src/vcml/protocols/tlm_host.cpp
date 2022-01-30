@@ -21,6 +21,16 @@
 
 namespace vcml {
 
+    unsigned int tlm_host::do_transport(tlm_target_socket& socket,
+        tlm_generic_payload& tx, const tlm_sbi& info) {
+        m_payload = &tx;
+        m_sideband = &info;
+        unsigned int n = transport(socket, tx, info);
+        m_payload = nullptr;
+        m_sideband = nullptr;
+        return n;
+    }
+
     void tlm_host::register_socket(tlm_initiator_socket* socket) {
         if (stl_contains(m_initiator_sockets, socket))
             VCML_ERROR("socket '%s' already registered", socket->name());
@@ -70,6 +80,8 @@ namespace vcml {
         m_offsets(),
         m_initiator_sockets(),
         m_target_sockets(),
+        m_payload(nullptr),
+        m_sideband(nullptr),
         allow_dmi("allow_dmi", true) {
     }
 
@@ -150,18 +162,18 @@ namespace vcml {
         sc_process_b* proc = current_thread();
         VCML_ERROR_ON(!proc, "b_transport outside SC_THREAD");
         m_offsets[proc] = dt;
-        transport(socket, tx, tx_get_sbi(tx));
+        do_transport(socket, tx, tx_get_sbi(tx));
         dt = m_offsets[proc];
     }
 
     unsigned int tlm_host::transport_dbg(tlm_target_socket& socket,
         tlm_generic_payload& tx) {
         sc_time t1 = sc_time_stamp();
-        unsigned int bytes = transport(socket, tx, tx_get_sbi(tx) | SBI_DEBUG);
+        unsigned int n = do_transport(socket, tx, tx_get_sbi(tx) | SBI_DEBUG);
         sc_time t2 = sc_time_stamp();
         if (thctl_is_sysc_thread() && t1 != t2)
             VCML_ERROR("time advance during debug call");
-        return bytes;
+        return n;
     }
 
     bool tlm_host::get_direct_mem_ptr(tlm_target_socket& socket,

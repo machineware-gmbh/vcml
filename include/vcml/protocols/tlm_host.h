@@ -38,6 +38,19 @@ namespace vcml {
         vector<tlm_initiator_socket*> m_initiator_sockets;
         vector<tlm_target_socket*> m_target_sockets;
 
+        const tlm_generic_payload* m_payload;
+        const tlm_sbi* m_sideband;
+
+        unsigned int do_transport(tlm_target_socket& socket,
+                                  tlm_generic_payload& tx,
+                                  const tlm_sbi& info);
+
+    protected:
+        bool in_transaction() const;
+        bool in_debug_transaction() const;
+        const tlm_generic_payload& current_transaction() const;
+        const tlm_sbi& current_sideband() const;
+
     public:
         void register_socket(tlm_initiator_socket* socket);
         void register_socket(tlm_target_socket* socket);
@@ -90,10 +103,28 @@ namespace vcml {
 
         virtual unsigned int transport(tlm_target_socket& socket,
                                        tlm_generic_payload& tx,
-                                       const tlm_sbi& info) = 0;
+                                       const tlm_sbi& info);
 
         property<bool> allow_dmi;
     };
+
+    inline bool tlm_host::in_transaction() const {
+        return m_payload != nullptr;
+    }
+
+    inline bool tlm_host::in_debug_transaction() const {
+        return m_sideband && m_sideband->is_debug;
+    }
+
+    inline const tlm_generic_payload& tlm_host::current_transaction() const {
+        VCML_ERROR_ON(!m_payload, "not currently servicing a transaction");
+        return *m_payload;
+    }
+
+    inline const tlm_sbi& tlm_host::current_sideband() const {
+        VCML_ERROR_ON(!m_sideband, "not currently servicing a transaction");
+        return *m_sideband;
+    }
 
     inline const vector<tlm_initiator_socket*>&
     tlm_host::get_tlm_initiator_sockets() const {
