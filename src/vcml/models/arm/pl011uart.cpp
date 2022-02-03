@@ -76,44 +76,43 @@ namespace vcml { namespace arm {
         return val;
     }
 
-    u16 pl011uart::write_DR(u16 val) {
+    void pl011uart::write_DR(u16 val) {
         if (!is_tx_enabled())
-            return DR;
+            return;
 
         // Upper 8 bits of DR are used for encoding transmission errors, but
         // since those are not simulated, we just set them to zero.
-        u8 val8 = (u8)val;
-        serial_out(val8);
+        DR = val & 0x00ff;
         RIS |= RIS_TX;
+        serial_out(DR);
         update();
-        return val8;
     }
 
-    u8 pl011uart::write_RSR(u8 val) {
+    void pl011uart::write_RSR(u8 val) {
         //  A write to this register clears the framing, parity, break,
         //  and overrun errors. The data value is not important.
-        return 0;
+        return;
     }
 
-    u16 pl011uart::write_IBRD(u16 val) {
-        return val & LCR_IBRD_M;
+    void pl011uart::write_IBRD(u16 val) {
+        IBRD = val & LCR_IBRD_M;
     }
 
-    u16 pl011uart::write_FBRD(u16 val) {
-        return val & LCR_FBRD_M;
+    void pl011uart::write_FBRD(u16 val) {
+        FBRD = val & LCR_FBRD_M;
     }
 
-    u8 pl011uart::write_LCR(u8 val) {
+    void pl011uart::write_LCR(u8 val) {
         if ((val & LCR_FEN) && !(LCR & LCR_FEN))
             log_debug("FIFO enabled");
         if (!(val & LCR_FEN) && (LCR & LCR_FEN))
             log_debug("FIFO disabled");
 
         m_fifo_size = (val & LCR_FEN) ? FIFOSIZE : 1;
-        return val & LCR_H_M;
+        LCR = val & LCR_H_M;
     }
 
-    u16 pl011uart::write_CR(u16 val) {
+    void pl011uart::write_CR(u16 val) {
         if (!is_enabled() && (val & CR_UARTEN))
             log_debug("device enabled");
         if (is_enabled() && !(val & CR_UARTEN))
@@ -128,23 +127,22 @@ namespace vcml { namespace arm {
             log_debug("receiver disabled");
 
         m_enable.notify(SC_ZERO_TIME);
-        return val;
+        CR = val;
     }
 
-    u16 pl011uart::write_IFLS(u16 val) {
-        return val & 0x3F; // TODO implement interrupt FIFO level select
+    void pl011uart::write_IFLS(u16 val) {
+        IFLS = val & 0x3f; // TODO implement interrupt FIFO level select
     }
 
-    u16 pl011uart::write_IMSC(u16 val) {
+    void pl011uart::write_IMSC(u16 val) {
         IMSC = val & RIS_M;
         update();
-        return IMSC;
     }
 
-    u16 pl011uart::write_ICR(u16 val) {
+    void pl011uart::write_ICR(u16 val) {
         RIS &= ~(val & RIS_M);
+        ICR = 0;
         update();
-        return 0;
     }
 
     pl011uart::pl011uart(const sc_module_name& nm):

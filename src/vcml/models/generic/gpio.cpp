@@ -88,7 +88,7 @@ namespace vcml { namespace generic {
         return result;
     }
 
-    u32 gpio::write_DATA(u32 val) {
+    void gpio::write_DATA(u32 val) {
         for (auto gpio : GPIO) {
             VCML_ERROR_ON(gpio.first > 31, "invalid GPIO%u", gpio.first);
 
@@ -104,7 +104,7 @@ namespace vcml { namespace generic {
             }
         }
 
-        return val;
+        DATA = val;
     }
 
     gpio::gpio(const sc_module_name& nm):
@@ -130,7 +130,7 @@ namespace vcml { namespace generic {
 
     void gpio::reset() {
         peripheral::reset();
-        DATA = write_DATA(0);
+        write_DATA(0);
     }
 
     void gpio::end_of_elaboration() {

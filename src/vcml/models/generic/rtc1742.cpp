@@ -156,26 +156,20 @@ namespace vcml { namespace generic {
         return TLM_OK_RESPONSE;
     }
 
-    u8 rtc1742::write_CONTROL(u8 val) {
+    void rtc1742::write_CONTROL(u8 val) {
         VCML_LOG_REG_BIT_CHANGE(CONTROL_R, CONTROL, val);
         VCML_LOG_REG_BIT_CHANGE(CONTROL_W, CONTROL, val);
 
-        if ((val & CONTROL_R) && !(CONTROL & CONTROL_R)) { // CONTROL_R set
-            load_time();
-            return CONTROL | CONTROL_R;
+        if ((val & CONTROL_R) && !(CONTROL & CONTROL_R)) {
+            load_time(); // CONTROL_R set
+            CONTROL |= CONTROL_R;
+        } else if ((val & CONTROL_W) && !(CONTROL & CONTROL_W)) {
+            load_time(); // CONTROL_W set
+            CONTROL |= CONTROL_W;
+        } else if (!(val & CONTROL_W) && (CONTROL & CONTROL_W)) {
+            save_time(); // CONTROL_W cleared
+            CONTROL &= ~CONTROL_W;
         }
-
-        if ((val & CONTROL_W) && !(CONTROL & CONTROL_W)) { // CONTROL_W set
-            load_time();
-            return CONTROL | CONTROL_W;
-        }
-
-        if (!(val & CONTROL_W) && (CONTROL & CONTROL_W)) { // CONTROL_W cleared
-            save_time();
-            return CONTROL & ~CONTROL_W;
-        }
-
-        return val;
     }
 
     rtc1742::rtc1742(const sc_module_name& nm, u32 nvmemsz):

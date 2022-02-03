@@ -34,7 +34,7 @@ namespace vcml { namespace riscv {
     class simdev: public peripheral
     {
     private:
-        u32 write_FINISH(u32 val);
+        void write_FINISH(u32 val);
 
     public:
         enum : u32 {

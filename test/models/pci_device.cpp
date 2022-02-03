@@ -74,12 +74,11 @@ public:
     reg<u32> TEST_REG;
     reg<u32> TEST_REG_IO;
 
-    u32 write_TEST_REG_IO(u32 val) {
+    void write_TEST_REG_IO(u32 val) {
         if (val == 0x1234)
             pci_interrupt(true, TEST_IRQ_VECTOR);
         if (val == 0)
             pci_interrupt(false, TEST_IRQ_VECTOR);
-        return val;
     }
 
     pci_test_device(const sc_module_name& nm):

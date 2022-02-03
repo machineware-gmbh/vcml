@@ -30,7 +30,7 @@ namespace vcml { namespace opencores {
         return STAT;
     }
 
-    u32 ocfbc::write_STAT(u32 val) {
+    void ocfbc::write_STAT(u32 val) {
         // only the lower 8 bits are writable
         val = (STAT & 0xFFFFFF00) | (val & 0xFF);
 
@@ -64,10 +64,10 @@ namespace vcml { namespace opencores {
             IRQ = false;
         }
 
-        return val;
+        STAT = val;
     }
 
-    u32 ocfbc::write_CTRL(u32 val) {
+    void ocfbc::write_CTRL(u32 val) {
         VCML_LOG_REG_BIT_CHANGE(CTLR_VEN,   CTLR, val);
         VCML_LOG_REG_BIT_CHANGE(CTLR_VIE,   CTLR, val);
         VCML_LOG_REG_BIT_CHANGE(CTLR_HIE,   CTLR, val);
@@ -102,25 +102,25 @@ namespace vcml { namespace opencores {
             create();
         }
 
-        return val;
+        CTLR = val;
     }
 
-    u32 ocfbc::write_HTIM(u32 val) {
+    void ocfbc::write_HTIM(u32 val) {
         u32 sync = (val >> 24) & 0xff;
         u32 gdel = (val >> 16) & 0xff;
         u32 gate = (val & 0xffff) + 1;
         log_debug("write HTIM: hsync = %d, hgate delay = %d, hgate = %d",
                   sync, gdel, gate);
-        return val;
+        HTIM = val;
     }
 
-    u32 ocfbc::write_VTIM(u32 val) {
+    void ocfbc::write_VTIM(u32 val) {
         u32 sync = (val >> 24) & 0xff;
         u32 gdel = (val >> 16) & 0xff;
         u32 gate = (val & 0xffff) + 1;
         log_debug("write VTIM: vsync = %d, vgate delay = %d, vgate = %d",
                   sync, gdel, gate);
-        return val;
+        VTIM = val;
     }
 
     tlm_response_status ocfbc::read(const range& addr, void* ptr,

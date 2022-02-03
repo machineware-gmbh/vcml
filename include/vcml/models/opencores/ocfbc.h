@@ -54,12 +54,12 @@ namespace vcml { namespace opencores {
         u32  m_bpp;
         bool m_pc;
 
-        u32 read_STAT();
+        u32  read_STAT();
 
-        u32 write_STAT(u32 val);
-        u32 write_CTRL(u32 val);
-        u32 write_HTIM(u32 val);
-        u32 write_VTIM(u32 val);
+        void write_STAT(u32 val);
+        void write_CTRL(u32 val);
+        void write_HTIM(u32 val);
+        void write_VTIM(u32 val);
 
         virtual tlm_response_status read(const range& addr, void* data,
                                          const tlm_sbi& info) override;

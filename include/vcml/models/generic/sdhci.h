@@ -93,14 +93,14 @@ namespace vcml { namespace generic {
         void transfer_data_from_port();
         void transfer_data_to_port();
 
-        u16 write_CMD(u16 val);
-        u32 read_BUFFER_DATA_PORT();
-        u32 write_BUFFER_DATA_PORT(u32 val);
-        u16 write_CLOCK_CTRL(u16 val);
-        u8  write_SOFTWARE_RESET(u8 val);
-        u16 write_NORMAL_INT_STAT(u16 val);
-        u16 write_ERROR_INT_STAT(u16 val);
-        u32 read_CAPABILITIES();
+        void write_CMD(u16 val);
+        u32  read_BUFFER_DATA_PORT();
+        void write_BUFFER_DATA_PORT(u32 val);
+        void write_CLOCK_CTRL(u16 val);
+        void write_SOFTWARE_RESET(u8 val);
+        void write_NORMAL_INT_STAT(u16 val);
+        void write_ERROR_INT_STAT(u16 val);
+        u32  read_CAPABILITIES();
 
         void dma_thread();
 

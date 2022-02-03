@@ -73,18 +73,17 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_CTLR(u32 val) {
+    void gic400::distif::write_CTLR(u32 val) {
         if ((val & CTLR_ENABLE) && !(CTLR & CTLR_ENABLE))
             log_debug("(CTLR) irq forwarding enabled");
         if (!(val & CTLR_ENABLE) && (CTLR & CTLR_ENABLE))
             log_debug("(CTLR) irq forwarding disabled");
         CTLR = val & CTLR_ENABLE;
         m_parent->update();
-        return CTLR;
     }
 
     u32 gic400::distif::read_TYPER() {
-        return 0xFF;
+        return 0xff;
     }
 
     u32 gic400::distif::read_ISENABLER_PPI() {
@@ -95,10 +94,10 @@ namespace vcml { namespace arm {
         }
 
         u32 mask = ppi_enabled_mask(cpu);
-        return (mask << 16) | 0xFFFF; // SGIs are always enabled
+        return (mask << 16) | 0xffff; // SGIs are always enabled
     }
 
-    u32 gic400::distif::write_ISENABLER_PPI(u32 val) {
+    void gic400::distif::write_ISENABLER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(ISER) invalid cpu %d, assuming 0", cpu);
@@ -119,7 +118,6 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ISENABLER_PPI;
     }
 
     u32 gic400::distif::read_ISENABLER_SPI(size_t idx) {
@@ -133,7 +131,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_ISENABLER_SPI(u32 val, size_t idx) {
+    void gic400::distif::write_ISENABLER_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i)) {
@@ -146,7 +144,6 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ISENABLER_SPI;
     }
 
     u32 gic400::distif::read_ICENABLER_PPI() {
@@ -160,7 +157,7 @@ namespace vcml { namespace arm {
         return (mask << 16) | 0xFFFF; // SGIs are always enabled
     }
 
-    u32 gic400::distif::write_ICENABLER_PPI(u32 val) {
+    void gic400::distif::write_ICENABLER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(ICER) invalid cpu %d, assuming 0", cpu);
@@ -176,7 +173,6 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICENABLER_PPI;
     }
 
     u32 gic400::distif::read_ICENABLER_SPI(size_t idx) {
@@ -190,7 +186,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_ICENABLER_SPI(u32 val, size_t idx) {
+    void gic400::distif::write_ICENABLER_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -198,7 +194,6 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICENABLER_SPI;
     }
 
     u32 gic400::distif::read_ISPENDR_PPI() {
@@ -211,7 +206,7 @@ namespace vcml { namespace arm {
         return int_pending_mask(cpu);
     }
 
-    u32 gic400::distif::write_ISPENDR_PPI(u32 value) {
+    void gic400::distif::write_ISPENDR_PPI(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(ISPR) invalid cpu %d, assuming 0", cpu);
@@ -227,14 +222,13 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ISPENDR_PPI;
     }
 
     u32 gic400::distif::read_SSPR(size_t idx) {
         return spi_pending_mask(idx);
     }
 
-    u32 gic400::distif::write_SSPR(u32 value, size_t idx) {
+    void gic400::distif::write_SSPR(u32 value, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (value & (1 << i))
@@ -242,7 +236,6 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ISPENDR_SPI;
     }
 
     u32 gic400::distif::read_ICPENDR_PPI() {
@@ -255,7 +248,7 @@ namespace vcml { namespace arm {
         return int_pending_mask(cpu);
     }
 
-    u32 gic400::distif::write_ICPENDR_PPI(u32 value) {
+    void gic400::distif::write_ICPENDR_PPI(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
@@ -271,14 +264,13 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICPENDR_SPI;
     }
 
     u32 gic400::distif::read_ICPENDR_SPI(size_t idx) {
         return spi_pending_mask(idx);
     }
 
-    u32 gic400::distif::write_ICPENDR_SPI(u32 val, size_t idx) {
+    void gic400::distif::write_ICPENDR_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
@@ -286,7 +278,6 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICPENDR_SPI;
     }
 
     u32 gic400::distif::read_ISACTIVER_PPI() {
@@ -317,7 +308,7 @@ namespace vcml { namespace arm {
         return value;
     }
 
-    u32 gic400::distif::write_ICACTIVER_PPI(u32 val) {
+    void gic400::distif::write_ICACTIVER_PPI(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(ICAR) invalid cpu %d, assuming 0", cpu);
@@ -329,18 +320,14 @@ namespace vcml { namespace arm {
             if (val & (1 << irq))
                 m_parent->set_irq_active(irq, false, mask);
         }
-
-        return 0;
     }
 
-    u32 gic400::distif::write_ICACTIVER_SPI(u32 val, size_t idx) {
+    void gic400::distif::write_ICACTIVER_SPI(u32 val, size_t idx) {
         unsigned int irq = NPRIV + idx * 32;
         for (unsigned int i = 0; i < 32; i++) {
             if (val & (1 << i))
                 m_parent->set_irq_active(irq + i, false, gic400::ALL_CPU);
         }
-
-        return 0;
     }
 
     u32 gic400::distif::read_ITARGETS_PPI(size_t idx) {
@@ -354,8 +341,8 @@ namespace vcml { namespace arm {
         return 0x01010101 << cpu;
     }
 
-    u32 gic400::distif::write_ICFGR(u32 value) {
-        ICFGR_PPI = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
+    void gic400::distif::write_ICFGR(u32 value) {
+        ICFGR_PPI = value & 0xaaaaaaaa; // odd bits are reserved, zero them out
 
         unsigned int irq = NSGI;
         for (unsigned int i = 0; i < NPPI; i++) {
@@ -369,11 +356,10 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICFGR_PPI;
     }
 
-    u32 gic400::distif::write_ICFGR_SPI(u32 value, size_t idx) {
-        ICFGR_SPI[idx] = value & 0xAAAAAAAA; // odd bits are reserved, zero them out
+    void gic400::distif::write_ICFGR_SPI(u32 value, size_t idx) {
+        ICFGR_SPI[idx] = value & 0xaaaaaaaa; // odd bits are reserved
 
         unsigned int irq = NPRIV + idx * 16;
         for (unsigned int i = 0; i < 16; i++) {
@@ -387,10 +373,9 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update();
-        return ICFGR_SPI;
     }
 
-    u32 gic400::distif::write_SGIR(u32 value) {
+    void gic400::distif::write_SGIR(u32 value) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(SCTL) invalid cpu %d, assuming 0", cpu);
@@ -427,12 +412,10 @@ namespace vcml { namespace arm {
 
         m_parent->set_irq_signaled(sgi_num, false, targets);
         m_parent->update();
-
-        return SGIR;
     }
 
 
-    u8 gic400::distif::write_SPENDSGIR(u8 value, size_t idx) {
+    void gic400::distif::write_SPENDSGIR(u8 value, size_t idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(SGIS) invalid cpu %d, assuming 0", cpu);
@@ -446,11 +429,9 @@ namespace vcml { namespace arm {
         m_parent->set_irq_pending(irq, true, mask);
         m_parent->set_irq_signaled(irq, false, mask);
         m_parent->update();
-
-        return SPENDSGIR;
     }
 
-    u8 gic400::distif::write_CPENDSGIR(u8 value, size_t idx) {
+    void gic400::distif::write_CPENDSGIR(u8 value, size_t idx) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(SGIC) invalid cpu %d, assuming 0", cpu);
@@ -464,7 +445,6 @@ namespace vcml { namespace arm {
         if (CPENDSGIR.bank(cpu, idx) == 0) // clear SGI if no sources remain
             m_parent->set_irq_pending(irq, false, mask);
         m_parent->update();
-        return CPENDSGIR;
     }
 
     gic400::distif::distif(const sc_module_name& nm):
@@ -663,24 +643,24 @@ namespace vcml { namespace arm {
         m_parent->update();
     }
 
-    u32 gic400::cpuif::write_CTLR(u32 val) {
+    void gic400::cpuif::write_CTLR(u32 val) {
         if ((val & CTLR_ENABLE) && !(CTLR & CTLR_ENABLE))
             log_debug("(CTLR) enabling cpu %d", current_cpu());
         if (!(val & CTLR_ENABLE) && (CTLR & CTLR_ENABLE))
             log_debug("(CTLR) disabling cpu %d", current_cpu());
-        return val & CTLR_ENABLE;
+        CTLR = val & CTLR_ENABLE;
     }
 
-    u32 gic400::cpuif::write_PMR(u32 val) {
-        return val & 0x000000FF; // read only first 8 bits
+    void gic400::cpuif::write_PMR(u32 val) {
+        PMR = val & 0x000000ff; // read only first 8 bits
     }
 
-    u32 gic400::cpuif::write_BPR(u32 val) {
+    void gic400::cpuif::write_BPR(u32 val) {
         ABPR = val & 0x7; // read only first 3 bits, store copy in ABPR
-        return ABPR;
+        BPR = ABPR;
     }
 
-    u32 gic400::cpuif::write_EOIR(u32 val) {
+    void gic400::cpuif::write_EOIR(u32 val) {
         int cpu = current_cpu();
         if (cpu < 0) {
             log_warn("(EOIR) invalid cpu %d, assuming 0", cpu);
@@ -688,12 +668,12 @@ namespace vcml { namespace arm {
         }
 
         if (m_curr_irq[cpu] == SPURIOUS_IRQ)
-            return 0; // no active IRQ
+            return; // no active IRQ
 
-        unsigned int irq = val & 0x3FF; // interrupt id stored in bits [9..0]
+        unsigned int irq = val & 0x3ff; // interrupt id stored in bits [9..0]
         if (irq >= m_parent->get_irq_num()) {
             log_warn("(EOI) invalid irq %d ignored", irq);
-            return 0;
+            return;
         }
 
         if (irq == m_curr_irq[cpu]) {
@@ -701,7 +681,7 @@ namespace vcml { namespace arm {
             set_current_irq(cpu, m_prev_irq[irq][cpu]);
             m_parent->set_irq_active(irq, false, 1 << cpu);
             m_parent->update();
-            return 0;
+            return;
         }
 
         // handle IRQ that is not currently running
@@ -715,7 +695,7 @@ namespace vcml { namespace arm {
             iter = m_prev_irq[iter][cpu];
         }
 
-        return 0;
+        return;
     }
 
     u32 gic400::cpuif::read_IAR() {
@@ -848,18 +828,17 @@ namespace vcml { namespace arm {
             m_curr_irq[cpu] = SPURIOUS_IRQ;
     }
 
-    u32 gic400::vifctrl::write_HCR(u32 val) {
+    void gic400::vifctrl::write_HCR(u32 val) {
         u8 cpu = current_cpu();
         HCR.bank(cpu) = val;
         m_parent->update(true);
-        return val;
     }
 
     u32 gic400::vifctrl::read_VTR() {
         return 0x90000000 | (NLR - 1);
     }
 
-    u32 gic400::vifctrl::write_LR(u32 val, size_t idx) {
+    void gic400::vifctrl::write_LR(u32 val, size_t idx) {
         u8 cpu = current_cpu();
         u8 state = (val >> 28) & 0b11;
         u8 hw = (val >> 31) & 0b1;
@@ -896,8 +875,6 @@ namespace vcml { namespace arm {
 
         LR[idx] = val;
         m_parent->update(true);
-
-        return val;
     }
 
     u32 gic400::vifctrl::read_LR(size_t idx) {
@@ -917,7 +894,7 @@ namespace vcml { namespace arm {
         return LR[idx];
     }
 
-    u32 gic400::vifctrl::write_VMCR(u32 val) {
+    void gic400::vifctrl::write_VMCR(u32 val) {
         int cpu = current_cpu();
         u8 prio_mask = (val >> 27) & 0x1f;
         u8 bpr = (val >> 21) & 0x03;
@@ -926,8 +903,6 @@ namespace vcml { namespace arm {
         m_parent->VCPUIF.PMR.bank(cpu) = prio_mask << 3;
         m_parent->VCPUIF.BPR.bank(cpu) = bpr;
         m_parent->VCPUIF.CTLR.bank(cpu) = ctlr;
-
-        return val;
     }
 
     u32 gic400::vifctrl::read_VMCR() {
@@ -939,13 +914,13 @@ namespace vcml { namespace arm {
         return (prio_mask << 27 | bpr << 21 | ctlr);
     }
 
-    u32 gic400::vifctrl::write_APR(u32 val) {
+    void gic400::vifctrl::write_APR(u32 val) {
        int cpu = current_cpu();
        u8 prio = IDLE_PRIO;
        if (val != 0)
            prio = fls(val) << (VIRT_MIN_BPR + 1);
        m_parent->VCPUIF.RPR.bank(cpu) = prio;
-       return val;
+       APR = val;
     }
 
     u8 gic400::vifctrl::get_irq_priority(unsigned int cpu, unsigned int irq) {
@@ -969,6 +944,7 @@ namespace vcml { namespace arm {
                 return i;
             }
         }
+
         log_error("failed getting LR for irq %d on cpu%d", irq, cpu);
         return 0;
     }
@@ -1009,14 +985,14 @@ namespace vcml { namespace arm {
         // nothing to do
     }
 
-    u32 gic400::vcpuif::write_CTLR(u32 val) {
+    void gic400::vcpuif::write_CTLR(u32 val) {
         if (val > 1)
             log_error("(vCTLR) using unimplemented features");
-        return val;
+        CTLR = val;
     }
 
-    u32 gic400::vcpuif::write_BPR(u32 val) {
-        return std::max(val & 0x07, (u32)VIRT_MIN_BPR);
+    void gic400::vcpuif::write_BPR(u32 val) {
+        BPR = std::max(val & 0x07, (u32)VIRT_MIN_BPR);
     }
 
     u32 gic400::vcpuif::read_IAR() {
@@ -1045,13 +1021,13 @@ namespace vcml { namespace arm {
         return ( (cpu_id & 0x111) << 10 | irq);
     }
 
-    u32 gic400::vcpuif::write_EOIR(u32 val) {
+    void gic400::vcpuif::write_EOIR(u32 val) {
         u8 cpu = current_cpu();
         u32 irq = val & 0x1FF;
 
         if (irq >= m_parent->get_irq_num()) {
             log_warn("(EOI) invalid irq %d ignored", irq);
-            return 0;
+            return;
         }
 
         log_debug("(vEOIR) cpu%d eois virq %d", cpu, irq);
@@ -1079,7 +1055,7 @@ namespace vcml { namespace arm {
         }
 
         m_parent->update(true);
-        return val;
+        EOIR = val;
     }
 
     gic400::vcpuif::vcpuif(const sc_module_name& nm, vifctrl *vifctrl):

@@ -44,43 +44,39 @@ namespace vcml { namespace arm {
         }
     }
 
-    u32 pl190vic::write_INTE(u32 val) {
+    void pl190vic::write_INTE(u32 val) {
         INTE |= val; // set hardware interrupt
         update();
-        return INTE;
     }
 
 
-    u32 pl190vic::write_IECR(u32 val) {
+    void pl190vic::write_IECR(u32 val) {
         INTE &= ~val; // clear hardware interrupt
         update();
-        return INTE;
     }
 
-    u32 pl190vic::write_SINT(u32 val) {
+    void pl190vic::write_SINT(u32 val) {
         SINT |= val; // set software interrupt
         update();
-        return SINT;
     }
 
-    u32 pl190vic::write_SICR(u32 val) {
+    void pl190vic::write_SICR(u32 val) {
         SINT &= ~val; // clear software interrupt
         update();
-        return SINT;
     }
 
-    u32 pl190vic::write_ADDR(u32 val) {
+    void pl190vic::write_ADDR(u32 val) {
         if (m_vect_int) { // write indicates EOI, value not important
             INTE &= ~(1 << m_current_irq);
             m_vect_int = false;
             update();
         }
 
-        return VADDR;
+        VADDR = val;
     }
 
-    u32 pl190vic::write_VCTRL(u32 val, size_t idx) {
-        return val & VCTRL_M;
+    void pl190vic::write_VCTRL(u32 val, size_t idx) {
+        VCTRL = val & VCTRL_M;
     }
 
     pl190vic::pl190vic(const sc_module_name& nm):

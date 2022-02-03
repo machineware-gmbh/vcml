@@ -20,7 +20,9 @@
 
 namespace vcml { namespace riscv {
 
-    u32 simdev::write_FINISH(u32 val) {
+    void simdev::write_FINISH(u32 val) {
+        FINISH = val;
+
         u32 status = val & 0xffff;
         u32 code = val >> 16;
 
@@ -44,8 +46,6 @@ namespace vcml { namespace riscv {
             log_warn("illegal exit request 0x%08x", val);
             break;
         }
-
-        return val;
     }
 
     simdev::simdev(const sc_module_name& nm):

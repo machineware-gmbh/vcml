@@ -32,26 +32,25 @@ namespace vcml { namespace riscv {
         return IRQ_SW[hart].read() ? 1 : 0;
     }
 
-    u32 clint::write_MSIP(u32 val, size_t hart) {
+    void clint::write_MSIP(u32 val, size_t hart) {
         if (!IRQ_SW.exists(hart))
-            return 0;
+            return;
 
         const u32 mask = 1u << 0;
         val &= mask;
 
         log_debug("%sing interrupt on hart %zu", val ? "sett" : "clear", hart);
 
+        MSIP[hart] = val;
         IRQ_SW[hart].write(val != 0);
-        return val;
     }
 
-    u64 clint::write_MTIMECMP(u64 val, size_t hart) {
+    void clint::write_MTIMECMP(u64 val, size_t hart) {
         if (!IRQ_TIMER.exists(hart))
-            return 0;
+            return;
 
         MTIMECMP[hart] = val;
         update_timer();
-        return val;
     }
 
     u64 clint::read_MTIME() {

@@ -449,13 +449,12 @@ namespace vcml { namespace generic {
         }
     }
 
-    u32 pci_device::write_BAR(u32 val, size_t barno) {
+    void pci_device::write_BAR(u32 val, size_t barno) {
         PCI_BAR[barno] = val;
         update_bars();
-        return PCI_BAR[barno];
     }
 
-    u16 pci_device::write_COMMAND(u16 val) {
+    void pci_device::write_COMMAND(u16 val) {
         u16 mask = PCI_COMMAND_IO          |
                    PCI_COMMAND_MMIO        |
                    PCI_COMMAND_BUS_MASTER  |
@@ -474,27 +473,26 @@ namespace vcml { namespace generic {
         PCI_COMMAND = val & mask;
         update_irqs();
         update_bars();
-        return PCI_COMMAND;
     }
 
-    u16 pci_device::write_STATUS(u16 val) {
+    void pci_device::write_STATUS(u16 val) {
         u16 mask = PCI_STATUS_MASTER_PARITY_ERROR |
                    PCI_STATUS_TX_TARGET_ABORT |
                    PCI_STATUS_RX_TARGET_ABORT |
                    PCI_STATUS_RX_MASTER_ABORT |
                    PCI_STATUS_TX_SYSTEM_ERROR |
                    PCI_STATUS_PARITY_ERROR;
-        return PCI_STATUS & ~(val & mask);
+        PCI_STATUS &= ~(val & mask);
     }
 
-    u32 pci_device::write_PM_CTRL(u32 val) {
+    void pci_device::write_PM_CTRL(u32 val) {
         u32 mask = PCI_PM_CTRL_PSTATE_D3H;
         if (!(val & PCI_PM_CTRL_PME))
             mask |= PCI_PM_CTRL_PME_ENABLE;
-        return (*m_pm->PM_CTRL & ~mask) | (val & mask);
+        *m_pm->PM_CTRL = (*m_pm->PM_CTRL & ~mask) | (val & mask);
     }
 
-    u16 pci_device::write_MSI_CTRL(u16 val) {
+    void pci_device::write_MSI_CTRL(u16 val) {
         size_t num_vectors = (val & PCI_MSI_QSIZE) >> 4;
         if (num_vectors > m_msi->max_vectors()) {
             log_warn("exceeding max MSI vectors %zu", num_vectors);
@@ -503,24 +501,22 @@ namespace vcml { namespace generic {
         }
 
         u16 mask = PCI_MSI_ENABLE | PCI_MSI_QSIZE;
-        return (*m_msi->MSI_CONTROL & ~mask) | (val & mask);
+        *m_msi->MSI_CONTROL = (*m_msi->MSI_CONTROL & ~mask) | (val & mask);
     }
 
-    u32 pci_device::write_MSI_ADDR(u32 val) {
-        return val & ~0x3;
+    void pci_device::write_MSI_ADDR(u32 val) {
+        *m_msi->MSI_ADDR = val & ~0x3;
     }
 
-    u32 pci_device::write_MSI_MASK(u32 val) {
+    void pci_device::write_MSI_MASK(u32 val) {
         *m_msi->MSI_MASK = val & ((1ul << m_msi->num_vectors()) - 1);
         m_msi_notify.notify(SC_ZERO_TIME);
-        return *m_msi->MSI_MASK;
     }
 
-    u16 pci_device::write_MSIX_CTRL(u16 val) {
+    void pci_device::write_MSIX_CTRL(u16 val) {
         const u64 mask = PCI_MSIX_ENABLE | PCI_MSIX_ALL_MASKED;
         *m_msix->MSIX_CONTROL = (*m_msix->MSIX_CONTROL & ~mask) | (val & mask);
         m_msix_notify.notify(SC_ZERO_TIME);
-        return *m_msix->MSIX_CONTROL;
     }
 
     void pci_device::update_bars() {

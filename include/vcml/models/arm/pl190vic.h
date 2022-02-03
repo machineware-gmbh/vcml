@@ -46,12 +46,12 @@ namespace vcml { namespace arm {
 
         void update();
 
-        u32 write_INTE(u32 val);
-        u32 write_IECR(u32 val);
-        u32 write_SINT(u32 val);
-        u32 write_SICR(u32 val);
-        u32 write_ADDR(u32 val);
-        u32 write_VCTRL(u32 val, size_t idx);
+        void write_INTE(u32 val);
+        void write_IECR(u32 val);
+        void write_SINT(u32 val);
+        void write_SICR(u32 val);
+        void write_ADDR(u32 val);
+        void write_VCTRL(u32 val, size_t idx);
 
     public:
         enum vctrl_bits {

@@ -33,17 +33,17 @@ namespace vcml { namespace meta {
     class simdev: public peripheral
     {
     private:
-        u32 write_STOP(u32 val);
-        u32 write_EXIT(u32 val);
-        u32 write_ABRT(u32 val);
+        void write_STOP(u32 val);
+        void write_EXIT(u32 val);
+        void write_ABRT(u32 val);
 
-        u64 read_SCLK();
-        u64 read_HCLK();
+        u64  read_SCLK();
+        u64  read_HCLK();
 
-        u32 write_SOUT(u32 val);
-        u32 write_SERR(u32 val);
+        void write_SOUT(u32 val);
+        void write_SERR(u32 val);
 
-        u32 read_PRNG();
+        u32  read_PRNG();
 
         // disabled
         simdev();

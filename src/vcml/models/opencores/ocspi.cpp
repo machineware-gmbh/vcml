@@ -20,7 +20,7 @@
 
 namespace vcml { namespace opencores {
 
-    u8 ocspi::write_TXDATA(u8 val) {
+    void ocspi::write_TXDATA(u8 val) {
         TXDATA = RXDATA.get();
 
         STATUS &= ~STATUS_TXR;
@@ -42,11 +42,9 @@ namespace vcml { namespace opencores {
             log_debug("setting TXE interrupt");
             IRQ = true;
         }
-
-        return TXDATA;
     }
 
-    u8 ocspi::write_STATUS(u8 val) {
+    void ocspi::write_STATUS(u8 val) {
         if (m_txe_irq && !(val & STATUS_TXE))
             log_debug("disabling TXE interrupt");
         if (!m_txe_irq && (val & STATUS_TXE))
@@ -75,10 +73,10 @@ namespace vcml { namespace opencores {
             IRQ = true;
         }
 
-        return STATUS;
+        STATUS = val;
     }
 
-    u32 ocspi::write_CONTROL(u32 val) {
+    void ocspi::write_CONTROL(u32 val) {
         if (val >= 4) {
             log_warn("invalid mode specified SPI%u", val);
             val = 0;
@@ -87,16 +85,16 @@ namespace vcml { namespace opencores {
         if (val != CONTROL)
             log_debug("changed mode to SPI%u", val);
 
-        return val;
+        CONTROL = val;
     }
 
-    u32 ocspi::write_BAUDDIV(u32 val) {
+    void ocspi::write_BAUDDIV(u32 val) {
         if (val != BAUDDIV) {
             unsigned int divider = val + 1;
             log_debug("changed transmission speed to %lu Hz", clock / divider);
         }
 
-        return val;
+        BAUDDIV = val;
     }
 
     ocspi::ocspi(const sc_module_name& nm):
@@ -131,7 +129,7 @@ namespace vcml { namespace opencores {
     }
 
     ocspi::~ocspi() {
-        /* nothing to do */
+        // nothing to do
     }
 
     void ocspi::reset() {

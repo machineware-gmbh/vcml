@@ -38,13 +38,13 @@ namespace vcml { namespace arm {
     private:
         u32 read_CLCK24();
 
-        u16 write_LOCKVAL(u16 val);
-        u32 write_FLAGS_S(u32 val);
-        u32 write_FLAGS_C(u32 val);
-        u32 write_NVFLAGS_S(u32 val);
-        u32 write_NVFLAGS_C(u32 val);
-        u32 write_SYS_CFGCTRL(u32 val);
-        u32 write_SYS_CFGSTAT(u32 val);
+        void write_LOCKVAL(u16 val);
+        void write_FLAGS_S(u32 val);
+        void write_FLAGS_C(u32 val);
+        void write_NVFLAGS_S(u32 val);
+        void write_NVFLAGS_C(u32 val);
+        void write_SYS_CFGCTRL(u32 val);
+        void write_SYS_CFGSTAT(u32 val);
 
         // disabled
         syscon();

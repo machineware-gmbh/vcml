@@ -254,18 +254,18 @@ namespace vcml { namespace generic {
 
         u8 read_CAP_PTR() { return pci_cap_ptr; }
 
-        u32 write_BAR(u32 val, size_t barno);
+        void write_BAR(u32 val, size_t barno);
 
-        u16 write_COMMAND(u16 val);
-        u16 write_STATUS(u16 val);
+        void write_COMMAND(u16 val);
+        void write_STATUS(u16 val);
 
-        u32 write_PM_CTRL(u32 val);
+        void write_PM_CTRL(u32 val);
 
-        u16 write_MSI_CTRL(u16 val);
-        u32 write_MSI_ADDR(u32 val);
-        u32 write_MSI_MASK(u32 val);
+        void write_MSI_CTRL(u16 val);
+        void write_MSI_ADDR(u32 val);
+        void write_MSI_MASK(u32 val);
 
-        u16 write_MSIX_CTRL(u16 val);
+        void write_MSIX_CTRL(u16 val);
 
         u16 read_MSIX_CTRL() {
             log_warn("MSIX_CTRL = 0x%04hx", m_msix->MSIX_CONTROL->get());

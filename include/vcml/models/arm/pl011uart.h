@@ -44,16 +44,16 @@ namespace vcml { namespace arm {
         void poll();
         void update();
 
-        u16 read_DR();
-        u16 write_DR(u16 val);
-        u8  write_RSR(u8 val);
-        u16 write_IBRD(u16 val);
-        u16 write_FBRD(u16 val);
-        u8  write_LCR(u8 val);
-        u16 write_CR(u16 val);
-        u16 write_IFLS(u16 val);
-        u16 write_IMSC(u16 val);
-        u16 write_ICR(u16 val);
+        u16  read_DR();
+        void write_DR(u16 val);
+        void write_RSR(u8 val);
+        void write_IBRD(u16 val);
+        void write_FBRD(u16 val);
+        void write_LCR(u8 val);
+        void write_CR(u16 val);
+        void write_IFLS(u16 val);
+        void write_IMSC(u16 val);
+        void write_ICR(u16 val);
 
         // disabled
         pl011uart();

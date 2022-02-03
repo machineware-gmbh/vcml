@@ -191,17 +191,17 @@ namespace vcml { namespace virtio {
         return TLM_ADDRESS_ERROR_RESPONSE;
     }
 
-    u32 pci::write_DEVICE_FEATURE_SEL(u32 val) {
+    void pci::write_DEVICE_FEATURE_SEL(u32 val) {
         unsigned int shift = val ? 32 : 0;
         DEVICE_FEATURE = (u32)(m_dev_features >> shift);
-        return val ? 1 : 0;
+        DEVICE_FEATURE_SEL = val ? 1 : 0;
     }
 
-    u32 pci::write_DRIVER_FEATURE(u32 val) {
+    void pci::write_DRIVER_FEATURE(u32 val) {
         if (IRQ_STATUS & VIRTIO_STATUS_FEATURES_OK) {
             log_warn("attempt to change features after negotiation");
             IRQ_STATUS = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
-            return 0;
+            return;
         }
 
         if (DRIVER_FEATURE_SEL) {
@@ -212,17 +212,18 @@ namespace vcml { namespace virtio {
             m_drv_features |= (u64)val;
         }
 
-        return val;
+        DRIVER_FEATURE = val;
     }
 
-    u8 pci::write_DEVICE_STATUS(u8 val) {
+    void pci::write_DEVICE_STATUS(u8 val) {
         val &= VIRTIO_STATUS_MASK;
 
         if (val == 0u) {
             log_debug("software triggered virtio device reset");
             cleanup_virtqueues();
             m_drv_features = 0;
-            return 0u;
+            DEVICE_STATUS = 0;
+            return;
         }
 
         if (popcnt(val ^ DEVICE_STATUS) > 1)
@@ -230,14 +231,14 @@ namespace vcml { namespace virtio {
         if (popcnt(DEVICE_STATUS) > popcnt(val))
             log_warn("attempt to clear individual status bits");
 
+        DEVICE_STATUS = val;
+
         if (val == VIRTIO_STATUS_FEATURE_CHECK) {
             if (m_drv_features & ~m_dev_features)
-                return val & ~VIRTIO_STATUS_FEATURES_OK;
-            if (!VIRTIO_OUT->write_features(m_drv_features))
-                return val & ~VIRTIO_STATUS_FEATURES_OK;
+                DEVICE_STATUS &= ~VIRTIO_STATUS_FEATURES_OK;
+            else if (!VIRTIO_OUT->write_features(m_drv_features))
+                DEVICE_STATUS &= ~VIRTIO_STATUS_FEATURES_OK;
         }
-
-        return val;
     }
 
     u16 pci::read_QUEUE_SIZE() {
@@ -284,12 +285,12 @@ namespace vcml { namespace virtio {
         return it->second.device;
     }
 
-    u16 pci::write_QUEUE_SIZE(u16 val) {
+    void pci::write_QUEUE_SIZE(u16 val) {
         u32 vqid = QUEUE_SEL;
         auto it = m_device.virtqueues.find(vqid);
         if (it == m_device.virtqueues.end()) {
             log_warn("programming size of invalid virtqueue %u", vqid);
-            return 0;
+            return;
         }
 
         virtio_queue_desc& qdesc = it->second;
@@ -299,100 +300,92 @@ namespace vcml { namespace virtio {
             val = qdesc.limit;
         }
 
-        return qdesc.size = val;
+        QUEUE_SIZE = qdesc.size = val;
     }
 
-    u16 pci::write_QUEUE_MSIX_VECTOR(u16 val) {
+    void pci::write_QUEUE_MSIX_VECTOR(u16 val) {
         u32 vqid = QUEUE_SEL;
         auto it = m_device.virtqueues.find(vqid);
         if (it == m_device.virtqueues.end()) {
             log_warn("programming MSIX vector of invalid virtqueue %u", vqid);
-            return 0;
+            return;
         }
 
         virtio_queue_desc& qdesc = it->second;
-        return qdesc.vector = val;
+        QUEUE_MSIX_VECTOR = qdesc.vector = val;
     }
 
-    u16 pci::write_QUEUE_ENABLE(u16 val) {
-        if (val >= VIRTQUEUE_MAX) {
-            log_warn("illegal virtqueue id %hu", val);
-            return val;
-        }
-
-        if (val)
+    void pci::write_QUEUE_ENABLE(u16 val) {
+        if ((QUEUE_ENABLE = val))
             enable_virtqueue(QUEUE_SEL);
         else
             disable_virtqueue(QUEUE_SEL);
-
-        return val;
     }
 
-    u16 pci::write_QUEUE_NOTIFY_OFF(u16 val) {
-        return 0;
+    void pci::write_QUEUE_NOTIFY_OFF(u16 val) {
+        return;
     }
 
-    u64 pci::write_QUEUE_DESC(u64 val) {
+    void pci::write_QUEUE_DESC(u64 val) {
         u32 vqid = QUEUE_SEL;
         auto it = m_device.virtqueues.find(vqid);
         if (it == m_device.virtqueues.end()) {
             log_warn("programming descriptors of invalid virtqueue %u", vqid);
-            return 0;
+            return;
         }
 
         virtio_queue_desc& qdesc = it->second;
-        return qdesc.desc = val;
+        QUEUE_DESC = qdesc.desc = val;
     }
 
-    u64 pci::write_QUEUE_DRIVER(u64 val) {
+    void pci::write_QUEUE_DRIVER(u64 val) {
         u32 vqid = QUEUE_SEL;
         auto it = m_device.virtqueues.find(vqid);
         if (it == m_device.virtqueues.end()) {
             log_warn("programming driver mem of invalid virtqueue %u", vqid);
-            return 0;
+            return;
         }
 
         virtio_queue_desc& qdesc = it->second;
-        return qdesc.driver = val;
+        QUEUE_DRIVER = qdesc.driver = val;
     }
 
-    u64 pci::write_QUEUE_DEVICE(u64 val) {
+    void pci::write_QUEUE_DEVICE(u64 val) {
         u32 vqid = QUEUE_SEL;
         auto it = m_device.virtqueues.find(vqid);
         if (it == m_device.virtqueues.end()) {
             log_warn("programming device mem of invalid virtqueue %u", vqid);
-            return 0;
+            return;
         }
 
         virtio_queue_desc& qdesc = it->second;
-        return qdesc.device = val;
+        QUEUE_DEVICE = qdesc.device = val;
     }
 
-    u32 pci::write_QUEUE_NOTIFY(u32 val) {
+    void pci::write_QUEUE_NOTIFY(u32 val) {
         if (!device_ready()) {
             log_warn("notify: device not ready");
-            return val;
+            return;
         }
 
         u32 vqid = val & 0xffff;
         if (vqid >= VIRTQUEUE_MAX) {
             log_warn("illegal virtqueue id %u", vqid);
-            return val;
+            return;
         }
 
         auto it = m_queues.find(vqid);
         if (it == m_queues.end()) {
             log_warn("notify: illegal queue id: %u", vqid);
-            return val;
+            return;
         }
 
+        QUEUE_NOTIFY = val;
         log_debug("notifying virtqueue %u", vqid);
         if (!VIRTIO_OUT->notify(vqid)) {
             log_warn("notify: device reported failure");
             DEVICE_STATUS = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
         }
-
-        return val;
     }
 
     u32 pci::read_IRQ_STATUS() {

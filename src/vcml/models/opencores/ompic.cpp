@@ -36,7 +36,7 @@ namespace vcml { namespace opencores {
         return m_control[core_idx];
     }
 
-    u32 ompic::write_CONTROL(u32 val, size_t core_idx) {
+    void ompic::write_CONTROL(u32 val, size_t core_idx) {
         VCML_ERROR_ON(core_idx >= m_num_cores, "core_id >= num_cores");
 
         u32 self = static_cast<uint32_t>(core_idx);
@@ -48,7 +48,7 @@ namespace vcml { namespace opencores {
             log_warn(" core: cpu%d", self);
             log_warn(" dest: cpu%d", dest);
             log_warn(" data: 0x%04x", data);
-            return 0;
+            return;
         }
 
         m_control[core_idx] = val;
@@ -67,8 +67,6 @@ namespace vcml { namespace opencores {
                 log_debug("no pending interrupt for cpu%d", self);
             IRQ[self] = false;
         }
-
-        return val;
     }
 
     ompic::ompic(const sc_core::sc_module_name& nm, unsigned int num_cores):

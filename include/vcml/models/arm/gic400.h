@@ -108,52 +108,52 @@ namespace vcml { namespace arm {
         private:
             gic400* m_parent;
 
-            u32 int_pending_mask(int cpu);
-            u32 spi_pending_mask(int cpu);
-            u16 ppi_enabled_mask(int cpu);
+            u32  int_pending_mask(int cpu);
+            u32  spi_pending_mask(int cpu);
+            u16  ppi_enabled_mask(int cpu);
 
-            u32 write_CTLR(u32 value);
+            void write_CTLR(u32 value);
 
-            u32 read_TYPER();
+            u32  read_TYPER();
 
-            u32 read_ISENABLER_PPI();
-            u32 write_ISENABLER_PPI(u32 value);
+            u32  read_ISENABLER_PPI();
+            void write_ISENABLER_PPI(u32 value);
 
-            u32 read_ISENABLER_SPI(size_t idx);
-            u32 write_ISENABLER_SPI(u32 value, size_t idx);
+            u32  read_ISENABLER_SPI(size_t idx);
+            void write_ISENABLER_SPI(u32 value, size_t idx);
 
-            u32 read_ICENABLER_PPI();
-            u32 write_ICENABLER_PPI(u32 value);
+            u32  read_ICENABLER_PPI();
+            void write_ICENABLER_PPI(u32 value);
 
-            u32 read_ICENABLER_SPI(size_t idx);
-            u32 write_ICENABLER_SPI(u32 value, size_t idx);
+            u32  read_ICENABLER_SPI(size_t idx);
+            void write_ICENABLER_SPI(u32 value, size_t idx);
 
-            u32 read_ISPENDR_PPI();
-            u32 write_ISPENDR_PPI(u32 value);
+            u32  read_ISPENDR_PPI();
+            void write_ISPENDR_PPI(u32 value);
 
-            u32 read_SSPR(size_t idx);
-            u32 write_SSPR(u32 value, size_t idx);
+            u32  read_SSPR(size_t idx);
+            void write_SSPR(u32 value, size_t idx);
 
-            u32 read_ICPENDR_PPI();
-            u32 write_ICPENDR_PPI(u32 value);
+            u32  read_ICPENDR_PPI();
+            void write_ICPENDR_PPI(u32 value);
 
-            u32 read_ICPENDR_SPI(size_t cpu_id);
-            u32 write_ICPENDR_SPI(u32 value, size_t idx);
+            u32  read_ICPENDR_SPI(size_t cpu_id);
+            void write_ICPENDR_SPI(u32 value, size_t idx);
 
-            u32 read_ISACTIVER_PPI();
-            u32 read_ISACTIVER_SPI(size_t idx);
+            u32  read_ISACTIVER_PPI();
+            u32  read_ISACTIVER_SPI(size_t idx);
 
-            u32 write_ICACTIVER_PPI(u32 value);
-            u32 write_ICACTIVER_SPI(u32 value, size_t idx);
+            void write_ICACTIVER_PPI(u32 value);
+            void write_ICACTIVER_SPI(u32 value, size_t idx);
 
-            u32 read_ITARGETS_PPI(size_t idx);
+            u32  read_ITARGETS_PPI(size_t idx);
 
-            u32 write_ICFGR(u32 value);
-            u32 write_ICFGR_SPI(u32 value, size_t idx);
+            void write_ICFGR(u32 value);
+            void write_ICFGR_SPI(u32 value, size_t idx);
 
-            u32 write_SGIR(u32 value);
-            u8  write_SPENDSGIR(u8 value, size_t idx);
-            u8  write_CPENDSGIR(u8 value, size_t idx);
+            void write_SGIR(u32 value);
+            void write_SPENDSGIR(u8 value, size_t idx);
+            void write_CPENDSGIR(u8 value, size_t idx);
 
         public:
             bitfield<0,1> CTLR_ENABLE;
@@ -220,11 +220,11 @@ namespace vcml { namespace arm {
 
             void set_current_irq(unsigned int cpu_id, unsigned int irq);
 
-            u32 write_CTLR(u32 val);
-            u32 write_PMR(u32 val);
-            u32 write_BPR(u32 val);
-            u32 write_EOIR(u32 val);
-            u32 read_IAR();
+            void write_CTLR(u32 val);
+            void write_PMR(u32 val);
+            void write_BPR(u32 val);
+            void write_EOIR(u32 val);
+            u32  read_IAR();
 
             // disabled
             cpuif();
@@ -261,13 +261,13 @@ namespace vcml { namespace arm {
             gic400* m_parent;
             lr m_lr_state[NVCPU][NLR];
 
-            u32 write_HCR(u32 val);
-            u32 read_VTR();
-            u32 write_LR(u32 val, size_t idx);
-            u32 read_LR(size_t idx);
-            u32 write_VMCR(u32 val);
-            u32 read_VMCR();
-            u32 write_APR(u32 val);
+            void write_HCR(u32 val);
+            u32  read_VTR();
+            void write_LR(u32 val, size_t idx);
+            u32  read_LR(size_t idx);
+            void write_VMCR(u32 val);
+            u32  read_VMCR();
+            void write_APR(u32 val);
 
             // disabled
             vifctrl();
@@ -312,10 +312,10 @@ namespace vcml { namespace arm {
             gic400* m_parent;
             vifctrl* m_vifctrl;
 
-            u32 write_BPR(u32 val);
-            u32 write_CTLR(u32 val);
-            u32 read_IAR();
-            u32 write_EOIR(u32 val);
+            void write_BPR(u32 val);
+            void write_CTLR(u32 val);
+            u32  read_IAR();
+            void write_EOIR(u32 val);
 
             // disabled
             vcpuif();

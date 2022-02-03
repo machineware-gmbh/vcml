@@ -78,13 +78,13 @@ namespace vcml { namespace opencores {
 
         void interrupt(int source);
 
-        u32 write_MODER(u32 val);
-        u32 write_INT_SOURCE(u32 val);
-        u32 write_INT_MASK(u32 val);
-        u32 write_TX_BD_NUM(u32 val);
-        u32 write_MIICOMMAND(u32 val);
-        u32 write_MAC_ADDR0(u32 val);
-        u32 write_MAC_ADDR1(u32 val);
+        void write_MODER(u32 val);
+        void write_INT_SOURCE(u32 val);
+        void write_INT_MASK(u32 val);
+        void write_TX_BD_NUM(u32 val);
+        void write_MIICOMMAND(u32 val);
+        void write_MAC_ADDR0(u32 val);
+        void write_MAC_ADDR1(u32 val);
 
         u32 read_MAC_ADDR0();
         u32 read_MAC_ADDR1();

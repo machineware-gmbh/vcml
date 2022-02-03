@@ -40,6 +40,7 @@ namespace vcml {
         vcml_access m_access;
         bool        m_rsync;
         bool        m_wsync;
+        bool        m_wback;
         peripheral* m_host;
 
         void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
@@ -72,6 +73,10 @@ namespace vcml {
         void sync_always() { m_rsync = m_wsync = true; }
         void sync_never() { m_rsync = m_wsync = false; }
 
+        bool is_writeback() const { return m_wback; }
+        void writeback(bool wb = true) { m_wback = wb; }
+        void no_writeback() { m_wback = false; }
+
         peripheral* get_host() const { return m_host; }
         int current_cpu() const;
 
@@ -101,9 +106,9 @@ namespace vcml {
     {
     public:
         typedef std::function<DATA(void)> readfn;
-        typedef std::function<DATA(DATA)> writefn;
+        typedef std::function<void(DATA)> writefn;
         typedef std::function<DATA(size_t)> readfn_tagged;
-        typedef std::function<DATA(DATA, size_t)> writefn_tagged;
+        typedef std::function<void(DATA, size_t)> writefn_tagged;
 
         void on_read(const readfn& rd) { m_read = rd; }
         void on_read(const readfn_tagged& rd) { m_read_tagged = rd; }
@@ -118,10 +123,10 @@ namespace vcml {
         void on_write(const writefn_tagged& wr) { m_write_tagged = wr; }
 
         template <typename HOST>
-        void on_write(DATA (HOST::*wr)(DATA), HOST* host = nullptr);
+        void on_write(void (HOST::*wr)(DATA), HOST* host = nullptr);
 
         template <typename HOST>
-        void on_write(DATA (HOST::*wr)(DATA, size_t), HOST* h = nullptr);
+        void on_write(void (HOST::*wr)(DATA, size_t), HOST* h = nullptr);
 
         bool is_banked() const { return m_banked; }
         void set_banked(bool set = true) { m_banked = set; }
@@ -159,6 +164,9 @@ namespace vcml {
 
         reg<DATA, N>& operator ++ ();
         reg<DATA, N>& operator -- ();
+
+        reg<DATA, N>& operator = (const reg<DATA, N>& other);
+        template <typename T> reg<DATA, N>& operator = (const reg<T, N>& r);
 
         template <typename T> reg<DATA, N>& operator =  (const T& value);
         template <typename T> reg<DATA, N>& operator |= (const T& value);
@@ -214,7 +222,7 @@ namespace vcml {
 
     template <typename DATA, size_t N>
     template <typename HOST>
-    void reg<DATA, N>::on_write(DATA (HOST::*wr)(DATA), HOST* host) {
+    void reg<DATA, N>::on_write(void (HOST::*wr)(DATA), HOST* host) {
         if (host == nullptr)
             host = dynamic_cast<HOST*>(get_host());
         VCML_ERROR_ON(!host, "write callback has no host");
@@ -224,7 +232,7 @@ namespace vcml {
 
     template <typename DATA, size_t N>
     template <typename HOST>
-    void reg<DATA, N>::on_write(DATA (HOST::*wr)(DATA, size_t), HOST* host) {
+    void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
         if (host == nullptr)
             host = dynamic_cast<HOST*>(get_host());
         VCML_ERROR_ON(!host, "tagged write callback has no host");
@@ -330,14 +338,17 @@ namespace vcml {
             u64 off  = addr.start % sizeof(DATA);
             u64 size = min(addr.length(), (u64)sizeof(DATA));
 
-            DATA val = current_bank(idx);
+            DATA val;
 
             if (m_read_tagged)
                 val = m_read_tagged(N > 1 ? idx : tag);
             else if (m_read)
                 val = m_read();
+            else
+                val = current_bank(idx);
 
-            current_bank(idx) = val;
+            if (is_writeback())
+                current_bank(idx) = val;
 
             unsigned char* ptr = (unsigned char*)&val + off;
             memcpy(dest, ptr, size);
@@ -363,11 +374,11 @@ namespace vcml {
             memcpy(ptr, src, size);
 
             if (m_write_tagged)
-                val = m_write_tagged(val, N > 1 ? idx : tag);
+                m_write_tagged(val, N > 1 ? idx : tag);
             else if (m_write)
-                val = m_write(val);
-
-            current_bank(idx) = val;
+                m_write(val);
+            else
+                current_bank(idx) = val;
 
             addr.start += size;
             src += size;
@@ -422,6 +433,22 @@ namespace vcml {
     reg<DATA, N>& reg<DATA, N>::operator -- () {
         for (size_t i = 0; i < N; i++)
             current_bank(i)--;
+        return *this;
+    }
+
+    template <typename DATA, size_t N>
+    inline reg<DATA, N>& reg<DATA, N>::operator = (const reg<DATA, N>& r) {
+        for (size_t i = 0; i < N; i++)
+            current_bank(i) = r.current_bank(i);
+        return *this;
+    }
+
+
+    template <typename DATA, size_t N>
+    template <typename T>
+    inline reg<DATA, N>& reg<DATA, N>::operator = (const reg<T, N>& r) {
+        for (size_t i = 0; i < N; i++)
+            current_bank(i) = r.current_bank(i);
         return *this;
     }
 

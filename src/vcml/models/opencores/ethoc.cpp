@@ -276,7 +276,7 @@ namespace vcml { namespace opencores {
             IRQ = true;
     }
 
-    u32 ethoc::write_MODER(u32 val) {
+    void ethoc::write_MODER(u32 val) {
         if ((val & MODER_TXEN) && !m_tx_enabled) {
             log_debug("ethoc transmitter enabled");
             m_tx_enabled = true;
@@ -307,33 +307,32 @@ namespace vcml { namespace opencores {
             reset();
         }
 
-        return val;
+        MODER = val;
     }
 
-    u32 ethoc::write_INT_SOURCE(u32 source) {
+    void ethoc::write_INT_SOURCE(u32 source) {
         INT_SOURCE &= ~source; // clear IRQs with 1 in source
         IRQ = (INT_SOURCE & INT_MASK) != 0;
-        return INT_SOURCE;
     }
 
-    u32 ethoc::write_INT_MASK(u32 data) {
+    void ethoc::write_INT_MASK(u32 data) {
         INT_MASK = data;
         IRQ = (INT_SOURCE & INT_MASK) != 0;
-        return INT_MASK;
     }
 
-    u32 ethoc::write_TX_BD_NUM(u32 data) {
+    void ethoc::write_TX_BD_NUM(u32 data) {
         TX_BD_NUM = data & TX_BD_NUM_M;
         log_debug("ethoc num bd tx = %d rx = %d", num_txbd(), num_rxbd());
-        return TX_BD_NUM;
     }
 
-    u32 ethoc::write_MIICOMMAND(u32 data) {
+    void ethoc::write_MIICOMMAND(u32 data) {
+        MIICOMMAND = data;
+
         if (data != MIICOMMAND_RSTAT)
-            return data;
+            return;
 
         if (MIIADDRESS & MIIADDRESS_FIAD_M)
-            return data;
+            return;
 
         switch ((MIIADDRESS >> MIIADDRESS_RGAD_O) & MIIADDRESS_RGAD_M) {
         case MII_BMCR:        MIIRX_DATA = BMCR_FULLDPLX; break;
@@ -360,24 +359,24 @@ namespace vcml { namespace opencores {
         case MII_RESV2:       MIIRX_DATA = 0; break;
         case MII_TPISTATUS:   MIIRX_DATA = 0; break;
         case MII_NCONFIG:     MIIRX_DATA = 0; break;
-        default: MIIRX_DATA = 0xffff; break;
+        default:
+            MIIRX_DATA = 0xffff;
+            break;
         }
-
-        return data;
     }
 
-    u32 ethoc::write_MAC_ADDR0(u32 data) {
+    void ethoc::write_MAC_ADDR0(u32 data) {
         m_mac[5] = (data >> MAC_ADDR0_B5) & 0xff;
         m_mac[4] = (data >> MAC_ADDR0_B4) & 0xff;
         m_mac[3] = (data >> MAC_ADDR0_B3) & 0xff;
         m_mac[2] = (data >> MAC_ADDR0_B2) & 0xff;
-        return data;
+        MAC_ADDR0 = data;
     }
 
-    u32 ethoc::write_MAC_ADDR1(u32 data) {
+    void ethoc::write_MAC_ADDR1(u32 data) {
         m_mac[1] = (data >> MAC_ADDR1_B1) & 0xff;
         m_mac[0] = (data >> MAC_ADDR1_B0) & 0xff;
-        return data;
+        MAC_ADDR1 = data;
     }
 
     u32 ethoc::read_MAC_ADDR0() {
@@ -512,7 +511,7 @@ namespace vcml { namespace opencores {
     }
 
     ethoc::~ethoc() {
-        /* nothing to do */
+        // nothing to do
     }
 
     void ethoc::reset() {

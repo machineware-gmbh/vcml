@@ -201,7 +201,7 @@ namespace vcml { namespace generic {
             BUFFER_DATA_PORT |= m_buffer[m_bufptr++] << 8 * i;
     }
 
-    u16 sdhci::write_CMD(u16 val) {
+    void sdhci::write_CMD(u16 val) {
         set_present_state(COMMAND_INHIBIT_CMD);
 
         m_cmd.spi = false;
@@ -269,7 +269,7 @@ namespace vcml { namespace generic {
             NORMAL_INT_STAT |= INT_TRANSFER_COMPLETE;
 
         IRQ.write(true);
-        return val;
+        CMD = val;
     }
 
     u32 sdhci::read_BUFFER_DATA_PORT() {
@@ -299,10 +299,10 @@ namespace vcml { namespace generic {
         return BUFFER_DATA_PORT;
     }
 
-    u32 sdhci::write_BUFFER_DATA_PORT(u32 val) {
+    void sdhci::write_BUFFER_DATA_PORT(u32 val) {
         if (!(PRESENT_STATE & BUFFER_WRITE_ENABLE)) {
             log_warn("writing BUFFER_DATA_PORT not allowed");
-            return BUFFER_DATA_PORT;
+            return;
         }
 
         BUFFER_DATA_PORT = val;
@@ -323,27 +323,26 @@ namespace vcml { namespace generic {
             if (BLOCK_COUNT_16BIT == 0) { // all the data blocks are written
                 set_present_state(~WRITE_TRANSFER_ACTIVE);
                 IRQ.write(true);
-                return val;
+                BUFFER_DATA_PORT = val;
+                return;
             }
 
             set_present_state(BUFFER_WRITE_ENABLE);
         }
 
-        return val;
+        BUFFER_DATA_PORT = val;
     }
 
-    u16 sdhci::write_CLOCK_CTRL(u16 val) {
+    void sdhci::write_CLOCK_CTRL(u16 val) {
         CLOCK_CTRL = val;
 
         // show the driver that the internal clock is stable: see SD Host
         // Controller Simplified Specification page 68
         if (val)
             CLOCK_CTRL |= 0x0002;
-
-        return CLOCK_CTRL;
     }
 
-    u8 sdhci::write_SOFTWARE_RESET(u8 val) {
+    void sdhci::write_SOFTWARE_RESET(u8 val) {
         switch (val) {
         case RESET_ALL:
             reset();
@@ -363,15 +362,15 @@ namespace vcml { namespace generic {
             VCML_ERROR("invalid reset identifier %d", val);
         }
 
-        return val & SOFTWARE_RESET;
+        SOFTWARE_RESET &= val;
     }
 
-    u16 sdhci::write_NORMAL_INT_STAT(u16 val) {
+    void sdhci::write_NORMAL_INT_STAT(u16 val) {
         IRQ.write(false);
-        return NORMAL_INT_STAT & ~val; // RW1C functionality
+        NORMAL_INT_STAT &= ~val; // RW1C functionality
     }
 
-    u16 sdhci::write_ERROR_INT_STAT(u16 val) {
+    void sdhci::write_ERROR_INT_STAT(u16 val) {
         // if all the errors are handled, write zero to the error interrupt bit
         // of the NORMAL_INT_STAT register
         if (!(ERROR_INT_STAT & ~val)) {
@@ -380,7 +379,7 @@ namespace vcml { namespace generic {
                 IRQ.write(false);
         }
 
-        return ERROR_INT_STAT & ~val; // RW1C functionality
+        ERROR_INT_STAT &= ~val; // RW1C functionality
     }
 
     u32 sdhci::read_CAPABILITIES() {

@@ -40,10 +40,10 @@ namespace vcml { namespace riscv {
 
         u64 get_cycles() const;
 
-        u32 read_MSIP(size_t hart);
-        u32 write_MSIP(u32 val, size_t hart);
-        u64 write_MTIMECMP(u64 val, size_t hart);
-        u64 read_MTIME();
+        u32  read_MSIP(size_t hart);
+        void write_MSIP(u32 val, size_t hart);
+        void write_MTIMECMP(u64 val, size_t hart);
+        u64  read_MTIME();
 
         void update_timer();
 

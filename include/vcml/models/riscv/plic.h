@@ -58,16 +58,16 @@ namespace vcml { namespace riscv {
         bool is_claimed(size_t irqno) const;
         bool is_enabled(size_t irqno, size_t ctxno) const;
 
-        u32 irq_priority(size_t irqno) const;
-        u32 ctx_threshold(size_t ctxno) const;
+        u32  irq_priority(size_t irqno) const;
+        u32  ctx_threshold(size_t ctxno) const;
 
-        u32 read_PENDING(size_t regno);
-        u32 read_CLAIM(size_t ctxno);
+        u32  read_PENDING(size_t regno);
+        u32  read_CLAIM(size_t ctxno);
 
-        u32 write_PRIORITY(u32 value, size_t irqno);
-        u32 write_ENABLED(u32 value, size_t regno);
-        u32 write_THRESHOLD(u32 value, size_t ctxno);
-        u32 write_COMPLETE(u32 value, size_t ctxno);
+        void write_PRIORITY(u32 value, size_t irqno);
+        void write_ENABLED(u32 value, size_t regno);
+        void write_THRESHOLD(u32 value, size_t ctxno);
+        void write_COMPLETE(u32 value, size_t ctxno);
 
         void update();
 

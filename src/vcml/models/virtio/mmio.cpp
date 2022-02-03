@@ -181,17 +181,17 @@ namespace vcml { namespace virtio {
         return m_device.vendor_id;
     }
 
-    u32 mmio::write_DEVICE_FEATURES_SEL(u32 val) {
+    void mmio::write_DEVICE_FEATURES_SEL(u32 val) {
         unsigned int shift = val ? 32 : 0;
         DEVICE_FEATURES = (u32)(m_dev_features >> shift);
-        return val ? 1 : 0;
+        DEVICE_FEATURES_SEL = val ? 1 : 0;
     }
 
-    u32 mmio::write_DRIVER_FEATURES(u32 val) {
+    void mmio::write_DRIVER_FEATURES(u32 val) {
         if (STATUS & VIRTIO_STATUS_FEATURES_OK) {
             log_warn("attempt to change features after negotiation");
             STATUS = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
-            return 0;
+            return;
         }
 
         if (DRIVER_FEATURES_SEL) {
@@ -202,15 +202,16 @@ namespace vcml { namespace virtio {
             m_drv_features |= (u64)val;
         }
 
-        return val;
+        DRIVER_FEATURES = val;
     }
 
-    u32 mmio::write_QUEUE_SEL(u32 val) {
+    void mmio::write_QUEUE_SEL(u32 val) {
         if (val >= VIRTQUEUE_MAX) {
             log_warn("illegal virtqueue id %u", val);
-            return val;
+            return;
         }
 
+        QUEUE_SEL = val;
         auto it = m_device.virtqueues.find(val);
         if (it != m_device.virtqueues.end()) {
             const virtio_queue_desc& q = it->second;
@@ -234,67 +235,60 @@ namespace vcml { namespace virtio {
             QUEUE_DEVICE_LO = 0;
             QUEUE_DEVICE_HI = 0;
         }
-
-        return val;
     }
 
-    u32 mmio::write_QUEUE_READY(u32 val) {
+    void mmio::write_QUEUE_READY(u32 val) {
         if (val >= VIRTQUEUE_MAX) {
             log_warn("illegal virtqueue id %u", val);
-            return val;
+            return;
         }
 
-        if (val)
+        if ((QUEUE_READY = val))
             enable_virtqueue(QUEUE_SEL);
         else
             disable_virtqueue(QUEUE_SEL);
-        return val;
     }
 
-    u32 mmio::write_QUEUE_NOTIFY(u32 val) {
+    void mmio::write_QUEUE_NOTIFY(u32 val) {
         if (!device_ready()) {
             log_warn("notify: device not ready");
-            return val;
+            return;
         }
 
         u32 vqid = val & 0xffff;
         if (vqid >= VIRTQUEUE_MAX) {
             log_warn("illegal virtqueue id %u", vqid);
-            return val;
+            return;
         }
 
         auto it = m_queues.find(vqid);
         if (it == m_queues.end()) {
             log_warn("notify: illegal queue id: %u", vqid);
-            return val;
+            return;
         }
+
+        QUEUE_NOTIFY = vqid;
 
         log_debug("notifying virtqueue %u", vqid);
         if (!VIRTIO_OUT->notify(vqid)) {
             log_warn("notify: device reported failure");
             STATUS = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
         }
-
-        return val;
     }
 
-    u32 mmio::write_INTERRRUPT_ACK(u32 val) {
-        val &= VIRTIO_IRQSTATUS_MASK;
-
-        INTERRUPT_ACK = val;
+    void mmio::write_INTERRRUPT_ACK(u32 val) {
+        INTERRUPT_ACK = val & VIRTIO_IRQSTATUS_MASK;
         INTERRUPT_STATUS &= ~INTERRUPT_ACK;
         IRQ = INTERRUPT_STATUS != 0u;
-
-        return INTERRUPT_ACK;
     }
 
-    u32 mmio::write_STATUS(u32 val) {
+    void mmio::write_STATUS(u32 val) {
         val &= VIRTIO_STATUS_MASK;
 
         if (val == 0u) {
             log_debug("software triggered device reset");
             reset();
-            return 0u;
+            return;
         }
 
         if (popcnt(val ^ STATUS) > 1)
@@ -302,14 +296,14 @@ namespace vcml { namespace virtio {
         if (popcnt(STATUS) > popcnt(val))
             log_warn("attempt to clear individual status bits");
 
+        STATUS = val;
+
         if (val == VIRTIO_STATUS_FEATURE_CHECK) {
             if (m_drv_features & ~m_dev_features)
-                return val & ~VIRTIO_STATUS_FEATURES_OK;
-            if (!VIRTIO_OUT->write_features(m_drv_features))
-                return val & ~VIRTIO_STATUS_FEATURES_OK;
+                STATUS &= ~VIRTIO_STATUS_FEATURES_OK;
+            else if (!VIRTIO_OUT->write_features(m_drv_features))
+                STATUS &= ~VIRTIO_STATUS_FEATURES_OK;
         }
-
-        return val;
     }
 
     mmio::mmio(const sc_module_name& nm):

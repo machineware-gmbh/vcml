@@ -59,14 +59,14 @@ namespace vcml { namespace arm {
             void trigger();
             void schedule(u32 ticks);
 
-            u32 read_VALUE();
-            u32 read_RIS();
-            u32 read_MIS();
+            u32  read_VALUE();
+            u32  read_RIS();
+            u32  read_MIS();
 
-            u32 write_LOAD(u32 val);
-            u32 write_CONTROL(u32 val);
-            u32 write_INTCLR(u32 val);
-            u32 write_BGLOAD(u32 val);
+            void write_LOAD(u32 val);
+            void write_CONTROL(u32 val);
+            void write_INTCLR(u32 val);
+            void write_BGLOAD(u32 val);
 
         public:
             enum control_bits: u32 {

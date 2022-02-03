@@ -20,22 +20,19 @@
 
 namespace vcml { namespace meta {
 
-    u32 simdev::write_STOP(u32 val) {
+    void simdev::write_STOP(u32 val) {
         log_info("stopping simulation upon request (%u)", val);
         sc_stop();
-        return 0;
     }
 
-    u32 simdev::write_EXIT(u32 val) {
+    void simdev::write_EXIT(u32 val) {
         log_info("exiting simulation upon request (%u)", val);
         exit(val);
-        return 0;
     }
 
-    u32 simdev::write_ABRT(u32 val) {
+    void simdev::write_ABRT(u32 val) {
         log_info("aborting simulation upon request (%u)", val);
         abort();
-        return 0;
     }
 
     u64 simdev::read_SCLK() {
@@ -47,20 +44,18 @@ namespace vcml { namespace meta {
         return realtime_us();
     }
 
-    u32 simdev::write_SOUT(u32 val) {
+    void simdev::write_SOUT(u32 val) {
         fputc(val, stdout);
         fflush(stdout);
-        return 0;
     }
 
-    u32 simdev::write_SERR(u32 val) {
+    void simdev::write_SERR(u32 val) {
         fputc(val, stderr);
         fflush(stderr);
-        return 0;
     }
 
     u32 simdev::read_PRNG() {
-        return (u32)random();
+        return random();
     }
 
     simdev::simdev(const sc_module_name& nm):

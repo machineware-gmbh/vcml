@@ -137,31 +137,28 @@ namespace vcml { namespace riscv {
         return irq;
     }
 
-    u32 plic::write_PRIORITY(u32 value, size_t irqno) {
-        PRIORITY.get(irqno) = value;
+    void plic::write_PRIORITY(u32 value, size_t irqno) {
+        PRIORITY[irqno] = value;
         update();
-        return value;
     }
 
-    u32 plic::write_ENABLED(u32 value, size_t regno) {
+    void plic::write_ENABLED(u32 value, size_t regno) {
         unsigned int ctxno = regno / (NIRQ / 32);
         unsigned int subno = regno % (NIRQ / 32);
         m_contexts[ctxno]->ENABLED[subno]->set(value);
         update();
-        return value;
     }
 
-    u32 plic::write_THRESHOLD(u32 value, size_t ctxno) {
+    void plic::write_THRESHOLD(u32 value, size_t ctxno) {
         m_contexts[ctxno]->THRESHOLD = value;
         update();
-        return value;
     }
 
-    u32 plic::write_COMPLETE(u32 value, size_t ctxno) {
+    void plic::write_COMPLETE(u32 value, size_t ctxno) {
         unsigned int irq = value;
         if (value >= NIRQ) {
             log_warn("context %zu completes illegal irq %u", ctxno, irq);
-            return value;
+            return;
         }
 
         if (m_claims[irq] != ctxno)
@@ -169,8 +166,6 @@ namespace vcml { namespace riscv {
 
         m_claims[irq] = ~0u;
         update();
-
-        return value;
     }
 
     void plic::update() {

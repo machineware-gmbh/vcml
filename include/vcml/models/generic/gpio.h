@@ -37,8 +37,8 @@ namespace vcml { namespace generic {
         bool cmd_set(const vector<string>& args, ostream& os);
         bool cmd_clear(const vector<string>& args, ostream& os);
 
-        u32 read_DATA();
-        u32 write_DATA(u32 val);
+        u32  read_DATA();
+        void write_DATA(u32 val);
 
         // disabled
         gpio();

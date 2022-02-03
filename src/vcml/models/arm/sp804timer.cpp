@@ -67,31 +67,27 @@ namespace vcml { namespace arm {
         return is_irq_enabled() ? read_RIS() : 0x0;
     }
 
-    u32 sp804timer::timer::write_LOAD(u32 val) {
+    void sp804timer::timer::write_LOAD(u32 val) {
         LOAD = val;
         BGLOAD = val;
         schedule(val);
-        return val;
     }
 
-    u32 sp804timer::timer::write_CONTROL(u32 val) {
+    void sp804timer::timer::write_CONTROL(u32 val) {
         if (((val >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) == 3)
             log_warn("invalid prescaler value defined");
         CONTROL = val & (u32)CONTROL_M;
         schedule(LOAD);
-        return CONTROL;
     }
 
-    u32 sp804timer::timer::write_INTCLR(u32 val) {
+    void sp804timer::timer::write_INTCLR(u32 val) {
         IRQ = false;
         m_timer->update_IRQC();
-        return 0;
     }
 
-    u32 sp804timer::timer::write_BGLOAD(u32 val) {
+    void sp804timer::timer::write_BGLOAD(u32 val) {
         LOAD = val;
         BGLOAD = val;
-        return val;
     }
 
     sp804timer::timer::timer(const sc_module_name& nm):

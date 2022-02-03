@@ -58,7 +58,7 @@ namespace vcml { namespace generic {
         virtual tlm_response_status write(const range& addr, const void* ptr,
                                          const tlm_sbi& info) override;
 
-        u8 write_CONTROL(u8 val);
+        void write_CONTROL(u8 val);
 
         // disabled
         rtc1742();

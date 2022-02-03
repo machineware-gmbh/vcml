@@ -108,11 +108,11 @@ namespace vcml { namespace generic {
         return IIR_THRE;
     }
 
-    u8 uart8250::write_THR(u8 val) {
+    void uart8250::write_THR(u8 val) {
         if (LCR & LCR_DLAB) {
             m_divisor = deposit(m_divisor, 0, 8, val);
             calibrate();
-            return THR;
+            return;
         }
 
         m_tx_fifo.push(val);
@@ -120,15 +120,15 @@ namespace vcml { namespace generic {
         if (m_tx_fifo.size() == m_tx_size)
             LSR &= ~LSR_THRE;
 
+        THR = val;
         update();
-        return val;
     }
 
-    u8 uart8250::write_IER(u8 val) {
+    void uart8250::write_IER(u8 val) {
         if (LCR & LCR_DLAB) {
             m_divisor = deposit(m_divisor, 8, 8, val);
             calibrate();
-            return IER;
+            return;
         }
 
         VCML_LOG_REG_BIT_CHANGE(IER_RDA,  IER, val);
@@ -138,10 +138,9 @@ namespace vcml { namespace generic {
 
         IER = val & 0xF;
         update();
-        return val;
     }
 
-    u8 uart8250::write_LCR(u8 val) {
+    void uart8250::write_LCR(u8 val) {
         int oldwl = (LCR & 0x3) + 5;
         int newwl = (val & 0x3) + 5;
         if (newwl != oldwl)
@@ -154,10 +153,10 @@ namespace vcml { namespace generic {
         VCML_LOG_REG_BIT_CHANGE(LCR_BCB, LCR, val);
         VCML_LOG_REG_BIT_CHANGE(LCR_DLAB, LCR, val);
 
-        return val;
+        LCR = val;
     }
 
-    u8 uart8250::write_FCR(u8 val) {
+    void uart8250::write_FCR(u8 val) {
         log_debug("FIFOs %sabled", val & FCR_FE ? "en" : "dis");
 
         if (val & FCR_CRF) {
@@ -180,10 +179,9 @@ namespace vcml { namespace generic {
         case FCR_IT4:  log_debug("interrupt threshold 4 bytes"); break;
         case FCR_IT8:  log_debug("interrupt threshold 8 bytes"); break;
         case FCR_IT14: log_debug("interrupt threshold 14 bytes"); break;
-        default: break;
+        default:
+            break;
         }
-
-        return IIR;
     }
 
     uart8250::uart8250(const sc_module_name& nm):

@@ -31,7 +31,7 @@ public:
     vcml::reg<u32> test_reg_b;
 
     MOCK_METHOD(u32, reg_read, ());
-    MOCK_METHOD(u32, reg_write, (u32));
+    MOCK_METHOD(void, reg_write, (u32));
 
     mock_peripheral(const sc_core::sc_module_name& nm =
         sc_core::sc_gen_unique_name("mock_peripheral")):
@@ -131,7 +131,10 @@ TEST(registers, write_callback) {
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
-    EXPECT_CALL(mock, reg_write(0x44332211)).WillOnce(Return(value));
+    EXPECT_CALL(mock, reg_write(0x44332211)).WillOnce(Invoke([&](u32 val) {
+        mock.test_reg_b = value;
+    }));
+
     EXPECT_EQ(mock.test_transport(tx), 4);
     EXPECT_EQ(mock.test_reg_a, 0xffffffff);
     EXPECT_EQ(mock.test_reg_b, value);
@@ -242,10 +245,12 @@ TEST(registers, misaligned_accesses) {
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 4);
 
-    EXPECT_CALL(mock, reg_write(0xffffff44)).WillOnce(Return(0xffffff44));
+    EXPECT_CALL(mock, reg_write(0xffffff44)).WillOnce(Invoke([&](u32 val) {
+        mock.test_reg_b = val;
+    }));
+
     EXPECT_EQ(mock.test_transport(tx), 4); // !
     EXPECT_EQ(mock.test_reg_a, 0x33221100u);
-    EXPECT_EQ(mock.test_reg_b, 0xffffff44u); // !
     EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 

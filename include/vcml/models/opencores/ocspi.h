@@ -40,10 +40,10 @@ namespace vcml { namespace opencores {
         bool m_txe_irq;
         bool m_txr_irq;
 
-        u8 write_TXDATA(u8 val);
-        u8 write_STATUS(u8 val);
-        u32 write_CONTROL(u32 val);
-        u32 write_BAUDDIV(u32 val);
+        void write_TXDATA(u8 val);
+        void write_STATUS(u8 val);
+        void write_CONTROL(u32 val);
+        void write_BAUDDIV(u32 val);
 
         // disabled
         ocspi();

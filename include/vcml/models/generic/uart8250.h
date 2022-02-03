@@ -53,10 +53,10 @@ namespace vcml { namespace generic {
         u8 read_IER();
         u8 read_IIR();
 
-        u8 write_THR(u8 val);
-        u8 write_IER(u8 val);
-        u8 write_LCR(u8 val);
-        u8 write_FCR(u8 val);
+        void write_THR(u8 val);
+        void write_IER(u8 val);
+        void write_LCR(u8 val);
+        void write_FCR(u8 val);
 
         // disabled
         uart8250();

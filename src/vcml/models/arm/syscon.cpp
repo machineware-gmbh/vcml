@@ -76,44 +76,40 @@ namespace vcml { namespace arm {
         return sc_time_stamp().to_seconds() * VCML_ARM_SYSCON_CLOCK24MHZ;
     }
 
-    u16 syscon::write_LOCKVAL(u16 val) {
+    void syscon::write_LOCKVAL(u16 val) {
         if (val != LOCKVAL_LOCK)
             val &= LOCKVAL_M;
-        return val;
+        LOCKVAL = val;
     }
 
-    u32 syscon::write_FLAGS_S(u32 val) {
+    void syscon::write_FLAGS_S(u32 val) {
         FLAGS_S |= val;
         FLAGS_C |= val;
-        return FLAGS_S;
     }
 
-    u32 syscon::write_FLAGS_C(u32 val) {
+    void syscon::write_FLAGS_C(u32 val) {
         FLAGS_S &= ~val;
         FLAGS_C &= ~val;
-        return FLAGS_C;
     }
 
-    u32 syscon::write_NVFLAGS_S(u32 val) {
+    void syscon::write_NVFLAGS_S(u32 val) {
         NVFLAGS_S |= val;
         NVFLAGS_C |= val;
-        return NVFLAGS_S;
     }
 
-    u32 syscon::write_NVFLAGS_C(u32 val) {
+    void syscon::write_NVFLAGS_C(u32 val) {
         NVFLAGS_S &= ~val;
         NVFLAGS_C &= ~val;
-        return NVFLAGS_C;
     }
 
-    u32 syscon::write_SYS_CFGCTRL(u32 val) {
+    void syscon::write_SYS_CFGCTRL(u32 val) {
         if (val & (1 << 31))
             log_warn("SYS_CFGCTRL write trigger action not implemented");
-        return val & ~((3 << 18) | (1 << 31));
+        SYS_CFGCTRL = val & ~((3 << 18) | (1 << 31));
     }
 
-    u32 syscon::write_SYS_CFGSTAT(u32 val) {
-        return val & 0x3;
+    void syscon::write_SYS_CFGSTAT(u32 val) {
+        SYS_CFGSTAT = val & 0x3;
     }
 
 }}

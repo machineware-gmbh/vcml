@@ -92,28 +92,28 @@ namespace vcml { namespace virtio {
         virtual tlm_response_status write(const range& addr, const void* data,
             const tlm_sbi& info, address_space as) override;
 
-        u32 write_DEVICE_FEATURE_SEL(u32 val);
-        u32 write_DRIVER_FEATURE(u32 val);
-        u8  write_DEVICE_STATUS(u8 val);
+        void write_DEVICE_FEATURE_SEL(u32 val);
+        void write_DRIVER_FEATURE(u32 val);
+        void write_DEVICE_STATUS(u8 val);
 
-        u16 read_QUEUE_SIZE();
-        u16 read_QUEUE_MSIX_VECTOR();
-        u16 read_QUEUE_ENABLE();
-        u16 read_QUEUE_NOTIFY_OFF();
-        u64 read_QUEUE_DESC();
-        u64 read_QUEUE_DRIVER();
-        u64 read_QUEUE_DEVICE();
+        u16  read_QUEUE_SIZE();
+        u16  read_QUEUE_MSIX_VECTOR();
+        u16  read_QUEUE_ENABLE();
+        u16  read_QUEUE_NOTIFY_OFF();
+        u64  read_QUEUE_DESC();
+        u64  read_QUEUE_DRIVER();
+        u64  read_QUEUE_DEVICE();
 
-        u16 write_QUEUE_SIZE(u16 val);
-        u16 write_QUEUE_MSIX_VECTOR(u16 val);
-        u16 write_QUEUE_ENABLE(u16 val);
-        u16 write_QUEUE_NOTIFY_OFF(u16 val);
-        u64 write_QUEUE_DESC(u64 val);
-        u64 write_QUEUE_DRIVER(u64 val);
-        u64 write_QUEUE_DEVICE(u64 val);
+        void write_QUEUE_SIZE(u16 val);
+        void write_QUEUE_MSIX_VECTOR(u16 val);
+        void write_QUEUE_ENABLE(u16 val);
+        void write_QUEUE_NOTIFY_OFF(u16 val);
+        void write_QUEUE_DESC(u64 val);
+        void write_QUEUE_DRIVER(u64 val);
+        void write_QUEUE_DEVICE(u64 val);
 
-        u32 write_QUEUE_NOTIFY(u32 val);
-        u32 read_IRQ_STATUS();
+        void write_QUEUE_NOTIFY(u32 val);
+        u32  read_IRQ_STATUS();
 
     public:
         property<bool> use_packed_queues;

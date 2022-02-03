@@ -64,13 +64,13 @@ namespace vcml { namespace virtio {
         u32 read_DEVICE_ID();
         u32 read_VENDOR_ID();
 
-        u32 write_DEVICE_FEATURES_SEL(u32 val);
-        u32 write_DRIVER_FEATURES(u32 val);
-        u32 write_QUEUE_SEL(u32 val);
-        u32 write_QUEUE_READY(u32 val);
-        u32 write_QUEUE_NOTIFY(u32 val);
-        u32 write_INTERRRUPT_ACK(u32 val);
-        u32 write_STATUS(u32 val);
+        void write_DEVICE_FEATURES_SEL(u32 val);
+        void write_DRIVER_FEATURES(u32 val);
+        void write_QUEUE_SEL(u32 val);
+        void write_QUEUE_READY(u32 val);
+        void write_QUEUE_NOTIFY(u32 val);
+        void write_INTERRRUPT_ACK(u32 val);
+        void write_STATUS(u32 val);
 
         // disabled
         mmio() = delete;

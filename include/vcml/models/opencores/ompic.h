@@ -40,10 +40,10 @@ namespace vcml { namespace opencores {
         u32* m_control;
         u32* m_status;
 
-        u32 read_STATUS(size_t core_idx);
-        u32 read_CONTROL(size_t core_idx);
+        u32  read_STATUS(size_t core_idx);
+        u32  read_CONTROL(size_t core_idx);
 
-        u32 write_CONTROL(u32 val, size_t core_idx);
+        void write_CONTROL(u32 val, size_t core_idx);
 
         // Disabled
         ompic();
