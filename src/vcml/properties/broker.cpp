@@ -56,10 +56,12 @@ namespace vcml {
 
     template <>
     void broker::define(const string& key, const string& value) {
-        struct value val;
-        val.value = value;
-        val.uses = 0;
-        m_values[key] = val;
+        if (!key.empty()) {
+            struct value val;
+            val.value = value;
+            val.uses = 0;
+            m_values[key] = val;
+        }
     }
 
     template <>

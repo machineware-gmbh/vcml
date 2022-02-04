@@ -65,8 +65,10 @@ namespace vcml {
             key = trim(key);
             val = trim(val);
 
-            replace(val);
-            define(key, val);
+            if (!key.empty()) {
+                replace(val);
+                define(key, val);
+            }
         }
     }
 
