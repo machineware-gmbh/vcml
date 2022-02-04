@@ -29,13 +29,12 @@ TEST(strings, split) {
         return isspace(c);
     });
 
-    EXPECT_EQ(v.size(), 6);
+    EXPECT_EQ(v.size(), 5);
     EXPECT_EQ(v.at(0), "abc");
     EXPECT_EQ(v.at(1), "def");
     EXPECT_EQ(v.at(2), "ghi");
     EXPECT_EQ(v.at(3), "jkl");
     EXPECT_EQ(v.at(4), ":.;");
-    EXPECT_TRUE(v.at(5).empty());
 }
 
 TEST(strings, join) {

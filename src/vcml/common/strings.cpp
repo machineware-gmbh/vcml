@@ -109,7 +109,9 @@ namespace vcml {
             }
         }
 
-        vec.push_back(buf);
+        if (!buf.empty())
+            vec.push_back(buf);
+
         return vec;
     }
 
@@ -128,7 +130,9 @@ namespace vcml {
             }
         }
 
-        vec.push_back(buf);
+        if (!buf.empty())
+            vec.push_back(buf);
+
         return vec;
     }
 
