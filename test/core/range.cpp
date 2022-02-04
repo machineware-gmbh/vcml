@@ -112,9 +112,9 @@ TEST(range, operators) {
 TEST(range, tostring) {
     vcml::range a = { 0x10, 0x20 };
     std::string s = to_string(a);
-    EXPECT_EQ(s, "0x00000010 0x00000020");
+    EXPECT_EQ(s, "0x00000010..0x00000020");
 
     vcml::range b = { 0xababababcdcdcdcdull, 0xfefefefe12121212ull };
     std::string t = to_string(b);
-    EXPECT_EQ(t, "0xababababcdcdcdcd 0xfefefefe12121212");
+    EXPECT_EQ(t, "0xababababcdcdcdcd..0xfefefefe12121212");
 }

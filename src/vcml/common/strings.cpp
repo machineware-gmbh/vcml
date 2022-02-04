@@ -100,9 +100,13 @@ namespace vcml {
     vector<string> split(const string& str, std::function<int(int)> f) {
         vector<string> vec;
         string buf = "";
-        for (auto ch : str) {
-            if (f(ch)) {
-                vec.push_back(buf);
+        for (unsigned int i = 0; i < str.length(); i++) {
+            char ch = str[i];
+            if (ch == '\\' && i < str.length() - 1)
+                buf += str[++i];
+            else if (f(ch)) {
+                if (!buf.empty())
+                    vec.push_back(buf);
                 buf = "";
             } else {
                 buf += ch;
@@ -120,10 +124,11 @@ namespace vcml {
         string buf = "";
         for (unsigned int i = 0; i < str.length(); i++) {
             char ch = str[i];
-            if (ch == '\\')
+            if (ch == '\\' && i < str.length() - 1)
                 buf += str[++i];
             else if (ch == predicate) {
-                vec.push_back(buf);
+                if (!buf.empty())
+                    vec.push_back(buf);
                 buf = "";
             } else {
                 buf += ch;

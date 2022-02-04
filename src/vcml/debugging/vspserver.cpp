@@ -271,7 +271,7 @@ namespace vcml { namespace debugging {
 
         stringstream ss;
         for (unsigned int i = 0; i < (prop->count() - 1); i++)
-            ss << values[i] << property_base::ARRAY_DELIMITER;
+            ss << values[i] << " ";
         ss << values[prop->count() - 1];
         prop->str(ss.str());
 

@@ -150,16 +150,16 @@ namespace vcml {
     }
 
     inline std::istream& operator >> (std::istream& is, vcml::range& r) {
-        is >> r.start;
-        is >> r.end;
+        string s; is >> s;
+        sscanf(s.c_str(), "0x%lx..0x%lx", &r.start, &r.end);
         return is;
     }
 
     inline std::ostream& operator << (std::ostream& os, const vcml::range& r) {
         int n = (r.start > std::numeric_limits<vcml::u32>::max() ||
                  r.end   > std::numeric_limits<vcml::u32>::max()) ? 16 : 8;
-        os <<  "0x" << std::hex << std::setw(n) << std::setfill('0') << r.start
-           << " 0x" << std::hex << std::setw(n) << std::setfill('0') << r.end;
+        os << "0x" << std::hex << std::setw(n) << std::setfill('0') << r.start
+           << "..0x" << std::hex << std::setw(n) << std::setfill('0') << r.end;
         return os;
     }
 

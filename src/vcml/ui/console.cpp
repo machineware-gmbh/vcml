@@ -25,7 +25,7 @@ namespace vcml { namespace ui {
         m_pointers(),
         m_displays(),
         displays("displays", "") {
-        vector<string> types = split(displays, ' ');
+        vector<string> types = split(displays);
         for (const string& type : types) {
             try {
                 auto disp = display::lookup(type);

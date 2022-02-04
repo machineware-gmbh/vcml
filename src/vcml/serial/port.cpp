@@ -97,7 +97,7 @@ namespace vcml { namespace serial {
             VCML_ERROR("serial port '%s' already exists", m_name.c_str());
         s_ports[m_name] = this;
 
-        vector<string> types = split(backends, ' ');
+        vector<string> types = split(backends);
         for  (auto type : types) {
             try {
                 create_backend(type);

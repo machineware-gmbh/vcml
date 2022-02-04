@@ -54,8 +54,6 @@ namespace vcml {
         virtual size_t size() const = 0;
         virtual size_t count() const = 0;
         virtual const char* type() const = 0;
-
-        static const char ARRAY_DELIMITER;
     };
 
 }

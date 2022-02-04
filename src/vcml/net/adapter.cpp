@@ -94,7 +94,7 @@ namespace vcml { namespace net {
             VCML_ERROR("network adapter '%s' already exists", m_name.c_str());
         s_adapters[m_name] = this;
 
-        vector<string> types = split(backends, ' ');
+        vector<string> types = split(backends);
         for  (auto type : types) {
             try {
                 create_client(type);

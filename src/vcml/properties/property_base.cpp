@@ -46,7 +46,5 @@ namespace vcml {
         m_parent->remove_attribute(name());
     }
 
-    const char property_base::ARRAY_DELIMITER = ' ';
-
 }
 

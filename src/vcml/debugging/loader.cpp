@@ -25,7 +25,8 @@ namespace vcml { namespace debugging {
         switch (type) {
         case IMAGE_ELF: return "elf";
         case IMAGE_BIN: return "bin";
-        default: return "unknown";
+        default:
+            return "unknown";
         }
     }
 
@@ -49,7 +50,7 @@ namespace vcml { namespace debugging {
 
     vector<image_info> images_from_string(const string& s) {
         vector<image_info> images;
-        vector<string> token = split(s, ';');
+        vector<string> token = split(s);
         for (string cur : token) {
             cur = trim(cur);
             if (cur.empty())
@@ -71,6 +72,9 @@ namespace vcml { namespace debugging {
 
             images.push_back({file, type, offset});
         }
+
+        for (auto& ii : images)
+            printf("%s @ 0x%lx\n", ii.filename.c_str(), ii.offset);
 
         return images;
     }

@@ -272,7 +272,7 @@ namespace vcml {
         SC_THREAD(processor_thread);
 
         if (!symbols.get().empty()) {
-            vector<string> symfiles = split(trim(symbols), ';');
+            vector<string> symfiles = split(symbols);
             for (auto symfile : symfiles) {
                 symfile = trim(symfile);
                 if (symfile.empty())

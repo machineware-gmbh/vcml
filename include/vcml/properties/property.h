@@ -138,7 +138,7 @@ namespace vcml {
 
     template <typename T, const unsigned int N>
     inline const char* property<T, N>::str() const {
-        const string delim = to_string(ARRAY_DELIMITER);
+        static const string delim = " ";
 
         m_str = "";
 
@@ -158,7 +158,7 @@ namespace vcml {
     template <typename T, const unsigned int N>
     inline void property<T, N>::str(const string& s) {
         m_inited = true;
-        vector<string> args = split(s, ARRAY_DELIMITER);
+        vector<string> args = split(s);
         unsigned int size = args.size();
 
         if (size < N) {
