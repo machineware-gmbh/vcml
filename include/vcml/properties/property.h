@@ -142,11 +142,16 @@ namespace vcml {
 
         m_str = "";
 
-        // coverity[unsigned_compare]
         for (unsigned int i = 0; i < (N - 1); i++)
             m_str += escape(to_string<T>(m_value[i]), delim) + delim;
         m_str += escape(to_string<T>(m_value[N - 1]), delim);
 
+        return m_str.c_str();
+    }
+
+    template <>
+    inline const char* property<string, 1>::str() const {
+        m_str = m_value[0];
         return m_str.c_str();
     }
 
@@ -164,6 +169,12 @@ namespace vcml {
 
         for (unsigned int i = 0; i < min(N, size); i++)
             m_value[i] = from_string<T>(trim(args[i]));
+    }
+
+    template <>
+    inline void property<string, 1>::str(const string& s) {
+        m_inited = true;
+        m_value[0] = s;
     }
 
     template <typename T, const unsigned int N>
