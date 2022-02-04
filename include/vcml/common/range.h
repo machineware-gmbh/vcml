@@ -150,8 +150,12 @@ namespace vcml {
     }
 
     inline std::istream& operator >> (std::istream& is, vcml::range& r) {
-        string s; is >> s;
-        sscanf(s.c_str(), "0x%lx..0x%lx", &r.start, &r.end);
+        string s; is >> s; u64 start = 0, end = 0;
+        if (sscanf(s.c_str(), "0x%lx..0x%lx", &start, &end) == 2) {
+            r.start = start;
+            r.end = end;
+        } else
+            is.setstate(std::ios::failbit);
         return is;
     }
 
