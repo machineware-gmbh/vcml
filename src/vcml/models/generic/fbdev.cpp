@@ -29,6 +29,7 @@ namespace vcml { namespace generic {
 
     fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
         component(nm),
+        m_console(),
         m_mode(),
         m_vptr(nullptr),
         addr("addr", 0),

@@ -40,9 +40,9 @@ namespace vcml { namespace generic {
         void update();
 
     public:
-        u8* vptr()   const { return m_vptr; }
-        u64 size()   const { return m_mode.size; }
-        u64 stride() const { return size() / m_mode.yres; }
+        u8*    vptr()   const { return m_vptr; }
+        size_t size()   const { return m_mode.size; }
+        size_t stride() const { return m_mode.stride; }
 
         property<u64> addr;
         property<u32> xres;

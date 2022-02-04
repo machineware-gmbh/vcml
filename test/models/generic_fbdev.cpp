@@ -53,6 +53,8 @@ public:
 };
 
 TEST(generic_fbdev, run) {
+    vcml::broker broker("test");
+    broker.define("harness.fb.displays", "null:0");
     test_harness test("harness");
     sc_core::sc_start();
 }
