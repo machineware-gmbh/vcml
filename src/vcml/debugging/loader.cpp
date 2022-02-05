@@ -73,9 +73,6 @@ namespace vcml { namespace debugging {
             images.push_back({file, type, offset});
         }
 
-        for (auto& ii : images)
-            printf("%s @ 0x%lx\n", ii.filename.c_str(), ii.offset);
-
         return images;
     }
 
