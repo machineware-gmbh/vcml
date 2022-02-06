@@ -39,6 +39,7 @@ namespace vcml { namespace net {
 
         set<backend_slirp*> m_clients;
 
+        mutex m_mtx;
         atomic<bool> m_running;
         thread m_thread;
 

@@ -137,15 +137,20 @@ namespace vcml { namespace net {
             unsigned int timeout = 10; // ms
             vector<pollfd> fds;
 
+            m_mtx.lock();
             slirp_pollfds_fill(m_slirp, &timeout, &slirp_add_poll_fd, &fds);
+            m_mtx.unlock();
+
             if (fds.empty()) {
                 usleep(timeout * 1000);
                 continue;
             }
 
             int ret = poll(fds.data(), fds.size(), timeout);
-            if (ret != 0)
+            if (ret != 0) {
+                lock_guard<mutex> guard(m_mtx);
                 slirp_pollfds_poll(m_slirp, ret < 0, &slirp_get_events, &fds);
+            }
         }
     }
 
@@ -153,6 +158,7 @@ namespace vcml { namespace net {
         m_config(),
         m_slirp(),
         m_clients(),
+        m_mtx(),
         m_running(true),
         m_thread() {
         m_config.version = 1;
@@ -214,6 +220,7 @@ namespace vcml { namespace net {
     }
 
     void slirp_network::recv_packet(const u8* ptr, size_t len) {
+        lock_guard<mutex> guard(m_mtx);
         slirp_input(m_slirp, ptr, len);
     }
 
