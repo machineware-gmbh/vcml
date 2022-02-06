@@ -96,6 +96,7 @@
 #include "vcml/models/generic/gpio.h"
 #include "vcml/models/generic/crossbar.h"
 #include "vcml/models/generic/uart8250.h"
+#include "vcml/models/generic/lan9118.h"
 #include "vcml/models/generic/rtc1742.h"
 #include "vcml/models/generic/spibus.h"
 #include "vcml/models/generic/spi2sd.h"

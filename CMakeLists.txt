@@ -116,6 +116,7 @@ set(sources
     ${src}/vcml/models/generic/gpio.cpp
     ${src}/vcml/models/generic/crossbar.cpp
     ${src}/vcml/models/generic/uart8250.cpp
+    ${src}/vcml/models/generic/lan9118.cpp
     ${src}/vcml/models/generic/rtc1742.cpp
     ${src}/vcml/models/generic/spibus.cpp
     ${src}/vcml/models/generic/spi2sd.cpp
