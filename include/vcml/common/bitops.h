@@ -70,6 +70,19 @@ namespace vcml {
         return s[0] | s[1] << 8 | s[2] << 16 | s[3] << 24;
     }
 
+    extern const u8 bitrev_table[256];
+    inline u8 bitrev(u8 val) {
+        return bitrev_table[val];
+    }
+
+    inline u16 bitrev(u16 val) {
+        return bitrev((u8)val) << 8 | bitrev((u8)(val >> 8));
+    }
+
+    inline u32 bitrev(u32 val) {
+        return bitrev((u16)val) << 16 | bitrev((u16)(val >> 16));
+    }
+
     inline u8 bswap(u8 val) {
         return val;
     }
@@ -96,8 +109,11 @@ namespace vcml {
 
     inline void memswap(void* ptr, unsigned int size) {
         u8* v = static_cast<u8*>(ptr);
-        for (unsigned int i = 0; i < size / 2; i++)
-            std::swap(v[i], v[size - 1 - i]);
+        for (unsigned int i = 0; i < size / 2; i++) {
+            u8 tmp = v[i];
+            v[i] = v[size-i-1];
+            v[size-i-1] = tmp;
+        }
     }
 
     template <typename T>
@@ -113,23 +129,15 @@ namespace vcml {
 
     // crc7 calculates a 7 bit CRC of the specified data using the polynomial
     // x^7 + x^3 + 1. It will be stored in the upper 7 bits of the result.
-    extern const u8 crc7_table[256]; //
-    inline u8 crc7(const u8* buffer, size_t len) {
-        u8 crc = 0;
-        while (len--)
-            crc = crc7_table[crc ^ *buffer++];
-        return crc;
-    }
+    u8 crc7(const u8* buffer, size_t len, u8 crc = 0);
 
     // crc16 calculates a 16 bit CRC of the given data using the polynomial
-    // // x^16 + x^12 + x^5 + 1.
-    extern const u16 crc16_table[256];
-    inline u16 crc16(const u8* buffer, size_t len) {
-        u16 crc = 0;
-        while (len--)
-            crc = (crc << 8) ^ crc16_table[((crc >> 8) ^ *buffer++) & 0xff];
-        return crc;
-    }
+    // x^16 + x^12 + x^5 + 1.
+    u16 crc16(const u8* buffer, size_t len, u16 crc = 0);
+
+    // crc32 calculates a 32 bit CRC of the given data using the polynomial
+    // x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x^1+1
+    u32 crc32(const u8* buffer, size_t len, u32 crc = ~0u);
 
     template <unsigned int OFF, unsigned int LEN, typename T = u32>
     struct bitfield {

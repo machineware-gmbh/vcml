@@ -112,6 +112,13 @@ TEST(bitops, fourcc) {
     EXPECT_EQ(vcml::fourcc("\0\0\0\0"), 0);
 }
 
+TEST(bitops, bitrev) {
+    EXPECT_EQ(vcml::bitrev((vcml::u32)0x01020304), 0x20c04080);
+    EXPECT_EQ(vcml::bitrev((vcml::u32)0x77e51f08), 0x10f8a7ee);
+    EXPECT_EQ(vcml::bitrev((vcml::u32)0xcb3e0121), 0x84807cd3);
+    EXPECT_EQ(vcml::bitrev((vcml::u32)0xf490ee20), 0x0477092f);
+}
+
 TEST(bitops, bswap) {
     vcml::u8  val1 = 0x11;
     vcml::u16 val2 = 0x1122;
@@ -188,6 +195,10 @@ TEST(bitops, crc16) {
     vcml::u8 b0[512] = { 0xFF };
     memset(b0, 0xff, 512);
     EXPECT_EQ(vcml::crc16(b0, sizeof(b0)), 0x7fa1);
+}
+
+TEST(bitops, crc32) {
+    EXPECT_EQ(vcml::crc32((const vcml::u8*)"123456789", 9), 0x9b63d02c);
 }
 
 const vcml::bitfield<0,3> TEST_FIELD1;

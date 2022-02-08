@@ -20,6 +20,7 @@
 #define VCML_NET_ADAPTER_H
 
 #include "vcml/common/types.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/report.h"
 #include "vcml/common/strings.h"
 
@@ -38,16 +39,27 @@ namespace vcml { namespace net {
         mac_addr& operator = (const mac_addr&) = default;
 
         mac_addr(u8, u8, u8, u8, u8, u8);
+        mac_addr(const vector<u8>& pkt, size_t off = 0);
 
         u8& operator [] (size_t i) { return bytes.at(i); }
         u8  operator [] (size_t i) const { return bytes.at(i); }
 
         bool operator == (const mac_addr&) const;
         bool operator != (const mac_addr&) const;
+
+        bool is_multicast() const { return bytes[0] & 1; }
+        bool is_broadcast() const;
+
+        u32 hash_crc32() const { return crc32(bytes.data(), 6); }
     };
 
     inline mac_addr::mac_addr(u8 a, u8 b, u8 c, u8 d, u8 e, u8 f):
         bytes({a, b, c, d, e, f}) {
+    }
+
+    inline mac_addr::mac_addr(const vector<u8>& pkt, size_t off):
+        bytes() {
+        std::copy(pkt.begin() + off, pkt.begin() + off + 6, bytes.begin());
     }
 
     inline bool mac_addr::operator == (const mac_addr& other) const {
@@ -56,6 +68,13 @@ namespace vcml { namespace net {
 
     inline bool mac_addr::operator != (const mac_addr& other) const {
         return !(bytes == other.bytes);
+    }
+
+    inline bool mac_addr::is_broadcast() const {
+        for (const u8& val : bytes)
+            if (val != 0xff)
+                return false;
+        return true;
     }
 
     ostream& operator << (ostream& os, const mac_addr& addr);
