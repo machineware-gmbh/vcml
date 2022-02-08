@@ -486,3 +486,19 @@ TEST(registers, hierarchy) {
     EXPECT_STREQ(regs[0]->name(), "H.W.TEST_REG");
     EXPECT_EQ(regs[0], (vcml::reg_base*)&H.W.TEST_REG);
 }
+
+TEST(registers, bitfields) {
+    mock_peripheral mock("mock");
+
+    static const vcml::bitfield<1,4,u32> TEST_FIELD;
+
+    mock.test_reg_a = 0xaaaaaaaa;
+    u32 val = vcml::get_bitfield(TEST_FIELD, mock.test_reg_a);
+    EXPECT_EQ(val, 5);
+    mock.test_reg_a.set_bitfield(TEST_FIELD, val - 1);
+    EXPECT_EQ(mock.test_reg_a, 0xaaaaaaa8);
+    mock.test_reg_a.set_bitfield(TEST_FIELD, val);
+    EXPECT_EQ(mock.test_reg_a, 0xaaaaaaaa);
+    mock.test_reg_a.set_bitfield(TEST_FIELD);
+    EXPECT_EQ(mock.test_reg_a, 0xaaaaaabe);
+}
