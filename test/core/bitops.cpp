@@ -211,7 +211,7 @@ TEST(bitops, bitfield) {
     EXPECT_EQ(0xffff & TEST_FIELD1, 0b111);
     EXPECT_EQ(0xffff & TEST_FIELD2, 0b10000);
 
-    vcml::u64 val = 0;
+    vcml::u32 val = 0;
 
     vcml::set_bitfield(TEST_FIELD1, val, 0b101);
     EXPECT_EQ(val, 0b101);

@@ -141,6 +141,7 @@ namespace vcml {
 
     template <unsigned int OFF, unsigned int LEN, typename T = u32>
     struct bitfield {
+        typedef T base;
         enum : unsigned int { OFFSET = OFF };
         enum : unsigned int { LENGTH = LEN };
         enum : T { MASK = bitmask(LEN, OFF) };
@@ -148,20 +149,20 @@ namespace vcml {
         operator T() const { return MASK; }
     };
 
-    template <typename F, typename T>
-    T get_bitfield(F f, T val) {
+    template <typename F>
+    typename F::base get_bitfield(F f, typename F::base val) {
         (void)f;
         return extract(val, F::OFFSET, F::LENGTH);
     }
 
-    template <typename F, typename T>
-    void set_bitfield(F f, T& val) {
+    template <typename F>
+    void set_bitfield(F f, typename F::base& val) {
         (void)f;
-        val = deposit(val, F::OFFSET, F::LENGTH, (T)~0ull);
+        val = deposit(val, F::OFFSET, F::LENGTH, ~0ull);
     }
 
-    template <typename F, typename T, typename T2>
-    void set_bitfield(F f, T& val, T2 x) {
+    template <typename F>
+    void set_bitfield(F f, typename F::base& val, typename F::base x) {
         (void)f;
         val = deposit(val, F::OFFSET, F::LENGTH, x);
     }

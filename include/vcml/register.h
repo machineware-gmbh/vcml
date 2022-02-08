@@ -184,8 +184,9 @@ namespace vcml {
         template <typename T> bool operator  < (const T& other) const;
         template <typename T> bool operator  > (const T& other) const;
 
-        template <typename F> DATA get_bitfield(F field);
-        template <typename F, typename T> void set_bitfield(F field, T val);
+        template <typename F> DATA get_bitfield(F field) const;
+        template <typename F> void set_bitfield(F field);
+        template <typename F> void set_bitfield(F field, DATA val);
 
     private:
         bool m_banked;
@@ -563,15 +564,22 @@ namespace vcml {
 
     template <typename DATA, size_t N>
     template <typename F>
-    inline DATA reg<DATA, N>::get_bitfield(F field) {
-        return get_bitfield(field, current_bank());
+    inline DATA reg<DATA, N>::get_bitfield(F field) const {
+        return vcml::get_bitfield<F>(field, current_bank());
     }
 
     template <typename DATA, size_t N>
-    template <typename F, typename T>
-    inline void reg<DATA, N>::set_bitfield(F field, T val) {
+    template <typename F>
+    inline void reg<DATA, N>::set_bitfield(F field) {
         for (size_t i = 0; i < N; i++)
-            set_bitfield(field, current_bank(i));
+            vcml::set_bitfield<F>(field, current_bank(i));
+    }
+
+    template <typename DATA, size_t N>
+    template <typename F>
+    inline void reg<DATA, N>::set_bitfield(F field, DATA val) {
+        for (size_t i = 0; i < N; i++)
+            vcml::set_bitfield<F>(field, current_bank(i), val);
     }
 
     template <typename DATA, size_t N>
