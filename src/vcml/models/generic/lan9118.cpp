@@ -198,15 +198,17 @@ namespace vcml { namespace generic {
                    IRQ_RXSTOP | IRQ_TXSTOP | IRQ_SW,
     };
 
+    static const bitfield<12, 6, u32> RX_CFG_DMA_COUNT;
+
     enum lan_rx_cfg : u32 {
         RX_CFG_RXDOFF         = bitmask(5, 8),
         RX_CFG_RX_DUMP        = 1u << 15,
-        RX_CFG_RX_DMA_CNT     = bitmask(12, 16),
+        RX_CFG_RX_DMA_MASK    = RX_CFG_DMA_COUNT.MASK,
         RX_CFG_END_ALIGN_4    = 0u << 30,
         RX_CFG_END_ALIGN_16   = 1u << 30,
         RX_CFG_END_ALIGN_32   = 2u << 30,
         RX_CFG_END_ALIGN_MASK = bitmask(2, 30),
-        RX_CFG_MASK           = RX_CFG_END_ALIGN_MASK | RX_CFG_RX_DMA_CNT |
+        RX_CFG_MASK           = RX_CFG_END_ALIGN_MASK | RX_CFG_RX_DMA_MASK |
                                 RX_CFG_RXDOFF,
     };
 
@@ -228,6 +230,10 @@ namespace vcml { namespace generic {
 
         HW_CFG_MASK     = HW_CFG_TX_FF_SZ | HW_CFG_MBO,
         HW_CFG_RESET    = 5 << 16 | HW_CFG_32BIT,
+    };
+
+    enum lan_rx_dp_ctrl_bits : u32 {
+        RX_DP_CTRL_FF = 1u << 31,
     };
 
     enum lan_pmt_ctrl_bits : u32 {
@@ -307,16 +313,33 @@ namespace vcml { namespace generic {
         CMDB_MASK = CMDB_PKT_LEN | CMDB_PAD_DIS | CMDB_CRC_DIS | CMDB_PKT_TAG,
     };
 
-    enum pkt_status_bits : u32 {
-        PKT_STS_DEFERRED   = 1u << 0,
-        PKT_STS_EX_DEF     = 1u << 2,
-        PKT_STS_COL_CNT    = bitmask(4, 3),
-        PKT_STS_EX_COL     = 1u << 8,
-        PKT_STS_LATE_COL   = 1u << 9,
-        PKT_STS_NO_CARRY   = 1u << 10,
-        PKT_STS_LOST_CARRY = 1u << 11,
-        PKT_STS_ERROR      = 1u << 15,
-        PKT_STS_TAG_MASK   = bitmask(16, 16),
+    enum pkt_txsts_bits : u32 {
+        PKT_TXSTS_DEFERRED   = 1u << 0,
+        PKT_TXSTS_EX_DEF     = 1u << 2,
+        PKT_TXSTS_COL_CNT    = bitmask(4, 3),
+        PKT_TXSTS_EX_COL     = 1u << 8,
+        PKT_TXSTS_LATE_COL   = 1u << 9,
+        PKT_TXSTS_NO_CARRY   = 1u << 10,
+        PKT_TXSTS_LOST_CARRY = 1u << 11,
+        PKT_TXSTS_ERROR      = 1u << 15,
+        PKT_TXSTS_TAG_MASK   = bitmask(16, 16),
+    };
+
+    enum pkt_rxsts_bits : u32 {
+        PKT_RXSTS_ERR_CRC    = 1u << 1,
+        PKT_RXSTS_DRIBBLE    = 1u << 2,
+        PKT_RXSTS_ERR_MII    = 1u << 3,
+        PKT_RXSTS_WATCHDOG   = 1u << 4,
+        PKT_RXSTS_FRAME_TYPE = 1u << 5,
+        PKT_RXSTS_COLLISION  = 1u << 6,
+        PKT_RXSTS_TOO_LONG   = 1u << 7,
+        PKT_RXSTS_MULTICAST  = 1u << 10,
+        PKT_RXSTS_RUNT       = 1u << 11,
+        PKT_RXSTS_ERR_LENGTH = 1u << 12,
+        PKT_RXSTS_BROADCAST  = 1u << 13,
+        PKT_RXSTS_ERROR      = 1u << 15,
+        PKT_RXSTS_LEN_MASK   = bitmask(14, 16),
+        PKT_RXSTS_FILTERED   = 1u << 30,
     };
 
     static constexpr u32 CHIPREV(u16 id, u16 rev) {
@@ -541,11 +564,9 @@ namespace vcml { namespace generic {
         set_address(m_addr);
     }
 
-    bool lan9118_mac::filter(const vector<u8>& pkt) const {
+    bool lan9118_mac::filter(const net::mac_addr& dest) const {
         if (CR & CR_PRMS) // promiscuous
             return true;
-
-        net::mac_addr dest(pkt);
 
         // broadcast packets disabled?
         if (dest.is_broadcast())
@@ -634,17 +655,26 @@ namespace vcml { namespace generic {
         if (!(mac.CR & CR_RXEN))
             return false;
 
-        if (pkt.size() > 2048 || pkt.size() < 14)
+        if (pkt.size() > 2048) {
+            IRQ_STS |= IRQ_RWT;
             return false;
+        }
 
+        if (pkt.size() < 14) {
+            log_warn("received short Ethernet frame: %zu bytes", pkt.size());
+            return false;
+        }
+
+        net::mac_addr dest(pkt);
         bool filter = mac.filter(pkt);
         if (!filter && (mac.CR & CR_RXALL) == 0)
             return true;
 
+        // not sure if this is the correct crc32 to use
+        u32 crc = crc32(pkt.data(), pkt.size());
+
         size_t offset = extract(RX_CFG.get(), 8, 5);
         size_t padding = calc_rx_padding(RX_CFG, pkt.size(), offset);
-
-        u32 crc = bswap(crc32(pkt.data(), pkt.size()));
         size_t length = pkt.size() + sizeof(crc) + offset + padding * 4;
         if (rx_data_free() < length)
             return false;
@@ -657,8 +687,7 @@ namespace vcml { namespace generic {
         u32 val = 0;
         for (u8 src : pkt) {
             val = (val >> 8) | (src << 24);
-            offset++;
-            if (offset == 4) {
+            if (++offset == 4) {
                 m_rx_data_fifo.push_back(val);
                 val = offset = 0;
             }
@@ -677,9 +706,14 @@ namespace vcml { namespace generic {
         while (padding--)
             m_rx_data_fifo.push_back(0);
 
-        u32 status = length << 16;
-        if (!rx_status_full())
-            m_rx_status_fifo.push_back(status);
+        u32 status = (length << 16) & PKT_RXSTS_LEN_MASK;
+        if (!filter)
+            status |= PKT_RXSTS_FILTERED;
+        if (dest.is_broadcast())
+            status |= PKT_RXSTS_BROADCAST;
+        else if (dest.is_multicast())
+            status |= PKT_RXSTS_MULTICAST;
+        m_rx_status_fifo.push_back(status);
 
         return true;
     }
@@ -697,8 +731,6 @@ namespace vcml { namespace generic {
                 if (!rx_enqueue(pkt)) {
                     IRQ_STS |= IRQ_RXDF;
                     RX_DROP++;
-                    // ToDo: RX dropped frame halfway
-                    log_warn("dropped frame");
                 }
 
                 update_irq();
@@ -745,12 +777,25 @@ namespace vcml { namespace generic {
         }
     }
 
+
     u32 lan9118::read_RX_DATA_FIFO() {
-        if (m_rx_data_fifo.empty())
+        if (m_rx_data_fifo.empty()) {
+            IRQ_STS |= IRQ_RXE;
             return 0;
+        }
 
         u32 val = m_rx_data_fifo.front();
         m_rx_data_fifo.pop_front();
+
+        u32 dma = RX_CFG.get_bitfield(RX_CFG_DMA_COUNT);
+        if (dma > 0) {
+            RX_CFG.set_bitfield(RX_CFG_DMA_COUNT, --dma);
+            if (dma == 0) {
+                IRQ_STS |= IRQ_RXD;
+                update_irq();
+            }
+        }
+
         return val;
     }
 
@@ -844,8 +889,10 @@ namespace vcml { namespace generic {
     }
 
     u32 lan9118::read_RX_STATUS_FIFO() {
-        if (m_rx_status_fifo.empty())
+        if (m_rx_status_fifo.empty()) {
+            IRQ_STS |= IRQ_RXE;
             return 0;
+        }
 
         u32 val = m_rx_status_fifo.front();
         m_rx_status_fifo.pop_front();
@@ -953,6 +1000,21 @@ namespace vcml { namespace generic {
 
         HW_CFG = val & HW_CFG_MASK;
         HW_CFG |= HW_CFG_32BIT;
+    }
+
+    void lan9118::write_RX_DP_CTRL(u32 val) {
+        if (val & RX_DP_CTRL_FF) {
+            size_t length = (read_RX_STATUS_FIFO() >> 16) & 0x3ff;
+            size_t offset = extract(RX_CFG.get(), 8, 5);
+            size_t padding = calc_rx_padding(RX_CFG, length, offset);
+            size_t ndw = (length + offset) / 4 + padding;
+            log_debug("triggering fast-forward for %zu dwords", ndw);
+
+            while (ndw--)
+                read_RX_DATA_FIFO();
+        }
+
+        update_irq();
     }
 
     u32 lan9118::read_RX_FIFO_INF() {
@@ -1106,7 +1168,7 @@ namespace vcml { namespace generic {
         RX_CFG         ("RX_CFG",         0x6c, 0x00000000),
         TX_CFG         ("TX_CFG",         0x70, 0x00000000),
         HW_CFG         ("HW_CFG",         0x74, HW_CFG_RESET),
-        RX_DP_CTL      ("RX_DP_CTL",      0x78, 0x00000000),
+        RX_DP_CTRL     ("RX_DP_CTRL",     0x78, 0x00000000),
         RX_FIFO_INF    ("RX_FIFO_INF",    0x7c, 0x00000000),
         TX_FIFO_INF    ("TX_FIFO_INF",    0x80, 0x00001200),
         PMT_CTRL       ("PMT_CTRL",       0x84, PMT_CTRL_RESET),
@@ -1183,6 +1245,10 @@ namespace vcml { namespace generic {
         HW_CFG.sync_always();
         HW_CFG.allow_read_write();
         HW_CFG.on_write(&lan9118::write_HW_CFG);
+
+        RX_DP_CTRL.sync_always();
+        RX_DP_CTRL.allow_read_write();
+        RX_DP_CTRL.on_write(&lan9118::write_RX_DP_CTRL);
 
         RX_FIFO_INF.sync_on_read();
         RX_FIFO_INF.allow_read_only();
@@ -1294,6 +1360,9 @@ namespace vcml { namespace generic {
 
         if (rx_status_used() > rx_status_level())
             IRQ_STS |= IRQ_RSFL;
+
+        if (RX_DROP > 0x7fffffffu)
+            IRQ_STS |= IRQ_RXDF;
 
         u32 irqs = IRQ_STS & IRQ_EN;
         if (irqs)

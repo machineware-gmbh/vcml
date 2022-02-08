@@ -103,7 +103,7 @@ namespace vcml { namespace generic {
         VCML_KIND(lan9118_mac);
         virtual void reset();
 
-        bool filter(const vector<u8>& pkt) const;
+        bool filter(const net::mac_addr& dest) const;
     };
 
     class lan9118 : public peripheral, public net::adapter
@@ -245,6 +245,8 @@ namespace vcml { namespace generic {
         void write_TX_CFG(u32 val);
         void write_HW_CFG(u32 val);
 
+        void write_RX_DP_CTRL(u32 val);
+
         u32  read_RX_FIFO_INF();
         u32  read_TX_FIFO_INF();
 
@@ -279,7 +281,7 @@ namespace vcml { namespace generic {
         reg<u32> RX_CFG;
         reg<u32> TX_CFG;
         reg<u32> HW_CFG;
-        reg<u32> RX_DP_CTL;
+        reg<u32> RX_DP_CTRL;
         reg<u32> RX_FIFO_INF;
         reg<u32> TX_FIFO_INF;
         reg<u32> PMT_CTRL;
