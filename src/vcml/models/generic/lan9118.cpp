@@ -438,9 +438,9 @@ namespace vcml { namespace generic {
 
     sc_time lan9118_phy::rxtx_delay(size_t bytes) const {
         if (CONTROL & PHY_CONTROL_SPEED_SEL)
-            return bytes * 8 * sc_time(10, SC_NS); // 100M
+            return (8 + bytes + 12) * 8 * sc_time(10, SC_NS); // 100M
         else
-            return bytes * 8 * sc_time(100, SC_NS); // 10M
+            return (8 + bytes + 12) * 8 * sc_time(100, SC_NS); // 10M
     }
 
     void lan9118_mac::write_CR(u32 val) {
@@ -541,6 +541,33 @@ namespace vcml { namespace generic {
         set_address(m_addr);
     }
 
+    bool lan9118_mac::filter(const vector<u8>& pkt) const {
+        if (CR & CR_PRMS) // promiscuous
+            return true;
+
+        net::mac_addr dest(pkt);
+
+        // broadcast packets disabled?
+        if (dest.is_broadcast())
+            return (CR & CR_BCAST) == 0;
+
+        // multicast packets passed?
+        if (dest.is_multicast() && (CR & CR_MCPAS))
+            return true;
+
+        // hash filtering requested?
+        if (dest.is_multicast() ? CR & CR_HPFILT : CR & CR_HO) {
+            u32 hash = dest.hash_crc32() >> 26;
+            u32 mask = 1u << (hash & 0x1f);
+            return (hash > 0x1f ? HASHH : HASHL) & mask;
+        }
+
+        if (CR & CR_INVFILT)
+            return dest != m_addr;
+        else
+            return dest == m_addr;
+    }
+
     void lan9118::reset_fifo_size(size_t txff_size) {
         size_t sram_size = 16 * KiB;
         size_t rxff_size = sram_size - txff_size;
@@ -610,12 +637,15 @@ namespace vcml { namespace generic {
         if (pkt.size() > 2048 || pkt.size() < 14)
             return false;
 
+        bool filter = mac.filter(pkt);
+        if (!filter && (mac.CR & CR_RXALL) == 0)
+            return true;
+
         size_t offset = extract(RX_CFG.get(), 8, 5);
         size_t padding = calc_rx_padding(RX_CFG, pkt.size(), offset);
 
-        VCML_ERROR_ON(padding != 0, "padding not supported");
-
-        size_t length = pkt.size() + 4 + offset + padding * 4;
+        u32 crc = bswap(crc32(pkt.data(), pkt.size()));
+        size_t length = pkt.size() + sizeof(crc) + offset + padding * 4;
         if (rx_data_free() < length)
             return false;
 
@@ -636,11 +666,16 @@ namespace vcml { namespace generic {
 
         if (offset > 0) {
             val >>= (4 - offset) * 8;
+            val |= crc << (offset * 8);
             m_rx_data_fifo.push_back(val);
+            val = crc >> (4 - offset) * 8;
+            m_rx_data_fifo.push_back(val);
+        } else {
+            m_rx_data_fifo.push_back(crc);
         }
 
-        u32 crc = 0;
-        m_rx_data_fifo.push_back(crc);
+        while (padding--)
+            m_rx_data_fifo.push_back(0);
 
         u32 status = length << 16;
         if (!rx_status_full())

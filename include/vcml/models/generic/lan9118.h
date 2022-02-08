@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
@@ -101,6 +102,8 @@ namespace vcml { namespace generic {
         virtual ~lan9118_mac();
         VCML_KIND(lan9118_mac);
         virtual void reset();
+
+        bool filter(const vector<u8>& pkt) const;
     };
 
     class lan9118 : public peripheral, public net::adapter

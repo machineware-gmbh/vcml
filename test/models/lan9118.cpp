@@ -185,22 +185,6 @@ public:
 };
 
 TEST(lan9118, simulate) {
-    net::mac_addr addr;
-    EXPECT_EQ(addr[0], 0);
-    EXPECT_EQ(addr[1], 0);
-    EXPECT_EQ(addr[2], 0);
-    EXPECT_EQ(addr[3], 0);
-    EXPECT_EQ(addr[4], 0);
-    EXPECT_EQ(addr[5], 0);
-
-    net::mac_addr addr2({ 1, 2, 3, 4, 5, 6});
-    EXPECT_EQ(addr2[0], 1);
-    EXPECT_EQ(addr2[1], 2);
-    EXPECT_EQ(addr2[2], 3);
-    EXPECT_EQ(addr2[3], 4);
-    EXPECT_EQ(addr2[4], 5);
-    EXPECT_EQ(addr2[5], 6);
-
     lan9118_bench test("bench");
     sc_core::sc_start();
 }
