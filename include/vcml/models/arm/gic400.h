@@ -156,7 +156,7 @@ namespace vcml { namespace arm {
             void write_CPENDSGIR(u8 value, size_t idx);
 
         public:
-            bitfield<0,1> CTLR_ENABLE;
+            typedef field<0,1> CTLR_ENABLE;
 
             reg<u32>     CTLR;  // Distributor Control register
             reg<u32>     TYPER; // IRQ Controller Type register
@@ -231,7 +231,7 @@ namespace vcml { namespace arm {
             cpuif(const cpuif&);
 
         public:
-            bitfield<0,1> CTLR_ENABLE;
+            typedef field<0,1> CTLR_ENABLE;
 
             reg<u32>    CTLR;  // CPU Control register
             reg<u32>    PMR;   // IRQ Priority Mask register

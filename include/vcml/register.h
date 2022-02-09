@@ -155,6 +155,7 @@ namespace vcml {
         virtual void do_write(const range& addr, const void* ptr) override;
 
         operator DATA() const;
+        operator DATA&();
 
         const DATA& operator [] (size_t idx) const;
         DATA& operator [] (size_t idx);
@@ -184,9 +185,9 @@ namespace vcml {
         template <typename T> bool operator  < (const T& other) const;
         template <typename T> bool operator  > (const T& other) const;
 
-        template <typename F> DATA get_bitfield(F field) const;
-        template <typename F> void set_bitfield(F field);
-        template <typename F> void set_bitfield(F field, DATA val);
+        template <typename F> DATA get_field() const;
+        template <typename F> void set_field();
+        template <typename F> void set_field(DATA val);
 
     private:
         bool m_banked;
@@ -392,6 +393,11 @@ namespace vcml {
     }
 
     template <typename DATA, size_t N>
+    reg<DATA, N>::operator DATA&() {
+        return current_bank();
+    }
+
+    template <typename DATA, size_t N>
     const DATA& reg<DATA, N>::operator [] (size_t idx) const {
         return current_bank(idx);
     }
@@ -564,22 +570,22 @@ namespace vcml {
 
     template <typename DATA, size_t N>
     template <typename F>
-    inline DATA reg<DATA, N>::get_bitfield(F field) const {
-        return vcml::get_bitfield<F>(field, current_bank());
+    inline DATA reg<DATA, N>::get_field() const {
+        return vcml::get_field<F>(current_bank());
     }
 
     template <typename DATA, size_t N>
     template <typename F>
-    inline void reg<DATA, N>::set_bitfield(F field) {
+    inline void reg<DATA, N>::set_field() {
         for (size_t i = 0; i < N; i++)
-            vcml::set_bitfield<F>(field, current_bank(i));
+            vcml::set_field<F>(current_bank(i));
     }
 
     template <typename DATA, size_t N>
     template <typename F>
-    inline void reg<DATA, N>::set_bitfield(F field, DATA val) {
+    inline void reg<DATA, N>::set_field(DATA val) {
         for (size_t i = 0; i < N; i++)
-            vcml::set_bitfield<F>(field, current_bank(i), val);
+            vcml::set_field<F>(current_bank(i), val);
     }
 
     template <typename DATA, size_t N>

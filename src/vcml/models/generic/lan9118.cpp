@@ -198,12 +198,12 @@ namespace vcml { namespace generic {
                    IRQ_RXSTOP | IRQ_TXSTOP | IRQ_SW,
     };
 
-    static const bitfield<12, 6, u32> RX_CFG_DMA_COUNT;
+    typedef field<12, 6, u32> RX_CFG_DMA_COUNT;
 
     enum lan_rx_cfg : u32 {
         RX_CFG_RXDOFF         = bitmask(5, 8),
         RX_CFG_RX_DUMP        = 1u << 15,
-        RX_CFG_RX_DMA_MASK    = RX_CFG_DMA_COUNT.MASK,
+        RX_CFG_RX_DMA_MASK    = RX_CFG_DMA_COUNT::MASK,
         RX_CFG_END_ALIGN_4    = 0u << 30,
         RX_CFG_END_ALIGN_16   = 1u << 30,
         RX_CFG_END_ALIGN_32   = 2u << 30,
@@ -787,9 +787,9 @@ namespace vcml { namespace generic {
         u32 val = m_rx_data_fifo.front();
         m_rx_data_fifo.pop_front();
 
-        u32 dma = RX_CFG.get_bitfield(RX_CFG_DMA_COUNT);
+        u32 dma = RX_CFG.get_field<RX_CFG_DMA_COUNT>();
         if (dma > 0) {
-            RX_CFG.set_bitfield(RX_CFG_DMA_COUNT, --dma);
+            RX_CFG.set_field<RX_CFG_DMA_COUNT>(--dma);
             if (dma == 0) {
                 IRQ_STS |= IRQ_RXD;
                 update_irq();

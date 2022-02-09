@@ -201,34 +201,34 @@ TEST(bitops, crc32) {
     EXPECT_EQ(vcml::crc32((const vcml::u8*)"123456789", 9), 0x9b63d02c);
 }
 
-const vcml::bitfield<0,3> TEST_FIELD1;
-const vcml::bitfield<4,1> TEST_FIELD2;
+typedef vcml::field<0,3> TEST_FIELD1;
+typedef vcml::field<4,1> TEST_FIELD2;
 
-TEST(bitops, bitfield) {
-    EXPECT_EQ(TEST_FIELD1, 0b111);
-    EXPECT_EQ(TEST_FIELD2, 0b10000);
+TEST(bitops, field) {
+    EXPECT_EQ(TEST_FIELD1::MASK, 0b111);
+    EXPECT_EQ(TEST_FIELD2::MASK, 0b10000);
 
-    EXPECT_EQ(0xffff & TEST_FIELD1, 0b111);
-    EXPECT_EQ(0xffff & TEST_FIELD2, 0b10000);
+    EXPECT_EQ(0xffff & TEST_FIELD1(), 0b111);
+    EXPECT_EQ(0xffff & TEST_FIELD2(), 0b10000);
 
     vcml::u32 val = 0;
 
-    vcml::set_bitfield(TEST_FIELD1, val, 0b101);
+    vcml::set_field<TEST_FIELD1>(val, 0b101);
     EXPECT_EQ(val, 0b101);
-    EXPECT_EQ(vcml::get_bitfield(TEST_FIELD1, val), 0b101);
+    EXPECT_EQ(vcml::get_field<TEST_FIELD1>(val), 0b101);
 
-    vcml::set_bitfield(TEST_FIELD2, val, true);
-    EXPECT_EQ(vcml::get_bitfield(TEST_FIELD2, val), 1);
+    vcml::set_field<TEST_FIELD2>(val, true);
+    EXPECT_EQ(vcml::get_field<TEST_FIELD2>(val), 1);
     EXPECT_EQ(val, 0b10101);
 
-    vcml::set_bitfield(TEST_FIELD1, val, 0);
-    EXPECT_EQ(vcml::get_bitfield(TEST_FIELD1, val), 0);
+    vcml::set_field<TEST_FIELD1>(val, 0);
+    EXPECT_EQ(vcml::get_field<TEST_FIELD1>(val), 0);
     EXPECT_EQ(val, 0b10000);
 
-    vcml::set_bitfield(TEST_FIELD2, val, 0);
-    EXPECT_EQ(vcml::get_bitfield(TEST_FIELD2, val), 0);
+    vcml::set_field<TEST_FIELD2>(val, 0);
+    EXPECT_EQ(vcml::get_field<TEST_FIELD2>(val), 0);
     EXPECT_EQ(val, 0b00000);
 
-    vcml::set_bitfield(TEST_FIELD2, val, 0xf0);
+    vcml::set_field<TEST_FIELD2>(val, 0xf0);
     EXPECT_EQ(val, 0b00000);
 }

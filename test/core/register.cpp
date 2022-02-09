@@ -490,15 +490,17 @@ TEST(registers, hierarchy) {
 TEST(registers, bitfields) {
     mock_peripheral mock("mock");
 
-    static const vcml::bitfield<1,4,u32> TEST_FIELD;
+    typedef vcml::field<1,4,u32> TEST_FIELD;
 
     mock.test_reg_a = 0xaaaaaaaa;
-    u32 val = vcml::get_bitfield(TEST_FIELD, mock.test_reg_a);
+    u32 val = vcml::get_field<TEST_FIELD>(mock.test_reg_a);
     EXPECT_EQ(val, 5);
-    mock.test_reg_a.set_bitfield(TEST_FIELD, val - 1);
+    mock.test_reg_a.set_field<TEST_FIELD>(val - 1);
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaaa8);
-    mock.test_reg_a.set_bitfield(TEST_FIELD, val);
+    mock.test_reg_a.set_field<TEST_FIELD>(val);
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaaaa);
-    mock.test_reg_a.set_bitfield(TEST_FIELD);
+    mock.test_reg_a.set_field<TEST_FIELD>();
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaabe);
+    vcml::set_field<TEST_FIELD>(mock.test_reg_a, val);
+    EXPECT_EQ(mock.test_reg_a, 0xaaaaaaaa);
 }

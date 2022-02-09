@@ -110,7 +110,7 @@ namespace vcml { namespace generic {
 
     void uart8250::write_THR(u8 val) {
         if (LCR & LCR_DLAB) {
-            m_divisor = deposit(m_divisor, 0, 8, val);
+            insert(m_divisor, 0, 8, val);
             calibrate();
             return;
         }
@@ -126,7 +126,7 @@ namespace vcml { namespace generic {
 
     void uart8250::write_IER(u8 val) {
         if (LCR & LCR_DLAB) {
-            m_divisor = deposit(m_divisor, 8, 8, val);
+            insert(m_divisor, 8, 8, val);
             calibrate();
             return;
         }

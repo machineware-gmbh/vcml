@@ -62,7 +62,7 @@ namespace vcml {
         return val != 0 && popcnt(val) == 1;
     }
 
-    constexpr u64 bitmask(unsigned int length, unsigned int offset = 0) {
+    constexpr u64 bitmask(size_t length, size_t offset = 0) {
         return ((1ull << length) - 1) << offset;
     }
 
@@ -116,17 +116,6 @@ namespace vcml {
         }
     }
 
-    template <typename T>
-    inline T extract(T val, unsigned int off, unsigned int len) {
-        return (val >> off) & ((1ull << len) - 1);
-    }
-
-    template <typename T, typename T2>
-    static inline T deposit(T val, unsigned int off, unsigned int len, T2 x) {
-        const T mask = ((1ull << len) - 1) << off;
-        return (val & ~mask) | (((T)x << off) & mask);
-    }
-
     // crc7 calculates a 7 bit CRC of the specified data using the polynomial
     // x^7 + x^3 + 1. It will be stored in the upper 7 bits of the result.
     u8 crc7(const u8* buffer, size_t len, u8 crc = 0);
@@ -139,32 +128,45 @@ namespace vcml {
     // x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x^1+1
     u32 crc32(const u8* buffer, size_t len, u32 crc = ~0u);
 
-    template <unsigned int OFF, unsigned int LEN, typename T = u32>
-    struct bitfield {
-        typedef T base;
-        enum : unsigned int { OFFSET = OFF };
-        enum : unsigned int { LENGTH = LEN };
-        enum : T { MASK = bitmask(LEN, OFF) };
+    template <typename T>
+    inline T extract(T val, size_t off, size_t len) {
+        return (val >> off) & ((1ull << len) - 1);
+    }
 
-        operator T() const { return MASK; }
+    template <typename T, typename T2>
+    static inline void insert(T& val, size_t off, size_t len, T2 x) {
+        const T mask = ((1ull << len) - 1) << off;
+        val = (val & ~mask) | (((T)x << off) & mask);
+    }
+
+    template <typename T, typename T2>
+    static inline T deposit(T val, size_t off, size_t len, T2 x) {
+        const T mask = ((1ull << len) - 1) << off;
+        return (val & ~mask) | (((T)x << off) & mask);
+    }
+
+    template <size_t OFF, size_t LEN, typename T = u32>
+    struct field {
+        using base = T;
+        enum : size_t { OFFSET = OFF };
+        enum : size_t { LENGTH = LEN };
+        enum : T { MASK = bitmask(LEN, OFF) };
+        constexpr operator T() const noexcept { return MASK; }
     };
 
     template <typename F>
-    typename F::base get_bitfield(F f, typename F::base val) {
-        (void)f;
+    typename F::base get_field(typename F::base val) {
         return extract(val, F::OFFSET, F::LENGTH);
     }
 
     template <typename F>
-    void set_bitfield(F f, typename F::base& val) {
-        (void)f;
-        val = deposit(val, F::OFFSET, F::LENGTH, ~0ull);
+    void set_field(typename F::base& val) {
+        insert(val, F::OFFSET, F::LENGTH, ~0ull);
     }
 
     template <typename F>
-    void set_bitfield(F f, typename F::base& val, typename F::base x) {
-        (void)f;
-        val = deposit(val, F::OFFSET, F::LENGTH, x);
+    void set_field(typename F::base& val, typename F::base x) {
+        insert(val, F::OFFSET, F::LENGTH, x);
     }
 
 }

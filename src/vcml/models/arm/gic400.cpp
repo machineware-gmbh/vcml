@@ -74,11 +74,11 @@ namespace vcml { namespace arm {
     }
 
     void gic400::distif::write_CTLR(u32 val) {
-        if ((val & CTLR_ENABLE) && !(CTLR & CTLR_ENABLE))
+        if ((val & CTLR_ENABLE()) && !(CTLR & CTLR_ENABLE()))
             log_debug("(CTLR) irq forwarding enabled");
-        if (!(val & CTLR_ENABLE) && (CTLR & CTLR_ENABLE))
+        if (!(val & CTLR_ENABLE()) && (CTLR & CTLR_ENABLE()))
             log_debug("(CTLR) irq forwarding disabled");
-        CTLR = val & CTLR_ENABLE;
+        CTLR = val & CTLR_ENABLE();
         m_parent->update();
     }
 
@@ -644,11 +644,11 @@ namespace vcml { namespace arm {
     }
 
     void gic400::cpuif::write_CTLR(u32 val) {
-        if ((val & CTLR_ENABLE) && !(CTLR & CTLR_ENABLE))
+        if ((val & CTLR_ENABLE()) && !(CTLR & CTLR_ENABLE()))
             log_debug("(CTLR) enabling cpu %d", current_cpu());
-        if (!(val & CTLR_ENABLE) && (CTLR & CTLR_ENABLE))
+        if (!(val & CTLR_ENABLE()) && (CTLR & CTLR_ENABLE()))
             log_debug("(CTLR) disabling cpu %d", current_cpu());
-        CTLR = val & CTLR_ENABLE;
+        CTLR = val & CTLR_ENABLE();
     }
 
     void gic400::cpuif::write_PMR(u32 val) {
