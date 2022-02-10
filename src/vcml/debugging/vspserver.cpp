@@ -370,14 +370,14 @@ namespace vcml { namespace debugging {
                 }
             }
         } catch (...) {
-            sc_pause();
+            pause_simulation("internal error");
             disconnect();
         }
     }
 
     void vspserver::pause_simulation(const string& reason) {
         m_stop_reason = reason;
-        suspend();
+        sc_pause();
     }
 
     void vspserver::force_quit() {
