@@ -69,6 +69,9 @@ namespace vcml { namespace generic {
         virtual void reset();
 
         sc_time rxtx_delay(size_t bytes) const;
+
+        bool link_status() const;
+        void set_link_status(bool up);
     };
 
     class lan9118_mac : public peripheral
@@ -311,6 +314,10 @@ namespace vcml { namespace generic {
         virtual void reset() override;
 
         void update_irq();
+
+    protected:
+        virtual void on_link_up();
+        virtual void on_link_down();
     };
 
 }}

@@ -88,10 +88,14 @@ namespace vcml { namespace net {
         size_t m_next_id;
         std::map<size_t, backend*> m_clients;
         vector<backend*> m_listener;
+        bool m_link_up;
 
         bool cmd_create_client(const vector<string>& args, ostream& os);
         bool cmd_destroy_client(const vector<string>& args, ostream& os);
         bool cmd_list_clients(const vector<string>& args, ostream& os);
+        bool cmd_link_up(const vector<string>& args, ostream& os);
+        bool cmd_link_down(const vector<string>& args, ostream& os);
+        bool cmd_link_status(const vector<string>& args, ostream& os);
 
         static unordered_map<string, adapter*> s_adapters;
 
@@ -114,6 +118,10 @@ namespace vcml { namespace net {
 
         static adapter* find(const string& name);
         static vector<adapter*> all();
+
+    protected:
+        virtual void on_link_up();
+        virtual void on_link_down();
     };
 
 }}

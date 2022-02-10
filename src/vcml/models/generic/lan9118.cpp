@@ -466,6 +466,21 @@ namespace vcml { namespace generic {
             return (8 + bytes + 12) * 8 * sc_time(100, SC_NS); // 10M
     }
 
+    bool lan9118_phy::link_status() const {
+        return STATUS & STATUS_LINK;
+    }
+
+    void lan9118_phy::set_link_status(bool link_up) {
+        if (link_up) {
+            STATUS |= STATUS_LINK;
+            if (CONTROL & PHY_CONTROL_AUTO_NEG)
+                negotiate_link();
+        } else {
+            STATUS &= ~(STATUS_LINK | STATUS_AUTO_NEG_DONE);
+            INT_SOURCE |= PHY_IRQ_LINK_DOWN;
+        }
+    }
+
     void lan9118_mac::write_CR(u32 val) {
         if (!(val & CR_RXEN) && (CR & CR_RXEN))
             m_parent.IRQ_STS |= IRQ_RXSTOP;
@@ -732,10 +747,9 @@ namespace vcml { namespace generic {
                     IRQ_STS |= IRQ_RXDF;
                     RX_DROP++;
                 }
-
-                update_irq();
             }
 
+            update_irq();
             wait(delay);
         }
     }
@@ -1387,6 +1401,14 @@ namespace vcml { namespace generic {
         log_debug("interrupt throttled for %luns", time_to_ns(throttle));
         m_deas_ev.notify(throttle);
         IRQ_CFG |= IRQ_CFG_DEAS_STS;
+    }
+
+    void lan9118::on_link_up() {
+        phy.set_link_status(true);
+    }
+
+    void lan9118::on_link_down() {
+        phy.set_link_status(false);
     }
 
 }}

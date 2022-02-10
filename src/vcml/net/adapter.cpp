@@ -80,11 +80,38 @@ namespace vcml { namespace net {
         return true;
     }
 
+    bool adapter::cmd_link_up(const vector<string>& args, ostream& os) {
+        if (!m_link_up) {
+            m_link_up = true;
+            on_link_up();
+        }
+
+        return true;
+    }
+
+    bool adapter::cmd_link_down(const vector<string>& args, ostream& os) {
+        if (m_link_up) {
+            m_link_up = false;
+            on_link_down();
+        }
+
+        return true;
+    }
+
+    bool adapter::cmd_link_status(const vector<string>& args, ostream& os) {
+        if (m_link_up)
+            os << "link up";
+        else
+            os << "link down";
+        return true;
+    }
+
     adapter::adapter():
         m_name(),
         m_next_id(),
         m_clients(),
         m_listener(),
+        m_link_up(true),
         backends("backends", "") {
         module* host = hierarchy_search<module>();
         VCML_ERROR_ON(!host, "serial port declared outside module");
@@ -112,6 +139,12 @@ namespace vcml { namespace net {
         host->register_command("list_clients", 0, this,
             &adapter::cmd_list_clients, "lists all known clients of this "
             "network adapter");
+        host->register_command("link_up", 0, this, &adapter::cmd_link_up,
+            "trigger link-up event");
+        host->register_command("link_down", 0, this, &adapter::cmd_link_down,
+            "trigger link-down event");
+        host->register_command("link_status", 0, this,
+             &adapter::cmd_link_status, "shows the link status");
     }
 
     adapter::~adapter() {
@@ -148,15 +181,20 @@ namespace vcml { namespace net {
     }
 
     bool adapter::recv_packet(vector<u8>& packet) {
-        for (backend* cl : m_listener)
-            if (cl->recv_packet(packet))
-                return true;
+        if (m_link_up) {
+            for (backend* cl : m_listener)
+                if (cl->recv_packet(packet))
+                    return true;
+        }
+
         return false;
     }
 
     void adapter::send_packet(const vector<u8>& packet) {
-        for (backend* cl : m_listener)
-            cl->send_packet(packet);
+        if (m_link_up) {
+            for (backend* cl : m_listener)
+                cl->send_packet(packet);
+        }
     }
 
     adapter* adapter::find(const string& name) {
@@ -170,6 +208,14 @@ namespace vcml { namespace net {
         for (auto it : s_adapters)
             all.push_back(it.second);
         return all;
+    }
+
+    void adapter::on_link_up() {
+        // to be overloaded
+    }
+
+    void adapter::on_link_down() {
+        // to be overloaded
     }
 
 }}
