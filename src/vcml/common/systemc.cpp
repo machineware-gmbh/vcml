@@ -605,8 +605,8 @@ namespace sc_core {
             t = sc_time(fval, sc_core::SC_MS);
         else if (strcmp(endptr, "s") == 0)
             t = sc_time(fval, sc_core::SC_SEC);
-        else // raw value, not part of ieee1666!
-            t = sc_time(value, true);
+        else
+            t = ::vcml::time_from_value(value);
 
         return is;
     }
