@@ -64,8 +64,11 @@ namespace vcml { namespace debugging {
 
     static symkind elf_symkind(u32 info) {
         switch (ELF32_ST_TYPE(info)) {
-        case STT_OBJECT: return SYMKIND_OBJECT;
-        case STT_FUNC: return SYMKIND_FUNCTION;
+        case STT_OBJECT:
+            return SYMKIND_OBJECT;
+        case STT_FUNC:
+        case STT_NOTYPE:
+            return SYMKIND_FUNCTION;
         default:
             return SYMKIND_UNKNOWN;
         }
