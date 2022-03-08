@@ -65,6 +65,7 @@ namespace vcml {
         bool cmd_lsym(const vector<string>& args, ostream& os);
         bool cmd_disas(const vector<string>& args, ostream& os);
         bool cmd_v2p(const vector<string>& args, ostream& os);
+        bool cmd_stack(const vector<string>& args, ostream& os);
 
         using cpureg = debugging::cpureg;
         virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;

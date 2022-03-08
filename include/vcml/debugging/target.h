@@ -71,6 +71,12 @@ namespace vcml { namespace debugging {
         const symbol* sym;
     };
 
+    struct stackframe {
+        u64 program_counter;
+        u64 frame_pointer;
+        const symbol* sym;
+    };
+
     class target
     {
     private:
@@ -139,6 +145,9 @@ namespace vcml { namespace debugging {
         virtual u64 program_counter();
         virtual u64 link_register();
         virtual u64 stack_pointer();
+        virtual u64 frame_pointer();
+
+        virtual void stacktrace(vector<stackframe>& trace, size_t limit = 64);
 
         virtual bool disassemble(u8* ibuf, u64& addr, string& code);
         virtual bool disassemble(u64 addr, u64 count, vector<disassembly>& s);

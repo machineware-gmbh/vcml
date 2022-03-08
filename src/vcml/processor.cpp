@@ -205,6 +205,25 @@ namespace vcml {
         }
     }
 
+    bool processor::cmd_stack(const vector<string>& args, ostream& os) {
+        stream_guard guard(os);
+        vector<debugging::stackframe> frames;
+        stacktrace(frames);
+
+        for (const auto& frame : frames) {
+            os << "[" << HEX(frame.program_counter, 16) << "]";
+            if (frame.sym != nullptr) {
+                os << " " << frame.sym->name() << " +0x" << std::hex
+                   << frame.program_counter - frame.sym->virt_addr()
+                   << "/0x" << std::hex << frame.sym->size();
+            }
+
+            os << "\n";
+        }
+
+        return true;
+    }
+
     void processor::processor_thread() {
         wait(SC_ZERO_TIME);
         while (true) {
@@ -300,6 +319,8 @@ namespace vcml {
             "disassemble instructions from memory");
         register_command("v2p", 1, this, &processor::cmd_v2p,
             "translate a given virtual address to physical");
+        register_command("stack", 0, this, &processor::cmd_stack,
+            "generates a stack trace for the current function");
     }
 
     processor::~processor() {

@@ -215,6 +215,20 @@ namespace vcml { namespace debugging {
         return 0; // to be overloaded
     }
 
+    u64 target::frame_pointer() {
+        return 0; // to be overloaded
+    }
+
+    void target::stacktrace(vector<stackframe>& trace, size_t limit) {
+        stackframe frame;
+        frame.program_counter = program_counter();
+        frame.frame_pointer = frame_pointer();
+        frame.sym = m_symbols.find_function(frame.program_counter);
+
+        trace.clear();
+        trace.push_back(frame);
+    }
+
     bool target::disassemble(u8* ibuf, u64& addr, string& code) {
         return false; // to be overloaded
     }
