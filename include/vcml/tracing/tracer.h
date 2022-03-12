@@ -118,13 +118,13 @@ namespace vcml {
             auto& tracers = tracer::all();
             if (!tracers.empty()) {
                 const tracer::activity<PAYLOAD> msg = {
-                    kind:    protocol<PAYLOAD>::kind,
-                    dir:     dir,
-                    error:   failed(payload),
-                    port:    port,
-                    payload: payload,
-                    t:       t + sc_time_stamp(),
-                    cycle:   sc_delta_count(),
+                    protocol<PAYLOAD>::kind,
+                    dir,
+                    failed(payload),
+                    port,
+                    payload,
+                    t + sc_time_stamp(),
+                    sc_delta_count(),
                 };
 
                 for (tracer* tr : tracers)
