@@ -549,10 +549,10 @@ namespace vcml {
         virtio_controller* m_controller;
         virtio_target_stub* m_stub;
 
-        virtual bool put(u32 vqid, vq_message& msg);
-        virtual bool get(u32 vqid, vq_message& msg);
+        virtual bool put(u32 vqid, vq_message& msg) override;
+        virtual bool get(u32 vqid, vq_message& msg) override;
 
-        virtual bool notify();
+        virtual bool notify() override;
 
     public:
         bool is_stubbed() const { return m_stub != nullptr; }
@@ -572,14 +572,14 @@ namespace vcml {
         virtio_device* m_device;
         virtio_initiator_stub* m_stub;
 
-        virtual void identify(virtio_device_desc& desc);
-        virtual bool notify(u32 vqid);
+        virtual void identify(virtio_device_desc& desc) override;
+        virtual bool notify(u32 vqid) override;
 
-        virtual void read_features(u64& features);
-        virtual bool write_features(u64 features);
+        virtual void read_features(u64& features) override;
+        virtual bool write_features(u64 features) override;
 
-        virtual bool read_config(const range& addr, void* data);
-        virtual bool write_config(const range& addr, const void* data);
+        virtual bool read_config(const range& addr, void* data) override;
+        virtual bool write_config(const range& addr, const void*) override;
 
     public:
         bool is_stubbed() const { return m_stub != nullptr; }
