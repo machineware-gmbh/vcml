@@ -25,6 +25,7 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
+#include "vcml/protocols/base.h"
 #include "vcml/protocols/pci_ids.h"
 
 #include "vcml/module.h"
@@ -528,14 +529,12 @@ namespace vcml {
         virtual bool notify() = 0;
     };
 
-    typedef tlm::tlm_base_initiator_socket<1, virtio_fw_transport_if,
-                                           virtio_bw_transport_if, 1,
-                                           sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_initiator_socket<virtio_fw_transport_if,
+                                  virtio_bw_transport_if>
         virtio_base_initiator_socket;
 
-    typedef tlm::tlm_base_target_socket<1, virtio_fw_transport_if,
-                                        virtio_bw_transport_if, 1,
-                                        sc_core::SC_ONE_OR_MORE_BOUND>
+    typedef base_target_socket<virtio_fw_transport_if,
+                               virtio_bw_transport_if>
         virtio_base_target_socket;
 
     class virtio_initiator_stub;
@@ -560,7 +559,7 @@ namespace vcml {
         explicit virtio_initiator_socket(const char* name);
         virtual ~virtio_initiator_socket();
         VCML_KIND(virtio_initiator_socket);
-        virtual sc_type_index get_protocol_types() const;
+        virtual sc_type_index get_protocol_types() const override;
         virtual void stub();
     };
 
@@ -587,7 +586,7 @@ namespace vcml {
         explicit virtio_target_socket(const char* name);
         virtual ~virtio_target_socket();
         VCML_KIND(virtio_target_socket);
-        virtual sc_type_index get_protocol_types() const;
+        virtual sc_type_index get_protocol_types() const override;
         virtual void stub();
     };
 

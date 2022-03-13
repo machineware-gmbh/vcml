@@ -519,7 +519,7 @@ namespace vcml {
     }
 
     virtio_initiator_socket::virtio_initiator_socket(const char* nm):
-        virtio_base_initiator_socket(nm),
+        virtio_base_initiator_socket(nm, VCML_AS_DEFAULT),
         virtio_bw_transport_if(),
         m_parent(hierarchy_search<module>()),
         m_controller(hierarchy_search<virtio_controller>()),
@@ -570,7 +570,7 @@ namespace vcml {
     }
 
     virtio_target_socket::virtio_target_socket(const char* nm):
-        virtio_base_target_socket(nm),
+        virtio_base_target_socket(nm, VCML_AS_DEFAULT),
         m_parent(hierarchy_search<module>()),
         m_device(hierarchy_search<virtio_device>()),
         m_stub(nullptr) {
