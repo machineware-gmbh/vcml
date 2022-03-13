@@ -111,7 +111,7 @@ namespace vcml {
         virtual ~irq_base_initiator_socket();
         VCML_KIND(irq_base_initiator_socket);
 
-        virtual sc_core::sc_type_index get_protocol_types() const {
+        virtual sc_core::sc_type_index get_protocol_types() const override {
             return typeid(irq_bw_transport_if);
         }
 
@@ -129,7 +129,7 @@ namespace vcml {
         virtual ~irq_base_target_socket();
         VCML_KIND(irq_base_target_socket);
 
-        virtual sc_core::sc_type_index get_protocol_types() const {
+        virtual sc_core::sc_type_index get_protocol_types() const override {
             return typeid(irq_fw_transport_if);
         }
 

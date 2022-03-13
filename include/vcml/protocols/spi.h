@@ -101,7 +101,7 @@ namespace vcml {
         virtual ~spi_initiator_socket();
         VCML_KIND(spi_initiator_socket);
 
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
 
         void transport(spi_payload& spi);
         void stub();
@@ -120,7 +120,7 @@ namespace vcml {
         spi_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~spi_target_socket();
         VCML_KIND(spi_target_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
         void stub();
     };
 

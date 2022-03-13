@@ -43,6 +43,14 @@ namespace vcml {
             trace_errors.inherit_default();
         }
 
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_2
+        virtual sc_core::sc_type_index get_protocol_types() const {
+#else
+        virtual sc_core::sc_type_index get_protocol_types() const override {
+#endif
+            return typeid(void);
+        }
+
     protected:
         template <typename PAYLOAD>
         void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
@@ -74,6 +82,14 @@ namespace vcml {
             trace_errors(this, "trace_errors", false) {
             trace.inherit_default();
             trace_errors.inherit_default();
+        }
+
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_2
+        virtual sc_core::sc_type_index get_protocol_types() const {
+#else
+        virtual sc_core::sc_type_index get_protocol_types() const override {
+#endif
+            return typeid(void);
         }
 
     protected:

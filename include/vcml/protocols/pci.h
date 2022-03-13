@@ -346,7 +346,7 @@ namespace vcml {
             address_space as = VCML_AS_DEFAULT);
         virtual ~pci_initiator_socket();
         VCML_KIND(pci_initiator_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
 
         void transport(pci_payload& tx);
 
@@ -367,7 +367,7 @@ namespace vcml {
         pci_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
         virtual ~pci_target_socket();
         VCML_KIND(pci_target_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
 
         void stub();
     };

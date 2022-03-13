@@ -198,7 +198,7 @@ namespace vcml {
         virtual ~sd_initiator_socket();
 
         VCML_KIND(sd_initiator_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
 
         void transport(sd_command& cmd);
         void transport(sd_data& data);
@@ -226,7 +226,7 @@ namespace vcml {
         virtual ~sd_target_socket();
 
         VCML_KIND(sd_target_socket);
-        virtual sc_core::sc_type_index get_protocol_types() const;
+        virtual sc_core::sc_type_index get_protocol_types() const override;
 
         void stub();
     };
