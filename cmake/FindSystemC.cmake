@@ -1,6 +1,6 @@
  ##############################################################################
  #                                                                            #
- # Copyright 2018 Jan Henrik Weinstock                                        #
+ # Copyright 2022 Jan Henrik Weinstock                                        #
  #                                                                            #
  # Licensed under the Apache License, Version 2.0 (the "License");            #
  # you may not use this file except in compliance with the License.           #
@@ -16,70 +16,87 @@
  #                                                                            #
  ##############################################################################
 
-if(NOT DEFINED SystemC_FIND_QUIET AND NOT DEFINED ENV{SYSTEMC_HOME})
-    message(WARNING "SYSTEMC_HOME not defined")
+if(TARGET systemc)
+    message(STATUS "Using SystemC at " ${SYSTEMC_HOME})
+    return()
 endif()
 
-set(SYSTEMC_HOME $ENV{SYSTEMC_HOME})
-find_path(SYSTEMC_INCLUDE_DIR NAMES systemc
-          HINTS ${SYSTEMC_HOME}/include)
-
+# TARGET_ARCH
 if(DEFINED ENV{TARGET_ARCH})
     set(SYSTEMC_TARGET_ARCH $ENV{TARGET_ARCH})
 elseif(DEFINED TARGET_ARCH)
     set(SYSTEMC_TARGET_ARCH ${TARGET_ARCH})
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(SYSTEMC_TARGET_ARCH "linux64")
 else()
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(SYSTEMC_TARGET_ARCH "linux64")
-    else()
-        set(SYSTEMC_TARGET_ARCH "linux")
-    endif()
-    if (NOT DEFINED SystemC_FIND_QUIET)
-        message(WARNING "TARGET_ARCH not defined, guessing "
-                \"${SYSTEMC_TARGET_ARCH}\")
-    endif()
+    set(SYSTEMC_TARGET_ARCH "linux")
 endif()
 
-find_library(SYSTEMC_LIBRARY NAMES libsystemc.a systemc libSnpsVP.so
-             HINTS ${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH}
-                   ${SYSTEMC_HOME}/lib
-                   ${SYSTEMC_HOME}/libso-gcc-6.2.0-64
-                   ${SYSTEMC_HOME}/libso-gcc-5.2.0-64)
-
-set(SYSTEMC_VERSION "")
-set(SYSTEMC_LIBRARIES ${SYSTEMC_LIBRARY})
-set(SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR})
-
-if(EXISTS ${SYSTEMC_INCLUDE_DIR}/tlm/)
-    list(APPEND SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR}/tlm)
+# SYSTEMC_HOME
+if(NOT EXISTS ${SYSTEMC_HOME})
+    set(SYSTEMC_HOME $ENV{SYSTEMC_HOME})
 endif()
 
-set(_sysc_ver_file "${SYSTEMC_INCLUDE_DIR}/sysc/kernel/sc_ver.h")
+if(NOT EXISTS ${SYSTEMC_HOME})
+    message(FATAL_ERROR "Could not find SystemC")
+endif()
 
-if(EXISTS ${_sysc_ver_file})
-    file(STRINGS ${_sysc_ver_file}  _systemc_ver REGEX
-         "^#[\t ]*define[\t ]+SC_VERSION_(MAJOR|MINOR|PATCH)[\t ]+([0-9]+)$")
-    foreach(VPART MAJOR MINOR PATCH)
-        foreach(VLINE ${_systemc_ver})
-            if(VLINE MATCHES
-               "^#[\t ]*define[\t ]+SC_VERSION_${VPART}[\t ]+([0-9]+)$")
-                set(SYSTEMC_VERSION_${VPART} ${CMAKE_MATCH_1})
-                if(SYSTEMC_VERSION)
-                    string(APPEND SYSTEMC_VERSION .${CMAKE_MATCH_1})
-                else()
-                    set(SYSTEMC_VERSION ${CMAKE_MATCH_1})
+macro(sysc_version _sysc_ver_file)
+    if(EXISTS ${_sysc_ver_file})
+        file(STRINGS ${_sysc_ver_file}  _systemc_ver REGEX
+        "^#[\t ]*define[\t ]+SC_VERSION_(MAJOR|MINOR|PATCH)[\t ]+([0-9]+)$")
+        foreach(VPART MAJOR MINOR PATCH)
+            foreach(VLINE ${_systemc_ver})
+                if(VLINE MATCHES
+                   "^#[\t ]*define[\t ]+SC_VERSION_${VPART}[\t ]+([0-9]+)$")
+                    set(SYSTEMC_VERSION_${VPART} ${CMAKE_MATCH_1})
+                    if(SYSTEMC_VERSION)
+                        string(APPEND SYSTEMC_VERSION .${CMAKE_MATCH_1})
+                    else()
+                        set(SYSTEMC_VERSION ${CMAKE_MATCH_1})
+                    endif()
                 endif()
-            endif()
+            endforeach()
         endforeach()
-    endforeach()
+    endif()
+endmacro()
+
+if(EXISTS ${SYSTEMC_HOME}/CMakeLists.txt)
+    set(CMAKE_CXX_STANDARD 11)
+    set(BUILD_SHARED_LIBS OFF)
+    #set(ENABLE_PHASE_CALLBACKS OFF)
+    #set(ENABLE_PHASE_CALLBACKS_TRACING OFF)
+    add_subdirectory(${SYSTEMC_HOME} systemc EXCLUDE_FROM_ALL)
+    set(SYSTEMC_LIBRARIES systemc)
+    set(SYSTEMC_INCLUDE_DIRS $<TARGET_PROPERTY:systemc,INCLUDE_DIRECTORIES>)
+    set(SYSTEMC_VERSION "")
+    sysc_version(${SYSTEMC_HOME}/src/sysc/kernel/sc_ver.h)
+    message(STATUS "Found SystemC " ${SYSTEMC_VERSION} " at " ${SYSTEMC_HOME})
+else()
+    find_path(SYSTEMC_INCLUDE_DIR NAMES systemc
+              HINTS ${SYSTEMC_HOME}/include)
+
+    find_library(SYSTEMC_LIBRARY NAMES libsystemc.a systemc
+                 HINTS ${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH}
+                       ${SYSTEMC_HOME}/lib)
+
+    set(SYSTEMC_LIBRARIES ${SYSTEMC_LIBRARY})
+    set(SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR})
+
+    if(EXISTS ${SYSTEMC_INCLUDE_DIR}/tlm/)
+        list(APPEND SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIR}/tlm)
+    endif()
+
+    set(SYSTEMC_VERSION "")
+    sysc_version(${SYSTEMC_INCLUDE_DIR}/sysc/kernel/sc_ver.h)
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(SystemC
+        REQUIRED_VARS SYSTEMC_LIBRARY SYSTEMC_INCLUDE_DIR
+        VERSION_VAR   SYSTEMC_VERSION)
+
+    mark_as_advanced(SYSTEMC_INCLUDE_DIR SYSTEMC_LIBRARY)
 endif()
-
-include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(SystemC
-    REQUIRED_VARS SYSTEMC_LIBRARY SYSTEMC_INCLUDE_DIR
-    VERSION_VAR SYSTEMC_VERSION)
-
-mark_as_advanced(SYSTEMC_INCLUDE_DIR SYSTEMC_LIBRARY)
 
 #message(STATUS "SYSTEMC_FOUND         " ${SYSTEMC_FOUND})
 #message(STATUS "SYSTEMC_HOME          " ${SYSTEMC_HOME})
