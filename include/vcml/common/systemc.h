@@ -23,6 +23,10 @@
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 #endif
 
+#ifndef SC_DISABLE_API_VERSION_CHECK
+#define SC_DISABLE_API_VERSION_CHECK
+#endif
+
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/simple_initiator_socket.h>
