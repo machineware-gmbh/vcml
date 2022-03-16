@@ -163,7 +163,8 @@ namespace vcml {
     }
 
     // we just need this class to have something that is called every cycle...
-    class helper_module: public sc_core::sc_trace_file, private sc_module
+    class helper_module: public sc_core::sc_trace_file,
+                         public sc_core::sc_prim_channel
     {
     public:
     #define DECL_TRACE_METHOD_A(t) \
@@ -219,6 +220,10 @@ namespace vcml {
 
         const bool use_phase_callbacks;
 
+        mutex mtx;
+
+        vector<function<void(void)>> next_update;
+
         vector<function<void(void)>> end_of_elab;
         vector<function<void(void)>> start_of_sim;
 
@@ -266,15 +271,23 @@ namespace vcml {
         }
 
         void add_timer(timer::event* ev) {
-            thctl_guard guard;
+            lock_guard<mutex> guard(mtx);
             timers.push(ev);
-            update_timer();
+            async_request_update();
         }
 
-        helper_module(const sc_module_name& nm):
+        void update() override {
+            lock_guard<mutex> guard(mtx);
+            update_timer();
+            for (auto& fn : next_update)
+                fn();
+            next_update.clear();
+        }
+
+        helper_module(const char* nm):
             sc_core::sc_trace_file(),
-            sc_core::sc_module(nm),
-            use_phase_callbacks(kernel_has_phase_callbacks()),
+            sc_core::sc_prim_channel(nm),
+            use_phase_callbacks(kernel_has_phase_callbacks()), mtx(),
             end_of_elab(), start_of_sim(), deltas(), tsteps(),
             timeout_event("timeout_ev"), timers() {
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
@@ -286,10 +299,11 @@ namespace vcml {
             if (!use_phase_callbacks)
                 simcontext()->add_trace_file(this);
 
-            SC_HAS_PROCESS(helper_module);
-            SC_METHOD(run_timer);
-            sensitive << timeout_event;
-            dont_initialize();
+            sc_spawn_options opts;
+            opts.spawn_method();
+            opts.set_sensitivity(&timeout_event);
+            opts.dont_initialize();
+            sc_spawn([&]() -> void { run_timer(); }, "run_timer", &opts);
         }
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
@@ -342,23 +356,34 @@ namespace vcml {
         }
     };
 
+    void on_next_update(function<void(void)> callback) {
+        helper_module& helper = helper_module::instance();
+        lock_guard<mutex> guard(helper.mtx);
+        helper.next_update.push_back(callback);
+        helper.async_request_update();
+    }
+
     void on_end_of_elaboration(function<void(void)> callback) {
         helper_module& helper = helper_module::instance();
+        lock_guard<mutex> guard(helper.mtx);
         helper.end_of_elab.push_back(callback);
     }
 
     void on_start_of_simulation(function<void(void)> callback) {
         helper_module& helper = helper_module::instance();
+        lock_guard<mutex> guard(helper.mtx);
         helper.start_of_sim.push_back(callback);
     }
 
     void on_each_delta_cycle(function<void(void)> callback) {
         helper_module& helper = helper_module::instance();
+        lock_guard<mutex> guard(helper.mtx);
         helper.deltas.push_back(callback);
     }
 
     void on_each_time_step(function<void(void)> callback) {
         helper_module& helper = helper_module::instance();
+        lock_guard<mutex> guard(helper.mtx);
         helper.tsteps.push_back(callback);
     }
 

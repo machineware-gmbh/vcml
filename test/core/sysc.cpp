@@ -80,4 +80,13 @@ TEST(systemc, callback) {
 
     EXPECT_EQ(elab_calls, 1);
     EXPECT_EQ(start_calls, 1);
+
+    bool update_called = false;
+    on_next_update([&]() -> void {
+        EXPECT_TRUE(sc_get_curr_simcontext()->update_phase());
+        update_called = true;
+    });
+
+    sc_core::sc_start(10, SC_SEC);
+    EXPECT_TRUE(update_called);
 }
