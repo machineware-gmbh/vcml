@@ -23,6 +23,10 @@ option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
 
+if(VCML_BUILD_PIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
@@ -31,10 +35,6 @@ find_package(LibSLIRP)
 find_package(SDL2)
 
 include(GenVersionHeader)
-
-if(VCML_BUILD_PIC)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif()
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -148,11 +148,13 @@ set(sources
     ${src}/vcml/models/riscv/plic.cpp
     ${src}/vcml/models/riscv/simdev.cpp)
 
-add_library(vcml ${sources})
+add_library(vcml STATIC ${sources})
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 target_compile_options(vcml PRIVATE -Wall -Werror)
-target_compile_features(vcml PUBLIC cxx_std_11)
+target_compile_features(vcml PUBLIC cxx_std_17)
 target_compile_definitions(vcml PUBLIC $<$<CONFIG:DEBUG>:VCML_DEBUG>)
+target_compile_definitions(vcml PUBLIC SC_INCLUDE_DYNAMIC_PROCESSES)
+target_compile_definitions(vcml PUBLIC SC_DISABLE_API_VERSION_CHECK)
 
 target_include_directories(vcml PUBLIC ${inc})
 target_include_directories(vcml PUBLIC ${gen})
