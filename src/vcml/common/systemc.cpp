@@ -342,6 +342,10 @@ namespace vcml {
             if (!use_phase_callbacks)
                 sc_get_curr_simcontext()->remove_trace_file(this);
 #endif
+            while (!timers.empty()) {
+                delete timers.top();
+                timers.pop();
+            }
         }
 
         static helper_module& instance() {
