@@ -53,7 +53,7 @@ public:
             EXPECT_TRUE(running);
             EXPECT_FALSE(thctl_is_sysc_thread());
             timer t3(10, SC_US, [&](timer& t) -> void {
-                EXPECT_EQ(sc_time_stamp(), t.timeout());
+                EXPECT_GE(sc_time_stamp(), t.timeout());
                 EXPECT_TRUE(thctl_is_sysc_thread());
                 running = false;
                 promise.set_value();

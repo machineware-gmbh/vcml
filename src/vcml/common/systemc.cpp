@@ -241,27 +241,41 @@ namespace vcml {
         std::priority_queue<timer::event*, vector<timer::event*>,
                             timer_compare> timers;
 
+        vector<timer::event*> pending_timers() {
+            lock_guard<mutex> guard(mtx);
+            sc_time now = sc_time_stamp();
+            vector<timer::event*> pending;
+
+            while (!timers.empty()) {
+                timer::event* event = timers.top();
+                if (event->timeout > now)
+                    break;
+
+                timers.pop();
+                pending.push_back(event);
+            }
+
+            return pending;
+        }
+
         void update_timer() {
+            lock_guard<mutex> guard(mtx);
+
             if (timers.empty()) {
                 timeout_event.cancel();
                 return;
             }
 
             sc_time next_timeout = timers.top()->timeout;
-            timeout_event.notify(next_timeout - sc_time_stamp());
+            if (next_timeout < sc_time_stamp())
+                timeout_event.notify(SC_ZERO_TIME);
+            else
+                timeout_event.notify(next_timeout - sc_time_stamp());
         }
 
         void run_timer() {
-            const sc_time now = sc_time_stamp();
-            while (!timers.empty()) {
-                timer::event* event = timers.top();
-                if (event->timeout > now)
-                    break;
-
-                if (event->timeout < now)
-                    VCML_ERROR("missed timer event");
-
-                timers.pop();
+            vector<timer::event*> pending = pending_timers();
+            for (auto event : pending) {
                 if (event->owner)
                     event->owner->trigger();
                 delete event;
@@ -277,8 +291,9 @@ namespace vcml {
         }
 
         void update() override {
-            lock_guard<mutex> guard(mtx);
             update_timer();
+
+            lock_guard<mutex> guard(mtx);
             for (auto& fn : next_update)
                 fn();
             next_update.clear();
