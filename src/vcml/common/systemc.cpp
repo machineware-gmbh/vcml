@@ -318,7 +318,7 @@ namespace vcml {
             opts.spawn_method();
             opts.set_sensitivity(&timeout_event);
             opts.dont_initialize();
-            sc_spawn([&]() -> void { run_timer(); }, "run_timer", &opts);
+            sc_spawn([&]() -> void { run_timer(); }, "$$$timer$$$", &opts);
         }
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
