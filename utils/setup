@@ -1,0 +1,70 @@
+#!/bin/bash -e
+
+ ##############################################################################
+ #                                                                            #
+ # Copyright 2021 Jan Henrik Weinstock                                        #
+ #                                                                            #
+ # Licensed under the Apache License, Version 2.0 (the "License");            #
+ # you may not use this file except in compliance with the License.           #
+ # You may obtain a copy of the License at                                    #
+ #                                                                            #
+ #     http://www.apache.org/licenses/LICENSE-2.0                             #
+ #                                                                            #
+ # Unless required by applicable law or agreed to in writing, software        #
+ # distributed under the License is distributed on an "AS IS" BASIS,          #
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+ # See the License for the specific language governing permissions and        #
+ # limitations under the License.                                             #
+ #                                                                            #
+ ##############################################################################
+
+home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
+
+systemc_repo=https://github.com/machineware-gmbh/systemc
+systemc_branch=2.3.3-mwr
+
+linter=$(which clang-tidy-12)
+bindir=$home/BUILD
+builds=$@
+
+[ -z "$builds" ] && builds="DEBUG RELEASE ASAN"
+
+if [ ! -f "$SYSTEMC_HOME/CMakeLists.txt" ]; then
+    export SYSTEMC_HOME=$bindir/systemc
+fi
+
+if [ ! -f "$SYSTEMC_HOME/CMakeLists.txt" ]; then
+    mkdir -p $SYSTEMC_HOME
+    git clone $systemc_repo -b $systemc_branch $SYSTEMC_HOME
+fi
+
+for type in $builds; do (
+    prefix=$home/BUILD/$type
+    build=$prefix/.BUILD
+    mkdir -p $build
+
+    if [ $type == "ASAN" ]; then
+        CXXFLAGS="$CXXFLAGS -fsanitize=address -fno-omit-frame-pointer"
+        LDFLAGS="$LDFLAGS -fsanitize=address -fno-omit-frame-pointer"
+        type="DEBUG"
+    elif [ $type == "USAN" ]; then
+        CXXFLAGS="$CXXFLAGS -fsanitize=undefined -fno-omit-frame-pointer"
+        LDFLAGS="$LDFLAGS -fsanitize=undefined -fno-omit-frame-pointer"
+        type="DEBUG"
+    elif [ $type == "TSAN" ]; then
+        CXXFLAGS="$CXXFLAGS -fsanitize=thread -fno-omit-frame-pointer"
+        LDFLAGS="$LDFLAGS -fsanitize=thread -fno-omit-frame-pointer"
+        type="DEBUG"
+    fi
+
+    CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
+    cmake -B $build -G Ninja                \
+        -DCMAKE_BUILD_TYPE=$type            \
+        -DCMAKE_INSTALL_PREFIX=$prefix      \
+        -DVCML_BUILD_TESTS=ON               \
+        -DVCML_BUILD_UTILS=ON               \
+        -DVCML_LINTER=$linter               \
+        $home
+
+    cmake --build $build -j $(nproc) -- install
+) done

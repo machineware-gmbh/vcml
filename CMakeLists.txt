@@ -22,6 +22,7 @@ project(vcml VERSION 2022.01.25 LANGUAGES C CXX)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
+set(VCML_LINTER "" CACHE STRING "Code linter to use")
 
 if(VCML_BUILD_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
