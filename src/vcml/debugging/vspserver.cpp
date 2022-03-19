@@ -104,6 +104,11 @@ namespace vcml { namespace debugging {
         return prop != nullptr ? prop->count() : 0;
     }
 
+    static const char* obj_version(sc_object* obj) {
+        module* mod = dynamic_cast<module*>(obj);
+        return mod ? mod->version() : SC_VERSION;
+    }
+
     static void list_object(ostream& os, sc_object* obj) {
         // hide object names starting with $$$
         if (strncmp("$$$", obj->basename(), 3) == 0)
@@ -111,7 +116,8 @@ namespace vcml { namespace debugging {
 
         os << "<object"
            << " name=\"" << xml_escape(obj->basename()) << "\""
-           << " kind=\"" << xml_escape(obj->kind()) << "\">";
+           << " kind=\"" << xml_escape(obj->kind()) << "\""
+           << " version=\"" << xml_escape(obj_version(obj)) << "\">";
 
         // list object attributes
         for (const sc_attr_base* attr : obj->attr_cltn()) {
@@ -121,7 +127,6 @@ namespace vcml { namespace debugging {
                << " count=\"" << attr_count(attr) << "\""
                << " />";
         }
-
 
         // list object commands
         module* mod = dynamic_cast<module*>(obj);
