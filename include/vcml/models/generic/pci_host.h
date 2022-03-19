@@ -68,6 +68,7 @@ namespace vcml { namespace generic {
 
         pci_host(const sc_module_name& nm, bool express = true);
         virtual ~pci_host();
+        VCML_KIND(pci_host);
 
     protected:
         u32 pci_devno(const pci_initiator_socket& socket) const {
