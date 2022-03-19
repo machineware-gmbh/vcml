@@ -246,16 +246,20 @@ elseif (VCML_GIT_DIRTY)
     string(APPEND VCML_GIT_REV_SHORT "-dirty")
 endif()
 
-string(CONCAT VCML_VERSION ${VCML_VERSION_MAJOR}
-                           ${VCML_VERSION_MINOR}
+string(CONCAT VCML_VERSION ${VCML_VERSION_MAJOR} "."
+                           ${VCML_VERSION_MINOR} "."
                            ${VCML_VERSION_PATCH})
 
+string(CONCAT VCML_VERSION_NO ${VCML_VERSION_MAJOR}
+                              ${VCML_VERSION_MINOR}
+                              ${VCML_VERSION_PATCH})
+
 string(CONCAT VCML_VERSION_STRING ${PROJECT_NAME} "-"
-                                  ${VCML_VERSION_MAJOR} "."
-                                  ${VCML_VERSION_MINOR} "."
-                                  ${VCML_VERSION_PATCH} "-"
+                                  ${VCML_VERSION} "-"
                                   ${VCML_GIT_REV_SHORT})
 
 message(STATUS "Writing version ${VCML_VERSION_STRING}")
+set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
+set_target_properties(vcml PROPERTIES SOVERSION "${VCML_VERSION_MAJOR}")
 configure_file(${src}/vcml/common/version.h.in
                ${gen}/vcml/common/version.h @ONLY)

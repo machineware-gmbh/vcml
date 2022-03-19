@@ -26,7 +26,7 @@
 #define VCML_GIT_REV          "@VCML_GIT_REV@"
 #define VCML_GIT_REV_SHORT    "@VCML_GIT_REV_SHORT@"
 
-#define VCML_VERSION          @VCML_VERSION@
+#define VCML_VERSION          @VCML_VERSION_NO@
 #define VCML_VERSION_STRING   "@VCML_VERSION_STRING@"
 
 namespace vcml {
