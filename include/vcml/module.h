@@ -40,6 +40,7 @@ namespace vcml {
         bool cmd_clist(const vector<string>& args, ostream& os);
         bool cmd_cinfo(const vector<string>& args, ostream& os);
         bool cmd_abort(const vector<string>& args, ostream& os);
+        bool cmd_version(const vector<string>& args, ostream& os);
 
     public:
         property<bool> trace;
@@ -53,6 +54,7 @@ namespace vcml {
         module(const sc_module_name& nm);
         virtual ~module();
         VCML_KIND(module);
+        virtual const char* version() const;
 
         void hierarchy_push();
         void hierarchy_pop();

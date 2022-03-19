@@ -16,6 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/common/version.h"
+
 #include "vcml/module.h"
 
 namespace vcml {
@@ -42,6 +44,11 @@ namespace vcml {
         return true;
     }
 
+    bool module::cmd_version(const vector<string>& args, ostream& os) {
+        os << kind() << " " << version();
+        return true;
+    }
+
     module::module(const sc_module_name& nm):
         sc_module(nm),
         m_commands(),
@@ -58,11 +65,17 @@ namespace vcml {
                          "returns information on a given command");
         register_command("abort", 0, this, &module::cmd_abort,
                          "immediately aborts the simulation");
+        register_command("version", 0, this, &module::cmd_version,
+                         "print version information about this module");
     }
 
     module::~module() {
         for (auto it : m_commands)
             delete it.second;
+    }
+
+    const char* module::version() const {
+        return VCML_VERSION_STRING;
     }
 
     void module::session_suspend() {
