@@ -35,13 +35,11 @@ find_package(LibVNC)
 find_package(LibSLIRP)
 find_package(SDL2)
 
-include(GenVersionHeader)
-
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(gen ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
-set(sources
+add_library(vcml STATIC
     ${src}/vcml/common/types.cpp
     ${src}/vcml/common/report.cpp
     ${src}/vcml/common/utils.cpp
@@ -149,7 +147,6 @@ set(sources
     ${src}/vcml/models/riscv/plic.cpp
     ${src}/vcml/models/riscv/simdev.cpp)
 
-add_library(vcml STATIC ${sources})
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 target_compile_options(vcml PRIVATE -Wall -Werror)
 target_compile_features(vcml PUBLIC cxx_std_17)
@@ -212,3 +209,53 @@ if(VCML_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
+
+# generate version header
+set(VCML_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(VCML_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(VCML_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+if (${VCML_VERSION_MINOR} LESS 10)
+    set(VCML_VERSION_MINOR 0${VCML_VERSION_MINOR})
+endif()
+
+if (${VCML_VERSION_PATCH} LESS 10)
+    set(VCML_VERSION_PATCH 0${VCML_VERSION_PATCH})
+endif()
+
+execute_process(COMMAND git rev-parse HEAD
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_VARIABLE VCML_GIT_REV
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process(COMMAND git rev-parse --short HEAD
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_VARIABLE VCML_GIT_REV_SHORT
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process(COMMAND git diff --quiet
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                RESULT_VARIABLE VCML_GIT_DIRTY
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(NOT VCML_GIT_REV)
+    set(VCML_GIT_REV "nogit")
+    set(VCML_GIT_REV_SHORT "nogit")
+elseif (VCML_GIT_DIRTY)
+    string(APPEND VCML_GIT_REV "-dirty")
+    string(APPEND VCML_GIT_REV_SHORT "-dirty")
+endif()
+
+string(CONCAT VCML_VERSION ${VCML_VERSION_MAJOR}
+                           ${VCML_VERSION_MINOR}
+                           ${VCML_VERSION_PATCH})
+
+string(CONCAT VCML_VERSION_STRING ${PROJECT_NAME} "-"
+                                  ${VCML_VERSION_MAJOR} "."
+                                  ${VCML_VERSION_MINOR} "."
+                                  ${VCML_VERSION_PATCH} "-"
+                                  ${VCML_GIT_REV_SHORT})
+
+message(STATUS "Writing version ${VCML_VERSION_STRING}")
+configure_file(${src}/vcml/common/version.h.in
+               ${gen}/vcml/common/version.h @ONLY)
