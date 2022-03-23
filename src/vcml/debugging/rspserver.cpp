@@ -37,12 +37,13 @@ static inline int checksum(const char* str) {
 }
 
 static inline int char2int(char c) {
-    return ((c >= 'a') && (c <= 'f'))
-               ? c - 'a' + 10
-               : ((c >= 'A') && (c <= 'F'))
-                     ? c - 'A' + 10
-                     : ((c >= '0') && (c <= '9')) ? c - '0'
-                                                  : (c == '\0') ? 0 : -1;
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    return c == '\0' ? 0 : -1;
 }
 
 static inline char int2char(int h) {

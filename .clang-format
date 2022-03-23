@@ -23,7 +23,6 @@ AllowShortLoopsOnASingleLine: false
 
 BreakConstructorInitializers: AfterColon
 BreakBeforeBinaryOperators: None
-BreakBeforeTernaryOperators: true
 BreakStringLiterals: true
 BreakBeforeBraces: Custom
 BraceWrapping:

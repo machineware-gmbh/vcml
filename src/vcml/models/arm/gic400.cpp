@@ -638,9 +638,12 @@ void gic400::distif::end_of_elaboration() {
 
 void gic400::cpuif::set_current_irq(unsigned int cpu, unsigned int irq) {
     m_curr_irq[cpu] = irq;
-    rpr.bank(cpu)   = (irq == SPURIOUS_IRQ)
-                        ? 0x100
-                        : (m_parent->get_irq_priority(cpu, irq));
+
+    if (irq == SPURIOUS_IRQ)
+        rpr.bank(cpu) = 0x100;
+    else
+        rpr.bank(cpu) = m_parent->get_irq_priority(cpu, irq);
+
     m_parent->update();
 }
 
