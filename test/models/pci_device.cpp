@@ -32,9 +32,9 @@ static const pci_config TEST_CONFIG = {
 };
 
 enum : u64 {
-    TEST_REG_OFFSET    = 0x0,
-    TEST_REG_IO_OFF    = 0x4,
-    TEST_IRQ_VECTOR    = 5,
+    TEST_REG_OFFSET = 0x0,
+    TEST_REG_IO_OFF = 0x4,
+    TEST_IRQ_VECTOR = 5,
 
     PCI_VENDOR_OFFSET  = 0x0,
     PCI_DEVICE_OFFSET  = 0x2,
@@ -44,11 +44,11 @@ enum : u64 {
     PCI_BAR2_OFFSET    = 0x18,
     PCI_CAP_OFFSET     = 0x34,
 
-    PCI_MSI_CTRL_OFF   = 0x2,
-    PCI_MSI_ADDR_OFF   = 0x4,
-    PCI_MSI_DATA_OFF   = 0x8,
-    PCI_MSI_MASK_OFF   = 0xc,
-    PCI_MSI_PEND_OFF   = 0x10,
+    PCI_MSI_CTRL_OFF = 0x2,
+    PCI_MSI_ADDR_OFF = 0x4,
+    PCI_MSI_DATA_OFF = 0x8,
+    PCI_MSI_MASK_OFF = 0xc,
+    PCI_MSI_PEND_OFF = 0x10,
 
     // MMIO space:
     //   0x00000 .. 0x0ffff: PCI CFG area
@@ -63,18 +63,18 @@ enum : u64 {
 
     // IO space:
     //   0x02000 .. 0x02fff: PCI IO area
-    MMAP_PCI_IO_ADDR   = 0x2000,
-    MMAP_PCI_IO_SIZE   = 0x1000,
+    MMAP_PCI_IO_ADDR = 0x2000,
+    MMAP_PCI_IO_SIZE = 0x1000,
 };
 
-class pci_test_device: public generic::pci_device
+class pci_test_device : public generic::pci_device
 {
 public:
-    pci_target_socket PCI_IN;
-    reg<u32> TEST_REG;
-    reg<u32> TEST_REG_IO;
+    pci_target_socket pci_in;
+    reg<u32> test_reg;
+    reg<u32> test_reg_io;
 
-    void write_TEST_REG_IO(u32 val) {
+    void write_test_reg_io(u32 val) {
         if (val == 0x1234)
             pci_interrupt(true, TEST_IRQ_VECTOR);
         if (val == 0)
@@ -83,14 +83,14 @@ public:
 
     pci_test_device(const sc_module_name& nm):
         pci_device(nm, TEST_CONFIG),
-        PCI_IN("PCI_IN"),
-        TEST_REG(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
-        TEST_REG_IO(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
-        TEST_REG.allow_read_write();
-        TEST_REG.sync_always();
-        TEST_REG_IO.allow_read_write();
-        TEST_REG_IO.sync_always();
-        TEST_REG_IO.on_write(&pci_test_device::write_TEST_REG_IO);
+        pci_in("PCI_IN"),
+        test_reg(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
+        test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
+        test_reg.allow_read_write();
+        test_reg.sync_always();
+        test_reg_io.allow_read_write();
+        test_reg_io.sync_always();
+        test_reg_io.on_write(&pci_test_device::write_test_reg_io);
         pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
         pci_declare_pm_cap(PCI_PM_CAP_VER_1_1);
@@ -99,29 +99,30 @@ public:
     virtual ~pci_test_device() = default;
 };
 
-class pci_test: public test_base
+class pci_test : public test_base
 {
 public:
-    generic::bus MMIO_BUS;
-    generic::bus IO_BUS;
+    generic::bus mmio_bus;
+    generic::bus io_bus;
 
-    generic::pci_host PCI_ROOT;
-    pci_test_device PCI_DEVICE;
+    generic::pci_host pci_root;
+    pci_test_device pci_device;
 
-    tlm_initiator_socket MMIO;
-    tlm_initiator_socket IO;
-    tlm_target_socket MSI;
+    tlm_initiator_socket mmio;
+    tlm_initiator_socket io;
+    tlm_target_socket msi;
 
-    irq_target_socket INT_A;
-    irq_target_socket INT_B;
-    irq_target_socket INT_C;
-    irq_target_socket INT_D;
+    irq_target_socket int_a;
+    irq_target_socket int_b;
+    irq_target_socket int_c;
+    irq_target_socket int_d;
 
     u64 msi_addr;
     u32 msi_data;
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-        const tlm_sbi& sideband, address_space as) override {
+                                   const tlm_sbi& sideband,
+                                   address_space as) override {
         EXPECT_TRUE(tx.is_write());
         EXPECT_EQ(as, VCML_AS_DEFAULT);
         EXPECT_EQ(tx.get_data_length(), sizeof(u32));
@@ -133,66 +134,66 @@ public:
 
     pci_test(const sc_module_name& nm):
         test_base(nm),
-        MMIO_BUS("MMIO_BUS"),
-        IO_BUS("IO_BUS"),
-        PCI_ROOT("PCI_ROOT", TEST_CONFIG.pcie),
-        PCI_DEVICE("PCI_DEVICE"),
-        MMIO("MMIO"),
-        IO("IO"),
-        MSI("MSI"),
-        INT_A("INT_A"),
-        INT_B("INT_B"),
-        INT_C("INT_C"),
-        INT_D("INT_D"),
+        mmio_bus("mmio_bus"),
+        io_bus("io_bus"),
+        pci_root("pci_root", TEST_CONFIG.pcie),
+        pci_device("pci_device"),
+        mmio("mmio"),
+        io("io"),
+        msi("msi"),
+        int_a("int_a"),
+        int_b("int_b"),
+        int_c("int_c"),
+        int_d("int_d"),
         msi_addr(),
         msi_data() {
-        PCI_ROOT.PCI_OUT[0].bind(PCI_DEVICE.PCI_IN);
+        pci_root.pci_out[0].bind(pci_device.pci_in);
 
-        const range MMAP_PCI_MSI(MMAP_PCI_MSI_ADDR,
-            MMAP_PCI_MSI_ADDR + MMAP_PCI_MSI_SIZE - 1);
-        const range MMAP_PCI_CFG(MMAP_PCI_CFG_ADDR,
-            MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
-        const range MMAP_PCI_MMIO(MMAP_PCI_MMIO_ADDR,
-            MMAP_PCI_MMIO_ADDR + MMAP_PCI_MMIO_SIZE - 1);
-        const range MMAP_PCI_IO(MMAP_PCI_IO_ADDR,
-            MMAP_PCI_IO_ADDR + MMAP_PCI_IO_SIZE - 1);
+        const range mmap_pci_msi(MMAP_PCI_MSI_ADDR,
+                                 MMAP_PCI_MSI_ADDR + MMAP_PCI_MSI_SIZE - 1);
+        const range mmap_pci_cfg(MMAP_PCI_CFG_ADDR,
+                                 MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
+        const range mmap_pci_mmio(MMAP_PCI_MMIO_ADDR,
+                                  MMAP_PCI_MMIO_ADDR + MMAP_PCI_MMIO_SIZE - 1);
+        const range mmap_pci_io(MMAP_PCI_IO_ADDR,
+                                MMAP_PCI_IO_ADDR + MMAP_PCI_IO_SIZE - 1);
 
-        MMIO_BUS.bind(MMIO);
-        MMIO_BUS.bind(PCI_ROOT.DMA_OUT);
-        MMIO_BUS.bind(MSI, MMAP_PCI_MSI);
-        MMIO_BUS.bind(PCI_ROOT.CFG_IN, MMAP_PCI_CFG);
-        MMIO_BUS.bind(PCI_ROOT.MMIO_IN[0], MMAP_PCI_MMIO, MMAP_PCI_MMIO_ADDR);
+        mmio_bus.bind(mmio);
+        mmio_bus.bind(pci_root.dma_out);
+        mmio_bus.bind(msi, mmap_pci_msi);
+        mmio_bus.bind(pci_root.cfg_in, mmap_pci_cfg);
+        mmio_bus.bind(pci_root.mmio_in[0], mmap_pci_mmio, MMAP_PCI_MMIO_ADDR);
 
-        IO_BUS.bind(IO);
-        IO_BUS.bind(PCI_ROOT.IO_IN[0], MMAP_PCI_IO, MMAP_PCI_IO_ADDR);
+        io_bus.bind(io);
+        io_bus.bind(pci_root.io_in[0], mmap_pci_io, MMAP_PCI_IO_ADDR);
 
-        PCI_ROOT.IRQ_A.bind(INT_A);
-        PCI_ROOT.IRQ_B.bind(INT_B);
-        PCI_ROOT.IRQ_C.bind(INT_C);
-        PCI_ROOT.IRQ_D.bind(INT_D);
+        pci_root.irq_a.bind(int_a);
+        pci_root.irq_b.bind(int_b);
+        pci_root.irq_c.bind(int_c);
+        pci_root.irq_d.bind(int_d);
 
-        MMIO_BUS.CLOCK.stub(100 * MHz);
-        IO_BUS.CLOCK.stub(100 * MHz);
-        PCI_ROOT.CLOCK.stub(100 * MHz);
-        PCI_DEVICE.CLOCK.stub(100 * MHz);
+        mmio_bus.clk.stub(100 * MHz);
+        io_bus.clk.stub(100 * MHz);
+        pci_root.clk.stub(100 * MHz);
+        pci_device.clk.stub(100 * MHz);
 
-        MMIO_BUS.RESET.stub();
-        IO_BUS.RESET.stub();
-        PCI_ROOT.RESET.stub();
-        PCI_DEVICE.RESET.stub();
+        mmio_bus.rst.stub();
+        io_bus.rst.stub();
+        pci_root.rst.stub();
+        pci_device.rst.stub();
     }
 
     template <typename T>
     void pci_read_cfg(u64 devno, u64 offset, T& data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
-        ASSERT_OK(MMIO.readw(addr, data))
+        ASSERT_OK(mmio.readw(addr, data))
             << "failed to read PCI config at offset " << std::hex << addr;
     }
 
     template <typename T>
     void pci_write_cfg(u64 devno, u64 offset, T data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
-        ASSERT_OK(MMIO.writew(addr, data))
+        ASSERT_OK(mmio.writew(addr, data))
             << "failed to write PCI config at offset " << std::hex << addr;
     }
 
@@ -211,9 +212,9 @@ public:
         // test mapping bar0
         //
         u32 dummy = 0; // make sure, nothing has been mapped yet
-        EXPECT_AE(MMIO.readw(MMAP_PCI_MMIO_ADDR, dummy))
+        EXPECT_AE(mmio.readw(MMAP_PCI_MMIO_ADDR, dummy))
             << "something has already been mapped to PCI MMIO address range";
-        EXPECT_AE(IO.readw(MMAP_PCI_IO_ADDR, dummy))
+        EXPECT_AE(io.readw(MMAP_PCI_IO_ADDR, dummy))
             << "something has already been mapped to PCI IO address range";
 
         u16 command = 3; // setup device for MMIO + IO
@@ -232,7 +233,7 @@ public:
         pci_write_cfg(0, PCI_BAR0_OFFSET, (u32)(bar0));
 
         u32 val = 0; // read bar0 offset 0 (TEST_REG)
-        EXPECT_OK(MMIO.readw(MMAP_PCI_MMIO_ADDR + TEST_REG_OFFSET, val))
+        EXPECT_OK(mmio.readw(MMAP_PCI_MMIO_ADDR + TEST_REG_OFFSET, val))
             << "BAR0 setup failed: cannot read BAR0 range";
         EXPECT_EQ(val, 1234) << "read wrong value from BAR0 area";
 
@@ -243,15 +244,15 @@ public:
         pci_write_cfg(0, PCI_BAR2_OFFSET, bar2);
 
         // write bar2 offset 4 (TEST_REG_IO) to trigger interrupt
-        EXPECT_FALSE(INT_A.read()) << "interrupt already active";
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
+        EXPECT_FALSE(int_a.read()) << "interrupt already active";
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
             << "BAR0 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
-        EXPECT_TRUE(INT_A.read()) << "interrupt did not get raised";
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
+        EXPECT_TRUE(int_a.read()) << "interrupt did not get raised";
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
             << "BAR0 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
-        EXPECT_FALSE(INT_A.read()) << "interrupt did not get lowered";
+        EXPECT_FALSE(int_a.read()) << "interrupt did not get lowered";
 
         //
         // test resetting bar0 & bar2
@@ -261,9 +262,9 @@ public:
 
         // should not be accessible anymore
         dummy = 0;
-        EXPECT_AE(MMIO.readw(MMAP_PCI_MMIO_ADDR, dummy))
+        EXPECT_AE(mmio.readw(MMAP_PCI_MMIO_ADDR, dummy))
             << "PCI BAR0 area remained active";
-        EXPECT_AE(IO.readw(MMAP_PCI_IO_ADDR, dummy))
+        EXPECT_AE(io.readw(MMAP_PCI_IO_ADDR, dummy))
             << "PCI BAR2 area remained active";
     }
 };

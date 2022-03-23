@@ -19,24 +19,22 @@
 #include "testing.h"
 
 #define XRES 1280
-#define YRES  720
+#define YRES 720
 #define SIZE (XRES * YRES * 4)
 
-class test_harness: public test_base
+class test_harness : public test_base
 {
 public:
     generic::fbdev fb;
     generic::memory vmem;
 
     test_harness(const sc_module_name& nm):
-        test_base(nm),
-        fb("fb", XRES, YRES),
-        vmem("vmem", SIZE) {
-        vmem.CLOCK.stub();
-        vmem.RESET.stub();
-        fb.CLOCK.stub(60);
-        fb.RESET.stub();
-        fb.OUT.bind(vmem.IN);
+        test_base(nm), fb("fb", XRES, YRES), vmem("vmem", SIZE) {
+        vmem.clk.stub();
+        vmem.rst.stub();
+        fb.clk.stub(60);
+        fb.rst.stub();
+        fb.out.bind(vmem.in);
     }
 
     virtual void run_test() override {
@@ -49,7 +47,6 @@ public:
 
         EXPECT_EQ(fb.vptr(), vmem.get_data_ptr());
     }
-
 };
 
 TEST(generic_fbdev, run) {

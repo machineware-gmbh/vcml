@@ -29,48 +29,49 @@
 
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    class memory: public peripheral,
-                  public debugging::loader
-    {
-    private:
-        tlm_memory m_memory;
+class memory : public peripheral, public debugging::loader
+{
+private:
+    tlm_memory m_memory;
 
-        bool cmd_show(const vector<string>& args, ostream& os);
+    bool cmd_show(const vector<string>& args, ostream& os);
 
-        memory();
-        memory(const memory&);
+    memory();
+    memory(const memory&);
 
-    protected:
-        virtual u8* allocate_image(u64 size, u64 offset) override;
-        virtual void copy_image(const u8* img, u64 size, u64 offset) override;
+protected:
+    virtual u8* allocate_image(u64 size, u64 offset) override;
+    virtual void copy_image(const u8* img, u64 size, u64 offset) override;
 
-    public:
-        property<u64> size;
-        property<alignment> align;
-        property<bool> discard_writes;
-        property<bool> readonly;
-        property<string> images;
-        property<u8> poison;
+public:
+    property<u64> size;
+    property<alignment> align;
+    property<bool> discard_writes;
+    property<bool> readonly;
+    property<string> images;
+    property<u8> poison;
 
-        tlm_target_socket IN;
+    tlm_target_socket in;
 
-        u8* get_data_ptr() const { return m_memory.data(); }
+    u8* get_data_ptr() const { return m_memory.data(); }
 
-        memory(const sc_module_name& name, u64 size, bool read_only = false,
-               alignment al = VCML_ALIGN_NONE, unsigned int read_latency = 0,
-               unsigned int write_latency = 0);
-        virtual ~memory();
-        VCML_KIND(memory);
-        virtual void reset() override;
+    memory(const sc_module_name& name, u64 size, bool read_only = false,
+           alignment al = VCML_ALIGN_NONE, unsigned int read_latency = 0,
+           unsigned int write_latency = 0);
+    virtual ~memory();
+    VCML_KIND(memory);
+    virtual void reset() override;
 
-        virtual tlm_response_status read  (const range& addr, void* data,
-                                           const tlm_sbi& info) override;
-        virtual tlm_response_status write (const range& addr, const void* data,
-                                           const tlm_sbi& info) override;
-    };
+    virtual tlm_response_status read(const range& addr, void* data,
+                                     const tlm_sbi& info) override;
+    virtual tlm_response_status write(const range& addr, const void* data,
+                                      const tlm_sbi& info) override;
+};
 
-}}
+} // namespace generic
+} // namespace vcml
 
 #endif

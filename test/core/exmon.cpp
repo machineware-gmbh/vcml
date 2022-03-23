@@ -24,11 +24,11 @@ using namespace ::testing;
 TEST(tlm_exmon, locking) {
     vcml::tlm_exmon mon;
 
-    mon.add_lock(0, {100, 200});
-    mon.add_lock(1, {300, 400});
+    mon.add_lock(0, { 100, 200 });
+    mon.add_lock(1, { 300, 400 });
     EXPECT_EQ(mon.get_locks().size(), 2);
 
-    mon.break_locks({0, 400});
+    mon.break_locks({ 0, 400 });
     EXPECT_TRUE(mon.get_locks().empty());
 }
 
@@ -36,8 +36,10 @@ TEST(tlm_exmon, update) {
     vcml::tlm_exmon mon;
 
     vcml::sbiext ex1, ex2;
-    ex1.cpuid = 1; ex1.is_excl = true;
-    ex2.cpuid = 2; ex2.is_excl = true;
+    ex1.cpuid   = 1;
+    ex1.is_excl = true;
+    ex2.cpuid   = 2;
+    ex2.is_excl = true;
     tlm::tlm_generic_payload tx;
 
     tx.set_address(100);
@@ -74,8 +76,8 @@ TEST(tlm_exmon, update) {
 TEST(tlm_exmon, dmi) {
     vcml::tlm_exmon mon;
 
-    mon.add_lock(0, {100, 199});
-    mon.add_lock(1, {300, 399});
+    mon.add_lock(0, { 100, 199 });
+    mon.add_lock(1, { 300, 399 });
 
     tlm::tlm_dmi dmi;
     dmi.set_dmi_ptr(NULL);

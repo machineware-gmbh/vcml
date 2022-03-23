@@ -28,82 +28,82 @@
 
 namespace vcml {
 
-    class tlm_memory : public tlm_dmi
-    {
-    private:
-        void*  m_base;
-        size_t m_size;
-        bool   m_discard;
+class tlm_memory : public tlm_dmi
+{
+private:
+    void* m_base;
+    size_t m_size;
+    bool m_discard;
 
-    public:
-        u8*    data() const { return get_dmi_ptr(); }
-        size_t size() const;
+public:
+    u8* data() const { return get_dmi_ptr(); }
+    size_t size() const;
 
-        void allow_read_only()  { allow_read(); }
-        void allow_write_only() { allow_write(); }
+    void allow_read_only() { allow_read(); }
+    void allow_write_only() { allow_write(); }
 
-        void discard_writes(bool discard = true) { m_discard = discard; }
+    void discard_writes(bool discard = true) { m_discard = discard; }
 
-        tlm_memory();
-        tlm_memory(size_t size, alignment al = VCML_ALIGN_NONE);
-        tlm_memory(const tlm_memory&) = delete;
-        tlm_memory(tlm_memory&& other);
-        virtual ~tlm_memory();
+    tlm_memory();
+    tlm_memory(size_t size, alignment al = VCML_ALIGN_NONE);
+    tlm_memory(const tlm_memory&) = delete;
+    tlm_memory(tlm_memory&& other);
+    virtual ~tlm_memory();
 
-        void init(size_t size, alignment al);
-        void free();
-        void fill(u8 data);
+    void init(size_t size, alignment al);
+    void free();
+    void fill(u8 data);
 
-        tlm_response_status fill(u8 data, bool debug);
+    tlm_response_status fill(u8 data, bool debug);
 
-        tlm_response_status
-        read(const range& addr, void* dest, bool debug = false);
+    tlm_response_status read(const range& addr, void* dest,
+                             bool debug = false);
 
-        tlm_response_status
-        write(const range& addr, const void* dest, bool debug = false);
-
-        template <typename T>
-        tlm_response_status read(u64 addr, T& data, bool debug = false);
-
-        template <typename T>
-        tlm_response_status write(u64 addr, const T& data, bool debug = false);
-
-        void transport(tlm_generic_payload& tx, const tlm_sbi& sbi);
-
-        u8  operator [] (size_t offset) const;
-        u8& operator [] (size_t offset);
-    };
-
-    inline size_t tlm_memory::size() const {
-        return get_end_address() - get_start_address() + 1;
-    }
-
-    inline void tlm_memory::fill(u8 val) {
-        memset(data(), val, size());
-    }
+    tlm_response_status write(const range& addr, const void* dest,
+                              bool debug = false);
 
     template <typename T>
-    tlm_response_status tlm_memory::read(u64 addr, T& data, bool dbg) {
-        return read({addr, addr + sizeof(data) - 1}, &data, dbg);
-    }
+    tlm_response_status read(u64 addr, T& data, bool debug = false);
 
     template <typename T>
-    tlm_response_status tlm_memory::write(u64 addr, const T& data, bool dbg) {
-        return write({addr, addr + sizeof(data) - 1}, &data, dbg);
-    }
+    tlm_response_status write(u64 addr, const T& data, bool debug = false);
 
-    inline u8 tlm_memory::operator [] (size_t offset) const {
-        VCML_ERROR_ON(data() == nullptr, "memory not initialized");
-        VCML_ERROR_ON(offset >= size(), "offset out of bounds: %zu", offset);
-        return data()[offset];
-    }
+    void transport(tlm_generic_payload& tx, const tlm_sbi& sbi);
 
-    inline u8& tlm_memory::operator [] (size_t offset) {
-        VCML_ERROR_ON(data() == nullptr, "memory not initialized");
-        VCML_ERROR_ON(offset >= size(), "offset out of bounds: %zu", offset);
-        return data()[offset];
-    }
+    u8 operator[](size_t offset) const;
+    u8& operator[](size_t offset);
+};
 
+inline size_t tlm_memory::size() const {
+    return get_end_address() - get_start_address() + 1;
 }
+
+inline void tlm_memory::fill(u8 val) {
+    memset(data(), val, size());
+}
+
+template <typename T>
+tlm_response_status tlm_memory::read(u64 addr, T& data, bool dbg) {
+    return read({ addr, addr + sizeof(data) - 1 }, &data, dbg);
+}
+
+template <typename T>
+tlm_response_status tlm_memory::write(u64 addr, const T& data, bool dbg) {
+    return write({ addr, addr + sizeof(data) - 1 }, &data, dbg);
+}
+
+inline u8 tlm_memory::operator[](size_t offset) const {
+    VCML_ERROR_ON(data() == nullptr, "memory not initialized");
+    VCML_ERROR_ON(offset >= size(), "offset out of bounds: %zu", offset);
+    return data()[offset];
+}
+
+inline u8& tlm_memory::operator[](size_t offset) {
+    VCML_ERROR_ON(data() == nullptr, "memory not initialized");
+    VCML_ERROR_ON(offset >= size(), "offset out of bounds: %zu", offset);
+    return data()[offset];
+}
+
+} // namespace vcml
 
 #endif

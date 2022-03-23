@@ -45,50 +45,53 @@ TEST(utils, curr_dir) {
 
 namespace N {
 
-    template<typename T>
-    struct A {
-        struct  B {
-            void func() {
-                std::vector<std::string> bt = ::vcml::backtrace(1, 1);
-                EXPECT_EQ(bt.size(), 1);
-                //EXPECT_TRUE(str_begins_with(bt[0], "N::A<int>::B::func()"));
-            }
+template <typename T>
+struct struct_a {
+    struct struct_b {
+        void func() {
+            std::vector<std::string> bt = ::vcml::backtrace(1, 1);
+            EXPECT_EQ(bt.size(), 1);
+            // EXPECT_TRUE(str_begins_with(bt[0], "N::A<int>::B::func()"));
+        }
 
-            void func(T t) {
-                std::vector<std::string> bt = ::vcml::backtrace(1, 1);
-                EXPECT_EQ(bt.size(), 1);
-                //EXPECT_TRUE(str_begins_with(bt[0], "N::A<char const*>::B::func(char const*)"));
-            }
+        void func(T t) {
+            std::vector<std::string> bt = ::vcml::backtrace(1, 1);
+            EXPECT_EQ(bt.size(), 1);
+            // EXPECT_TRUE(str_begins_with(bt[0], "N::A<char
+            // const*>::B::func(char const*)"));
+        }
 
-            void func2() {
-                std::vector<std::string> bt = ::vcml::backtrace(1, 1);
-                EXPECT_EQ(bt.size(), 1);
-                //EXPECT_TRUE(str_begins_with(bt[0], "N::A<N::A<std::map<int, double, std::less<int>, std::allocator<std::pair<int const, double> > > > >::B::func2()"));
-            }
-        };
-    };
-
-    struct U {
-        template<int N>
-        void unroll(double d) {
-            unroll<N-1>(d);
+        void func2() {
+            std::vector<std::string> bt = ::vcml::backtrace(1, 1);
+            EXPECT_EQ(bt.size(), 1);
+            // EXPECT_TRUE(str_begins_with(bt[0], "N::A<N::A<std::map<int,
+            // double, std::less<int>, std::allocator<std::pair<int const,
+            // double> > > > >::B::func2()"));
         }
     };
+};
 
-    template<>
-    void U::unroll<0>(double d) {
-        std::vector<std::string> bt = ::vcml::backtrace(5, 1);
-        EXPECT_EQ(bt.size(), 5);
-        for (auto func : bt)
-            std::cout << func << std::endl;
+struct struct_u {
+    template <int N>
+    void unroll(double d) {
+        unroll<N - 1>(d);
     }
+};
+
+template <>
+void struct_u::unroll<0>(double d) {
+    std::vector<std::string> bt = ::vcml::backtrace(5, 1);
+    EXPECT_EQ(bt.size(), 5);
+    for (auto func : bt)
+        std::cout << func << std::endl;
 }
+} // namespace N
 
 TEST(utils, backtrace) {
-    N::A<int>::B().func();
-    N::A<const char*>::B().func("42");
-    N::A< N::A<std::map<int, double> > >::B().func2();
-    N::U().unroll<5>(42.0);
+    N::struct_a<int>::struct_b().func();
+    N::struct_a<const char*>::struct_b().func("42");
+    N::struct_a<N::struct_a<std::map<int, double> > >::struct_b().func2();
+    N::struct_u().unroll<5>(42.0);
 }
 
 TEST(utils, realtime) {

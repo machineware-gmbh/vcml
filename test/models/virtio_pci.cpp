@@ -25,68 +25,68 @@ enum : u64 {
     MMAP_PCI_MMIO_SIZE = 0x1000,
 };
 
-class virtio_pci_test: public test_base
+class virtio_pci_test : public test_base
 {
 public:
-    tlm_initiator_socket MMIO;
+    tlm_initiator_socket mmio;
 
-    generic::bus MMIO_BUS;
-    generic::pci_host PCI_ROOT;
-    virtio::pci VIRTIO_PCI;
+    generic::bus mmio_bus;
+    generic::pci_host pci_root;
+    virtio::pci virtio_pci;
 
-    irq_target_socket INT_A;
-    irq_target_socket INT_B;
-    irq_target_socket INT_C;
-    irq_target_socket INT_D;
+    irq_target_socket int_a;
+    irq_target_socket int_b;
+    irq_target_socket int_c;
+    irq_target_socket int_d;
 
     virtio_pci_test(const sc_module_name& nm):
         test_base(nm),
-        MMIO("MMIO"),
-        MMIO_BUS("MMIO_BUS"),
-        PCI_ROOT("PCI_ROOT", false),
-        VIRTIO_PCI("VIRTIO_PCI"),
-        INT_A("INT_A"),
-        INT_B("INT_B"),
-        INT_C("INT_C"),
-        INT_D("INT_D") {
-        PCI_ROOT.PCI_OUT[0].bind(VIRTIO_PCI.PCI_IN);
-        VIRTIO_PCI.VIRTIO_OUT.stub();
+        mmio("mmio"),
+        mmio_bus("mmio_bus"),
+        pci_root("pci_root", false),
+        virtio_pci("virtio_pci"),
+        int_a("int_a"),
+        int_b("int_b"),
+        int_c("int_c"),
+        int_d("int_d") {
+        pci_root.pci_out[0].bind(virtio_pci.pci_in);
+        virtio_pci.virtio_out.stub();
 
-        const range MMAP_PCI_CFG(MMAP_PCI_CFG_ADDR,
-            MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
-        const range MMAP_PCI_MMIO(MMAP_PCI_MMIO_ADDR,
-            MMAP_PCI_MMIO_ADDR + MMAP_PCI_MMIO_SIZE - 1);
+        const range mmap_pci_cfg(MMAP_PCI_CFG_ADDR,
+                                 MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
+        const range mmap_pci_mmio(MMAP_PCI_MMIO_ADDR,
+                                  MMAP_PCI_MMIO_ADDR + MMAP_PCI_MMIO_SIZE - 1);
 
-        MMIO_BUS.bind(MMIO);
-        MMIO_BUS.bind(PCI_ROOT.DMA_OUT);
-        MMIO_BUS.bind(PCI_ROOT.CFG_IN, MMAP_PCI_CFG);
-        MMIO_BUS.bind(PCI_ROOT.MMIO_IN[0], MMAP_PCI_MMIO, MMAP_PCI_MMIO_ADDR);
+        mmio_bus.bind(mmio);
+        mmio_bus.bind(pci_root.dma_out);
+        mmio_bus.bind(pci_root.cfg_in, mmap_pci_cfg);
+        mmio_bus.bind(pci_root.mmio_in[0], mmap_pci_mmio, MMAP_PCI_MMIO_ADDR);
 
-        PCI_ROOT.IRQ_A.bind(INT_A);
-        PCI_ROOT.IRQ_B.bind(INT_B);
-        PCI_ROOT.IRQ_C.bind(INT_C);
-        PCI_ROOT.IRQ_D.bind(INT_D);
+        pci_root.irq_a.bind(int_a);
+        pci_root.irq_b.bind(int_b);
+        pci_root.irq_c.bind(int_c);
+        pci_root.irq_d.bind(int_d);
 
-        MMIO_BUS.CLOCK.stub(100 * MHz);
-        PCI_ROOT.CLOCK.stub(100 * MHz);
-        VIRTIO_PCI.CLOCK.stub(100 * MHz);
+        mmio_bus.clk.stub(100 * MHz);
+        pci_root.clk.stub(100 * MHz);
+        virtio_pci.clk.stub(100 * MHz);
 
-        MMIO_BUS.RESET.stub();
-        PCI_ROOT.RESET.stub();
-        VIRTIO_PCI.RESET.stub();
+        mmio_bus.rst.stub();
+        pci_root.rst.stub();
+        virtio_pci.rst.stub();
     }
 
     template <typename T>
     void pci_read_cfg(u64 devno, u64 offset, T& data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
-        ASSERT_OK(MMIO.readw(addr, data))
+        ASSERT_OK(mmio.readw(addr, data))
             << "failed to read PCI config at offset " << std::hex << addr;
     }
 
     template <typename T>
     void pci_write_cfg(u64 devno, u64 offset, T data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 256 + offset;
-        ASSERT_OK(MMIO.writew(addr, data))
+        ASSERT_OK(mmio.writew(addr, data))
             << "failed to write PCI config at offset " << std::hex << addr;
     }
 
@@ -117,7 +117,6 @@ public:
         EXPECT_TRUE(find_virtio_cap(virtio::VIRTIO_PCI_CAP_ISR));
         EXPECT_TRUE(find_virtio_cap(virtio::VIRTIO_PCI_CAP_DEVICE));
     }
-
 };
 
 TEST(virtio, pci) {

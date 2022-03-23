@@ -20,31 +20,30 @@
 
 namespace vcml {
 
-    static string gen_hierarchy_name(const char* nm, sc_object* parent) {
-        stringstream ss;
+static string gen_hierarchy_name(const char* nm, sc_object* parent) {
+    stringstream ss;
 
-        if (parent)
-            ss << parent->name() << SC_HIERARCHY_CHAR;
+    if (parent)
+        ss << parent->name() << SC_HIERARCHY_CHAR;
 
-        ss << nm;
-        return ss.str();
-    }
-
-    property_base::property_base(const char* nm):
-        property_base(hierarchy_top(), nm) {
-    }
-
-    property_base::property_base(sc_object* parent, const char* nm):
-        sc_attr_base(nm),
-        m_parent(parent),
-        m_fullname(gen_hierarchy_name(nm, parent)) {
-        VCML_ERROR_ON(!m_parent, "property '%s' has no parent object", nm);
-        m_parent->add_attribute(*this);
-    }
-
-    property_base::~property_base() {
-        m_parent->remove_attribute(name());
-    }
-
+    ss << nm;
+    return ss.str();
 }
 
+property_base::property_base(const char* nm):
+    property_base(hierarchy_top(), nm) {
+}
+
+property_base::property_base(sc_object* parent, const char* nm):
+    sc_attr_base(nm),
+    m_parent(parent),
+    m_fullname(gen_hierarchy_name(nm, parent)) {
+    VCML_ERROR_ON(!m_parent, "property '%s' has no parent object", nm);
+    m_parent->add_attribute(*this);
+}
+
+property_base::~property_base() {
+    m_parent->remove_attribute(name());
+}
+
+} // namespace vcml

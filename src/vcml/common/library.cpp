@@ -21,60 +21,55 @@
 
 namespace vcml {
 
-    void* library::lookup(const string& name) const {
-        void* sym = dlsym(m_handle, name.c_str());
-        VCML_REPORT_ON(!sym, "error loading %s: %s", name.c_str(), dlerror());
-        return sym;
-    }
-
-    library::library():
-        m_path(),
-        m_handle(nullptr) {
-    }
-
-    library::library(library& other):
-        m_path(std::move(other.m_path)),
-        m_handle(std::move(other.m_handle)) {
-        other.m_handle = nullptr;
-    }
-
-    library::library(const string& file):
-        library(file, -1) {
-    }
-
-    library::library(const string& file, int mode):
-        library() {
-        open(file, mode);
-    }
-
-    library::~library() {
-        close();
-    }
-
-    void library::open(const string& path, int mode) {
-        if (is_open())
-            close();
-
-        if (mode < 0)
-            mode = RTLD_NOW | RTLD_LOCAL;
-
-        m_handle = dlopen(path.c_str(), mode);
-        if (m_handle == nullptr)
-            VCML_REPORT("failed to open %s: %s", path.c_str(), dlerror());
-        m_path = path;
-    }
-
-    void library::close() {
-        if (is_open()) {
-            dlclose(m_handle);
-            m_handle = nullptr;
-        }
-    }
-
-    bool library::has(const string& name) const {
-        void* sym = dlsym(m_handle, name.c_str());
-        dlerror(); // clear errors
-        return sym != nullptr;
-    }
-
+void* library::lookup(const string& name) const {
+    void* sym = dlsym(m_handle, name.c_str());
+    VCML_REPORT_ON(!sym, "error loading %s: %s", name.c_str(), dlerror());
+    return sym;
 }
+
+library::library(): m_path(), m_handle(nullptr) {
+}
+
+library::library(library& other):
+    m_path(std::move(other.m_path)), m_handle(std::move(other.m_handle)) {
+    other.m_handle = nullptr;
+}
+
+library::library(const string& file): library(file, -1) {
+}
+
+library::library(const string& file, int mode): library() {
+    open(file, mode);
+}
+
+library::~library() {
+    close();
+}
+
+void library::open(const string& path, int mode) {
+    if (is_open())
+        close();
+
+    if (mode < 0)
+        mode = RTLD_NOW | RTLD_LOCAL;
+
+    m_handle = dlopen(path.c_str(), mode);
+    if (m_handle == nullptr)
+        VCML_REPORT("failed to open %s: %s", path.c_str(), dlerror());
+    m_path = path;
+}
+
+void library::close() {
+    if (is_open()) {
+        dlclose(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+bool library::has(const string& name) const {
+    void* sym = dlsym(m_handle, name.c_str());
+    dlerror(); // clear errors
+    return sym != nullptr;
+}
+
+} // namespace vcml

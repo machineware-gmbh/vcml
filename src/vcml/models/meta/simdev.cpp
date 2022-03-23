@@ -18,89 +18,90 @@
 
 #include "vcml/models/meta/simdev.h"
 
-namespace vcml { namespace meta {
+namespace vcml {
+namespace meta {
 
-    void simdev::write_STOP(u32 val) {
-        log_info("stopping simulation upon request (%u)", val);
-        sc_stop();
-    }
+void simdev::write_stop(u32 val) {
+    log_info("stopping simulation upon request (%u)", val);
+    sc_stop();
+}
 
-    void simdev::write_EXIT(u32 val) {
-        log_info("exiting simulation upon request (%u)", val);
-        exit(val);
-    }
+void simdev::write_exit(u32 val) {
+    log_info("exiting simulation upon request (%u)", val);
+    ::exit(val);
+}
 
-    void simdev::write_ABRT(u32 val) {
-        log_info("aborting simulation upon request (%u)", val);
-        abort();
-    }
+void simdev::write_abrt(u32 val) {
+    log_info("aborting simulation upon request (%u)", val);
+    ::abort();
+}
 
-    u64 simdev::read_SCLK() {
-        sc_time now = sc_time_stamp();
-        return (u64)now.value();
-    }
+u64 simdev::read_sclk() {
+    sc_time now = sc_time_stamp();
+    return (u64)now.value();
+}
 
-    u64 simdev::read_HCLK() {
-        return realtime_us();
-    }
+u64 simdev::read_hclk() {
+    return realtime_us();
+}
 
-    void simdev::write_SOUT(u32 val) {
-        fputc(val, stdout);
-        fflush(stdout);
-    }
+void simdev::write_sout(u32 val) {
+    fputc(val, stdout);
+    fflush(stdout);
+}
 
-    void simdev::write_SERR(u32 val) {
-        fputc(val, stderr);
-        fflush(stderr);
-    }
+void simdev::write_serr(u32 val) {
+    fputc(val, stderr);
+    fflush(stderr);
+}
 
-    u32 simdev::read_PRNG() {
-        return random();
-    }
+u32 simdev::read_prng() {
+    return random();
+}
 
-    simdev::simdev(const sc_module_name& nm):
-        peripheral(nm),
-        STOP("STOP", 0x00, 0),
-        EXIT("EXIT", 0x08, 0),
-        ABRT("ABRT", 0x10, 0),
-        SCLK("SCLK", 0x18, 0),
-        HCLK("HCLK", 0x20, 0),
-        SOUT("SOUT", 0x28, 0),
-        SERR("SERR", 0x30, 0),
-        PRNG("PRNG", 0x38, 0),
-        IN("IN") {
+simdev::simdev(const sc_module_name& nm):
+    peripheral(nm),
+    stop("stop", 0x00, 0),
+    exit("exit", 0x08, 0),
+    abrt("abrt", 0x10, 0),
+    sclk("sclk", 0x18, 0),
+    hclk("hclk", 0x20, 0),
+    sout("sout", 0x28, 0),
+    serr("serr", 0x30, 0),
+    prng("prng", 0x38, 0),
+    in("in") {
+    stop.allow_read_write();
+    stop.on_write(&simdev::write_stop);
 
-        STOP.allow_read_write();
-        STOP.on_write(&simdev::write_STOP);
+    exit.allow_read_write();
+    exit.on_write(&simdev::write_exit);
 
-        EXIT.allow_read_write();
-        EXIT.on_write(&simdev::write_EXIT);
+    abrt.allow_read_write();
+    abrt.on_write(&simdev::write_abrt);
 
-        ABRT.allow_read_write();
-        ABRT.on_write(&simdev::write_ABRT);
+    sclk.allow_read_write();
+    sclk.on_read(&simdev::read_sclk);
 
-        SCLK.allow_read_write();
-        SCLK.on_read(&simdev::read_SCLK);
+    hclk.allow_read_write();
+    hclk.on_read(&simdev::read_hclk);
 
-        HCLK.allow_read_write();
-        HCLK.on_read(&simdev::read_HCLK);
+    sout.allow_read_write();
+    sout.on_write(&simdev::write_sout);
 
-        SOUT.allow_read_write();
-        SOUT.on_write(&simdev::write_SOUT);
+    serr.allow_read_write();
+    serr.on_write(&simdev::write_serr);
 
-        SERR.allow_read_write();
-        SERR.on_write(&simdev::write_SERR);
+    prng.allow_read_write();
+    prng.on_read(&simdev::read_prng);
+}
 
-        PRNG.allow_read_write();
-        PRNG.on_read(&simdev::read_PRNG);
-    }
+simdev::~simdev() {
+    // nothing to do
+}
 
-    simdev::~simdev() {
-        // nothing to do
-    }
+void simdev::reset() {
+    // nothing to do
+}
 
-    void simdev::reset() {
-        // nothing to do
-    }
-
-}}
+} // namespace meta
+} // namespace vcml

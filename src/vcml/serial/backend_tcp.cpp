@@ -18,48 +18,49 @@
 
 #include "vcml/serial/backend_tcp.h"
 
-namespace vcml { namespace serial {
+namespace vcml {
+namespace serial {
 
-    backend_tcp::backend_tcp(const string& serial, int port):
-        backend(serial),
-        m_socket(port) {
-        m_socket.accept_async();
-        m_type = mkstr("tcp:%hu", m_socket.port());
-        log_info("listening on port %hu", m_socket.port());
-    }
+backend_tcp::backend_tcp(const string& serial, int port):
+    backend(serial), m_socket(port) {
+    m_socket.accept_async();
+    m_type = mkstr("tcp:%hu", m_socket.port());
+    log_info("listening on port %hu", m_socket.port());
+}
 
-    backend_tcp::~backend_tcp() {
-        // nothing to do
-    }
+backend_tcp::~backend_tcp() {
+    // nothing to do
+}
 
-    bool backend_tcp::read(u8& val) {
-        try {
-            if (!m_socket.is_connected() || !m_socket.peek())
-                return false;
-
-            m_socket.recv(&val, sizeof(val));
-            return true;
-        } catch (...) {
-            m_socket.accept_async();
+bool backend_tcp::read(u8& val) {
+    try {
+        if (!m_socket.is_connected() || !m_socket.peek())
             return false;
-        }
-    }
 
-    void backend_tcp::write(u8 val) {
-        try {
-            if (m_socket.is_connected())
-                m_socket.send(&val, sizeof(val));
-        } catch (...) {
-            m_socket.accept_async();
-        }
+        m_socket.recv(&val, sizeof(val));
+        return true;
+    } catch (...) {
+        m_socket.accept_async();
+        return false;
     }
+}
 
-    backend* backend_tcp::create(const string& serial, const string& type) {
-        int port = 0;
-        vector<string> args = split(type, ':');
-        if (args.size() > 1)
-            port = from_string<int>(args[1]);
-        return new backend_tcp(serial, port);
+void backend_tcp::write(u8 val) {
+    try {
+        if (m_socket.is_connected())
+            m_socket.send(&val, sizeof(val));
+    } catch (...) {
+        m_socket.accept_async();
     }
+}
 
-}}
+backend* backend_tcp::create(const string& serial, const string& type) {
+    int port            = 0;
+    vector<string> args = split(type, ':');
+    if (args.size() > 1)
+        port = from_string<int>(args[1]);
+    return new backend_tcp(serial, port);
+}
+
+} // namespace serial
+} // namespace vcml

@@ -26,134 +26,136 @@
 #include "vcml/logging/logger.h"
 #include "vcml/ui/keymap.h"
 
-namespace vcml { namespace ui {
+namespace vcml {
+namespace ui {
 
-    enum key_state : u32 {
-        VCML_KEY_UP   = 0u,
-        VCML_KEY_DOWN = 1u,
-        VCML_KEY_HELD = 2u,
+enum key_state : u32 {
+    VCML_KEY_UP   = 0u,
+    VCML_KEY_DOWN = 1u,
+    VCML_KEY_HELD = 2u,
+};
+
+enum mouse_button : u32 {
+    BUTTON_NONE   = 0u,
+    BUTTON_LEFT   = 1u,
+    BUTTON_MIDDLE = 2u,
+    BUTTON_RIGHT  = 3u,
+};
+
+enum event_type : u32 {
+    EVTYPE_KEY = 1u,
+    EVTYPE_PTR = 2u,
+};
+
+struct input_event {
+    event_type type;
+
+    union {
+        struct {
+            u32 code;
+            u32 state;
+        } key;
+
+        struct {
+            u32 x;
+            u32 y;
+        } ptr;
     };
 
-    enum mouse_button : u32 {
-        BUTTON_NONE   = 0u,
-        BUTTON_LEFT   = 1u,
-        BUTTON_MIDDLE = 2u,
-        BUTTON_RIGHT  = 3u,
-    };
+    bool is_key() const { return type == EVTYPE_KEY; }
+    bool is_ptr() const { return type == EVTYPE_PTR; }
+};
 
-    enum event_type : u32 {
-        EVTYPE_KEY    = 1u,
-        EVTYPE_PTR    = 2u,
-    };
+class input
+{
+private:
+    string m_name;
 
-    struct input_event {
-        event_type type;
+    mutable mutex m_mutex;
+    queue<input_event> m_events;
 
-        union {
-            struct {
-                u32 code;
-                u32 state;
-            } key;
+protected:
+    void push_event(const input_event& ev);
+    void push_key(u32 key, u32 state);
+    void push_ptr(u32 x, u32 y);
 
-            struct {
-                u32 x;
-                u32 y;
-            } ptr;
-        };
+public:
+    const char* input_name() const { return m_name.c_str(); }
 
-        bool is_key() const { return type == EVTYPE_KEY; }
-        bool is_ptr() const { return type == EVTYPE_PTR; }
-    };
+    input(const char* name);
+    virtual ~input();
 
-    class input
-    {
-    private:
-        string m_name;
+    bool has_events() const;
+    bool pop_event(input_event& ev);
+};
 
-        mutable mutex m_mutex;
-        queue<input_event> m_events;
+class keyboard : public input
+{
+private:
+    bool m_shift_l;
+    bool m_shift_r;
+    bool m_capsl;
+    bool m_alt_l;
+    bool m_alt_r;
+    u32 m_prev_sym;
+    string m_layout;
 
-    protected:
-        void push_event(const input_event& ev);
-        void push_key(u32 key, u32 state);
-        void push_ptr(u32 x, u32 y);
+    static unordered_map<string, keyboard*> s_keyboards;
 
-    public:
-        const char* input_name() const { return m_name.c_str(); }
+public:
+    bool shift_l() const { return m_shift_l; }
+    bool shift_r() const { return m_shift_r; }
+    bool shift() const { return m_shift_l || m_shift_r; }
 
-        input(const char* name);
-        virtual ~input();
+    bool alt_l() const { return m_alt_l; }
+    bool alt_r() const { return m_alt_r; }
+    bool alt() const { return m_alt_l || m_alt_r; }
 
-        bool has_events() const;
-        bool pop_event(input_event& ev);
-    };
+    bool capslock() const { return m_capsl; }
 
-    class keyboard : public input
-    {
-    private:
-        bool m_shift_l;
-        bool m_shift_r;
-        bool m_capsl;
-        bool m_alt_l;
-        bool m_alt_r;
-        u32  m_prev_sym;
-        string m_layout;
+    const char* layout() const { return m_layout.c_str(); }
+    void set_layout(const string& layout) { m_layout = layout; }
 
-        static unordered_map<string, keyboard*> s_keyboards;
+    keyboard(const char* name, const string& layout = "");
+    virtual ~keyboard();
 
-    public:
-        bool shift_l() const { return m_shift_l; }
-        bool shift_r() const { return m_shift_r; }
-        bool shift()   const { return m_shift_l || m_shift_r; }
+    void notify_key(u32 symbol, bool down);
 
-        bool alt_l() const { return m_alt_l; }
-        bool alt_r() const { return m_alt_r; }
-        bool alt()   const { return m_alt_l || m_alt_r; }
+    static vector<keyboard*> all();
+    static keyboard* find(const char* name);
+};
 
-        bool capslock() const { return m_capsl; }
+class pointer : public input
+{
+private:
+    mutable mutex m_mutex;
+    queue<input_event> m_events;
 
-        const char* layout() const { return m_layout.c_str(); }
-        void set_layout(const string& layout) { m_layout = layout; }
+    u32 m_buttons;
+    u32 m_prev_x;
+    u32 m_prev_y;
 
-        keyboard(const char* name, const string& layout = "");
-        virtual ~keyboard();
+    static unordered_map<string, pointer*> s_pointers;
 
-        void notify_key(u32 symbol, bool down);
+public:
+    u32 x() const { return m_prev_x; }
+    u32 y() const { return m_prev_y; }
 
-        static vector<keyboard*> all();
-        static keyboard* find(const char* name);
-    };
+    bool left() const { return m_buttons & BUTTON_LEFT; }
+    bool middle() const { return m_buttons & BUTTON_MIDDLE; }
+    bool right() const { return m_buttons & BUTTON_RIGHT; }
 
-    class pointer : public input
-    {
-    private:
-        mutable mutex      m_mutex;
-        queue<input_event> m_events;
+    pointer(const char* name);
+    virtual ~pointer();
 
-        u32 m_buttons;
-        u32 m_prev_x;
-        u32 m_prev_y;
+    void notify_btn(u32 btn, bool down);
+    void notify_pos(u32 x, u32 y);
 
-        static unordered_map<string, pointer*> s_pointers;
+    static vector<pointer*> all();
+    static pointer* find(const char* name);
+};
 
-    public:
-        u32 x() const { return m_prev_x; }
-        u32 y() const { return m_prev_y; }
-
-        bool left()   const { return m_buttons & BUTTON_LEFT; }
-        bool middle() const { return m_buttons & BUTTON_MIDDLE; }
-        bool right()  const { return m_buttons & BUTTON_RIGHT; }
-
-        pointer(const char* name);
-        virtual ~pointer();
-
-        void notify_btn(u32 btn, bool down);
-        void notify_pos(u32 x, u32 y);
-
-        static vector<pointer*> all();
-        static pointer* find(const char* name);
-    };
-
-}}
+} // namespace ui
+} // namespace vcml
 
 #endif

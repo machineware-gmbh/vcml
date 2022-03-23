@@ -20,31 +20,29 @@
 
 namespace vcml {
 
-    broker_arg::broker_arg(int argc, const char* const* argv):
-        broker("cmdline", PRIO_CMDLINE) {
+broker_arg::broker_arg(int argc, const char* const* argv):
+    broker("cmdline", PRIO_CMDLINE) {
+    int i = 1;
+    while (++i < argc) {
+        if ((strcmp(argv[i - 1], "--config") == 0) ||
+            (strcmp(argv[i - 1], "-c") == 0)) {
+            string arg(argv[i++]);
+            string::size_type separator = arg.find('=');
 
-        int i = 1;
-        while (++i < argc) {
-            if ((strcmp(argv[i - 1], "--config") == 0) ||
-                (strcmp(argv[i - 1],       "-c") == 0)) {
+            // if (separator == arg.npos)
+            //    log_warning("missing '=' in property '%s'", arg.c_str());
 
-                string arg(argv[i++]);
-                string::size_type separator = arg.find('=');
+            // this will cause val=key if separator was missing
+            string key = arg.substr(0, separator);
+            string val = arg.substr(separator + 1);
 
-                //if (separator == arg.npos)
-                //    log_warning("missing '=' in property '%s'", arg.c_str());
-
-                // this will cause val=key if separator was missing
-                string key = arg.substr(0, separator);
-                string val = arg.substr(separator + 1);
-
-                define(key, val);
-            }
+            define(key, val);
         }
     }
-
-    broker_arg::~broker_arg() {
-        // nothing to do
-    }
-
 }
+
+broker_arg::~broker_arg() {
+    // nothing to do
+}
+
+} // namespace vcml

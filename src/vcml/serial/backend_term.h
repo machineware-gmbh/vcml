@@ -31,42 +31,44 @@
 #include "vcml/logging/logger.h"
 #include "vcml/serial/backend.h"
 
-namespace vcml { namespace serial {
+namespace vcml {
+namespace serial {
 
-    class backend_term: public backend
-    {
-    private:
-        mutex m_fifo_mtx;
-        queue<u8> m_fifo;
+class backend_term : public backend
+{
+private:
+    mutex m_fifo_mtx;
+    queue<u8> m_fifo;
 
-        int m_signal;
-        bool m_exit;
-        bool m_stopped;
+    int m_signal;
+    bool m_exit;
+    bool m_stopped;
 
-        termios m_termios;
-        double  m_time;
+    termios m_termios;
+    double m_time;
 
-        sighandler_t m_sigint;
-        sighandler_t m_sigstp;
+    sighandler_t m_sigint;
+    sighandler_t m_sigstp;
 
-        static backend_term* singleton;
-        static void handle_signal(int sig);
+    static backend_term* singleton;
+    static void handle_signal(int sig);
 
-        void handle_sigstp(int sig);
-        void handle_sigint(int sig);
+    void handle_sigstp(int sig);
+    void handle_sigint(int sig);
 
-        void cleanup();
+    void cleanup();
 
-    public:
-        backend_term(const string& port);
-        virtual ~backend_term();
+public:
+    backend_term(const string& port);
+    virtual ~backend_term();
 
-        virtual bool read(u8& val) override;
-        virtual void write(u8 val) override;
+    virtual bool read(u8& val) override;
+    virtual void write(u8 val) override;
 
-        static backend* create(const string& port, const string& type);
-    };
+    static backend* create(const string& port, const string& type);
+};
 
-}}
+} // namespace serial
+} // namespace vcml
 
 #endif

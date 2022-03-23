@@ -27,10 +27,14 @@ TEST(logging, operators) {
     std::stringstream ss("error warning info debug trace");
     vcml::log_level lvl;
 
-    ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_ERROR);
-    ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_WARN);
-    ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_INFO);
-    ss >> lvl; EXPECT_EQ(lvl, vcml::LOG_DEBUG);
+    ss >> lvl;
+    EXPECT_EQ(lvl, vcml::LOG_ERROR);
+    ss >> lvl;
+    EXPECT_EQ(lvl, vcml::LOG_WARN);
+    ss >> lvl;
+    EXPECT_EQ(lvl, vcml::LOG_INFO);
+    ss >> lvl;
+    EXPECT_EQ(lvl, vcml::LOG_DEBUG);
 }
 
 MATCHER_P(match_level, level, "matches level of log message") {
@@ -47,11 +51,10 @@ MATCHER_P(match_sender, name, "matches log message sender") {
 
 MATCHER(match_source, "checks if log message source information makes sense") {
     return !arg.lines.empty() && arg.source.file &&
-           strcmp(arg.source.file, __FILE__) == 0 &&
-           arg.source.line != -1;
+           strcmp(arg.source.file, __FILE__) == 0 && arg.source.line != -1;
 }
 
-class mock_publisher: public vcml::publisher
+class mock_publisher : public vcml::publisher
 {
 public:
     mock_publisher(): vcml::publisher(vcml::LOG_ERROR, vcml::LOG_INFO) {}
@@ -119,15 +122,13 @@ TEST(logging, component) {
     comp.log_error("error message");
 }
 
-class mock_component: public vcml::component
+class mock_component : public vcml::component
 {
 public:
     vcml::component subcomp;
 
     mock_component(const sc_core::sc_module_name& nm):
-        vcml::component(nm),
-        subcomp("subcomp") {
-    }
+        vcml::component(nm), subcomp("subcomp") {}
 
     virtual ~mock_component() {}
 };
@@ -146,7 +147,8 @@ TEST(logging, hierarchy) {
     EXPECT_EQ(comp.loglvl.get(), vcml::LOG_DEBUG);
     EXPECT_EQ(comp.subcomp.loglvl.get(), vcml::LOG_DEBUG);
     EXPECT_CALL(publisher, publish(match_sender(comp.name()))).Times(1);
-    EXPECT_CALL(publisher, publish(match_sender(comp.subcomp.name()))).Times(1);
+    EXPECT_CALL(publisher, publish(match_sender(comp.subcomp.name())))
+        .Times(1);
     comp.log_debug("top level debug message");
     comp.subcomp.log_debug("sub level debug message");
 

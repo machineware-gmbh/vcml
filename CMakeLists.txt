@@ -28,6 +28,8 @@ if(VCML_BUILD_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
@@ -148,6 +150,8 @@ add_library(vcml STATIC
     ${src}/vcml/models/riscv/simdev.cpp)
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
+set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
+
 target_compile_options(vcml PRIVATE -Wall -Werror)
 target_compile_features(vcml PUBLIC cxx_std_17)
 target_compile_definitions(vcml PUBLIC $<$<CONFIG:DEBUG>:VCML_DEBUG>)

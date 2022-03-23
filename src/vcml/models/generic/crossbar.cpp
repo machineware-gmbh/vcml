@@ -18,41 +18,39 @@
 
 #include "vcml/models/generic/crossbar.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    void crossbar::forward(unsigned int from) {
-        bool val = IN[from].read();
-        bool bcast = is_broadcast(from);
+void crossbar::forward(unsigned int from) {
+    bool value = in[from].read();
+    bool bcast = is_broadcast(from);
 
-        for (auto port : OUT)
-            if (bcast || is_forward(from, port.first))
-                port.second->write(val);
+    for (auto port : out)
+        if (bcast || is_forward(from, port.first))
+            port.second->write(value);
+}
+
+crossbar::crossbar(const sc_module_name& nm):
+    peripheral(nm), m_forward(), in("in"), out("out") {
+}
+
+crossbar::~crossbar() {
+    // nothing to do
+}
+
+void crossbar::end_of_elaboration() {
+    for (auto port : in) {
+        stringstream ss;
+        ss << "forward_" << port.first;
+
+        sc_spawn_options opts;
+        opts.spawn_method();
+        opts.set_sensitivity(port.second);
+        opts.dont_initialize();
+
+        sc_spawn(sc_bind(&crossbar::forward, this, port.first),
+                 sc_gen_unique_name(ss.str().c_str()), &opts);
     }
-
-    crossbar::crossbar(const sc_module_name& nm):
-        peripheral(nm),
-        m_forward(),
-        IN("IN"),
-        OUT("OUT") {
-        /* nothing to do */
-    }
-
-    crossbar::~crossbar() {
-        /* nothing to do */
-    }
-
-    void crossbar::end_of_elaboration() {
-        for (auto port : IN) {
-            stringstream ss;
-            ss << "forward_" << port.first;
-
-            sc_spawn_options opts;
-            opts.spawn_method();
-            opts.set_sensitivity(port.second);
-            opts.dont_initialize();
-
-            sc_spawn(sc_bind(&crossbar::forward, this, port.first),
-                     sc_gen_unique_name(ss.str().c_str()), &opts);
-        }
-    }
-}}
+}
+} // namespace generic
+} // namespace vcml

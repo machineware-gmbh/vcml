@@ -35,42 +35,44 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace opencores {
+namespace vcml {
+namespace opencores {
 
-    class ockbd: public peripheral
-    {
-    private:
-        queue<u8> m_key_fifo;
+class ockbd : public peripheral
+{
+private:
+    queue<u8> m_key_fifo;
 
-        ui::keyboard m_keyboard;
-        ui::console m_console;
+    ui::keyboard m_keyboard;
+    ui::console m_console;
 
-        void update();
-        void key_event(u32 key, u32 down);
+    void update();
+    void key_event(u32 key, u32 down);
 
-        u8 read_KHR();
+    u8 read_khr();
 
-        // disabled
-        ockbd();
-        ockbd(const ockbd&);
+    // disabled
+    ockbd();
+    ockbd(const ockbd&);
 
-    public:
-        reg<u8> KHR;
+public:
+    reg<u8> khr;
 
-        irq_initiator_socket IRQ;
-        tlm_target_socket IN;
+    irq_initiator_socket irq;
+    tlm_target_socket in;
 
-        property<string> keymap;
-        property<size_t> fifosize;
+    property<string> keymap;
+    property<size_t> fifosize;
 
-        ockbd(const sc_module_name& name);
-        virtual ~ockbd();
-        VCML_KIND(ockbd);
+    ockbd(const sc_module_name& name);
+    virtual ~ockbd();
+    VCML_KIND(opencores::ockbd);
 
-    protected:
-        virtual void end_of_simulation() override;
-    };
+protected:
+    virtual void end_of_simulation() override;
+};
 
-}}
+} // namespace opencores
+} // namespace vcml
 
 #endif

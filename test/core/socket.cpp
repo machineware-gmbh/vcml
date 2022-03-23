@@ -25,7 +25,6 @@ TEST(socket, server) {
     EXPECT_EQ(server.port(), 12345);
 }
 
-
 TEST(socket, port_select) {
     vcml::socket server(0);
     EXPECT_NE(server.port(), 0);

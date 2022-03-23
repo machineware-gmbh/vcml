@@ -26,24 +26,26 @@
 #include "vcml/logging/logger.h"
 #include "vcml/net/backend.h"
 
-namespace vcml { namespace net {
+namespace vcml {
+namespace net {
 
-    class backend_file: public backend
-    {
-    private:
-        size_t m_count;
-        ofstream m_tx;
+class backend_file : public backend
+{
+private:
+    size_t m_count;
+    ofstream m_tx;
 
-    public:
-        backend_file(const string& adapter, const string& tx);
-        virtual ~backend_file();
+public:
+    backend_file(const string& adapter, const string& tx);
+    virtual ~backend_file();
 
-        virtual bool recv_packet(vector<u8>& packet) override;
-        virtual void send_packet(const vector<u8>& packet) override;
+    virtual bool recv_packet(vector<u8>& packet) override;
+    virtual void send_packet(const vector<u8>& packet) override;
 
-        static backend* create(const string& adapter, const string& type);
-    };
+    static backend* create(const string& adapter, const string& type);
+};
 
-}}
+} // namespace net
+} // namespace vcml
 
 #endif

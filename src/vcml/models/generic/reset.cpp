@@ -18,20 +18,20 @@
 
 #include "vcml/models/generic/reset.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    reset::reset(const sc_module_name& nm, bool init_state):
-        module(nm),
-        state("state", init_state),
-        RESET("RESET") {
-    }
+reset::reset(const sc_module_name& nm, bool init_state):
+    module(nm), state("state", init_state), rst("rst") {
+}
 
-    reset::~reset() {
-        // nothing to do
-    }
+reset::~reset() {
+    // nothing to do
+}
 
-    void reset::end_of_elaboration() {
-        RESET.write(state);
-    }
+void reset::end_of_elaboration() {
+    rst.write(state);
+}
 
-}}
+} // namespace generic
+} // namespace vcml

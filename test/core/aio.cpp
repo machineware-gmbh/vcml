@@ -27,11 +27,12 @@ TEST(aio, callback) {
     int fds[2];
     EXPECT_EQ(pipe(fds), 0);
 
-    std::mutex mtx; mtx.lock();
+    std::mutex mtx;
+    mtx.lock();
     std::condition_variable_any cv;
     std::atomic<int> count(0);
 
-    vcml::aio_notify(fds[0], [&](int fd)-> void {
+    vcml::aio_notify(fds[0], [&](int fd) -> void {
         char buf;
         EXPECT_EQ(fd, fds[0]) << "wrong file descriptor passed to handler";
         EXPECT_EQ(read(fd, &buf, 1), 1) << "cannot read file descriptor";

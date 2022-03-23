@@ -33,71 +33,73 @@
 
 #include <SDL.h>
 
-namespace vcml { namespace ui {
+namespace vcml {
+namespace ui {
 
-    struct sdl_client {
-        display*      disp;
-        SDL_Window*   window;
-        SDL_Renderer* renderer;
-        SDL_Texture*  texture;
-        u32           window_id;
-        u64           time_frame;
-        u64           time_sim;
-        u64           frames;
+struct sdl_client {
+    display* disp;
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    SDL_Texture* texture;
+    u32 window_id;
+    u64 time_frame;
+    u64 time_sim;
+    u64 frames;
 
-        void notify_key(u32 keysym, bool down);
-        void notify_btn(SDL_MouseButtonEvent& event);
-        void notify_pos(SDL_MouseMotionEvent& event);
+    void notify_key(u32 keysym, bool down);
+    void notify_btn(SDL_MouseButtonEvent& event);
+    void notify_pos(SDL_MouseMotionEvent& event);
 
-        void init_window();
-        void exit_window();
-        void draw_window();
-    };
+    void init_window();
+    void exit_window();
+    void draw_window();
+};
 
-    class sdl
-    {
-    private:
-        mutex m_attach_mtx;
-        mutex m_client_mtx;
-        thread m_uithread;
-        atomic<int> m_attached;
-        vector<sdl_client> m_clients;
+class sdl
+{
+private:
+    mutex m_attach_mtx;
+    mutex m_client_mtx;
+    thread m_uithread;
+    atomic<int> m_attached;
+    vector<sdl_client> m_clients;
 
-        sdl_client* find_by_window_id(u32 id);
+    sdl_client* find_by_window_id(u32 id);
 
-        void check_clients();
-        void poll_events();
-        void draw_windows();
+    void check_clients();
+    void poll_events();
+    void draw_windows();
 
-        void ui_run();
+    void ui_run();
 
-        sdl() = default;
-        sdl(const sdl&) = delete;
+    sdl()           = default;
+    sdl(const sdl&) = delete;
 
-    public:
-        ~sdl();
+public:
+    ~sdl();
 
-        void register_display(display* disp);
-        void unregister_display(display* disp);
+    void register_display(display* disp);
+    void unregister_display(display* disp);
 
-        static display* create(u32 nr);
-    };
+    static display* create(u32 nr);
+};
 
-    class sdl_display: public display
-    {
-    private:
-        sdl& m_owner;
+class sdl_display : public display
+{
+private:
+    sdl& m_owner;
 
-    public:
-        sdl_display(u32 nr, sdl& owner);
-        virtual ~sdl_display();
+public:
+    sdl_display(u32 nr, sdl& owner);
+    virtual ~sdl_display();
 
-        virtual void init(const videomode& mode, u8* fb) override;
-        virtual void render(u32 x, u32 y, u32 w, u32 h) override;
-        virtual void render() override;
-        virtual void shutdown() override;
-    };
+    virtual void init(const videomode& mode, u8* fb) override;
+    virtual void render(u32 x, u32 y, u32 w, u32 h) override;
+    virtual void render() override;
+    virtual void shutdown() override;
+};
 
-}}
+} // namespace ui
+} // namespace vcml
 
 #endif

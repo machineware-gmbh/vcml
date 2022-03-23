@@ -30,43 +30,41 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace opencores {
+namespace vcml {
+namespace opencores {
 
-    class ompic: public peripheral
-    {
-    private:
-        unsigned int m_num_cores;
+class ompic : public peripheral
+{
+private:
+    unsigned int m_num_cores;
 
-        u32* m_control;
-        u32* m_status;
+    u32* m_control;
+    u32* m_status;
 
-        u32  read_STATUS(size_t core_idx);
-        u32  read_CONTROL(size_t core_idx);
+    u32 read_status(size_t core_idx);
+    u32 read_control(size_t core_idx);
 
-        void write_CONTROL(u32 val, size_t core_idx);
+    void write_control(u32 val, size_t core_idx);
 
-        // Disabled
-        ompic();
-        ompic(const ompic&);
+    // Disabled
+    ompic();
+    ompic(const ompic&);
 
-    public:
-        enum control_bits {
-            CTRL_IRQ_GEN = 1 << 30,
-            CTRL_IRQ_ACK = 1 << 31
-        };
+public:
+    enum control_bits { CTRL_IRQ_GEN = 1 << 30, CTRL_IRQ_ACK = 1 << 31 };
 
-        reg<u32>** CONTROL;
-        reg<u32>** STATUS;
+    reg<u32>** control;
+    reg<u32>** status;
 
-        irq_initiator_socket_array<> IRQ;
-        tlm_target_socket IN;
+    irq_initiator_socket_array<> irq;
+    tlm_target_socket in;
 
-        ompic(const sc_core::sc_module_name& name, unsigned int num_cores);
-        virtual ~ompic();
+    ompic(const sc_module_name& name, unsigned int num_cores);
+    virtual ~ompic();
+    VCML_KIND(opencores::ompic);
+};
 
-        VCML_KIND(ompic);
-    };
-
-}}
+} // namespace opencores
+} // namespace vcml
 
 #endif

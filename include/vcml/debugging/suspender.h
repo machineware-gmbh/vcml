@@ -25,34 +25,36 @@
 #include "vcml/common/utils.h"
 #include "vcml/common/thctl.h"
 
-namespace vcml { namespace debugging {
+namespace vcml {
+namespace debugging {
 
-    class suspender
-    {
-    private:
-        atomic<int> m_pcount;
-        string      m_name;
-        sc_object*  m_owner;
+class suspender
+{
+private:
+    atomic<int> m_pcount;
+    string m_name;
+    sc_object* m_owner;
 
-    public:
-        const char* name() const { return m_name.c_str(); }
-        sc_object* owner() const { return m_owner; }
+public:
+    const char* name() const { return m_name.c_str(); }
+    sc_object* owner() const { return m_owner; }
 
-        suspender() = delete;
-        explicit suspender(const string& nm);
-        virtual ~suspender();
+    suspender() = delete;
+    explicit suspender(const string& nm);
+    virtual ~suspender();
 
-        bool is_suspending() const;
+    bool is_suspending() const;
 
-        void suspend(bool wait = true);
-        void resume();
+    void suspend(bool wait = true);
+    void resume();
 
-        static suspender* current();
-        static void quit();
-        static bool simulation_suspended();
-        static void handle_requests();
-    };
+    static suspender* current();
+    static void quit();
+    static bool simulation_suspended();
+    static void handle_requests();
+};
 
-}}
+} // namespace debugging
+} // namespace vcml
 
 #endif

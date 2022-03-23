@@ -18,17 +18,15 @@
 
 #include "testing.h"
 
-class async_test: public test_base
+class async_test : public test_base
 {
 public:
     bool success;
 
-    async_test(const sc_module_name& nm):
-       test_base(nm), success(false) {
-    }
+    async_test(const sc_module_name& nm): test_base(nm), success(false) {}
 
     void work(const sc_time& duration) {
-        sc_time t = SC_ZERO_TIME;
+        sc_time t    = SC_ZERO_TIME;
         sc_time step = duration / 10;
 
         EXPECT_FALSE(thctl_is_sysc_thread());
@@ -52,13 +50,12 @@ public:
         EXPECT_EQ(sc_time_stamp(), SC_ZERO_TIME);
 
         sc_time dura(10, SC_SEC);
-        auto fn = [&] () -> void { work(dura); };
+        auto fn = [&]() -> void { work(dura); };
         sc_async(fn);
 
         EXPECT_TRUE(success);
         EXPECT_EQ(sc_time_stamp(), 2 * dura);
     }
-
 };
 
 TEST(async, run) {

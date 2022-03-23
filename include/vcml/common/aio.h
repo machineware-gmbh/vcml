@@ -25,11 +25,11 @@
 
 namespace vcml {
 
-    typedef function<void(int)> aio_handler;
+typedef function<void(int)> aio_handler;
 
-    void aio_notify(int fd, aio_handler handler);
-    void aio_cancel(int fd);
+void aio_notify(int fd, aio_handler handler);
+void aio_cancel(int fd);
 
-}
+} // namespace vcml
 
 #endif

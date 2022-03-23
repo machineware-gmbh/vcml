@@ -26,34 +26,33 @@
 
 namespace vcml {
 
-    class system: public module
-    {
-    private:
-        void timeout();
+class system : public module
+{
+private:
+    void timeout();
 
-    public:
-        property<string>  name;
-        property<string>  desc;
-        property<string>  config;
+public:
+    property<string> name;
+    property<string> desc;
+    property<string> config;
 
-        property<bool>    backtrace;
+    property<bool> backtrace;
 
-        property<int>     session;
-        property<bool>    session_debug;
+    property<int> session;
+    property<bool> session_debug;
 
-        property<sc_time> quantum;
-        property<sc_time> duration;
+    property<sc_time> quantum;
+    property<sc_time> duration;
 
-        system() = delete;
-        system(const system&) = delete;
-        explicit system(const sc_module_name& name);
-        virtual ~system();
-        VCML_KIND(system);
+    system()              = delete;
+    system(const system&) = delete;
+    explicit system(const sc_module_name& name);
+    virtual ~system();
+    VCML_KIND(system);
 
-        virtual int run();
-    };
+    virtual int run();
+};
 
-}
-
+} // namespace vcml
 
 #endif

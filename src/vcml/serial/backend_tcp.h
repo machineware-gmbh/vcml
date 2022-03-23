@@ -27,25 +27,27 @@
 #include "vcml/logging/logger.h"
 #include "vcml/serial/backend.h"
 
-namespace vcml { namespace serial {
+namespace vcml {
+namespace serial {
 
-    class backend_tcp: public backend
-    {
-    private:
-        socket m_socket;
+class backend_tcp : public backend
+{
+private:
+    socket m_socket;
 
-    public:
-        u16 port() const { return m_socket.port(); }
+public:
+    u16 port() const { return m_socket.port(); }
 
-        backend_tcp(const string& serial, int port);
-        virtual ~backend_tcp();
+    backend_tcp(const string& serial, int port);
+    virtual ~backend_tcp();
 
-        virtual bool read(u8& val) override;
-        virtual void write(u8 val) override;
+    virtual bool read(u8& val) override;
+    virtual void write(u8 val) override;
 
-        static backend* create(const string& port, const string& type);
-    };
+    static backend* create(const string& port, const string& type);
+};
 
-}}
+} // namespace serial
+} // namespace vcml
 
 #endif

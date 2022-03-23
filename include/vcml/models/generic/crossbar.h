@@ -29,73 +29,74 @@
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
 
+namespace vcml {
+namespace generic {
 
-namespace vcml { namespace generic {
+class crossbar : public peripheral
+{
+private:
+    mutable std::map<u64, bool> m_forward;
 
-    class crossbar: public peripheral
-    {
-    private:
-        mutable std::map<u64, bool> m_forward;
+    u64 idx(unsigned int from, unsigned int to) const;
 
-        u64 idx(unsigned int from, unsigned int to) const;
+    void forward(unsigned int);
 
-        void forward(unsigned int);
+    // Disabled
+    crossbar();
+    crossbar(const crossbar&);
 
-        // Disabled
-        crossbar();
-        crossbar(const crossbar&);
+public:
+    in_port_list<bool> in;
+    out_port_list<bool> out;
 
-    public:
-        in_port_list<bool> IN;
-        out_port_list<bool> OUT;
+    bool is_forward(unsigned int from, unsigned int to) const;
+    void set_forward(unsigned int from, unsigned int to);
+    void set_no_forward(unsigned int from, unsigned int to);
 
-        bool is_forward(unsigned int from, unsigned int to) const;
-        void set_forward(unsigned int from, unsigned int to);
-        void set_no_forward(unsigned int from, unsigned int to);
+    bool is_broadcast(unsigned int from) const;
+    void set_broadcast(unsigned int from);
+    void set_no_broadcast(unsigned int from);
 
-        bool is_broadcast(unsigned int from) const;
-        void set_broadcast(unsigned int from);
-        void set_no_broadcast(unsigned int from);
+    crossbar(const sc_module_name& name);
+    virtual ~crossbar();
 
-        crossbar(const sc_module_name& name);
-        virtual ~crossbar();
+    VCML_KIND(crossbar);
 
-        VCML_KIND(crossbar);
+protected:
+    virtual void end_of_elaboration() override;
+};
 
-    protected:
-        virtual void end_of_elaboration() override;
-    };
+inline u64 crossbar::idx(unsigned int from, unsigned int to) const {
+    u64 idx_hi = from & 0xffffffffull;
+    u64 idx_lo = to & 0xffffffffull;
+    return idx_hi << 32 | idx_lo;
+}
 
-    inline u64 crossbar::idx(unsigned int from, unsigned int to) const {
-        u64 idx_hi = from & 0xffffffffull;
-        u64 idx_lo = to & 0xffffffffull;
-        return idx_hi << 32 | idx_lo;
-    }
+inline bool crossbar::is_forward(unsigned int from, unsigned int to) const {
+    return m_forward[idx(from, to)];
+}
 
-    inline bool crossbar::is_forward(unsigned int from, unsigned int to) const {
-        return m_forward[idx(from, to)];
-    }
+inline void crossbar::set_forward(unsigned int from, unsigned int to) {
+    m_forward[idx(from, to)] = true;
+}
 
-    inline void crossbar::set_forward(unsigned int from, unsigned int to) {
-        m_forward[idx(from, to)] = true;
-    }
+inline void crossbar::set_no_forward(unsigned int from, unsigned int to) {
+    m_forward[idx(from, to)] = false;
+}
 
-    inline void crossbar::set_no_forward(unsigned int from, unsigned int to) {
-        m_forward[idx(from, to)] = false;
-    }
+inline bool crossbar::is_broadcast(unsigned int from) const {
+    return m_forward[idx(from, (unsigned int)-1)];
+}
 
-    inline bool crossbar::is_broadcast(unsigned int from) const {
-        return m_forward[idx(from, (unsigned int)-1)];
-    }
+inline void crossbar::set_broadcast(unsigned int from) {
+    m_forward[idx(from, (unsigned int)-1)] = true;
+}
 
-    inline void crossbar::set_broadcast(unsigned int from) {
-        m_forward[idx(from, (unsigned int)-1)] = true;
-    }
+inline void crossbar::set_no_broadcast(unsigned int from) {
+    m_forward[idx(from, (unsigned int)-1)] = false;
+}
 
-    inline void crossbar::set_no_broadcast(unsigned int from) {
-        m_forward[idx(from, (unsigned int)-1)] = false;
-    }
-
-}}
+} // namespace generic
+} // namespace vcml
 
 #endif

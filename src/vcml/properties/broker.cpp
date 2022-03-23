@@ -21,86 +21,84 @@
 
 namespace vcml {
 
-    struct priority_compare {
-        bool operator() (const broker* a, const broker* b) const {
-            return a->priority > b->priority;
-        }
-    };
-
-    static set<broker*, priority_compare> g_brokers;
-
-    broker::broker(const string& nm, int prio):
-        m_name(nm),
-        m_values(),
-        priority(prio) {
-        g_brokers.insert(this);
+struct priority_compare {
+    bool operator()(const broker* a, const broker* b) const {
+        return a->priority > b->priority;
     }
+};
 
-    broker::~broker() {
-        g_brokers.erase(this);
-    }
+static set<broker*, priority_compare> g_brokers;
 
-    bool broker::lookup(const string& key, string& value) {
-        if (!stl_contains(m_values, key))
-            return false;
+broker::broker(const string& nm, int prio):
+    m_name(nm), m_values(), priority(prio) {
+    g_brokers.insert(this);
+}
 
-        auto& val = m_values[key];
-        value = val.value;
-        val.uses++;
-        return true;
-    }
+broker::~broker() {
+    g_brokers.erase(this);
+}
 
-    bool broker::defines(const string& key) const {
-        return stl_contains(m_values, key);
-    }
+bool broker::lookup(const string& key, string& value) {
+    if (!stl_contains(m_values, key))
+        return false;
 
-    template <>
-    void broker::define(const string& key, const string& value) {
-        if (!key.empty()) {
-            struct value val;
-            val.value = value;
-            val.uses = 0;
-            m_values[key] = val;
-        }
-    }
+    auto& val = m_values[key];
+    value     = val.value;
+    val.uses++;
+    return true;
+}
 
-    template <>
-    broker* broker::init(const string& name, string& value) {
-        for (auto broker : g_brokers)
-            if (broker->lookup(name, value))
-                return broker;
-        return nullptr;
-    }
+bool broker::defines(const string& key) const {
+    return stl_contains(m_values, key);
+}
 
-    vector<pair<string, broker*>> broker::collect_unused() {
-        vector<pair<string, broker*>> unused;
-        for (auto& brkr : g_brokers) {
-            for (auto& value : brkr->m_values)
-                if (value.second.uses == 0)
-                    unused.push_back({value.first, brkr});
-        }
-
-        for (auto& brkr : g_brokers) {
-            for (auto& value : brkr->m_values) {
-                if (value.second.uses > 0) {
-                    stl_remove_erase_if(unused,
-                    [&](const pair<string, broker*>& entry) -> bool {
-                        return entry.first == value.first;
-                    });
-                }
-            }
-        }
-
-        return unused;
-    }
-
-    void broker::report_unused() {
-        auto unused = collect_unused();
-        if (unused.empty())
-            return;
-
-        log_warn("unused properties:");
-        for (auto& prop : unused)
-            log_warn("  %s (%s)", prop.first.c_str(), prop.second->name());
+template <>
+void broker::define(const string& key, const string& value) {
+    if (!key.empty()) {
+        struct value val;
+        val.value     = value;
+        val.uses      = 0;
+        m_values[key] = val;
     }
 }
+
+template <>
+broker* broker::init(const string& name, string& value) {
+    for (auto broker : g_brokers)
+        if (broker->lookup(name, value))
+            return broker;
+    return nullptr;
+}
+
+vector<pair<string, broker*>> broker::collect_unused() {
+    vector<pair<string, broker*>> unused;
+    for (auto& brkr : g_brokers) {
+        for (auto& value : brkr->m_values)
+            if (value.second.uses == 0)
+                unused.push_back({ value.first, brkr });
+    }
+
+    for (auto& brkr : g_brokers) {
+        for (auto& value : brkr->m_values) {
+            if (value.second.uses > 0) {
+                stl_remove_erase_if(
+                    unused, [&](const pair<string, broker*>& entry) -> bool {
+                        return entry.first == value.first;
+                    });
+            }
+        }
+    }
+
+    return unused;
+}
+
+void broker::report_unused() {
+    auto unused = collect_unused();
+    if (unused.empty())
+        return;
+
+    log_warn("unused properties:");
+    for (auto& prop : unused)
+        log_warn("  %s (%s)", prop.first.c_str(), prop.second->name());
+}
+} // namespace vcml

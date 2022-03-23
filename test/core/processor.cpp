@@ -23,26 +23,24 @@ using namespace ::testing;
 
 #include "vcml.h"
 
-class mock_processor: public vcml::processor
+class mock_processor : public vcml::processor
 {
 public:
     vcml::u64 cycles;
 
-    vcml::irq_initiator_socket IRQ0;
-    vcml::irq_initiator_socket IRQ1;
+    vcml::irq_initiator_socket irq0;
+    vcml::irq_initiator_socket irq1;
 
-    MOCK_METHOD2(interrupt, void(unsigned int,bool));
+    MOCK_METHOD2(interrupt, void(unsigned int, bool));
     MOCK_METHOD1(simulate2, void(unsigned int));
     MOCK_METHOD0(reset, void(void));
-    MOCK_METHOD2(handle_clock_update, void(clock_t,clock_t));
+    MOCK_METHOD2(handle_clock_update, void(clock_t, clock_t));
 
     mock_processor(const sc_core::sc_module_name& nm):
-        vcml::processor(nm, "mock"), cycles(0), IRQ0("IRQ0"), IRQ1("IRQ1") {}
+        vcml::processor(nm, "mock"), cycles(0), irq0("irq0"), irq1("irq1") {}
     virtual ~mock_processor() {}
 
-    virtual vcml::u64 cycle_count() const override {
-        return cycles;
-    }
+    virtual vcml::u64 cycle_count() const override { return cycles; }
 
     virtual void simulate(unsigned int n) override {
         sc_core::sc_time now = sc_core::sc_time_stamp();
@@ -64,17 +62,17 @@ TEST(processor, processor) {
 
     mock_processor cpu("CPU");
 
-    cpu.CLOCK.bind(clk);
-    cpu.RESET.bind(rst);
-    imem.CLOCK.bind(clk);
-    imem.RESET.bind(rst);
-    dmem.CLOCK.bind(clk);
-    dmem.RESET.bind(rst);
+    cpu.clk.bind(clk);
+    cpu.rst.bind(rst);
+    imem.clk.bind(clk);
+    imem.rst.bind(rst);
+    dmem.clk.bind(clk);
+    dmem.rst.bind(rst);
 
-    cpu.INSN.bind(imem.IN);
-    cpu.DATA.bind(dmem.IN);
-    cpu.IRQ[0].bind(cpu.IRQ0);
-    cpu.IRQ[1].bind(cpu.IRQ1);
+    cpu.insn.bind(imem.in);
+    cpu.data.bind(dmem.in);
+    cpu.irq[0].bind(cpu.irq0);
+    cpu.irq[1].bind(cpu.irq1);
 
     vcml::clock_t defclk = 1 * vcml::kHz;
     clk.write(defclk);
@@ -89,8 +87,6 @@ TEST(processor, processor) {
     sc_core::sc_time cycle = cpu.clock_cycle();
     tlm::tlm_global_quantum::instance().set(quantum);
 
-
-
     // test processor::simulate
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
@@ -98,26 +94,24 @@ TEST(processor, processor) {
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(10);
     sc_core::sc_start(10 * quantum);
 
-
-
     // test processor::interrupt
     EXPECT_CALL(cpu, interrupt(0, true)).Times(1);
-    cpu.IRQ0 = true;
+    cpu.irq0 = true;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
     EXPECT_CALL(cpu, interrupt(0, false)).Times(1);
-    cpu.IRQ0 = false;
+    cpu.irq0 = false;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
     EXPECT_CALL(cpu, interrupt(1, true)).Times(1);
-    cpu.IRQ1 = true;
+    cpu.irq1 = true;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
     EXPECT_CALL(cpu, interrupt(1, false)).Times(1);
-    cpu.IRQ1 = false;
+    cpu.irq1 = false;
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(1);
     sc_core::sc_start(quantum);
 
@@ -140,8 +134,6 @@ TEST(processor, processor) {
     rst.write(false);
     EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(AtLeast(9));
     sc_core::sc_start(10 * quantum);
-
-
 
     // test processor::handle_clock_update
     clk.write(0);

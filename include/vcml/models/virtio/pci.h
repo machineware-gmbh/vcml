@@ -34,147 +34,152 @@
 
 #include "vcml/models/generic/pci_device.h"
 
-namespace vcml { namespace virtio {
+namespace vcml {
+namespace virtio {
 
-    using generic::pci_device;
-    using generic::pci_capability;
+using generic::pci_device;
+using generic::pci_capability;
 
-    enum virtio_cap_type : u8 {
-        VIRTIO_PCI_CAP_COMMON  = 1,
-        VIRTIO_PCI_CAP_NOTIFY  = 2,
-        VIRTIO_PCI_CAP_ISR     = 3,
-        VIRTIO_PCI_CAP_DEVICE  = 4,
-        VIRTIO_PCI_CAP_PCI_CFG = 5,
-    };
+enum virtio_cap_type : u8 {
+    VIRTIO_PCI_CAP_COMMON  = 1,
+    VIRTIO_PCI_CAP_NOTIFY  = 2,
+    VIRTIO_PCI_CAP_ISR     = 3,
+    VIRTIO_PCI_CAP_DEVICE  = 4,
+    VIRTIO_PCI_CAP_PCI_CFG = 5,
+};
 
-    class pci;
+class pci;
 
-    struct pci_cap_virtio : pci_capability {
-        reg< u8>* CAP_LEN;
-        reg< u8>* CFG_TYPE;
-        reg< u8>* BAR;
-        reg<u32>* OFFSET;
-        reg<u32>* LENGTH;
-        reg<u32>* NOTIFY_MULT;
+struct pci_cap_virtio : pci_capability {
+    reg<u8>* cap_len;
+    reg<u8>* cfg_type;
+    reg<u8>* cap_bar;
+    reg<u32>* offset;
+    reg<u32>* length;
+    reg<u32>* notify_mult;
 
-        pci_cap_virtio(const string& nm, u8 type, u8 bar, u32 offset,
-                       u32 length, u32 mult);
-        virtual ~pci_cap_virtio() = default;
-    };
+    pci_cap_virtio(const string& nm, u8 type, u8 bar, u32 offset, u32 length,
+                   u32 mult);
+    virtual ~pci_cap_virtio() = default;
+};
 
-    class pci : public pci_device, public virtio_controller
-    {
-        friend class pci_cap_virtio;
-    private:
-        u64 m_drv_features;
-        u64 m_dev_features;
+class pci : public pci_device, public virtio_controller
+{
+    friend struct pci_cap_virtio;
 
-        virtio_device_desc m_device;
+private:
+    u64 m_drv_features;
+    u64 m_dev_features;
 
-        std::unordered_map<u32, virtqueue*> m_queues;
+    virtio_device_desc m_device;
 
-        pci_cap_virtio* m_cap_common;
-        pci_cap_virtio* m_cap_notify;
-        pci_cap_virtio* m_cap_isr;
-        pci_cap_virtio* m_cap_device;
+    unordered_map<u32, virtqueue*> m_queues;
 
-        void enable_virtqueue(u32 vqid);
-        void disable_virtqueue(u32 vqid);
-        void cleanup_virtqueues();
+    pci_cap_virtio* m_cap_common;
+    pci_cap_virtio* m_cap_notify;
+    pci_cap_virtio* m_cap_isr;
+    pci_cap_virtio* m_cap_device;
 
-        virtual bool get(u32 vqid, vq_message& msg) override;
-        virtual bool put(u32 vqid, vq_message& msg) override;
+    void enable_virtqueue(u32 vqid);
+    void disable_virtqueue(u32 vqid);
+    void cleanup_virtqueues();
 
-        virtual bool notify() override;
+    virtual bool get(u32 vqid, vq_message& msg) override;
+    virtual bool put(u32 vqid, vq_message& msg) override;
 
-        virtual tlm_response_status read(const range& addr, void* data,
-            const tlm_sbi& info, address_space as) override;
-        virtual tlm_response_status write(const range& addr, const void* data,
-            const tlm_sbi& info, address_space as) override;
+    virtual bool notify() override;
 
-        void write_DEVICE_FEATURE_SEL(u32 val);
-        void write_DRIVER_FEATURE(u32 val);
-        void write_DEVICE_STATUS(u8 val);
+    virtual tlm_response_status read(const range& addr, void* data,
+                                     const tlm_sbi& info,
+                                     address_space as) override;
+    virtual tlm_response_status write(const range& addr, const void* data,
+                                      const tlm_sbi& info,
+                                      address_space as) override;
 
-        u16  read_QUEUE_SIZE();
-        u16  read_QUEUE_MSIX_VECTOR();
-        u16  read_QUEUE_ENABLE();
-        u16  read_QUEUE_NOTIFY_OFF();
-        u64  read_QUEUE_DESC();
-        u64  read_QUEUE_DRIVER();
-        u64  read_QUEUE_DEVICE();
+    void write_device_feature_sel(u32 val);
+    void write_driver_feature(u32 val);
+    void write_device_status(u8 val);
 
-        void write_QUEUE_SIZE(u16 val);
-        void write_QUEUE_MSIX_VECTOR(u16 val);
-        void write_QUEUE_ENABLE(u16 val);
-        void write_QUEUE_NOTIFY_OFF(u16 val);
-        void write_QUEUE_DESC(u64 val);
-        void write_QUEUE_DRIVER(u64 val);
-        void write_QUEUE_DEVICE(u64 val);
+    u16 read_queue_size();
+    u16 read_queue_msix_vector();
+    u16 read_queue_enable();
+    u16 read_queue_notify_off();
+    u64 read_queue_desc();
+    u64 read_queue_driver();
+    u64 read_queue_device();
 
-        void write_QUEUE_NOTIFY(u32 val);
-        u32  read_IRQ_STATUS();
+    void write_queue_size(u16 val);
+    void write_queue_msix_vector(u16 val);
+    void write_queue_enable(u16 val);
+    void write_queue_notify_off(u16 val);
+    void write_queue_desc(u64 val);
+    void write_queue_driver(u64 val);
+    void write_queue_device(u64 val);
 
-    public:
-        property<bool> use_packed_queues;
-        property<bool> use_strong_barriers;
+    void write_queue_notify(u32 val);
+    u32 read_irq_status();
 
-        property<unsigned int> msix_vectors;
-        property<unsigned int> virtio_bar;
-        property<unsigned int> msix_bar;
+public:
+    property<bool> use_packed_queues;
+    property<bool> use_strong_barriers;
 
-        pci_address_space virtio_as() const {
-            return (pci_address_space)(PCI_AS_BAR0 + virtio_bar);
-        }
+    property<unsigned int> msix_vectors;
+    property<unsigned int> virtio_bar;
+    property<unsigned int> msix_bar;
 
-        pci_address_space msix_as() const {
-            return (pci_address_space)(PCI_AS_BAR0 + msix_bar);
-        }
-
-        reg<u32> DEVICE_FEATURE_SEL;
-        reg<u32> DEVICE_FEATURE;
-        reg<u32> DRIVER_FEATURE_SEL;
-        reg<u32> DRIVER_FEATURE;
-        reg<u16> MSIX_CONFIG;
-        reg<u16> NUM_QUEUES;
-        reg< u8> DEVICE_STATUS;
-        reg< u8> CONFIG_GEN;
-        reg<u16> QUEUE_SEL;
-        reg<u16> QUEUE_SIZE;
-        reg<u16> QUEUE_MSIX_VECTOR;
-        reg<u16> QUEUE_ENABLE;
-        reg<u16> QUEUE_NOTIFY_OFF;
-        reg<u64> QUEUE_DESC;
-        reg<u64> QUEUE_DRIVER;
-        reg<u64> QUEUE_DEVICE;
-        reg<u32> QUEUE_NOTIFY;
-        reg<u32> IRQ_STATUS;
-
-        pci_target_socket PCI_IN;
-        virtio_initiator_socket VIRTIO_OUT;
-
-        pci(const sc_module_name& nm);
-        virtual ~pci();
-        VCML_KIND(virtio::pci);
-        virtual void reset() override;
-
-        void virtio_declare_common_cap(u8 bar, u32 offset, u32 length);
-        void virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult);
-        void virtio_declare_isr_cap(u8 bar, u32 offset, u32 length);
-        void virtio_declare_device_cap(u8 bar, u32 offset, u32 length);
-
-        bool has_feature(u64 feature) const;
-        bool device_ready() const;
-    };
-
-    inline bool pci::has_feature(u64 feature) const {
-        return (m_drv_features & m_dev_features & feature) == feature;
+    pci_address_space virtio_as() const {
+        return (pci_address_space)(PCI_AS_BAR0 + virtio_bar);
     }
 
-    inline bool pci::device_ready() const {
-        return DEVICE_STATUS == VIRTIO_STATUS_DEVICE_READY;
+    pci_address_space msix_as() const {
+        return (pci_address_space)(PCI_AS_BAR0 + msix_bar);
     }
 
-}};
+    reg<u32> device_feature_sel;
+    reg<u32> device_feature;
+    reg<u32> driver_feature_sel;
+    reg<u32> driver_feature;
+    reg<u16> msix_config;
+    reg<u16> num_queues;
+    reg<u8> device_status;
+    reg<u8> config_gen;
+    reg<u16> queue_sel;
+    reg<u16> queue_size;
+    reg<u16> queue_msix_vector;
+    reg<u16> queue_enable;
+    reg<u16> queue_notify_off;
+    reg<u64> queue_desc;
+    reg<u64> queue_driver;
+    reg<u64> queue_device;
+    reg<u32> queue_notify;
+    reg<u32> irq_status;
+
+    pci_target_socket pci_in;
+    virtio_initiator_socket virtio_out;
+
+    pci(const sc_module_name& nm);
+    virtual ~pci();
+    VCML_KIND(virtio::pci);
+    virtual void reset() override;
+
+    void virtio_declare_common_cap(u8 bar, u32 offset, u32 length);
+    void virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult);
+    void virtio_declare_isr_cap(u8 bar, u32 offset, u32 length);
+    void virtio_declare_device_cap(u8 bar, u32 offset, u32 length);
+
+    bool has_feature(u64 feature) const;
+    bool device_ready() const;
+};
+
+inline bool pci::has_feature(u64 feature) const {
+    return (m_drv_features & m_dev_features & feature) == feature;
+}
+
+inline bool pci::device_ready() const {
+    return device_status == VIRTIO_STATUS_DEVICE_READY;
+}
+
+} // namespace virtio
+}; // namespace vcml
 
 #endif

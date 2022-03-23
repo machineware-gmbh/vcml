@@ -28,27 +28,29 @@
 #include "vcml/properties/property.h"
 #include "vcml/module.h"
 
-namespace vcml { namespace meta {
+namespace vcml {
+namespace meta {
 
-    class throttle : public module
-    {
-    private:
-        bool m_throttling;
-        u64  m_time_real;
+class throttle : public module
+{
+private:
+    bool m_throttling;
+    u64 m_time_real;
 
-        void update();
+    void update();
 
-    public:
-        property<sc_time> update_interval;
-        property<double> rtf;
+public:
+    property<sc_time> update_interval;
+    property<double> rtf;
 
-        throttle(const sc_module_name& nm);
-        virtual ~throttle();
-        VCML_KIND(throttle);
+    throttle(const sc_module_name& nm);
+    virtual ~throttle();
+    VCML_KIND(throttle);
 
-        bool is_throttling() const { return m_throttling; }
-    };
+    bool is_throttling() const { return m_throttling; }
+};
 
-}}
+} // namespace meta
+} // namespace vcml
 
 #endif

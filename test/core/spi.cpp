@@ -22,29 +22,29 @@ enum : address_space {
     VCML_AS_TEST = VCML_AS_DEFAULT + 1,
 };
 
-class spi_harness: public test_base, public spi_host
+class spi_harness : public test_base, public spi_host
 {
 public:
-    spi_initiator_socket SPI_OUT;
-    spi_target_socket SPI_IN;
+    spi_initiator_socket spi_out;
+    spi_target_socket spi_in;
 
-    spi_initiator_socket SPI_OUT2;
-    spi_target_socket SPI_IN2;
+    spi_initiator_socket spi_out2;
+    spi_target_socket spi_in2;
 
     spi_harness(const sc_module_name& nm):
         test_base(nm),
         spi_host(),
-        SPI_OUT("SPI_OUT"),
-        SPI_IN("SPI_IN", VCML_AS_TEST),
-        SPI_OUT2("SPI_OUT2"),
-        SPI_IN2("SPI_IN2") {
-        SPI_OUT.bind(SPI_IN);
-        SPI_OUT2.stub();
-        SPI_IN2.stub();
+        spi_out("spi_out"),
+        spi_in("spi_in", VCML_AS_TEST),
+        spi_out2("spi_out2"),
+        spi_in2("spi_in2") {
+        spi_out.bind(spi_in);
+        spi_out2.stub();
+        spi_in2.stub();
 
         auto initiators = get_spi_initiator_sockets();
-        auto targets = get_spi_target_sockets();
-        auto sockets = get_spi_target_sockets(VCML_AS_TEST);
+        auto targets    = get_spi_target_sockets();
+        auto sockets    = get_spi_target_sockets(VCML_AS_TEST);
 
         EXPECT_EQ(initiators.size(), 2) << "spi initiators did not register";
         EXPECT_EQ(targets.size(), 2) << "spi targets did not register";
@@ -61,7 +61,7 @@ public:
         for (vcml::u8 i = 0; i < 10; i++) {
             wait(1, sc_core::SC_SEC);
             spi_payload spi(i);
-            SPI_OUT->spi_transport(spi);
+            spi_out->spi_transport(spi);
             EXPECT_EQ(spi.miso, spi.mosi * 2);
         }
     }

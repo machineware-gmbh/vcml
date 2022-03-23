@@ -21,36 +21,41 @@
 
 namespace vcml {
 
-    const char* protocol_name(protocol_kind kind) {
-        switch (kind) {
-        case PROTO_TLM:    return "TLM";
-        case PROTO_IRQ:    return "IRQ";
-        case PROTO_PCI:    return "PCI";
-        case PROTO_SPI:    return "SPI";
-        case PROTO_SD:     return "SD";
-        case PROTO_VIRTIO: return "VIRTIO";
-        default:
-            return "unknown protocol";
-        }
+const char* protocol_name(protocol_kind kind) {
+    switch (kind) {
+    case PROTO_TLM:
+        return "TLM";
+    case PROTO_IRQ:
+        return "IRQ";
+    case PROTO_PCI:
+        return "PCI";
+    case PROTO_SPI:
+        return "SPI";
+    case PROTO_SD:
+        return "SD";
+    case PROTO_VIRTIO:
+        return "VIRTIO";
+    default:
+        return "unknown protocol";
     }
-
-    tracer::tracer() {
-        all().insert(this);
-    }
-
-    tracer::~tracer() {
-        all().erase(this);
-    }
-
-    void tracer::print_timing(ostream& os, const sc_time& time, u64 delta) {
-        // use same formatting as logger
-        publisher::print_timing(os, time, delta);
-    }
-
-    unordered_set<tracer*>& tracer::all() {
-        static unordered_set<tracer*> tracers;
-        return tracers;
-    }
-
 }
 
+tracer::tracer() {
+    all().insert(this);
+}
+
+tracer::~tracer() {
+    all().erase(this);
+}
+
+void tracer::print_timing(ostream& os, const sc_time& time, u64 delta) {
+    // use same formatting as logger
+    publisher::print_timing(os, time, delta);
+}
+
+unordered_set<tracer*>& tracer::all() {
+    static unordered_set<tracer*> tracers;
+    return tracers;
+}
+
+} // namespace vcml

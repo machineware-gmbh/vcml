@@ -28,28 +28,30 @@
 #include "vcml/register.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    class hwrng: public peripheral
-    {
-    private:
-        u32 read_RNG();
+class hwrng : public peripheral
+{
+private:
+    u32 read_rng();
 
-    public:
-        reg<u32> RNG;
-        tlm_target_socket IN;
+public:
+    reg<u32> rng;
+    tlm_target_socket in;
 
-        property<bool> pseudo;
-        property<u32> seed;
+    property<bool> pseudo;
+    property<u32> seed;
 
-        hwrng() = delete;
-        hwrng(const sc_module_name& nm);
-        virtual ~hwrng();
-        VCML_KIND(hwrng);
+    hwrng() = delete;
+    hwrng(const sc_module_name& nm);
+    virtual ~hwrng();
+    VCML_KIND(hwrng);
 
-        virtual void reset() override;
-    };
+    virtual void reset() override;
+};
 
-}}
+} // namespace generic
+} // namespace vcml
 
 #endif

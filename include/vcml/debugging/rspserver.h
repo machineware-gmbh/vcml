@@ -26,72 +26,74 @@
 
 #include "vcml/logging/logger.h"
 
-namespace vcml { namespace debugging {
+namespace vcml {
+namespace debugging {
 
-    class rspserver
-    {
-    public:
-        typedef function<string(const char*)> handler;
+class rspserver
+{
+public:
+    typedef function<string(const char*)> handler;
 
-    private:
-        bool m_echo;
-        socket m_sock;
-        u16 m_port;
+private:
+    bool m_echo;
+    socket m_sock;
+    u16 m_port;
 
-        string m_name;
+    string m_name;
 
-        atomic<bool> m_running;
+    atomic<bool> m_running;
 
-        mutex m_mutex;
-        thread m_thread;
+    mutex m_mutex;
+    thread m_thread;
 
-        std::map<string, handler> m_handlers;
+    std::map<string, handler> m_handlers;
 
-        // disabled
-        rspserver();
-        rspserver(const rspserver&);
+    // disabled
+    rspserver();
+    rspserver(const rspserver&);
 
-    public:
-        logger log;
+public:
+    logger log;
 
-        u16 port() const { return m_port; }
-        const char* name() const { return m_name.c_str(); }
+    u16 port() const { return m_port; }
+    const char* name() const { return m_name.c_str(); }
 
-        bool is_connected() const { return m_sock.is_connected(); }
-        bool is_listening() const { return m_sock.is_listening(); }
+    bool is_connected() const { return m_sock.is_connected(); }
+    bool is_listening() const { return m_sock.is_listening(); }
 
-        void echo(bool e = true) { m_echo = e; }
+    void echo(bool e = true) { m_echo = e; }
 
-        rspserver(u16 port);
-        virtual ~rspserver();
+    rspserver(u16 port);
+    virtual ~rspserver();
 
-        void   send_packet(const string& s);
-        void   send_packet(const char* format, ...);
-        string recv_packet();
-        int    recv_signal(time_t timeoutms = ~0ull);
+    void send_packet(const string& s);
+    void send_packet(const char* format, ...);
+    string recv_packet();
+    int recv_signal(time_t timeoutms = ~0ull);
 
-        void listen();
-        void disconnect();
+    void listen();
+    void disconnect();
 
-        void run_async();
-        void run();
-        void stop();
-        void shutdown();
+    void run_async();
+    void run();
+    void stop();
+    void shutdown();
 
-        virtual string handle_command(const string& command);
-        virtual void   handle_connect(const char* peer);
-        virtual void   handle_disconnect();
+    virtual string handle_command(const string& command);
+    virtual void handle_connect(const char* peer);
+    virtual void handle_disconnect();
 
-        void register_handler(const char* command, handler handler);
-        void unregister_handler(const char* command);
+    void register_handler(const char* command, handler handler);
+    void unregister_handler(const char* command);
 
-        static const char* ERR_COMMAND;  // malformed command
-        static const char* ERR_PARAM;    // parameter has invalid value
-        static const char* ERR_INTERNAL; // internal error
-        static const char* ERR_UNKNOWN;  // unknown error
-        static const char* ERR_PROTOCOL; // protocol error
-    };
+    static const char* const ERR_COMMAND;  // malformed command
+    static const char* const ERR_PARAM;    // parameter has invalid value
+    static const char* const ERR_INTERNAL; // internal error
+    static const char* const ERR_UNKNOWN;  // unknown error
+    static const char* const ERR_PROTOCOL; // protocol error
+};
 
-}}
+} // namespace debugging
+} // namespace vcml
 
 #endif

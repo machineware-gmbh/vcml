@@ -32,10 +32,10 @@ static const pci_config TEST_CONFIG = {
 };
 
 enum : u64 {
-    TEST_REG_OFFSET    = 0x0,
-    TEST_REG_IO_OFF    = 0x4,
-    TEST_IRQ_VECTOR    = 5,
-    TEST_MSIX_NVEC     = 128,
+    TEST_REG_OFFSET = 0x0,
+    TEST_REG_IO_OFF = 0x4,
+    TEST_IRQ_VECTOR = 5,
+    TEST_MSIX_NVEC  = 128,
 
     PCI_VENDOR_OFFSET  = 0x0,
     PCI_DEVICE_OFFSET  = 0x2,
@@ -46,15 +46,15 @@ enum : u64 {
     PCI_BAR3_OFFSET    = 0x1c,
     PCI_CAP_OFFSET     = 0x34,
 
-    PCI_MSI_CTRL_OFF   = 0x2,
-    PCI_MSI_ADDR_OFF   = 0x4,
-    PCI_MSI_DATA_OFF   = 0x8,
-    PCI_MSI_MASK_OFF   = 0xc,
-    PCI_MSI_PEND_OFF   = 0x10,
+    PCI_MSI_CTRL_OFF = 0x2,
+    PCI_MSI_ADDR_OFF = 0x4,
+    PCI_MSI_DATA_OFF = 0x8,
+    PCI_MSI_MASK_OFF = 0xc,
+    PCI_MSI_PEND_OFF = 0x10,
 
-    PCI_MSIX_CTRL_OFF  = 0x2,
-    PCI_MSIX_BIR_OFF   = 0x4,
-    PCI_MSIX_PBA_OFF   = 0x8,
+    PCI_MSIX_CTRL_OFF = 0x2,
+    PCI_MSIX_BIR_OFF  = 0x4,
+    PCI_MSIX_PBA_OFF  = 0x8,
 
     // MMIO space:
     //   0x00000 .. 0x0ffff: PCI CFG area
@@ -73,18 +73,18 @@ enum : u64 {
 
     // IO space:
     //   0x02000 .. 0x02fff: PCI IO area
-    MMAP_PCI_IO_ADDR   = 0x2000,
-    MMAP_PCI_IO_SIZE   = 0x1000,
+    MMAP_PCI_IO_ADDR = 0x2000,
+    MMAP_PCI_IO_SIZE = 0x1000,
 };
 
-class pcie_test_device: public generic::pci_device
+class pcie_test_device : public generic::pci_device
 {
 public:
-    pci_target_socket PCI_IN;
-    reg<u32> TEST_REG;
-    reg<u32> TEST_REG_IO;
+    pci_target_socket pci_in;
+    reg<u32> test_reg;
+    reg<u32> test_reg_io;
 
-    void write_TEST_REG_IO(u32 val) {
+    void write_test_reg_io(u32 val) {
         if (val == 0x1234)
             pci_interrupt(true, TEST_IRQ_VECTOR);
         if (val == 0)
@@ -93,14 +93,14 @@ public:
 
     pcie_test_device(const sc_module_name& nm):
         pci_device(nm, TEST_CONFIG),
-        PCI_IN("PCI_IN"),
-        TEST_REG(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
-        TEST_REG_IO(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
-        TEST_REG.allow_read_write();
-        TEST_REG.sync_always();
-        TEST_REG_IO.allow_read_write();
-        TEST_REG_IO.sync_always();
-        TEST_REG_IO.on_write(&pcie_test_device::write_TEST_REG_IO);
+        pci_in("PCI_IN"),
+        test_reg(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
+        test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
+        test_reg.allow_read_write();
+        test_reg.sync_always();
+        test_reg_io.allow_read_write();
+        test_reg_io.sync_always();
+        test_reg_io.on_write(&pcie_test_device::write_test_reg_io);
         pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
         pci_declare_bar(3, MMAP_PCI_MSIX_TABLE_SIZE, PCI_BAR_MMIO);
@@ -112,24 +112,25 @@ public:
     virtual ~pcie_test_device() = default;
 };
 
-class pcie_test: public test_base
+class pcie_test : public test_base
 {
 public:
-    generic::bus MMIO_BUS;
-    generic::bus IO_BUS;
+    generic::bus mmio_bus;
+    generic::bus io_bus;
 
-    generic::pci_host PCIE_ROOT;
-    pcie_test_device PCIE_DEVICE;
+    generic::pci_host pcie_root;
+    pcie_test_device pcie_device;
 
-    tlm_initiator_socket MMIO;
-    tlm_initiator_socket IO;
-    tlm_target_socket MSI;
+    tlm_initiator_socket mmio;
+    tlm_initiator_socket io;
+    tlm_target_socket msi;
 
     u64 msi_addr;
     u32 msi_data;
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-        const tlm_sbi& sideband, address_space as) override {
+                                   const tlm_sbi& sideband,
+                                   address_space as) override {
         EXPECT_TRUE(tx.is_write());
         EXPECT_EQ(as, VCML_AS_DEFAULT);
         EXPECT_EQ(tx.get_data_length(), sizeof(u32));
@@ -141,62 +142,63 @@ public:
 
     pcie_test(const sc_module_name& nm):
         test_base(nm),
-        MMIO_BUS("MMIO_BUS"),
-        IO_BUS("IO_BUS"),
-        PCIE_ROOT("PCIE_ROOT", TEST_CONFIG.pcie),
-        PCIE_DEVICE("PCIE_DEVICE"),
-        MMIO("MMIO"),
-        IO("IO"),
-        MSI("MSI"),
+        mmio_bus("mmio_bus"),
+        io_bus("io_bus"),
+        pcie_root("pcie_root", TEST_CONFIG.pcie),
+        pcie_device("pcie_device"),
+        mmio("mmio"),
+        io("io"),
+        msi("msi"),
         msi_addr(),
         msi_data() {
-        PCIE_ROOT.PCI_OUT[0].bind(PCIE_DEVICE.PCI_IN);
+        pcie_root.pci_out[0].bind(pcie_device.pci_in);
 
-        const range MMAP_PCI_MSI(MMAP_PCI_MSI_ADDR,
-            MMAP_PCI_MSI_ADDR + MMAP_PCI_MSI_SIZE - 1);
-        const range MMAP_PCI_CFG(MMAP_PCI_CFG_ADDR,
-            MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
-        const range MMAP_PCI_MMIO(MMAP_PCI_MMIO_ADDR,
+        const range mmap_pci_msi(MMAP_PCI_MSI_ADDR,
+                                 MMAP_PCI_MSI_ADDR + MMAP_PCI_MSI_SIZE - 1);
+        const range mmap_pci_cfg(MMAP_PCI_CFG_ADDR,
+                                 MMAP_PCI_CFG_ADDR + MMAP_PCI_CFG_SIZE - 1);
+        const range mmap_pci_mmio(
+            MMAP_PCI_MMIO_ADDR,
             MMAP_PCI_MSIX_TABLE_ADDR + MMAP_PCI_MSIX_TABLE_SIZE - 1);
-        const range MMAP_PCI_IO(MMAP_PCI_IO_ADDR,
-            MMAP_PCI_IO_ADDR + MMAP_PCI_IO_SIZE - 1);
+        const range mmap_pci_io(MMAP_PCI_IO_ADDR,
+                                MMAP_PCI_IO_ADDR + MMAP_PCI_IO_SIZE - 1);
 
-        MMIO_BUS.bind(MMIO);
-        MMIO_BUS.bind(PCIE_ROOT.DMA_OUT);
-        MMIO_BUS.bind(MSI, MMAP_PCI_MSI);
-        MMIO_BUS.bind(PCIE_ROOT.CFG_IN, MMAP_PCI_CFG);
-        MMIO_BUS.bind(PCIE_ROOT.MMIO_IN[0], MMAP_PCI_MMIO, MMAP_PCI_MMIO_ADDR);
+        mmio_bus.bind(mmio);
+        mmio_bus.bind(pcie_root.dma_out);
+        mmio_bus.bind(msi, mmap_pci_msi);
+        mmio_bus.bind(pcie_root.cfg_in, mmap_pci_cfg);
+        mmio_bus.bind(pcie_root.mmio_in[0], mmap_pci_mmio, MMAP_PCI_MMIO_ADDR);
 
-        IO_BUS.bind(IO);
-        IO_BUS.bind(PCIE_ROOT.IO_IN[0], MMAP_PCI_IO, MMAP_PCI_IO_ADDR);
+        io_bus.bind(io);
+        io_bus.bind(pcie_root.io_in[0], mmap_pci_io, MMAP_PCI_IO_ADDR);
 
-        PCIE_ROOT.IRQ_A.stub();
-        PCIE_ROOT.IRQ_B.stub();
-        PCIE_ROOT.IRQ_C.stub();
-        PCIE_ROOT.IRQ_D.stub();
+        pcie_root.irq_a.stub();
+        pcie_root.irq_b.stub();
+        pcie_root.irq_c.stub();
+        pcie_root.irq_d.stub();
 
-        MMIO_BUS.CLOCK.stub(100 * MHz);
-        IO_BUS.CLOCK.stub(100 * MHz);
-        PCIE_ROOT.CLOCK.stub(100 * MHz);
-        PCIE_DEVICE.CLOCK.stub(100 * MHz);
+        mmio_bus.clk.stub(100 * MHz);
+        io_bus.clk.stub(100 * MHz);
+        pcie_root.clk.stub(100 * MHz);
+        pcie_device.clk.stub(100 * MHz);
 
-        MMIO_BUS.RESET.stub();
-        IO_BUS.RESET.stub();
-        PCIE_ROOT.RESET.stub();
-        PCIE_DEVICE.RESET.stub();
+        mmio_bus.rst.stub();
+        io_bus.rst.stub();
+        pcie_root.rst.stub();
+        pcie_device.rst.stub();
     }
 
     template <typename T>
     void pcie_read_cfg(u64 devno, u64 offset, T& data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 4096 + offset;
-        ASSERT_OK(MMIO.readw(addr, data))
+        ASSERT_OK(mmio.readw(addr, data))
             << "failed to read PCIe config at offset " << std::hex << addr;
     }
 
     template <typename T>
     void pcie_write_cfg(u64 devno, u64 offset, T data) {
         u64 addr = MMAP_PCI_CFG_ADDR + devno * 4096 + offset;
-        ASSERT_OK(MMIO.writew(addr, data))
+        ASSERT_OK(mmio.writew(addr, data))
             << "failed to write PCIe config at offset " << std::hex << addr;
     }
 
@@ -231,9 +233,9 @@ public:
         // test mapping bar0
         //
         u32 dummy = 0; // make sure, nothing has been mapped yet
-        EXPECT_AE(MMIO.readw(MMAP_PCI_MMIO_ADDR, dummy))
+        EXPECT_AE(mmio.readw(MMAP_PCI_MMIO_ADDR, dummy))
             << "something has already been mapped to PCI MMIO address range";
-        EXPECT_AE(IO.readw(MMAP_PCI_IO_ADDR, dummy))
+        EXPECT_AE(io.readw(MMAP_PCI_IO_ADDR, dummy))
             << "something has already been mapped to PCI IO address range";
 
         u16 command = 3; // setup device for MMIO + IO
@@ -252,7 +254,7 @@ public:
         pcie_write_cfg(0, PCI_BAR0_OFFSET, (u32)(bar0));
 
         u32 val = 0; // read bar0 offset 0 (TEST_REG)
-        EXPECT_OK(MMIO.readw(MMAP_PCI_MMIO_ADDR + TEST_REG_OFFSET, val))
+        EXPECT_OK(mmio.readw(MMAP_PCI_MMIO_ADDR + TEST_REG_OFFSET, val))
             << "BAR0 setup failed: cannot read BAR0 range";
         EXPECT_EQ(val, 1234) << "read wrong value from BAR0 area";
 
@@ -276,13 +278,13 @@ public:
         msi_data = msi_addr = 0;
 
         // write bar2 offset 4 (TEST_REG_IO) to trigger MSI interrupt
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
             << "BAR2 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
         EXPECT_EQ(msi_data, 0xa00 | TEST_IRQ_VECTOR) << "MSI did not arrive";
         EXPECT_EQ(msi_addr, MMAP_PCI_MSI_ADDR) << "MSI did not arrive";
 
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
             << "BAR2 setup failed: cannot read BAR2 range";
 
         //
@@ -292,7 +294,7 @@ public:
         pcie_write_cfg(0, cap_off + PCI_MSI_MASK_OFF, 0xffffffff);
 
         // write bar2 offset 4 (TEST_REG_IO) to trigger MSI interrupt
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
             << "BAR0 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
         EXPECT_EQ(msi_data, 0) << "MSI arrived despite masked";
@@ -303,7 +305,7 @@ public:
         EXPECT_EQ(msi_pending, 1u << TEST_IRQ_VECTOR)
             << "MSI pending bit not set";
 
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0))
             << "BAR0 setup failed: cannot read BAR2 range";
 
         msi_control &= ~PCI_MSI_ENABLE;
@@ -332,32 +334,31 @@ public:
         msi_addr = msi_data = 0;
         u64 msix_table_addr = MMAP_PCI_MSIX_TABLE_ADDR + TEST_IRQ_VECTOR * 16;
         u32 msix_addr, msix_data, msix_mask;
-        EXPECT_OK(MMIO.readw(msix_table_addr + 0, msix_addr))
+        EXPECT_OK(mmio.readw(msix_table_addr + 0, msix_addr))
             << "cannot read MSIX vector table";
-        EXPECT_OK(MMIO.readw(msix_table_addr + 8, msix_data))
+        EXPECT_OK(mmio.readw(msix_table_addr + 8, msix_data))
             << "cannot read MSIX vector table";
-        EXPECT_OK(MMIO.readw(msix_table_addr + 12, msix_mask))
+        EXPECT_OK(mmio.readw(msix_table_addr + 12, msix_mask))
             << "cannot read MSIX vector table";
         EXPECT_EQ(msix_addr & 3, 0)
             << "MSIX vector table addr entry corrupted";
-        EXPECT_EQ(msix_data, 0)
-            << "MSIX vector table data entry corrupted";
+        EXPECT_EQ(msix_data, 0) << "MSIX vector table data entry corrupted";
         EXPECT_EQ(msix_mask, PCI_MSIX_MASKED)
             << "MSIX vector table mask entry corrupted";
         msix_addr = MMAP_PCI_MSI_ADDR + 0x44;
         msix_data = 1234567;
-        EXPECT_OK(MMIO.writew(msix_table_addr + 0, msix_addr + 3))
+        EXPECT_OK(mmio.writew(msix_table_addr + 0, msix_addr + 3))
             << "cannot write MSIX vector table";
-        EXPECT_OK(MMIO.writew(msix_table_addr + 8, msix_data))
+        EXPECT_OK(mmio.writew(msix_table_addr + 8, msix_data))
             << "cannot write MSIX vector table";
-        EXPECT_OK(IO.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
+        EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
             << "BAR2 setup failed: cannot read BAR2 range";
         wait_clock_cycle();
         EXPECT_EQ(msi_addr, 0) << "got MSIX address despite masked";
         EXPECT_EQ(msi_data, 0) << "got MSIX data despite masked";
 
         msix_mask = ~PCI_MSIX_MASKED; // trigger MSI by unmasking
-        EXPECT_OK(MMIO.writew(msix_table_addr + 12, msix_mask))
+        EXPECT_OK(mmio.writew(msix_table_addr + 12, msix_mask))
             << "cannot write MSIX vector table";
         wait_clock_cycle();
         EXPECT_EQ(msi_addr, msix_addr) << "got wrong MSIX address";
@@ -371,9 +372,9 @@ public:
 
         // should not be accessible anymore
         dummy = 0;
-        EXPECT_AE(MMIO.readw(MMAP_PCI_MMIO_ADDR, dummy))
+        EXPECT_AE(mmio.readw(MMAP_PCI_MMIO_ADDR, dummy))
             << "PCI BAR0 area remained active";
-        EXPECT_AE(IO.readw(MMAP_PCI_IO_ADDR, dummy))
+        EXPECT_AE(io.readw(MMAP_PCI_IO_ADDR, dummy))
             << "PCI BAR2 area remained active";
     }
 };

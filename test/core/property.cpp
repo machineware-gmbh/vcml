@@ -21,18 +21,18 @@ using namespace ::testing;
 
 #include "vcml.h"
 
-class test_component: public vcml::component
+class test_component : public vcml::component
 {
 public:
-    vcml::property<std::string>     prop_str;
-    vcml::property<vcml::u64>       prop_u64;
-    vcml::property<vcml::u32>       prop_u32;
-    vcml::property<vcml::u16>       prop_u16;
-    vcml::property<vcml::u8>        prop_u8;
-    vcml::property<vcml::i32>       prop_i32;
-    vcml::property<std::string>     not_inited;
-    vcml::property<vcml::u32, 4>    prop_array;
-    vcml::property<std::string, 4>  prop_array_string;
+    vcml::property<std::string> prop_str;
+    vcml::property<vcml::u64> prop_u64;
+    vcml::property<vcml::u32> prop_u32;
+    vcml::property<vcml::u16> prop_u16;
+    vcml::property<vcml::u8> prop_u8;
+    vcml::property<vcml::i32> prop_i32;
+    vcml::property<std::string> not_inited;
+    vcml::property<vcml::u32, 4> prop_array;
+    vcml::property<std::string, 4> prop_array_string;
 
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
@@ -40,14 +40,14 @@ public:
         prop_u64("prop_u64", 0xFFFFFFFFFFFFFFFF),
         prop_u32("prop_u32", 0xFFFFFFFF),
         prop_u16("prop_u16", 0xFFFF),
-        prop_u8("prop_u8",   0xFF),
+        prop_u8("prop_u8", 0xFF),
         prop_i32("prop_i32", -1),
         not_inited("prop_not_inited", "not_inited"),
         prop_array("prop_array", 7),
-        prop_array_string("prop_array_string", "not_inited") {
-    }
+        prop_array_string("prop_array_string", "not_inited") {}
 
-    virtual ~test_component() { /* nothing to do */ }
+    virtual ~test_component() { /* nothing to do */
+    }
 };
 
 TEST(property, init) {
@@ -105,5 +105,6 @@ TEST(property, init) {
     EXPECT_EQ(std::string(test.prop_array_string.str()), "abc def x\\ y zzz");
 
     test.prop_array_string[3] = "z z";
-    EXPECT_EQ(std::string(test.prop_array_string.str()), "abc def x\\ y z\\ z");
+    EXPECT_EQ(std::string(test.prop_array_string.str()),
+              "abc def x\\ y z\\ z");
 }

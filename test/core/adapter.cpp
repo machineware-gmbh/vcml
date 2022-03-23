@@ -18,54 +18,53 @@
 
 #include "testing.h"
 
-class test_harness: public test_base
+class test_harness : public test_base
 {
 public:
-    vcml::tlm_initiator_socket    TEST1_OUT64;
-    vcml::tlm_target_socket       TEST1_IN64;
-    tlm::tlm_initiator_socket<32> TEST1_OUT32;
-    tlm::tlm_target_socket<32>    TEST1_IN32;
+    vcml::tlm_initiator_socket test1_out64;
+    vcml::tlm_target_socket test1_in64;
+    tlm::tlm_initiator_socket<32> test1_out32;
+    tlm::tlm_target_socket<32> test1_in32;
 
-    vcml::tlm_initiator_socket    TEST2_OUT64;
-    tlm::tlm_initiator_socket<32> TEST2_OUT32;
-    vcml::tlm_target_socket       TEST2_IN64;
+    vcml::tlm_initiator_socket test2_out64;
+    tlm::tlm_initiator_socket<32> test2_out32;
+    vcml::tlm_target_socket test2_in64;
 
-    vcml::tlm_initiator_socket    TEST3_OUT64;
-    tlm::tlm_target_socket<32>    TEST3_IN32;
-    vcml::tlm_target_socket       TEST3_IN64;
+    vcml::tlm_initiator_socket test3_out64;
+    tlm::tlm_target_socket<32> test3_in32;
+    vcml::tlm_target_socket test3_in64;
 
     test_harness(const sc_module_name& nm):
         test_base(nm),
-        TEST1_OUT64("TEST1_OUT64"),
-        TEST1_IN64("TEST1_IN64"),
-        TEST1_OUT32("TEST1_OUT32"),
-        TEST1_IN32("TEST1_IN32"),
-        TEST2_OUT64("TEST2_OUT64"),
-        TEST2_OUT32("TEST2_OUT32"),
-        TEST2_IN64("TEST2_IN64"),
-        TEST3_OUT64("TEST3_OUT64"),
-        TEST3_IN32("TEST3_IN32"),
-        TEST3_IN64("TEST3_IN64") {
-
+        test1_out64("test1_out64"),
+        test1_in64("test1_in64"),
+        test1_out32("test1_out32"),
+        test1_in32("test1_in32"),
+        test2_out64("test2_out64"),
+        test2_out32("test2_out32"),
+        test2_in64("test2_in64"),
+        test3_out64("test3_out64"),
+        test3_in32("test3_in32"),
+        test3_in64("test3_in64") {
         // test1: out64 -> out32 -> in32 -> in64
-        TEST1_OUT64.bind(TEST1_OUT32);
-        TEST1_IN64.bind(TEST1_IN32);
-        TEST1_OUT32.bind(TEST1_IN32);
+        test1_out64.bind(test1_out32);
+        test1_in64.bind(test1_in32);
+        test1_out32.bind(test1_in32);
 
         // test2: out64 -> out32 -> in64
-        TEST2_OUT64.bind(TEST2_OUT32);
-        TEST2_IN64.bind(TEST2_OUT32);
+        test2_out64.bind(test2_out32);
+        test2_in64.bind(test2_out32);
 
         // test3: out64 -> in32 -> in64
-        TEST3_IN64.bind(TEST3_IN32);
-        TEST3_OUT64.bind(TEST3_IN32);
+        test3_in64.bind(test3_in32);
+        test3_out64.bind(test3_in32);
     }
 
-    unsigned int transport(tlm_generic_payload& tx,
-        const tlm_sbi& sbi, address_space as) override {
+    unsigned int transport(tlm_generic_payload& tx, const tlm_sbi& sbi,
+                           address_space as) override {
         EXPECT_TRUE(tx.is_read());
         EXPECT_EQ(tx.get_address(), 0x1234);
-        EXPECT_EQ(tx.get_data_length(), 8u) << "mop";
+        EXPECT_EQ(tx.get_data_length(), 8u);
 
         memset(tx.get_data_ptr(), 0xff, tx.get_data_length());
         tx.set_response_status(TLM_OK_RESPONSE);
@@ -74,22 +73,20 @@ public:
 
     void run_test() override {
         u64 data = 0;
-        EXPECT_OK(TEST1_OUT64.readw(0x1234, data));
+        EXPECT_OK(test1_out64.readw(0x1234, data));
         EXPECT_EQ(data, ~0ull);
 
         data = 0;
-        EXPECT_OK(TEST2_OUT64.readw(0x1234, data));
+        EXPECT_OK(test2_out64.readw(0x1234, data));
         EXPECT_EQ(data, ~0ull);
 
         data = 0;
-        EXPECT_OK(TEST3_OUT64.readw(0x1234, data));
+        EXPECT_OK(test3_out64.readw(0x1234, data));
         EXPECT_EQ(data, ~0ull);
     }
-
 };
 
 TEST(generic_memory, access) {
     test_harness test("harness");
     sc_core::sc_start();
 }
-

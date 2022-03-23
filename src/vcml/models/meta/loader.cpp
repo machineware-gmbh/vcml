@@ -18,55 +18,57 @@
 
 #include "vcml/models/meta/loader.h"
 
-namespace vcml { namespace meta {
+namespace vcml {
+namespace meta {
 
-    loader::loader(const sc_module_name& nm, const string& imginit):
-        component(nm),
-        debugging::loader(name()),
-        images("images", imginit),
-        INSN("INSN"),
-        DATA("DATA") {
-    }
+loader::loader(const sc_module_name& nm, const string& imginit):
+    component(nm),
+    debugging::loader(name()),
+    images("images", imginit),
+    insn("insn"),
+    data("data") {
+}
 
-    loader::~loader() {
-        // nothing to do
-    }
+loader::~loader() {
+    // nothing to do
+}
 
-    void loader::reset() {
-        component::reset();
-        load_images(images);
-    }
+void loader::reset() {
+    component::reset();
+    load_images(images);
+}
 
-    u8* loader::allocate_image(u64 size, u64 offset) {
-        u8* ptr = DATA.lookup_dmi_ptr(offset, size, VCML_ACCESS_NONE);
-        if (ptr != nullptr)
-            return ptr;
-        return INSN.lookup_dmi_ptr(offset, size, VCML_ACCESS_NONE);
-    }
+u8* loader::allocate_image(u64 size, u64 offset) {
+    u8* ptr = data.lookup_dmi_ptr(offset, size, VCML_ACCESS_NONE);
+    if (ptr != nullptr)
+        return ptr;
+    return insn.lookup_dmi_ptr(offset, size, VCML_ACCESS_NONE);
+}
 
-    u8* loader::allocate_image(const debugging::elf_segment& seg, u64 off) {
-        auto& port = seg.x ? INSN : DATA;
-        return port.lookup_dmi_ptr(seg.phys + off, seg.size, VCML_ACCESS_NONE);
-    }
+u8* loader::allocate_image(const debugging::elf_segment& seg, u64 off) {
+    auto& port = seg.x ? insn : data;
+    return port.lookup_dmi_ptr(seg.phys + off, seg.size, VCML_ACCESS_NONE);
+}
 
-    void loader::copy_image(const u8* img, u64 size, u64 offset) {
-        if (failed(DATA.write(offset, img, size, SBI_DEBUG)))
-            VCML_REPORT("bus error");
-    }
+void loader::copy_image(const u8* img, u64 size, u64 offset) {
+    if (failed(data.write(offset, img, size, SBI_DEBUG)))
+        VCML_REPORT("bus error");
+}
 
-    void loader::copy_image(const u8* img, const debugging::elf_segment& seg,
-                            u64 offset) {
-        auto& port = seg.x ? INSN : DATA;
-        if (failed(port.write(seg.phys + offset, img, seg.size, SBI_DEBUG)))
-            VCML_REPORT("bus error");
-    }
+void loader::copy_image(const u8* img, const debugging::elf_segment& seg,
+                        u64 offset) {
+    auto& port = seg.x ? insn : data;
+    if (failed(port.write(seg.phys + offset, img, seg.size, SBI_DEBUG)))
+        VCML_REPORT("bus error");
+}
 
-    void loader::before_end_of_elaboration() {
-        component::before_end_of_elaboration();
-        if (!CLOCK.is_bound())
-            CLOCK.stub(100 * MHz);
-        if (!RESET.is_bound())
-            RESET.stub();
-    }
+void loader::before_end_of_elaboration() {
+    component::before_end_of_elaboration();
+    if (!clk.is_bound())
+        clk.stub(100 * MHz);
+    if (!rst.is_bound())
+        rst.stub();
+}
 
-}}
+} // namespace meta
+} // namespace vcml

@@ -24,25 +24,25 @@
 
 namespace vcml {
 
-    class log_term: public publisher
-    {
-    private:
-        bool     m_use_colors;
-        ostream& m_os;
+class log_term : public publisher
+{
+private:
+    bool m_use_colors;
+    ostream& m_os;
 
-    public:
-        bool has_colors() const { return m_use_colors; }
-        void set_colors(bool set = true) { m_use_colors = set; }
+public:
+    bool has_colors() const { return m_use_colors; }
+    void set_colors(bool set = true) { m_use_colors = set; }
 
-        log_term(bool use_cerr = true);
-        virtual ~log_term();
+    log_term(bool use_cerr = true);
+    virtual ~log_term();
 
-        virtual void publish(const logmsg& msg) override;
+    virtual void publish(const logmsg& msg) override;
 
-        static const char* colors[NUM_LOG_LEVELS];
-        static const char* reset;
-    };
+    static const char* colors[NUM_LOG_LEVELS];
+    static const char* reset;
+};
 
-}
+} // namespace vcml
 
 #endif

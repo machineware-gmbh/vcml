@@ -29,31 +29,34 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace riscv {
+namespace vcml {
+namespace riscv {
 
-    class simdev: public peripheral
-    {
-    private:
-        void write_FINISH(u32 val);
+class simdev : public peripheral
+{
+private:
+    void write_finish(u32 val);
 
-    public:
-        enum : u32 {
-            FINISH_FAIL  = 0x3333,
-            FINISH_PASS  = 0x5555,
-            FINISH_RESET = 0x7777,
-        };
-
-        reg<u32> FINISH;
-
-        tlm_target_socket IN;
-
-        simdev() = delete;
-        simdev(const simdev&) = delete;
-        simdev(const sc_module_name& nm);
-        virtual ~simdev();
-        VCML_KIND(sifive_simdev);
+public:
+    enum : u32 {
+        FINISH_FAIL  = 0x3333,
+        FINISH_PASS  = 0x5555,
+        FINISH_RESET = 0x7777,
     };
 
-}}
+    reg<u32> finish;
+
+    tlm_target_socket in;
+
+    simdev()              = delete;
+    simdev(const simdev&) = delete;
+
+    simdev(const sc_module_name& nm);
+    virtual ~simdev();
+    VCML_KIND(sifive::simdev);
+};
+
+} // namespace riscv
+} // namespace vcml
 
 #endif

@@ -27,63 +27,64 @@
 #include "vcml/logging/logger.h"
 #include "vcml/debugging/elf_reader.h"
 
-namespace vcml { namespace debugging {
+namespace vcml {
+namespace debugging {
 
-    enum image_type {
-        IMAGE_ELF,
-        IMAGE_BIN,
-    };
+enum image_type {
+    IMAGE_ELF,
+    IMAGE_BIN,
+};
 
-    const char* image_type_to_str(image_type type);
-    image_type detect_image_type(const string& filename);
+const char* image_type_to_str(image_type type);
+image_type detect_image_type(const string& filename);
 
-    struct image_info {
-        string filename;
-        image_type type;
-        u64 offset;
-    };
+struct image_info {
+    string filename;
+    image_type type;
+    u64 offset;
+};
 
-    vector<image_info> images_from_string(const string& s);
+vector<image_info> images_from_string(const string& s);
 
-    class loader
-    {
-    private:
-        string m_name;
+class loader
+{
+private:
+    string m_name;
 
-        bool cmd_load(const vector<string>& args, ostream& os);
-        bool cmd_load_bin(const vector<string>& args, ostream& os);
-        bool cmd_load_elf(const vector<string>& args, ostream& os);
+    bool cmd_load(const vector<string>& args, ostream& os);
+    bool cmd_load_bin(const vector<string>& args, ostream& os);
+    bool cmd_load_elf(const vector<string>& args, ostream& os);
 
-        static unordered_map<string, loader*> s_loaders;
+    static unordered_map<string, loader*> s_loaders;
 
-    protected:
-        virtual void load_bin(const string& filename, u64 offset);
-        virtual void load_elf(const string& filename, u64 offset);
+protected:
+    virtual void load_bin(const string& filename, u64 offset);
+    virtual void load_elf(const string& filename, u64 offset);
 
-        virtual u8* allocate_image(u64 size, u64 offset);
-        virtual u8* allocate_image(const elf_segment& seg, u64 offset);
+    virtual u8* allocate_image(u64 size, u64 offset);
+    virtual u8* allocate_image(const elf_segment& seg, u64 offset);
 
-        virtual void copy_image(const u8* img, u64 size, u64 offset) = 0;
-        virtual void copy_image(const u8* img, const elf_segment& seg, u64 off);
+    virtual void copy_image(const u8* img, u64 size, u64 offset) = 0;
+    virtual void copy_image(const u8* img, const elf_segment& seg, u64 off);
 
-    public:
-        const char* loader_name() const { return m_name.c_str(); }
+public:
+    const char* loader_name() const { return m_name.c_str(); }
 
-        loader(const string& name);
-        virtual ~loader();
+    loader(const string& name);
+    virtual ~loader();
 
-        void load_image(const string& filename, u64 offset = 0);
-        void load_image(const string& filename, u64 offset, image_type type);
-        void load_image(const image_info& image);
+    void load_image(const string& filename, u64 offset = 0);
+    void load_image(const string& filename, u64 offset, image_type type);
+    void load_image(const image_info& image);
 
-        void load_images(const string& images);
-        void load_images(const vector<image_info>& images);
+    void load_images(const string& images);
+    void load_images(const vector<image_info>& images);
 
-        static loader* find(const string& name);
-        static vector<loader*> all();
-    };
+    static loader* find(const string& name);
+    static vector<loader*> all();
+};
 
-
-}}
+} // namespace debugging
+} // namespace vcml
 
 #endif

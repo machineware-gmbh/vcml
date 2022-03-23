@@ -29,33 +29,33 @@
 
 namespace vcml {
 
-    struct exlock {
-        int cpu;
-        range addr;
-    };
+struct exlock {
+    int cpu;
+    range addr;
+};
 
-    class tlm_exmon
-    {
-    private:
-        vector<exlock> m_locks;
+class tlm_exmon
+{
+private:
+    vector<exlock> m_locks;
 
-    public:
-        const vector<exlock> get_locks() const { return m_locks; }
+public:
+    const vector<exlock> get_locks() const { return m_locks; }
 
-        tlm_exmon() = default;
-        virtual ~tlm_exmon() = default;
+    tlm_exmon()          = default;
+    virtual ~tlm_exmon() = default;
 
-        bool has_lock(int cpu, const range& r) const;
-        bool add_lock(int cpu, const range& r);
+    bool has_lock(int cpu, const range& r) const;
+    bool add_lock(int cpu, const range& r);
 
-        void break_locks(int cpu);
-        void break_locks(const range& r);
+    void break_locks(int cpu);
+    void break_locks(const range& r);
 
-        bool update(tlm_generic_payload& tx);
+    bool update(tlm_generic_payload& tx);
 
-        bool override_dmi(const tlm_generic_payload& tx, tlm_dmi& dmi);
-    };
+    bool override_dmi(const tlm_generic_payload& tx, tlm_dmi& dmi);
+};
 
-}
+} // namespace vcml
 
 #endif

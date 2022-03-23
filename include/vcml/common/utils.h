@@ -24,47 +24,47 @@
 
 namespace vcml {
 
-    string dirname(const string& path);
-    string filename(const string& path);
-    string filename_noext(const string& path);
+string dirname(const string& path);
+string filename(const string& path);
+string filename_noext(const string& path);
 
-    string curr_dir();
-    string temp_dir();
+string curr_dir();
+string temp_dir();
 
-    string progname();
-    string username();
+string progname();
+string username();
 
-    bool file_exists(const string& filename);
+bool file_exists(const string& filename);
 
-    double realtime();
+double realtime();
 
-    u64 realtime_us();
-    u64 timestamp_us();
+u64 realtime_us();
+u64 timestamp_us();
 
-    size_t fd_peek(int fd, time_t timeout_ms = 0ull);
-    size_t fd_read(int fd, void* buffer, size_t buflen);
-    size_t fd_write(int fd, const void* buffer, size_t buflen);
+size_t fd_peek(int fd, time_t timeout_ms = 0ull);
+size_t fd_read(int fd, void* buffer, size_t buflen);
+size_t fd_write(int fd, const void* buffer, size_t buflen);
 
-    string call_origin();
-    vector<string> backtrace(unsigned int frames = 63, unsigned int skip = 1);
+string call_origin();
+vector<string> backtrace(unsigned int frames = 63, unsigned int skip = 1);
 
-    string get_thread_name(const thread& t = std::thread());
-    bool   set_thread_name(thread& t, const string& name);
+string get_thread_name(const thread& t = std::thread());
+bool set_thread_name(thread& t, const string& name);
 
+bool is_debug_build();
 
-    bool is_debug_build();
+class stream_guard
+{
+private:
+    std::ostream& m_os;
+    std::ios::fmtflags m_flags;
+    stream_guard() = delete;
 
-    class stream_guard
-    {
-    private:
-        std::ostream& m_os;
-        std::ios::fmtflags m_flags;
-        stream_guard() = delete;
-    public:
-        stream_guard(ostream& os): m_os(os), m_flags(os.flags()) {}
-        ~stream_guard() { m_os.flags(m_flags); }
-    };
+public:
+    stream_guard(ostream& os): m_os(os), m_flags(os.flags()) {}
+    ~stream_guard() { m_os.flags(m_flags); }
+};
 
-}
+} // namespace vcml
 
 #endif

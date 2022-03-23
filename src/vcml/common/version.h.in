@@ -31,11 +31,10 @@
 
 namespace vcml {
 
-    extern const unsigned int version;
-    extern const char* const version_string;
+    unsigned int library_version();
 
     static inline bool version_check() {
-        return version == VCML_VERSION;
+        return library_version() == VCML_VERSION;
     }
 
 }

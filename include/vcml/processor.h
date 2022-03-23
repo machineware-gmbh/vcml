@@ -38,134 +38,135 @@
 
 namespace vcml {
 
-    struct irq_stats {
-        unsigned int irq;
-        unsigned int irq_count;
-        bool         irq_status;
-        sc_time      irq_last;
-        sc_time      irq_uptime;
-        sc_time      irq_longest;
-    };
+struct irq_stats {
+    unsigned int irq;
+    unsigned int irq_count;
+    bool irq_status;
+    sc_time irq_last;
+    sc_time irq_uptime;
+    sc_time irq_longest;
+};
 
-    class processor: public component,
-                     public irq_target,
-                     protected debugging::target {
-    private:
-        double m_run_time;
-        u64    m_cycle_count;
+class processor : public component,
+                  public irq_target,
+                  protected debugging::target
+{
+private:
+    double m_run_time;
+    u64 m_cycle_count;
 
-        debugging::gdbserver* m_gdb;
+    debugging::gdbserver* m_gdb;
 
-        unordered_map<unsigned int, irq_stats> m_irq_stats;
-        unordered_map<u64, property_base*> m_regprops;
+    unordered_map<unsigned int, irq_stats> m_irq_stats;
+    unordered_map<u64, property_base*> m_regprops;
 
-        bool cmd_dump(const vector<string>& args, ostream& os);
-        bool cmd_read(const vector<string>& args, ostream& os);
-        bool cmd_symbols(const vector<string>& args, ostream& os);
-        bool cmd_lsym(const vector<string>& args, ostream& os);
-        bool cmd_disas(const vector<string>& args, ostream& os);
-        bool cmd_v2p(const vector<string>& args, ostream& os);
-        bool cmd_stack(const vector<string>& args, ostream& os);
+    bool cmd_dump(const vector<string>& args, ostream& os);
+    bool cmd_read(const vector<string>& args, ostream& os);
+    bool cmd_symbols(const vector<string>& args, ostream& os);
+    bool cmd_lsym(const vector<string>& args, ostream& os);
+    bool cmd_disas(const vector<string>& args, ostream& os);
+    bool cmd_v2p(const vector<string>& args, ostream& os);
+    bool cmd_stack(const vector<string>& args, ostream& os);
 
-        using cpureg = debugging::cpureg;
-        virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
-        virtual bool write_cpureg_dbg(const cpureg& r, vcml::u64 val) override;
+    using cpureg = debugging::cpureg;
+    virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
+    virtual bool write_cpureg_dbg(const cpureg& r, vcml::u64 val) override;
 
-        void processor_thread();
+    void processor_thread();
 
-    public:
-        property<string> cpuarch;
-        property<string> symbols;
+public:
+    property<string> cpuarch;
+    property<string> symbols;
 
-        property<int>  gdb_port;
-        property<bool> gdb_wait;
-        property<bool> gdb_echo;
+    property<int> gdb_port;
+    property<bool> gdb_wait;
+    property<bool> gdb_echo;
 
-        irq_target_socket_array<> IRQ;
+    irq_target_socket_array<> irq;
 
-        tlm_initiator_socket INSN;
-        tlm_initiator_socket DATA;
+    tlm_initiator_socket insn;
+    tlm_initiator_socket data;
 
-        processor(const sc_module_name& name, const string& cpu_arch);
-        virtual ~processor();
-        VCML_KIND(processor);
+    processor(const sc_module_name& name, const string& cpu_arch);
+    virtual ~processor();
+    VCML_KIND(processor);
 
-        processor() = delete;
-        processor(const processor&) = delete;
+    processor()                 = delete;
+    processor(const processor&) = delete;
 
-        virtual void session_suspend() override;
-        virtual void session_resume() override;
+    virtual void session_suspend() override;
+    virtual void session_resume() override;
 
-        virtual u64 cycle_count() const = 0;
+    virtual u64 cycle_count() const = 0;
 
-        double get_run_time() const { return m_run_time; }
-        double get_cps()      const { return cycle_count() / m_run_time; }
+    double get_run_time() const { return m_run_time; }
+    double get_cps() const { return cycle_count() / m_run_time; }
 
-        virtual void reset() override;
+    virtual void reset() override;
 
-        bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
-
-        template <typename T>
-        inline tlm_response_status fetch (u64 addr, T& data);
-
-        template <typename T>
-        inline tlm_response_status read  (u64 addr, T& data);
-
-        template <typename T>
-        inline tlm_response_status write (u64 addr, const T& data);
-
-    protected:
-        void log_bus_error(const tlm_initiator_socket& socket, vcml_access rwx,
-                           tlm_response_status rs, u64 addr, u64 size);
-
-        virtual void irq_transport(const irq_target_socket& socket,
-            irq_payload& irq) override;
-
-        virtual void interrupt(unsigned int irq, bool set, irq_vector vector);
-        virtual void interrupt(unsigned int irq, bool set);
-
-        virtual void simulate(unsigned int cycles) = 0;
-        virtual void update_local_time(sc_time& local_time) override;
-        virtual void end_of_elaboration() override;
-
-        virtual void fetch_cpuregs();
-        virtual void flush_cpuregs();
-
-        virtual void define_cpuregs(const vector<cpureg>& regs) override;
-
-        virtual bool read_reg_dbg(vcml::u64 idx, vcml::u64& val);
-        virtual bool write_reg_dbg(vcml::u64 idx, vcml::u64 val);
-
-        virtual u64 read_pmem_dbg(u64 addr, void* ptr, u64 sz) override;
-        virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;
-
-        virtual const char* arch() override;
-    };
+    bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
 
     template <typename T>
-    inline tlm_response_status processor::fetch(u64 addr, T& data) {
-        tlm_response_status rs = INSN.readw(addr, data);
-        if (failed(rs))
-            log_bus_error(INSN, VCML_ACCESS_READ, rs, addr, sizeof(T));
-        return rs;
-    }
+    inline tlm_response_status fetch(u64 addr, T& data);
 
     template <typename T>
-    inline tlm_response_status processor::read(u64 addr, T& data) {
-        tlm_response_status rs = DATA.readw(addr, data);
-        if (failed(rs))
-            log_bus_error(DATA, VCML_ACCESS_READ, rs, addr, sizeof(T));
-        return rs;
-    }
+    inline tlm_response_status read(u64 addr, T& data);
 
     template <typename T>
-    inline tlm_response_status processor::write(u64 addr, const T& data) {
-        tlm_response_status rs = DATA.writew(addr, data);
-        if (failed(rs))
-            log_bus_error(DATA, VCML_ACCESS_WRITE, rs, addr, sizeof(T));
-        return rs;
-    }
+    inline tlm_response_status write(u64 addr, const T& data);
 
+protected:
+    void log_bus_error(const tlm_initiator_socket& socket, vcml_access rwx,
+                       tlm_response_status rs, u64 addr, u64 size);
+
+    virtual void irq_transport(const irq_target_socket& socket,
+                               irq_payload& irq) override;
+
+    virtual void interrupt(unsigned int irq, bool set, irq_vector vector);
+    virtual void interrupt(unsigned int irq, bool set);
+
+    virtual void simulate(unsigned int cycles) = 0;
+    virtual void update_local_time(sc_time& local_time) override;
+    virtual void end_of_elaboration() override;
+
+    virtual void fetch_cpuregs();
+    virtual void flush_cpuregs();
+
+    virtual void define_cpuregs(const vector<cpureg>& regs) override;
+
+    virtual bool read_reg_dbg(vcml::u64 idx, vcml::u64& val);
+    virtual bool write_reg_dbg(vcml::u64 idx, vcml::u64 val);
+
+    virtual u64 read_pmem_dbg(u64 addr, void* ptr, u64 sz) override;
+    virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;
+
+    virtual const char* arch() override;
+};
+
+template <typename T>
+inline tlm_response_status processor::fetch(u64 addr, T& data) {
+    tlm_response_status rs = insn.readw(addr, data);
+    if (failed(rs))
+        log_bus_error(insn, VCML_ACCESS_READ, rs, addr, sizeof(T));
+    return rs;
 }
+
+template <typename T>
+inline tlm_response_status processor::read(u64 addr, T& data) {
+    tlm_response_status rs = data.readw(addr, data);
+    if (failed(rs))
+        log_bus_error(data, VCML_ACCESS_READ, rs, addr, sizeof(T));
+    return rs;
+}
+
+template <typename T>
+inline tlm_response_status processor::write(u64 addr, const T& data) {
+    tlm_response_status rs = data.writew(addr, data);
+    if (failed(rs))
+        log_bus_error(data, VCML_ACCESS_WRITE, rs, addr, sizeof(T));
+    return rs;
+}
+
+} // namespace vcml
 
 #endif

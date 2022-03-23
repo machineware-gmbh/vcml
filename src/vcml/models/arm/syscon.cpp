@@ -18,98 +18,100 @@
 
 #include "vcml/models/arm/syscon.h"
 
-namespace vcml { namespace arm {
+namespace vcml {
+namespace arm {
 
-    syscon::syscon(const sc_module_name& nm):
-        peripheral(nm),
-        SYS_ID      ("SYS_ID",      0x00),
-        LOCKVAL     ("LOCKVAL",     0x20),
-        CFGDATA0    ("CFGDATA0",    0x24),
-        CFGDATA1    ("CFGDATA1",    0x28),
-        FLAGS_S     ("FLAGS_S",     0x30),
-        FLAGS_C     ("FLAGS_C",     0x34),
-        NVFLAGS_S   ("NVFLAGS_S",   0x38),
-        NVFLAGS_C   ("NVFLAGS_C",   0x3c),
-        CLCK24      ("CLCK24",      0x5c),
-        PROC_ID     ("PROC_ID",     0x84),
-        SYS_CFGDATA ("SYS_CFGDATA", 0xa0),
-        SYS_CFGCTRL ("SYS_CFGCTRL", 0xa4),
-        SYS_CFGSTAT ("SYS_CFGSTAT", 0xa8),
-        IN("IN") {
-        SYS_ID.allow_read_only();
+syscon::syscon(const sc_module_name& nm):
+    peripheral(nm),
+    sys_id("sys_id", 0x00),
+    lockval("lockval", 0x20),
+    cfgdata0("cfgdata0", 0x24),
+    cfgdata1("cfgdata1", 0x28),
+    flags_s("flags_s", 0x30),
+    flags_c("flags_c", 0x34),
+    nvflags_s("nvflags_s", 0x38),
+    nvflags_c("nvflags_c", 0x3c),
+    clck24("clck24", 0x5c),
+    proc_id("proc_id", 0x84),
+    sys_cfgdata("sys_cfgdata", 0xa0),
+    sys_cfgctrl("sys_cfgctrl", 0xa4),
+    sys_cfgstat("sys_cfgstat", 0xa8),
+    in("IN") {
+    sys_id.allow_read_only();
 
-        LOCKVAL.allow_read_write();
-        LOCKVAL.on_write(&syscon::write_LOCKVAL);
+    lockval.allow_read_write();
+    lockval.on_write(&syscon::write_lockval);
 
-        CFGDATA0.allow_read_write();
-        CFGDATA1.allow_read_write();
+    cfgdata0.allow_read_write();
+    cfgdata1.allow_read_write();
 
-        FLAGS_S.allow_read_write();
-        FLAGS_S.on_write(&syscon::write_FLAGS_S);
-        FLAGS_C.allow_read_write();
-        FLAGS_C.on_write(&syscon::write_FLAGS_C);
+    flags_s.allow_read_write();
+    flags_s.on_write(&syscon::write_flags_s);
+    flags_c.allow_read_write();
+    flags_c.on_write(&syscon::write_flags_c);
 
-        NVFLAGS_S.allow_read_write();
-        NVFLAGS_S.on_write(&syscon::write_NVFLAGS_S);
-        NVFLAGS_C.allow_read_write();
-        NVFLAGS_C.on_write(&syscon::write_NVFLAGS_C);
+    nvflags_s.allow_read_write();
+    nvflags_s.on_write(&syscon::write_nvflags_s);
+    nvflags_c.allow_read_write();
+    nvflags_c.on_write(&syscon::write_nvflags_c);
 
-        CLCK24.allow_read_only();
-        CLCK24.on_read(&syscon::read_CLCK24);
+    clck24.allow_read_only();
+    clck24.on_read(&syscon::read_clc_k24);
 
-        PROC_ID.allow_read_write();
+    proc_id.allow_read_write();
 
-        SYS_CFGDATA.allow_read_write();
+    sys_cfgdata.allow_read_write();
 
-        SYS_CFGCTRL.allow_read_write();
-        SYS_CFGCTRL.on_write(&syscon::write_SYS_CFGCTRL);
+    sys_cfgctrl.allow_read_write();
+    sys_cfgctrl.on_write(&syscon::write_sys_cfgctrl);
 
-        SYS_CFGSTAT.allow_read_write();
-        SYS_CFGSTAT.on_write(&syscon::write_SYS_CFGSTAT);
-    }
+    sys_cfgstat.allow_read_write();
+    sys_cfgstat.on_write(&syscon::write_sys_cfgstat);
+}
 
-    syscon::~syscon() {
-        // nothing to do
-    }
+syscon::~syscon() {
+    // nothing to do
+}
 
-    u32 syscon::read_CLCK24() {
-        return sc_time_stamp().to_seconds() * VCML_ARM_SYSCON_CLOCK24MHZ;
-    }
+u32 syscon::read_clc_k24() {
+    return sc_time_stamp().to_seconds() * 24.0 * MHz;
+}
 
-    void syscon::write_LOCKVAL(u16 val) {
-        if (val != LOCKVAL_LOCK)
-            val &= LOCKVAL_M;
-        LOCKVAL = val;
-    }
+void syscon::write_lockval(u16 val) {
+    if (val != LOCKVAL_LOCK)
+        val &= LOCKVAL_M;
+    lockval = val;
+}
 
-    void syscon::write_FLAGS_S(u32 val) {
-        FLAGS_S |= val;
-        FLAGS_C |= val;
-    }
+void syscon::write_flags_s(u32 val) {
+    flags_s |= val;
+    flags_c |= val;
+}
 
-    void syscon::write_FLAGS_C(u32 val) {
-        FLAGS_S &= ~val;
-        FLAGS_C &= ~val;
-    }
+void syscon::write_flags_c(u32 val) {
+    flags_s &= ~val;
+    flags_c &= ~val;
+}
 
-    void syscon::write_NVFLAGS_S(u32 val) {
-        NVFLAGS_S |= val;
-        NVFLAGS_C |= val;
-    }
+void syscon::write_nvflags_s(u32 val) {
+    nvflags_s |= val;
+    nvflags_c |= val;
+}
 
-    void syscon::write_NVFLAGS_C(u32 val) {
-        NVFLAGS_S &= ~val;
-        NVFLAGS_C &= ~val;
-    }
+void syscon::write_nvflags_c(u32 val) {
+    nvflags_s &= ~val;
+    nvflags_c &= ~val;
+}
 
-    void syscon::write_SYS_CFGCTRL(u32 val) {
-        if (val & (1 << 31))
-            log_warn("SYS_CFGCTRL write trigger action not implemented");
-        SYS_CFGCTRL = val & ~((3 << 18) | (1 << 31));
-    }
+void syscon::write_sys_cfgctrl(u32 val) {
+    if (val & (1 << 31))
+        log_warn("SYS_CFGCTRL write trigger action not implemented");
+    sys_cfgctrl = val & ~((3 << 18) | (1 << 31));
+}
 
-    void syscon::write_SYS_CFGSTAT(u32 val) {
-        SYS_CFGSTAT = val & 0x3;
-    }
+void syscon::write_sys_cfgstat(u32 val) {
+    sys_cfgstat = val & 0x3;
+}
 
-}}
+} // namespace arm
+} // namespace vcml

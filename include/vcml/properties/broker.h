@@ -25,64 +25,64 @@
 
 namespace vcml {
 
-    class broker
-    {
-    protected:
-        struct value {
-            string value;
-            int uses;
-        };
-
-        string m_name;
-        std::map<string, struct value> m_values;
-
-    public:
-        enum : int {
-            PRIO_DEFAULT = 0,
-            PRIO_CFGFILE = 10,
-            PRIO_ENVIRON = 100,
-            PRIO_CMDLINE = 1000,
-        };
-
-        const int priority;
-
-                const char* name() const { return m_name.c_str(); }
-        virtual const char* kind() const { return "vcml::broker"; }
-
-        broker(const string& name, int priority = PRIO_DEFAULT);
-        virtual ~broker();
-
-        virtual bool lookup(const string& key, string& value);
-
-        virtual bool defines(const string& key) const;
-
-        template <typename T>
-        void define(const string& key, const T& value);
-
-        template <typename T>
-        static broker* init(const string& key, T& value);
-
-        static vector<pair<string, broker*>> collect_unused();
-        static void report_unused();
+class broker
+{
+protected:
+    struct value {
+        string value;
+        int uses;
     };
 
-    template <typename T>
-    inline void broker::define(const string& key, const T& value) {
-        define(key, to_string(value));
-    }
+    string m_name;
+    std::map<string, struct value> m_values;
+
+public:
+    enum : int {
+        PRIO_DEFAULT = 0,
+        PRIO_CFGFILE = 10,
+        PRIO_ENVIRON = 100,
+        PRIO_CMDLINE = 1000,
+    };
+
+    const int priority;
+
+    const char* name() const { return m_name.c_str(); }
+    virtual const char* kind() const { return "vcml::broker"; }
+
+    broker(const string& name, int priority = PRIO_DEFAULT);
+    virtual ~broker();
+
+    virtual bool lookup(const string& key, string& value);
+
+    virtual bool defines(const string& key) const;
 
     template <typename T>
-    inline broker* broker::init(const string& key, T& value) {
-        string str;
-        broker* brkr = broker::init(key, str);
-        if (brkr != nullptr)
-            value = from_string<T>(str);
-        return brkr;
-    }
+    void define(const string& key, const T& value);
 
-    template <>
-    broker* broker::init(const string& key, string& value);
+    template <typename T>
+    static broker* init(const string& key, T& value);
 
+    static vector<pair<string, broker*>> collect_unused();
+    static void report_unused();
+};
+
+template <typename T>
+inline void broker::define(const string& key, const T& value) {
+    define(key, to_string(value));
 }
+
+template <typename T>
+inline broker* broker::init(const string& key, T& value) {
+    string str;
+    broker* brkr = broker::init(key, str);
+    if (brkr != nullptr)
+        value = from_string<T>(str);
+    return brkr;
+}
+
+template <>
+broker* broker::init(const string& key, string& value);
+
+} // namespace vcml
 
 #endif

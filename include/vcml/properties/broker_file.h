@@ -23,22 +23,22 @@
 
 namespace vcml {
 
-    class broker_file: public broker
-    {
-    private:
-        string m_filename;
-        std::map<string, string> m_replacements;
+class broker_file : public broker
+{
+private:
+    string m_filename;
+    std::map<string, string> m_replacements;
 
-        void parse_file(const string& filename);
-        void replace(string& str);
+    void parse_file(const string& filename);
+    void replace(string& str);
 
-    public:
-        broker_file() = delete;
-        broker_file(const string& filename);
-        virtual ~broker_file();
-        VCML_KIND(broker_file);
-    };
+public:
+    broker_file() = delete;
+    broker_file(const string& filename);
+    virtual ~broker_file();
+    VCML_KIND(broker_file);
+};
 
-}
+} // namespace vcml
 
 #endif

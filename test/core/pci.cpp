@@ -18,89 +18,91 @@
 
 #include "testing.h"
 
-class pci_harness: public test_base, public pci_initiator, public pci_target
+class pci_harness : public test_base, public pci_initiator, public pci_target
 {
 private:
     /* PCI initiator interface */
     virtual void pci_bar_map(pci_initiator_socket& socket,
-        const pci_bar& bar) override {
+                             const pci_bar& bar) override {
         ADD_FAILURE() << __FUNCTION__ << " should not be called";
     }
 
     virtual void pci_bar_unmap(pci_initiator_socket& socket,
-        int barno) override {
+                               int barno) override {
         ADD_FAILURE() << __FUNCTION__ << " should not be called";
     }
 
-    virtual void* pci_dma_ptr(pci_initiator_socket& socket,
-        vcml_access rw, u64 addr, u64 size) override {
+    virtual void* pci_dma_ptr(pci_initiator_socket& socket, vcml_access rw,
+                              u64 addr, u64 size) override {
         ADD_FAILURE() << __FUNCTION__ << " should not be called";
         return nullptr;
     }
 
-    virtual bool pci_dma_read(pci_initiator_socket& socket,
-        u64 addr, u64 size, void* data) override {
-        *(u32*)data = PCI_OUT.index_of(socket);
+    virtual bool pci_dma_read(pci_initiator_socket& socket, u64 addr, u64 size,
+                              void* data) override {
+        *(u32*)data = pci_out.index_of(socket);
         return true;
     }
 
-    virtual bool pci_dma_write(pci_initiator_socket& socket,
-        u64 addr, u64 size, const void* data) override {
+    virtual bool pci_dma_write(pci_initiator_socket& socket, u64 addr,
+                               u64 size, const void* data) override {
         ADD_FAILURE() << __FUNCTION__ << " should not be called";
         return false;
     }
 
-    virtual void pci_interrupt(pci_initiator_socket& socket,
-        pci_irq irq, bool state) override {
+    virtual void pci_interrupt(pci_initiator_socket& socket, pci_irq irq,
+                               bool state) override {
         ADD_FAILURE() << __FUNCTION__ << " should not be called";
     }
 
     /* PCI target interface */
     virtual void pci_transport(pci_target_socket& socket,
-        pci_payload& pci) override {
+                               pci_payload& pci) override {
         EXPECT_TRUE(pci.is_read());
         EXPECT_TRUE(pci.is_cfg());
-        pci.data = PCI_IN.index_of(socket);
+        pci.data     = pci_in.index_of(socket);
         pci.response = PCI_RESP_SUCCESS;
     }
 
 public:
-    pci_initiator_socket_array<> PCI_OUT;
-    pci_target_socket_array<> PCI_IN;
+    pci_initiator_socket_array<> pci_out;
+    pci_target_socket_array<> pci_in;
 
     pci_harness(const sc_module_name& nm):
-        test_base(nm), pci_initiator(), pci_target(),
-        PCI_OUT("PCI_OUT"), PCI_IN("PCI_IN") {
+        test_base(nm),
+        pci_initiator(),
+        pci_target(),
+        pci_out("pci_out"),
+        pci_in("pci_in") {
         for (int i = 0; i < 4; i++)
-            PCI_OUT[i].bind(PCI_IN[i]);
+            pci_out[i].bind(pci_in[i]);
     }
 
     virtual void run_test() override {
         pci_payload pci;
         pci.command = PCI_READ;
-        pci.space = PCI_AS_CFG;
+        pci.space   = PCI_AS_CFG;
 
         size_t ninit = 0;
         size_t ntgts = 0;
 
-        for (auto& port : PCI_OUT) {
+        for (auto& port : pci_out) {
             (*port.second)->pci_transport(pci);
             EXPECT_SUCCESS(pci);
             EXPECT_EQ(pci.data, (u32)port.first);
             ninit++;
         }
 
-        for (auto& port : PCI_IN) {
+        for (auto& port : pci_in) {
             u32 data = -1;
             EXPECT_TRUE((*port.second)->pci_dma_read(0, sizeof(data), &data));
             EXPECT_EQ(data, (u32)port.first);
             ntgts++;
         }
 
-        EXPECT_EQ(ninit, PCI_OUT.count());
-        EXPECT_EQ(ntgts, PCI_IN.count());
+        EXPECT_EQ(ninit, pci_out.count());
+        EXPECT_EQ(ntgts, pci_in.count());
     }
-
 };
 
 TEST(spi, sockets) {

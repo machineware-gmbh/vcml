@@ -32,46 +32,50 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace opencores {
+namespace vcml {
+namespace opencores {
 
-    class ocspi: public peripheral
-    {
-    private:
-        bool m_txe_irq;
-        bool m_txr_irq;
+class ocspi : public peripheral
+{
+private:
+    bool m_txe_irq;
+    bool m_txr_irq;
 
-        void write_TXDATA(u8 val);
-        void write_STATUS(u8 val);
-        void write_CONTROL(u32 val);
-        void write_BAUDDIV(u32 val);
+    void write_txdata(u8 val);
+    void write_status(u8 val);
+    void write_control(u32 val);
+    void write_bauddiv(u32 val);
 
-        // disabled
-        ocspi();
-        ocspi(const ocspi&);
-    public:
-        enum status_bis {
-            STATUS_TXE = 1 << 0, /* transfer ended */
-            STATUS_TXR = 1 << 1, /* transfer ready */
-        };
+    // disabled
+    ocspi();
+    ocspi(const ocspi&);
 
-        reg<u8> RXDATA;
-        reg<u8> TXDATA;
-        reg<u8> STATUS;
-        reg<u32> CONTROL;
-        reg<u32> BAUDDIV;
-
-        irq_initiator_socket IRQ;
-        tlm_target_socket IN;
-        spi_initiator_socket SPI_OUT;
-
-        property<clock_t> clock;
-
-        ocspi(const sc_module_name& name);
-        virtual ~ocspi();
-        VCML_KIND(ocspi);
-        virtual void reset() override;
+public:
+    enum status_bis {
+        STATUS_TXE = 1 << 0, // transfer ended
+        STATUS_TXR = 1 << 1, // transfer ready
     };
 
-}}
+    reg<u8> rxdata;
+    reg<u8> txdata;
+    reg<u8> status;
+    reg<u32> control;
+    reg<u32> bauddiv;
+
+    irq_initiator_socket irq;
+    tlm_target_socket in;
+    spi_initiator_socket spi_out;
+
+    property<clock_t> clock;
+
+    ocspi(const sc_module_name& name);
+    virtual ~ocspi();
+    VCML_KIND(opencores::ocspi);
+
+    virtual void reset() override;
+};
+
+} // namespace opencores
+} // namespace vcml
 
 #endif

@@ -27,7 +27,6 @@ TEST(irq, to_string) {
     std::cout << irq << std::endl;
 }
 
-
 class irq_test_harness : public test_base
 {
 public:
@@ -35,67 +34,67 @@ public:
     unordered_map<irq_vector, bool> irq_state;
     unordered_set<unsigned int> irq_source;
 
-    irq_initiator_socket OUT;
-    irq_initiator_socket OUT2;
-    irq_target_socket_array<> IN;
+    irq_initiator_socket out;
+    irq_initiator_socket out2;
+    irq_target_socket_array<> in;
 
     // for testing hierarchical binding
-    irq_base_initiator_socket H_OUT;
-    irq_base_target_socket H_IN;
+    irq_base_initiator_socket h_out;
+    irq_base_target_socket h_in;
 
     // for adapter testing
-    irq_initiator_socket A_OUT;
-    irq_target_adapter TA;
+    irq_initiator_socket a_out;
+    irq_target_adapter ta;
     sc_signal<bool> signal;
-    irq_initiator_adapter IA;
+    irq_initiator_adapter ia;
 
     irq_test_harness(const sc_module_name& nm):
         test_base(nm),
         irq_no(),
         irq_state(),
         irq_source(),
-        OUT("OUT"),
-        OUT2("OUT2"),
-        IN("IN"),
-        H_OUT("H_OUT"),
-        H_IN("H_IN"),
-        A_OUT("A_OUT"),
-        TA("TA"),
+        out("out"),
+        out2("out2"),
+        in("in"),
+        h_out("h_out"),
+        h_in("h_in"),
+        a_out("a_out"),
+        ta("ta"),
         signal("signal"),
-        IA("IA") {
-        OUT.bind(IN[0]);
+        ia("ia") {
+        out.bind(in[0]);
 
         // check hierarchical binding: OUT -> H_OUT -> H_IN -> IN[1]
-        OUT.bind(H_OUT);
-        H_IN.bind(IN[1]);
-        H_OUT.bind(H_IN);
+        out.bind(h_out);
+        h_in.bind(in[1]);
+        h_out.bind(h_in);
 
         // check stubbing
-        OUT2.stub();
-        IN[2].stub();
+        out2.stub();
+        in[2].stub();
 
         // check adapters
-        A_OUT.bind(TA.IRQ_IN);
-        TA.IRQ_OUT.bind(signal);
-        IA.IRQ_IN.bind(signal);
-        IA.IRQ_OUT.bind(IN[3]);
+        a_out.bind(ta.irq_in);
+        ta.irq_out.bind(signal);
+        ia.irq_in.bind(signal);
+        ia.irq_out.bind(in[3]);
 
         auto initiators = get_irq_initiator_sockets();
-        auto targets = get_irq_target_sockets();
-        auto sockets = get_irq_target_sockets(0);
+        auto targets    = get_irq_target_sockets();
+        auto sockets    = get_irq_target_sockets(0);
 
         EXPECT_EQ(initiators.size(), 3) << "irq initiators did not register";
         EXPECT_EQ(targets.size(), 4) << "irq targets did not register";
         EXPECT_FALSE(sockets.empty()) << "irq targets in wrong address space";
 
-        CLOCK.stub(100 * MHz);
-        RESET.stub();
+        clk.stub(100 * MHz);
+        rst.stub();
     }
 
     virtual void irq_transport(const irq_target_socket& socket,
-        irq_payload& irq) override {
+                               irq_payload& irq) override {
         irq_state[irq.vector] = irq.active;
-        size_t source = IN.index_of(socket);
+        size_t source         = in.index_of(socket);
         if (irq.active)
             irq_source.insert(source);
         else
@@ -105,48 +104,50 @@ public:
     virtual void run_test() override {
         // this also forces construction of IN[0]'s default event so that it
         // it can be triggered later on
-        EXPECT_TRUE(IN[0].default_event().name());
+        EXPECT_TRUE(in[0].default_event().name());
 
-        const irq_vector VECTOR = 0x42;
+        enum test_vectors : irq_vector {
+            VECTOR = 0x42,
+        };
 
         EXPECT_FALSE(irq_state[VECTOR]);
-        OUT[VECTOR] = true;
+        out[VECTOR] = true;
         EXPECT_TRUE(irq_state[VECTOR]);
         EXPECT_TRUE(irq_source.count(0));
         EXPECT_TRUE(irq_source.count(1));
 
-        wait(IN[0].default_event());
+        wait(in[0].default_event());
 
         EXPECT_TRUE(irq_state[VECTOR]);
-        OUT[VECTOR] = false;
+        out[VECTOR] = false;
         EXPECT_FALSE(irq_state[VECTOR]);
         EXPECT_FALSE(irq_source.count(0));
         EXPECT_FALSE(irq_source.count(1));
 
-        wait(IN[0].default_event());
+        wait(in[0].default_event());
 
         EXPECT_FALSE(irq_state[IRQ_NO_VECTOR]);
-        OUT = true;
+        out = true;
         EXPECT_TRUE(irq_state[IRQ_NO_VECTOR]);
         EXPECT_TRUE(irq_source.count(0));
         EXPECT_TRUE(irq_source.count(1));
 
-        wait(IN[0].default_event());
+        wait(in[0].default_event());
 
         EXPECT_TRUE(irq_state[IRQ_NO_VECTOR]);
-        OUT = false;
+        out = false;
         EXPECT_FALSE(irq_state[IRQ_NO_VECTOR]);
         EXPECT_FALSE(irq_source.count(0));
         EXPECT_FALSE(irq_source.count(1));
 
         // test hierarchy binding
         EXPECT_FALSE(signal.read());
-        A_OUT = true;
-        wait(IN[3].default_event());
-        EXPECT_TRUE(IN[3].read());
-        A_OUT = false;
-        wait(IN[3].default_event());
-        EXPECT_FALSE(IN[3].read());
+        a_out = true;
+        wait(in[3].default_event());
+        EXPECT_TRUE(in[3].read());
+        a_out = false;
+        wait(in[3].default_event());
+        EXPECT_FALSE(in[3].read());
     }
 };
 

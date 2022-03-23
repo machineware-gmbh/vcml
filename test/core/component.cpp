@@ -30,28 +30,25 @@ using namespace ::testing;
 using namespace sc_core;
 using namespace vcml;
 
-class test_component: public component
+class test_component : public component
 {
 public:
-    tlm_target_socket IN;
-    tlm_initiator_socket OUT;
+    tlm_target_socket in;
+    tlm_initiator_socket out;
 
     test_component(const sc_module_name& nm):
-        component(nm),
-        IN("IN"),
-        OUT("OUT") {
+        component(nm), in("in"), out("out") {
+        out.bind(in);
 
-        OUT.bind(IN);
-
-        CLOCK.stub(100 * MHz);
-        RESET.stub();
+        clk.stub(100 * MHz);
+        rst.stub();
 
         SC_HAS_PROCESS(test_component);
         SC_THREAD(run_test);
     }
 
-    virtual unsigned int transport(tlm_generic_payload& tx,
-        const tlm_sbi& sbi, address_space as) override {
+    virtual unsigned int transport(tlm_generic_payload& tx, const tlm_sbi& sbi,
+                                   address_space as) override {
         EXPECT_EQ(as, VCML_AS_DEFAULT);
         EXPECT_EQ(tx.get_address(), 0x0);
         EXPECT_EQ(tx.get_data_length(), 4);
@@ -63,15 +60,15 @@ public:
     void run_test() {
         wait(SC_ZERO_TIME);
 
-        u32 data = 0xf3f3f3f3;
+        u32 data               = 0xf3f3f3f3;
         unsigned char* dmi_ptr = (unsigned char*)&data;
         map_dmi(dmi_ptr, 0, 3, VCML_ACCESS_READ);
 
-        ASSERT_OK(OUT.readw<u32>(0, data))
+        ASSERT_OK(out.readw<u32>(0, data))
             << "component did respond to read command";
 
         tlm_dmi dmi; // previous read should have provided DMI access
-        ASSERT_TRUE(OUT.dmi().lookup(0, 4, TLM_READ_COMMAND, dmi))
+        ASSERT_TRUE(out.dmi().lookup(0, 4, TLM_READ_COMMAND, dmi))
             << "component did not provide DMI mapping";
         EXPECT_TRUE(dmi.is_read_allowed())
             << "component denied previously granted DMI read access";
@@ -82,7 +79,7 @@ public:
         EXPECT_EQ(dmi.get_dmi_ptr(), dmi_ptr)
             << "component returned invalid DMI pointer";
 
-        ASSERT_OK(OUT.writew<u32>(0, data))
+        ASSERT_OK(out.writew<u32>(0, data))
             << "component did not respond to write command";
 
         sc_stop();

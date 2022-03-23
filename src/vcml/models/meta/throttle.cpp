@@ -18,44 +18,46 @@
 
 #include "vcml/models/meta/throttle.h"
 
-namespace vcml { namespace meta {
+namespace vcml {
+namespace meta {
 
-    void throttle::update() {
-        sc_time quantum = tlm::tlm_global_quantum::instance().get();
-        sc_time interval = max(update_interval.get(), quantum);
-        next_trigger(interval);
+void throttle::update() {
+    sc_time quantum  = tlm::tlm_global_quantum::instance().get();
+    sc_time interval = max(update_interval.get(), quantum);
+    next_trigger(interval);
 
-        if (rtf > 0.0) {
-            u64 actual = realtime_us() - m_time_real;
-            u64 target = time_to_us(interval) / rtf;
+    if (rtf > 0.0) {
+        u64 actual = realtime_us() - m_time_real;
+        u64 target = time_to_us(interval) / rtf;
 
-            if (actual < target) {
-                usleep(target - actual);
-                if (!m_throttling)
-                    log_debug("throttling started");
-                m_throttling = true;
-            } else {
-                if (m_throttling)
-                    log_debug("throttling stopped");
-                m_throttling = false;
-            }
+        if (actual < target) {
+            usleep(target - actual);
+            if (!m_throttling)
+                log_debug("throttling started");
+            m_throttling = true;
+        } else {
+            if (m_throttling)
+                log_debug("throttling stopped");
+            m_throttling = false;
         }
-
-        m_time_real = realtime_us();
     }
 
-    throttle::throttle(const sc_module_name& nm):
-        module(nm),
-        m_throttling(false),
-        m_time_real(realtime_us()),
-        update_interval("update_interval", sc_time(10.0, SC_MS)),
-        rtf("rtf", 0.0) {
-        SC_HAS_PROCESS(throttle);
-        SC_METHOD(update);
-    }
+    m_time_real = realtime_us();
+}
 
-    throttle::~throttle() {
-        // nothing to do
-    }
+throttle::throttle(const sc_module_name& nm):
+    module(nm),
+    m_throttling(false),
+    m_time_real(realtime_us()),
+    update_interval("update_interval", sc_time(10.0, SC_MS)),
+    rtf("rtf", 0.0) {
+    SC_HAS_PROCESS(throttle);
+    SC_METHOD(update);
+}
 
-}}
+throttle::~throttle() {
+    // nothing to do
+}
+
+} // namespace meta
+} // namespace vcml

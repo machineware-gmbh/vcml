@@ -25,18 +25,18 @@
 
 namespace vcml {
 
-    class log_file: public publisher
-    {
-    private:
-        ofstream m_file;
+class log_file : public publisher
+{
+private:
+    ofstream m_file;
 
-    public:
-        log_file(const string& filename);
-        virtual ~log_file();
+public:
+    log_file(const string& filename);
+    virtual ~log_file();
 
-        virtual void publish(const logmsg& msg) override;
-    };
+    virtual void publish(const logmsg& msg) override;
+};
 
-}
+} // namespace vcml
 
 #endif

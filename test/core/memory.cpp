@@ -71,7 +71,7 @@ TEST(memory, readwrite) {
     EXPECT_OK(mem.write(range(0, 0), &data, false)) << "write failed";
     EXPECT_EQ(mem[0], data) << "data not stored";
 
-    EXPECT_AE(mem.write(range(1,1), &data, false))
+    EXPECT_AE(mem.write(range(1, 1), &data, false))
         << "out of bounds write succeeded";
 
     mem.allow_read_only();
@@ -79,13 +79,11 @@ TEST(memory, readwrite) {
 
     EXPECT_CE(mem.write(range(0, 0), &data, false))
         << "read-only memory permitted write";
-    EXPECT_EQ(mem[0], 0)
-        << "read-only memory got overwritten";
+    EXPECT_EQ(mem[0], 0) << "read-only memory got overwritten";
 
     EXPECT_OK(mem.write(range(0, 0), &data, true))
         << "read-only memory denied debug write";
-    EXPECT_EQ(mem[0], data)
-        << "debug write has no effect";
+    EXPECT_EQ(mem[0], data) << "debug write has no effect";
 }
 
 TEST(memory, move) {
@@ -102,4 +100,3 @@ TEST(memory, move) {
     EXPECT_EQ(orig.data(), nullptr) << "memory pointer not cleared after move";
     EXPECT_EQ(move.data(), data) << "memory pointer not moved";
 }
-

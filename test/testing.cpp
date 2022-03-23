@@ -41,10 +41,10 @@ void test_base::finalize_test() {
 }
 
 void test_base::before_end_of_elaboration() {
-    if (!CLOCK.is_bound())
-        CLOCK.stub(100 * MHz);
-    if (!RESET.is_bound())
-        RESET.stub();
+    if (!clk.is_bound())
+        clk.stub(100 * MHz);
+    if (!rst.is_bound())
+        rst.stub();
 }
 
 void test_base::irq_transport(const irq_target_socket& s, irq_payload& tx) {

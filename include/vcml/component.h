@@ -34,59 +34,58 @@
 
 namespace vcml {
 
-    class component: public module, public tlm_host
-    {
-    private:
-        clock_t m_curclk;
+class component : public module, public tlm_host
+{
+private:
+    clock_t m_curclk;
 
-        bool cmd_reset(const vector<string>& args, ostream& os);
+    bool cmd_reset(const vector<string>& args, ostream& os);
 
-        void do_reset();
+    void do_reset();
 
-        void clock_handler();
-        void reset_handler();
+    void clock_handler();
+    void reset_handler();
 
-    public:
-        in_port<clock_t> CLOCK;
-        in_port<bool>    RESET;
+public:
+    in_port<clock_t> clk;
+    in_port<bool> rst;
 
-        component() = delete;
-        component(const component&) = delete;
-        component(const sc_module_name& nm, bool allow_dmi = true);
-        virtual ~component();
-        VCML_KIND(component);
+    component()                 = delete;
+    component(const component&) = delete;
+    component(const sc_module_name& nm, bool allow_dmi = true);
+    virtual ~component();
+    VCML_KIND(component);
 
-        virtual void reset();
+    virtual void reset();
 
-        virtual void wait_clock_reset();
-        virtual void wait_clock_cycle();
-        virtual void wait_clock_cycles(u64 num);
+    virtual void wait_clock_reset();
+    virtual void wait_clock_cycle();
+    virtual void wait_clock_cycles(u64 num);
 
-        sc_time clock_cycle() const;
-        sc_time clock_cycles(u64 num) const;
+    sc_time clock_cycle() const;
+    sc_time clock_cycles(u64 num) const;
 
-        double clock_hz() const;
+    double clock_hz() const;
 
-        virtual unsigned int transport(tlm_target_socket& socket,
-                                       tlm_generic_payload& tx,
-                                       const tlm_sbi& sideband) override;
+    virtual unsigned int transport(tlm_target_socket& socket,
+                                   tlm_generic_payload& tx,
+                                   const tlm_sbi& sideband) override;
 
-        virtual unsigned int transport(tlm_generic_payload& tx,
-                                       const tlm_sbi& sideband,
-                                       address_space as);
+    virtual unsigned int transport(tlm_generic_payload& tx,
+                                   const tlm_sbi& sideband, address_space as);
 
-        virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
-    };
+    virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
+};
 
-    inline sc_time component::clock_cycles(u64 num) const {
-        return clock_cycle() * num;
-    }
-
-    inline double component::clock_hz() const {
-        const sc_time c = clock_cycle();
-        return c == SC_ZERO_TIME ? 0.0 : sc_time(1.0, SC_SEC) / c;
-    }
-
+inline sc_time component::clock_cycles(u64 num) const {
+    return clock_cycle() * num;
 }
+
+inline double component::clock_hz() const {
+    const sc_time c = clock_cycle();
+    return c == SC_ZERO_TIME ? 0.0 : sc_time(1.0, SC_SEC) / c;
+}
+
+} // namespace vcml
 
 #endif

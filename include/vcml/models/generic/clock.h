@@ -26,25 +26,27 @@
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    class clock: public module
-    {
-    public:
-        property<clock_t> freq;
-        out_port<clock_t> CLOCK;
+class clock : public module
+{
+public:
+    property<clock_t> freq;
+    out_port<clock_t> clk;
 
-        clock() = delete;
-        clock(const clock&) = delete;
+    clock()             = delete;
+    clock(const clock&) = delete;
 
-        clock(const sc_module_name& nm, clock_t init_freq);
-        virtual ~clock();
-        VCML_KIND(clock);
+    clock(const sc_module_name& nm, clock_t init_freq);
+    virtual ~clock();
+    VCML_KIND(clock);
 
-    protected:
-        virtual void end_of_elaboration() override;
-    };
+protected:
+    virtual void end_of_elaboration() override;
+};
 
-}}
+} // namespace generic
+} // namespace vcml
 
 #endif

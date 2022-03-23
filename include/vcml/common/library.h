@@ -25,39 +25,39 @@
 
 namespace vcml {
 
-    class library
-    {
-    private:
-        string m_path;
-        void* m_handle;
+class library
+{
+private:
+    string m_path;
+    void* m_handle;
 
-        void* lookup(const string& name) const;
+    void* lookup(const string& name) const;
 
-    public:
-        const char* path() const { return m_path.c_str(); }
-        bool is_open() const { return m_handle != nullptr; }
+public:
+    const char* path() const { return m_path.c_str(); }
+    bool is_open() const { return m_handle != nullptr; }
 
-        library();
-        library(library& other);
-        library(const string& path);
-        library(const string& path, int mode);
-        library(const library& copy) = delete;
-        virtual ~library();
+    library();
+    library(library& other);
+    library(const string& path);
+    library(const string& path, int mode);
+    library(const library& copy) = delete;
+    virtual ~library();
 
-        void open(const string& path, int mode = -1);
-        void close();
+    void open(const string& path, int mode = -1);
+    void close();
 
-        bool has(const string& name) const;
-
-        template <typename T>
-        void get(T*& fn, const string& name) const;
-    };
+    bool has(const string& name) const;
 
     template <typename T>
-    void library::get(T*& fn, const string& name) const {
-        fn = (T*)lookup(name);
-    }
+    void get(T*& fn, const string& name) const;
+};
 
+template <typename T>
+void library::get(T*& fn, const string& name) const {
+    fn = (T*)lookup(name);
 }
+
+} // namespace vcml
 
 #endif

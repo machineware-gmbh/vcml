@@ -22,102 +22,100 @@
 
 namespace vcml {
 
-    struct thctl {
-        std::thread::id sysc_thread;
-        std::thread::id curr_owner;
+struct thctl {
+    std::thread::id sysc_thread;
+    std::thread::id curr_owner;
 
-        std::mutex mutex;
-        std::atomic<size_t> nwaiting;
-        std::condition_variable_any notify;
+    std::mutex mutex;
+    std::atomic<size_t> nwaiting;
+    std::condition_variable_any notify;
 
-        thctl();
-        ~thctl() = default;
+    thctl();
+    ~thctl() = default;
 
-        bool is_sysc_thread() const;
-        bool is_in_critical() const;
+    bool is_sysc_thread() const;
+    bool is_in_critical() const;
 
-        void enter_critical();
-        void exit_critical();
+    void enter_critical();
+    void exit_critical();
 
-        void suspend();
-    };
+    void suspend();
+};
 
-    thctl::thctl():
-        sysc_thread(std::this_thread::get_id()),
-        curr_owner(sysc_thread),
-        mutex(),
-        nwaiting(0),
-        notify() {
-        mutex.lock();
-        on_each_delta_cycle(std::bind(&thctl::suspend, this));
-    }
-
-    inline bool thctl::is_sysc_thread() const {
-        return std::this_thread::get_id() == sysc_thread;
-    }
-
-    inline bool thctl::is_in_critical() const {
-        return std::this_thread::get_id() == curr_owner;
-    }
-
-    inline void thctl::enter_critical() {
-        if (is_sysc_thread())
-            VCML_ERROR("SystemC thread must not enter critical sections");
-        if (is_in_critical())
-            VCML_ERROR("thread already in critical section");
-
-        nwaiting++;
-        mutex.lock();
-        curr_owner = std::this_thread::get_id();
-    }
-
-    inline void thctl::exit_critical() {
-        if (curr_owner != std::this_thread::get_id())
-            VCML_ERROR("thread not in critical section");
-
-        curr_owner = std::thread::id();
-        mutex.unlock();
-
-        if (--nwaiting == 0)
-            notify.notify_all();
-    }
-
-    void thctl::suspend() {
-        VCML_ERROR_ON(!is_sysc_thread(), "this is not the SystemC thread");
-        VCML_ERROR_ON(!is_in_critical(), "thread not in critical section");
-
-        if (nwaiting == 0)
-            return;
-
-        notify.wait(mutex, [&]() -> bool {
-            return nwaiting == 0;
-        });
-
-        curr_owner = sysc_thread;
-    }
-
-    thctl g_thctl;
-
-    bool thctl_is_sysc_thread() {
-        return g_thctl.is_sysc_thread();
-    }
-
-    bool thctl_is_in_critical() {
-        return g_thctl.is_in_critical();
-    }
-
-    void thctl_enter_critical() {
-        if (sim_running())
-            g_thctl.enter_critical();
-    }
-
-    void thctl_exit_critical() {
-        if (sim_running())
-            g_thctl.exit_critical();
-    }
-
-    void thctl_suspend() {
-        g_thctl.suspend();
-    }
-
+thctl::thctl():
+    sysc_thread(std::this_thread::get_id()),
+    curr_owner(sysc_thread),
+    mutex(),
+    nwaiting(0),
+    notify() {
+    mutex.lock();
+    on_each_delta_cycle(std::bind(&thctl::suspend, this));
 }
+
+inline bool thctl::is_sysc_thread() const {
+    return std::this_thread::get_id() == sysc_thread;
+}
+
+inline bool thctl::is_in_critical() const {
+    return std::this_thread::get_id() == curr_owner;
+}
+
+inline void thctl::enter_critical() {
+    if (is_sysc_thread())
+        VCML_ERROR("SystemC thread must not enter critical sections");
+    if (is_in_critical())
+        VCML_ERROR("thread already in critical section");
+
+    nwaiting++;
+    mutex.lock();
+    curr_owner = std::this_thread::get_id();
+}
+
+inline void thctl::exit_critical() {
+    if (curr_owner != std::this_thread::get_id())
+        VCML_ERROR("thread not in critical section");
+
+    curr_owner = std::thread::id();
+    mutex.unlock();
+
+    if (--nwaiting == 0)
+        notify.notify_all();
+}
+
+void thctl::suspend() {
+    VCML_ERROR_ON(!is_sysc_thread(), "this is not the SystemC thread");
+    VCML_ERROR_ON(!is_in_critical(), "thread not in critical section");
+
+    if (nwaiting == 0)
+        return;
+
+    notify.wait(mutex, [&]() -> bool { return nwaiting == 0; });
+
+    curr_owner = sysc_thread;
+}
+
+thctl g_thctl;
+
+bool thctl_is_sysc_thread() {
+    return g_thctl.is_sysc_thread();
+}
+
+bool thctl_is_in_critical() {
+    return g_thctl.is_in_critical();
+}
+
+void thctl_enter_critical() {
+    if (sim_running())
+        g_thctl.enter_critical();
+}
+
+void thctl_exit_critical() {
+    if (sim_running())
+        g_thctl.exit_critical();
+}
+
+void thctl_suspend() {
+    g_thctl.suspend();
+}
+
+} // namespace vcml

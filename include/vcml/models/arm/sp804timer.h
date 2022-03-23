@@ -30,126 +30,126 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace arm {
+namespace vcml {
+namespace arm {
 
-    class sp804timer: public peripheral
+class sp804timer : public peripheral
+{
+private:
+    void update_irqc();
+
+    // disabled
+    sp804timer();
+    sp804timer(const sp804timer&);
+
+public:
+    enum amba_ids : u32 {
+        AMBA_PID = 0x00141804, // Peripheral ID
+        AMBA_CID = 0xb105f00d, // PrimeCell ID
+    };
+
+    class timer : public peripheral
     {
     private:
-        SC_HAS_PROCESS(sp804timer);
-        void update_IRQC();
+        sc_event m_ev;
+        sc_time m_prev;
+        sc_time m_next;
+        sp804timer* m_timer;
 
-        // disabled
-        sp804timer();
-        sp804timer(const sp804timer&);
+        void trigger();
+        void schedule(u32 ticks);
+
+        u32 read_value();
+        u32 read_ris();
+        u32 read_mis();
+
+        void write_load(u32 val);
+        void write_control(u32 val);
+        void write_intclr(u32 val);
+        void write_bgload(u32 val);
 
     public:
-        const u32 SP804TIMER_PID = 0x00141804; // Peripheral ID
-        const u32 SP804TIMER_CID = 0xB105F00D; // PrimeCell ID
-
-        class timer: public peripheral
-        {
-        private:
-            SC_HAS_PROCESS(timer);
-
-            sc_event    m_ev;
-            sc_time     m_prev;
-            sc_time     m_next;
-            sp804timer* m_timer;
-
-            void trigger();
-            void schedule(u32 ticks);
-
-            u32  read_VALUE();
-            u32  read_RIS();
-            u32  read_MIS();
-
-            void write_LOAD(u32 val);
-            void write_CONTROL(u32 val);
-            void write_INTCLR(u32 val);
-            void write_BGLOAD(u32 val);
-
-        public:
-            enum control_bits: u32 {
-                CONTROL_ONESHOT = 1 << 0,
-                CONTROL_32BIT   = 1 << 1,
-                CONTROL_IRQEN   = 1 << 5,
-                CONTROL_PERIOD  = 1 << 6,
-                CONTROL_ENABLED = 1 << 7,
-                CONTROL_M       = 0xFF,
-            };
-
-            enum control_prescale_bits: u32 {
-                CTLR_PRESCALE_O = 2,
-                CTLR_PRESCALE_M = 3,
-            };
-
-            reg<u32> LOAD;    // Load register
-            reg<u32> VALUE;   // Current Value register
-            reg<u32> CONTROL; // Timer Control register
-            reg<u32> INTCLR;  // Interrupt Clear register
-            reg<u32> RIS;     // Raw Interrupt Status register
-            reg<u32> MIS;     // Masked Interrupt Status register
-            reg<u32> BGLOAD;  // Background Load register
-
-            irq_initiator_socket IRQ;
-
-            bool is_enabled()     const { return CONTROL & CONTROL_ENABLED; }
-            bool is_irq_enabled() const { return CONTROL & CONTROL_IRQEN; }
-            bool is_32bit()       const { return CONTROL & CONTROL_32BIT; }
-            bool is_periodic()    const { return CONTROL & CONTROL_PERIOD; }
-            bool is_oneshot()     const { return CONTROL & CONTROL_ONESHOT; }
-
-            int get_prescale_stages() const;
-            int get_prescale_divider() const;
-
-            timer(const sc_module_name& nm);
-            virtual ~timer();
-            VCML_KIND(sp804timer::timer);
-
-            virtual void reset() override;
+        enum control_bits : u32 {
+            CONTROL_ONESHOT = 1 << 0,
+            CONTROL_32BIT   = 1 << 1,
+            CONTROL_IRQEN   = 1 << 5,
+            CONTROL_PERIOD  = 1 << 6,
+            CONTROL_ENABLED = 1 << 7,
+            CONTROL_M       = 0xff,
         };
 
-        enum timer_address {
-            TIMER1_START = 0x00,
-            TIMER1_END   = 0x1F,
-            TIMER2_START = 0x20,
-            TIMER2_END   = 0x3F,
+        enum control_prescale_bits : u32 {
+            CTLR_PRESCALE_O = 2,
+            CTLR_PRESCALE_M = 3,
         };
 
-        timer TIMER1;
-        timer TIMER2;
+        reg<u32> load;    // Load register
+        reg<u32> value;   // Current Value register
+        reg<u32> control; // Timer Control register
+        reg<u32> intclr;  // Interrupt Clear register
+        reg<u32> ris;     // Raw Interrupt Status register
+        reg<u32> mis;     // Masked Interrupt Status register
+        reg<u32> bgload;  // Background Load register
 
-        reg<u32> ITCR;   // Integration Test Control Register
-        reg<u32> ITOP;   // Integration Test OutPut set register
+        irq_initiator_socket irq;
 
-        reg<u32, 4> PID; // Peripheral ID Register
-        reg<u32, 4> CID; // Cell ID Register
+        bool is_enabled() const { return control & CONTROL_ENABLED; }
+        bool is_irq_enabled() const { return control & CONTROL_IRQEN; }
+        bool is_32bit() const { return control & CONTROL_32BIT; }
+        bool is_periodic() const { return control & CONTROL_PERIOD; }
+        bool is_oneshot() const { return control & CONTROL_ONESHOT; }
 
-        tlm_target_socket IN;
+        int get_prescale_stages() const;
+        int get_prescale_divider() const;
 
-        irq_base_initiator_socket IRQ1;
-        irq_base_initiator_socket IRQ2;
-        irq_initiator_socket IRQC;
-
-        sp804timer(const sc_module_name& nm);
-        virtual ~sp804timer();
-        VCML_KIND(arm::sp804timer);
-
-        virtual unsigned int receive(tlm_generic_payload& tx,
-                                     const tlm_sbi& info,
-                                     address_space as) override;
+        timer(const sc_module_name& nm);
+        virtual ~timer();
+        VCML_KIND(arm::sp804timer::timer);
 
         virtual void reset() override;
     };
 
-    inline int sp804timer::timer::get_prescale_stages() const {
-        return ((CONTROL >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) << 2;
-    }
+    enum timer_address : u64 {
+        TIMER1_START = 0x00,
+        TIMER1_END   = 0x1f,
+        TIMER2_START = 0x20,
+        TIMER2_END   = 0x3f,
+    };
 
-    inline int sp804timer::timer::get_prescale_divider() const {
-        return 1 << get_prescale_stages();
-    }
+    timer timer1;
+    timer timer2;
 
-}}
+    reg<u32> itcr; // Integration Test Control Register
+    reg<u32> itop; // Integration Test OutPut set register
+
+    reg<u32, 4> pid; // Peripheral ID Register
+    reg<u32, 4> cid; // Cell ID Register
+
+    tlm_target_socket in;
+
+    irq_base_initiator_socket irq1;
+    irq_base_initiator_socket irq2;
+    irq_initiator_socket irqc;
+
+    sp804timer(const sc_module_name& nm);
+    virtual ~sp804timer();
+    VCML_KIND(arm::sp804timer);
+
+    virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                                 address_space as) override;
+
+    virtual void reset() override;
+};
+
+inline int sp804timer::timer::get_prescale_stages() const {
+    return ((control >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) << 2;
+}
+
+inline int sp804timer::timer::get_prescale_divider() const {
+    return 1 << get_prescale_stages();
+}
+
+} // namespace arm
+} // namespace vcml
 
 #endif

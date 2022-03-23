@@ -20,18 +20,18 @@
 
 namespace vcml {
 
-    log_file::log_file(const string& filename):
-        publisher(LOG_ERROR, LOG_DEBUG),
-        m_file(filename.c_str(), std::ios_base::out) {
-        // nothing to do
-    }
-
-    log_file::~log_file() {
-        // nothing to do
-    }
-
-    void log_file::publish(const logmsg& msg) {
-        m_file << msg << std::endl;
-    }
-
+log_file::log_file(const string& filename):
+    publisher(LOG_ERROR, LOG_DEBUG),
+    m_file(filename.c_str(), std::ios_base::out) {
+    // nothing to do
 }
+
+log_file::~log_file() {
+    // nothing to do
+}
+
+void log_file::publish(const logmsg& msg) {
+    m_file << msg << std::endl;
+}
+
+} // namespace vcml

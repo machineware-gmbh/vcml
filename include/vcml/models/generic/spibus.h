@@ -30,56 +30,58 @@
 #include "vcml/ports.h"
 #include "vcml/component.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    typedef port_list<spi_initiator_socket> spi_initiator_list;
+typedef port_list<spi_initiator_socket> spi_initiator_list;
 
-    class spibus: public component,
-                  public spi_host {
-    private:
-        std::map<unsigned int, bool> m_csmode;
+class spibus : public component, public spi_host
+{
+private:
+    std::map<unsigned int, bool> m_csmode;
 
-        // disabled
-        spibus();
-        spibus(const spibus&);
+    // disabled
+    spibus();
+    spibus(const spibus&);
 
-    public:
-        spi_target_socket  SPI_IN;
-        spi_initiator_list SPI_OUT;
+public:
+    spi_target_socket spi_in;
+    spi_initiator_list spi_out;
 
-        in_port_list<bool> CS;
+    in_port_list<bool> cs;
 
-        spibus(const sc_module_name& nm);
-        virtual ~spibus();
-        VCML_KIND(spibus);
-        virtual void reset() override;
+    spibus(const sc_module_name& nm);
+    virtual ~spibus();
+    VCML_KIND(spibus);
+    virtual void reset() override;
 
-        bool is_valid(unsigned int port) const;
-        bool is_active(unsigned int port) const;
-        bool is_active_high(unsigned int port) const;
-        bool is_active_low(unsigned int port) const;
+    bool is_valid(unsigned int port) const;
+    bool is_active(unsigned int port) const;
+    bool is_active_high(unsigned int port) const;
+    bool is_active_low(unsigned int port) const;
 
-        void set_active_high(unsigned int port, bool set = true);
-        void set_active_low(unsigned int port, bool set = true);
+    void set_active_high(unsigned int port, bool set = true);
+    void set_active_low(unsigned int port, bool set = true);
 
-        virtual void spi_transport(const spi_target_socket& socket,
-                                   spi_payload& spi) override;
+    virtual void spi_transport(const spi_target_socket& socket,
+                               spi_payload& spi) override;
 
-        unsigned int next_free() const;
+    unsigned int next_free() const;
 
-        void bind(spi_initiator_socket& initiator);
-        unsigned int bind(spi_target_socket& target, sc_signal<bool>& cs,
-                          bool cs_active_high = true);
-    };
+    void bind(spi_initiator_socket& initiator);
+    unsigned int bind(spi_target_socket& target, sc_signal<bool>& select,
+                      bool cs_active_high = true);
+};
 
-    inline void spibus::set_active_high(unsigned int port, bool set) {
-        m_csmode[port] = set;
-    }
+inline void spibus::set_active_high(unsigned int port, bool set) {
+    m_csmode[port] = set;
+}
 
-    inline void spibus::set_active_low(unsigned int port, bool set) {
-        m_csmode[port] = !set;
-    }
+inline void spibus::set_active_low(unsigned int port, bool set) {
+    m_csmode[port] = !set;
+}
 
-}}
+} // namespace generic
+} // namespace vcml
 
 #endif

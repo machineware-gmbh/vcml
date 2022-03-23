@@ -20,18 +20,16 @@
 
 namespace vcml {
 
-    log_stream::log_stream(ostream& o):
-        publisher(LOG_ERROR, LOG_DEBUG),
-        os(o) {
-        // nothing to do
-    }
-
-    log_stream::~log_stream() {
-        // nothing to do
-    }
-
-    void log_stream::publish(const logmsg& msg) {
-        os << msg << std::endl;
-    }
-
+log_stream::log_stream(ostream& o): publisher(LOG_ERROR, LOG_DEBUG), os(o) {
+    // nothing to do
 }
+
+log_stream::~log_stream() {
+    // nothing to do
+}
+
+void log_stream::publish(const logmsg& msg) {
+    os << msg << std::endl;
+}
+
+} // namespace vcml

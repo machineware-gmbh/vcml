@@ -21,47 +21,47 @@
 
 #include "vcml/models/generic/hwrng.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    u32 hwrng::read_RNG() {
-        if (pseudo)
-            return (u32)rand();
+u32 hwrng::read_rng() {
+    if (pseudo)
+        return (u32)rand();
 
-        static const char* src = "/dev/urandom";
-        int fd = open(src, O_RDONLY);
-        VCML_ERROR_ON(fd < 0, "failed to open %s: %s", src, strerror(errno));
+    static const char* src = "/dev/urandom";
 
-        u32 data = 0;
-        if (!fd_read(fd, &data, sizeof(data)))
-            VCML_ERROR("failed to read %s: %s", src, strerror(errno));
+    int fd = open(src, O_RDONLY);
+    VCML_ERROR_ON(fd < 0, "failed to open %s: %s", src, strerror(errno));
 
-        if (close(fd) < 0)
-            VCML_ERROR("failed to close %s: %s", src, strerror(errno));
+    u32 data = 0;
+    if (!fd_read(fd, &data, sizeof(data)))
+        VCML_ERROR("failed to read %s: %s", src, strerror(errno));
 
-        return data;
-    }
+    if (close(fd) < 0)
+        VCML_ERROR("failed to close %s: %s", src, strerror(errno));
 
-    hwrng::hwrng(const sc_module_name& nm):
-        peripheral(nm),
-        RNG("RNG", 0x0),
-        IN("IN"),
-        pseudo("pseudo", false),
-        seed("seed", 0) {
+    return data;
+}
 
-        RNG.allow_read_only();
-        RNG.sync_never();
-        RNG.on_read(&hwrng::read_RNG);
+hwrng::hwrng(const sc_module_name& nm):
+    peripheral(nm),
+    rng("rng", 0x0),
+    in("in"),
+    pseudo("pseudo", false),
+    seed("seed", 0) {
+    rng.allow_read_only();
+    rng.sync_never();
+    rng.on_read(&hwrng::read_rng);
+}
 
-        reset();
-    }
+hwrng::~hwrng() {
+    // nothing to do
+}
 
-    hwrng::~hwrng() {
-        // nothing to do
-    }
+void hwrng::reset() {
+    if (pseudo)
+        srand(seed);
+}
 
-    void hwrng::reset() {
-        if (pseudo)
-            srand(seed);
-    }
-
-}}
+} // namespace generic
+} // namespace vcml

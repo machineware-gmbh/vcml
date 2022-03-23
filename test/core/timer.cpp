@@ -19,12 +19,10 @@
 #include <future>
 #include "testing.h"
 
-class timer_test: public test_base
+class timer_test : public test_base
 {
 public:
-    timer_test(const sc_module_name& nm):
-        test_base(nm) {
-    }
+    timer_test(const sc_module_name& nm): test_base(nm) {}
 
     virtual void run_test() override {
         timer t1(1, SC_MS, [](timer& t) -> void {
@@ -73,4 +71,3 @@ TEST(timer, test) {
     timer_test test("timer");
     sc_core::sc_start();
 }
-

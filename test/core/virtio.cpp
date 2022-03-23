@@ -21,7 +21,7 @@
 TEST(virtio, msgcopy) {
     const char* s1 = "abc";
     const char* s2 = "def";
-    char* s3 = strdup("abcdefg");
+    char* s3       = strdup("abcdefg");
 
     vq_message msg;
     msg.dmi = [](u64 addr, u32 size, vcml_access a) -> u8* {
@@ -32,9 +32,9 @@ TEST(virtio, msgcopy) {
     msg.append((uintptr_t)s2, strlen(s2), false);
     msg.append((uintptr_t)s3, strlen(s3), true);
 
-    size_t n = 0;
+    size_t n   = 0;
     char s4[7] = { 0 };
-    n = msg.copy_in(s4, 5, 1);
+    n          = msg.copy_in(s4, 5, 1);
     EXPECT_EQ(n, 5);
     EXPECT_STREQ(s4, "bcdef");
 

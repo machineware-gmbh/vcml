@@ -24,18 +24,18 @@
 
 namespace vcml {
 
-    class log_stream: public publisher
-    {
-    protected:
-        ostream& os;
+class log_stream : public publisher
+{
+protected:
+    ostream& os;
 
-    public:
-        log_stream(ostream& os);
-        virtual ~log_stream();
+public:
+    log_stream(ostream& os);
+    virtual ~log_stream();
 
-        virtual void publish(const logmsg& msg) override;
-    };
+    virtual void publish(const logmsg& msg) override;
+};
 
-}
+} // namespace vcml
 
 #endif

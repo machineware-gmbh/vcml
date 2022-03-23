@@ -25,7 +25,8 @@ using namespace ::testing;
 
 using ::vcml::u32;
 
-class mock_peripheral: public vcml::peripheral {
+class mock_peripheral : public vcml::peripheral
+{
 public:
     vcml::reg<u32> test_reg_a;
     vcml::reg<u32> test_reg_b;
@@ -34,35 +35,34 @@ public:
     MOCK_METHOD(void, reg_write, (u32));
 
     mock_peripheral(const sc_core::sc_module_name& nm =
-        sc_core::sc_gen_unique_name("mock_peripheral")):
+                        sc_core::sc_gen_unique_name("mock_peripheral")):
         vcml::peripheral(nm, vcml::ENDIAN_LITTLE, 1, 10),
         test_reg_a("test_reg_a", 0x0, 0xffffffff),
         test_reg_b("test_reg_b", 0x4, 0xffffffff) {
         test_reg_b.allow_read_write();
         test_reg_b.on_read(&mock_peripheral::reg_read);
         test_reg_b.on_write(&mock_peripheral::reg_write);
-        CLOCK.stub(100 * vcml::MHz);
-        RESET.stub();
-        handle_clock_update(0, CLOCK.read());
+        clk.stub(100 * vcml::MHz);
+        rst.stub();
+        handle_clock_update(0, clk.read());
     }
 
     unsigned int test_transport(tlm::tlm_generic_payload& tx) {
         return transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT);
     }
-
 };
 
 TEST(registers, read) {
     mock_peripheral mock;
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    unsigned char buffer [] = { 0xcc, 0xcc, 0xcc, 0xcc };
-    unsigned char expect [] = { 0x37, 0x13, 0x00, 0x00 };
+    unsigned char buffer[] = { 0xcc, 0xcc, 0xcc, 0xcc };
+    unsigned char expect[] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_a = 0x1337;
-    local = sc_core::SC_ZERO_TIME;
+    local           = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
 
     EXPECT_EQ(mock.test_transport(tx), 4);
@@ -78,15 +78,15 @@ TEST(registers, read) {
 
 TEST(registers, read_callback) {
     mock_peripheral mock;
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    unsigned char buffer [] = { 0xcc, 0xcc, 0xcc, 0xcc };
-    unsigned char expect [] = { 0x37, 0x13, 0x00, 0x00 };
+    unsigned char buffer[] = { 0xcc, 0xcc, 0xcc, 0xcc };
+    unsigned char expect[] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_b = 0x1337;
-    local = sc_core::SC_ZERO_TIME;
+    local           = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
@@ -103,11 +103,11 @@ TEST(registers, read_callback) {
 
 TEST(registers, write) {
     mock_peripheral mock;
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
@@ -121,12 +121,12 @@ TEST(registers, write) {
 
 TEST(registers, write_callback) {
     mock_peripheral mock;
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    u32 value = 0x98765432;
-    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
+    u32 value              = 0x98765432;
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     local = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
@@ -144,16 +144,16 @@ TEST(registers, write_callback) {
 
 TEST(registers, read_byte_enable) {
     mock_peripheral mock;
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    unsigned char buffer [] = { 0xcc, 0xcc, 0x00, 0x00 };
-    unsigned char bebuff [] = { 0xff, 0xff, 0x00, 0x00 };
-    unsigned char expect [] = { 0x37, 0x13, 0x00, 0x00 };
+    unsigned char buffer[] = { 0xcc, 0xcc, 0x00, 0x00 };
+    unsigned char bebuff[] = { 0xff, 0xff, 0x00, 0x00 };
+    unsigned char expect[] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_a = 0x1337;
-    local = sc_core::SC_ZERO_TIME;
+    local           = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
@@ -171,15 +171,15 @@ TEST(registers, read_byte_enable) {
 
 TEST(registers, write_byte_enable) {
     mock_peripheral mock;
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
-    unsigned char bebuff [] = { 0xff, 0x00, 0xff, 0x00 };
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
+    unsigned char bebuff[] = { 0xff, 0x00, 0xff, 0x00 };
 
     mock.test_reg_a = 0;
-    local = sc_core::SC_ZERO_TIME;
+    local           = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
@@ -194,11 +194,11 @@ TEST(registers, write_byte_enable) {
 TEST(registers, permissions) {
     mock_peripheral mock;
 
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
 
     tlm::tlm_generic_payload tx;
-    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     local = sc_core::SC_ZERO_TIME;
     mock.test_reg_b.allow_read_only();
@@ -226,14 +226,14 @@ TEST(registers, permissions) {
 TEST(registers, misaligned_accesses) {
     mock_peripheral mock;
 
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
 
     tlm::tlm_generic_payload tx;
-    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     mock.test_reg_a = 0;
-    local = sc_core::SC_ZERO_TIME;
+    local           = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 2);
 
     EXPECT_EQ(mock.test_transport(tx), 2);
@@ -254,8 +254,8 @@ TEST(registers, misaligned_accesses) {
     EXPECT_EQ(local, cycle * mock.write_latency);
     EXPECT_TRUE(tx.is_response_ok());
 
-    unsigned char largebuf [8] = { 0xff };
-    local = sc_core::SC_ZERO_TIME;
+    unsigned char largebuf[8] = { 0xff };
+    local                     = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, largebuf, 8);
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
@@ -276,7 +276,7 @@ TEST(registers, banking) {
     mock_peripheral mock;
     mock.test_reg_a.set_banked();
 
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
 
     tlm::tlm_generic_payload tx;
     vcml::sbiext bank;
@@ -290,26 +290,26 @@ TEST(registers, banking) {
 
     tx.set_extension(&bank);
 
-    buffer = val1;
+    buffer     = val1;
     bank.cpuid = 1;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank1, vcml::VCML_AS_DEFAULT), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
-    buffer = val2;
+    buffer     = val2;
     bank.cpuid = 2;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank2, vcml::VCML_AS_DEFAULT), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
-    buffer = 0x0;
+    buffer     = 0x0;
     bank.cpuid = 1;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank1, vcml::VCML_AS_DEFAULT), 1);
     EXPECT_TRUE(tx.is_response_ok());
     EXPECT_EQ(buffer, val1);
 
-    buffer = 0x0;
+    buffer     = 0x0;
     bank.cpuid = 2;
     vcml::tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank2, vcml::VCML_AS_DEFAULT), 1);
@@ -323,7 +323,7 @@ TEST(registers, endianess) {
     mock_peripheral mock;
     mock.set_big_endian();
 
-    sc_core::sc_time cycle(1.0 / mock.CLOCK, sc_core::SC_SEC);
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
     sc_core::sc_time& local = mock.local_time();
 
     tlm::tlm_generic_payload tx;
@@ -337,7 +337,7 @@ TEST(registers, endianess) {
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = 0xeeff00cc;
-    local = sc_core::SC_ZERO_TIME;
+    local  = sc_core::SC_ZERO_TIME;
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 4);
     EXPECT_EQ(mock.test_transport(tx), 4);
     EXPECT_EQ(mock.test_reg_a, 0xcc00ffeeu);
@@ -358,11 +358,11 @@ TEST(registers, operators) {
     EXPECT_FALSE(mock.test_reg_b != 3u);
 
     EXPECT_EQ(mock.test_reg_a++, 3u);
-    EXPECT_EQ(mock.test_reg_a,   4u);
+    EXPECT_EQ(mock.test_reg_a, 4u);
     EXPECT_EQ(++mock.test_reg_a, 5u);
 
     EXPECT_EQ(mock.test_reg_b--, 3u);
-    EXPECT_EQ(mock.test_reg_b,   2u);
+    EXPECT_EQ(mock.test_reg_b, 2u);
     EXPECT_EQ(--mock.test_reg_b, 1u);
 
     EXPECT_EQ(mock.test_reg_b += 1, 2u);
@@ -374,28 +374,28 @@ enum : vcml::address_space {
     VCML_AS_TEST2 = vcml::VCML_AS_DEFAULT + 2,
 };
 
-class mock_peripheral_as: public vcml::peripheral {
+class mock_peripheral_as : public vcml::peripheral
+{
 public:
     vcml::reg<u32> test_reg_a;
     vcml::reg<u32> test_reg_b;
 
     mock_peripheral_as(const sc_core::sc_module_name& nm =
-        sc_core::sc_gen_unique_name("mock_peripheral_as")):
+                           sc_core::sc_gen_unique_name("mock_peripheral_as")):
         vcml::peripheral(nm, vcml::ENDIAN_LITTLE, 1, 10),
         test_reg_a(VCML_AS_TEST1, "test_reg_a", 0x0, 0xffffffff),
         test_reg_b(VCML_AS_TEST2, "test_reg_b", 0x0, 0xffffffff) {
         test_reg_b.allow_read_write();
         test_reg_b.allow_read_write();
-        CLOCK.stub(100 * vcml::MHz);
-        RESET.stub();
-        handle_clock_update(0, CLOCK.read());
+        clk.stub(100 * vcml::MHz);
+        rst.stub();
+        handle_clock_update(0, clk.read());
     }
 
     unsigned int test_transport(tlm::tlm_generic_payload& tx,
-        vcml::address_space as) {
+                                vcml::address_space as) {
         return transport(tx, vcml::SBI_NONE, as);
     }
-
 };
 
 TEST(registers, address_spaces) {
@@ -403,7 +403,7 @@ TEST(registers, address_spaces) {
     mock_peripheral_as mock;
 
     tlm::tlm_generic_payload tx;
-    unsigned char buffer [] = { 0x11, 0x22, 0x33, 0x44 };
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
     vcml::tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
 
     // writes to default address space should get lost in the void
@@ -431,14 +431,11 @@ TEST(registers, address_spaces) {
 class lambda_test : public vcml::peripheral
 {
 public:
-    vcml::reg<u32> REG;
+    vcml::reg<u32> reg;
     lambda_test(const sc_core::sc_module_name& nm):
-        vcml::peripheral(nm),
-        REG("REG", 0) {
-        REG.allow_read_only();
-        REG.on_read([&]() -> vcml::u32 {
-            return 0x42;
-        });
+        vcml::peripheral(nm), reg("REG", 0) {
+        reg.allow_read_only();
+        reg.on_read([&]() -> vcml::u32 { return 0x42; });
     };
 
     virtual ~lambda_test() = default;
@@ -461,39 +458,36 @@ public:
     class wrapper : public sc_core::sc_module
     {
     public:
-        vcml::reg<vcml::u64> TEST_REG;
+        vcml::reg<vcml::u64> test_reg;
 
         wrapper(const sc_core::sc_module_name& nm):
-            sc_core::sc_module(nm), TEST_REG("TEST_REG", 0) {
-        }
+            sc_core::sc_module(nm), test_reg("test_reg", 0) {}
 
         virtual ~wrapper() = default;
     };
 
-    wrapper W;
+    wrapper w;
 
     hierarchy_test(const sc_core::sc_module_name& nm):
-        vcml::peripheral(nm),
-        W("W") {
-    }
+        vcml::peripheral(nm), w("w") {}
 };
 
 TEST(registers, hierarchy) {
-    hierarchy_test H("H");
-    EXPECT_STREQ(H.W.TEST_REG.name(), "H.W.TEST_REG");
-    std::vector<vcml::reg_base*> regs = H.get_registers();
+    hierarchy_test h("h");
+    EXPECT_STREQ(h.w.test_reg.name(), "h.w.test_reg");
+    std::vector<vcml::reg_base*> regs = h.get_registers();
     ASSERT_FALSE(regs.empty());
-    EXPECT_STREQ(regs[0]->name(), "H.W.TEST_REG");
-    EXPECT_EQ(regs[0], (vcml::reg_base*)&H.W.TEST_REG);
+    EXPECT_STREQ(regs[0]->name(), "h.w.test_reg");
+    EXPECT_EQ(regs[0], (vcml::reg_base*)&h.w.test_reg);
 }
 
 TEST(registers, bitfields) {
     mock_peripheral mock("mock");
 
-    typedef vcml::field<1,4,u32> TEST_FIELD;
+    typedef vcml::field<1, 4, u32> TEST_FIELD;
 
     mock.test_reg_a = 0xaaaaaaaa;
-    u32 val = vcml::get_field<TEST_FIELD>(mock.test_reg_a);
+    u32 val         = vcml::get_field<TEST_FIELD>(mock.test_reg_a);
     EXPECT_EQ(val, 5);
     mock.test_reg_a.set_field<TEST_FIELD>(val - 1);
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaaa8);

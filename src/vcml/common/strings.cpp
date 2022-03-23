@@ -23,139 +23,142 @@
 
 namespace vcml {
 
-    string mkstr(const char* format, ...) {
-        va_list args;
-        va_start(args, format);
-        string str = vmkstr(format, args);
-        va_end(args);
-        return str;
-    }
-
-    string vmkstr(const char* format, va_list args) {
-        va_list args2;
-        va_copy(args2, args);
-
-        int size = vsnprintf(NULL, 0, format, args) + 1;
-        if (size <= 0)
-            return "";
-
-        char* buffer = new char [size];
-        vsnprintf(buffer, size, format, args2);
-        va_end(args2);
-
-        string s(buffer);
-        delete [] buffer;
-        return s;
-    }
-
-    string concat(const string& a, const string& b) {
-        return a + b;
-    }
-
-    string trim(const string& str) {
-        string res(str);
-        res.erase(res.begin(), std::find_if(res.begin(), res.end(),
-            [] (int ch) { return !std::isspace(ch); }));
-
-        res.erase(std::find_if(res.rbegin(), res.rend(),
-            [] (int ch) { return !std::isspace(ch); }).base(), res.end());
-        return res;
-    }
-
-    string to_lower(const string& s) {
-        string result;
-        for (auto ch : s)
-            result += tolower(ch);
-        return result;
-    }
-
-    string to_upper(const string& s) {
-        string result;
-        for (auto ch : s)
-            result += toupper(ch);
-        return result;
-    }
-
-    string escape(const string& s, const string& chars) {
-        stringstream ss;
-        for (auto c : s) {
-            for (auto esc : chars + "\\") {
-                if (c == esc)
-                    ss << '\\';
-            }
-            ss << c;
-        }
-        return ss.str();
-    }
-
-    string unescape(const string& s) {
-        stringstream ss;
-        for (auto c : s) {
-            if (c != '\\')
-                ss << c;
-        }
-        return ss.str();
-    }
-
-    vector<string> split(const string& str, std::function<int(int)> f) {
-        vector<string> vec;
-        string buf = "";
-        for (unsigned int i = 0; i < str.length(); i++) {
-            char ch = str[i];
-            if (ch == '\\' && i < str.length() - 1)
-                buf += str[++i];
-            else if (f(ch)) {
-                if (!buf.empty())
-                    vec.push_back(buf);
-                buf = "";
-            } else {
-                buf += ch;
-            }
-        }
-
-        if (!buf.empty())
-            vec.push_back(buf);
-
-        return vec;
-    }
-
-    vector<string> split(const string& str, char predicate) {
-        vector<string> vec;
-        string buf = "";
-        for (unsigned int i = 0; i < str.length(); i++) {
-            char ch = str[i];
-            if (ch == '\\' && i < str.length() - 1)
-                buf += str[++i];
-            else if (ch == predicate) {
-                if (!buf.empty())
-                    vec.push_back(buf);
-                buf = "";
-            } else {
-                buf += ch;
-            }
-        }
-
-        if (!buf.empty())
-            vec.push_back(buf);
-
-        return vec;
-    }
-
-    int replace(string& str, const string& search, const string& repl) {
-        int count = 0;
-        size_t index = 0;
-
-        while (true) {
-             index = str.find(search, index);
-             if (index == std::string::npos)
-                 break;
-
-             str.replace(index, search.length(), repl);
-             index += repl.length();
-             count++;
-        }
-
-        return count;
-    }
-
+string mkstr(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    string str = vmkstr(format, args);
+    va_end(args);
+    return str;
 }
+
+string vmkstr(const char* format, va_list args) {
+    va_list args2;
+    va_copy(args2, args);
+
+    int size = vsnprintf(NULL, 0, format, args) + 1;
+    if (size <= 0)
+        return "";
+
+    char* buffer = new char[size];
+    vsnprintf(buffer, size, format, args2);
+    va_end(args2);
+
+    string s(buffer);
+    delete[] buffer;
+    return s;
+}
+
+string concat(const string& a, const string& b) {
+    return a + b;
+}
+
+string trim(const string& str) {
+    string res(str);
+    res.erase(res.begin(), std::find_if(res.begin(), res.end(), [](int ch) {
+                  return !std::isspace(ch);
+              }));
+
+    res.erase(std::find_if(res.rbegin(), res.rend(),
+                           [](int ch) { return !std::isspace(ch); })
+                  .base(),
+              res.end());
+    return res;
+}
+
+string to_lower(const string& s) {
+    string result;
+    for (auto ch : s)
+        result += tolower(ch);
+    return result;
+}
+
+string to_upper(const string& s) {
+    string result;
+    for (auto ch : s)
+        result += toupper(ch);
+    return result;
+}
+
+string escape(const string& s, const string& chars) {
+    stringstream ss;
+    for (auto c : s) {
+        for (auto esc : chars + "\\") {
+            if (c == esc)
+                ss << '\\';
+        }
+        ss << c;
+    }
+    return ss.str();
+}
+
+string unescape(const string& s) {
+    stringstream ss;
+    for (auto c : s) {
+        if (c != '\\')
+            ss << c;
+    }
+    return ss.str();
+}
+
+vector<string> split(const string& str, std::function<int(int)> f) {
+    vector<string> vec;
+    string buf = "";
+    for (unsigned int i = 0; i < str.length(); i++) {
+        char ch = str[i];
+        if (ch == '\\' && i < str.length() - 1)
+            buf += str[++i];
+        else if (f(ch)) {
+            if (!buf.empty())
+                vec.push_back(buf);
+            buf = "";
+        } else {
+            buf += ch;
+        }
+    }
+
+    if (!buf.empty())
+        vec.push_back(buf);
+
+    return vec;
+}
+
+vector<string> split(const string& str, char predicate) {
+    vector<string> vec;
+    string buf = "";
+    for (unsigned int i = 0; i < str.length(); i++) {
+        char ch = str[i];
+        if (ch == '\\' && i < str.length() - 1)
+            buf += str[++i];
+        else if (ch == predicate) {
+            if (!buf.empty())
+                vec.push_back(buf);
+            buf = "";
+        } else {
+            buf += ch;
+        }
+    }
+
+    if (!buf.empty())
+        vec.push_back(buf);
+
+    return vec;
+}
+
+int replace(string& str, const string& search, const string& repl) {
+    int count    = 0;
+    size_t index = 0;
+
+    while (true) {
+        index = str.find(search, index);
+        if (index == std::string::npos)
+            break;
+
+        str.replace(index, search.length(), repl);
+        index += repl.length();
+        count++;
+    }
+
+    return count;
+}
+
+} // namespace vcml

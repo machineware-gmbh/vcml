@@ -24,10 +24,9 @@ TEST(strings, mkstr) {
 }
 
 TEST(strings, split) {
-    std::string s = "abc def\nghi\tjkl :.; ";
-    std::vector<std::string> v = vcml::split(s, [] (unsigned char c) {
-        return isspace(c);
-    });
+    std::string s              = "abc def\nghi\tjkl :.; ";
+    std::vector<std::string> v = vcml::split(
+        s, [](unsigned char c) { return isspace(c); });
 
     EXPECT_EQ(v.size(), 5);
     EXPECT_EQ(v.at(0), "abc");
@@ -38,9 +37,9 @@ TEST(strings, split) {
 }
 
 TEST(strings, join) {
-    std::vector<std::string> v0 = { };
-    std::vector<std::string> v1 = {"a"};
-    std::vector<std::string> v3 = {"a", "b", "c"};
+    std::vector<std::string> v0 = {};
+    std::vector<std::string> v1 = { "a" };
+    std::vector<std::string> v3 = { "a", "b", "c" };
 
     EXPECT_EQ(vcml::join(v0, ", "), "");
     EXPECT_EQ(vcml::join(v1, ", "), "a");
@@ -98,4 +97,3 @@ TEST(strings, contains) {
     EXPECT_TRUE(vcml::ends_with(s, "world"));
     EXPECT_FALSE(vcml::ends_with(s, "hello"));
 }
-

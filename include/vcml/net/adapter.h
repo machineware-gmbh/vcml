@@ -28,102 +28,103 @@
 
 #include "vcml/net/backend.h"
 
-namespace vcml { namespace net {
+namespace vcml {
+namespace net {
 
-    struct mac_addr {
-        array<u8, 6> bytes;
+struct mac_addr {
+    array<u8, 6> bytes;
 
-        mac_addr() = default;
-        mac_addr(mac_addr&&) = default;
-        mac_addr(const mac_addr&) = default;
-        mac_addr& operator = (const mac_addr&) = default;
+    mac_addr()                = default;
+    mac_addr(mac_addr&&)      = default;
+    mac_addr(const mac_addr&) = default;
+    mac_addr& operator=(const mac_addr&) = default;
 
-        mac_addr(u8, u8, u8, u8, u8, u8);
-        mac_addr(const vector<u8>& pkt, size_t off = 0);
+    mac_addr(u8, u8, u8, u8, u8, u8);
+    mac_addr(const vector<u8>& pkt, size_t off = 0);
 
-        u8& operator [] (size_t i) { return bytes.at(i); }
-        u8  operator [] (size_t i) const { return bytes.at(i); }
+    u8& operator[](size_t i) { return bytes.at(i); }
+    u8 operator[](size_t i) const { return bytes.at(i); }
 
-        bool operator == (const mac_addr&) const;
-        bool operator != (const mac_addr&) const;
+    bool operator==(const mac_addr&) const;
+    bool operator!=(const mac_addr&) const;
 
-        bool is_multicast() const { return bytes[0] & 1; }
-        bool is_broadcast() const;
+    bool is_multicast() const { return bytes[0] & 1; }
+    bool is_broadcast() const;
 
-        u32 hash_crc32() const { return crc32(bytes.data(), 6); }
-    };
+    u32 hash_crc32() const { return crc32(bytes.data(), 6); }
+};
 
-    inline mac_addr::mac_addr(u8 a, u8 b, u8 c, u8 d, u8 e, u8 f):
-        bytes({a, b, c, d, e, f}) {
-    }
+inline mac_addr::mac_addr(u8 a, u8 b, u8 c, u8 d, u8 e, u8 f):
+    bytes({ a, b, c, d, e, f }) {
+}
 
-    inline mac_addr::mac_addr(const vector<u8>& pkt, size_t off):
-        bytes() {
-        std::copy(pkt.begin() + off, pkt.begin() + off + 6, bytes.begin());
-    }
+inline mac_addr::mac_addr(const vector<u8>& pkt, size_t off): bytes() {
+    std::copy(pkt.begin() + off, pkt.begin() + off + 6, bytes.begin());
+}
 
-    inline bool mac_addr::operator == (const mac_addr& other) const {
-        return bytes == other.bytes;
-    }
+inline bool mac_addr::operator==(const mac_addr& other) const {
+    return bytes == other.bytes;
+}
 
-    inline bool mac_addr::operator != (const mac_addr& other) const {
-        return !(bytes == other.bytes);
-    }
+inline bool mac_addr::operator!=(const mac_addr& other) const {
+    return !(bytes == other.bytes);
+}
 
-    inline bool mac_addr::is_broadcast() const {
-        for (const u8& val : bytes)
-            if (val != 0xff)
-                return false;
-        return true;
-    }
+inline bool mac_addr::is_broadcast() const {
+    for (const u8& val : bytes)
+        if (val != 0xff)
+            return false;
+    return true;
+}
 
-    ostream& operator << (ostream& os, const mac_addr& addr);
+ostream& operator<<(ostream& os, const mac_addr& addr);
 
-    class backend;
+class backend;
 
-    class adapter
-    {
-    private:
-        string m_name;
-        size_t m_next_id;
-        std::map<size_t, backend*> m_clients;
-        vector<backend*> m_listener;
-        bool m_link_up;
+class adapter
+{
+private:
+    string m_name;
+    size_t m_next_id;
+    std::map<size_t, backend*> m_clients;
+    vector<backend*> m_listener;
+    bool m_link_up;
 
-        bool cmd_create_client(const vector<string>& args, ostream& os);
-        bool cmd_destroy_client(const vector<string>& args, ostream& os);
-        bool cmd_list_clients(const vector<string>& args, ostream& os);
-        bool cmd_link_up(const vector<string>& args, ostream& os);
-        bool cmd_link_down(const vector<string>& args, ostream& os);
-        bool cmd_link_status(const vector<string>& args, ostream& os);
+    bool cmd_create_client(const vector<string>& args, ostream& os);
+    bool cmd_destroy_client(const vector<string>& args, ostream& os);
+    bool cmd_list_clients(const vector<string>& args, ostream& os);
+    bool cmd_link_up(const vector<string>& args, ostream& os);
+    bool cmd_link_down(const vector<string>& args, ostream& os);
+    bool cmd_link_status(const vector<string>& args, ostream& os);
 
-        static unordered_map<string, adapter*> s_adapters;
+    static unordered_map<string, adapter*> s_adapters;
 
-    public:
-        property<string> backends;
+public:
+    property<string> backends;
 
-        const char* adapter_name() const { return m_name.c_str(); }
+    const char* adapter_name() const { return m_name.c_str(); }
 
-        adapter();
-        virtual ~adapter();
+    adapter();
+    virtual ~adapter();
 
-        void attach(backend* client);
-        void detach(backend* client);
+    void attach(backend* client);
+    void detach(backend* client);
 
-        int  create_client(const string& type);
-        bool destroy_client(int id);
+    int create_client(const string& type);
+    bool destroy_client(int id);
 
-        bool recv_packet(vector<u8>& packet);
-        void send_packet(const vector<u8>& packet);
+    bool recv_packet(vector<u8>& packet);
+    void send_packet(const vector<u8>& packet);
 
-        static adapter* find(const string& name);
-        static vector<adapter*> all();
+    static adapter* find(const string& name);
+    static vector<adapter*> all();
 
-    protected:
-        virtual void on_link_up();
-        virtual void on_link_down();
-    };
+protected:
+    virtual void on_link_up();
+    virtual void on_link_down();
+};
 
-}}
+} // namespace net
+} // namespace vcml
 
 #endif

@@ -18,45 +18,44 @@
 
 #include "vcml/net/backend_file.h"
 
-namespace vcml { namespace net {
+namespace vcml {
+namespace net {
 
-    backend_file::backend_file(const string& adapter, const string& tx):
-        backend(adapter),
-        m_count(0),
-        m_tx(tx) {
-        if (!m_tx.good())
-            log_warn("failed to open file '%s'", tx.c_str());
-        m_type = mkstr("file:%s", tx.c_str());
+backend_file::backend_file(const string& adapter, const string& tx):
+    backend(adapter), m_count(0), m_tx(tx) {
+    if (!m_tx.good())
+        log_warn("failed to open file '%s'", tx.c_str());
+    m_type = mkstr("file:%s", tx.c_str());
+}
+
+backend_file::~backend_file() {
+    // nothing to do
+}
+
+bool backend_file::recv_packet(vector<u8>& packet) {
+    return false;
+}
+
+void backend_file::send_packet(const vector<u8>& packet) {
+    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << ", "
+         << packet.size() << " bytes";
+
+    for (size_t i = 0; i < packet.size(); i++) {
+        m_tx << (i % 25 ? " " : "\n") << std::hex << std::setw(2)
+             << std::setfill('0') << (int)packet[i] << std::dec;
     }
 
-    backend_file::~backend_file() {
-        // nothing to do
-    }
+    m_tx << std::endl << std::endl;
+}
 
-    bool backend_file::recv_packet(vector<u8>& packet) {
-        return false;
-    }
+backend* backend_file::create(const string& adapter, const string& type) {
+    string tx           = adapter + ".tx";
+    vector<string> args = split(type, ':');
+    if (args.size() > 1)
+        tx = args[1];
 
-    void backend_file::send_packet(const vector<u8>& packet) {
-        m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << ", "
-             << packet.size() << " bytes";
+    return new backend_file(adapter, tx);
+}
 
-        for (size_t i = 0; i < packet.size(); i++) {
-            m_tx << (i % 25 ? " " : "\n")
-                 << std::hex << std::setw(2) << std::setfill('0')
-                 << (int)packet[i] << std::dec;
-        }
-
-        m_tx << std::endl << std::endl;
-    }
-
-    backend* backend_file::create(const string& adapter, const string& type) {
-        string tx = adapter + ".tx";
-        vector<string> args = split(type, ':');
-        if (args.size() > 1)
-            tx = args[1];
-
-        return new backend_file(adapter, tx);
-    }
-
-}}
+} // namespace net
+} // namespace vcml

@@ -26,47 +26,49 @@
 
 namespace vcml {
 
-    class command_base
-    {
-    private:
-        string m_name;
-        string m_desc;
-        unsigned int m_argc;
+class command_base
+{
+private:
+    string m_name;
+    string m_desc;
+    unsigned int m_argc;
 
-    public:
-        inline const char*  name() const { return m_name.c_str(); }
-        inline const char*  desc() const { return m_desc.c_str(); }
-        inline unsigned int argc() const { return m_argc;  }
+public:
+    inline const char* name() const { return m_name.c_str(); }
+    inline const char* desc() const { return m_desc.c_str(); }
+    inline unsigned int argc() const { return m_argc; }
 
-        command_base(string name, unsigned int argc, string desc = ""):
-            m_name(name), m_desc(desc), m_argc(argc) { /* nothing to do */ }
-        virtual ~command_base() { /* nothing to do */ }
+    command_base(string name, unsigned int argc, string desc = ""):
+        m_name(name), m_desc(desc), m_argc(argc) {}
 
-        virtual bool execute(const vector<string>& args, ostream& os) = 0;
-    };
+    virtual ~command_base() = default;
 
-    template <class T>
-    class command: public command_base
-    {
-    private:
-        T* m_host;
-        bool (T::*m_func)(const vector<string>& args, ostream& os);
+    virtual bool execute(const vector<string>& args, ostream& os) = 0;
+};
 
-        // disabled
-        command();
-        command(const command<T>& other);
+template <class T>
+class command : public command_base
+{
+private:
+    T* m_host;
+    bool (T::*m_func)(const vector<string>& args, ostream& os);
 
-    public:
-        command(string name, unsigned int argc, string desc, T* host,
-                bool (T::*func)(const vector<string>& args, ostream& os)):
-            command_base(name, argc, desc), m_host(host), m_func(func) {}
-        virtual ~command() { /* nothing to do */ }
+    // disabled
+    command();
+    command(const command<T>& other);
 
-        virtual bool execute(const vector<string>& args, ostream& os) {
-            return (m_host->*m_func)(args, os);
-        }
-    };
+public:
+    command(string name, unsigned int argc, string desc, T* host,
+            bool (T::*func)(const vector<string>& args, ostream& os)):
+        command_base(name, argc, desc), m_host(host), m_func(func) {}
 
-}
+    virtual ~command() = default;
+
+    virtual bool execute(const vector<string>& args, ostream& os) {
+        return (m_host->*m_func)(args, os);
+    }
+};
+
+} // namespace vcml
 
 #endif

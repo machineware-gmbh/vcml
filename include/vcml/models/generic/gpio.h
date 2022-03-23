@@ -28,35 +28,38 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    class gpio: public peripheral
-    {
-    private:
-        bool cmd_status(const vector<string>& args, ostream& os);
-        bool cmd_set(const vector<string>& args, ostream& os);
-        bool cmd_clear(const vector<string>& args, ostream& os);
+class gpio : public peripheral
+{
+private:
+    bool cmd_status(const vector<string>& args, ostream& os);
+    bool cmd_set(const vector<string>& args, ostream& os);
+    bool cmd_clear(const vector<string>& args, ostream& os);
 
-        u32  read_DATA();
-        void write_DATA(u32 val);
+    u32 read_data();
+    void write_data(u32 val);
 
-        // disabled
-        gpio();
-        gpio(const gpio&);
-    public:
-        reg<u32> DATA;
+    // disabled
+    gpio();
+    gpio(const gpio&);
 
-        out_port_list<bool> GPIO;
-        tlm_target_socket IN;
+public:
+    reg<u32> data;
 
-        gpio(const sc_module_name& name);
-        virtual ~gpio();
-        VCML_KIND(gpio);
-        virtual void reset() override;
+    out_port_list<bool> ports;
+    tlm_target_socket in;
 
-        virtual void end_of_elaboration() override;
-    };
+    gpio(const sc_module_name& name);
+    virtual ~gpio();
+    VCML_KIND(out);
+    virtual void reset() override;
 
-}}
+    virtual void end_of_elaboration() override;
+};
+
+} // namespace generic
+} // namespace vcml
 
 #endif

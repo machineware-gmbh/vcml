@@ -18,20 +18,20 @@
 
 #include "vcml/models/generic/clock.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    clock::clock(const sc_module_name& nm, clock_t init_freq):
-        module(nm),
-        freq("freq", init_freq),
-        CLOCK("CLOCK") {
-    }
+clock::clock(const sc_module_name& nm, clock_t init_freq):
+    module(nm), freq("freq", init_freq), clk("clk") {
+}
 
-    clock::~clock() {
-        // nothing to do
-    }
+clock::~clock() {
+    // nothing to do
+}
 
-    void clock::end_of_elaboration() {
-        CLOCK.write(freq);
-    }
+void clock::end_of_elaboration() {
+    clk.write(freq);
+}
 
-}}
+} // namespace generic
+} // namespace vcml

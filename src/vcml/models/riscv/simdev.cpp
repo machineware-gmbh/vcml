@@ -18,47 +18,47 @@
 
 #include "vcml/models/riscv/simdev.h"
 
-namespace vcml { namespace riscv {
+namespace vcml {
+namespace riscv {
 
-    void simdev::write_FINISH(u32 val) {
-        FINISH = val;
+void simdev::write_finish(u32 val) {
+    finish = val;
 
-        u32 status = val & 0xffff;
-        u32 code = val >> 16;
+    u32 status = val & 0xffff;
+    u32 code   = val >> 16;
 
-        switch (status) {
-        case FINISH_FAIL:
-            log_info("simulation abort requested by cpu %d", current_cpu());
-            exit(code);
-            break;
+    switch (status) {
+    case FINISH_FAIL:
+        log_info("simulation abort requested by cpu %d", current_cpu());
+        exit(code);
+        break;
 
-        case FINISH_PASS:
-            log_info("simulation exit requested by cpu %d", current_cpu());
-            sc_core::sc_stop();
-            break;
+    case FINISH_PASS:
+        log_info("simulation exit requested by cpu %d", current_cpu());
+        sc_core::sc_stop();
+        break;
 
-        case FINISH_RESET:
-            log_info("simulation reset requested by cpu %d", current_cpu());
-            sc_core::sc_stop();
-            break;
+    case FINISH_RESET:
+        log_info("simulation reset requested by cpu %d", current_cpu());
+        sc_core::sc_stop();
+        break;
 
-        default:
-            log_warn("illegal exit request 0x%08x", val);
-            break;
-        }
+    default:
+        log_warn("illegal exit request 0x%08x", val);
+        break;
     }
+}
 
-    simdev::simdev(const sc_module_name& nm):
-        peripheral(nm),
-        FINISH("FINISH", 0x0, 0),
-        IN("IN") {
-        FINISH.sync_always();
-        FINISH.allow_read_write();
-        FINISH.on_write(&simdev::write_FINISH);
-    }
+simdev::simdev(const sc_module_name& nm):
+    peripheral(nm), finish("finish", 0x0, 0), in("in") {
+    finish.sync_always();
+    finish.allow_read_write();
+    finish.on_write(&simdev::write_finish);
+}
 
-    simdev::~simdev() {
-        // nothing to do
-    }
+simdev::~simdev() {
+    // nothing to do
+}
 
-}}
+} // namespace riscv
+} // namespace vcml

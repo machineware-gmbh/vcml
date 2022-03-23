@@ -23,7 +23,7 @@ using namespace ::testing;
 
 #include "vcml.h"
 
-class mock_module: public vcml::module
+class mock_module : public vcml::module
 {
 public:
     bool cmd_test(const std::vector<std::string>& args, std::ostream& os) {
@@ -36,7 +36,6 @@ public:
         vcml::module(nm) {
         register_command("test", 3, this, &mock_module::cmd_test, "test");
     }
-
 };
 
 TEST(module, commands) {
@@ -48,7 +47,8 @@ TEST(module, commands) {
     EXPECT_EQ(cmd->argc(), 3);
 
     std::stringstream ss;
-    EXPECT_TRUE(mod.execute("test", std::vector<std::string>({ "a", "b", "c" }), ss));
+    EXPECT_TRUE(
+        mod.execute("test", std::vector<std::string>({ "a", "b", "c" }), ss));
     EXPECT_EQ(ss.str(), "abc");
 
     ss.str("");

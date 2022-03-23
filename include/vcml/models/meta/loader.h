@@ -31,35 +31,36 @@
 
 #include "vcml/component.h"
 
-namespace vcml { namespace meta {
+namespace vcml {
+namespace meta {
 
-    class loader: public component,
-                  public debugging::loader
-    {
-    public:
-        property<string> images;
+class loader : public component, public debugging::loader
+{
+public:
+    property<string> images;
 
-        tlm_initiator_socket INSN;
-        tlm_initiator_socket DATA;
+    tlm_initiator_socket insn;
+    tlm_initiator_socket data;
 
-        loader(const sc_module_name& nm, const string& images = "");
-        virtual ~loader();
-        VCML_KIND(loader);
+    loader(const sc_module_name& nm, const string& images = "");
+    virtual ~loader();
+    VCML_KIND(loader);
 
-        virtual void reset() override;
+    virtual void reset() override;
 
-    protected:
-        virtual u8* allocate_image(u64 size, u64 offset) override;
-        virtual u8* allocate_image(const debugging::elf_segment& seg,
-                                   u64 offset) override;
+protected:
+    virtual u8* allocate_image(u64 size, u64 offset) override;
+    virtual u8* allocate_image(const debugging::elf_segment& seg,
+                               u64 offset) override;
 
-        virtual void copy_image(const u8* img, u64 size, u64 offset) override;
-        virtual void copy_image(const u8* img, const debugging::elf_segment& s,
-                                u64 offset) override;
+    virtual void copy_image(const u8* img, u64 size, u64 offset) override;
+    virtual void copy_image(const u8* img, const debugging::elf_segment& s,
+                            u64 offset) override;
 
-        virtual void before_end_of_elaboration() override;
-    };
+    virtual void before_end_of_elaboration() override;
+};
 
-}}
+} // namespace meta
+} // namespace vcml
 
 #endif

@@ -18,7 +18,6 @@
 
 #include "testing.h"
 
-
 TEST(systemc, time) {
     EXPECT_EQ(time_to_ns(sc_time(1.0, SC_NS)), 1ull);
     EXPECT_EQ(time_to_ns(sc_time(1.9, SC_NS)), 1ull);

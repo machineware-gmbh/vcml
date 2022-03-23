@@ -18,38 +18,42 @@
 
 #include "vcml/serial/backend_fd.h"
 
-namespace vcml { namespace serial {
+namespace vcml {
+namespace serial {
 
-    backend_fd::backend_fd(const string& port, int fd):
-        backend(port),
-        m_fd(fd) {
-        switch (fd) {
-        case STDOUT_FILENO: m_type = "stdout"; break;
-        case STDERR_FILENO: m_type = "stderr"; break;
-        default:
-            m_type = mkstr("fd:%d", fd);
-        }
+backend_fd::backend_fd(const string& port, int fd): backend(port), m_fd(fd) {
+    switch (fd) {
+    case STDOUT_FILENO:
+        m_type = "stdout";
+        break;
+    case STDERR_FILENO:
+        m_type = "stderr";
+        break;
+    default:
+        m_type = mkstr("fd:%d", fd);
     }
+}
 
-    backend_fd::~backend_fd() {
-        // nothing to do
-    }
+backend_fd::~backend_fd() {
+    // nothing to do
+}
 
-    bool backend_fd::read(u8& val) {
-        return false;
-    }
+bool backend_fd::read(u8& val) {
+    return false;
+}
 
-    void backend_fd::write(u8 val) {
-        fd_write(m_fd, &val, sizeof(val));
-    }
+void backend_fd::write(u8 val) {
+    fd_write(m_fd, &val, sizeof(val));
+}
 
-    backend* backend_fd::create(const string& port, const string& type) {
-        if (starts_with(type, "stdout"))
-            return new backend_fd(port, STDOUT_FILENO);
-        if (starts_with(type, "stderr"))
-            return new backend_fd(port, STDERR_FILENO);
+backend* backend_fd::create(const string& port, const string& type) {
+    if (starts_with(type, "stdout"))
+        return new backend_fd(port, STDOUT_FILENO);
+    if (starts_with(type, "stderr"))
+        return new backend_fd(port, STDERR_FILENO);
 
-        VCML_REPORT("unknown type: %s", type.c_str());
-    }
+    VCML_REPORT("unknown type: %s", type.c_str());
+}
 
-}}
+} // namespace serial
+} // namespace vcml

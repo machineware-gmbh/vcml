@@ -27,124 +27,136 @@
 
 namespace vcml {
 
-    struct irq_payload;
-    struct pci_payload;
-    struct spi_payload;
-    struct sd_command;
-    struct sd_data;
-    struct vq_message;
+struct irq_payload;
+struct pci_payload;
+struct spi_payload;
+struct sd_command;
+struct sd_data;
+struct vq_message;
 
-    enum trace_direction : int {
-        TRACE_FW = 1,
-        TRACE_FW_NOINDENT = 0,
-        TRACE_BW_NOINDENT = -1,
-        TRACE_BW = -2,
+enum trace_direction : int {
+    TRACE_FW          = 1,
+    TRACE_FW_NOINDENT = 0,
+    TRACE_BW_NOINDENT = -1,
+    TRACE_BW          = -2,
+};
+
+inline bool is_forward_trace(trace_direction dir) {
+    return dir >= 0;
+}
+inline bool is_backward_trace(trace_direction dir) {
+    return dir < 0;
+}
+
+enum protocol_kind {
+    PROTO_TLM,
+    PROTO_IRQ,
+    PROTO_PCI,
+    PROTO_SPI,
+    PROTO_SD,
+    PROTO_VIRTIO,
+    NUM_PROTOCOLS,
+};
+
+const char* protocol_name(protocol_kind kind);
+
+template <typename PAYLOAD>
+struct protocol {};
+
+template <>
+struct protocol<tlm_generic_payload> {
+    static constexpr protocol_kind KIND = PROTO_TLM;
+};
+
+template <>
+struct protocol<irq_payload> {
+    static constexpr protocol_kind KIND = PROTO_IRQ;
+};
+
+template <>
+struct protocol<pci_payload> {
+    static constexpr protocol_kind KIND = PROTO_PCI;
+};
+
+template <>
+struct protocol<spi_payload> {
+    static constexpr protocol_kind KIND = PROTO_SPI;
+};
+
+template <>
+struct protocol<sd_command> {
+    static constexpr protocol_kind KIND = PROTO_SD;
+};
+
+template <>
+struct protocol<sd_data> {
+    static constexpr protocol_kind KIND = PROTO_SD;
+};
+
+template <>
+struct protocol<vq_message> {
+    static constexpr protocol_kind KIND = PROTO_VIRTIO;
+};
+
+class tracer
+{
+public:
+    template <typename PAYLOAD>
+    struct activity {
+        protocol_kind kind;
+        trace_direction dir;
+        bool error;
+        const sc_object& port;
+        const PAYLOAD& payload;
+        const sc_time& t;
+        const u64 cycle;
     };
 
-    inline bool is_forward_trace(trace_direction dir)  { return dir >= 0; }
-    inline bool is_backward_trace(trace_direction dir) { return dir < 0; }
+    virtual void trace(const activity<tlm_generic_payload>&) {}
+    virtual void trace(const activity<irq_payload>&) {}
+    virtual void trace(const activity<pci_payload>&) {}
+    virtual void trace(const activity<spi_payload>&) {}
+    virtual void trace(const activity<sd_command>&) {}
+    virtual void trace(const activity<sd_data>&) {}
+    virtual void trace(const activity<vq_message>&) {}
 
-    enum protocol_kind {
-        PROTO_TLM,
-        PROTO_IRQ,
-        PROTO_PCI,
-        PROTO_SPI,
-        PROTO_SD,
-        PROTO_VIRTIO,
-        NUM_PROTOCOLS,
-    };
-
-    const char* protocol_name(protocol_kind kind);
+    tracer();
+    virtual ~tracer();
 
     template <typename PAYLOAD>
-    struct protocol {};
+    static void record(trace_direction dir, const sc_object& port,
+                       const PAYLOAD& payload,
+                       const sc_time& t = SC_ZERO_TIME) {
+        auto& tracers = tracer::all();
+        if (!tracers.empty()) {
+            const tracer::activity<PAYLOAD> msg = {
+                protocol<PAYLOAD>::KIND,
+                dir,
+                failed(payload),
+                port,
+                payload,
+                t + sc_time_stamp(),
+                sc_delta_count(),
+            };
 
-    template <> struct protocol<tlm_generic_payload> {
-        static constexpr protocol_kind kind = PROTO_TLM;
-    };
-
-    template <> struct protocol<irq_payload> {
-        static constexpr protocol_kind kind = PROTO_IRQ;
-    };
-
-    template <> struct protocol<pci_payload> {
-        static constexpr protocol_kind kind = PROTO_PCI;
-    };
-
-    template <> struct protocol<spi_payload> {
-        static constexpr protocol_kind kind = PROTO_SPI;
-    };
-
-    template <> struct protocol<sd_command> {
-        static constexpr protocol_kind kind = PROTO_SD;
-    };
-
-    template <> struct protocol<sd_data> {
-        static constexpr protocol_kind kind = PROTO_SD;
-    };
-
-    template <> struct protocol<vq_message> {
-        static constexpr protocol_kind kind = PROTO_VIRTIO;
-    };
-
-    class tracer
-    {
-    public:
-        template <typename PAYLOAD>
-        struct activity {
-            protocol_kind kind;
-            trace_direction dir;
-            bool error;
-            const sc_object& port;
-            const PAYLOAD& payload;
-            const sc_time& t;
-            const u64 cycle;
-        };
-
-        virtual void trace(const activity<tlm_generic_payload>&) {}
-        virtual void trace(const activity<irq_payload>&) {}
-        virtual void trace(const activity<pci_payload>&) {}
-        virtual void trace(const activity<spi_payload>&) {}
-        virtual void trace(const activity<sd_command>&) {}
-        virtual void trace(const activity<sd_data>&) {}
-        virtual void trace(const activity<vq_message>&) {}
-
-        tracer();
-        virtual ~tracer();
-
-        template <typename PAYLOAD>
-        static void record(trace_direction dir, const sc_object& port,
-            const PAYLOAD& payload, const sc_time& t = SC_ZERO_TIME) {
-            auto& tracers = tracer::all();
-            if (!tracers.empty()) {
-                const tracer::activity<PAYLOAD> msg = {
-                    protocol<PAYLOAD>::kind,
-                    dir,
-                    failed(payload),
-                    port,
-                    payload,
-                    t + sc_time_stamp(),
-                    sc_delta_count(),
-                };
-
-                for (tracer* tr : tracers)
-                    tr->trace(msg);
-            }
+            for (tracer* tr : tracers)
+                tr->trace(msg);
         }
+    }
 
-        static bool any() { return !all().empty(); }
+    static bool any() { return !all().empty(); }
 
-    protected:
-        template <typename PAYLOAD>
-        static void print_timing(ostream& os, const activity<PAYLOAD>& msg) {
-            print_timing(os, msg.t, msg.cycle);
-        }
+protected:
+    template <typename PAYLOAD>
+    static void print_timing(ostream& os, const activity<PAYLOAD>& msg) {
+        print_timing(os, msg.t, msg.cycle);
+    }
 
-        static void print_timing(ostream& os, const sc_time& time, u64 delta);
+    static void print_timing(ostream& os, const sc_time& time, u64 delta);
 
-        static unordered_set<tracer*>& all();
-    };
+    static unordered_set<tracer*>& all();
+};
 
-}
+} // namespace vcml
 
 #endif

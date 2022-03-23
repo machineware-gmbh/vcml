@@ -18,210 +18,210 @@
 
 #include "vcml/models/arm/sp804timer.h"
 
-namespace vcml { namespace arm {
+namespace vcml {
+namespace arm {
 
-    void sp804timer::timer::trigger() {
-        IRQ = false;
+void sp804timer::timer::trigger() {
+    irq = false;
 
-        if (is_enabled()) {
-            if (is_irq_enabled())
-                IRQ = true;
+    if (is_enabled()) {
+        if (is_irq_enabled())
+            irq = true;
 
-            if (!is_oneshot())
-                schedule(is_periodic() ? LOAD : 0xFFFFFFFF);
-        }
-
-        m_timer->update_IRQC();
+        if (!is_oneshot())
+            schedule(is_periodic() ? load : 0xFFFFFFFF);
     }
 
-    void sp804timer::timer::schedule(u32 ticks) {
-        m_ev.cancel();
+    m_timer->update_irqc();
+}
 
-        if (!is_enabled())
-            return;
+void sp804timer::timer::schedule(u32 ticks) {
+    m_ev.cancel();
 
-        if (!is_32bit())
-            ticks &= 0xffff;
+    if (!is_enabled())
+        return;
 
-        clock_t effclk = CLOCK / get_prescale_divider();
-        sc_time delta((double)ticks / (double)effclk, SC_SEC);
+    if (!is_32bit())
+        ticks &= 0xffff;
 
-        m_prev = sc_time_stamp();
-        m_next = m_prev + delta;
-        m_ev.notify(delta);
+    clock_t effclk = clk / get_prescale_divider();
+    sc_time delta((double)ticks / (double)effclk, SC_SEC);
+
+    m_prev = sc_time_stamp();
+    m_next = m_prev + delta;
+    m_ev.notify(delta);
+}
+
+u32 sp804timer::timer::read_value() {
+    if (!is_enabled())
+        return load;
+
+    double delta = (sc_time_stamp() - m_prev) / (m_next - m_prev);
+    return load * (1.0 - delta);
+}
+
+u32 sp804timer::timer::read_ris() {
+    return irq.read() ? 0x1 : 0x0;
+}
+
+u32 sp804timer::timer::read_mis() {
+    return is_irq_enabled() ? read_ris() : 0x0;
+}
+
+void sp804timer::timer::write_load(u32 val) {
+    load   = val;
+    bgload = val;
+    schedule(val);
+}
+
+void sp804timer::timer::write_control(u32 val) {
+    if (((val >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) == 3)
+        log_warn("invalid prescaler value defined");
+    control = val & (u32)CONTROL_M;
+    schedule(load);
+}
+
+void sp804timer::timer::write_intclr(u32 val) {
+    irq = false;
+    m_timer->update_irqc();
+}
+
+void sp804timer::timer::write_bgload(u32 val) {
+    load   = val;
+    bgload = val;
+}
+
+sp804timer::timer::timer(const sc_module_name& nm):
+    peripheral(nm),
+    m_ev("event"),
+    m_prev(SC_ZERO_TIME),
+    m_next(SC_ZERO_TIME),
+    m_timer(dynamic_cast<sp804timer*>(get_parent_object())),
+    load("load", 0x00, 0x00000000),
+    value("value", 0x04, 0xffffffff),
+    control("control", 0x08, 0x00000020),
+    intclr("intclr", 0x0C, 0x00000000),
+    ris("ris", 0x10, 0x00000000),
+    mis("mis", 0x14, 0x00000000),
+    bgload("bgload", 0x18, 0x00000000),
+    irq("irq") {
+    load.sync_always();
+    load.allow_read_write();
+    load.on_write(&timer::write_load);
+
+    value.sync_always();
+    value.allow_read_only();
+    value.on_read(&timer::read_value);
+
+    control.sync_always();
+    control.allow_read_write();
+    control.on_write(&timer::write_control);
+
+    intclr.sync_always();
+    intclr.allow_write_only();
+    intclr.on_write(&timer::write_intclr);
+
+    ris.sync_always();
+    ris.allow_read_only();
+    ris.on_read(&timer::read_ris);
+
+    mis.sync_always();
+    mis.allow_read_only();
+    mis.on_read(&timer::read_mis);
+
+    bgload.sync_always();
+    bgload.allow_read_write();
+    bgload.on_write(&timer::write_bgload);
+
+    SC_HAS_PROCESS(timer);
+    SC_METHOD(trigger);
+    sensitive << m_ev;
+    dont_initialize();
+}
+
+sp804timer::timer::~timer() {
+    // nothing to do
+}
+
+void sp804timer::timer::reset() {
+    peripheral::reset();
+    m_ev.cancel();
+}
+
+void sp804timer::update_irqc() {
+    irqc = timer1.irq || timer2.irq;
+}
+
+sp804timer::sp804timer(const sc_module_name& nm):
+    peripheral(nm),
+    timer1("timer1"),
+    timer2("timer2"),
+    itcr("itcr", 0xf00, 0x00000000),
+    itop("itop", 0xf04, 0x00000000),
+    pid("pid", 0xfe0),
+    cid("cid", 0xff0),
+    in("in"),
+    irq1("irq1"),
+    irq2("irq2"),
+    irqc("irqc") {
+    itcr.sync_never();
+    itcr.allow_read_write();
+
+    itop.sync_never();
+    itop.allow_read_only();
+
+    pid.sync_never();
+    pid.allow_read_only();
+
+    cid.sync_never();
+    cid.allow_read_only();
+
+    timer1.irq.bind(irq1);
+    timer2.irq.bind(irq2);
+
+    timer1.clk.bind(clk);
+    timer2.clk.bind(clk);
+
+    timer1.rst.bind(rst);
+    timer2.rst.bind(rst);
+}
+
+sp804timer::~sp804timer() {
+    // nothing to do
+}
+
+unsigned int sp804timer::receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                                 address_space as) {
+    u64 addr = tx.get_address();
+
+    if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
+        tx.set_address(addr - TIMER1_START);
+        unsigned int bytes = timer1.receive(tx, info, as);
+        tx.set_address(addr);
+        return bytes;
     }
 
-    u32 sp804timer::timer::read_VALUE() {
-        if (!is_enabled())
-            return LOAD;
-
-        double delta = (sc_time_stamp() - m_prev) / (m_next - m_prev);
-        return LOAD * (1.0 - delta);
+    if ((addr >= TIMER2_START) && (addr <= TIMER2_END)) {
+        tx.set_address(addr - TIMER2_START);
+        unsigned int bytes = timer2.receive(tx, info, as);
+        tx.set_address(addr);
+        return bytes;
     }
 
-    u32 sp804timer::timer::read_RIS() {
-        return IRQ.read() ? 0x1 : 0x0;
-    }
+    return peripheral::receive(tx, info, as);
+}
 
-    u32 sp804timer::timer::read_MIS() {
-        return is_irq_enabled() ? read_RIS() : 0x0;
-    }
+void sp804timer::reset() {
+    peripheral::reset();
 
-    void sp804timer::timer::write_LOAD(u32 val) {
-        LOAD = val;
-        BGLOAD = val;
-        schedule(val);
-    }
+    for (unsigned int i = 0; i < pid.count(); i++)
+        pid[i] = (AMBA_PID >> (i * 8)) & 0xff;
 
-    void sp804timer::timer::write_CONTROL(u32 val) {
-        if (((val >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) == 3)
-            log_warn("invalid prescaler value defined");
-        CONTROL = val & (u32)CONTROL_M;
-        schedule(LOAD);
-    }
+    for (unsigned int i = 0; i < cid.count(); i++)
+        cid[i] = (AMBA_CID >> (i * 8)) & 0xff;
 
-    void sp804timer::timer::write_INTCLR(u32 val) {
-        IRQ = false;
-        m_timer->update_IRQC();
-    }
+    irqc = false;
+}
 
-    void sp804timer::timer::write_BGLOAD(u32 val) {
-        LOAD = val;
-        BGLOAD = val;
-    }
-
-    sp804timer::timer::timer(const sc_module_name& nm):
-        peripheral(nm),
-        m_ev("event"),
-        m_prev(SC_ZERO_TIME),
-        m_next(SC_ZERO_TIME),
-        m_timer(dynamic_cast<sp804timer*>(get_parent_object())),
-        LOAD("LOAD", 0x00, 0x00000000),
-        VALUE("VALUE", 0x04, 0xFFFFFFFF),
-        CONTROL("CONTROL", 0x08, 0x00000020),
-        INTCLR("INTCLR", 0x0C, 0x00000000),
-        RIS("RIS", 0x10, 0x00000000),
-        MIS("MIS", 0x14, 0x00000000),
-        BGLOAD("BGLOAD", 0x18, 0x00000000),
-        IRQ("IRQ") {
-
-        LOAD.sync_always();
-        LOAD.allow_read_write();
-        LOAD.on_write(&timer::write_LOAD);
-
-        VALUE.sync_always();
-        VALUE.allow_read_only();
-        VALUE.on_read(&timer::read_VALUE);
-
-        CONTROL.sync_always();
-        CONTROL.allow_read_write();
-        CONTROL.on_write(&timer::write_CONTROL);
-
-        INTCLR.sync_always();
-        INTCLR.allow_write_only();
-        INTCLR.on_write(&timer::write_INTCLR);
-
-        RIS.sync_always();
-        RIS.allow_read_only();
-        RIS.on_read(&timer::read_RIS);
-
-        MIS.sync_always();
-        MIS.allow_read_only();
-        MIS.on_read(&timer::read_MIS);
-
-        BGLOAD.sync_always();
-        BGLOAD.allow_read_write();
-        BGLOAD.on_write(&timer::write_BGLOAD);
-
-        SC_METHOD(trigger);
-        sensitive << m_ev;
-        dont_initialize();
-    }
-
-    sp804timer::timer::~timer() {
-        // nothing to do
-    }
-
-    void sp804timer::timer::reset() {
-        peripheral::reset();
-        m_ev.cancel();
-    }
-
-    void sp804timer::update_IRQC() {
-        IRQC = TIMER1.IRQ || TIMER2.IRQ;
-    }
-
-    sp804timer::sp804timer(const sc_module_name& nm):
-        peripheral(nm),
-        TIMER1("TIMER1"),
-        TIMER2("TIMER2"),
-        ITCR("ITCR", 0xF00, 0x00000000),
-        ITOP("ITOP", 0xF04, 0x00000000),
-        PID("PID", 0xFE0),
-        CID("CID", 0xFF0),
-        IN("IN"),
-        IRQ1("IRQ1"),
-        IRQ2("IRQ2"),
-        IRQC("IRQC") {
-
-        ITCR.sync_never();
-        ITCR.allow_read_write();
-
-        ITOP.sync_never();
-        ITOP.allow_read_only();
-
-        PID.sync_never();
-        PID.allow_read_only();
-
-        CID.sync_never();
-        CID.allow_read_only();
-
-        TIMER1.IRQ.bind(IRQ1);
-        TIMER2.IRQ.bind(IRQ2);
-
-        TIMER1.CLOCK.bind(CLOCK);
-        TIMER2.CLOCK.bind(CLOCK);
-
-        TIMER1.RESET.bind(RESET);
-        TIMER2.RESET.bind(RESET);
-    }
-
-    sp804timer::~sp804timer() {
-        // nothing to do
-    }
-
-    unsigned int sp804timer::receive(tlm_generic_payload& tx,
-        const tlm_sbi& info, address_space as) {
-        u64 addr = tx.get_address();
-
-        // coverity[unsigned_compare]
-        if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
-            tx.set_address(addr - TIMER1_START);
-            unsigned int bytes = TIMER1.receive(tx, info, as);
-            tx.set_address(addr);
-            return bytes;
-        }
-
-        if ((addr >= TIMER2_START) && (addr <= TIMER2_END)) {
-            tx.set_address(addr - TIMER2_START);
-            unsigned int bytes = TIMER2.receive(tx, info, as);
-            tx.set_address(addr);
-            return bytes;
-        }
-
-        return peripheral::receive(tx, info, as);
-    }
-
-    void sp804timer::reset() {
-        peripheral::reset();
-
-        for (unsigned int i = 0; i < PID.count(); i++)
-            PID[i] = (SP804TIMER_PID >> (i * 8)) & 0xFF;
-
-        for (unsigned int i = 0; i < CID.count(); i++)
-            CID[i] = (SP804TIMER_CID >> (i * 8)) & 0xFF;
-
-        IRQC = false;
-    }
-
-}}
+} // namespace arm
+} // namespace vcml

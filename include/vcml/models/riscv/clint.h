@@ -30,48 +30,48 @@
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
-namespace vcml { namespace riscv {
+namespace vcml {
+namespace riscv {
 
-    class clint: public peripheral
-    {
-    private:
-        sc_time m_time_reset;
-        sc_event m_trigger;
+class clint : public peripheral
+{
+private:
+    sc_time m_time_reset;
+    sc_event m_trigger;
 
-        u64 get_cycles() const;
+    u64 get_cycles() const;
 
-        u32  read_MSIP(size_t hart);
-        void write_MSIP(u32 val, size_t hart);
-        void write_MTIMECMP(u64 val, size_t hart);
-        u64  read_MTIME();
+    u32 read_msip(size_t hart);
+    void write_msip(u32 val, size_t hart);
+    void write_mtimecmp(u64 val, size_t hart);
+    u64 read_mtime();
 
-        void update_timer();
+    void update_timer();
 
-        // disabled
-        clint();
-        clint(const clint&);
+    // disabled
+    clint();
+    clint(const clint&);
 
-    public:
-        static const int NHARTS = 4095;
+public:
+    static const size_t NHARTS = 4095;
 
-        reg<u32, NHARTS> MSIP;
-        reg<u64, NHARTS> MTIMECMP;
-        reg<u64> MTIME;
+    reg<u32, NHARTS> msip;
+    reg<u64, NHARTS> mtimecmp;
+    reg<u64> mtime;
 
-        irq_initiator_socket_array<NHARTS> IRQ_SW;
-        irq_initiator_socket_array<NHARTS> IRQ_TIMER;
+    irq_initiator_socket_array<NHARTS> irq_sw;
+    irq_initiator_socket_array<NHARTS> irq_timer;
 
-        tlm_target_socket IN;
+    tlm_target_socket in;
 
-        clint(const sc_module_name& nm);
-        virtual ~clint();
+    clint(const sc_module_name& nm);
+    virtual ~clint();
+    VCML_KIND(riscv::clint);
 
-        SC_HAS_PROCESS(clint);
-        VCML_KIND(clint);
+    virtual void reset() override;
+};
 
-        virtual void reset() override;
-    };
-
-}}
+} // namespace riscv
+} // namespace vcml
 
 #endif

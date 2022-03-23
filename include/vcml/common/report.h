@@ -26,76 +26,76 @@
 
 namespace vcml {
 
-    class report: public std::exception
-    {
-    private:
-        string         m_message;
-        string         m_origin;
-        double         m_time;
-        string         m_file;
-        int            m_line;
-        vector<string> m_backtrace;
-        string         m_desc;
+class report : public std::exception
+{
+private:
+    string m_message;
+    string m_origin;
+    double m_time;
+    string m_file;
+    int m_line;
+    vector<string> m_backtrace;
+    string m_desc;
 
-    public:
-        const char*  message()  const { return m_message.c_str(); }
-        const char*  origin()   const { return m_origin.c_str(); }
-        const char*  file()     const { return m_file.c_str(); }
-        int          line()     const { return m_line; }
-        double       time()     const { return m_time; }
+public:
+    const char* message() const { return m_message.c_str(); }
+    const char* origin() const { return m_origin.c_str(); }
+    const char* file() const { return m_file.c_str(); }
+    int line() const { return m_line; }
+    double time() const { return m_time; }
 
-        const vector<string> backtrace() const;
+    const vector<string> backtrace() const;
 
-        report() = delete;
-        report(const string& msg, const char* file, int line);
-        virtual ~report() throw();
+    report() = delete;
+    report(const string& msg, const char* file, int line);
+    virtual ~report() throw();
 
-        virtual const char* what() const throw();
+    virtual const char* what() const throw();
 
-        static void report_segfaults();
-        static unsigned int max_backtrace_length;
-    };
+    static void report_segfaults();
+    static unsigned int max_backtrace_length;
+};
 
-    inline const vector<string> report::backtrace() const {
-        return m_backtrace;
-    }
-
-#define VCML_REPORT(...)                                                      \
-    throw ::vcml::report(::vcml::mkstr(__VA_ARGS__), __FILE__, __LINE__)
-
-#define VCML_REPORT_ON(condition, ...)                                        \
-    do {                                                                      \
-        if (condition)  {                                                     \
-            VCML_REPORT(__VA_ARGS__) ;                                        \
-        }                                                                     \
-    } while (0)
-
-#define VCML_REPORT_ONCE(...)                                                 \
-    do {                                                                      \
-        static bool report_done = false;                                      \
-        if (!report_done) {                                                   \
-            report_done = true;                                               \
-            VCML_REPORT(__VA_ARGS__);                                         \
-        }                                                                     \
-    } while (0)
-
-#define VCML_ERROR(...)                                                       \
-    do {                                                                      \
-        fprintf(stderr, "%s:%d ", __FILE__, __LINE__);                        \
-        fprintf(stderr, __VA_ARGS__);                                         \
-        fprintf(stderr, "\n");                                                \
-        abort();                                                              \
-    } while (0)
-
-#define VCML_ERROR_ON(condition, ...)                                         \
-    do {                                                                      \
-        if (condition) {                                                      \
-            VCML_ERROR(__VA_ARGS__);                                          \
-        }                                                                     \
-    } while (0)
-
+inline const vector<string> report::backtrace() const {
+    return m_backtrace;
 }
 
-std::ostream& operator << (std::ostream& os, const vcml::report& rep);
+#define VCML_REPORT(...) \
+    throw ::vcml::report(::vcml::mkstr(__VA_ARGS__), __FILE__, __LINE__)
+
+#define VCML_REPORT_ON(condition, ...) \
+    do {                               \
+        if (condition) {               \
+            VCML_REPORT(__VA_ARGS__);  \
+        }                              \
+    } while (0)
+
+#define VCML_REPORT_ONCE(...)            \
+    do {                                 \
+        static bool report_done = false; \
+        if (!report_done) {              \
+            report_done = true;          \
+            VCML_REPORT(__VA_ARGS__);    \
+        }                                \
+    } while (0)
+
+#define VCML_ERROR(...)                                \
+    do {                                               \
+        fprintf(stderr, "%s:%d ", __FILE__, __LINE__); \
+        fprintf(stderr, __VA_ARGS__);                  \
+        fprintf(stderr, "\n");                         \
+        abort();                                       \
+    } while (0)
+
+#define VCML_ERROR_ON(condition, ...) \
+    do {                              \
+        if (condition) {              \
+            VCML_ERROR(__VA_ARGS__);  \
+        }                             \
+    } while (0)
+
+} // namespace vcml
+
+std::ostream& operator<<(std::ostream& os, const vcml::report& rep);
 
 #endif

@@ -26,55 +26,57 @@
 
 #include "vcml/debugging/symtab.h"
 
-namespace vcml { namespace debugging {
+namespace vcml {
+namespace debugging {
 
-    struct elf_segment {
-        const u64 virt;
-        const u64 phys;
-        const u64 size;
-        const u64 filesz;
-        const u64 offset;
-        const bool r, w, x;
-    };
+struct elf_segment {
+    const u64 virt;
+    const u64 phys;
+    const u64 size;
+    const u64 filesz;
+    const u64 offset;
+    const bool r, w, x;
+};
 
-    class elf_reader
-    {
-    private:
-        string    m_filename;
-        symtab    m_symtab;
-        int       m_fd;
-        u64       m_entry;
-        u64       m_machine;
-        endianess m_endian;
+class elf_reader
+{
+private:
+    string m_filename;
+    symtab m_symtab;
+    int m_fd;
+    u64 m_entry;
+    u64 m_machine;
+    endianess m_endian;
 
-        vector<elf_segment> m_segments;
+    vector<elf_segment> m_segments;
 
-        template <typename TRAITS, typename ELF>
-        void read_sections(ELF* elf);
+    template <typename TRAITS, typename ELF>
+    void read_sections(ELF* elf);
 
-        u64 to_phys(u64 virt) const;
+    u64 to_phys(u64 virt) const;
 
-    public:
-        u64 entry()   const { return m_entry; }
-        u64 machine() const { return m_machine; }
+public:
+    u64 entry() const { return m_entry; }
+    u64 machine() const { return m_machine; }
 
-        endianess endian()      const { return m_endian; }
-        bool is_little_endian() const { return m_endian == ENDIAN_LITTLE; }
-        bool is_big_endian()    const { return m_endian == ENDIAN_BIG; }
+    endianess endian() const { return m_endian; }
+    bool is_little_endian() const { return m_endian == ENDIAN_LITTLE; }
+    bool is_big_endian() const { return m_endian == ENDIAN_BIG; }
 
-        const char* filename() const { return m_filename.c_str(); }
+    const char* filename() const { return m_filename.c_str(); }
 
-        const vector<elf_segment>& segments() const { return m_segments; }
+    const vector<elf_segment>& segments() const { return m_segments; }
 
-        elf_reader(const string& filename);
-        ~elf_reader();
+    elf_reader(const string& filename);
+    ~elf_reader();
 
-        elf_reader(const elf_reader&) = delete;
+    elf_reader(const elf_reader&) = delete;
 
-        u64 read_symbols(symtab& tab);
-        u64 read_segment(const elf_segment& segment, u8* dest);
-    };
+    u64 read_symbols(symtab& tab);
+    u64 read_segment(const elf_segment& segment, u8* dest);
+};
 
-}}
+} // namespace debugging
+} // namespace vcml
 
 #endif

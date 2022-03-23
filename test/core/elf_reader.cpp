@@ -65,4 +65,3 @@ TEST(elf_reader, segments) {
     EXPECT_EQ(memcmp(seg0.data(), code, 4), 0);
     EXPECT_EQ(memcmp(seg1.data(), data, 12), 0);
 }
-

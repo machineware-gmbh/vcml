@@ -27,62 +27,59 @@
 
 namespace vcml {
 
-    template <typename PAYLOAD>
-    void tracer_file::do_trace(const activity<PAYLOAD>& msg) {
-        vector<string> lines = split(to_string(msg.payload), '\n');
-        for (const string& line : lines) {
-            m_stream << "[" << protocol_name(msg.kind);
-            print_timing(m_stream, msg);
-            m_stream << "] " << msg.port.name();
+template <typename PAYLOAD>
+void tracer_file::do_trace(const activity<PAYLOAD>& msg) {
+    vector<string> lines = split(to_string(msg.payload), '\n');
+    for (const string& line : lines) {
+        m_stream << "[" << protocol_name(msg.kind);
+        print_timing(m_stream, msg);
+        m_stream << "] " << msg.port.name();
 
-            if (is_forward_trace(msg.dir))
-                m_stream << " >> ";
+        if (is_forward_trace(msg.dir))
+            m_stream << " >> ";
 
-            if (is_backward_trace(msg.dir))
-                m_stream << " << ";
+        if (is_backward_trace(msg.dir))
+            m_stream << " << ";
 
-            m_stream << line << std::endl;
-        }
+        m_stream << line << std::endl;
     }
-
-    void tracer_file::trace(const activity<tlm_generic_payload>& msg) {
-        do_trace(msg);
-    }
-
-    void tracer_file::trace(const activity<irq_payload>& msg) {
-        do_trace(msg);
-    }
-
-    void tracer_file::trace(const activity<pci_payload>& msg) {
-        do_trace(msg);
-    }
-
-    void tracer_file::trace(const activity<spi_payload>& msg) {
-        do_trace(msg);
-    }
-
-    void tracer_file::trace(const activity<sd_command>& msg) {
-        do_trace(msg);
-    }
-
-    void tracer_file::trace(const activity<sd_data>& msg) {
-        do_trace(msg);
-    }
-
-    void tracer_file::trace(const activity<vq_message>& msg) {
-        do_trace(msg);
-    }
-
-    tracer_file::tracer_file(const string& file):
-        tracer(),
-        m_filename(file),
-        m_stream(m_filename.c_str()) {
-        VCML_ERROR_ON(!m_stream.is_open(), "failed to open %s", file.c_str());
-    }
-
-    tracer_file::~tracer_file() {
-        // nothing to do
-    }
-
 }
 
+void tracer_file::trace(const activity<tlm_generic_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<irq_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<pci_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<spi_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<sd_command>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<sd_data>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<vq_message>& msg) {
+    do_trace(msg);
+}
+
+tracer_file::tracer_file(const string& file):
+    tracer(), m_filename(file), m_stream(m_filename.c_str()) {
+    VCML_ERROR_ON(!m_stream.is_open(), "failed to open %s", file.c_str());
+}
+
+tracer_file::~tracer_file() {
+    // nothing to do
+}
+
+} // namespace vcml

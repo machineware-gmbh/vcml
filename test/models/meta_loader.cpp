@@ -18,7 +18,7 @@
 
 #include "testing.h"
 
-class loader_test: public test_base
+class loader_test : public test_base
 {
 public:
     generic::memory imem;
@@ -36,38 +36,37 @@ public:
         ibus("ibus"),
         dbus("dbus"),
         loader("loader", get_resource_path("elf.elf")) {
+        ibus.bind(loader.insn);
+        ibus.bind(imem.in, { 0x400000, 0x400fff });
 
-        ibus.bind(loader.INSN);
-        ibus.bind(imem.IN, {0x400000, 0x400fff});
+        dbus.bind(loader.data);
+        dbus.bind(dmem.in, { 0x601000, 0x601fff });
 
-        dbus.bind(loader.DATA);
-        dbus.bind(dmem.IN, {0x601000, 0x601fff});
+        imem.clk.bind(clk);
+        dmem.clk.bind(clk);
+        ibus.clk.bind(clk);
+        dbus.clk.bind(clk);
 
-        imem.CLOCK.bind(CLOCK);
-        dmem.CLOCK.bind(CLOCK);
-        ibus.CLOCK.bind(CLOCK);
-        dbus.CLOCK.bind(CLOCK);
-
-        imem.RESET.bind(RESET);
-        dmem.RESET.bind(RESET);
-        ibus.RESET.bind(RESET);
-        dbus.RESET.bind(RESET);
+        imem.rst.bind(rst);
+        dmem.rst.bind(rst);
+        ibus.rst.bind(rst);
+        dbus.rst.bind(rst);
     }
 
     virtual void run_test() override {
         u32 code_start = 0;
-        u32 global_a = 0;
-        u64 global_b = 0;
+        u32 global_a   = 0;
+        u64 global_b   = 0;
 
-        ASSERT_OK(loader.INSN.readw(0x400000, code_start));
-        ASSERT_OK(loader.DATA.readw(0x601000, global_b));
-        ASSERT_OK(loader.DATA.readw(0x601008, global_a));
+        ASSERT_OK(loader.insn.readw(0x400000, code_start));
+        ASSERT_OK(loader.data.readw(0x601000, global_b));
+        ASSERT_OK(loader.data.readw(0x601008, global_a));
 
-        EXPECT_EQ(code_start, fourcc("\x7f""ELF"));
+        EXPECT_EQ(code_start, fourcc("\x7f"
+                                     "ELF"));
         EXPECT_EQ(global_a, 4);
         EXPECT_EQ(global_b, 0x42);
     }
-
 };
 
 TEST(virtio, rng) {

@@ -25,24 +25,26 @@
 #include "vcml/logging/logger.h"
 #include "vcml/net/backend.h"
 
-namespace vcml { namespace net {
+namespace vcml {
+namespace net {
 
-    class backend_tap: public backend
-    {
-    private:
-        int m_fd;
+class backend_tap : public backend
+{
+private:
+    int m_fd;
 
-        void close_tap();
+    void close_tap();
 
-    public:
-        backend_tap(const string& adapter, int devno);
-        virtual ~backend_tap();
+public:
+    backend_tap(const string& adapter, int devno);
+    virtual ~backend_tap();
 
-        virtual void send_packet(const vector<u8>& packet) override;
+    virtual void send_packet(const vector<u8>& packet) override;
 
-        static backend* create(const string& name, const string& type);
-    };
+    static backend* create(const string& name, const string& type);
+};
 
-}}
+} // namespace net
+} // namespace vcml
 
 #endif

@@ -19,8 +19,8 @@
 #include "testing.h"
 
 MATCHER_P3(match_trace, dir, addr, data, "matches trace entry") {
-    return arg.kind == PROTO_TLM && arg.dir == dir &&
-           !arg.error && arg.payload.get_address() == addr &&
+    return arg.kind == PROTO_TLM && arg.dir == dir && !arg.error &&
+           arg.payload.get_address() == addr &&
            arg.payload.get_data_length() == 4 &&
            memcmp(arg.payload.get_data_ptr(), &data, 4) == 0;
 }
@@ -29,14 +29,15 @@ MATCHER_P(match_trace_error, err, "matches if trace has error set") {
     return arg.error == err && is_backward_trace(arg.dir);
 }
 
-class mock_tracer: public vcml::tracer
+class mock_tracer : public vcml::tracer
 {
 public:
     mock_tracer(): tracer() {}
-    MOCK_METHOD(void, trace, (const tracer::activity<tlm_generic_payload>&), (override));
+    MOCK_METHOD(void, trace, (const tracer::activity<tlm_generic_payload>&),
+                (override));
 };
 
-class test_harness: public test_base
+class test_harness : public test_base
 {
 public:
     tracer_term term;
@@ -45,35 +46,27 @@ public:
     u64 addr;
     u32 data;
 
-    tlm_initiator_socket OUT;
-    tlm_target_socket IN;
+    tlm_initiator_socket out;
+    tlm_target_socket in;
 
     test_harness(const sc_module_name& nm):
-        test_base(nm),
-        term(),
-        mock(),
-        addr(),
-        data(),
-        OUT("OUT"),
-        IN("IN") {
-        OUT.bind(IN);
+        test_base(nm), term(), mock(), addr(), data(), out("out"), in("in") {
+        out.bind(in);
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx,
-        const tlm_sbi& info, address_space as) override {
+                                   const tlm_sbi& info,
+                                   address_space as) override {
         if (tx.get_address() == 0) {
             tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
             return 0;
         }
 
-        EXPECT_EQ(tx.get_address(), addr)
-            << "received wrong address";
-        EXPECT_EQ(tx.get_data_length(), sizeof(data))
-            << "received wrong size";
+        EXPECT_EQ(tx.get_address(), addr) << "received wrong address";
+        EXPECT_EQ(tx.get_data_length(), sizeof(data)) << "received wrong size";
         EXPECT_EQ(*reinterpret_cast<u32*>(tx.get_data_ptr()), data)
             << "received wrong data";
-        EXPECT_FALSE(info.is_debug)
-            << "received debug request";
+        EXPECT_FALSE(info.is_debug) << "received debug request";
 
         tx.set_response_status(TLM_OK_RESPONSE);
         return tx.get_data_length();
@@ -83,24 +76,24 @@ public:
         addr = 0x420;
         data = 0x1234;
 
-        OUT.trace = true;
-        OUT.trace_errors = false;
+        out.trace        = true;
+        out.trace_errors = false;
 
         EXPECT_CALL(mock, trace(match_trace(TRACE_FW, addr, data)));
         EXPECT_CALL(mock, trace(match_trace(TRACE_BW, addr, data)));
-        EXPECT_OK(OUT.writew(addr, data)) << "failed to send transaction";
+        EXPECT_OK(out.writew(addr, data)) << "failed to send transaction";
 
-        OUT.trace = false;
-        OUT.trace_errors = false;
+        out.trace        = false;
+        out.trace_errors = false;
 
         EXPECT_CALL(mock, trace(_)).Times(0);
-        EXPECT_OK(OUT.writew(addr, data)) << "failed to send transaction";
+        EXPECT_OK(out.writew(addr, data)) << "failed to send transaction";
 
-        OUT.trace = false;
-        OUT.trace_errors = true;
+        out.trace        = false;
+        out.trace_errors = true;
 
         EXPECT_CALL(mock, trace(match_trace_error(true))).Times(1);
-        EXPECT_AE(OUT.writew(0, data)) << "did not get an address error";
+        EXPECT_AE(out.writew(0, data)) << "did not get an address error";
     }
 };
 
@@ -108,5 +101,3 @@ TEST(tracing, basic) {
     test_harness test("harness");
     sc_core::sc_start();
 }
-
-

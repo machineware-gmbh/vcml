@@ -26,24 +26,26 @@
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
-namespace vcml { namespace generic {
+namespace vcml {
+namespace generic {
 
-    class reset: public module
-    {
-    public:
-        property<bool> state;
+class reset : public module
+{
+public:
+    property<bool> state;
 
-        out_port<bool> RESET;
+    out_port<bool> rst;
 
-        reset() = delete;
-        reset(const sc_module_name& nm, bool init_state = false);
-        virtual ~reset();
-        VCML_KIND(reset);
+    reset() = delete;
+    reset(const sc_module_name& nm, bool init_state = false);
+    virtual ~reset();
+    VCML_KIND(reset);
 
-    protected:
-        virtual void end_of_elaboration() override;
-    };
+protected:
+    virtual void end_of_elaboration() override;
+};
 
-}}
+} // namespace generic
+} // namespace vcml
 
 #endif

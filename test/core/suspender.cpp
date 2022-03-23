@@ -18,15 +18,17 @@
 
 #include "testing.h"
 
-class suspender_test: public test_base, debugging::suspender
+class suspender_test : public test_base, debugging::suspender
 {
-private:
+public:
     std::thread t0;
     std::thread t1;
 
+    atomic<bool> done;
+
     void test_resume() {
         done = false;
-        t0 = std::thread([&]() -> void {
+        t0   = std::thread([&]() -> void {
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
@@ -73,14 +75,12 @@ private:
             wait(1, SC_MS);
     }
 
-public:
-    bool done;
-
     suspender_test(const sc_module_name& nm = "test"):
         test_base(nm),
         debugging::suspender("suspender"),
-        done(false) {
-    }
+        t0(),
+        t1(),
+        done(false) {}
 
     virtual ~suspender_test() {
         if (t0.joinable())

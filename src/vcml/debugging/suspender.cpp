@@ -23,195 +23,189 @@
 
 #include "vcml/debugging/suspender.h"
 
-namespace vcml { namespace debugging {
+namespace vcml {
+namespace debugging {
 
-    struct suspend_manager
-    {
-        atomic<bool> is_quitting;
-        atomic<bool> is_suspended;
+struct suspend_manager {
+    atomic<bool> is_quitting;
+    atomic<bool> is_suspended;
 
-        mutable mutex sysc_lock;
-        condition_variable_any sysc_notify;
+    mutable mutex sysc_lock;
+    condition_variable_any sysc_notify;
 
-        mutable mutex suspender_lock;
-        vector<suspender*> suspenders;
+    mutable mutex suspender_lock;
+    vector<suspender*> suspenders;
 
-        void request_pause(suspender* s);
-        void request_resume(suspender* s);
+    void request_pause(suspender* s);
+    void request_resume(suspender* s);
 
-        bool is_suspending(const suspender* s) const;
+    bool is_suspending(const suspender* s) const;
 
-        size_t count() const;
+    size_t count() const;
 
-        suspender* current() const;
+    suspender* current() const;
 
-        void quit();
+    void quit();
 
-        void notify_suspend(sc_object* obj = nullptr);
-        void notify_resume(sc_object* obj = nullptr);
+    void notify_suspend(sc_object* obj = nullptr);
+    void notify_resume(sc_object* obj = nullptr);
 
-        void handle_requests();
+    void handle_requests();
 
-        suspend_manager();
-    };
+    suspend_manager();
+};
 
-    static suspend_manager g_manager;
+static suspend_manager g_manager;
 
-    void suspend_manager::request_pause(suspender* s) {
-        if (is_quitting)
-            return;
-        if (!sim_running())
-            VCML_ERROR("cannot suspend, simulation not running");
-        lock_guard<mutex> guard(suspender_lock);
-        stl_add_unique(suspenders, s);
-    }
+void suspend_manager::request_pause(suspender* s) {
+    if (is_quitting)
+        return;
+    if (!sim_running())
+        VCML_ERROR("cannot suspend, simulation not running");
+    lock_guard<mutex> guard(suspender_lock);
+    stl_add_unique(suspenders, s);
+}
 
-    void suspend_manager::request_resume(suspender* s) {
-        lock_guard<mutex> guard(suspender_lock);
-        stl_remove_erase(suspenders, s);
-        if (suspenders.empty())
-            sysc_notify.notify_all();
-    }
-
-    bool suspend_manager::is_suspending(const suspender* s) const {
-        lock_guard<mutex> guard(suspender_lock);
-        return stl_contains(suspenders, s);
-    }
-
-    size_t suspend_manager::count() const {
-        lock_guard<mutex> guard(suspender_lock);
-        return suspenders.size();
-    }
-
-    suspender* suspend_manager::current() const {
-        if (!sysc_lock.try_lock())
-            return nullptr;
-
-        sysc_lock.unlock();
-
-        lock_guard<mutex> guard(suspender_lock);
-        if (suspenders.empty())
-            return nullptr;
-        return suspenders.front();
-    }
-
-    void suspend_manager::quit() {
-        lock_guard<mutex> guard(suspender_lock);
-        is_quitting = true;
-        suspenders.clear();
+void suspend_manager::request_resume(suspender* s) {
+    lock_guard<mutex> guard(suspender_lock);
+    stl_remove_erase(suspenders, s);
+    if (suspenders.empty())
         sysc_notify.notify_all();
+}
+
+bool suspend_manager::is_suspending(const suspender* s) const {
+    lock_guard<mutex> guard(suspender_lock);
+    return stl_contains(suspenders, s);
+}
+
+size_t suspend_manager::count() const {
+    lock_guard<mutex> guard(suspender_lock);
+    return suspenders.size();
+}
+
+suspender* suspend_manager::current() const {
+    if (!sysc_lock.try_lock())
+        return nullptr;
+
+    sysc_lock.unlock();
+
+    lock_guard<mutex> guard(suspender_lock);
+    if (suspenders.empty())
+        return nullptr;
+    return suspenders.front();
+}
+
+void suspend_manager::quit() {
+    lock_guard<mutex> guard(suspender_lock);
+    is_quitting = true;
+    suspenders.clear();
+    sysc_notify.notify_all();
+}
+
+void suspend_manager::notify_suspend(sc_object* obj) {
+    const auto& children = obj ? obj->get_child_objects()
+                               : sc_core::sc_get_top_level_objects();
+    for (auto child : children)
+        notify_suspend(child);
+
+    if (obj == nullptr)
+        return;
+
+    module* mod = dynamic_cast<module*>(obj);
+    if (mod != nullptr)
+        mod->session_suspend();
+}
+
+void suspend_manager::notify_resume(sc_object* obj) {
+    const auto& children = obj ? obj->get_child_objects()
+                               : sc_core::sc_get_top_level_objects();
+    for (auto child : children)
+        notify_resume(child);
+
+    if (obj == nullptr)
+        return;
+
+    module* mod = dynamic_cast<module*>(obj);
+    if (mod != nullptr)
+        mod->session_resume();
+}
+
+void suspend_manager::handle_requests() {
+    if (is_quitting) {
+        static std::once_flag once;
+        std::call_once(once, sc_stop);
+        return;
     }
 
-    void suspend_manager::notify_suspend(sc_object* obj) {
-        const auto& children = obj ? obj->get_child_objects()
-                                   : sc_core::sc_get_top_level_objects();
-        for (auto child : children)
-            notify_suspend(child);
+    if (count() == 0)
+        return;
 
-        if (obj == nullptr)
-            return;
+    is_suspended = true;
+    notify_suspend();
 
-        module* mod = dynamic_cast<module*>(obj);
-        if (mod != nullptr)
-            mod->session_suspend();
+    sysc_notify.wait(sysc_lock, [&]() -> bool { return count() == 0; });
+
+    notify_resume();
+    is_suspended = false;
+}
+
+suspend_manager::suspend_manager():
+    is_quitting(false),
+    is_suspended(false),
+    sysc_lock(),
+    sysc_notify(),
+    suspender_lock(),
+    suspenders() {
+    sysc_lock.lock();
+    auto fn = std::bind(&suspend_manager::handle_requests, this);
+    on_each_delta_cycle(fn);
+}
+
+suspender::suspender(const string& name):
+    m_pcount(), m_name(name), m_owner(hierarchy_top()) {
+    if (m_owner != nullptr)
+        m_name = mkstr("%s%c", m_owner->name(), SC_HIERARCHY_CHAR) + name;
+}
+
+suspender::~suspender() {
+    if (is_suspending())
+        resume();
+}
+
+bool suspender::is_suspending() const {
+    return g_manager.is_suspending(this);
+}
+
+void suspender::suspend(bool wait) {
+    if (m_pcount++ == 0)
+        g_manager.request_pause(this);
+
+    if (wait && !thctl_is_sysc_thread()) {
+        lock_guard<mutex> lock(g_manager.sysc_lock);
     }
+}
 
-    void suspend_manager::notify_resume(sc_object* obj) {
-        const auto& children = obj ? obj->get_child_objects()
-                                   : sc_core::sc_get_top_level_objects();
-        for (auto child : children)
-            notify_resume(child);
+void suspender::resume() {
+    if (--m_pcount == 0)
+        g_manager.request_resume(this);
+    VCML_ERROR_ON(m_pcount < 0, "unmatched resume");
+}
 
-        if (obj == nullptr)
-            return;
+suspender* suspender::current() {
+    return g_manager.current();
+}
 
-        module* mod = dynamic_cast<module*>(obj);
-        if (mod != nullptr)
-            mod->session_resume();
-    }
+void suspender::quit() {
+    g_manager.quit();
+}
 
-    void suspend_manager::handle_requests() {
-        if (is_quitting) {
-            static std::once_flag once;
-            std::call_once(once, sc_stop);
-            return;
-        }
+bool suspender::simulation_suspended() {
+    return g_manager.is_suspended;
+}
 
-        if (count() == 0)
-            return;
+void suspender::handle_requests() {
+    g_manager.handle_requests();
+}
 
-        is_suspended = true;
-        notify_suspend();
-
-        sysc_notify.wait(sysc_lock, [&]() -> bool {
-            return count() == 0;
-        });
-
-        notify_resume();
-        is_suspended = false;
-
-
-    }
-
-    suspend_manager::suspend_manager():
-        is_quitting(false),
-        is_suspended(false),
-        sysc_lock(),
-        sysc_notify(),
-        suspender_lock(),
-        suspenders() {
-        sysc_lock.lock();
-        auto fn = std::bind(&suspend_manager::handle_requests, this);
-        on_each_delta_cycle(fn);
-    }
-
-    suspender::suspender(const string& name):
-        m_pcount(),
-        m_name(name),
-        m_owner(hierarchy_top()) {
-        if (m_owner != nullptr)
-            m_name = mkstr("%s%c", m_owner->name(), SC_HIERARCHY_CHAR) + name;
-    }
-
-    suspender::~suspender() {
-        if (is_suspending())
-            resume();
-    }
-
-    bool suspender::is_suspending() const {
-        return g_manager.is_suspending(this);
-    }
-
-    void suspender::suspend(bool wait) {
-        if (m_pcount++ == 0)
-            g_manager.request_pause(this);
-
-        if (wait && !thctl_is_sysc_thread()) {
-            lock_guard<mutex> lock(g_manager.sysc_lock);
-        }
-    }
-
-    void suspender::resume() {
-        if (--m_pcount == 0)
-            g_manager.request_resume(this);
-        VCML_ERROR_ON(m_pcount < 0, "unmatched resume");
-    }
-
-    suspender* suspender::current() {
-        return g_manager.current();
-    }
-
-    void suspender::quit() {
-        g_manager.quit();
-    }
-
-    bool suspender::simulation_suspended() {
-        return g_manager.is_suspended;
-    }
-
-    void suspender::handle_requests() {
-        g_manager.handle_requests();
-    }
-
-}}
-
+} // namespace debugging
+} // namespace vcml

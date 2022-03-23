@@ -32,43 +32,45 @@
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
-namespace vcml { namespace ui {
+namespace vcml {
+namespace ui {
 
-    class console
-    {
-    private:
-        unordered_set<keyboard*> m_keyboards;
-        unordered_set<pointer*>  m_pointers;
-        unordered_set<shared_ptr<display>> m_displays;
+class console
+{
+private:
+    unordered_set<keyboard*> m_keyboards;
+    unordered_set<pointer*> m_pointers;
+    unordered_set<shared_ptr<display>> m_displays;
 
-    public:
-        property<string> displays;
+public:
+    property<string> displays;
 
-        bool has_display() const { return !m_displays.empty(); }
+    bool has_display() const { return !m_displays.empty(); }
 
-        u32 xres() const;
-        u32 yres() const;
+    u32 xres() const;
+    u32 yres() const;
 
-        console();
-        virtual ~console();
+    console();
+    virtual ~console();
 
-        void notify(keyboard& kbd);
-        void notify(pointer& ptr);
+    void notify(keyboard& kbd);
+    void notify(pointer& ptr);
 
-        void setup(const videomode& mode, u8* fbptr);
-        void render(u32 x, u32 y, u32 w, u32 h);
-        void render();
-        void shutdown();
-    };
+    void setup(const videomode& mode, u8* fbptr);
+    void render(u32 x, u32 y, u32 w, u32 h);
+    void render();
+    void shutdown();
+};
 
-    inline u32 console::xres() const {
-        return m_displays.empty() ? 0u : (*m_displays.begin())->xres();
-    }
+inline u32 console::xres() const {
+    return m_displays.empty() ? 0u : (*m_displays.begin())->xres();
+}
 
-    inline u32 console::yres() const {
-        return m_displays.empty() ? 0u : (*m_displays.begin())->yres();
-    }
+inline u32 console::yres() const {
+    return m_displays.empty() ? 0u : (*m_displays.begin())->yres();
+}
 
-}}
+} // namespace ui
+} // namespace vcml
 
 #endif

@@ -18,223 +18,218 @@
 
 #include "vcml/models/riscv/plic.h"
 
-namespace vcml { namespace riscv {
+namespace vcml {
+namespace riscv {
 
-    plic::context::context(const string& nm, size_t no):
-        ENABLED(),
-        THRESHOLD(mkstr("CTX%zu_THRESHOLD", no).c_str(), BASE + no * SIZE + 0),
-        CLAIM(mkstr("CTX%zu_CLAIM", no).c_str(), BASE + no * SIZE + 4) {
+plic::context::context(size_t no):
+    enabled(),
+    threshold(mkstr("ctx%zu_threshold", no), BASE + no * SIZE + 0),
+    claim(mkstr("ctx%zu_claim", no), BASE + no * SIZE + 4) {
+    threshold.allow_read_write();
+    threshold.on_write(&plic::write_threshold);
+    threshold.tag = no;
 
-        THRESHOLD.allow_read_write();
-        THRESHOLD.on_write(&plic::write_THRESHOLD);
-        THRESHOLD.tag = no;
+    claim.allow_read_write();
+    claim.on_read(&plic::read_claim);
+    claim.on_write(&plic::write_complete);
+    claim.tag = no;
 
-        CLAIM.allow_read_write();
-        CLAIM.on_read(&plic::read_CLAIM);
-        CLAIM.on_write(&plic::write_COMPLETE);
-        CLAIM.tag = no;
+    for (size_t regno = 0; regno < NIRQ / 32; regno++) {
+        const string rnm = mkstr("ctx%zu_enabled%zu", no, regno);
+        unsigned int gid = no * NIRQ / 32 + regno;
 
-        for (size_t regno = 0; regno < NIRQ / 32; regno++) {
-            string rnm = mkstr("CTX%zu_ENABLED%zu", no, regno);
-            unsigned int gid = no * NIRQ / 32 + regno;
-            ENABLED[regno] = new reg<u32>(rnm.c_str(), 0x2000 + gid * 4);
-            ENABLED[regno]->allow_read_write();
-            ENABLED[regno]->on_write(&plic::write_ENABLED);
-            ENABLED[regno]->tag = gid;
+        enabled[regno] = new reg<u32>(rnm, 0x2000 + gid * 4);
+        enabled[regno]->allow_read_write();
+        enabled[regno]->on_write(&plic::write_enabled);
+        enabled[regno]->tag = gid;
+    }
+}
+
+plic::context::~context() {
+    for (auto& reg : enabled)
+        delete reg;
+}
+
+bool plic::is_pending(size_t irqno) const {
+    VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
+
+    if (irqno == 0)
+        return false;
+
+    if (!irqs.exists(irqno))
+        return false;
+
+    return irqs[irqno].read();
+}
+
+bool plic::is_claimed(size_t irqno) const {
+    VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
+    return m_claims[irqno] < NCTX;
+}
+
+bool plic::is_enabled(size_t irqno, size_t ctxno) const {
+    VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
+    VCML_ERROR_ON(ctxno >= NCTX, "invalid context %zu", ctxno);
+
+    if (irqno == 0)
+        return false;
+
+    if (m_contexts[ctxno] == nullptr)
+        return false;
+
+    unsigned int regno = irqno / 32;
+    unsigned int shift = irqno % 32;
+
+    return (m_contexts[ctxno]->enabled[regno]->get() >> shift) & 0b1;
+}
+
+u32 plic::irq_priority(size_t irqno) const {
+    if (irqno == 0) {
+        log_debug("attempt to read priority of invalid irq%zu\n", irqno);
+        return 0;
+    }
+
+    return priority.get(irqno);
+}
+
+u32 plic::ctx_threshold(size_t ctxno) const {
+    context* ctx = m_contexts[ctxno];
+    if (ctx == nullptr)
+        return 0u;
+    return ctx->threshold;
+}
+
+u32 plic::read_pending(size_t regno) {
+    unsigned int irqbase = regno * 32;
+
+    u32 pending = 0u;
+    for (unsigned int irqno = 0; irqno < 32; irqno++) {
+        if (is_pending(irqbase + irqno) && !is_claimed(irqno))
+            pending |= (1u << irqno);
+    }
+
+    if (regno == 0)
+        pending |= ~1u;
+
+    return pending;
+}
+
+u32 plic::read_claim(size_t ctxno) {
+    unsigned int irq       = 0;
+    unsigned int threshold = ctx_threshold(ctxno);
+
+    for (unsigned int irqno = 0; irqno < NIRQ; irqno++) {
+        if (is_pending(irqno) && is_enabled(irqno, ctxno) &&
+            !is_claimed(irqno) && irq_priority(irqno) > threshold) {
+            irq       = irqno;
+            threshold = irq_priority(irqno);
         }
     }
 
-    plic::context::~context() {
-        for (auto& reg : ENABLED)
-            delete reg;
+    if (irq > 0)
+        m_claims[irq] = ctxno;
+
+    log_debug("context %zu claims irq %u", ctxno, irq);
+
+    update();
+
+    return irq;
+}
+
+void plic::write_priority(u32 value, size_t irqno) {
+    priority[irqno] = value;
+    update();
+}
+
+void plic::write_enabled(u32 value, size_t regno) {
+    unsigned int ctxno = regno / (NIRQ / 32);
+    unsigned int subno = regno % (NIRQ / 32);
+    m_contexts[ctxno]->enabled[subno]->set(value);
+    update();
+}
+
+void plic::write_threshold(u32 value, size_t ctxno) {
+    m_contexts[ctxno]->threshold = value;
+    update();
+}
+
+void plic::write_complete(u32 value, size_t ctxno) {
+    unsigned int irq = value;
+    if (value >= NIRQ) {
+        log_warn("context %zu completes illegal irq %u", ctxno, irq);
+        return;
     }
 
-    bool plic::is_pending(size_t irqno) const {
-        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
+    if (m_claims[irq] != ctxno)
+        log_debug("context %zu completes unclaimed irq %u", ctxno, value);
 
-        if (irqno == 0)
-            return false;
+    m_claims[irq] = ~0u;
+    update();
+}
 
-        if (!IRQS.exists(irqno))
-            return false;
+void plic::update() {
+    for (auto ctx : irqt) {
+        ctx.second->write(false);
+        u32 th = ctx_threshold(ctx.first);
 
-        return IRQS[irqno].read();
-    }
-
-    bool plic::is_claimed(size_t irqno) const {
-        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
-        return m_claims[irqno] < NCTX;
-    }
-
-    bool plic::is_enabled(size_t irqno, size_t ctxno) const {
-        VCML_ERROR_ON(irqno >= NIRQ, "invalid irq %zu", irqno);
-        VCML_ERROR_ON(ctxno >= NCTX, "invalid context %zu", ctxno);
-
-        if (irqno == 0)
-            return false;
-
-        if (m_contexts[ctxno] == nullptr)
-            return false;
-
-        unsigned int regno = irqno / 32;
-        unsigned int shift = irqno % 32;
-
-        return (m_contexts[ctxno]->ENABLED[regno]->get() >> shift) & 0b1;
-    }
-
-    u32 plic::irq_priority(size_t irqno) const {
-        if (irqno == 0) {
-            log_debug("attempt to read priority of invalid irq%zu\n", irqno);
-            return 0;
-        }
-
-        return PRIORITY.get(irqno);
-    }
-
-    u32 plic::ctx_threshold(size_t ctxno) const {
-        context* ctx = m_contexts[ctxno];
-        if (ctx == nullptr)
-            return 0u;
-        return ctx->THRESHOLD;
-    }
-
-    u32 plic::read_PENDING(size_t regno) {
-        unsigned int irqbase = regno * 32;
-
-        u32 pending = 0u;
-        for (unsigned int irqno = 0; irqno < 32; irqno++) {
-            if (is_pending(irqbase + irqno) && !is_claimed(irqno))
-                pending |= (1u << irqno);
-        }
-
-        if (regno == 0)
-            pending |= ~1u;
-
-        return pending;
-    }
-
-    u32 plic::read_CLAIM(size_t ctxno) {
-        unsigned int irq = 0;
-        unsigned int threshold = ctx_threshold(ctxno);
-
-        for (unsigned int irqno = 0; irqno < NIRQ; irqno++) {
-            if (is_pending(irqno)
-                && is_enabled(irqno, ctxno)
-                && !is_claimed(irqno)
-                && irq_priority(irqno) > threshold) {
-                irq = irqno;
-                threshold = irq_priority(irqno);
+        for (auto irq : irqs) {
+            if (is_pending(irq.first) && is_enabled(irq.first, ctx.first) &&
+                !is_claimed(irq.first) && irq_priority(irq.first) > th) {
+                ctx.second->write(true);
+                log_debug("forwarding irq %zu to context %zu", irq.first,
+                          ctx.first);
             }
         }
-
-        if (irq > 0)
-            m_claims[irq] = ctxno;
-
-        log_debug("context %zu claims irq %u", ctxno, irq);
-
-        update();
-
-        return irq;
     }
+}
 
-    void plic::write_PRIORITY(u32 value, size_t irqno) {
-        PRIORITY[irqno] = value;
-        update();
-    }
+plic::plic(const sc_module_name& nm):
+    peripheral(nm),
+    irq_target(),
+    m_claims(),
+    m_contexts(),
+    priority("priority", 0x0, 0),
+    pending("pending", 0x1000, 0),
+    irqs("irqs"),
+    irqt("irqt"),
+    in("in") {
+    priority.allow_read_write();
+    priority.on_write(&plic::write_priority);
 
-    void plic::write_ENABLED(u32 value, size_t regno) {
-        unsigned int ctxno = regno / (NIRQ / 32);
-        unsigned int subno = regno % (NIRQ / 32);
-        m_contexts[ctxno]->ENABLED[subno]->set(value);
-        update();
-    }
+    pending.allow_read_only();
+    pending.on_read(&plic::read_pending);
 
-    void plic::write_THRESHOLD(u32 value, size_t ctxno) {
-        m_contexts[ctxno]->THRESHOLD = value;
-        update();
-    }
+    for (unsigned int ctx = 0; ctx < NCTX; ctx++)
+        m_contexts[ctx] = nullptr;
 
-    void plic::write_COMPLETE(u32 value, size_t ctxno) {
-        unsigned int irq = value;
-        if (value >= NIRQ) {
-            log_warn("context %zu completes illegal irq %u", ctxno, irq);
-            return;
-        }
-
-        if (m_claims[irq] != ctxno)
-            log_debug("context %zu completes unclaimed irq %u", ctxno, value);
-
+    for (unsigned int irq = 0; irq < NIRQ; irq++)
         m_claims[irq] = ~0u;
-        update();
-    }
+}
 
-    void plic::update() {
-        for (auto ctx : IRQT) {
-            ctx.second->write(false);
-            u32 th = ctx_threshold(ctx.first);
+plic::~plic() {
+    for (auto ctx : m_contexts)
+        delete ctx;
+}
 
-            for (auto irq : IRQS) {
-                if (is_pending(irq.first)
-                    && is_enabled(irq.first, ctx.first)
-                    && !is_claimed(irq.first)
-                    && irq_priority(irq.first) > th) {
+void plic::reset() {
+    peripheral::reset();
 
-                    ctx.second->write(true);
-                    log_debug("forwarding irq %zu to context %zu", irq.first,
-                              ctx.first);
-                }
-            }
-        }
-    }
+    for (unsigned int irq = 0; irq < NIRQ; irq++)
+        m_claims[irq] = ~0u;
+}
 
-    plic::plic(const sc_module_name& nm):
-        peripheral(nm),
-        irq_target(),
-        m_claims(),
-        m_contexts(),
-        PRIORITY("PRIORITY", 0x0, 0),
-        PENDING("PENDING", 0x1000, 0),
-        IRQS("IRQS"),
-        IRQT("IRQT"),
-        IN("IN") {
-        PRIORITY.allow_read_write();
-        PRIORITY.on_write(&plic::write_PRIORITY);
+void plic::end_of_elaboration() {
+    for (auto ctx : irqt)
+        m_contexts[ctx.first] = new context(ctx.first);
 
-        PENDING.allow_read_only();
-        PENDING.on_read(&plic::read_PENDING);
+    VCML_ERROR_ON(irqs.exists(0), "irq0 must not be used");
+}
 
-        for (unsigned int ctx = 0; ctx < NCTX; ctx++)
-            m_contexts[ctx] = nullptr;
+void plic::irq_transport(const irq_target_socket& sock, irq_payload& irq) {
+    unsigned int irqno = irqs.index_of(sock);
+    log_debug("irq %u %s", irqno, irq.active ? "set" : "cleared");
+    update();
+}
 
-        for (unsigned int irq = 0; irq < NIRQ; irq++)
-            m_claims[irq] = ~0u;
-    }
-
-    plic::~plic() {
-        for (auto ctx : m_contexts)
-            delete ctx;
-    }
-
-    void plic::reset() {
-        peripheral::reset();
-
-        for (unsigned int irq = 0; irq < NIRQ; irq++)
-            m_claims[irq] = ~0u;
-    }
-
-    void plic::end_of_elaboration() {
-        for (auto ctx : IRQT) {
-            string nm = mkstr("CONTEXT%zu", ctx.first);
-            m_contexts[ctx.first] = new context(nm.c_str(), ctx.first);
-        }
-
-        VCML_ERROR_ON(IRQS.exists(0), "irq0 must not be used");
-    }
-
-    void plic::irq_transport(const irq_target_socket& sock, irq_payload& irq) {
-        unsigned int irqno = IRQS.index_of(sock);
-        log_debug("irq %u %s", irqno, irq.active ? "set" : "cleared");
-        update();
-    }
-
-}}
+} // namespace riscv
+} // namespace vcml

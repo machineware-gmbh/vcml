@@ -48,7 +48,8 @@
 
 namespace vcml {
 
-    const unsigned int version = VCML_VERSION;
-    const char* const version_string = VCML_VERSION_STRING;
-
+unsigned int library_version() {
+    return VCML_VERSION;
 }
+
+} // namespace vcml

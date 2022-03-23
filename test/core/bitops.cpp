@@ -47,16 +47,16 @@ TEST(bitops, ctz64) {
 
 TEST(bitops, ffs32) {
     EXPECT_EQ(vcml::ffs(0u), -1);
-    EXPECT_EQ(vcml::ffs(1u << 31 | 1u <<  0),  0);
-    EXPECT_EQ(vcml::ffs(1u << 31 | 1u <<  7),  7);
+    EXPECT_EQ(vcml::ffs(1u << 31 | 1u << 0), 0);
+    EXPECT_EQ(vcml::ffs(1u << 31 | 1u << 7), 7);
     EXPECT_EQ(vcml::ffs(1u << 31 | 1u << 15), 15);
     EXPECT_EQ(vcml::ffs(1u << 31), 31);
 }
 
 TEST(bitops, ffs64) {
     EXPECT_EQ(vcml::ffs(0ul), -1);
-    EXPECT_EQ(vcml::ffs(1ul << 63 | 1ul <<  0),  0);
-    EXPECT_EQ(vcml::ffs(1ul << 63 | 1ul <<  7),  7);
+    EXPECT_EQ(vcml::ffs(1ul << 63 | 1ul << 0), 0);
+    EXPECT_EQ(vcml::ffs(1ul << 63 | 1ul << 7), 7);
     EXPECT_EQ(vcml::ffs(1ul << 63 | 1ul << 15), 15);
     EXPECT_EQ(vcml::ffs(1ul << 63 | 1ul << 31), 31);
     EXPECT_EQ(vcml::ffs(1ul << 63), 63);
@@ -64,16 +64,16 @@ TEST(bitops, ffs64) {
 
 TEST(bitops, fls32) {
     EXPECT_EQ(vcml::fls(0u), -1);
-    EXPECT_EQ(vcml::fls(1u | 1u <<  0),  0);
-    EXPECT_EQ(vcml::fls(1u | 1u <<  7),  7);
+    EXPECT_EQ(vcml::fls(1u | 1u << 0), 0);
+    EXPECT_EQ(vcml::fls(1u | 1u << 7), 7);
     EXPECT_EQ(vcml::fls(1u | 1u << 15), 15);
     EXPECT_EQ(vcml::fls(1u | 1u << 31), 31);
 }
 
 TEST(bitops, fls64) {
     EXPECT_EQ(vcml::fls(0ul), -1);
-    EXPECT_EQ(vcml::fls(1ul | 1ul <<  0),  0);
-    EXPECT_EQ(vcml::fls(1ul | 1ul <<  7),  7);
+    EXPECT_EQ(vcml::fls(1ul | 1ul << 0), 0);
+    EXPECT_EQ(vcml::fls(1ul | 1ul << 7), 7);
     EXPECT_EQ(vcml::fls(1ul | 1ul << 15), 15);
     EXPECT_EQ(vcml::fls(1ul | 1ul << 31), 31);
     EXPECT_EQ(vcml::fls(1ul | 1ul << 63), 63);
@@ -120,7 +120,7 @@ TEST(bitops, bitrev) {
 }
 
 TEST(bitops, bswap) {
-    vcml::u8  val1 = 0x11;
+    vcml::u8 val1  = 0x11;
     vcml::u16 val2 = 0x1122;
     vcml::u32 val3 = 0x11223344;
     vcml::u64 val4 = 0x1122334455667788ull;
@@ -182,13 +182,13 @@ TEST(bitops, crc7) {
     EXPECT_EQ(vcml::crc7(b1, sizeof(b1)), 0x11 << 1);
     EXPECT_EQ(vcml::crc7(b2, sizeof(b2)), 0x08 << 1);
 
-    vcml::u8  cmd0[] = { 0x40, 0x00, 0x00, 0x00, 0x00 };
+    vcml::u8 cmd0[]  = { 0x40, 0x00, 0x00, 0x00, 0x00 };
     vcml::u8 cmd17[] = { 0x51, 0x00, 0x00, 0x00, 0x00 };
-    vcml::u8  resp[] = { 0x11, 0x00, 0x00, 0x09, 0x00 };
+    vcml::u8 resp[]  = { 0x11, 0x00, 0x00, 0x09, 0x00 };
 
-    EXPECT_EQ(vcml::crc7(cmd0,  sizeof(cmd0)),  0x4a << 1);
+    EXPECT_EQ(vcml::crc7(cmd0, sizeof(cmd0)), 0x4a << 1);
     EXPECT_EQ(vcml::crc7(cmd17, sizeof(cmd17)), 0x2a << 1);
-    EXPECT_EQ(vcml::crc7(resp,  sizeof(resp)),  0x33 << 1);
+    EXPECT_EQ(vcml::crc7(resp, sizeof(resp)), 0x33 << 1);
 }
 
 TEST(bitops, crc16) {
@@ -201,8 +201,8 @@ TEST(bitops, crc32) {
     EXPECT_EQ(vcml::crc32((const vcml::u8*)"123456789", 9), 0x9b63d02c);
 }
 
-typedef vcml::field<0,3> TEST_FIELD1;
-typedef vcml::field<4,1> TEST_FIELD2;
+typedef vcml::field<0, 3> TEST_FIELD1;
+typedef vcml::field<4, 1> TEST_FIELD2;
 
 TEST(bitops, field) {
     EXPECT_EQ(TEST_FIELD1::MASK, 0b111);

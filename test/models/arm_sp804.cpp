@@ -18,33 +18,29 @@
 
 #include "testing.h"
 
-class sp804_stim: public test_base
+class sp804_stim : public test_base
 {
 public:
-    tlm_initiator_socket OUT;
+    tlm_initiator_socket out;
 
-    sc_out<bool> RESET_OUT;
+    sc_out<bool> reset_out;
 
-    irq_target_socket IRQ1;
-    irq_target_socket IRQ2;
-    irq_target_socket IRQC;
+    irq_target_socket irq1;
+    irq_target_socket irq2;
+    irq_target_socket irqc;
 
     sp804_stim(const sc_module_name& nm):
-        test_base(nm),
-        OUT("OUT"),
-        IRQ1("IRQ1"),
-        IRQ2("IRQ2"),
-        IRQC("IRQC") {
-    }
+        test_base(nm), out("out"), irq1("irq1"), irq2("irq2"), irqc("irqc") {}
 
     virtual void run_test() override {
-        const u64 TIMER1_LOAD    = 0x00;
-        const u64 TIMER1_VALUE   = 0x04;
-        const u64 TIMER1_CONTROL = 0x08;
-        u32 val;
+        enum addresses : u64 {
+            TIMER1_LOAD    = 0x00,
+            TIMER1_VALUE   = 0x04,
+            TIMER1_CONTROL = 0x08,
+        };
 
-        val = 0x100;
-        EXPECT_OK(OUT.writew(TIMER1_LOAD, val)) << "cannot set counter";
+        u32 val = 0x100;
+        EXPECT_OK(out.writew(TIMER1_LOAD, val)) << "cannot set counter";
 
         // force a non-zero test starting time
         wait(100, SC_MS);
@@ -52,39 +48,39 @@ public:
 
         // enable timer
         val = 0;
-        EXPECT_OK(OUT.readw(TIMER1_VALUE, val));
+        EXPECT_OK(out.readw(TIMER1_VALUE, val));
         EXPECT_GE(val, 0x100) << "counter changed while disabled";
 
         val = arm::sp804timer::timer::CONTROL_ENABLED |
-              arm::sp804timer::timer::CONTROL_IRQEN   |
+              arm::sp804timer::timer::CONTROL_IRQEN |
               arm::sp804timer::timer::CONTROL_ONESHOT |
               arm::sp804timer::timer::CONTROL_32BIT;
-        EXPECT_OK(OUT.writew(TIMER1_CONTROL, val)) << "cannot write CONTROL";
+        EXPECT_OK(out.writew(TIMER1_CONTROL, val)) << "cannot write CONTROL";
 
-        wait(IRQC.default_event());
+        wait(irqc.default_event());
 
-        EXPECT_TRUE(IRQ1) << "irq1 did not fire";
-        EXPECT_TRUE(IRQC) << "irqc did not propagate from irq1";
-        EXPECT_FALSE(IRQ2) << "irq2 randomly fired";
+        EXPECT_TRUE(irq1) << "irq1 did not fire";
+        EXPECT_TRUE(irqc) << "irqc did not propagate from irq1";
+        EXPECT_FALSE(irq2) << "irq2 randomly fired";
 
         EXPECT_EQ(sc_time_stamp(), start + clock_cycles(0x100))
             << "interrupt did not fire at correct time";
 
-        EXPECT_OK(OUT.readw(TIMER1_VALUE, val)) << "cannot read counter";
+        EXPECT_OK(out.readw(TIMER1_VALUE, val)) << "cannot read counter";
         EXPECT_EQ(val, 0) << "counter did not stop at zero";
 
         // check if resetting works
-        EXPECT_OK(OUT.readw(TIMER1_CONTROL, val)) << "cannot read CONTROL";
+        EXPECT_OK(out.readw(TIMER1_CONTROL, val)) << "cannot read CONTROL";
         EXPECT_NE(val, 0x20) << "TIMER1_CONTROL changed randomly";
 
-        RESET_OUT = true;
+        reset_out = true;
         wait(10, SC_MS);
-        RESET_OUT = false;
+        reset_out = false;
         wait(SC_ZERO_TIME);
-        ASSERT_FALSE(RESET);
+        ASSERT_FALSE(rst);
 
         val = 0;
-        EXPECT_OK(OUT.readw(TIMER1_CONTROL, val)) << "cannot read CONTROL";
+        EXPECT_OK(out.readw(TIMER1_CONTROL, val)) << "cannot read CONTROL";
         EXPECT_EQ(val, 0x20) << "TIMER1_CONTROL did not reset";
     }
 };
@@ -97,24 +93,24 @@ TEST(sp804timer, main) {
     sc_signal<bool> rst("reset");
     sc_signal<clock_t> clk("clock");
 
-    generic::clock sysclk("SYSCLK", 1 * MHz);
-    sysclk.CLOCK.bind(clk);
+    generic::clock sysclk("sysclk", 1 * MHz);
+    sysclk.clk.bind(clk);
 
-    sp804_stim stim("STIM");
-    arm::sp804timer sp804("SP804");
+    sp804_stim stim("stim");
+    arm::sp804timer sp804("sp804");
 
-    stim.OUT.bind(sp804.IN);
-    stim.RESET_OUT.bind(rst);
+    stim.out.bind(sp804.in);
+    stim.reset_out.bind(rst);
 
-    stim.CLOCK.bind(clk);
-    stim.RESET.bind(rst);
+    stim.clk.bind(clk);
+    stim.rst.bind(rst);
 
-    sp804.CLOCK.bind(clk);
-    sp804.RESET.bind(rst);
+    sp804.clk.bind(clk);
+    sp804.rst.bind(rst);
 
-    sp804.IRQ1.bind(stim.IRQ1);
-    sp804.IRQ2.bind(stim.IRQ2);
-    sp804.IRQC.bind(stim.IRQC);
+    sp804.irq1.bind(stim.irq1);
+    sp804.irq2.bind(stim.irq2);
+    sp804.irqc.bind(stim.irqc);
 
     sc_core::sc_start();
 }

@@ -18,7 +18,7 @@
 
 #include "testing.h"
 
-class thctl_test: public test_base
+class thctl_test : public test_base
 {
 public:
     atomic<int> crit_count;
@@ -26,11 +26,7 @@ public:
     bool crit2_done;
 
     thctl_test(const sc_module_name& nm = sc_gen_unique_name("test")):
-        test_base(nm),
-        crit_count(),
-        crit1_done(false),
-        crit2_done(false) {
-    }
+        test_base(nm), crit_count(), crit1_done(false), crit2_done(false) {}
 
     virtual void run_test() override {
         std::thread t1([&]() -> void {
@@ -74,4 +70,3 @@ TEST(thctl, critical) {
     thctl_test test;
     sc_core::sc_start();
 }
-

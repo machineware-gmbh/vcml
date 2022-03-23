@@ -27,51 +27,53 @@
 #include <libslirp.h>
 #include <libslirp-version.h>
 
-namespace vcml { namespace net {
+namespace vcml {
+namespace net {
 
-    class backend_slirp;
+class backend_slirp;
 
-    class slirp_network
-    {
-    private:
-        SlirpConfig m_config;
-        Slirp* m_slirp;
+class slirp_network
+{
+private:
+    SlirpConfig m_config;
+    Slirp* m_slirp;
 
-        set<backend_slirp*> m_clients;
+    set<backend_slirp*> m_clients;
 
-        mutex m_mtx;
-        atomic<bool> m_running;
-        thread m_thread;
+    mutex m_mtx;
+    atomic<bool> m_running;
+    thread m_thread;
 
-        void slirp_thread();
+    void slirp_thread();
 
-    public:
-        slirp_network(unsigned int id);
-        virtual ~slirp_network();
+public:
+    slirp_network(unsigned int id);
+    virtual ~slirp_network();
 
-        void send_packet(const u8* ptr, size_t len);
-        void recv_packet(const u8* ptr, size_t len);
+    void send_packet(const u8* ptr, size_t len);
+    void recv_packet(const u8* ptr, size_t len);
 
-        void register_client(backend_slirp* client);
-        void unregister_client(backend_slirp* client);
-    };
+    void register_client(backend_slirp* client);
+    void unregister_client(backend_slirp* client);
+};
 
-    class backend_slirp: public backend
-    {
-    private:
-        shared_ptr<slirp_network> m_network;
+class backend_slirp : public backend
+{
+private:
+    shared_ptr<slirp_network> m_network;
 
-    public:
-        backend_slirp(const string& ada, const shared_ptr<slirp_network>& net);
-        virtual ~backend_slirp();
+public:
+    backend_slirp(const string& ada, const shared_ptr<slirp_network>& net);
+    virtual ~backend_slirp();
 
-        void disconnect() { m_network = nullptr; }
+    void disconnect() { m_network = nullptr; }
 
-        virtual void send_packet(const vector<u8>& packet) override;
+    virtual void send_packet(const vector<u8>& packet) override;
 
-        static backend* create(const string& adapter, const string& type);
-    };
+    static backend* create(const string& adapter, const string& type);
+};
 
-}}
+} // namespace net
+} // namespace vcml
 
 #endif

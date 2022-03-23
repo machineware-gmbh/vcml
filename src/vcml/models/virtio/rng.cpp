@@ -18,70 +18,69 @@
 
 #include "vcml/models/virtio/rng.h"
 
-namespace vcml { namespace virtio {
+namespace vcml {
+namespace virtio {
 
-    void rng::identify(virtio_device_desc& desc) {
-        reset();
-        desc.device_id = VIRTIO_DEVICE_RNG;
-        desc.vendor_id = VIRTIO_VENDOR_VCML;
-        desc.pci_class = PCI_CLASS_OTHERS;
-        desc.request_virtqueue(VIRTQUEUE_REQUEST, 8);
+void rng::identify(virtio_device_desc& desc) {
+    reset();
+    desc.device_id = VIRTIO_DEVICE_RNG;
+    desc.vendor_id = VIRTIO_VENDOR_VCML;
+    desc.pci_class = PCI_CLASS_OTHERS;
+    desc.request_virtqueue(VIRTQUEUE_REQUEST, 8);
+}
+
+bool rng::notify(u32 vqid) {
+    vq_message msg;
+    int count = 0;
+
+    while (virtio_in->get(vqid, msg)) {
+        log_debug("received message from virtqueue %u with %u bytes", vqid,
+                  msg.length());
+
+        vector<u8> random(msg.length_out());
+        for (auto& elem : random)
+            elem = rand_r(&m_seed);
+
+        count++;
+        msg.copy_out(random);
+
+        if (!virtio_in->put(vqid, msg))
+            return false;
     }
 
-    bool rng::notify(u32 vqid) {
-        vq_message msg;
-        int count = 0;
+    if (!count)
+        log_warn("notify without messages");
 
-        while (VIRTIO_IN->get(vqid, msg)) {
-            log_debug("received message from virtqueue %u with %u bytes",
-                      vqid, msg.length());
+    return true;
+}
 
-            vector<u8> random(msg.length_out());
-            for (auto& elem : random)
-                elem = rand_r(&m_seed);
+void rng::read_features(u64& features) {
+    features = 0;
+}
 
-            count++;
-            msg.copy_out(random);
+bool rng::write_features(u64 features) {
+    return true;
+}
 
-            if (!VIRTIO_IN->put(vqid, msg))
-                return false;
-        }
+bool rng::read_config(const range& addr, void* ptr) {
+    return false;
+}
 
-        if (!count)
-            log_warn("notify without messages");
+bool rng::write_config(const range& addr, const void* ptr) {
+    return false;
+}
 
-        return true;
-    }
+rng::rng(const sc_module_name& nm):
+    module(nm), virtio_device(), m_seed(0), virtio_in("virtio_in") {
+}
 
-    void rng::read_features(u64& features) {
-        features = 0;
-    }
+rng::~rng() {
+    // nothing to do
+}
 
-    bool rng::write_features(u64 features) {
-        return true;
-    }
+void rng::reset() {
+    m_seed = (unsigned int)sc_time_stamp().value();
+}
 
-    bool rng::read_config(const range& addr, void* ptr) {
-        return false;
-    }
-
-    bool rng::write_config(const range& addr, const void* ptr) {
-        return false;
-    }
-
-    rng::rng(const sc_module_name& nm):
-        module(nm),
-        virtio_device(),
-        m_seed(0),
-        VIRTIO_IN("VIRTIO_IN") {
-    }
-
-    rng::~rng() {
-        // nothing to do
-    }
-
-    void rng::reset() {
-        m_seed = (unsigned int)sc_time_stamp().value();
-    }
-
-}}
+} // namespace virtio
+} // namespace vcml

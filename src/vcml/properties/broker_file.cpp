@@ -21,78 +21,76 @@
 
 namespace vcml {
 
-    void broker_file::parse_file(const string& filename) {
-        int lno = 0;
-        string line, buffer = "";
-        ifstream file(filename.c_str());
+void broker_file::parse_file(const string& filename) {
+    int lno = 0;
+    string line, buffer = "";
+    ifstream file(filename.c_str());
 
-        VCML_ERROR_ON(!file.good(), "cannot read '%s'", filename.c_str());
+    VCML_ERROR_ON(!file.good(), "cannot read '%s'", filename.c_str());
 
-        while (std::getline(file, line)) {
-            lno++;
+    while (std::getline(file, line)) {
+        lno++;
 
-            // remove white spaces
-            line = trim(line);
+        // remove white spaces
+        line = trim(line);
 
-            if (line.empty())
-                continue;
+        if (line.empty())
+            continue;
 
-            // continue on next line?
-            if (line[line.size() -1] == '\\') {
-                buffer += line.substr(0, line.size() - 1);
-                continue;
-            }
+        // continue on next line?
+        if (line[line.size() - 1] == '\\') {
+            buffer += line.substr(0, line.size() - 1);
+            continue;
+        }
 
-            // prepend buffer from previous lines
-            line = buffer + line;
-            buffer = "";
+        // prepend buffer from previous lines
+        line   = buffer + line;
+        buffer = "";
 
-            // remove comments
-            size_t pos = line.find('#');
-            if (pos != line.npos)
-                line.erase(pos);
-            if (line.empty())
-                continue;
+        // remove comments
+        size_t pos = line.find('#');
+        if (pos != line.npos)
+            line.erase(pos);
+        if (line.empty())
+            continue;
 
-            // read key=value part
-            size_t separator = line.find('=');
-            if (separator == line.npos)
-                log_warn("%s:%d missing '='", m_filename.c_str(), lno);
+        // read key=value part
+        size_t separator = line.find('=');
+        if (separator == line.npos)
+            log_warn("%s:%d missing '='", m_filename.c_str(), lno);
 
-            string key = line.substr(0, separator);
-            string val = line.substr(separator + 1);
+        string key = line.substr(0, separator);
+        string val = line.substr(separator + 1);
 
-            key = trim(key);
-            val = trim(val);
+        key = trim(key);
+        val = trim(val);
 
-            if (!key.empty()) {
-                replace(val);
-                define(key, val);
-            }
+        if (!key.empty()) {
+            replace(val);
+            define(key, val);
         }
     }
-
-    void broker_file::replace(string& str) {
-        for (auto it : m_replacements)
-            vcml::replace(str, it.first, it.second);
-    }
-
-    broker_file::broker_file(const string& filepath):
-        broker(filepath, PRIO_CFGFILE),
-        m_filename(filepath),
-        m_replacements() {
-        m_replacements["$dir"] = dirname(filepath);
-        m_replacements["$cfg"] = filename_noext(filepath);
-        m_replacements["$app"] = progname();
-        m_replacements["$pwd"] = curr_dir();
-        m_replacements["$tmp"] = temp_dir();
-        m_replacements["$usr"] = username();
-        m_replacements["$pid"] = to_string(getpid());
-        parse_file(filepath);
-    }
-
-    broker_file::~broker_file() {
-        // nothing to do
-    }
-
 }
+
+void broker_file::replace(string& str) {
+    for (auto it : m_replacements)
+        vcml::replace(str, it.first, it.second);
+}
+
+broker_file::broker_file(const string& filepath):
+    broker(filepath, PRIO_CFGFILE), m_filename(filepath), m_replacements() {
+    m_replacements["$dir"] = dirname(filepath);
+    m_replacements["$cfg"] = filename_noext(filepath);
+    m_replacements["$app"] = progname();
+    m_replacements["$pwd"] = curr_dir();
+    m_replacements["$tmp"] = temp_dir();
+    m_replacements["$usr"] = username();
+    m_replacements["$pid"] = to_string(getpid());
+    parse_file(filepath);
+}
+
+broker_file::~broker_file() {
+    // nothing to do
+}
+
+} // namespace vcml

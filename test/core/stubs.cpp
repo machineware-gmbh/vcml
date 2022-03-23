@@ -18,29 +18,26 @@
 
 #include "testing.h"
 
-class test_harness: public test_base
+class test_harness : public test_base
 {
 public:
-    tlm_initiator_socket OUT;
-    tlm_target_socket IN;
+    tlm_initiator_socket out;
+    tlm_target_socket in;
 
     test_harness(const sc_module_name& nm):
-        test_base(nm),
-        OUT("OUT"),
-        IN("IN") {
-        OUT.stub(TLM_ADDRESS_ERROR_RESPONSE);
-        IN.stub();
+        test_base(nm), out("out"), in("in") {
+        out.stub(TLM_ADDRESS_ERROR_RESPONSE);
+        in.stub();
     }
 
     virtual void run_test() override {
         u32 data;
         sc_time now = local_time_stamp();
-        EXPECT_AE(OUT.writew(0x1234, data))
+        EXPECT_AE(out.writew(0x1234, data))
             << "stub did not response with programmed status";
-        EXPECT_EQ(now, local_time_stamp())
-            << "stub advanced systemc time";
+        EXPECT_EQ(now, local_time_stamp()) << "stub advanced systemc time";
 
-        IN.invalidate_dmi(); // no response, but test for aborts
+        in.invalidate_dmi(); // no response, but test for aborts
     }
 };
 

@@ -18,65 +18,65 @@
 
 #include "vcml/serial/backend_file.h"
 
-namespace vcml { namespace serial {
+namespace vcml {
+namespace serial {
 
-    backend_file::backend_file(const string& port, const string& rx,
-        const string& tx):
-        backend(port),
-        m_rx(),
-        m_tx() {
-        if (!rx.empty()) {
-            m_rx.open(rx.c_str(), ifstream::binary | ifstream::in);
-            if (!m_rx.good())
-                log_warn("failed to open file '%s'", rx.c_str());
-        }
-
-        if (!tx.empty()) {
-            auto mode = ofstream::binary | ofstream::app | ofstream::out;
-            m_tx.open(tx.c_str(), mode);
-            if (!m_tx.good())
-                log_warn("failed to open file '%s'", tx.c_str());
-        }
-
-        m_type = mkstr("file:%s:%s", rx.c_str(), tx.c_str());
+backend_file::backend_file(const string& port, const string& rx,
+                           const string& tx):
+    backend(port), m_rx(), m_tx() {
+    if (!rx.empty()) {
+        m_rx.open(rx.c_str(), ifstream::binary | ifstream::in);
+        if (!m_rx.good())
+            log_warn("failed to open file '%s'", rx.c_str());
     }
 
-    backend_file::~backend_file() {
-        // nothing to do
+    if (!tx.empty()) {
+        auto mode = ofstream::binary | ofstream::app | ofstream::out;
+        m_tx.open(tx.c_str(), mode);
+        if (!m_tx.good())
+            log_warn("failed to open file '%s'", tx.c_str());
     }
 
-    bool backend_file::read(u8& val) {
-        if (!m_rx.is_open() || !m_rx.good())
-            return false;
+    m_type = mkstr("file:%s:%s", rx.c_str(), tx.c_str());
+}
 
-        m_rx.read(reinterpret_cast<char*>(&val), sizeof(val));
-        return m_rx.gcount() > 0u;
+backend_file::~backend_file() {
+    // nothing to do
+}
+
+bool backend_file::read(u8& val) {
+    if (!m_rx.is_open() || !m_rx.good())
+        return false;
+
+    m_rx.read(reinterpret_cast<char*>(&val), sizeof(val));
+    return m_rx.gcount() > 0u;
+}
+
+void backend_file::write(u8 val) {
+    if (m_tx.is_open() && m_tx.good()) {
+        m_tx.write(reinterpret_cast<const char*>(&val), sizeof(val));
+        m_tx.flush();
+    }
+}
+
+backend* backend_file::create(const string& port, const string& type) {
+    string rx = port + ".rx";
+    string tx = port + ".tx";
+
+    vector<string> args = split(type, ':');
+
+    if (args.size() == 2) {
+        rx = args[1] + ".rx";
+        tx = args[1] + ".tx";
     }
 
-    void backend_file::write(u8 val) {
-        if (m_tx.is_open() && m_tx.good()) {
-            m_tx.write(reinterpret_cast<const char*>(&val), sizeof(val));
-            m_tx.flush();
-        }
+    if (args.size() >= 3) {
+        rx = args[1];
+        tx = args[2];
     }
 
-    backend* backend_file::create(const string& port, const string& type) {
-        string rx = port + ".rx";
-        string tx = port + ".tx";
+    return new backend_file(port, rx, tx);
+}
 
-        vector<string> args = split(type, ':');
-
-        if (args.size() == 2) {
-            rx = args[1] + ".rx";
-            tx = args[1] + ".tx";
-        }
-
-        if (args.size() >= 3) {
-            rx = args[1];
-            tx = args[2];
-        }
-
-        return new backend_file(port, rx, tx);
-    }
-
-}}
+} // namespace serial
+} // namespace vcml
