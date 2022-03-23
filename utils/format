@@ -18,7 +18,7 @@
  #                                                                            #
  ##############################################################################
 
-home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
+home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
 check_dirs="$home/src/ $home/include/ $home/test/core $home/test/models"
 headers=$(find $check_dirs -name '*.h')
 sources=$(find $check_dirs -name '*.cpp')
