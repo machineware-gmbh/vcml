@@ -13,6 +13,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
+    - name: Setup
+      run: clang-format --version
+
     - name: Lint
       run: ./utils/format -n
 
