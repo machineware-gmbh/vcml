@@ -31,6 +31,9 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(Sanitizer)
+
+find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
 find_package(LibVNC)
@@ -227,17 +230,17 @@ if (${VCML_VERSION_PATCH} LESS 10)
     set(VCML_VERSION_PATCH 0${VCML_VERSION_PATCH})
 endif()
 
-execute_process(COMMAND git rev-parse HEAD
+execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_VARIABLE VCML_GIT_REV
                 ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-execute_process(COMMAND git rev-parse --short HEAD
+execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_VARIABLE VCML_GIT_REV_SHORT
                 ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-execute_process(COMMAND git diff --quiet
+execute_process(COMMAND ${GIT_EXECUTABLE} diff --quiet
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 RESULT_VARIABLE VCML_GIT_DIRTY
                 ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)

@@ -7,10 +7,10 @@ on:
     branches: [ master ]
 
 env:
-  BUILD_TYPE: RelWithDebInfo
   TARGET_ARCH: linux64
   ASAN_OPTIONS: verbosity=1
   TSAN_OPTIONS: verbosity=1
+  UBSAN_OPTIONS: print_stacktrace=1
 
 jobs:
   build:
@@ -20,9 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         systemc: [ 2.3.3 ]
-        sanitizer: [ address, thread, undefined ]
+        sanitizer: [ ASAN, TSAN, UBSAN ]
 
-    name: ${{matrix.sanitizer}} sanitizer
+    name: ${{matrix.sanitizer}}
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
@@ -51,15 +51,12 @@ jobs:
       run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
 
     - name: Configure
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
-      env:
-        CXXFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer -fno-var-tracking
-        LDFLAGS: -fsanitize=${{matrix.sanitizer}} -fno-omit-frame-pointer -fno-var-tracking
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.sanitizer}} -DVCML_BUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.sanitizer}} -j $(nproc)
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --verbose
+      run: ctest -C ${{matrix.sanitizer}} --verbose
 

@@ -20,44 +20,16 @@
 
 home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
 
-systemc_repo=https://github.com/machineware-gmbh/systemc
-systemc_branch=2.3.3-mwr
-
 linter=$(which clang-tidy-12)
 bindir=$home/BUILD
 builds=$@
 
 [ -z "$builds" ] && builds="DEBUG RELEASE ASAN"
 
-if [ ! -f "$SYSTEMC_HOME/CMakeLists.txt" ]; then
-    export SYSTEMC_HOME=$bindir/systemc
-fi
-
-if [ ! -f "$SYSTEMC_HOME/CMakeLists.txt" ]; then
-    mkdir -p $SYSTEMC_HOME
-    git clone $systemc_repo -b $systemc_branch $SYSTEMC_HOME
-fi
-
 for type in $builds; do (
     prefix=$home/BUILD/$type
     build=$prefix/.BUILD
-    mkdir -p $build
 
-    if [ $type == "ASAN" ]; then
-        CXXFLAGS="$CXXFLAGS -fsanitize=address -fno-omit-frame-pointer"
-        LDFLAGS="$LDFLAGS -fsanitize=address -fno-omit-frame-pointer"
-        type="DEBUG"
-    elif [ $type == "USAN" ]; then
-        CXXFLAGS="$CXXFLAGS -fsanitize=undefined -fno-omit-frame-pointer"
-        LDFLAGS="$LDFLAGS -fsanitize=undefined -fno-omit-frame-pointer"
-        type="DEBUG"
-    elif [ $type == "TSAN" ]; then
-        CXXFLAGS="$CXXFLAGS -fsanitize=thread -fno-omit-frame-pointer"
-        LDFLAGS="$LDFLAGS -fsanitize=thread -fno-omit-frame-pointer"
-        type="DEBUG"
-    fi
-
-    CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
     cmake -B $build -G Ninja                \
           -DCMAKE_BUILD_TYPE=$type          \
           -DCMAKE_INSTALL_PREFIX=$prefix    \
