@@ -20,47 +20,55 @@ if(DEFINED ENV{TARGET_ARCH})
     set(SYSTEMC_TARGET_ARCH $ENV{TARGET_ARCH})
 elseif(DEFINED TARGET_ARCH)
     set(SYSTEMC_TARGET_ARCH ${TARGET_ARCH})
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(SYSTEMC_TARGET_ARCH "linux64")
-else()
-    set(SYSTEMC_TARGET_ARCH "linux")
+elseif (UNIX AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(SYSTEMC_TARGET_ARCH "linux64")
+    else()
+        set(SYSTEMC_TARGET_ARCH "linux")
+    endif()
 endif()
 
-if(NOT EXISTS ${SYSTEMC_HOME})
-    set(SYSTEMC_HOME $ENV{SYSTEMC_HOME})
+if(NOT DEFINED SYSTEMC_TARGET_ARCH)
+    message(FATAL_ERROR "Cannot determine SystemC TARGET_ARCH")
 endif()
 
-if(NOT EXISTS ${SYSTEMC_HOME})
-    find_package(Git REQUIRED)
-    set(SYSTEMC_HOME "${CMAKE_CURRENT_BINARY_DIR}/systemc")
-    set(SYSTEMC_REPO "https://github.com/machineware-gmbh/systemc")
-    set(SYSTEMC_BRANCH "2.3.3-mwr")
-    message(STATUS "Fetching SystemC from ${SYSTEMC_REPO}")
-    execute_process(COMMAND ${GIT_EXECUTABLE} clone --depth 1 --branch ${SYSTEMC_BRANCH} ${SYSTEMC_REPO} ${SYSTEMC_HOME}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} ERROR_QUIET)
-endif()
+if(NOT TARGET systemc)
+    if(NOT EXISTS "${SYSTEMC_HOME}")
+        set(SYSTEMC_HOME $ENV{SYSTEMC_HOME})
+    endif()
 
-if(NOT EXISTS ${SYSTEMC_HOME})
-    message(FATAL_ERROR "Could not find SystemC")
-endif()
+    if(NOT EXISTS "${SYSTEMC_HOME}")
+        find_package(Git REQUIRED)
+        set(SYSTEMC_HOME "${CMAKE_CURRENT_BINARY_DIR}/systemc")
+        set(SYSTEMC_REPO "https://github.com/machineware-gmbh/systemc")
+        set(SYSTEMC_BRANCH "2.3.3-mwr")
+        message(STATUS "Fetching SystemC from ${SYSTEMC_REPO}")
+        execute_process(COMMAND ${GIT_EXECUTABLE} clone --depth 1 --branch ${SYSTEMC_BRANCH} ${SYSTEMC_REPO} ${SYSTEMC_HOME}
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                        ERROR_QUIET)
+    endif()
 
-if(EXISTS ${SYSTEMC_HOME}/CMakeLists.txt)
-    set(ENABLE_PHASE_CALLBACKS ON CACHE STRING "")
-    set(ENABLE_PHASE_CALLBACKS_TRACING ON CACHE STRING "")
-    if(NOT TARGET systemc)
+    if(EXISTS "${SYSTEMC_HOME}/CMakeLists.txt")
+        set(ENABLE_PHASE_CALLBACKS ON CACHE STRING
+            "Enable the simulation phase callbacks" FORCE)
+        set(ENABLE_PHASE_CALLBACKS_TRACING ON CACHE STRING
+            "Enable using simulation phase callbacks for sc_trace" FORCE)
         add_subdirectory(${SYSTEMC_HOME} systemc EXCLUDE_FROM_ALL)
     endif()
-    if(TARGET systemc)
-        set(SYSTEMC_LIBRARIES systemc)
-        set(SYSTEMC_INCLUDE_DIRS $<TARGET_PROPERTY:systemc,INCLUDE_DIRECTORIES>)
-    endif()
+endif()
+
+if(TARGET systemc)
+    set(SYSTEMC_LIBRARIES systemc)
+    get_target_property(SYSTEMC_INCLUDE_DIRS systemc INCLUDE_DIRECTORIES)
+    get_target_property(SYSTEMC_HOME systemc SOURCE_DIR)
+    get_filename_component(SYSTEMC_HOME "${SYSTEMC_HOME}" DIRECTORY)
 else()
     find_path(SYSTEMC_INCLUDE_DIRS NAMES systemc
               HINTS ${SYSTEMC_HOME}/include)
 
     find_library(SYSTEMC_LIBRARIES NAMES libsystemc.a systemc
-                 HINTS ${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH}
-                       ${SYSTEMC_HOME}/lib)
+                 HINTS "${SYSTEMC_HOME}/lib-${SYSTEMC_TARGET_ARCH}"
+                       "${SYSTEMC_HOME}/lib")
 
     if(EXISTS ${SYSTEMC_INCLUDE_DIRS}/tlm/)
         list(APPEND SYSTEMC_INCLUDE_DIRS ${SYSTEMC_INCLUDE_DIRS}/tlm)
@@ -91,8 +99,8 @@ endforeach()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SystemC
-        REQUIRED_VARS SYSTEMC_LIBRARIES SYSTEMC_INCLUDE_DIRS
-        VERSION_VAR   SYSTEMC_VERSION)
+    REQUIRED_VARS SYSTEMC_LIBRARIES SYSTEMC_INCLUDE_DIRS
+    VERSION_VAR   SYSTEMC_VERSION)
 mark_as_advanced(SYSTEMC_LIBRARIES SYSTEMC_INCLUDE_DIRS)
 
 #message(STATUS "SYSTEMC_FOUND         " ${SYSTEMC_FOUND})
