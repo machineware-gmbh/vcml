@@ -32,7 +32,7 @@
 find_package(Git REQUIRED)
 
 string(TOUPPER ${PROJECT_NAME} _pfx)
-string(REPLACE "-" "_" _pfx ${_pfx)
+string(REPLACE "-" "_" _pfx ${_pfx})
 
 set(${_pfx}_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(${_pfx}_VERSION_MINOR ${PROJECT_VERSION_MINOR})
