@@ -31,6 +31,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(GenVersionInfo)
 include(Sanitizer)
 
 find_package(Git REQUIRED)
@@ -43,6 +44,9 @@ find_package(SDL2)
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(gen ${CMAKE_CURRENT_BINARY_DIR}/gen)
+
+configure_file(${src}/vcml/common/version.h.in
+               ${gen}/vcml/common/version.h @ONLY)
 
 add_library(vcml STATIC
     ${src}/vcml/common/types.cpp
@@ -154,6 +158,8 @@ add_library(vcml STATIC
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
+set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
+set_target_properties(vcml PROPERTIES SOVERSION "${VCML_VERSION_MAJOR}")
 
 target_compile_options(vcml PRIVATE -Wall -Werror)
 target_compile_features(vcml PUBLIC cxx_std_17)
@@ -216,57 +222,3 @@ if(VCML_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
-
-# generate version header
-set(VCML_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set(VCML_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(VCML_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-
-if (${VCML_VERSION_MINOR} LESS 10)
-    set(VCML_VERSION_MINOR 0${VCML_VERSION_MINOR})
-endif()
-
-if (${VCML_VERSION_PATCH} LESS 10)
-    set(VCML_VERSION_PATCH 0${VCML_VERSION_PATCH})
-endif()
-
-execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                OUTPUT_VARIABLE VCML_GIT_REV
-                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                OUTPUT_VARIABLE VCML_GIT_REV_SHORT
-                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process(COMMAND ${GIT_EXECUTABLE} diff --quiet
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                RESULT_VARIABLE VCML_GIT_DIRTY
-                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-if(NOT VCML_GIT_REV)
-    set(VCML_GIT_REV "nogit")
-    set(VCML_GIT_REV_SHORT "nogit")
-elseif (VCML_GIT_DIRTY)
-    string(APPEND VCML_GIT_REV "-dirty")
-    string(APPEND VCML_GIT_REV_SHORT "-dirty")
-endif()
-
-string(CONCAT VCML_VERSION ${VCML_VERSION_MAJOR} "."
-                           ${VCML_VERSION_MINOR} "."
-                           ${VCML_VERSION_PATCH})
-
-string(CONCAT VCML_VERSION_NO ${VCML_VERSION_MAJOR}
-                              ${VCML_VERSION_MINOR}
-                              ${VCML_VERSION_PATCH})
-
-string(CONCAT VCML_VERSION_STRING ${PROJECT_NAME} "-"
-                                  ${VCML_VERSION} "-"
-                                  ${VCML_GIT_REV_SHORT})
-
-message(STATUS "Writing version ${VCML_VERSION_STRING}")
-set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
-set_target_properties(vcml PROPERTIES SOVERSION "${VCML_VERSION_MAJOR}")
-configure_file(${src}/vcml/common/version.h.in
-               ${gen}/vcml/common/version.h @ONLY)
