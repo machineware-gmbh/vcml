@@ -400,7 +400,6 @@ void pci_device::pci_transport(pci_target_socket& sck, pci_payload& pci) {
     tx_setup(tx, cmd, pci.addr, &pci.data, pci.size);
     peripheral::receive(tx, pci.debug ? SBI_DEBUG : SBI_NONE, pci.space);
     pci.response = pci_translate_response(tx.get_response_status());
-    std::cerr << "PCI TX " << tx << std::endl;
 }
 
 void pci_device::msi_send(unsigned int vector) {
