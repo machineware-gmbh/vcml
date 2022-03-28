@@ -137,20 +137,20 @@ string socket_addr::peer() const {
 }
 
 socket::socket():
-    m_port(0),
     m_host(),
     m_peer(),
     m_ipv6(),
+    m_port(0),
     m_socket(-1),
     m_conn(-1),
     m_async() {
 }
 
 socket::socket(u16 port):
-    m_port(0),
     m_host(),
     m_peer(),
     m_ipv6(),
+    m_port(0),
     m_socket(-1),
     m_conn(-1),
     m_async() {
@@ -158,10 +158,10 @@ socket::socket(u16 port):
 }
 
 socket::socket(const string& host, u16 port):
-    m_port(0),
     m_host(),
     m_peer(),
     m_ipv6(),
+    m_port(0),
     m_socket(-1),
     m_conn(-1),
     m_async() {
@@ -182,7 +182,8 @@ void socket::listen(u16 port) {
     unlisten();
 
     int family = socket_default_address_family();
-    m_socket   = ::socket(family, SOCK_STREAM, 0);
+
+    m_socket = ::socket(family, SOCK_STREAM, 0);
     if (m_socket < 0)
         VCML_REPORT("failed to create socket: %s", strerror(errno));
 
@@ -258,7 +259,7 @@ void socket::accept_async() {
         disconnect();
 
     m_async = thread(std::bind(&socket::accept, this));
-    set_thread_name(m_async, mkstr("socket_%hu", m_port));
+    set_thread_name(m_async, mkstr("socket_%hu", port()));
 }
 
 void socket::connect(const string& host, u16 port) {
