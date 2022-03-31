@@ -159,7 +159,7 @@ inline string strcat(const A& a, const B& b) {
 
 template <typename T, typename... ARGS>
 inline string strcat(const T& arg, const ARGS&... args) {
-    return strcat(arg, args...);
+    return to_string(arg) + strcat(args...);
 }
 
 } // namespace vcml

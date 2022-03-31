@@ -97,3 +97,9 @@ TEST(strings, contains) {
     EXPECT_TRUE(vcml::ends_with(s, "world"));
     EXPECT_FALSE(vcml::ends_with(s, "hello"));
 }
+
+TEST(strings, strcat) {
+    EXPECT_EQ(vcml::strcat("abc", "def"), "abcdef");
+    EXPECT_EQ(vcml::strcat(123, "-", 456), "123-456");
+    EXPECT_EQ(vcml::strcat(true, false, true, 85), "truefalsetrue85");
+}
