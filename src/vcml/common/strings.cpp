@@ -48,21 +48,18 @@ string vmkstr(const char* format, va_list args) {
     return s;
 }
 
-string concat(const string& a, const string& b) {
-    return a + b;
-}
-
 string trim(const string& str) {
-    string res(str);
-    res.erase(res.begin(), std::find_if(res.begin(), res.end(), [](int ch) {
-                  return !std::isspace(ch);
-              }));
+    static const auto nospace = [](int ch) { return !std::isspace(ch); };
 
-    res.erase(std::find_if(res.rbegin(), res.rend(),
-                           [](int ch) { return !std::isspace(ch); })
-                  .base(),
-              res.end());
-    return res;
+    string copy(str);
+
+    auto front = std::find_if(copy.begin(), copy.end(), nospace);
+    copy.erase(copy.begin(), front);
+
+    auto back = std::find_if(copy.rbegin(), copy.rend(), nospace);
+    copy.erase(back.base(), copy.end());
+
+    return copy;
 }
 
 string to_lower(const string& s) {
@@ -88,6 +85,7 @@ string escape(const string& s, const string& chars) {
         }
         ss << c;
     }
+
     return ss.str();
 }
 
@@ -97,6 +95,7 @@ string unescape(const string& s) {
         if (c != '\\')
             ss << c;
     }
+
     return ss.str();
 }
 
@@ -105,9 +104,9 @@ vector<string> split(const string& str, std::function<int(int)> f) {
     string buf = "";
     for (unsigned int i = 0; i < str.length(); i++) {
         char ch = str[i];
-        if (ch == '\\' && i < str.length() - 1)
+        if (ch == '\\' && i < str.length() - 1) {
             buf += str[++i];
-        else if (f(ch)) {
+        } else if (f(ch)) {
             if (!buf.empty())
                 vec.push_back(buf);
             buf = "";
@@ -144,8 +143,8 @@ vector<string> split(const string& str, char predicate) {
     return vec;
 }
 
-int replace(string& str, const string& search, const string& repl) {
-    int count    = 0;
+size_t replace(string& str, const string& search, const string& repl) {
+    size_t count = 0;
     size_t index = 0;
 
     while (true) {

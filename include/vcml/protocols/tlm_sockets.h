@@ -195,7 +195,7 @@ inline void tlm_initiator_socket::bind(
     tlm::tlm_initiator_socket<WIDTH>& other) {
     typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
-    string nm = concat(basename(), "_adapter");
+    string nm = strcat(basename(), "_adapter");
 
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
@@ -214,7 +214,7 @@ template <unsigned int WIDTH>
 inline void tlm_initiator_socket::bind(tlm::tlm_target_socket<WIDTH>& other) {
     typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
-    string nm = concat(basename(), "_adapter");
+    string nm = strcat(basename(), "_adapter");
 
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
@@ -303,7 +303,7 @@ template <unsigned int WIDTH>
 inline void tlm_target_socket::bind(tlm::tlm_initiator_socket<WIDTH>& tgt) {
     typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
-    const string nm = concat(basename(), "_adapter");
+    const string nm = strcat(basename(), "_adapter");
 
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
@@ -321,7 +321,7 @@ template <unsigned int WIDTH>
 inline void tlm_target_socket::bind(tlm::tlm_target_socket<WIDTH>& s) {
     typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
-    const string nm = concat(basename(), "_adapter");
+    const string nm = strcat(basename(), "_adapter");
 
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());

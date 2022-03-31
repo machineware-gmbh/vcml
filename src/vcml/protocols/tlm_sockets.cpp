@@ -257,7 +257,7 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
 void tlm_initiator_socket::stub(tlm_response_status r) {
     VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
     hierarchy_guard guard(m_parent);
-    m_stub = new tlm_target_stub(concat(basename(), "_stub").c_str(), r);
+    m_stub = new tlm_target_stub(strcat(basename(), "_stub").c_str(), r);
     base_type::bind(m_stub->in);
 }
 
@@ -321,7 +321,7 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     simple_target_socket<tlm_target_socket, 64>(nm),
     m_curr(0),
     m_next(0),
-    m_free_ev(concat(nm, "_free").c_str()),
+    m_free_ev(strcat(nm, "_free").c_str()),
     m_dmi_cache(),
     m_exmon(),
     m_stub(nullptr),
@@ -380,7 +380,7 @@ void tlm_target_socket::invalidate_dmi() {
 void tlm_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
     hierarchy_guard guard(m_parent);
-    m_stub = new tlm_initiator_stub(concat(basename(), "_stub").c_str());
+    m_stub = new tlm_initiator_stub(strcat(basename(), "_stub").c_str());
     m_stub->out.bind(*this);
 }
 

@@ -35,7 +35,7 @@ private:
 public:
     stub_signal(sc_object* parent, const T& retval = T()):
         m_retval(retval),
-        m_never(concat(parent->basename(), "_never_ev").c_str()) {}
+        m_never(strcat(parent->basename(), "_never_ev").c_str()) {}
 
     virtual const sc_event& value_changed_event() const { return m_never; }
 
@@ -144,7 +144,7 @@ template <typename T>
 out_port<T>::out_port(const char* nm):
     sc_core::sc_out<T>(nm),
     m_state(false),
-    m_update(concat(this->basename(), "_update_ev").c_str()),
+    m_update(strcat(this->basename(), "_update_ev").c_str()),
     m_parent(hierarchy_top()),
     m_stub(nullptr) {
     VCML_ERROR_ON(!m_parent, "%s outside module", sc_out<T>::name());
@@ -155,7 +155,7 @@ out_port<T>::out_port(const char* nm):
     opts.dont_initialize();
 
     sc_spawn(sc_bind(&out_port::update, this),
-             concat(this->basename(), "_update").c_str(), &opts);
+             strcat(this->basename(), "_update").c_str(), &opts);
 }
 
 template <typename T>

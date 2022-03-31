@@ -37,7 +37,6 @@ using std::istringstream;
 
 string mkstr(const char* format, ...) VCML_DECL_PRINTF(1, 2);
 string vmkstr(const char* format, va_list args);
-string concat(const string& a, const string& b);
 string trim(const string& s);
 string to_lower(const string& s);
 string to_upper(const string& s);
@@ -60,7 +59,7 @@ inline string join(const V& v, const T& separator) {
     return os.str();
 }
 
-int replace(string& str, const string& s1, const string& s2);
+size_t replace(string& str, const string& s1, const string& s2);
 
 template <typename T>
 inline string to_string(const T& t) {
@@ -131,26 +130,36 @@ inline bool from_string<bool>(const string& str) {
     return from_string<unsigned int>(str) > 0;
 }
 
-static inline bool contains(const string& s, const string& search) {
+inline bool contains(const string& s, const string& search) {
     return s.find(search) != std::string::npos;
 }
 
-static inline bool starts_with(const string& s, const string& prefix) {
+inline bool starts_with(const string& s, const string& prefix) {
     return s.rfind(prefix, 0) == 0;
 }
 
-static inline bool ends_with(const string& s, const string& suffix) {
+inline bool ends_with(const string& s, const string& suffix) {
     if (s.size() < suffix.size())
         return false;
     return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-static inline bool is_number(const string& s) {
+inline bool is_number(const string& s) {
     if (s.empty())
         return false;
     if (starts_with(s, "0x"))
         return true;
     return std::all_of(s.begin(), s.end(), isdigit);
+}
+
+template <typename A, typename B>
+inline string strcat(const A& a, const B& b) {
+    return to_string(a) + to_string(b);
+}
+
+template <typename T, typename... ARGS>
+inline string strcat(const T& arg, const ARGS&... args) {
+    return strcat(arg, args...);
 }
 
 } // namespace vcml
