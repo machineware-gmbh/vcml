@@ -113,9 +113,9 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
     tx_set_sbi(tx, m_sbi | info);
 
     if (info.is_debug) {
-        sc_time t1 = sc_time_stamp();
-        bytes      = (*this)->transport_dbg(tx);
-        sc_time t2 = sc_time_stamp();
+        sc_time t1(sc_time_stamp());
+        bytes = (*this)->transport_dbg(tx);
+        sc_time t2(sc_time_stamp());
 
         if (thctl_is_sysc_thread() && t1 != t2)
             VCML_ERROR("time advanced during debug call");
@@ -371,7 +371,7 @@ void tlm_target_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
 }
 
 void tlm_target_socket::invalidate_dmi() {
-    for (auto dmi : m_dmi_cache.get_entries()) {
+    for (const tlm_dmi& dmi : m_dmi_cache.get_entries()) {
         (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
                                            dmi.get_end_address());
     }

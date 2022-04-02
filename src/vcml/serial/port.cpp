@@ -36,7 +36,7 @@ bool port::cmd_create_backend(const vector<string>& args, ostream& os) {
 }
 
 bool port::cmd_destroy_backend(const vector<string>& args, ostream& os) {
-    for (string arg : args) {
+    for (const string& arg : args) {
         int id = from_string<int>(arg);
         if (id < 0) {
             for (auto it : m_backends)
@@ -59,10 +59,10 @@ bool port::cmd_list_backends(const vector<string>& args, ostream& os) {
         return true;
     }
 
-    for (string arg : args) {
+    for (const string& arg : args) {
         size_t id = from_string<size_t>(arg);
-        auto it   = m_backends.find(id);
 
+        auto it = m_backends.find(id);
         os << id << ": ";
         os << (it == m_backends.end() ? "none" : it->second->type());
         os << ",";
@@ -99,7 +99,7 @@ port::port():
     s_ports[m_name] = this;
 
     vector<string> types = split(backends);
-    for (auto type : types) {
+    for (const auto& type : types) {
         try {
             create_backend(type);
         } catch (std::exception& ex) {
@@ -177,7 +177,7 @@ port* port::find(const string& name) {
 vector<port*> port::all() {
     vector<port*> all;
     all.reserve(s_ports.size());
-    for (auto it : s_ports)
+    for (const auto& it : s_ports)
         all.push_back(it.second);
     return all;
 }

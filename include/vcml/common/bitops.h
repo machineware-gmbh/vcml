@@ -62,7 +62,16 @@ inline bool is_pow2(const T& val) {
     return val != 0 && popcnt(val) == 1;
 }
 
+template <typename T>
+constexpr size_t width_of() {
+    return sizeof(T) * CHAR_BIT;
+};
+
 constexpr u64 bitmask(size_t length, size_t offset = 0) {
+    if (offset >= width_of<u64>())
+        return 0ull;
+    if (length >= width_of<u64>())
+        return ~0ull << offset;
     return ((1ull << length) - 1) << offset;
 }
 

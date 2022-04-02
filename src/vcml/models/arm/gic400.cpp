@@ -600,8 +600,6 @@ gic400::distif::distif(const sc_module_name& nm):
 
     cidr.allow_read_only();
     cidr.sync_never();
-
-    reset();
 }
 
 gic400::distif::~distif() {
@@ -698,8 +696,6 @@ void gic400::cpuif::write_eoir(u32 val) {
 
         iter = m_prev_irq[iter][cpu];
     }
-
-    return;
 }
 
 u32 gic400::cpuif::read_iar() {
@@ -723,8 +719,10 @@ u32 gic400::cpuif::read_iar() {
     }
 
     if (is_software_interrupt(irq)) {
-        u32 pending          = m_parent->distif.spendsgir.bank(cpu, irq);
+        u32 pending = m_parent->distif.spendsgir.bank(cpu, irq);
+
         unsigned int src_cpu = ctz(pending);
+        VCML_ERROR_ON(src_cpu > 8, "invalid src_cpu: %u", src_cpu);
         m_parent->distif.set_sgi_pending(1 << src_cpu, irq, cpu, false);
 
         // check if SGI is not pending from any CPUs
@@ -811,8 +809,6 @@ gic400::cpuif::cpuif(const sc_module_name& nm):
     dir.set_banked();
     dir.sync_always();
     dir.allow_read_write();
-
-    reset();
 }
 
 gic400::cpuif::~cpuif() {
@@ -1102,8 +1098,6 @@ gic400::vcpuif::vcpuif(const sc_module_name& nm, class vifctrl* ctrl):
     apr.allow_read_write();
 
     iidr.allow_read_only();
-
-    reset();
 }
 
 gic400::vcpuif::~vcpuif() {

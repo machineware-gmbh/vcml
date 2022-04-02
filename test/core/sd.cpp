@@ -58,7 +58,8 @@ public:
         cmd.response[0] = cmd.argument * 10;
     }
 
-    virtual void sd_transport(const sd_target_socket& socket, sd_data& data) {
+    virtual void sd_transport(const sd_target_socket& socket,
+                              sd_data& data) override {
         EXPECT_EQ(socket.as, VCML_AS_TEST);
         EXPECT_EQ(data.mode, SD_READ);
         data.data *= 10;

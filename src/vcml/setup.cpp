@@ -102,7 +102,7 @@ setup::setup(int argc, char** argv):
     log_level min = LOG_ERROR;
     log_level max = m_log_debug ? LOG_DEBUG : LOG_INFO;
 
-    for (string file : m_log_files) {
+    for (const string& file : m_log_files) {
         publisher* pub = new log_file(file);
         pub->set_level(min, max);
         m_publishers.push_back(pub);
@@ -114,7 +114,7 @@ setup::setup(int argc, char** argv):
         m_publishers.push_back(pub);
     }
 
-    for (string file : m_trace_files) {
+    for (const string& file : m_trace_files) {
         tracer* t = new tracer_file(file);
         m_tracers.push_back(t);
     }
@@ -127,7 +127,7 @@ setup::setup(int argc, char** argv):
     m_brokers.push_back(new broker_arg(argc, argv));
     m_brokers.push_back(new broker_env());
 
-    for (string file : m_config_files)
+    for (const string& file : m_config_files)
         m_brokers.push_back(new broker_file(file));
 }
 

@@ -120,7 +120,7 @@ public:
 
 template <typename T, const unsigned int N>
 property<T, N>::property(const char* nm, const T& def):
-    property_base(nm), m_value(), m_defval(def), m_inited(false), m_str("") {
+    property_base(nm), m_value(), m_defval(def), m_inited(false), m_str() {
     property<T, N>::reset();
 }
 
@@ -130,7 +130,7 @@ property<T, N>::property(sc_object* parent, const char* nm, const T& def):
     m_value(),
     m_defval(def),
     m_inited(false),
-    m_str("") {
+    m_str() {
     property<T, N>::reset();
 }
 
@@ -146,7 +146,7 @@ inline void property<T, N>::reset() {
 
     string init;
     if (broker::init(fullname(), init))
-        str(init);
+        property<T, N>::str(init);
 }
 
 template <typename T, const unsigned int N>

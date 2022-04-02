@@ -22,7 +22,7 @@ namespace vcml {
 namespace generic {
 
 pci_capability::pci_capability(const string& nm, pci_cap_id id):
-    name(std::move(nm)),
+    name(nm),
     registers(),
     device(hierarchy_search<pci_device>()),
     cap_id(),

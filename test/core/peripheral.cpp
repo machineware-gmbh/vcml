@@ -56,7 +56,7 @@ TEST(peripheral, transporting) {
     EXPECT_CALL(mock, read(vcml::range(tx), buffer, vcml::SBI_NONE,
                            vcml::VCML_AS_DEFAULT))
         .WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
-    EXPECT_CALL(mock, write(_, _, _, _)).Times(0);
+    EXPECT_CALL(mock, write(_, _, _, _)).Times(0); // NOLINT
     EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.read_latency);
@@ -68,6 +68,8 @@ TEST(peripheral, transporting) {
     EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency);
@@ -86,6 +88,7 @@ TEST(peripheral, transporting_debug) {
                            vcml::VCML_AS_DEFAULT))
         .Times(1);
 
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(_, _, _, _)).Times(0);
     EXPECT_EQ(mock.transport(tx, vcml::SBI_DEBUG, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
@@ -97,6 +100,8 @@ TEST(peripheral, transporting_debug) {
     EXPECT_CALL(mock, read(_, _, _, _)).Times(0);
     EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_DEBUG,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_EQ(mock.transport(tx, vcml::SBI_DEBUG, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, sc_core::SC_ZERO_TIME);
@@ -119,6 +124,8 @@ TEST(peripheral, transport_streaming) {
     EXPECT_CALL(
         mock, write(vcml::range(tx), _, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT))
         .Times(npulses);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(local, cycle * mock.write_latency * npulses);
 
@@ -130,6 +137,8 @@ TEST(peripheral, transport_streaming) {
     EXPECT_CALL(
         mock, read(vcml::range(tx), _, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT))
         .Times(npulses);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(_, _, _, _)).Times(0);
     EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(local, cycle * mock.read_latency * npulses);
@@ -152,26 +161,44 @@ TEST(peripheral, transporting_byte_enable) {
     EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 0, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(5, 5), buffer + 1, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 2, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(8, 8), buffer + 4, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(9, 9), buffer + 5, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(10, 10), buffer + 6, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(11, 11), buffer + 7, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency);
@@ -197,20 +224,34 @@ TEST(peripheral, transporting_byte_enable_with_streaming) {
     EXPECT_CALL(mock, write(vcml::range(tx), buffer, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 0, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(4, 4), buffer + 4, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 2, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(6, 6), buffer + 6, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(5, 5), buffer + 1, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(vcml::range(7, 7), buffer + 3, vcml::SBI_NONE,
                             vcml::VCML_AS_DEFAULT))
         .Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_EQ(mock.transport(tx, vcml::SBI_NONE, vcml::VCML_AS_DEFAULT), 0);
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency * npulses);

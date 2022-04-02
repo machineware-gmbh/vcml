@@ -90,7 +90,6 @@ void pl011uart::write_dr(u16 val) {
 void pl011uart::write_rsr(u8 val) {
     //  A write to this register clears the framing, parity, break,
     //  and overrun errors. The data value is not important.
-    return;
 }
 
 void pl011uart::write_ibrd(u16 val) {
@@ -228,8 +227,6 @@ pl011uart::pl011uart(const sc_module_name& nm):
 
     SC_HAS_PROCESS(pl011uart);
     SC_METHOD(poll);
-
-    reset();
 }
 
 pl011uart::~pl011uart() {

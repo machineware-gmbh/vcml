@@ -27,7 +27,7 @@ class mock_module : public vcml::module
 {
 public:
     bool cmd_test(const std::vector<std::string>& args, std::ostream& os) {
-        for (auto arg : args)
+        for (const std::string& arg : args)
             os << arg;
         return true;
     }

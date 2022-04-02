@@ -89,10 +89,10 @@ inline bool logger::would_log(log_level lvl) const {
 
 extern logger log;
 
-#define log_error(...) log.error(__FILE__, __LINE__, __VA_ARGS__)
-#define log_warn(...)  log.warn(__FILE__, __LINE__, __VA_ARGS__)
-#define log_info(...)  log.info(__FILE__, __LINE__, __VA_ARGS__)
-#define log_debug(...) log.debug(__FILE__, __LINE__, __VA_ARGS__)
+#define log_error(...) log.error(__FILE__, __LINE__, __VA_ARGS__) // NOLINT
+#define log_warn(...)  log.warn(__FILE__, __LINE__, __VA_ARGS__)  // NOLINT
+#define log_info(...)  log.info(__FILE__, __LINE__, __VA_ARGS__)  // NOLINT
+#define log_debug(...) log.debug(__FILE__, __LINE__, __VA_ARGS__) // NOLINT
 
 } // namespace vcml
 

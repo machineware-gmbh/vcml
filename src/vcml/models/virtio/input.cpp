@@ -171,10 +171,16 @@ void input::update() {
             push_key(event.key.code, event.key.state);
             push_sync();
         } else if (event.is_ptr()) {
-            size_t x = (event.ptr.x * xmax) / m_console.xres();
-            size_t y = (event.ptr.y * ymax) / m_console.yres();
+            size_t xres = m_console.xres();
+            size_t yres = m_console.yres();
+            VCML_ERROR_ON(!xres, "console width cannot be zero");
+            VCML_ERROR_ON(!yres, "console height cannot be zero");
+
+            size_t x = (event.ptr.x * xmax) / xres;
+            size_t y = (event.ptr.y * ymax) / yres;
             VCML_ERROR_ON(x != (u32)x, "pointer out of range");
             VCML_ERROR_ON(y != (u32)y, "pointer out of range");
+
             push_abs(ABS_X, x);
             push_abs(ABS_Y, y);
             push_sync();

@@ -216,6 +216,8 @@ void ocfbc::render() {
         u32 linesz  = m_xres * m_bpp;
 
         u8 linebuf[linesz];
+        memset(linebuf, 0, sizeof(linebuf));
+
         u8* fb = m_fb;
 
         for (u32 y = 0; y < m_yres; y++) {
@@ -284,10 +286,13 @@ void ocfbc::update() {
         while (!(ctlr & CTLR_VEN))
             wait(m_enable);
 
-        sc_time t = sc_time_stamp();
+        const sc_time& t = sc_time_stamp();
+
         render();
+
         sc_time delta = sc_time_stamp() - t;
         sc_time frame(1.0 / clock, SC_SEC);
+
         if (delta < frame) {
             wait(frame - delta); // wait until next frame
         } else {

@@ -324,7 +324,8 @@ void pci::write_queue_enable(u16 val) {
 }
 
 void pci::write_queue_notify_off(u16 val) {
-    return;
+    if (val != 0)
+        log_warn("nonzero notification offset not supported");
 }
 
 void pci::write_queue_desc(u64 val) {

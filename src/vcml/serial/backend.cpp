@@ -40,7 +40,7 @@ backend::~backend() {
 }
 
 backend* backend::create(const string& port, const string& type) {
-    string kind = type.substr(0, type.find(":"));
+    string kind = type.substr(0, type.find(':'));
     typedef function<backend*(const string&, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create }, { "tcp", backend_tcp::create },
@@ -53,7 +53,7 @@ backend* backend::create(const string& port, const string& type) {
         stringstream ss;
         ss << "unknown serial backend '" << type << "'" << std::endl
            << "the following backends are known:" << std::endl;
-        for (auto avail : backends)
+        for (const auto& avail : backends)
             ss << "  " << avail.first;
         VCML_REPORT("%s", ss.str().c_str());
     }

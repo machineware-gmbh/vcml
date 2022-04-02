@@ -34,7 +34,7 @@ bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
               });
 
     int i = 0;
-    for (auto bm : mappings) {
+    for (const auto& bm : mappings) {
         os << std::endl
            << i++ << ": " << HEX(bm.addr.start) << ".." << HEX(bm.addr.end)
            << " -> ";

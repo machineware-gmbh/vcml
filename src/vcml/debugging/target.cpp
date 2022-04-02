@@ -404,7 +404,7 @@ bool target::insert_watchpoint(const range& addr, vcml_access prot,
     if (wp == m_watchpoints.end()) {
         const symbol* obj = m_symbols.find_object(addr.start);
         watchpoint* newwp = new watchpoint(*this, addr, obj);
-        m_watchpoints.push_back(std::move(newwp));
+        m_watchpoints.push_back(newwp);
         wp = m_watchpoints.end() - 1;
     }
 
@@ -466,7 +466,7 @@ void target::notify_singlestep() {
 vector<target*> target::all() {
     vector<target*> res;
     res.reserve(s_targets.size());
-    for (auto it : s_targets)
+    for (const auto& it : s_targets)
         res.push_back(it.second);
     return res;
 }

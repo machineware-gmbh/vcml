@@ -44,7 +44,7 @@ public:
     backend(const string& adapter);
     virtual ~backend();
 
-    void queue_packet(shared_ptr<vector<u8>> packet);
+    void queue_packet(const shared_ptr<vector<u8>>& packet);
 
     virtual bool recv_packet(vector<u8>& packet);
     virtual void send_packet(const vector<u8>& packet);

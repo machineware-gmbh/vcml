@@ -44,7 +44,7 @@ bool adapter::cmd_create_client(const vector<string>& args, ostream& os) {
 }
 
 bool adapter::cmd_destroy_client(const vector<string>& args, ostream& os) {
-    for (string arg : args) {
+    for (const string& arg : args) {
         int id = from_string<int>(arg);
         if (id < 0) {
             for (auto it : m_clients)
@@ -69,10 +69,10 @@ bool adapter::cmd_list_clients(const vector<string>& args, ostream& os) {
         return true;
     }
 
-    for (string arg : args) {
+    for (const string& arg : args) {
         size_t id = from_string<size_t>(arg);
-        auto it   = m_clients.find(id);
 
+        auto it = m_clients.find(id);
         os << id << ": ";
         os << (it == m_clients.end() ? "none" : it->second->type());
         os << ",";
@@ -123,7 +123,7 @@ adapter::adapter():
     s_adapters[m_name] = this;
 
     vector<string> types = split(backends);
-    for (auto type : types) {
+    for (const string& type : types) {
         try {
             create_client(type);
         } catch (std::exception& ex) {
@@ -208,7 +208,7 @@ adapter* adapter::find(const string& name) {
 vector<adapter*> adapter::all() {
     vector<adapter*> all;
     all.reserve(s_adapters.size());
-    for (auto it : s_adapters)
+    for (const auto& it : s_adapters)
         all.push_back(it.second);
     return all;
 }

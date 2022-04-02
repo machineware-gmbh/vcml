@@ -76,7 +76,7 @@ logmsg::logmsg(log_level lvl, const string& s):
     lines() {
     if (sender.empty())
         sender = call_origin();
-    sc_object* obj  = find_object(sender.c_str());
+    sc_object* obj  = find_object(sender);
     component* comp = dynamic_cast<component*>(obj);
     if (comp && is_thread())
         time_offset = comp->local_time();

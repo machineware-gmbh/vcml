@@ -43,7 +43,7 @@ public:
     virtual vcml::u64 cycle_count() const override { return cycles; }
 
     virtual void simulate(unsigned int n) override {
-        sc_core::sc_time now = sc_core::sc_time_stamp();
+        const sc_core::sc_time& now = sc_core::sc_time_stamp();
         ASSERT_EQ(local_time_stamp(), now);
 
         simulate2(n);

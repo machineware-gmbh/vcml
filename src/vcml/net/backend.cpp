@@ -42,7 +42,7 @@ backend::~backend() {
         a->detach(this);
 }
 
-void backend::queue_packet(shared_ptr<vector<u8>> packet) {
+void backend::queue_packet(const shared_ptr<vector<u8>>& packet) {
     lock_guard<mutex> guard(m_packets_mtx);
     m_packets.push(packet);
 }
@@ -55,7 +55,7 @@ bool backend::recv_packet(vector<u8>& packet) {
     shared_ptr<vector<u8>> top = m_packets.front();
     m_packets.pop();
 
-    packet = *top.get();
+    packet = *top;
     return true;
 }
 
@@ -64,7 +64,7 @@ void backend::send_packet(const vector<u8>& packet) {
 }
 
 backend* backend::create(const string& adapter, const string& type) {
-    string kind = type.substr(0, type.find(":"));
+    string kind = type.substr(0, type.find(':'));
     typedef function<backend*(const string&, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create },
@@ -79,7 +79,7 @@ backend* backend::create(const string& adapter, const string& type) {
         stringstream ss;
         ss << "unknown network backend '" << type << "'" << std::endl
            << "the following network backends are known:" << std::endl;
-        for (auto avail : backends)
+        for (const auto& avail : backends)
             ss << "  " << avail.first;
         VCML_REPORT("%s", ss.str().c_str());
     }

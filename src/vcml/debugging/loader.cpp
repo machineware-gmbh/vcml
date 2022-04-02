@@ -236,7 +236,7 @@ void loader::load_images(const string& files) {
 }
 
 void loader::load_images(const vector<image_info>& images) {
-    for (auto image : images) {
+    for (const auto& image : images) {
         try {
             load_image(image);
         } catch (std::exception& ex) {
@@ -257,7 +257,7 @@ loader* loader::find(const string& name) {
 vector<loader*> loader::all() {
     vector<loader*> all;
     all.reserve(s_loaders.size());
-    for (auto it : s_loaders)
+    for (const auto& it : s_loaders)
         all.push_back(it.second);
     return all;
 }

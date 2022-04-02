@@ -23,7 +23,7 @@ namespace vcml {
 
 void broker_file::parse_file(const string& filename) {
     int lno = 0;
-    string line, buffer = "";
+    string line, buffer;
     ifstream file(filename.c_str());
 
     VCML_ERROR_ON(!file.good(), "cannot read '%s'", filename.c_str());
@@ -44,7 +44,7 @@ void broker_file::parse_file(const string& filename) {
         }
 
         // prepend buffer from previous lines
-        line   = buffer + line;
+        line   = strcat(buffer, line);
         buffer = "";
 
         // remove comments
@@ -73,7 +73,7 @@ void broker_file::parse_file(const string& filename) {
 }
 
 void broker_file::replace(string& str) {
-    for (auto it : m_replacements)
+    for (const auto& it : m_replacements)
         vcml::replace(str, it.first, it.second);
 }
 

@@ -29,14 +29,14 @@ static inline string opcode(const string& s) {
     return s.substr(0, pos);
 }
 
-static inline int checksum(const char* str) {
+static inline unsigned int checksum(const char* str) {
     int result = 0;
     while (str && *str)
         result += static_cast<int>(*str++);
     return result & 0xff;
 }
 
-static inline int char2int(char c) {
+static inline unsigned int char2int(char c) {
     if (c >= 'a' && c <= 'f')
         return c - 'a' + 10;
     if (c >= 'A' && c <= 'F')
@@ -261,7 +261,7 @@ void rspserver::handle_disconnect() {
 }
 
 void rspserver::register_handler(const char* cmd, handler h) {
-    m_handlers[cmd] = h;
+    m_handlers[cmd] = std::move(h);
 }
 
 void rspserver::unregister_handler(const char* cmd) {

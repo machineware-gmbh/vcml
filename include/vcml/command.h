@@ -39,7 +39,7 @@ public:
     inline unsigned int argc() const { return m_argc; }
 
     command_base(string name, unsigned int argc, string desc = ""):
-        m_name(name), m_desc(desc), m_argc(argc) {}
+        m_name(std::move(name)), m_desc(std::move(desc)), m_argc(argc) {}
 
     virtual ~command_base() = default;
 

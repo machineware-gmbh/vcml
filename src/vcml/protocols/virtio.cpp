@@ -143,7 +143,7 @@ virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi):
     has_event_idx(desc.has_event_idx),
     notify(false),
     vector(VIRTIO_NO_VECTOR),
-    dmi(dmi),
+    dmi(std::move(dmi)),
     parent(hierarchy_search<module>()),
     log(this) {
     VCML_ERROR_ON(!parent, "virtqueue created outside module");
@@ -183,7 +183,7 @@ bool virtqueue::put(vq_message& msg) {
 
 split_virtqueue::split_virtqueue(const virtio_queue_desc& queue_desc,
                                  virtio_dmifn dmifn):
-    virtqueue(queue_desc, dmifn),
+    virtqueue(queue_desc, std::move(dmifn)),
     m_last_avail_idx(0),
     m_desc(nullptr),
     m_avail(nullptr),
@@ -330,7 +330,7 @@ virtio_status split_virtqueue::do_put(vq_message& msg) {
 
 packed_virtqueue::packed_virtqueue(const virtio_queue_desc& queue_desc,
                                    virtio_dmifn dmifn):
-    virtqueue(queue_desc, dmifn),
+    virtqueue(queue_desc, std::move(dmifn)),
     m_last_avail_idx(0),
     m_desc(nullptr),
     m_driver(nullptr),

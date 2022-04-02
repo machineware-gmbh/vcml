@@ -244,13 +244,12 @@ public:
     };
 
     sc_event timeout_event;
-    std::priority_queue<timer::event*, vector<timer::event*>, timer_compare>
-        timers;
+    priority_queue<timer::event*, vector<timer::event*>, timer_compare> timers;
 
     vector<timer::event*> pending_timers() {
         lock_guard<mutex> guard(mtx);
-        sc_time now = sc_time_stamp();
         vector<timer::event*> pending;
+        sc_time now = sc_time_stamp();
 
         while (!timers.empty()) {
             timer::event* event = timers.top();
@@ -389,32 +388,32 @@ protected:
 void on_next_update(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.next_update.push_back(callback);
+    helper.next_update.push_back(std::move(callback));
     helper.async_request_update();
 }
 
 void on_end_of_elaboration(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.end_of_elab.push_back(callback);
+    helper.end_of_elab.push_back(std::move(callback));
 }
 
 void on_start_of_simulation(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.start_of_sim.push_back(callback);
+    helper.start_of_sim.push_back(std::move(callback));
 }
 
 void on_each_delta_cycle(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.deltas.push_back(callback);
+    helper.deltas.push_back(std::move(callback));
 }
 
 void on_each_time_step(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.tsteps.push_back(callback);
+    helper.tsteps.push_back(std::move(callback));
 }
 
 timer::timer(function<void(timer&)> cb):
@@ -444,10 +443,11 @@ void timer::reset(const sc_time& delta) {
     m_event          = new event;
     m_event->owner   = this;
     m_event->timeout = m_timeout = sc_time_stamp() + delta;
+
     helper_module::instance().add_timer(m_event);
 }
 
-__thread struct async_worker* g_async = nullptr;
+thread_local struct async_worker* g_async = nullptr;
 
 struct async_worker {
     const size_t id;
@@ -549,7 +549,7 @@ struct async_worker {
 
         auto it = workers.find(thread);
         if (it != workers.end())
-            return *it->second.get();
+            return *it->second;
 
         size_t id   = workers.size();
         auto worker = std::make_shared<async_worker>(id, thread);
@@ -573,7 +573,7 @@ void sc_sync(function<void(void)> job) {
     if (thctl_is_sysc_thread()) {
         job();
     } else if (g_async != nullptr) {
-        g_async->run_sync(job);
+        g_async->run_sync(std::move(job));
     } else {
         VCML_ERROR("not on systemc or async thread");
     }

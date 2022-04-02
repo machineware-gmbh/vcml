@@ -54,7 +54,7 @@ string vspserver::handle_step(const char* command) {
 
     target* tgt = target::find(args[1]);
     if (tgt == nullptr)
-        return mkstr("E,no such target: %s", tgt->target_name());
+        return mkstr("E,no such target: %s", args[1].c_str());
 
     tgt->request_singlestep(this);
     resume_simulation(SC_MAX_TIME);
@@ -105,8 +105,9 @@ static string attr_type(const sc_attr_base* attr) {
 }
 
 static string attr_name(const sc_attr_base* attr) {
-    string name = attr->name();
-    size_t pos  = name.find_last_of(SC_HIERARCHY_CHAR);
+    const string& name = attr->name();
+
+    size_t pos = name.find_last_of(SC_HIERARCHY_CHAR);
     return pos == string::npos ? name : name.substr(pos + 1);
 }
 

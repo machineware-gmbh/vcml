@@ -432,10 +432,8 @@ tlm_response_status sdhci::dma_read(u32 boundary) {
         offset += blksz;
 
         block_count_16_bit -= 1;
-        if (block_count_16_bit == 0) {
-            offset = 0;
+        if (block_count_16_bit == 0)
             break;
-        }
 
         transfer_data_from_sd();
     }
@@ -469,10 +467,8 @@ tlm_response_status sdhci::dma_write(u32 boundary) {
         transfer_data_to_sd();
 
         block_count_16_bit -= 1;
-        if (block_count_16_bit == 0) {
-            offset = 0;
+        if (block_count_16_bit == 0)
             break;
-        }
     }
 
     return rs;

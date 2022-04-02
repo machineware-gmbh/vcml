@@ -43,7 +43,7 @@ string to_upper(const string& s);
 string escape(const string& s, const string& chars);
 string unescape(const string& s);
 
-vector<string> split(const string& str, function<int(int)> f = isspace);
+vector<string> split(const string& str, const function<int(int)>& f = isspace);
 vector<string> split(const string& str, char predicate);
 
 template <typename V, typename T>

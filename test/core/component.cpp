@@ -83,7 +83,6 @@ public:
             << "component did not respond to write command";
 
         sc_stop();
-        return;
     }
 };
 

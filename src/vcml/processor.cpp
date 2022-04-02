@@ -152,10 +152,10 @@ bool processor::cmd_disas(const vector<string>& args, ostream& os) {
         os << " (virtual)";
 
     u64 maxsz = 0;
-    for (auto insn : disas)
+    for (const auto& insn : disas)
         maxsz = max(maxsz, insn.size);
 
-    for (auto insn : disas) {
+    for (const auto& insn : disas) {
         os << "\n" << (insn.addr == program_counter() ? " > " : "   ");
         if (insn.sym != nullptr) {
             u64 offset = insn.addr - insn.sym->virt_addr();
@@ -514,7 +514,7 @@ void processor::flush_cpuregs() {
                        reg->name.c_str(), reg->size);
         }
 
-        const u64 mask = (1ul << reg->width()) - 1;
+        const u64 mask = bitmask(reg->width());
         if (reg->size < 8 && val > mask) {
             log_warn("truncating value 0x%lx for %lu bit cpu register %s", val,
                      reg->width(), reg->name.c_str());
@@ -528,7 +528,7 @@ void processor::flush_cpuregs() {
 void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
     target::define_cpuregs(regs);
 
-    for (auto reg : regs) {
+    for (const auto& reg : regs) {
         u64 defval = 0;
 
         const char* regnm = reg.name.c_str();

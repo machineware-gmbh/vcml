@@ -143,10 +143,11 @@ unordered_map<string, keyboard*> keyboard::s_keyboards;
 vector<keyboard*> keyboard::all() {
     vector<keyboard*> res;
     res.reserve(s_keyboards.size());
-    for (auto it : s_keyboards)
+    for (const auto& it : s_keyboards)
         res.push_back(it.second);
     return res;
 }
+
 keyboard* keyboard::find(const char* name) {
     auto it = s_keyboards.find(name);
     return it != s_keyboards.end() ? it->second : nullptr;
@@ -214,7 +215,7 @@ unordered_map<string, pointer*> pointer::s_pointers;
 vector<pointer*> pointer::all() {
     vector<pointer*> res;
     res.reserve(s_pointers.size());
-    for (auto it : s_pointers)
+    for (const auto& it : s_pointers)
         res.push_back(it.second);
     return res;
 }

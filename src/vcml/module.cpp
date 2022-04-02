@@ -23,7 +23,7 @@
 namespace vcml {
 
 bool module::cmd_clist(const vector<string>& args, ostream& os) {
-    for (auto cmd : m_commands)
+    for (const auto& cmd : m_commands)
         os << cmd.first << ",";
     return true;
 }
@@ -70,7 +70,7 @@ module::module(const sc_module_name& nm):
 }
 
 module::~module() {
-    for (auto it : m_commands)
+    for (const auto& it : m_commands)
         delete it.second;
 }
 
@@ -105,7 +105,7 @@ bool module::execute(const string& name, const vector<string>& args,
 
 vector<command_base*> module::get_commands() const {
     vector<command_base*> list;
-    for (auto cmd : m_commands)
+    for (const auto& cmd : m_commands)
         if (cmd.second != nullptr)
             list.push_back(cmd.second);
     return list;

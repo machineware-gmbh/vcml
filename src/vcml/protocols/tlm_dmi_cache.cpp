@@ -90,7 +90,7 @@ void tlm_dmi_cache::invalidate(const range& r) {
     vector<tlm_dmi> entries(m_entries.rbegin(), m_entries.rend());
     m_entries.clear();
 
-    for (auto dmi : entries) {
+    for (const tlm_dmi& dmi : entries) {
         if (!r.overlaps(dmi)) {
             insert(dmi);
             continue;

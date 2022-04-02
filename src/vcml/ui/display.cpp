@@ -103,7 +103,7 @@ void display::remove_pointer(pointer* ptr) {
 }
 
 static bool parse_display(const string& name, string& id, u32& nr) {
-    auto it = name.rfind(":");
+    auto it = name.rfind(':');
     if (it == string::npos)
         return false;
 
@@ -145,7 +145,7 @@ shared_ptr<display> display::lookup(const string& name) {
     if (it == types.end()) {
         stringstream ss;
         ss << "unknown display '" << type << "', available displays:";
-        for (auto avail : types)
+        for (const auto& avail : types)
             ss << " " << avail.first;
         VCML_REPORT("%s", ss.str().c_str());
     }
@@ -158,7 +158,7 @@ void display::register_display_type(const string& type,
                                     function<display*(u32)> creator) {
     if (stl_contains(types, type))
         VCML_ERROR("display type '%s' already registered", type.c_str());
-    types.insert({ type, creator });
+    types.insert({ type, std::move(creator) });
 }
 
 } // namespace ui

@@ -46,6 +46,7 @@
 #include <condition_variable>
 
 #include <stdint.h>
+#include <limits.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -68,18 +69,18 @@ typedef int64_t i64;
 
 using ::clock_t;
 
-const clock_t Hz  = 1;
-const clock_t kHz = 1000 * Hz;
-const clock_t MHz = 1000 * kHz;
-const clock_t GHz = 1000 * MHz;
-const clock_t THz = 1000 * GHz;
+const clock_t Hz  = 1;          // NOLINT(readability-identifier-naming)
+const clock_t kHz = 1000 * Hz;  // NOLINT(readability-identifier-naming)
+const clock_t MHz = 1000 * kHz; // NOLINT(readability-identifier-naming)
+const clock_t GHz = 1000 * MHz; // NOLINT(readability-identifier-naming)
+const clock_t THz = 1000 * GHz; // NOLINT(readability-identifier-naming)
 
 using std::size_t;
 
-const size_t KiB = 1024;
-const size_t MiB = 1024 * KiB;
-const size_t GiB = 1024 * MiB;
-const size_t TiB = 1024 * GiB;
+const size_t KiB = 1024;       // NOLINT(readability-identifier-naming)
+const size_t MiB = 1024 * KiB; // NOLINT(readability-identifier-naming)
+const size_t GiB = 1024 * MiB; // NOLINT(readability-identifier-naming)
+const size_t TiB = 1024 * GiB; // NOLINT(readability-identifier-naming)
 
 template <typename T>
 struct typeinfo {
@@ -117,6 +118,7 @@ using std::max;
 using std::list;
 using std::queue;
 using std::deque;
+using std::priority_queue;
 using std::array;
 using std::vector;
 using std::set;

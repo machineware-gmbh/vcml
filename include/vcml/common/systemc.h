@@ -38,10 +38,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/utils.h"
 
-#define SYSTEMC_VERSION_2_3_0a 20120701
-#define SYSTEMC_VERSION_2_3_1a 20140417
-#define SYSTEMC_VERSION_2_3_2  20171012
-#define SYSTEMC_VERSION_2_3_3  20181013
+#define SYSTEMC_VERSION_2_3_0a 20120701 // NOLINT
+#define SYSTEMC_VERSION_2_3_1a 20140417 // NOLINT
+#define SYSTEMC_VERSION_2_3_2  20171012 // NOLINT
+#define SYSTEMC_VERSION_2_3_3  20181013 // NOLINT
 
 #if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
 inline sc_core::sc_time operator%(const sc_core::sc_time& t1,
@@ -326,13 +326,17 @@ public:
     const sc_time& timeout() const { return m_timeout; }
 
     timer(function<void(timer&)> cb);
-    timer(const sc_time& delta, function<void(timer&)> cb): timer(cb) {
+    ~timer();
+
+    timer(const sc_time& delta, function<void(timer&)> cb):
+        timer(std::move(cb)) {
         reset(delta);
     }
-    timer(double t, sc_time_unit tu, function<void(timer&)> cb): timer(cb) {
+
+    timer(double t, sc_time_unit tu, function<void(timer&)> cb):
+        timer(std::move(cb)) {
         reset(t, tu);
     }
-    ~timer();
 
     void trigger();
     void cancel();
