@@ -34,12 +34,13 @@ private:
     unsigned int m_argc;
 
 public:
-    inline const char* name() const { return m_name.c_str(); }
-    inline const char* desc() const { return m_desc.c_str(); }
-    inline unsigned int argc() const { return m_argc; }
+    const char* name() const { return m_name.c_str(); }
+    const char* desc() const { return m_desc.c_str(); }
+    unsigned int argc() const { return m_argc; }
 
-    command_base(string name, unsigned int argc, string desc = ""):
-        m_name(std::move(name)), m_desc(std::move(desc)), m_argc(argc) {}
+    command_base(const string& name, unsigned int argc,
+                 const string& desc = ""):
+        m_name(name), m_desc(desc), m_argc(argc) {}
 
     virtual ~command_base() = default;
 
@@ -58,7 +59,7 @@ private:
     command(const command<T>& other);
 
 public:
-    command(string name, unsigned int argc, string desc, T* host,
+    command(const string& name, unsigned int argc, const string& desc, T* host,
             bool (T::*func)(const vector<string>& args, ostream& os)):
         command_base(name, argc, desc), m_host(host), m_func(func) {}
 
