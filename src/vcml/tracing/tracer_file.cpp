@@ -20,6 +20,7 @@
 #include "vcml/protocols/irq.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
+#include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/virtio.h"
 
@@ -54,6 +55,10 @@ void tracer_file::trace(const activity<irq_payload>& msg) {
 }
 
 void tracer_file::trace(const activity<pci_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<i2c_payload>& msg) {
     do_trace(msg);
 }
 

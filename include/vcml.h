@@ -75,6 +75,7 @@
 #include "vcml/protocols/irq.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
+#include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/pci_ids.h"
 #include "vcml/protocols/virtio.h"

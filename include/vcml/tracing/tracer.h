@@ -29,6 +29,7 @@ namespace vcml {
 
 struct irq_payload;
 struct pci_payload;
+struct i2c_payload;
 struct spi_payload;
 struct sd_command;
 struct sd_data;
@@ -52,6 +53,7 @@ enum protocol_kind {
     PROTO_TLM,
     PROTO_IRQ,
     PROTO_PCI,
+    PROTO_I2C,
     PROTO_SPI,
     PROTO_SD,
     PROTO_VIRTIO,
@@ -76,6 +78,11 @@ struct protocol<irq_payload> {
 template <>
 struct protocol<pci_payload> {
     static constexpr protocol_kind KIND = PROTO_PCI;
+};
+
+template <>
+struct protocol<i2c_payload> {
+    static constexpr protocol_kind KIND = PROTO_I2C;
 };
 
 template <>
@@ -115,6 +122,7 @@ public:
     virtual void trace(const activity<tlm_generic_payload>&) {}
     virtual void trace(const activity<irq_payload>&) {}
     virtual void trace(const activity<pci_payload>&) {}
+    virtual void trace(const activity<i2c_payload>&) {}
     virtual void trace(const activity<spi_payload>&) {}
     virtual void trace(const activity<sd_command>&) {}
     virtual void trace(const activity<sd_data>&) {}
