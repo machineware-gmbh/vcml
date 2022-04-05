@@ -111,10 +111,11 @@ public:
         EXPECT_TRUE(find_object("bench.i2c_array_in[6]_stub"));
     }
 
-    MOCK_METHOD(i2c_response, i2c_start, (i2c_target_socket&, tlm_command));
-    MOCK_METHOD(i2c_response, i2c_stop, (i2c_target_socket&));
-    MOCK_METHOD(i2c_response, i2c_read, (i2c_target_socket&, u8&));
-    MOCK_METHOD(i2c_response, i2c_write, (i2c_target_socket&, u8));
+    MOCK_METHOD(i2c_response, i2c_start,
+                (const i2c_target_socket&, tlm_command));
+    MOCK_METHOD(i2c_response, i2c_stop, (const i2c_target_socket&));
+    MOCK_METHOD(i2c_response, i2c_read, (const i2c_target_socket&, u8&));
+    MOCK_METHOD(i2c_response, i2c_write, (const i2c_target_socket&, u8));
 
     virtual void run_test() override {
         // test starting a read transfer

@@ -59,26 +59,52 @@ ostream& operator<<(ostream& os, const i2c_payload& tx) {
     return os << "(" << tx.resp << ")";
 }
 
-i2c_initiator_socket::i2c_initiator_socket(const char* nm, address_space as):
-    i2c_base_initiator_socket(nm, as),
-    i2c_bw_transport_if(),
-    m_host(hierarchy_search<i2c_host>()),
-    m_stub(nullptr),
-    m_transport(this) {
-    bind(m_transport);
-    if (m_host)
-        m_host->m_isocks.insert(this);
+i2c_base_initiator_socket::i2c_base_initiator_socket(const char* nm,
+                                                     address_space space):
+    i2c_base_initiator_socket_b(nm, space), m_stub(nullptr) {
 }
 
-i2c_initiator_socket::~i2c_initiator_socket() {
-    if (m_host)
-        m_host->m_isocks.erase(this);
+i2c_base_initiator_socket::~i2c_base_initiator_socket() {
     if (m_stub)
         delete m_stub;
 }
 
-sc_type_index i2c_initiator_socket::get_protocol_types() const {
-    return typeid(i2c_protocol_types);
+void i2c_base_initiator_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new i2c_target_stub(basename());
+    bind(m_stub->i2c_in);
+}
+
+i2c_base_target_socket::i2c_base_target_socket(const char* nm,
+                                               address_space space):
+    i2c_base_target_socket_b(nm, space), m_stub(nullptr) {
+}
+
+i2c_base_target_socket::~i2c_base_target_socket() {
+    if (m_stub)
+        delete m_stub;
+}
+
+void i2c_base_target_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new i2c_initiator_stub(basename());
+    m_stub->i2c_out.bind(*this);
+}
+
+i2c_initiator_socket::i2c_initiator_socket(const char* nm, address_space as):
+    i2c_base_initiator_socket(nm, as),
+    m_host(hierarchy_search<i2c_host>()),
+    m_transport(this) {
+    bind(m_transport);
+    if (m_host)
+        m_host->m_initiator_sockets.insert(this);
+}
+
+i2c_initiator_socket::~i2c_initiator_socket() {
+    if (m_host)
+        m_host->m_initiator_sockets.erase(this);
 }
 
 i2c_response i2c_initiator_socket::start(u8 address, tlm_command cmd) {
@@ -128,13 +154,6 @@ void i2c_initiator_socket::transport(i2c_payload& tx) {
         tx.resp = I2C_NACK;
 
     trace_bw(tx);
-}
-
-void i2c_initiator_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
-    m_stub = new i2c_target_stub(basename());
-    bind(m_stub->i2c_in);
 }
 
 void i2c_target_socket::i2c_transport(i2c_payload& tx) {
@@ -189,31 +208,17 @@ void i2c_target_socket::set_address(u8 address) {
 i2c_target_socket::i2c_target_socket(const char* nm, address_space as):
     i2c_base_target_socket(nm, as),
     m_host(hierarchy_search<i2c_host>()),
-    m_stub(nullptr),
     m_address(I2C_ADDR_INVALID),
     m_state(TLM_IGNORE_COMMAND),
     m_transport(this) {
     bind(m_transport);
     VCML_ERROR_ON(!m_host, "socket %s declared outside i2c_host", name());
-    m_host->m_tsocks.insert(this);
+    m_host->m_target_sockets.insert(this);
 }
 
 i2c_target_socket::~i2c_target_socket() {
     if (m_host)
-        m_host->m_tsocks.erase(this);
-    if (m_stub)
-        delete m_stub;
-}
-
-sc_type_index i2c_target_socket::get_protocol_types() const {
-    return typeid(i2c_protocol_types);
-}
-
-void i2c_target_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
-    m_stub = new i2c_initiator_stub(basename());
-    m_stub->i2c_out.bind(*this);
+        m_host->m_target_sockets.erase(this);
 }
 
 i2c_initiator_stub::i2c_initiator_stub(const char* nm):

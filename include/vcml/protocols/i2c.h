@@ -88,11 +88,11 @@ public:
     typedef set<i2c_target_socket*> i2c_target_sockets;
 
     const i2c_initiator_sockets& all_i2c_initiator_sockets() const {
-        return m_isocks;
+        return m_initiator_sockets;
     }
 
     const i2c_target_sockets& all_i2c_target_sockets() const {
-        return m_tsocks;
+        return m_target_sockets;
     }
 
     i2c_host()                = default;
@@ -101,24 +101,20 @@ public:
     i2c_host(const i2c_host&) = delete;
 
 protected:
-    virtual i2c_response i2c_start(i2c_target_socket&, tlm_command) = 0;
-    virtual i2c_response i2c_stop(i2c_target_socket&)               = 0;
-    virtual i2c_response i2c_read(i2c_target_socket&, u8& data)     = 0;
-    virtual i2c_response i2c_write(i2c_target_socket&, u8 data)     = 0;
+    virtual i2c_response i2c_start(const i2c_target_socket&, tlm_command) = 0;
+    virtual i2c_response i2c_stop(const i2c_target_socket&)               = 0;
+    virtual i2c_response i2c_read(const i2c_target_socket&, u8& data)     = 0;
+    virtual i2c_response i2c_write(const i2c_target_socket&, u8 data)     = 0;
 
 private:
-    i2c_initiator_sockets m_isocks;
-    i2c_target_sockets m_tsocks;
-};
-
-struct i2c_protocol_types {
-    typedef i2c_payload payload;
+    i2c_initiator_sockets m_initiator_sockets;
+    i2c_target_sockets m_target_sockets;
 };
 
 class i2c_fw_transport_if : public sc_core::sc_interface
 {
 public:
-    typedef i2c_protocol_types protocol_types;
+    typedef i2c_payload protocol_types;
 
     virtual void i2c_transport(i2c_payload& tx) = 0;
 };
@@ -126,21 +122,55 @@ public:
 class i2c_bw_transport_if : public sc_core::sc_interface
 {
 public:
-    typedef i2c_protocol_types protocol_types;
+    typedef i2c_payload protocol_types;
 };
 
 typedef multi_initiator_socket<i2c_fw_transport_if, i2c_bw_transport_if>
-    i2c_base_initiator_socket;
+    i2c_base_initiator_socket_b;
 
 typedef multi_target_socket<i2c_fw_transport_if, i2c_bw_transport_if>
-    i2c_base_target_socket;
+    i2c_base_target_socket_b;
 
-class i2c_initiator_socket : public i2c_base_initiator_socket,
-                             protected i2c_bw_transport_if
+class i2c_base_initiator_socket : public i2c_base_initiator_socket_b
+{
+private:
+    i2c_target_stub* m_stub;
+
+public:
+    i2c_base_initiator_socket(const char*, address_space = VCML_AS_DEFAULT);
+    virtual ~i2c_base_initiator_socket();
+    VCML_KIND(i2c_base_initiator_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(i2c_bw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
+
+class i2c_base_target_socket : public i2c_base_target_socket_b
+{
+private:
+    i2c_initiator_stub* m_stub;
+
+public:
+    i2c_base_target_socket(const char*, address_space = VCML_AS_DEFAULT);
+    virtual ~i2c_base_target_socket();
+    VCML_KIND(i2c_base_target_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(i2c_fw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
+
+class i2c_initiator_socket : public i2c_base_initiator_socket
 {
 private:
     i2c_host* m_host;
-    i2c_target_stub* m_stub;
 
     struct i2c_bw_transport : i2c_bw_transport_if {
         i2c_initiator_socket* socket;
@@ -149,28 +179,21 @@ private:
     } m_transport;
 
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
-
     i2c_initiator_socket(const char* name, address_space as = VCML_AS_DEFAULT);
     virtual ~i2c_initiator_socket();
     VCML_KIND(i2c_initiator_socket);
-
-    virtual sc_type_index get_protocol_types() const override;
 
     i2c_response start(u8 address, tlm_command cmd);
     i2c_response stop();
     i2c_response transport(u8& data);
 
     void transport(i2c_payload& tx);
-
-    void stub();
 };
 
 class i2c_target_socket : public i2c_base_target_socket
 {
 private:
     i2c_host* m_host;
-    i2c_initiator_stub* m_stub;
 
     u8 m_address;
     tlm_command m_state;
@@ -187,18 +210,12 @@ private:
     void i2c_transport(i2c_payload& tx);
 
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
-
     u8 address() const { return m_address; }
     void set_address(u8 address);
 
     i2c_target_socket(const char* name, address_space as = VCML_AS_DEFAULT);
     virtual ~i2c_target_socket();
     VCML_KIND(i2c_target_socket);
-
-    virtual sc_type_index get_protocol_types() const override;
-
-    void stub();
 };
 
 class i2c_initiator_stub : private i2c_bw_transport_if
@@ -221,6 +238,12 @@ public:
     i2c_target_stub(const char* nm);
     virtual ~i2c_target_stub() = default;
 };
+
+template <const size_t N = SIZE_MAX>
+using i2c_base_initiator_socket_array = socket_array<i2c_base_initiator_socket,
+                                                     N>;
+template <const size_t N = SIZE_MAX>
+using i2c_base_target_socket_array = socket_array<i2c_base_target_socket, N>;
 
 template <const size_t N = SIZE_MAX>
 using i2c_initiator_socket_array = socket_array<i2c_initiator_socket, N>;
