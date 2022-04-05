@@ -79,9 +79,9 @@ public:
         ia.irq_in.bind(signal);
         ia.irq_out.bind(in[3]);
 
-        auto initiators = get_irq_initiator_sockets();
-        auto targets    = get_irq_target_sockets();
-        auto sockets    = get_irq_target_sockets(0);
+        auto initiators = all_irq_initiator_sockets();
+        auto targets    = all_irq_target_sockets();
+        auto sockets    = all_irq_target_sockets(0);
 
         EXPECT_EQ(initiators.size(), 3) << "irq initiators did not register";
         EXPECT_EQ(targets.size(), 4) << "irq targets did not register";
