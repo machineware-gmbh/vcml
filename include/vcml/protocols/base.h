@@ -42,8 +42,8 @@ public:
     property<bool> trace;
     property<bool> trace_errors;
 
-    base_initiator_socket(const char* name, address_space as):
-        tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>(name),
+    base_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT):
+        tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>(nm),
         trace(this, "trace", false),
         trace_errors(this, "trace_errors", false) {
         trace.inherit_default();
@@ -79,8 +79,8 @@ public:
     property<bool> trace;
     property<bool> trace_errors;
 
-    base_target_socket(const char* name, address_space space):
-        tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>(name),
+    base_target_socket(const char* nm, address_space space = VCML_AS_DEFAULT):
+        tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>(nm),
         as(space),
         trace(this, "trace", false),
         trace_errors(this, "trace_errors", false) {
