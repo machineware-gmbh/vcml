@@ -103,12 +103,12 @@ public:
         i2c_array_in[46].set_address(46);
 
         // did the port get created?
-        EXPECT_TRUE(find_object("bench.i2c_array_out[5]"));
-        EXPECT_TRUE(find_object("bench.i2c_array_in[6]"));
+        EXPECT_TRUE(find_object("i2c.i2c_array_out[5]"));
+        EXPECT_TRUE(find_object("i2c.i2c_array_in[6]"));
 
         // did the stubs get created?
-        EXPECT_TRUE(find_object("bench.i2c_array_out[5]_stub"));
-        EXPECT_TRUE(find_object("bench.i2c_array_in[6]_stub"));
+        EXPECT_TRUE(find_object("i2c.i2c_array_out[5]_stub"));
+        EXPECT_TRUE(find_object("i2c.i2c_array_in[6]_stub"));
     }
 
     MOCK_METHOD(i2c_response, i2c_start,
@@ -155,6 +155,6 @@ public:
 TEST(i2c, simulate) {
     broker_arg broker(sc_argc(), sc_argv());
     tracer_term tracer;
-    i2c_bench bench("bench");
+    i2c_bench bench("i2c");
     sc_core::sc_start();
 }

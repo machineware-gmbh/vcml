@@ -36,6 +36,7 @@ const char* tracer_term::colors[NUM_PROTOCOLS] = {
     /* [PROTO_TLM]    = */ "\x1B[35m", // magenta
     /* [PROTO_IRQ]    = */ "\x1B[33m", // yellow
     /* [PROTO_PCI]    = */ "\x1B[36m", // cyan
+    /* [PROTO_I2C]    = */ "\x1B[92m", // light green
     /* [PROTO_SPI]    = */ "\x1B[93m", // light yellow
     /* [PROTO_SD]     = */ "\x1B[95m", // light magenta
     /* [PROTO_VIRTIO] = */ "\x1B[96m", // light cyan
