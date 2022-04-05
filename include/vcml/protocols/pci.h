@@ -247,18 +247,22 @@ public:
     pci_initiator(pci_initiator&&)      = delete;
     pci_initiator(const pci_initiator&) = delete;
 
-    virtual void pci_bar_map(pci_initiator_socket& socket,
-                             const pci_bar& bar)                        = 0;
-    virtual void pci_bar_unmap(pci_initiator_socket& socket, int barno) = 0;
+    virtual void pci_bar_map(const pci_initiator_socket& socket,
+                             const pci_bar& bar) = 0;
 
-    virtual void* pci_dma_ptr(pci_initiator_socket& socket, vcml_access rw,
-                              u64 addr, u64 size)          = 0;
-    virtual bool pci_dma_read(pci_initiator_socket& socket, u64 addr, u64 size,
-                              void* data)                  = 0;
-    virtual bool pci_dma_write(pci_initiator_socket& socket, u64 addr,
+    virtual void pci_bar_unmap(const pci_initiator_socket& socket,
+                               int barno) = 0;
+
+    virtual void* pci_dma_ptr(const pci_initiator_socket& socket,
+                              vcml_access rw, u64 addr, u64 size) = 0;
+
+    virtual bool pci_dma_read(const pci_initiator_socket& socket, u64 addr,
+                              u64 size, void* data) = 0;
+
+    virtual bool pci_dma_write(const pci_initiator_socket& socket, u64 addr,
                                u64 size, const void* data) = 0;
 
-    virtual void pci_interrupt(pci_initiator_socket& socket, pci_irq irq,
+    virtual void pci_interrupt(const pci_initiator_socket& socket, pci_irq irq,
                                bool state) = 0;
 
 private:
@@ -282,7 +286,7 @@ public:
     pci_target(pci_target&&)      = delete;
     pci_target(const pci_target&) = delete;
 
-    virtual void pci_transport(pci_target_socket&, pci_payload&) = 0;
+    virtual void pci_transport(const pci_target_socket&, pci_payload&) = 0;
 
 protected:
     virtual void pci_bar_map(const pci_bar& bar);
@@ -296,14 +300,10 @@ private:
     pci_target_sockets m_sockets;
 };
 
-struct pci_protocol_types {
-    typedef pci_payload payload;
-};
-
 class pci_fw_transport_if : public sc_core::sc_interface
 {
 public:
-    typedef pci_protocol_types protocol_types;
+    typedef pci_payload protocol_types;
 
     virtual void pci_transport(pci_payload& tx) = 0;
 };
@@ -311,70 +311,130 @@ public:
 class pci_bw_transport_if : public sc_core::sc_interface
 {
 public:
-    typedef pci_protocol_types protocol_types;
+    typedef pci_payload protocol_types;
 
-    virtual void pci_bar_map(const pci_bar& bar) = 0;
-    virtual void pci_bar_unmap(int barno)        = 0;
-
+    virtual void pci_bar_map(const pci_bar& bar)                     = 0;
+    virtual void pci_bar_unmap(int barno)                            = 0;
     virtual void* pci_dma_ptr(vcml_access rw, u64 addr, u64 size)    = 0;
     virtual bool pci_dma_read(u64 addr, u64 size, void* data)        = 0;
     virtual bool pci_dma_write(u64 addr, u64 size, const void* data) = 0;
-
-    virtual void pci_interrupt(pci_irq irq, bool state) = 0;
+    virtual void pci_interrupt(pci_irq irq, bool state)              = 0;
 };
 
 typedef base_initiator_socket<pci_fw_transport_if, pci_bw_transport_if>
-    pci_base_initiator_socket;
+    pci_base_initiator_socket_b;
 
 typedef base_target_socket<pci_fw_transport_if, pci_bw_transport_if>
-    pci_base_target_socket;
+    pci_base_target_socket_b;
 
-class pci_initiator_socket : public pci_base_initiator_socket,
-                             protected pci_bw_transport_if
+class pci_base_initiator_socket : public pci_base_initiator_socket_b
 {
 private:
-    pci_initiator* m_initiator;
     pci_target_stub* m_stub;
 
-    virtual void pci_bar_map(const pci_bar& bar) override;
-    virtual void pci_bar_unmap(int barno) override;
-    virtual void* pci_dma_ptr(vcml_access rw, u64 addr, u64 size) override;
-    virtual bool pci_dma_read(u64 addr, u64 size, void* data) override;
-    virtual bool pci_dma_write(u64 addr, u64 size, const void*) override;
-    virtual void pci_interrupt(pci_irq irq, bool state) override;
-
 public:
+    pci_base_initiator_socket(const char* nm, address_space = VCML_AS_DEFAULT);
+    virtual ~pci_base_initiator_socket();
+    VCML_KIND(pci_base_initiator_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(pci_bw_transport_if::protocol_types);
+    }
+
     bool is_stubbed() const { return m_stub != nullptr; }
-
-    explicit pci_initiator_socket(const char* nm,
-                                  address_space as = VCML_AS_DEFAULT);
-    virtual ~pci_initiator_socket();
-    VCML_KIND(pci_initiator_socket);
-    virtual sc_core::sc_type_index get_protocol_types() const override;
-
-    void transport(pci_payload& tx);
-
     void stub();
 };
 
-class pci_target_socket : public pci_base_target_socket,
-                          protected pci_fw_transport_if
+class pci_base_target_socket : public pci_base_target_socket_b
+{
+private:
+    pci_initiator_stub* m_stub;
+
+public:
+    pci_base_target_socket(const char* nm, address_space = VCML_AS_DEFAULT);
+    virtual ~pci_base_target_socket();
+    VCML_KIND(pci_base_target_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(pci_fw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
+
+template <const size_t MAX_SOCKETS = SIZE_MAX>
+using pci_base_initiator_socket_array = socket_array<pci_base_initiator_socket,
+                                                     MAX_SOCKETS>;
+
+template <const size_t MAX_SOCKETS = SIZE_MAX>
+using pci_base_target_socket_array = socket_array<pci_base_target_socket,
+                                                  MAX_SOCKETS>;
+
+class pci_initiator_socket : public pci_base_initiator_socket
+{
+private:
+    pci_initiator* m_initiator;
+
+    struct pci_bw_transport : pci_bw_transport_if {
+        pci_initiator_socket* socket;
+        pci_bw_transport(pci_initiator_socket* sock): socket(sock) {}
+
+        virtual ~pci_bw_transport() = default;
+
+        virtual void pci_bar_map(const pci_bar& bar) override {
+            socket->m_initiator->pci_bar_map(*socket, bar);
+        }
+
+        virtual void pci_bar_unmap(int barno) override {
+            socket->m_initiator->pci_bar_unmap(*socket, barno);
+        }
+
+        virtual void* pci_dma_ptr(vcml_access rw, u64 addr, u64 sz) override {
+            return socket->m_initiator->pci_dma_ptr(*socket, rw, addr, sz);
+        }
+
+        virtual bool pci_dma_read(u64 addr, u64 sz, void* data) override {
+            return socket->m_initiator->pci_dma_read(*socket, addr, sz, data);
+        }
+
+        virtual bool pci_dma_write(u64 addr, u64 sz, const void* p) override {
+            return socket->m_initiator->pci_dma_write(*socket, addr, sz, p);
+        }
+
+        virtual void pci_interrupt(pci_irq irq, bool state) override {
+            socket->m_initiator->pci_interrupt(*socket, irq, state);
+        }
+    } m_transport;
+
+public:
+    pci_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
+    virtual ~pci_initiator_socket();
+    VCML_KIND(pci_initiator_socket);
+
+    void transport(pci_payload& tx);
+};
+
+class pci_target_socket : public pci_base_target_socket
 {
 private:
     pci_target* m_target;
-    pci_initiator_stub* m_stub;
 
-    virtual void pci_transport(pci_payload& tx) override;
+    struct pci_fw_transport : pci_fw_transport_if {
+        pci_target_socket* socket;
+        pci_fw_transport(pci_target_socket* s): socket(s) {}
+        virtual ~pci_fw_transport() = default;
+        virtual void pci_transport(pci_payload& tx) override {
+            socket->trace_fw(tx);
+            socket->m_target->pci_transport(*socket, tx);
+            socket->trace_bw(tx);
+        }
+    } m_transport;
 
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
-
     pci_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
     virtual ~pci_target_socket();
     VCML_KIND(pci_target_socket);
-    virtual sc_core::sc_type_index get_protocol_types() const override;
-
-    void stub();
 };
 
 constexpr size_t pci_devno(size_t dev, size_t fn = 0) {
@@ -387,42 +447,31 @@ using pci_initiator_socket_array = socket_array<pci_initiator_socket, MAX>;
 template <const size_t MAX = SIZE_MAX>
 using pci_target_socket_array = socket_array<pci_target_socket, MAX>;
 
-class pci_initiator_stub : public module, public pci_initiator
+class pci_initiator_stub : private pci_bw_transport_if
 {
-protected:
-    virtual void pci_bar_map(pci_initiator_socket& socket,
-                             const pci_bar& bar) override;
-    virtual void pci_bar_unmap(pci_initiator_socket& socket,
-                               int barno) override;
-
-    virtual void* pci_dma_ptr(pci_initiator_socket& socket, vcml_access rw,
-                              u64 addr, u64 size) override;
-    virtual bool pci_dma_read(pci_initiator_socket& socket, u64 addr, u64 size,
-                              void* data) override;
-    virtual bool pci_dma_write(pci_initiator_socket& socket, u64 addr,
-                               u64 size, const void* data) override;
-
-    virtual void pci_interrupt(pci_initiator_socket& socket, pci_irq irq,
-                               bool state) override;
+private:
+    virtual void pci_bar_map(const pci_bar& bar) override;
+    virtual void pci_bar_unmap(int barno) override;
+    virtual void* pci_dma_ptr(vcml_access rw, u64 addr, u64 size) override;
+    virtual bool pci_dma_read(u64 addr, u64 size, void* data) override;
+    virtual bool pci_dma_write(u64 addr, u64 size, const void* data) override;
+    virtual void pci_interrupt(pci_irq irq, bool state) override;
 
 public:
-    pci_initiator_socket pci_out;
-    pci_initiator_stub(const sc_module_name& name);
+    pci_base_initiator_socket pci_out;
+    pci_initiator_stub(const char* name);
     virtual ~pci_initiator_stub() = default;
-    VCML_KIND(pci_initiator_stub);
 };
 
-class pci_target_stub : public module, public pci_target
+class pci_target_stub : private pci_fw_transport_if
 {
-protected:
-    virtual void pci_transport(pci_target_socket& socket,
-                               pci_payload& tx) override;
+private:
+    virtual void pci_transport(pci_payload& tx) override;
 
 public:
-    pci_target_socket pci_in;
-    pci_target_stub(const sc_module_name& name);
+    pci_base_target_socket pci_in;
+    pci_target_stub(const char* name);
     virtual ~pci_target_stub() = default;
-    VCML_KIND(pci_target_stub);
 };
 
 } // namespace vcml

@@ -83,19 +83,17 @@ protected:
     virtual void pci_transport_cfg(pci_payload& tx);
     virtual void pci_transport(pci_payload& tx, bool io);
 
-    virtual void pci_bar_map(pci_initiator_socket& socket,
+    virtual void pci_bar_map(const pci_initiator_socket& socket,
                              const pci_bar& bar) override;
-    virtual void pci_bar_unmap(pci_initiator_socket& socket,
+    virtual void pci_bar_unmap(const pci_initiator_socket& socket,
                                int barno) override;
-
-    virtual void* pci_dma_ptr(pci_initiator_socket& socket, vcml_access rw,
-                              u64 addr, u64 size) override;
-    virtual bool pci_dma_read(pci_initiator_socket& socket, u64 addr, u64 size,
-                              void* data) override;
-    virtual bool pci_dma_write(pci_initiator_socket& socket, u64 addr,
+    virtual void* pci_dma_ptr(const pci_initiator_socket& socket,
+                              vcml_access rw, u64 addr, u64 size) override;
+    virtual bool pci_dma_read(const pci_initiator_socket& socket, u64 addr,
+                              u64 size, void* data) override;
+    virtual bool pci_dma_write(const pci_initiator_socket& socket, u64 addr,
                                u64 size, const void* data) override;
-
-    virtual void pci_interrupt(pci_initiator_socket& socket, pci_irq irq,
+    virtual void pci_interrupt(const pci_initiator_socket& socket, pci_irq irq,
                                bool state) override;
 };
 

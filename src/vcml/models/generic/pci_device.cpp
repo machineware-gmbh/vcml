@@ -394,7 +394,8 @@ void pci_device::pci_legacy_interrupt(bool state) {
     update_irqs();
 }
 
-void pci_device::pci_transport(pci_target_socket& sck, pci_payload& pci) {
+void pci_device::pci_transport(const pci_target_socket& sck,
+                               pci_payload& pci) {
     tlm_generic_payload tx;
     tlm_command cmd = pci_translate_command(pci.command);
     tx_setup(tx, cmd, pci.addr, &pci.data, pci.size);

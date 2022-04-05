@@ -21,42 +21,25 @@
 class pci_harness : public test_base, public pci_initiator, public pci_target
 {
 private:
-    /* PCI initiator interface */
-    virtual void pci_bar_map(pci_initiator_socket& socket,
-                             const pci_bar& bar) override {
-        ADD_FAILURE() << __FUNCTION__ << " should not be called";
-    }
+    // PCI initiator interface
+    MOCK_METHOD(void, pci_bar_map,
+                (const pci_initiator_socket& socket, const pci_bar& bar));
+    MOCK_METHOD(void, pci_bar_unmap,
+                (const pci_initiator_socket& socket, int barno));
+    MOCK_METHOD(void*, pci_dma_ptr,
+                (const pci_initiator_socket& socket, vcml_access rw, u64 addr,
+                 u64 size));
+    MOCK_METHOD(bool, pci_dma_read,
+                (const pci_initiator_socket& socket, u64 addr, u64 size,
+                 void* data));
+    MOCK_METHOD(bool, pci_dma_write,
+                (const pci_initiator_socket& socket, u64 addr, u64 size,
+                 const void* data));
+    MOCK_METHOD(void, pci_interrupt,
+                (const pci_initiator_socket& socket, pci_irq irq, bool state));
 
-    virtual void pci_bar_unmap(pci_initiator_socket& socket,
-                               int barno) override {
-        ADD_FAILURE() << __FUNCTION__ << " should not be called";
-    }
-
-    virtual void* pci_dma_ptr(pci_initiator_socket& socket, vcml_access rw,
-                              u64 addr, u64 size) override {
-        ADD_FAILURE() << __FUNCTION__ << " should not be called";
-        return nullptr;
-    }
-
-    virtual bool pci_dma_read(pci_initiator_socket& socket, u64 addr, u64 size,
-                              void* data) override {
-        *(u32*)data = pci_out.index_of(socket);
-        return true;
-    }
-
-    virtual bool pci_dma_write(pci_initiator_socket& socket, u64 addr,
-                               u64 size, const void* data) override {
-        ADD_FAILURE() << __FUNCTION__ << " should not be called";
-        return false;
-    }
-
-    virtual void pci_interrupt(pci_initiator_socket& socket, pci_irq irq,
-                               bool state) override {
-        ADD_FAILURE() << __FUNCTION__ << " should not be called";
-    }
-
-    /* PCI target interface */
-    virtual void pci_transport(pci_target_socket& socket,
+    // PCI target interface
+    virtual void pci_transport(const pci_target_socket& socket,
                                pci_payload& pci) override {
         EXPECT_TRUE(pci.is_read());
         EXPECT_TRUE(pci.is_cfg());
@@ -68,44 +51,63 @@ public:
     pci_initiator_socket_array<> pci_out;
     pci_target_socket_array<> pci_in;
 
+    pci_base_initiator_socket_array<> pci_out_h;
+    pci_base_target_socket_array<> pci_in_h;
+
+    pci_initiator_socket pci_out_nocon;
+    pci_target_socket pci_in_nocon;
+
     pci_harness(const sc_module_name& nm):
         test_base(nm),
         pci_initiator(),
         pci_target(),
         pci_out("pci_out"),
-        pci_in("pci_in") {
-        for (int i = 0; i < 4; i++)
-            pci_out[i].bind(pci_in[i]);
+        pci_in("pci_in"),
+        pci_out_h("pci_out_h"),
+        pci_in_h("pci_in_h"),
+        pci_out_nocon("pci_out_nocon"),
+        pci_in_nocon("pci_in_nocon") {
+        for (int i = 0; i < 4; i++) {
+            pci_out[i].bind(pci_out_h[i]);
+            pci_in_h[i].bind(pci_in[i]);
+            pci_out_h[i].bind(pci_in_h[i]);
+        }
+
+        pci_out_nocon.stub();
+        pci_in_nocon.stub();
+
+        EXPECT_TRUE(find_object("pci.pci_out_nocon_stub"));
+        EXPECT_TRUE(find_object("pci.pci_in_nocon_stub"));
     }
 
     virtual void run_test() override {
-        pci_payload pci;
+        pci_payload pci{};
         pci.command = PCI_READ;
         pci.space   = PCI_AS_CFG;
-
-        size_t ninit = 0;
-        size_t ntgts = 0;
+        pci.addr    = 0x12345678;
+        pci.data    = 0xffffffff;
+        pci.size    = 4;
 
         for (auto& port : pci_out) {
+            pci.response = PCI_RESP_INCOMPLETE;
             (*port.second)->pci_transport(pci);
             EXPECT_SUCCESS(pci);
             EXPECT_EQ(pci.data, (u32)port.first);
-            ninit++;
         }
 
         for (auto& port : pci_in) {
             u32 data = -1;
+            EXPECT_CALL(*this, pci_dma_read(_, 0, sizeof(data), &data))
+                .Times(1)
+                .WillOnce(Return(true));
             EXPECT_TRUE((*port.second)->pci_dma_read(0, sizeof(data), &data));
-            EXPECT_EQ(data, (u32)port.first);
-            ntgts++;
         }
-
-        EXPECT_EQ(ninit, pci_out.count());
-        EXPECT_EQ(ntgts, pci_in.count());
     }
 };
 
-TEST(spi, sockets) {
-    pci_harness test("test");
+TEST(pci, sockets) {
+    broker_arg broker(sc_argc(), sc_argv());
+    tracer_term tracer;
+    pci_harness test("pci");
     sc_core::sc_start();
 }

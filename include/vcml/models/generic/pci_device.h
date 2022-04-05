@@ -234,7 +234,7 @@ public:
     void pci_legacy_interrupt(bool state);
 
 protected:
-    virtual void pci_transport(pci_target_socket& socket,
+    virtual void pci_transport(const pci_target_socket& socket,
                                pci_payload& tx) override;
 
 private:
