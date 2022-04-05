@@ -176,6 +176,7 @@ private:
         i2c_initiator_socket* socket;
         i2c_bw_transport(i2c_initiator_socket* s):
             i2c_bw_transport_if(), socket(s) {}
+        virtual ~i2c_bw_transport() = default;
     } m_transport;
 
 public:
@@ -202,6 +203,7 @@ private:
         i2c_target_socket* socket;
         i2c_fw_transport(i2c_target_socket* t):
             i2c_fw_transport_if(), socket(t) {}
+        virtual ~i2c_fw_transport() = default;
         virtual void i2c_transport(i2c_payload& tx) override {
             socket->i2c_transport(tx);
         }
