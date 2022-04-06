@@ -103,7 +103,8 @@ spi_target_socket::spi_target_socket(const char* nm, address_space as):
 }
 
 spi_target_socket::~spi_target_socket() {
-    stl_remove_erase(m_host->m_target_sockets, this);
+    if (m_host)
+        stl_remove_erase(m_host->m_target_sockets, this);
 }
 
 spi_initiator_stub::spi_initiator_stub(const char* nm):
