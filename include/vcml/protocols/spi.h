@@ -50,15 +50,15 @@ public:
     typedef vector<spi_initiator_socket*> spi_initiator_sockets;
     typedef vector<spi_target_socket*> spi_target_sockets;
 
-    const spi_initiator_sockets& get_spi_initiator_sockets() const {
+    const spi_initiator_sockets& all_spi_initiator_sockets() const {
         return m_initiator_sockets;
     }
 
-    const spi_target_sockets& get_spi_target_sockets() const {
+    const spi_target_sockets& all_spi_target_sockets() const {
         return m_target_sockets;
     }
 
-    spi_target_sockets get_spi_target_sockets(address_space);
+    spi_target_sockets all_spi_target_sockets(address_space);
 
     spi_host()          = default;
     virtual ~spi_host() = default;
@@ -83,69 +83,128 @@ public:
 };
 
 typedef base_initiator_socket<spi_fw_transport_if, spi_bw_transport_if>
-    spi_base_initiator_socket;
+    spi_base_initiator_socket_b;
 
 typedef base_target_socket<spi_fw_transport_if, spi_bw_transport_if>
-    spi_base_target_socket;
+    spi_base_target_socket_b;
 
-class spi_initiator_socket : public spi_base_initiator_socket,
-                             private spi_bw_transport_if
+class spi_base_initiator_socket : public spi_base_initiator_socket_b
 {
 private:
-    spi_host* m_host;
     spi_target_stub* m_stub;
 
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
+    spi_base_initiator_socket(const char* nm, address_space = VCML_AS_DEFAULT);
+    virtual ~spi_base_initiator_socket();
+    VCML_KIND(spi_base_initiator_socket);
 
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(spi_bw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
+
+class spi_base_target_socket : public spi_base_target_socket_b
+{
+private:
+    spi_initiator_stub* m_stub;
+
+public:
+    spi_base_target_socket(const char* nm, address_space = VCML_AS_DEFAULT);
+    virtual ~spi_base_target_socket();
+    VCML_KIND(spi_base_target_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(spi_fw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
+
+template <const size_t MAX_PORTS = SIZE_MAX>
+using spi_base_initiator_socket_array = socket_array<spi_base_initiator_socket,
+                                                     MAX_PORTS>;
+
+template <const size_t MAX_PORTS = SIZE_MAX>
+using spi_base_target_socket_array = socket_array<spi_base_target_socket,
+                                                  MAX_PORTS>;
+
+class spi_initiator_socket : public spi_base_initiator_socket
+{
+private:
+    spi_host* m_host;
+
+    struct spi_bw_transport : spi_bw_transport_if {
+        spi_initiator_socket* socket;
+        spi_bw_transport(spi_initiator_socket* parent): socket(parent) {}
+        virtual ~spi_bw_transport() = default;
+    } m_transport;
+
+public:
     spi_initiator_socket(const char* nm, address_space = VCML_AS_DEFAULT);
     virtual ~spi_initiator_socket();
     VCML_KIND(spi_initiator_socket);
 
-    virtual sc_core::sc_type_index get_protocol_types() const override;
-
     void transport(spi_payload& spi);
-    void stub();
 };
 
-class spi_target_socket : public spi_base_target_socket,
-                          private spi_fw_transport_if
+class spi_target_socket : public spi_base_target_socket
 {
 private:
     spi_host* m_host;
-    spi_initiator_stub* m_stub;
 
-    virtual void spi_transport(spi_payload& spi) override;
+    struct spi_fw_transport : spi_fw_transport_if {
+        spi_target_socket* socket;
+        spi_fw_transport(spi_target_socket* parent): socket(parent) {}
+        virtual ~spi_fw_transport() = default;
+        virtual void spi_transport(spi_payload& spi) override {
+            socket->spi_transport(spi);
+        }
+    } m_transport;
+
+    void spi_transport(spi_payload& spi);
 
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
     spi_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
     virtual ~spi_target_socket();
     VCML_KIND(spi_target_socket);
-    virtual sc_core::sc_type_index get_protocol_types() const override;
-    void stub();
 };
 
-class spi_initiator_stub : public module
+template <const size_t MAX_PORTS = SIZE_MAX>
+using spi_initiator_socket_array = socket_array<spi_initiator_socket,
+                                                MAX_PORTS>;
+
+template <const size_t MAX_PORTS = SIZE_MAX>
+using spi_target_socket_array = socket_array<spi_target_socket, MAX_PORTS>;
+
+class spi_initiator_stub
 {
+private:
+    struct spi_bw_transport : spi_bw_transport_if {
+        virtual ~spi_bw_transport() = default;
+    } m_transport;
+
 public:
-    spi_initiator_socket spi_out;
-    spi_initiator_stub(const sc_module_name& name);
-    virtual ~spi_initiator_stub();
-    VCML_KIND(spi_initiator_stub);
+    spi_base_initiator_socket spi_out;
+    spi_initiator_stub(const char* name);
+    virtual ~spi_initiator_stub() = default;
 };
 
-class spi_target_stub : public module, public spi_host
+class spi_target_stub
 {
-protected:
-    virtual void spi_transport(const spi_target_socket& socket,
-                               spi_payload& spi) override;
+private:
+    struct spi_fw_transport : spi_fw_transport_if {
+        virtual ~spi_fw_transport() = default;
+        virtual void spi_transport(spi_payload& spi) override {}
+    } m_transport;
 
 public:
-    spi_target_socket spi_in;
-    spi_target_stub(const sc_module_name& name);
-    virtual ~spi_target_stub();
-    VCML_KIND(spi_target_stub);
+    spi_base_target_socket spi_in;
+    spi_target_stub(const char* name);
+    virtual ~spi_target_stub() = default;
 };
 
 } // namespace vcml
