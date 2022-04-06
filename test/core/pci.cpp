@@ -106,8 +106,6 @@ public:
 };
 
 TEST(pci, sockets) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     pci_harness test("pci");
     sc_core::sc_start();
 }

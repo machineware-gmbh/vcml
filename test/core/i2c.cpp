@@ -153,8 +153,6 @@ public:
 };
 
 TEST(i2c, simulate) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     i2c_bench bench("i2c");
     sc_core::sc_start();
 }

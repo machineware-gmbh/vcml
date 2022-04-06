@@ -131,8 +131,6 @@ public:
 };
 
 TEST(virtio, sockets) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     virtio_harness test("virtio");
     sc_core::sc_start();
 }

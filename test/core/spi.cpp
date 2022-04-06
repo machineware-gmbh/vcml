@@ -81,8 +81,6 @@ public:
 };
 
 TEST(spi, sockets) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     spi_harness test("spi");
     sc_core::sc_start();
 }
