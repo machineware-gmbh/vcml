@@ -31,8 +31,8 @@ public:
     spi_base_initiator_socket spi_out_h;
     spi_base_target_socket spi_in_h;
 
-    spi_initiator_socket spi_out2;
-    spi_target_socket spi_in2;
+    spi_initiator_socket_array<> spi_out_arr;
+    spi_target_socket_array<> spi_in_arr;
 
     spi_harness(const sc_module_name& nm):
         test_base(nm),
@@ -41,19 +41,19 @@ public:
         spi_in("spi_in", VCML_AS_TEST),
         spi_out_h("spi_out_h"),
         spi_in_h("spi_in_h"),
-        spi_out2("spi_out2"),
-        spi_in2("spi_in2") {
+        spi_out_arr("spi_out_arr"),
+        spi_in_arr("spi_in_arr") {
         // test hierarchy binding
         spi_out.bind(spi_out_h);
         spi_in_h.bind(spi_in);
         spi_out_h.bind(spi_in_h);
 
         // test stubbing
-        spi_out2.stub();
-        spi_in2.stub();
+        spi_out_arr[33].stub();
+        spi_in_arr[44].stub();
 
-        EXPECT_TRUE(find_object("spi.spi_out2_stub"));
-        EXPECT_TRUE(find_object("spi.spi_in2_stub"));
+        EXPECT_TRUE(find_object("spi.spi_out_arr[33]_stub"));
+        EXPECT_TRUE(find_object("spi.spi_in_arr[44]_stub"));
 
         auto initiators = all_spi_initiator_sockets();
         auto targets    = all_spi_target_sockets();

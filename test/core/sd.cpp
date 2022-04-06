@@ -31,8 +31,8 @@ public:
     sd_base_initiator_socket sd_out_h;
     sd_base_target_socket sd_in_h;
 
-    sd_initiator_socket sd_out2;
-    sd_target_socket sd_in2;
+    sd_initiator_socket_array<> sd_out_arr;
+    sd_target_socket_array<> sd_in_arr;
 
     sd_harness(const sc_module_name& nm):
         test_base(nm),
@@ -41,19 +41,19 @@ public:
         sd_in("sd_in", VCML_AS_TEST),
         sd_out_h("sd_out_h"),
         sd_in_h("sd_in_h"),
-        sd_out2("sd_out2"),
-        sd_in2("sd_in2") {
+        sd_out_arr("sd_out_arr"),
+        sd_in_arr("sd_in_arr") {
         // test hierarchy binding
         sd_out.bind(sd_out_h);
         sd_in_h.bind(sd_in);
         sd_out_h.bind(sd_in_h);
 
         // test stubbing
-        sd_out2.stub();
-        sd_in2.stub();
+        sd_out_arr[28].stub();
+        sd_in_arr[29].stub();
 
-        EXPECT_TRUE(find_object("sd.sd_out2_stub"));
-        EXPECT_TRUE(find_object("sd.sd_in2_stub"));
+        EXPECT_TRUE(find_object("sd.sd_out_arr[28]_stub"));
+        EXPECT_TRUE(find_object("sd.sd_in_arr[29]_stub"));
 
         auto initiators = all_sd_initiator_sockets();
         auto targets    = all_sd_target_sockets();
