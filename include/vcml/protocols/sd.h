@@ -20,8 +20,8 @@
 #define VCML_PROTOCOLS_SD_H
 
 #include "vcml/common/types.h"
+#include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
-#include "vcml/module.h"
 
 #include "vcml/protocols/base.h"
 
