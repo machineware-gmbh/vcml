@@ -43,6 +43,9 @@ using namespace ::vcml;
 class test_base: public component, public irq_target
 {
 private:
+    tracer_term m_tracer;
+    log_term m_logger;
+
     void run();
 
 public:

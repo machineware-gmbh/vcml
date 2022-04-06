@@ -20,7 +20,9 @@
 
 test_base::test_base(const sc_module_name& nm):
     component(nm),
-    irq_target() {
+    irq_target(),
+    m_tracer(),
+    m_logger() {
     SC_HAS_PROCESS(test_base);
     SC_THREAD(run);
 }
@@ -97,6 +99,7 @@ string get_resource_path(const string& name) {
 extern "C" int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::vcml::report::report_segfaults();
+    ::vcml::broker_arg broker(argc, argv);
     ::sc_core::sc_report_handler::set_handler(systemc_report_handler);
     for (int i = 0; i < argc; i++)
         args.push_back(argv[i]);
