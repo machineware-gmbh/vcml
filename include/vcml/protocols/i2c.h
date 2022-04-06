@@ -224,7 +224,6 @@ class i2c_initiator_stub : private i2c_bw_transport_if
 {
 public:
     i2c_base_initiator_socket i2c_out;
-
     i2c_initiator_stub(const char* nm);
     virtual ~i2c_initiator_stub() = default;
 };
@@ -236,22 +235,21 @@ private:
 
 public:
     i2c_base_target_socket i2c_in;
-
     i2c_target_stub(const char* nm);
     virtual ~i2c_target_stub() = default;
 };
 
-template <const size_t N = SIZE_MAX>
+template <const size_t MAX_SOCKETS = SIZE_MAX>
 using i2c_base_initiator_socket_array = socket_array<i2c_base_initiator_socket,
-                                                     N>;
-template <const size_t N = SIZE_MAX>
-using i2c_base_target_socket_array = socket_array<i2c_base_target_socket, N>;
-
-template <const size_t N = SIZE_MAX>
-using i2c_initiator_socket_array = socket_array<i2c_initiator_socket, N>;
-
-template <const size_t N = SIZE_MAX>
-using i2c_target_socket_array = socket_array<i2c_target_socket, N>;
+                                                     MAX_SOCKETS>;
+template <const size_t MAX_SOCKETS = SIZE_MAX>
+using i2c_base_target_socket_array = socket_array<i2c_base_target_socket,
+                                                  MAX_SOCKETS>;
+template <const size_t MAX_SOCKETS = SIZE_MAX>
+using i2c_initiator_socket_array = socket_array<i2c_initiator_socket,
+                                                MAX_SOCKETS>;
+template <const size_t MAX_SOCKETS = SIZE_MAX>
+using i2c_target_socket_array = socket_array<i2c_target_socket, MAX_SOCKETS>;
 
 } // namespace vcml
 

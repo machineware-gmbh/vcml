@@ -108,13 +108,17 @@ spi_target_socket::~spi_target_socket() {
 }
 
 spi_initiator_stub::spi_initiator_stub(const char* nm):
-    m_transport(), spi_out(mkstr("%s_stub", nm).c_str()) {
-    spi_out.bind(m_transport);
+    spi_bw_transport_if(), spi_out(mkstr("%s_stub", nm).c_str()) {
+    spi_out.bind(*this);
+}
+
+void spi_target_stub::spi_transport(spi_payload& spi) {
+    // nothing to do
 }
 
 spi_target_stub::spi_target_stub(const char* nm):
-    m_transport(), spi_in(mkstr("%s_stub", nm).c_str()) {
-    spi_in.bind(m_transport);
+    spi_fw_transport_if(), spi_in(mkstr("%s_stub", nm).c_str()) {
+    spi_in.bind(*this);
 }
 
 } // namespace vcml

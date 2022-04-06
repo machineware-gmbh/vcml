@@ -307,36 +307,19 @@ using sd_initiator_socket_array = socket_array<sd_initiator_socket, MAX_PORTS>;
 template <const size_t MAX_PORTS = SIZE_MAX>
 using sd_target_socket_array = socket_array<sd_target_socket, MAX_PORTS>;
 
-class sd_initiator_stub
+class sd_initiator_stub : private sd_bw_transport_if
 {
-private:
-    struct sd_bw_transport : sd_bw_transport_if {
-        virtual ~sd_bw_transport() = default;
-    } m_transport;
-
 public:
     sd_base_initiator_socket sd_out;
     sd_initiator_stub(const char* name);
     virtual ~sd_initiator_stub() = default;
 };
 
-class sd_target_stub
+class sd_target_stub : private sd_fw_transport_if
 {
-protected:
-    struct sd_fw_transport : sd_fw_transport_if {
-        virtual ~sd_fw_transport() = default;
-        virtual void sd_transport(sd_command& cmd) override {
-            cmd.resp_len = 0;
-            cmd.status   = SD_OK;
-        }
-
-        virtual void sd_transport(sd_data& data) override {
-            if (data.mode == SD_READ)
-                data.status.read = SDTX_ERR_ILLEGAL;
-            else
-                data.status.write = SDRX_OK;
-        }
-    } m_transport;
+private:
+    virtual void sd_transport(sd_command& cmd) override;
+    virtual void sd_transport(sd_data& data) override;
 
 public:
     sd_base_target_socket sd_in;

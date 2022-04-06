@@ -180,26 +180,18 @@ using spi_initiator_socket_array = socket_array<spi_initiator_socket,
 template <const size_t MAX_PORTS = SIZE_MAX>
 using spi_target_socket_array = socket_array<spi_target_socket, MAX_PORTS>;
 
-class spi_initiator_stub
+class spi_initiator_stub : private spi_bw_transport_if
 {
-private:
-    struct spi_bw_transport : spi_bw_transport_if {
-        virtual ~spi_bw_transport() = default;
-    } m_transport;
-
 public:
     spi_base_initiator_socket spi_out;
     spi_initiator_stub(const char* name);
     virtual ~spi_initiator_stub() = default;
 };
 
-class spi_target_stub
+class spi_target_stub : private spi_fw_transport_if
 {
 private:
-    struct spi_fw_transport : spi_fw_transport_if {
-        virtual ~spi_fw_transport() = default;
-        virtual void spi_transport(spi_payload& spi) override {}
-    } m_transport;
+    virtual void spi_transport(spi_payload& spi) override;
 
 public:
     spi_base_target_socket spi_in;

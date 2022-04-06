@@ -563,14 +563,50 @@ virtio_target_socket::virtio_target_socket(const char* nm):
     bind(m_transport);
 }
 
+bool virtio_initiator_stub::put(u32 vqid, vq_message& msg) {
+    return false;
+}
+
+bool virtio_initiator_stub::get(u32 vqid, vq_message& msg) {
+    return false;
+}
+
+bool virtio_initiator_stub::notify() {
+    return false;
+}
+
 virtio_initiator_stub::virtio_initiator_stub(const char* nm):
-    m_transport(), virtio_out(mkstr("%s_stub", nm).c_str()) {
-    virtio_out.bind(m_transport);
+    virtio_bw_transport_if(), virtio_out(mkstr("%s_stub", nm).c_str()) {
+    virtio_out.bind(*this);
+}
+
+void virtio_target_stub::identify(virtio_device_desc& desc) {
+    desc.device_id = VIRTIO_DEVICE_NONE;
+    desc.vendor_id = VIRTIO_VENDOR_VCML;
+}
+
+bool virtio_target_stub::notify(u32 vqid) {
+    return false;
+}
+
+void virtio_target_stub::read_features(u64& features) {
+    features = 0;
+}
+bool virtio_target_stub::write_features(u64 features) {
+    return false;
+}
+
+bool virtio_target_stub::read_config(const range& addr, void* ptr) {
+    return false;
+}
+
+bool virtio_target_stub::write_config(const range& addr, const void* p) {
+    return false;
 }
 
 virtio_target_stub::virtio_target_stub(const char* nm):
-    m_transport(), virtio_in(mkstr("%s_stub", nm).c_str()) {
-    virtio_in.bind(m_transport);
+    virtio_fw_transport_if(), virtio_in(mkstr("%s_stub", nm).c_str()) {
+    virtio_in.bind(*this);
 }
 
 } // namespace vcml

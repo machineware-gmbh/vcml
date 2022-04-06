@@ -357,13 +357,25 @@ sd_target_socket::~sd_target_socket() {
 }
 
 sd_initiator_stub::sd_initiator_stub(const char* nm):
-    m_transport(), sd_out(mkstr("%s_stub", nm).c_str()) {
-    sd_out.bind(m_transport);
+    sd_bw_transport_if(), sd_out(mkstr("%s_stub", nm).c_str()) {
+    sd_out.bind(*(sd_bw_transport_if*)this);
+}
+
+void sd_target_stub::sd_transport(sd_command& cmd) {
+    cmd.resp_len = 0;
+    cmd.status   = SD_OK;
+}
+
+void sd_target_stub::sd_transport(sd_data& data) {
+    if (data.mode == SD_READ)
+        data.status.read = SDTX_ERR_ILLEGAL;
+    else
+        data.status.write = SDRX_OK;
 }
 
 sd_target_stub::sd_target_stub(const char* nm):
-    m_transport(), sd_in(mkstr("%s_stub", nm).c_str()) {
-    sd_in.bind(m_transport);
+    sd_fw_transport_if(), sd_in(mkstr("%s_stub", nm).c_str()) {
+    sd_in.bind(*this);
 }
 
 } // namespace vcml

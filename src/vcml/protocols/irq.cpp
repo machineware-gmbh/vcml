@@ -190,13 +190,17 @@ bool irq_target_socket::read(irq_vector vector) const {
 }
 
 irq_initiator_stub::irq_initiator_stub(const char* nm):
-    m_transport(), irq_out(mkstr("%s_stub", nm).c_str()) {
-    irq_out.bind(m_transport);
+    irq_bw_transport_if(), irq_out(mkstr("%s_stub", nm).c_str()) {
+    irq_out.bind(*(irq_bw_transport_if*)this);
+}
+
+void irq_target_stub::irq_transport(irq_payload& irq) {
+    // nothing to do
 }
 
 irq_target_stub::irq_target_stub(const char* nm):
-    m_transport(), irq_in(mkstr("%s_stub", nm).c_str()) {
-    irq_in.bind(m_transport);
+    irq_fw_transport_if(), irq_in(mkstr("%s_stub", nm).c_str()) {
+    irq_in.bind(*(irq_fw_transport_if*)this);
 }
 
 irq_initiator_adapter::irq_initiator_adapter(const sc_module_name& nm):

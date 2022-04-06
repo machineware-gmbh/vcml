@@ -222,26 +222,18 @@ using irq_initiator_socket_array = socket_array<irq_initiator_socket,
 template <const size_t MAX_PORTS = SIZE_MAX>
 using irq_target_socket_array = socket_array<irq_target_socket, MAX_PORTS>;
 
-class irq_initiator_stub
+class irq_initiator_stub : private irq_bw_transport_if
 {
-private:
-    struct irq_bw_transport : irq_bw_transport_if {
-        virtual ~irq_bw_transport() = default;
-    } m_transport;
-
 public:
     irq_base_initiator_socket irq_out;
     irq_initiator_stub(const char* nm);
     virtual ~irq_initiator_stub() = default;
 };
 
-class irq_target_stub
+class irq_target_stub : private irq_fw_transport_if
 {
 private:
-    struct irq_fw_transport : irq_fw_transport_if {
-        virtual ~irq_fw_transport() = default;
-        virtual void irq_transport(irq_payload& irq) override {}
-    } m_transport;
+    virtual void irq_transport(irq_payload& irq) override;
 
 public:
     irq_base_target_socket irq_in;

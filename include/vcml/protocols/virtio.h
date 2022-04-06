@@ -653,15 +653,12 @@ public:
     VCML_KIND(virtio_target_socket);
 };
 
-class virtio_initiator_stub
+class virtio_initiator_stub : private virtio_bw_transport_if
 {
 private:
-    struct virtio_bw_transport : virtio_bw_transport_if {
-        virtual ~virtio_bw_transport() = default;
-        virtual bool put(u32 vqid, vq_message& msg) override { return false; }
-        virtual bool get(u32 vqid, vq_message& msg) override { return false; }
-        virtual bool notify() override { return false; }
-    } m_transport;
+    virtual bool put(u32 vqid, vq_message& msg) override;
+    virtual bool get(u32 vqid, vq_message& msg) override;
+    virtual bool notify() override;
 
 public:
     virtio_base_initiator_socket virtio_out;
@@ -669,28 +666,15 @@ public:
     virtual ~virtio_initiator_stub() = default;
 };
 
-class virtio_target_stub
+class virtio_target_stub : private virtio_fw_transport_if
 {
 private:
-    struct virtio_fw_transport : virtio_fw_transport_if {
-        virtual ~virtio_fw_transport() = default;
-        virtual void identify(virtio_device_desc& desc) override {
-            desc.device_id = VIRTIO_DEVICE_NONE;
-            desc.vendor_id = VIRTIO_VENDOR_VCML;
-        }
-
-        virtual bool notify(u32 vqid) override { return false; }
-        virtual void read_features(u64& features) override { features = 0; }
-        virtual bool write_features(u64 features) override { return false; }
-
-        virtual bool read_config(const range& addr, void* ptr) override {
-            return false;
-        }
-
-        virtual bool write_config(const range& addr, const void* p) override {
-            return false;
-        }
-    } m_transport;
+    virtual void identify(virtio_device_desc& desc) override;
+    virtual bool notify(u32 vqid) override;
+    virtual void read_features(u64& features) override;
+    virtual bool write_features(u64 features) override;
+    virtual bool read_config(const range& addr, void* ptr) override;
+    virtual bool write_config(const range& addr, const void* p) override;
 
 public:
     virtio_base_target_socket virtio_in;
