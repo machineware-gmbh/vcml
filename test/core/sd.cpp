@@ -28,6 +28,9 @@ public:
     sd_initiator_socket sd_out;
     sd_target_socket sd_in;
 
+    sd_base_initiator_socket sd_out_h;
+    sd_base_target_socket sd_in_h;
+
     sd_initiator_socket sd_out2;
     sd_target_socket sd_in2;
 
@@ -36,15 +39,25 @@ public:
         sd_host(),
         sd_out("sd_out"),
         sd_in("sd_in", VCML_AS_TEST),
+        sd_out_h("sd_out_h"),
+        sd_in_h("sd_in_h"),
         sd_out2("sd_out2"),
         sd_in2("sd_in2") {
-        sd_out.bind(sd_in);
+        // test hierarchy binding
+        sd_out.bind(sd_out_h);
+        sd_in_h.bind(sd_in);
+        sd_out_h.bind(sd_in_h);
+
+        // test stubbing
         sd_out2.stub();
         sd_in2.stub();
 
-        auto initiators = get_sd_initiator_sockets();
-        auto targets    = get_sd_target_sockets();
-        auto sockets    = get_sd_target_sockets(VCML_AS_TEST);
+        EXPECT_TRUE(find_object("sd.sd_out2_stub"));
+        EXPECT_TRUE(find_object("sd.sd_in2_stub"));
+
+        auto initiators = all_sd_initiator_sockets();
+        auto targets    = all_sd_target_sockets();
+        auto sockets    = all_sd_target_sockets(VCML_AS_TEST);
 
         EXPECT_EQ(initiators.size(), 2) << "sd initiators did not register";
         EXPECT_EQ(targets.size(), 2) << "sd targets did not register";
@@ -89,6 +102,6 @@ public:
 };
 
 TEST(sd, sockets) {
-    sd_harness test("test");
+    sd_harness test("sd");
     sc_core::sc_start();
 }

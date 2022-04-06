@@ -160,18 +160,17 @@ public:
     typedef vector<sd_initiator_socket*> sd_initiator_sockets;
     typedef vector<sd_target_socket*> sd_target_sockets;
 
-    const sd_initiator_sockets& get_sd_initiator_sockets() const {
+    const sd_initiator_sockets& all_sd_initiator_sockets() const {
         return m_initiator_sockets;
     }
 
-    const sd_target_sockets& get_sd_target_sockets() const {
+    const sd_target_sockets& all_sd_target_sockets() const {
         return m_target_sockets;
     }
 
-    sd_target_sockets get_sd_target_sockets(address_space);
+    sd_target_sockets all_sd_target_sockets(address_space);
 
-    sd_host() = default;
-
+    sd_host()          = default;
     virtual ~sd_host() = default;
 
     virtual void sd_transport(const sd_target_socket&, sd_command&) = 0;
@@ -203,81 +202,146 @@ public:
 };
 
 typedef base_initiator_socket<sd_fw_transport_if, sd_bw_transport_if>
-    sd_base_initiator_socket;
+    sd_base_initiator_socket_b;
 
 typedef base_target_socket<sd_fw_transport_if, sd_bw_transport_if>
-    sd_base_target_socket;
+    sd_base_target_socket_b;
 
-class sd_initiator_socket : public sd_base_initiator_socket,
-                            protected sd_bw_transport_if
+class sd_base_initiator_socket : public sd_base_initiator_socket_b
 {
 private:
-    sd_host* m_host;
     sd_target_stub* m_stub;
 
 public:
+    sd_base_initiator_socket(const char* nm, address_space = VCML_AS_DEFAULT);
+    virtual ~sd_base_initiator_socket();
+    VCML_KIND(sd_base_initiator_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(sd_bw_transport_if::protocol_types);
+    }
+
     bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
 
-    explicit sd_initiator_socket(const char* name,
-                                 address_space as = VCML_AS_DEFAULT);
+class sd_base_target_socket : public sd_base_target_socket_b
+{
+private:
+    sd_initiator_stub* m_stub;
+
+public:
+    sd_base_target_socket(const char* nm, address_space = VCML_AS_DEFAULT);
+    virtual ~sd_base_target_socket();
+    VCML_KIND(sd_base_target_socket);
+
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(sd_fw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
+    void stub();
+};
+
+template <const size_t MAX_PORTS = SIZE_MAX>
+using sd_base_initiator_socket_array = socket_array<sd_base_initiator_socket,
+                                                    MAX_PORTS>;
+
+template <const size_t MAX_PORTS = SIZE_MAX>
+using sd_base_target_socket_array = socket_array<sd_base_target_socket,
+                                                 MAX_PORTS>;
+
+class sd_initiator_socket : public sd_base_initiator_socket
+{
+private:
+    sd_host* m_host;
+
+    struct sd_bw_transport : sd_bw_transport_if {
+        sd_initiator_socket* socket;
+        sd_bw_transport(sd_initiator_socket* parent): socket(parent) {}
+        virtual ~sd_bw_transport() = default;
+    } m_transport;
+
+public:
+    sd_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
     virtual ~sd_initiator_socket();
-
     VCML_KIND(sd_initiator_socket);
-    virtual sc_core::sc_type_index get_protocol_types() const override;
 
     void transport(sd_command& cmd);
     void transport(sd_data& data);
 
     sd_status_tx read_data(u8& data);
     sd_status_rx write_data(u8 data);
-
-    void stub();
 };
 
-class sd_target_socket : public sd_base_target_socket,
-                         protected sd_fw_transport_if
+class sd_target_socket : public sd_base_target_socket
 {
 private:
     sd_host* m_host;
-    sd_initiator_stub* m_stub;
 
-    virtual void sd_transport(sd_command& cmd) override;
-    virtual void sd_transport(sd_data& data) override;
+    struct sd_fw_transport : sd_fw_transport_if {
+        sd_target_socket* socket;
+        sd_fw_transport(sd_target_socket* parent): socket(parent) {}
+        virtual ~sd_fw_transport() = default;
+        virtual void sd_transport(sd_command& cmd) override {
+            socket->sd_transport(cmd);
+        }
+
+        virtual void sd_transport(sd_data& data) override {
+            socket->sd_transport(data);
+        }
+    } m_transport;
+
+    void sd_transport(sd_command& cmd);
+    void sd_transport(sd_data& data);
 
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
-
     sd_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
     virtual ~sd_target_socket();
-
     VCML_KIND(sd_target_socket);
-    virtual sc_core::sc_type_index get_protocol_types() const override;
-
-    void stub();
 };
 
-class sd_initiator_stub : public module
+template <const size_t MAX_PORTS = SIZE_MAX>
+using sd_initiator_socket_array = socket_array<sd_initiator_socket, MAX_PORTS>;
+
+template <const size_t MAX_PORTS = SIZE_MAX>
+using sd_target_socket_array = socket_array<sd_target_socket, MAX_PORTS>;
+
+class sd_initiator_stub
 {
+private:
+    struct sd_bw_transport : sd_bw_transport_if {
+        virtual ~sd_bw_transport() = default;
+    } m_transport;
+
 public:
-    sd_initiator_socket sd_out;
-    sd_initiator_stub(const sc_module_name& name);
+    sd_base_initiator_socket sd_out;
+    sd_initiator_stub(const char* name);
     virtual ~sd_initiator_stub() = default;
-    VCML_KIND(sd_initiator_stub);
 };
 
-class sd_target_stub : public module, public sd_host
+class sd_target_stub
 {
 protected:
-    virtual void sd_transport(const sd_target_socket& socket,
-                              sd_command& cmd) override;
-    virtual void sd_transport(const sd_target_socket& socket,
-                              sd_data& data) override;
+    struct sd_fw_transport : sd_fw_transport_if {
+        virtual ~sd_fw_transport() = default;
+        virtual void sd_transport(sd_command& cmd) override {
+            cmd.resp_len = 0;
+            cmd.status   = SD_OK;
+        }
+
+        virtual void sd_transport(sd_data& data) override {
+            if (data.mode == SD_READ)
+                data.status.read = SDTX_ERR_ILLEGAL;
+            else
+                data.status.write = SDRX_OK;
+        }
+    } m_transport;
 
 public:
-    sd_target_socket sd_in;
-    sd_target_stub(const sc_module_name& name);
+    sd_base_target_socket sd_in;
+    sd_target_stub(const char* name);
     virtual ~sd_target_stub() = default;
-    VCML_KIND(sd_target_stub);
 };
 
 } // namespace vcml

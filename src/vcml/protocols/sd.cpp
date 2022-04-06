@@ -242,7 +242,7 @@ ostream& operator<<(ostream& os, const sd_data& tx) {
     return os;
 }
 
-sd_host::sd_target_sockets sd_host::get_sd_target_sockets(address_space as) {
+sd_host::sd_target_sockets sd_host::all_sd_target_sockets(address_space as) {
     sd_target_sockets sockets;
     for (auto& socket : m_target_sockets)
         if (socket->as == as)
@@ -250,12 +250,44 @@ sd_host::sd_target_sockets sd_host::get_sd_target_sockets(address_space as) {
     return sockets;
 }
 
+sd_base_initiator_socket::sd_base_initiator_socket(const char* nm,
+                                                   address_space a):
+    sd_base_initiator_socket_b(nm, a), m_stub(nullptr) {
+}
+
+sd_base_initiator_socket::~sd_base_initiator_socket() {
+    if (m_stub)
+        delete m_stub;
+}
+
+void sd_base_initiator_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new sd_target_stub(basename());
+    bind(m_stub->sd_in);
+}
+
+sd_base_target_socket::sd_base_target_socket(const char* nm, address_space a):
+    sd_base_target_socket_b(nm, a), m_stub(nullptr) {
+}
+
+sd_base_target_socket::~sd_base_target_socket() {
+    if (m_stub)
+        delete m_stub;
+}
+
+void sd_base_target_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new sd_initiator_stub(basename());
+    m_stub->sd_out.bind(*this);
+}
+
 sd_initiator_socket::sd_initiator_socket(const char* nm, address_space as):
     sd_base_initiator_socket(nm, as),
-    sd_bw_transport_if(),
     m_host(dynamic_cast<sd_host*>(hierarchy_top())),
-    m_stub(nullptr) {
-    bind(*(sd_bw_transport_if*)this);
+    m_transport(this) {
+    bind(m_transport);
     if (m_host)
         m_host->m_initiator_sockets.push_back(this);
 }
@@ -263,12 +295,6 @@ sd_initiator_socket::sd_initiator_socket(const char* nm, address_space as):
 sd_initiator_socket::~sd_initiator_socket() {
     if (m_host)
         stl_remove_erase(m_host->m_initiator_sockets, this);
-    if (m_stub)
-        delete m_stub;
-}
-
-sc_core::sc_type_index sd_initiator_socket::get_protocol_types() const {
-    return typeid(sd_fw_transport_if);
 }
 
 void sd_initiator_socket::transport(sd_command& cmd) {
@@ -304,13 +330,6 @@ sd_status_rx sd_initiator_socket::write_data(u8 data) {
     return tx.status.write;
 }
 
-void sd_initiator_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
-    m_stub = new sd_target_stub(mkstr("%s_stub", basename()).c_str());
-    bind(m_stub->sd_in);
-}
-
 void sd_target_socket::sd_transport(sd_command& tx) {
     trace_fw(tx);
     m_host->sd_transport(*this, tx);
@@ -326,49 +345,25 @@ void sd_target_socket::sd_transport(sd_data& tx) {
 sd_target_socket::sd_target_socket(const char* nm, address_space a):
     sd_base_target_socket(nm, a),
     m_host(hierarchy_search<sd_host>()),
-    m_stub(nullptr) {
+    m_transport(this) {
+    bind(m_transport);
     VCML_ERROR_ON(!m_host, "%s declared outside sd_host", name());
     m_host->m_target_sockets.push_back(this);
-    bind(*(sd_fw_transport_if*)this);
 }
 
 sd_target_socket::~sd_target_socket() {
-    stl_remove_erase(m_host->m_target_sockets, this);
-    if (m_stub)
-        delete m_stub;
+    if (m_host)
+        stl_remove_erase(m_host->m_target_sockets, this);
 }
 
-sc_core::sc_type_index sd_target_socket::get_protocol_types() const {
-    return typeid(sd_bw_transport_if);
+sd_initiator_stub::sd_initiator_stub(const char* nm):
+    m_transport(), sd_out(mkstr("%s_stub", nm).c_str()) {
+    sd_out.bind(m_transport);
 }
 
-void sd_target_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
-    m_stub = new sd_initiator_stub(mkstr("%s_stub", basename()).c_str());
-    m_stub->sd_out.bind(*this);
-}
-
-sd_initiator_stub::sd_initiator_stub(const sc_module_name& nm):
-    module(nm), sd_out("sd_out") {
-}
-
-void sd_target_stub::sd_transport(const sd_target_socket& socket,
-                                  sd_command& tx) {
-    tx.resp_len = 0;
-    tx.status   = SD_OK;
-}
-
-void sd_target_stub::sd_transport(const sd_target_socket& socket,
-                                  sd_data& tx) {
-    if (tx.mode == SD_READ)
-        tx.status.read = SDTX_ERR_ILLEGAL;
-    else
-        tx.status.write = SDRX_OK;
-}
-
-sd_target_stub::sd_target_stub(const sc_module_name& nm):
-    module(nm), sd_host(), sd_in("sd_in") {
+sd_target_stub::sd_target_stub(const char* nm):
+    m_transport(), sd_in(mkstr("%s_stub", nm).c_str()) {
+    sd_in.bind(m_transport);
 }
 
 } // namespace vcml
