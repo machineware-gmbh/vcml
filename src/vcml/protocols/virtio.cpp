@@ -515,156 +515,62 @@ virtio_status packed_virtqueue::do_put(vq_message& msg) {
     }
 }
 
-bool virtio_initiator_socket::put(u32 vqid, vq_message& msg) {
-    return m_controller->put(vqid, msg); // virtqueue handles tracing
+virtio_base_initiator_socket::virtio_base_initiator_socket(const char* nm):
+    virtio_base_initiator_socket_b(nm, VCML_AS_DEFAULT), m_stub(nullptr) {
 }
 
-bool virtio_initiator_socket::get(u32 vqid, vq_message& msg) {
-    return m_controller->get(vqid, msg); // virtqueue handles tracing
-}
-
-bool virtio_initiator_socket::notify() {
-    return m_controller->notify();
-}
-
-virtio_initiator_socket::virtio_initiator_socket(const char* nm):
-    virtio_base_initiator_socket(nm, VCML_AS_DEFAULT),
-    virtio_bw_transport_if(),
-    m_parent(hierarchy_search<module>()),
-    m_controller(hierarchy_search<virtio_controller>()),
-    m_stub(nullptr) {
-    VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-    VCML_ERROR_ON(!m_controller, "%s has no virtio_controller", name());
-    bind(*(virtio_bw_transport_if*)this);
-}
-
-virtio_initiator_socket::~virtio_initiator_socket() {
+virtio_base_initiator_socket::~virtio_base_initiator_socket() {
     if (m_stub)
         delete m_stub;
 }
 
-sc_type_index virtio_initiator_socket::get_protocol_types() const {
-    return typeid(virtio_initiator_socket);
-}
-
-void virtio_initiator_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-    hierarchy_guard guard(m_parent);
-    m_stub = new virtio_target_stub(mkstr("%s_stub", basename()).c_str());
+void virtio_base_initiator_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new virtio_target_stub(basename());
     bind(m_stub->virtio_in);
 }
 
-void virtio_target_socket::identify(virtio_device_desc& desc) {
-    m_device->identify(desc);
+virtio_base_target_socket::virtio_base_target_socket(const char* nm):
+    virtio_base_target_socket_b(nm, VCML_AS_DEFAULT), m_stub(nullptr) {
 }
 
-bool virtio_target_socket::notify(u32 vqid) {
-    return m_device->notify(vqid);
-}
-
-void virtio_target_socket::read_features(u64& features) {
-    m_device->read_features(features);
-}
-
-bool virtio_target_socket::write_features(u64 features) {
-    return m_device->write_features(features);
-}
-
-bool virtio_target_socket::read_config(const range& addr, void* data) {
-    return m_device->read_config(addr, data);
-}
-
-bool virtio_target_socket::write_config(const range& addr, const void* p) {
-    return m_device->write_config(addr, p);
-}
-
-virtio_target_socket::virtio_target_socket(const char* nm):
-    virtio_base_target_socket(nm, VCML_AS_DEFAULT),
-    m_parent(hierarchy_search<module>()),
-    m_device(hierarchy_search<virtio_device>()),
-    m_stub(nullptr) {
-    VCML_ERROR_ON(!m_parent, "%s declared outside module", name());
-    VCML_ERROR_ON(!m_device, "%s has no virtio_device", name());
-    bind(*(virtio_fw_transport_if*)this);
-}
-
-virtio_target_socket::~virtio_target_socket() {
+virtio_base_target_socket::~virtio_base_target_socket() {
     if (m_stub)
         delete m_stub;
 }
 
-sc_type_index virtio_target_socket::get_protocol_types() const {
-    return typeid(virtio_target_socket);
-}
-
-void virtio_target_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-    hierarchy_guard guard(m_parent);
-    m_stub = new virtio_initiator_stub(mkstr("%s_stub", basename()).c_str());
+void virtio_base_target_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new virtio_initiator_stub(basename());
     m_stub->virtio_out.bind(*this);
 }
 
-bool virtio_initiator_stub::put(u32 vqid, vq_message& msg) {
-    (void)vqid;
-    (void)msg;
-    return false;
+virtio_initiator_socket::virtio_initiator_socket(const char* nm):
+    virtio_base_initiator_socket(nm),
+    m_controller(hierarchy_search<virtio_controller>()),
+    m_transport(m_controller) {
+    VCML_ERROR_ON(!m_controller, "%s has no virtio_controller", name());
+    bind(m_transport);
 }
 
-bool virtio_initiator_stub::get(u32 vqid, vq_message& msg) {
-    (void)vqid;
-    (void)msg;
-    return false;
+virtio_target_socket::virtio_target_socket(const char* nm):
+    virtio_base_target_socket(nm),
+    m_device(hierarchy_search<virtio_device>()),
+    m_transport(m_device) {
+    VCML_ERROR_ON(!m_device, "%s has no virtio_device", name());
+    bind(m_transport);
 }
 
-bool virtio_initiator_stub::notify() {
-    return false;
+virtio_initiator_stub::virtio_initiator_stub(const char* nm):
+    m_transport(), virtio_out(mkstr("%s_stub", nm).c_str()) {
+    virtio_out.bind(m_transport);
 }
 
-virtio_initiator_stub::virtio_initiator_stub(const sc_module_name& nm):
-    module(nm), virtio_controller(), virtio_out("virtio_out") {
-}
-
-virtio_initiator_stub::~virtio_initiator_stub() {
-    // nothing to do
-}
-
-void virtio_target_stub::identify(virtio_device_desc& desc) {
-    desc.device_id = VIRTIO_DEVICE_NONE;
-    desc.vendor_id = VIRTIO_VENDOR_VCML;
-}
-
-bool virtio_target_stub::notify(u32 vqid) {
-    (void)vqid;
-    return false;
-}
-
-void virtio_target_stub::read_features(u64& features) {
-    features = 0;
-}
-
-bool virtio_target_stub::write_features(u64 features) {
-    (void)features;
-    return false;
-}
-
-bool virtio_target_stub::read_config(const range& addr, void* ptr) {
-    (void)addr;
-    (void)ptr;
-    return false;
-}
-
-bool virtio_target_stub::write_config(const range& addr, const void* ptr) {
-    (void)addr;
-    (void)ptr;
-    return false;
-}
-
-virtio_target_stub::virtio_target_stub(const sc_module_name& nm):
-    module(nm), virtio_device(), virtio_in("virtio_in") {
-}
-
-virtio_target_stub::~virtio_target_stub() {
-    // nothing to do
+virtio_target_stub::virtio_target_stub(const char* nm):
+    m_transport(), virtio_in(mkstr("%s_stub", nm).c_str()) {
+    virtio_in.bind(m_transport);
 }
 
 } // namespace vcml

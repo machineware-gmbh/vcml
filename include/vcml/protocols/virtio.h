@@ -541,105 +541,161 @@ public:
 };
 
 typedef base_initiator_socket<virtio_fw_transport_if, virtio_bw_transport_if>
-    virtio_base_initiator_socket;
+    virtio_base_initiator_socket_b;
 
 typedef base_target_socket<virtio_fw_transport_if, virtio_bw_transport_if>
-    virtio_base_target_socket;
+    virtio_base_target_socket_b;
 
 class virtio_initiator_stub;
 class virtio_target_stub;
 
-class virtio_initiator_socket : public virtio_base_initiator_socket,
-                                private virtio_bw_transport_if
+class virtio_base_initiator_socket : public virtio_base_initiator_socket_b
 {
 private:
-    module* m_parent;
-    virtio_controller* m_controller;
     virtio_target_stub* m_stub;
 
-    virtual bool put(u32 vqid, vq_message& msg) override;
-    virtual bool get(u32 vqid, vq_message& msg) override;
-
-    virtual bool notify() override;
-
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
+    virtio_base_initiator_socket(const char* nm);
+    virtual ~virtio_base_initiator_socket();
+    VCML_KIND(virtio_base_initiator_socket);
 
-    explicit virtio_initiator_socket(const char* name);
-    virtual ~virtio_initiator_socket();
-    VCML_KIND(virtio_initiator_socket);
-    virtual sc_type_index get_protocol_types() const override;
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(virtio_bw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
 };
 
-class virtio_target_socket : public virtio_base_target_socket,
-                             private virtio_fw_transport_if
+class virtio_base_target_socket : public virtio_base_target_socket_b
 {
 private:
-    module* m_parent;
-    virtio_device* m_device;
     virtio_initiator_stub* m_stub;
 
-    virtual void identify(virtio_device_desc& desc) override;
-    virtual bool notify(u32 vqid) override;
-
-    virtual void read_features(u64& features) override;
-    virtual bool write_features(u64 features) override;
-
-    virtual bool read_config(const range& addr, void* data) override;
-    virtual bool write_config(const range& addr, const void*) override;
-
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
+    virtio_base_target_socket(const char* nm);
+    virtual ~virtio_base_target_socket();
+    VCML_KIND(virtio_base_target_socket);
 
-    explicit virtio_target_socket(const char* name);
-    virtual ~virtio_target_socket();
-    VCML_KIND(virtio_target_socket);
-    virtual sc_type_index get_protocol_types() const override;
+    virtual sc_type_index get_protocol_types() const override {
+        return typeid(virtio_fw_transport_if::protocol_types);
+    }
+
+    bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
 };
 
-class virtio_initiator_stub : public module, public virtio_controller
+class virtio_initiator_socket : public virtio_base_initiator_socket
 {
 private:
-    virtual bool put(u32 vqid, vq_message& msg) override;
-    virtual bool get(u32 vqid, vq_message& msg) override;
-    virtual bool notify() override;
+    virtio_controller* m_controller;
+
+    struct virtio_bw_transport : virtio_bw_transport_if {
+        virtio_controller* parent;
+        virtio_bw_transport(virtio_controller* ctrl): parent(ctrl) {}
+        virtual ~virtio_bw_transport() = default;
+
+        virtual bool put(u32 vqid, vq_message& msg) override {
+            return parent->put(vqid, msg);
+        }
+
+        virtual bool get(u32 vqid, vq_message& msg) override {
+            return parent->get(vqid, msg);
+        }
+
+        virtual bool notify() override { return parent->notify(); }
+    } m_transport;
 
 public:
-    virtio_initiator_socket virtio_out;
-
-    virtio_initiator_stub() = delete;
-
-    virtio_initiator_stub(const virtio_initiator_stub&) = delete;
-
-    virtio_initiator_stub(const sc_module_name& nm);
-    virtual ~virtio_initiator_stub();
-    VCML_KIND(virtio_initiator_stub);
+    virtio_initiator_socket(const char* name);
+    virtual ~virtio_initiator_socket() = default;
+    VCML_KIND(virtio_initiator_socket);
 };
 
-class virtio_target_stub : public module, public virtio_device
+class virtio_target_socket : public virtio_base_target_socket
 {
 private:
-    virtual void identify(virtio_device_desc& desc) override;
-    virtual bool notify(u32 vqid) override;
+    virtio_device* m_device;
 
-    virtual void read_features(u64& features) override;
-    virtual bool write_features(u64 features) override;
+    struct virtio_fw_transport : virtio_fw_transport_if {
+        virtio_device* device;
+        virtio_fw_transport(virtio_device* dev): device(dev) {}
+        virtual ~virtio_fw_transport() = default;
 
-    virtual bool read_config(const range& addr, void* ptr) override;
-    virtual bool write_config(const range& addr, const void* ptr) override;
+        virtual void identify(virtio_device_desc& desc) override {
+            device->identify(desc);
+        }
+
+        virtual bool notify(u32 virtqueue_id) override {
+            return device->notify(virtqueue_id);
+        }
+
+        virtual void read_features(u64& features) override {
+            device->read_features(features);
+        }
+
+        virtual bool write_features(u64 features) override {
+            return device->write_features(features);
+        }
+
+        virtual bool read_config(const range& addr, void* data) override {
+            return device->read_config(addr, data);
+        }
+
+        virtual bool write_config(const range& addr, const void* p) override {
+            return device->write_config(addr, p);
+        }
+    } m_transport;
 
 public:
-    virtio_target_socket virtio_in;
+    virtio_target_socket(const char* name);
+    virtual ~virtio_target_socket() = default;
+    VCML_KIND(virtio_target_socket);
+};
 
-    virtio_target_stub() = delete;
+class virtio_initiator_stub
+{
+private:
+    struct virtio_bw_transport : virtio_bw_transport_if {
+        virtual ~virtio_bw_transport() = default;
+        virtual bool put(u32 vqid, vq_message& msg) override { return false; }
+        virtual bool get(u32 vqid, vq_message& msg) override { return false; }
+        virtual bool notify() override { return false; }
+    } m_transport;
 
-    virtio_target_stub(const virtio_target_stub&) = delete;
+public:
+    virtio_base_initiator_socket virtio_out;
+    virtio_initiator_stub(const char* nm);
+    virtual ~virtio_initiator_stub() = default;
+};
 
-    virtio_target_stub(const sc_module_name& nm);
-    virtual ~virtio_target_stub();
-    VCML_KIND(virtio_target_stub);
+class virtio_target_stub
+{
+private:
+    struct virtio_fw_transport : virtio_fw_transport_if {
+        virtual ~virtio_fw_transport() = default;
+        virtual void identify(virtio_device_desc& desc) override {
+            desc.device_id = VIRTIO_DEVICE_NONE;
+            desc.vendor_id = VIRTIO_VENDOR_VCML;
+        }
+
+        virtual bool notify(u32 vqid) override { return false; }
+        virtual void read_features(u64& features) override { features = 0; }
+        virtual bool write_features(u64 features) override { return false; }
+
+        virtual bool read_config(const range& addr, void* ptr) override {
+            return false;
+        }
+
+        virtual bool write_config(const range& addr, const void* p) override {
+            return false;
+        }
+    } m_transport;
+
+public:
+    virtio_base_target_socket virtio_in;
+    virtio_target_stub(const char* nm);
+    virtual ~virtio_target_stub() = default;
 };
 
 } // namespace vcml
