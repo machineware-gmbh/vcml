@@ -43,7 +43,6 @@ public:
         spi_in_h("spi_in_h"),
         spi_out2("spi_out2"),
         spi_in2("spi_in2") {
-
         // test hierarchy binding
         spi_out.bind(spi_out_h);
         spi_in_h.bind(spi_in);
