@@ -56,6 +56,7 @@ enum virtio_devices : u32 {
     VIRTIO_DEVICE_BLOCK   = 2,
     VIRTIO_DEVICE_CONSOLE = 3,
     VIRTIO_DEVICE_RNG     = 4,
+    VIRTIO_DEVICE_P9FS    = 9,
     VIRTIO_DEVICE_GPU     = 16,
     VIRTIO_DEVICE_INPUT   = 18,
 };
