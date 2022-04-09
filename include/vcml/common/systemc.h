@@ -243,8 +243,14 @@ inline bool failed(const tlm_generic_payload& tx) {
     return failed(tx.get_response_status());
 }
 
+inline void tx_reset(tlm_generic_payload& tx) {
+    tx.set_dmi_allowed(false);
+    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
+}
+
 inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd, u64 addr,
                      void* data, unsigned int size) {
+    tx_reset(tx);
     tx.set_command(cmd);
     tx.set_address(addr);
     tx.set_data_ptr(reinterpret_cast<unsigned char*>(data));
@@ -252,8 +258,6 @@ inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd, u64 addr,
     tx.set_streaming_width(size);
     tx.set_byte_enable_ptr(nullptr);
     tx.set_byte_enable_length(0);
-    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
-    tx.set_dmi_allowed(false);
 }
 
 inline u64 tx_size(const tlm_generic_payload& tx) {
