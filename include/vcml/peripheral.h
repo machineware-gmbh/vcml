@@ -67,7 +67,7 @@ public:
     int current_cpu() const { return m_current_cpu; }
     void set_current_cpu(int cpu) { m_current_cpu = cpu; }
 
-    void allow_natural_accesses_only(bool only = true);
+    void natural_accesses_only(bool only = true);
 
     peripheral(const sc_module_name& nm, endianess e = host_endian(),
                unsigned int read_latency = 0, unsigned int write_latency = 0);
@@ -130,7 +130,7 @@ inline T peripheral::from_host_endian(T val) const {
     return is_host_endian() ? val : bswap(val);
 }
 
-inline void peripheral::allow_natural_accesses_only(bool only) {
+inline void peripheral::natural_accesses_only(bool only) {
     for (auto* reg : m_registers)
         reg->natural_accesses_only(only);
 }
