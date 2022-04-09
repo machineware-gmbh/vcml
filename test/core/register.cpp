@@ -485,12 +485,13 @@ TEST(registers, hierarchy) {
 }
 
 TEST(registers, bitfields) {
-    mock_peripheral mock("mock");
+    mock_peripheral mock;
 
     typedef field<1, 4, u32> TEST_FIELD;
 
     mock.test_reg_a = 0xaaaaaaaa;
-    u32 val         = get_field<TEST_FIELD>(mock.test_reg_a);
+
+    u32 val = get_field<TEST_FIELD>(mock.test_reg_a);
     EXPECT_EQ(val, 5);
     mock.test_reg_a.set_field<TEST_FIELD>(val - 1);
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaaa8);
@@ -500,4 +501,36 @@ TEST(registers, bitfields) {
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaabe);
     set_field<TEST_FIELD>(mock.test_reg_a, val);
     EXPECT_EQ(mock.test_reg_a, 0xaaaaaaaa);
+}
+
+TEST(registers, natural_alignment) {
+    u32 data = 0;
+    tlm_generic_payload tx;
+    mock_peripheral mock;
+    mock.natural_accesses_only();
+
+    EXPECT_TRUE(mock.test_reg_a.is_natural_accesses_only());
+    EXPECT_TRUE(mock.test_reg_b.is_natural_accesses_only());
+
+    mock.test_reg_a.natural_accesses_only(false);
+    mock.test_reg_b.natural_accesses_only();
+
+    EXPECT_FALSE(mock.test_reg_a.is_natural_accesses_only());
+    ASSERT_TRUE(mock.test_reg_b.is_natural_accesses_only());
+
+    tx_setup(tx, TLM_READ_COMMAND, 4, &data, sizeof(data));
+    EXPECT_EQ(mock.test_transport(tx), sizeof(data));
+    EXPECT_EQ(tx.get_response_status(), TLM_OK_RESPONSE);
+
+    tx_setup(tx, TLM_READ_COMMAND, 4, &data, sizeof(u8));
+    EXPECT_EQ(mock.test_transport(tx), 0);
+    EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
+
+    tx_setup(tx, TLM_READ_COMMAND, 5, &data, sizeof(data));
+    EXPECT_EQ(mock.test_transport(tx), 0);
+    EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
+
+    tx_setup(tx, TLM_READ_COMMAND, 5, &data, sizeof(u8));
+    EXPECT_EQ(mock.test_transport(tx), 0);
+    EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
 }
