@@ -43,12 +43,12 @@ bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
     return true;
 }
 
-peripheral::peripheral(const sc_module_name& nm, endianess endian,
+peripheral::peripheral(const sc_module_name& nm, endianess default_endian,
                        unsigned int rlatency, unsigned int wlatency):
     component(nm),
     m_current_cpu(SBI_NONE.cpuid),
-    m_endian(endian),
     m_registers(),
+    endian("endian", default_endian),
     read_latency("read_latency", rlatency),
     write_latency("write_latency", wlatency) {
     register_command("mmap", 0, this, &peripheral::cmd_mmap,
@@ -106,48 +106,59 @@ void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
 
 unsigned int peripheral::transport(tlm_generic_payload& tx,
                                    const tlm_sbi& info, address_space as) {
-    sc_dt::uint64 addr           = tx.get_address();
-    unsigned char* ptr           = tx.get_data_ptr();
-    unsigned int length          = tx.get_data_length();
-    unsigned int streaming_width = tx.get_streaming_width();
-    unsigned char* be_ptr        = tx.get_byte_enable_ptr();
-    unsigned int be_length       = tx.get_byte_enable_length();
-    unsigned int be_index        = 0;
-    unsigned int nbytes          = 0;
+    sc_dt::uint64 addr     = tx.get_address();
+    unsigned char* ptr     = tx.get_data_ptr();
+    unsigned int length    = tx.get_data_length();
+    unsigned int swidth    = tx.get_streaming_width();
+    unsigned char* be_ptr  = tx.get_byte_enable_ptr();
+    unsigned int be_length = tx.get_byte_enable_length();
+    unsigned int be_index  = 0;
+    unsigned int nbytes    = 0;
 
-    if (streaming_width == 0)
-        streaming_width = length;
+    VCML_ERROR_ON(ptr == nullptr, "transaction data pointer cannot be null");
+    VCML_ERROR_ON(length == 0, "transaction data length cannot be zero");
 
-    unsigned int npulses = length / streaming_width;
-    for (unsigned int pulse = 0; pulse < npulses; pulse++) {
+    if (tx.get_response_status() != TLM_INCOMPLETE_RESPONSE)
+        VCML_ERROR("invalid in-bound transaction response status");
+
+    if (swidth == 0)
+        swidth = length;
+
+    unsigned int npulses = length / swidth;
+    for (unsigned int pulse = 0; pulse < npulses && !failed(tx); pulse++) {
         if (!info.is_debug) {
             local_time() += tx.is_read() ? clock_cycles(read_latency)
                                          : clock_cycles(write_latency);
         }
 
         if (be_ptr == nullptr) {
-            tx.set_data_ptr(ptr + pulse * streaming_width);
-            tx.set_data_length(streaming_width);
+            tx.set_data_ptr(ptr + pulse * swidth);
+            tx.set_data_length(swidth);
+            tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
             nbytes += receive(tx, info, as);
         } else {
-            for (unsigned int byte = 0; byte < streaming_width; byte++) {
+            for (unsigned int byte = 0; byte < swidth && !failed(tx); byte++) {
                 if (be_ptr[be_index++ % be_length]) {
                     tx.set_address(addr + byte);
-                    tx.set_data_ptr(ptr + pulse * streaming_width + byte);
+                    tx.set_data_ptr(ptr + pulse * swidth + byte);
                     tx.set_data_length(1);
                     tx.set_streaming_width(1);
                     tx.set_byte_enable_ptr(nullptr);
                     tx.set_byte_enable_length(0);
+                    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
                     nbytes += receive(tx, info, as);
                 }
             }
         }
     }
 
+    if (tx.get_response_status() == TLM_INCOMPLETE_RESPONSE)
+        VCML_ERROR("invalid out-bound transaction response status");
+
     tx.set_address(addr);
     tx.set_data_ptr(ptr);
     tx.set_data_length(length);
-    tx.set_streaming_width(streaming_width);
+    tx.set_streaming_width(swidth);
     tx.set_byte_enable_ptr(be_ptr);
     tx.set_byte_enable_length(be_length);
 
@@ -161,7 +172,6 @@ unsigned int peripheral::transport(tlm_generic_payload& tx,
 unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
                                  address_space as) {
     unsigned int bytes = 0;
-    unsigned int nregs = 0;
     unsigned int width = tx.get_streaming_width();
 
     // no streaming support
@@ -181,11 +191,16 @@ unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     for (auto reg : m_registers)
         if (reg->get_range().overlaps(tx) && reg->as == as) {
             bytes += reg->receive(tx, info);
-            nregs++;
+
+            if (success(tx) && reg->is_natural_accesses_only())
+                break;
+
+            if (failed(tx))
+                break;
         }
 
     set_current_cpu(SBI_NONE.cpuid);
-    if (nregs > 0) // stop if at least one register took the access
+    if (success(tx) || failed(tx)) // stop if at least one reg took the access
         return bytes;
 
     tlm_response_status rs = TLM_OK_RESPONSE;

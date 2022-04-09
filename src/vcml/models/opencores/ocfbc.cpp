@@ -180,8 +180,9 @@ void ocfbc::create() {
         break;
 
     case 2:
-        mode        = ui::videomode::r5g6b5(m_xres, m_yres);
-        mode.endian = get_endian();
+        mode = ui::videomode::r5g6b5(m_xres, m_yres);
+
+        mode.endian = endian;
         break;
 
     case 1:

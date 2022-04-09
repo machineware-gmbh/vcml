@@ -36,11 +36,14 @@ class peripheral;
 class reg_base : public sc_object
 {
 private:
+    u64 m_cell_size;
+    u64 m_cell_count;
     range m_range;
     vcml_access m_access;
     bool m_rsync;
     bool m_wsync;
     bool m_wback;
+    bool m_natural;
     peripheral* m_host;
 
     void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
@@ -51,11 +54,15 @@ public:
     size_t tag;
 
     u64 get_address() const { return m_range.start; }
+    u64 get_cell_size() const { return m_cell_size; }
+    u64 get_cell_count() const { return m_cell_count; }
     u64 get_size() const { return m_range.length(); }
     const range& get_range() const { return m_range; }
 
+    bool is_array() const { return m_cell_count > 1; }
+
     vcml_access get_access() const { return m_access; }
-    void set_access(vcml_access a) { m_access = a; }
+    void set_access(vcml_access rw) { m_access = rw; }
 
     bool is_read_only() const;
     bool is_write_only() const;
@@ -77,10 +84,13 @@ public:
     void writeback(bool wb = true) { m_wback = wb; }
     void no_writeback() { m_wback = false; }
 
+    bool is_natural_accesses_only() const { return m_natural; }
+    void natural_accesses_only(bool only = true) { m_natural = only; }
+
     peripheral* get_host() const { return m_host; }
     int current_cpu() const;
 
-    reg_base(address_space as, const string& nm, u64 addr, u64 size);
+    reg_base(address_space as, const string& nm, u64 addr, u64 size, u64 n);
     virtual ~reg_base();
 
     VCML_KIND(reg_base);
@@ -105,10 +115,10 @@ template <typename DATA, size_t N = 1>
 class reg : public reg_base, public property<DATA, N>
 {
 public:
-    typedef std::function<DATA(void)> readfn;
-    typedef std::function<void(DATA)> writefn;
-    typedef std::function<DATA(size_t)> readfn_tagged;
-    typedef std::function<void(DATA, size_t)> writefn_tagged;
+    typedef function<DATA(void)> readfn;
+    typedef function<void(DATA)> writefn;
+    typedef function<DATA(size_t)> readfn_tagged;
+    typedef function<void(DATA, size_t)> writefn_tagged;
 
     void on_read(const readfn& rd) { m_read = rd; }
     void on_read(const readfn_tagged& rd) { m_read_tagged = rd; }
@@ -303,7 +313,7 @@ DATA& reg<DATA, N>::current_bank(size_t idx) {
 
 template <typename DATA, size_t N>
 reg<DATA, N>::reg(const string& nm, u64 addr, DATA def):
-    reg_base(VCML_AS_DEFAULT, nm, addr, N * sizeof(DATA)),
+    reg_base(VCML_AS_DEFAULT, nm, addr, sizeof(DATA), N),
     property<DATA, N>(nm.c_str(), def),
     m_banked(false),
     m_init(),
@@ -318,7 +328,7 @@ reg<DATA, N>::reg(const string& nm, u64 addr, DATA def):
 
 template <typename DATA, size_t N>
 reg<DATA, N>::reg(address_space a, const string& nm, u64 addr, DATA d):
-    reg_base(a, nm, addr, N * sizeof(DATA)),
+    reg_base(a, nm, addr, sizeof(DATA), N),
     property<DATA, N>(nm.c_str(), d),
     m_banked(false),
     m_init(),
