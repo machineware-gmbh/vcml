@@ -108,8 +108,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
         return 0;
     }
 
-    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
-    tx.set_dmi_allowed(false);
+    tx_reset(tx);
     tx_set_sbi(tx, m_sbi | info);
 
     if (info.is_debug) {
@@ -215,10 +214,10 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
 
     if (info.is_debug) {
         tx_setup(m_txd, cmd, addr, data, size);
-        size                   = send(m_txd, info);
-        tlm_response_status rs = m_txd.get_response_status();
+        size = send(m_txd, info);
 
         // transport_dbg does not always change response status
+        tlm_response_status rs = m_txd.get_response_status();
         if (rs == TLM_INCOMPLETE_RESPONSE)
             rs = TLM_OK_RESPONSE;
 

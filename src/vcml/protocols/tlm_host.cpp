@@ -27,7 +27,13 @@ unsigned int tlm_host::do_transport(tlm_target_socket& socket,
     m_payload  = &tx;
     m_sideband = &info;
 
+    if (tx.get_response_status() != TLM_INCOMPLETE_RESPONSE)
+        VCML_ERROR("invalid in-bound transaction response status");
+
     unsigned int n = transport(socket, tx, info);
+
+    if (tx.get_response_status() == TLM_INCOMPLETE_RESPONSE)
+        VCML_ERROR("invalid out-bound transaction response status");
 
     m_payload  = nullptr;
     m_sideband = nullptr;
