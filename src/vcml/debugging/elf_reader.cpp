@@ -32,9 +32,7 @@ struct elf32_traits {
     typedef Elf32_Sym Elf_Sym;
 
     static Elf_Ehdr* elf_getehdr(Elf* elf) { return elf32_getehdr(elf); }
-
     static Elf_Phdr* elf_getphdr(Elf* elf) { return elf32_getphdr(elf); }
-
     static Elf_Shdr* elf_getshdr(Elf_Scn* scn) { return elf32_getshdr(scn); }
 };
 
@@ -45,9 +43,7 @@ struct elf64_traits {
     typedef Elf64_Sym Elf_Sym;
 
     static Elf_Ehdr* elf_getehdr(Elf* elf) { return elf64_getehdr(elf); }
-
     static Elf_Phdr* elf_getphdr(Elf* elf) { return elf64_getphdr(elf); }
-
     static Elf_Shdr* elf_getshdr(Elf_Scn* scn) { return elf64_getshdr(scn); }
 };
 
@@ -81,7 +77,8 @@ static endianess elf_endianess(Elf* elf) {
 template <typename T>
 static vector<elf_segment> elf_segments(Elf* elf) {
     size_t count = 0;
-    int err      = elf_getphdrnum(elf, &count);
+
+    int err = elf_getphdrnum(elf, &count);
     if (err)
         VCML_ERROR("elf_begin failed: %s", elf_errmsg(err));
 
@@ -108,11 +105,11 @@ void elf_reader::read_sections(ELF* elf) {
         if (shdr->sh_type != SHT_SYMTAB)
             continue;
 
-        Elf_Data* data            = elf_getdata(scn, nullptr);
-        size_t num_symbols        = shdr->sh_size / shdr->sh_entsize;
-        typename T::Elf_Sym* syms = (typename T::Elf_Sym*)(data->d_buf);
+        Elf_Data* data = elf_rawdata(scn, nullptr);
+        size_t numsyms = shdr->sh_size / shdr->sh_entsize;
 
-        for (size_t i = 0; i < num_symbols; i++) {
+        typename T::Elf_Sym* syms = (typename T::Elf_Sym*)(data->d_buf);
+        for (size_t i = 0; i < numsyms; i++) {
             if (syms[i].st_size == 0)
                 continue;
 
