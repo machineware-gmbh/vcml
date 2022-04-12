@@ -119,20 +119,19 @@ backend_term::~backend_term() {
     singleton = nullptr;
 }
 
-bool backend_term::read(u8& val) {
+bool backend_term::read(u8& value) {
     if (m_signal != 0) {
-        val      = (u8)m_signal;
+        value    = (u8)m_signal;
         m_signal = 0;
         return true;
     }
 
+    lock_guard<mutex> guard(m_fifo_mtx);
     if (m_fifo.empty())
         return false;
 
-    lock_guard<mutex> guard(m_fifo_mtx);
-    val = m_fifo.front();
+    value = m_fifo.front();
     m_fifo.pop();
-
     return true;
 }
 
