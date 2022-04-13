@@ -626,8 +626,9 @@ sc_process_b* current_method() {
 }
 
 bool sim_running() {
-    sc_simcontext* simc = sc_get_curr_simcontext();
-    switch (simc->get_status()) {
+    sc_simcontext* simc             = sc_get_curr_simcontext();
+    const sc_core::sc_status status = simc->get_status();
+    switch (status) {
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
     case sc_core::SC_END_OF_UPDATE:
         return true;
@@ -635,7 +636,7 @@ bool sim_running() {
         return true;
 #endif
     default:
-        return simc->get_status() < sc_core::SC_STOPPED;
+        return status < sc_core::SC_STOPPED;
     }
 }
 
