@@ -105,7 +105,7 @@ void elf_reader::read_sections(ELF* elf) {
         if (shdr->sh_type != SHT_SYMTAB)
             continue;
 
-        Elf_Data* data = elf_rawdata(scn, nullptr);
+        Elf_Data* data = elf_getdata(scn, nullptr);
         size_t numsyms = shdr->sh_size / shdr->sh_entsize;
 
         typename T::Elf_Sym* syms = (typename T::Elf_Sym*)(data->d_buf);
