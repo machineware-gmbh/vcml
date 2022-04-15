@@ -8,9 +8,10 @@ features, such as TLM sockets, Interrupt ports, I/O peripherals and registers.
 Based on these design primitives, TLM models for frequently deployed components
 are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
-[![Build Status](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml)
-[![ASAN Status](https://github.com/janweinstock/vcml/actions/workflows/asan.yml/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/asan.yml)
-[![Lint Status](https://github.com/janweinstock/vcml/actions/workflows/lint.yml/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/lint.yml)
+[![Build Status](https://github.com/janweinstock/vcml/workflows/cmake/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/cmake.yml)
+[![Sanitizer Status](https://github.com/janweinstock/vcml/workflows/asan/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/asan.yml)
+[![Lint Status](https://github.com/janweinstock/vcml/workflows/lint/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/lint.yml)
+[![Code Style](https://github.com/janweinstock/vcml/workflows/style/badge.svg?event=push)](https://github.com/janweinstock/vcml/actions/workflows/style.yml)
 
 ----
 ## Build & Installation
