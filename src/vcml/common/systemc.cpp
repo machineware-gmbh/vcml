@@ -224,6 +224,8 @@ public:
     virtual void write_comment(const std::string& comment) override {}
     virtual void set_time_unit(double v, sc_core::sc_time_unit tu) override {}
 
+    atomic<bool> sim_running;
+
     const bool use_phase_callbacks;
 
     mutex mtx;
@@ -232,6 +234,7 @@ public:
 
     vector<function<void(void)>> end_of_elab;
     vector<function<void(void)>> start_of_sim;
+    vector<function<void(void)>> end_of_sim;
 
     vector<function<void(void)>> deltas;
     vector<function<void(void)>> tsteps;
@@ -307,10 +310,12 @@ public:
     helper_module(const char* nm):
         sc_core::sc_trace_file(),
         sc_core::sc_prim_channel(nm),
+        sim_running(true),
         use_phase_callbacks(kernel_has_phase_callbacks()),
         mtx(),
         end_of_elab(),
         start_of_sim(),
+        end_of_sim(),
         deltas(),
         tsteps(),
         timeout_event("timeout_ev"),
@@ -375,12 +380,21 @@ protected:
     }
 
     virtual void end_of_elaboration() override {
+        sim_running = true;
+
         for (auto& func : end_of_elab)
             func();
     }
 
     virtual void start_of_simulation() override {
         for (auto& func : start_of_sim)
+            func();
+    }
+
+    virtual void end_of_simulation() override {
+        sim_running = false;
+
+        for (auto& func : end_of_sim)
             func();
     }
 };
@@ -626,18 +640,8 @@ sc_process_b* current_method() {
 }
 
 bool sim_running() {
-    sc_simcontext* simc             = sc_get_curr_simcontext();
-    const sc_core::sc_status status = simc->get_status();
-    switch (status) {
-#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
-    case sc_core::SC_END_OF_UPDATE:
-        return true;
-    case sc_core::SC_BEFORE_TIMESTEP:
-        return true;
-#endif
-    default:
-        return status < sc_core::SC_STOPPED;
-    }
+    return sc_core::sc_is_running();
+    return helper_module::instance().sim_running;
 }
 
 } // namespace vcml
@@ -649,22 +653,22 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
     is >> str;
     str = vcml::to_lower(str);
 
-    char* endptr        = nullptr;
-    sc_dt::uint64 value = strtoul(str.c_str(), &endptr, 0);
-    double fval         = value;
+    char* endptr      = nullptr;
+    sc_dt::uint64 val = strtoul(str.c_str(), &endptr, 0);
+    double float_val  = val;
 
     if (strcmp(endptr, "ps") == 0)
-        t = sc_time(fval, sc_core::SC_PS);
+        t = sc_time(float_val, sc_core::SC_PS);
     else if (strcmp(endptr, "ns") == 0)
-        t = sc_time(fval, sc_core::SC_NS);
+        t = sc_time(float_val, sc_core::SC_NS);
     else if (strcmp(endptr, "us") == 0)
-        t = sc_time(fval, sc_core::SC_US);
+        t = sc_time(float_val, sc_core::SC_US);
     else if (strcmp(endptr, "ms") == 0)
-        t = sc_time(fval, sc_core::SC_MS);
+        t = sc_time(float_val, sc_core::SC_MS);
     else if (strcmp(endptr, "s") == 0)
-        t = sc_time(fval, sc_core::SC_SEC);
+        t = sc_time(float_val, sc_core::SC_SEC);
     else
-        t = ::vcml::time_from_value(value);
+        t = ::vcml::time_from_value(val);
 
     return is;
 }
