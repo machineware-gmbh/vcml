@@ -149,7 +149,7 @@ setup* setup::instance() {
 }
 
 int main(int argc, char** argv) {
-    int res = 0;
+    ensure_setup_helper();
     setup s(argc, argv);
 
 #ifndef VCML_DEBUG
@@ -158,14 +158,14 @@ int main(int argc, char** argv) {
                                             sc_core::SC_DO_NOTHING);
 #endif
 
+    int res = EXIT_FAILURE;
+
     try {
         res = sc_core::sc_elab_and_sim(argc, argv);
     } catch (vcml::report& rep) {
         log.error(rep);
-        res = EXIT_FAILURE;
     } catch (std::exception& ex) {
         log.error(ex);
-        res = EXIT_FAILURE;
     }
 
     // at this point sc_is_running is false and no new critical sections

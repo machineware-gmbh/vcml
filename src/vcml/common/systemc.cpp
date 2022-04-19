@@ -399,6 +399,13 @@ protected:
     }
 };
 
+void ensure_setup_helper() {
+    // just make sure the helper module exists, we cannot do that anymore after
+    // simulation has started
+    helper_module& helper = helper_module::instance();
+    (void)helper;
+}
+
 void on_next_update(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
