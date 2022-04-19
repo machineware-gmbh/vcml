@@ -47,7 +47,7 @@ void backend_term::handle_sigint(int sig) {
     double now = realtime();
     if ((now - m_time) < 1.0) {
         tcsetattr(STDIN_FILENO, TCSANOW, &m_termios);
-        if (m_stopped || m_exit || !sc_core::sc_is_running()) {
+        if (m_stopped || m_exit || !sim_running()) {
             cleanup();
             exit(EXIT_SUCCESS);
         } else {
