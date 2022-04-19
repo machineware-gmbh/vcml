@@ -22,6 +22,7 @@ macro(core_test test)
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
     add_test(NAME core/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
+    set_tests_properties(core/${test} PROPERTIES ENVIRONMENT "${VCML_ENVVAR}")
     set_tests_properties(core/${test} PROPERTIES TIMEOUT 4)
 endmacro()
 
