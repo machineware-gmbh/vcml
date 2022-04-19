@@ -301,10 +301,14 @@ public:
     void update() override {
         update_timer();
 
-        lock_guard<mutex> guard(mtx);
-        for (auto& fn : next_update)
+        vector<function<void(void)>> curr_update;
+
+        mtx.lock();
+        std::swap(curr_update, next_update);
+        mtx.unlock();
+
+        for (auto& fn : curr_update)
             fn();
-        next_update.clear();
     }
 
     helper_module(const char* nm):
