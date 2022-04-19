@@ -23,12 +23,12 @@
 namespace vcml {
 
 struct thctl {
-    std::thread::id sysc_thread;
-    std::thread::id curr_owner;
+    thread::id sysc_thread;
+    thread::id curr_owner;
 
-    std::mutex mutex;
-    std::atomic<size_t> nwaiting;
-    std::condition_variable_any notify;
+    mutex mtx;
+    atomic<size_t> nwaiting;
+    condition_variable_any notify;
 
     thctl();
     ~thctl() = default;
@@ -45,11 +45,10 @@ struct thctl {
 thctl::thctl():
     sysc_thread(std::this_thread::get_id()),
     curr_owner(sysc_thread),
-    mutex(),
+    mtx(),
     nwaiting(0),
     notify() {
-    mutex.lock();
-    on_each_delta_cycle(std::bind(&thctl::suspend, this));
+    mtx.lock();
 }
 
 inline bool thctl::is_sysc_thread() const {
@@ -65,9 +64,13 @@ inline void thctl::enter_critical() {
         VCML_ERROR("SystemC thread must not enter critical sections");
     if (is_in_critical())
         VCML_ERROR("thread already in critical section");
+    if (!sim_running())
+        return;
 
-    nwaiting++;
-    mutex.lock();
+    if (nwaiting++ == 0)
+        on_next_update([]() -> void { thctl_suspend(); });
+
+    mtx.lock();
     curr_owner = std::this_thread::get_id();
 }
 
@@ -75,8 +78,11 @@ inline void thctl::exit_critical() {
     if (curr_owner != std::this_thread::get_id())
         VCML_ERROR("thread not in critical section");
 
-    curr_owner = std::thread::id();
-    mutex.unlock();
+    if (!sim_running())
+        return;
+
+    curr_owner = thread::id();
+    mtx.unlock();
 
     if (--nwaiting == 0)
         notify.notify_all();
@@ -89,7 +95,7 @@ void thctl::suspend() {
     if (nwaiting == 0)
         return;
 
-    notify.wait(mutex, [&]() -> bool { return nwaiting == 0; });
+    notify.wait(mtx, [&]() -> bool { return nwaiting == 0; });
 
     curr_owner = sysc_thread;
 }
@@ -105,13 +111,11 @@ bool thctl_is_in_critical() {
 }
 
 void thctl_enter_critical() {
-    if (sim_running())
-        g_thctl.enter_critical();
+    g_thctl.enter_critical();
 }
 
 void thctl_exit_critical() {
-    if (sim_running())
-        g_thctl.exit_critical();
+    g_thctl.exit_critical();
 }
 
 void thctl_suspend() {
