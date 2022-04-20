@@ -40,6 +40,8 @@ struct thctl {
     void exit_critical();
 
     void suspend();
+
+    static thctl& instance();
 };
 
 thctl::thctl():
@@ -100,26 +102,32 @@ void thctl::suspend() {
     curr_owner = sysc_thread;
 }
 
-thctl g_thctl;
+thctl& thctl::instance() {
+    static thctl singleton;
+    return singleton;
+}
+
+// need to make sure thctl gets created on the main (aka SystemC) thread
+thctl& g_thctl = thctl::instance();
 
 bool thctl_is_sysc_thread() {
-    return g_thctl.is_sysc_thread();
+    return thctl::instance().is_sysc_thread();
 }
 
 bool thctl_is_in_critical() {
-    return g_thctl.is_in_critical();
+    return thctl::instance().is_in_critical();
 }
 
 void thctl_enter_critical() {
-    g_thctl.enter_critical();
+    thctl::instance().enter_critical();
 }
 
 void thctl_exit_critical() {
-    g_thctl.exit_critical();
+    thctl::instance().exit_critical();
 }
 
 void thctl_suspend() {
-    g_thctl.suspend();
+    thctl::instance().suspend();
 }
 
 } // namespace vcml
