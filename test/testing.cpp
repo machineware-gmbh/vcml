@@ -98,7 +98,6 @@ string get_resource_path(const string& name) {
 
 extern "C" int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
-    ::vcml::ensure_setup_helper();
     ::vcml::report::report_segfaults();
     ::vcml::broker_arg broker(argc, argv);
     ::sc_core::sc_report_handler::set_handler(systemc_report_handler);

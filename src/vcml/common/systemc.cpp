@@ -337,7 +337,7 @@ public:
         opts.spawn_method();
         opts.set_sensitivity(&timeout_event);
         opts.dont_initialize();
-        sc_spawn([&]() -> void { run_timer(); }, "$$$timer$$$", &opts);
+        sc_spawn([&]() -> void { run_timer(); }, "$$$$vcml_timer$$$$", &opts);
     }
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
@@ -368,7 +368,7 @@ public:
     }
 
     static helper_module& instance() {
-        static helper_module helper("$$$vcml_helper_module$$$");
+        static helper_module helper("$$$$vcml_helper_module$$$$");
         return helper;
     }
 
@@ -403,12 +403,9 @@ protected:
     }
 };
 
-void ensure_setup_helper() {
-    // just make sure the helper module exists, we cannot do that anymore after
-    // simulation has started
-    helper_module& helper = helper_module::instance();
-    (void)helper;
-}
+// just make sure the helper module exists at some point during initialization,
+// since we cannot do that anymore after simulation has started
+helper_module& g_helper = helper_module::instance();
 
 void on_next_update(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
@@ -469,7 +466,7 @@ void timer::reset(const sc_time& delta) {
     m_event->owner   = this;
     m_event->timeout = m_timeout = sc_time_stamp() + delta;
 
-    helper_module::instance().add_timer(m_event);
+    g_helper.add_timer(m_event);
 }
 
 thread_local struct async_worker* g_async = nullptr;
@@ -651,8 +648,7 @@ sc_process_b* current_method() {
 }
 
 bool sim_running() {
-    return sc_core::sc_is_running();
-    return helper_module::instance().sim_running;
+    return g_helper.sim_running;
 }
 
 } // namespace vcml

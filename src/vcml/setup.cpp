@@ -149,14 +149,13 @@ setup* setup::instance() {
 }
 
 int main(int argc, char** argv) {
-    ensure_setup_helper();
-    setup s(argc, argv);
-
 #ifndef VCML_DEBUG
     // disable deprecated warning for release builds
     sc_core::sc_report_handler::set_actions("/IEEE_Std_1666/deprecated",
                                             sc_core::SC_DO_NOTHING);
 #endif
+
+    setup env(argc, argv);
 
     int res = EXIT_FAILURE;
 
