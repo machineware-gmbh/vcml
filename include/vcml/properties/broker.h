@@ -71,6 +71,16 @@ inline void broker::define(const string& key, const T& value) {
     define(key, to_string(value));
 }
 
+template <>
+inline void broker::define(const string& key, const string& value) {
+    if (!key.empty()) {
+        struct value val;
+        val.value     = value;
+        val.uses      = 0;
+        m_values[key] = val;
+    }
+}
+
 template <typename T>
 inline broker* broker::init(const string& key, T& value) {
     string str;

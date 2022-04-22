@@ -53,16 +53,6 @@ bool broker::defines(const string& key) const {
 }
 
 template <>
-void broker::define(const string& key, const string& value) {
-    if (!key.empty()) {
-        struct value val;
-        val.value     = value;
-        val.uses      = 0;
-        m_values[key] = val;
-    }
-}
-
-template <>
 broker* broker::init(const string& name, string& value) {
     for (auto broker : g_brokers)
         if (broker->lookup(name, value))
