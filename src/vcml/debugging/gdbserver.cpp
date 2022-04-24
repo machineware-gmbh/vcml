@@ -358,8 +358,9 @@ string gdbserver::handle_mem_read(const char* command) {
     ss << std::hex << std::setfill('0');
 
     u8 buffer[BUFFER_SIZE];
+    memset(buffer, 0xff, sizeof(buffer));
     if (m_target.read_vmem_dbg(addr, buffer, size) != size)
-        return ERR_UNKNOWN;
+        log_warn("failed to read 0x%llx..0x%llx", addr, addr + size - 1);
 
     for (unsigned int i = 0; i < size; i++)
         ss << std::setw(2) << (int)buffer[i];
