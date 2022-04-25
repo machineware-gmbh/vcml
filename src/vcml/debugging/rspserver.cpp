@@ -53,10 +53,10 @@ static inline char int2char(int h) {
 }
 
 rspserver::rspserver(u16 port):
-    m_echo(false),
     m_sock(port),
     m_port(m_sock.port()),
     m_name(mkstr("rsp_%hu", m_port)),
+    m_echo(false),
     m_running(false),
     m_mutex(),
     m_thread(),

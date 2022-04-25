@@ -35,12 +35,12 @@ public:
     typedef function<string(const char*)> handler;
 
 private:
-    bool m_echo;
     socket m_sock;
     u16 m_port;
 
     string m_name;
 
+    atomic<bool> m_echo;
     atomic<bool> m_running;
 
     mutex m_mutex;
