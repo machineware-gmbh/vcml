@@ -328,7 +328,7 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     m_parent(hierarchy_search<module>()),
     m_adapter(nullptr),
     trace(this, "trace", false),
-    trace_errors(this, "trace_errros", false),
+    trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),
     as(a) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
