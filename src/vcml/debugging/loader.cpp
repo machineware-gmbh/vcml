@@ -187,18 +187,15 @@ loader::loader(const string& name): m_name(name) {
 
     module* m = dynamic_cast<module*>(find_object(name));
     if (m != nullptr) {
-        m->register_command(
-            "load", 1, this, &loader::cmd_load,
-            "load <image> [offset] to load the contents of file <image> "
-            "to memory with an optional offset");
-        m->register_command(
-            "load_bin", 1, this, &loader::cmd_load_bin,
-            "load_bin <image> [offset] to load the binary file <image> "
-            "to memory with an optional offset");
-        m->register_command(
-            "load_elf", 1, this, &loader::cmd_load_elf,
-            "load_elf <image> [offset] to load the ELF file <image> "
-            "to memory with an optional offset");
+        m->register_command("load", 1, this, &loader::cmd_load,
+                            "load <image> [offset] to load the contents of "
+                            "file <image> to memory with an optional offset");
+        m->register_command("load_bin", 1, this, &loader::cmd_load_bin,
+                            "load_bin <image> [offset] to load the binary "
+                            "file <image> to memory with an optional offset");
+        m->register_command("load_elf", 1, this, &loader::cmd_load_elf,
+                            "load_elf <image> [offset] to load the ELF "
+                            "file <image> to memory with an optional offset");
     }
 }
 

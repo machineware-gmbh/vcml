@@ -95,10 +95,8 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
 
     map_dmi(m_memory);
 
-    register_command(
-        "show", 2, this, &memory::cmd_show,
-        "show memory contents between addresses [start] and [end]. "
-        "usage: show [start] [end]");
+    register_command("show", 2, this, &memory::cmd_show,
+                     "show [start] [end] to print memory contents");
 }
 
 memory::~memory() {
