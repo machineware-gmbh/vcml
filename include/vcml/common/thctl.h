@@ -31,6 +31,10 @@ void thctl_enter_critical();
 void thctl_exit_critical();
 void thctl_suspend();
 
+void thctl_yield();
+void thctl_notify();
+void thctl_block();
+
 class thctl_guard
 {
 private:

@@ -26,9 +26,9 @@ struct thctl {
     thread::id sysc_thread;
     thread::id curr_owner;
 
-    mutex mtx;
+    mutex sysc_mutex;
     atomic<size_t> nwaiting;
-    condition_variable_any notify;
+    condition_variable_any cvar;
 
     thctl();
     ~thctl() = default;
@@ -39,6 +39,10 @@ struct thctl {
     void enter_critical();
     void exit_critical();
 
+    void yield();
+    void notify();
+    void block();
+
     void suspend();
 
     static thctl& instance();
@@ -47,21 +51,21 @@ struct thctl {
 thctl::thctl():
     sysc_thread(std::this_thread::get_id()),
     curr_owner(sysc_thread),
-    mtx(),
+    sysc_mutex(),
     nwaiting(0),
-    notify() {
-    mtx.lock();
+    cvar() {
+    sysc_mutex.lock();
 }
 
-inline bool thctl::is_sysc_thread() const {
+bool thctl::is_sysc_thread() const {
     return std::this_thread::get_id() == sysc_thread;
 }
 
-inline bool thctl::is_in_critical() const {
+bool thctl::is_in_critical() const {
     return std::this_thread::get_id() == curr_owner;
 }
 
-inline void thctl::enter_critical() {
+void thctl::enter_critical() {
     if (is_sysc_thread())
         VCML_ERROR("SystemC thread must not enter critical sections");
     if (is_in_critical())
@@ -69,14 +73,17 @@ inline void thctl::enter_critical() {
     if (!sim_running())
         return;
 
-    if (nwaiting++ == 0)
-        on_next_update([]() -> void { thctl_suspend(); });
+    bool first = nwaiting++ == 0;
+    if (!sysc_mutex.try_lock()) {
+        if (first)
+            on_next_update([]() -> void { thctl_suspend(); });
+        sysc_mutex.lock();
+    }
 
-    mtx.lock();
     curr_owner = std::this_thread::get_id();
 }
 
-inline void thctl::exit_critical() {
+void thctl::exit_critical() {
     if (curr_owner != std::this_thread::get_id())
         VCML_ERROR("thread not in critical section");
 
@@ -84,10 +91,32 @@ inline void thctl::exit_critical() {
         return;
 
     curr_owner = thread::id();
-    mtx.unlock();
+    sysc_mutex.unlock();
+
+    notify();
+}
+
+void thctl::yield() {
+    VCML_ERROR_ON(!is_sysc_thread(), "only SystemC thread can yield");
+
+    nwaiting++;
+    suspend();
+}
+
+void thctl::notify() {
+    size_t before = nwaiting;
 
     if (--nwaiting == 0)
-        notify.notify_all();
+        cvar.notify_all();
+
+    // this can happen if you call notify without calling enter/yield before
+    if (nwaiting > before)
+        VCML_ERROR("underflow on number of waiting threads");
+}
+
+void thctl::block() {
+    VCML_ERROR_ON(is_sysc_thread(), "cannot block SystemC thread");
+    lock_guard<mutex> l(sysc_mutex);
 }
 
 void thctl::suspend() {
@@ -97,7 +126,7 @@ void thctl::suspend() {
     if (nwaiting == 0)
         return;
 
-    notify.wait(mtx, [&]() -> bool { return nwaiting == 0; });
+    cvar.wait(sysc_mutex, [&]() -> bool { return nwaiting == 0; });
 
     curr_owner = sysc_thread;
 }
@@ -128,6 +157,18 @@ void thctl_exit_critical() {
 
 void thctl_suspend() {
     thctl::instance().suspend();
+}
+
+void thctl_yield() {
+    thctl::instance().yield();
+}
+
+void thctl_notify() {
+    thctl::instance().notify();
+}
+
+void thctl_block() {
+    thctl::instance().block();
 }
 
 } // namespace vcml

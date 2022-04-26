@@ -30,9 +30,6 @@ struct suspend_manager {
     atomic<bool> is_quitting;
     atomic<bool> is_suspended;
 
-    mutable mutex sysc_lock;
-    condition_variable_any sysc_notify;
-
     mutable mutex suspender_lock;
     vector<suspender*> suspenders;
 
@@ -74,7 +71,7 @@ void suspend_manager::request_resume(suspender* s) {
     lock_guard<mutex> guard(suspender_lock);
     stl_remove_erase(suspenders, s);
     if (suspenders.empty())
-        sysc_notify.notify_all();
+        thctl_notify();
 }
 
 bool suspend_manager::is_suspending(const suspender* s) const {
@@ -88,11 +85,6 @@ size_t suspend_manager::count() const {
 }
 
 suspender* suspend_manager::current() const {
-    if (!sysc_lock.try_lock())
-        return nullptr;
-
-    sysc_lock.unlock();
-
     lock_guard<mutex> guard(suspender_lock);
     if (suspenders.empty())
         return nullptr;
@@ -106,7 +98,7 @@ void suspend_manager::quit() {
 
     is_quitting = true;
     suspenders.clear();
-    sysc_notify.notify_all();
+    thctl_notify();
 }
 
 void suspend_manager::notify_suspend(sc_object* obj) {
@@ -144,20 +136,14 @@ void suspend_manager::handle_requests() {
     is_suspended = true;
     notify_suspend();
 
-    sysc_notify.wait(sysc_lock, [&]() -> bool { return count() == 0; });
+    thctl_yield();
 
     notify_resume();
     is_suspended = false;
 }
 
 suspend_manager::suspend_manager():
-    is_quitting(false),
-    is_suspended(false),
-    sysc_lock(),
-    sysc_notify(),
-    suspender_lock(),
-    suspenders() {
-    sysc_lock.lock();
+    is_quitting(false), is_suspended(false), suspender_lock(), suspenders() {
 }
 
 suspend_manager& suspend_manager::instance() {
@@ -186,9 +172,8 @@ void suspender::suspend(bool wait) {
     if (m_pcount++ == 0)
         manager.request_pause(this);
 
-    if (wait && !thctl_is_sysc_thread()) {
-        lock_guard<mutex> lock(manager.sysc_lock);
-    }
+    if (wait && !thctl_is_sysc_thread())
+        thctl_block();
 }
 
 void suspender::resume() {
