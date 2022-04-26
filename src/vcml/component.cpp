@@ -64,6 +64,7 @@ component::component(const sc_module_name& nm, bool dmi):
 
     SC_METHOD(reset_handler);
     sensitive << rst.pos();
+    dont_initialize();
 
     register_command("reset", 0, this, &component::cmd_reset,
                      "resets this component");
@@ -122,6 +123,11 @@ unsigned int component::transport(tlm_generic_payload& tx,
 
 void component::handle_clock_update(clock_t oldclk, clock_t newclk) {
     // to be overloaded
+}
+
+void component::end_of_elaboration() {
+    module::end_of_elaboration();
+    reset();
 }
 
 } // namespace vcml

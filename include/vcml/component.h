@@ -75,6 +75,9 @@ public:
                                    const tlm_sbi& sideband, address_space as);
 
     virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
+
+protected:
+    void end_of_elaboration() override;
 };
 
 inline sc_time component::clock_cycles(u64 num) const {
