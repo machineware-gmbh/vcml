@@ -27,3 +27,4 @@ race:sc_core::sc_time::sc_time
 # the async update list does not lock-protect its internal pending-requests
 # vector when checking if there are any pending requests via vector->size()
 race:sc_core::sc_prim_channel_registry::async_update_list::pending
+race:sc_core::sc_prim_channel_registry::async_update_list::append
