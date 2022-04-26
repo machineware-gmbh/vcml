@@ -136,7 +136,8 @@ void suspend_manager::handle_requests() {
     is_suspended = true;
     notify_suspend();
 
-    thctl_yield();
+    while (count() > 0)
+        thctl_suspend();
 
     notify_resume();
     is_suspended = false;
