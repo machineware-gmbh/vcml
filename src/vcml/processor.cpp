@@ -427,6 +427,8 @@ void processor::update_local_time(sc_time& local_time) {
 }
 
 void processor::end_of_elaboration() {
+    component::end_of_elaboration();
+
     for (auto it : irq) {
         irq_stats& stats  = m_irq_stats[it.first];
         stats.irq         = it.first;
