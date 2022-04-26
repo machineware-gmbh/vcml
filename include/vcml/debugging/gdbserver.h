@@ -53,7 +53,7 @@ private:
     target& m_target;
     const gdbarch* m_target_arch;
     string m_target_xml;
-    gdb_status m_status;
+    atomic<gdb_status> m_status;
     gdb_status m_default;
 
     vector<const cpureg*> m_cpuregs;
