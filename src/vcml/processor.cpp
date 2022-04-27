@@ -56,18 +56,19 @@ bool processor::cmd_dump(const vector<string>& args, ostream& os) {
 }
 
 bool processor::cmd_read(const vector<string>& args, ostream& os) {
-    tlm_initiator_socket& socket = (args[0] == "INSN") ? insn : data;
-    u64 start                    = strtoull(args[1].c_str(), NULL, 0);
-    u64 end                      = strtoull(args[2].c_str(), NULL, 0);
-    u64 size                     = end - start;
+    u64 start = strtoull(args[1].c_str(), NULL, 0);
+    u64 end   = strtoull(args[2].c_str(), NULL, 0);
+    u64 size  = end - start;
     if (end <= start) {
         os << "Usage: read <INSN|DATA> <start> <end>";
         return false;
     }
 
+    auto& socket = (to_lower(args[0]) == "insn") ? insn : data;
+
     tlm_response_status rs;
-    unsigned char* data = new unsigned char[size];
-    if (failed(rs = socket.read(start, data, size, SBI_DEBUG))) {
+    auto data = std::make_unique<u8[]>(size);
+    if (failed(rs = socket.read(start, data.get(), size, SBI_DEBUG))) {
         os << "Read request failed: " << tlm_response_to_str(rs);
         return false;
     }
@@ -87,7 +88,6 @@ bool processor::cmd_read(const vector<string>& args, ostream& os) {
         addr++;
     }
 
-    delete[] data;
     return true;
 }
 
@@ -192,10 +192,10 @@ bool processor::cmd_disas(const vector<string>& args, ostream& os) {
 }
 
 bool processor::cmd_v2p(const vector<string>& args, ostream& os) {
-    u64 phys     = -1;
-    u64 virt     = strtoull(args[0].c_str(), NULL, 0);
-    bool success = virt_to_phys(virt, phys);
-    if (!success) {
+    u64 phys = -1;
+    u64 virt = strtoull(args[0].c_str(), NULL, 0);
+    bool ret = virt_to_phys(virt, phys);
+    if (!ret) {
         os << "cannot translate virtual address 0x" << HEX(virt, 16);
         return false;
     } else {
@@ -224,7 +224,22 @@ bool processor::cmd_stack(const vector<string>& args, ostream& os) {
 }
 
 void processor::processor_thread() {
+    if (gdb_port >= 0) {
+        debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
+                                                : debugging::GDB_RUNNING;
+
+        m_gdb = new debugging::gdbserver(gdb_port, *this, status);
+        m_gdb->echo(gdb_echo);
+
+        if (gdb_port == 0)
+            gdb_port = m_gdb->port();
+
+        log_info("%s for GDB connection on port %hu",
+                 gdb_wait ? "waiting" : "listening", m_gdb->port());
+    }
+
     wait(SC_ZERO_TIME);
+
     while (true) {
         sc_time now = local_time_stamp();
 
@@ -437,20 +452,6 @@ void processor::end_of_elaboration() {
         stats.irq_last    = SC_ZERO_TIME;
         stats.irq_uptime  = SC_ZERO_TIME;
         stats.irq_longest = SC_ZERO_TIME;
-    }
-
-    if (gdb_port >= 0) {
-        debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
-                                                : debugging::GDB_RUNNING;
-
-        m_gdb = new debugging::gdbserver(gdb_port, *this, status);
-        m_gdb->echo(gdb_echo);
-
-        if (gdb_port == 0)
-            gdb_port = m_gdb->port();
-
-        log_info("%s for GDB connection on port %hu",
-                 gdb_wait ? "waiting" : "listening", m_gdb->port());
     }
 }
 
