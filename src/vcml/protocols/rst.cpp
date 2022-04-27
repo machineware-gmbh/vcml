@@ -44,7 +44,7 @@ ostream& operator<<(ostream& os, const rst_payload& rst) {
     return os;
 }
 
-rst_target::rst_target_sockets rst_target::all_rst_target_sockets(
+rst_host::rst_target_sockets rst_host::all_rst_target_sockets(
     address_space as) const {
     rst_target_sockets sockets;
     for (auto& socket : m_target_sockets)
@@ -89,7 +89,7 @@ void rst_base_target_socket::stub() {
 
 rst_initiator_socket::rst_initiator_socket(const char* nm, address_space as):
     rst_base_initiator_socket(nm, as),
-    m_host(dynamic_cast<rst_target*>(hierarchy_top())),
+    m_host(dynamic_cast<rst_host*>(hierarchy_top())),
     m_event(nullptr),
     m_state(false),
     m_transport(this) {
@@ -132,7 +132,7 @@ rst_initiator_socket& rst_initiator_socket::operator=(bool set) {
     return *this;
 }
 
-void rst_initiator_socket::rst_transport(rst_payload& rst) {
+void rst_initiator_socket::rst_transport(const rst_payload& rst) {
     trace_fw(rst);
     for (int i = 0; i < size(); i++)
         get_interface(i)->rst_transport(rst);
@@ -142,7 +142,7 @@ void rst_initiator_socket::rst_transport(rst_payload& rst) {
         m_event->notify(SC_ZERO_TIME);
 }
 
-void rst_target_socket::rst_transport(rst_payload& rst) {
+void rst_target_socket::rst_transport(const rst_payload& rst) {
     trace_fw(rst);
 
     if (rst.signal == RST_PULSE && rst.reset)
@@ -160,7 +160,7 @@ void rst_target_socket::rst_transport(rst_payload& rst) {
 
 rst_target_socket::rst_target_socket(const char* nm, address_space space):
     rst_base_target_socket(nm, space),
-    m_target(hierarchy_search<rst_target>()),
+    m_target(hierarchy_search<rst_host>()),
     m_event(nullptr),
     m_state(false),
     m_transport(this) {
@@ -189,7 +189,7 @@ rst_initiator_stub::rst_initiator_stub(const char* nm):
     rst_out.bind(*(rst_bw_transport_if*)this);
 }
 
-void rst_target_stub::rst_transport(rst_payload& rst) {
+void rst_target_stub::rst_transport(const rst_payload& rst) {
     // nothing to do
 }
 
@@ -210,7 +210,7 @@ void rst_initiator_adapter::update() {
 }
 
 rst_target_adapter::rst_target_adapter(const sc_module_name& nm):
-    module(nm), rst_target(), rst_in("rst_in"), rst_out("rst_out") {
+    module(nm), rst_host(), rst_in("rst_in"), rst_out("rst_out") {
 }
 
 void rst_target_adapter::rst_notify(const rst_target_socket& socket,

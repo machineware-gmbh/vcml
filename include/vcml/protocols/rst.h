@@ -56,7 +56,7 @@ class rst_fw_transport_if : public sc_core::sc_interface
 {
 public:
     typedef rst_payload protocol_types;
-    virtual void rst_transport(rst_payload& tx) = 0;
+    virtual void rst_transport(const rst_payload& tx) = 0;
 };
 
 class rst_bw_transport_if : public sc_core::sc_interface
@@ -70,7 +70,7 @@ class rst_target_socket;
 class rst_initiator_stub;
 class rst_target_stub;
 
-class rst_target
+class rst_host
 {
 public:
     friend class rst_initiator_socket;
@@ -84,9 +84,9 @@ public:
 
     rst_target_sockets all_rst_target_sockets(address_space as) const;
 
-    rst_target() = default;
+    rst_host() = default;
 
-    virtual ~rst_target() = default;
+    virtual ~rst_host() = default;
 
     virtual void rst_notify(const rst_target_socket&, const rst_payload&) = 0;
 
@@ -95,13 +95,13 @@ private:
     rst_target_sockets m_target_sockets;
 };
 
-inline const rst_target::rst_initiator_sockets&
-rst_target::all_rst_initiator_sockets() const {
+inline const rst_host::rst_initiator_sockets&
+rst_host::all_rst_initiator_sockets() const {
     return m_initiator_sockets;
 }
 
-inline const rst_target::rst_target_sockets&
-rst_target::all_rst_target_sockets() const {
+inline const rst_host::rst_target_sockets& rst_host::all_rst_target_sockets()
+    const {
     return m_target_sockets;
 }
 
@@ -173,7 +173,7 @@ public:
     rst_initiator_socket& operator=(bool set);
 
 private:
-    rst_target* m_host;
+    rst_host* m_host;
     sc_event* m_event;
 
     bool m_state;
@@ -184,7 +184,7 @@ private:
             rst_bw_transport_if(), socket(s) {}
     } m_transport;
 
-    void rst_transport(rst_payload& tx);
+    void rst_transport(const rst_payload& tx);
 };
 
 class rst_target_socket : public rst_base_target_socket
@@ -200,7 +200,7 @@ public:
     operator bool() const { return read(); }
 
 private:
-    rst_target* m_target;
+    rst_host* m_target;
     sc_event* m_event;
 
     bool m_state;
@@ -210,12 +210,12 @@ private:
         rst_fw_transport(rst_target_socket* s):
             rst_fw_transport_if(), socket(s) {}
 
-        virtual void rst_transport(rst_payload& tx) override {
+        virtual void rst_transport(const rst_payload& tx) override {
             socket->rst_transport(tx);
         }
     } m_transport;
 
-    void rst_transport(rst_payload& tx);
+    void rst_transport(const rst_payload& tx);
 };
 
 template <const size_t MAX_PORTS = SIZE_MAX>
@@ -236,7 +236,7 @@ public:
 class rst_target_stub : private rst_fw_transport_if
 {
 private:
-    virtual void rst_transport(rst_payload& tx) override;
+    virtual void rst_transport(const rst_payload& tx) override;
 
 public:
     rst_base_target_socket rst_in;
@@ -257,7 +257,7 @@ private:
     void update();
 };
 
-class rst_target_adapter : public module, public rst_target
+class rst_target_adapter : public module, public rst_host
 {
 public:
     rst_target_socket rst_in;

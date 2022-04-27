@@ -45,7 +45,7 @@ MATCHER_P2(rst_match_payload, sig, val, "Matches an rst payload") {
     return arg.signal == sig && arg.reset == val;
 }
 
-class rst_bench : public test_base, public rst_target
+class rst_bench : public test_base
 {
 public:
     rst_initiator_socket rst_out;
@@ -58,7 +58,6 @@ public:
 
     rst_bench(const sc_module_name& nm):
         test_base(nm),
-        rst_target(),
         rst_out("rst_out"),
         rst_out_h("rst_out_h"),
         rst_in_h("rst_in_h"),
