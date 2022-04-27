@@ -18,6 +18,7 @@
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/rst.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
@@ -35,6 +36,7 @@ size_t tracer_term::trace_curr_indent = 0;
 const char* tracer_term::colors[NUM_PROTOCOLS] = {
     /* [PROTO_TLM]    = */ "\x1B[35m", // magenta
     /* [PROTO_IRQ]    = */ "\x1B[33m", // yellow
+    /* [PROTO_RST]    = */ "\x1B[31m", // red
     /* [PROTO_PCI]    = */ "\x1B[36m", // cyan
     /* [PROTO_I2C]    = */ "\x1B[92m", // light green
     /* [PROTO_SPI]    = */ "\x1B[93m", // light yellow
@@ -92,6 +94,10 @@ void tracer_term::trace(const activity<tlm_generic_payload>& msg) {
 }
 
 void tracer_term::trace(const activity<irq_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<rst_payload>& msg) {
     do_trace(msg);
 }
 

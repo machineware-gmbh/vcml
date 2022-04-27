@@ -27,6 +27,8 @@ const char* protocol_name(protocol_kind kind) {
         return "TLM";
     case PROTO_IRQ:
         return "IRQ";
+    case PROTO_RST:
+        return "RST";
     case PROTO_PCI:
         return "PCI";
     case PROTO_I2C:

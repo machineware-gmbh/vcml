@@ -106,6 +106,7 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/tlm_sockets.cpp
     ${src}/vcml/protocols/tlm_memory.cpp
     ${src}/vcml/protocols/irq.cpp
+    ${src}/vcml/protocols/rst.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
     ${src}/vcml/protocols/i2c.cpp
@@ -158,7 +159,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/riscv/simdev.cpp)
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
-set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
+#set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
 set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
 set_target_properties(vcml PROPERTIES SOVERSION "${VCML_VERSION_MAJOR}")
 

@@ -28,6 +28,7 @@
 namespace vcml {
 
 struct irq_payload;
+struct rst_payload;
 struct pci_payload;
 struct i2c_payload;
 struct spi_payload;
@@ -52,6 +53,7 @@ inline bool is_backward_trace(trace_direction dir) {
 enum protocol_kind {
     PROTO_TLM,
     PROTO_IRQ,
+    PROTO_RST,
     PROTO_PCI,
     PROTO_I2C,
     PROTO_SPI,
@@ -73,6 +75,11 @@ struct protocol<tlm_generic_payload> {
 template <>
 struct protocol<irq_payload> {
     static constexpr protocol_kind KIND = PROTO_IRQ;
+};
+
+template <>
+struct protocol<rst_payload> {
+    static constexpr protocol_kind KIND = PROTO_RST;
 };
 
 template <>
@@ -121,6 +128,7 @@ public:
 
     virtual void trace(const activity<tlm_generic_payload>&) {}
     virtual void trace(const activity<irq_payload>&) {}
+    virtual void trace(const activity<rst_payload>&) {}
     virtual void trace(const activity<pci_payload>&) {}
     virtual void trace(const activity<i2c_payload>&) {}
     virtual void trace(const activity<spi_payload>&) {}
