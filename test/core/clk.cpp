@@ -25,14 +25,14 @@ TEST(clk, to_string) {
 
     stringstream ss1;
     ss1 << tx;
-    EXPECT_EQ(ss1.str(), "off -> 10Hz");
+    EXPECT_EQ(ss1.str(), "CLK [off->10Hz]");
 
     tx.oldhz = 10;
     tx.newhz = 0;
 
     stringstream ss2;
     ss2 << tx;
-    EXPECT_EQ(ss2.str(), "10Hz -> off");
+    EXPECT_EQ(ss2.str(), "CLK [10Hz->off]");
 }
 
 TEST(clk, result) {
@@ -52,7 +52,7 @@ MATCHER_P2(clk_match_payload, oldhz, newhz, "Matches a clk payload") {
     return arg.oldhz == oldhz && arg.newhz == newhz;
 }
 
-class clk_bench : public test_base, public clk_host
+class clk_bench : public test_base
 {
 public:
     clk_initiator_socket clk_out;
@@ -65,7 +65,6 @@ public:
 
     clk_bench(const sc_module_name& nm):
         test_base(nm),
-        clk_host(),
         clk_out("clk_out"),
         clk_out_h("clk_out_h"),
         clk_in_h("clk_in_h"),
@@ -109,7 +108,7 @@ public:
         EXPECT_EQ(clk_out, 100 * MHz) << "clk port did not update";
 
         // Setting same frequency should not trigger anything
-        EXPECT_CALL(*this, clk_notify(_,_)).Times(0);
+        EXPECT_CALL(*this, clk_notify(_, _)).Times(0);
         clk_out = 100 * MHz;
         EXPECT_EQ(clk_out, 100 * MHz) << "clk port changed unexpectedly";
 
