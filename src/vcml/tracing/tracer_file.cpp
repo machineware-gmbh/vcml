@@ -19,6 +19,7 @@
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
 #include "vcml/protocols/rst.h"
+#include "vcml/protocols/clk.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
@@ -56,6 +57,10 @@ void tracer_file::trace(const activity<irq_payload>& msg) {
 }
 
 void tracer_file::trace(const activity<rst_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<clk_payload>& msg) {
     do_trace(msg);
 }
 
