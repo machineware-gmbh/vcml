@@ -56,8 +56,11 @@ class clk_bw_transport_if : public sc_core::sc_interface
 {
 public:
     typedef clk_payload protocol_types;
+    virtual clock_t clk_get_hz() = 0;
 };
 
+class clk_base_initiator_socket;
+class clk_base_target_socket;
 class clk_initiator_socket;
 class clk_target_socket;
 class clk_initiator_stub;
@@ -118,6 +121,9 @@ public:
         return typeid(clk_bw_transport_if);
     }
 
+    using clk_base_initiator_socket_b::bind;
+    virtual void bind(clk_base_target_socket& socket);
+
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 };
@@ -132,12 +138,16 @@ public:
     virtual ~clk_base_target_socket();
     VCML_KIND(clk_base_target_socket);
 
+    using clk_base_target_socket_b::bind;
+    virtual void bind(clk_base_initiator_socket& other);
+    virtual void complete_binding(clk_base_initiator_socket& socket) {}
+
     virtual sc_core::sc_type_index get_protocol_types() const override {
         return typeid(clk_fw_transport_if);
     }
 
     bool is_stubbed() const { return m_stub != nullptr; }
-    void stub();
+    void stub(clock_t hz = 100 * MHz);
 };
 
 template <const size_t MAX_PORTS = SIZE_MAX>
@@ -161,6 +171,9 @@ public:
     operator clock_t() const { return get(); }
     clk_initiator_socket& operator=(clock_t hz);
 
+    sc_time cycle() const;
+    sc_time cycles(size_t n) const { return cycle() * n; }
+
 private:
     clk_host* m_host;
     clock_t m_hz;
@@ -169,10 +182,17 @@ private:
         clk_initiator_socket* socket;
         clk_bw_transport(clk_initiator_socket* s):
             clk_bw_transport_if(), socket(s) {}
+        clock_t clk_get_hz() override { return socket->get(); }
     } m_transport;
 
     void clk_transport(const clk_payload& tx);
 };
+
+inline sc_time clk_initiator_socket::cycle() const {
+    if (m_hz == 0)
+        return SC_ZERO_TIME;
+    return sc_time(1.0 / m_hz, SC_SEC);
+}
 
 class clk_target_socket : public clk_base_target_socket
 {
@@ -181,12 +201,18 @@ public:
     virtual ~clk_target_socket();
     VCML_KIND(clk_target_socket);
 
-    clock_t read() const { return m_hz; }
+    using clk_base_target_socket::bind;
+    virtual void bind(clk_base_target_socket& other);
+    virtual void complete_binding(clk_base_initiator_socket& socket) override;
+
+    clock_t read() const;
     operator clock_t() const { return read(); }
+
+    sc_time cycle() const;
+    sc_time cycles(size_t n) const { return cycle() * n; }
 
 private:
     clk_host* m_host;
-    clock_t m_hz;
 
     struct clk_fw_transport : public clk_fw_transport_if {
         clk_target_socket* socket;
@@ -197,6 +223,9 @@ private:
             socket->clk_transport(tx);
         }
     } m_transport;
+
+    clk_base_initiator_socket* m_initiator;
+    vector<clk_base_target_socket*> m_targets;
 
     void clk_transport(const clk_payload& tx);
 };
@@ -210,9 +239,14 @@ using clk_target_socket_array = socket_array<clk_target_socket, MAX_PORTS>;
 
 class clk_initiator_stub : private clk_bw_transport_if
 {
+private:
+    clock_t m_hz;
+
+    virtual clock_t clk_get_hz() override { return m_hz; }
+
 public:
     clk_base_initiator_socket clk_out;
-    clk_initiator_stub(const char* nm);
+    clk_initiator_stub(const char* nm, clock_t hz);
     virtual ~clk_initiator_stub() = default;
 };
 

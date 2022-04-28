@@ -71,12 +71,23 @@ public:
         clk_in("clk_in"),
         clk_array_out("clk_array_out"),
         clk_array_in("clk_array_in") {
+        EXPECT_FALSE(clk_out.is_bound());
+        EXPECT_FALSE(clk_out_h.is_bound());
+        EXPECT_FALSE(clk_in_h.is_bound());
+        EXPECT_FALSE(clk_in.is_bound());
         clk_out.bind(clk_out_h);
         clk_in_h.bind(clk_in);
         clk_out_h.bind(clk_in_h);
-
+        EXPECT_TRUE(clk_out.is_bound());
+        EXPECT_TRUE(clk_out_h.is_bound());
+        EXPECT_TRUE(clk_in_h.is_bound());
+        EXPECT_TRUE(clk_in.is_bound());
+        EXPECT_FALSE(clk_array_out[5].is_stubbed());
+        EXPECT_FALSE(clk_array_in[6].is_stubbed());
         clk_array_out[5].stub();
-        clk_array_in[6].stub();
+        clk_array_in[6].stub(0);
+        EXPECT_TRUE(clk_array_out[5].is_stubbed());
+        EXPECT_TRUE(clk_array_in[6].is_stubbed());
 
         // test binding multiple targets to one initiator
         clk_out.bind(clk_array_in[6]);
@@ -98,6 +109,7 @@ public:
         EXPECT_EQ(clk_out, 0 * Hz);
         EXPECT_EQ(clk_in, 0 * Hz);
         EXPECT_EQ(clk_array_in[6], 0 * Hz);
+        EXPECT_EQ(clk_out.cycle(), SC_ZERO_TIME);
 
         // Turn on clock, make sure events trigger
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_in"),
@@ -106,6 +118,8 @@ public:
                                       clk_match_payload(0, 100 * MHz)));
         clk_out = 100 * MHz;
         EXPECT_EQ(clk_out, 100 * MHz) << "clk port did not update";
+        EXPECT_EQ(clk_out.cycle(), sc_time(10, SC_NS)) << "wrong cycle";
+        EXPECT_EQ(clk_out.cycles(2), sc_time(20, SC_NS)) << "wrong cycles";
 
         // Setting same frequency should not trigger anything
         EXPECT_CALL(*this, clk_notify(_, _)).Times(0);
