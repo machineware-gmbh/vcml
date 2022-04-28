@@ -42,15 +42,15 @@ public:
         dbus.bind(loader.data);
         dbus.bind(dmem.in, { 0x601000, 0x601fff });
 
-        imem.clk.bind(clk);
-        dmem.clk.bind(clk);
-        ibus.clk.bind(clk);
-        dbus.clk.bind(clk);
+        clk.bind(imem.clk);
+        clk.bind(dmem.clk);
+        clk.bind(ibus.clk);
+        clk.bind(dbus.clk);
 
-        imem.rst.bind(rst);
-        dmem.rst.bind(rst);
-        ibus.rst.bind(rst);
-        dbus.rst.bind(rst);
+        rst.bind(imem.rst);
+        rst.bind(dmem.rst);
+        rst.bind(ibus.rst);
+        rst.bind(dbus.rst);
     }
 
     virtual void run_test() override {

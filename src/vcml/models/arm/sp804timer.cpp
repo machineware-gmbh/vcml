@@ -179,11 +179,11 @@ sp804timer::sp804timer(const sc_module_name& nm):
     timer1.irq.bind(irq1);
     timer2.irq.bind(irq2);
 
-    timer1.clk.bind(clk);
-    timer2.clk.bind(clk);
+    clk.bind(timer1.clk);
+    clk.bind(timer2.clk);
 
-    timer1.rst.bind(rst);
-    timer2.rst.bind(rst);
+    rst.bind(timer1.rst);
+    rst.bind(timer2.rst);
 }
 
 sp804timer::~sp804timer() {

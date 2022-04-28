@@ -23,6 +23,8 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
+#include "vcml/protocols/clk.h"
+
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
@@ -32,13 +34,14 @@ namespace generic {
 class clock : public module
 {
 public:
-    property<clock_t> freq;
-    out_port<clock_t> clk;
+    property<clock_t> hz;
+    clk_initiator_socket clk;
 
-    clock()             = delete;
+    clock() = delete;
+
     clock(const clock&) = delete;
 
-    clock(const sc_module_name& nm, clock_t init_freq);
+    clock(const sc_module_name& nm, clock_t hz);
     virtual ~clock();
     VCML_KIND(clock);
 

@@ -30,7 +30,7 @@ reset::~reset() {
 }
 
 void reset::end_of_elaboration() {
-    rst.write(state);
+    rst = state;
 }
 
 } // namespace generic

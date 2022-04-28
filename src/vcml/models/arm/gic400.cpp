@@ -21,7 +21,7 @@
 namespace vcml {
 namespace arm {
 
-static inline bool is_software_interrupt(unsigned int irq) {
+constexpr bool is_software_interrupt(unsigned int irq) {
     return irq < gic400::NSGI;
 }
 
@@ -48,7 +48,8 @@ gic400::list_entry::list_entry():
 }
 
 u32 gic400::distif::int_pending_mask(int cpu) {
-    u32 value         = 0;
+    u32 value = 0;
+
     unsigned int mask = 1 << cpu;
     for (unsigned int irq = 0; irq < NPRIV; irq++)
         if (m_parent->test_pending(irq, mask))
@@ -57,7 +58,8 @@ u32 gic400::distif::int_pending_mask(int cpu) {
 }
 
 u32 gic400::distif::spi_pending_mask(int cpu) {
-    u32 value           = 0;
+    u32 value = 0;
+
     unsigned int offset = NPRIV + cpu * 32;
     for (unsigned int irq = 0; irq < 32; irq++)
         if (m_parent->test_pending(offset + irq, gic400::ALL_CPU))
@@ -66,7 +68,8 @@ u32 gic400::distif::spi_pending_mask(int cpu) {
 }
 
 u16 gic400::distif::ppi_enabled_mask(int cpu) {
-    u16 value         = 0;
+    u16 value = 0;
+
     unsigned int mask = 1 << cpu;
     for (unsigned int irq = 0; irq < NPPI; irq++)
         if (m_parent->is_irq_enabled(irq + NSGI, mask))
@@ -122,7 +125,8 @@ void gic400::distif::write_isenabler_ppi(u32 val) {
 }
 
 u32 gic400::distif::read_isenabler_spi(size_t idx) {
-    u32 value        = 0;
+    u32 value = 0;
+
     unsigned int irq = NPRIV + idx * 32;
     for (unsigned int i = 0; i < 32; i++) {
         if (m_parent->is_irq_enabled(irq + i, gic400::ALL_CPU))
@@ -177,7 +181,8 @@ void gic400::distif::write_icenabler_ppi(u32 val) {
 }
 
 u32 gic400::distif::read_icenabler_spi(size_t idx) {
-    u32 value        = 0;
+    u32 value = 0;
+
     unsigned int irq = NPRIV + idx * 32;
     for (unsigned int i = 0; i < 32; i++) {
         if (m_parent->is_irq_enabled(irq + i, gic400::ALL_CPU))
@@ -288,7 +293,8 @@ u32 gic400::distif::read_isactiver_ppi() {
         cpu = 0;
     }
 
-    u32 value         = 0;
+    u32 value = 0;
+
     unsigned int mask = 1 << cpu;
     for (unsigned int l = 0; l < NPRIV; l++) {
         if (m_parent->is_irq_active(l, mask))
@@ -299,7 +305,8 @@ u32 gic400::distif::read_isactiver_ppi() {
 }
 
 u32 gic400::distif::read_isactiver_spi(size_t idx) {
-    u32 value        = 0;
+    u32 value = 0;
+
     unsigned int irq = NPRIV + idx * 32;
     for (unsigned int i = 0; i < 32; i++) {
         if (m_parent->is_irq_active(irq + i, gic400::ALL_CPU))
@@ -830,8 +837,7 @@ void gic400::cpuif::reset() {
 }
 
 void gic400::vifctrl::write_hcr(u32 val) {
-    u8 cpu        = current_cpu();
-    hcr.bank(cpu) = val;
+    hcr.bank(current_cpu()) = val;
     m_parent->update(true);
 }
 
@@ -896,23 +902,23 @@ u32 gic400::vifctrl::read_lr(size_t idx) {
 }
 
 void gic400::vifctrl::write_vmcr(u32 val) {
-    int cpu      = current_cpu();
-    u8 prio_mask = (val >> 27) & 0x1f;
-    u8 bpr       = (val >> 21) & 0x03;
-    u32 ctlr     = val & 0x1ff;
+    int cpu  = current_cpu();
+    u8 pmask = (val >> 27) & 0x1f;
+    u8 bpr   = (val >> 21) & 0x03;
+    u32 ctlr = val & 0x1ff;
 
-    m_parent->vcpuif.pmr.bank(cpu)  = prio_mask << 3;
+    m_parent->vcpuif.pmr.bank(cpu)  = pmask << 3;
     m_parent->vcpuif.bpr.bank(cpu)  = bpr;
     m_parent->vcpuif.ctlr.bank(cpu) = ctlr;
 }
 
 u32 gic400::vifctrl::read_vmcr() {
-    int cpu      = current_cpu();
-    u8 prio_mask = (m_parent->vcpuif.pmr.bank(cpu) >> 3) & 0x1f;
-    u8 bpr       = m_parent->vcpuif.bpr.bank(cpu) & 0x03;
-    u32 ctlr     = m_parent->vcpuif.ctlr.bank(cpu) & 0x1ff;
+    int cpu  = current_cpu();
+    u8 pmask = (m_parent->vcpuif.pmr.bank(cpu) >> 3) & 0x1f;
+    u8 bpr   = m_parent->vcpuif.bpr.bank(cpu) & 0x03;
+    u32 ctlr = m_parent->vcpuif.ctlr.bank(cpu) & 0x1ff;
 
-    return (prio_mask << 27 | bpr << 21 | ctlr);
+    return (pmask << 27 | bpr << 21 | ctlr);
 }
 
 void gic400::vifctrl::write_apr(u32 val) {
@@ -1001,11 +1007,11 @@ u32 gic400::vcpuif::read_iar() {
         m_vifctrl->get_irq_priority(cpu, irq) >= rpr.bank(cpu))
         return SPURIOUS_IRQ;
 
-    u32 prio             = m_vifctrl->get_irq_priority(cpu, irq) << 3;
-    u32 mask             = ~0ul << ((bpr.bank(cpu) & 0x07) + 1);
-    rpr.bank(cpu)        = prio & mask;
-    u32 preemption_level = prio >> (VIRT_MIN_BPR + 1);
-    u32 bitno            = preemption_level % 32;
+    u32 prio       = m_vifctrl->get_irq_priority(cpu, irq) << 3;
+    u32 mask       = ~0ul << ((bpr.bank(cpu) & 0x07) + 1);
+    rpr.bank(cpu)  = prio & mask;
+    u32 preemptlvl = prio >> (VIRT_MIN_BPR + 1);
+    u32 bitno      = preemptlvl % 32;
     m_parent->vifctrl.apr.bank(cpu) |= (1 << bitno);
 
     u8 lr = m_vifctrl->get_lr(irq, cpu);
@@ -1124,14 +1130,14 @@ gic400::gic400(const sc_module_name& nm):
     m_irq_num(NPRIV),
     m_cpu_num(0),
     m_irq_state() {
-    distif.clk.bind(clk);
-    distif.rst.bind(rst);
-    cpuif.clk.bind(clk);
-    cpuif.rst.bind(rst);
-    vifctrl.clk.bind(clk);
-    vifctrl.rst.bind(rst);
-    vcpuif.clk.bind(clk);
-    vcpuif.rst.bind(rst);
+    clk.bind(distif.clk);
+    clk.bind(cpuif.clk);
+    clk.bind(vifctrl.clk);
+    clk.bind(vcpuif.clk);
+    rst.bind(distif.rst);
+    rst.bind(cpuif.rst);
+    rst.bind(vifctrl.rst);
+    rst.bind(vcpuif.rst);
 }
 
 gic400::~gic400() {

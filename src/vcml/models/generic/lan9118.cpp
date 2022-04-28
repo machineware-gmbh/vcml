@@ -1317,10 +1317,10 @@ lan9118::lan9118(const sc_module_name& nm):
     sensitive << m_deas_ev;
     dont_initialize();
 
-    mac.rst.bind(rst);
-    phy.rst.bind(rst);
-    mac.clk.bind(clk);
-    phy.clk.bind(clk);
+    rst.bind(mac.rst);
+    rst.bind(phy.rst);
+    clk.bind(mac.clk);
+    clk.bind(phy.clk);
 
     m_eeprom.fill(0);
     m_eeprom[0] = 0xa5;

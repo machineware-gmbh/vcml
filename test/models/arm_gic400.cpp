@@ -653,13 +653,6 @@ public:
 };
 
 TEST(gic400, gic400) {
-    sc_vector<sc_signal<bool>> firqs("firqs", 2);
-    sc_vector<sc_signal<bool>> nirqs("nirqs", 2);
-    sc_vector<sc_signal<bool>> vfirqs("vfirqs", 2);
-    sc_vector<sc_signal<bool>> vnirqs("vnirqs", 2);
-    sc_vector<sc_signal<bool>> spis("spis", 3);
-    sc_vector<sc_signal<bool>> ppis("ppis", 2);
-
     gic400_stim stim("stim");
     arm::gic400 gic400("gic400");
 

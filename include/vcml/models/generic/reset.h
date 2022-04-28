@@ -23,6 +23,8 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 
+#include "vcml/protocols/rst.h"
+
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
@@ -34,7 +36,7 @@ class reset : public module
 public:
     property<bool> state;
 
-    out_port<bool> rst;
+    rst_initiator_socket rst;
 
     reset() = delete;
     reset(const sc_module_name& nm, bool init_state = false);

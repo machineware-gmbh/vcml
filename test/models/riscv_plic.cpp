@@ -106,20 +106,11 @@ public:
 };
 
 TEST(plic, plic) {
-    sc_signal<clock_t> clk("clk");
-
     plic_stim stim("STIM");
     riscv::plic plic("PLIC");
-    generic::clock sysclk("SYSCLK", 100 * MHz);
 
-    stim.clk.bind(clk);
-    plic.clk.bind(clk);
-    sysclk.clk.bind(clk);
-
-    EXPECT_EQ(stim.clk.size(), 1);
-
-    stim.rst.stub();
-    plic.rst.stub();
+    stim.clk.bind(plic.clk);
+    stim.rst.bind(plic.rst);
 
     stim.out.bind(plic.in);
 

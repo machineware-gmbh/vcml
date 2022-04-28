@@ -21,8 +21,8 @@
 namespace vcml {
 namespace generic {
 
-clock::clock(const sc_module_name& nm, clock_t init_freq):
-    module(nm), freq("freq", init_freq), clk("clk") {
+clock::clock(const sc_module_name& nm, clock_t init_hz):
+    module(nm), hz("freq", init_hz), clk("clk") {
 }
 
 clock::~clock() {
@@ -30,7 +30,7 @@ clock::~clock() {
 }
 
 void clock::end_of_elaboration() {
-    clk.write(freq);
+    clk = hz;
 }
 
 } // namespace generic
