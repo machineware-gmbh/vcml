@@ -54,6 +54,12 @@ public:
         return typeid(void);
     }
 
+    bool is_bound() const {
+        using base = tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>;
+        const sc_core::sc_port_b<FW>& port = base::get_base_port();
+        return const_cast<sc_core::sc_port_b<FW>&>(port).bind_count();
+    }
+
 protected:
     template <typename PAYLOAD>
     void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
@@ -90,6 +96,12 @@ public:
 
     virtual sc_type_index get_protocol_types() const VCML_PROTO_OVERRIDE {
         return typeid(void);
+    }
+
+    bool is_bound() const {
+        using base = tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>;
+        const sc_core::sc_port_b<BW>& port = base::get_base_port();
+        return const_cast<sc_core::sc_port_b<BW>&>(port).bind_count();
     }
 
 protected:
