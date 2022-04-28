@@ -65,6 +65,8 @@ public:
     typedef rst_payload protocol_types;
 };
 
+class rst_base_initiator_socket;
+class rst_base_target_socket;
 class rst_initiator_socket;
 class rst_target_socket;
 class rst_initiator_stub;
@@ -121,6 +123,9 @@ public:
     virtual ~rst_base_initiator_socket();
     VCML_KIND(rst_base_initiator_socket);
 
+    using rst_base_initiator_socket_b::bind;
+    virtual void bind(rst_base_target_socket& socket);
+
     virtual sc_core::sc_type_index get_protocol_types() const override {
         return typeid(rst_bw_transport_if);
     }
@@ -138,6 +143,10 @@ public:
     rst_base_target_socket(const char*, address_space = VCML_AS_DEFAULT);
     virtual ~rst_base_target_socket();
     VCML_KIND(rst_base_target_socket);
+
+    using rst_base_target_socket_b::bind;
+    virtual void bind(rst_base_initiator_socket& other);
+    virtual void complete_binding(rst_base_initiator_socket& socket) {}
 
     virtual sc_core::sc_type_index get_protocol_types() const override {
         return typeid(rst_fw_transport_if);
@@ -189,6 +198,8 @@ private:
 
 class rst_target_socket : public rst_base_target_socket
 {
+    friend class rst_initiator_socket;
+
 public:
     rst_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
     virtual ~rst_target_socket();
@@ -198,6 +209,10 @@ public:
 
     bool read() const { return m_state; }
     operator bool() const { return read(); }
+
+    using rst_base_target_socket::bind;
+    virtual void bind(rst_target_socket& other);
+    virtual void complete_binding(rst_base_initiator_socket& socket) override;
 
 private:
     rst_host* m_target;
@@ -214,6 +229,9 @@ private:
             socket->rst_transport(tx);
         }
     } m_transport;
+
+    rst_base_initiator_socket* m_initiator;
+    vector<rst_target_socket*> m_targets;
 
     void rst_transport(const rst_payload& tx);
 };

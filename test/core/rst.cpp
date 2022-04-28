@@ -64,12 +64,23 @@ public:
         rst_in("rst_in"),
         rst_array_out("rst_array_out"),
         rst_array_in("rst_array_in") {
+        EXPECT_FALSE(rst_out.is_bound());
+        EXPECT_FALSE(rst_out_h.is_bound());
+        EXPECT_FALSE(rst_in_h.is_bound());
+        EXPECT_FALSE(rst_in.is_bound());
         rst_out.bind(rst_out_h);
         rst_in_h.bind(rst_in);
         rst_out_h.bind(rst_in_h);
-
+        EXPECT_TRUE(rst_out.is_bound());
+        EXPECT_TRUE(rst_out_h.is_bound());
+        EXPECT_TRUE(rst_in_h.is_bound());
+        EXPECT_TRUE(rst_in.is_bound());
+        EXPECT_FALSE(rst_array_out[5].is_stubbed());
+        EXPECT_FALSE(rst_array_in[6].is_stubbed());
         rst_array_out[5].stub();
         rst_array_in[6].stub();
+        EXPECT_TRUE(rst_array_out[5].is_stubbed());
+        EXPECT_TRUE(rst_array_in[6].is_stubbed());
 
         // test binding multiple targets to one initiator
         rst_out.bind(rst_array_in[2]);

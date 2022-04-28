@@ -63,6 +63,11 @@ rst_base_initiator_socket::~rst_base_initiator_socket() {
         delete m_stub;
 }
 
+void rst_base_initiator_socket::bind(rst_base_target_socket& socket) {
+    rst_base_initiator_socket_b::bind(socket);
+    socket.complete_binding(*this);
+}
+
 void rst_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     hierarchy_guard guard(this);
@@ -78,6 +83,11 @@ rst_base_target_socket::rst_base_target_socket(const char* nm,
 rst_base_target_socket::~rst_base_target_socket() {
     if (m_stub != nullptr)
         delete m_stub;
+}
+
+void rst_base_target_socket::bind(rst_base_initiator_socket& other) {
+    rst_base_target_socket_b::bind(other);
+    complete_binding(other);
 }
 
 void rst_base_target_socket::stub() {
@@ -163,7 +173,9 @@ rst_target_socket::rst_target_socket(const char* nm, address_space space):
     m_target(hierarchy_search<rst_host>()),
     m_event(nullptr),
     m_state(false),
-    m_transport(this) {
+    m_transport(this),
+    m_initiator(nullptr),
+    m_targets() {
     VCML_ERROR_ON(!m_target, "%s declared outside rst_target", name());
     m_target->m_target_sockets.push_back(this);
     bind(m_transport);
@@ -182,6 +194,20 @@ const sc_event& rst_target_socket::default_event() {
     }
 
     return *m_event;
+}
+
+void rst_target_socket::bind(rst_target_socket& socket) {
+    if (m_initiator != nullptr)
+        m_initiator->bind(socket);
+    else
+        m_targets.push_back(&socket);
+}
+
+void rst_target_socket::complete_binding(rst_base_initiator_socket& socket) {
+    m_initiator = &socket;
+    for (rst_target_socket* target : m_targets)
+        target->bind(socket);
+    m_targets.clear();
 }
 
 rst_initiator_stub::rst_initiator_stub(const char* nm):
