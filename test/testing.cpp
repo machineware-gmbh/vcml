@@ -22,7 +22,11 @@ test_base::test_base(const sc_module_name& nm):
     component(nm),
     irq_target(),
     m_tracer(),
-    m_logger() {
+    m_logger(),
+    m_reset("reset"),
+    m_clock("clock", 100 * MHz) {
+    m_reset.rst.bind(rst);
+    m_clock.clk.bind(clk);
     SC_HAS_PROCESS(test_base);
     SC_THREAD(run);
 }
@@ -40,13 +44,6 @@ void test_base::run() {
 void test_base::finalize_test() {
     ASSERT_EQ(sc_core::sc_get_status(), sc_core::SC_STOPPED)
         << "simulation incomplete";
-}
-
-void test_base::before_end_of_elaboration() {
-    if (!clk.is_bound())
-        clk.stub(100 * MHz);
-    if (!rst.is_bound())
-        rst.stub();
 }
 
 void test_base::irq_transport(const irq_target_socket& s, irq_payload& tx) {

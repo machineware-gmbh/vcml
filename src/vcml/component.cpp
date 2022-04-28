@@ -101,9 +101,4 @@ void component::rst_notify(const rst_target_socket& s, const rst_payload& tx) {
     m_clkrst_ev.notify(SC_ZERO_TIME);
 }
 
-void component::end_of_elaboration() {
-    module::end_of_elaboration();
-    reset();
-}
-
 } // namespace vcml

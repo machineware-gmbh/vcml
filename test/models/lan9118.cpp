@@ -74,12 +74,8 @@ public:
         test_base(nm), lan("lan9118"), out("out"), irq("irq") {
         out.bind(lan.in);
         lan.irq.bind(irq);
-
-        rst.stub();
-        lan.rst.stub();
-
-        clk.stub(100 * MHz);
-        lan.clk.stub(100 * MHz);
+        rst.bind(lan.rst);
+        clk.bind(lan.clk);
     }
 
     void check_irq(unsigned int irq) {

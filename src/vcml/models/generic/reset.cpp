@@ -30,6 +30,7 @@ reset::~reset() {
 }
 
 void reset::end_of_elaboration() {
+    rst.reset();
     rst = state;
 }
 

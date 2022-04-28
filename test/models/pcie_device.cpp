@@ -177,15 +177,15 @@ public:
         pcie_root.irq_c.stub();
         pcie_root.irq_d.stub();
 
-        mmio_bus.clk.stub(100 * MHz);
-        io_bus.clk.stub(100 * MHz);
-        pcie_root.clk.stub(100 * MHz);
-        pcie_device.clk.stub(100 * MHz);
+        clk.bind(mmio_bus.clk);
+        clk.bind(io_bus.clk);
+        clk.bind(pcie_root.clk);
+        clk.bind(pcie_device.clk);
 
-        mmio_bus.rst.stub();
-        io_bus.rst.stub();
-        pcie_root.rst.stub();
-        pcie_device.rst.stub();
+        rst.bind(mmio_bus.rst);
+        rst.bind(io_bus.rst);
+        rst.bind(pcie_root.rst);
+        rst.bind(pcie_device.rst);
     }
 
     template <typename T>

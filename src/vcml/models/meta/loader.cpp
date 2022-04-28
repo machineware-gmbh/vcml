@@ -66,8 +66,10 @@ void loader::before_end_of_elaboration() {
     component::before_end_of_elaboration();
     if (!clk.is_bound())
         clk.stub(100 * MHz);
-    if (!rst.is_bound())
+    if (!rst.is_bound()) {
         rst.stub();
+        reset();
+    }
 }
 
 } // namespace meta

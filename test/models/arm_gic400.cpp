@@ -656,11 +656,8 @@ TEST(gic400, gic400) {
     gic400_stim stim("stim");
     arm::gic400 gic400("gic400");
 
-    stim.clk.stub(100 * MHz);
-    stim.rst.stub();
-
-    gic400.clk.stub(100 * MHz);
-    gic400.rst.stub();
+    stim.clk.bind(gic400.clk);
+    stim.rst.bind(gic400.rst);
 
     stim.distif_out.bind(gic400.distif.in);
     stim.cpuif_out.bind(gic400.cpuif.in);

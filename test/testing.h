@@ -46,6 +46,9 @@ private:
     tracer_term m_tracer;
     log_term m_logger;
 
+    generic::reset m_reset;
+    generic::clock m_clock;
+
     void run();
 
 public:
@@ -57,7 +60,6 @@ public:
     virtual void finalize_test();
 
 protected:
-    void before_end_of_elaboration() override;
     virtual void irq_transport(const irq_target_socket&, irq_payload&) override;
 };
 

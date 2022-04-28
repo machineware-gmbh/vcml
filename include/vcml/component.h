@@ -83,7 +83,6 @@ protected:
                             const clk_payload& tx) override;
     virtual void rst_notify(const rst_target_socket& socket,
                             const rst_payload& tx) override;
-    void end_of_elaboration() override;
 };
 
 } // namespace vcml

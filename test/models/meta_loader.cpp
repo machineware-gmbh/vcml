@@ -71,6 +71,5 @@ public:
 
 TEST(virtio, rng) {
     loader_test stim;
-
     sc_core::sc_start();
 }
