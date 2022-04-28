@@ -25,9 +25,9 @@ public:
 
     mock_sdcard(const sc_module_name& nm): component(nm), sd_in("sd_in") {}
 
-    MOCK_METHOD1(test_transport, sd_status(sd_command&));
-    MOCK_METHOD1(test_data_read, sd_status_tx(u8&));
-    MOCK_METHOD1(test_data_write, sd_status_rx(u8));
+    MOCK_METHOD(sd_status, test_transport, (sd_command&));
+    MOCK_METHOD(sd_status_tx, test_data_read, (u8&));
+    MOCK_METHOD(sd_status_rx, test_data_write, (u8));
 
     virtual void sd_transport(const sd_target_socket& s, sd_command& tx) {
         tx.status = test_transport(tx);
@@ -56,14 +56,14 @@ public:
         mem("mem", 1024),
         sdcard("mock_sd"),
         out("out") {
-        sdhci.rst.stub();
-        sdhci.clk.stub(100 * MHz);
+        rst.bind(sdhci.rst);
+        clk.bind(sdhci.clk);
 
-        mem.rst.stub();
-        mem.clk.stub(100 * MHz);
+        rst.bind(mem.rst);
+        clk.bind(mem.clk);
 
-        sdcard.rst.stub();
-        sdcard.clk.stub(100 * MHz);
+        rst.bind(sdcard.rst);
+        clk.bind(sdcard.clk);
 
         // I/O Mapping
         out.bind(sdhci.in);
@@ -102,7 +102,7 @@ public:
         cmd.status      = SD_INCOMPLETE;
 
         EXPECT_CALL(sdcard, test_transport(_))
-            .WillOnce(::testing::DoAll(SetArgReferee<0>(cmd), Return(SD_OK)));
+            .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK)));
 
         ASSERT_OK(out.writew<u32>(0x08, 0x00000000))
             << "write zero to ARG register";
@@ -215,7 +215,7 @@ public:
         EXPECT_EQ(0x0C0B0A09, value_of_buffer_data_port);
         ASSERT_OK(out.readw(0x20, value_of_buffer_data_port))
             << "read BUFFER_DATA_PORT register";
-        EXPECT_EQ(0x100F0E0D, value_of_buffer_data_port);
+        EXPECT_EQ(0x100f0e0d, value_of_buffer_data_port);
 
         EXPECT_TRUE(sdhci.irq.read())
             << "check whether an interrupt has been triggered";

@@ -36,10 +36,10 @@ public:
     vcml::irq_initiator_socket irq0;
     vcml::irq_initiator_socket irq1;
 
-    MOCK_METHOD2(interrupt, void(unsigned int, bool));
-    MOCK_METHOD1(simulate2, void(unsigned int));
-    MOCK_METHOD0(reset, void(void));
-    MOCK_METHOD2(handle_clock_update, void(clock_t, clock_t));
+    MOCK_METHOD(void, interrupt, (unsigned int, bool), (override));
+    MOCK_METHOD(void, simulate2, (unsigned int));
+    MOCK_METHOD(void, reset, (), (override));
+    MOCK_METHOD(void, handle_clock_update, (clock_t, clock_t), (override));
 
     mock_processor(const sc_core::sc_module_name& nm):
         vcml::processor(nm, "mock"),
