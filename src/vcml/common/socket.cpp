@@ -217,7 +217,8 @@ void socket::unlisten() {
     if (!is_listening())
         return;
 
-    int fd   = m_socket;
+    int fd = m_socket;
+
     m_socket = -1;
     ::shutdown(fd, SHUT_RDWR);
 
@@ -234,8 +235,8 @@ bool socket::accept() {
 
     socket_addr addr;
     socklen_t len = sizeof(addr);
-    m_conn        = ::accept(m_socket, &addr.base, &len);
 
+    m_conn = ::accept(m_socket, &addr.base, &len);
     if (m_conn < 0 && m_socket < 0)
         return false; // shutdown while waiting for connections
 
