@@ -60,6 +60,18 @@ void broker_file::parse_file(const string& filename) {
             continue;
         }
 
+        // check for loop directive
+        if (starts_with(line, "for ")) {
+            parse_loop(trim(line), filename, lno);
+            continue;
+        }
+
+        // check for end-loop directive
+        if (starts_with(line, "end")) {
+            parse_done(trim(line), filename, lno);
+            continue;
+        }
+
         // read key=value part
         size_t separator = line.find('=');
         if (separator == line.npos)
@@ -71,11 +83,57 @@ void broker_file::parse_file(const string& filename) {
         key = trim(key);
         val = trim(val);
 
-        if (!key.empty()) {
-            replace(val, filename, lno);
-            define(key, val);
-        }
+        if (!key.empty())
+            resolve(key, val, filename, lno);
     }
+
+    for (auto loop : m_loops) {
+        m_errors++;
+        log_error("%s:%zu unmatched 'for'", loop.file.c_str(), loop.line);
+    }
+}
+
+void broker_file::parse_loop(const string& expr, const string& file,
+                             size_t line) {
+    loopdesc loop;
+    loop.file = file;
+    loop.line = line;
+
+    // parse 'for ITER : BOUNDS do'
+    size_t offset = strlen("for ");
+    size_t delim0 = expr.rfind(':');
+    size_t delim1 = expr.rfind("do");
+    string bounds = trim(expr.substr(delim0 + 1, delim1 - delim0 - 1));
+
+    if (delim0 == expr.npos || delim1 == expr.npos || delim0 >= delim1) {
+        m_errors++;
+        log_error("%s:%zu error parsing loop", file.c_str(), line);
+        return;
+    }
+
+    // parse ITER
+    loop.iter = trim(expr.substr(offset, delim0 - offset - 1));
+
+    // parse BOUNDS
+    replace(bounds, file, line);
+
+    size_t start = 0;
+    size_t limit = from_string<size_t>(bounds);
+    for (size_t i = start; i < limit; i++)
+        loop.values.push_back(to_string(i));
+
+    m_loops.push_front(loop);
+}
+
+void broker_file::parse_done(const string& expr, const string& file,
+                             size_t line) {
+    if (m_loops.empty()) {
+        m_errors++;
+        log_error("%s:%zu unmatched 'end'", file.c_str(), line);
+        return;
+    }
+
+    m_loops.pop_front();
 }
 
 void broker_file::replace(string& str, const string& file, size_t line) {
@@ -100,6 +158,25 @@ void broker_file::replace(string& str, const string& file, size_t line) {
         }
 
         str = str.substr(0, pos) + val + str.substr(end + 1);
+    }
+}
+
+void broker_file::resolve(const string& key, const string& val,
+                          const string& file, size_t line) {
+    if (m_loops.empty()) {
+        string _key = key;
+        string _val = val;
+        replace(_key, file, line);
+        replace(_val, file, line);
+        define(_key, _val);
+    } else {
+        auto loop = m_loops.front();
+        m_loops.pop_front();
+        for (string iter : loop.values) {
+            define(loop.iter, iter);
+            resolve(key, val, file, line);
+        }
+        m_loops.push_front(loop);
     }
 }
 

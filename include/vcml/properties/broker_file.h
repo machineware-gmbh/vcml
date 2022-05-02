@@ -30,8 +30,21 @@ private:
     string m_filename;
     std::map<string, string> m_replacements;
 
+    struct loopdesc {
+        string iter;
+        vector<string> values;
+        string file;
+        size_t line;
+    };
+
+    std::deque<loopdesc> m_loops;
+
     void parse_file(const string& filename);
+    void parse_loop(const string& expr, const string& file, size_t line);
+    void parse_done(const string& expr, const string& file, size_t line);
+
     void replace(string& str, const string& file, size_t line);
+    void resolve(const string&, const string&, const string&, size_t);
 
 public:
     broker_file() = delete;
