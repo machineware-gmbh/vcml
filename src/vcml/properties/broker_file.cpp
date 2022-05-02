@@ -21,14 +21,14 @@
 
 namespace vcml {
 
-void broker_file::parse_file(const string& filename) {
+void broker_file::parse_file(const string& file) {
     size_t lno = 0;
     string line, buffer;
-    ifstream file(filename.c_str());
+    ifstream stream(file.c_str());
 
-    VCML_ERROR_ON(!file.good(), "cannot read '%s'", filename.c_str());
+    VCML_ERROR_ON(!stream.good(), "cannot read '%s'", file.c_str());
 
-    while (std::getline(file, line)) {
+    while (std::getline(stream, line)) {
         lno++;
 
         // remove white spaces
@@ -56,26 +56,30 @@ void broker_file::parse_file(const string& filename) {
 
         // check for include directive
         if (starts_with(line, "%include ")) {
-            parse_file(trim(line.substr(9)));
+            string incl = trim(line.substr(9));
+            replace(incl, file, lno);
+            m_replacements["$dir"] = m_replacements["${dir}"] = dirname(incl);
+            parse_file(incl);
+            m_replacements["$dir"] = m_replacements["${dir}"] = dirname(file);
             continue;
         }
 
         // check for loop directive
         if (starts_with(line, "for ")) {
-            parse_loop(trim(line), filename, lno);
+            parse_loop(trim(line), file, lno);
             continue;
         }
 
         // check for end-loop directive
         if (starts_with(line, "end")) {
-            parse_done(trim(line), filename, lno);
+            parse_done(trim(line), file, lno);
             continue;
         }
 
         // read key=value part
         size_t separator = line.find('=');
         if (separator == line.npos)
-            log_warn("%s:%zu missing '='", filename.c_str(), lno);
+            log_warn("%s:%zu missing '='", file.c_str(), lno);
 
         string key = line.substr(0, separator);
         string val = line.substr(separator + 1);
@@ -84,7 +88,7 @@ void broker_file::parse_file(const string& filename) {
         val = trim(val);
 
         if (!key.empty())
-            resolve(key, val, filename, lno);
+            resolve(key, val, file, lno);
     }
 
     for (const auto& loop : m_loops) {
