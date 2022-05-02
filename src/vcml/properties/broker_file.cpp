@@ -87,7 +87,7 @@ void broker_file::parse_file(const string& filename) {
             resolve(key, val, filename, lno);
     }
 
-    for (auto loop : m_loops) {
+    for (const auto& loop : m_loops) {
         m_errors++;
         log_error("%s:%zu unmatched 'for'", loop.file.c_str(), loop.line);
     }
@@ -149,30 +149,28 @@ void broker_file::replace(string& str, const string& file, size_t line) {
             break;
         }
 
-        string val = "";
-        string key = str.substr(pos + 2, end - pos - 2);
-
+        string val, key = str.substr(pos + 2, end - pos - 2);
         if (!lookup(key, val)) {
             m_errors++;
             log_warn("%s:%zu %s not defined", file.c_str(), line, key.c_str());
         }
 
-        str = str.substr(0, pos) + val + str.substr(end + 1);
+        str = strcat(str.substr(0, pos), val, str.substr(end + 1));
     }
 }
 
 void broker_file::resolve(const string& key, const string& val,
                           const string& file, size_t line) {
     if (m_loops.empty()) {
-        string _key = key;
-        string _val = val;
-        replace(_key, file, line);
-        replace(_val, file, line);
-        define(_key, _val);
+        string resolved_key = key;
+        string resolved_val = val;
+        replace(resolved_key, file, line);
+        replace(resolved_val, file, line);
+        define(resolved_key, resolved_val);
     } else {
         auto loop = m_loops.front();
         m_loops.pop_front();
-        for (string iter : loop.values) {
+        for (const string& iter : loop.values) {
             define(loop.iter, iter);
             resolve(key, val, file, line);
         }
