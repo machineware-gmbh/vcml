@@ -54,6 +54,12 @@ void broker_file::parse_file(const string& filename) {
         if (line.empty())
             continue;
 
+        // check for include directive
+        if (starts_with(line, "%include ")) {
+            parse_file(trim(line.substr(9)));
+            continue;
+        }
+
         // read key=value part
         size_t separator = line.find('=');
         if (separator == line.npos)
