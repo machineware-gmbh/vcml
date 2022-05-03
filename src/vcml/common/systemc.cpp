@@ -486,6 +486,8 @@ struct async_worker {
     condition_variable_any notify;
     thread worker;
 
+    struct sim_terminated_exception {};
+
     async_worker(size_t worker_id, sc_process_b* worker_proc):
         id(worker_id),
         process(worker_proc),
@@ -520,7 +522,12 @@ struct async_worker {
             if (!alive)
                 break;
 
-            task();
+            try {
+                task();
+            } catch (sim_terminated_exception& ex) {
+                alive = false;
+            }
+
             working = false;
         }
 
@@ -540,7 +547,7 @@ struct async_worker {
         task    = job;
         working = true;
         mtx.unlock();
-        notify.notify_all();
+        notify.notify_one();
 
         while (working) {
             u64 p = progress.exchange(0);
@@ -559,8 +566,11 @@ struct async_worker {
 
     void run_sync(function<void(void)> job) {
         g_async->request = &job;
-        while (g_async->request)
+        while (g_async->request) {
+            if (!sim_running())
+                throw sim_terminated_exception();
             yield();
+        }
     }
 
     static async_worker& lookup(sc_process_b* thread) {
