@@ -40,6 +40,7 @@ private:
     std::deque<loopdesc> m_loops;
 
     void parse_file(const string& filename);
+    void parse_expr(string expr, const string& file, size_t line);
     void parse_loop(const string& expr, const string& file, size_t line);
     void parse_done(const string& expr, const string& file, size_t line);
 

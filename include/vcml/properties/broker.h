@@ -30,26 +30,19 @@ class broker
 protected:
     struct value {
         string value;
-        int uses;
+        size_t uses;
     };
 
     string m_name;
     std::map<string, struct value> m_values;
 
+    string expand(const string& s);
+
 public:
-    enum : int {
-        PRIO_DEFAULT = 0,
-        PRIO_CFGFILE = 10,
-        PRIO_ENVIRON = 100,
-        PRIO_CMDLINE = 1000,
-    };
-
-    const int priority;
-
     const char* name() const { return m_name.c_str(); }
     virtual const char* kind() const { return "vcml::broker"; }
 
-    broker(const string& name, int priority = PRIO_DEFAULT);
+    broker(const string& name);
     virtual ~broker();
 
     virtual bool lookup(const string& key, string& value);
@@ -57,7 +50,9 @@ public:
     virtual bool defines(const string& key) const;
 
     template <typename T>
-    void define(const string& key, const T& value);
+    void define(const string& key, const T& value, size_t uses = 0);
+
+    void undefine(const string& key);
 
     template <typename T>
     static broker* init(const string& key, T& value);
@@ -67,18 +62,18 @@ public:
 };
 
 template <typename T>
-inline void broker::define(const string& key, const T& value) {
-    define(key, to_string(value));
+inline void broker::define(const string& key, const T& val, size_t uses) {
+    define(key, to_string(val), uses);
 }
 
 template <>
-inline void broker::define(const string& key, const string& value) {
-    if (!key.empty()) {
-        struct value val;
-        val.value     = value;
-        val.uses      = 0;
-        m_values[key] = val;
-    }
+inline void broker::define(const string& key, const string& val, size_t uses) {
+    if (!key.empty())
+        m_values[expand(key)] = { expand(val), uses };
+}
+
+inline void broker::undefine(const string& key) {
+    m_values.erase(key);
 }
 
 template <typename T>

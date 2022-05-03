@@ -16,18 +16,18 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/logging/logger.h"
 #include "vcml/properties/broker_arg.h"
 
 namespace vcml {
 
-broker_arg::broker_arg(int argc, const char* const* argv):
-    broker("cmdline", PRIO_CMDLINE) {
+broker_arg::broker_arg(int argc, const char* const* argv): broker("cmdline") {
     int i = 1;
     while (++i < argc) {
         if ((strcmp(argv[i - 1], "--config") == 0) ||
             (strcmp(argv[i - 1], "-c") == 0)) {
             string arg(argv[i++]);
-            string::size_type separator = arg.find('=');
+            size_t separator = arg.find('=');
 
             // if (separator == arg.npos)
             //    log_warning("missing '=' in property '%s'", arg.c_str());
@@ -36,7 +36,11 @@ broker_arg::broker_arg(int argc, const char* const* argv):
             string key = arg.substr(0, separator);
             string val = arg.substr(separator + 1);
 
-            define(key, val);
+            try {
+                define(key, val);
+            } catch (std::exception& ex) {
+                log_error("arg %d: %s", i - 1, ex.what());
+            }
         }
     }
 }

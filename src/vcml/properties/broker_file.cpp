@@ -23,78 +23,86 @@ namespace vcml {
 
 void broker_file::parse_file(const string& file) {
     size_t lno = 0;
-    string line, buffer;
+    string line, prev;
     ifstream stream(file.c_str());
 
     VCML_ERROR_ON(!stream.good(), "cannot read '%s'", file.c_str());
 
-    while (std::getline(stream, line)) {
-        lno++;
+    try {
+        while (std::getline(stream, line)) {
+            lno++;
 
-        // remove white spaces
-        line = trim(line);
+            // remove white spaces
+            line = trim(line);
 
-        if (line.empty())
-            continue;
+            if (line.empty())
+                continue;
 
-        // continue on next line?
-        if (line[line.size() - 1] == '\\') {
-            buffer += line.substr(0, line.size() - 1);
-            continue;
+            // continue on next line?
+            if (line[line.size() - 1] == '\\') {
+                prev += line.substr(0, line.size() - 1);
+                continue;
+            }
+
+            // prepend buffer from previous lines
+            line = strcat(prev, line);
+            prev = "";
+
+            parse_expr(line, file, lno);
         }
-
-        // prepend buffer from previous lines
-        line   = strcat(buffer, line);
-        buffer = "";
-
-        // remove comments
-        size_t pos = line.find('#');
-        if (pos != line.npos)
-            line.erase(pos);
-        if (line.empty())
-            continue;
-
-        // check for include directive
-        if (starts_with(line, "%include ")) {
-            string incl = trim(line.substr(9));
-            replace(incl, file, lno);
-            m_replacements["$dir"] = m_replacements["${dir}"] = dirname(incl);
-            parse_file(incl);
-            m_replacements["$dir"] = m_replacements["${dir}"] = dirname(file);
-            continue;
-        }
-
-        // check for loop directive
-        if (starts_with(line, "for ")) {
-            parse_loop(trim(line), file, lno);
-            continue;
-        }
-
-        // check for end-loop directive
-        if (starts_with(line, "end")) {
-            parse_done(trim(line), file, lno);
-            continue;
-        }
-
-        // read key=value part
-        size_t separator = line.find('=');
-        if (separator == line.npos)
-            log_warn("%s:%zu missing '='", file.c_str(), lno);
-
-        string key = line.substr(0, separator);
-        string val = line.substr(separator + 1);
-
-        key = trim(key);
-        val = trim(val);
-
-        if (!key.empty())
-            resolve(key, val, file, lno);
+    } catch (std::exception& ex) {
+        m_errors++;
+        log_error("%s:%zu %s", file.c_str(), lno, ex.what());
     }
 
     for (const auto& loop : m_loops) {
         m_errors++;
         log_error("%s:%zu unmatched 'for'", loop.file.c_str(), loop.line);
     }
+}
+
+void broker_file::parse_expr(string expr, const string& file, size_t line) {
+    // remove comments
+    size_t pos = expr.find('#');
+    if (pos != expr.npos)
+        expr.erase(pos);
+    if (expr.empty())
+        return;
+
+    // check for include directive
+    if (starts_with(expr, "%include ")) {
+        string incl = expand(trim(expr.substr(9)));
+        define("dir", dirname(incl), 1);
+        parse_file(incl);
+        define("dir", dirname(file), 1);
+        return;
+    }
+
+    // check for loop directive
+    if (starts_with(expr, "for ")) {
+        parse_loop(trim(expr), file, line);
+        return;
+    }
+
+    // check for end-loop directive
+    if (starts_with(expr, "done")) {
+        parse_done(trim(expr), file, line);
+        return;
+    }
+
+    // read key=value part
+    size_t separator = expr.find('=');
+    if (separator == expr.npos)
+        VCML_REPORT("%s:%zu missing '='", file.c_str(), line);
+
+    string key = expr.substr(0, separator);
+    string val = expr.substr(separator + 1);
+
+    key = trim(key);
+    val = trim(val);
+
+    if (!key.empty())
+        resolve(key, val, file, line);
 }
 
 void broker_file::parse_loop(const string& expr, const string& file,
@@ -107,7 +115,6 @@ void broker_file::parse_loop(const string& expr, const string& file,
     size_t offset = strlen("for ");
     size_t delim0 = expr.rfind(':');
     size_t delim1 = expr.rfind("do");
-    string bounds = trim(expr.substr(delim0 + 1, delim1 - delim0 - 1));
 
     if (delim0 == expr.npos || delim1 == expr.npos || delim0 >= delim1) {
         m_errors++;
@@ -119,10 +126,9 @@ void broker_file::parse_loop(const string& expr, const string& file,
     loop.iter = trim(expr.substr(offset, delim0 - offset - 1));
 
     // parse BOUNDS
-    replace(bounds, file, line);
+    string bounds = expand(trim(expr.substr(delim0 + 1, delim1 - delim0 - 1)));
+    size_t start = 0, limit = from_string<size_t>(bounds);
 
-    size_t start = 0;
-    size_t limit = from_string<size_t>(bounds);
     for (size_t i = start; i < limit; i++)
         loop.values.push_back(to_string(i));
 
@@ -133,7 +139,7 @@ void broker_file::parse_done(const string& expr, const string& file,
                              size_t line) {
     if (m_loops.empty()) {
         m_errors++;
-        log_error("%s:%zu unmatched 'end'", file.c_str(), line);
+        log_error("%s:%zu unmatched '%s'", file.c_str(), line, expr.c_str());
         return;
     }
 
@@ -143,24 +149,6 @@ void broker_file::parse_done(const string& expr, const string& file,
 void broker_file::replace(string& str, const string& file, size_t line) {
     for (const auto& it : m_replacements)
         vcml::replace(str, it.first, it.second);
-
-    size_t pos = 0;
-    while ((pos = str.find("${", pos)) != str.npos) {
-        size_t end = str.find('}', pos + 2);
-        if (end == str.npos) {
-            m_errors++;
-            log_warn("%s:%zu missing '}'", file.c_str(), line);
-            break;
-        }
-
-        string val, key = str.substr(pos + 2, end - pos - 2);
-        if (!lookup(key, val)) {
-            m_errors++;
-            log_warn("%s:%zu %s not defined", file.c_str(), line, key.c_str());
-        }
-
-        str = strcat(str.substr(0, pos), val, str.substr(end + 1));
-    }
 }
 
 void broker_file::resolve(const string& key, const string& val,
@@ -183,18 +171,25 @@ void broker_file::resolve(const string& key, const string& val,
 }
 
 broker_file::broker_file(const string& file):
-    broker(file, PRIO_CFGFILE),
-    m_errors(0),
-    m_filename(file),
-    m_replacements() {
-    m_replacements["$dir"] = m_replacements["${dir}"] = dirname(file);
-    m_replacements["$cfg"] = m_replacements["${cfg}"] = filename_noext(file);
-    m_replacements["$app"] = m_replacements["${app}"] = progname();
-    m_replacements["$pwd"] = m_replacements["${pwd}"] = curr_dir();
-    m_replacements["$tmp"] = m_replacements["${tmp}"] = temp_dir();
-    m_replacements["$usr"] = m_replacements["${usr}"] = username();
-    m_replacements["$pid"] = m_replacements["${pid}"] = to_string(getpid());
+    broker(file), m_errors(0), m_filename(file), m_replacements() {
+    m_replacements["$dir"] = dirname(file);
+    m_replacements["$cfg"] = filename_noext(file);
+    m_replacements["$app"] = progname();
+    m_replacements["$pwd"] = curr_dir();
+    m_replacements["$tmp"] = temp_dir();
+    m_replacements["$usr"] = username();
+    m_replacements["$pid"] = to_string(getpid());
+
+    define("dir", dirname(file), 1);
+    define("cfg", filename_noext(file), 1);
+    define("app", progname(), 1);
+    define("pwd", curr_dir(), 1);
+    define("tmp", temp_dir(), 1);
+    define("usr", username(), 1);
+    define("pid", getpid(), 1);
+
     parse_file(file);
+
     VCML_ERROR_ON(m_errors, "%zu errors parsing %s", m_errors, file.c_str());
 }
 
