@@ -91,13 +91,16 @@ inline string to_string<u8>(const u8& v) {
 
 template <typename T>
 inline T from_string(const string& str) {
+    if (str.empty())
+        return T();
+
     istringstream ss;
     ss.str(str);
     ss.unsetf(std::ios::dec);
     ss.unsetf(std::ios::hex);
     ss.unsetf(std::ios::oct);
 
-    T val;
+    T val = T();
     ss >> val;
     return val;
 }
@@ -109,13 +112,16 @@ inline string from_string<string>(const string& s) {
 
 template <>
 inline u8 from_string<u8>(const string& str) {
+    if (str.empty())
+        return 0;
+
     istringstream ss;
     ss.str(str);
     ss.unsetf(std::ios::dec);
     ss.unsetf(std::ios::hex);
     ss.unsetf(std::ios::oct);
 
-    unsigned int val;
+    unsigned int val = 0;
     ss >> val;
     return (u8)val;
 }
