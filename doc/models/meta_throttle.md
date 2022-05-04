@@ -36,7 +36,7 @@ The model supports the following commands during simulation:
 | `abort`       | Aborts the simulation                 |
 
 In order to execute commands, an active VSP session is required. Tools such
-as [`viper`](https://github.com/janweinstock/viper/) can be used as a
+as [`viper`](https://github.com/machineware-gmbh/viper/) can be used as a
 graphical frontend for running commands via VSP.
 
 ----
