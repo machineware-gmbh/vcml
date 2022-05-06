@@ -343,37 +343,43 @@ string gdbserver::handle_reg_write_all(const char* command) {
 }
 
 string gdbserver::handle_mem_read(const char* command) {
-    unsigned long long addr, size;
+    unsigned long long addr = 0, size = 0;
     if (sscanf(command, "m%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
+
+    if (size == 0)
+        return "OK";
 
     if (size > BUFFER_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
         return ERR_PARAM;
     }
 
+    vector<u8> buffer;
+    buffer.resize(size);
+
     stringstream ss;
     ss << std::hex << std::setfill('0');
-
-    u8 buffer[BUFFER_SIZE];
-    memset(buffer, 0xff, sizeof(buffer));
-    if (m_target.read_vmem_dbg(addr, buffer, size) != size)
+    if (m_target.read_vmem_dbg(addr, buffer.data(), size) != size)
         log_debug("failed to read 0x%llx..0x%llx", addr, addr + size - 1);
 
-    for (unsigned int i = 0; i < size; i++)
+    for (unsigned long long i = 0; i < size; i++)
         ss << std::setw(2) << (int)buffer[i];
 
     return ss.str();
 }
 
 string gdbserver::handle_mem_write(const char* command) {
-    unsigned long long addr, size;
+    unsigned long long addr = 0, size = 0;
     if (sscanf(command, "M%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
+
+    if (size == 0)
+        return "OK";
 
     if (size > BUFFER_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
@@ -388,30 +394,31 @@ string gdbserver::handle_mem_write(const char* command) {
 
     data++;
 
-    u8 buffer[BUFFER_SIZE];
-    for (unsigned int i = 0; i < size; i++)
+    vector<u8> buffer;
+    buffer.resize(size);
+    for (unsigned long long i = 0; i < size; i++)
         buffer[i] = str2int(data++, 2);
 
-    if (m_target.write_vmem_dbg(addr, buffer, size) != size)
+    if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
 }
 
 string gdbserver::handle_mem_write_bin(const char* command) {
-    unsigned long long addr, size;
+    unsigned long long addr = 0, size = 0;
     if (sscanf(command, "X%llx,%llx:", &addr, &size) != 2) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
 
-    if (size > BUFFER_SIZE) {
+    if (size == 0)
+        return "OK";
+
+    if (size > PACKET_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
         return ERR_PARAM;
     }
-
-    if (size == 0)
-        return "OK"; // empty load to test if binary write is supported
 
     const char* data = strchr(command, ':');
     if (data == NULL) {
@@ -421,11 +428,12 @@ string gdbserver::handle_mem_write_bin(const char* command) {
 
     data++;
 
-    u8 buffer[BUFFER_SIZE];
-    for (unsigned int i = 0; i < size; i++)
+    vector<u8> buffer;
+    buffer.resize(size);
+    for (unsigned long long i = 0; i < size; i++)
         buffer[i] = char_unescape(data);
 
-    if (m_target.write_vmem_dbg(addr, buffer, size) != size)
+    if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
