@@ -114,7 +114,7 @@ private:
 
 public:
     enum : size_t {
-        PACKET_SIZE = 4096,
+        PACKET_SIZE = 8 * MiB,
         BUFFER_SIZE = PACKET_SIZE / 2,
     };
 
