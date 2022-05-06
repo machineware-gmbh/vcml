@@ -29,26 +29,7 @@ union gdb_u64 {
     gdb_u64(): val() {}
 };
 
-static inline int char2int(char c) {
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    return c == '\0' ? 0 : -1;
-}
-
-static inline u64 str2int(const char* s, int n) {
-    u64 val = 0;
-    for (const char* c = s + n - 1; c >= s; c--) {
-        val <<= 4;
-        val |= char2int(*c);
-    }
-    return val;
-}
-
-static inline u8 char_unescape(const char*& s) {
+static u8 char_unescape(const char*& s) {
     u8 result = *s++;
     if (result == '}')
         result = *s++ ^ 0x20;
@@ -387,7 +368,7 @@ string gdbserver::handle_mem_write(const char* command) {
     }
 
     const char* data = strchr(command, ':');
-    if (data == NULL) {
+    if (data == nullptr) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
@@ -396,8 +377,10 @@ string gdbserver::handle_mem_write(const char* command) {
 
     vector<u8> buffer;
     buffer.resize(size);
-    for (unsigned long long i = 0; i < size; i++)
-        buffer[i] = str2int(data++, 2);
+    for (unsigned long long i = 0; i < size; i++) {
+        buffer[i] = from_hex_ascii(data[2 * i + 0]) << 4 |
+                    from_hex_ascii(data[2 * i + 1]);
+    }
 
     if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
@@ -421,7 +404,7 @@ string gdbserver::handle_mem_write_bin(const char* command) {
     }
 
     const char* data = strchr(command, ':');
-    if (data == NULL) {
+    if (data == nullptr) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }

@@ -22,34 +22,18 @@
 namespace vcml {
 namespace debugging {
 
-static inline string opcode(const string& s) {
+static string opcode(const string& s) {
     size_t pos = s.find(',');
     if (pos == std::string::npos)
         return s;
     return s.substr(0, pos);
 }
 
-static inline unsigned int checksum(const char* str) {
-    int result = 0;
+static u8 checksum(const char* str) {
+    u8 result = 0;
     while (str && *str)
-        result += static_cast<int>(*str++);
-    return result & 0xff;
-}
-
-static inline unsigned int char2int(char c) {
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    return c == '\0' ? 0 : -1;
-}
-
-static inline char int2char(int h) {
-    static const char hexchars[] = { '0', '1', '2', '3', '4', '5', '6', '7',
-                                     '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-    return hexchars[h & 0xf];
+        result += static_cast<u8>(*str++);
+    return result;
 }
 
 rspserver::rspserver(u16 port):
@@ -78,15 +62,14 @@ void rspserver::send_packet(const char* format, ...) {
 
 void rspserver::send_packet(const string& s) {
     VCML_ERROR_ON(!is_connected(), "no connection established");
-
     string esc = escape(s, "$#");
-    int sum    = checksum(esc.c_str());
+
     stringstream ss;
-    ss << "$" << esc << "#" << int2char((sum >> 4) & 0xf)
-       << int2char((sum >> 0) & 0xf);
+    u8 sum = checksum(esc.c_str());
+    ss << "$" << esc << "#" << to_hex_ascii(sum >> 4) << to_hex_ascii(sum);
 
     char ack;
-    int attempts = 10;
+    size_t attempts = 10;
     lock_guard<mutex> lock(m_mutex);
 
     do {
@@ -113,7 +96,8 @@ void rspserver::send_packet(const string& s) {
 string rspserver::recv_packet() {
     lock_guard<mutex> lock(m_mutex);
     VCML_ERROR_ON(!is_connected(), "no connection established");
-    unsigned int checksum = 0;
+
+    u8 checksum = 0;
     stringstream ss;
 
     while (true) {
@@ -128,12 +112,12 @@ string rspserver::recv_packet() {
             if (m_echo)
                 log_debug("received packet '%s'", ss.str().c_str());
 
-            unsigned int refsum = 0;
-            refsum |= char2int(m_sock.recv_char()) << 4;
-            refsum |= char2int(m_sock.recv_char()) << 0;
+            u8 refsum = 0;
+            refsum |= from_hex_ascii(m_sock.recv_char()) << 4;
+            refsum |= from_hex_ascii(m_sock.recv_char()) << 0;
 
             if (refsum != checksum) {
-                log_debug("checksum mismatch %d != %d", refsum, checksum);
+                log_warn("checksum mismatch %d != %d", refsum, checksum);
                 m_sock.send_char('-');
                 checksum = 0;
                 ss.str("");
@@ -148,12 +132,12 @@ string rspserver::recv_packet() {
         }
 
         case '\\':
-            checksum = (checksum + ch) & 0xff;
-            ch       = m_sock.recv_char();
+            checksum += ch;
+            ch = m_sock.recv_char();
             // no break
 
         default:
-            checksum = (checksum + ch) & 0xff;
+            checksum += ch;
             ss << ch;
             break;
         }
@@ -201,7 +185,7 @@ void rspserver::run_async() {
 
 void rspserver::run() {
     m_running = true;
-    while (m_running)
+    while (m_running) {
         try {
             disconnect();
             listen();
@@ -219,6 +203,7 @@ void rspserver::run() {
         } catch (vcml::report& r) {
             log.error(r);
         }
+    }
 }
 
 void rspserver::stop() {
