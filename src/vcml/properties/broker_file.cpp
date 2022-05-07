@@ -183,6 +183,7 @@ broker_file::broker_file(const string& file):
     define("dir", dirname(file), 1);
     define("cfg", filename_noext(file), 1);
     define("app", progname(), 1);
+    define("bin", dirname(progname()));
     define("pwd", curr_dir(), 1);
     define("tmp", temp_dir(), 1);
     define("usr", username(), 1);
