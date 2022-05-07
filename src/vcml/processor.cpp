@@ -223,6 +223,31 @@ bool processor::cmd_stack(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
+    if (!vcml::file_exists(gdb_term)) {
+        os << "gdbterm not found at " << gdb_term.str() << std::endl;
+        return false;
+    }
+
+    stringstream ss;
+    ss << gdb_term.str() << " -n " << name() << " -p " << gdb_port.str();
+    vector<string> symfiles = split(symbols);
+    for (auto symfile : symfiles)
+        ss << " -s " << symfile;
+
+    log_debug("gdbterm command line:");
+    log_debug("'%s'", ss.str().c_str());
+
+    int res = system(ss.str().c_str());
+    if (res == -1) {
+        os << "failed to start gdb shell";
+        return false;
+    }
+
+    os << "started gdb shell on port " << gdb_port.str();
+    return true;
+}
+
 void processor::processor_thread() {
     if (gdb_port >= 0) {
         debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
@@ -297,6 +322,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     gdb_port("gdb_port", -1),
     gdb_wait("gdb_wait", false),
     gdb_echo("gdb_echo", false),
+    gdb_term("gdb_term", "gdbterm"),
     irq("irq"),
     insn("insn"),
     data("data") {
@@ -334,6 +360,8 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
                      "translate a given virtual address to physical");
     register_command("stack", 0, this, &processor::cmd_stack,
                      "generates a stack trace for the current function");
+    register_command("gdb", 0, this, &processor::cmd_gdb,
+                     "opens a new gdb debug session");
 }
 
 processor::~processor() {

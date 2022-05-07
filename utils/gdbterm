@@ -1,0 +1,47 @@
+#!/bin/bash -e
+
+ ##############################################################################
+ #                                                                            #
+ # Copyright 2022 MachineWare GmbH                                            #
+ # All Rights Reserved                                                        #
+ #                                                                            #
+ # This is unpublished proprietary work and may not be used or disclosed to   #
+ # third parties, copied or duplicated in any form, in whole or in part,      #
+ # without prior written permission of the authors.                           #
+ #                                                                            #
+ ##############################################################################
+
+gdb="gdb-multiarch"
+term="xterm"
+
+# check if gdb and xterm can be found
+$gdb  -v >/dev/null 2>&1 || { echo >&2 "$gdb not found, aborting."; exit 1; }
+$term -v >/dev/null 2>&1 || { echo >&2 "$term not found, aborting."; exit 1; }
+
+name="" # Name of the processor to connect to
+host="" # Simulation host
+port="" # Port to use for the GDB remote serial protocol
+syms="" # Location(s) of the symbol file(s)
+
+# parse command line
+while getopts "n:h:p:s:" opt; do
+    case "$opt" in
+        n) name="$OPTARG" ;;
+        h) host="$OPTARG" ;;
+        p) port="$OPTARG" ;;
+        s) syms="$syms $OPTARG" ;;
+        ?) echo "Usage $(basename $0) [-n name] [-h host] [-p port] [-s syms]"
+           exit 1
+    esac
+done
+
+test "$name" != "" || { echo >&2 "cpu name cannot be empty"; exit 1; }
+test "$port" != "" || { echo >&2 "gdb port not specified"; exit 1; }
+
+args="--nx -ex=\"set confirm off\""
+for s in $syms; do
+    args="$args -ex=\"add-symbol-file $s\""
+done
+args="$args -ex=\"set confirm on\""
+args="$args -ex=\"target remote $host:$port\""
+$term -fa 'Monospace' -fs 12 -T "$name" -e "$gdb $args" &

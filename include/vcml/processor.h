@@ -67,6 +67,7 @@ private:
     bool cmd_disas(const vector<string>& args, ostream& os);
     bool cmd_v2p(const vector<string>& args, ostream& os);
     bool cmd_stack(const vector<string>& args, ostream& os);
+    bool cmd_gdb(const vector<string>& args, ostream& os);
 
     using cpureg = debugging::cpureg;
     virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
@@ -81,6 +82,7 @@ public:
     property<int> gdb_port;
     property<bool> gdb_wait;
     property<bool> gdb_echo;
+    property<string> gdb_term;
 
     irq_target_socket_array<> irq;
 
