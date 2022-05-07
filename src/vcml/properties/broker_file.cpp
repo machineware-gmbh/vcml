@@ -146,40 +146,26 @@ void broker_file::parse_done(const string& expr, const string& file,
     m_loops.pop_front();
 }
 
-void broker_file::replace(string& str, const string& file, size_t line) {
-    for (const auto& it : m_replacements)
-        vcml::replace(str, it.first, it.second);
-}
-
 void broker_file::resolve(const string& key, const string& val,
                           const string& file, size_t line) {
     if (m_loops.empty()) {
-        string resolved_key = key;
-        string resolved_val = val;
-        replace(resolved_key, file, line);
-        replace(resolved_val, file, line);
-        define(resolved_key, resolved_val);
-    } else {
-        auto loop = m_loops.front();
-        m_loops.pop_front();
-        for (const string& iter : loop.values) {
-            define(loop.iter, iter);
-            resolve(key, val, file, line);
-        }
-        m_loops.push_front(loop);
+        define(key, val);
+        return;
     }
+
+    auto loop = m_loops.front();
+    m_loops.pop_front();
+
+    for (const string& iter : loop.values) {
+        define(loop.iter, iter);
+        resolve(key, val, file, line);
+    }
+
+    m_loops.push_front(loop);
 }
 
 broker_file::broker_file(const string& file):
-    broker(file), m_errors(0), m_filename(file), m_replacements() {
-    m_replacements["$dir"] = dirname(file);
-    m_replacements["$cfg"] = filename_noext(file);
-    m_replacements["$app"] = progname();
-    m_replacements["$pwd"] = curr_dir();
-    m_replacements["$tmp"] = temp_dir();
-    m_replacements["$usr"] = username();
-    m_replacements["$pid"] = to_string(getpid());
-
+    broker(file), m_errors(0), m_filename(file) {
     define("dir", dirname(file), 1);
     define("cfg", filename_noext(file), 1);
     define("app", progname(), 1);
