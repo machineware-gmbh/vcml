@@ -232,7 +232,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     stringstream ss;
     ss << gdb_term.str() << " -n " << name() << " -p " << gdb_port.str();
     vector<string> symfiles = split(symbols);
-    for (auto symfile : symfiles)
+    for (const auto& symfile : symfiles)
         ss << " -s " << symfile;
 
     log_debug("gdbterm command line:");
