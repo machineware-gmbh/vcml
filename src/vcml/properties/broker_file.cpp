@@ -168,12 +168,6 @@ broker_file::broker_file(const string& file):
     broker(file), m_errors(0), m_filename(file) {
     define("dir", dirname(file), 1);
     define("cfg", filename_noext(file), 1);
-    define("app", progname(), 1);
-    define("bin", dirname(progname()));
-    define("pwd", curr_dir(), 1);
-    define("tmp", temp_dir(), 1);
-    define("usr", username(), 1);
-    define("pid", getpid(), 1);
 
     parse_file(file);
 
