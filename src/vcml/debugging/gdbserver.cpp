@@ -46,7 +46,9 @@ void gdbserver::update_status(gdb_status status) {
     if (m_status == status)
         return;
 
-    switch (status) {
+    gdb_status prev_status = m_status;
+
+    switch ((m_status = status)) {
     case GDB_STOPPED:
         suspend();
         break;
@@ -63,15 +65,13 @@ void gdbserver::update_status(gdb_status status) {
     case GDB_KILLED:
         stop();
         disconnect();
-        if (m_status == GDB_STOPPED)
+        if (prev_status == GDB_STOPPED)
             resume();
         break;
 
     default:
         VCML_ERROR("illegal gdb status: %u", status);
     }
-
-    m_status = status;
 }
 
 void gdbserver::notify_step_complete(target& tgt) {
