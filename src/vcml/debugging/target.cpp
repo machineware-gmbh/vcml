@@ -66,6 +66,7 @@ void target::define_cpuregs(const vector<cpureg>& regs) {
 }
 
 target::target():
+    m_mtx(),
     m_name(),
     m_endian(ENDIAN_UNKNOWN),
     m_cpuregs(),
@@ -458,9 +459,14 @@ bool target::remove_watchpoint(const range& addr, vcml_access prot,
 }
 
 void target::notify_singlestep() {
-    for (auto s : m_steppers)
+    vector<subscriber*> prev_steppers;
+
+    m_mtx.lock();
+    prev_steppers.swap(m_steppers);
+    m_mtx.unlock();
+
+    for (auto s : prev_steppers)
         s->notify_step_complete(*this);
-    m_steppers.clear();
 }
 
 vector<target*> target::all() {
