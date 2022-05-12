@@ -19,6 +19,7 @@
 # from_value_and_unit is called by most sc_time constructors and always writes
 # 'true' to 'time_resolution_fixed', unsynchronized from other threads
 race:from_value_and_unit
+race:from_value
 
 # the sc_time copy constructors reports a race on simcontext m_curr_time when
 # we call sc_time_stamp from threads other than the main SystemC thread
