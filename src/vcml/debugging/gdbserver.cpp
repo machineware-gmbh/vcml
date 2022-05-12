@@ -113,7 +113,7 @@ string gdbserver::handle_step(const char* command) {
     update_status(GDB_STEPPING);
     while (sim_running() && is_stepping()) {
         int signal = 0;
-        if ((signal = recv_signal(100))) {
+        if ((signal = recv_signal(1))) {
             log_debug("received signal %d", signal);
             break;
         }
@@ -127,7 +127,7 @@ string gdbserver::handle_continue(const char* command) {
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
         int signal = 0;
-        if ((signal = recv_signal(100))) {
+        if ((signal = recv_signal(1))) {
             log_debug("received signal %d", signal);
             break;
         }
