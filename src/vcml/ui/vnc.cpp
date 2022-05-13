@@ -244,7 +244,7 @@ void vnc::run() {
         samples++;
     if (fbm.g.size > 0)
         samples++;
-    if (fbm.g.size > 0)
+    if (fbm.b.size > 0)
         samples++;
 
     m_screen = rfbGetScreen(nullptr, nullptr, fbm.xres, fbm.yres, fbm.r.size,
