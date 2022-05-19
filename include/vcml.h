@@ -125,6 +125,7 @@
 #include "vcml/models/opencores/ockbd.h"
 #include "vcml/models/opencores/ocfbc.h"
 #include "vcml/models/opencores/ocspi.h"
+#include "vcml/models/opencores/oci2c.h"
 
 #include "vcml/models/arm/pl011uart.h"
 #include "vcml/models/arm/pl190vic.h"

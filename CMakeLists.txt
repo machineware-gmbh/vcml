@@ -150,6 +150,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/opencores/ockbd.cpp
     ${src}/vcml/models/opencores/ocfbc.cpp
     ${src}/vcml/models/opencores/ocspi.cpp
+    ${src}/vcml/models/opencores/oci2c.cpp
     ${src}/vcml/models/arm/pl011uart.cpp
     ${src}/vcml/models/arm/pl190vic.cpp
     ${src}/vcml/models/arm/sp804timer.cpp
