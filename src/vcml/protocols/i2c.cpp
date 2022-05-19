@@ -108,10 +108,12 @@ i2c_initiator_socket::~i2c_initiator_socket() {
 }
 
 i2c_response i2c_initiator_socket::start(u8 address, tlm_command cmd) {
-    VCML_ERROR_ON(address > 127, "invalid i2c address: %hhu", address);
+    if (cmd == TLM_IGNORE_COMMAND) {
+        cmd = address & 1u ? TLM_READ_COMMAND : TLM_WRITE_COMMAND;
+        address >>= 1;
+    }
 
-    if (cmd == TLM_IGNORE_COMMAND)
-        return I2C_ACK;
+    VCML_ERROR_ON(address > 127, "invalid i2c address: %hhu", address);
 
     i2c_payload tx;
     tx.cmd  = I2C_START;

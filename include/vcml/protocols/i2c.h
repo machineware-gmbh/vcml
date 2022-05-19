@@ -184,7 +184,7 @@ public:
     virtual ~i2c_initiator_socket();
     VCML_KIND(i2c_initiator_socket);
 
-    i2c_response start(u8 address, tlm_command cmd);
+    i2c_response start(u8 address, tlm_command cmd = TLM_IGNORE_COMMAND);
     i2c_response stop();
     i2c_response transport(u8& data);
 
