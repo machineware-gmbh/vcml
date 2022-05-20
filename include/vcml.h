@@ -109,6 +109,7 @@
 #include "vcml/models/generic/fbdev.h"
 #include "vcml/models/generic/pci_host.h"
 #include "vcml/models/generic/pci_device.h"
+#include "vcml/models/generic/lm75.h"
 
 #include "vcml/models/meta/loader.h"
 #include "vcml/models/meta/simdev.h"

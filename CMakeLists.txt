@@ -137,6 +137,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/fbdev.cpp
     ${src}/vcml/models/generic/pci_device.cpp
     ${src}/vcml/models/generic/pci_host.cpp
+    ${src}/vcml/models/generic/lm75.cpp
     ${src}/vcml/models/meta/loader.cpp
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp
