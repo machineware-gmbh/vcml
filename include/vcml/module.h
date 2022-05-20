@@ -69,6 +69,11 @@ public:
                           bool (T::*func)(const vector<string>&, ostream&),
                           const string& description);
 
+    template <class T>
+    void register_command(const string& name, unsigned int argc,
+                          bool (T::*func)(const vector<string>&, ostream&),
+                          const string& description);
+
     command_base* get_command(const string& name);
     vector<command_base*> get_commands() const;
 
@@ -104,6 +109,15 @@ void module::register_command(const string& cmdnm, unsigned int argc, T* host,
     }
 
     m_commands[cmdnm] = new command<T>(cmdnm, argc, desc, host, func);
+}
+
+template <class T>
+void module::register_command(const string& cmdnm, unsigned int argc,
+                              bool (T::*func)(const vector<string>&, ostream&),
+                              const string& desc) {
+    T* host = dynamic_cast<T*>(this);
+    VCML_ERROR_ON(!host, "command host not found");
+    register_command(cmdnm, argc, host, func, desc);
 }
 
 inline command_base* module::get_command(const string& name) {
