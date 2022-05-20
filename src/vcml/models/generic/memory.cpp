@@ -95,7 +95,7 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
 
     map_dmi(m_memory);
 
-    register_command("show", 2, this, &memory::cmd_show,
+    register_command("show", 2, &memory::cmd_show,
                      "show [start] [end] to print memory contents");
 }
 

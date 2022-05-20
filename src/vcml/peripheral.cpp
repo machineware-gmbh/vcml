@@ -51,7 +51,7 @@ peripheral::peripheral(const sc_module_name& nm, endianess default_endian,
     endian("endian", default_endian),
     read_latency("read_latency", rlatency),
     write_latency("write_latency", wlatency) {
-    register_command("mmap", 0, this, &peripheral::cmd_mmap,
+    register_command("mmap", 0, &peripheral::cmd_mmap,
                      "shows the memory map of this peripheral");
 }
 

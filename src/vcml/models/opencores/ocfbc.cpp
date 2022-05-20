@@ -348,7 +348,7 @@ ocfbc::ocfbc(const sc_module_name& nm):
     SC_HAS_PROCESS(ocfbc);
     SC_THREAD(update);
 
-    register_command("info", 0, this, &ocfbc::cmd_info,
+    register_command("info", 0, &ocfbc::cmd_info,
                      "shows information about the framebuffer");
 }
 

@@ -277,7 +277,7 @@ bus::bus(const sc_module_name& nm):
     m_default.offset = 0;
     m_default.peer   = "";
 
-    register_command("mmap", 0, this, &bus::cmd_mmap,
+    register_command("mmap", 0, &bus::cmd_mmap,
                      "shows the memory map of this bus");
 }
 

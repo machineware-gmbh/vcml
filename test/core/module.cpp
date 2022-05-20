@@ -34,7 +34,7 @@ public:
 
     mock_module(const sc_core::sc_module_name& nm = "mock_component"):
         vcml::module(nm) {
-        register_command("test", 3, this, &mock_module::cmd_test, "test");
+        register_command("test", 3, &mock_module::cmd_test, "test");
     }
 };
 

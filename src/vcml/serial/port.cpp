@@ -111,15 +111,15 @@ port::port():
                            &port::cmd_create_backend,
                            "creates a new serial backend for this "
                            "port of given type, usage: create_backend <type>");
-    host->register_command(
-        "destroy_backend", 1, this, &port::cmd_destroy_backend,
-        "destroys the serial backends of this "
-        "port with the specified IDs, usage: destroy_backend <ID> [ID]..");
+    host->register_command("destroy_backend", 1, this,
+                           &port::cmd_destroy_backend,
+                           "destroys serial backends of this port with the "
+                           "given IDs, usage: destroy_backend <ID> [ID]..");
     host->register_command("list_backends", 0, this, &port::cmd_list_backends,
                            "lists all known backends of this port");
-    host->register_command(
-        "history", 0, this, &port::cmd_history,
-        "show previously transmitted data from this serial port");
+    host->register_command("history", 0, this, &port::cmd_history,
+                           "show previously transmitted data from this "
+                           "serial port");
 }
 
 port::~port() {

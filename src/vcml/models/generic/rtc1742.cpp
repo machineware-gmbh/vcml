@@ -205,11 +205,11 @@ rtc1742::rtc1742(const sc_module_name& nm, u32 nvmemsz):
     month.allow_read_write();
     year.allow_read_write();
 
-    register_command("load", 1, this, &rtc1742::cmd_load,
-                     "loads <file> into nvmem");
-    register_command("save", 1, this, &rtc1742::cmd_save,
-                     "stores the contents of nvmem into <file>");
-    register_command("battery", 0, this, &rtc1742::cmd_battery,
+    register_command("load", 1, &rtc1742::cmd_load,
+                     "loads <file> into the nvmem");
+    register_command("save", 1, &rtc1742::cmd_save,
+                     "stores the contents of the nvmem into <file>");
+    register_command("battery", 0, &rtc1742::cmd_battery,
                      "toggle battery bit");
 }
 

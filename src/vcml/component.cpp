@@ -41,7 +41,7 @@ component::component(const sc_module_name& nm, bool dmi):
     m_clkrst_ev("clkrst_ev"),
     clk("clk"),
     rst("rst") {
-    register_command("reset", 0, this, &component::cmd_reset,
+    register_command("reset", 0, &component::cmd_reset,
                      "resets this component");
 }
 

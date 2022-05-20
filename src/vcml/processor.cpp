@@ -346,21 +346,21 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
         }
     }
 
-    register_command("dump", 0, this, &processor::cmd_dump,
+    register_command("dump", 0, &processor::cmd_dump,
                      "dump internal state of the processor");
-    register_command("read", 3, this, &processor::cmd_read,
+    register_command("read", 3, &processor::cmd_read,
                      "read memory from INSN or DATA ports");
-    register_command("symbols", 1, this, &processor::cmd_symbols,
+    register_command("symbols", 1, &processor::cmd_symbols,
                      "load a symbol file for use in disassembly");
-    register_command("lsym", 0, this, &processor::cmd_lsym,
+    register_command("lsym", 0, &processor::cmd_lsym,
                      "show a list of all available symbols");
-    register_command("disas", 0, this, &processor::cmd_disas,
+    register_command("disas", 0, &processor::cmd_disas,
                      "disassemble instructions from memory");
-    register_command("v2p", 1, this, &processor::cmd_v2p,
+    register_command("v2p", 1, &processor::cmd_v2p,
                      "translate a given virtual address to physical");
-    register_command("stack", 0, this, &processor::cmd_stack,
+    register_command("stack", 0, &processor::cmd_stack,
                      "generates a stack trace for the current function");
-    register_command("gdb", 0, this, &processor::cmd_gdb,
+    register_command("gdb", 0, &processor::cmd_gdb,
                      "opens a new gdb debug session");
 }
 

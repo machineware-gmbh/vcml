@@ -131,14 +131,14 @@ adapter::adapter():
         }
     }
 
-    host->register_command(
-        "create_client", 1, this, &adapter::cmd_create_client,
-        "creates a new net client for this "
-        "adapter of given type, usage: create_client <type>");
-    host->register_command(
-        "destroy_client", 1, this, &adapter::cmd_destroy_client,
-        "destroys the net clients of this "
-        "adapter with the specified IDs, usage: destroy_client <ID>...");
+    host->register_command("create_client", 1, this,
+                           &adapter::cmd_create_client,
+                           "creates a new net client for this adapter of the "
+                           "given type, usage: create_client <type>");
+    host->register_command("destroy_client", 1, this,
+                           &adapter::cmd_destroy_client,
+                           "destroys the net clients of this adapter with the "
+                           "specified IDs, usage: destroy_client <ID>...");
     host->register_command("list_clients", 0, this, &adapter::cmd_list_clients,
                            "lists all known clients of this "
                            "network adapter");
