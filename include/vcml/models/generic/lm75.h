@@ -39,12 +39,14 @@ class lm75 : public module, public i2c_host
 private:
     u8 m_buf[2];
     size_t m_len;
+    bool m_evt;
 
     bool cmd_set_temp(const vector<string>& args, ostream& os);
     bool cmd_set_high(const vector<string>& args, ostream& os);
     bool cmd_set_hyst(const vector<string>& args, ostream& os);
 
     void poll_temp();
+    void irq_update();
     void load_buffer();
     void save_buffer();
 

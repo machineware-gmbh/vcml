@@ -52,29 +52,33 @@ bool lm75::cmd_set_hyst(const vector<string>& args, ostream& os) {
 }
 
 void lm75::poll_temp() {
-    bool event = false;
     while (true) {
-        wait(tlm_global_quantum::instance().get());
+        sc_time quantum = tlm_global_quantum::instance().get();
+        sc_time i2c_clk = sc_time(1.0 / (100 * kHz), SC_SEC);
+        wait(max(quantum, i2c_clk));
+        irq_update();
+    }
+}
 
-        if (config & CFG_SHUTDOWN) {
+void lm75::irq_update() {
+    if (config & CFG_SHUTDOWN) {
+        alarm = false;
+        return;
+    }
+
+    if (config & CFG_INT) { // interrupt mode
+        if (!m_evt && temp > high) {
+            m_evt = true;
+            alarm = true;
+        } else if (m_evt && temp < hyst) {
+            m_evt = false;
+            alarm = true;
+        }
+    } else { // comparator mode
+        if (temp > high)
+            alarm = true;
+        if (temp < hyst)
             alarm = false;
-            continue;
-        }
-
-        if (config & CFG_INT) { // interrupt mode
-            if (!event && temp > high) {
-                event = true;
-                alarm = true;
-            } else if (event && temp < hyst) {
-                event = false;
-                alarm = true;
-            }
-        } else { // comparator mode
-            if (temp > high)
-                alarm = true;
-            if (temp < hyst)
-                alarm = false;
-        }
     }
 }
 
@@ -108,8 +112,6 @@ void lm75::load_buffer() {
 void lm75::save_buffer() {
     switch (pointer & 3) {
     case REG_TEMP:
-        temp = (u16)m_buf[0] << 1 | m_buf[1] >> 7;
-        log_debug("setting temp 0x%hx (%.1lfC)", temp.get(), from_temp9(temp));
         break;
 
     case REG_CONF:
@@ -132,6 +134,8 @@ void lm75::save_buffer() {
         log_debug("setting hyst 0x%hx (%.1lfC)", hyst.get(), from_temp9(hyst));
         break;
     }
+
+    irq_update();
 }
 
 u16 lm75::to_temp9(double t) {
@@ -155,6 +159,7 @@ lm75::lm75(const sc_module_name& nm, u8 address):
     i2c_host(),
     m_buf(),
     m_len(),
+    m_evt(false),
     pointer("pointer", 0),
     config("config", 0),
     temp("temp", to_temp9(22.5)),
