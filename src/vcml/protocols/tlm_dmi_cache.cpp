@@ -61,6 +61,7 @@ tlm_dmi_cache::~tlm_dmi_cache() {
 }
 
 void tlm_dmi_cache::insert(const tlm_dmi& dmi) {
+    lock_guard<mutex> guard(m_mtx);
     tlm_dmi merged(dmi);
     while (true) {
         vector<tlm_dmi>::iterator it = std::find_if(
@@ -87,6 +88,7 @@ void tlm_dmi_cache::invalidate(u64 start, u64 end) {
 }
 
 void tlm_dmi_cache::invalidate(const range& r) {
+    lock_guard<mutex> guard(m_mtx);
     vector<tlm_dmi> entries(m_entries.rbegin(), m_entries.rend());
     m_entries.clear();
 
@@ -113,6 +115,7 @@ void tlm_dmi_cache::invalidate(const range& r) {
 }
 
 bool tlm_dmi_cache::lookup(const range& r, vcml_access rwx, tlm_dmi& out) {
+    lock_guard<mutex> guard(m_mtx);
     for (unsigned int i = 0; i < m_entries.size(); i++) {
         if (r.inside(m_entries[i]) && dmi_check_access(m_entries[i], rwx)) {
             std::swap(m_entries[i], m_entries[0]);
