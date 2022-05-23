@@ -34,7 +34,7 @@ private:
     size_t m_limit;
     vector<tlm_dmi> m_entries;
 
-    void cleanup();
+    void insert_locked(const tlm_dmi& dmi);
 
 public:
     size_t get_entry_limit() const { return m_limit; }
