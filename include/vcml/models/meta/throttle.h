@@ -35,9 +35,8 @@ class throttle : public module
 {
 private:
     bool m_throttling;
-    u64 m_time_real;
 
-    void update();
+    void thread();
 
 public:
     property<sc_time> update_interval;
