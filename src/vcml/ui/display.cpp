@@ -26,6 +26,10 @@
 #include "vcml/ui/sdl.h"
 #endif
 
+#ifdef HAVE_LIBRFB
+#include "vcml/ui/rfb.h"
+#endif
+
 namespace vcml {
 namespace ui {
 
@@ -123,6 +127,9 @@ unordered_map<string, function<display*(u32)>> display::types = {
 #endif
 #ifdef HAVE_SDL2
     { "sdl", sdl::create },
+#endif
+#ifdef HAVE_LIBRFB
+    { "rfb", rfb::create },
 #endif
 };
 
