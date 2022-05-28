@@ -560,10 +560,6 @@ public:
     virtual ~virtio_base_initiator_socket();
     VCML_KIND(virtio_base_initiator_socket);
 
-    virtual sc_type_index get_protocol_types() const override {
-        return typeid(virtio_bw_transport_if::protocol_types);
-    }
-
     bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
 };
@@ -577,10 +573,6 @@ public:
     virtio_base_target_socket(const char* nm);
     virtual ~virtio_base_target_socket();
     VCML_KIND(virtio_base_target_socket);
-
-    virtual sc_type_index get_protocol_types() const override {
-        return typeid(virtio_fw_transport_if::protocol_types);
-    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();

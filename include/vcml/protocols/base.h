@@ -51,7 +51,7 @@ public:
     }
 
     virtual sc_type_index get_protocol_types() const VCML_PROTO_OVERRIDE {
-        return typeid(void);
+        return typeid(typename FW::protocol_types);
     }
 
     bool is_bound() const {
@@ -95,7 +95,7 @@ public:
     }
 
     virtual sc_type_index get_protocol_types() const VCML_PROTO_OVERRIDE {
-        return typeid(void);
+        return typeid(typename BW::protocol_types);
     }
 
     bool is_bound() const {

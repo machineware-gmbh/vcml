@@ -126,10 +126,6 @@ public:
     using rst_base_initiator_socket_b::bind;
     virtual void bind(rst_base_target_socket& socket);
 
-    virtual sc_core::sc_type_index get_protocol_types() const override {
-        return typeid(rst_bw_transport_if);
-    }
-
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 };
@@ -147,10 +143,6 @@ public:
     using rst_base_target_socket_b::bind;
     virtual void bind(rst_base_initiator_socket& other);
     virtual void complete_binding(rst_base_initiator_socket& socket) {}
-
-    virtual sc_core::sc_type_index get_protocol_types() const override {
-        return typeid(rst_fw_transport_if);
-    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();

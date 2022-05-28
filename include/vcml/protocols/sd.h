@@ -217,10 +217,6 @@ public:
     virtual ~sd_base_initiator_socket();
     VCML_KIND(sd_base_initiator_socket);
 
-    virtual sc_type_index get_protocol_types() const override {
-        return typeid(sd_bw_transport_if::protocol_types);
-    }
-
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 };
@@ -234,10 +230,6 @@ public:
     sd_base_target_socket(const char* nm, address_space = VCML_AS_DEFAULT);
     virtual ~sd_base_target_socket();
     VCML_KIND(sd_base_target_socket);
-
-    virtual sc_type_index get_protocol_types() const override {
-        return typeid(sd_fw_transport_if::protocol_types);
-    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();

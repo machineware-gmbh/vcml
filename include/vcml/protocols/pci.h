@@ -337,10 +337,6 @@ public:
     virtual ~pci_base_initiator_socket();
     VCML_KIND(pci_base_initiator_socket);
 
-    virtual sc_type_index get_protocol_types() const override {
-        return typeid(pci_bw_transport_if::protocol_types);
-    }
-
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 };
@@ -354,10 +350,6 @@ public:
     pci_base_target_socket(const char* nm, address_space = VCML_AS_DEFAULT);
     virtual ~pci_base_target_socket();
     VCML_KIND(pci_base_target_socket);
-
-    virtual sc_type_index get_protocol_types() const override {
-        return typeid(pci_fw_transport_if::protocol_types);
-    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();

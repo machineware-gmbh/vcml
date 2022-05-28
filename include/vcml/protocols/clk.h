@@ -117,10 +117,6 @@ public:
     virtual ~clk_base_initiator_socket();
     VCML_KIND(clk_base_initiator_socket);
 
-    virtual sc_core::sc_type_index get_protocol_types() const override {
-        return typeid(clk_bw_transport_if);
-    }
-
     using clk_base_initiator_socket_b::bind;
     virtual void bind(clk_base_target_socket& socket);
 
@@ -141,10 +137,6 @@ public:
     using clk_base_target_socket_b::bind;
     virtual void bind(clk_base_initiator_socket& other);
     virtual void complete_binding(clk_base_initiator_socket& socket) {}
-
-    virtual sc_core::sc_type_index get_protocol_types() const override {
-        return typeid(clk_fw_transport_if);
-    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(clock_t hz = 100 * MHz);

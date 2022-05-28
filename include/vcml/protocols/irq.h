@@ -112,10 +112,6 @@ public:
     virtual ~irq_base_initiator_socket();
     VCML_KIND(irq_base_initiator_socket);
 
-    virtual sc_core::sc_type_index get_protocol_types() const override {
-        return typeid(irq_bw_transport_if);
-    }
-
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 };
@@ -129,10 +125,6 @@ public:
     irq_base_target_socket(const char*, address_space = VCML_AS_DEFAULT);
     virtual ~irq_base_target_socket();
     VCML_KIND(irq_base_target_socket);
-
-    virtual sc_core::sc_type_index get_protocol_types() const override {
-        return typeid(irq_fw_transport_if);
-    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
