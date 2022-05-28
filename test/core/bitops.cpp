@@ -94,6 +94,23 @@ TEST(bitops, popcnt64) {
     EXPECT_EQ(vcml::popcnt(0xf0f0f0f0f0f0f0f0ul), 32);
 }
 
+TEST(bitops, parity32) {
+    EXPECT_EQ(vcml::parity(1u), 1u);
+    EXPECT_EQ(vcml::parity(3u), 0u);
+    EXPECT_EQ(vcml::parity(7u), 1u);
+}
+
+TEST(bitops, parity64) {
+    EXPECT_EQ(vcml::parity(0x1f00000000000000ul), 1u);
+    EXPECT_EQ(vcml::parity(0x0f00000000000000ul), 0u);
+}
+
+TEST(bitops, parity8) {
+    EXPECT_EQ(vcml::parity<vcml::u8>(0x00), 0u);
+    EXPECT_EQ(vcml::parity<vcml::u8>(0x11), 0u);
+    EXPECT_EQ(vcml::parity<vcml::u8>(0x01), 1u);
+}
+
 TEST(bitops, is_pow2) {
     EXPECT_FALSE(vcml::is_pow2(0));
     EXPECT_FALSE(vcml::is_pow2(3));

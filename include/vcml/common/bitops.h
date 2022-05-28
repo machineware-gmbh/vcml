@@ -34,24 +34,39 @@ constexpr size_t popcnt(const T& val) {
 }
 
 template <typename T>
+constexpr size_t parity(const T& val) {
+    return __builtin_parityll((unsigned long long)val);
+}
+
+template <typename T>
+constexpr bool parity_odd(const T& val) {
+    return parity(val) == 1u;
+}
+
+template <typename T>
+constexpr size_t parity_even(const T& val) {
+    return parity(val) == 0u;
+}
+
+template <typename T>
 constexpr bool is_pow2(const T& val) {
     return val != 0 && popcnt(val) == 1u;
 }
 
 template <typename T>
-constexpr size_t clz(T val) { // count leading zeroes
+constexpr size_t clz(const T& val) { // count leading zeroes
     return val ? __builtin_clzll(val) -
                      (width_of<unsigned long long>() - width_of<T>())
                : width_of<T>();
 }
 
 template <typename T>
-constexpr size_t ctz(T val) { // count trailing zeroes
+constexpr size_t ctz(const T& val) { // count trailing zeroes
     return val ? __builtin_ctzll(val) : width_of<T>();
 }
 
 template <typename T>
-constexpr ssize_t ffs(T val) { // find first set
+constexpr ssize_t ffs(const T& val) { // find first set
     return __builtin_ffsll(val) - 1;
 }
 
