@@ -23,49 +23,42 @@
 
 namespace vcml {
 
-constexpr int clz(u32 val) {
-    return val ? __builtin_clz(val) : 32;
-}
-
-constexpr int clz(u64 val) {
-    return val ? __builtin_clzl(val) : 64;
-}
-
-constexpr int ctz(u32 val) {
-    return val ? __builtin_ctz(val) : 32;
-}
-
-constexpr int ctz(u64 val) {
-    return val ? __builtin_ctzl(val) : 64;
-}
-
-constexpr int ffs(u32 val) {
-    return __builtin_ffs(val) - 1;
-}
-
-constexpr int ffs(u64 val) {
-    return __builtin_ffsl(val) - 1;
-}
-
-template <typename T>
-constexpr int fls(const T& val) {
-    return sizeof(T) * 8 - clz(val) - 1;
-}
-
-template <typename T>
-constexpr unsigned int popcnt(const T& val) {
-    return __builtin_popcountl((long)val);
-}
-
-template <typename T>
-constexpr bool is_pow2(const T& val) {
-    return val != 0 && popcnt(val) == 1;
-}
-
 template <typename T>
 constexpr size_t width_of() {
     return sizeof(T) * CHAR_BIT;
 };
+
+template <typename T>
+constexpr size_t popcnt(const T& val) {
+    return __builtin_popcountll((unsigned long long)val);
+}
+
+template <typename T>
+constexpr bool is_pow2(const T& val) {
+    return val != 0 && popcnt(val) == 1u;
+}
+
+template <typename T>
+constexpr size_t clz(T val) { // count leading zeroes
+    return val ? __builtin_clzll(val) -
+                     (width_of<unsigned long long>() - width_of<T>())
+               : width_of<T>();
+}
+
+template <typename T>
+constexpr size_t ctz(T val) { // count trailing zeroes
+    return val ? __builtin_ctzll(val) : width_of<T>();
+}
+
+template <typename T>
+constexpr ssize_t ffs(T val) { // find first set
+    return __builtin_ffsll(val) - 1;
+}
+
+template <typename T>
+constexpr int fls(const T& val) { // find last set
+    return width_of<T>() - clz(val) - 1;
+}
 
 constexpr u64 bitmask(size_t length, size_t offset = 0) {
     if (offset >= width_of<u64>())
