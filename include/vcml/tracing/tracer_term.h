@@ -52,6 +52,7 @@ public:
     virtual void trace(const activity<sd_command>&) override;
     virtual void trace(const activity<sd_data>&) override;
     virtual void trace(const activity<vq_message>&) override;
+    virtual void trace(const activity<serial_payload>&) override;
 
     tracer_term(bool use_cerr = false, bool use_colors = true);
     virtual ~tracer_term();
@@ -60,7 +61,7 @@ public:
     static size_t trace_indent_incr;
     static size_t trace_curr_indent;
 
-    static const char* colors[NUM_PROTOCOLS];
+    static array<const char*, NUM_PROTOCOLS> colors;
 };
 
 } // namespace vcml

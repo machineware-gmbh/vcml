@@ -35,6 +35,17 @@ public:
     mock_tracer(): tracer() {}
     MOCK_METHOD(void, trace, (const tracer::activity<tlm_generic_payload>&),
                 (override));
+
+    virtual void trace(const activity<irq_payload>&) override {}
+    virtual void trace(const activity<rst_payload>&) override {}
+    virtual void trace(const activity<clk_payload>&) override {}
+    virtual void trace(const activity<pci_payload>&) override {}
+    virtual void trace(const activity<i2c_payload>&) override {}
+    virtual void trace(const activity<spi_payload>&) override {}
+    virtual void trace(const activity<sd_command>&) override {}
+    virtual void trace(const activity<sd_data>&) override {}
+    virtual void trace(const activity<vq_message>&) override {}
+    virtual void trace(const activity<serial_payload>&) override {}
 };
 
 class test_harness : public test_base
@@ -98,6 +109,11 @@ public:
 };
 
 TEST(tracing, basic) {
+    for (int i = 0; i < NUM_PROTOCOLS; i++) {
+        EXPECT_NE(tracer_term::colors[i], nullptr)
+            << "color undefined for protocol " << i;
+    }
+
     test_harness test("harness");
     sc_core::sc_start();
 }

@@ -51,6 +51,7 @@ public:
     virtual void trace(const activity<sd_command>&) override;
     virtual void trace(const activity<sd_data>&) override;
     virtual void trace(const activity<vq_message>&) override;
+    virtual void trace(const activity<serial_payload>&) override;
 
     tracer_file(const string& filename);
     virtual ~tracer_file();

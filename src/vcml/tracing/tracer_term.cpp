@@ -24,6 +24,7 @@
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
+#include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/tracing/tracer_term.h"
@@ -34,7 +35,7 @@ size_t tracer_term::trace_name_length = 16;
 size_t tracer_term::trace_indent_incr = 1;
 size_t tracer_term::trace_curr_indent = 0;
 
-const char* tracer_term::colors[NUM_PROTOCOLS] = {
+array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_TLM]    = */ "\x1B[35m", // magenta
     /* [PROTO_IRQ]    = */ "\x1B[33m", // yellow
     /* [PROTO_RST]    = */ "\x1B[31m", // red
@@ -43,6 +44,7 @@ const char* tracer_term::colors[NUM_PROTOCOLS] = {
     /* [PROTO_I2C]    = */ "\x1B[92m", // light green
     /* [PROTO_SPI]    = */ "\x1B[93m", // light yellow
     /* [PROTO_SD]     = */ "\x1B[95m", // light magenta
+    /* [PROTO_SERIAL] = */ "\x1B[93m", // light yellow
     /* [PROTO_VIRTIO] = */ "\x1B[96m", // light cyan
 };
 
@@ -128,6 +130,10 @@ void tracer_term::trace(const activity<sd_data>& msg) {
 }
 
 void tracer_term::trace(const activity<vq_message>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<serial_payload>& msg) {
     do_trace(msg);
 }
 

@@ -36,6 +36,7 @@ struct spi_payload;
 struct sd_command;
 struct sd_data;
 struct vq_message;
+struct serial_payload;
 
 enum trace_direction : int {
     TRACE_FW          = 1,
@@ -60,6 +61,7 @@ enum protocol_kind {
     PROTO_I2C,
     PROTO_SPI,
     PROTO_SD,
+    PROTO_SERIAL,
     PROTO_VIRTIO,
     NUM_PROTOCOLS,
 };
@@ -115,6 +117,11 @@ struct protocol<sd_data> {
 };
 
 template <>
+struct protocol<serial_payload> {
+    static constexpr protocol_kind KIND = PROTO_SERIAL;
+};
+
+template <>
 struct protocol<vq_message> {
     static constexpr protocol_kind KIND = PROTO_VIRTIO;
 };
@@ -133,16 +140,17 @@ public:
         const u64 cycle;
     };
 
-    virtual void trace(const activity<tlm_generic_payload>&) {}
-    virtual void trace(const activity<irq_payload>&) {}
-    virtual void trace(const activity<rst_payload>&) {}
-    virtual void trace(const activity<clk_payload>&) {}
-    virtual void trace(const activity<pci_payload>&) {}
-    virtual void trace(const activity<i2c_payload>&) {}
-    virtual void trace(const activity<spi_payload>&) {}
-    virtual void trace(const activity<sd_command>&) {}
-    virtual void trace(const activity<sd_data>&) {}
-    virtual void trace(const activity<vq_message>&) {}
+    virtual void trace(const activity<tlm_generic_payload>&) = 0;
+    virtual void trace(const activity<irq_payload>&)         = 0;
+    virtual void trace(const activity<rst_payload>&)         = 0;
+    virtual void trace(const activity<clk_payload>&)         = 0;
+    virtual void trace(const activity<pci_payload>&)         = 0;
+    virtual void trace(const activity<i2c_payload>&)         = 0;
+    virtual void trace(const activity<spi_payload>&)         = 0;
+    virtual void trace(const activity<sd_command>&)          = 0;
+    virtual void trace(const activity<sd_data>&)             = 0;
+    virtual void trace(const activity<vq_message>&)          = 0;
+    virtual void trace(const activity<serial_payload>&)      = 0;
 
     tracer();
     virtual ~tracer();
