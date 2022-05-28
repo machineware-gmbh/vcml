@@ -146,6 +146,29 @@ void serial_base_target_socket::stub() {
     m_stub->serial_tx.bind(*this);
 }
 
+sc_time serial_initiator_socket::cycle() const {
+    double symbols = 2.0;
+    if (m_parity != SERIAL_PARITY_NONE)
+        symbols += 1.0;
+
+    switch (m_stop) {
+    case SERIAL_STOP_1:
+        symbols += 1.0;
+        break;
+
+    case SERIAL_STOP_2:
+        symbols += 2.0;
+        break;
+    case SERIAL_STOP_1_5:
+        symbols += 1.5;
+        break;
+    default:
+        break;
+    }
+
+    return sc_time(symbols / m_baud, SC_SEC);
+}
+
 serial_initiator_socket::serial_initiator_socket(const char* nm,
                                                  address_space as):
     serial_base_initiator_socket(nm, as),

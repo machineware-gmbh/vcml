@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Jan Henrik Weinstock                                        *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,17 +16,14 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/serial/port.h"
-#include "vcml/module.h"
+#include "vcml/serial/terminal.h"
 
 namespace vcml {
 namespace serial {
 
-unordered_map<string, port*> port::s_ports;
-
-bool port::cmd_create_backend(const vector<string>& args, ostream& os) {
+bool terminal::cmd_create_backend(const vector<string>& args, ostream& os) {
     try {
-        int id = create_backend(args[0]);
+        id_t id = create_backend(args[0]);
         os << "created backend " << id;
         return true;
     } catch (std::exception& ex) {
@@ -35,24 +32,24 @@ bool port::cmd_create_backend(const vector<string>& args, ostream& os) {
     }
 }
 
-bool port::cmd_destroy_backend(const vector<string>& args, ostream& os) {
+bool terminal::cmd_destroy_backend(const vector<string>& args, ostream& os) {
     for (const string& arg : args) {
-        int id = from_string<int>(arg);
-        if (id < 0) {
+        if (to_lower(arg) == "all") {
             for (auto it : m_backends)
                 delete it.second;
             m_backends.clear();
             return true;
+        } else {
+            id_t id = from_string<id_t>(arg);
+            if (!destroy_backend(id))
+                os << "invalid backend id: " << id;
         }
-
-        if (!destroy_backend(id))
-            os << "invalid backend id: " << id;
     }
 
     return true;
 }
 
-bool port::cmd_list_backends(const vector<string>& args, ostream& os) {
+bool terminal::cmd_list_backends(const vector<string>& args, ostream& os) {
     if (args.empty()) {
         for (auto it : m_backends)
             os << it.first << ": " << it.second->type() << ",";
@@ -60,7 +57,7 @@ bool port::cmd_list_backends(const vector<string>& args, ostream& os) {
     }
 
     for (const string& arg : args) {
-        size_t id = from_string<size_t>(arg);
+        id_t id = from_string<id_t>(arg);
 
         auto it = m_backends.find(id);
         os << id << ": ";
@@ -71,7 +68,7 @@ bool port::cmd_list_backends(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool port::cmd_history(const vector<string>& args, ostream& os) {
+bool terminal::cmd_history(const vector<string>& args, ostream& os) {
     vector<u8> history;
     fetch_history(history);
     for (u8 val : history) {
@@ -83,20 +80,44 @@ bool port::cmd_history(const vector<string>& args, ostream& os) {
     return true;
 }
 
-port::port():
-    m_name(),
+void terminal::serial_transmit() {
+    while (true) {
+        sc_time quantum = tlm_global_quantum::instance().get();
+        wait(max(serial_tx.cycle(), quantum));
+
+        u8 data = 0xff;
+        for (backend* b : m_listeners) {
+            if (b->read(data)) {
+                serial_tx.send(data);
+                wait(serial_tx.cycle());
+            }
+        }
+    }
+}
+
+void terminal::serial_receive(u8 data) {
+    m_hist.insert(data);
+    for (backend* b : m_listeners)
+        b->write(data);
+}
+
+unordered_map<string, terminal*>& terminal::terminals() {
+    static unordered_map<string, terminal*> term;
+    return term;
+}
+
+terminal::terminal(const sc_module_name& nm):
+    module(nm),
     m_hist(),
     m_next_id(),
     m_backends(),
     m_listeners(),
-    backends("backends", "") {
-    module* host = hierarchy_search<module>();
-    VCML_ERROR_ON(!host, "serial port declared outside module");
-    m_name = host->name();
-
-    if (stl_contains(s_ports, m_name))
-        VCML_ERROR("serial port '%s' already exists", m_name.c_str());
-    s_ports[m_name] = this;
+    backends("backends", ""),
+    serial_tx("serial_tx"),
+    serial_rx("serial_rx") {
+    if (stl_contains(terminals(), string(name())))
+        VCML_ERROR("serial terminal '%s' already exists", name());
+    terminals()[name()] = this;
 
     vector<string> types = split(backends);
     for (const auto& type : types) {
@@ -107,46 +128,48 @@ port::port():
         }
     }
 
-    host->register_command("create_backend", 1, this,
-                           &port::cmd_create_backend,
-                           "creates a new serial backend for this "
-                           "port of given type, usage: create_backend <type>");
-    host->register_command("destroy_backend", 1, this,
-                           &port::cmd_destroy_backend,
-                           "destroys serial backends of this port with the "
-                           "given IDs, usage: destroy_backend <ID> [ID]..");
-    host->register_command("list_backends", 0, this, &port::cmd_list_backends,
-                           "lists all known backends of this port");
-    host->register_command("history", 0, this, &port::cmd_history,
-                           "show previously transmitted data from this "
-                           "serial port");
+    register_command("create_backend", 1, this, &terminal::cmd_create_backend,
+                     "creates a new serial backend for this terminal of a "
+                     "given type, usage: create_backend <type>");
+    register_command("destroy_backend", 1, this,
+                     &terminal::cmd_destroy_backend,
+                     "destroys serial backends of this terminal with the "
+                     "given IDs, usage: destroy_backend <ID> [ID]..| all");
+    register_command("list_backends", 0, this, &terminal::cmd_list_backends,
+                     "lists all known backends of this terminal");
+    register_command("history", 0, this, &terminal::cmd_history,
+                     "show previously transmitted data from this terminal");
+
+    SC_HAS_PROCESS(terminal);
+    SC_THREAD(serial_transmit);
 }
 
-port::~port() {
+terminal::~terminal() {
     for (auto it : m_backends)
         delete it.second;
 
-    s_ports.erase(m_name);
+    terminals().erase(name());
 }
 
-void port::attach(backend* b) {
+void terminal::attach(backend* b) {
     if (stl_contains(m_listeners, b))
         VCML_ERROR("attempt to attach backend twice");
     m_listeners.push_back(b);
 }
 
-void port::detach(backend* b) {
+void terminal::detach(backend* b) {
     if (!stl_contains(m_listeners, b))
         VCML_ERROR("attempt to detach unknown backend");
     stl_remove_erase(m_listeners, b);
 }
 
-int port::create_backend(const string& type) {
-    m_backends[m_next_id] = backend::create(m_name, type);
+id_t terminal::create_backend(const string& type) {
+    hierarchy_guard guard(this);
+    m_backends[m_next_id] = backend::create(this, type);
     return m_next_id++;
 }
 
-bool port::destroy_backend(int id) {
+bool terminal::destroy_backend(id_t id) {
     auto it = m_backends.find(id);
     if (it == m_backends.end())
         return false;
@@ -156,28 +179,15 @@ bool port::destroy_backend(int id) {
     return true;
 }
 
-bool port::serial_in(u8& val) {
-    for (backend* b : m_listeners)
-        if (b->read(val))
-            return true;
-    return false;
+terminal* terminal::find(const string& name) {
+    auto it = terminals().find(name);
+    return it != terminals().end() ? it->second : nullptr;
 }
 
-void port::serial_out(u8 val) {
-    m_hist.insert(val);
-    for (backend* b : m_listeners)
-        b->write(val);
-}
-
-port* port::find(const string& name) {
-    auto it = s_ports.find(name);
-    return it != s_ports.end() ? it->second : nullptr;
-}
-
-vector<port*> port::all() {
-    vector<port*> all;
-    all.reserve(s_ports.size());
-    for (const auto& it : s_ports)
+vector<terminal*> terminal::all() {
+    vector<terminal*> all;
+    all.reserve(terminals().size());
+    for (const auto& it : terminals())
         all.push_back(it.second);
     return all;
 }

@@ -24,7 +24,7 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/serial/port.h"
+#include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/module.h"
@@ -32,7 +32,7 @@
 namespace vcml {
 namespace virtio {
 
-class console : public module, public virtio_device, public serial::port
+class console : public module, public virtio_device, public serial_host
 {
 private:
     enum virtqueues : int {
@@ -57,11 +57,7 @@ private:
 
     queue<vq_message> m_fifo;
 
-    size_t rx_data(u8* data, size_t len);
-    size_t tx_data(const u8* data, size_t len);
-
-    void poll();
-
+    // virtio_device
     virtual void identify(virtio_device_desc& desc) override;
     virtual bool notify(u32 vqid) override;
 
@@ -71,13 +67,17 @@ private:
     virtual bool read_config(const range& addr, void* ptr) override;
     virtual bool write_config(const range& addr, const void* ptr) override;
 
+    // serial_host
+    virtual void serial_receive(u8 data) override;
+
 public:
     property<u16> cols;
     property<u16> rows;
 
-    property<u64> pollrate;
-
     virtio_target_socket virtio_in;
+
+    serial_initiator_socket serial_tx;
+    serial_target_socket serial_rx;
 
     console(const sc_module_name& nm);
     virtual ~console();

@@ -21,17 +21,8 @@
 namespace vcml {
 namespace serial {
 
-backend_fd::backend_fd(const string& port, int fd): backend(port), m_fd(fd) {
-    switch (fd) {
-    case STDOUT_FILENO:
-        m_type = "stdout";
-        break;
-    case STDERR_FILENO:
-        m_type = "stderr";
-        break;
-    default:
-        m_type = mkstr("fd:%d", fd);
-    }
+backend_fd::backend_fd(terminal* term, int fd):
+    backend(term, fd == STDOUT_FILENO ? "stdout" : "stderr"), m_fd(fd) {
 }
 
 backend_fd::~backend_fd() {
@@ -46,11 +37,11 @@ void backend_fd::write(u8 val) {
     fd_write(m_fd, &val, sizeof(val));
 }
 
-backend* backend_fd::create(const string& port, const string& type) {
+backend* backend_fd::create(terminal* term, const string& type) {
     if (starts_with(type, "stdout"))
-        return new backend_fd(port, STDOUT_FILENO);
+        return new backend_fd(term, STDOUT_FILENO);
     if (starts_with(type, "stderr"))
-        return new backend_fd(port, STDERR_FILENO);
+        return new backend_fd(term, STDERR_FILENO);
 
     VCML_REPORT("unknown type: %s", type.c_str());
 }

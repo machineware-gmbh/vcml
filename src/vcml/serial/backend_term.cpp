@@ -26,9 +26,9 @@ backend_term* backend_term::singleton = nullptr;
 
 void backend_term::handle_signal(int sig) {
     if (singleton) {
-        if (sig == SIGINT) /* interrupt (ANSI) */
+        if (sig == SIGINT) // interrupt (ANSI)
             return singleton->handle_sigint(sig);
-        if (sig == SIGTSTP) /* keyboard stop (POSIX) */
+        if (sig == SIGTSTP) // keyboard stop (POSIX)
             singleton->handle_sigstp(sig);
     }
 
@@ -56,8 +56,10 @@ void backend_term::handle_sigint(int sig) {
         }
     }
 
-    m_time   = now;
+    m_time = now;
+
     m_signal = m_termios.c_cc[VINTR];
+
     if ((m_sigint != SIG_DFL) && (m_sigint != SIG_IGN))
         (*m_sigint)(sig);
 }
@@ -72,8 +74,8 @@ void backend_term::cleanup() {
     aio_cancel(STDIN_FILENO);
 }
 
-backend_term::backend_term(const string& port):
-    backend(port),
+backend_term::backend_term(terminal* term):
+    backend(term, "term"),
     m_fifo_mtx(),
     m_fifo(),
     m_signal(0),
@@ -85,8 +87,6 @@ backend_term::backend_term(const string& port):
     m_sigstp() {
     VCML_REPORT_ON(singleton, "multiple terminal backends requested");
     singleton = this;
-
-    m_type = "term";
 
     if (!isatty(STDIN_FILENO))
         VCML_REPORT("not a terminal");
@@ -139,8 +139,8 @@ void backend_term::write(u8 val) {
     fd_write(STDOUT_FILENO, &val, sizeof(val));
 }
 
-backend* backend_term::create(const string& port, const string& type) {
-    return new backend_term(port);
+backend* backend_term::create(terminal* term, const string& type) {
+    return new backend_term(term);
 }
 
 } // namespace serial

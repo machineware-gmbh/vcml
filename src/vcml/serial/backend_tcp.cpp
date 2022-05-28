@@ -21,8 +21,8 @@
 namespace vcml {
 namespace serial {
 
-backend_tcp::backend_tcp(const string& serial, int port):
-    backend(serial), m_socket(port) {
+backend_tcp::backend_tcp(terminal* term, u16 port):
+    backend(term, "tcp"), m_socket(port) {
     m_socket.accept_async();
     m_type = mkstr("tcp:%hu", m_socket.port());
     log_info("listening on port %hu", m_socket.port());
@@ -54,12 +54,14 @@ void backend_tcp::write(u8 val) {
     }
 }
 
-backend* backend_tcp::create(const string& serial, const string& type) {
-    int port            = 0;
+backend* backend_tcp::create(terminal* term, const string& type) {
     vector<string> args = split(type, ':');
+
+    u16 port = 0;
     if (args.size() > 1)
-        port = from_string<int>(args[1]);
-    return new backend_tcp(serial, port);
+        port = from_string<u16>(args[1]);
+
+    return new backend_tcp(term, port);
 }
 
 } // namespace serial

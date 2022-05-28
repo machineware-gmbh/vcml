@@ -39,6 +39,8 @@ public:
         out("out"),
         irq("irq") {
         virtio.virtio_out.bind(virtio_console.virtio_in);
+        virtio_console.serial_tx.stub();
+        virtio_console.serial_rx.stub();
 
         bus.bind(mem.in, 0, 0xfff);
         bus.bind(virtio.in, 0x1000, 0x1fff);

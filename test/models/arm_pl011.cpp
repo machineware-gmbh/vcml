@@ -40,6 +40,9 @@ public:
         reset_out.bind(uart.rst);
         reset_out.bind(rst);
         clk.bind(uart.clk);
+
+        uart.serial_rx.stub();
+        uart.serial_tx.stub();
     }
 
     virtual void run_test() override {

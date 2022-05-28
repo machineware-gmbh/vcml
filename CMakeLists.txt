@@ -88,7 +88,7 @@ add_library(vcml STATIC
     ${src}/vcml/serial/backend_tcp.cpp
     ${src}/vcml/serial/backend_term.cpp
     ${src}/vcml/serial/backend.cpp
-    ${src}/vcml/serial/port.cpp
+    ${src}/vcml/serial/terminal.cpp
     ${src}/vcml/net/backend.cpp
     ${src}/vcml/net/backend_file.cpp
     ${src}/vcml/net/backend_tap.cpp

@@ -25,7 +25,7 @@
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/loader.h"
-#include "vcml/serial/port.h"
+#include "vcml/serial/terminal.h"
 #include "vcml/net/adapter.h"
 #include "vcml/ui/input.h"
 
@@ -186,8 +186,8 @@ string vspserver::handle_list(const char* command) {
     for (auto ptr : ui::pointer::all())
         ss << "<pointer>" << ptr->input_name() << "</pointer>";
 
-    for (auto serial : serial::port::all())
-        ss << "<serial>" << serial->port_name() << "</serial>";
+    for (auto terminal : serial::terminal::all())
+        ss << "<terminal>" << terminal->name() << "</terminal>";
 
     for (auto adapter : net::adapter::all())
         ss << "<adapter>" << adapter->adapter_name() << "</adapter>";

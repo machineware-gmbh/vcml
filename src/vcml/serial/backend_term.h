@@ -59,13 +59,13 @@ private:
     void cleanup();
 
 public:
-    backend_term(const string& port);
+    backend_term(terminal* term);
     virtual ~backend_term();
 
     virtual bool read(u8& val) override;
     virtual void write(u8 val) override;
 
-    static backend* create(const string& port, const string& type);
+    static backend* create(terminal* term, const string& type);
 };
 
 } // namespace serial

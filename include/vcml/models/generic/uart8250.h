@@ -26,7 +26,7 @@
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
-#include "vcml/serial/port.h"
+#include "vcml/protocols/serial.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -34,7 +34,7 @@
 namespace vcml {
 namespace generic {
 
-class uart8250 : public peripheral, public serial::port
+class uart8250 : public peripheral, public serial_host
 {
 private:
     const size_t m_rx_size;
@@ -47,35 +47,36 @@ private:
 
     void calibrate();
     void update();
-    void poll();
 
     u8 read_rbr();
     u8 read_ier();
     u8 read_iir();
+    u8 read_lsr();
 
     void write_thr(u8 val);
     void write_ier(u8 val);
     void write_lcr(u8 val);
     void write_fcr(u8 val);
 
-    // disabled
-    uart8250();
-    uart8250(const uart8250&);
+    // serial_host
+    void serial_receive(u8 data) override;
 
 public:
-    enum : u32 { DEFAULT_BAUD = 9600 };
+    enum : baud_t { DEFAULT_BAUD = SERIAL_9600BD };
 
+    // clang-format off
     enum lsr_status {
         LSR_DR   = 1 << 0, // line status data ready
+        LSR_OE   = 1 << 1, // line status overrun error
         LSR_THRE = 1 << 5, // line status transmitter hold empty
         LSR_TEMT = 1 << 6, // line status transmitter empty
     };
 
-    enum ier_status {
-        IER_RDA  = 1 << 0, // enable receiver data available irq
-        IER_THRE = 1 << 1, // enable transmitter hold empty irq
-        IER_RLS  = 1 << 2, // enable receiver line status irq
-        IER_MST  = 1 << 3, // enable modem status irq
+    enum irq_status {
+        IRQ_RDA  = 1 << 0, // enable receiver data available irq
+        IRQ_THRE = 1 << 1, // enable transmitter hold empty irq
+        IRQ_RLS  = 1 << 2, // enable receiver line status irq
+        IRQ_MST  = 1 << 3, // enable modem status irq
     };
 
     enum iir_status {
@@ -110,6 +111,8 @@ public:
         FCR_IT14 = 3 << 6, // IRQ trigger threshold at 14 bytes
     };
 
+    // clang-format on
+
     reg<u8> thr; // transmit hold / receive buffer
     reg<u8> ier; // interrupt enable register
     reg<u8> iir; // interrupt identify register
@@ -119,15 +122,19 @@ public:
     reg<u8> msr; // modem status register
     reg<u8> scr; // scratch register
 
+    serial_initiator_socket serial_tx;
+    serial_target_socket serial_rx;
+
     irq_initiator_socket irq;
     tlm_target_socket in;
 
     uart8250(const sc_module_name& name);
     virtual ~uart8250();
-
     VCML_KIND(uart8250);
-
     virtual void reset() override;
+
+    uart8250()                = delete;
+    uart8250(const uart8250&) = delete;
 };
 
 } // namespace generic

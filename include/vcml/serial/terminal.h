@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Jan Henrik Weinstock                                        *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,98 +16,89 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SERIAL_PORT_H
-#define VCML_SERIAL_PORT_H
+#ifndef VCML_SERIAL_TERMINAL_H
+#define VCML_SERIAL_TERMINAL_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/strings.h"
 #include "vcml/common/systemc.h"
 
-#include "vcml/properties/property.h"
 #include "vcml/serial/backend.h"
+#include "vcml/protocols/serial.h"
+#include "vcml/properties/property.h"
+
+#include "vcml/module.h"
 
 namespace vcml {
 namespace serial {
 
-class port
+class terminal : public module, public serial_host
 {
 private:
-    template <unsigned int N>
     struct history {
-        std::array<u8, N> data;
+        array<u8, 4096> data;
         size_t count;
         size_t wrptr;
 
-        history(): data(), count(0), wrptr(0) {}
+        history(): data(), count(), wrptr() { clear(); }
 
         void insert(u8 val);
         void fetch(vector<u8>& hist) const;
         void clear() { count = wrptr = 0; }
     };
 
-    string m_name;
-    history<4096> m_hist;
-
-    size_t m_next_id;
-    std::map<int, backend*> m_backends;
-    std::vector<backend*> m_listeners;
+    history m_hist;
+    id_t m_next_id;
+    unordered_map<id_t, backend*> m_backends;
+    vector<backend*> m_listeners;
 
     bool cmd_create_backend(const vector<string>& args, ostream& os);
     bool cmd_destroy_backend(const vector<string>& args, ostream& os);
     bool cmd_list_backends(const vector<string>& args, ostream& os);
     bool cmd_history(const vector<string>& args, ostream& os);
 
-    static unordered_map<string, port*> s_ports;
+    void serial_transmit();
+
+    virtual void serial_receive(u8 data) override;
+
+    static unordered_map<string, terminal*>& terminals();
 
 public:
     property<string> backends;
 
-    const char* port_name() const { return m_name.c_str(); }
+    serial_initiator_socket serial_tx;
+    serial_target_socket serial_rx;
 
-    port();
-    virtual ~port();
+    terminal(const sc_module_name& nm);
+    virtual ~terminal();
+    VCML_KIND(serial::terminal);
 
     void attach(backend* b);
     void detach(backend* b);
 
-    int create_backend(const string& type);
-    bool destroy_backend(int id);
+    id_t create_backend(const string& type);
+    bool destroy_backend(id_t id);
 
-    void fetch_history(vector<u8>& hist);
-    void clear_history();
+    void fetch_history(vector<u8>& hist) { m_hist.fetch(hist); }
+    void clear_history() { m_hist.clear(); }
 
-    bool serial_in(u8& val);
-    void serial_out(u8 val);
-
-    static port* find(const string& name);
-    static vector<port*> all();
+    static terminal* find(const string& name);
+    static vector<terminal*> all();
 };
 
-template <unsigned int N>
-void port::history<N>::insert(u8 val) {
+inline void terminal::history::insert(u8 val) {
     data[wrptr] = val;
-    wrptr       = (wrptr + 1) % data.size();
-    count       = min(count + 1, data.size());
+
+    wrptr = (wrptr + 1) % data.size();
+    count = min(count + 1, data.size());
 }
 
-template <unsigned int N>
-void port::history<N>::fetch(vector<u8>& hist) const {
-    hist.clear();
+inline void terminal::history::fetch(vector<u8>& hist) const {
     hist.resize(count);
     size_t pos = count == data.size() ? wrptr : 0;
-    for (size_t i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++, pos = (pos + 1) % data.size())
         hist[i] = data[pos];
-        pos     = (pos + 1) % data.size();
-    }
-}
-
-inline void port::fetch_history(vector<u8>& hist) {
-    m_hist.fetch(hist);
-}
-
-inline void port::clear_history() {
-    m_hist.clear();
 }
 
 } // namespace serial

@@ -61,7 +61,7 @@
 #include "vcml/debugging/vspserver.h"
 
 #include "vcml/serial/backend.h"
-#include "vcml/serial/port.h"
+#include "vcml/serial/terminal.h"
 
 #include "vcml/net/backend.h"
 #include "vcml/net/adapter.h"
@@ -80,6 +80,7 @@
 #include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/pci_ids.h"
+#include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"

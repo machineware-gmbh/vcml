@@ -24,9 +24,9 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/serial/port.h"
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/serial.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -34,14 +34,15 @@
 namespace vcml {
 namespace arm {
 
-class pl011uart : public peripheral, public serial::port
+class pl011uart : public peripheral, public serial_host
 {
 private:
     unsigned int m_fifo_size;
     queue<u16> m_fifo;
-    sc_event m_enable;
 
-    void poll();
+    // serial host
+    virtual void serial_receive(u8 data) override;
+
     void update();
 
     u16 read_dr();
@@ -143,6 +144,9 @@ public:
 
     tlm_target_socket in;
     irq_initiator_socket irq;
+
+    serial_initiator_socket serial_tx;
+    serial_target_socket serial_rx;
 
     bool is_enabled() const { return cr & CR_UARTEN; }
     bool is_rx_enabled() const { return cr & CR_RXE; }

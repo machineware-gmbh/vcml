@@ -213,6 +213,8 @@ public:
     serial_stop stop_bits() const { return m_stop; }
     void set_stop_bits(serial_stop s) { m_stop = s; }
 
+    sc_time cycle() const;
+
     serial_initiator_socket(const char* name, address_space = VCML_AS_DEFAULT);
     virtual ~serial_initiator_socket();
     VCML_KIND(serial_initiator_socket);

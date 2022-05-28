@@ -34,13 +34,13 @@ private:
     ofstream m_tx;
 
 public:
-    backend_file(const string& port, const string& rx, const string& tx);
+    backend_file(terminal* term, const string& rx, const string& tx);
     virtual ~backend_file();
 
     virtual bool read(u8& val) override;
     virtual void write(u8 val) override;
 
-    static backend* create(const string& port, const string& type);
+    static backend* create(terminal* term, const string& type);
 };
 
 } // namespace serial
