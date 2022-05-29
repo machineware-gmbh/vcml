@@ -33,7 +33,7 @@ TEST(serial, to_string) {
 
     std::stringstream ss;
     ss << tx;
-    EXPECT_EQ(ss.str(), "SERIAL TX [41] (9600E8)");
+    EXPECT_EQ(ss.str(), "SERIAL TX [41] (9600e8)");
 }
 
 TEST(serial, success) {
