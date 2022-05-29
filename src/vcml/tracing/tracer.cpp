@@ -39,6 +39,8 @@ const char* protocol_name(protocol_kind kind) {
         return "SPI";
     case PROTO_SD:
         return "SD";
+    case PROTO_SERIAL:
+        return "SERIAL";
     case PROTO_VIRTIO:
         return "VIRTIO";
     default:
