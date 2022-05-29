@@ -27,7 +27,7 @@ namespace serial {
 
 class terminal;
 
-class backend : public sc_object
+class backend
 {
 protected:
     terminal* m_term;

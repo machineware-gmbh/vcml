@@ -30,13 +30,12 @@ namespace serial {
 backend::backend(terminal* term, const string& type):
     m_term(term), m_type(type) {
     VCML_ERROR_ON(!term, "backend created without terminal");
-    term->attach(this);
+    m_term->attach(this);
 }
 
 backend::~backend() {
-    terminal* term = hierarchy_search<terminal>(this);
-    if (term)
-        term->detach(this);
+    if (m_term)
+        m_term->detach(this);
 }
 
 backend* backend::create(terminal* term, const string& type) {
