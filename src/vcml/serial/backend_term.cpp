@@ -67,6 +67,12 @@ backend_term::~backend_term() {
     g_owner = nullptr;
 }
 
+enum keys : u8 {
+    CTRL_A = 0x1,
+    CTRL_C = 0x3,
+    CTRL_X = 0x18,
+};
+
 bool backend_term::read(u8& value) {
     if (!fd_peek(STDIN_FILENO))
         return false;
@@ -74,15 +80,15 @@ bool backend_term::read(u8& value) {
     u8 ch;
     fd_read(STDIN_FILENO, &ch, sizeof(ch));
 
-    if (ch == 0x1) { // ctrl-a
+    if (ch == CTRL_A) { // ctrl-a
         fd_read(STDIN_FILENO, &ch, sizeof(ch));
-        if (ch == 'x' || ch == g_term.c_cc[VINTR] || ch == 0x18) {
+        if (ch == 'x' || ch == CTRL_X || ch == g_term.c_cc[VINTR]) {
             terminate();
             return false;
         }
 
         if (ch == 'a')
-            ch = 0x1;
+            ch = CTRL_A;
     }
 
     value = ch;
