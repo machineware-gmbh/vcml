@@ -59,27 +59,28 @@ private:
     void write_fcr(u8 val);
 
     // serial_host
-    void serial_receive(u8 data) override;
+    void serial_receive(serial_target_socket&, serial_payload& tx) override;
 
 public:
     enum : baud_t { DEFAULT_BAUD = SERIAL_9600BD };
 
     // clang-format off
-    enum lsr_status {
+    enum lsr_status : u8 {
         LSR_DR   = 1 << 0, // line status data ready
         LSR_OE   = 1 << 1, // line status overrun error
+        LSR_PE   = 1 << 2, // line status parity error
         LSR_THRE = 1 << 5, // line status transmitter hold empty
         LSR_TEMT = 1 << 6, // line status transmitter empty
     };
 
-    enum irq_status {
+    enum irq_status : u8 {
         IRQ_RDA  = 1 << 0, // enable receiver data available irq
         IRQ_THRE = 1 << 1, // enable transmitter hold empty irq
         IRQ_RLS  = 1 << 2, // enable receiver line status irq
         IRQ_MST  = 1 << 3, // enable modem status irq
     };
 
-    enum iir_status {
+    enum iir_status : u8 {
         IIR_NOIP = 1 << 0, // no interrupt pending
         IIR_MST  = 0 << 1, // irq modem status
         IIR_THRE = 1 << 1, // irq transmitter hold empty
@@ -87,7 +88,7 @@ public:
         IIR_RLS  = 3 << 1, // irq receiver line status
     };
 
-    enum lcr_status {
+    enum lcr_status : u8 {
         LCR_WL5  = 0 << 0, // word length 5 bit
         LCR_WL6  = 1 << 0, // word length 6 bit
         LCR_WL7  = 2 << 0, // word length 7 bit
@@ -100,7 +101,7 @@ public:
         LCR_DLAB = 1 << 7, // divisor latch access bit
     };
 
-    enum fcr_status {
+    enum fcr_status : u8 {
         FCR_FE   = 1 << 0, // FIFO enable
         FCR_CRF  = 1 << 1, // Clear receiver FIFO
         FCR_CTF  = 1 << 2, // Clear transmit FIFO

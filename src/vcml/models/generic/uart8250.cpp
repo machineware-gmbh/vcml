@@ -27,8 +27,9 @@ void uart8250::calibrate() {
         m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
     }
 
-    u32 baud = clock_hz() / (m_divisor * 16);
-    log_debug("setup divisor %u (%u baud)", m_divisor, baud);
+    baud_t baud = clock_hz() / (m_divisor * 16);
+    log_debug("setup divisor %u (%ld baud)", m_divisor, baud);
+    serial_tx.set_baud(baud);
 }
 
 void uart8250::update() {
@@ -81,6 +82,7 @@ u8 uart8250::read_ier() {
 u8 uart8250::read_iir() {
     if (iir & IRQ_RLS)
         return IIR_RLS;
+
     if (iir & IRQ_RDA)
         return IIR_RDA;
 
@@ -98,7 +100,7 @@ u8 uart8250::read_iir() {
 
 u8 uart8250::read_lsr() {
     u8 val = lsr;
-    lsr &= ~LSR_OE;
+    lsr &= ~(LSR_OE | LSR_PE);
     update();
     return val;
 }
@@ -136,11 +138,11 @@ void uart8250::write_ier(u8 val) {
 }
 
 void uart8250::write_lcr(u8 val) {
-    size_t oldbits = SERIAL_5_BITS + (lcr & 0x3);
-    size_t newbits = SERIAL_5_BITS + (val & 0x3);
+    serial_bits oldbits = (serial_bits)(SERIAL_5_BITS + (lcr & 0x3));
+    serial_bits newbits = (serial_bits)(SERIAL_5_BITS + (val & 0x3));
     if (newbits != oldbits) {
         log_debug("word length %zu bits", newbits);
-        serial_tx.set_data_width((serial_width)newbits);
+        serial_tx.set_data_width(newbits);
     }
 
     VCML_LOG_REG_BIT_CHANGE(LCR_STP, lcr, val);
@@ -189,10 +191,12 @@ void uart8250::write_fcr(u8 val) {
     }
 }
 
-void uart8250::serial_receive(u8 data) {
-    if (m_rx_fifo.size() < m_rx_size)
-        m_rx_fifo.push(data);
-    else
+void uart8250::serial_receive(serial_target_socket& s, serial_payload& tx) {
+    if (m_rx_fifo.size() < m_rx_size) {
+        m_rx_fifo.push(tx.data & tx.mask);
+        if (!serial_test_parity(tx))
+            lsr |= LSR_PE;
+    } else
         lsr |= LSR_OE;
 
     update();
@@ -239,6 +243,9 @@ uart8250::uart8250(const sc_module_name& nm):
     mcr.allow_read_write();
     msr.allow_read_write();
     scr.allow_read_write();
+
+    serial_tx.set_baud(DEFAULT_BAUD);
+    serial_tx.set_data_width(SERIAL_5_BITS);
 }
 
 uart8250::~uart8250() {
