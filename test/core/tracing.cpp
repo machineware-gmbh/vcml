@@ -110,8 +110,11 @@ public:
 
 TEST(tracing, basic) {
     for (int i = 0; i < NUM_PROTOCOLS; i++) {
+        EXPECT_STRNE(protocol_name((protocol_kind)i), "unknown protocol")
+            << "name undefined for protocol " << i;
         EXPECT_NE(tracer_term::colors[i], nullptr)
-            << "color undefined for protocol " << i;
+            << "color undefined for protocol "
+            << protocol_name((protocol_kind)i);
     }
 
     test_harness test("harness");
