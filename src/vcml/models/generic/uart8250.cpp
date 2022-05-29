@@ -191,13 +191,18 @@ void uart8250::write_fcr(u8 val) {
     }
 }
 
-void uart8250::serial_receive(serial_target_socket& s, serial_payload& tx) {
+void uart8250::serial_receive(const serial_target_socket& socket,
+                              serial_payload& tx) {
     if (m_rx_fifo.size() < m_rx_size) {
         m_rx_fifo.push(tx.data & tx.mask);
-        if (!serial_test_parity(tx))
+        if (!serial_test_parity(tx)) {
+            log_warn("parity error detected");
             lsr |= LSR_PE;
-    } else
+        }
+    } else {
+        log_warn("rx fifo overflow");
         lsr |= LSR_OE;
+    }
 
     update();
 }

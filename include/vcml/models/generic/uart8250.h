@@ -59,7 +59,8 @@ private:
     void write_fcr(u8 val);
 
     // serial_host
-    void serial_receive(serial_target_socket&, serial_payload& tx) override;
+    void serial_receive(const serial_target_socket& socket,
+                        serial_payload& tx) override;
 
 public:
     enum : baud_t { DEFAULT_BAUD = SERIAL_9600BD };
