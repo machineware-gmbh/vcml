@@ -21,6 +21,44 @@
 namespace vcml {
 namespace serial {
 
+static bool parse_config(const string& config, baud_t& baud,
+                         serial_parity& parity, serial_bits& width) {
+    baud_t bd;
+    serial_bits bits;
+    char c;
+
+    int n = sscanf(config.c_str(), "%zu%c%zu", &bd, &c, &bits);
+    if (n != 3)
+        return false;
+
+    baud  = bd;
+    width = bits;
+
+    switch (c) {
+    case 'o':
+    case 'O':
+        parity = SERIAL_PARITY_ODD;
+        return true;
+    case 'e':
+    case 'E':
+        parity = SERIAL_PARITY_EVEN;
+        return true;
+    case 'm':
+    case 'M':
+        parity = SERIAL_PARITY_MARK;
+        return true;
+    case 's':
+    case 'S':
+        parity = SERIAL_PARITY_SPACE;
+        return true;
+    case 'N':
+    case 'n':
+    default:
+        parity = SERIAL_PARITY_NONE;
+        return true;
+    }
+}
+
 bool terminal::cmd_create_backend(const vector<string>& args, ostream& os) {
     try {
         id_t id = create_backend(args[0]);
@@ -127,6 +165,16 @@ terminal::terminal(const sc_module_name& nm):
             log_warn("%s", ex.what());
         }
     }
+
+    baud_t baud          = SERIAL_9600BD;
+    serial_bits bits     = SERIAL_8_BITS;
+    serial_parity parity = SERIAL_PARITY_NONE;
+    if (!config.get().empty() && !parse_config(config, baud, parity, bits))
+        log_warn("failed to parse configuration");
+
+    serial_tx.set_baud(baud);
+    serial_tx.set_parity(parity);
+    serial_tx.set_data_width(bits);
 
     register_command("create_backend", 1, this, &terminal::cmd_create_backend,
                      "creates a new serial backend for this terminal of a "

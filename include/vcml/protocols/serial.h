@@ -30,7 +30,7 @@
 
 namespace vcml {
 
-enum serial_width : size_t {
+enum serial_bits : size_t {
     SERIAL_5_BITS = 5,
     SERIAL_6_BITS = 6,
     SERIAL_7_BITS = 7,
@@ -43,7 +43,7 @@ enum serial_stop : size_t {
     SERIAL_STOP_1_5 = 3,
 };
 
-constexpr u32 serial_mask(serial_width size) {
+constexpr u32 serial_mask(serial_bits size) {
     return bitmask(size, 0);
 }
 
@@ -76,7 +76,7 @@ struct serial_payload {
 
     baud_t baud;
 
-    serial_width width;
+    serial_bits width;
     serial_parity parity;
     serial_stop stop;
 };
@@ -188,7 +188,7 @@ class serial_initiator_socket : public serial_base_initiator_socket
 {
 private:
     baud_t m_baud;
-    serial_width m_width;
+    serial_bits m_width;
     serial_parity m_parity;
     serial_stop m_stop;
     serial_host* m_host;
@@ -204,8 +204,8 @@ public:
     baud_t baud() const { return m_baud; }
     void set_baud(baud_t b) { m_baud = b; }
 
-    serial_width data_width() const { return m_width; }
-    void set_data_width(serial_width w) { m_width = w; }
+    serial_bits data_width() const { return m_width; }
+    void set_data_width(serial_bits w) { m_width = w; }
 
     serial_parity parity() const { return m_parity; }
     void set_parity(serial_parity p) { m_parity = p; }

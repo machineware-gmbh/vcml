@@ -66,6 +66,7 @@ private:
 
 public:
     property<string> backends;
+    property<string> config;
 
     serial_initiator_socket serial_tx;
     serial_target_socket serial_rx;
