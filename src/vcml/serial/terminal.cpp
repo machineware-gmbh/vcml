@@ -24,7 +24,7 @@ namespace serial {
 static bool parse_config(const string& config, baud_t& baud,
                          serial_parity& parity, serial_bits& width) {
     baud_t bd;
-    serial_bits bits;
+    size_t bits;
     char c;
 
     int n = sscanf(config.c_str(), "%zu%c%zu", &bd, &c, &bits);
@@ -32,31 +32,37 @@ static bool parse_config(const string& config, baud_t& baud,
         return false;
 
     baud  = bd;
-    width = bits;
+    width = (serial_bits)bits;
+    if (width < SERIAL_5_BITS)
+        width = SERIAL_5_BITS;
+    if (width > SERIAL_8_BITS)
+        width = SERIAL_8_BITS;
 
     switch (c) {
     case 'o':
     case 'O':
         parity = SERIAL_PARITY_ODD;
-        return true;
+        break;
     case 'e':
     case 'E':
         parity = SERIAL_PARITY_EVEN;
-        return true;
+        break;
     case 'm':
     case 'M':
         parity = SERIAL_PARITY_MARK;
-        return true;
+        break;
     case 's':
     case 'S':
         parity = SERIAL_PARITY_SPACE;
-        return true;
+        break;
     case 'N':
     case 'n':
     default:
         parity = SERIAL_PARITY_NONE;
-        return true;
+        break;
     }
+
+    return true;
 }
 
 bool terminal::cmd_create_backend(const vector<string>& args, ostream& os) {
@@ -151,20 +157,12 @@ terminal::terminal(const sc_module_name& nm):
     m_backends(),
     m_listeners(),
     backends("backends", ""),
+    config("config", "9600N8"),
     serial_tx("serial_tx"),
     serial_rx("serial_rx") {
     if (stl_contains(terminals(), string(name())))
         VCML_ERROR("serial terminal '%s' already exists", name());
     terminals()[name()] = this;
-
-    vector<string> types = split(backends);
-    for (const auto& type : types) {
-        try {
-            create_backend(type);
-        } catch (std::exception& ex) {
-            log_warn("%s", ex.what());
-        }
-    }
 
     baud_t baud          = SERIAL_9600BD;
     serial_bits bits     = SERIAL_8_BITS;
@@ -175,6 +173,17 @@ terminal::terminal(const sc_module_name& nm):
     serial_tx.set_baud(baud);
     serial_tx.set_parity(parity);
     serial_tx.set_data_width(bits);
+
+    log_debug("using setup %zu%s%zu", baud, serial_parity_str(parity), bits);
+
+    vector<string> types = split(backends);
+    for (const auto& type : types) {
+        try {
+            create_backend(type);
+        } catch (std::exception& ex) {
+            log_warn("%s", ex.what());
+        }
+    }
 
     register_command("create_backend", 1, this, &terminal::cmd_create_backend,
                      "creates a new serial backend for this terminal of a "
