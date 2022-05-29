@@ -137,7 +137,7 @@ TEST(bitops, bitrev) {
 }
 
 TEST(bitops, bswap) {
-    vcml::u8 val1  = 0x11;
+    vcml::u8 val1 = 0x11;
     vcml::u16 val2 = 0x1122;
     vcml::u32 val3 = 0x11223344;
     vcml::u64 val4 = 0x1122334455667788ull;
@@ -199,9 +199,9 @@ TEST(bitops, crc7) {
     EXPECT_EQ(vcml::crc7(b1, sizeof(b1)), 0x11 << 1);
     EXPECT_EQ(vcml::crc7(b2, sizeof(b2)), 0x08 << 1);
 
-    vcml::u8 cmd0[]  = { 0x40, 0x00, 0x00, 0x00, 0x00 };
+    vcml::u8 cmd0[] = { 0x40, 0x00, 0x00, 0x00, 0x00 };
     vcml::u8 cmd17[] = { 0x51, 0x00, 0x00, 0x00, 0x00 };
-    vcml::u8 resp[]  = { 0x11, 0x00, 0x00, 0x09, 0x00 };
+    vcml::u8 resp[] = { 0x11, 0x00, 0x00, 0x09, 0x00 };
 
     EXPECT_EQ(vcml::crc7(cmd0, sizeof(cmd0)), 0x4a << 1);
     EXPECT_EQ(vcml::crc7(cmd17, sizeof(cmd17)), 0x2a << 1);

@@ -59,13 +59,13 @@ public:
 
     virtual void run_test() override {
         enum addresses : u64 {
-            INPUT_BASE    = 0x1000,
-            INPUT_MAGIC   = INPUT_BASE + 0x00,
+            INPUT_BASE = 0x1000,
+            INPUT_MAGIC = INPUT_BASE + 0x00,
             INPUT_VERSION = INPUT_BASE + 0x04,
-            INPUT_DEVID   = INPUT_BASE + 0x08,
-            INPUT_VQ_SEL  = INPUT_BASE + 0x30,
-            INPUT_VQ_MAX  = INPUT_BASE + 0x34,
-            INPUT_STATUS  = INPUT_BASE + 0x70,
+            INPUT_DEVID = INPUT_BASE + 0x08,
+            INPUT_VQ_SEL = INPUT_BASE + 0x30,
+            INPUT_VQ_MAX = INPUT_BASE + 0x34,
+            INPUT_STATUS = INPUT_BASE + 0x70,
         };
 
         u32 data;

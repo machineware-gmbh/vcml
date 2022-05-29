@@ -24,7 +24,7 @@ namespace vcml {
 unsigned int tlm_host::do_transport(tlm_target_socket& socket,
                                     tlm_generic_payload& tx,
                                     const tlm_sbi& info) {
-    m_payload  = &tx;
+    m_payload = &tx;
     m_sideband = &info;
 
     if (tx.get_response_status() != TLM_INCOMPLETE_RESPONSE)
@@ -35,7 +35,7 @@ unsigned int tlm_host::do_transport(tlm_target_socket& socket,
     if (tx.get_response_status() == TLM_INCOMPLETE_RESPONSE)
         VCML_ERROR("invalid out-bound transaction response status");
 
-    m_payload  = nullptr;
+    m_payload = nullptr;
     m_sideband = nullptr;
 
     return n;

@@ -47,7 +47,7 @@ void display::init(const videomode& mode, u8* fbptr) {
         shutdown();
 
     m_mode = mode;
-    m_fb   = fbptr;
+    m_fb = fbptr;
 
     if (m_fb == nullptr)
         m_fb = m_nullfb = new u8[mode.size]();

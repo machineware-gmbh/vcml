@@ -129,7 +129,7 @@ private:
 
         void reset() {
             used_dw = length = offset = remain = padding = 0;
-            state                                        = CMDA;
+            state = CMDA;
             data.clear();
         }
     };

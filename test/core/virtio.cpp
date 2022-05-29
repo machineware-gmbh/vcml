@@ -33,7 +33,7 @@ TEST(virtio, msgcopy) {
     msg.append((uintptr_t)s2, strlen(s2), false);
     msg.append((uintptr_t)s3, strlen(s3), true);
 
-    size_t n   = 0;
+    size_t n = 0;
     char s4[7] = { 0 };
 
     n = msg.copy_in(s4, 5, 1);

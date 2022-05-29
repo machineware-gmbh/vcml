@@ -22,11 +22,11 @@
 
 TEST(serial, to_string) {
     serial_payload tx;
-    tx.data   = 'A';
-    tx.mask   = serial_mask(SERIAL_8_BITS);
-    tx.baud   = SERIAL_9600BD;
+    tx.data = 'A';
+    tx.mask = serial_mask(SERIAL_8_BITS);
+    tx.baud = SERIAL_9600BD;
     tx.parity = SERIAL_PARITY_EVEN;
-    tx.width  = SERIAL_8_BITS;
+    tx.width = SERIAL_8_BITS;
 
     if (serial_calc_parity(tx.data & tx.mask, tx.parity))
         tx.data |= 1u << tx.width;
@@ -38,11 +38,11 @@ TEST(serial, to_string) {
 
 TEST(serial, success) {
     serial_payload tx;
-    tx.mask   = serial_mask(SERIAL_8_BITS);
-    tx.baud   = SERIAL_9600BD;
+    tx.mask = serial_mask(SERIAL_8_BITS);
+    tx.baud = SERIAL_9600BD;
     tx.parity = SERIAL_PARITY_EVEN;
-    tx.width  = SERIAL_8_BITS;
-    tx.data   = 'A' | 1u << tx.width;
+    tx.width = SERIAL_8_BITS;
+    tx.data = 'A' | 1u << tx.width;
     EXPECT_TRUE(success(tx));
     EXPECT_FALSE(failed(tx));
 

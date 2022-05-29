@@ -69,7 +69,7 @@ u32 sp804timer::timer::read_mis() {
 }
 
 void sp804timer::timer::write_load(u32 val) {
-    load   = val;
+    load = val;
     bgload = val;
     schedule(val);
 }
@@ -87,7 +87,7 @@ void sp804timer::timer::write_intclr(u32 val) {
 }
 
 void sp804timer::timer::write_bgload(u32 val) {
-    load   = val;
+    load = val;
     bgload = val;
 }
 

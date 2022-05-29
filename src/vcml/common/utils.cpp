@@ -50,7 +50,7 @@ string filename(const string& path) {
 
 string filename_noext(const string& path) {
     const string name = filename(path);
-    size_t i          = name.rfind('.', path.length());
+    size_t i = name.rfind('.', path.length());
     return (i == string::npos) ? name : name.substr(0, i);
 }
 
@@ -123,11 +123,11 @@ size_t fd_peek(int fd, time_t timeoutms) {
     FD_ZERO(&out);
     FD_ZERO(&err);
 
-    timeout.tv_sec  = (timeoutms / 1000ull);
+    timeout.tv_sec = (timeoutms / 1000ull);
     timeout.tv_usec = (timeoutms % 1000ull) * 1000ull;
 
     struct timeval* ptimeout = ~timeoutms ? &timeout : nullptr;
-    int ret                  = select(fd + 1, &in, &out, &err, ptimeout);
+    int ret = select(fd + 1, &in, &out, &err, ptimeout);
     return ret > 0 ? 1 : 0;
 }
 
@@ -210,8 +210,8 @@ vector<string> backtrace(unsigned int frames, unsigned int skip) {
     sv.resize(size - skip);
 
     size_t dmbufsz = 256;
-    char* dmbuf    = (char*)malloc(dmbufsz);
-    char** names   = ::backtrace_symbols(symbols, size);
+    char* dmbuf = (char*)malloc(dmbufsz);
+    char** names = ::backtrace_symbols(symbols, size);
     for (unsigned int i = skip; i < size; i++) {
         char *func = nullptr, *offset = nullptr, *end = nullptr;
         for (char* ptr = names[i]; *ptr != '\0'; ptr++) {
@@ -230,14 +230,14 @@ vector<string> backtrace(unsigned int frames, unsigned int skip) {
             continue;
         }
 
-        *func++   = '\0';
+        *func++ = '\0';
         *offset++ = '\0';
-        *end      = '\0';
+        *end = '\0';
 
         sv[i - skip] = string(func) + "+" + string(offset);
 
         int status = 0;
-        char* res  = abi::__cxa_demangle(func, dmbuf, &dmbufsz, &status);
+        char* res = abi::__cxa_demangle(func, dmbuf, &dmbufsz, &status);
         if (status == 0)
             sv[i - skip] = string(dmbuf = res) + "+" + string(offset);
     }

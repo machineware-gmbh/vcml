@@ -43,7 +43,7 @@ private:
                                pci_payload& pci) override {
         EXPECT_TRUE(pci.is_read());
         EXPECT_TRUE(pci.is_cfg());
-        pci.data     = pci_in.index_of(socket);
+        pci.data = pci_in.index_of(socket);
         pci.response = PCI_RESP_SUCCESS;
     }
 
@@ -83,10 +83,10 @@ public:
     virtual void run_test() override {
         pci_payload pci{};
         pci.command = PCI_READ;
-        pci.space   = PCI_AS_CFG;
-        pci.addr    = 0x12345678;
-        pci.data    = 0xffffffff;
-        pci.size    = 4;
+        pci.space = PCI_AS_CFG;
+        pci.addr = 0x12345678;
+        pci.data = 0xffffffff;
+        pci.size = 4;
 
         for (auto& port : pci_out) {
             pci.response = PCI_RESP_INCOMPLETE;

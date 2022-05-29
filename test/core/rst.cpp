@@ -21,7 +21,7 @@
 TEST(rst, to_string) {
     rst_payload rst;
     rst.signal = RST_PULSE;
-    rst.reset  = true;
+    rst.reset = true;
 
     stringstream ss;
     ss << rst;
@@ -31,7 +31,7 @@ TEST(rst, to_string) {
 TEST(rst, result) {
     rst_payload rst;
     rst.signal = RST_PULSE;
-    rst.reset  = true;
+    rst.reset = true;
 
     EXPECT_TRUE(success(rst));
     EXPECT_FALSE(failed(rst));

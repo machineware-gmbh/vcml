@@ -47,11 +47,11 @@ public:
 
     virtual void run_test() override {
         enum addresses : u64 {
-            PL011_UARTDR   = 0x00,
-            PL011_UARTFR   = 0x18,
-            PL011_UARTCR   = 0x30,
+            PL011_UARTDR = 0x00,
+            PL011_UARTFR = 0x18,
+            PL011_UARTCR = 0x30,
             PL011_UARTIMSC = 0x38,
-            PL011_UARTRIS  = 0x3c,
+            PL011_UARTRIS = 0x3c,
         };
 
         // check initial UART status

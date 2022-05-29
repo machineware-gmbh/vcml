@@ -31,7 +31,7 @@ static bool parse_config(const string& config, baud_t& baud,
     if (n != 3)
         return false;
 
-    baud  = bd;
+    baud = bd;
     width = (serial_bits)bits;
     if (width < SERIAL_5_BITS)
         width = SERIAL_5_BITS;
@@ -164,8 +164,8 @@ terminal::terminal(const sc_module_name& nm):
         VCML_ERROR("serial terminal '%s' already exists", name());
     terminals()[name()] = this;
 
-    baud_t baud          = SERIAL_9600BD;
-    serial_bits bits     = SERIAL_8_BITS;
+    baud_t baud = SERIAL_9600BD;
+    serial_bits bits = SERIAL_8_BITS;
     serial_parity parity = SERIAL_PARITY_NONE;
     if (!config.get().empty() && !parse_config(config, baud, parity, bits))
         log_warn("failed to parse configuration");

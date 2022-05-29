@@ -52,7 +52,7 @@ protected:
 
     static display* create(u32 nr);
 
-    display()               = delete;
+    display() = delete;
     display(const display&) = delete;
     display(const string& type, u32 nr);
 

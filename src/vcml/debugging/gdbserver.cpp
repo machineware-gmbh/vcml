@@ -174,7 +174,7 @@ string gdbserver::handle_rcmd(const char* command) {
         return ERR_COMMAND;
 
     vector<string> args = split(command, ' ');
-    string cmdname      = args[0];
+    string cmdname = args[0];
     args.erase(args.begin());
 
     stringstream ss;
@@ -190,8 +190,8 @@ string gdbserver::handle_xfer(const char* command) {
         return ERR_COMMAND;
 
     string object = args[1];
-    string read   = args[2];
-    string annex  = args[3];
+    string read = args[2];
+    string annex = args[3];
 
     if (read != "read")
         return ERR_COMMAND;

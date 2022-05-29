@@ -92,11 +92,11 @@ u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access rw) {
 
 unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
                                         const tlm_sbi& info) try {
-    unsigned int bytes   = 0;
-    unsigned int size    = tx.get_data_length();
-    unsigned int width   = tx.get_streaming_width();
+    unsigned int bytes = 0;
+    unsigned int size = tx.get_data_length();
+    unsigned int width = tx.get_streaming_width();
     unsigned char* beptr = tx.get_byte_enable_ptr();
-    unsigned int belen   = tx.get_byte_enable_length();
+    unsigned int belen = tx.get_byte_enable_length();
 
     if ((width == 0) || (width > size) || (size % width)) {
         tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
@@ -126,7 +126,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
             m_host->sync();
 
         sc_time& offset = m_host->local_time();
-        sc_time local   = sc_time_stamp() + offset;
+        sc_time local = sc_time_stamp() + offset;
 
         trace_fw(tx, offset);
         (*this)->b_transport(tx, offset);

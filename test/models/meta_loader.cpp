@@ -55,8 +55,8 @@ public:
 
     virtual void run_test() override {
         u32 code_start = 0;
-        u32 global_a   = 0;
-        u64 global_b   = 0;
+        u32 global_a = 0;
+        u64 global_b = 0;
 
         ASSERT_OK(loader.insn.readw(0x400000, code_start));
         ASSERT_OK(loader.data.readw(0x601000, global_b));

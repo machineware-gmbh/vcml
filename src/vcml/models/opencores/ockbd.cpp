@@ -28,7 +28,7 @@ void ockbd::update() {
     while (m_keyboard.pop_event(event)) {
         VCML_ERROR_ON(!event.is_key(), "illegal event from keyboard");
         u8 scancode = (u8)(event.key.code & 0xff);
-        bool down   = (event.key.state != ui::VCML_KEY_UP);
+        bool down = (event.key.state != ui::VCML_KEY_UP);
 
         if (!down)
             scancode |= MOD_RELEASE;

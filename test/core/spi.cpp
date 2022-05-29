@@ -56,8 +56,8 @@ public:
         EXPECT_TRUE(find_object("spi.spi_in_arr[44]_stub"));
 
         auto initiators = all_spi_initiator_sockets();
-        auto targets    = all_spi_target_sockets();
-        auto sockets    = all_spi_target_sockets(VCML_AS_TEST);
+        auto targets = all_spi_target_sockets();
+        auto sockets = all_spi_target_sockets(VCML_AS_TEST);
 
         EXPECT_EQ(initiators.size(), 2) << "spi initiators did not register";
         EXPECT_EQ(targets.size(), 2) << "spi targets did not register";

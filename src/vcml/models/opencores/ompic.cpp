@@ -82,10 +82,10 @@ ompic::ompic(const sc_core::sc_module_name& nm, unsigned int num_cores):
     VCML_ERROR_ON(num_cores == 0, "number of cores must not be zero");
 
     control = new reg<u32>*[m_num_cores];
-    status  = new reg<u32>*[m_num_cores];
+    status = new reg<u32>*[m_num_cores];
 
     m_control = new uint32_t[m_num_cores]();
-    m_status  = new uint32_t[m_num_cores]();
+    m_status = new uint32_t[m_num_cores]();
 
     for (unsigned int core = 0; core < num_cores; core++) {
         control[core] = new reg<u32>(mkstr("control%u", core), core * 8);

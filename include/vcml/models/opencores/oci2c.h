@@ -50,8 +50,8 @@ private:
 
 public:
     enum ctr_bits : u8 {
-        CTR_EN   = 1u << 7,
-        CTR_IEN  = 1u << 6,
+        CTR_EN = 1u << 7,
+        CTR_IEN = 1u << 6,
         CTR_MASK = CTR_EN | CTR_IEN,
     };
 
@@ -60,10 +60,10 @@ public:
     };
 
     enum cmdr_bits : u8 {
-        CMD_STA  = 1u << 7,
-        CMD_STO  = 1u << 6,
-        CMD_RD   = 1u << 5,
-        CMD_WR   = 1u << 4,
+        CMD_STA = 1u << 7,
+        CMD_STO = 1u << 6,
+        CMD_RD = 1u << 5,
+        CMD_WR = 1u << 4,
         CMD_NACK = 1u << 3,
         CMD_IACK = 1u << 0,
         CMD_MASK = CMD_STA | CMD_STO | CMD_RD | CMD_WR | CMD_NACK | CMD_IACK,
@@ -72,9 +72,9 @@ public:
     enum sr_bits : u8 {
         SR_NACK = 1u << 7,
         SR_BUSY = 1u << 6,
-        SR_AL   = 1u << 5,
-        SR_TIP  = 1u << 1,
-        SR_IF   = 1u << 0,
+        SR_AL = 1u << 5,
+        SR_TIP = 1u << 1,
+        SR_IF = 1u << 0,
         SR_MASK = SR_NACK | SR_BUSY | SR_AL | SR_TIP | SR_IF,
     };
 

@@ -50,7 +50,7 @@ public:
            u64 virt_addr, u64 phys_addr);
 
     symbol(const symbol&) = default;
-    ~symbol()             = default;
+    ~symbol() = default;
 
     const char* name() const { return m_name.c_str(); }
 
@@ -92,7 +92,7 @@ public:
     const symset& functions() const { return m_functions; }
     const symset& objects() const { return m_objects; }
 
-    symtab()  = default;
+    symtab() = default;
     ~symtab() = default;
 
     void insert(const symbol& sym);

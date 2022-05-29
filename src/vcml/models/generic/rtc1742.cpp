@@ -30,7 +30,7 @@ static u8 bcd2bin(u8 val) {
 }
 
 static char* strtime(struct tm* t) {
-    char* str            = asctime(t);
+    char* str = asctime(t);
     str[strlen(str) - 1] = '\0';
     return str;
 }
@@ -40,7 +40,7 @@ void rtc1742::load_time() {
     // stamp based on the real time when the simulation was started plus
     // the amount of SystemC seconds elapsed since simulation start.
     // Otherwise we just fetch the current real time stamp from host.
-    time_t now          = sctime ? sysc_timestamp() : real_timestamp();
+    time_t now = sctime ? sysc_timestamp() : real_timestamp();
     struct tm* timeinfo = gmtime(&now);
     log_debug("loading current time %lu (%s)", now, strtime(timeinfo));
 
@@ -50,25 +50,25 @@ void rtc1742::load_time() {
 
     seconds = (bin2bcd(timeinfo->tm_sec) & 0x7F) | osc;
     minutes = (bin2bcd(timeinfo->tm_min) & 0x7F);
-    hour    = (bin2bcd(timeinfo->tm_hour) & 0x3F);
-    day     = (bin2bcd(timeinfo->tm_wday) & 0x03) | btb | ftb;
-    date    = (bin2bcd(timeinfo->tm_mday) & 0x3F);
-    month   = (bin2bcd(timeinfo->tm_mon + 1) & 0x1F);
-    year    = (bin2bcd(timeinfo->tm_year % 100) & 0xFF);
+    hour = (bin2bcd(timeinfo->tm_hour) & 0x3F);
+    day = (bin2bcd(timeinfo->tm_wday) & 0x03) | btb | ftb;
+    date = (bin2bcd(timeinfo->tm_mday) & 0x3F);
+    month = (bin2bcd(timeinfo->tm_mon + 1) & 0x1F);
+    year = (bin2bcd(timeinfo->tm_year % 100) & 0xFF);
 
     u32 century = (timeinfo->tm_year + 1900) / 100;
-    control     = (bin2bcd((u8)century) & 0x3F);
+    control = (bin2bcd((u8)century) & 0x3F);
 }
 
 void rtc1742::save_time() {
     struct tm tinfo = {};
-    tinfo.tm_sec    = bcd2bin(seconds & 0x7F);
-    tinfo.tm_min    = bcd2bin(minutes & 0x7F);
-    tinfo.tm_hour   = bcd2bin(hour & 0x3F);
-    tinfo.tm_wday   = bcd2bin(day & 0x03);
-    tinfo.tm_mday   = bcd2bin(date & 0x3F);
-    tinfo.tm_mon    = bcd2bin(month & 0x1F) - 1;
-    tinfo.tm_year   = bcd2bin(year) + bcd2bin(control & 0x3F) * 100 - 1900;
+    tinfo.tm_sec = bcd2bin(seconds & 0x7F);
+    tinfo.tm_min = bcd2bin(minutes & 0x7F);
+    tinfo.tm_hour = bcd2bin(hour & 0x3F);
+    tinfo.tm_wday = bcd2bin(day & 0x03);
+    tinfo.tm_mday = bcd2bin(date & 0x3F);
+    tinfo.tm_mon = bcd2bin(month & 0x1F) - 1;
+    tinfo.tm_year = bcd2bin(year) + bcd2bin(control & 0x3F) * 100 - 1900;
 
     // Set the new offset time. Future calculations will use the specified
     // real time stamp as the base on to which the elapsed SystemC time
@@ -91,7 +91,7 @@ void rtc1742::load_nvram(const string& filename) {
     }
 
     u64 nbytes = file.tellg();
-    u64 size   = m_addr.length() - control.get_address();
+    u64 size = m_addr.length() - control.get_address();
 
     if (nbytes > size) {
         nbytes = size;

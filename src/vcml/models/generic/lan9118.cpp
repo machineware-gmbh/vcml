@@ -22,33 +22,33 @@ namespace vcml {
 namespace generic {
 
 enum phy_cr_bits : u16 {
-    PHY_CONTROL_COL_TEST  = 1u << 7,
-    PHY_CONTROL_DUPLEX    = 1u << 8,
-    PHY_CONTROL_RESTART   = 1u << 9,
-    PHY_CONTROL_AUTO_NEG  = 1u << 12,
+    PHY_CONTROL_COL_TEST = 1u << 7,
+    PHY_CONTROL_DUPLEX = 1u << 8,
+    PHY_CONTROL_RESTART = 1u << 9,
+    PHY_CONTROL_AUTO_NEG = 1u << 12,
     PHY_CONTROL_SPEED_SEL = 1u << 13,
-    PHY_CONTROL_PWR_DOWN  = 1u << 11,
-    PHY_CONTROL_LOOPBACK  = 1u << 14,
-    PHY_CONTROL_SW_RESET  = 1u << 15,
-    PHY_CONTROL_MASK      = PHY_CONTROL_COL_TEST | PHY_CONTROL_DUPLEX |
+    PHY_CONTROL_PWR_DOWN = 1u << 11,
+    PHY_CONTROL_LOOPBACK = 1u << 14,
+    PHY_CONTROL_SW_RESET = 1u << 15,
+    PHY_CONTROL_MASK = PHY_CONTROL_COL_TEST | PHY_CONTROL_DUPLEX |
                        PHY_CONTROL_AUTO_NEG | PHY_CONTROL_SPEED_SEL |
                        PHY_CONTROL_PWR_DOWN | PHY_CONTROL_LOOPBACK,
     PHY_CONTROL_RESET = PHY_CONTROL_AUTO_NEG | PHY_CONTROL_SPEED_SEL,
 };
 
 enum phy_status_bits : u16 {
-    STATUS_EXT_CAP          = 1u << 0,
-    STATUS_JABBER           = 1u << 1,
-    STATUS_LINK             = 1u << 2,
-    STATUS_AUTO_NEG_CAP     = 1u << 3,
-    STATUS_REMOTE_FAULT     = 1u << 4,
-    STATUS_AUTO_NEG_DONE    = 1u << 5,
-    STATUS_10M_HALF_DUPLEX  = 1u << 11,
-    STATUS_10M_FULL_DUPLEX  = 1u << 12,
+    STATUS_EXT_CAP = 1u << 0,
+    STATUS_JABBER = 1u << 1,
+    STATUS_LINK = 1u << 2,
+    STATUS_AUTO_NEG_CAP = 1u << 3,
+    STATUS_REMOTE_FAULT = 1u << 4,
+    STATUS_AUTO_NEG_DONE = 1u << 5,
+    STATUS_10M_HALF_DUPLEX = 1u << 11,
+    STATUS_10M_FULL_DUPLEX = 1u << 12,
     STATUS_100M_HALF_DUPLEX = 1u << 13,
     STATUS_100M_FULL_DUPLEX = 1u << 14,
-    STATUS_100M_T4          = 1u << 15,
-    STATUS_MASK             = STATUS_EXT_CAP | STATUS_JABBER | STATUS_LINK |
+    STATUS_100M_T4 = 1u << 15,
+    STATUS_MASK = STATUS_EXT_CAP | STATUS_JABBER | STATUS_LINK |
                   STATUS_AUTO_NEG_CAP | STATUS_REMOTE_FAULT |
                   STATUS_AUTO_NEG_DONE | STATUS_10M_HALF_DUPLEX |
                   STATUS_10M_FULL_DUPLEX | STATUS_100M_HALF_DUPLEX |
@@ -59,18 +59,18 @@ enum phy_status_bits : u16 {
 };
 
 enum phy_advertise_bits : u16 {
-    ADVERTISE_IEEE_802_3   = 0b00001,
-    ADVERTISE_10M          = 1u << 5,
-    ADVERTISE_10M_DUPLEX   = 1u << 6,
-    ADVERTISE_100M         = 1u << 7,
-    ADVERTISE_100M_DUPLEX  = 1u << 8,
-    ADVERTISE_100M_T4      = 1u << 9,
-    ADVERTISE_NO_PAUSE     = 0b00 << 10,
-    ADVERTISE_PAUSE_SYM    = 0b01 << 10,
-    ADVERTISE_PAUSE_ASYM   = 0b10 << 10,
-    ADVERTISE_PAUSE_BOTH   = 0b11 << 10,
+    ADVERTISE_IEEE_802_3 = 0b00001,
+    ADVERTISE_10M = 1u << 5,
+    ADVERTISE_10M_DUPLEX = 1u << 6,
+    ADVERTISE_100M = 1u << 7,
+    ADVERTISE_100M_DUPLEX = 1u << 8,
+    ADVERTISE_100M_T4 = 1u << 9,
+    ADVERTISE_NO_PAUSE = 0b00 << 10,
+    ADVERTISE_PAUSE_SYM = 0b01 << 10,
+    ADVERTISE_PAUSE_ASYM = 0b10 << 10,
+    ADVERTISE_PAUSE_BOTH = 0b11 << 10,
     ADVERTISE_REMOTE_FAULT = 1u << 13,
-    ADVERTISE_NEXT_PAGE    = 1u << 15,
+    ADVERTISE_NEXT_PAGE = 1u << 15,
 
     ADVERTISE_RESET = ADVERTISE_IEEE_802_3 | ADVERTISE_10M_DUPLEX |
                       ADVERTISE_100M_DUPLEX,
@@ -85,60 +85,60 @@ enum phy_advertise_bits : u16 {
 };
 
 enum phy_irq_bits : u16 {
-    PHY_IRQ_NEG_P0_RECV  = 1u << 1,
+    PHY_IRQ_NEG_P0_RECV = 1u << 1,
     PHY_IRQ_DETECT_FAULT = 1u << 2,
-    PHY_IRQ_NEG_LP_ACK   = 1u << 3,
-    PHY_IRQ_LINK_DOWN    = 1u << 4,
+    PHY_IRQ_NEG_LP_ACK = 1u << 3,
+    PHY_IRQ_LINK_DOWN = 1u << 4,
     PHY_IRQ_REMOTE_FAULT = 1u << 5,
     PHY_IRQ_NEG_COMPLETE = 1u << 6,
-    PHY_IRQ_ENERGY_ON    = 1u << 7,
-    PHY_IRQ_MASK         = 0xff,
+    PHY_IRQ_ENERGY_ON = 1u << 7,
+    PHY_IRQ_MASK = 0xff,
 };
 
 enum phy_special_mode_bits : u16 {
-    SPECIAL_MODE_PHYAD             = 0x1f,
-    SPECIAL_MODE_10M_HALF_NO_AUTO  = 0u << 5,
-    SPECIAL_MODE_10M_FULL_NO_AUTO  = 1u << 5,
+    SPECIAL_MODE_PHYAD = 0x1f,
+    SPECIAL_MODE_10M_HALF_NO_AUTO = 0u << 5,
+    SPECIAL_MODE_10M_FULL_NO_AUTO = 1u << 5,
     SPECIAL_MODE_100M_HALF_NO_AUTO = 2u << 5,
     SPECIAL_MODE_100M_FULL_NO_AUTO = 3u << 5,
-    SPECIAL_MODE_100M_HALF_AUTO    = 4u << 5,
-    SPECIAL_MODE_100M_FULL_AUTO    = 5u << 5,
-    SPECIAL_MODE_ALL_CAPS          = 7u << 5,
+    SPECIAL_MODE_100M_HALF_AUTO = 4u << 5,
+    SPECIAL_MODE_100M_FULL_AUTO = 5u << 5,
+    SPECIAL_MODE_ALL_CAPS = 7u << 5,
     SPECIAL_MODE_MASK = SPECIAL_MODE_PHYAD | SPECIAL_MODE_ALL_CAPS,
 };
 
 enum phy_special_control_bits : u16 {
-    SPECIAL_CTRL_XPOL     = 1u << 4,
+    SPECIAL_CTRL_XPOL = 1u << 4,
     SPECIAL_CTRL_VCOOF_LP = 1u << 10,
 };
 
 enum phy_special_status_bits : u16 {
-    SPECIAL_STATUS_10M_HALF  = 1u << 2,
-    SPECIAL_STATUS_10M_FULL  = 5u << 2,
+    SPECIAL_STATUS_10M_HALF = 1u << 2,
+    SPECIAL_STATUS_10M_FULL = 5u << 2,
     SPECIAL_STATUS_100M_HALF = 2u << 2,
     SPECIAL_STATUS_100M_FULL = 6u << 2,
     SPECIAL_STATUS_AUTO_DONE = 1u << 12,
 };
 
 enum mac_cr_bits : u32 {
-    CR_RXEN    = 1u << 2,
-    CR_TXEN    = 1u << 3,
-    CR_DFCHK   = 1u << 5,
-    CR_BOLMT   = 3u << 6,
-    CR_PADSTR  = 1u << 8,
-    CR_DISRTY  = 1u << 10,
-    CR_BCAST   = 1u << 11,
-    CR_LCOLL   = 1u << 12,
-    CR_HPFILT  = 1u << 13,
-    CR_HO      = 1u << 15,
+    CR_RXEN = 1u << 2,
+    CR_TXEN = 1u << 3,
+    CR_DFCHK = 1u << 5,
+    CR_BOLMT = 3u << 6,
+    CR_PADSTR = 1u << 8,
+    CR_DISRTY = 1u << 10,
+    CR_BCAST = 1u << 11,
+    CR_LCOLL = 1u << 12,
+    CR_HPFILT = 1u << 13,
+    CR_HO = 1u << 15,
     CR_PASSBAD = 1u << 16,
     CR_INVFILT = 1u << 17,
-    CR_PRMS    = 1u << 18,
-    CR_MCPAS   = 1u << 19,
-    CR_FDPX    = 1u << 20,
-    CR_LOOPBK  = 1u << 21,
-    CR_RCVOWN  = 1u << 23,
-    CR_RXALL   = 1u << 31,
+    CR_PRMS = 1u << 18,
+    CR_MCPAS = 1u << 19,
+    CR_FDPX = 1u << 20,
+    CR_LOOPBK = 1u << 21,
+    CR_RCVOWN = 1u << 23,
+    CR_RXALL = 1u << 31,
 
     CR_RESET = CR_PRMS,
     CR_MASK = CR_RXEN | CR_TXEN | CR_DFCHK | CR_BOLMT | CR_PADSTR | CR_DISRTY |
@@ -148,49 +148,49 @@ enum mac_cr_bits : u32 {
 };
 
 enum lan_mac_mii_bits : u32 {
-    MII_ACC_BUSY  = 1u << 0,
+    MII_ACC_BUSY = 1u << 0,
     MII_ACC_WRITE = 1u << 1,
-    MII_ACC_MASK  = 0x0000ffc2,
+    MII_ACC_MASK = 0x0000ffc2,
     MII_DATA_MASK = bitmask(16),
 };
 
 enum lan_irq_cfg_bits : u32 {
-    IRQ_CFG_TYPE     = 1u << 0,
-    IRQ_CFG_POL      = 1u << 4,
-    IRQ_CFG_EN       = 1u << 8,
-    IRQ_CFG_INT      = 1u << 12,
+    IRQ_CFG_TYPE = 1u << 0,
+    IRQ_CFG_POL = 1u << 4,
+    IRQ_CFG_EN = 1u << 8,
+    IRQ_CFG_INT = 1u << 12,
     IRQ_CFG_DEAS_STS = 1u << 13,
     IRQ_CFG_DEAS_CLR = 1u << 14,
-    IRQ_CFG_DEAS     = bitmask(8, 24),
+    IRQ_CFG_DEAS = bitmask(8, 24),
 
     IRQ_CFG_MASK = IRQ_CFG_TYPE | IRQ_CFG_POL | IRQ_CFG_EN | IRQ_CFG_DEAS,
 };
 
 enum lan_irq_bits : u32 {
-    IRQ_GPIO0  = 1u << 0,
-    IRQ_GPIO1  = 1u << 1,
-    IRQ_GPIO2  = 1u << 2,
-    IRQ_RSFL   = 1u << 3,  // RX FIFO level
-    IRQ_RSFF   = 1u << 4,  // RX FIFO full
-    IRQ_RXDF   = 1u << 6,  // RX dropped frame
-    IRQ_TSFL   = 1u << 7,  // TX status FIFO level
-    IRQ_TSFF   = 1u << 8,  // TX status FIFO full
-    IRQ_TDFA   = 1u << 9,  // TX data FIFO available
-    IRQ_TDFO   = 1u << 10, // TX FIFO overrun
-    IRQ_TXE    = 1u << 13, // transmitter error
-    IRQ_RXE    = 1u << 14, // receiver error
-    IRQ_RWT    = 1u << 15, // receiver watch-dog timeout
-    IRQ_TXSO   = 1u << 16, // TX status FIFO overflow
-    IRQ_PME    = 1u << 17, // power management interrupt
-    IRQ_PHY    = 1u << 18, // PHY interrupt
-    IRQ_GPT    = 1u << 19, // general timer interrupt
-    IRQ_RXD    = 1u << 20, // RX DMA interrupt
-    IRQ_TXIOC  = 1u << 21, // TX FIFO IOC event
-    IRQ_RXDFH  = 1u << 23, // RX dropped frame half-way
+    IRQ_GPIO0 = 1u << 0,
+    IRQ_GPIO1 = 1u << 1,
+    IRQ_GPIO2 = 1u << 2,
+    IRQ_RSFL = 1u << 3,    // RX FIFO level
+    IRQ_RSFF = 1u << 4,    // RX FIFO full
+    IRQ_RXDF = 1u << 6,    // RX dropped frame
+    IRQ_TSFL = 1u << 7,    // TX status FIFO level
+    IRQ_TSFF = 1u << 8,    // TX status FIFO full
+    IRQ_TDFA = 1u << 9,    // TX data FIFO available
+    IRQ_TDFO = 1u << 10,   // TX FIFO overrun
+    IRQ_TXE = 1u << 13,    // transmitter error
+    IRQ_RXE = 1u << 14,    // receiver error
+    IRQ_RWT = 1u << 15,    // receiver watch-dog timeout
+    IRQ_TXSO = 1u << 16,   // TX status FIFO overflow
+    IRQ_PME = 1u << 17,    // power management interrupt
+    IRQ_PHY = 1u << 18,    // PHY interrupt
+    IRQ_GPT = 1u << 19,    // general timer interrupt
+    IRQ_RXD = 1u << 20,    // RX DMA interrupt
+    IRQ_TXIOC = 1u << 21,  // TX FIFO IOC event
+    IRQ_RXDFH = 1u << 23,  // RX dropped frame half-way
     IRQ_RXSTOP = 1u << 24, // RX stopped
     IRQ_TXSTOP = 1u << 25, // TX stopped
-    IRQ_SW     = 1u << 31, // software interrupt
-    IRQ_MASK   = IRQ_GPIO0 | IRQ_GPIO1 | IRQ_GPIO2 | IRQ_RSFL | IRQ_RSFF |
+    IRQ_SW = 1u << 31,     // software interrupt
+    IRQ_MASK = IRQ_GPIO0 | IRQ_GPIO1 | IRQ_GPIO2 | IRQ_RSFL | IRQ_RSFF |
                IRQ_RXDF | IRQ_TSFL | IRQ_TSFF | IRQ_TDFA | IRQ_TDFO | IRQ_TXE |
                IRQ_RXE | IRQ_RWT | IRQ_TXSO | IRQ_PME | IRQ_PHY | IRQ_GPT |
                IRQ_RXD | IRQ_TXIOC | IRQ_RXDFH | IRQ_RXSTOP | IRQ_TXSTOP |
@@ -200,33 +200,33 @@ enum lan_irq_bits : u32 {
 typedef field<12, 6, u32> RX_CFG_DMA_COUNT;
 
 enum lan_rx_cfg : u32 {
-    RX_CFG_RXDOFF         = bitmask(5, 8),
-    RX_CFG_RX_DUMP        = 1u << 15,
-    RX_CFG_RX_DMA_MASK    = RX_CFG_DMA_COUNT::MASK,
-    RX_CFG_END_ALIGN_4    = 0u << 30,
-    RX_CFG_END_ALIGN_16   = 1u << 30,
-    RX_CFG_END_ALIGN_32   = 2u << 30,
+    RX_CFG_RXDOFF = bitmask(5, 8),
+    RX_CFG_RX_DUMP = 1u << 15,
+    RX_CFG_RX_DMA_MASK = RX_CFG_DMA_COUNT::MASK,
+    RX_CFG_END_ALIGN_4 = 0u << 30,
+    RX_CFG_END_ALIGN_16 = 1u << 30,
+    RX_CFG_END_ALIGN_32 = 2u << 30,
     RX_CFG_END_ALIGN_MASK = bitmask(2, 30),
     RX_CFG_MASK = RX_CFG_END_ALIGN_MASK | RX_CFG_RX_DMA_MASK | RX_CFG_RXDOFF,
 };
 
 enum lan_tx_cfg : u32 {
-    TX_CFG_STOP_TX  = 1u << 0,
-    TX_CFG_TX_ON    = 1u << 1,
-    TX_CFG_TXSAO    = 1u << 2,
+    TX_CFG_STOP_TX = 1u << 0,
+    TX_CFG_TX_ON = 1u << 1,
+    TX_CFG_TXSAO = 1u << 2,
     TX_CFG_TXD_DUMP = 1u << 14,
     TX_CFG_TXS_DUMP = 1u << 15,
-    TX_CFG_MASK     = TX_CFG_TX_ON | TX_CFG_TXSAO,
+    TX_CFG_MASK = TX_CFG_TX_ON | TX_CFG_TXSAO,
 };
 
 enum lan_hwcfg_bits : u32 {
-    HW_CFG_SRST     = 1u << 0,
-    HW_CFG_SRST_TO  = 1u << 1,
-    HW_CFG_32BIT    = 1u << 2,
+    HW_CFG_SRST = 1u << 0,
+    HW_CFG_SRST_TO = 1u << 1,
+    HW_CFG_32BIT = 1u << 2,
     HW_CFG_TX_FF_SZ = bitmask(4, 16),
-    HW_CFG_MBO      = 1u << 20,
+    HW_CFG_MBO = 1u << 20,
 
-    HW_CFG_MASK  = HW_CFG_TX_FF_SZ | HW_CFG_MBO,
+    HW_CFG_MASK = HW_CFG_TX_FF_SZ | HW_CFG_MBO,
     HW_CFG_RESET = 5 << 16 | HW_CFG_32BIT,
 };
 
@@ -235,34 +235,34 @@ enum lan_rx_dp_ctrl_bits : u32 {
 };
 
 enum lan_pmt_ctrl_bits : u32 {
-    PMT_CTRL_READY         = 1u << 0,
-    PMT_CTRL_PME_EN        = 1u << 1,
-    PMT_CTRL_PME_POL       = 1u << 2,
-    PMT_CTRL_PME_IND       = 1u << 3,
-    PMT_CTRL_WUPS_NONE     = 0u << 4,
-    PMT_CTRL_WUPS_ENERGY   = 1u << 4,
-    PMT_CTRL_WUPS_WAKEUP   = 2u << 4,
+    PMT_CTRL_READY = 1u << 0,
+    PMT_CTRL_PME_EN = 1u << 1,
+    PMT_CTRL_PME_POL = 1u << 2,
+    PMT_CTRL_PME_IND = 1u << 3,
+    PMT_CTRL_WUPS_NONE = 0u << 4,
+    PMT_CTRL_WUPS_ENERGY = 1u << 4,
+    PMT_CTRL_WUPS_WAKEUP = 2u << 4,
     PMT_CTRL_WUPS_MULTIPLE = PMT_CTRL_WUPS_ENERGY | PMT_CTRL_WUPS_WAKEUP,
-    PMT_CTRL_PME_TYPE      = 1u << 6,
-    PMT_CTRL_ED_EN         = 1u << 8,
-    PMT_CTRL_WOL_EN        = 1u << 9,
-    PMT_CTRL_PHY_RST       = 1u << 10,
-    PMT_CTRL_PM_D0         = 0u << 12,
-    PMT_CTRL_PM_D1         = 1u << 12,
-    PMT_CTRL_PM_D2         = 2u << 12,
-    PMT_CTRL_PM_MASK       = 3u << 12,
+    PMT_CTRL_PME_TYPE = 1u << 6,
+    PMT_CTRL_ED_EN = 1u << 8,
+    PMT_CTRL_WOL_EN = 1u << 9,
+    PMT_CTRL_PHY_RST = 1u << 10,
+    PMT_CTRL_PM_D0 = 0u << 12,
+    PMT_CTRL_PM_D1 = 1u << 12,
+    PMT_CTRL_PM_D2 = 2u << 12,
+    PMT_CTRL_PM_MASK = 3u << 12,
 
     PMT_CTRL_RESET = PMT_CTRL_READY,
-    PMT_CTRL_MASK  = PMT_CTRL_PME_EN | PMT_CTRL_PME_POL | PMT_CTRL_PME_IND |
+    PMT_CTRL_MASK = PMT_CTRL_PME_EN | PMT_CTRL_PME_POL | PMT_CTRL_PME_IND |
                     PMT_CTRL_WUPS_MULTIPLE | PMT_CTRL_PME_TYPE |
                     PMT_CTRL_ED_EN | PMT_CTRL_WOL_EN | PMT_CTRL_PM_MASK,
 };
 
 enum lan_gpt_cfg_bits : u32 {
     GPT_CFG_LOAD_MASK = bitmask(16),
-    GPT_CFG_TIMER_EN  = 1u << 29,
-    GPT_CFG_MASK      = GPT_CFG_LOAD_MASK | GPT_CFG_TIMER_EN,
-    GPT_CFG_RESET     = GPT_CFG_LOAD_MASK,
+    GPT_CFG_TIMER_EN = 1u << 29,
+    GPT_CFG_MASK = GPT_CFG_LOAD_MASK | GPT_CFG_TIMER_EN,
+    GPT_CFG_RESET = GPT_CFG_LOAD_MASK,
 };
 
 enum lan_mac_cmd_bits : u32 {
@@ -273,32 +273,32 @@ enum lan_mac_cmd_bits : u32 {
 };
 
 enum lan_e2p_cmd_bits : u32 {
-    E2P_CMD_BUSY       = 1u << 31,
-    E2P_CMD_READ       = 0u << 28,
-    E2P_CMD_EWDS       = 1u << 28,
-    E2P_CMD_EWEN       = 2u << 28,
-    E2P_CMD_WRITE      = 3u << 28,
-    E2P_CMD_WRAL       = 4u << 28,
-    E2P_CMD_ERASE      = 5u << 28,
-    E2P_CMD_ERAL       = 6u << 28,
-    E2P_CMD_RELOAD     = 7u << 28,
-    E2P_CMD_TIMEOUT    = 1u << 9,
+    E2P_CMD_BUSY = 1u << 31,
+    E2P_CMD_READ = 0u << 28,
+    E2P_CMD_EWDS = 1u << 28,
+    E2P_CMD_EWEN = 2u << 28,
+    E2P_CMD_WRITE = 3u << 28,
+    E2P_CMD_WRAL = 4u << 28,
+    E2P_CMD_ERASE = 5u << 28,
+    E2P_CMD_ERAL = 6u << 28,
+    E2P_CMD_RELOAD = 7u << 28,
+    E2P_CMD_TIMEOUT = 1u << 9,
     E2P_CMD_MAC_LOADED = 1u << 8,
-    E2P_CMD_ADDR_MASK  = 0xff,
+    E2P_CMD_ADDR_MASK = 0xff,
     E2P_CMD_MASK = E2P_CMD_ADDR_MASK | E2P_CMD_MAC_LOADED | E2P_CMD_TIMEOUT |
                    E2P_CMD_RELOAD | E2P_CMD_BUSY,
 };
 
 enum pkt_cmda_bits : u32 {
-    CMDA_BUFSZ_MASK     = bitmask(11),
-    CMDA_LAST           = 1u << 12,
-    CMDA_FIRST          = 1u << 13,
-    CMDA_OFFSET_MASK    = bitmask(5, 16),
-    CMDA_END_ALIGN_4    = 0u << 24,
-    CMDA_END_ALIGN_16   = 1u << 24,
-    CMDA_END_ALIGN_32   = 2u << 24,
+    CMDA_BUFSZ_MASK = bitmask(11),
+    CMDA_LAST = 1u << 12,
+    CMDA_FIRST = 1u << 13,
+    CMDA_OFFSET_MASK = bitmask(5, 16),
+    CMDA_END_ALIGN_4 = 0u << 24,
+    CMDA_END_ALIGN_16 = 1u << 24,
+    CMDA_END_ALIGN_32 = 2u << 24,
     CMDA_END_ALIGN_MASK = 3u << 24,
-    CMDA_TX_IOC         = 1u << 31,
+    CMDA_TX_IOC = 1u << 31,
     CMDA_MASK = CMDA_BUFSZ_MASK | CMDA_LAST | CMDA_FIRST | CMDA_OFFSET_MASK |
                 CMDA_END_ALIGN_MASK | CMDA_TX_IOC,
 };
@@ -308,36 +308,36 @@ enum pkt_cmdb_bits : u32 {
     CMDB_PAD_DIS = 1u << 12,
     CMDB_CRC_DIS = 1u << 13,
     CMDB_PKT_TAG = bitmask(16, 16),
-    CMDB_MASK    = CMDB_PKT_LEN | CMDB_PAD_DIS | CMDB_CRC_DIS | CMDB_PKT_TAG,
+    CMDB_MASK = CMDB_PKT_LEN | CMDB_PAD_DIS | CMDB_CRC_DIS | CMDB_PKT_TAG,
 };
 
 enum pkt_txsts_bits : u32 {
-    PKT_TXSTS_DEFERRED   = 1u << 0,
-    PKT_TXSTS_EX_DEF     = 1u << 2,
-    PKT_TXSTS_COL_CNT    = bitmask(4, 3),
-    PKT_TXSTS_EX_COL     = 1u << 8,
-    PKT_TXSTS_LATE_COL   = 1u << 9,
-    PKT_TXSTS_NO_CARRY   = 1u << 10,
+    PKT_TXSTS_DEFERRED = 1u << 0,
+    PKT_TXSTS_EX_DEF = 1u << 2,
+    PKT_TXSTS_COL_CNT = bitmask(4, 3),
+    PKT_TXSTS_EX_COL = 1u << 8,
+    PKT_TXSTS_LATE_COL = 1u << 9,
+    PKT_TXSTS_NO_CARRY = 1u << 10,
     PKT_TXSTS_LOST_CARRY = 1u << 11,
-    PKT_TXSTS_ERROR      = 1u << 15,
-    PKT_TXSTS_TAG_MASK   = bitmask(16, 16),
+    PKT_TXSTS_ERROR = 1u << 15,
+    PKT_TXSTS_TAG_MASK = bitmask(16, 16),
 };
 
 enum pkt_rxsts_bits : u32 {
-    PKT_RXSTS_ERR_CRC    = 1u << 1,
-    PKT_RXSTS_DRIBBLE    = 1u << 2,
-    PKT_RXSTS_ERR_MII    = 1u << 3,
-    PKT_RXSTS_WATCHDOG   = 1u << 4,
+    PKT_RXSTS_ERR_CRC = 1u << 1,
+    PKT_RXSTS_DRIBBLE = 1u << 2,
+    PKT_RXSTS_ERR_MII = 1u << 3,
+    PKT_RXSTS_WATCHDOG = 1u << 4,
     PKT_RXSTS_FRAME_TYPE = 1u << 5,
-    PKT_RXSTS_COLLISION  = 1u << 6,
-    PKT_RXSTS_TOO_LONG   = 1u << 7,
-    PKT_RXSTS_MULTICAST  = 1u << 10,
-    PKT_RXSTS_RUNT       = 1u << 11,
+    PKT_RXSTS_COLLISION = 1u << 6,
+    PKT_RXSTS_TOO_LONG = 1u << 7,
+    PKT_RXSTS_MULTICAST = 1u << 10,
+    PKT_RXSTS_RUNT = 1u << 11,
     PKT_RXSTS_ERR_LENGTH = 1u << 12,
-    PKT_RXSTS_BROADCAST  = 1u << 13,
-    PKT_RXSTS_ERROR      = 1u << 15,
-    PKT_RXSTS_LEN_MASK   = bitmask(14, 16),
-    PKT_RXSTS_FILTERED   = 1u << 30,
+    PKT_RXSTS_BROADCAST = 1u << 13,
+    PKT_RXSTS_ERROR = 1u << 15,
+    PKT_RXSTS_LEN_MASK = bitmask(14, 16),
+    PKT_RXSTS_FILTERED = 1u << 30,
 };
 
 static constexpr u32 chiprev(u16 id, u16 rev) {
@@ -385,7 +385,7 @@ void lan9118_phy::write_advertise(u16 val) {
 }
 
 u16 lan9118_phy::read_int_source() {
-    u16 val    = int_source;
+    u16 val = int_source;
     int_source = 0;
     m_parent.update_irq();
     return val;
@@ -489,7 +489,7 @@ void lan9118_mac::write_cr(u32 val) {
 }
 
 void lan9118_mac::write_mii_acc(u32 val) {
-    mii_acc      = val & MII_ACC_MASK;
+    mii_acc = val & MII_ACC_MASK;
     u32 phy_addr = extract(val, 11, 5);
     if (phy_addr != 1) {
         log_warn("MII_ACC ignoring invalid PHY_ADDR %u", phy_addr);
@@ -606,10 +606,10 @@ void lan9118::reset_fifo_size(size_t txff_size) {
     size_t rxff_size = sram_size - txff_size;
 
     m_tx_status_fifo_size = 512;
-    m_tx_data_fifo_size   = txff_size - m_tx_status_fifo_size;
+    m_tx_data_fifo_size = txff_size - m_tx_status_fifo_size;
 
     m_rx_status_fifo_size = rxff_size / 16;
-    m_rx_data_fifo_size   = rxff_size - m_rx_status_fifo_size;
+    m_rx_data_fifo_size = rxff_size - m_rx_status_fifo_size;
 
     log_debug("TX STATUS FIFO: %zu bytes", m_tx_status_fifo_size);
     log_debug("TX DATA FIFO:   %zu bytes", m_tx_data_fifo_size);
@@ -687,9 +687,9 @@ bool lan9118::rx_enqueue(const vector<u8>& pkt) {
     // not sure if this is the correct crc32 to use
     u32 crc = crc32(pkt.data(), pkt.size());
 
-    size_t offset  = extract(rx_cfg.get(), 8, 5);
+    size_t offset = extract(rx_cfg.get(), 8, 5);
     size_t padding = calc_rx_padding(rx_cfg, pkt.size(), offset);
-    size_t length  = pkt.size() + sizeof(crc) + offset + padding * 4;
+    size_t length = pkt.size() + sizeof(crc) + offset + padding * 4;
     if (rx_data_free() < length)
         return false;
 
@@ -834,19 +834,19 @@ void lan9118::write_tx_data_fifo(u32 val) {
     switch (m_tx_pkt.state) {
     case packet::CMDA: {
         m_tx_pkt.used_dw++;
-        m_tx_pkt.cmda    = val & CMDA_MASK;
-        m_tx_pkt.offset  = extract(val, 16, 5);
-        m_tx_pkt.remain  = extract(val, 0, 11);
+        m_tx_pkt.cmda = val & CMDA_MASK;
+        m_tx_pkt.offset = extract(val, 16, 5);
+        m_tx_pkt.remain = extract(val, 0, 11);
         m_tx_pkt.padding = calc_tx_padding(m_tx_pkt.cmda, m_tx_pkt.offset,
                                            m_tx_pkt.remain);
-        m_tx_pkt.state   = packet::CMDB;
+        m_tx_pkt.state = packet::CMDB;
         break;
     }
 
     case packet::CMDB: {
         m_tx_pkt.used_dw++;
         if (m_tx_pkt.cmda & CMDA_FIRST) {
-            m_tx_pkt.cmdb   = val & CMDB_MASK;
+            m_tx_pkt.cmdb = val & CMDB_MASK;
             m_tx_pkt.length = extract(val, 0, 11);
         }
 
@@ -937,7 +937,7 @@ u32 lan9118::read_tx_status_peek() {
 }
 
 void lan9118::write_irq_cfg(u32 val) {
-    irq_cfg      = val & IRQ_CFG_MASK;
+    irq_cfg = val & IRQ_CFG_MASK;
     m_deas_delta = (val >> 24) * m_deas_cycle;
 
     if (val & IRQ_CFG_DEAS_CLR)
@@ -1017,10 +1017,10 @@ void lan9118::write_hw_cfg(u32 val) {
 
 void lan9118::write_rx_dp_ctrl(u32 val) {
     if (val & RX_DP_CTRL_FF) {
-        size_t length  = (read_rx_status_fifo() >> 16) & 0x3ff;
-        size_t offset  = extract(rx_cfg.get(), 8, 5);
+        size_t length = (read_rx_status_fifo() >> 16) & 0x3ff;
+        size_t offset = extract(rx_cfg.get(), 8, 5);
         size_t padding = calc_rx_padding(rx_cfg, length, offset);
-        size_t ndw     = (length + offset) / 4 + padding;
+        size_t ndw = (length + offset) / 4 + padding;
         log_debug("triggering fast-forward for %zu dwords", ndw);
 
         while (ndw--)
@@ -1391,7 +1391,7 @@ void lan9118::update_irq() {
     if (sc_time_stamp() >= m_deas_limit) {
         irq_cfg &= ~IRQ_CFG_DEAS_STS;
         m_deas_limit = sc_time_stamp() + m_deas_delta;
-        irq          = true;
+        irq = true;
         return;
     }
 

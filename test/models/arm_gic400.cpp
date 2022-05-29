@@ -50,28 +50,28 @@ public:
 
     virtual void run_test() override {
         enum addresses : u64 {
-            GICC_IIDR  = 0xfc, // CPU Interface Identification
-            GICC_CTLR  = 0x00, // CPU Interface Control Register
-            GICC_PMR   = 0x04, // Interrupt Priority Mask Register
-            GICC_IAR   = 0x0c, // Interrupt Acknowledge Register
-            GICC_EOIR  = 0x10, // End of Interrupt Register
-            GICC_RPR   = 0x14, // Running Priority Register
+            GICC_IIDR = 0xfc,  // CPU Interface Identification
+            GICC_CTLR = 0x00,  // CPU Interface Control Register
+            GICC_PMR = 0x04,   // Interrupt Priority Mask Register
+            GICC_IAR = 0x0c,   // Interrupt Acknowledge Register
+            GICC_EOIR = 0x10,  // End of Interrupt Register
+            GICC_RPR = 0x14,   // Running Priority Register
             GICC_HPPIR = 0x18, // Highest Pending IRQ register
 
-            GICD_CTLR          = 0x000, // Distributor Control Register
+            GICD_CTLR = 0x000,          // Distributor Control Register
             GICD_ISENABLER_SPI = 0x104, // Interrupt Set-Enable Registers
-            GICD_ITARGETS_SPI  = 0x820, // Interrupt Target Registers
+            GICD_ITARGETS_SPI = 0x820,  // Interrupt Target Registers
             GICD_IPRIORITY_SGI = 0x400, // SGI Priority Register
             GICD_IPRIORITY_SPI = 0x420, // SPI Priority Register
 
-            GICV_CTLR  = 0x00, // VM Control Register
-            GICV_PMR   = 0x04, // VM Priority Mask Register
-            GICV_IAR   = 0x0C, // VM Interrupt Acknowledge Register
-            GICV_EOIR  = 0x10, // VM End of Interrupt Register
+            GICV_CTLR = 0x00,  // VM Control Register
+            GICV_PMR = 0x04,   // VM Priority Mask Register
+            GICV_IAR = 0x0C,   // VM Interrupt Acknowledge Register
+            GICV_EOIR = 0x10,  // VM End of Interrupt Register
             GICV_HPPIR = 0x18, // VM Highest Priority Pending IRQ
 
-            GICH_HCR = 0x00,  // Hypervisor Control Register
-            GICH_LR  = 0x100, // List Registers
+            GICH_HCR = 0x00, // Hypervisor Control Register
+            GICH_LR = 0x100, // List Registers
         };
 
         u32 val = ~0;

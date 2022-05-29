@@ -191,7 +191,7 @@ void rspserver::run() {
             listen();
             while (m_running && is_connected())
                 try {
-                    string command  = recv_packet();
+                    string command = recv_packet();
                     string response = handle_command(command);
                     if (is_connected())
                         send_packet(response);
@@ -253,10 +253,10 @@ void rspserver::unregister_handler(const char* cmd) {
     m_handlers.erase(cmd);
 }
 
-const char* const rspserver::ERR_COMMAND  = "E01";
-const char* const rspserver::ERR_PARAM    = "E02";
+const char* const rspserver::ERR_COMMAND = "E01";
+const char* const rspserver::ERR_PARAM = "E02";
 const char* const rspserver::ERR_INTERNAL = "E03";
-const char* const rspserver::ERR_UNKNOWN  = "E04";
+const char* const rspserver::ERR_UNKNOWN = "E04";
 const char* const rspserver::ERR_PROTOCOL = "E05";
 
 } // namespace debugging

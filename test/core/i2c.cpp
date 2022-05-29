@@ -29,7 +29,7 @@ MATCHER_P(i2c_match_address, addr, "Matches an i2c socket address") {
 
 TEST(i2c, to_string) {
     i2c_payload tx;
-    tx.cmd  = I2C_START;
+    tx.cmd = I2C_START;
     tx.resp = I2C_ACK;
     tx.data = 0xff;
 
@@ -48,11 +48,11 @@ TEST(i2c, to_string) {
 
 TEST(i2c, result) {
     i2c_payload ok;
-    ok.cmd  = I2C_DATA;
+    ok.cmd = I2C_DATA;
     ok.resp = I2C_ACK;
 
     i2c_payload err;
-    err.cmd  = I2C_DATA;
+    err.cmd = I2C_DATA;
     err.resp = I2C_NACK;
 
     EXPECT_TRUE(success(ok));

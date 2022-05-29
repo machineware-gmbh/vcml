@@ -42,9 +42,9 @@ struct tlm_sbi {
         u64 code;
     };
 
-    tlm_sbi()               = default;
+    tlm_sbi() = default;
     tlm_sbi(const tlm_sbi&) = default;
-    tlm_sbi(tlm_sbi&&)      = default;
+    tlm_sbi(tlm_sbi&&) = default;
 
     tlm_sbi(bool debug, bool nodmi, bool sync, bool insn, bool excl, bool lock,
             int cpu = 0, int lvl = 0):
@@ -103,13 +103,13 @@ inline bool tlm_sbi::operator!=(const tlm_sbi& other) const {
     return code != other.code;
 }
 
-const tlm_sbi SBI_NONE  = { false, false, false, false, false, false };
+const tlm_sbi SBI_NONE = { false, false, false, false, false, false };
 const tlm_sbi SBI_DEBUG = { true, false, false, false, false, false };
 const tlm_sbi SBI_NODMI = { false, true, false, false, false, false };
-const tlm_sbi SBI_SYNC  = { false, false, true, false, false, false };
-const tlm_sbi SBI_INSN  = { false, false, false, true, false, false };
-const tlm_sbi SBI_EXCL  = { false, false, false, false, true, false };
-const tlm_sbi SBI_LOCK  = { false, false, false, false, false, true };
+const tlm_sbi SBI_SYNC = { false, false, true, false, false, false };
+const tlm_sbi SBI_INSN = { false, false, false, true, false, false };
+const tlm_sbi SBI_EXCL = { false, false, false, false, true, false };
+const tlm_sbi SBI_LOCK = { false, false, false, false, false, true };
 
 inline tlm_sbi sbi_cpuid(int cpu) {
     return tlm_sbi(false, false, false, false, false, false, cpu, 0);

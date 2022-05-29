@@ -135,7 +135,7 @@ public:
     VCML_KIND(uart8250);
     virtual void reset() override;
 
-    uart8250()                = delete;
+    uart8250() = delete;
     uart8250(const uart8250&) = delete;
 };
 

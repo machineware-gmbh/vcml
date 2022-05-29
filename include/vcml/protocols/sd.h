@@ -28,30 +28,30 @@
 namespace vcml {
 
 enum sd_status : int {
-    SD_INCOMPLETE  = 0,  // command has not yet been processed
-    SD_OK          = 1,  // command has fully completed
-    SD_OK_TX_RDY   = 2,  // command done, data available for reading
-    SD_OK_RX_RDY   = 3,  // command done, awaiting data for writing
-    SD_ERR_CRC     = -1, // command checksum error
-    SD_ERR_ARG     = -2, // invalid command argument error
+    SD_INCOMPLETE = 0,   // command has not yet been processed
+    SD_OK = 1,           // command has fully completed
+    SD_OK_TX_RDY = 2,    // command done, data available for reading
+    SD_OK_RX_RDY = 3,    // command done, awaiting data for writing
+    SD_ERR_CRC = -1,     // command checksum error
+    SD_ERR_ARG = -2,     // invalid command argument error
     SD_ERR_ILLEGAL = -3, // illegal command error
 };
 
 enum sd_status_tx {
-    SDTX_INCOMPLETE  = 0,  // request has not yet been processed
-    SDTX_OK          = 1,  // next token ready
+    SDTX_INCOMPLETE = 0,   // request has not yet been processed
+    SDTX_OK = 1,           // next token ready
     SDTX_OK_BLK_DONE = 2,  // one block fully transmitted
     SDTX_OK_COMPLETE = 3,  // transmission completed
     SDTX_ERR_ILLEGAL = -1, // not transmitting
 };
 
 enum sd_status_rx {
-    SDRX_INCOMPLETE  = 0,  // request has not yet been processed
-    SDRX_OK          = 1,  // ready for next token
+    SDRX_INCOMPLETE = 0,   // request has not yet been processed
+    SDRX_OK = 1,           // ready for next token
     SDRX_OK_BLK_DONE = 2,  // data for one block received
     SDRX_OK_COMPLETE = 3,  // data received successfully
-    SDRX_ERR_CRC     = -1, // checksum error
-    SDRX_ERR_INT     = -2, // internal error
+    SDRX_ERR_CRC = -1,     // checksum error
+    SDRX_ERR_INT = -2,     // internal error
     SDRX_ERR_ILLEGAL = -3, // not receiving
 };
 
@@ -170,11 +170,11 @@ public:
 
     sd_target_sockets all_sd_target_sockets(address_space);
 
-    sd_host()          = default;
+    sd_host() = default;
     virtual ~sd_host() = default;
 
     virtual void sd_transport(const sd_target_socket&, sd_command&) = 0;
-    virtual void sd_transport(const sd_target_socket&, sd_data&)    = 0;
+    virtual void sd_transport(const sd_target_socket&, sd_data&) = 0;
 
 private:
     sd_initiator_sockets m_initiator_sockets;
@@ -192,7 +192,7 @@ public:
     typedef sd_protocol_types protocol_types;
 
     virtual void sd_transport(sd_command& cmd) = 0;
-    virtual void sd_transport(sd_data& data)   = 0;
+    virtual void sd_transport(sd_data& data) = 0;
 };
 
 class sd_bw_transport_if : public sc_core::sc_interface

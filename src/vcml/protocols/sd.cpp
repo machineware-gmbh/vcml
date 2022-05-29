@@ -311,8 +311,8 @@ void sd_initiator_socket::transport(sd_data& data) {
 
 sd_status_tx sd_initiator_socket::read_data(u8& data) {
     sd_data tx;
-    tx.mode        = SD_READ;
-    tx.data        = data;
+    tx.mode = SD_READ;
+    tx.data = data;
     tx.status.read = SDTX_INCOMPLETE;
 
     transport(tx);
@@ -322,8 +322,8 @@ sd_status_tx sd_initiator_socket::read_data(u8& data) {
 
 sd_status_rx sd_initiator_socket::write_data(u8 data) {
     sd_data tx;
-    tx.mode         = SD_WRITE;
-    tx.data         = data;
+    tx.mode = SD_WRITE;
+    tx.data = data;
     tx.status.write = SDRX_INCOMPLETE;
 
     transport(tx);
@@ -363,7 +363,7 @@ sd_initiator_stub::sd_initiator_stub(const char* nm):
 
 void sd_target_stub::sd_transport(sd_command& cmd) {
     cmd.resp_len = 0;
-    cmd.status   = SD_OK;
+    cmd.status = SD_OK;
 }
 
 void sd_target_stub::sd_transport(sd_data& data) {

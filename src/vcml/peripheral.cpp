@@ -106,14 +106,14 @@ void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
 
 unsigned int peripheral::transport(tlm_generic_payload& tx,
                                    const tlm_sbi& info, address_space as) {
-    sc_dt::uint64 addr     = tx.get_address();
-    unsigned char* ptr     = tx.get_data_ptr();
-    unsigned int length    = tx.get_data_length();
-    unsigned int swidth    = tx.get_streaming_width();
-    unsigned char* be_ptr  = tx.get_byte_enable_ptr();
+    sc_dt::uint64 addr = tx.get_address();
+    unsigned char* ptr = tx.get_data_ptr();
+    unsigned int length = tx.get_data_length();
+    unsigned int swidth = tx.get_streaming_width();
+    unsigned char* be_ptr = tx.get_byte_enable_ptr();
     unsigned int be_length = tx.get_byte_enable_length();
-    unsigned int be_index  = 0;
-    unsigned int nbytes    = 0;
+    unsigned int be_index = 0;
+    unsigned int nbytes = 0;
 
     VCML_ERROR_ON(ptr == nullptr, "transaction data pointer cannot be null");
     VCML_ERROR_ON(length == 0, "transaction data length cannot be zero");

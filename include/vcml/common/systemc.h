@@ -395,8 +395,8 @@ private:
 
         VCML_ERROR_ON(idx >= LIMIT, "socket out of bounds: %zu", idx);
         hierarchy_guard guard(m_parent);
-        string nm     = mkstr("%s[%zu]", m_name.c_str(), idx);
-        socket        = new SOCKET(nm.c_str(), m_space);
+        string nm = mkstr("%s[%zu]", m_name.c_str(), idx);
+        socket = new SOCKET(nm.c_str(), m_space);
         m_ids[socket] = idx;
         return *socket;
     }

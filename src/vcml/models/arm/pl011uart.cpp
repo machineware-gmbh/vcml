@@ -58,7 +58,7 @@ u16 pl011uart::read_dr() {
         m_fifo.pop();
     }
 
-    dr  = val;
+    dr = val;
     rsr = (val >> RSR_O) & RSR_M;
 
     update();

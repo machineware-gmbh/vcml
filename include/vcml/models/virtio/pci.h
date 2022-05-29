@@ -41,10 +41,10 @@ using generic::pci_device;
 using generic::pci_capability;
 
 enum virtio_cap_type : u8 {
-    VIRTIO_PCI_CAP_COMMON  = 1,
-    VIRTIO_PCI_CAP_NOTIFY  = 2,
-    VIRTIO_PCI_CAP_ISR     = 3,
-    VIRTIO_PCI_CAP_DEVICE  = 4,
+    VIRTIO_PCI_CAP_COMMON = 1,
+    VIRTIO_PCI_CAP_NOTIFY = 2,
+    VIRTIO_PCI_CAP_ISR = 3,
+    VIRTIO_PCI_CAP_DEVICE = 4,
     VIRTIO_PCI_CAP_PCI_CFG = 5,
 };
 

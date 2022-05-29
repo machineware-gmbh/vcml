@@ -24,7 +24,7 @@ TEST(strings, mkstr) {
 }
 
 TEST(strings, split) {
-    std::string s              = "abc def\nghi\tjkl :.; ";
+    std::string s = "abc def\nghi\tjkl :.; ";
     std::vector<std::string> v = vcml::split(
         s, [](unsigned char c) { return isspace(c); });
 

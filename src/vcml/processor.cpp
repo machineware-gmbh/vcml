@@ -57,8 +57,8 @@ bool processor::cmd_dump(const vector<string>& args, ostream& os) {
 
 bool processor::cmd_read(const vector<string>& args, ostream& os) {
     u64 start = strtoull(args[1].c_str(), NULL, 0);
-    u64 end   = strtoull(args[2].c_str(), NULL, 0);
-    u64 size  = end - start;
+    u64 end = strtoull(args[2].c_str(), NULL, 0);
+    u64 size = end - start;
     if (end <= start) {
         os << "Usage: read <INSN|DATA> <start> <end>";
         return false;
@@ -277,10 +277,10 @@ void processor::processor_thread() {
                 return;
 
             unsigned int num_cycles = 1;
-            sc_time quantum         = tlm_global_quantum::instance().get();
+            sc_time quantum = tlm_global_quantum::instance().get();
             if (quantum > clock_cycle() && quantum > local_time()) {
                 sc_time time_left = quantum - local_time();
-                num_cycles        = time_left / clock_cycle();
+                num_cycles = time_left / clock_cycle();
 
                 // if there will be less than one clock_cycle left
                 // in the current quantum -> do one more instruction
@@ -375,7 +375,7 @@ void processor::reset() {
     component::reset();
 
     m_cycle_count = 0;
-    m_run_time    = 0.0;
+    m_run_time = 0.0;
 
     for (auto reg : m_regprops)
         reg.second->reset();
@@ -431,7 +431,7 @@ void processor::log_bus_error(const tlm_initiator_socket& socket,
 void processor::irq_transport(const irq_target_socket& socket,
                               irq_payload& tx) {
     unsigned int irqno = irq.index_of(socket);
-    irq_stats& stats   = m_irq_stats[irqno];
+    irq_stats& stats = m_irq_stats[irqno];
 
     if (tx.active == stats.irq_status) {
         log_warn("irq %d already %s", irqno, tx.active ? "set" : "cleared");
@@ -473,12 +473,12 @@ void processor::end_of_elaboration() {
     component::end_of_elaboration();
 
     for (auto it : irq) {
-        irq_stats& stats  = m_irq_stats[it.first];
-        stats.irq         = it.first;
-        stats.irq_count   = 0;
-        stats.irq_status  = false;
-        stats.irq_last    = SC_ZERO_TIME;
-        stats.irq_uptime  = SC_ZERO_TIME;
+        irq_stats& stats = m_irq_stats[it.first];
+        stats.irq = it.first;
+        stats.irq_count = 0;
+        stats.irq_status = false;
+        stats.irq_last = SC_ZERO_TIME;
+        stats.irq_uptime = SC_ZERO_TIME;
         stats.irq_longest = SC_ZERO_TIME;
     }
 }

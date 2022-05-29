@@ -46,7 +46,7 @@ public:
     virtual ~property();
     VCML_KIND(property);
 
-    property()                      = delete;
+    property() = delete;
     property(const property<T, N>&) = delete;
 
     virtual void reset() override;
@@ -170,9 +170,9 @@ inline const char* property<string, 1>::str() const {
 
 template <typename T, const unsigned int N>
 inline void property<T, N>::str(const string& s) {
-    m_inited            = true;
+    m_inited = true;
     vector<string> args = split(s);
-    unsigned int size   = args.size();
+    unsigned int size = args.size();
 
     if (size < N) {
         log_warn("property %s has not enough initializers", name().c_str());
@@ -186,7 +186,7 @@ inline void property<T, N>::str(const string& s) {
 
 template <>
 inline void property<string, 1>::str(const string& s) {
-    m_inited   = true;
+    m_inited = true;
     m_value[0] = s;
 }
 
@@ -245,7 +245,7 @@ template <typename T, const unsigned int N>
 inline void property<T, N>::set(const T& val, unsigned int idx) {
     VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
     m_value[idx] = val;
-    m_inited     = true;
+    m_inited = true;
 }
 
 template <typename T, const unsigned int N>
@@ -266,7 +266,7 @@ inline void property<T, N>::inherit_default() {
         return;
 
     const property<T, N>* prop = nullptr;
-    const sc_object* obj       = parent()->get_parent_object();
+    const sc_object* obj = parent()->get_parent_object();
     for (; obj && !prop; obj = obj->get_parent_object()) {
         const auto* attr = obj->attr_cltn()[name()];
         if (attr != nullptr)

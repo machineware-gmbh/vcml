@@ -60,9 +60,9 @@ public:
 
     enum config_bits : u8 {
         CFG_SHUTDOWN = 1u << 0,
-        CFG_INT      = 1u << 1,
-        CFG_POL      = 1u << 2,
-        CFG_FQUEUE   = 3u << 3,
+        CFG_INT = 1u << 1,
+        CFG_POL = 1u << 2,
+        CFG_FQUEUE = 3u << 3,
     };
 
     property<u8> pointer;

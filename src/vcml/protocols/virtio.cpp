@@ -69,7 +69,7 @@ size_t vq_message::copy_out(const void* ptr, size_t size, size_t offset) {
 }
 
 size_t vq_message::copy_in(void* ptr, size_t size, size_t offset) {
-    u8* dest      = (u8*)ptr;
+    u8* dest = (u8*)ptr;
     size_t copied = 0;
 
     for (auto buf : in) {
@@ -78,7 +78,7 @@ size_t vq_message::copy_in(void* ptr, size_t size, size_t offset) {
             continue;
         }
 
-        size_t n      = min(size, buf.size - offset);
+        size_t n = min(size, buf.size - offset);
         const u8* src = dmi(buf.addr + offset, n, VCML_ACCESS_READ);
         VCML_ERROR_ON(!src, "no DMI pointer for 0x%016lx", buf.addr);
 
@@ -154,9 +154,9 @@ virtqueue::~virtqueue() {
 }
 
 bool virtqueue::get(vq_message& msg) {
-    msg.dmi    = dmi;
+    msg.dmi = dmi;
     msg.status = VIRTIO_INCOMPLETE;
-    msg.index  = -1;
+    msg.index = -1;
     msg.in.clear();
     msg.out.clear();
 
@@ -220,7 +220,7 @@ bool split_virtqueue::validate() {
     }
 
     if (has_event_idx) {
-        m_used_ev  = (u16*)(m_avail->ring + size);
+        m_used_ev = (u16*)(m_avail->ring + size);
         m_avail_ev = (u16*)(m_used->ring + size);
     }
 
@@ -321,7 +321,7 @@ virtio_status split_virtqueue::do_put(vq_message& msg) {
     if ((m_used_ev && *m_used_ev == m_used->idx) || !m_avail->no_irq())
         notify = true;
 
-    m_used->ring[m_used->idx % size].id  = msg.index;
+    m_used->ring[m_used->idx % size].id = msg.index;
     m_used->ring[m_used->idx % size].len = msg.length();
     m_used->idx++;
 

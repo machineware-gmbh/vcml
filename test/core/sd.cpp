@@ -56,8 +56,8 @@ public:
         EXPECT_TRUE(find_object("sd.sd_in_arr[29]_stub"));
 
         auto initiators = all_sd_initiator_sockets();
-        auto targets    = all_sd_target_sockets();
-        auto sockets    = all_sd_target_sockets(VCML_AS_TEST);
+        auto targets = all_sd_target_sockets();
+        auto sockets = all_sd_target_sockets(VCML_AS_TEST);
 
         EXPECT_EQ(initiators.size(), 2) << "sd initiators did not register";
         EXPECT_EQ(targets.size(), 2) << "sd targets did not register";
@@ -67,7 +67,7 @@ public:
     virtual void sd_transport(const sd_target_socket& socket,
                               sd_command& cmd) override {
         EXPECT_EQ(socket.as, VCML_AS_TEST);
-        cmd.status      = SD_OK;
+        cmd.status = SD_OK;
         cmd.response[0] = cmd.argument * 10;
     }
 
@@ -83,16 +83,16 @@ public:
         for (vcml::u8 i = 0; i < 10; i++) {
             wait(1, sc_core::SC_SEC);
             sd_command cmd = {};
-            cmd.opcode     = 0;
-            cmd.argument   = i;
-            cmd.status     = SD_INCOMPLETE;
+            cmd.opcode = 0;
+            cmd.argument = i;
+            cmd.status = SD_INCOMPLETE;
             sd_out->sd_transport(cmd);
             EXPECT_TRUE(success(cmd));
             EXPECT_EQ(cmd.response[0], i * 10);
 
-            sd_data data     = {};
-            data.mode        = SD_READ;
-            data.data        = i;
+            sd_data data = {};
+            data.mode = SD_READ;
+            data.data = i;
             data.status.read = SDTX_INCOMPLETE;
             sd_out->sd_transport(data);
             EXPECT_TRUE(success(data));

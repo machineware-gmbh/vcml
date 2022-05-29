@@ -217,7 +217,7 @@ static void rfb_err_func(const char* format, ...) {
 }
 
 static void rfb_key_func(rfbBool down, rfbKeySym sym, rfbClientPtr cl) {
-    int port  = cl->screen->port;
+    int port = cl->screen->port;
     auto disp = display::lookup(mkstr("vnc:%d", port));
     VCML_ERROR_ON(!disp, "no display found for port %d", port);
     auto vnc_server = dynamic_cast<vnc*>(disp.get());
@@ -226,7 +226,7 @@ static void rfb_key_func(rfbBool down, rfbKeySym sym, rfbClientPtr cl) {
 }
 
 static void rfb_ptr_func(int mask, int x, int y, rfbClientPtr cl) {
-    int port  = cl->screen->port;
+    int port = cl->screen->port;
     auto disp = display::lookup(mkstr("vnc:%d", port));
     VCML_ERROR_ON(!disp, "no display found for port %d", port);
     auto vnc_server = dynamic_cast<vnc*>(disp.get());
@@ -253,24 +253,24 @@ void vnc::run() {
     m_screen->frameBuffer = (char*)framebuffer();
     m_screen->desktopName = name();
     m_screen->port = m_screen->ipv6port = m_port;
-    m_screen->kbdAddEvent               = &rfb_key_func;
-    m_screen->ptrAddEvent               = &rfb_ptr_func;
+    m_screen->kbdAddEvent = &rfb_key_func;
+    m_screen->ptrAddEvent = &rfb_ptr_func;
 
     rfbInitServer(m_screen);
 
     rfbNewFramebuffer(m_screen, m_screen->frameBuffer, fbm.xres, fbm.yres,
                       fbm.r.size, samples, fbm.bpp);
 
-    m_screen->serverFormat.redShift   = fbm.r.offset;
+    m_screen->serverFormat.redShift = fbm.r.offset;
     m_screen->serverFormat.greenShift = fbm.g.offset;
-    m_screen->serverFormat.blueShift  = fbm.b.offset;
+    m_screen->serverFormat.blueShift = fbm.b.offset;
 
-    m_screen->serverFormat.redMax   = (1 << fbm.r.size) - 1;
+    m_screen->serverFormat.redMax = (1 << fbm.r.size) - 1;
     m_screen->serverFormat.greenMax = (1 << fbm.g.size) - 1;
-    m_screen->serverFormat.blueMax  = (1 << fbm.b.size) - 1;
+    m_screen->serverFormat.blueMax = (1 << fbm.b.size) - 1;
 
     m_screen->serverFormat.bitsPerPixel = fbm.bpp * 8;
-    m_screen->serverFormat.bigEndian    = fbm.endian == ENDIAN_BIG;
+    m_screen->serverFormat.bigEndian = fbm.endian == ENDIAN_BIG;
 
     log_debug("starting vnc server on port %d", m_screen->port);
 
@@ -307,7 +307,7 @@ void vnc::init(const videomode& mode, u8* fb) {
     display::init(mode, fb);
 
     m_running = true;
-    m_thread  = thread(&vnc::run, this);
+    m_thread = thread(&vnc::run, this);
     set_thread_name(m_thread, name());
 }
 
@@ -340,9 +340,9 @@ void vnc::key_event(u32 sym, bool down) {
 }
 
 enum vnc_buttons : u32 {
-    VNC_BTN_LEFT   = 1 << 0,
+    VNC_BTN_LEFT = 1 << 0,
     VNC_BTN_MIDDLE = 1 << 1,
-    VNC_BTN_RIGHT  = 1 << 2,
+    VNC_BTN_RIGHT = 1 << 2,
 };
 
 void vnc::ptr_event(u32 mask, u32 x, u32 y) {

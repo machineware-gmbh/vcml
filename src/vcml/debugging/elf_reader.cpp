@@ -163,17 +163,17 @@ elf_reader::elf_reader(const string& path):
     Elf64_Ehdr* ehdr64 = elf64_getehdr(elf);
 
     if (ehdr32) {
-        m_entry    = ehdr32->e_entry;
-        m_machine  = ehdr32->e_machine;
-        m_endian   = elf_endianess(elf);
+        m_entry = ehdr32->e_entry;
+        m_machine = ehdr32->e_machine;
+        m_endian = elf_endianess(elf);
         m_segments = elf_segments<elf32_traits>(elf);
         read_sections<elf32_traits>(elf);
     }
 
     if (ehdr64) {
-        m_entry    = ehdr64->e_entry;
-        m_machine  = ehdr64->e_machine;
-        m_endian   = elf_endianess(elf);
+        m_entry = ehdr64->e_entry;
+        m_machine = ehdr64->e_machine;
+        m_endian = elf_endianess(elf);
         m_segments = elf_segments<elf64_traits>(elf);
         read_sections<elf64_traits>(elf);
     }

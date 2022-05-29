@@ -37,7 +37,7 @@ static void setup_term() {
 
     termios attr = g_term;
     attr.c_lflag &= ~(ICANON | ECHO | ISIG);
-    attr.c_cc[VMIN]  = 1;
+    attr.c_cc[VMIN] = 1;
     attr.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &attr);
 

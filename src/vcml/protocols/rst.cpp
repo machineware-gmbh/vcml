@@ -126,7 +126,7 @@ const sc_event& rst_initiator_socket::default_event() {
 
 void rst_initiator_socket::reset(bool state, rst_signal sig) {
     rst_payload tx;
-    tx.reset  = state;
+    tx.reset = state;
     tx.signal = sig;
 
     if (sig == RST_PULSE)

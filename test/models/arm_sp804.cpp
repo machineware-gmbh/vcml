@@ -41,8 +41,8 @@ public:
 
     virtual void run_test() override {
         enum addresses : u64 {
-            TIMER1_LOAD    = 0x00,
-            TIMER1_VALUE   = 0x04,
+            TIMER1_LOAD = 0x00,
+            TIMER1_VALUE = 0x04,
             TIMER1_CONTROL = 0x08,
         };
 

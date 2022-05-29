@@ -43,8 +43,8 @@ private:
     };
 
     enum features : u64 {
-        VIRTIO_CONSOLE_F_SIZE        = 1ull << 0,
-        VIRTIO_CONSOLE_F_MULTIPORT   = 1ull << 1,
+        VIRTIO_CONSOLE_F_SIZE = 1ull << 0,
+        VIRTIO_CONSOLE_F_MULTIPORT = 1ull << 1,
         VIRTIO_CONSOLE_F_EMERG_WRITE = 1ull << 2,
     };
 

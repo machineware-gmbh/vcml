@@ -19,8 +19,8 @@
 #include "testing.h"
 
 enum : u64 {
-    MMAP_PCI_CFG_ADDR  = 0x0,
-    MMAP_PCI_CFG_SIZE  = 0x10000,
+    MMAP_PCI_CFG_ADDR = 0x0,
+    MMAP_PCI_CFG_SIZE = 0x10000,
     MMAP_PCI_MMIO_ADDR = 0x40000,
     MMAP_PCI_MMIO_SIZE = 0x1000,
 };

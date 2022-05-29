@@ -39,10 +39,10 @@ struct vq_message;
 struct serial_payload;
 
 enum trace_direction : int {
-    TRACE_FW          = 1,
+    TRACE_FW = 1,
     TRACE_FW_NOINDENT = 0,
     TRACE_BW_NOINDENT = -1,
-    TRACE_BW          = -2,
+    TRACE_BW = -2,
 };
 
 inline bool is_forward_trace(trace_direction dir) {
@@ -141,16 +141,16 @@ public:
     };
 
     virtual void trace(const activity<tlm_generic_payload>&) = 0;
-    virtual void trace(const activity<irq_payload>&)         = 0;
-    virtual void trace(const activity<rst_payload>&)         = 0;
-    virtual void trace(const activity<clk_payload>&)         = 0;
-    virtual void trace(const activity<pci_payload>&)         = 0;
-    virtual void trace(const activity<i2c_payload>&)         = 0;
-    virtual void trace(const activity<spi_payload>&)         = 0;
-    virtual void trace(const activity<sd_command>&)          = 0;
-    virtual void trace(const activity<sd_data>&)             = 0;
-    virtual void trace(const activity<vq_message>&)          = 0;
-    virtual void trace(const activity<serial_payload>&)      = 0;
+    virtual void trace(const activity<irq_payload>&) = 0;
+    virtual void trace(const activity<rst_payload>&) = 0;
+    virtual void trace(const activity<clk_payload>&) = 0;
+    virtual void trace(const activity<pci_payload>&) = 0;
+    virtual void trace(const activity<i2c_payload>&) = 0;
+    virtual void trace(const activity<spi_payload>&) = 0;
+    virtual void trace(const activity<sd_command>&) = 0;
+    virtual void trace(const activity<sd_data>&) = 0;
+    virtual void trace(const activity<vq_message>&) = 0;
+    virtual void trace(const activity<serial_payload>&) = 0;
 
     tracer();
     virtual ~tracer();

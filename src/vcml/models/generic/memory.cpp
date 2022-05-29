@@ -23,7 +23,7 @@ namespace generic {
 
 bool memory::cmd_show(const vector<string>& args, ostream& os) {
     u64 start = strtoull(args[0].c_str(), NULL, 0);
-    u64 end   = strtoull(args[1].c_str(), NULL, 0);
+    u64 end = strtoull(args[1].c_str(), NULL, 0);
 
     if ((end <= start) || (end >= size))
         return false;

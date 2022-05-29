@@ -102,81 +102,81 @@ private:
 public:
     enum ram_address {
         RAM_START = 0x400, // internal RAM start address
-        RAM_END   = 0x7ff, // internal RAM end address
+        RAM_END = 0x7ff,   // internal RAM end address
     };
 
     enum txbd_status {
-        TXBD_CS     = 1 << 0,  // carrier sense lost
-        TXBD_DF     = 1 << 1,  // defer indication
-        TXBD_LC     = 1 << 2,  // late collision
-        TXBD_RL     = 1 << 3,  // retransmission limit
-        TXBD_RTRY_O = 4,       // retry count offset
-        TXBD_RTRY_M = 0xf,     // retry count mask
-        TXBD_UR     = 1 << 8,  // underrun
-        TXBD_CRC    = 1 << 11, // CRC enabled
-        TXBD_PAD    = 1 << 12, // pad enabled
-        TXBD_WR     = 1 << 13, // wrap
-        TXBD_IRQ    = 1 << 14, // IRQ enabled
-        TXBD_RD     = 1 << 15, // ready
-        TXBD_LEN_O  = 16,      // length offset
-        TXBD_LEN_M  = 0xffff   // length mask
+        TXBD_CS = 1 << 0,   // carrier sense lost
+        TXBD_DF = 1 << 1,   // defer indication
+        TXBD_LC = 1 << 2,   // late collision
+        TXBD_RL = 1 << 3,   // retransmission limit
+        TXBD_RTRY_O = 4,    // retry count offset
+        TXBD_RTRY_M = 0xf,  // retry count mask
+        TXBD_UR = 1 << 8,   // underrun
+        TXBD_CRC = 1 << 11, // CRC enabled
+        TXBD_PAD = 1 << 12, // pad enabled
+        TXBD_WR = 1 << 13,  // wrap
+        TXBD_IRQ = 1 << 14, // IRQ enabled
+        TXBD_RD = 1 << 15,  // ready
+        TXBD_LEN_O = 16,    // length offset
+        TXBD_LEN_M = 0xffff // length mask
     };
 
     enum rxbd_status {
-        RXBD_LC    = 1 << 0,  // late collision
-        RXBD_CRC   = 1 << 1,  // CRC error
-        RXBD_SF    = 1 << 2,  // short frame received
-        RXBD_TL    = 1 << 3,  // too long
-        RXBD_DN    = 1 << 4,  // dribble nibble
-        RXBD_IS    = 1 << 5,  // invalid symbol
-        RXBD_OR    = 1 << 6,  // overrun
-        RXBD_M     = 1 << 7,  // miss
-        RXBD_CF    = 1 << 8,  // control frame
-        RXBD_WRAP  = 1 << 13, // wrap
-        RXBD_IRQ   = 1 << 14, // IRQ enabled
-        RXBD_E     = 1 << 15, // empty
-        RXBD_LEN_O = 16,      // length offset
-        RXBD_LEN_M = 0xffff   // length mask
+        RXBD_LC = 1 << 0,    // late collision
+        RXBD_CRC = 1 << 1,   // CRC error
+        RXBD_SF = 1 << 2,    // short frame received
+        RXBD_TL = 1 << 3,    // too long
+        RXBD_DN = 1 << 4,    // dribble nibble
+        RXBD_IS = 1 << 5,    // invalid symbol
+        RXBD_OR = 1 << 6,    // overrun
+        RXBD_M = 1 << 7,     // miss
+        RXBD_CF = 1 << 8,    // control frame
+        RXBD_WRAP = 1 << 13, // wrap
+        RXBD_IRQ = 1 << 14,  // IRQ enabled
+        RXBD_E = 1 << 15,    // empty
+        RXBD_LEN_O = 16,     // length offset
+        RXBD_LEN_M = 0xffff  // length mask
     };
 
     enum moder_status {
-        MODER_RXEN     = 1 << 0,  // receive enabled
-        MODER_TXEN     = 1 << 1,  // transmit enabled
-        MODER_NOPRE    = 1 << 2,  // no preamble
-        MODER_BRO      = 1 << 3,  // receive broadcast address frames
-        MODER_IAM      = 1 << 4,  // individual address mode enabled
-        MODER_PRO      = 1 << 5,  // promiscuous mode enabled
-        MODER_IFG      = 1 << 6,  // interframe gap
-        MODER_LOOPBCK  = 1 << 7,  // loop back TX to RX
-        MODER_NOBCKOF  = 1 << 8,  // no backoff
-        MODER_EXDFREN  = 1 << 9,  // excess defer enabled
-        MODER_FULLD    = 1 << 10, // full duplex Mode
-        MODER_RST      = 1 << 11, // reserved
+        MODER_RXEN = 1 << 0,      // receive enabled
+        MODER_TXEN = 1 << 1,      // transmit enabled
+        MODER_NOPRE = 1 << 2,     // no preamble
+        MODER_BRO = 1 << 3,       // receive broadcast address frames
+        MODER_IAM = 1 << 4,       // individual address mode enabled
+        MODER_PRO = 1 << 5,       // promiscuous mode enabled
+        MODER_IFG = 1 << 6,       // interframe gap
+        MODER_LOOPBCK = 1 << 7,   // loop back TX to RX
+        MODER_NOBCKOF = 1 << 8,   // no backoff
+        MODER_EXDFREN = 1 << 9,   // excess defer enabled
+        MODER_FULLD = 1 << 10,    // full duplex Mode
+        MODER_RST = 1 << 11,      // reserved
         MODER_DLYCRCEN = 1 << 12, // delayed CRC enabled
-        MODER_CRCEN    = 1 << 13, // CRC enabled
-        MODER_HUGEN    = 1 << 14, // huge packets enabled
-        MODER_PAD      = 1 << 15, // padding enabled
+        MODER_CRCEN = 1 << 13,    // CRC enabled
+        MODER_HUGEN = 1 << 14,    // huge packets enabled
+        MODER_PAD = 1 << 15,      // padding enabled
         MODER_RECSMALL = 1 << 16, // receive small packets
     };
 
     enum int_source_status {
-        INT_SOURCE_TXB  = 1 << 0, // transmit buffer
-        INT_SOURCE_TXE  = 1 << 1, // transmit error
-        INT_SOURCE_RXB  = 1 << 2, // receive frame
-        INT_SOURCE_RXE  = 1 << 3, // receive error
+        INT_SOURCE_TXB = 1 << 0,  // transmit buffer
+        INT_SOURCE_TXE = 1 << 1,  // transmit error
+        INT_SOURCE_RXB = 1 << 2,  // receive frame
+        INT_SOURCE_RXE = 1 << 3,  // receive error
         INT_SOURCE_BUSY = 1 << 4, // busy
-        INT_SOURCE_TXC  = 1 << 5, // transmit control frame
-        INT_SOURCE_RXC  = 1 << 6, // receive control frame
+        INT_SOURCE_TXC = 1 << 5,  // transmit control frame
+        INT_SOURCE_RXC = 1 << 6,  // receive control frame
     };
 
     enum int_mask_status {
-        INT_MASK_TXB  = 1 << 0, // transmit buffer
-        INT_MASK_TXE  = 1 << 1, // transmit error
-        INT_MASK_RXB  = 1 << 2, // receive frame
-        INT_MASK_RXE  = 1 << 3, // receive error
+        INT_MASK_TXB = 1 << 0,  // transmit buffer
+        INT_MASK_TXE = 1 << 1,  // transmit error
+        INT_MASK_RXB = 1 << 2,  // receive frame
+        INT_MASK_RXE = 1 << 3,  // receive error
         INT_MASK_BUSY = 1 << 4, // busy
-        INT_MASK_TXC  = 1 << 5, // transmit control frame
-        INT_MASK_RXC  = 1 << 6, // receive control frame
+        INT_MASK_TXC = 1 << 5,  // transmit control frame
+        INT_MASK_RXC = 1 << 6,  // receive control frame
     };
 
     enum packetlen_status {
@@ -188,8 +188,8 @@ public:
 
     enum collconf_status {
         COLLCONF_COLLVALID = 0x3f, // collision valid field
-        COLLCONF_MAXRET_M  = 0xf,  // maximum retry mask
-        COLLCONF_MAXRET_O  = 16,   // maximum retry offset
+        COLLCONF_MAXRET_M = 0xf,   // maximum retry mask
+        COLLCONF_MAXRET_O = 16,    // maximum retry offset
     };
 
     enum tx_bd_num_mask {
@@ -198,18 +198,18 @@ public:
 
     enum ctrlmoder_status {
         CTRLMODER_PASSALL = 1 << 0, // pass all received frames
-        CTRLMODER_RXFLOW  = 1 << 1, // receive flow control
-        CTRLMODER_TXFLOW  = 1 << 2, // transmit flow control
+        CTRLMODER_RXFLOW = 1 << 1,  // receive flow control
+        CTRLMODER_TXFLOW = 1 << 2,  // transmit flow control
     };
 
     enum miimoder_status {
-        MIIMODER_CLKDIV   = 0xf,    // clock divider
+        MIIMODER_CLKDIV = 0xf,      // clock divider
         MIIMODER_MIINOPRE = 1 << 8, // no preamble
     };
 
     enum miicommand_status {
-        MIICOMMAND_SCANSTAT  = 1 << 0, // scan status
-        MIICOMMAND_RSTAT     = 1 << 1, // read status
+        MIICOMMAND_SCANSTAT = 1 << 0,  // scan status
+        MIICOMMAND_RSTAT = 1 << 1,     // read status
         MIICOMMAND_WCTRLDATA = 1 << 2, // write control data
     };
 
@@ -222,8 +222,8 @@ public:
 
     enum mii_status {
         MIISTATUS_LINKFAIL = 1 << 0, // link failed
-        MIISTATUS_BUSY     = 1 << 1, // MII busy
-        MIISTATUS_NVALID   = 1 << 2, // data in MSTATUS is invalid
+        MIISTATUS_BUSY = 1 << 1,     // MII busy
+        MIISTATUS_NVALID = 1 << 2,   // data in MSTATUS is invalid
     };
 
     enum mac_addr0_offset {
@@ -239,8 +239,8 @@ public:
     };
 
     enum txctrl_status {
-        TXCTRL_TXPAUSETV_M = 0xffff,  // value send in pause control frame
-        TXCTRL_TXPAUSERQ   = 1 << 16, // TX pause request
+        TXCTRL_TXPAUSETV_M = 0xffff, // value send in pause control frame
+        TXCTRL_TXPAUSERQ = 1 << 16,  // TX pause request
     };
 
     reg<u32> moder;         // mode register

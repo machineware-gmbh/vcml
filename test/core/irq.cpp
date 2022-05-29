@@ -80,8 +80,8 @@ public:
         ia.irq_out.bind(in[3]);
 
         auto initiators = all_irq_initiator_sockets();
-        auto targets    = all_irq_target_sockets();
-        auto sockets    = all_irq_target_sockets(0);
+        auto targets = all_irq_target_sockets();
+        auto sockets = all_irq_target_sockets(0);
 
         EXPECT_EQ(initiators.size(), 3) << "irq initiators did not register";
         EXPECT_EQ(targets.size(), 4) << "irq targets did not register";
@@ -94,7 +94,7 @@ public:
     virtual void irq_transport(const irq_target_socket& socket,
                                irq_payload& irq) override {
         irq_state[irq.vector] = irq.active;
-        size_t source         = in.index_of(socket);
+        size_t source = in.index_of(socket);
         if (irq.active)
             irq_source.insert(source);
         else

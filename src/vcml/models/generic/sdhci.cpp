@@ -203,13 +203,13 @@ void sdhci::transfer_data_to_port() {
 void sdhci::write_cmd(u16 val) {
     set_present_state(COMMAND_INHIBIT_CMD);
 
-    m_cmd.spi      = false;
-    m_cmd.appcmd   = false;
-    m_cmd.opcode   = (val & 0x3f00) >> 8;
+    m_cmd.spi = false;
+    m_cmd.appcmd = false;
+    m_cmd.opcode = (val & 0x3f00) >> 8;
     m_cmd.argument = arg;
-    m_cmd.crc      = calc_crc7();
+    m_cmd.crc = calc_crc7();
     m_cmd.resp_len = 0;
-    m_cmd.status   = SD_INCOMPLETE;
+    m_cmd.status = SD_INCOMPLETE;
 
     if (m_cmd.opcode == 17 || m_cmd.opcode == 18)
         set_present_state(READ_TRANSFER_ACTIVE);
@@ -313,7 +313,7 @@ void sdhci::write_buffer_data_port(u32 val) {
         block_count_16_bit -= 1;
         m_bufptr = 0;
 
-        u16 crc             = crc16(m_buffer, (block_size & 0x0fff));
+        u16 crc = crc16(m_buffer, (block_size & 0x0fff));
         m_buffer[blksz + 0] = (u8)(crc >> 8);
         m_buffer[blksz + 1] = (u8)(crc >> 0);
 
@@ -415,7 +415,7 @@ void sdhci::dma_thread() {
 
 tlm_response_status sdhci::dma_read(u32 boundary) {
     u32 offset = 0;
-    u32 blksz  = block_size & 0xfff;
+    u32 blksz = block_size & 0xfff;
     tlm_response_status rs;
 
     while (true) {
@@ -443,7 +443,7 @@ tlm_response_status sdhci::dma_read(u32 boundary) {
 
 tlm_response_status sdhci::dma_write(u32 boundary) {
     u32 offset = 0;
-    u32 blksz  = block_size & 0xfff;
+    u32 blksz = block_size & 0xfff;
     u16 crc;
     tlm_response_status rs;
 
@@ -460,7 +460,7 @@ tlm_response_status sdhci::dma_write(u32 boundary) {
         sdma_system_address += blksz;
         offset += blksz;
 
-        crc                 = crc16(m_buffer, blksz);
+        crc = crc16(m_buffer, blksz);
         m_buffer[blksz + 0] = (u8)(crc >> 8);
         m_buffer[blksz + 1] = (u8)(crc >> 0);
 

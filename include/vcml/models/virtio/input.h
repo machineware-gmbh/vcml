@@ -40,7 +40,7 @@ class input : public module, public virtio_device
 {
 private:
     enum virtqueues : int {
-        VIRTQUEUE_EVENT  = 0,
+        VIRTQUEUE_EVENT = 0,
         VIRTQUEUE_STATUS = 1,
     };
 
@@ -51,13 +51,13 @@ private:
     };
 
     enum config_select : u8 {
-        VIRTIO_INPUT_CFG_UNSET     = 0x00,
-        VIRTIO_INPUT_CFG_ID_NAME   = 0x01,
+        VIRTIO_INPUT_CFG_UNSET = 0x00,
+        VIRTIO_INPUT_CFG_ID_NAME = 0x01,
         VIRTIO_INPUT_CFG_ID_SERIAL = 0x02,
         VIRTIO_INPUT_CFG_ID_DEVIDS = 0x03,
         VIRTIO_INPUT_CFG_PROP_BITS = 0x10,
-        VIRTIO_INPUT_CFG_EV_BITS   = 0x11,
-        VIRTIO_INPUT_CFG_ABS_INFO  = 0x12,
+        VIRTIO_INPUT_CFG_EV_BITS = 0x11,
+        VIRTIO_INPUT_CFG_ABS_INFO = 0x12,
     };
 
     struct input_absinfo {

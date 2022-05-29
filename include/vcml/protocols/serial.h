@@ -38,8 +38,8 @@ enum serial_bits : size_t {
 };
 
 enum serial_stop : size_t {
-    SERIAL_STOP_1   = 1,
-    SERIAL_STOP_2   = 2,
+    SERIAL_STOP_1 = 1,
+    SERIAL_STOP_2 = 2,
     SERIAL_STOP_1_5 = 3,
 };
 
@@ -58,13 +58,13 @@ enum serial_parity {
 typedef clock_t baud_t;
 
 enum : baud_t {
-    SERIAL_1200BD   = 1200,
-    SERIAL_2400BD   = 2400,
-    SERIAL_4800BD   = 4800,
-    SERIAL_9600BD   = 9600,
-    SERIAL_14400BD  = 14400,
-    SERIAL_38400BD  = 38400,
-    SERIAL_57600BD  = 57600,
+    SERIAL_1200BD = 1200,
+    SERIAL_2400BD = 2400,
+    SERIAL_4800BD = 4800,
+    SERIAL_9600BD = 9600,
+    SERIAL_14400BD = 14400,
+    SERIAL_38400BD = 38400,
+    SERIAL_57600BD = 57600,
     SERIAL_115200BD = 115200,
     SERIAL_128000BD = 128000,
     SERIAL_256000BD = 256000,
@@ -121,9 +121,9 @@ public:
         return m_target_sockets;
     }
 
-    serial_host()                   = default;
-    virtual ~serial_host()          = default;
-    serial_host(serial_host&&)      = delete;
+    serial_host() = default;
+    virtual ~serial_host() = default;
+    serial_host(serial_host&&) = delete;
     serial_host(const serial_host&) = delete;
 
 protected:

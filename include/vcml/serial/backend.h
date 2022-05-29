@@ -37,9 +37,9 @@ public:
     backend(terminal* term, const string& type);
     virtual ~backend();
 
-    backend()               = delete;
+    backend() = delete;
     backend(const backend&) = delete;
-    backend(backend&&)      = default;
+    backend(backend&&) = default;
 
     terminal* term() const { return m_term; }
 

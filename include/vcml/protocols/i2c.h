@@ -28,20 +28,20 @@
 namespace vcml {
 
 enum i2c_address : u8 {
-    I2C_ADDR_BCAST   = 0,
+    I2C_ADDR_BCAST = 0,
     I2C_ADDR_INVALID = 0xff,
 };
 
 enum i2c_command : int {
     I2C_START = 1,
-    I2C_DATA  = 0,
-    I2C_STOP  = -1,
+    I2C_DATA = 0,
+    I2C_STOP = -1,
 };
 
 enum i2c_response : int {
     I2C_INCOMPLETE = 0,
-    I2C_ACK        = 1,
-    I2C_NACK       = -1,
+    I2C_ACK = 1,
+    I2C_NACK = -1,
 };
 
 struct i2c_payload {
@@ -95,16 +95,16 @@ public:
         return m_target_sockets;
     }
 
-    i2c_host()                = default;
-    virtual ~i2c_host()       = default;
-    i2c_host(i2c_host&&)      = delete;
+    i2c_host() = default;
+    virtual ~i2c_host() = default;
+    i2c_host(i2c_host&&) = delete;
     i2c_host(const i2c_host&) = delete;
 
 protected:
     virtual i2c_response i2c_start(const i2c_target_socket&, tlm_command) = 0;
-    virtual i2c_response i2c_stop(const i2c_target_socket&)               = 0;
-    virtual i2c_response i2c_read(const i2c_target_socket&, u8& data)     = 0;
-    virtual i2c_response i2c_write(const i2c_target_socket&, u8 data)     = 0;
+    virtual i2c_response i2c_stop(const i2c_target_socket&) = 0;
+    virtual i2c_response i2c_read(const i2c_target_socket&, u8& data) = 0;
+    virtual i2c_response i2c_write(const i2c_target_socket&, u8 data) = 0;
 
 private:
     i2c_initiator_sockets m_initiator_sockets;

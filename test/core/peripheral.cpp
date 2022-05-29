@@ -212,7 +212,7 @@ TEST(peripheral, transporting_byte_enable_with_streaming) {
     tx.set_byte_enable_ptr(byte_enable);
     tx.set_streaming_width(4);
 
-    local   = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     npulses = tx.get_data_length() / tx.get_streaming_width();
 
     EXPECT_CALL(mock, read(_, _, _, _)).Times(0);

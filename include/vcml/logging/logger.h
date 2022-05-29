@@ -50,7 +50,7 @@ public:
     logger(sc_object* parent);
     logger(const string& name);
 
-    logger(logger&&)      = default;
+    logger(logger&&) = default;
     logger(const logger&) = default;
 
     void log(log_level lvl, const char* format, ...) const

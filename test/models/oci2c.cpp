@@ -32,11 +32,11 @@ public:
     enum address : u32 {
         PRERLO = 0u,
         PRERHI = 1u,
-        CTR    = 2u,
-        RXR    = 3u,
-        TXR    = 3u,
-        SR     = 4u,
-        CR     = 4u,
+        CTR = 2u,
+        RXR = 3u,
+        TXR = 3u,
+        SR = 4u,
+        CR = 4u,
     };
 
     oci2c model;

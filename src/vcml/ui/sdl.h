@@ -72,7 +72,7 @@ private:
 
     void ui_run();
 
-    sdl()           = default;
+    sdl() = default;
     sdl(const sdl&) = delete;
 
 public:

@@ -49,7 +49,7 @@ public:
 
     logger log;
 
-    module()              = delete;
+    module() = delete;
     module(const module&) = delete;
     module(const sc_module_name& nm);
     virtual ~module();

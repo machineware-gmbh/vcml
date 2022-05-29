@@ -95,8 +95,8 @@ void ocfbc::write_ctrl(u32 val) {
 
         m_xres = (htim & 0xffff) + 1;
         m_yres = (vtim & 0xffff) + 1;
-        m_bpp  = OCFBC_BPP(val);
-        m_pc   = (val & CTLR_PC) == CTLR_PC;
+        m_bpp = OCFBC_BPP(val);
+        m_pc = (val & CTLR_PC) == CTLR_PC;
 
         create();
     }
@@ -214,7 +214,7 @@ void ocfbc::render() {
         tlm_response_status rs;
 
         u32 burstsz = OCFBC_VBL(ctlr);
-        u32 linesz  = m_xres * m_bpp;
+        u32 linesz = m_xres * m_bpp;
 
         u8 linebuf[linesz];
         memset(linebuf, 0, sizeof(linebuf));
@@ -244,10 +244,10 @@ void ocfbc::render() {
 
                 for (u32 x = 0; x < linesz; x++) {
                     u32 color = to_host_endian(palette[linebuf[x]]);
-                    *fb++     = (color >> 0) & 0xff;  // b
-                    *fb++     = (color >> 8) & 0xff;  // g
-                    *fb++     = (color >> 16) & 0xff; // r
-                    *fb++     = 0xff;                 // a
+                    *fb++ = (color >> 0) & 0xff;  // b
+                    *fb++ = (color >> 8) & 0xff;  // g
+                    *fb++ = (color >> 16) & 0xff; // r
+                    *fb++ = 0xff;                 // a
                 }
             }
 

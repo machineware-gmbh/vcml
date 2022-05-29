@@ -82,7 +82,7 @@ struct videomode {
     videomode();
     videomode(pixelformat fmt, u32 xres, u32 yres);
     videomode(const videomode& other) = default;
-    videomode(videomode&& other)      = default;
+    videomode(videomode&& other) = default;
     videomode& operator=(const videomode&) = default;
 
     bool is_valid() const { return size > 0; }

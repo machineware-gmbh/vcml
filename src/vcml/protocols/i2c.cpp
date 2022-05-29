@@ -116,7 +116,7 @@ i2c_response i2c_initiator_socket::start(u8 address, tlm_command cmd) {
     VCML_ERROR_ON(address > 127, "invalid i2c address: %hhu", address);
 
     i2c_payload tx;
-    tx.cmd  = I2C_START;
+    tx.cmd = I2C_START;
     tx.resp = I2C_INCOMPLETE;
     tx.data = address << 1;
 
@@ -129,7 +129,7 @@ i2c_response i2c_initiator_socket::start(u8 address, tlm_command cmd) {
 
 i2c_response i2c_initiator_socket::stop() {
     i2c_payload tx;
-    tx.cmd  = I2C_STOP;
+    tx.cmd = I2C_STOP;
     tx.resp = I2C_INCOMPLETE;
     tx.data = 0;
     transport(tx);
@@ -138,7 +138,7 @@ i2c_response i2c_initiator_socket::stop() {
 
 i2c_response i2c_initiator_socket::transport(u8& data) {
     i2c_payload tx;
-    tx.cmd  = I2C_DATA;
+    tx.cmd = I2C_DATA;
     tx.resp = I2C_INCOMPLETE;
     tx.data = data;
     transport(tx);

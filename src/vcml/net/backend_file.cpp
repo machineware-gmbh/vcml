@@ -49,7 +49,7 @@ void backend_file::send_packet(const vector<u8>& packet) {
 }
 
 backend* backend_file::create(const string& adapter, const string& type) {
-    string tx           = adapter + ".tx";
+    string tx = adapter + ".tx";
     vector<string> args = split(type, ':');
     if (args.size() > 1)
         tx = args[1];

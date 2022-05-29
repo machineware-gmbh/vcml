@@ -23,14 +23,14 @@ namespace generic {
 
 static void cam_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
     offset = addr & 0xff;
-    devfn  = (addr >> 8) & 0xff;
-    bus    = (addr >> 16) & 0xff;
+    devfn = (addr >> 8) & 0xff;
+    bus = (addr >> 16) & 0xff;
 }
 
 static void ecam_decode_cfg(u64 addr, u32& bus, u32& devfn, u32& offset) {
     offset = addr & 0xfff;
-    devfn  = (addr >> 12) & 0xff;
-    bus    = (addr >> 20) & 0x1ff;
+    devfn = (addr >> 12) & 0xff;
+    bus = (addr >> 20) & 0x1ff;
 }
 
 static pci_address_space pci_target_space(int bar) {
@@ -106,13 +106,13 @@ unsigned int pci_host::transport(tlm_generic_payload& tx,
     }
 
     pci_payload pci;
-    pci.command  = pci_translate_command(tx.get_command());
+    pci.command = pci_translate_command(tx.get_command());
     pci.response = PCI_RESP_INCOMPLETE;
-    pci.space    = (pci_address_space)space;
-    pci.debug    = sideband.is_debug;
-    pci.addr     = tx.get_address();
-    pci.size     = size;
-    pci.data     = 0;
+    pci.space = (pci_address_space)space;
+    pci.debug = sideband.is_debug;
+    pci.addr = tx.get_address();
+    pci.size = size;
+    pci.data = 0;
 
     if (tx.is_write())
         memcpy(&pci.data, tx.get_data_ptr(), pci.size);
@@ -168,7 +168,7 @@ void pci_host::pci_transport_cfg(pci_payload& tx) {
     // not an error to access nonexistent devices or buses
     if (bus != 0 || !pci_out.exists(devno)) {
         tx.response = PCI_RESP_SUCCESS;
-        tx.data     = ~0u;
+        tx.data = ~0u;
         return;
     }
 
@@ -179,7 +179,7 @@ void pci_host::pci_transport_cfg(pci_payload& tx) {
     // treat nonexistent registers as reserved memory
     if (tx.is_address_error()) {
         tx.response = PCI_RESP_SUCCESS;
-        tx.data     = 0;
+        tx.data = 0;
     }
 }
 
@@ -198,7 +198,7 @@ void pci_host::pci_bar_map(const pci_initiator_socket& s, const pci_bar& bar) {
 }
 
 void pci_host::pci_bar_unmap(const pci_initiator_socket& socket, int barno) {
-    u32 devno  = pci_devno(socket);
+    u32 devno = pci_devno(socket);
     auto match = [devno, barno](const pci_mapping& entry) -> bool {
         return entry.devno == devno && entry.barno == barno;
     };

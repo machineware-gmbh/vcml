@@ -52,7 +52,7 @@ public:
     clk_target_socket clk;
     rst_target_socket rst;
 
-    component()                 = delete;
+    component() = delete;
     component(const component&) = delete;
     component(const sc_module_name& nm, bool allow_dmi = true);
     virtual ~component();

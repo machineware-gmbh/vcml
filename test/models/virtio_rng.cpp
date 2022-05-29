@@ -59,13 +59,13 @@ public:
 
     virtual void run_test() override {
         enum addresses : u64 {
-            RNG_BASE    = 0x1000,
-            RNG_MAGIC   = RNG_BASE + 0x00,
+            RNG_BASE = 0x1000,
+            RNG_MAGIC = RNG_BASE + 0x00,
             RNG_VERSION = RNG_BASE + 0x04,
-            RNG_DEVID   = RNG_BASE + 0x08,
-            RNG_VQ_SEL  = RNG_BASE + 0x30,
-            RNG_VQ_MAX  = RNG_BASE + 0x34,
-            RNG_STATUS  = RNG_BASE + 0x70,
+            RNG_DEVID = RNG_BASE + 0x08,
+            RNG_VQ_SEL = RNG_BASE + 0x30,
+            RNG_VQ_MAX = RNG_BASE + 0x34,
+            RNG_STATUS = RNG_BASE + 0x70,
         };
 
         u32 data;

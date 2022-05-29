@@ -33,7 +33,7 @@ pci_capability::pci_capability(const string& nm, pci_cap_id id):
 
     device->curr_cap_ptr = device->curr_cap_off;
 
-    cap_id   = new_cap_reg_ro<u8>("cap_id", id);
+    cap_id = new_cap_reg_ro<u8>("cap_id", id);
     cap_next = new_cap_reg_ro<u8>("cap_next", prev_ptr);
 }
 
@@ -133,7 +133,7 @@ pci_cap_msix::pci_cap_msix(const string& nm, u32 bar_idx, size_t nvec,
         VCML_ERROR("too many MSIX vectors: %zu", nvec);
 
     msix_table = new msix_entry[nvec];
-    msix_pba   = new u32[(nvec + 31) / 32];
+    msix_pba = new u32[(nvec + 31) / 32];
 
     msix_control = new_cap_reg_rw<u16>("msix_control", control);
     msix_control->on_write(&pci_device::write_msix_ctrl);
@@ -273,7 +273,7 @@ pci_device::pci_device(const sc_module_name& nm, const pci_config& cfg):
 
     for (u32 i = 0; i < PCI_NUM_BARS; i++) {
         m_bars[i].barno = i;
-        m_bars[i].size  = 0;
+        m_bars[i].size = 0;
     }
 }
 
@@ -315,21 +315,21 @@ tlm_response_status pci_device::write(const range& addr, const void* data,
 }
 
 void pci_device::pci_declare_bar(int barno, u64 size, u32 type) {
-    bool is_io       = type & PCI_BAR_IO;
-    bool is_64       = type & PCI_BAR_64;
+    bool is_io = type & PCI_BAR_IO;
+    bool is_64 = type & PCI_BAR_64;
     bool is_prefetch = type & PCI_BAR_PREFETCH;
-    int maxbar       = is_64 ? PCI_NUM_BARS - 1 : PCI_NUM_BARS;
+    int maxbar = is_64 ? PCI_NUM_BARS - 1 : PCI_NUM_BARS;
 
     VCML_ERROR_ON(is_io && is_64, "IO BAR cannot be 64 bit");
     VCML_ERROR_ON(is_io && is_prefetch, "cannot prefetch IO BAR");
     VCML_ERROR_ON(barno >= maxbar, "barno %d out of bounds", barno);
 
-    m_bars[barno].size        = size;
-    m_bars[barno].is_io       = is_io;
-    m_bars[barno].is_64bit    = is_64;
+    m_bars[barno].size = size;
+    m_bars[barno].is_io = is_io;
+    m_bars[barno].is_64bit = is_64;
     m_bars[barno].is_prefetch = is_prefetch;
-    m_bars[barno].addr_lo     = PCI_BAR_UNMAPPED & ~(size - 1);
-    m_bars[barno].addr_hi     = is_64 ? PCI_BAR_UNMAPPED : 0u;
+    m_bars[barno].addr_lo = PCI_BAR_UNMAPPED & ~(size - 1);
+    m_bars[barno].addr_hi = is_64 ? PCI_BAR_UNMAPPED : 0u;
 }
 
 void pci_device::pci_declare_pm_cap(u16 pm_caps) {
@@ -404,7 +404,7 @@ void pci_device::pci_transport(const pci_target_socket& sck,
 }
 
 void pci_device::msi_send(unsigned int vector) {
-    u32 vmask    = m_msi->num_vectors() - 1;
+    u32 vmask = m_msi->num_vectors() - 1;
     u32 msi_data = (*m_msi->msi_data & ~vmask) | (vector & vmask);
     u64 msi_addr = *m_msi->msi_addr;
 
@@ -507,7 +507,7 @@ void pci_device::write_msi_mask(u32 val) {
 }
 
 void pci_device::write_msix_ctrl(u16 val) {
-    const u64 mask        = PCI_MSIX_ENABLE | PCI_MSIX_ALL_MASKED;
+    const u64 mask = PCI_MSIX_ENABLE | PCI_MSIX_ALL_MASKED;
     *m_msix->msix_control = (*m_msix->msix_control & ~mask) | (val & mask);
     m_msix_notify.notify(SC_ZERO_TIME);
 }
@@ -552,7 +552,7 @@ void pci_device::update_bars() {
 }
 
 void pci_device::update_irqs() {
-    pci_irq irq     = PCI_IRQ_NONE;
+    pci_irq irq = PCI_IRQ_NONE;
     bool suppressed = pci_command & PCI_COMMAND_NO_IRQ;
 
     if ((pci_status & PCI_STATUS_IRQ) && !suppressed)

@@ -95,38 +95,38 @@ enum keysym : u32 {
     KEYSYM_y = 'y', // NOLINT(readability-identifier-naming)
     KEYSYM_z = 'z', // NOLINT(readability-identifier-naming)
 
-    KEYSYM_EXCLAIM      = '!',
-    KEYSYM_DBLQUOTE     = '"',
-    KEYSYM_HASH         = '#',
-    KEYSYM_DOLLAR       = '$',
-    KEYSYM_PERCENT      = '%',
-    KEYSYM_AMPERSAND    = '&',
-    KEYSYM_QUOTE        = '\'',
-    KEYSYM_LEFTPAR      = '(',
-    KEYSYM_RIGHTPAR     = ')',
-    KEYSYM_ASTERISK     = '*',
-    KEYSYM_PLUS         = '+',
-    KEYSYM_COMMA        = ',',
-    KEYSYM_MINUS        = '-',
-    KEYSYM_DOT          = '.',
-    KEYSYM_SLASH        = '/',
-    KEYSYM_COLON        = ':',
-    KEYSYM_SEMICOLON    = ';',
-    KEYSYM_LESS         = '<',
-    KEYSYM_EQUAL        = '=',
-    KEYSYM_GREATER      = '>',
-    KEYSYM_QUESTION     = '?',
-    KEYSYM_AT           = '@',
-    KEYSYM_LEFTBRACKET  = '[',
-    KEYSYM_BACKSLASH    = '\\',
+    KEYSYM_EXCLAIM = '!',
+    KEYSYM_DBLQUOTE = '"',
+    KEYSYM_HASH = '#',
+    KEYSYM_DOLLAR = '$',
+    KEYSYM_PERCENT = '%',
+    KEYSYM_AMPERSAND = '&',
+    KEYSYM_QUOTE = '\'',
+    KEYSYM_LEFTPAR = '(',
+    KEYSYM_RIGHTPAR = ')',
+    KEYSYM_ASTERISK = '*',
+    KEYSYM_PLUS = '+',
+    KEYSYM_COMMA = ',',
+    KEYSYM_MINUS = '-',
+    KEYSYM_DOT = '.',
+    KEYSYM_SLASH = '/',
+    KEYSYM_COLON = ':',
+    KEYSYM_SEMICOLON = ';',
+    KEYSYM_LESS = '<',
+    KEYSYM_EQUAL = '=',
+    KEYSYM_GREATER = '>',
+    KEYSYM_QUESTION = '?',
+    KEYSYM_AT = '@',
+    KEYSYM_LEFTBRACKET = '[',
+    KEYSYM_BACKSLASH = '\\',
     KEYSYM_RIGHTBRACKET = ']',
-    KEYSYM_CARET        = '^',
-    KEYSYM_UNDERSCORE   = '_',
-    KEYSYM_BACKQUOTE    = '`',
-    KEYSYM_LEFTBRACE    = '{',
-    KEYSYM_PIPE         = '|',
-    KEYSYM_RIGHTBRACE   = '}',
-    KEYSYM_TILDE        = '~',
+    KEYSYM_CARET = '^',
+    KEYSYM_UNDERSCORE = '_',
+    KEYSYM_BACKQUOTE = '`',
+    KEYSYM_LEFTBRACE = '{',
+    KEYSYM_PIPE = '|',
+    KEYSYM_RIGHTBRACE = '}',
+    KEYSYM_TILDE = '~',
 
     KEYSYM_SPECIAL = 1u << 31,
 
@@ -224,9 +224,9 @@ private:
 public:
     const vector<syminfo>& layout;
 
-    keymap()              = delete;
+    keymap() = delete;
     keymap(const keymap&) = default;
-    keymap(keymap&&)      = default;
+    keymap(keymap&&) = default;
 
     const syminfo* lookup_symbol(u32 symbol) const;
 

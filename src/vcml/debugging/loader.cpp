@@ -65,9 +65,9 @@ vector<image_info> images_from_string(const string& s) {
         if (vec.empty())
             continue;
 
-        string file     = trim(vec[0]);
+        string file = trim(vec[0]);
         image_type type = IMAGE_BIN;
-        u64 offset      = 0;
+        u64 offset = 0;
 
         if (file_exists(file))
             type = detect_image_type(file);
@@ -83,7 +83,7 @@ vector<image_info> images_from_string(const string& s) {
 
 bool loader::cmd_load(const vector<string>& args, ostream& os) {
     string image = args[0];
-    u64 offset   = 0ull;
+    u64 offset = 0ull;
 
     if (args.size() > 1)
         offset = strtoull(args[1].c_str(), NULL, 0);
@@ -94,7 +94,7 @@ bool loader::cmd_load(const vector<string>& args, ostream& os) {
 
 bool loader::cmd_load_bin(const vector<string>& args, ostream& os) {
     string image = args[0];
-    u64 offset   = 0ull;
+    u64 offset = 0ull;
 
     if (args.size() > 1)
         offset = strtoull(args[1].c_str(), NULL, 0);
@@ -105,7 +105,7 @@ bool loader::cmd_load_bin(const vector<string>& args, ostream& os) {
 
 bool loader::cmd_load_elf(const vector<string>& args, ostream& os) {
     string image = args[0];
-    u64 offset   = 0ull;
+    u64 offset = 0ull;
 
     if (args.size() > 1)
         offset = strtoull(args[1].c_str(), NULL, 0);

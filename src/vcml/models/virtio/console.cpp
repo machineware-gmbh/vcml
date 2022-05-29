@@ -131,8 +131,8 @@ console::~console() {
 }
 
 void console::reset() {
-    m_config.cols         = cols;
-    m_config.rows         = rows;
+    m_config.cols = cols;
+    m_config.rows = rows;
     m_config.max_nr_ports = 1;
 }
 

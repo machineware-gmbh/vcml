@@ -36,13 +36,13 @@ enum : u64 {
     TEST_REG_IO_OFF = 0x4,
     TEST_IRQ_VECTOR = 5,
 
-    PCI_VENDOR_OFFSET  = 0x0,
-    PCI_DEVICE_OFFSET  = 0x2,
+    PCI_VENDOR_OFFSET = 0x0,
+    PCI_DEVICE_OFFSET = 0x2,
     PCI_COMMAND_OFFSET = 0x4,
-    PCI_BAR0_OFFSET    = 0x10,
-    PCI_BAR1_OFFSET    = 0x14,
-    PCI_BAR2_OFFSET    = 0x18,
-    PCI_CAP_OFFSET     = 0x34,
+    PCI_BAR0_OFFSET = 0x10,
+    PCI_BAR1_OFFSET = 0x14,
+    PCI_BAR2_OFFSET = 0x18,
+    PCI_CAP_OFFSET = 0x34,
 
     PCI_MSI_CTRL_OFF = 0x2,
     PCI_MSI_ADDR_OFF = 0x4,
@@ -54,12 +54,12 @@ enum : u64 {
     //   0x00000 .. 0x0ffff: PCI CFG area
     //   0x10000 .. 0x1ffff: PCI MMIO area
     //   0x40000 .. 0xfffff: PCI MSI area
-    MMAP_PCI_CFG_ADDR  = 0x0,
-    MMAP_PCI_CFG_SIZE  = 0x10000,
+    MMAP_PCI_CFG_ADDR = 0x0,
+    MMAP_PCI_CFG_SIZE = 0x10000,
     MMAP_PCI_MMIO_ADDR = 0x100010000,
     MMAP_PCI_MMIO_SIZE = 0x1000,
-    MMAP_PCI_MSI_ADDR  = 0x40000,
-    MMAP_PCI_MSI_SIZE  = 0xc0000,
+    MMAP_PCI_MSI_ADDR = 0x40000,
+    MMAP_PCI_MSI_SIZE = 0xc0000,
 
     // IO space:
     //   0x02000 .. 0x02fff: PCI IO area

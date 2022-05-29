@@ -36,7 +36,7 @@ void throttle::thread() {
     u64 extra = 0;
 
     while (true) {
-        sc_time quantum  = tlm::tlm_global_quantum::instance().get();
+        sc_time quantum = tlm::tlm_global_quantum::instance().get();
         sc_time interval = max(update_interval.get(), quantum);
         wait(interval);
 

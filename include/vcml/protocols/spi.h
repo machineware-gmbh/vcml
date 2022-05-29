@@ -60,7 +60,7 @@ public:
 
     spi_target_sockets all_spi_target_sockets(address_space);
 
-    spi_host()          = default;
+    spi_host() = default;
     virtual ~spi_host() = default;
     virtual void spi_transport(const spi_target_socket&, spi_payload&) = 0;
 

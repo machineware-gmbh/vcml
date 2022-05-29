@@ -93,7 +93,7 @@ public:
     virtual ~processor();
     VCML_KIND(processor);
 
-    processor()                 = delete;
+    processor() = delete;
     processor(const processor&) = delete;
 
     virtual void session_suspend() override;

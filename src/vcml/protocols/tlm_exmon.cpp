@@ -57,7 +57,7 @@ bool tlm_exmon::update(tlm_generic_payload& tx) {
             tx.set_dmi_allowed(false);
 
     bool proceed = true;
-    sbiext* ex   = tx.get_extension<sbiext>();
+    sbiext* ex = tx.get_extension<sbiext>();
     if (ex != nullptr && ex->is_excl) {
         if (tx.is_read())
             add_lock(ex->cpuid, tx);

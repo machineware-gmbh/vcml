@@ -33,12 +33,12 @@
 namespace vcml {
 
 enum virtio_status : int {
-    VIRTIO_INCOMPLETE   = 0,
-    VIRTIO_OK           = 1,
+    VIRTIO_INCOMPLETE = 0,
+    VIRTIO_OK = 1,
     VIRTIO_ERR_INDIRECT = -1,
-    VIRTIO_ERR_NODMI    = -2,
-    VIRTIO_ERR_CHAIN    = -3,
-    VIRTIO_ERR_DESC     = -4,
+    VIRTIO_ERR_NODMI = -2,
+    VIRTIO_ERR_CHAIN = -3,
+    VIRTIO_ERR_DESC = -4,
 };
 
 const char* virtio_status_str(virtio_status status);
@@ -51,14 +51,14 @@ inline bool failed(virtio_status sts) {
 }
 
 enum virtio_devices : u32 {
-    VIRTIO_DEVICE_NONE    = 0,
-    VIRTIO_DEVICE_NET     = 1,
-    VIRTIO_DEVICE_BLOCK   = 2,
+    VIRTIO_DEVICE_NONE = 0,
+    VIRTIO_DEVICE_NET = 1,
+    VIRTIO_DEVICE_BLOCK = 2,
     VIRTIO_DEVICE_CONSOLE = 3,
-    VIRTIO_DEVICE_RNG     = 4,
-    VIRTIO_DEVICE_P9FS    = 9,
-    VIRTIO_DEVICE_GPU     = 16,
-    VIRTIO_DEVICE_INPUT   = 18,
+    VIRTIO_DEVICE_RNG = 4,
+    VIRTIO_DEVICE_P9FS = 9,
+    VIRTIO_DEVICE_GPU = 16,
+    VIRTIO_DEVICE_INPUT = 18,
 };
 
 enum virtio_vendors : u32 {
@@ -68,14 +68,14 @@ enum virtio_vendors : u32 {
 
 enum virtio_features : u64 {
     VIRTIO_F_RING_INDIRECT_DESC = 1ull << 28,
-    VIRTIO_F_RING_EVENT_IDX     = 1ull << 29,
-    VIRTIO_F_VERSION_1          = 1ull << 32,
-    VIRTIO_F_ACCESS_PLATFORM    = 1ull << 33,
-    VIRTIO_F_RING_PACKED        = 1ull << 34,
-    VIRTIO_F_IN_ORDER           = 1ull << 35,
-    VIRTIO_F_ORDER_PLATFORM     = 1ull << 36,
-    VIRTIO_F_SR_IOV             = 1ull << 37,
-    VIRTIO_F_NOTIFICATION_DATA  = 1ull << 38,
+    VIRTIO_F_RING_EVENT_IDX = 1ull << 29,
+    VIRTIO_F_VERSION_1 = 1ull << 32,
+    VIRTIO_F_ACCESS_PLATFORM = 1ull << 33,
+    VIRTIO_F_RING_PACKED = 1ull << 34,
+    VIRTIO_F_IN_ORDER = 1ull << 35,
+    VIRTIO_F_ORDER_PLATFORM = 1ull << 36,
+    VIRTIO_F_SR_IOV = 1ull << 37,
+    VIRTIO_F_NOTIFICATION_DATA = 1ull << 38,
 };
 
 enum virtio_vectors : u16 {
@@ -83,12 +83,12 @@ enum virtio_vectors : u16 {
 };
 
 enum virtio_device_status : u32 {
-    VIRTIO_STATUS_ACKNOWLEDGE        = 1u << 0,
-    VIRTIO_STATUS_DRIVER             = 1u << 1,
-    VIRTIO_STATUS_DRIVER_OK          = 1u << 2,
-    VIRTIO_STATUS_FEATURES_OK        = 1u << 3,
+    VIRTIO_STATUS_ACKNOWLEDGE = 1u << 0,
+    VIRTIO_STATUS_DRIVER = 1u << 1,
+    VIRTIO_STATUS_DRIVER_OK = 1u << 2,
+    VIRTIO_STATUS_FEATURES_OK = 1u << 3,
     VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1u << 6,
-    VIRTIO_STATUS_FAILED             = 1u << 7,
+    VIRTIO_STATUS_FAILED = 1u << 7,
 
     VIRTIO_STATUS_FEATURE_CHECK = VIRTIO_STATUS_ACKNOWLEDGE |
                                   VIRTIO_STATUS_DRIVER |
@@ -206,7 +206,7 @@ inline void vq_message::trim(u32 max_len) {
     for (auto& buf : out) {
         if (buf.size > max_len) {
             buf.size = max_len;
-            max_len  = 0;
+            max_len = 0;
         } else {
             max_len -= buf.size;
         }
@@ -286,12 +286,12 @@ public:
 
     logger log;
 
-    virtqueue()                 = delete;
+    virtqueue() = delete;
     virtqueue(const virtqueue&) = delete;
     virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
     virtual ~virtqueue();
 
-    virtual bool validate()                   = 0;
+    virtual bool validate() = 0;
     virtual void invalidate(const range& mem) = 0;
 
     bool get(vq_message& msg);
@@ -308,8 +308,8 @@ private:
         u16 next;
 
         enum flags : u16 {
-            F_NEXT     = 1u << 0,
-            F_WRITE    = 1u << 1,
+            F_NEXT = 1u << 0,
+            F_WRITE = 1u << 1,
             F_INDIRECT = 1u << 2,
         };
 
@@ -380,7 +380,7 @@ private:
     virtual virtio_status do_put(vq_message& msg) override;
 
 public:
-    split_virtqueue()                       = delete;
+    split_virtqueue() = delete;
     split_virtqueue(const split_virtqueue&) = delete;
     split_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
     virtual ~split_virtqueue();
@@ -399,11 +399,11 @@ private:
         u16 flags;
 
         enum flags : u16 {
-            F_NEXT         = 1u << 0,
-            F_WRITE        = 1u << 1,
-            F_INDIRECT     = 1u << 2,
+            F_NEXT = 1u << 0,
+            F_WRITE = 1u << 1,
+            F_INDIRECT = 1u << 2,
             F_PACKED_AVAIL = 1u << 7,
-            F_PACKED_USED  = 1u << 15,
+            F_PACKED_USED = 1u << 15,
         };
 
         bool is_chained() const { return flags & F_NEXT; }
@@ -430,9 +430,9 @@ private:
         u16 flags;
 
         enum event_flags : u16 {
-            F_EVENT_ENABLE  = 0,
+            F_EVENT_ENABLE = 0,
             F_EVENT_DISABLE = 1,
-            F_EVENT_DESC    = 2,
+            F_EVENT_DESC = 2,
         };
 
         bool should_notify(u32 index) const {
@@ -474,7 +474,7 @@ private:
     virtual virtio_status do_put(vq_message& msg) override;
 
 public:
-    packed_virtqueue()                        = delete;
+    packed_virtqueue() = delete;
     packed_virtqueue(const packed_virtqueue&) = delete;
     packed_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
     virtual ~packed_virtqueue();
@@ -489,12 +489,12 @@ public:
     virtual ~virtio_device() = default;
 
     virtual void identify(virtio_device_desc& desc) = 0;
-    virtual bool notify(u32 vqid)                   = 0;
+    virtual bool notify(u32 vqid) = 0;
 
     virtual void read_features(u64& features) = 0;
     virtual bool write_features(u64 features) = 0;
 
-    virtual bool read_config(const range& addr, void* data)        = 0;
+    virtual bool read_config(const range& addr, void* data) = 0;
     virtual bool write_config(const range& addr, const void* data) = 0;
 };
 
@@ -518,12 +518,12 @@ public:
     virtual ~virtio_fw_transport_if() {}
 
     virtual void identify(virtio_device_desc& desc) = 0;
-    virtual bool notify(u32 vqid)                   = 0;
+    virtual bool notify(u32 vqid) = 0;
 
     virtual void read_features(u64& features) = 0;
     virtual bool write_features(u64 features) = 0;
 
-    virtual bool read_config(const range& addr, void* data)        = 0;
+    virtual bool read_config(const range& addr, void* data) = 0;
     virtual bool write_config(const range& addr, const void* data) = 0;
 };
 

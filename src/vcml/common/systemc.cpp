@@ -110,7 +110,7 @@ string tlm_transaction_to_str(const tlm_generic_payload& tx) {
 
     // data array
     unsigned int size = tx.get_data_length();
-    unsigned char* c  = tx.get_data_ptr();
+    unsigned char* c = tx.get_data_ptr();
 
     ss << " [";
     if (size == 0)
@@ -455,15 +455,15 @@ void timer::trigger() {
 void timer::cancel() {
     if (m_event) {
         m_event->owner = nullptr;
-        m_event        = nullptr;
+        m_event = nullptr;
     }
 }
 
 void timer::reset(const sc_time& delta) {
     cancel();
 
-    m_event          = new event;
-    m_event->owner   = this;
+    m_event = new event;
+    m_event->owner = this;
     m_event->timeout = m_timeout = sc_time_stamp() + delta;
 
     g_helper.add_timer(m_event);
@@ -544,7 +544,7 @@ struct async_worker {
 
     void run_async(function<void(void)>& job) {
         mtx.lock();
-        task    = job;
+        task = job;
         working = true;
         mtx.unlock();
         notify.notify_one();
@@ -583,7 +583,7 @@ struct async_worker {
         if (it != workers.end())
             return *it->second;
 
-        size_t id   = workers.size();
+        size_t id = workers.size();
         auto worker = std::make_shared<async_worker>(id, thread);
         return *(workers[thread] = worker);
     }
@@ -670,9 +670,9 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
     is >> str;
     str = vcml::to_lower(str);
 
-    char* endptr      = nullptr;
+    char* endptr = nullptr;
     sc_dt::uint64 val = strtoul(str.c_str(), &endptr, 0);
-    double float_val  = val;
+    double float_val = val;
 
     if (strcmp(endptr, "ps") == 0)
         t = sc_time(float_val, sc_core::SC_PS);

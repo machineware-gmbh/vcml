@@ -99,7 +99,7 @@ public:
 
     unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
-    virtual void do_read(const range& addr, void* ptr)        = 0;
+    virtual void do_read(const range& addr, void* ptr) = 0;
     virtual void do_write(const range& addr, const void* ptr) = 0;
 };
 
@@ -364,8 +364,8 @@ void reg<DATA, N>::do_read(const range& txaddr, void* ptr) {
     unsigned char* dest = (unsigned char*)ptr;
 
     while (addr.start <= addr.end) {
-        u64 idx  = addr.start / sizeof(DATA);
-        u64 off  = addr.start % sizeof(DATA);
+        u64 idx = addr.start / sizeof(DATA);
+        u64 off = addr.start % sizeof(DATA);
         u64 size = min(addr.length(), (u64)sizeof(DATA));
 
         DATA val;
@@ -394,8 +394,8 @@ void reg<DATA, N>::do_write(const range& txaddr, const void* data) {
     const unsigned char* src = (const unsigned char*)data;
 
     while (addr.start <= addr.end) {
-        u64 idx  = addr.start / sizeof(DATA);
-        u64 off  = addr.start % sizeof(DATA);
+        u64 idx = addr.start / sizeof(DATA);
+        u64 off = addr.start % sizeof(DATA);
         u64 size = min(addr.length(), (u64)sizeof(DATA));
 
         DATA val = current_bank(idx);

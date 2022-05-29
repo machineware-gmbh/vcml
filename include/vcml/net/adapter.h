@@ -34,8 +34,8 @@ namespace net {
 struct mac_addr {
     array<u8, 6> bytes;
 
-    mac_addr()                = default;
-    mac_addr(mac_addr&&)      = default;
+    mac_addr() = default;
+    mac_addr(mac_addr&&) = default;
     mac_addr(const mac_addr&) = default;
     mac_addr& operator=(const mac_addr&) = default;
 

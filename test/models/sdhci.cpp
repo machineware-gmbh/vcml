@@ -88,18 +88,18 @@ public:
         sdhci.dma_enabled = false; // tests without DMA
 
         vcml::sd_command cmd;
-        cmd.spi         = false;
-        cmd.opcode      = 0;
-        cmd.argument    = 0;
-        cmd.crc         = 0;
-        cmd.resp_len    = 6;
+        cmd.spi = false;
+        cmd.opcode = 0;
+        cmd.argument = 0;
+        cmd.crc = 0;
+        cmd.resp_len = 6;
         cmd.response[0] = 0;
         cmd.response[1] = 1;
         cmd.response[2] = 2;
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
-        cmd.status      = SD_INCOMPLETE;
+        cmd.status = SD_INCOMPLETE;
 
         EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK)));
@@ -142,18 +142,18 @@ public:
         ASSERT_OK(out.writew(0x2f, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = false; // tests without DMA
 
-        cmd.spi         = false;
-        cmd.opcode      = 18;
-        cmd.argument    = 0;
-        cmd.crc         = 0;
-        cmd.resp_len    = 6;
+        cmd.spi = false;
+        cmd.opcode = 18;
+        cmd.argument = 0;
+        cmd.crc = 0;
+        cmd.resp_len = 6;
         cmd.response[0] = 0;
         cmd.response[1] = 1;
         cmd.response[2] = 2;
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
-        cmd.status      = SD_INCOMPLETE;
+        cmd.status = SD_INCOMPLETE;
 
         EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_TX_RDY)));
@@ -243,18 +243,18 @@ public:
         ASSERT_OK(out.writew(0x2f, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = false; // tests without DMA
 
-        cmd.spi         = false;
-        cmd.opcode      = 25;
-        cmd.argument    = 0;
-        cmd.crc         = 0;
-        cmd.resp_len    = 6;
+        cmd.spi = false;
+        cmd.opcode = 25;
+        cmd.argument = 0;
+        cmd.crc = 0;
+        cmd.resp_len = 6;
         cmd.response[0] = 0;
         cmd.response[1] = 1;
         cmd.response[2] = 2;
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
-        cmd.status      = SD_INCOMPLETE;
+        cmd.status = SD_INCOMPLETE;
 
         EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_RX_RDY)));
@@ -349,18 +349,18 @@ public:
         ASSERT_OK(out.writew<u8>(0x2F, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = true; // tests with DMA
 
-        cmd.spi         = false;
-        cmd.opcode      = 18;
-        cmd.argument    = 0;
-        cmd.crc         = 0;
-        cmd.resp_len    = 6;
+        cmd.spi = false;
+        cmd.opcode = 18;
+        cmd.argument = 0;
+        cmd.crc = 0;
+        cmd.resp_len = 6;
         cmd.response[0] = 0;
         cmd.response[1] = 1;
         cmd.response[2] = 2;
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
-        cmd.status      = SD_INCOMPLETE;
+        cmd.status = SD_INCOMPLETE;
 
         EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_TX_RDY)));
@@ -428,18 +428,18 @@ public:
         ASSERT_OK(out.writew(0x2F, 0x01)) << "reset the SDHCI controller";
         sdhci.dma_enabled = true; // tests with DMA
 
-        cmd.spi         = false;
-        cmd.opcode      = 25;
-        cmd.argument    = 0;
-        cmd.crc         = 0;
-        cmd.resp_len    = 6;
+        cmd.spi = false;
+        cmd.opcode = 25;
+        cmd.argument = 0;
+        cmd.crc = 0;
+        cmd.resp_len = 6;
         cmd.response[0] = 0;
         cmd.response[1] = 1;
         cmd.response[2] = 2;
         cmd.response[3] = 3;
         cmd.response[4] = 4;
         cmd.response[5] = 0;
-        cmd.status      = SD_INCOMPLETE;
+        cmd.status = SD_INCOMPLETE;
 
         EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_RX_RDY)));

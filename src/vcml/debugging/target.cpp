@@ -57,11 +57,11 @@ void target::define_cpuregs(const vector<cpureg>& regs) {
             VCML_ERROR("cpureg %s already defined", regname);
 
         cpureg& newreg = m_cpuregs[reg.regno];
-        newreg.regno   = reg.regno;
-        newreg.size    = reg.size;
-        newreg.prot    = reg.prot;
-        newreg.name    = reg.name;
-        newreg.host    = this;
+        newreg.regno = reg.regno;
+        newreg.size = reg.size;
+        newreg.prot = reg.prot;
+        newreg.name = reg.name;
+        newreg.host = this;
     }
 }
 
@@ -147,11 +147,11 @@ u64 target::read_vmem_dbg(u64 addr, void* buffer, u64 size) {
         return read_pmem_dbg(addr, buffer, size);
 
     u64 count = 0;
-    u64 end   = addr + size;
-    u8* dest  = (u8*)buffer;
+    u64 end = addr + size;
+    u8* dest = (u8*)buffer;
 
     while (addr < end) {
-        u64 pa   = 0;
+        u64 pa = 0;
         u64 todo = min(end - addr, pgsz - (addr % pgsz));
         if (virt_to_phys(addr, pa))
             count += read_pmem_dbg(pa, dest, todo);
@@ -170,12 +170,12 @@ u64 target::write_vmem_dbg(u64 addr, const void* buffer, u64 size) {
     if (!page_size(pgsz))
         return write_pmem_dbg(addr, buffer, size);
 
-    u64 count      = 0;
-    u64 end        = addr + size;
+    u64 count = 0;
+    u64 end = addr + size;
     const u8* dest = (const u8*)buffer;
 
     while (addr < end) {
-        u64 pa   = 0;
+        u64 pa = 0;
         u64 todo = min(end - addr, pgsz - (addr % pgsz));
         if (virt_to_phys(addr, pa))
             count += write_pmem_dbg(pa, dest, todo);
@@ -224,8 +224,8 @@ u64 target::frame_pointer() {
 void target::stacktrace(vector<stackframe>& trace, size_t limit) {
     stackframe frame;
     frame.program_counter = program_counter();
-    frame.frame_pointer   = frame_pointer();
-    frame.sym             = m_symbols.find_function(frame.program_counter);
+    frame.frame_pointer = frame_pointer();
+    frame.sym = m_symbols.find_function(frame.program_counter);
 
     trace.clear();
     trace.push_back(frame);
@@ -238,7 +238,7 @@ bool target::disassemble(u8* ibuf, u64& addr, string& code) {
 bool target::disassemble(u64 addr, u64 count, vector<disassembly>& s) {
     while (s.size() < count) {
         disassembly disas = {};
-        disas.addr        = addr;
+        disas.addr = addr;
 
         const u64 size = sizeof(disas.insn);
         if (read_vmem_dbg(addr, disas.insn, size) != size)
@@ -274,12 +274,12 @@ bool target::disassemble(const range& addr, vector<disassembly>& s) {
 
     while (pos < addr.start + size) {
         disassembly disas = {};
-        disas.addr        = pos;
+        disas.addr = pos;
 
         if (!disassemble(ptr, pos, disas.code))
             break;
 
-        disas.size    = pos - disas.addr;
+        disas.size = pos - disas.addr;
         const u64 lim = sizeof(disas.insn);
         VCML_ERROR_ON(disas.size == 0, "disassembler address stuck");
         VCML_ERROR_ON(disas.size > lim, "insn size exceeds limit");
@@ -346,7 +346,7 @@ const breakpoint* target::insert_breakpoint(u64 addr, subscriber* subscr) {
         return nullptr;
 
     const symbol* func = m_symbols.find_function(addr);
-    breakpoint* newbp  = new breakpoint(*this, addr, func);
+    breakpoint* newbp = new breakpoint(*this, addr, func);
     newbp->subscribe(subscr);
     m_breakpoints.push_back(newbp);
     return newbp;

@@ -64,7 +64,7 @@ string vspserver::handle_step(const char* command) {
 
 string vspserver::handle_cont(const char* command) {
     vector<string> args = split(command, ',');
-    sc_time duration    = SC_MAX_TIME;
+    sc_time duration = SC_MAX_TIME;
 
     if (args.size() > 1)
         duration = from_string<sc_time>(args[1]);
@@ -169,7 +169,7 @@ static void list_object(ostream& os, sc_object* obj) {
 }
 
 string vspserver::handle_list(const char* command) {
-    string format       = "xml";
+    string format = "xml";
     vector<string> args = split(command, ',');
     if (args.size() > 1)
         format = to_lower(args[1]);
@@ -211,7 +211,7 @@ string vspserver::handle_exec(const char* command) {
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    string name    = args[1];
+    string name = args[1];
     sc_object* obj = find_object(name);
     if (obj == nullptr)
         return mkstr("E,object '%s' not found", name.c_str());
@@ -262,7 +262,7 @@ string vspserver::handle_geta(const char* command) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    string name        = args[1];
+    string name = args[1];
     sc_attr_base* attr = find_attribute(name);
     if (attr == nullptr)
         return mkstr("E,attribute '%s' not found", name.c_str());
@@ -353,7 +353,7 @@ string vspserver::handle_rmbp(const char* command) {
         return mkstr("E,insufficient arguments %zu", args.size());
 
     u64 bpid = from_string<u64>(args[1]);
-    auto it  = m_breakpoints.find(bpid);
+    auto it = m_breakpoints.find(bpid);
     if (it == m_breakpoints.end())
         return mkstr("E,invalid breakpoint id: %lu", bpid);
 

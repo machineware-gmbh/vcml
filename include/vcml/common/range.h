@@ -153,7 +153,7 @@ inline std::istream& operator>>(std::istream& is, vcml::range& r) {
     u64 start = 0, end = 0;
     if (sscanf(s.c_str(), "0x%lx..0x%lx", &start, &end) == 2) {
         r.start = start;
-        r.end   = end;
+        r.end = end;
     } else
         is.setstate(std::ios::failbit);
     return is;

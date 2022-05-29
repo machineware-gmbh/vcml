@@ -38,7 +38,7 @@ public:
     virtual ~property_base();
     virtual const char* kind() const { return "vcml::property"; }
 
-    property_base()                     = delete;
+    property_base() = delete;
     property_base(const property_base&) = delete;
     property_base& operator=(const property_base&) = delete;
 
@@ -48,11 +48,11 @@ public:
 
     virtual void reset() = 0;
 
-    virtual const char* str() const   = 0;
+    virtual const char* str() const = 0;
     virtual void str(const string& s) = 0;
 
-    virtual size_t size() const      = 0;
-    virtual size_t count() const     = 0;
+    virtual size_t size() const = 0;
+    virtual size_t count() const = 0;
     virtual const char* type() const = 0;
 };
 

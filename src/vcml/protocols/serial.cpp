@@ -190,12 +190,12 @@ serial_initiator_socket::~serial_initiator_socket() {
 
 void serial_initiator_socket::send(u8 data) {
     serial_payload tx;
-    tx.data   = data;
-    tx.mask   = serial_mask(m_width);
-    tx.baud   = m_baud;
-    tx.width  = m_width;
+    tx.data = data;
+    tx.mask = serial_mask(m_width);
+    tx.baud = m_baud;
+    tx.width = m_width;
     tx.parity = m_parity;
-    tx.stop   = m_stop;
+    tx.stop = m_stop;
 
     if (serial_calc_parity(data, m_parity))
         tx.data |= 1u << m_width;

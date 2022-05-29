@@ -87,20 +87,20 @@ public:
         addr = 0x420;
         data = 0x1234;
 
-        out.trace        = true;
+        out.trace = true;
         out.trace_errors = false;
 
         EXPECT_CALL(mock, trace(match_trace(TRACE_FW, addr, data)));
         EXPECT_CALL(mock, trace(match_trace(TRACE_BW, addr, data)));
         EXPECT_OK(out.writew(addr, data)) << "failed to send transaction";
 
-        out.trace        = false;
+        out.trace = false;
         out.trace_errors = false;
 
         EXPECT_CALL(mock, trace(_)).Times(0);
         EXPECT_OK(out.writew(addr, data)) << "failed to send transaction";
 
-        out.trace        = false;
+        out.trace = false;
         out.trace_errors = true;
 
         EXPECT_CALL(mock, trace(match_trace_error(true))).Times(1);

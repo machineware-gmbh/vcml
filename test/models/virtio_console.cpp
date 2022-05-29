@@ -61,13 +61,13 @@ public:
 
     virtual void run_test() override {
         enum addresses : u64 {
-            CONSOLE_BASE    = 0x1000,
-            CONSOLE_MAGIC   = CONSOLE_BASE + 0x00,
+            CONSOLE_BASE = 0x1000,
+            CONSOLE_MAGIC = CONSOLE_BASE + 0x00,
             CONSOLE_VERSION = CONSOLE_BASE + 0x04,
-            CONSOLE_DEVID   = CONSOLE_BASE + 0x08,
-            CONSOLE_VQ_SEL  = CONSOLE_BASE + 0x30,
-            CONSOLE_VQ_MAX  = CONSOLE_BASE + 0x34,
-            CONSOLE_STATUS  = CONSOLE_BASE + 0x70,
+            CONSOLE_DEVID = CONSOLE_BASE + 0x08,
+            CONSOLE_VQ_SEL = CONSOLE_BASE + 0x30,
+            CONSOLE_VQ_MAX = CONSOLE_BASE + 0x34,
+            CONSOLE_STATUS = CONSOLE_BASE + 0x70,
         };
 
         u32 data;

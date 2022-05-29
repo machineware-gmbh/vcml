@@ -115,13 +115,13 @@ u32 plic::read_pending(size_t regno) {
 }
 
 u32 plic::read_claim(size_t ctxno) {
-    unsigned int irq       = 0;
+    unsigned int irq = 0;
     unsigned int threshold = ctx_threshold(ctxno);
 
     for (unsigned int irqno = 0; irqno < NIRQ; irqno++) {
         if (is_pending(irqno) && is_enabled(irqno, ctxno) &&
             !is_claimed(irqno) && irq_priority(irqno) > threshold) {
-            irq       = irqno;
+            irq = irqno;
             threshold = irq_priority(irqno);
         }
     }

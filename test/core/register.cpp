@@ -62,7 +62,7 @@ TEST(registers, read) {
     unsigned char expect[] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_a = 0x1337;
-    local           = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
 
     EXPECT_EQ(mock.test_transport(tx), 4);
@@ -86,7 +86,7 @@ TEST(registers, read_callback) {
     unsigned char expect[] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_b = 0x1337;
-    local           = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
@@ -125,7 +125,7 @@ TEST(registers, write_callback) {
     sc_core::sc_time& local = mock.local_time();
     tlm::tlm_generic_payload tx;
 
-    u32 value              = 0x98765432;
+    u32 value = 0x98765432;
     unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     local = sc_core::SC_ZERO_TIME;
@@ -153,7 +153,7 @@ TEST(registers, read_byte_enable) {
     unsigned char expect[] = { 0x37, 0x13, 0x00, 0x00 };
 
     mock.test_reg_a = 0x1337;
-    local           = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, sizeof(buffer));
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
@@ -179,7 +179,7 @@ TEST(registers, write_byte_enable) {
     unsigned char bebuff[] = { 0xff, 0x00, 0xff, 0x00 };
 
     mock.test_reg_a = 0;
-    local           = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
     tx.set_byte_enable_ptr(bebuff);
     tx.set_byte_enable_length(sizeof(bebuff));
@@ -233,7 +233,7 @@ TEST(registers, misaligned_accesses) {
     unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     mock.test_reg_a = 0;
-    local           = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 1, buffer, 2);
 
     EXPECT_EQ(mock.test_transport(tx), 2);
@@ -255,7 +255,7 @@ TEST(registers, misaligned_accesses) {
     EXPECT_TRUE(tx.is_response_ok());
 
     unsigned char largebuf[8] = { 0xff };
-    local                     = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 0, largebuf, 8);
 
     EXPECT_CALL(mock, reg_read()).WillOnce(Return(mock.test_reg_b.get()));
@@ -290,26 +290,26 @@ TEST(registers, banking) {
 
     tx.set_extension(&bank);
 
-    buffer     = val1;
+    buffer = val1;
     bank.cpuid = 1;
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank1, VCML_AS_DEFAULT), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
-    buffer     = val2;
+    buffer = val2;
     bank.cpuid = 2;
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank2, VCML_AS_DEFAULT), 1);
     EXPECT_TRUE(tx.is_response_ok());
 
-    buffer     = 0x0;
+    buffer = 0x0;
     bank.cpuid = 1;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank1, VCML_AS_DEFAULT), 1);
     EXPECT_TRUE(tx.is_response_ok());
     EXPECT_EQ(buffer, val1);
 
-    buffer     = 0x0;
+    buffer = 0x0;
     bank.cpuid = 2;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 0, &buffer, 1);
     EXPECT_EQ(mock.transport(tx, bank2, VCML_AS_DEFAULT), 1);
@@ -337,7 +337,7 @@ TEST(registers, endianess) {
     EXPECT_TRUE(tx.is_response_ok());
 
     buffer = 0xeeff00cc;
-    local  = sc_core::SC_ZERO_TIME;
+    local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, &buffer, 4);
     EXPECT_EQ(mock.test_transport(tx), 4);
     EXPECT_EQ(mock.test_reg_a, 0xcc00ffeeu);

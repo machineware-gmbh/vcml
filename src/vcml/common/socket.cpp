@@ -81,15 +81,15 @@ socket_addr::socket_addr(const sockaddr* addr) {
 socket_addr::socket_addr(int family, u16 port) {
     switch (family) {
     case AF_INET:
-        ipv4.sin_family      = AF_INET;
+        ipv4.sin_family = AF_INET;
         ipv4.sin_addr.s_addr = INADDR_ANY;
-        ipv4.sin_port        = htons(port);
+        ipv4.sin_port = htons(port);
         break;
 
     case AF_INET6:
         ipv6.sin6_family = AF_INET6;
-        ipv6.sin6_addr   = in6addr_any;
-        ipv6.sin6_port   = htons(port);
+        ipv6.sin6_addr = in6addr_any;
+        ipv6.sin6_port = htons(port);
         break;
 
     default:
@@ -269,8 +269,8 @@ void socket::connect(const string& host, u16 port) {
 
     string pstr = to_string(port);
 
-    addrinfo hint    = {};
-    hint.ai_family   = AF_UNSPEC;
+    addrinfo hint = {};
+    hint.ai_family = AF_UNSPEC;
     hint.ai_socktype = SOCK_STREAM;
     hint.ai_protocol = IPPROTO_TCP;
 
@@ -340,7 +340,7 @@ void socket::send(const void* data, size_t size) {
         VCML_REPORT("error receiving data: not connected");
 
     const u8* ptr = (const u8*)data;
-    size_t n      = 0;
+    size_t n = 0;
 
     while (n < size) {
         int r = ::send(m_conn, ptr + n, size - n, 0);
@@ -362,7 +362,7 @@ void socket::recv(void* data, size_t size) {
     if (!is_connected())
         VCML_REPORT("error receiving data: not connected");
 
-    u8* ptr  = (u8*)data;
+    u8* ptr = (u8*)data;
     size_t n = 0;
 
     while (n < size) {

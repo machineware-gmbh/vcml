@@ -47,8 +47,8 @@ static struct in6_addr ipaddr6(const string& format, int val) {
 
 static int slirp_add_poll_fd(int fd, int events, void* opaque) {
     pollfd request;
-    request.fd      = fd;
-    request.events  = 0;
+    request.fd = fd;
+    request.events = 0;
     request.revents = 0;
 
     if (events & SLIRP_POLL_IN)
@@ -160,31 +160,31 @@ slirp_network::slirp_network(unsigned int id):
     m_config(), m_slirp(), m_clients(), m_mtx(), m_running(true), m_thread() {
     m_config.version = 1;
 
-    m_config.in_enabled  = true;
-    m_config.vnetwork    = ipaddr("10.0.%u.0", id);
-    m_config.vnetmask    = ipaddr("255.255.255.0");
-    m_config.vhost       = ipaddr("10.0.%u.2", id);
+    m_config.in_enabled = true;
+    m_config.vnetwork = ipaddr("10.0.%u.0", id);
+    m_config.vnetmask = ipaddr("255.255.255.0");
+    m_config.vhost = ipaddr("10.0.%u.2", id);
     m_config.vdhcp_start = ipaddr("10.0.%u.15", id);
     m_config.vnameserver = ipaddr("10.0.%u.3", id);
 
-    m_config.in6_enabled   = true;
+    m_config.in6_enabled = true;
     m_config.vprefix_addr6 = ipaddr6("%x::", 0xfec0 + id);
-    m_config.vhost6        = ipaddr6("%x::2", 0xfec0 + id);
-    m_config.vnameserver6  = ipaddr6("%x::3", 0xfec0 + id);
-    m_config.vprefix_len   = 64;
+    m_config.vhost6 = ipaddr6("%x::2", 0xfec0 + id);
+    m_config.vnameserver6 = ipaddr6("%x::3", 0xfec0 + id);
+    m_config.vprefix_len = 64;
 
-    m_config.vhostname        = nullptr;
+    m_config.vhostname = nullptr;
     m_config.tftp_server_name = nullptr;
-    m_config.tftp_path        = nullptr;
-    m_config.bootfile         = nullptr;
-    m_config.vdnssearch       = nullptr;
-    m_config.vdomainname      = nullptr;
+    m_config.tftp_path = nullptr;
+    m_config.bootfile = nullptr;
+    m_config.vdnssearch = nullptr;
+    m_config.vdomainname = nullptr;
 
-    m_config.if_mtu                = 0; // IF_MTU_DEFAULT
-    m_config.if_mru                = 0; // IF_MRU_DEFAULT
+    m_config.if_mtu = 0; // IF_MTU_DEFAULT
+    m_config.if_mru = 0; // IF_MRU_DEFAULT
     m_config.disable_host_loopback = false;
-    m_config.enable_emu            = false;
-    m_config.restricted            = false;
+    m_config.enable_emu = false;
+    m_config.restricted = false;
 
     m_slirp = slirp_new(&m_config, &SLIRP_CBS, this);
     VCML_REPORT_ON(!m_slirp, "failed to initialize SLIRP");

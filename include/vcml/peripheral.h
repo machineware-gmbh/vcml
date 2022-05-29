@@ -73,7 +73,7 @@ public:
                unsigned int read_latency = 0, unsigned int write_latency = 0);
     virtual ~peripheral();
 
-    peripheral()                  = delete;
+    peripheral() = delete;
     peripheral(const peripheral&) = delete;
 
     VCML_KIND(peripheral);

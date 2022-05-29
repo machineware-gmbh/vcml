@@ -108,7 +108,7 @@ void gic400::distif::write_isenabler_ppi(u32 val) {
         cpu = 0;
     }
 
-    unsigned int irq  = NSGI;
+    unsigned int irq = NSGI;
     unsigned int mask = 1 << cpu;
 
     for (; irq < NPRIV; irq++) {
@@ -169,7 +169,7 @@ void gic400::distif::write_icenabler_ppi(u32 val) {
         cpu = 0;
     }
 
-    unsigned int irq  = NSGI;
+    unsigned int irq = NSGI;
     unsigned int mask = 1 << cpu;
 
     for (; irq < NPRIV; irq++) {
@@ -219,7 +219,7 @@ void gic400::distif::write_ispendr_ppi(u32 value) {
         cpu = 0;
     }
 
-    unsigned int irq  = NSGI;
+    unsigned int irq = NSGI;
     unsigned int mask = 1 << cpu;
 
     for (; irq < NPRIV; irq++) {
@@ -261,7 +261,7 @@ void gic400::distif::write_icpendr_ppi(u32 value) {
         cpu = 0;
     }
 
-    unsigned int irq  = NSGI;
+    unsigned int irq = NSGI;
     unsigned int mask = 1 << cpu;
 
     for (; irq < NPRIV; irq++) {
@@ -430,7 +430,7 @@ void gic400::distif::write_spendsgir(u8 value, size_t idx) {
     }
 
     unsigned int mask = 1 << cpu;
-    unsigned int irq  = idx;
+    unsigned int irq = idx;
 
     set_sgi_pending(value, irq, cpu, true);
     m_parent->set_irq_pending(irq, true, mask);
@@ -446,7 +446,7 @@ void gic400::distif::write_cpendsgir(u8 value, size_t idx) {
     }
 
     unsigned int mask = 1 << cpu;
-    unsigned int irq  = idx;
+    unsigned int irq = idx;
 
     set_sgi_pending(value, irq, cpu, false);
     if (cpendsgir.bank(cpu, idx) == 0) // clear SGI if no sources remain
@@ -666,7 +666,7 @@ void gic400::cpuif::write_pmr(u32 val) {
 
 void gic400::cpuif::write_bpr(u32 val) {
     abpr = val & 0x7; // read only first 3 bits, store copy in ABPR
-    bpr  = abpr;
+    bpr = abpr;
 }
 
 void gic400::cpuif::write_eoir(u32 val) {
@@ -712,7 +712,7 @@ u32 gic400::cpuif::read_iar() {
         cpu = 0;
     }
 
-    int irq      = hppir.bank(cpu);
+    int irq = hppir.bank(cpu);
     int cpu_mask = (m_parent->get_irq_model(irq) == gic400::N_1)
                        ? (gic400::ALL_CPU)
                        : (1 << cpu);
@@ -846,9 +846,9 @@ u32 gic400::vifctrl::read_vtr() {
 }
 
 void gic400::vifctrl::write_lr(u32 val, size_t idx) {
-    u8 cpu   = current_cpu();
+    u8 cpu = current_cpu();
     u8 state = (val >> 28) & 0b11;
-    u8 hw    = (val >> 31) & 0b1;
+    u8 hw = (val >> 31) & 0b1;
 
     if (hw == 0) {
         u8 eoi = (val >> 19) & 0b1;
@@ -875,7 +875,7 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
     }
 
     u32 prio = (val >> 23) & 0x1f;
-    u32 irq  = val & 0x1ff;
+    u32 irq = val & 0x1ff;
 
     set_lr_prio(idx, cpu, prio);
     set_lr_vid(idx, cpu, irq);
@@ -902,20 +902,20 @@ u32 gic400::vifctrl::read_lr(size_t idx) {
 }
 
 void gic400::vifctrl::write_vmcr(u32 val) {
-    int cpu  = current_cpu();
+    int cpu = current_cpu();
     u8 pmask = (val >> 27) & 0x1f;
-    u8 bpr   = (val >> 21) & 0x03;
+    u8 bpr = (val >> 21) & 0x03;
     u32 ctlr = val & 0x1ff;
 
-    m_parent->vcpuif.pmr.bank(cpu)  = pmask << 3;
-    m_parent->vcpuif.bpr.bank(cpu)  = bpr;
+    m_parent->vcpuif.pmr.bank(cpu) = pmask << 3;
+    m_parent->vcpuif.bpr.bank(cpu) = bpr;
     m_parent->vcpuif.ctlr.bank(cpu) = ctlr;
 }
 
 u32 gic400::vifctrl::read_vmcr() {
-    int cpu  = current_cpu();
+    int cpu = current_cpu();
     u8 pmask = (m_parent->vcpuif.pmr.bank(cpu) >> 3) & 0x1f;
-    u8 bpr   = m_parent->vcpuif.bpr.bank(cpu) & 0x03;
+    u8 bpr = m_parent->vcpuif.bpr.bank(cpu) & 0x03;
     u32 ctlr = m_parent->vcpuif.ctlr.bank(cpu) & 0x1ff;
 
     return (pmask << 27 | bpr << 21 | ctlr);
@@ -927,7 +927,7 @@ void gic400::vifctrl::write_apr(u32 val) {
     if (val != 0)
         prio = fls(val) << (VIRT_MIN_BPR + 1);
     m_parent->vcpuif.rpr.bank(cpu) = prio;
-    apr                            = val;
+    apr = val;
 }
 
 u8 gic400::vifctrl::get_irq_priority(unsigned int cpu, unsigned int irq) {
@@ -1007,11 +1007,11 @@ u32 gic400::vcpuif::read_iar() {
         m_vifctrl->get_irq_priority(cpu, irq) >= rpr.bank(cpu))
         return SPURIOUS_IRQ;
 
-    u32 prio       = m_vifctrl->get_irq_priority(cpu, irq) << 3;
-    u32 mask       = ~0ul << ((bpr.bank(cpu) & 0x07) + 1);
-    rpr.bank(cpu)  = prio & mask;
+    u32 prio = m_vifctrl->get_irq_priority(cpu, irq) << 3;
+    u32 mask = ~0ul << ((bpr.bank(cpu) & 0x07) + 1);
+    rpr.bank(cpu) = prio & mask;
     u32 preemptlvl = prio >> (VIRT_MIN_BPR + 1);
-    u32 bitno      = preemptlvl % 32;
+    u32 bitno = preemptlvl % 32;
     m_parent->vifctrl.apr.bank(cpu) |= (1 << bitno);
 
     u8 lr = m_vifctrl->get_lr(irq, cpu);
@@ -1026,7 +1026,7 @@ u32 gic400::vcpuif::read_iar() {
 }
 
 void gic400::vcpuif::write_eoir(u32 val) {
-    u8 cpu  = current_cpu();
+    u8 cpu = current_cpu();
     u32 irq = val & 0x1FF;
 
     if (irq >= m_parent->get_irq_num()) {
@@ -1111,7 +1111,7 @@ gic400::vcpuif::~vcpuif() {
 }
 
 void gic400::vcpuif::reset() {
-    rpr   = rpr.get_default();
+    rpr = rpr.get_default();
     hppir = hppir.get_default();
 }
 
@@ -1147,8 +1147,8 @@ gic400::~gic400() {
 void gic400::update(bool virt) {
     for (unsigned int cpu = 0; cpu < m_cpu_num; cpu++) {
         unsigned int irq;
-        unsigned int mask      = 1 << cpu;
-        unsigned int best_irq  = SPURIOUS_IRQ;
+        unsigned int mask = 1 << cpu;
+        unsigned int best_irq = SPURIOUS_IRQ;
         unsigned int best_prio = IDLE_PRIO;
 
         if (!virt)
@@ -1175,7 +1175,7 @@ void gic400::update(bool virt) {
                     !is_irq_active(irq, mask)) {
                     if (distif.ipriority_sgi.bank(cpu, irq) < best_prio) {
                         best_prio = distif.ipriority_sgi.bank(cpu, irq);
-                        best_irq  = irq;
+                        best_irq = irq;
                     }
                 }
             }
@@ -1187,7 +1187,7 @@ void gic400::update(bool virt) {
                     int idx = irq - NSGI;
                     if (distif.ipriority_ppi.bank(cpu, idx) < best_prio) {
                         best_prio = distif.ipriority_ppi.bank(cpu, idx);
-                        best_irq  = irq;
+                        best_irq = irq;
                     }
                 }
             }
@@ -1200,7 +1200,7 @@ void gic400::update(bool virt) {
                     !is_irq_active(irq, mask)) {
                     if (distif.ipriority_spi[idx] < best_prio) {
                         best_prio = distif.ipriority_spi[idx];
-                        best_irq  = irq;
+                        best_irq = irq;
                     }
                 }
             }
@@ -1212,7 +1212,7 @@ void gic400::update(bool virt) {
                               23;
                     if (prio < best_prio) {
                         best_prio = prio;
-                        best_irq  = (vifctrl.lr.bank(cpu, lr_idx) & 0x1FF);
+                        best_irq = (vifctrl.lr.bank(cpu, lr_idx) & 0x1FF);
                     }
                 }
             }
@@ -1304,7 +1304,7 @@ void gic400::irq_transport(const irq_target_socket& socket, irq_payload& irq) {
 }
 
 void gic400::handle_ppi(unsigned int cpu, unsigned int idx, irq_payload& tx) {
-    unsigned int irq  = NSGI + idx;
+    unsigned int irq = NSGI + idx;
     unsigned int mask = 1 << cpu;
 
     set_irq_level(irq, tx.active, mask);
@@ -1316,7 +1316,7 @@ void gic400::handle_ppi(unsigned int cpu, unsigned int idx, irq_payload& tx) {
 }
 
 void gic400::handle_spi(unsigned int idx, irq_payload& tx) {
-    unsigned int irq        = NPRIV + idx;
+    unsigned int irq = NPRIV + idx;
     unsigned int target_cpu = distif.itargets_spi[idx];
 
     set_irq_level(irq, tx.active, gic400::ALL_CPU);
