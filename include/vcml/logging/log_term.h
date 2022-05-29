@@ -20,6 +20,7 @@
 #define VCML_LOG_TERM_H
 
 #include "vcml/common/types.h"
+#include "vcml/common/utils.h"
 #include "vcml/logging/publisher.h"
 
 namespace vcml {
@@ -40,7 +41,6 @@ public:
     virtual void publish(const logmsg& msg) override;
 
     static const char* colors[NUM_LOG_LEVELS];
-    static const char* reset;
 };
 
 } // namespace vcml

@@ -61,24 +61,6 @@ public:
     static size_t trace_indent_incr;
     static size_t trace_curr_indent;
 
-    static const char* const RESET;
-    static const char* const BLACK;
-    static const char* const RED;
-    static const char* const GREEN;
-    static const char* const YELLOW;
-    static const char* const BLUE;
-    static const char* const MAGENTA;
-    static const char* const CYAN;
-    static const char* const WHITE;
-    static const char* const BRIGHT_BLACK;
-    static const char* const BRIGHT_RED;
-    static const char* const BRIGHT_GREEN;
-    static const char* const BRIGHT_YELLOW;
-    static const char* const BRIGHT_BLUE;
-    static const char* const BRIGHT_MAGENTA;
-    static const char* const BRIGHT_CYAN;
-    static const char* const BRIGHT_WHITE;
-
     static array<const char*, NUM_PROTOCOLS> colors;
 };
 

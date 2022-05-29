@@ -35,35 +35,17 @@ size_t tracer_term::trace_name_length = 16;
 size_t tracer_term::trace_indent_incr = 1;
 size_t tracer_term::trace_curr_indent = 0;
 
-const char* const tracer_term::RESET = "\x1b[0m";
-const char* const tracer_term::BLACK = "\x1b[30m";
-const char* const tracer_term::RED = "\x1b[31m";
-const char* const tracer_term::GREEN = "\x1b[32m";
-const char* const tracer_term::YELLOW = "\x1b[33m";
-const char* const tracer_term::BLUE = "\x1b[34m";
-const char* const tracer_term::MAGENTA = "\x1b[35m";
-const char* const tracer_term::CYAN = "\x1b[36m";
-const char* const tracer_term::WHITE = "\x1b[37m";
-const char* const tracer_term::BRIGHT_BLACK = "\x1b[90m";
-const char* const tracer_term::BRIGHT_RED = "\x1b[91m";
-const char* const tracer_term::BRIGHT_GREEN = "\x1b[92m";
-const char* const tracer_term::BRIGHT_YELLOW = "\x1b[93m";
-const char* const tracer_term::BRIGHT_BLUE = "\x1b[94m";
-const char* const tracer_term::BRIGHT_MAGENTA = "\x1b[95m";
-const char* const tracer_term::BRIGHT_CYAN = "\x1b[96m";
-const char* const tracer_term::BRIGHT_WHITE = "\x1b[97m";
-
 array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
-    /* [PROTO_TLM]    = */ tracer_term::MAGENTA,
-    /* [PROTO_IRQ]    = */ tracer_term::YELLOW,
-    /* [PROTO_RST]    = */ tracer_term::RED,
-    /* [PROTO_RST]    = */ tracer_term::BLUE,
-    /* [PROTO_PCI]    = */ tracer_term::CYAN,
-    /* [PROTO_I2C]    = */ tracer_term::BRIGHT_GREEN,
-    /* [PROTO_SPI]    = */ tracer_term::BRIGHT_YELLOW,
-    /* [PROTO_SD]     = */ tracer_term::BRIGHT_MAGENTA,
-    /* [PROTO_SERIAL] = */ tracer_term::BRIGHT_RED,
-    /* [PROTO_VIRTIO] = */ tracer_term::BRIGHT_CYAN,
+    /* [PROTO_TLM]    = */ termcolors::MAGENTA,
+    /* [PROTO_IRQ]    = */ termcolors::YELLOW,
+    /* [PROTO_RST]    = */ termcolors::RED,
+    /* [PROTO_RST]    = */ termcolors::BLUE,
+    /* [PROTO_PCI]    = */ termcolors::CYAN,
+    /* [PROTO_I2C]    = */ termcolors::BRIGHT_GREEN,
+    /* [PROTO_SPI]    = */ termcolors::BRIGHT_YELLOW,
+    /* [PROTO_SD]     = */ termcolors::BRIGHT_MAGENTA,
+    /* [PROTO_SERIAL] = */ termcolors::BRIGHT_RED,
+    /* [PROTO_VIRTIO] = */ termcolors::BRIGHT_CYAN,
 };
 
 template <typename PAYLOAD>
@@ -99,7 +81,7 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
     }
 
     if (m_colors)
-        m_os << RESET;
+        m_os << termcolors::CLEAR;
 
     if (msg.dir == TRACE_BW && !msg.error) {
         if (trace_curr_indent >= trace_indent_incr)
