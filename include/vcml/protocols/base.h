@@ -21,6 +21,7 @@
 
 #include "vcml/common/types.h"
 #include "vcml/common/systemc.h"
+#include "vcml/common/version.h"
 
 #include "vcml/tracing/tracer.h"
 #include "vcml/properties/property.h"
@@ -33,22 +34,55 @@
 
 namespace vcml {
 
-template <typename FW, typename BW, unsigned int WIDTH = 1, int N = 1,
-          sc_core::sc_port_policy POL = sc_core::SC_ONE_OR_MORE_BOUND>
-class base_initiator_socket
-    : public tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>
+class base_socket
 {
+private:
+    sc_object* m_port;
+
 public:
+    const address_space as;
+
     property<bool> trace;
     property<bool> trace_errors;
 
-    base_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT):
-        tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>(nm),
-        trace(this, "trace", false),
-        trace_errors(this, "trace_errors", false) {
+    base_socket() = delete;
+    base_socket(sc_object* port, address_space space):
+        m_port(port),
+        as(space),
+        trace(port, "trace", false),
+        trace_errors(port, "trace_errors", false) {
         trace.inherit_default();
         trace_errors.inherit_default();
     }
+
+    virtual ~base_socket() = default;
+
+    virtual const char* version() const { return VCML_VERSION_STRING; }
+
+protected:
+    template <typename PAYLOAD>
+    void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
+        if (trace)
+            tracer::record(TRACE_FW, *m_port, tx, t);
+    }
+
+    template <typename PAYLOAD>
+    void trace_bw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
+        if (trace || (trace_errors && failed(tx)))
+            tracer::record(TRACE_BW, *m_port, tx, t);
+    }
+};
+
+template <typename FW, typename BW, unsigned int WIDTH = 1, int N = 1,
+          sc_core::sc_port_policy POL = sc_core::SC_ONE_OR_MORE_BOUND>
+class base_initiator_socket
+    : public tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>,
+      public base_socket
+{
+public:
+    base_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT):
+        tlm::tlm_base_initiator_socket<WIDTH, FW, BW, N, POL>(nm),
+        base_socket(this, as) {}
 
     virtual sc_type_index get_protocol_types() const VCML_PROTO_OVERRIDE {
         return typeid(typename FW::protocol_types);
@@ -59,40 +93,18 @@ public:
         const sc_core::sc_port_b<FW>& port = base::get_base_port();
         return const_cast<sc_core::sc_port_b<FW>&>(port).bind_count();
     }
-
-protected:
-    template <typename PAYLOAD>
-    void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
-        if (trace)
-            tracer::record(TRACE_FW, *this, tx, t);
-    }
-
-    template <typename PAYLOAD>
-    void trace_bw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
-        if (trace || (trace_errors && failed(tx)))
-            tracer::record(TRACE_BW, *this, tx, t);
-    }
 };
 
 template <typename FW, typename BW, unsigned int WIDTH = 1, int N = 1,
           sc_core::sc_port_policy POL = sc_core::SC_ONE_OR_MORE_BOUND>
 class base_target_socket
-    : public tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>
+    : public tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>,
+      public base_socket
 {
 public:
-    const address_space as;
-
-    property<bool> trace;
-    property<bool> trace_errors;
-
     base_target_socket(const char* nm, address_space space = VCML_AS_DEFAULT):
         tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>(nm),
-        as(space),
-        trace(this, "trace", false),
-        trace_errors(this, "trace_errors", false) {
-        trace.inherit_default();
-        trace_errors.inherit_default();
-    }
+        base_socket(this, space) {}
 
     virtual sc_type_index get_protocol_types() const VCML_PROTO_OVERRIDE {
         return typeid(typename BW::protocol_types);
@@ -102,19 +114,6 @@ public:
         using base = tlm::tlm_base_target_socket<WIDTH, FW, BW, N, POL>;
         const sc_core::sc_port_b<BW>& port = base::get_base_port();
         return const_cast<sc_core::sc_port_b<BW>&>(port).bind_count();
-    }
-
-protected:
-    template <typename PAYLOAD>
-    void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
-        if (trace)
-            tracer::record(TRACE_FW, *this, tx, t);
-    }
-
-    template <typename PAYLOAD>
-    void trace_bw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
-        if (trace || (trace_errors && failed(tx)))
-            tracer::record(TRACE_BW, *this, tx, t);
     }
 };
 
