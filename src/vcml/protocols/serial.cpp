@@ -23,15 +23,15 @@ namespace vcml {
 const char* serial_parity_str(serial_parity par) {
     switch (par) {
     case SERIAL_PARITY_NONE:
-        return "N";
+        return "n";
     case SERIAL_PARITY_ODD:
-        return "O";
+        return "o";
     case SERIAL_PARITY_EVEN:
-        return "E";
+        return "e";
     case SERIAL_PARITY_MARK:
-        return "M";
+        return "m";
     case SERIAL_PARITY_SPACE:
-        return "S";
+        return "s";
     default:
         VCML_ERROR("invalid serial parity %d", (int)par);
     }
