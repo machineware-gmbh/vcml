@@ -86,6 +86,12 @@ public:
 
     static terminal* find(const string& name);
     static vector<terminal*> all();
+
+    template <typename T>
+    void connect(T& device) {
+        serial_tx.bind(device.serial_rx);
+        device.serial_tx.bind(serial_rx);
+    }
 };
 
 inline void terminal::history::insert(u8 val) {
