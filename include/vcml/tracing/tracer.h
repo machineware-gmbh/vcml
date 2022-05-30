@@ -37,6 +37,7 @@ struct sd_command;
 struct sd_data;
 struct vq_message;
 struct serial_payload;
+struct eth_frame;
 
 enum trace_direction : int {
     TRACE_FW = 1,
@@ -63,6 +64,7 @@ enum protocol_kind {
     PROTO_SD,
     PROTO_SERIAL,
     PROTO_VIRTIO,
+    PROTO_ETHERNET,
     NUM_PROTOCOLS,
 };
 
@@ -126,6 +128,11 @@ struct protocol<vq_message> {
     static constexpr protocol_kind KIND = PROTO_VIRTIO;
 };
 
+template <>
+struct protocol<eth_frame> {
+    static constexpr protocol_kind KIND = PROTO_ETHERNET;
+};
+
 class tracer
 {
 public:
@@ -151,6 +158,7 @@ public:
     virtual void trace(const activity<sd_data>&) = 0;
     virtual void trace(const activity<vq_message>&) = 0;
     virtual void trace(const activity<serial_payload>&) = 0;
+    virtual void trace(const activity<eth_frame>&) = 0;
 
     tracer();
     virtual ~tracer();

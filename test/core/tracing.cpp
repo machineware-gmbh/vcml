@@ -46,6 +46,7 @@ public:
     virtual void trace(const activity<sd_data>&) override {}
     virtual void trace(const activity<vq_message>&) override {}
     virtual void trace(const activity<serial_payload>&) override {}
+    virtual void trace(const activity<eth_frame>&) override {}
 };
 
 class test_harness : public test_base

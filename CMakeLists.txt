@@ -112,6 +112,7 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/sd.cpp
     ${src}/vcml/protocols/i2c.cpp
     ${src}/vcml/protocols/pci.cpp
+    ${src}/vcml/protocols/eth.cpp
     ${src}/vcml/protocols/serial.cpp
     ${src}/vcml/protocols/virtio.cpp
     ${src}/vcml/module.cpp

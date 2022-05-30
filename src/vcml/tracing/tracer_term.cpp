@@ -24,6 +24,7 @@
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
+#include "vcml/protocols/eth.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
@@ -36,16 +37,17 @@ size_t tracer_term::trace_indent_incr = 1;
 size_t tracer_term::trace_curr_indent = 0;
 
 array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
-    /* [PROTO_TLM]    = */ termcolors::MAGENTA,
-    /* [PROTO_IRQ]    = */ termcolors::YELLOW,
-    /* [PROTO_RST]    = */ termcolors::RED,
-    /* [PROTO_RST]    = */ termcolors::BLUE,
-    /* [PROTO_PCI]    = */ termcolors::CYAN,
-    /* [PROTO_I2C]    = */ termcolors::BRIGHT_GREEN,
-    /* [PROTO_SPI]    = */ termcolors::BRIGHT_YELLOW,
-    /* [PROTO_SD]     = */ termcolors::BRIGHT_MAGENTA,
-    /* [PROTO_SERIAL] = */ termcolors::BRIGHT_RED,
-    /* [PROTO_VIRTIO] = */ termcolors::BRIGHT_CYAN,
+    /* [PROTO_TLM]      = */ termcolors::MAGENTA,
+    /* [PROTO_IRQ]      = */ termcolors::YELLOW,
+    /* [PROTO_RST]      = */ termcolors::RED,
+    /* [PROTO_RST]      = */ termcolors::BLUE,
+    /* [PROTO_PCI]      = */ termcolors::CYAN,
+    /* [PROTO_I2C]      = */ termcolors::BRIGHT_GREEN,
+    /* [PROTO_SPI]      = */ termcolors::BRIGHT_YELLOW,
+    /* [PROTO_SD]       = */ termcolors::BRIGHT_MAGENTA,
+    /* [PROTO_SERIAL]   = */ termcolors::BRIGHT_RED,
+    /* [PROTO_VIRTIO]   = */ termcolors::BRIGHT_CYAN,
+    /* [PROTO_ETHERNET] = */ termcolors::BRIGHT_BLUE,
 };
 
 template <typename PAYLOAD>
@@ -132,6 +134,10 @@ void tracer_term::trace(const activity<vq_message>& msg) {
 }
 
 void tracer_term::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<eth_frame>& msg) {
     do_trace(msg);
 }
 

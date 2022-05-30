@@ -1,0 +1,143 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *     http://www.apache.org/licenses/LICENSE-2.0                             *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ *                                                                            *
+ ******************************************************************************/
+
+#include "testing.h"
+
+#include "vcml/protocols/eth.h"
+
+TEST(ethernet, to_string) {
+    vector<u8> data = { 0x11, 0x22, 0x33, 0x44 };
+    eth_frame frame("ff:ff:ff:ff:ff:ff", "12:23:34:45:56:67", data);
+
+    stringstream ss;
+    ss << frame;
+    std::cout << frame << std::endl;
+}
+
+TEST(ethernet, frame) {
+    vector<u8> data = { 0x11, 0x22, 0x33, 0x44 };
+    eth_frame frame("ff:ff:ff:ff:ff:ff", "12:23:34:45:56:67", data);
+
+    EXPECT_EQ(frame.destination(), "ff:ff:ff:ff:ff:ff");
+    EXPECT_EQ(frame.source(), "12:23:34:45:56:67");
+
+    ASSERT_GE(frame.payload_size(), data.size());
+    for (size_t i = 0; i < data.size(); i++)
+        EXPECT_EQ(frame.payload(i), data[i]);
+
+    EXPECT_EQ(frame.read_crc(), frame.calc_crc());
+    EXPECT_TRUE(frame.is_valid());
+
+    EXPECT_TRUE(success(frame));
+    EXPECT_FALSE(failed(frame));
+
+    frame.payload(0) += 1;
+
+    EXPECT_FALSE(success(frame));
+    EXPECT_TRUE(failed(frame));
+
+    frame.refresh_crc();
+
+    EXPECT_TRUE(success(frame));
+    EXPECT_FALSE(failed(frame));
+}
+
+MATCHER_P(eth_match_socket, socket, "Matches an ethernet socket") {
+    return &arg == socket;
+}
+
+MATCHER_P(eth_match_frame, frame, "Matches an ethernet frame") {
+    return arg == frame;
+}
+
+class ethernet_bench : public test_base, public eth_host
+{
+public:
+    eth_initiator_socket eth_tx;
+    eth_base_initiator_socket eth_tx_h;
+    eth_base_target_socket eth_rx_h;
+    eth_target_socket eth_rx;
+
+    eth_initiator_socket_array<> eth_array_tx;
+    eth_target_socket_array<> eth_array_rx;
+
+    ethernet_bench(const sc_module_name& nm):
+        test_base(nm),
+        eth_host(),
+        eth_tx("eth_tx"),
+        eth_tx_h("eth_tx_h"),
+        eth_rx_h("eth_rx_h"),
+        eth_rx("eth_rx"),
+        eth_array_tx("eth_array_tx"),
+        eth_array_rx("eth_array_rx") {
+        eth_tx.bind(eth_tx_h);
+        eth_rx_h.bind(eth_rx);
+        eth_tx_h.bind(eth_rx_h);
+
+        eth_array_tx[4].bind(eth_array_rx[4]);
+        eth_array_tx[5].stub();
+        eth_array_rx[6].stub();
+
+        // did the ports get created?
+        EXPECT_TRUE(find_object("eth.eth_array_tx[4]"));
+        EXPECT_TRUE(find_object("eth.eth_array_rx[4]"));
+        EXPECT_TRUE(find_object("eth.eth_array_tx[5]"));
+        EXPECT_TRUE(find_object("eth.eth_array_rx[6]"));
+
+        // did the stubs get created?
+        EXPECT_TRUE(find_object("eth.eth_array_tx[5]_stub"));
+        EXPECT_TRUE(find_object("eth.eth_array_rx[6]_stub"));
+    }
+
+    MOCK_METHOD(void, eth_receive, (const eth_target_socket&, eth_frame&),
+                (override));
+
+    MOCK_METHOD(void, eth_link_up, (), (override));
+    MOCK_METHOD(void, eth_link_down, (), (override));
+
+    virtual void run_test() override {
+        wait(SC_ZERO_TIME);
+
+        stringstream ss;
+        vector<u8> data = { 0x11, 0x22, 0x33, 0x44 };
+        eth_frame frame("ff:ff:ff:ff:ff:ff", "12:23:34:45:56:67", data);
+
+        EXPECT_CALL(*this, eth_receive(_, eth_match_frame(frame)));
+        eth_tx.send(frame);
+
+        EXPECT_CALL(*this, eth_link_down());
+        EXPECT_TRUE(execute("link_down", {}, ss));
+        EXPECT_EQ(ss.str(), "");
+
+        EXPECT_CALL(*this, eth_receive(_, _)).Times(0);
+        eth_tx.send(frame);
+
+        EXPECT_CALL(*this, eth_link_up()).Times(1);
+        EXPECT_TRUE(execute("link_up", {}, ss));
+        EXPECT_TRUE(execute("link_up", {}, ss)); // should not trigger
+        EXPECT_EQ(ss.str(), "");
+
+        EXPECT_CALL(*this, eth_receive(_, eth_match_frame(frame)));
+        eth_tx.send(frame);
+    }
+};
+
+TEST(ethernet, simulate) {
+    ethernet_bench bench("eth");
+    sc_core::sc_start();
+}

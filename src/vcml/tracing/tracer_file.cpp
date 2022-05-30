@@ -24,6 +24,7 @@
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
+#include "vcml/protocols/eth.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
@@ -90,6 +91,10 @@ void tracer_file::trace(const activity<vq_message>& msg) {
 }
 
 void tracer_file::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<eth_frame>& msg) {
     do_trace(msg);
 }
 

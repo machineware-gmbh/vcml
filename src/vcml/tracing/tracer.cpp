@@ -43,6 +43,8 @@ const char* protocol_name(protocol_kind kind) {
         return "SERIAL";
     case PROTO_VIRTIO:
         return "VIRTIO";
+    case PROTO_ETHERNET:
+        return "ETHERNET";
     default:
         return "unknown protocol";
     }
