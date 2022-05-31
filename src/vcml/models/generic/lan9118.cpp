@@ -517,7 +517,7 @@ void lan9118_mac::write_mii_data(u32 val) {
     mii_data = val & MII_DATA_MASK;
 }
 
-void lan9118_mac::set_address(const net::mac_addr& addr) {
+void lan9118_mac::set_address(const mac_addr& addr) {
     m_addr = addr;
 
     addrh = (u32)m_addr[4] | (u32)m_addr[5] << 8;
@@ -576,7 +576,7 @@ void lan9118_mac::reset() {
     set_address(m_addr);
 }
 
-bool lan9118_mac::filter(const net::mac_addr& dest) const {
+bool lan9118_mac::filter(const mac_addr& dest) const {
     if (cr & CR_PRMS) // promiscuous
         return true;
 
@@ -623,7 +623,7 @@ void lan9118::eeprom_reload() {
         return;
     }
 
-    net::mac_addr addr;
+    mac_addr addr;
     for (int i = 0; i < 6; i++)
         addr[i] = m_eeprom[i + 1];
 
@@ -679,7 +679,7 @@ bool lan9118::rx_enqueue(const vector<u8>& pkt) {
         return false;
     }
 
-    net::mac_addr dest(pkt);
+    mac_addr dest(pkt);
     bool filter = mac.filter(pkt);
     if (!filter && (mac.cr & CR_RXALL) == 0)
         return true;
@@ -739,10 +739,10 @@ void lan9118::rx_thread() {
 
         sc_time delay = tlm_global_quantum::instance().get();
 
-        vector<u8> pkt;
-        if (recv_packet(pkt)) {
-            delay = phy.rxtx_delay(pkt.size());
-            if (!rx_enqueue(pkt)) {
+        eth_frame frame;
+        if (eth_rx_pop(frame)) {
+            delay = phy.rxtx_delay(frame.size());
+            if (!rx_enqueue(frame.raw)) {
                 irq_sts |= IRQ_RXDF;
                 rx_drop++;
             }
@@ -772,7 +772,7 @@ void lan9118::tx_thread() {
         if (phy.control & PHY_CONTROL_LOOPBACK)
             rx_enqueue(pkt.data);
         else
-            send_packet(pkt.data);
+            eth_tx.send(pkt.data);
 
         u32 status = pkt.cmdb & CMDB_PKT_TAG;
         // error injection?
@@ -1143,7 +1143,7 @@ void lan9118::write_e2_p_cmd(u32 val) {
 
 lan9118::lan9118(const sc_module_name& nm):
     peripheral(nm),
-    net::adapter(),
+    eth_host(),
     m_eeprom(128),
     m_last_reset(),
     m_deas_cycle(10, SC_US),
@@ -1198,6 +1198,8 @@ lan9118::lan9118(const sc_module_name& nm):
     e2p_data("e2p_data", 0xb4, 0x00000000),
     in("in"),
     irq("irq"),
+    eth_tx("eth_tx"),
+    eth_rx("eth_rx"),
     phy("phy", *this),
     mac("mac", *this) {
     rx_data_fifo.sync_always();
@@ -1326,10 +1328,9 @@ lan9118::lan9118(const sc_module_name& nm):
     m_eeprom[0] = 0xa5;
 
     const char* factory_mac = eeprom_mac.get().c_str();
-    if (sscanf(factory_mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-               m_eeprom.data() + 1, m_eeprom.data() + 2, m_eeprom.data() + 3,
-               m_eeprom.data() + 4, m_eeprom.data() + 5,
-               m_eeprom.data() + 6) != 6) {
+    if (sscanf(factory_mac, mac_addr::format, m_eeprom.data() + 1,
+               m_eeprom.data() + 2, m_eeprom.data() + 3, m_eeprom.data() + 4,
+               m_eeprom.data() + 5, m_eeprom.data() + 6) != 6) {
         VCML_ERROR("invalid MAC address specified: %s", factory_mac);
     }
 }
@@ -1401,11 +1402,11 @@ void lan9118::update_irq() {
     irq_cfg |= IRQ_CFG_DEAS_STS;
 }
 
-void lan9118::on_link_up() {
+void lan9118::eth_link_up() {
     phy.set_link_status(true);
 }
 
-void lan9118::on_link_down() {
+void lan9118::eth_link_down() {
     phy.set_link_status(false);
 }
 

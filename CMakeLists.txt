@@ -89,10 +89,11 @@ add_library(vcml STATIC
     ${src}/vcml/serial/backend_term.cpp
     ${src}/vcml/serial/backend.cpp
     ${src}/vcml/serial/terminal.cpp
-    ${src}/vcml/net/backend.cpp
-    ${src}/vcml/net/backend_file.cpp
-    ${src}/vcml/net/backend_tap.cpp
-    ${src}/vcml/net/adapter.cpp
+    ${src}/vcml/ethernet/backend.cpp
+    ${src}/vcml/ethernet/backend_file.cpp
+    ${src}/vcml/ethernet/backend_tap.cpp
+    ${src}/vcml/ethernet/gateway.cpp
+    ${src}/vcml/ethernet/network.cpp
     ${src}/vcml/ui/video.cpp
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
@@ -211,7 +212,7 @@ if(LIBSLIRP_FOUND)
     message(STATUS "Building with SLIRP support")
     target_compile_definitions(vcml PRIVATE HAVE_LIBSLIRP)
     target_include_directories(vcml SYSTEM PRIVATE ${LIBSLIRP_INCLUDE_DIRS})
-    target_sources(vcml PRIVATE ${src}/vcml/net/backend_slirp.cpp)
+    target_sources(vcml PRIVATE ${src}/vcml/ethernet/backend_slirp.cpp)
     target_link_libraries(vcml PUBLIC ${LIBSLIRP_LIBRARIES})
 else()
     message(STATUS "Building without SLIRP support")

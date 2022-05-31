@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Jan Henrik Weinstock                                        *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,36 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_FILE_H
-#define VCML_NET_BACKEND_FILE_H
-
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
-#include "vcml/logging/logger.h"
-#include "vcml/net/backend.h"
-
-namespace vcml {
-namespace net {
-
-class backend_file : public backend
-{
-private:
-    size_t m_count;
-    ofstream m_tx;
-
-public:
-    backend_file(const string& adapter, const string& tx);
-    virtual ~backend_file();
-
-    virtual bool recv_packet(vector<u8>& packet) override;
-    virtual void send_packet(const vector<u8>& packet) override;
-
-    static backend* create(const string& adapter, const string& type);
-};
-
-} // namespace net
-} // namespace vcml
+#ifndef VCML_ETHERNET_NETWORK_H
+#define VCML_ETHERNET_NETWORK_H
 
 #endif

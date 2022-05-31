@@ -27,7 +27,7 @@
 #include "vcml/debugging/loader.h"
 #include "vcml/protocols/base.h"
 #include "vcml/serial/terminal.h"
-#include "vcml/net/adapter.h"
+#include "vcml/ethernet/gateway.h"
 #include "vcml/ui/input.h"
 
 namespace vcml {
@@ -198,8 +198,8 @@ string vspserver::handle_list(const char* command) {
     for (auto terminal : serial::terminal::all())
         ss << "<terminal>" << terminal->name() << "</terminal>";
 
-    for (auto adapter : net::adapter::all())
-        ss << "<adapter>" << adapter->adapter_name() << "</adapter>";
+    for (auto gateway : ethernet::gateway::all())
+        ss << "<gateway>" << gateway->name() << "</gateway>";
 
     ss << "</hierarchy>";
     return ss.str();

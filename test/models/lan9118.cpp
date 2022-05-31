@@ -74,6 +74,8 @@ public:
         test_base(nm), lan("lan9118"), out("out"), irq("irq") {
         out.bind(lan.in);
         lan.irq.bind(irq);
+        lan.eth_tx.stub();
+        lan.eth_rx.stub();
         rst.bind(lan.rst);
         clk.bind(lan.clk);
     }
@@ -134,7 +136,7 @@ public:
         EXPECT_EQ(data, 0xa5) << "EEPROM magic value mismatch";
 
         // check MAC was loaded from EEPROM
-        net::mac_addr addr = lan.mac_address();
+        mac_addr addr = lan.mac_address();
         EXPECT_EQ(to_string(addr), "12:34:56:78:9a:bc") << "address broken";
         EXPECT_EQ(lan.mac.addrh, 0xbc9au) << "address not loaded into MAC";
         EXPECT_EQ(lan.mac.addrl, 0x78563412u) << "address not loaded into MAC";

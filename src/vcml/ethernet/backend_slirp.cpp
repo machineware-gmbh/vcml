@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/net/backend_slirp.h"
+#include "vcml/ethernet/backend_slirp.h"
 
 #include <poll.h>
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
 static struct in_addr ipaddr(const string& str) {
     struct in_addr addr;
@@ -211,9 +211,9 @@ slirp_network::~slirp_network() {
 }
 
 void slirp_network::send_packet(const u8* ptr, size_t len) {
-    auto packet = std::make_shared<vector<u8>>(ptr, ptr + len);
+    eth_frame frame(ptr, len);
     for (auto client : m_clients)
-        client->queue_packet(packet);
+        client->send_to_guest(frame);
 }
 
 void slirp_network::recv_packet(const u8* ptr, size_t len) {
@@ -229,9 +229,8 @@ void slirp_network::unregister_client(backend_slirp* client) {
     m_clients.erase(client);
 }
 
-backend_slirp::backend_slirp(const string& adapter,
-                             const shared_ptr<slirp_network>& network):
-    backend(adapter), m_network(network) {
+backend_slirp::backend_slirp(gateway* gw, const shared_ptr<slirp_network>& n):
+    backend(gw), m_network(n) {
     VCML_ERROR_ON(!m_network, "no network");
     m_network->register_client(this);
 }
@@ -241,12 +240,12 @@ backend_slirp::~backend_slirp() {
         m_network->unregister_client(this);
 }
 
-void backend_slirp::send_packet(const vector<u8>& packet) {
+void backend_slirp::send_to_host(const eth_frame& frame) {
     if (m_network)
-        m_network->recv_packet(packet.data(), packet.size());
+        m_network->recv_packet(frame.data(), frame.size());
 }
 
-backend* backend_slirp::create(const string& adapter, const string& type) {
+backend* backend_slirp::create(gateway* gw, const string& type) {
     unsigned int netid = 0;
     if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
         netid = 0;
@@ -255,8 +254,8 @@ backend* backend_slirp::create(const string& adapter, const string& type) {
     auto& network = networks[netid];
     if (network == nullptr)
         network = std::make_shared<slirp_network>(netid);
-    return new backend_slirp(adapter, network);
+    return new backend_slirp(gw, network);
 }
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml

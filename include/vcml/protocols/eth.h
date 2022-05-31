@@ -83,8 +83,18 @@ struct eth_frame {
     eth_frame(const eth_frame&) = default;
     eth_frame(const vector<u8>& frame): raw(frame) {}
     eth_frame(vector<u8>&& frame): raw(std::move(frame)) {}
+    eth_frame(const u8* data, size_t len): raw(data, data + len) {}
     eth_frame(const mac_addr& dest, const mac_addr& src,
               const vector<u8>& payload);
+
+    eth_frame& operator=(const eth_frame&) = default;
+    eth_frame& operator=(eth_frame&&) = default;
+
+    u8& operator[](size_t i) { return raw.at(i); }
+    u8 operator[](size_t i) const { return raw.at(i); }
+
+    bool operator==(const eth_frame& f) const { return raw == f.raw; }
+    bool operator!=(const eth_frame& f) const { return !(raw == f.raw); }
 
     template <typename T>
     T read(size_t offset) const {
@@ -93,6 +103,8 @@ struct eth_frame {
         memcpy(&val, raw.data() + offset, sizeof(T));
         return val;
     }
+
+    void append(u8 data) { raw.push_back(data); }
 
     u32 read_crc() const { return read<u32>(size() - sizeof(u32)); }
     u32 calc_crc() const { return crc32(raw.data(), size() - sizeof(u32)); }
@@ -103,6 +115,9 @@ struct eth_frame {
     size_t size() const { return raw.size(); }
     size_t header_size() const { return has_tag() ? 18 : 14; }
     size_t payload_size() const { return size() - header_size() - 4; }
+
+    u8* data() { return raw.data(); }
+    const u8* data() const { return raw.data(); }
 
     u8* payload() { return raw.data() + header_size(); }
     const u8* payload() const { return raw.data() + header_size(); }
@@ -116,13 +131,10 @@ struct eth_frame {
     bool is_multicast() const { return destination().is_multicast(); }
     bool is_broadcast() const { return destination().is_broadcast(); }
 
+    bool is_empty() const { return raw.empty(); }
     bool is_valid() const;
 
-    u8& operator[](size_t i) { return raw.at(i); }
-    u8 operator[](size_t i) const { return raw.at(i); }
-
-    bool operator==(const eth_frame& f) const { return raw == f.raw; }
-    bool operator!=(const eth_frame& f) const { return !(raw == f.raw); }
+    void clear() { raw.clear(); }
 };
 
 ostream& operator<<(ostream& os, const mac_addr& addr);
@@ -169,6 +181,7 @@ public:
 protected:
     virtual void eth_receive(const eth_target_socket& sock, eth_frame& frame);
     virtual void eth_receive(eth_frame& frame);
+    virtual bool eth_rx_pop(eth_frame& frame);
 
     virtual void eth_link_up();
     virtual void eth_link_up(const eth_initiator_socket& sock);
@@ -181,6 +194,7 @@ protected:
 private:
     eth_initiator_sockets m_initiator_sockets;
     eth_target_sockets m_target_sockets;
+    queue<eth_frame> m_rx_queue;
     bool m_link_up;
 
     vector<string> gather_sockets(const vector<string>& names,
@@ -261,6 +275,7 @@ public:
     virtual ~eth_initiator_socket();
     VCML_KIND(eth_initiator_socket);
 
+    void send(const vector<u8>& data);
     void send(eth_frame& frame);
 };
 

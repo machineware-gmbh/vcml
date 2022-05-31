@@ -16,64 +16,37 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_SLIRP_H
-#define VCML_NET_BACKEND_SLIRP_H
+#ifndef VCML_ETHERNET_BACKEND_FILE_H
+#define VCML_ETHERNET_BACKEND_FILE_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
 #include "vcml/logging/logger.h"
-#include "vcml/net/backend.h"
 
-#include <libslirp.h>
-#include <libslirp-version.h>
+#include "vcml/ethernet/backend.h"
+#include "vcml/ethernet/gateway.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-class backend_slirp;
-
-class slirp_network
+class backend_file : public backend
 {
 private:
-    SlirpConfig m_config;
-    Slirp* m_slirp;
-
-    set<backend_slirp*> m_clients;
-
-    mutex m_mtx;
-    atomic<bool> m_running;
-    thread m_thread;
-
-    void slirp_thread();
+    size_t m_count;
+    ofstream m_tx;
 
 public:
-    slirp_network(unsigned int id);
-    virtual ~slirp_network();
+    backend_file(gateway* gw, const string& tx);
+    virtual ~backend_file();
 
-    void send_packet(const u8* ptr, size_t len);
-    void recv_packet(const u8* ptr, size_t len);
+    virtual void send_to_host(const eth_frame& frame) override;
 
-    void register_client(backend_slirp* client);
-    void unregister_client(backend_slirp* client);
+    static backend* create(gateway* gw, const string& type);
 };
 
-class backend_slirp : public backend
-{
-private:
-    shared_ptr<slirp_network> m_network;
-
-public:
-    backend_slirp(const string& ada, const shared_ptr<slirp_network>& net);
-    virtual ~backend_slirp();
-
-    void disconnect() { m_network = nullptr; }
-
-    virtual void send_packet(const vector<u8>& packet) override;
-
-    static backend* create(const string& adapter, const string& type);
-};
-
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
 
 #endif

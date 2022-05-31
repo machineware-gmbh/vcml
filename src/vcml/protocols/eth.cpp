@@ -116,7 +116,16 @@ void eth_host::eth_receive(const eth_target_socket& sock, eth_frame& frame) {
 }
 
 void eth_host::eth_receive(eth_frame& frame) {
-    // to be overloaded
+    m_rx_queue.push(std::move(frame));
+}
+
+bool eth_host::eth_rx_pop(eth_frame& frame) {
+    if (m_rx_queue.empty())
+        return false;
+
+    frame = std::move(m_rx_queue.front());
+    m_rx_queue.pop();
+    return true;
 }
 
 void eth_host::eth_link_up() {
@@ -295,6 +304,11 @@ eth_initiator_socket::eth_initiator_socket(const char* nm, address_space as):
 eth_initiator_socket::~eth_initiator_socket() {
     if (m_host)
         m_host->m_initiator_sockets.erase(this);
+}
+
+void eth_initiator_socket::send(const vector<u8>& data) {
+    eth_frame frame(data);
+    send(frame);
 }
 
 void eth_initiator_socket::send(eth_frame& frame) {

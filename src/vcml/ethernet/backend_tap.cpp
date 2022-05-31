@@ -26,22 +26,20 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "vcml/net/backend_tap.h"
-
-#define ETH_MAX_FRAME_SIZE 1522
+#include "vcml/ethernet/backend_tap.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-static void tap_read(int fd, shared_ptr<vector<u8>>& packet) {
+static void tap_read(int fd, vector<u8>& buf) {
     size_t len;
-    packet->resize(ETH_MAX_FRAME_SIZE);
+    buf.resize(eth_frame::FRAME_MAX_SIZE);
 
     do {
-        len = read(fd, packet->data(), packet->size());
+        len = read(fd, buf.data(), buf.size());
     } while (len < 0 && errno == EINTR);
 
-    packet->resize(len);
+    buf.resize(len);
 }
 
 void backend_tap::close_tap() {
@@ -52,7 +50,7 @@ void backend_tap::close_tap() {
     }
 }
 
-backend_tap::backend_tap(const string& adapter, int devno): backend(adapter) {
+backend_tap::backend_tap(gateway* gw, int devno): backend(gw) {
     m_fd = open("/dev/net/tun", O_RDWR);
     VCML_REPORT_ON(m_fd < 0, "error opening tundev: %s", strerror(errno));
 
@@ -68,15 +66,15 @@ backend_tap::backend_tap(const string& adapter, int devno): backend(adapter) {
     m_type = mkstr("tap:%d", devno);
 
     aio_notify(m_fd, [&](int fd) -> void {
-        auto packet = std::make_shared<vector<u8>>();
-        tap_read(fd, packet);
-        if (packet->empty()) {
+        eth_frame frame;
+        tap_read(fd, frame.raw);
+        if (frame.is_empty()) {
             log_error("error reading tap device: %s", strerror(errno));
             close_tap();
             return;
         }
 
-        queue_packet(packet);
+        send_to_guest(std::move(frame));
     });
 }
 
@@ -84,17 +82,17 @@ backend_tap::~backend_tap() {
     close_tap();
 }
 
-void backend_tap::send_packet(const vector<u8>& packet) {
+void backend_tap::send_to_host(const eth_frame& frame) {
     if (m_fd >= 0)
-        fd_write(m_fd, packet.data(), packet.size());
+        fd_write(m_fd, frame.data(), frame.size());
 }
 
-backend* backend_tap::create(const string& adapter, const string& type) {
+backend* backend_tap::create(gateway* gw, const string& type) {
     unsigned int devno = 0;
     if (sscanf(type.c_str(), "tap:%u", &devno) != 1)
         devno = 0;
-    return new backend_tap(adapter, devno);
+    return new backend_tap(gw, devno);
 }
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml

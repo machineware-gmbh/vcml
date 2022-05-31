@@ -125,8 +125,6 @@
 namespace vcml {
 namespace opencores {
 
-static const u8 BCAST[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-
 void ethoc::tx_process() {
     while (true) {
         wait(m_tx_event);
@@ -231,18 +229,18 @@ bool ethoc::tx_packet(u32 addr, u32 length) {
     }
 
     log_debug("sending packet:\n%s", ss.str().c_str());
-    send_packet(buffer);
+    eth_tx.send(buffer);
 
     return true;
 }
 
 bool ethoc::rx_packet(u32 addr, u32& size) {
-    vector<u8> packet;
-    if (!recv_packet(packet))
+    eth_frame frame;
+    if (!eth_rx_pop(frame))
         return true;
 
     stringstream ss;
-    for (u8 data : packet) {
+    for (u8 data : frame.raw) {
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)data
            << " ";
     }
@@ -251,21 +249,21 @@ bool ethoc::rx_packet(u32 addr, u32& size) {
 
     // promiscuous mode disabled, check destination HW address
     if (!(moder & MODER_PRO)) {
-        if ((memcmp(packet.data(), m_mac, ETH_ALEN) != 0) &&
-            (memcmp(packet.data(), BCAST, ETH_ALEN) != 0)) {
+        mac_addr dest = frame.destination();
+        if ((dest != m_mac) && !dest.is_broadcast()) {
             log_debug("ignoring broadcast packet");
             return true; // packet not for us
         }
     }
 
-    tlm_response_status rs = out.write(addr, packet.data(), packet.size());
+    tlm_response_status rs = out.write(addr, frame.data(), frame.size());
     if (failed(rs)) {
         log_warn("rx error %s while writing to 0x%08x",
                  tlm_response_to_str(rs), addr);
         return false;
     }
 
-    size = (u32)packet.size();
+    size = (u32)frame.size();
     return true;
 }
 
@@ -462,7 +460,7 @@ tlm_response_status ethoc::write(const range& addr, const void* data,
 
 ethoc::ethoc(const sc_module_name& nm):
     peripheral(nm),
-    net::adapter(),
+    eth_host(),
     m_mac(),
     m_tx_idx(0),
     m_rx_idx(ETHOC_NUMBD / 2),
@@ -494,16 +492,13 @@ ethoc::ethoc(const sc_module_name& nm):
     eth_txctrl("eth_txctrl", 0x50, 0),
     clock("clock", 20 * MHz), // input polling frequency
     mac("mac", "12:34:56:78:9a:bc"),
-    irq("IRQ"),
-    in("IN"),
-    out("OUT") {
-    if (sscanf(mac.get().c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", m_mac + 0,
-               m_mac + 1, m_mac + 2, m_mac + 3, m_mac + 4, m_mac + 5) != 6) {
-        VCML_ERROR("invalid MAC address specified: %s", mac.get().c_str());
-    }
-
-    log_debug("using MAC m_mac: %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
-              m_mac[0], m_mac[1], m_mac[2], m_mac[3], m_mac[4], m_mac[5]);
+    irq("irq"),
+    in("in"),
+    out("out"),
+    eth_tx("eth_tx"),
+    eth_rx("eth_rx") {
+    m_mac = mac_addr(mac);
+    log_debug("using MAC %s", to_string(m_mac).c_str());
 
     SC_HAS_PROCESS(ethoc);
     SC_THREAD(tx_process);

@@ -24,10 +24,9 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/net/adapter.h"
-
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/eth.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -35,10 +34,10 @@
 namespace vcml {
 namespace opencores {
 
-class ethoc : public peripheral, public net::adapter
+class ethoc : public peripheral, public eth_host
 {
 private:
-    u8 m_mac[6];
+    mac_addr m_mac;
     size_t m_tx_idx;
     size_t m_rx_idx;
 
@@ -269,8 +268,12 @@ public:
     property<string> mac;
 
     irq_initiator_socket irq;
+
     tlm_target_socket in;
     tlm_initiator_socket out;
+
+    eth_initiator_socket eth_tx;
+    eth_target_socket eth_rx;
 
     ethoc(const sc_module_name& name);
     virtual ~ethoc();

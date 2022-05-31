@@ -16,35 +16,43 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_TAP_H
-#define VCML_NET_BACKEND_TAP_H
+#ifndef VCML_ETHERNET_BACKEND_H
+#define VCML_ETHERNET_BACKEND_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
-#include "vcml/common/aio.h"
-#include "vcml/logging/logger.h"
-#include "vcml/net/backend.h"
+#include "vcml/common/strings.h"
+#include "vcml/protocols/eth.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-class backend_tap : public backend
+class gateway;
+
+class backend
 {
-private:
-    int m_fd;
-
-    void close_tap();
+protected:
+    gateway* m_parent;
+    string m_type;
 
 public:
-    backend_tap(const string& adapter, int devno);
-    virtual ~backend_tap();
+    gateway* parent() { return m_parent; }
+    const char* type() const { return m_type.c_str(); }
 
-    virtual void send_packet(const vector<u8>& packet) override;
+    backend(gateway* gw);
+    virtual ~backend();
 
-    static backend* create(const string& name, const string& type);
+    backend() = delete;
+    backend(const backend&) = delete;
+    backend(backend&&) = default;
+
+    virtual void send_to_host(const eth_frame& frame) = 0;
+    virtual void send_to_guest(eth_frame frame);
+
+    static backend* create(gateway* gw, const string& type);
 };
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
 
 #endif

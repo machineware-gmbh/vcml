@@ -16,46 +16,37 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/net/backend_file.h"
+#ifndef VCML_ETHERNET_BACKEND_TAP_H
+#define VCML_ETHERNET_BACKEND_TAP_H
+
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/aio.h"
+#include "vcml/logging/logger.h"
+
+#include "vcml/ethernet/backend.h"
+#include "vcml/ethernet/gateway.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-backend_file::backend_file(const string& adapter, const string& tx):
-    backend(adapter), m_count(0), m_tx(tx) {
-    if (!m_tx.good())
-        log_warn("failed to open file '%s'", tx.c_str());
-    m_type = mkstr("file:%s", tx.c_str());
-}
+class backend_tap : public backend
+{
+private:
+    int m_fd;
 
-backend_file::~backend_file() {
-    // nothing to do
-}
+    void close_tap();
 
-bool backend_file::recv_packet(vector<u8>& packet) {
-    return false;
-}
+public:
+    backend_tap(gateway* gw, int devno);
+    virtual ~backend_tap();
 
-void backend_file::send_packet(const vector<u8>& packet) {
-    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << ", "
-         << packet.size() << " bytes";
+    virtual void send_to_host(const eth_frame& frame) override;
 
-    for (size_t i = 0; i < packet.size(); i++) {
-        m_tx << (i % 25 ? " " : "\n") << std::hex << std::setw(2)
-             << std::setfill('0') << (int)packet[i] << std::dec;
-    }
+    static backend* create(gateway* gw, const string& type);
+};
 
-    m_tx << std::endl << std::endl;
-}
-
-backend* backend_file::create(const string& adapter, const string& type) {
-    string tx = adapter + ".tx";
-    vector<string> args = split(type, ':');
-    if (args.size() > 1)
-        tx = args[1];
-
-    return new backend_file(adapter, tx);
-}
-
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
+
+#endif
