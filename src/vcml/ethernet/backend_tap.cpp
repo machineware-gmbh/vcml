@@ -50,7 +50,7 @@ void backend_tap::close_tap() {
     }
 }
 
-backend_tap::backend_tap(gateway* gw, int devno): backend(gw) {
+backend_tap::backend_tap(bridge* br, int devno): backend(br) {
     m_fd = open("/dev/net/tun", O_RDWR);
     VCML_REPORT_ON(m_fd < 0, "error opening tundev: %s", strerror(errno));
 
@@ -87,11 +87,11 @@ void backend_tap::send_to_host(const eth_frame& frame) {
         fd_write(m_fd, frame.data(), frame.size());
 }
 
-backend* backend_tap::create(gateway* gw, const string& type) {
+backend* backend_tap::create(bridge* br, const string& type) {
     unsigned int devno = 0;
     if (sscanf(type.c_str(), "tap:%u", &devno) != 1)
         devno = 0;
-    return new backend_tap(gw, devno);
+    return new backend_tap(br, devno);
 }
 
 } // namespace ethernet

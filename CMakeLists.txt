@@ -92,7 +92,7 @@ add_library(vcml STATIC
     ${src}/vcml/ethernet/backend.cpp
     ${src}/vcml/ethernet/backend_file.cpp
     ${src}/vcml/ethernet/backend_tap.cpp
-    ${src}/vcml/ethernet/gateway.cpp
+    ${src}/vcml/ethernet/bridge.cpp
     ${src}/vcml/ethernet/network.cpp
     ${src}/vcml/ui/video.cpp
     ${src}/vcml/ui/keymap.cpp

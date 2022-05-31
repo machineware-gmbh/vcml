@@ -21,8 +21,8 @@
 namespace vcml {
 namespace ethernet {
 
-backend_file::backend_file(gateway* gw, const string& tx):
-    backend(gw), m_count(0), m_tx(tx) {
+backend_file::backend_file(bridge* br, const string& tx):
+    backend(br), m_count(0), m_tx(tx) {
     if (!m_tx.good())
         log_warn("failed to open file '%s'", tx.c_str());
     m_type = mkstr("file:%s", tx.c_str());
@@ -33,8 +33,8 @@ backend_file::~backend_file() {
 }
 
 void backend_file::send_to_host(const eth_frame& frame) {
-    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << " " << frame
-         << std::endl;
+    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << " "
+         << frame;
 
     for (size_t i = 0; i < frame.size(); i++) {
         m_tx << (i % 25 ? " " : "\n\t") << std::hex << std::setw(2)
@@ -44,13 +44,13 @@ void backend_file::send_to_host(const eth_frame& frame) {
     m_tx << std::endl << std::endl;
 }
 
-backend* backend_file::create(gateway* gw, const string& type) {
-    string tx = mkstr("%s.tx", gw->name());
+backend* backend_file::create(bridge* br, const string& type) {
+    string tx = mkstr("%s.tx", br->name());
     vector<string> args = split(type, ':');
     if (args.size() > 1)
         tx = args[1];
 
-    return new backend_file(gw, tx);
+    return new backend_file(br, tx);
 }
 
 } // namespace ethernet

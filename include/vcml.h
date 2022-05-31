@@ -64,7 +64,7 @@
 #include "vcml/serial/terminal.h"
 
 #include "vcml/ethernet/backend.h"
-#include "vcml/ethernet/gateway.h"
+#include "vcml/ethernet/bridge.h"
 #include "vcml/ethernet/network.h"
 
 #include "vcml/ui/keymap.h"

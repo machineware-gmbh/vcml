@@ -15,3 +15,5 @@
  * limitations under the License.                                             *
  *                                                                            *
  ******************************************************************************/
+
+#include "vcml/ethernet/network.h"

@@ -229,8 +229,8 @@ void slirp_network::unregister_client(backend_slirp* client) {
     m_clients.erase(client);
 }
 
-backend_slirp::backend_slirp(gateway* gw, const shared_ptr<slirp_network>& n):
-    backend(gw), m_network(n) {
+backend_slirp::backend_slirp(bridge* br, const shared_ptr<slirp_network>& n):
+    backend(br), m_network(n) {
     VCML_ERROR_ON(!m_network, "no network");
     m_network->register_client(this);
 }
@@ -245,7 +245,7 @@ void backend_slirp::send_to_host(const eth_frame& frame) {
         m_network->recv_packet(frame.data(), frame.size());
 }
 
-backend* backend_slirp::create(gateway* gw, const string& type) {
+backend* backend_slirp::create(bridge* br, const string& type) {
     unsigned int netid = 0;
     if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
         netid = 0;
@@ -254,7 +254,7 @@ backend* backend_slirp::create(gateway* gw, const string& type) {
     auto& network = networks[netid];
     if (network == nullptr)
         network = std::make_shared<slirp_network>(netid);
-    return new backend_slirp(gw, network);
+    return new backend_slirp(br, network);
 }
 
 } // namespace ethernet

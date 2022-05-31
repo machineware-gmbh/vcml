@@ -16,8 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/ethernet/gateway.h"
-
+#include "vcml/ethernet/bridge.h"
 #include "vcml/ethernet/backend.h"
 #include "vcml/ethernet/backend_file.h"
 #include "vcml/ethernet/backend_tap.h"
@@ -29,7 +28,7 @@
 namespace vcml {
 namespace ethernet {
 
-backend::backend(gateway* gw): m_parent(gw), m_type("unknown") {
+backend::backend(bridge* br): m_parent(br), m_type("unknown") {
     m_parent->attach(this);
 }
 
@@ -42,9 +41,9 @@ void backend::send_to_guest(eth_frame frame) {
     m_parent->send_to_guest(std::move(frame));
 }
 
-backend* backend::create(gateway* gw, const string& type) {
+backend* backend::create(bridge* br, const string& type) {
     string kind = type.substr(0, type.find(':'));
-    typedef function<backend*(gateway*, const string&)> construct;
+    typedef function<backend*(bridge*, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create },
         { "tap", backend_tap::create },
@@ -64,7 +63,7 @@ backend* backend::create(gateway* gw, const string& type) {
     }
 
     try {
-        return it->second(gw, type);
+        return it->second(br, type);
     } catch (std::exception& ex) {
         VCML_REPORT("%s: %s", type.c_str(), ex.what());
     } catch (...) {

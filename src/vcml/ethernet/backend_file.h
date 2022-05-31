@@ -26,7 +26,7 @@
 #include "vcml/logging/logger.h"
 
 #include "vcml/ethernet/backend.h"
-#include "vcml/ethernet/gateway.h"
+#include "vcml/ethernet/bridge.h"
 
 namespace vcml {
 namespace ethernet {
@@ -38,12 +38,12 @@ private:
     ofstream m_tx;
 
 public:
-    backend_file(gateway* gw, const string& tx);
+    backend_file(bridge* br, const string& tx);
     virtual ~backend_file();
 
     virtual void send_to_host(const eth_frame& frame) override;
 
-    static backend* create(gateway* gw, const string& type);
+    static backend* create(bridge* gw, const string& type);
 };
 
 } // namespace ethernet

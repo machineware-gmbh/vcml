@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_ETHERNET_GATEWAY_H
-#define VCML_ETHERNET_GATEWAY_H
+#ifndef VCML_ETHERNET_BRIDGE_H
+#define VCML_ETHERNET_BRIDGE_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/bitops.h"
@@ -36,7 +36,7 @@ namespace ethernet {
 
 class backend;
 
-class gateway : public module, public eth_host
+class bridge : public module, public eth_host
 {
 private:
     id_t m_next_id;
@@ -55,7 +55,7 @@ private:
 
     void eth_transmit();
 
-    static unordered_map<string, gateway*>& gateways();
+    static unordered_map<string, bridge*>& bridges();
 
 public:
     property<string> backends;
@@ -63,9 +63,9 @@ public:
     eth_initiator_socket eth_tx;
     eth_target_socket eth_rx;
 
-    gateway(const sc_module_name& nm);
-    virtual ~gateway();
-    VCML_KIND(ethernet::gateway);
+    bridge(const sc_module_name& nm);
+    virtual ~bridge();
+    VCML_KIND(ethernet::bridge);
 
     void send_to_host(const eth_frame& frame);
     void send_to_guest(eth_frame frame);
@@ -76,8 +76,8 @@ public:
     id_t create_backend(const string& type);
     bool destroy_backend(id_t id);
 
-    static gateway* find(const string& name);
-    static vector<gateway*> all();
+    static bridge* find(const string& name);
+    static vector<bridge*> all();
 
     template <typename T>
     void connect(T& device) {

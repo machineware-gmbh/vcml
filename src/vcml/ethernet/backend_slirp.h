@@ -16,15 +16,15 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_SLIRP_H
-#define VCML_NET_BACKEND_SLIRP_H
+#ifndef VCML_ETHERNET_BACKEND_SLIRP_H
+#define VCML_ETHERNET_BACKEND_SLIRP_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/logging/logger.h"
 
 #include "vcml/ethernet/backend.h"
-#include "vcml/ethernet/gateway.h"
+#include "vcml/ethernet/bridge.h"
 
 #include <libslirp.h>
 #include <libslirp-version.h>
@@ -65,14 +65,14 @@ private:
     shared_ptr<slirp_network> m_network;
 
 public:
-    backend_slirp(gateway* gw, const shared_ptr<slirp_network>& net);
+    backend_slirp(bridge* br, const shared_ptr<slirp_network>& net);
     virtual ~backend_slirp();
 
     void disconnect() { m_network = nullptr; }
 
     virtual void send_to_host(const eth_frame& frame) override;
 
-    static backend* create(gateway* gw, const string& type);
+    static backend* create(bridge* br, const string& type);
 };
 
 } // namespace ethernet

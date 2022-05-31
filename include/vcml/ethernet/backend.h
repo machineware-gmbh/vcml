@@ -27,19 +27,19 @@
 namespace vcml {
 namespace ethernet {
 
-class gateway;
+class bridge;
 
 class backend
 {
 protected:
-    gateway* m_parent;
+    bridge* m_parent;
     string m_type;
 
 public:
-    gateway* parent() { return m_parent; }
+    bridge* parent() { return m_parent; }
     const char* type() const { return m_type.c_str(); }
 
-    backend(gateway* gw);
+    backend(bridge* gw);
     virtual ~backend();
 
     backend() = delete;
@@ -49,7 +49,7 @@ public:
     virtual void send_to_host(const eth_frame& frame) = 0;
     virtual void send_to_guest(eth_frame frame);
 
-    static backend* create(gateway* gw, const string& type);
+    static backend* create(bridge* br, const string& type);
 };
 
 } // namespace ethernet

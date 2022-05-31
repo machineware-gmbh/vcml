@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/ethernet/gateway.h"
+#include "vcml/ethernet/bridge.h"
 
 namespace vcml {
 namespace ethernet {
 
-bool gateway::cmd_create_backend(const vector<string>& args, ostream& os) {
+bool bridge::cmd_create_backend(const vector<string>& args, ostream& os) {
     try {
         id_t id = create_backend(args[0]);
         os << "created backend " << id;
@@ -32,7 +32,7 @@ bool gateway::cmd_create_backend(const vector<string>& args, ostream& os) {
     }
 }
 
-bool gateway::cmd_destroy_backend(const vector<string>& args, ostream& os) {
+bool bridge::cmd_destroy_backend(const vector<string>& args, ostream& os) {
     for (const string& arg : args) {
         if (to_lower(arg) == "all") {
             for (auto it : m_dynamic_backends)
@@ -49,7 +49,7 @@ bool gateway::cmd_destroy_backend(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool gateway::cmd_list_backends(const vector<string>& args, ostream& os) {
+bool bridge::cmd_list_backends(const vector<string>& args, ostream& os) {
     if (args.empty()) {
         for (auto it : m_dynamic_backends)
             os << it.first << ": " << it.second->type() << ",";
@@ -68,11 +68,11 @@ bool gateway::cmd_list_backends(const vector<string>& args, ostream& os) {
     return true;
 }
 
-void gateway::eth_receive(eth_frame& frame) {
+void bridge::eth_receive(eth_frame& frame) {
     send_to_host(frame);
 }
 
-void gateway::eth_transmit() {
+void bridge::eth_transmit() {
     while (true) {
         wait(m_ev);
 
@@ -85,12 +85,12 @@ void gateway::eth_transmit() {
     }
 }
 
-unordered_map<string, gateway*>& gateway::gateways() {
-    static unordered_map<string, gateway*> instances;
+unordered_map<string, bridge*>& bridge::bridges() {
+    static unordered_map<string, bridge*> instances;
     return instances;
 }
 
-gateway::gateway(const sc_module_name& nm):
+bridge::bridge(const sc_module_name& nm):
     module(nm),
     eth_host(),
     m_next_id(),
@@ -102,7 +102,7 @@ gateway::gateway(const sc_module_name& nm):
     backends("backends", ""),
     eth_tx("eth_tx"),
     eth_rx("eth_rx") {
-    gateways()[name()] = this;
+    bridges()[name()] = this;
 
     vector<string> types = split(backends);
     for (const string& type : types) {
@@ -113,55 +113,55 @@ gateway::gateway(const sc_module_name& nm):
         }
     }
 
-    SC_HAS_PROCESS(gateway);
+    SC_HAS_PROCESS(bridge);
     SC_THREAD(eth_transmit);
 
-    register_command("create_backend", 1, this, &gateway::cmd_create_backend,
+    register_command("create_backend", 1, this, &bridge::cmd_create_backend,
                      "creates a new backend for this gateway of the given "
                      "type, usage: create_backend <type>");
-    register_command("destroy_backend", 1, this, &gateway::cmd_destroy_backend,
+    register_command("destroy_backend", 1, this, &bridge::cmd_destroy_backend,
                      "destroys the backends of this gateway with the "
                      "specified IDs, usage: destroy_backend <ID>...");
-    register_command("list_backends", 0, this, &gateway::cmd_list_backends,
+    register_command("list_backends", 0, this, &bridge::cmd_list_backends,
                      "lists all known clients of this gateway");
 }
 
-gateway::~gateway() {
+bridge::~bridge() {
     for (auto it : m_dynamic_backends)
         delete it.second;
 
-    gateways().erase(name());
+    bridges().erase(name());
 }
 
-void gateway::send_to_host(const eth_frame& frame) {
+void bridge::send_to_host(const eth_frame& frame) {
     for (backend* b : m_backends)
         b->send_to_host(frame);
 }
 
-void gateway::send_to_guest(eth_frame frame) {
+void bridge::send_to_guest(eth_frame frame) {
     lock_guard<mutex> guard(m_mtx);
     m_rx.push(std::move(frame));
     on_next_update([&]() -> void { m_ev.notify(SC_ZERO_TIME); });
 }
 
-void gateway::attach(backend* b) {
+void bridge::attach(backend* b) {
     if (stl_contains(m_backends, b))
         VCML_ERROR("attempt to attach backend twice");
     m_backends.push_back(b);
 }
 
-void gateway::detach(backend* b) {
+void bridge::detach(backend* b) {
     if (!stl_contains(m_backends, b))
         VCML_ERROR("attempt to detach unknown backend");
     stl_remove_erase(m_backends, b);
 }
 
-id_t gateway::create_backend(const string& type) {
+id_t bridge::create_backend(const string& type) {
     m_dynamic_backends[m_next_id] = backend::create(this, type);
     return m_next_id++;
 }
 
-bool gateway::destroy_backend(id_t id) {
+bool bridge::destroy_backend(id_t id) {
     auto it = m_dynamic_backends.find(id);
     if (it == m_dynamic_backends.end())
         return false;
@@ -171,15 +171,15 @@ bool gateway::destroy_backend(id_t id) {
     return true;
 }
 
-gateway* gateway::find(const string& name) {
-    auto it = gateways().find(name);
-    return it != gateways().end() ? it->second : nullptr;
+bridge* bridge::find(const string& name) {
+    auto it = bridges().find(name);
+    return it != bridges().end() ? it->second : nullptr;
 }
 
-vector<gateway*> gateway::all() {
-    vector<gateway*> all;
-    all.reserve(gateways().size());
-    for (const auto& it : gateways())
+vector<bridge*> bridge::all() {
+    vector<bridge*> all;
+    all.reserve(bridges().size());
+    for (const auto& it : bridges())
         all.push_back(it.second);
     return all;
 }
