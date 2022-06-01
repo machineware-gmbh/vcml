@@ -21,6 +21,31 @@
 namespace vcml {
 namespace generic {
 
+static serial_bits uart8250_data_bits(u8 lcr) {
+    return (serial_bits)(SERIAL_5_BITS + (lcr & 3));
+}
+
+static serial_stop uart8250_stop_bits(u8 lcr) {
+    if (lcr & uart8250::LCR_SPB)
+        return (lcr & 3) ? SERIAL_STOP_2 : SERIAL_STOP_1_5;
+    return SERIAL_STOP_1;
+}
+
+static serial_parity uart8250_parity(u8 lcr) {
+    if (!(lcr & uart8250::LCR_PEN))
+        return SERIAL_PARITY_NONE;
+
+    if (!(lcr & uart8250::LCR_SPB)) {
+        if (lcr & uart8250::LCR_EPS)
+            return SERIAL_PARITY_EVEN;
+        return SERIAL_PARITY_ODD;
+    }
+
+    if (lcr & uart8250::LCR_EPS)
+        return SERIAL_PARITY_MARK;
+    return SERIAL_PARITY_SPACE;
+}
+
 void uart8250::calibrate() {
     if (m_divisor == 0) {
         log_warn("zero baud divisor specified, reverting to default");
@@ -138,12 +163,10 @@ void uart8250::write_ier(u8 val) {
 }
 
 void uart8250::write_lcr(u8 val) {
-    serial_bits oldbits = (serial_bits)(SERIAL_5_BITS + (lcr & 0x3));
-    serial_bits newbits = (serial_bits)(SERIAL_5_BITS + (val & 0x3));
-    if (newbits != oldbits) {
+    size_t oldbits = SERIAL_5_BITS + (lcr & 0x3);
+    size_t newbits = SERIAL_5_BITS + (val & 0x3);
+    if (newbits != oldbits)
         log_debug("word length %zu bits", newbits);
-        serial_tx.set_data_width(newbits);
-    }
 
     VCML_LOG_REG_BIT_CHANGE(LCR_STP, lcr, val);
     VCML_LOG_REG_BIT_CHANGE(LCR_PEN, lcr, val);
@@ -153,6 +176,10 @@ void uart8250::write_lcr(u8 val) {
     VCML_LOG_REG_BIT_CHANGE(LCR_DLAB, lcr, val);
 
     lcr = val;
+
+    serial_tx.set_data_width(uart8250_data_bits(lcr));
+    serial_tx.set_stop_bits(uart8250_stop_bits(lcr));
+    serial_tx.set_parity(uart8250_parity(lcr));
 }
 
 void uart8250::write_fcr(u8 val) {
@@ -218,7 +245,7 @@ uart8250::uart8250(const sc_module_name& nm):
     thr("thr", 0x0, 0x00),
     ier("ier", 0x1, 0x00),
     iir("iir", 0x2, IIR_NOIP),
-    lcr("lcr", 0x3, 0x00),
+    lcr("lcr", 0x3, LCR_WL8), // 8bits, no parity
     mcr("mcr", 0x4, 0x00),
     lsr("lsr", 0x5, LSR_THRE | LSR_TEMT),
     msr("msr", 0x6, 0x00),
@@ -250,7 +277,9 @@ uart8250::uart8250(const sc_module_name& nm):
     scr.allow_read_write();
 
     serial_tx.set_baud(DEFAULT_BAUD);
-    serial_tx.set_data_width(SERIAL_5_BITS);
+    serial_tx.set_data_width(uart8250_data_bits(lcr));
+    serial_tx.set_stop_bits(uart8250_stop_bits(lcr));
+    serial_tx.set_parity(uart8250_parity(lcr));
 }
 
 uart8250::~uart8250() {
