@@ -58,6 +58,7 @@ private:
 
             int ret = poll(polls.data(), polls.size(), TIMEOUT_MS);
             VCML_ERROR_ON(ret < 0, "aio error: %s", strerror(errno));
+            vector<pair<int, aio_handler>> scheduled;
 
             if (ret > 0 && m_running) {
                 lock_guard<mutex> guard(m_mtx);
@@ -69,9 +70,12 @@ private:
                         VCML_ERROR("invalid file descriptor: %d", pfd.fd);
 
                     if (pfd.revents & (POLLIN | POLLPRI))
-                        m_handlers[pfd.fd](pfd.fd);
+                        scheduled.emplace_back(pfd.fd, m_handlers[pfd.fd]);
                 }
             }
+
+            for (const auto& handler : scheduled)
+                handler.second(handler.first);
         }
     }
 
