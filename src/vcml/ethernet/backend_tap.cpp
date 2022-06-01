@@ -31,7 +31,7 @@
 namespace vcml {
 namespace ethernet {
 
-static void tap_read(int fd, vector<u8>& buf) {
+static bool tap_read(int fd, vector<u8>& buf) {
     size_t len;
     buf.resize(eth_frame::FRAME_MAX_SIZE);
 
@@ -39,7 +39,11 @@ static void tap_read(int fd, vector<u8>& buf) {
         len = read(fd, buf.data(), buf.size());
     } while (len < 0 && errno == EINTR);
 
+    if (len < 0)
+        return false;
+
     buf.resize(len);
+    return true;
 }
 
 void backend_tap::close_tap() {
@@ -67,10 +71,9 @@ backend_tap::backend_tap(bridge* br, int devno): backend(br) {
 
     aio_notify(m_fd, [&](int fd) -> void {
         eth_frame frame;
-        tap_read(fd, frame.raw);
-        if (frame.is_empty()) {
+        if (!tap_read(fd, frame)) {
             log_error("error reading tap device: %s", strerror(errno));
-            close_tap();
+            aio_cancel(fd);
             return;
         }
 

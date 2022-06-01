@@ -36,39 +36,64 @@ string mac_addr::to_string() const {
 
 eth_frame::eth_frame(const mac_addr& dest, const mac_addr& src,
                      const vector<u8>& payload) {
-    raw.insert(raw.end(), dest.bytes.begin(), dest.bytes.end());
-    raw.insert(raw.end(), src.bytes.begin(), src.bytes.end());
+    insert(end(), dest.bytes.begin(), dest.bytes.end());
+    insert(end(), src.bytes.begin(), src.bytes.end());
 
     u16 len = payload.size();
-    raw.push_back(len >> 0);
-    raw.push_back(len >> 8);
+    push_back(len >> 0);
+    push_back(len >> 8);
 
-    raw.insert(raw.end(), payload.begin(), payload.end());
+    insert(end(), payload.begin(), payload.end());
 
-    for (size_t crc = 0; crc < 4; crc++)
-        raw.push_back(0);
-
-    if (raw.size() > FRAME_MAX_SIZE)
+    if (size() > FRAME_MAX_SIZE)
         VCML_ERROR("payload too big");
-    while (raw.size() < FRAME_MIN_SIZE)
-        raw.push_back(0);
-
-    refresh_crc();
+    while (size() < FRAME_MIN_SIZE)
+        push_back(0);
 }
 
-void eth_frame::refresh_crc() {
-    u32 crc = calc_crc();
-    raw[raw.size() - 4] = crc >> 0;
-    raw[raw.size() - 3] = crc >> 8;
-    raw[raw.size() - 2] = crc >> 16;
-    raw[raw.size() - 1] = crc >> 24;
-}
+string eth_frame::identify() const {
+    if (empty())
+        return "ETHERNET_EMPTY";
+    if (!valid())
+        return "ETHERNET_INVALID";
 
-bool eth_frame::is_valid() const {
-    if (raw.size() < FRAME_MIN_SIZE || raw.size() > FRAME_MAX_SIZE)
-        return false;
-    return read_crc() == calc_crc();
-}
+    u16 type = ether_type();
+    switch (type) {
+    case ETHER_TYPE_ARP: {
+        if (payload_size() > 7 && payload(7) == 1)
+            return "ETHERNET_ARP_REQUEST";
+        if (payload_size() > 7 && payload(7) == 2)
+            return "ETHERNET_ARP_RESPONSE";
+        return "ETHERNET_ARP";
+    }
+
+    case ETHER_TYPE_IPV4: {
+        if (payload_size() > 9 && payload(9) == IP_TCP)
+            return "ETHERNET_TCP/IP";
+        if (payload_size() > 9 && payload(9) == IP_UDP)
+            return "ETHERNET_UDP/IP";
+        if (payload_size() > 9 && payload(9) == IP_ICMP)
+            return "ETHERNET_ICMP";
+        return "ETHERNET_IPv4";
+    }
+
+    case ETHER_TYPE_IPV6: {
+        if (payload_size() > 6 && payload(6) == IP_TCP)
+            return "ETHERNET_TCP/IPv6";
+        if (payload_size() > 6 && payload(6) == IP_UDP)
+            return "ETHERNET_UDP/IPv6";
+        if (payload_size() > 6 && payload(6) == IP_ICMP6)
+            return "ETHERNET_ICMP6";
+        return "ETHERNET_IPv6";
+    }
+
+    default:
+        return mkstr("ETHERNET_0x%02hx", type);
+    }
+} // namespace vcml
+
+bool eth_frame::print_payload = true;
+size_t eth_frame::print_payload_columns = 16;
 
 ostream& operator<<(ostream& os, const mac_addr& addr) {
     stream_guard guard(os);
@@ -78,10 +103,24 @@ ostream& operator<<(ostream& os, const mac_addr& addr) {
 
 ostream& operator<<(ostream& os, const eth_frame& frame) {
     stream_guard guard(os);
-    os << "[dest=" << frame.destination() << " src=" << frame.source()
-       << mkstr(" size=%zubytes crc=0x%08x/0x%08x", frame.size(),
-                frame.read_crc(), frame.calc_crc())
-       << "]";
+
+    os << frame.identify() << " " << frame.size() << "bytes";
+
+    if (!frame.valid())
+        return os;
+
+    os << " from " << frame.source() << " to " << frame.destination();
+
+    if (eth_frame::print_payload && eth_frame::print_payload_columns > 0) {
+        for (size_t i = 0; i < frame.size(); i++) {
+            os << (i % eth_frame::print_payload_columns ? " " : "\n\t")
+               << std::hex << std::setw(2) << std::setfill('0')
+               << (int)frame[i] << std::dec;
+        }
+
+        os << std::endl;
+    }
+
     return os;
 }
 

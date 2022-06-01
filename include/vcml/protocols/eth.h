@@ -70,82 +70,79 @@ struct mac_addr {
     static const char* format;
 };
 
-struct eth_frame {
+struct eth_frame : public vector<u8> {
     enum : size_t {
+        FRAME_HEADER_SIZE = 14,
         FRAME_MIN_SIZE = 64,
         FRAME_MAX_SIZE = 1522,
     };
 
-    vector<u8> raw;
+    enum : u16 {
+        ETHER_TYPE_ARP = 0x0806,
+        ETHER_TYPE_IPV4 = 0x0800,
+        ETHER_TYPE_IPV6 = 0x86dd,
+    };
+
+    enum : u8 {
+        IP_ICMP = 0x01,
+        IP_ICMP6 = 0x3a,
+        IP_TCP = 0x06,
+        IP_UDP = 0x11,
+    };
 
     eth_frame() = default;
     eth_frame(eth_frame&&) = default;
     eth_frame(const eth_frame&) = default;
-    eth_frame(const vector<u8>& frame): raw(frame) {}
-    eth_frame(vector<u8>&& frame): raw(std::move(frame)) {}
-    eth_frame(const u8* data, size_t len): raw(data, data + len) {}
+    eth_frame(const vector<u8>& raw): vector<u8>(raw) {}
+    eth_frame(vector<u8>&& frame): vector<u8>(std::move(frame)) {}
+    eth_frame(const u8* data, size_t len): vector<u8>(data, data + len) {}
     eth_frame(const mac_addr& dest, const mac_addr& src,
               const vector<u8>& payload);
 
     eth_frame& operator=(const eth_frame&) = default;
     eth_frame& operator=(eth_frame&&) = default;
 
-    u8& operator[](size_t i) { return raw.at(i); }
-    u8 operator[](size_t i) const { return raw.at(i); }
-
-    bool operator==(const eth_frame& f) const { return raw == f.raw; }
-    bool operator!=(const eth_frame& f) const { return !(raw == f.raw); }
-
     template <typename T>
     T read(size_t offset) const {
         T val = T();
         VCML_ERROR_ON(sizeof(T) + offset > size(), "reading beyond frame");
-        memcpy(&val, raw.data() + offset, sizeof(T));
+        memcpy(&val, data() + offset, sizeof(T));
         return val;
     }
 
-    void append(u8 data) { raw.push_back(data); }
+    u16 ether_type() const { return bswap(read<u16>(12)); }
 
-    u32 read_crc() const { return read<u32>(size() - sizeof(u32)); }
-    u32 calc_crc() const { return crc32(raw.data(), size() - sizeof(u32)); }
-    void refresh_crc();
+    size_t payload_size() const { return size() - FRAME_HEADER_SIZE; }
+    u8* payload() { return data() + FRAME_HEADER_SIZE; }
+    const u8* payload() const { return data() + FRAME_HEADER_SIZE; }
+    u8& payload(size_t i) { return at(FRAME_HEADER_SIZE + i); }
+    u8 payload(size_t i) const { return at(FRAME_HEADER_SIZE + i); }
 
-    bool has_tag() const { return read<u16>(12) == 0x8100; }
-
-    size_t size() const { return raw.size(); }
-    size_t header_size() const { return has_tag() ? 18 : 14; }
-    size_t payload_size() const { return size() - header_size() - 4; }
-
-    u8* data() { return raw.data(); }
-    const u8* data() const { return raw.data(); }
-
-    u8* payload() { return raw.data() + header_size(); }
-    const u8* payload() const { return raw.data() + header_size(); }
-
-    u8& payload(size_t i) { return raw.at(header_size() + i); }
-    u8 payload(size_t i) const { return raw.at(header_size() + i); }
-
-    mac_addr destination() const { return mac_addr(raw, 0); }
-    mac_addr source() const { return mac_addr(raw, 6); }
+    mac_addr destination() const { return mac_addr(*this, 0); }
+    mac_addr source() const { return mac_addr(*this, 6); }
 
     bool is_multicast() const { return destination().is_multicast(); }
     bool is_broadcast() const { return destination().is_broadcast(); }
 
-    bool is_empty() const { return raw.empty(); }
-    bool is_valid() const;
+    bool valid() const {
+        return size() >= FRAME_MIN_SIZE && size() <= FRAME_MAX_SIZE;
+    }
 
-    void clear() { raw.clear(); }
+    string identify() const;
+
+    static bool print_payload;
+    static size_t print_payload_columns;
 };
 
 ostream& operator<<(ostream& os, const mac_addr& addr);
 ostream& operator<<(ostream& os, const eth_frame& frame);
 
-inline bool success(const eth_frame& frame) {
-    return frame.is_valid();
+constexpr bool success(const eth_frame& frame) {
+    return true;
 }
 
-inline bool failed(const eth_frame& frame) {
-    return !frame.is_valid();
+constexpr bool failed(const eth_frame& frame) {
+    return false;
 }
 
 class eth_initiator_socket;

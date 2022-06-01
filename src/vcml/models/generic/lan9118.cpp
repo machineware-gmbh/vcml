@@ -742,7 +742,7 @@ void lan9118::rx_thread() {
         eth_frame frame;
         if (eth_rx_pop(frame)) {
             delay = phy.rxtx_delay(frame.size());
-            if (!rx_enqueue(frame.raw)) {
+            if (!rx_enqueue(frame)) {
                 irq_sts |= IRQ_RXDF;
                 rx_drop++;
             }

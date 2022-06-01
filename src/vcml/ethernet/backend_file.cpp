@@ -33,15 +33,8 @@ backend_file::~backend_file() {
 }
 
 void backend_file::send_to_host(const eth_frame& frame) {
-    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << " "
-         << frame;
-
-    for (size_t i = 0; i < frame.size(); i++) {
-        m_tx << (i % 25 ? " " : "\n\t") << std::hex << std::setw(2)
-             << std::setfill('0') << (int)frame[i] << std::dec;
-    }
-
-    m_tx << std::endl << std::endl;
+    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << " " << frame
+         << std::endl;
 }
 
 backend* backend_file::create(bridge* br, const string& type) {

@@ -240,7 +240,7 @@ bool ethoc::rx_packet(u32 addr, u32& size) {
         return true;
 
     stringstream ss;
-    for (u8 data : frame.raw) {
+    for (u8 data : frame) {
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)data
            << " ";
     }

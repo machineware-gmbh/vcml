@@ -40,19 +40,6 @@ TEST(ethernet, frame) {
     for (size_t i = 0; i < data.size(); i++)
         EXPECT_EQ(frame.payload(i), data[i]);
 
-    EXPECT_EQ(frame.read_crc(), frame.calc_crc());
-    EXPECT_TRUE(frame.is_valid());
-
-    EXPECT_TRUE(success(frame));
-    EXPECT_FALSE(failed(frame));
-
-    frame.payload(0) += 1;
-
-    EXPECT_FALSE(success(frame));
-    EXPECT_TRUE(failed(frame));
-
-    frame.refresh_crc();
-
     EXPECT_TRUE(success(frame));
     EXPECT_FALSE(failed(frame));
 }
