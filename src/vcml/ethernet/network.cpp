@@ -17,3 +17,31 @@
  ******************************************************************************/
 
 #include "vcml/ethernet/network.h"
+
+namespace vcml {
+namespace ethernet {
+
+void network::eth_receive(const eth_target_socket& rx, eth_frame& frame) {
+    const eth_initiator_socket& sender = peer_of(rx);
+    for (auto& tx : eth_tx) {
+        if (tx.second != &sender)
+            tx.second->send(frame);
+    }
+}
+
+network::network(const sc_module_name& nm):
+    module(nm), eth_host(), m_next_id(0), eth_tx("eth_tx"), eth_rx("eth_rx") {
+    // nothing to do
+}
+
+void network::bind(eth_initiator_socket& tx, eth_target_socket& rx) {
+    while (eth_tx.exists(m_next_id) || eth_rx.exists(m_next_id))
+        m_next_id++;
+
+    eth_tx[m_next_id].bind(rx);
+    tx.bind(eth_rx[m_next_id]);
+    m_next_id++;
+}
+
+} // namespace ethernet
+} // namespace vcml
