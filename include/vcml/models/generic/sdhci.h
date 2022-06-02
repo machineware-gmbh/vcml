@@ -38,38 +38,38 @@ class sdhci : public peripheral
 {
 private:
     enum reset_kind {
-        RESET_ALL      = 1 << 0,
+        RESET_ALL = 1 << 0,
         RESET_CMD_LINE = 1 << 1,
         RESET_DAT_LINE = 1 << 2
     };
 
     enum present_state : unsigned int {
-        COMMAND_INHIBIT_CMD   = 1 << 0,
-        COMMAND_INHIBIT_DAT   = 1 << 1,
-        DAT_LINE_ACTIVE       = 1 << 2,
+        COMMAND_INHIBIT_CMD = 1 << 0,
+        COMMAND_INHIBIT_DAT = 1 << 1,
+        DAT_LINE_ACTIVE = 1 << 2,
         WRITE_TRANSFER_ACTIVE = 1 << 8,
-        READ_TRANSFER_ACTIVE  = 1 << 9,
-        BUFFER_WRITE_ENABLE   = 1 << 10,
-        BUFFER_READ_ENABLE    = 1 << 11,
-        CARD_INSERTED         = 1 << 16
+        READ_TRANSFER_ACTIVE = 1 << 9,
+        BUFFER_WRITE_ENABLE = 1 << 10,
+        BUFFER_READ_ENABLE = 1 << 11,
+        CARD_INSERTED = 1 << 16
     };
 
     enum normal_interrupts {
-        INT_COMMAND_COMPLETE   = 1 << 0,
-        INT_TRANSFER_COMPLETE  = 1 << 1,
-        INT_DMA_INTERRUPT      = 1 << 3,
+        INT_COMMAND_COMPLETE = 1 << 0,
+        INT_TRANSFER_COMPLETE = 1 << 1,
+        INT_DMA_INTERRUPT = 1 << 3,
         INT_BUFFER_WRITE_READY = 1 << 4,
-        INT_BUFFER_READ_READY  = 1 << 5,
-        INT_ERROR              = 1 << 15
+        INT_BUFFER_READ_READY = 1 << 5,
+        INT_ERROR = 1 << 15
     };
 
     enum error_interrupts {
-        ERR_CMD_TIMEOUT  = 1 << 0,
-        ERR_CMD_CRC      = 1 << 1,
-        ERR_CMD_END_BIT  = 1 << 2,
-        ERR_CMD_INDEX    = 1 << 3,
+        ERR_CMD_TIMEOUT = 1 << 0,
+        ERR_CMD_CRC = 1 << 1,
+        ERR_CMD_END_BIT = 1 << 2,
+        ERR_CMD_INDEX = 1 << 3,
         ERR_DATA_TIMEOUT = 1 << 4,
-        ERR_DATA_CRC     = 1 << 5,
+        ERR_DATA_CRC = 1 << 5,
         ERR_DATA_END_BIT = 1 << 6
     };
 

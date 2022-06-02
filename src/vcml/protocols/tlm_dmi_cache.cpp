@@ -53,14 +53,14 @@ static inline tlm_dmi dmi_merge(const tlm_dmi& a, const tlm_dmi& b) {
 }
 
 tlm_dmi_cache::tlm_dmi_cache(): m_limit(16), m_entries() {
-    /* nothing to do */
+    // nothing to do
 }
 
 tlm_dmi_cache::~tlm_dmi_cache() {
-    /* nothing to do */
+    // nothing to do
 }
 
-void tlm_dmi_cache::insert(const tlm_dmi& dmi) {
+void tlm_dmi_cache::insert_locked(const tlm_dmi& dmi) {
     tlm_dmi merged(dmi);
     while (true) {
         vector<tlm_dmi>::iterator it = std::find_if(
@@ -82,17 +82,23 @@ void tlm_dmi_cache::insert(const tlm_dmi& dmi) {
         m_entries.resize(m_limit);
 }
 
+void tlm_dmi_cache::insert(const tlm_dmi& dmi) {
+    lock_guard<mutex> guard(m_mtx);
+    insert_locked(dmi);
+}
+
 void tlm_dmi_cache::invalidate(u64 start, u64 end) {
     invalidate(range(start, end));
 }
 
 void tlm_dmi_cache::invalidate(const range& r) {
+    lock_guard<mutex> guard(m_mtx);
     vector<tlm_dmi> entries(m_entries.rbegin(), m_entries.rend());
     m_entries.clear();
 
-    for (auto dmi : entries) {
+    for (const tlm_dmi& dmi : entries) {
         if (!r.overlaps(dmi)) {
-            insert(dmi);
+            insert_locked(dmi);
             continue;
         }
 
@@ -100,19 +106,20 @@ void tlm_dmi_cache::invalidate(const range& r) {
             tlm_dmi front(dmi);
             front.set_end_address(r.start - 1);
             if (front.get_start_address() < front.get_end_address())
-                insert(front);
+                insert_locked(front);
         }
 
         if (r.end != (u64)-1) {
             tlm_dmi back(dmi);
             dmi_set_start_address(back, r.end + 1);
             if (back.get_start_address() < back.get_end_address())
-                insert(back);
+                insert_locked(back);
         }
     }
 }
 
 bool tlm_dmi_cache::lookup(const range& r, vcml_access rwx, tlm_dmi& out) {
+    lock_guard<mutex> guard(m_mtx);
     for (unsigned int i = 0; i < m_entries.size(); i++) {
         if (r.inside(m_entries[i]) && dmi_check_access(m_entries[i], rwx)) {
             std::swap(m_entries[i], m_entries[0]);

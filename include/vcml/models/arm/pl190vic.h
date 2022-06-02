@@ -51,14 +51,14 @@ private:
 
 public:
     enum vctrl_bits : u32 {
-        VCTRL_ENABLED  = 1 << 5,
+        VCTRL_ENABLED = 1 << 5,
         VCTRL_SOURCE_M = 0x1f,
-        VCTRL_M        = 0x3f,
+        VCTRL_M = 0x3f,
     };
 
     enum vic_params : u32 {
-        NVEC     = 16,
-        NIRQ     = 32,
+        NVEC = 16,
+        NIRQ = 32,
         AMBA_PID = 0x00041190, // Peripheral ID
         AMBA_CID = 0xb105f00d, // PrimeCell ID
     };

@@ -33,12 +33,12 @@
 namespace vcml {
 
 enum virtio_status : int {
-    VIRTIO_INCOMPLETE   = 0,
-    VIRTIO_OK           = 1,
+    VIRTIO_INCOMPLETE = 0,
+    VIRTIO_OK = 1,
     VIRTIO_ERR_INDIRECT = -1,
-    VIRTIO_ERR_NODMI    = -2,
-    VIRTIO_ERR_CHAIN    = -3,
-    VIRTIO_ERR_DESC     = -4,
+    VIRTIO_ERR_NODMI = -2,
+    VIRTIO_ERR_CHAIN = -3,
+    VIRTIO_ERR_DESC = -4,
 };
 
 const char* virtio_status_str(virtio_status status);
@@ -51,13 +51,14 @@ inline bool failed(virtio_status sts) {
 }
 
 enum virtio_devices : u32 {
-    VIRTIO_DEVICE_NONE    = 0,
-    VIRTIO_DEVICE_NET     = 1,
-    VIRTIO_DEVICE_BLOCK   = 2,
+    VIRTIO_DEVICE_NONE = 0,
+    VIRTIO_DEVICE_NET = 1,
+    VIRTIO_DEVICE_BLOCK = 2,
     VIRTIO_DEVICE_CONSOLE = 3,
-    VIRTIO_DEVICE_RNG     = 4,
-    VIRTIO_DEVICE_GPU     = 16,
-    VIRTIO_DEVICE_INPUT   = 18,
+    VIRTIO_DEVICE_RNG = 4,
+    VIRTIO_DEVICE_P9FS = 9,
+    VIRTIO_DEVICE_GPU = 16,
+    VIRTIO_DEVICE_INPUT = 18,
 };
 
 enum virtio_vendors : u32 {
@@ -67,14 +68,14 @@ enum virtio_vendors : u32 {
 
 enum virtio_features : u64 {
     VIRTIO_F_RING_INDIRECT_DESC = 1ull << 28,
-    VIRTIO_F_RING_EVENT_IDX     = 1ull << 29,
-    VIRTIO_F_VERSION_1          = 1ull << 32,
-    VIRTIO_F_ACCESS_PLATFORM    = 1ull << 33,
-    VIRTIO_F_RING_PACKED        = 1ull << 34,
-    VIRTIO_F_IN_ORDER           = 1ull << 35,
-    VIRTIO_F_ORDER_PLATFORM     = 1ull << 36,
-    VIRTIO_F_SR_IOV             = 1ull << 37,
-    VIRTIO_F_NOTIFICATION_DATA  = 1ull << 38,
+    VIRTIO_F_RING_EVENT_IDX = 1ull << 29,
+    VIRTIO_F_VERSION_1 = 1ull << 32,
+    VIRTIO_F_ACCESS_PLATFORM = 1ull << 33,
+    VIRTIO_F_RING_PACKED = 1ull << 34,
+    VIRTIO_F_IN_ORDER = 1ull << 35,
+    VIRTIO_F_ORDER_PLATFORM = 1ull << 36,
+    VIRTIO_F_SR_IOV = 1ull << 37,
+    VIRTIO_F_NOTIFICATION_DATA = 1ull << 38,
 };
 
 enum virtio_vectors : u16 {
@@ -82,12 +83,12 @@ enum virtio_vectors : u16 {
 };
 
 enum virtio_device_status : u32 {
-    VIRTIO_STATUS_ACKNOWLEDGE        = 1u << 0,
-    VIRTIO_STATUS_DRIVER             = 1u << 1,
-    VIRTIO_STATUS_DRIVER_OK          = 1u << 2,
-    VIRTIO_STATUS_FEATURES_OK        = 1u << 3,
+    VIRTIO_STATUS_ACKNOWLEDGE = 1u << 0,
+    VIRTIO_STATUS_DRIVER = 1u << 1,
+    VIRTIO_STATUS_DRIVER_OK = 1u << 2,
+    VIRTIO_STATUS_FEATURES_OK = 1u << 3,
     VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1u << 6,
-    VIRTIO_STATUS_FAILED             = 1u << 7,
+    VIRTIO_STATUS_FAILED = 1u << 7,
 
     VIRTIO_STATUS_FEATURE_CHECK = VIRTIO_STATUS_ACKNOWLEDGE |
                                   VIRTIO_STATUS_DRIVER |
@@ -205,7 +206,7 @@ inline void vq_message::trim(u32 max_len) {
     for (auto& buf : out) {
         if (buf.size > max_len) {
             buf.size = max_len;
-            max_len  = 0;
+            max_len = 0;
         } else {
             max_len -= buf.size;
         }
@@ -285,12 +286,12 @@ public:
 
     logger log;
 
-    virtqueue()                 = delete;
+    virtqueue() = delete;
     virtqueue(const virtqueue&) = delete;
     virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
     virtual ~virtqueue();
 
-    virtual bool validate()                   = 0;
+    virtual bool validate() = 0;
     virtual void invalidate(const range& mem) = 0;
 
     bool get(vq_message& msg);
@@ -307,8 +308,8 @@ private:
         u16 next;
 
         enum flags : u16 {
-            F_NEXT     = 1u << 0,
-            F_WRITE    = 1u << 1,
+            F_NEXT = 1u << 0,
+            F_WRITE = 1u << 1,
             F_INDIRECT = 1u << 2,
         };
 
@@ -379,7 +380,7 @@ private:
     virtual virtio_status do_put(vq_message& msg) override;
 
 public:
-    split_virtqueue()                       = delete;
+    split_virtqueue() = delete;
     split_virtqueue(const split_virtqueue&) = delete;
     split_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
     virtual ~split_virtqueue();
@@ -398,11 +399,11 @@ private:
         u16 flags;
 
         enum flags : u16 {
-            F_NEXT         = 1u << 0,
-            F_WRITE        = 1u << 1,
-            F_INDIRECT     = 1u << 2,
+            F_NEXT = 1u << 0,
+            F_WRITE = 1u << 1,
+            F_INDIRECT = 1u << 2,
             F_PACKED_AVAIL = 1u << 7,
-            F_PACKED_USED  = 1u << 15,
+            F_PACKED_USED = 1u << 15,
         };
 
         bool is_chained() const { return flags & F_NEXT; }
@@ -429,9 +430,9 @@ private:
         u16 flags;
 
         enum event_flags : u16 {
-            F_EVENT_ENABLE  = 0,
+            F_EVENT_ENABLE = 0,
             F_EVENT_DISABLE = 1,
-            F_EVENT_DESC    = 2,
+            F_EVENT_DESC = 2,
         };
 
         bool should_notify(u32 index) const {
@@ -473,7 +474,7 @@ private:
     virtual virtio_status do_put(vq_message& msg) override;
 
 public:
-    packed_virtqueue()                        = delete;
+    packed_virtqueue() = delete;
     packed_virtqueue(const packed_virtqueue&) = delete;
     packed_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
     virtual ~packed_virtqueue();
@@ -488,12 +489,12 @@ public:
     virtual ~virtio_device() = default;
 
     virtual void identify(virtio_device_desc& desc) = 0;
-    virtual bool notify(u32 vqid)                   = 0;
+    virtual bool notify(u32 vqid) = 0;
 
     virtual void read_features(u64& features) = 0;
     virtual bool write_features(u64 features) = 0;
 
-    virtual bool read_config(const range& addr, void* data)        = 0;
+    virtual bool read_config(const range& addr, void* data) = 0;
     virtual bool write_config(const range& addr, const void* data) = 0;
 };
 
@@ -517,12 +518,12 @@ public:
     virtual ~virtio_fw_transport_if() {}
 
     virtual void identify(virtio_device_desc& desc) = 0;
-    virtual bool notify(u32 vqid)                   = 0;
+    virtual bool notify(u32 vqid) = 0;
 
     virtual void read_features(u64& features) = 0;
     virtual bool write_features(u64 features) = 0;
 
-    virtual bool read_config(const range& addr, void* data)        = 0;
+    virtual bool read_config(const range& addr, void* data) = 0;
     virtual bool write_config(const range& addr, const void* data) = 0;
 };
 
@@ -541,65 +542,111 @@ public:
 };
 
 typedef base_initiator_socket<virtio_fw_transport_if, virtio_bw_transport_if>
-    virtio_base_initiator_socket;
+    virtio_base_initiator_socket_b;
 
 typedef base_target_socket<virtio_fw_transport_if, virtio_bw_transport_if>
-    virtio_base_target_socket;
+    virtio_base_target_socket_b;
 
 class virtio_initiator_stub;
 class virtio_target_stub;
 
-class virtio_initiator_socket : public virtio_base_initiator_socket,
-                                private virtio_bw_transport_if
+class virtio_base_initiator_socket : public virtio_base_initiator_socket_b
 {
 private:
-    module* m_parent;
-    virtio_controller* m_controller;
     virtio_target_stub* m_stub;
 
-    virtual bool put(u32 vqid, vq_message& msg) override;
-    virtual bool get(u32 vqid, vq_message& msg) override;
-
-    virtual bool notify() override;
-
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
+    virtio_base_initiator_socket(const char* nm);
+    virtual ~virtio_base_initiator_socket();
+    VCML_KIND(virtio_base_initiator_socket);
 
-    explicit virtio_initiator_socket(const char* name);
-    virtual ~virtio_initiator_socket();
-    VCML_KIND(virtio_initiator_socket);
-    virtual sc_type_index get_protocol_types() const override;
+    bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
 };
 
-class virtio_target_socket : public virtio_base_target_socket,
-                             private virtio_fw_transport_if
+class virtio_base_target_socket : public virtio_base_target_socket_b
 {
 private:
-    module* m_parent;
-    virtio_device* m_device;
     virtio_initiator_stub* m_stub;
 
-    virtual void identify(virtio_device_desc& desc) override;
-    virtual bool notify(u32 vqid) override;
-
-    virtual void read_features(u64& features) override;
-    virtual bool write_features(u64 features) override;
-
-    virtual bool read_config(const range& addr, void* data) override;
-    virtual bool write_config(const range& addr, const void*) override;
-
 public:
-    bool is_stubbed() const { return m_stub != nullptr; }
+    virtio_base_target_socket(const char* nm);
+    virtual ~virtio_base_target_socket();
+    VCML_KIND(virtio_base_target_socket);
 
-    explicit virtio_target_socket(const char* name);
-    virtual ~virtio_target_socket();
-    VCML_KIND(virtio_target_socket);
-    virtual sc_type_index get_protocol_types() const override;
+    bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
 };
 
-class virtio_initiator_stub : public module, public virtio_controller
+class virtio_initiator_socket : public virtio_base_initiator_socket
+{
+private:
+    virtio_controller* m_controller;
+
+    struct virtio_bw_transport : virtio_bw_transport_if {
+        virtio_controller* parent;
+        virtio_bw_transport(virtio_controller* ctrl): parent(ctrl) {}
+        virtual ~virtio_bw_transport() = default;
+
+        virtual bool put(u32 vqid, vq_message& msg) override {
+            return parent->put(vqid, msg);
+        }
+
+        virtual bool get(u32 vqid, vq_message& msg) override {
+            return parent->get(vqid, msg);
+        }
+
+        virtual bool notify() override { return parent->notify(); }
+    } m_transport;
+
+public:
+    virtio_initiator_socket(const char* name);
+    virtual ~virtio_initiator_socket() = default;
+    VCML_KIND(virtio_initiator_socket);
+};
+
+class virtio_target_socket : public virtio_base_target_socket
+{
+private:
+    virtio_device* m_device;
+
+    struct virtio_fw_transport : virtio_fw_transport_if {
+        virtio_device* device;
+        virtio_fw_transport(virtio_device* dev): device(dev) {}
+        virtual ~virtio_fw_transport() = default;
+
+        virtual void identify(virtio_device_desc& desc) override {
+            device->identify(desc);
+        }
+
+        virtual bool notify(u32 virtqueue_id) override {
+            return device->notify(virtqueue_id);
+        }
+
+        virtual void read_features(u64& features) override {
+            device->read_features(features);
+        }
+
+        virtual bool write_features(u64 features) override {
+            return device->write_features(features);
+        }
+
+        virtual bool read_config(const range& addr, void* data) override {
+            return device->read_config(addr, data);
+        }
+
+        virtual bool write_config(const range& addr, const void* p) override {
+            return device->write_config(addr, p);
+        }
+    } m_transport;
+
+public:
+    virtio_target_socket(const char* name);
+    virtual ~virtio_target_socket() = default;
+    VCML_KIND(virtio_target_socket);
+};
+
+class virtio_initiator_stub : private virtio_bw_transport_if
 {
 private:
     virtual bool put(u32 vqid, vq_message& msg) override;
@@ -607,39 +654,25 @@ private:
     virtual bool notify() override;
 
 public:
-    virtio_initiator_socket virtio_out;
-
-    virtio_initiator_stub() = delete;
-
-    virtio_initiator_stub(const virtio_initiator_stub&) = delete;
-
-    virtio_initiator_stub(const sc_module_name& nm);
-    virtual ~virtio_initiator_stub();
-    VCML_KIND(virtio_initiator_stub);
+    virtio_base_initiator_socket virtio_out;
+    virtio_initiator_stub(const char* nm);
+    virtual ~virtio_initiator_stub() = default;
 };
 
-class virtio_target_stub : public module, public virtio_device
+class virtio_target_stub : private virtio_fw_transport_if
 {
 private:
     virtual void identify(virtio_device_desc& desc) override;
     virtual bool notify(u32 vqid) override;
-
     virtual void read_features(u64& features) override;
     virtual bool write_features(u64 features) override;
-
     virtual bool read_config(const range& addr, void* ptr) override;
-    virtual bool write_config(const range& addr, const void* ptr) override;
+    virtual bool write_config(const range& addr, const void* p) override;
 
 public:
-    virtio_target_socket virtio_in;
-
-    virtio_target_stub() = delete;
-
-    virtio_target_stub(const virtio_target_stub&) = delete;
-
-    virtio_target_stub(const sc_module_name& nm);
-    virtual ~virtio_target_stub();
-    VCML_KIND(virtio_target_stub);
+    virtio_base_target_socket virtio_in;
+    virtio_target_stub(const char* nm);
+    virtual ~virtio_target_stub() = default;
 };
 
 } // namespace vcml

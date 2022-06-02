@@ -38,13 +38,13 @@ private:
 public:
     u16 port() const { return m_socket.port(); }
 
-    backend_tcp(const string& serial, int port);
+    backend_tcp(terminal* term, u16 port);
     virtual ~backend_tcp();
 
     virtual bool read(u8& val) override;
     virtual void write(u8 val) override;
 
-    static backend* create(const string& port, const string& type);
+    static backend* create(terminal* term, const string& type);
 };
 
 } // namespace serial

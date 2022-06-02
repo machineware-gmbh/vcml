@@ -16,46 +16,37 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/net/backend_file.h"
+#ifndef VCML_ETHERNET_BACKEND_FILE_H
+#define VCML_ETHERNET_BACKEND_FILE_H
+
+#include "vcml/common/types.h"
+#include "vcml/common/report.h"
+#include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
+#include "vcml/logging/logger.h"
+
+#include "vcml/ethernet/backend.h"
+#include "vcml/ethernet/bridge.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-backend_file::backend_file(const string& adapter, const string& tx):
-    backend(adapter), m_count(0), m_tx(tx) {
-    if (!m_tx.good())
-        log_warn("failed to open file '%s'", tx.c_str());
-    m_type = mkstr("file:%s", tx.c_str());
-}
+class backend_file : public backend
+{
+private:
+    size_t m_count;
+    ofstream m_tx;
 
-backend_file::~backend_file() {
-    // nothing to do
-}
+public:
+    backend_file(bridge* br, const string& tx);
+    virtual ~backend_file();
 
-bool backend_file::recv_packet(vector<u8>& packet) {
-    return false;
-}
+    virtual void send_to_host(const eth_frame& frame) override;
 
-void backend_file::send_packet(const vector<u8>& packet) {
-    m_tx << "[" << sc_time_stamp() << "] packet #" << ++m_count << ", "
-         << packet.size() << " bytes";
+    static backend* create(bridge* gw, const string& type);
+};
 
-    for (size_t i = 0; i < packet.size(); i++) {
-        m_tx << (i % 25 ? " " : "\n") << std::hex << std::setw(2)
-             << std::setfill('0') << (int)packet[i] << std::dec;
-    }
-
-    m_tx << std::endl << std::endl;
-}
-
-backend* backend_file::create(const string& adapter, const string& type) {
-    string tx           = adapter + ".tx";
-    vector<string> args = split(type, ':');
-    if (args.size() > 1)
-        tx = args[1];
-
-    return new backend_file(adapter, tx);
-}
-
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
+
+#endif

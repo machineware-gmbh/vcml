@@ -39,8 +39,8 @@ private:
 
 public:
     enum : u32 {
-        FINISH_FAIL  = 0x3333,
-        FINISH_PASS  = 0x5555,
+        FINISH_FAIL = 0x3333,
+        FINISH_PASS = 0x5555,
         FINISH_RESET = 0x7777,
     };
 
@@ -48,7 +48,7 @@ public:
 
     tlm_target_socket in;
 
-    simdev()              = delete;
+    simdev() = delete;
     simdev(const simdev&) = delete;
 
     simdev(const sc_module_name& nm);

@@ -18,25 +18,40 @@
 
 #include "testing.h"
 
-class pl011_stim : public test_base
+class pl011_bench : public test_base
 {
 public:
     tlm_initiator_socket out;
 
-    sc_out<bool> reset_out;
+    rst_initiator_socket reset_out;
 
     irq_target_socket irq_in;
 
-    pl011_stim(const sc_module_name& nm):
-        test_base(nm), out("out"), reset_out("reset_out"), irq_in("irq_in") {}
+    arm::pl011uart uart;
+
+    pl011_bench(const sc_module_name& nm):
+        test_base(nm),
+        out("out"),
+        reset_out("reset_out"),
+        irq_in("irq_in"),
+        uart("pl011") {
+        out.bind(uart.in);
+        uart.irq.bind(irq_in);
+        reset_out.bind(uart.rst);
+        reset_out.bind(rst);
+        clk.bind(uart.clk);
+
+        uart.serial_rx.stub();
+        uart.serial_tx.stub();
+    }
 
     virtual void run_test() override {
         enum addresses : u64 {
-            PL011_UARTDR   = 0x00,
-            PL011_UARTFR   = 0x18,
-            PL011_UARTCR   = 0x30,
+            PL011_UARTDR = 0x00,
+            PL011_UARTFR = 0x18,
+            PL011_UARTCR = 0x30,
             PL011_UARTIMSC = 0x38,
-            PL011_UARTRIS  = 0x3c,
+            PL011_UARTRIS = 0x3c,
         };
 
         // check initial UART status
@@ -81,23 +96,6 @@ public:
 };
 
 TEST(arm_pl011, main) {
-    sc_signal<bool> rst("reset");
-    sc_signal<clock_t> clk("clock");
-
-    generic::clock sysclk("sysclk", 1 * MHz);
-    sysclk.clk.bind(clk);
-
-    pl011_stim stim("stim");
-    arm::pl011uart pl011("pl011");
-
-    stim.out.bind(pl011.in);
-    stim.reset_out.bind(rst);
-    stim.clk.bind(clk);
-    stim.rst.bind(rst);
-
-    pl011.clk.bind(clk);
-    pl011.rst.bind(rst);
-    pl011.irq.bind(stim.irq_in);
-
+    pl011_bench bench("bench");
     sc_core::sc_start();
 }

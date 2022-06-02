@@ -60,7 +60,7 @@ public:
     void run_test() {
         wait(SC_ZERO_TIME);
 
-        u32 data               = 0xf3f3f3f3;
+        u32 data = 0xf3f3f3f3;
         unsigned char* dmi_ptr = (unsigned char*)&data;
         map_dmi(dmi_ptr, 0, 3, VCML_ACCESS_READ);
 
@@ -83,7 +83,6 @@ public:
             << "component did not respond to write command";
 
         sc_stop();
-        return;
     }
 };
 

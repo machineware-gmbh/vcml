@@ -56,18 +56,19 @@ bool processor::cmd_dump(const vector<string>& args, ostream& os) {
 }
 
 bool processor::cmd_read(const vector<string>& args, ostream& os) {
-    tlm_initiator_socket& socket = (args[0] == "INSN") ? insn : data;
-    u64 start                    = strtoull(args[1].c_str(), NULL, 0);
-    u64 end                      = strtoull(args[2].c_str(), NULL, 0);
-    u64 size                     = end - start;
+    u64 start = strtoull(args[1].c_str(), NULL, 0);
+    u64 end = strtoull(args[2].c_str(), NULL, 0);
+    u64 size = end - start;
     if (end <= start) {
         os << "Usage: read <INSN|DATA> <start> <end>";
         return false;
     }
 
+    auto& socket = (to_lower(args[0]) == "insn") ? insn : data;
+
     tlm_response_status rs;
-    unsigned char* data = new unsigned char[size];
-    if (failed(rs = socket.read(start, data, size, SBI_DEBUG))) {
+    auto data = std::make_unique<u8[]>(size);
+    if (failed(rs = socket.read(start, data.get(), size, SBI_DEBUG))) {
         os << "Read request failed: " << tlm_response_to_str(rs);
         return false;
     }
@@ -87,7 +88,6 @@ bool processor::cmd_read(const vector<string>& args, ostream& os) {
         addr++;
     }
 
-    delete[] data;
     return true;
 }
 
@@ -152,10 +152,10 @@ bool processor::cmd_disas(const vector<string>& args, ostream& os) {
         os << " (virtual)";
 
     u64 maxsz = 0;
-    for (auto insn : disas)
+    for (const auto& insn : disas)
         maxsz = max(maxsz, insn.size);
 
-    for (auto insn : disas) {
+    for (const auto& insn : disas) {
         os << "\n" << (insn.addr == program_counter() ? " > " : "   ");
         if (insn.sym != nullptr) {
             u64 offset = insn.addr - insn.sym->virt_addr();
@@ -192,10 +192,10 @@ bool processor::cmd_disas(const vector<string>& args, ostream& os) {
 }
 
 bool processor::cmd_v2p(const vector<string>& args, ostream& os) {
-    u64 phys     = -1;
-    u64 virt     = strtoull(args[0].c_str(), NULL, 0);
-    bool success = virt_to_phys(virt, phys);
-    if (!success) {
+    u64 phys = -1;
+    u64 virt = strtoull(args[0].c_str(), NULL, 0);
+    bool ret = virt_to_phys(virt, phys);
+    if (!ret) {
         os << "cannot translate virtual address 0x" << HEX(virt, 16);
         return false;
     } else {
@@ -223,8 +223,48 @@ bool processor::cmd_stack(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
+    if (!vcml::file_exists(gdb_term)) {
+        os << "gdbterm not found at " << gdb_term.str() << std::endl;
+        return false;
+    }
+
+    stringstream ss;
+    ss << gdb_term.str() << " -n " << name() << " -p " << gdb_port.str();
+    vector<string> symfiles = split(symbols);
+    for (const auto& symfile : symfiles)
+        ss << " -s " << symfile;
+
+    log_debug("gdbterm command line:");
+    log_debug("'%s'", ss.str().c_str());
+
+    int res = system(ss.str().c_str());
+    if (res == -1) {
+        os << "failed to start gdb shell";
+        return false;
+    }
+
+    os << "started gdb shell on port " << gdb_port.str();
+    return true;
+}
+
 void processor::processor_thread() {
+    if (gdb_port >= 0) {
+        debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
+                                                : debugging::GDB_RUNNING;
+
+        m_gdb = new debugging::gdbserver(gdb_port, *this, status);
+        m_gdb->echo(gdb_echo);
+
+        if (gdb_port == 0)
+            gdb_port = m_gdb->port();
+
+        log_info("%s for GDB connection on port %hu",
+                 gdb_wait ? "waiting" : "listening", m_gdb->port());
+    }
+
     wait(SC_ZERO_TIME);
+
     while (true) {
         sc_time now = local_time_stamp();
 
@@ -237,10 +277,10 @@ void processor::processor_thread() {
                 return;
 
             unsigned int num_cycles = 1;
-            sc_time quantum         = tlm_global_quantum::instance().get();
+            sc_time quantum = tlm_global_quantum::instance().get();
             if (quantum > clock_cycle() && quantum > local_time()) {
                 sc_time time_left = quantum - local_time();
-                num_cycles        = time_left / clock_cycle();
+                num_cycles = time_left / clock_cycle();
 
                 // if there will be less than one clock_cycle left
                 // in the current quantum -> do one more instruction
@@ -282,6 +322,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     gdb_port("gdb_port", -1),
     gdb_wait("gdb_wait", false),
     gdb_echo("gdb_echo", false),
+    gdb_term("gdb_term", "gdbterm"),
     irq("irq"),
     insn("insn"),
     data("data") {
@@ -305,20 +346,22 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
         }
     }
 
-    register_command("dump", 0, this, &processor::cmd_dump,
+    register_command("dump", 0, &processor::cmd_dump,
                      "dump internal state of the processor");
-    register_command("read", 3, this, &processor::cmd_read,
+    register_command("read", 3, &processor::cmd_read,
                      "read memory from INSN or DATA ports");
-    register_command("symbols", 1, this, &processor::cmd_symbols,
+    register_command("symbols", 1, &processor::cmd_symbols,
                      "load a symbol file for use in disassembly");
-    register_command("lsym", 0, this, &processor::cmd_lsym,
+    register_command("lsym", 0, &processor::cmd_lsym,
                      "show a list of all available symbols");
-    register_command("disas", 0, this, &processor::cmd_disas,
+    register_command("disas", 0, &processor::cmd_disas,
                      "disassemble instructions from memory");
-    register_command("v2p", 1, this, &processor::cmd_v2p,
+    register_command("v2p", 1, &processor::cmd_v2p,
                      "translate a given virtual address to physical");
-    register_command("stack", 0, this, &processor::cmd_stack,
+    register_command("stack", 0, &processor::cmd_stack,
                      "generates a stack trace for the current function");
+    register_command("gdb", 0, &processor::cmd_gdb,
+                     "opens a new gdb debug session");
 }
 
 processor::~processor() {
@@ -332,7 +375,7 @@ void processor::reset() {
     component::reset();
 
     m_cycle_count = 0;
-    m_run_time    = 0.0;
+    m_run_time = 0.0;
 
     for (auto reg : m_regprops)
         reg.second->reset();
@@ -388,7 +431,7 @@ void processor::log_bus_error(const tlm_initiator_socket& socket,
 void processor::irq_transport(const irq_target_socket& socket,
                               irq_payload& tx) {
     unsigned int irqno = irq.index_of(socket);
-    irq_stats& stats   = m_irq_stats[irqno];
+    irq_stats& stats = m_irq_stats[irqno];
 
     if (tx.active == stats.irq_status) {
         log_warn("irq %d already %s", irqno, tx.active ? "set" : "cleared");
@@ -427,28 +470,16 @@ void processor::update_local_time(sc_time& local_time) {
 }
 
 void processor::end_of_elaboration() {
+    component::end_of_elaboration();
+
     for (auto it : irq) {
-        irq_stats& stats  = m_irq_stats[it.first];
-        stats.irq         = it.first;
-        stats.irq_count   = 0;
-        stats.irq_status  = false;
-        stats.irq_last    = SC_ZERO_TIME;
-        stats.irq_uptime  = SC_ZERO_TIME;
+        irq_stats& stats = m_irq_stats[it.first];
+        stats.irq = it.first;
+        stats.irq_count = 0;
+        stats.irq_status = false;
+        stats.irq_last = SC_ZERO_TIME;
+        stats.irq_uptime = SC_ZERO_TIME;
         stats.irq_longest = SC_ZERO_TIME;
-    }
-
-    if (gdb_port >= 0) {
-        debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
-                                                : debugging::GDB_RUNNING;
-
-        m_gdb = new debugging::gdbserver(gdb_port, *this, status);
-        m_gdb->echo(gdb_echo);
-
-        if (gdb_port == 0)
-            gdb_port = m_gdb->port();
-
-        log_info("%s for GDB connection on port %hu",
-                 gdb_wait ? "waiting" : "listening", m_gdb->port());
     }
 }
 
@@ -514,7 +545,7 @@ void processor::flush_cpuregs() {
                        reg->name.c_str(), reg->size);
         }
 
-        const u64 mask = (1ul << reg->width()) - 1;
+        const u64 mask = bitmask(reg->width());
         if (reg->size < 8 && val > mask) {
             log_warn("truncating value 0x%lx for %lu bit cpu register %s", val,
                      reg->width(), reg->name.c_str());
@@ -528,7 +559,7 @@ void processor::flush_cpuregs() {
 void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
     target::define_cpuregs(regs);
 
-    for (auto reg : regs) {
+    for (const auto& reg : regs) {
         u64 defval = 0;
 
         const char* regnm = reg.name.c_str();

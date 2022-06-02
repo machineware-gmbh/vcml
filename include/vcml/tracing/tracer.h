@@ -28,21 +28,27 @@
 namespace vcml {
 
 struct irq_payload;
+struct rst_payload;
+struct clk_payload;
 struct pci_payload;
+struct i2c_payload;
 struct spi_payload;
 struct sd_command;
 struct sd_data;
 struct vq_message;
+struct serial_payload;
+struct eth_frame;
 
 enum trace_direction : int {
-    TRACE_FW          = 1,
-    TRACE_FW_NOINDENT = 0,
+    TRACE_FW = 2,
+    TRACE_FW_NOINDENT = 1,
+    TRACE_NONE = 0,
     TRACE_BW_NOINDENT = -1,
-    TRACE_BW          = -2,
+    TRACE_BW = -2,
 };
 
 inline bool is_forward_trace(trace_direction dir) {
-    return dir >= 0;
+    return dir > 0;
 }
 inline bool is_backward_trace(trace_direction dir) {
     return dir < 0;
@@ -51,10 +57,15 @@ inline bool is_backward_trace(trace_direction dir) {
 enum protocol_kind {
     PROTO_TLM,
     PROTO_IRQ,
+    PROTO_RST,
+    PROTO_CLK,
     PROTO_PCI,
+    PROTO_I2C,
     PROTO_SPI,
     PROTO_SD,
+    PROTO_SERIAL,
     PROTO_VIRTIO,
+    PROTO_ETHERNET,
     NUM_PROTOCOLS,
 };
 
@@ -66,36 +77,85 @@ struct protocol {};
 template <>
 struct protocol<tlm_generic_payload> {
     static constexpr protocol_kind KIND = PROTO_TLM;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
 };
 
 template <>
 struct protocol<irq_payload> {
     static constexpr protocol_kind KIND = PROTO_IRQ;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
+template <>
+struct protocol<rst_payload> {
+    static constexpr protocol_kind KIND = PROTO_RST;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
+template <>
+struct protocol<clk_payload> {
+    static constexpr protocol_kind KIND = PROTO_CLK;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
 };
 
 template <>
 struct protocol<pci_payload> {
     static constexpr protocol_kind KIND = PROTO_PCI;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
+template <>
+struct protocol<i2c_payload> {
+    static constexpr protocol_kind KIND = PROTO_I2C;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
 };
 
 template <>
 struct protocol<spi_payload> {
     static constexpr protocol_kind KIND = PROTO_SPI;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
 };
 
 template <>
 struct protocol<sd_command> {
     static constexpr protocol_kind KIND = PROTO_SD;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
 };
 
 template <>
 struct protocol<sd_data> {
     static constexpr protocol_kind KIND = PROTO_SD;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
+template <>
+struct protocol<serial_payload> {
+    static constexpr protocol_kind KIND = PROTO_SERIAL;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = false;
 };
 
 template <>
 struct protocol<vq_message> {
     static constexpr protocol_kind KIND = PROTO_VIRTIO;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
+template <>
+struct protocol<eth_frame> {
+    static constexpr protocol_kind KIND = PROTO_ETHERNET;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = false;
 };
 
 class tracer
@@ -110,15 +170,41 @@ public:
         const PAYLOAD& payload;
         const sc_time& t;
         const u64 cycle;
+
+        static constexpr trace_direction translate(trace_direction dir) {
+            switch (dir) {
+            case TRACE_FW:
+                if (!protocol<PAYLOAD>::TRACE_BW)
+                    dir = TRACE_FW_NOINDENT;
+                // no break
+            case TRACE_FW_NOINDENT:
+                return protocol<PAYLOAD>::TRACE_FW ? dir : TRACE_NONE;
+
+            case TRACE_BW:
+                if (!protocol<PAYLOAD>::TRACE_FW)
+                    dir = TRACE_BW_NOINDENT;
+                // no break
+            case TRACE_BW_NOINDENT:
+                return protocol<PAYLOAD>::TRACE_BW ? dir : TRACE_NONE;
+
+            default:
+                return TRACE_NONE;
+            }
+        }
     };
 
-    virtual void trace(const activity<tlm_generic_payload>&) {}
-    virtual void trace(const activity<irq_payload>&) {}
-    virtual void trace(const activity<pci_payload>&) {}
-    virtual void trace(const activity<spi_payload>&) {}
-    virtual void trace(const activity<sd_command>&) {}
-    virtual void trace(const activity<sd_data>&) {}
-    virtual void trace(const activity<vq_message>&) {}
+    virtual void trace(const activity<tlm_generic_payload>&) = 0;
+    virtual void trace(const activity<irq_payload>&) = 0;
+    virtual void trace(const activity<rst_payload>&) = 0;
+    virtual void trace(const activity<clk_payload>&) = 0;
+    virtual void trace(const activity<pci_payload>&) = 0;
+    virtual void trace(const activity<i2c_payload>&) = 0;
+    virtual void trace(const activity<spi_payload>&) = 0;
+    virtual void trace(const activity<sd_command>&) = 0;
+    virtual void trace(const activity<sd_data>&) = 0;
+    virtual void trace(const activity<vq_message>&) = 0;
+    virtual void trace(const activity<serial_payload>&) = 0;
+    virtual void trace(const activity<eth_frame>&) = 0;
 
     tracer();
     virtual ~tracer();
@@ -128,8 +214,9 @@ public:
                        const PAYLOAD& payload,
                        const sc_time& t = SC_ZERO_TIME) {
         auto& tracers = tracer::all();
-        if (!tracers.empty()) {
-            const tracer::activity<PAYLOAD> msg = {
+        dir = activity<PAYLOAD>::translate(dir);
+        if (!tracers.empty() && dir != TRACE_NONE) {
+            const activity<PAYLOAD> msg = {
                 protocol<PAYLOAD>::KIND,
                 dir,
                 failed(payload),

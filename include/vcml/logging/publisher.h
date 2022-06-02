@@ -133,7 +133,7 @@ inline bool publisher::would_publish(log_level lvl) {
 }
 
 inline void publisher::filter(log_filter filter) {
-    m_filters.push_back(filter);
+    m_filters.push_back(std::move(filter));
 }
 
 inline void publisher::filter_time(const sc_time& t0, const sc_time& t1) {

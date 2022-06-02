@@ -39,6 +39,8 @@
 #include <iomanip>
 #include <fstream>
 #include <memory>
+#include <optional>
+#include <variant>
 #include <functional>
 #include <atomic>
 #include <mutex>
@@ -46,6 +48,7 @@
 #include <condition_variable>
 
 #include <stdint.h>
+#include <limits.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -68,18 +71,20 @@ typedef int64_t i64;
 
 using ::clock_t;
 
-const clock_t Hz  = 1;
-const clock_t kHz = 1000 * Hz;
-const clock_t MHz = 1000 * kHz;
-const clock_t GHz = 1000 * MHz;
-const clock_t THz = 1000 * GHz;
+const clock_t Hz = 1;           // NOLINT(readability-identifier-naming)
+const clock_t kHz = 1000 * Hz;  // NOLINT(readability-identifier-naming)
+const clock_t MHz = 1000 * kHz; // NOLINT(readability-identifier-naming)
+const clock_t GHz = 1000 * MHz; // NOLINT(readability-identifier-naming)
+const clock_t THz = 1000 * GHz; // NOLINT(readability-identifier-naming)
 
 using std::size_t;
 
-const size_t KiB = 1024;
-const size_t MiB = 1024 * KiB;
-const size_t GiB = 1024 * MiB;
-const size_t TiB = 1024 * GiB;
+const size_t KiB = 1024;       // NOLINT(readability-identifier-naming)
+const size_t MiB = 1024 * KiB; // NOLINT(readability-identifier-naming)
+const size_t GiB = 1024 * MiB; // NOLINT(readability-identifier-naming)
+const size_t TiB = 1024 * GiB; // NOLINT(readability-identifier-naming)
+
+typedef std::size_t id_t;
 
 template <typename T>
 struct typeinfo {
@@ -117,6 +122,7 @@ using std::max;
 using std::list;
 using std::queue;
 using std::deque;
+using std::priority_queue;
 using std::array;
 using std::vector;
 using std::set;
@@ -170,6 +176,9 @@ using std::ofstream;
 using std::shared_ptr;
 using std::unique_ptr;
 
+using std::variant;
+using std::optional;
+
 using std::function;
 
 using std::atomic;
@@ -185,9 +194,9 @@ inline bool is_set(int flags, int set) {
 }
 
 enum vcml_access {
-    VCML_ACCESS_NONE       = 0x0,
-    VCML_ACCESS_READ       = 0x1,
-    VCML_ACCESS_WRITE      = 0x2,
+    VCML_ACCESS_NONE = 0x0,
+    VCML_ACCESS_READ = 0x1,
+    VCML_ACCESS_WRITE = 0x2,
     VCML_ACCESS_READ_WRITE = VCML_ACCESS_READ | VCML_ACCESS_WRITE
 };
 
@@ -201,8 +210,8 @@ inline bool is_write_allowed(int a) {
 
 typedef enum vcml_endianess {
     ENDIAN_UNKNOWN = 0,
-    ENDIAN_LITTLE  = 1,
-    ENDIAN_BIG     = 2,
+    ENDIAN_LITTLE = 1,
+    ENDIAN_BIG = 2,
 } endianess;
 
 istream& operator>>(istream& is, endianess& e);
@@ -210,7 +219,7 @@ ostream& operator<<(ostream& os, endianess e);
 
 inline endianess host_endian() {
     u32 test = 1;
-    u8* p    = reinterpret_cast<u8*>(&test);
+    u8* p = reinterpret_cast<u8*>(&test);
     if (p[0] == 1)
         return ENDIAN_LITTLE;
     if (p[3] == 1)
@@ -226,27 +235,27 @@ enum vcml_address_space : address_space {
 
 typedef enum vcml_alignment {
     VCML_ALIGN_NONE = 0,
-    VCML_ALIGN_1K   = 10,
-    VCML_ALIGN_2K   = 11,
-    VCML_ALIGN_4K   = 12,
-    VCML_ALIGN_8K   = 13,
-    VCML_ALIGN_16K  = 14,
-    VCML_ALIGN_32K  = 15,
-    VCML_ALIGN_64K  = 16,
+    VCML_ALIGN_1K = 10,
+    VCML_ALIGN_2K = 11,
+    VCML_ALIGN_4K = 12,
+    VCML_ALIGN_8K = 13,
+    VCML_ALIGN_16K = 14,
+    VCML_ALIGN_32K = 15,
+    VCML_ALIGN_64K = 16,
     VCML_ALIGN_128K = 17,
     VCML_ALIGN_256K = 18,
     VCML_ALIGN_512K = 19,
-    VCML_ALIGN_1M   = 20,
-    VCML_ALIGN_2M   = 21,
-    VCML_ALIGN_4M   = 22,
-    VCML_ALIGN_8M   = 23,
-    VCML_ALIGN_16M  = 24,
-    VCML_ALIGN_32M  = 25,
-    VCML_ALIGN_64M  = 26,
+    VCML_ALIGN_1M = 20,
+    VCML_ALIGN_2M = 21,
+    VCML_ALIGN_4M = 22,
+    VCML_ALIGN_8M = 23,
+    VCML_ALIGN_16M = 24,
+    VCML_ALIGN_32M = 25,
+    VCML_ALIGN_64M = 26,
     VCML_ALIGN_128M = 27,
     VCML_ALIGN_256M = 28,
     VCML_ALIGN_512M = 29,
-    VCML_ALIGN_1G   = 30,
+    VCML_ALIGN_1G = 30,
 } alignment;
 
 istream& operator>>(istream& is, alignment& a);

@@ -42,7 +42,7 @@ private:
 public:
     const vector<exlock> get_locks() const { return m_locks; }
 
-    tlm_exmon()          = default;
+    tlm_exmon() = default;
     virtual ~tlm_exmon() = default;
 
     bool has_lock(int cpu, const range& r) const;

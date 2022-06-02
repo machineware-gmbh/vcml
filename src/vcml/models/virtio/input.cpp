@@ -42,10 +42,10 @@ void input::config_update_devids() {
         return;
 
     m_config.u.ids.bustype = 1;
-    m_config.u.ids.vendor  = 2;
+    m_config.u.ids.vendor = 2;
     m_config.u.ids.product = 3;
     m_config.u.ids.version = 4;
-    m_config.size          = sizeof(m_config.u.ids);
+    m_config.size = sizeof(m_config.u.ids);
 }
 
 void input::config_update_props() {
@@ -107,13 +107,13 @@ void input::config_update_absinfo() {
     case ABS_X:
         m_config.u.abs.min = 0;
         m_config.u.abs.max = xmax;
-        m_config.size      = sizeof(m_config.u.abs);
+        m_config.size = sizeof(m_config.u.abs);
         break;
 
     case ABS_Y:
         m_config.u.abs.min = 0;
         m_config.u.abs.max = ymax;
-        m_config.size      = sizeof(m_config.u.abs);
+        m_config.size = sizeof(m_config.u.abs);
         break;
 
     default:
@@ -171,10 +171,16 @@ void input::update() {
             push_key(event.key.code, event.key.state);
             push_sync();
         } else if (event.is_ptr()) {
-            size_t x = (event.ptr.x * xmax) / m_console.xres();
-            size_t y = (event.ptr.y * ymax) / m_console.yres();
+            size_t xres = m_console.xres();
+            size_t yres = m_console.yres();
+            VCML_ERROR_ON(!xres, "console width cannot be zero");
+            VCML_ERROR_ON(!yres, "console height cannot be zero");
+
+            size_t x = (event.ptr.x * xmax) / xres;
+            size_t y = (event.ptr.y * ymax) / yres;
             VCML_ERROR_ON(x != (u32)x, "pointer out of range");
             VCML_ERROR_ON(y != (u32)y, "pointer out of range");
+
             push_abs(ABS_X, x);
             push_abs(ABS_Y, y);
             push_sync();
@@ -200,7 +206,7 @@ void input::update() {
         }
     }
 
-    sc_time quantum   = tlm_global_quantum::instance().get();
+    sc_time quantum = tlm_global_quantum::instance().get();
     sc_time polldelay = sc_time(1.0 / pollrate, SC_SEC);
     next_trigger(max(polldelay, quantum));
 }
@@ -282,7 +288,7 @@ input::~input() {
 void input::reset() {
     memset(&m_config, 0, sizeof(m_config));
     m_messages = {};
-    m_events   = {};
+    m_events = {};
 }
 
 void input::end_of_simulation() {

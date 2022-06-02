@@ -17,13 +17,15 @@
  ******************************************************************************/
 
 #include "vcml/serial/backend_file.h"
+#include "vcml/serial/terminal.h"
 
 namespace vcml {
 namespace serial {
 
-backend_file::backend_file(const string& port, const string& rx,
-                           const string& tx):
-    backend(port), m_rx(), m_tx() {
+backend_file::backend_file(terminal* term, const string& rx, const string& tx):
+    backend(term, mkstr("file:%s:%s", rx.c_str(), tx.c_str())),
+    m_rx(),
+    m_tx() {
     if (!rx.empty()) {
         m_rx.open(rx.c_str(), ifstream::binary | ifstream::in);
         if (!m_rx.good())
@@ -36,8 +38,6 @@ backend_file::backend_file(const string& port, const string& rx,
         if (!m_tx.good())
             log_warn("failed to open file '%s'", tx.c_str());
     }
-
-    m_type = mkstr("file:%s:%s", rx.c_str(), tx.c_str());
 }
 
 backend_file::~backend_file() {
@@ -59,9 +59,9 @@ void backend_file::write(u8 val) {
     }
 }
 
-backend* backend_file::create(const string& port, const string& type) {
-    string rx = port + ".rx";
-    string tx = port + ".tx";
+backend* backend_file::create(terminal* term, const string& type) {
+    string rx = mkstr("%s.rx", term->name());
+    string tx = mkstr("%s.tx", term->name());
 
     vector<string> args = split(type, ':');
 
@@ -75,7 +75,7 @@ backend* backend_file::create(const string& port, const string& type) {
         tx = args[2];
     }
 
-    return new backend_file(port, rx, tx);
+    return new backend_file(term, rx, tx);
 }
 
 } // namespace serial

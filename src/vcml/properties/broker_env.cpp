@@ -20,7 +20,7 @@
 
 namespace vcml {
 
-broker_env::broker_env(): broker("environment", PRIO_ENVIRON) {
+broker_env::broker_env(): broker("environment") {
     // nothing to do
 }
 

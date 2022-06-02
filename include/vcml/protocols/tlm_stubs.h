@@ -31,9 +31,9 @@ class tlm_initiator_stub : public sc_module,
 public:
     tlm::tlm_initiator_socket<64> out;
 
-    tlm_initiator_stub()                          = delete;
+    tlm_initiator_stub() = delete;
     tlm_initiator_stub(const tlm_initiator_stub&) = delete;
-    tlm_initiator_stub(tlm_initiator_stub&&)      = delete;
+    tlm_initiator_stub(tlm_initiator_stub&&) = delete;
 
     tlm_initiator_stub(const sc_module_name& name);
     virtual ~tlm_initiator_stub() = default;
@@ -56,9 +56,9 @@ private:
 public:
     tlm::tlm_target_socket<64> in;
 
-    tlm_target_stub()                       = delete;
+    tlm_target_stub() = delete;
     tlm_target_stub(const tlm_target_stub&) = delete;
-    tlm_target_stub(tlm_target_stub&&)      = delete;
+    tlm_target_stub(tlm_target_stub&&) = delete;
 
     tlm_target_stub(const sc_module_name& name,
                     tlm_response_status response = TLM_ADDRESS_ERROR_RESPONSE);

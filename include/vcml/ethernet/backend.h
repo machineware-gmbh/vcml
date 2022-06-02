@@ -16,64 +16,43 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_SLIRP_H
-#define VCML_NET_BACKEND_SLIRP_H
+#ifndef VCML_ETHERNET_BACKEND_H
+#define VCML_ETHERNET_BACKEND_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
-#include "vcml/logging/logger.h"
-#include "vcml/net/backend.h"
-
-#include <libslirp.h>
-#include <libslirp-version.h>
+#include "vcml/common/strings.h"
+#include "vcml/protocols/eth.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-class backend_slirp;
+class bridge;
 
-class slirp_network
+class backend
 {
-private:
-    SlirpConfig m_config;
-    Slirp* m_slirp;
-
-    set<backend_slirp*> m_clients;
-
-    mutex m_mtx;
-    atomic<bool> m_running;
-    thread m_thread;
-
-    void slirp_thread();
+protected:
+    bridge* m_parent;
+    string m_type;
 
 public:
-    slirp_network(unsigned int id);
-    virtual ~slirp_network();
+    bridge* parent() { return m_parent; }
+    const char* type() const { return m_type.c_str(); }
 
-    void send_packet(const u8* ptr, size_t len);
-    void recv_packet(const u8* ptr, size_t len);
+    backend(bridge* gw);
+    virtual ~backend();
 
-    void register_client(backend_slirp* client);
-    void unregister_client(backend_slirp* client);
+    backend() = delete;
+    backend(const backend&) = delete;
+    backend(backend&&) = default;
+
+    virtual void send_to_host(const eth_frame& frame) = 0;
+    virtual void send_to_guest(eth_frame frame);
+
+    static backend* create(bridge* br, const string& type);
 };
 
-class backend_slirp : public backend
-{
-private:
-    shared_ptr<slirp_network> m_network;
-
-public:
-    backend_slirp(const string& ada, const shared_ptr<slirp_network>& net);
-    virtual ~backend_slirp();
-
-    void disconnect() { m_network = nullptr; }
-
-    virtual void send_packet(const vector<u8>& packet) override;
-
-    static backend* create(const string& adapter, const string& type);
-};
-
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
 
 #endif

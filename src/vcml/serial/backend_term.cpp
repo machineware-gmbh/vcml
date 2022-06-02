@@ -16,123 +16,82 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/serial/terminal.h"
 #include "vcml/serial/backend_term.h"
 #include "vcml/debugging/suspender.h"
+
+#include <termios.h>
 
 namespace vcml {
 namespace serial {
 
-backend_term* backend_term::singleton = nullptr;
+static terminal* g_owner = nullptr;
+static struct termios g_term;
 
-void backend_term::handle_signal(int sig) {
-    if (singleton) {
-        if (sig == SIGINT) /* interrupt (ANSI) */
-            return singleton->handle_sigint(sig);
-        if (sig == SIGTSTP) /* keyboard stop (POSIX) */
-            singleton->handle_sigstp(sig);
-    }
-
-    // this should not happen, but just to be safe...
-    signal(sig, SIG_DFL);
-    raise(sig);
+static void cleanup_term() {
+    tcsetattr(STDIN_FILENO, TCSANOW, &g_term);
 }
 
-void backend_term::handle_sigstp(int sig) {
-    m_signal = m_termios.c_cc[VSUSP];
-    if ((m_sigstp != SIG_DFL) && (m_sigstp != SIG_IGN))
-        (*m_sigstp)(sig);
-}
+static void setup_term() {
+    tcgetattr(STDIN_FILENO, &g_term);
 
-void backend_term::handle_sigint(int sig) {
-    double now = realtime();
-    if ((now - m_time) < 1.0) {
-        tcsetattr(STDIN_FILENO, TCSANOW, &m_termios);
-        if (m_stopped || m_exit || !sc_core::sc_is_running()) {
-            cleanup();
-            exit(EXIT_SUCCESS);
-        } else {
-            m_stopped = true;
-            debugging::suspender::quit();
-        }
-    }
-
-    m_time   = now;
-    m_signal = m_termios.c_cc[VINTR];
-    if ((m_sigint != SIG_DFL) && (m_sigint != SIG_IGN))
-        (*m_sigint)(sig);
-}
-
-void backend_term::cleanup() {
-    signal(SIGINT, m_sigint);
-    signal(SIGTSTP, m_sigstp);
-
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &m_termios) == -1)
-        log_error("failed to reset terminal");
-
-    aio_cancel(STDIN_FILENO);
-}
-
-backend_term::backend_term(const string& port):
-    backend(port),
-    m_fifo_mtx(),
-    m_fifo(),
-    m_signal(0),
-    m_exit(false),
-    m_stopped(false),
-    m_termios(),
-    m_time(realtime()),
-    m_sigint(),
-    m_sigstp() {
-    VCML_REPORT_ON(singleton, "multiple terminal backends requested");
-    singleton = this;
-
-    m_type = "term";
-
-    if (!isatty(STDIN_FILENO))
-        VCML_REPORT("not a terminal");
-
-    if (tcgetattr(STDIN_FILENO, &m_termios) == -1)
-        VCML_REPORT("failed to get terminal attributes");
-
-    termios attr = m_termios;
-    attr.c_lflag &= ~(ICANON | ECHO);
-    attr.c_cc[VMIN]  = 1;
+    termios attr = g_term;
+    attr.c_lflag &= ~(ICANON | ECHO | ISIG);
+    attr.c_cc[VMIN] = 1;
     attr.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &attr);
 
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &attr) == -1)
-        VCML_REPORT("failed to set terminal attributes");
+    atexit(cleanup_term);
+}
 
-    m_sigint = signal(SIGINT, &backend_term::handle_signal);
-    m_sigstp = signal(SIGTSTP, &backend_term::handle_signal);
+void backend_term::terminate() {
+    cleanup_term();
 
-    aio_notify(STDIN_FILENO, [&](int fd) -> void {
-        u8 data;
-        if (fd_read(fd, &data, sizeof(data)) == sizeof(data)) {
-            lock_guard<mutex> guard(m_fifo_mtx);
-            m_fifo.push(data);
-        }
-    });
+    if (m_exit_requested || !sim_running())
+        exit(EXIT_SUCCESS);
+
+    m_exit_requested = true;
+    debugging::suspender::quit();
+}
+
+backend_term::backend_term(terminal* term):
+    backend(term, "term"), m_exit_requested(false) {
+    VCML_REPORT_ON(g_owner, "stdin already used by %s", g_owner->name());
+    VCML_REPORT_ON(!isatty(STDIN_FILENO), "not a terminal");
+    g_owner = term;
+    setup_term();
 }
 
 backend_term::~backend_term() {
-    cleanup();
-    singleton = nullptr;
+    cleanup_term();
+    g_owner = nullptr;
 }
 
-bool backend_term::read(u8& val) {
-    if (m_signal != 0) {
-        val      = (u8)m_signal;
-        m_signal = 0;
-        return true;
-    }
+enum keys : u8 {
+    CTRL_A = 0x1,
+    CTRL_C = 0x3,
+    CTRL_X = 0x18,
+};
 
-    if (m_fifo.empty())
+bool backend_term::read(u8& value) {
+    if (!fd_peek(STDIN_FILENO))
         return false;
 
-    lock_guard<mutex> guard(m_fifo_mtx);
-    val = m_fifo.front();
-    m_fifo.pop();
+    u8 ch;
+    fd_read(STDIN_FILENO, &ch, sizeof(ch));
 
+    if (ch == CTRL_A) { // ctrl-a
+        fd_read(STDIN_FILENO, &ch, sizeof(ch));
+        if (ch == 'x' || ch == CTRL_X || ch == g_term.c_cc[VINTR]) {
+            terminate();
+            return false;
+        }
+
+        if (ch == 'a')
+            ch = CTRL_A;
+    }
+
+    value = ch;
     return true;
 }
 
@@ -140,8 +99,8 @@ void backend_term::write(u8 val) {
     fd_write(STDOUT_FILENO, &val, sizeof(val));
 }
 
-backend* backend_term::create(const string& port, const string& type) {
-    return new backend_term(port);
+backend* backend_term::create(terminal* term, const string& type) {
+    return new backend_term(term);
 }
 
 } // namespace serial

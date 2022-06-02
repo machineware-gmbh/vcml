@@ -30,7 +30,7 @@ tlm_memory::tlm_memory(size_t size, alignment align): tlm_memory() {
     init(size, align);
 }
 
-tlm_memory::tlm_memory(tlm_memory&& other):
+tlm_memory::tlm_memory(tlm_memory&& other) noexcept:
     tlm_dmi(std::move(other)),
     m_base(other.m_base),
     m_size(other.m_size),
@@ -50,7 +50,7 @@ void tlm_memory::init(size_t size, alignment al) {
     // mmap automatically aligns up to 4k, for larger alignments we
     // reserve extra space to include an aligned start address plus size
     u64 extra = (al > VCML_ALIGN_4K) ? (1ull << al) - 1 : 0;
-    m_size    = size + extra;
+    m_size = size + extra;
 
     const int perms = PROT_READ | PROT_WRITE;
     const int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
@@ -117,7 +117,7 @@ tlm_response_status tlm_memory::write(const range& addr, const void* src,
 }
 
 void tlm_memory::transport(tlm_generic_payload& tx, const tlm_sbi& sbi) {
-    tlm_response_status res;
+    tlm_response_status res = TLM_OK_RESPONSE;
     range addr(tx);
 
     if (tx.is_read())

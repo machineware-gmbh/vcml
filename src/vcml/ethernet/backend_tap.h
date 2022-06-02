@@ -16,17 +16,19 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_TAP_H
-#define VCML_NET_BACKEND_TAP_H
+#ifndef VCML_ETHERNET_BACKEND_TAP_H
+#define VCML_ETHERNET_BACKEND_TAP_H
 
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/aio.h"
 #include "vcml/logging/logger.h"
-#include "vcml/net/backend.h"
+
+#include "vcml/ethernet/backend.h"
+#include "vcml/ethernet/bridge.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
 class backend_tap : public backend
 {
@@ -36,15 +38,15 @@ private:
     void close_tap();
 
 public:
-    backend_tap(const string& adapter, int devno);
+    backend_tap(bridge* br, int devno);
     virtual ~backend_tap();
 
-    virtual void send_packet(const vector<u8>& packet) override;
+    virtual void send_to_host(const eth_frame& frame) override;
 
-    static backend* create(const string& name, const string& type);
+    static backend* create(bridge* br, const string& type);
 };
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
 
 #endif

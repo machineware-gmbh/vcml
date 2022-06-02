@@ -37,7 +37,7 @@ void simdev::write_abrt(u32 val) {
 }
 
 u64 simdev::read_sclk() {
-    sc_time now = sc_time_stamp();
+    const sc_time& now = sc_time_stamp();
     return (u64)now.value();
 }
 

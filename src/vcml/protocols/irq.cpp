@@ -27,7 +27,7 @@ ostream& operator<<(ostream& os, const irq_payload& irq) {
     return os;
 }
 
-irq_target::irq_target_sockets irq_target::get_irq_target_sockets(
+irq_target::irq_target_sockets irq_target::all_irq_target_sockets(
     address_space as) const {
     irq_target_sockets sockets;
     for (auto& socket : m_target_sockets)
@@ -49,7 +49,7 @@ irq_base_initiator_socket::~irq_base_initiator_socket() {
 void irq_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     hierarchy_guard guard(this);
-    m_stub = new irq_target_stub(mkstr("%s_stub", basename()).c_str());
+    m_stub = new irq_target_stub(basename());
     bind(m_stub->irq_in);
 }
 
@@ -66,7 +66,7 @@ irq_base_target_socket::~irq_base_target_socket() {
 void irq_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     hierarchy_guard guard(this);
-    m_stub = new irq_initiator_stub(mkstr("%s_stub", basename()).c_str());
+    m_stub = new irq_initiator_stub(basename());
     m_stub->irq_out.bind(*this);
 }
 
@@ -189,17 +189,18 @@ bool irq_target_socket::read(irq_vector vector) const {
     return m_state.count(vector) ? m_state.at(vector) : false;
 }
 
-irq_initiator_stub::irq_initiator_stub(const sc_module_name& nm):
-    module(nm), irq_out("irq_out") {
+irq_initiator_stub::irq_initiator_stub(const char* nm):
+    irq_bw_transport_if(), irq_out(mkstr("%s_stub", nm).c_str()) {
+    irq_out.bind(*(irq_bw_transport_if*)this);
 }
 
-void irq_target_stub::irq_transport(const irq_target_socket& socket,
-                                    irq_payload& irq) {
+void irq_target_stub::irq_transport(irq_payload& irq) {
     // nothing to do
 }
 
-irq_target_stub::irq_target_stub(const sc_module_name& nm):
-    module(nm), irq_target(), irq_in("irq_in") {
+irq_target_stub::irq_target_stub(const char* nm):
+    irq_fw_transport_if(), irq_in(mkstr("%s_stub", nm).c_str()) {
+    irq_in.bind(*(irq_fw_transport_if*)this);
 }
 
 irq_initiator_adapter::irq_initiator_adapter(const sc_module_name& nm):

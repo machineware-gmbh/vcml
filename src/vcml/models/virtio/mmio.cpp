@@ -38,9 +38,9 @@ void mmio::enable_virtqueue(u32 vqid) {
     virtio_queue_desc& qd = it->second;
 
     qd.has_event_idx = has_feature(VIRTIO_F_RING_EVENT_IDX);
-    qd.desc          = (u64)queue_desc_hi << 32 | (u64)queue_desc_lo;
-    qd.driver        = (u64)queue_driver_hi << 32 | (u64)queue_driver_lo;
-    qd.device        = (u64)queue_device_hi << 32 | (u64)queue_device_lo;
+    qd.desc = (u64)queue_desc_hi << 32 | (u64)queue_desc_lo;
+    qd.driver = (u64)queue_driver_hi << 32 | (u64)queue_driver_lo;
+    qd.device = (u64)queue_device_hi << 32 | (u64)queue_device_lo;
 
     qd.size = queue_num;
     if (qd.size > qd.limit) {
@@ -125,7 +125,7 @@ bool mmio::put(u32 vqid, vq_message& msg) {
     }
 
     virtqueue* q = it->second;
-    bool result  = q->put(msg);
+    bool result = q->put(msg);
     if (result && q->notify) {
         interrupt_status |= VIRTIO_IRQSTATUS_VQUEUE;
         irq = interrupt_status != 0u;
@@ -183,8 +183,8 @@ u32 mmio::read_vendor_id() {
 }
 
 void mmio::write_device_features_sel(u32 val) {
-    unsigned int shift  = val ? 32 : 0;
-    device_features     = (u32)(m_dev_features >> shift);
+    unsigned int shift = val ? 32 : 0;
+    device_features = (u32)(m_dev_features >> shift);
     device_features_sel = val ? 1 : 0;
 }
 
@@ -213,24 +213,24 @@ void mmio::write_queue_sel(u32 val) {
     }
 
     queue_sel = val;
-    auto it   = m_device.virtqueues.find(val);
+    auto it = m_device.virtqueues.find(val);
     if (it != m_device.virtqueues.end()) {
         const virtio_queue_desc& q = it->second;
-        queue_num_max              = q.limit;
-        queue_num                  = q.size;
-        queue_ready                = m_queues.count(val);
-        queue_desc_lo              = (u32)(q.desc);
-        queue_desc_hi              = (u32)(q.desc >> 32);
-        queue_driver_lo            = (u32)(q.driver);
-        queue_driver_hi            = (u32)(q.driver >> 32);
-        queue_device_lo            = (u32)(q.device);
-        queue_device_hi            = (u32)(q.device >> 32);
+        queue_num_max = q.limit;
+        queue_num = q.size;
+        queue_ready = m_queues.count(val);
+        queue_desc_lo = (u32)(q.desc);
+        queue_desc_hi = (u32)(q.desc >> 32);
+        queue_driver_lo = (u32)(q.driver);
+        queue_driver_hi = (u32)(q.driver >> 32);
+        queue_device_lo = (u32)(q.device);
+        queue_device_hi = (u32)(q.device >> 32);
     } else {
-        queue_num_max   = 0;
-        queue_num       = 0;
-        queue_ready     = 0;
-        queue_desc_lo   = 0;
-        queue_desc_hi   = 0;
+        queue_num_max = 0;
+        queue_num = 0;
+        queue_ready = 0;
+        queue_desc_lo = 0;
+        queue_desc_hi = 0;
         queue_driver_lo = 0;
         queue_driver_hi = 0;
         queue_device_lo = 0;

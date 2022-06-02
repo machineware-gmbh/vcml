@@ -30,12 +30,9 @@ void* library::lookup(const string& name) const {
 library::library(): m_path(), m_handle(nullptr) {
 }
 
-library::library(library& other):
-    m_path(std::move(other.m_path)), m_handle(std::move(other.m_handle)) {
+library::library(library&& other) noexcept:
+    m_path(std::move(other.m_path)), m_handle(other.m_handle) {
     other.m_handle = nullptr;
-}
-
-library::library(const string& file): library(file, -1) {
 }
 
 library::library(const string& file, int mode): library() {

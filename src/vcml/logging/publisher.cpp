@@ -23,11 +23,11 @@ namespace vcml {
 
 vector<publisher*> publisher::publishers[NUM_LOG_LEVELS];
 
-bool publisher::print_time_stamp  = true;
+bool publisher::print_time_stamp = true;
 bool publisher::print_delta_cycle = false;
-bool publisher::print_sender      = true;
-bool publisher::print_source      = false;
-bool publisher::print_backtrace   = true;
+bool publisher::print_sender = true;
+bool publisher::print_source = false;
+bool publisher::print_backtrace = true;
 
 const char* publisher::prefix[NUM_LOG_LEVELS] = {
     /* [LOG_ERROR] = */ "E",
@@ -76,7 +76,7 @@ logmsg::logmsg(log_level lvl, const string& s):
     lines() {
     if (sender.empty())
         sender = call_origin();
-    sc_object* obj  = find_object(sender.c_str());
+    sc_object* obj = find_object(sender);
     component* comp = dynamic_cast<component*>(obj);
     if (comp && is_thread())
         time_offset = comp->local_time();
@@ -158,7 +158,7 @@ void publisher::publish(log_level level, const string& sender,
         origin = rep.origin();
 
     // always force printing of source locations of reports
-    bool print   = print_source;
+    bool print = print_source;
     print_source = true;
     publish(level, origin, ss.str(), rep.file(), rep.line());
     print_source = print;

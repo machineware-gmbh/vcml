@@ -44,7 +44,7 @@ public:
     property<sc_time> quantum;
     property<sc_time> duration;
 
-    system()              = delete;
+    system() = delete;
     system(const system&) = delete;
     explicit system(const sc_module_name& name);
     virtual ~system();

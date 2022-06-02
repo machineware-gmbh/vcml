@@ -29,26 +29,7 @@ union gdb_u64 {
     gdb_u64(): val() {}
 };
 
-static inline int char2int(char c) {
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    return c == '\0' ? 0 : -1;
-}
-
-static inline u64 str2int(const char* s, int n) {
-    u64 val = 0;
-    for (const char* c = s + n - 1; c >= s; c--) {
-        val <<= 4;
-        val |= char2int(*c);
-    }
-    return val;
-}
-
-static inline u8 char_unescape(const char*& s) {
+static u8 char_unescape(const char*& s) {
     u8 result = *s++;
     if (result == '}')
         result = *s++ ^ 0x20;
@@ -65,7 +46,9 @@ void gdbserver::update_status(gdb_status status) {
     if (m_status == status)
         return;
 
-    switch (status) {
+    gdb_status prev_status = m_status;
+
+    switch ((m_status = status)) {
     case GDB_STOPPED:
         suspend();
         break;
@@ -82,15 +65,13 @@ void gdbserver::update_status(gdb_status status) {
     case GDB_KILLED:
         stop();
         disconnect();
-        if (m_status == GDB_STOPPED)
+        if (prev_status == GDB_STOPPED)
             resume();
         break;
 
     default:
         VCML_ERROR("illegal gdb status: %u", status);
     }
-
-    m_status = status;
 }
 
 void gdbserver::notify_step_complete(target& tgt) {
@@ -132,7 +113,7 @@ string gdbserver::handle_step(const char* command) {
     update_status(GDB_STEPPING);
     while (sim_running() && is_stepping()) {
         int signal = 0;
-        if ((signal = recv_signal(100))) {
+        if ((signal = recv_signal(1))) {
             log_debug("received signal %d", signal);
             break;
         }
@@ -146,7 +127,7 @@ string gdbserver::handle_continue(const char* command) {
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
         int signal = 0;
-        if ((signal = recv_signal(100))) {
+        if ((signal = recv_signal(1))) {
             log_debug("received signal %d", signal);
             break;
         }
@@ -193,7 +174,7 @@ string gdbserver::handle_rcmd(const char* command) {
         return ERR_COMMAND;
 
     vector<string> args = split(command, ' ');
-    string cmdname      = args[0];
+    string cmdname = args[0];
     args.erase(args.begin());
 
     stringstream ss;
@@ -209,8 +190,8 @@ string gdbserver::handle_xfer(const char* command) {
         return ERR_COMMAND;
 
     string object = args[1];
-    string read   = args[2];
-    string annex  = args[3];
+    string read = args[2];
+    string annex = args[3];
 
     if (read != "read")
         return ERR_COMMAND;
@@ -343,36 +324,43 @@ string gdbserver::handle_reg_write_all(const char* command) {
 }
 
 string gdbserver::handle_mem_read(const char* command) {
-    unsigned long long addr, size;
+    unsigned long long addr = 0, size = 0;
     if (sscanf(command, "m%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
+
+    if (size == 0)
+        return "OK";
 
     if (size > BUFFER_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
         return ERR_PARAM;
     }
 
+    vector<u8> buffer;
+    buffer.resize(size);
+
     stringstream ss;
     ss << std::hex << std::setfill('0');
+    if (m_target.read_vmem_dbg(addr, buffer.data(), size) != size)
+        log_debug("failed to read 0x%llx..0x%llx", addr, addr + size - 1);
 
-    u8 buffer[BUFFER_SIZE];
-    if (m_target.read_vmem_dbg(addr, buffer, size) != size)
-        return ERR_UNKNOWN;
-
-    for (unsigned int i = 0; i < size; i++)
+    for (unsigned long long i = 0; i < size; i++)
         ss << std::setw(2) << (int)buffer[i];
 
     return ss.str();
 }
 
 string gdbserver::handle_mem_write(const char* command) {
-    unsigned long long addr, size;
+    unsigned long long addr = 0, size = 0;
     if (sscanf(command, "M%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
+
+    if (size == 0)
+        return "OK";
 
     if (size > BUFFER_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
@@ -380,51 +368,55 @@ string gdbserver::handle_mem_write(const char* command) {
     }
 
     const char* data = strchr(command, ':');
-    if (data == NULL) {
+    if (data == nullptr) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
 
     data++;
 
-    u8 buffer[BUFFER_SIZE];
-    for (unsigned int i = 0; i < size; i++)
-        buffer[i] = str2int(data++, 2);
+    vector<u8> buffer;
+    buffer.resize(size);
+    for (unsigned long long i = 0; i < size; i++) {
+        buffer[i] = from_hex_ascii(data[2 * i + 0]) << 4 |
+                    from_hex_ascii(data[2 * i + 1]);
+    }
 
-    if (m_target.write_vmem_dbg(addr, buffer, size) != size)
+    if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
 }
 
 string gdbserver::handle_mem_write_bin(const char* command) {
-    unsigned long long addr, size;
+    unsigned long long addr = 0, size = 0;
     if (sscanf(command, "X%llx,%llx:", &addr, &size) != 2) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
 
-    if (size > BUFFER_SIZE) {
+    if (size == 0)
+        return "OK";
+
+    if (size > PACKET_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
         return ERR_PARAM;
     }
 
-    if (size == 0)
-        return "OK"; // empty load to test if binary write is supported
-
     const char* data = strchr(command, ':');
-    if (data == NULL) {
+    if (data == nullptr) {
         log_warn("malformed command '%s'", command);
         return ERR_COMMAND;
     }
 
     data++;
 
-    u8 buffer[BUFFER_SIZE];
-    for (unsigned int i = 0; i < size; i++)
+    vector<u8> buffer;
+    buffer.resize(size);
+    for (unsigned long long i = 0; i < size; i++)
         buffer[i] = char_unescape(data);
 
-    if (m_target.write_vmem_dbg(addr, buffer, size) != size)
+    if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
 
     return "OK";

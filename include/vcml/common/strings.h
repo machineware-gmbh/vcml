@@ -43,7 +43,7 @@ string to_upper(const string& s);
 string escape(const string& s, const string& chars);
 string unescape(const string& s);
 
-vector<string> split(const string& str, function<int(int)> f = isspace);
+vector<string> split(const string& str, const function<int(int)>& f = isspace);
 vector<string> split(const string& str, char predicate);
 
 template <typename V, typename T>
@@ -91,13 +91,16 @@ inline string to_string<u8>(const u8& v) {
 
 template <typename T>
 inline T from_string(const string& str) {
+    if (str.empty())
+        return T();
+
     istringstream ss;
     ss.str(str);
     ss.unsetf(std::ios::dec);
     ss.unsetf(std::ios::hex);
     ss.unsetf(std::ios::oct);
 
-    T val;
+    T val = T();
     ss >> val;
     return val;
 }
@@ -109,13 +112,16 @@ inline string from_string<string>(const string& s) {
 
 template <>
 inline u8 from_string<u8>(const string& str) {
+    if (str.empty())
+        return 0;
+
     istringstream ss;
     ss.str(str);
     ss.unsetf(std::ios::dec);
     ss.unsetf(std::ios::hex);
     ss.unsetf(std::ios::oct);
 
-    unsigned int val;
+    unsigned int val = 0;
     ss >> val;
     return (u8)val;
 }
@@ -128,6 +134,22 @@ inline bool from_string<bool>(const string& str) {
     if (lower == "false")
         return false;
     return from_string<unsigned int>(str) > 0;
+}
+
+inline char to_hex_ascii(unsigned int hex) {
+    static const char hexchars[] = { '0', '1', '2', '3', '4', '5', '6', '7',
+                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    return hexchars[hex & 0xf];
+}
+
+inline unsigned int from_hex_ascii(char ch) {
+    if (ch >= 'a' && ch <= 'f')
+        return ch - 'a' + 10;
+    if (ch >= 'A' && ch <= 'F')
+        return ch - 'A' + 10;
+    if (ch >= '0' && ch <= '9')
+        return ch - '0';
+    return ch == '\0' ? 0 : -1;
 }
 
 inline bool contains(const string& s, const string& search) {

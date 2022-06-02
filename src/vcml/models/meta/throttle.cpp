@@ -21,38 +21,53 @@
 namespace vcml {
 namespace meta {
 
-void throttle::update() {
-    sc_time quantum  = tlm::tlm_global_quantum::instance().get();
-    sc_time interval = max(update_interval.get(), quantum);
-    next_trigger(interval);
+static u64 do_usleep(u64 delta) {
+    u64 start = timestamp_us();
+    usleep(delta);
+    u64 end = timestamp_us();
+    if (start >= end)
+        return 0;
+    u64 d = end - start;
+    return d > delta ? d - delta : 0;
+}
 
-    if (rtf > 0.0) {
-        u64 actual = realtime_us() - m_time_real;
-        u64 target = time_to_us(interval) / rtf;
+void throttle::thread() {
+    u64 start = realtime_us();
+    u64 extra = 0;
 
-        if (actual < target) {
-            usleep(target - actual);
-            if (!m_throttling)
-                log_debug("throttling started");
-            m_throttling = true;
-        } else {
-            if (m_throttling)
-                log_debug("throttling stopped");
-            m_throttling = false;
+    while (true) {
+        sc_time quantum = tlm::tlm_global_quantum::instance().get();
+        sc_time interval = max(update_interval.get(), quantum);
+        wait(interval);
+
+        if (rtf > 0.0) {
+            u64 actual = realtime_us() - start + extra;
+            u64 target = time_to_us(interval) / rtf;
+
+            if (actual < target) {
+                extra = do_usleep(target - actual);
+                if (!m_throttling)
+                    log_debug("throttling started");
+                m_throttling = true;
+            } else {
+                extra = actual - target;
+                if (m_throttling)
+                    log_debug("throttling stopped");
+                m_throttling = false;
+            }
         }
-    }
 
-    m_time_real = realtime_us();
+        start = realtime_us();
+    }
 }
 
 throttle::throttle(const sc_module_name& nm):
     module(nm),
     m_throttling(false),
-    m_time_real(realtime_us()),
     update_interval("update_interval", sc_time(10.0, SC_MS)),
     rtf("rtf", 0.0) {
     SC_HAS_PROCESS(throttle);
-    SC_METHOD(update);
+    SC_THREAD(thread);
 }
 
 throttle::~throttle() {

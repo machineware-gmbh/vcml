@@ -30,9 +30,6 @@ struct suspend_manager {
     atomic<bool> is_quitting;
     atomic<bool> is_suspended;
 
-    mutable mutex sysc_lock;
-    condition_variable_any sysc_notify;
-
     mutable mutex suspender_lock;
     vector<suspender*> suspenders;
 
@@ -53,9 +50,11 @@ struct suspend_manager {
     void handle_requests();
 
     suspend_manager();
+
+    static suspend_manager& instance();
 };
 
-static suspend_manager g_manager;
+suspend_manager& g_manager = suspend_manager::instance();
 
 void suspend_manager::request_pause(suspender* s) {
     if (is_quitting)
@@ -63,6 +62,8 @@ void suspend_manager::request_pause(suspender* s) {
     if (!sim_running())
         VCML_ERROR("cannot suspend, simulation not running");
     lock_guard<mutex> guard(suspender_lock);
+    if (suspenders.empty())
+        on_next_update([&]() -> void { handle_requests(); });
     stl_add_unique(suspenders, s);
 }
 
@@ -70,7 +71,7 @@ void suspend_manager::request_resume(suspender* s) {
     lock_guard<mutex> guard(suspender_lock);
     stl_remove_erase(suspenders, s);
     if (suspenders.empty())
-        sysc_notify.notify_all();
+        thctl_notify();
 }
 
 bool suspend_manager::is_suspending(const suspender* s) const {
@@ -84,11 +85,6 @@ size_t suspend_manager::count() const {
 }
 
 suspender* suspend_manager::current() const {
-    if (!sysc_lock.try_lock())
-        return nullptr;
-
-    sysc_lock.unlock();
-
     lock_guard<mutex> guard(suspender_lock);
     if (suspenders.empty())
         return nullptr;
@@ -97,9 +93,12 @@ suspender* suspend_manager::current() const {
 
 void suspend_manager::quit() {
     lock_guard<mutex> guard(suspender_lock);
+    if (!is_quitting)
+        on_next_update([]() -> void { sc_stop(); });
+
     is_quitting = true;
     suspenders.clear();
-    sysc_notify.notify_all();
+    thctl_notify();
 }
 
 void suspend_manager::notify_suspend(sc_object* obj) {
@@ -131,34 +130,26 @@ void suspend_manager::notify_resume(sc_object* obj) {
 }
 
 void suspend_manager::handle_requests() {
-    if (is_quitting) {
-        static std::once_flag once;
-        std::call_once(once, sc_stop);
-        return;
-    }
-
-    if (count() == 0)
+    if (is_quitting || count() == 0)
         return;
 
     is_suspended = true;
     notify_suspend();
 
-    sysc_notify.wait(sysc_lock, [&]() -> bool { return count() == 0; });
+    while (count() > 0)
+        thctl_suspend();
 
     notify_resume();
     is_suspended = false;
 }
 
 suspend_manager::suspend_manager():
-    is_quitting(false),
-    is_suspended(false),
-    sysc_lock(),
-    sysc_notify(),
-    suspender_lock(),
-    suspenders() {
-    sysc_lock.lock();
-    auto fn = std::bind(&suspend_manager::handle_requests, this);
-    on_each_delta_cycle(fn);
+    is_quitting(false), is_suspended(false), suspender_lock(), suspenders() {
+}
+
+suspend_manager& suspend_manager::instance() {
+    static suspend_manager singleton;
+    return singleton;
 }
 
 suspender::suspender(const string& name):
@@ -173,38 +164,39 @@ suspender::~suspender() {
 }
 
 bool suspender::is_suspending() const {
-    return g_manager.is_suspending(this);
+    return suspend_manager::instance().is_suspending(this);
 }
 
 void suspender::suspend(bool wait) {
-    if (m_pcount++ == 0)
-        g_manager.request_pause(this);
+    suspend_manager& manager = suspend_manager::instance();
 
-    if (wait && !thctl_is_sysc_thread()) {
-        lock_guard<mutex> lock(g_manager.sysc_lock);
-    }
+    if (m_pcount++ == 0)
+        manager.request_pause(this);
+
+    if (wait && !thctl_is_sysc_thread())
+        thctl_block();
 }
 
 void suspender::resume() {
     if (--m_pcount == 0)
-        g_manager.request_resume(this);
+        suspend_manager::instance().request_resume(this);
     VCML_ERROR_ON(m_pcount < 0, "unmatched resume");
 }
 
 suspender* suspender::current() {
-    return g_manager.current();
+    return suspend_manager::instance().current();
 }
 
 void suspender::quit() {
-    g_manager.quit();
+    suspend_manager::instance().quit();
 }
 
 bool suspender::simulation_suspended() {
-    return g_manager.is_suspended;
+    return suspend_manager::instance().is_suspended;
 }
 
 void suspender::handle_requests() {
-    g_manager.handle_requests();
+    suspend_manager::instance().handle_requests();
 }
 
 } // namespace debugging

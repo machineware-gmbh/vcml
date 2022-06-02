@@ -38,10 +38,10 @@
 #include "vcml/common/report.h"
 #include "vcml/common/utils.h"
 
-#define SYSTEMC_VERSION_2_3_0a 20120701
-#define SYSTEMC_VERSION_2_3_1a 20140417
-#define SYSTEMC_VERSION_2_3_2  20171012
-#define SYSTEMC_VERSION_2_3_3  20181013
+#define SYSTEMC_VERSION_2_3_0a 20120701 // NOLINT
+#define SYSTEMC_VERSION_2_3_1a 20140417 // NOLINT
+#define SYSTEMC_VERSION_2_3_2  20171012 // NOLINT
+#define SYSTEMC_VERSION_2_3_3  20181013 // NOLINT
 
 #if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
 inline sc_core::sc_time operator%(const sc_core::sc_time& t1,
@@ -243,8 +243,14 @@ inline bool failed(const tlm_generic_payload& tx) {
     return failed(tx.get_response_status());
 }
 
+inline void tx_reset(tlm_generic_payload& tx) {
+    tx.set_dmi_allowed(false);
+    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
+}
+
 inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd, u64 addr,
                      void* data, unsigned int size) {
+    tx_reset(tx);
     tx.set_command(cmd);
     tx.set_address(addr);
     tx.set_data_ptr(reinterpret_cast<unsigned char*>(data));
@@ -252,8 +258,6 @@ inline void tx_setup(tlm_generic_payload& tx, tlm_command cmd, u64 addr,
     tx.set_streaming_width(size);
     tx.set_byte_enable_ptr(nullptr);
     tx.set_byte_enable_length(0);
-    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
-    tx.set_dmi_allowed(false);
 }
 
 inline u64 tx_size(const tlm_generic_payload& tx) {
@@ -310,6 +314,7 @@ void on_next_update(function<void(void)> callback);
 
 void on_end_of_elaboration(function<void(void)> callback);
 void on_start_of_simulation(function<void(void)> callback);
+void on_end_of_simulation(function<void(void)> callback);
 
 void on_each_delta_cycle(function<void(void)> callback);
 void on_each_time_step(function<void(void)> callback);
@@ -326,13 +331,17 @@ public:
     const sc_time& timeout() const { return m_timeout; }
 
     timer(function<void(timer&)> cb);
-    timer(const sc_time& delta, function<void(timer&)> cb): timer(cb) {
+    ~timer();
+
+    timer(const sc_time& delta, function<void(timer&)> cb):
+        timer(std::move(cb)) {
         reset(delta);
     }
-    timer(double t, sc_time_unit tu, function<void(timer&)> cb): timer(cb) {
+
+    timer(double t, sc_time_unit tu, function<void(timer&)> cb):
+        timer(std::move(cb)) {
         reset(t, tu);
     }
-    ~timer();
 
     void trigger();
     void cancel();
@@ -386,8 +395,8 @@ private:
 
         VCML_ERROR_ON(idx >= LIMIT, "socket out of bounds: %zu", idx);
         hierarchy_guard guard(m_parent);
-        string nm     = mkstr("%s[%zu]", m_name.c_str(), idx);
-        socket        = new SOCKET(nm.c_str(), m_space);
+        string nm = mkstr("%s[%zu]", m_name.c_str(), idx);
+        socket = new SOCKET(nm.c_str(), m_space);
         m_ids[socket] = idx;
         return *socket;
     }

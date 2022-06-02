@@ -74,7 +74,7 @@ private:
     void write_status(u32 val);
 
     // disabled
-    mmio()            = delete;
+    mmio() = delete;
     mmio(const mmio&) = delete;
 
 public:

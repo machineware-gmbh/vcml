@@ -30,16 +30,16 @@ namespace vcml {
 namespace ui {
 
 enum key_state : u32 {
-    VCML_KEY_UP   = 0u,
+    VCML_KEY_UP = 0u,
     VCML_KEY_DOWN = 1u,
     VCML_KEY_HELD = 2u,
 };
 
 enum mouse_button : u32 {
-    BUTTON_NONE   = 0u,
-    BUTTON_LEFT   = 1u,
+    BUTTON_NONE = 0u,
+    BUTTON_LEFT = 1u,
     BUTTON_MIDDLE = 2u,
-    BUTTON_RIGHT  = 3u,
+    BUTTON_RIGHT = 3u,
 };
 
 enum event_type : u32 {

@@ -291,7 +291,7 @@ void sdl_client::init_window() {
         VCML_ERROR("cannot create SDL window: %s", SDL_GetError());
 
     window_id = SDL_GetWindowID(window);
-    renderer  = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, -1, 0);
     if (renderer == nullptr)
         VCML_ERROR("cannot create SDL renderer: %s", SDL_GetError());
 
@@ -304,7 +304,7 @@ void sdl_client::init_window() {
 
     const int access = SDL_TEXTUREACCESS_STREAMING;
     const int format = sdl_format_from_fbmode(disp->mode());
-    texture          = SDL_CreateTexture(renderer, format, access, w, h);
+    texture = SDL_CreateTexture(renderer, format, access, w, h);
     if (texture == nullptr)
         VCML_ERROR("cannot create SDL texture: %s", SDL_GetError());
 
@@ -334,12 +334,12 @@ void sdl_client::draw_window() {
         return;
 
     SDL_Rect rect = {};
-    rect.x        = 0;
-    rect.y        = 0;
-    rect.w        = disp->xres();
-    rect.h        = disp->yres();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = disp->xres();
+    rect.h = disp->yres();
 
-    int pitch          = disp->framebuffer_size() / disp->yres();
+    int pitch = disp->framebuffer_size() / disp->yres();
     const void* pixels = disp->framebuffer();
 
     SDL_RenderClear(renderer);
@@ -354,19 +354,19 @@ void sdl_client::draw_window() {
 
     // all times in microseconds
     const u64 update_interval = 1000000;
-    u64 delta                 = realtime_us() - time_frame;
+    u64 delta = realtime_us() - time_frame;
     if (delta >= update_interval) {
-        u64 now    = time_to_us(sc_time_stamp());
+        u64 now = time_to_us(sc_time_stamp());
         double rtf = (double)(now - time_sim) / delta;
         double fps = (double)frames / (delta / 1e6);
 
         const char* name = disp->name();
-        string caption   = mkstr("%s %.1f fps %.2f rtf", name, fps, rtf);
+        string caption = mkstr("%s %.1f fps %.2f rtf", name, fps, rtf);
         SDL_SetWindowTitle(window, caption.c_str());
 
         time_frame = realtime_us();
-        time_sim   = now;
-        frames     = 0;
+        time_sim = now;
+        frames = 0;
     }
 }
 
@@ -492,7 +492,7 @@ void sdl::register_display(display* disp) {
         VCML_ERROR("display %s already registered", disp->name());
 
     sdl_client client = {};
-    client.disp       = disp;
+    client.disp = disp;
     m_clients.push_back(client);
     m_attached++;
 

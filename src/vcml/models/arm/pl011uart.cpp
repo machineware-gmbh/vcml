@@ -21,22 +21,12 @@
 namespace vcml {
 namespace arm {
 
-void pl011uart::poll() {
-    if (!is_enabled() || !is_rx_enabled()) {
-        next_trigger(m_enable);
-        return;
-    }
-
-    u8 val;
-    if (serial_in(val)) {
+void pl011uart::serial_receive(u8 data) {
+    if (is_enabled() || is_rx_enabled()) {
         if (m_fifo.size() < m_fifo_size)
-            m_fifo.push((u16)val);
+            m_fifo.push(data);
         update();
     }
-
-    sc_time cycle   = clock_cycle();
-    sc_time quantum = tlm_global_quantum::instance().get();
-    next_trigger(max(cycle, quantum));
 }
 
 void pl011uart::update() {
@@ -68,7 +58,7 @@ u16 pl011uart::read_dr() {
         m_fifo.pop();
     }
 
-    dr  = val;
+    dr = val;
     rsr = (val >> RSR_O) & RSR_M;
 
     update();
@@ -83,14 +73,13 @@ void pl011uart::write_dr(u16 val) {
     // since those are not simulated, we just set them to zero.
     dr = val & 0x00ff;
     ris |= RIS_TX;
-    serial_out(dr);
+    serial_tx.send(dr);
     update();
 }
 
 void pl011uart::write_rsr(u8 val) {
     //  A write to this register clears the framing, parity, break,
     //  and overrun errors. The data value is not important.
-    return;
 }
 
 void pl011uart::write_ibrd(u16 val) {
@@ -108,7 +97,8 @@ void pl011uart::write_lcr(u8 val) {
         log_debug("FIFO disabled");
 
     m_fifo_size = (val & LCR_FEN) ? FIFOSIZE : 1;
-    lcr         = val & LCR_H_M;
+
+    lcr = val & LCR_H_M;
 }
 
 void pl011uart::write_cr(u16 val) {
@@ -125,7 +115,6 @@ void pl011uart::write_cr(u16 val) {
     if (is_rx_enabled() && !(val & CR_RXE))
         log_debug("receiver disabled");
 
-    m_enable.notify(SC_ZERO_TIME);
     cr = val;
 }
 
@@ -146,10 +135,9 @@ void pl011uart::write_icr(u16 val) {
 
 pl011uart::pl011uart(const sc_module_name& nm):
     peripheral(nm),
-    serial::port(),
+    serial_host(),
     m_fifo_size(),
     m_fifo(),
-    m_enable("enable"),
     dr("dr", 0x000, 0x0),
     rsr("rsr", 0x004, 0x0),
     fr("fr", 0x018, FR_TXFE | FR_RXFE),
@@ -167,7 +155,9 @@ pl011uart::pl011uart(const sc_module_name& nm):
     pid("pid", 0xFE0, 0x00000000),
     cid("cid", 0xFF0, 0x00000000),
     in("in"),
-    irq("irq") {
+    irq("irq"),
+    serial_tx("serial_tx"),
+    serial_rx("serial_rx") {
     dr.sync_always();
     dr.allow_read_write();
     dr.on_read(&pl011uart::read_dr);
@@ -225,11 +215,6 @@ pl011uart::pl011uart(const sc_module_name& nm):
 
     cid.sync_never();
     cid.allow_read_only();
-
-    SC_HAS_PROCESS(pl011uart);
-    SC_METHOD(poll);
-
-    reset();
 }
 
 pl011uart::~pl011uart() {

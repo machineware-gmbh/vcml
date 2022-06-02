@@ -18,9 +18,14 @@
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/rst.h"
+#include "vcml/protocols/clk.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
+#include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
+#include "vcml/protocols/eth.h"
+#include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/tracing/tracer_term.h"
@@ -31,16 +36,19 @@ size_t tracer_term::trace_name_length = 16;
 size_t tracer_term::trace_indent_incr = 1;
 size_t tracer_term::trace_curr_indent = 0;
 
-const char* tracer_term::colors[NUM_PROTOCOLS] = {
-    /* [PROTO_TLM]    = */ "\x1B[35m", // magenta
-    /* [PROTO_IRQ]    = */ "\x1B[33m", // yellow
-    /* [PROTO_PCI]    = */ "\x1B[36m", // cyan
-    /* [PROTO_SPI]    = */ "\x1B[93m", // light yellow
-    /* [PROTO_SD]     = */ "\x1B[95m", // light magenta
-    /* [PROTO_VIRTIO] = */ "\x1B[96m", // light cyan
+array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
+    /* [PROTO_TLM]      = */ termcolors::MAGENTA,
+    /* [PROTO_IRQ]      = */ termcolors::YELLOW,
+    /* [PROTO_RST]      = */ termcolors::RED,
+    /* [PROTO_RST]      = */ termcolors::BLUE,
+    /* [PROTO_PCI]      = */ termcolors::CYAN,
+    /* [PROTO_I2C]      = */ termcolors::BRIGHT_GREEN,
+    /* [PROTO_SPI]      = */ termcolors::BRIGHT_YELLOW,
+    /* [PROTO_SD]       = */ termcolors::BRIGHT_MAGENTA,
+    /* [PROTO_SERIAL]   = */ termcolors::BRIGHT_RED,
+    /* [PROTO_VIRTIO]   = */ termcolors::BRIGHT_CYAN,
+    /* [PROTO_ETHERNET] = */ termcolors::BRIGHT_BLUE,
 };
-
-static const char* term_reset = "\x1B[0m";
 
 template <typename PAYLOAD>
 void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
@@ -75,7 +83,7 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
     }
 
     if (m_colors)
-        m_os << term_reset;
+        m_os << termcolors::CLEAR;
 
     if (msg.dir == TRACE_BW && !msg.error) {
         if (trace_curr_indent >= trace_indent_incr)
@@ -93,7 +101,19 @@ void tracer_term::trace(const activity<irq_payload>& msg) {
     do_trace(msg);
 }
 
+void tracer_term::trace(const activity<rst_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<clk_payload>& msg) {
+    do_trace(msg);
+}
+
 void tracer_term::trace(const activity<pci_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<i2c_payload>& msg) {
     do_trace(msg);
 }
 
@@ -110,6 +130,14 @@ void tracer_term::trace(const activity<sd_data>& msg) {
 }
 
 void tracer_term::trace(const activity<vq_message>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<eth_frame>& msg) {
     do_trace(msg);
 }
 

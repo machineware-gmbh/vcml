@@ -94,7 +94,7 @@ TEST(memory, move) {
 
     tlm_memory move = std::move(orig);
 
-    EXPECT_EQ(orig.size(), 0) << "size not zero after move";
+    EXPECT_EQ(orig.size(), 0) << "size not zero after move"; // NOLINT
     EXPECT_EQ(move.size(), size) << "size not copied correctly";
 
     EXPECT_EQ(orig.data(), nullptr) << "memory pointer not cleared after move";

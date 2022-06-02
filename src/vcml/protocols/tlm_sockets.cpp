@@ -92,11 +92,11 @@ u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access rw) {
 
 unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
                                         const tlm_sbi& info) try {
-    unsigned int bytes   = 0;
-    unsigned int size    = tx.get_data_length();
-    unsigned int width   = tx.get_streaming_width();
+    unsigned int bytes = 0;
+    unsigned int size = tx.get_data_length();
+    unsigned int width = tx.get_streaming_width();
     unsigned char* beptr = tx.get_byte_enable_ptr();
-    unsigned int belen   = tx.get_byte_enable_length();
+    unsigned int belen = tx.get_byte_enable_length();
 
     if ((width == 0) || (width > size) || (size % width)) {
         tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
@@ -108,14 +108,13 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
         return 0;
     }
 
-    tx.set_response_status(TLM_INCOMPLETE_RESPONSE);
-    tx.set_dmi_allowed(false);
+    tx_reset(tx);
     tx_set_sbi(tx, m_sbi | info);
 
     if (info.is_debug) {
-        sc_time t1 = sc_time_stamp();
-        bytes      = (*this)->transport_dbg(tx);
-        sc_time t2 = sc_time_stamp();
+        sc_time t1(sc_time_stamp());
+        bytes = (*this)->transport_dbg(tx);
+        sc_time t2(sc_time_stamp());
 
         if (thctl_is_sysc_thread() && t1 != t2)
             VCML_ERROR("time advanced during debug call");
@@ -127,7 +126,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
             m_host->sync();
 
         sc_time& offset = m_host->local_time();
-        sc_time local   = sc_time_stamp() + offset;
+        sc_time local = sc_time_stamp() + offset;
 
         trace_fw(tx, offset);
         (*this)->b_transport(tx, offset);
@@ -215,10 +214,10 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
 
     if (info.is_debug) {
         tx_setup(m_txd, cmd, addr, data, size);
-        size                   = send(m_txd, info);
-        tlm_response_status rs = m_txd.get_response_status();
+        size = send(m_txd, info);
 
         // transport_dbg does not always change response status
+        tlm_response_status rs = m_txd.get_response_status();
         if (rs == TLM_INCOMPLETE_RESPONSE)
             rs = TLM_OK_RESPONSE;
 
@@ -329,7 +328,7 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     m_parent(hierarchy_search<module>()),
     m_adapter(nullptr),
     trace(this, "trace", false),
-    trace_errors(this, "trace_errros", false),
+    trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),
     as(a) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
@@ -371,7 +370,7 @@ void tlm_target_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
 }
 
 void tlm_target_socket::invalidate_dmi() {
-    for (auto dmi : m_dmi_cache.get_entries()) {
+    for (const tlm_dmi& dmi : m_dmi_cache.get_entries()) {
         (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
                                            dmi.get_end_address());
     }

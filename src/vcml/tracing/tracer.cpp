@@ -27,14 +27,24 @@ const char* protocol_name(protocol_kind kind) {
         return "TLM";
     case PROTO_IRQ:
         return "IRQ";
+    case PROTO_RST:
+        return "RST";
+    case PROTO_CLK:
+        return "CLK";
     case PROTO_PCI:
         return "PCI";
+    case PROTO_I2C:
+        return "I2C";
     case PROTO_SPI:
         return "SPI";
     case PROTO_SD:
         return "SD";
+    case PROTO_SERIAL:
+        return "SERIAL";
     case PROTO_VIRTIO:
         return "VIRTIO";
+    case PROTO_ETHERNET:
+        return "ETHERNET";
     default:
         return "unknown protocol";
     }

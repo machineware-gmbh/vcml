@@ -102,19 +102,11 @@ public:
 };
 
 TEST(clint, clint) {
-    sc_signal<clock_t> clk("clk_100mhz");
-
     clint_stim stim("stim");
     riscv::clint clint("clint");
-    generic::clock sysclk("sysclk", 100 * MHz);
 
-    stim.rst.stub();
-    clint.rst.stub();
-
-    stim.clk.bind(clk);
-    clint.clk.bind(clk);
-    sysclk.clk.bind(clk);
-
+    stim.clk.bind(clint.clk);
+    stim.rst.bind(clint.rst);
     stim.out.bind(clint.in);
 
     clint.irq_sw[0].bind(stim.irq_sw_0);

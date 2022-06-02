@@ -21,53 +21,68 @@
 namespace vcml {
 namespace generic {
 
+static serial_bits uart8250_data_bits(u8 lcr) {
+    return (serial_bits)(SERIAL_5_BITS + (lcr & 3));
+}
+
+static serial_stop uart8250_stop_bits(u8 lcr) {
+    if (lcr & uart8250::LCR_SPB)
+        return (lcr & 3) ? SERIAL_STOP_2 : SERIAL_STOP_1_5;
+    return SERIAL_STOP_1;
+}
+
+static serial_parity uart8250_parity(u8 lcr) {
+    if (!(lcr & uart8250::LCR_PEN))
+        return SERIAL_PARITY_NONE;
+
+    if (!(lcr & uart8250::LCR_SPB)) {
+        if (lcr & uart8250::LCR_EPS)
+            return SERIAL_PARITY_EVEN;
+        return SERIAL_PARITY_ODD;
+    }
+
+    if (lcr & uart8250::LCR_EPS)
+        return SERIAL_PARITY_MARK;
+    return SERIAL_PARITY_SPACE;
+}
+
 void uart8250::calibrate() {
     if (m_divisor == 0) {
         log_warn("zero baud divisor specified, reverting to default");
         m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
     }
 
-    u32 baud = clock_hz() / (m_divisor * 16);
-    log_debug("setup divisor %u (%u baud)", m_divisor, baud);
+    baud_t baud = clock_hz() / (m_divisor * 16);
+    log_debug("setup divisor %u (%ld baud)", m_divisor, baud);
+    serial_tx.set_baud(baud);
 }
 
 void uart8250::update() {
-    u8 val;
+    if (m_tx_fifo.empty())
+        lsr |= LSR_TEMT;
+    else
+        lsr &= ~LSR_TEMT;
 
-    if ((m_rx_fifo.size() < m_rx_size) && serial_in(val)) {
-        m_rx_fifo.push(val);
-        lsr |= LSR_DR;
-    }
-
-    while (!m_tx_fifo.empty()) {
-        val = m_tx_fifo.front();
-        m_tx_fifo.pop();
-        serial_out(val);
-
+    if (m_tx_fifo.size() < m_tx_size)
         lsr |= LSR_THRE;
-        if (m_tx_fifo.empty())
-            lsr |= LSR_TEMT;
-    }
+    else
+        lsr &= ~LSR_THRE;
 
-    if (m_tx_fifo.empty() && (ier & IER_THRE)) {
-        log_debug("transmitter empty, setting THRE interrupt");
-        irq = true;
-    }
+    if (!m_rx_fifo.empty())
+        lsr |= LSR_DR;
+    else
+        lsr &= ~LSR_DR;
 
-    if (!m_rx_fifo.empty() && (ier & IER_RDA)) {
-        log_debug("data received, setting RDA interrupt");
-        irq = true;
-    }
-}
+    iir = 0;
 
-void uart8250::poll() {
-    update();
+    if (lsr & LSR_THRE)
+        iir |= IRQ_THRE;
+    if (lsr & LSR_DR)
+        iir |= IRQ_RDA;
+    if (lsr & LSR_OE)
+        iir |= IRQ_RLS;
 
-    // it does not make sense to poll multiple times during
-    // a quantum, so if a quantum is set, only update once.
-    sc_time cycle   = clock_cycle() * m_divisor;
-    sc_time quantum = tlm_global_quantum::instance().get();
-    next_trigger(max(cycle, quantum));
+    irq = iir & ier;
 }
 
 u8 uart8250::read_rbr() {
@@ -79,14 +94,6 @@ u8 uart8250::read_rbr() {
 
     u8 val = m_rx_fifo.front();
     m_rx_fifo.pop();
-    if (m_rx_fifo.empty()) {
-        lsr &= ~LSR_DR;
-        if ((ier & IER_RDA) && irq) {
-            log_debug("received data fetched, clearing RDA interrupt");
-            irq = false;
-        }
-    }
-
     update();
     return val;
 }
@@ -98,15 +105,29 @@ u8 uart8250::read_ier() {
 }
 
 u8 uart8250::read_iir() {
-    if (!irq.read())
-        return IIR_NOIP;
+    if (iir & IRQ_RLS)
+        return IIR_RLS;
 
-    if (!m_rx_fifo.empty())
+    if (iir & IRQ_RDA)
         return IIR_RDA;
 
-    log_debug("IIR read, clearing THRE interrupt");
-    irq = false;
-    return IIR_THRE;
+    if (iir & IRQ_THRE) {
+        iir &= ~IRQ_THRE;
+        irq = false;
+        return IIR_RDA;
+    }
+
+    if (iir & IRQ_MST)
+        return IIR_MST;
+
+    return IIR_NOIP;
+}
+
+u8 uart8250::read_lsr() {
+    u8 val = lsr;
+    lsr &= ~(LSR_OE | LSR_PE);
+    update();
+    return val;
 }
 
 void uart8250::write_thr(u8 val) {
@@ -116,12 +137,12 @@ void uart8250::write_thr(u8 val) {
         return;
     }
 
-    m_tx_fifo.push(val);
-    lsr &= ~LSR_TEMT;
-    if (m_tx_fifo.size() == m_tx_size)
-        lsr &= ~LSR_THRE;
-
     thr = val;
+    m_tx_fifo.push(thr);
+    update();
+
+    m_tx_fifo.pop();
+    serial_tx.send(thr);
     update();
 }
 
@@ -132,20 +153,20 @@ void uart8250::write_ier(u8 val) {
         return;
     }
 
-    VCML_LOG_REG_BIT_CHANGE(IER_RDA, ier, val);
-    VCML_LOG_REG_BIT_CHANGE(IER_THRE, ier, val);
-    VCML_LOG_REG_BIT_CHANGE(IER_RLS, ier, val);
-    VCML_LOG_REG_BIT_CHANGE(IER_MST, ier, val);
+    VCML_LOG_REG_BIT_CHANGE(IRQ_RDA, ier, val);
+    VCML_LOG_REG_BIT_CHANGE(IRQ_THRE, ier, val);
+    VCML_LOG_REG_BIT_CHANGE(IRQ_RLS, ier, val);
+    VCML_LOG_REG_BIT_CHANGE(IRQ_MST, ier, val);
 
-    ier = val & 0xF;
+    ier = val & 0xf;
     update();
 }
 
 void uart8250::write_lcr(u8 val) {
-    int oldwl = (lcr & 0x3) + 5;
-    int newwl = (val & 0x3) + 5;
-    if (newwl != oldwl)
-        log_debug("word length %d bits", newwl);
+    size_t oldbits = SERIAL_5_BITS + (lcr & 0x3);
+    size_t newbits = SERIAL_5_BITS + (val & 0x3);
+    if (newbits != oldbits)
+        log_debug("word length %zu bits", newbits);
 
     VCML_LOG_REG_BIT_CHANGE(LCR_STP, lcr, val);
     VCML_LOG_REG_BIT_CHANGE(LCR_PEN, lcr, val);
@@ -155,6 +176,10 @@ void uart8250::write_lcr(u8 val) {
     VCML_LOG_REG_BIT_CHANGE(LCR_DLAB, lcr, val);
 
     lcr = val;
+
+    serial_tx.set_data_width(uart8250_data_bits(lcr));
+    serial_tx.set_stop_bits(uart8250_stop_bits(lcr));
+    serial_tx.set_parity(uart8250_parity(lcr));
 }
 
 void uart8250::write_fcr(u8 val) {
@@ -193,9 +218,25 @@ void uart8250::write_fcr(u8 val) {
     }
 }
 
+void uart8250::serial_receive(const serial_target_socket& socket,
+                              serial_payload& tx) {
+    if (m_rx_fifo.size() < m_rx_size) {
+        m_rx_fifo.push(tx.data & tx.mask);
+        if (!serial_test_parity(tx)) {
+            log_warn("parity error detected");
+            lsr |= LSR_PE;
+        }
+    } else {
+        log_warn("rx fifo overflow");
+        lsr |= LSR_OE;
+    }
+
+    update();
+}
+
 uart8250::uart8250(const sc_module_name& nm):
     peripheral(nm),
-    serial::port(),
+    serial_host(),
     m_rx_size(1),
     m_tx_size(1),
     m_rx_fifo(),
@@ -204,11 +245,13 @@ uart8250::uart8250(const sc_module_name& nm):
     thr("thr", 0x0, 0x00),
     ier("ier", 0x1, 0x00),
     iir("iir", 0x2, IIR_NOIP),
-    lcr("lcr", 0x3, 0x00),
+    lcr("lcr", 0x3, LCR_WL8), // 8bits, no parity
     mcr("mcr", 0x4, 0x00),
     lsr("lsr", 0x5, LSR_THRE | LSR_TEMT),
     msr("msr", 0x6, 0x00),
     scr("scr", 0x7, 0x00),
+    serial_tx("serial_tx"),
+    serial_rx("serial_rx"),
     irq("irq"),
     in("in") {
     thr.allow_read_write();
@@ -227,12 +270,16 @@ uart8250::uart8250(const sc_module_name& nm):
     lcr.on_write(&uart8250::write_lcr);
 
     lsr.allow_read_only();
+    lsr.on_read(&uart8250::read_lsr);
+
     mcr.allow_read_write();
     msr.allow_read_write();
     scr.allow_read_write();
 
-    SC_HAS_PROCESS(uart8250);
-    SC_METHOD(poll);
+    serial_tx.set_baud(DEFAULT_BAUD);
+    serial_tx.set_data_width(uart8250_data_bits(lcr));
+    serial_tx.set_stop_bits(uart8250_stop_bits(lcr));
+    serial_tx.set_parity(uart8250_parity(lcr));
 }
 
 uart8250::~uart8250() {

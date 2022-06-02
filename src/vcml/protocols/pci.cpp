@@ -212,79 +212,65 @@ void pci_target::pci_interrupt(pci_irq irq, bool state) {
         (*socket)->pci_interrupt(irq, state);
 }
 
-void pci_initiator_socket::pci_bar_map(const pci_bar& bar) {
-    m_initiator->pci_bar_map(*this, bar);
+pci_base_initiator_socket::pci_base_initiator_socket(const char* nm,
+                                                     address_space as):
+    pci_base_initiator_socket_b(nm, as), m_stub(nullptr) {
 }
 
-void pci_initiator_socket::pci_bar_unmap(int barno) {
-    m_initiator->pci_bar_unmap(*this, barno);
+pci_base_initiator_socket::~pci_base_initiator_socket() {
+    if (m_stub)
+        delete m_stub;
 }
 
-void* pci_initiator_socket::pci_dma_ptr(vcml_access rw, u64 addr, u64 sz) {
-    return m_initiator->pci_dma_ptr(*this, rw, addr, sz);
+void pci_base_initiator_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new pci_target_stub(basename());
+    bind(m_stub->pci_in);
 }
 
-bool pci_initiator_socket::pci_dma_read(u64 addr, u64 size, void* data) {
-    return m_initiator->pci_dma_read(*this, addr, size, data);
+pci_base_target_socket::pci_base_target_socket(const char* n, address_space a):
+    pci_base_target_socket_b(n, a), m_stub(nullptr) {
 }
 
-bool pci_initiator_socket::pci_dma_write(u64 addr, u64 size,
-                                         const void* data) {
-    return m_initiator->pci_dma_write(*this, addr, size, data);
+pci_base_target_socket::~pci_base_target_socket() {
+    if (m_stub)
+        delete m_stub;
 }
 
-void pci_initiator_socket::pci_interrupt(pci_irq irq, bool state) {
-    m_initiator->pci_interrupt(*this, irq, state);
+void pci_base_target_socket::stub() {
+    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
+    hierarchy_guard guard(this);
+    m_stub = new pci_initiator_stub(basename());
+    m_stub->pci_out.bind(*this);
 }
 
-pci_initiator_socket::pci_initiator_socket(const char* n, address_space a):
-    pci_base_initiator_socket(n, a),
-    pci_bw_transport_if(),
+pci_initiator_socket::pci_initiator_socket(const char* nm, address_space as):
+    pci_base_initiator_socket(nm, as),
     m_initiator(hierarchy_search<pci_initiator>()),
-    m_stub(nullptr) {
+    m_transport(this) {
     VCML_ERROR_ON(!m_initiator, "%s outside pci_initiator", name());
-    bind(*(pci_bw_transport_if*)this);
-    if (m_initiator)
-        m_initiator->m_sockets.push_back(this);
+    m_initiator->m_sockets.push_back(this);
+    bind(m_transport);
 }
 
 pci_initiator_socket::~pci_initiator_socket() {
     if (m_initiator)
         stl_remove_erase(m_initiator->m_sockets, this);
-    if (m_stub)
-        delete m_stub;
-}
-
-sc_core::sc_type_index pci_initiator_socket::get_protocol_types() const {
-    return typeid(pci_protocol_types);
 }
 
 void pci_initiator_socket::transport(pci_payload& tx) {
     trace_fw(tx);
-    (*this)->pci_transport(tx);
-    trace_bw(tx);
-}
-
-void pci_initiator_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
-    m_stub = new pci_target_stub(mkstr("%s_stub", basename()).c_str());
-    bind(m_stub->pci_in);
-}
-
-void pci_target_socket::pci_transport(pci_payload& tx) {
-    trace_fw(tx);
-    m_target->pci_transport(*this, tx);
+    get_interface(0)->pci_transport(tx);
     trace_bw(tx);
 }
 
 pci_target_socket::pci_target_socket(const char* nm, address_space space):
     pci_base_target_socket(nm, space),
-    pci_fw_transport_if(),
     m_target(hierarchy_search<pci_target>()),
-    m_stub(nullptr) {
+    m_transport(this) {
     VCML_ERROR_ON(!m_target, "%s outside pci_target", name());
-    bind(*(pci_fw_transport_if*)this);
+    bind(m_transport);
     if (m_target)
         m_target->m_sockets.push_back(this);
 }
@@ -292,62 +278,44 @@ pci_target_socket::pci_target_socket(const char* nm, address_space space):
 pci_target_socket::~pci_target_socket() {
     if (m_target)
         stl_remove_erase(m_target->m_sockets, this);
-    if (m_stub)
-        delete m_stub;
 }
 
-sc_core::sc_type_index pci_target_socket::get_protocol_types() const {
-    return typeid(pci_protocol_types);
-}
-
-void pci_target_socket::stub() {
-    VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
-    m_stub = new pci_initiator_stub(mkstr("%s_stub", basename()).c_str());
-    m_stub->pci_out.bind(*this);
-}
-
-void pci_initiator_stub::pci_bar_map(pci_initiator_socket& socket,
-                                     const pci_bar& bar) {
+void pci_initiator_stub::pci_bar_map(const pci_bar& bar) {
     // nothing to do
 }
 
-void pci_initiator_stub::pci_bar_unmap(pci_initiator_socket& socket,
-                                       int barno) {
+void pci_initiator_stub::pci_bar_unmap(int barno) {
     // nothing to do
 }
 
-void pci_initiator_stub::pci_interrupt(pci_initiator_socket& socket,
-                                       pci_irq irq, bool state) {
+void pci_initiator_stub::pci_interrupt(pci_irq irq, bool state) {
     // nothing to do
 }
 
-void* pci_initiator_stub::pci_dma_ptr(pci_initiator_socket& socket,
-                                      vcml_access rw, u64 addr, u64 size) {
+void* pci_initiator_stub::pci_dma_ptr(vcml_access rw, u64 addr, u64 size) {
     return nullptr; // nothing to do
 }
 
-bool pci_initiator_stub::pci_dma_read(pci_initiator_socket& socket, u64 addr,
-                                      u64 size, void* data) {
+bool pci_initiator_stub::pci_dma_read(u64 addr, u64 size, void* data) {
     return false; // nothing to do
 }
 
-bool pci_initiator_stub::pci_dma_write(pci_initiator_socket& socket, u64 addr,
-                                       u64 size, const void* data) {
+bool pci_initiator_stub::pci_dma_write(u64 addr, u64 size, const void* data) {
     return false; // nothing to do
 }
 
-pci_initiator_stub::pci_initiator_stub(const sc_module_name& nm):
-    module(nm), pci_initiator(), pci_out("pci_out") {
+pci_initiator_stub::pci_initiator_stub(const char* nm):
+    pci_bw_transport_if(), pci_out(mkstr("%s_stub", nm).c_str()) {
+    pci_out.bind(*this);
 }
 
-void pci_target_stub::pci_transport(pci_target_socket& socket,
-                                    pci_payload& tx) {
+void pci_target_stub::pci_transport(pci_payload& tx) {
     // nothing to do
 }
 
-pci_target_stub::pci_target_stub(const sc_module_name& nm):
-    module(nm), pci_target(), pci_in("pci_in") {
+pci_target_stub::pci_target_stub(const char* nm):
+    pci_fw_transport_if(), pci_in(mkstr("%s_stub", nm).c_str()) {
+    pci_in.bind(*this);
 }
 
 } // namespace vcml

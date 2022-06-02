@@ -27,8 +27,7 @@
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
-
-#include "vcml/net/adapter.h"
+#include "vcml/protocols/eth.h"
 
 #include "vcml/peripheral.h"
 
@@ -79,15 +78,15 @@ class lan9118_mac : public peripheral
 {
 private:
     lan9118& m_parent;
-    net::mac_addr m_addr;
+    mac_addr m_addr;
 
     void write_cr(u32 val);
     void write_mii_acc(u32 val);
     void write_mii_data(u32 val);
 
 public:
-    net::mac_addr address() const { return m_addr; }
-    void set_address(const net::mac_addr& addr);
+    mac_addr address() const { return m_addr; }
+    void set_address(const mac_addr& addr);
 
     reg<u32> cr;
     reg<u32> addrh;
@@ -107,10 +106,10 @@ public:
     VCML_KIND(lan9118_mac);
     virtual void reset() override;
 
-    bool filter(const net::mac_addr& dest) const;
+    bool filter(const mac_addr& dest) const;
 };
 
-class lan9118 : public peripheral, public net::adapter
+class lan9118 : public peripheral, public eth_host
 {
 private:
     struct packet {
@@ -129,7 +128,7 @@ private:
 
         void reset() {
             used_dw = length = offset = remain = padding = 0;
-            state                                        = CMDA;
+            state = CMDA;
             data.clear();
         }
     };
@@ -292,10 +291,13 @@ public:
     tlm_target_socket in;
     irq_initiator_socket irq;
 
+    eth_initiator_socket eth_tx;
+    eth_target_socket eth_rx;
+
     lan9118_phy phy;
     lan9118_mac mac;
 
-    net::mac_addr mac_address() const { return mac.address(); }
+    mac_addr mac_address() const { return mac.address(); }
 
     lan9118(const sc_module_name& name);
     virtual ~lan9118();
@@ -305,8 +307,8 @@ public:
     void update_irq();
 
 protected:
-    virtual void on_link_up() override;
-    virtual void on_link_down() override;
+    virtual void eth_link_up() override;
+    virtual void eth_link_down() override;
 };
 
 } // namespace generic

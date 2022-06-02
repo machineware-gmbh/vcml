@@ -61,10 +61,11 @@
 #include "vcml/debugging/vspserver.h"
 
 #include "vcml/serial/backend.h"
-#include "vcml/serial/port.h"
+#include "vcml/serial/terminal.h"
 
-#include "vcml/net/backend.h"
-#include "vcml/net/adapter.h"
+#include "vcml/ethernet/backend.h"
+#include "vcml/ethernet/bridge.h"
+#include "vcml/ethernet/network.h"
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/video.h"
@@ -73,10 +74,15 @@
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/rst.h"
+#include "vcml/protocols/clk.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
+#include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/pci_ids.h"
+#include "vcml/protocols/eth.h"
+#include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"
@@ -107,6 +113,7 @@
 #include "vcml/models/generic/fbdev.h"
 #include "vcml/models/generic/pci_host.h"
 #include "vcml/models/generic/pci_device.h"
+#include "vcml/models/generic/lm75.h"
 
 #include "vcml/models/meta/loader.h"
 #include "vcml/models/meta/simdev.h"
@@ -123,6 +130,7 @@
 #include "vcml/models/opencores/ockbd.h"
 #include "vcml/models/opencores/ocfbc.h"
 #include "vcml/models/opencores/ocspi.h"
+#include "vcml/models/opencores/oci2c.h"
 
 #include "vcml/models/arm/pl011uart.h"
 #include "vcml/models/arm/pl190vic.h"

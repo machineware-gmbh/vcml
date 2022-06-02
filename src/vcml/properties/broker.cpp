@@ -21,45 +21,54 @@
 
 namespace vcml {
 
-struct priority_compare {
-    bool operator()(const broker* a, const broker* b) const {
-        return a->priority > b->priority;
+string broker::expand(const string& s) {
+    string str = s;
+    size_t pos = 0;
+    while ((pos = str.find("${", pos)) != str.npos) {
+        size_t end = str.find('}', pos + 2);
+        VCML_REPORT_ON(end == str.npos, "missing '}' near '%s'", str.c_str());
+
+        string val, key = str.substr(pos + 2, end - pos - 2);
+        if (!init(key, val))
+            VCML_REPORT("%s is not defined", key.c_str());
+
+        str = strcat(str.substr(0, pos), val, str.substr(end + 1));
     }
-};
 
-static set<broker*, priority_compare> g_brokers;
+    return trim(str);
+}
 
-broker::broker(const string& nm, int prio):
-    m_name(nm), m_values(), priority(prio) {
-    g_brokers.insert(this);
+static vector<broker*> g_brokers;
+
+broker::broker(const string& nm): m_name(nm), m_values() {
+    define("app", progname(), 1);
+    define("bin", dirname(progname()), 1);
+    define("pwd", curr_dir(), 1);
+    define("tmp", temp_dir(), 1);
+    define("usr", username(), 1);
+    define("pid", getpid(), 1);
+    g_brokers.push_back(this);
 }
 
 broker::~broker() {
-    g_brokers.erase(this);
+    stl_remove_erase(g_brokers, this);
 }
 
 bool broker::lookup(const string& key, string& value) {
     if (!stl_contains(m_values, key))
         return false;
 
-    auto& val = m_values[key];
-    value     = val.value;
-    val.uses++;
+    auto it = m_values.find(key);
+    if (it == m_values.end())
+        return false;
+
+    value = it->second.value;
+    it->second.uses++;
     return true;
 }
 
 bool broker::defines(const string& key) const {
     return stl_contains(m_values, key);
-}
-
-template <>
-void broker::define(const string& key, const string& value) {
-    if (!key.empty()) {
-        struct value val;
-        val.value     = value;
-        val.uses      = 0;
-        m_values[key] = val;
-    }
 }
 
 template <>
@@ -101,4 +110,5 @@ void broker::report_unused() {
     for (auto& prop : unused)
         log_warn("  %s (%s)", prop.first.c_str(), prop.second->name());
 }
+
 } // namespace vcml

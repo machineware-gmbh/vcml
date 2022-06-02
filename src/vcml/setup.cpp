@@ -102,7 +102,7 @@ setup::setup(int argc, char** argv):
     log_level min = LOG_ERROR;
     log_level max = m_log_debug ? LOG_DEBUG : LOG_INFO;
 
-    for (string file : m_log_files) {
+    for (const string& file : m_log_files) {
         publisher* pub = new log_file(file);
         pub->set_level(min, max);
         m_publishers.push_back(pub);
@@ -114,7 +114,7 @@ setup::setup(int argc, char** argv):
         m_publishers.push_back(pub);
     }
 
-    for (string file : m_trace_files) {
+    for (const string& file : m_trace_files) {
         tracer* t = new tracer_file(file);
         m_tracers.push_back(t);
     }
@@ -127,7 +127,7 @@ setup::setup(int argc, char** argv):
     m_brokers.push_back(new broker_arg(argc, argv));
     m_brokers.push_back(new broker_env());
 
-    for (string file : m_config_files)
+    for (const string& file : m_config_files)
         m_brokers.push_back(new broker_file(file));
 }
 
@@ -149,29 +149,28 @@ setup* setup::instance() {
 }
 
 int main(int argc, char** argv) {
-    int res = 0;
-    setup s(argc, argv);
-
 #ifndef VCML_DEBUG
     // disable deprecated warning for release builds
     sc_core::sc_report_handler::set_actions("/IEEE_Std_1666/deprecated",
                                             sc_core::SC_DO_NOTHING);
 #endif
 
+    setup env(argc, argv);
+
+    int res = EXIT_FAILURE;
+
     try {
         res = sc_core::sc_elab_and_sim(argc, argv);
     } catch (vcml::report& rep) {
         log.error(rep);
-        res = EXIT_FAILURE;
     } catch (std::exception& ex) {
         log.error(ex);
-        res = EXIT_FAILURE;
     }
 
     // at this point sc_is_running is false and no new critical sections
     // should be entered, but we need to give those who are still waiting
     // to execute a final chance to run
-    thctl_suspend();
+    thctl_flush();
 
     return res;
 }

@@ -48,24 +48,24 @@ public:
 
         virtio.irq.bind(irq);
 
-        bus.clk.bind(clk);
-        mem.clk.bind(clk);
-        virtio.clk.bind(clk);
+        clk.bind(bus.clk);
+        clk.bind(mem.clk);
+        clk.bind(virtio.clk);
 
-        bus.rst.bind(rst);
-        mem.rst.bind(rst);
-        virtio.rst.bind(rst);
+        rst.bind(bus.rst);
+        rst.bind(mem.rst);
+        rst.bind(virtio.rst);
     }
 
     virtual void run_test() override {
         enum addresses : u64 {
-            RNG_BASE    = 0x1000,
-            RNG_MAGIC   = RNG_BASE + 0x00,
+            RNG_BASE = 0x1000,
+            RNG_MAGIC = RNG_BASE + 0x00,
             RNG_VERSION = RNG_BASE + 0x04,
-            RNG_DEVID   = RNG_BASE + 0x08,
-            RNG_VQ_SEL  = RNG_BASE + 0x30,
-            RNG_VQ_MAX  = RNG_BASE + 0x34,
-            RNG_STATUS  = RNG_BASE + 0x70,
+            RNG_DEVID = RNG_BASE + 0x08,
+            RNG_VQ_SEL = RNG_BASE + 0x30,
+            RNG_VQ_MAX = RNG_BASE + 0x34,
+            RNG_STATUS = RNG_BASE + 0x70,
         };
 
         u32 data;
@@ -102,8 +102,5 @@ public:
 
 TEST(virtio, rng) {
     virtio_rng_stim stim;
-    stim.clk.stub(100 * MHz);
-    stim.rst.stub();
-
     sc_core::sc_start();
 }

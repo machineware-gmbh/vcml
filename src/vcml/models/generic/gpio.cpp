@@ -114,11 +114,10 @@ gpio::gpio(const sc_module_name& nm):
     data.on_read(&gpio::read_data);
     data.on_write(&gpio::write_data);
 
-    register_command("status", 0, this, &gpio::cmd_status,
+    register_command("status", 0, &gpio::cmd_status,
                      "reports the status of all GPIO lines");
-    register_command("set", 1, this, &gpio::cmd_set,
-                     "sets the given GPIO line");
-    register_command("clear", 1, this, &gpio::cmd_clear,
+    register_command("set", 1, &gpio::cmd_set, "sets the given GPIO line");
+    register_command("clear", 1, &gpio::cmd_clear,
                      "clears the given GPIO line");
 }
 

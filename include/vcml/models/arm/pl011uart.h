@@ -24,9 +24,9 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/serial/port.h"
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/serial.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -34,14 +34,15 @@
 namespace vcml {
 namespace arm {
 
-class pl011uart : public peripheral, public serial::port
+class pl011uart : public peripheral, public serial_host
 {
 private:
     unsigned int m_fifo_size;
     queue<u16> m_fifo;
-    sc_event m_enable;
 
-    void poll();
+    // serial host
+    virtual void serial_receive(u8 data) override;
+
     void update();
 
     u16 read_dr();
@@ -82,15 +83,15 @@ public:
     };
 
     enum fr_bits : u16 {
-        FR_CTS  = 1 << 0, // Clear To Send
-        FR_DSR  = 1 << 1, // Data Set Ready
-        FR_DCD  = 1 << 2, // Data Carrier Detect
+        FR_CTS = 1 << 0,  // Clear To Send
+        FR_DSR = 1 << 1,  // Data Set Ready
+        FR_DCD = 1 << 2,  // Data Carrier Detect
         FR_BUSY = 1 << 3, // Busy/Transmitting
         FR_RXFE = 1 << 4, // Receive FIFO Empty
         FR_TXFF = 1 << 5, // Transmit FIFO FULL
         FR_RXFF = 1 << 6, // Receive FIFO Full
         FR_TXFE = 1 << 7, // Transmit FIFO Empty
-        FR_RI   = 1 << 8  // Ring Indicator
+        FR_RI = 1 << 8    // Ring Indicator
     };
 
     enum ris_bits : u32 {
@@ -101,26 +102,26 @@ public:
         RIS_PE = 1 << 8,  // Parity Error Interrupt Status
         RIS_BE = 1 << 9,  // Break Error Interrupt Status
         RIS_OE = 1 << 10, // Overrun Error Interrupt Status
-        RIS_M  = 0x7f     // Raw Interrupt Status Mask
+        RIS_M = 0x7f      // Raw Interrupt Status Mask
     };
 
     enum lcr_bits : u32 {
-        LCR_BRK    = 1 << 0, // Send Break
-        LCR_PEN    = 1 << 1, // Parity Enable
-        LCR_EPS    = 1 << 2, // Even Parity Select
-        LCR_STP2   = 1 << 3, // Two Stop Bits Select
-        LCR_FEN    = 1 << 4, // FIFO Enable
-        LCR_WLEN   = 3 << 5, // Word Length
-        LCR_SPS    = 1 << 7, // Stick Parity Select
+        LCR_BRK = 1 << 0,    // Send Break
+        LCR_PEN = 1 << 1,    // Parity Enable
+        LCR_EPS = 1 << 2,    // Even Parity Select
+        LCR_STP2 = 1 << 3,   // Two Stop Bits Select
+        LCR_FEN = 1 << 4,    // FIFO Enable
+        LCR_WLEN = 3 << 5,   // Word Length
+        LCR_SPS = 1 << 7,    // Stick Parity Select
         LCR_IBRD_M = 0xffff, // Integer Baud Rate Divider Mask
         LCR_FBRD_M = 0x003f, // Fraction Baud Raid Divider Mask
-        LCR_H_M    = 0xff    // LCR Header Mask
+        LCR_H_M = 0xff       // LCR Header Mask
     };
 
     enum cr_bits {
         CR_UARTEN = 1 << 0, // UART Enable
-        CR_TXE    = 1 << 8, // Transmit Enable
-        CR_RXE    = 1 << 9  // Receive Enable
+        CR_TXE = 1 << 8,    // Transmit Enable
+        CR_RXE = 1 << 9     // Receive Enable
     };
 
     reg<u16> dr;   // Data Register
@@ -143,6 +144,9 @@ public:
 
     tlm_target_socket in;
     irq_initiator_socket irq;
+
+    serial_initiator_socket serial_tx;
+    serial_target_socket serial_rx;
 
     bool is_enabled() const { return cr & CR_UARTEN; }
     bool is_rx_enabled() const { return cr & CR_RXE; }

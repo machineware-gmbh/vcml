@@ -50,7 +50,7 @@ void sdcard::make_r1(sd_command& tx) {
     tx.response[3] = m_status >> 8;
     tx.response[4] = m_status >> 0;
     tx.response[5] = crc7(tx.response, 5) | 1;
-    tx.resp_len    = 6;
+    tx.resp_len = 6;
 
     m_status &= ~(OUT_OF_RANGE | ADDRESS_ERROR | BLOCK_LEN_ERROR |
                   ERASE_SEQ_ERROR | ERASE_PARAM | WP_VIOLATION |
@@ -93,7 +93,7 @@ void sdcard::make_r3(sd_command& tx) {
     tx.response[3] = m_ocr >> 8;
     tx.response[4] = m_ocr >> 0;
     tx.response[5] = 0xff;
-    tx.resp_len    = 6;
+    tx.resp_len = 6;
 }
 
 void sdcard::make_r6(sd_command& tx) {
@@ -117,7 +117,7 @@ void sdcard::make_r6(sd_command& tx) {
     if (m_status & AKE_SEQ_ERROR)
         tx.response[4] |= AKE_SEQ_ERROR;
     tx.response[5] = crc7(tx.response, 5) | 1;
-    tx.resp_len    = 6;
+    tx.resp_len = 6;
 }
 
 void sdcard::make_r7(sd_command& tx) {
@@ -132,14 +132,14 @@ void sdcard::make_r7(sd_command& tx) {
     tx.response[3] = m_hvs >> 8;
     tx.response[4] = m_hvs >> 0;
     tx.response[5] = crc7(tx.response, 5) | 1;
-    tx.resp_len    = 6;
+    tx.resp_len = 6;
 }
 
 void sdcard::make_r1_spi(sd_command& tx) {
     VCML_ERROR_ON(!m_spi, "not in SPI mode");
     update_status();
 
-    tx.resp_len    = 1;
+    tx.resp_len = 1;
     tx.response[0] = 0;
 
     if (m_state <= IDENTIFICATION)
@@ -166,7 +166,7 @@ void sdcard::make_r2_spi(sd_command& tx) {
 
     make_r1_spi(tx);
 
-    tx.resp_len    = 2;
+    tx.resp_len = 2;
     tx.response[1] = 0;
 
     if (m_status & CARD_IS_LOCKED)
@@ -196,7 +196,7 @@ void sdcard::make_r3_spi(sd_command& tx) {
     tx.response[2] = m_ocr >> 16;
     tx.response[3] = m_ocr >> 8;
     tx.response[4] = m_ocr >> 0;
-    tx.resp_len    = 5;
+    tx.resp_len = 5;
 }
 
 void sdcard::make_r7_spi(sd_command& tx) {
@@ -208,7 +208,7 @@ void sdcard::make_r7_spi(sd_command& tx) {
     tx.response[2] = m_hvs >> 16;
     tx.response[3] = m_hvs >> 8;
     tx.response[4] = m_hvs >> 0;
-    tx.resp_len    = 5;
+    tx.resp_len = 5;
 }
 
 void sdcard::setup_tx(u8* data, size_t len) {
@@ -250,7 +250,7 @@ void sdcard::setup_tx_blk(size_t offset) {
     }
 
     if (m_do_crc) {
-        u16 crc              = crc16(m_buffer, m_blklen);
+        u16 crc = crc16(m_buffer, m_blklen);
         m_buffer[blklen + 0] = (u8)(crc >> 8);
         m_buffer[blklen + 1] = (u8)(crc >> 0);
     } else {
@@ -309,7 +309,7 @@ void sdcard::init_cid() {
 
     m_cid[8] = 0x01; // product revision in BCD
 
-    m_cid[9]  = 0x13; // product serial number
+    m_cid[9] = 0x13; // product serial number
     m_cid[10] = 0x37;
     m_cid[11] = 0xBE;
     m_cid[12] = 0xEF;
@@ -324,9 +324,9 @@ void sdcard::init_cid() {
 void sdcard::init_csd_sdsc() {
     u32 read_bl_len = fls(m_blklen);
     u32 c_size_mult = 7; // 2^(7+2) = 512
-    u32 c_size      = capacity / (m_blklen * (1 << (c_size_mult + 2)));
+    u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2)));
     u32 sector_size = 7; // 128 blocks erasable at once (max)
-    u32 wpgrp_size  = 7; // 128 blocks per write-protect group
+    u32 wpgrp_size = 7;  // 128 blocks per write-protect group
 
     // prevent underflow if capacity < 256k
     if (c_size > 0)
@@ -338,16 +338,16 @@ void sdcard::init_csd_sdsc() {
     log_debug("    c_size: %u bytes", c_size);
     log_debug("    c_mult: %ux", 1 << (c_size_mult + 2));
 
-    m_csd[0]  = 0x00; // CSD structure version 1
-    m_csd[1]  = 0x26; // TAAC (time unit 1ms, time value 1.5)
-    m_csd[2]  = 0x00; // NSAC
-    m_csd[3]  = 0x32; // 25MHz TX speed (fixed by spec)
-    m_csd[4]  = 0x5F; // Card Command Classes (0,2,4,5,6,7,8,10)
-    m_csd[5]  = 0x50 | (u8)read_bl_len;
-    m_csd[6]  = 0x80 | ((c_size >> 10) & 3); // no DSR
-    m_csd[7]  = ((c_size) >> 2) & 0xFF;      // middle part of device size
-    m_csd[8]  = ((c_size & 3) << 6) | 0x0f;  // VDD 1mA..100mA
-    m_csd[9]  = 0x3c | ((c_size_mult >> 1) & 3);
+    m_csd[0] = 0x00; // CSD structure version 1
+    m_csd[1] = 0x26; // TAAC (time unit 1ms, time value 1.5)
+    m_csd[2] = 0x00; // NSAC
+    m_csd[3] = 0x32; // 25MHz TX speed (fixed by spec)
+    m_csd[4] = 0x5F; // Card Command Classes (0,2,4,5,6,7,8,10)
+    m_csd[5] = 0x50 | (u8)read_bl_len;
+    m_csd[6] = 0x80 | ((c_size >> 10) & 3); // no DSR
+    m_csd[7] = ((c_size) >> 2) & 0xFF;      // middle part of device size
+    m_csd[8] = ((c_size & 3) << 6) | 0x0f;  // VDD 1mA..100mA
+    m_csd[9] = 0x3c | ((c_size_mult >> 1) & 3);
     m_csd[10] = ((c_size_mult & 1) << 7) | 1 << 6 | (sector_size >> 1);
     m_csd[11] = (sector_size & 1) << 7 | (wpgrp_size & 0x7F);
     m_csd[12] = (1 << 7) | ((read_bl_len >> 2) & 3); // R2W -> 1:1
@@ -358,7 +358,7 @@ void sdcard::init_csd_sdsc() {
 
 void sdcard::init_csd_sdhc() {
     u32 c_size_mult = 8; // 2^(8+2) = 1024, fixed by spec
-    u32 c_size      = capacity / (m_blklen * (1 << (c_size_mult + 2)));
+    u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2)));
 
     // prevent underflow if capacity < 512k
     if (c_size > 0)
@@ -370,16 +370,16 @@ void sdcard::init_csd_sdhc() {
     log_debug("    c_size: %u bytes", c_size);
     log_debug("    c_mult: %ux", 1 << (c_size_mult + 2));
 
-    m_csd[0]  = 0x40; // CSD structure version 2
-    m_csd[1]  = 0x0e; // TAAC
-    m_csd[2]  = 0x00; // NSAC
-    m_csd[3]  = 0x32; // TRAN_SPEED
-    m_csd[4]  = 0x5b; // CCC 11:4
-    m_csd[5]  = 0x59; // CCC  3:0 | READ_BL_LEN
-    m_csd[6]  = 0x00; // READ_BL_P | WR_BLK_MA | RD_BLK_MA | DSR_IMP
-    m_csd[7]  = (c_size >> 16) & 0x3f;
-    m_csd[8]  = (c_size >> 8) & 0xff;
-    m_csd[9]  = (c_size >> 0) & 0xff;
+    m_csd[0] = 0x40; // CSD structure version 2
+    m_csd[1] = 0x0e; // TAAC
+    m_csd[2] = 0x00; // NSAC
+    m_csd[3] = 0x32; // TRAN_SPEED
+    m_csd[4] = 0x5b; // CCC 11:4
+    m_csd[5] = 0x59; // CCC  3:0 | READ_BL_LEN
+    m_csd[6] = 0x00; // READ_BL_P | WR_BLK_MA | RD_BLK_MA | DSR_IMP
+    m_csd[7] = (c_size >> 16) & 0x3f;
+    m_csd[8] = (c_size >> 8) & 0xff;
+    m_csd[9] = (c_size >> 0) & 0xff;
     m_csd[10] = 0x7f; // ERASE_BLK_LEN | SECTOR_SIZE[6:1]
     m_csd[11] = 0x80; // SECTOR_SIZE[0] | WP_GRP_SIZE
     m_csd[12] = 0x0a; // WP_GRP_EN | R2W_FACTOR | WRITE_BL_LEN[3:2]
@@ -495,14 +495,14 @@ void sdcard::switch_function(u32 arg) {
     m_swf[0] = 0x00;
     m_swf[1] = 0x01; // max power */
 
-    m_swf[2]  = 0x00;
-    m_swf[3]  = 0x00; // supported grp6 functions
-    m_swf[4]  = 0x00;
-    m_swf[5]  = 0x00; // supported grp5 functions
-    m_swf[6]  = 0x00;
-    m_swf[7]  = 0x00; // supported grp4 functions
-    m_swf[8]  = 0x00;
-    m_swf[9]  = 0x00; // supported grp3 functions
+    m_swf[2] = 0x00;
+    m_swf[3] = 0x00; // supported grp6 functions
+    m_swf[4] = 0x00;
+    m_swf[5] = 0x00; // supported grp5 functions
+    m_swf[6] = 0x00;
+    m_swf[7] = 0x00; // supported grp4 functions
+    m_swf[8] = 0x00;
+    m_swf[9] = 0x00; // supported grp3 functions
     m_swf[10] = 0x00;
     m_swf[11] = 0x00; // supported grp2 functions
     m_swf[12] = 0x00;
@@ -515,7 +515,7 @@ void sdcard::switch_function(u32 arg) {
     m_swf[17] = 0; // 0: structure version (first 17 bytes present)
                    // 1: extended version (12 more bytes present)
 
-    u16 crc   = crc16(m_swf, 64);
+    u16 crc = crc16(m_swf, 64);
     m_swf[64] = crc >> 8;
     m_swf[65] = crc & 0xff;
 }
@@ -524,7 +524,7 @@ sd_status sdcard::do_normal_command(sd_command& tx) {
     switch (tx.opcode) {
     case 0: // GO_IDLE_STATE (SD/SPI)
         m_state = IDLE;
-        m_spi   = tx.spi;
+        m_spi = tx.spi;
         log_debug("operation mode is %s", m_spi ? "SPI" : "SD");
         make_r1(tx);
         return SD_OK;
@@ -869,7 +869,7 @@ sd_status_tx sdcard::do_data_read(u8& val) {
 
     if (m_bufptr >= m_bufend) {
         m_numblk++;
-        m_state  = TRANSFER;
+        m_state = TRANSFER;
         m_bufptr = nullptr;
         m_bufend = nullptr;
 
@@ -912,7 +912,7 @@ sd_status_rx sdcard::do_data_write(u8 val) {
         VCML_ERROR("unsupported write CMD%hhu", m_curcmd);
 
     size_t blklen = is_sdhc() ? SDHC_BLKLEN : m_blklen;
-    u16 crc       = (u16)m_buffer[blklen] << 8 | (u16)m_buffer[blklen + 1];
+    u16 crc = (u16)m_buffer[blklen] << 8 | (u16)m_buffer[blklen + 1];
     if (crc != crc16(m_buffer, blklen)) {
         log_debug("CRC mismatch on received data");
         return SDRX_ERR_CRC;
@@ -982,7 +982,7 @@ sdcard::~sdcard() {
 
 void sdcard::reset() {
     m_status = 0;
-    m_state  = IDLE;
+    m_state = IDLE;
 
     init_ocr();
     init_cid();
@@ -1004,7 +1004,7 @@ sd_status sdcard::do_command(sd_command& tx) {
 }
 
 void sdcard::sd_transport(const sd_target_socket& socket, sd_command& tx) {
-    tx.appcmd   = (m_status & APP_CMD);
+    tx.appcmd = (m_status & APP_CMD);
     tx.resp_len = 0;
 
     if (m_state == SENDING || m_state == RECEIVING) {

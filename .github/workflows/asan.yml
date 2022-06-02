@@ -2,9 +2,9 @@ name: asan
 
 on:
   push:
-    branches: [ master ]
+    branches: [main]
   pull_request:
-    branches: [ master ]
+    branches: [main]
 
 env:
   TARGET_ARCH: linux64
@@ -13,31 +13,29 @@ env:
   UBSAN_OPTIONS: print_stacktrace=1
 
 jobs:
-  build:
+  sanitize:
     runs-on: ubuntu-20.04
+    name: ${{matrix.sanitizer}}
 
     strategy:
       fail-fast: false
       matrix:
-        systemc: [ 2.3.3 ]
-        sanitizer: [ ASAN, TSAN, UBSAN ]
-
-    name: ${{matrix.sanitizer}}
+        systemc: [2.3.3]
+        sanitizer: [ASAN, TSAN, UBSAN]
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         submodules: 'recursive'
 
     - name: Setup Dependencies
       run: |
-        sudo add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu `lsb_release -sc` main universe restricted multiverse"
         sudo apt-get update -y -qq
-        sudo apt-get install libelf-dev libsdl2-dev libvncserver-dev libslirp-dev
+        sudo apt-get install libelf-dev libsdl2-dev libvncserver-dev libslirp-dev ninja-build
 
     - name: Cache SystemC
       id: cache-systemc
@@ -51,7 +49,7 @@ jobs:
       run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
 
     - name: Configure
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.sanitizer}} -DVCML_BUILD_TESTS=ON
+      run: cmake -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.sanitizer}} -DVCML_BUILD_TESTS=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{matrix.sanitizer}} -j $(nproc)

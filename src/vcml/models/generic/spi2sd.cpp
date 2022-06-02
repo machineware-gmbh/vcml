@@ -22,15 +22,15 @@ namespace vcml {
 namespace generic {
 
 u8 spi2sd::new_command(u8 val) {
-    m_cmd.spi      = true;
-    m_cmd.appcmd   = false;
-    m_cmd.opcode   = val & 0x3f;
+    m_cmd.spi = true;
+    m_cmd.appcmd = false;
+    m_cmd.opcode = val & 0x3f;
     m_cmd.argument = 0;
     m_cmd.resp_len = 0;
-    m_cmd.status   = SD_INCOMPLETE;
+    m_cmd.status = SD_INCOMPLETE;
 
     m_argbytes = 0;
-    m_state    = READ_ARGUMENT;
+    m_state = READ_ARGUMENT;
 
     return 0xff;
 }
@@ -50,13 +50,13 @@ u8 spi2sd::do_spi_transport(u8 mosi) {
 
     case READ_CHECKSUM:
         m_cmd.crc = mosi;
-        m_state   = DO_COMMAND;
+        m_state = DO_COMMAND;
         return 0xff;
 
     case DO_COMMAND: {
         sd_out.transport(m_cmd);
         m_rspbytes = 0;
-        m_state    = DO_RESPONSE;
+        m_state = DO_RESPONSE;
         return 0xff;
     }
 
@@ -91,8 +91,8 @@ u8 spi2sd::do_spi_transport(u8 mosi) {
             return new_command(mosi);
 
         sd_data tx;
-        tx.data        = 0;
-        tx.mode        = SD_READ;
+        tx.data = 0;
+        tx.mode = SD_READ;
         tx.status.read = SDTX_INCOMPLETE;
         sd_out.transport(tx);
 
@@ -137,8 +137,8 @@ u8 spi2sd::do_spi_transport(u8 mosi) {
 
     case RX_RECORDING: {
         sd_data tx;
-        tx.data         = mosi;
-        tx.mode         = SD_WRITE;
+        tx.data = mosi;
+        tx.mode = SD_WRITE;
         tx.status.write = SDRX_INCOMPLETE;
         sd_out.transport(tx);
 

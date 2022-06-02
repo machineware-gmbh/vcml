@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Jan Henrik Weinstock                                        *
+ * Copyright 2022 Jan Henrik Weinstock                                        *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,36 +16,32 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_FILE_H
-#define VCML_NET_BACKEND_FILE_H
-
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
-#include "vcml/logging/logger.h"
-#include "vcml/net/backend.h"
+#include "vcml/ethernet/network.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-class backend_file : public backend
-{
-private:
-    size_t m_count;
-    ofstream m_tx;
+void network::eth_receive(const eth_target_socket& rx, eth_frame& frame) {
+    const eth_initiator_socket& sender = peer_of(rx);
+    for (auto& tx : eth_tx) {
+        if (tx.second != &sender)
+            tx.second->send(frame);
+    }
+}
 
-public:
-    backend_file(const string& adapter, const string& tx);
-    virtual ~backend_file();
+network::network(const sc_module_name& nm):
+    module(nm), eth_host(), m_next_id(0), eth_tx("eth_tx"), eth_rx("eth_rx") {
+    // nothing to do
+}
 
-    virtual bool recv_packet(vector<u8>& packet) override;
-    virtual void send_packet(const vector<u8>& packet) override;
+void network::bind(eth_initiator_socket& tx, eth_target_socket& rx) {
+    while (eth_tx.exists(m_next_id) || eth_rx.exists(m_next_id))
+        m_next_id++;
 
-    static backend* create(const string& adapter, const string& type);
-};
+    eth_tx[m_next_id].bind(rx);
+    tx.bind(eth_rx[m_next_id]);
+    m_next_id++;
+}
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
-
-#endif

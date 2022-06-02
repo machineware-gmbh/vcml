@@ -25,29 +25,30 @@
 namespace vcml {
 namespace serial {
 
+class terminal;
+
 class backend
 {
-private:
-    string m_port;
-
 protected:
+    terminal* m_term;
     string m_type;
 
 public:
-    backend(const string& port);
+    backend(terminal* term, const string& type);
     virtual ~backend();
 
-    backend()               = delete;
+    backend() = delete;
     backend(const backend&) = delete;
-    backend(backend&&)      = default;
+    backend(backend&&) = default;
 
-    const char* port() const { return m_port.c_str(); }
+    terminal* term() const { return m_term; }
+
     const char* type() const { return m_type.c_str(); }
 
     virtual bool read(u8& val) = 0;
     virtual void write(u8 val) = 0;
 
-    static backend* create(const string& port, const string& type);
+    static backend* create(terminal* term, const string& type);
 };
 
 } // namespace serial

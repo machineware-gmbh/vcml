@@ -35,16 +35,16 @@ enum : u64 {
     TEST_REG_OFFSET = 0x0,
     TEST_REG_IO_OFF = 0x4,
     TEST_IRQ_VECTOR = 5,
-    TEST_MSIX_NVEC  = 128,
+    TEST_MSIX_NVEC = 128,
 
-    PCI_VENDOR_OFFSET  = 0x0,
-    PCI_DEVICE_OFFSET  = 0x2,
+    PCI_VENDOR_OFFSET = 0x0,
+    PCI_DEVICE_OFFSET = 0x2,
     PCI_COMMAND_OFFSET = 0x4,
-    PCI_BAR0_OFFSET    = 0x10,
-    PCI_BAR1_OFFSET    = 0x14,
-    PCI_BAR2_OFFSET    = 0x18,
-    PCI_BAR3_OFFSET    = 0x1c,
-    PCI_CAP_OFFSET     = 0x34,
+    PCI_BAR0_OFFSET = 0x10,
+    PCI_BAR1_OFFSET = 0x14,
+    PCI_BAR2_OFFSET = 0x18,
+    PCI_BAR3_OFFSET = 0x1c,
+    PCI_CAP_OFFSET = 0x34,
 
     PCI_MSI_CTRL_OFF = 0x2,
     PCI_MSI_ADDR_OFF = 0x4,
@@ -53,20 +53,20 @@ enum : u64 {
     PCI_MSI_PEND_OFF = 0x10,
 
     PCI_MSIX_CTRL_OFF = 0x2,
-    PCI_MSIX_BIR_OFF  = 0x4,
-    PCI_MSIX_PBA_OFF  = 0x8,
+    PCI_MSIX_BIR_OFF = 0x4,
+    PCI_MSIX_PBA_OFF = 0x8,
 
     // MMIO space:
     //   0x00000 .. 0x0ffff: PCI CFG area
     //   0x10000 .. 0x1ffff: PCI MMIO area
     //   0x20000 .. 0x20fff: PCI MMIO area (for MSI-X table)
     //   0x40000 .. 0xfffff: PCI MSI area
-    MMAP_PCI_CFG_ADDR  = 0x0,
-    MMAP_PCI_CFG_SIZE  = 0x10000,
+    MMAP_PCI_CFG_ADDR = 0x0,
+    MMAP_PCI_CFG_SIZE = 0x10000,
     MMAP_PCI_MMIO_ADDR = 0x10000,
     MMAP_PCI_MMIO_SIZE = 0x1000,
-    MMAP_PCI_MSI_ADDR  = 0x40000,
-    MMAP_PCI_MSI_SIZE  = 0xc0000,
+    MMAP_PCI_MSI_ADDR = 0x40000,
+    MMAP_PCI_MSI_SIZE = 0xc0000,
 
     MMAP_PCI_MSIX_TABLE_ADDR = 0x20000,
     MMAP_PCI_MSIX_TABLE_SIZE = 0x1000,
@@ -177,15 +177,15 @@ public:
         pcie_root.irq_c.stub();
         pcie_root.irq_d.stub();
 
-        mmio_bus.clk.stub(100 * MHz);
-        io_bus.clk.stub(100 * MHz);
-        pcie_root.clk.stub(100 * MHz);
-        pcie_device.clk.stub(100 * MHz);
+        clk.bind(mmio_bus.clk);
+        clk.bind(io_bus.clk);
+        clk.bind(pcie_root.clk);
+        clk.bind(pcie_device.clk);
 
-        mmio_bus.rst.stub();
-        io_bus.rst.stub();
-        pcie_root.rst.stub();
-        pcie_device.rst.stub();
+        rst.bind(mmio_bus.rst);
+        rst.bind(io_bus.rst);
+        rst.bind(pcie_root.rst);
+        rst.bind(pcie_device.rst);
     }
 
     template <typename T>
@@ -380,8 +380,6 @@ public:
 };
 
 TEST(pci, simulate) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     pcie_test test("pcie");
     sc_core::sc_start();
 }

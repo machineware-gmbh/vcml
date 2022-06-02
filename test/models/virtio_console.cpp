@@ -39,6 +39,8 @@ public:
         out("out"),
         irq("irq") {
         virtio.virtio_out.bind(virtio_console.virtio_in);
+        virtio_console.serial_tx.stub();
+        virtio_console.serial_rx.stub();
 
         bus.bind(mem.in, 0, 0xfff);
         bus.bind(virtio.in, 0x1000, 0x1fff);
@@ -48,24 +50,24 @@ public:
 
         virtio.irq.bind(irq);
 
-        bus.clk.bind(clk);
-        mem.clk.bind(clk);
-        virtio.clk.bind(clk);
+        clk.bind(bus.clk);
+        clk.bind(mem.clk);
+        clk.bind(virtio.clk);
 
-        bus.rst.bind(rst);
-        mem.rst.bind(rst);
-        virtio.rst.bind(rst);
+        rst.bind(bus.rst);
+        rst.bind(mem.rst);
+        rst.bind(virtio.rst);
     }
 
     virtual void run_test() override {
         enum addresses : u64 {
-            CONSOLE_BASE    = 0x1000,
-            CONSOLE_MAGIC   = CONSOLE_BASE + 0x00,
+            CONSOLE_BASE = 0x1000,
+            CONSOLE_MAGIC = CONSOLE_BASE + 0x00,
             CONSOLE_VERSION = CONSOLE_BASE + 0x04,
-            CONSOLE_DEVID   = CONSOLE_BASE + 0x08,
-            CONSOLE_VQ_SEL  = CONSOLE_BASE + 0x30,
-            CONSOLE_VQ_MAX  = CONSOLE_BASE + 0x34,
-            CONSOLE_STATUS  = CONSOLE_BASE + 0x70,
+            CONSOLE_DEVID = CONSOLE_BASE + 0x08,
+            CONSOLE_VQ_SEL = CONSOLE_BASE + 0x30,
+            CONSOLE_VQ_MAX = CONSOLE_BASE + 0x34,
+            CONSOLE_STATUS = CONSOLE_BASE + 0x70,
         };
 
         u32 data;

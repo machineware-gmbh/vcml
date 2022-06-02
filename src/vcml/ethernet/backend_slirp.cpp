@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/net/backend_slirp.h"
+#include "vcml/ethernet/backend_slirp.h"
 
 #include <poll.h>
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
 static struct in_addr ipaddr(const string& str) {
     struct in_addr addr;
@@ -47,8 +47,8 @@ static struct in6_addr ipaddr6(const string& format, int val) {
 
 static int slirp_add_poll_fd(int fd, int events, void* opaque) {
     pollfd request;
-    request.fd      = fd;
-    request.events  = 0;
+    request.fd = fd;
+    request.events = 0;
     request.revents = 0;
 
     if (events & SLIRP_POLL_IN)
@@ -160,31 +160,31 @@ slirp_network::slirp_network(unsigned int id):
     m_config(), m_slirp(), m_clients(), m_mtx(), m_running(true), m_thread() {
     m_config.version = 1;
 
-    m_config.in_enabled  = true;
-    m_config.vnetwork    = ipaddr("10.0.%u.0", id);
-    m_config.vnetmask    = ipaddr("255.255.255.0");
-    m_config.vhost       = ipaddr("10.0.%u.2", id);
+    m_config.in_enabled = true;
+    m_config.vnetwork = ipaddr("10.0.%u.0", id);
+    m_config.vnetmask = ipaddr("255.255.255.0");
+    m_config.vhost = ipaddr("10.0.%u.2", id);
     m_config.vdhcp_start = ipaddr("10.0.%u.15", id);
     m_config.vnameserver = ipaddr("10.0.%u.3", id);
 
-    m_config.in6_enabled   = true;
+    m_config.in6_enabled = true;
     m_config.vprefix_addr6 = ipaddr6("%x::", 0xfec0 + id);
-    m_config.vhost6        = ipaddr6("%x::2", 0xfec0 + id);
-    m_config.vnameserver6  = ipaddr6("%x::3", 0xfec0 + id);
-    m_config.vprefix_len   = 64;
+    m_config.vhost6 = ipaddr6("%x::2", 0xfec0 + id);
+    m_config.vnameserver6 = ipaddr6("%x::3", 0xfec0 + id);
+    m_config.vprefix_len = 64;
 
-    m_config.vhostname        = nullptr;
+    m_config.vhostname = nullptr;
     m_config.tftp_server_name = nullptr;
-    m_config.tftp_path        = nullptr;
-    m_config.bootfile         = nullptr;
-    m_config.vdnssearch       = nullptr;
-    m_config.vdomainname      = nullptr;
+    m_config.tftp_path = nullptr;
+    m_config.bootfile = nullptr;
+    m_config.vdnssearch = nullptr;
+    m_config.vdomainname = nullptr;
 
-    m_config.if_mtu                = 0; // IF_MTU_DEFAULT
-    m_config.if_mru                = 0; // IF_MRU_DEFAULT
+    m_config.if_mtu = 0; // IF_MTU_DEFAULT
+    m_config.if_mru = 0; // IF_MRU_DEFAULT
     m_config.disable_host_loopback = false;
-    m_config.enable_emu            = false;
-    m_config.restricted            = false;
+    m_config.enable_emu = false;
+    m_config.restricted = false;
 
     m_slirp = slirp_new(&m_config, &SLIRP_CBS, this);
     VCML_REPORT_ON(!m_slirp, "failed to initialize SLIRP");
@@ -211,9 +211,9 @@ slirp_network::~slirp_network() {
 }
 
 void slirp_network::send_packet(const u8* ptr, size_t len) {
-    auto packet = std::make_shared<vector<u8>>(ptr, ptr + len);
+    eth_frame frame(ptr, len);
     for (auto client : m_clients)
-        client->queue_packet(packet);
+        client->send_to_guest(frame);
 }
 
 void slirp_network::recv_packet(const u8* ptr, size_t len) {
@@ -229,9 +229,8 @@ void slirp_network::unregister_client(backend_slirp* client) {
     m_clients.erase(client);
 }
 
-backend_slirp::backend_slirp(const string& adapter,
-                             const shared_ptr<slirp_network>& network):
-    backend(adapter), m_network(network) {
+backend_slirp::backend_slirp(bridge* br, const shared_ptr<slirp_network>& n):
+    backend(br), m_network(n) {
     VCML_ERROR_ON(!m_network, "no network");
     m_network->register_client(this);
 }
@@ -241,12 +240,12 @@ backend_slirp::~backend_slirp() {
         m_network->unregister_client(this);
 }
 
-void backend_slirp::send_packet(const vector<u8>& packet) {
+void backend_slirp::send_to_host(const eth_frame& frame) {
     if (m_network)
-        m_network->recv_packet(packet.data(), packet.size());
+        m_network->recv_packet(frame.data(), frame.size());
 }
 
-backend* backend_slirp::create(const string& adapter, const string& type) {
+backend* backend_slirp::create(bridge* br, const string& type) {
     unsigned int netid = 0;
     if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
         netid = 0;
@@ -255,8 +254,8 @@ backend* backend_slirp::create(const string& adapter, const string& type) {
     auto& network = networks[netid];
     if (network == nullptr)
         network = std::make_shared<slirp_network>(netid);
-    return new backend_slirp(adapter, network);
+    return new backend_slirp(br, network);
 }
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml

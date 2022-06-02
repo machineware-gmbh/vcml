@@ -18,9 +18,14 @@
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/irq.h"
+#include "vcml/protocols/rst.h"
+#include "vcml/protocols/clk.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
+#include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
+#include "vcml/protocols/eth.h"
+#include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/tracing/tracer_file.h"
@@ -53,7 +58,19 @@ void tracer_file::trace(const activity<irq_payload>& msg) {
     do_trace(msg);
 }
 
+void tracer_file::trace(const activity<rst_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<clk_payload>& msg) {
+    do_trace(msg);
+}
+
 void tracer_file::trace(const activity<pci_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<i2c_payload>& msg) {
     do_trace(msg);
 }
 
@@ -70,6 +87,14 @@ void tracer_file::trace(const activity<sd_data>& msg) {
 }
 
 void tracer_file::trace(const activity<vq_message>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<eth_frame>& msg) {
     do_trace(msg);
 }
 

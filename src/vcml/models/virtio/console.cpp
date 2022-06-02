@@ -21,40 +21,6 @@
 namespace vcml {
 namespace virtio {
 
-size_t console::rx_data(u8* data, size_t size) {
-    for (size_t count = 0; count < size; count++)
-        if (!serial_in(*data++))
-            return count;
-    return size;
-}
-
-size_t console::tx_data(const u8* data, size_t size) {
-    for (size_t i = 0; i < size; i++)
-        serial_out(data[i]);
-    return size;
-}
-
-void console::poll() {
-    while (!m_fifo.empty()) {
-        vq_message msg(m_fifo.front());
-        vector<u8> chars(msg.length_out());
-
-        size_t nread = rx_data(chars.data(), chars.size());
-        if (nread == 0)
-            break;
-
-        msg.copy_out(chars);
-        msg.trim(nread);
-
-        if (virtio_in->put(VIRTQUEUE_DATA_RX, msg))
-            m_fifo.pop();
-    }
-
-    sc_time quantum = tlm_global_quantum::instance().get();
-    sc_time polldelay(1.0 / pollrate, SC_SEC);
-    next_trigger(max(polldelay, quantum));
-}
-
 void console::identify(virtio_device_desc& desc) {
     reset();
     desc.device_id = VIRTIO_DEVICE_CONSOLE;
@@ -78,7 +44,8 @@ bool console::notify(u32 vqid) {
         case VIRTQUEUE_DATA_TX: {
             vector<u8> chars(msg.length_in());
             msg.copy_in(chars);
-            tx_data(chars.data(), chars.size());
+            for (u8 data : chars)
+                serial_tx.send(data);
             break;
         }
 
@@ -133,21 +100,30 @@ bool console::write_config(const range& addr, const void* ptr) {
     if (addr.length() != sizeof(m_config.emerg_write))
         return false;
 
-    tx_data((const u8*)ptr, 1);
+    serial_tx.send(*(const u8*)ptr);
     return true;
+}
+
+void console::serial_receive(u8 data) {
+    vq_message msg(m_fifo.front());
+    msg.copy_out(data);
+    msg.trim(1);
+
+    if (virtio_in->put(VIRTQUEUE_DATA_RX, msg))
+        m_fifo.pop();
 }
 
 console::console(const sc_module_name& nm):
     module(nm),
     virtio_device(),
-    serial::port(),
+    serial_host(),
     m_config(),
     cols("cols", 0),
     rows("rows", 0),
-    pollrate("pollrate", 1000),
-    virtio_in("virtio_in") {
-    SC_HAS_PROCESS(console);
-    SC_METHOD(poll);
+    virtio_in("virtio_in"),
+    serial_tx("serial_tx"),
+    serial_rx("serial_rx") {
+    // nothing to do
 }
 
 console::~console() {
@@ -155,8 +131,8 @@ console::~console() {
 }
 
 void console::reset() {
-    m_config.cols         = cols;
-    m_config.rows         = rows;
+    m_config.cols = cols;
+    m_config.rows = rows;
     m_config.max_nr_ports = 1;
 }
 

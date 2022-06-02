@@ -61,7 +61,7 @@ private:
     typename sc_in<T>::if_type* m_stub;
 
 public:
-    in_port()                  = delete;
+    in_port() = delete;
     in_port(const in_port<T>&) = delete;
 
     in_port(const char* name);
@@ -116,9 +116,9 @@ private:
     void update();
 
 public:
-    out_port()                        = delete;
+    out_port() = delete;
     out_port(const out_port<T>& copy) = delete;
-    out_port(out_port<T>&& other)     = delete;
+    out_port(out_port<T>&& other) = delete;
 
     out_port(const char* name);
     virtual ~out_port();
@@ -225,7 +225,7 @@ public:
     typedef typename map_type::iterator iterator;
     typedef typename map_type::const_iterator const_iterator;
 
-    port_list()                       = delete;
+    port_list() = delete;
     port_list(const port_list<PORT>&) = delete;
     port_list(const string& nm);
     virtual ~port_list();

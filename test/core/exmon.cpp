@@ -36,9 +36,9 @@ TEST(tlm_exmon, update) {
     vcml::tlm_exmon mon;
 
     vcml::sbiext ex1, ex2;
-    ex1.cpuid   = 1;
+    ex1.cpuid = 1;
     ex1.is_excl = true;
-    ex2.cpuid   = 2;
+    ex2.cpuid = 2;
     ex2.is_excl = true;
     tlm::tlm_generic_payload tx;
 

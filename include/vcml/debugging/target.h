@@ -78,6 +78,8 @@ struct stackframe {
 class target
 {
 private:
+    mutable mutex m_mtx;
+
     string m_name;
 
     endianess m_endian;
@@ -207,10 +209,12 @@ inline const vector<watchpoint*>& target::watchpoints() const {
 }
 
 inline bool target::is_stepping() const {
+    lock_guard<mutex> guard(m_mtx);
     return !m_steppers.empty();
 }
 
 inline void target::request_singlestep(subscriber* subscr) {
+    lock_guard<mutex> guard(m_mtx);
     stl_add_unique(m_steppers, subscr);
 }
 

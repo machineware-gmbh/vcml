@@ -146,30 +146,30 @@ class pci_device : public peripheral, public pci_target
 
 public:
     enum pci_command_bits : u16 {
-        PCI_COMMAND_IO         = 1 << 0,
-        PCI_COMMAND_MMIO       = 1 << 1,
+        PCI_COMMAND_IO = 1 << 0,
+        PCI_COMMAND_MMIO = 1 << 1,
         PCI_COMMAND_BUS_MASTER = 1 << 2,
-        PCI_COMMAND_SPECIAL    = 1 << 3,
+        PCI_COMMAND_SPECIAL = 1 << 3,
         PCI_COMMAND_INVALIDATE = 1 << 4,
-        PCI_COMMAND_PALETTE    = 1 << 5,
-        PCI_COMMAND_PARITY     = 1 << 6,
-        PCI_COMMAND_WAIT       = 1 << 7,
-        PCI_COMMAND_SERR       = 1 << 8,
-        PCI_COMMAND_FAST_B2B   = 1 << 9,
-        PCI_COMMAND_NO_IRQ     = 1 << 10,
+        PCI_COMMAND_PALETTE = 1 << 5,
+        PCI_COMMAND_PARITY = 1 << 6,
+        PCI_COMMAND_WAIT = 1 << 7,
+        PCI_COMMAND_SERR = 1 << 8,
+        PCI_COMMAND_FAST_B2B = 1 << 9,
+        PCI_COMMAND_NO_IRQ = 1 << 10,
     };
 
     enum pci_status_bits : u16 {
-        PCI_STATUS_IRQ                 = 1 << 3,
-        PCI_STATUS_CAPABILITY_LIST     = 1 << 4,
-        PCI_STATUS_66MHZ_CAPABLE       = 1 << 5,
-        PCI_STATUS_FAST_B2B            = 1 << 7,
+        PCI_STATUS_IRQ = 1 << 3,
+        PCI_STATUS_CAPABILITY_LIST = 1 << 4,
+        PCI_STATUS_66MHZ_CAPABLE = 1 << 5,
+        PCI_STATUS_FAST_B2B = 1 << 7,
         PCI_STATUS_MASTER_PARITY_ERROR = 1 << 8,
-        PCI_STATUS_TX_TARGET_ABORT     = 1 << 11,
-        PCI_STATUS_RX_TARGET_ABORT     = 1 << 12,
-        PCI_STATUS_RX_MASTER_ABORT     = 1 << 13,
-        PCI_STATUS_TX_SYSTEM_ERROR     = 1 << 14,
-        PCI_STATUS_PARITY_ERROR        = 1 << 15,
+        PCI_STATUS_TX_TARGET_ABORT = 1 << 11,
+        PCI_STATUS_RX_TARGET_ABORT = 1 << 12,
+        PCI_STATUS_RX_MASTER_ABORT = 1 << 13,
+        PCI_STATUS_TX_SYSTEM_ERROR = 1 << 14,
+        PCI_STATUS_PARITY_ERROR = 1 << 15,
     };
 
     constexpr u16 pci_status_init(bool pcie) {
@@ -234,7 +234,7 @@ public:
     void pci_legacy_interrupt(bool state);
 
 protected:
-    virtual void pci_transport(pci_target_socket& socket,
+    virtual void pci_transport(const pci_target_socket& socket,
                                pci_payload& tx) override;
 
 private:

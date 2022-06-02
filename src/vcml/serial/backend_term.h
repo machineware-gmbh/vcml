@@ -19,10 +19,6 @@
 #ifndef VCML_SERIAL_BACKEND_TERM_H
 #define VCML_SERIAL_BACKEND_TERM_H
 
-#include <signal.h>
-#include <termios.h>
-#include <fcntl.h>
-
 #include "vcml/common/types.h"
 #include "vcml/common/utils.h"
 #include "vcml/common/report.h"
@@ -37,35 +33,18 @@ namespace serial {
 class backend_term : public backend
 {
 private:
-    mutex m_fifo_mtx;
-    queue<u8> m_fifo;
+    bool m_exit_requested;
 
-    int m_signal;
-    bool m_exit;
-    bool m_stopped;
-
-    termios m_termios;
-    double m_time;
-
-    sighandler_t m_sigint;
-    sighandler_t m_sigstp;
-
-    static backend_term* singleton;
-    static void handle_signal(int sig);
-
-    void handle_sigstp(int sig);
-    void handle_sigint(int sig);
-
-    void cleanup();
+    void terminate();
 
 public:
-    backend_term(const string& port);
+    backend_term(terminal* term);
     virtual ~backend_term();
 
     virtual bool read(u8& val) override;
     virtual void write(u8 val) override;
 
-    static backend* create(const string& port, const string& type);
+    static backend* create(terminal* term, const string& type);
 };
 
 } // namespace serial

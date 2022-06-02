@@ -35,6 +35,18 @@ public:
     mock_tracer(): tracer() {}
     MOCK_METHOD(void, trace, (const tracer::activity<tlm_generic_payload>&),
                 (override));
+
+    virtual void trace(const activity<irq_payload>&) override {}
+    virtual void trace(const activity<rst_payload>&) override {}
+    virtual void trace(const activity<clk_payload>&) override {}
+    virtual void trace(const activity<pci_payload>&) override {}
+    virtual void trace(const activity<i2c_payload>&) override {}
+    virtual void trace(const activity<spi_payload>&) override {}
+    virtual void trace(const activity<sd_command>&) override {}
+    virtual void trace(const activity<sd_data>&) override {}
+    virtual void trace(const activity<vq_message>&) override {}
+    virtual void trace(const activity<serial_payload>&) override {}
+    virtual void trace(const activity<eth_frame>&) override {}
 };
 
 class test_harness : public test_base
@@ -76,20 +88,20 @@ public:
         addr = 0x420;
         data = 0x1234;
 
-        out.trace        = true;
+        out.trace = true;
         out.trace_errors = false;
 
         EXPECT_CALL(mock, trace(match_trace(TRACE_FW, addr, data)));
         EXPECT_CALL(mock, trace(match_trace(TRACE_BW, addr, data)));
         EXPECT_OK(out.writew(addr, data)) << "failed to send transaction";
 
-        out.trace        = false;
+        out.trace = false;
         out.trace_errors = false;
 
         EXPECT_CALL(mock, trace(_)).Times(0);
         EXPECT_OK(out.writew(addr, data)) << "failed to send transaction";
 
-        out.trace        = false;
+        out.trace = false;
         out.trace_errors = true;
 
         EXPECT_CALL(mock, trace(match_trace_error(true))).Times(1);
@@ -98,6 +110,14 @@ public:
 };
 
 TEST(tracing, basic) {
+    for (int i = 0; i < NUM_PROTOCOLS; i++) {
+        EXPECT_STRNE(protocol_name((protocol_kind)i), "unknown protocol")
+            << "name undefined for protocol " << i;
+        EXPECT_NE(tracer_term::colors[i], nullptr)
+            << "color undefined for protocol "
+            << protocol_name((protocol_kind)i);
+    }
+
     test_harness test("harness");
     sc_core::sc_start();
 }

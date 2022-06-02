@@ -25,22 +25,29 @@ int reg_base::current_cpu() const {
     return m_host->current_cpu();
 }
 
-reg_base::reg_base(address_space a, const string& nm, u64 addr, u64 size):
-    sc_object(nm.c_str()),
-    m_range(addr, addr + size - 1),
+reg_base::reg_base(address_space space, const string& regname, u64 addr,
+                   u64 cell_size, u64 cell_count):
+    sc_object(regname.c_str()),
+    m_cell_size(cell_size),
+    m_cell_count(cell_count),
+    m_range(addr, addr + cell_size * cell_count - 1),
     m_access(VCML_ACCESS_READ_WRITE),
     m_rsync(false),
     m_wsync(false),
     m_wback(true),
+    m_natural(false),
     m_host(hierarchy_search<peripheral>()),
-    as(a),
+    as(space),
     tag() {
+    VCML_ERROR_ON(m_cell_size == 0, "register cell size cannot be 0");
+    VCML_ERROR_ON(m_cell_count == 0, "register cell count cannot be 0");
     VCML_ERROR_ON(!m_host, "register '%s' outside peripheral", name());
     m_host->add_register(this);
 }
 
 reg_base::~reg_base() {
-    m_host->remove_register(this);
+    if (m_host)
+        m_host->remove_register(this);
 }
 
 void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
@@ -55,7 +62,7 @@ void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     }
 
     unsigned char* ptr = tx.get_data_ptr();
-    if (m_host->get_endian() != host_endian()) // i.e. if big endian
+    if (m_host->endian != host_endian()) // i.e. if big endian
         memswap(ptr, tx.get_data_length());
 
     if (tx.is_read())
@@ -63,7 +70,7 @@ void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     if (tx.is_write())
         do_write(tx, ptr);
 
-    if (m_host->get_endian() != host_endian()) // i.e. swap back
+    if (m_host->endian != host_endian()) // i.e. swap back
         memswap(ptr, tx.get_data_length());
 
     tx.set_response_status(TLM_OK_RESPONSE);
@@ -77,6 +84,12 @@ unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
 
     VCML_ERROR_ON(strw != size, "invalid transaction streaming setup");
     VCML_ERROR_ON(!m_range.overlaps(tx), "invalid register access");
+    VCML_ERROR_ON(m_cell_size == 0, "cell size cannot be zero");
+
+    if (m_natural && (size != m_cell_size || addr % m_cell_size)) {
+        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
+        return 0;
+    }
 
     range span = m_range.intersect(tx);
 

@@ -39,23 +39,21 @@ class peripheral : public component
 {
 private:
     int m_current_cpu;
-    endianess m_endian;
     vector<reg_base*> m_registers;
 
     bool cmd_mmap(const vector<string>& args, ostream& os);
 
 public:
+    property<endianess> endian;
+
     property<unsigned int> read_latency;
     property<unsigned int> write_latency;
 
     sc_time read_cycles() const { return clock_cycles(read_latency); }
     sc_time write_cycles() const { return clock_cycles(write_latency); }
 
-    endianess get_endian() const { return m_endian; }
-    void set_endian(endianess e) { m_endian = e; }
-
-    void set_little_endian() { m_endian = ENDIAN_LITTLE; }
-    void set_big_endian() { m_endian = ENDIAN_BIG; }
+    void set_little_endian() { endian = ENDIAN_LITTLE; }
+    void set_big_endian() { endian = ENDIAN_BIG; }
 
     bool is_little_endian() const;
     bool is_big_endian() const;
@@ -69,11 +67,13 @@ public:
     int current_cpu() const { return m_current_cpu; }
     void set_current_cpu(int cpu) { m_current_cpu = cpu; }
 
+    void natural_accesses_only(bool only = true);
+
     peripheral(const sc_module_name& nm, endianess e = host_endian(),
                unsigned int read_latency = 0, unsigned int write_latency = 0);
     virtual ~peripheral();
 
-    peripheral()                  = delete;
+    peripheral() = delete;
     peripheral(const peripheral&) = delete;
 
     VCML_KIND(peripheral);
@@ -109,15 +109,15 @@ public:
 };
 
 inline bool peripheral::is_little_endian() const {
-    return m_endian == ENDIAN_LITTLE;
+    return endian == ENDIAN_LITTLE;
 }
 
 inline bool peripheral::is_big_endian() const {
-    return m_endian == ENDIAN_BIG;
+    return endian == ENDIAN_BIG;
 }
 
 inline bool peripheral::is_host_endian() const {
-    return m_endian == host_endian();
+    return endian == host_endian();
 }
 
 template <typename T>
@@ -128,6 +128,11 @@ inline T peripheral::to_host_endian(T val) const {
 template <typename T>
 inline T peripheral::from_host_endian(T val) const {
     return is_host_endian() ? val : bswap(val);
+}
+
+inline void peripheral::natural_accesses_only(bool only) {
+    for (auto* reg : m_registers)
+        reg->natural_accesses_only(only);
 }
 
 } // namespace vcml

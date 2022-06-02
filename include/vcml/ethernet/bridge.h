@@ -16,43 +16,77 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_NET_BACKEND_H
-#define VCML_NET_BACKEND_H
+#ifndef VCML_ETHERNET_BRIDGE_H
+#define VCML_ETHERNET_BRIDGE_H
 
 #include "vcml/common/types.h"
+#include "vcml/common/bitops.h"
 #include "vcml/common/report.h"
 #include "vcml/common/strings.h"
+#include "vcml/common/systemc.h"
+
+#include "vcml/properties/property.h"
+#include "vcml/ethernet/backend.h"
+#include "vcml/protocols/eth.h"
+
+#include "vcml/module.h"
 
 namespace vcml {
-namespace net {
+namespace ethernet {
 
-class backend
+class backend;
+
+class bridge : public module, public eth_host
 {
 private:
-    string m_adapter;
+    id_t m_next_id;
+    unordered_map<id_t, backend*> m_dynamic_backends;
+    vector<backend*> m_backends;
 
-protected:
-    string m_type;
+    mutable mutex m_mtx;
+    queue<eth_frame> m_rx;
+    sc_event m_ev;
 
-    mutable mutex m_packets_mtx;
-    queue<shared_ptr<vector<u8>>> m_packets;
+    bool cmd_create_backend(const vector<string>& args, ostream& os);
+    bool cmd_destroy_backend(const vector<string>& args, ostream& os);
+    bool cmd_list_backends(const vector<string>& args, ostream& os);
+
+    virtual void eth_receive(eth_frame& frame) override;
+
+    void eth_transmit();
+
+    static unordered_map<string, bridge*>& bridges();
 
 public:
-    const char* adapter_name() const { return m_adapter.c_str(); }
-    const char* type() const { return m_type.c_str(); }
+    property<string> backends;
 
-    backend(const string& adapter);
-    virtual ~backend();
+    eth_initiator_socket eth_tx;
+    eth_target_socket eth_rx;
 
-    void queue_packet(shared_ptr<vector<u8>> packet);
+    bridge(const sc_module_name& nm);
+    virtual ~bridge();
+    VCML_KIND(ethernet::bridge);
 
-    virtual bool recv_packet(vector<u8>& packet);
-    virtual void send_packet(const vector<u8>& packet);
+    void send_to_host(const eth_frame& frame);
+    void send_to_guest(eth_frame frame);
 
-    static backend* create(const string& adapter, const string& type);
+    void attach(backend* b);
+    void detach(backend* b);
+
+    id_t create_backend(const string& type);
+    bool destroy_backend(id_t id);
+
+    static bridge* find(const string& name);
+    static vector<bridge*> all();
+
+    template <typename T>
+    void connect(T& device) {
+        eth_tx.bind(device.eth_rx);
+        device.eth_tx.bind(eth_rx);
+    }
 };
 
-} // namespace net
+} // namespace ethernet
 } // namespace vcml
 
 #endif

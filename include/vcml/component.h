@@ -28,29 +28,31 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/rst.h"
+#include "vcml/protocols/clk.h"
 
 #include "vcml/ports.h"
 #include "vcml/module.h"
 
 namespace vcml {
 
-class component : public module, public tlm_host
+class component : public module,
+                  public tlm_host,
+                  public rst_host,
+                  public clk_host
 {
 private:
-    clock_t m_curclk;
+    sc_event m_clkrst_ev;
 
     bool cmd_reset(const vector<string>& args, ostream& os);
 
     void do_reset();
 
-    void clock_handler();
-    void reset_handler();
-
 public:
-    in_port<clock_t> clk;
-    in_port<bool> rst;
+    clk_target_socket clk;
+    rst_target_socket rst;
 
-    component()                 = delete;
+    component() = delete;
     component(const component&) = delete;
     component(const sc_module_name& nm, bool allow_dmi = true);
     virtual ~component();
@@ -62,10 +64,10 @@ public:
     virtual void wait_clock_cycle();
     virtual void wait_clock_cycles(u64 num);
 
-    sc_time clock_cycle() const;
-    sc_time clock_cycles(u64 num) const;
+    sc_time clock_cycle() const { return clk.cycle(); }
+    sc_time clock_cycles(size_t n) const { return clk.cycles(n); }
 
-    double clock_hz() const;
+    double clock_hz() const { return clk.read(); }
 
     virtual unsigned int transport(tlm_target_socket& socket,
                                    tlm_generic_payload& tx,
@@ -75,16 +77,13 @@ public:
                                    const tlm_sbi& sideband, address_space as);
 
     virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
+
+protected:
+    virtual void clk_notify(const clk_target_socket& socket,
+                            const clk_payload& tx) override;
+    virtual void rst_notify(const rst_target_socket& socket,
+                            const rst_payload& tx) override;
 };
-
-inline sc_time component::clock_cycles(u64 num) const {
-    return clock_cycle() * num;
-}
-
-inline double component::clock_hz() const {
-    const sc_time c = clock_cycle();
-    return c == SC_ZERO_TIME ? 0.0 : sc_time(1.0, SC_SEC) / c;
-}
 
 } // namespace vcml
 

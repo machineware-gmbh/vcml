@@ -65,9 +65,9 @@ vector<image_info> images_from_string(const string& s) {
         if (vec.empty())
             continue;
 
-        string file     = trim(vec[0]);
+        string file = trim(vec[0]);
         image_type type = IMAGE_BIN;
-        u64 offset      = 0;
+        u64 offset = 0;
 
         if (file_exists(file))
             type = detect_image_type(file);
@@ -83,7 +83,7 @@ vector<image_info> images_from_string(const string& s) {
 
 bool loader::cmd_load(const vector<string>& args, ostream& os) {
     string image = args[0];
-    u64 offset   = 0ull;
+    u64 offset = 0ull;
 
     if (args.size() > 1)
         offset = strtoull(args[1].c_str(), NULL, 0);
@@ -94,7 +94,7 @@ bool loader::cmd_load(const vector<string>& args, ostream& os) {
 
 bool loader::cmd_load_bin(const vector<string>& args, ostream& os) {
     string image = args[0];
-    u64 offset   = 0ull;
+    u64 offset = 0ull;
 
     if (args.size() > 1)
         offset = strtoull(args[1].c_str(), NULL, 0);
@@ -105,7 +105,7 @@ bool loader::cmd_load_bin(const vector<string>& args, ostream& os) {
 
 bool loader::cmd_load_elf(const vector<string>& args, ostream& os) {
     string image = args[0];
-    u64 offset   = 0ull;
+    u64 offset = 0ull;
 
     if (args.size() > 1)
         offset = strtoull(args[1].c_str(), NULL, 0);
@@ -187,18 +187,15 @@ loader::loader(const string& name): m_name(name) {
 
     module* m = dynamic_cast<module*>(find_object(name));
     if (m != nullptr) {
-        m->register_command(
-            "load", 1, this, &loader::cmd_load,
-            "load <image> [offset] to load the contents of file <image> "
-            "to memory with an optional offset");
-        m->register_command(
-            "load_bin", 1, this, &loader::cmd_load_bin,
-            "load_bin <image> [offset] to load the binary file <image> "
-            "to memory with an optional offset");
-        m->register_command(
-            "load_elf", 1, this, &loader::cmd_load_elf,
-            "load_elf <image> [offset] to load the ELF file <image> "
-            "to memory with an optional offset");
+        m->register_command("load", 1, this, &loader::cmd_load,
+                            "load <image> [offset] to load the contents of "
+                            "file <image> to memory with an optional offset");
+        m->register_command("load_bin", 1, this, &loader::cmd_load_bin,
+                            "load_bin <image> [offset] to load the binary "
+                            "file <image> to memory with an optional offset");
+        m->register_command("load_elf", 1, this, &loader::cmd_load_elf,
+                            "load_elf <image> [offset] to load the ELF "
+                            "file <image> to memory with an optional offset");
     }
 }
 
@@ -236,7 +233,7 @@ void loader::load_images(const string& files) {
 }
 
 void loader::load_images(const vector<image_info>& images) {
-    for (auto image : images) {
+    for (const auto& image : images) {
         try {
             load_image(image);
         } catch (std::exception& ex) {
@@ -257,7 +254,7 @@ loader* loader::find(const string& name) {
 vector<loader*> loader::all() {
     vector<loader*> all;
     all.reserve(s_loaders.size());
-    for (auto it : s_loaders)
+    for (const auto& it : s_loaders)
         all.push_back(it.second);
     return all;
 }

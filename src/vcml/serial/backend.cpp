@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/serial/port.h"
+#include "vcml/serial/terminal.h"
 
 #include "vcml/serial/backend.h"
 #include "vcml/serial/backend_file.h"
@@ -27,21 +27,20 @@
 namespace vcml {
 namespace serial {
 
-backend::backend(const string& port): m_port(port), m_type("unknown") {
-    auto serial = port::find(port);
-    VCML_ERROR_ON(!serial, "serial port not found: %s", port.c_str());
-    serial->attach(this);
+backend::backend(terminal* term, const string& type):
+    m_term(term), m_type(type) {
+    VCML_ERROR_ON(!term, "backend created without terminal");
+    m_term->attach(this);
 }
 
 backend::~backend() {
-    auto port = port::find(m_port);
-    if (port)
-        port->detach(this);
+    if (m_term)
+        m_term->detach(this);
 }
 
-backend* backend::create(const string& port, const string& type) {
-    string kind = type.substr(0, type.find(":"));
-    typedef function<backend*(const string&, const string&)> construct;
+backend* backend::create(terminal* term, const string& type) {
+    string kind = type.substr(0, type.find(':'));
+    typedef function<backend*(terminal*, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create }, { "tcp", backend_tcp::create },
         { "stderr", backend_fd::create }, { "stdout", backend_fd::create },
@@ -53,13 +52,13 @@ backend* backend::create(const string& port, const string& type) {
         stringstream ss;
         ss << "unknown serial backend '" << type << "'" << std::endl
            << "the following backends are known:" << std::endl;
-        for (auto avail : backends)
+        for (const auto& avail : backends)
             ss << "  " << avail.first;
         VCML_REPORT("%s", ss.str().c_str());
     }
 
     try {
-        return it->second(port, type);
+        return it->second(term, type);
     } catch (std::exception& ex) {
         VCML_REPORT("%s: %s", type.c_str(), ex.what());
     } catch (...) {

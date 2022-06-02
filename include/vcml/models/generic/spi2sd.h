@@ -36,13 +36,13 @@ class spi2sd : public component, public spi_host
 {
 private:
     enum token {
-        SPITX_GO      = 0b11111110, // reading and single-block writing
-        SPITX_ERR     = 0b00001001, // error while reading (range)
-        SPIRX_GO      = 0b11111100, // initiate multi-block writing
-        SPIRX_STOP    = 0b11111101, // stop multi-block writing
-        SPIRX_OK      = 0b00000101, // writing completed successfully
+        SPITX_GO = 0b11111110,      // reading and single-block writing
+        SPITX_ERR = 0b00001001,     // error while reading (range)
+        SPIRX_GO = 0b11111100,      // initiate multi-block writing
+        SPIRX_STOP = 0b11111101,    // stop multi-block writing
+        SPIRX_OK = 0b00000101,      // writing completed successfully
         SPIRX_ERR_CRC = 0b00001011, // writing encountered CRC error
-        SPIRX_ERR_WR  = 0b00001101, // generic error during writing
+        SPIRX_ERR_WR = 0b00001101,  // generic error during writing
     };
 
     enum state {

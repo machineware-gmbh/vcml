@@ -47,7 +47,7 @@ public:
     tlm_memory();
     tlm_memory(size_t size, alignment al = VCML_ALIGN_NONE);
     tlm_memory(const tlm_memory&) = delete;
-    tlm_memory(tlm_memory&& other);
+    tlm_memory(tlm_memory&& other) noexcept;
     virtual ~tlm_memory();
 
     void init(size_t size, alignment al);

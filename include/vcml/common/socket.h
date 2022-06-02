@@ -53,7 +53,7 @@ public:
     socket(const string& host, u16 port);
     virtual ~socket();
 
-    socket(socket&&)      = delete;
+    socket(socket&&) = delete;
     socket(const socket&) = delete;
     socket& operator=(const socket&) = delete;
 

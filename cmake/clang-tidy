@@ -1,0 +1,30 @@
+Checks: >
+  -*,
+  portability-*,
+  performance-*,
+  -performance-no-int-to-ptr,
+  readability-identifier-naming,
+  readability-redundant-*,
+  -readability-redundant-member-init,
+  clang-analyzer-*,
+
+WarningsAsErrors:   '*'
+HeaderFilterRegex:  '.*'
+CheckOptions:
+  # We allow const sc_time to be copy constructed from const references, because
+  # sc_time_stamp returnes a const references instead of a new time stamp object
+  - { key: performance-unnecessary-copy-initialization.AllowedTypes, value: sc_time }
+
+  - { key: readability-identifier-naming.PrivateMemberPrefix, value: m_ }
+
+  - { key: readability-identifier-naming.VariableCase,  value: lower_case }
+  - { key: readability-identifier-naming.FunctionCase,  value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase, value: lower_case }
+  - { key: readability-identifier-naming.ConstantCase,  value: lower_case }
+  - { key: readability-identifier-naming.ClassCase,     value: lower_case }
+  - { key: readability-identifier-naming.MemberCase,    value: lower_case }
+
+  - { key: readability-identifier-naming.GlobalConstantCase,    value: UPPER_CASE }
+  - { key: readability-identifier-naming.EnumConstantCase,      value: UPPER_CASE }
+  - { key: readability-identifier-naming.MacroDefinitionCase,   value: UPPER_CASE }
+  - { key: readability-identifier-naming.TemplateParameterCase, value: UPPER_CASE }

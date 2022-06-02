@@ -36,8 +36,10 @@ string vmkstr(const char* format, va_list args) {
     va_copy(args2, args);
 
     int size = vsnprintf(NULL, 0, format, args) + 1;
-    if (size <= 0)
+    if (size <= 0) {
+        va_end(args2);
         return "";
+    }
 
     char* buffer = new char[size];
     vsnprintf(buffer, size, format, args2);
@@ -99,9 +101,10 @@ string unescape(const string& s) {
     return ss.str();
 }
 
-vector<string> split(const string& str, std::function<int(int)> f) {
+vector<string> split(const string& str, const function<int(int)>& f) {
     vector<string> vec;
-    string buf = "";
+    string buf;
+
     for (unsigned int i = 0; i < str.length(); i++) {
         char ch = str[i];
         if (ch == '\\' && i < str.length() - 1) {
@@ -123,7 +126,8 @@ vector<string> split(const string& str, std::function<int(int)> f) {
 
 vector<string> split(const string& str, char predicate) {
     vector<string> vec;
-    string buf = "";
+    string buf;
+
     for (unsigned int i = 0; i < str.length(); i++) {
         char ch = str[i];
         if (ch == '\\' && i < str.length() - 1)

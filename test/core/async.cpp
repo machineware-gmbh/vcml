@@ -26,7 +26,7 @@ public:
     async_test(const sc_module_name& nm): test_base(nm), success(false) {}
 
     void work(const sc_time& duration) {
-        sc_time t    = SC_ZERO_TIME;
+        sc_time t = SC_ZERO_TIME;
         sc_time step = duration / 10;
 
         EXPECT_FALSE(thctl_is_sysc_thread());

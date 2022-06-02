@@ -71,11 +71,11 @@ public:
     public:
         enum control_bits : u32 {
             CONTROL_ONESHOT = 1 << 0,
-            CONTROL_32BIT   = 1 << 1,
-            CONTROL_IRQEN   = 1 << 5,
-            CONTROL_PERIOD  = 1 << 6,
+            CONTROL_32BIT = 1 << 1,
+            CONTROL_IRQEN = 1 << 5,
+            CONTROL_PERIOD = 1 << 6,
             CONTROL_ENABLED = 1 << 7,
-            CONTROL_M       = 0xff,
+            CONTROL_M = 0xff,
         };
 
         enum control_prescale_bits : u32 {
@@ -111,9 +111,9 @@ public:
 
     enum timer_address : u64 {
         TIMER1_START = 0x00,
-        TIMER1_END   = 0x1f,
+        TIMER1_END = 0x1f,
         TIMER2_START = 0x20,
-        TIMER2_END   = 0x3f,
+        TIMER2_END = 0x3f,
     };
 
     timer timer1;
