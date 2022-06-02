@@ -120,6 +120,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp
+    ${src}/vcml/models/generic/max31855.cpp
     ${src}/vcml/models/generic/memory.cpp
     ${src}/vcml/models/generic/gpio.cpp
     ${src}/vcml/models/generic/crossbar.cpp
