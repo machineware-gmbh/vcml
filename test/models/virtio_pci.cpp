@@ -19,8 +19,8 @@
 #include "testing.h"
 
 enum : u64 {
-    MMAP_PCI_CFG_ADDR  = 0x0,
-    MMAP_PCI_CFG_SIZE  = 0x10000,
+    MMAP_PCI_CFG_ADDR = 0x0,
+    MMAP_PCI_CFG_SIZE = 0x10000,
     MMAP_PCI_MMIO_ADDR = 0x40000,
     MMAP_PCI_MMIO_SIZE = 0x1000,
 };
@@ -31,13 +31,13 @@ public:
     tlm_initiator_socket mmio;
 
     generic::bus mmio_bus;
-    generic::pci_host pci_root;
+    pci::host pci_root;
     virtio::pci virtio_pci;
 
-    irq_target_socket int_a;
-    irq_target_socket int_b;
-    irq_target_socket int_c;
-    irq_target_socket int_d;
+    gpio_target_socket int_a;
+    gpio_target_socket int_b;
+    gpio_target_socket int_c;
+    gpio_target_socket int_d;
 
     virtio_pci_test(const sc_module_name& nm):
         test_base(nm),
@@ -120,8 +120,6 @@ public:
 };
 
 TEST(virtio, pci) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     virtio_pci_test test("virtio_pci");
     sc_core::sc_start();
 }

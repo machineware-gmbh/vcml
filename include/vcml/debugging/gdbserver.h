@@ -53,7 +53,7 @@ private:
     target& m_target;
     const gdbarch* m_target_arch;
     string m_target_xml;
-    gdb_status m_status;
+    atomic<gdb_status> m_status;
     gdb_status m_default;
 
     vector<const cpureg*> m_cpuregs;
@@ -78,10 +78,10 @@ private:
     std::map<char, handler> m_handler;
 
     enum breakpoint_type {
-        GDB_BREAKPOINT_SW     = 0,
-        GDB_BREAKPOINT_HW     = 1,
-        GDB_WATCHPOINT_WRITE  = 2,
-        GDB_WATCHPOINT_READ   = 3,
+        GDB_BREAKPOINT_SW = 0,
+        GDB_BREAKPOINT_HW = 1,
+        GDB_WATCHPOINT_WRITE = 2,
+        GDB_WATCHPOINT_READ = 3,
         GDB_WATCHPOINT_ACCESS = 4
     };
 
@@ -114,7 +114,7 @@ private:
 
 public:
     enum : size_t {
-        PACKET_SIZE = 4096,
+        PACKET_SIZE = 8 * MiB,
         BUFFER_SIZE = PACKET_SIZE / 2,
     };
 
@@ -123,7 +123,7 @@ public:
     bool is_running() const { return m_status == GDB_RUNNING; }
     bool is_killed() const { return m_status == GDB_KILLED; }
 
-    gdbserver()                 = delete;
+    gdbserver() = delete;
     gdbserver(const gdbserver&) = delete;
     gdbserver(u16 port, target& stub, gdb_status status = GDB_STOPPED);
     virtual ~gdbserver();

@@ -26,11 +26,24 @@ namespace vcml {
 class broker_file : public broker
 {
 private:
+    size_t m_errors;
     string m_filename;
-    std::map<string, string> m_replacements;
+
+    struct loopdesc {
+        string iter;
+        vector<string> values;
+        string file;
+        size_t line;
+    };
+
+    std::deque<loopdesc> m_loops;
 
     void parse_file(const string& filename);
-    void replace(string& str);
+    void parse_expr(string expr, const string& file, size_t line);
+    void parse_loop(const string& expr, const string& file, size_t line);
+    void parse_done(const string& expr, const string& file, size_t line);
+
+    void resolve(const string&, const string&, const string&, size_t);
 
 public:
     broker_file() = delete;

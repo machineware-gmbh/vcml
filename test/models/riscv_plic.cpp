@@ -23,11 +23,11 @@ class plic_stim : public test_base
 public:
     tlm_initiator_socket out;
 
-    irq_target_socket irqt1;
-    irq_target_socket irqt2;
+    gpio_target_socket irqt1;
+    gpio_target_socket irqt2;
 
-    irq_initiator_socket irqs1;
-    irq_initiator_socket irqs2;
+    gpio_initiator_socket irqs1;
+    gpio_initiator_socket irqs2;
 
     plic_stim(const sc_module_name& nm):
         test_base(nm),
@@ -106,20 +106,11 @@ public:
 };
 
 TEST(plic, plic) {
-    sc_signal<clock_t> clk("clk");
-
     plic_stim stim("STIM");
     riscv::plic plic("PLIC");
-    generic::clock sysclk("SYSCLK", 100 * MHz);
 
-    stim.clk.bind(clk);
-    plic.clk.bind(clk);
-    sysclk.clk.bind(clk);
-
-    EXPECT_EQ(stim.clk.size(), 1);
-
-    stim.rst.stub();
-    plic.rst.stub();
+    stim.clk.bind(plic.clk);
+    stim.rst.bind(plic.rst);
 
     stim.out.bind(plic.in);
 

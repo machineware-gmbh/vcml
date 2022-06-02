@@ -28,17 +28,17 @@ void input::push_event(const input_event& ev) {
 
 void input::push_key(u32 key, u32 state) {
     input_event ev = {};
-    ev.type        = EVTYPE_KEY;
-    ev.key.code    = key;
-    ev.key.state   = state;
+    ev.type = EVTYPE_KEY;
+    ev.key.code = key;
+    ev.key.state = state;
     push_event(ev);
 }
 
 void input::push_ptr(u32 x, u32 y) {
     input_event ev = {};
-    ev.type        = EVTYPE_PTR;
-    ev.ptr.x       = x;
-    ev.ptr.y       = y;
+    ev.type = EVTYPE_PTR;
+    ev.ptr.x = x;
+    ev.ptr.y = y;
     push_event(ev);
 }
 
@@ -93,7 +93,7 @@ void keyboard::notify_key(u32 sym, bool down) {
     }
 
     const auto& map = ui::keymap::lookup(m_layout);
-    auto info       = map.lookup_symbol(sym);
+    auto info = map.lookup_symbol(sym);
 
     if (info == nullptr) {
         log_debug("no key code found for key 0x%x", sym);
@@ -143,10 +143,11 @@ unordered_map<string, keyboard*> keyboard::s_keyboards;
 vector<keyboard*> keyboard::all() {
     vector<keyboard*> res;
     res.reserve(s_keyboards.size());
-    for (auto it : s_keyboards)
+    for (const auto& it : s_keyboards)
         res.push_back(it.second);
     return res;
 }
+
 keyboard* keyboard::find(const char* name) {
     auto it = s_keyboards.find(name);
     return it != s_keyboards.end() ? it->second : nullptr;
@@ -214,7 +215,7 @@ unordered_map<string, pointer*> pointer::s_pointers;
 vector<pointer*> pointer::all() {
     vector<pointer*> res;
     res.reserve(s_pointers.size());
-    for (auto it : s_pointers)
+    for (const auto& it : s_pointers)
         res.push_back(it.second);
     return res;
 }

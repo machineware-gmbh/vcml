@@ -37,9 +37,9 @@ void pl190vic::update() {
             u32 source = vctrl[l] & VCTRL_SOURCE_M;
             u32 srcmsk = 1 << source;
             if (irqs & srcmsk) {
-                addr          = vaddr[l];
+                addr = vaddr[l];
                 m_current_irq = source;
-                m_vect_int    = true;
+                m_vect_int = true;
             }
         }
     }
@@ -149,12 +149,11 @@ void pl190vic::reset() {
         cid[i] = (AMBA_CID >> (i * 8)) & 0xff;
 }
 
-void pl190vic::irq_transport(const irq_target_socket& socket,
-                             irq_payload& irq) {
+void pl190vic::gpio_notify(const gpio_target_socket& socket) {
     unsigned int nirq = irq_in.index_of(socket);
-    const u32 mask    = 1 << nirq;
+    const u32 mask = 1 << nirq;
 
-    if (irq.active) {
+    if (socket.read()) {
         m_ext_irq |= mask;
         log_debug("setting IRQ %u", nirq);
     } else {

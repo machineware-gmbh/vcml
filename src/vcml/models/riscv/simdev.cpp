@@ -25,7 +25,7 @@ void simdev::write_finish(u32 val) {
     finish = val;
 
     u32 status = val & 0xffff;
-    u32 code   = val >> 16;
+    u32 code = val >> 16;
 
     switch (status) {
     case FINISH_FAIL:

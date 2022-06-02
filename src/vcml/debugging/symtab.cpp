@@ -98,8 +98,10 @@ const symbol* symtab::find_function(u64 addr) const {
         return nullptr;
 
     symbol upper("", SYMKIND_FUNCTION, ENDIAN_LITTLE, 0, addr, addr);
-    auto it           = m_functions.upper_bound(upper);
-    const symbol& sym = *--it; // find first that is not greater than addr
+    auto it = m_functions.upper_bound(upper);
+
+    // find first that is not greater than addr
+    const symbol& sym = *--it;
     return sym.memory().includes(addr) ? &sym : nullptr;
 }
 
@@ -117,8 +119,10 @@ const symbol* symtab::find_object(u64 addr) const {
         return nullptr;
 
     symbol upper("", SYMKIND_OBJECT, ENDIAN_LITTLE, 0, addr, addr);
-    auto it           = m_objects.upper_bound(upper);
-    const symbol& sym = *--it; // find first that is not greater than addr
+    auto it = m_objects.upper_bound(upper);
+
+    // find first that is not greater than addr
+    const symbol& sym = *--it;
     return sym.memory().includes(addr) ? &sym : nullptr;
 }
 

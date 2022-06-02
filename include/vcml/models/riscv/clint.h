@@ -25,9 +25,8 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -59,8 +58,8 @@ public:
     reg<u64, NHARTS> mtimecmp;
     reg<u64> mtime;
 
-    irq_initiator_socket_array<NHARTS> irq_sw;
-    irq_initiator_socket_array<NHARTS> irq_timer;
+    gpio_initiator_socket_array<NHARTS> irq_sw;
+    gpio_initiator_socket_array<NHARTS> irq_timer;
 
     tlm_target_socket in;
 

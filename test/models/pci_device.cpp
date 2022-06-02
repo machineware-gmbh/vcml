@@ -36,13 +36,13 @@ enum : u64 {
     TEST_REG_IO_OFF = 0x4,
     TEST_IRQ_VECTOR = 5,
 
-    PCI_VENDOR_OFFSET  = 0x0,
-    PCI_DEVICE_OFFSET  = 0x2,
+    PCI_VENDOR_OFFSET = 0x0,
+    PCI_DEVICE_OFFSET = 0x2,
     PCI_COMMAND_OFFSET = 0x4,
-    PCI_BAR0_OFFSET    = 0x10,
-    PCI_BAR1_OFFSET    = 0x14,
-    PCI_BAR2_OFFSET    = 0x18,
-    PCI_CAP_OFFSET     = 0x34,
+    PCI_BAR0_OFFSET = 0x10,
+    PCI_BAR1_OFFSET = 0x14,
+    PCI_BAR2_OFFSET = 0x18,
+    PCI_CAP_OFFSET = 0x34,
 
     PCI_MSI_CTRL_OFF = 0x2,
     PCI_MSI_ADDR_OFF = 0x4,
@@ -54,12 +54,12 @@ enum : u64 {
     //   0x00000 .. 0x0ffff: PCI CFG area
     //   0x10000 .. 0x1ffff: PCI MMIO area
     //   0x40000 .. 0xfffff: PCI MSI area
-    MMAP_PCI_CFG_ADDR  = 0x0,
-    MMAP_PCI_CFG_SIZE  = 0x10000,
+    MMAP_PCI_CFG_ADDR = 0x0,
+    MMAP_PCI_CFG_SIZE = 0x10000,
     MMAP_PCI_MMIO_ADDR = 0x100010000,
     MMAP_PCI_MMIO_SIZE = 0x1000,
-    MMAP_PCI_MSI_ADDR  = 0x40000,
-    MMAP_PCI_MSI_SIZE  = 0xc0000,
+    MMAP_PCI_MSI_ADDR = 0x40000,
+    MMAP_PCI_MSI_SIZE = 0xc0000,
 
     // IO space:
     //   0x02000 .. 0x02fff: PCI IO area
@@ -67,7 +67,7 @@ enum : u64 {
     MMAP_PCI_IO_SIZE = 0x1000,
 };
 
-class pci_test_device : public generic::pci_device
+class pci_test_device : public pci::device
 {
 public:
     pci_target_socket pci_in;
@@ -82,7 +82,7 @@ public:
     }
 
     pci_test_device(const sc_module_name& nm):
-        pci_device(nm, TEST_CONFIG),
+        device(nm, TEST_CONFIG),
         pci_in("PCI_IN"),
         test_reg(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
         test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
@@ -105,17 +105,17 @@ public:
     generic::bus mmio_bus;
     generic::bus io_bus;
 
-    generic::pci_host pci_root;
+    pci::host pci_root;
     pci_test_device pci_device;
 
     tlm_initiator_socket mmio;
     tlm_initiator_socket io;
     tlm_target_socket msi;
 
-    irq_target_socket int_a;
-    irq_target_socket int_b;
-    irq_target_socket int_c;
-    irq_target_socket int_d;
+    gpio_target_socket int_a;
+    gpio_target_socket int_b;
+    gpio_target_socket int_c;
+    gpio_target_socket int_d;
 
     u64 msi_addr;
     u32 msi_data;
@@ -172,15 +172,15 @@ public:
         pci_root.irq_c.bind(int_c);
         pci_root.irq_d.bind(int_d);
 
-        mmio_bus.clk.stub(100 * MHz);
-        io_bus.clk.stub(100 * MHz);
-        pci_root.clk.stub(100 * MHz);
-        pci_device.clk.stub(100 * MHz);
+        clk.bind(mmio_bus.clk);
+        clk.bind(io_bus.clk);
+        clk.bind(pci_root.clk);
+        clk.bind(pci_device.clk);
 
-        mmio_bus.rst.stub();
-        io_bus.rst.stub();
-        pci_root.rst.stub();
-        pci_device.rst.stub();
+        rst.bind(mmio_bus.rst);
+        rst.bind(io_bus.rst);
+        rst.bind(pci_root.rst);
+        rst.bind(pci_device.rst);
     }
 
     template <typename T>
@@ -270,8 +270,6 @@ public:
 };
 
 TEST(pci, simulate) {
-    broker_arg broker(sc_argc(), sc_argv());
-    tracer_term tracer;
     pci_test test("pci");
     sc_core::sc_start();
 }

@@ -28,7 +28,7 @@ public:
     virtio::input virtio_input;
 
     tlm_initiator_socket out;
-    irq_target_socket irq;
+    gpio_target_socket irq;
 
     virtio_rng_stim(const sc_module_name& nm = sc_gen_unique_name("stim")):
         test_base(nm),
@@ -48,24 +48,24 @@ public:
 
         virtio.irq.bind(irq);
 
-        bus.clk.bind(clk);
-        mem.clk.bind(clk);
-        virtio.clk.bind(clk);
+        clk.bind(bus.clk);
+        clk.bind(mem.clk);
+        clk.bind(virtio.clk);
 
-        bus.rst.bind(rst);
-        mem.rst.bind(rst);
-        virtio.rst.bind(rst);
+        rst.bind(bus.rst);
+        rst.bind(mem.rst);
+        rst.bind(virtio.rst);
     }
 
     virtual void run_test() override {
         enum addresses : u64 {
-            INPUT_BASE    = 0x1000,
-            INPUT_MAGIC   = INPUT_BASE + 0x00,
+            INPUT_BASE = 0x1000,
+            INPUT_MAGIC = INPUT_BASE + 0x00,
             INPUT_VERSION = INPUT_BASE + 0x04,
-            INPUT_DEVID   = INPUT_BASE + 0x08,
-            INPUT_VQ_SEL  = INPUT_BASE + 0x30,
-            INPUT_VQ_MAX  = INPUT_BASE + 0x34,
-            INPUT_STATUS  = INPUT_BASE + 0x70,
+            INPUT_DEVID = INPUT_BASE + 0x08,
+            INPUT_VQ_SEL = INPUT_BASE + 0x30,
+            INPUT_VQ_MAX = INPUT_BASE + 0x34,
+            INPUT_STATUS = INPUT_BASE + 0x70,
         };
 
         u32 data;
@@ -107,8 +107,5 @@ public:
 
 TEST(virtio, rng) {
     virtio_rng_stim stim;
-    stim.clk.stub(100 * MHz);
-    stim.rst.stub();
-
     sc_core::sc_start();
 }

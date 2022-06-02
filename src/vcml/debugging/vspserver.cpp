@@ -25,9 +25,10 @@
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/loader.h"
-#include "vcml/serial/port.h"
-#include "vcml/net/adapter.h"
+#include "vcml/protocols/base.h"
 #include "vcml/ui/input.h"
+#include "vcml/models/serial/terminal.h"
+#include "vcml/models/ethernet/bridge.h"
 
 namespace vcml {
 namespace debugging {
@@ -54,7 +55,7 @@ string vspserver::handle_step(const char* command) {
 
     target* tgt = target::find(args[1]);
     if (tgt == nullptr)
-        return mkstr("E,no such target: %s", tgt->target_name());
+        return mkstr("E,no such target: %s", args[1].c_str());
 
     tgt->request_singlestep(this);
     resume_simulation(SC_MAX_TIME);
@@ -63,7 +64,7 @@ string vspserver::handle_step(const char* command) {
 
 string vspserver::handle_cont(const char* command) {
     vector<string> args = split(command, ',');
-    sc_time duration    = SC_MAX_TIME;
+    sc_time duration = SC_MAX_TIME;
 
     if (args.size() > 1)
         duration = from_string<sc_time>(args[1]);
@@ -105,8 +106,9 @@ static string attr_type(const sc_attr_base* attr) {
 }
 
 static string attr_name(const sc_attr_base* attr) {
-    string name = attr->name();
-    size_t pos  = name.find_last_of(SC_HIERARCHY_CHAR);
+    const string& name = attr->name();
+
+    size_t pos = name.find_last_of(SC_HIERARCHY_CHAR);
     return pos == string::npos ? name : name.substr(pos + 1);
 }
 
@@ -117,7 +119,15 @@ static size_t attr_count(const sc_attr_base* attr) {
 
 static const char* obj_version(sc_object* obj) {
     module* mod = dynamic_cast<module*>(obj);
-    return mod ? mod->version() : SC_VERSION;
+    if (mod)
+        return mod->version();
+
+    base_socket* socket = dynamic_cast<base_socket*>(obj);
+    if (socket)
+        return socket->version();
+
+    const char* kind = obj->kind();
+    return starts_with(kind, "vcml::") ? VCML_VERSION_STRING : SC_VERSION;
 }
 
 static void list_object(ostream& os, sc_object* obj) {
@@ -159,7 +169,7 @@ static void list_object(ostream& os, sc_object* obj) {
 }
 
 string vspserver::handle_list(const char* command) {
-    string format       = "xml";
+    string format = "xml";
     vector<string> args = split(command, ',');
     if (args.size() > 1)
         format = to_lower(args[1]);
@@ -185,11 +195,11 @@ string vspserver::handle_list(const char* command) {
     for (auto ptr : ui::pointer::all())
         ss << "<pointer>" << ptr->input_name() << "</pointer>";
 
-    for (auto serial : serial::port::all())
-        ss << "<serial>" << serial->port_name() << "</serial>";
+    for (auto terminal : serial::terminal::all())
+        ss << "<terminal>" << terminal->name() << "</terminal>";
 
-    for (auto adapter : net::adapter::all())
-        ss << "<adapter>" << adapter->adapter_name() << "</adapter>";
+    for (auto bridge : ethernet::bridge::all())
+        ss << "<bridge>" << bridge->name() << "</bridge>";
 
     ss << "</hierarchy>";
     return ss.str();
@@ -201,7 +211,7 @@ string vspserver::handle_exec(const char* command) {
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    string name    = args[1];
+    string name = args[1];
     sc_object* obj = find_object(name);
     if (obj == nullptr)
         return mkstr("E,object '%s' not found", name.c_str());
@@ -252,7 +262,7 @@ string vspserver::handle_geta(const char* command) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    string name        = args[1];
+    string name = args[1];
     sc_attr_base* attr = find_attribute(name);
     if (attr == nullptr)
         return mkstr("E,attribute '%s' not found", name.c_str());
@@ -343,7 +353,7 @@ string vspserver::handle_rmbp(const char* command) {
         return mkstr("E,insufficient arguments %zu", args.size());
 
     u64 bpid = from_string<u64>(args[1]);
-    auto it  = m_breakpoints.find(bpid);
+    auto it = m_breakpoints.find(bpid);
     if (it == m_breakpoints.end())
         return mkstr("E,invalid breakpoint id: %lu", bpid);
 
@@ -433,21 +443,20 @@ vspserver::vspserver(u16 server_port):
     session = this;
     atexit(&cleanup_session);
 
-    using std::placeholders::_1;
-    register_handler("n", std::bind(&vspserver::handle_none, this, _1));
-    register_handler("s", std::bind(&vspserver::handle_step, this, _1));
-    register_handler("c", std::bind(&vspserver::handle_cont, this, _1));
-    register_handler("l", std::bind(&vspserver::handle_list, this, _1));
-    register_handler("e", std::bind(&vspserver::handle_exec, this, _1));
-    register_handler("t", std::bind(&vspserver::handle_time, this, _1));
-    register_handler("q", std::bind(&vspserver::handle_rdgq, this, _1));
-    register_handler("Q", std::bind(&vspserver::handle_wrgq, this, _1));
-    register_handler("a", std::bind(&vspserver::handle_geta, this, _1));
-    register_handler("A", std::bind(&vspserver::handle_seta, this, _1));
-    register_handler("x", std::bind(&vspserver::handle_quit, this, _1));
-    register_handler("v", std::bind(&vspserver::handle_vers, this, _1));
-    register_handler("b", std::bind(&vspserver::handle_mkbp, this, _1));
-    register_handler("r", std::bind(&vspserver::handle_rmbp, this, _1));
+    register_handler("n", &vspserver::handle_none);
+    register_handler("s", &vspserver::handle_step);
+    register_handler("c", &vspserver::handle_cont);
+    register_handler("l", &vspserver::handle_list);
+    register_handler("e", &vspserver::handle_exec);
+    register_handler("t", &vspserver::handle_time);
+    register_handler("q", &vspserver::handle_rdgq);
+    register_handler("Q", &vspserver::handle_wrgq);
+    register_handler("a", &vspserver::handle_geta);
+    register_handler("A", &vspserver::handle_seta);
+    register_handler("x", &vspserver::handle_quit);
+    register_handler("v", &vspserver::handle_vers);
+    register_handler("b", &vspserver::handle_mkbp);
+    register_handler("r", &vspserver::handle_rmbp);
 
     // Create announce file
     ofstream of(m_announce.c_str());

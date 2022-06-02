@@ -19,45 +19,45 @@
 #include "testing.h"
 
 enum lan9118_addr : u64 {
-    CSR_ID_REV      = 0x50,
-    CSR_IRQ_CFG     = 0x54,
-    CSR_IRQ_STS     = 0x58,
-    CSR_IRQ_EN      = 0x5c,
-    CSR_BYTE_TEST   = 0x64,
-    CSR_FIFO_INT    = 0x68,
-    CSR_RX_CFG      = 0x6c,
-    CSR_TX_CFG      = 0x70,
-    CSR_HW_CFG      = 0x74,
-    CSR_RX_DP_CTRL  = 0x78,
+    CSR_ID_REV = 0x50,
+    CSR_IRQ_CFG = 0x54,
+    CSR_IRQ_STS = 0x58,
+    CSR_IRQ_EN = 0x5c,
+    CSR_BYTE_TEST = 0x64,
+    CSR_FIFO_INT = 0x68,
+    CSR_RX_CFG = 0x6c,
+    CSR_TX_CFG = 0x70,
+    CSR_HW_CFG = 0x74,
+    CSR_RX_DP_CTRL = 0x78,
     CSR_RX_FIFO_INF = 0x7c,
     CSR_TX_FIFO_INF = 0x80,
-    CSR_PMT_CTRL    = 0x84,
-    CSR_GPIO_CFG    = 0x88,
-    CSR_GPT_CFG     = 0x8c,
-    CSR_GPT_CNT     = 0x90,
-    CSR_WORD_SWAP   = 0x98,
-    CSR_FREE_RUN    = 0x9c,
-    CSR_RX_DROP     = 0xa0,
-    CSR_MAC_CMD     = 0xa4,
-    CSR_MAC_DATA    = 0xa8,
-    CSR_AFC_CFG     = 0xac,
-    CSR_E2P_CMD     = 0xb0,
-    CSR_E2P_DATA    = 0xb4,
+    CSR_PMT_CTRL = 0x84,
+    CSR_GPIO_CFG = 0x88,
+    CSR_GPT_CFG = 0x8c,
+    CSR_GPT_CNT = 0x90,
+    CSR_WORD_SWAP = 0x98,
+    CSR_FREE_RUN = 0x9c,
+    CSR_RX_DROP = 0xa0,
+    CSR_MAC_CMD = 0xa4,
+    CSR_MAC_DATA = 0xa8,
+    CSR_AFC_CFG = 0xac,
+    CSR_E2P_CMD = 0xb0,
+    CSR_E2P_DATA = 0xb4,
 };
 
 enum lan9118_mac_csr : u32 {
-    MAC_CR       = 1,
-    MAC_ADDRH    = 2,
-    MAC_ADDRL    = 3,
-    MAC_HASHH    = 4,
-    MAC_HASHL    = 5,
-    MAC_MII_ACC  = 6,
+    MAC_CR = 1,
+    MAC_ADDRH = 2,
+    MAC_ADDRL = 3,
+    MAC_HASHH = 4,
+    MAC_HASHL = 5,
+    MAC_MII_ACC = 6,
     MAC_MII_DATA = 7,
-    MAC_FLOW     = 8,
+    MAC_FLOW = 8,
 };
 
 enum lan9117_phy_csr : u32 {
-    PHY_CR     = 0,
+    PHY_CR = 0,
     PHY_STATUS = 1,
     PHY_IDENT1 = 2,
     PHY_IDENT2 = 3,
@@ -68,18 +68,16 @@ class lan9118_bench : public test_base
 public:
     generic::lan9118 lan;
     tlm_initiator_socket out;
-    irq_target_socket irq;
+    gpio_target_socket irq;
 
     lan9118_bench(const sc_module_name& nm):
         test_base(nm), lan("lan9118"), out("out"), irq("irq") {
         out.bind(lan.in);
         lan.irq.bind(irq);
-
-        rst.stub();
-        lan.rst.stub();
-
-        clk.stub(100 * MHz);
-        lan.clk.stub(100 * MHz);
+        lan.eth_tx.stub();
+        lan.eth_rx.stub();
+        rst.bind(lan.rst);
+        clk.bind(lan.clk);
     }
 
     void check_irq(unsigned int irq) {
@@ -138,7 +136,7 @@ public:
         EXPECT_EQ(data, 0xa5) << "EEPROM magic value mismatch";
 
         // check MAC was loaded from EEPROM
-        net::mac_addr addr = lan.mac_address();
+        mac_addr addr = lan.mac_address();
         EXPECT_EQ(to_string(addr), "12:34:56:78:9a:bc") << "address broken";
         EXPECT_EQ(lan.mac.addrh, 0xbc9au) << "address not loaded into MAC";
         EXPECT_EQ(lan.mac.addrl, 0x78563412u) << "address not loaded into MAC";

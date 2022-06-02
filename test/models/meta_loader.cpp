@@ -42,21 +42,21 @@ public:
         dbus.bind(loader.data);
         dbus.bind(dmem.in, { 0x601000, 0x601fff });
 
-        imem.clk.bind(clk);
-        dmem.clk.bind(clk);
-        ibus.clk.bind(clk);
-        dbus.clk.bind(clk);
+        clk.bind(imem.clk);
+        clk.bind(dmem.clk);
+        clk.bind(ibus.clk);
+        clk.bind(dbus.clk);
 
-        imem.rst.bind(rst);
-        dmem.rst.bind(rst);
-        ibus.rst.bind(rst);
-        dbus.rst.bind(rst);
+        rst.bind(imem.rst);
+        rst.bind(dmem.rst);
+        rst.bind(ibus.rst);
+        rst.bind(dbus.rst);
     }
 
     virtual void run_test() override {
         u32 code_start = 0;
-        u32 global_a   = 0;
-        u64 global_b   = 0;
+        u32 global_a = 0;
+        u64 global_b = 0;
 
         ASSERT_OK(loader.insn.readw(0x400000, code_start));
         ASSERT_OK(loader.data.readw(0x601000, global_b));
@@ -71,6 +71,5 @@ public:
 
 TEST(virtio, rng) {
     loader_test stim;
-
     sc_core::sc_start();
 }

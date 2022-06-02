@@ -27,14 +27,14 @@ bool gpio::cmd_status(const vector<string>& args, ostream& os) {
        << read_data() << std::dec << std::setfill(' ') << std::endl;
 
     os << "Set: ";
-    for (auto port : ports) {
+    for (auto port : gpio_out) {
         if (port.second->read())
             os << port.first << ", ";
     }
     os << std::endl;
 
     os << "Cleared: ";
-    for (auto port : ports) {
+    for (auto port : gpio_out) {
         if (!port.second->read())
             os << port.first << ", ";
     }
@@ -50,13 +50,13 @@ bool gpio::cmd_set(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    if (!ports.exists(idx)) {
+    if (!gpio_out.exists(idx)) {
         os << "GPIO" << idx << " not connected";
         return false;
     }
 
     os << "setting GPIO" << idx;
-    ports[idx].write(true);
+    gpio_out[idx] = true;
     return true;
 }
 
@@ -67,20 +67,20 @@ bool gpio::cmd_clear(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    if (!ports.exists(idx)) {
+    if (!gpio_out.exists(idx)) {
         os << "GPIO" << idx << " not connected";
         return false;
     }
 
     os << "clearing GPIO" << idx;
-    ports[idx].write(false);
+    gpio_out[idx] = false;
     return true;
 }
 
 u32 gpio::read_data() {
     u32 result = 0;
-    for (auto gpio : ports) {
-        VCML_ERROR_ON(gpio.first > 31, "invalid GPIO%u", gpio.first);
+    for (auto gpio : gpio_out) {
+        VCML_ERROR_ON(gpio.first > 31, "invalid GPIO%lu", gpio.first);
 
         if (gpio.second->read())
             result |= (1 << gpio.first);
@@ -90,18 +90,18 @@ u32 gpio::read_data() {
 }
 
 void gpio::write_data(u32 val) {
-    for (auto port : ports) {
-        VCML_ERROR_ON(port.first > 31, "invalid GPIO%u", port.first);
+    for (auto port : gpio_out) {
+        VCML_ERROR_ON(port.first > 31, "invalid GPIO%lu", port.first);
 
         u32 mask = (1 << port.first);
         if ((val & mask) && !port.second->read()) {
-            log_debug("setting GPIO%u", port.first);
-            port.second->write(true);
+            log_debug("setting GPIO%lu", port.first);
+            *port.second = true;
         }
 
         if (!(val & mask) && port.second->read()) {
-            log_debug("clearing GPIO%u", port.first);
-            port.second->write(false);
+            log_debug("clearing GPIO%lu", port.first);
+            *port.second = false;
         }
     }
 
@@ -109,16 +109,15 @@ void gpio::write_data(u32 val) {
 }
 
 gpio::gpio(const sc_module_name& nm):
-    peripheral(nm), data("data", 0x0, 0), ports("ports"), in("in") {
+    peripheral(nm), data("data", 0x0, 0), gpio_out("gpio_out"), in("in") {
     data.allow_read_write();
     data.on_read(&gpio::read_data);
     data.on_write(&gpio::write_data);
 
-    register_command("status", 0, this, &gpio::cmd_status,
+    register_command("status", 0, &gpio::cmd_status,
                      "reports the status of all GPIO lines");
-    register_command("set", 1, this, &gpio::cmd_set,
-                     "sets the given GPIO line");
-    register_command("clear", 1, this, &gpio::cmd_clear,
+    register_command("set", 1, &gpio::cmd_set, "sets the given GPIO line");
+    register_command("clear", 1, &gpio::cmd_clear,
                      "clears the given GPIO line");
 }
 
@@ -135,9 +134,9 @@ void gpio::end_of_elaboration() {
     peripheral::end_of_elaboration();
 
     bool valid_binding = true;
-    for (auto port : ports) {
+    for (auto port : gpio_out) {
         if (port.first > 31) {
-            log_warn("GPIO index out of bounds: %u", port.first);
+            log_warn("GPIO index out of bounds: %lu", port.first);
             valid_binding = false;
         }
     }

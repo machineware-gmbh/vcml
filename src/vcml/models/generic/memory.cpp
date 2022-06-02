@@ -23,7 +23,7 @@ namespace generic {
 
 bool memory::cmd_show(const vector<string>& args, ostream& os) {
     u64 start = strtoull(args[0].c_str(), NULL, 0);
-    u64 end   = strtoull(args[1].c_str(), NULL, 0);
+    u64 end = strtoull(args[1].c_str(), NULL, 0);
 
     if ((end <= start) || (end >= size))
         return false;
@@ -95,10 +95,8 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
 
     map_dmi(m_memory);
 
-    register_command(
-        "show", 2, this, &memory::cmd_show,
-        "show memory contents between addresses [start] and [end]. "
-        "usage: show [start] [end]");
+    register_command("show", 2, &memory::cmd_show,
+                     "show [start] [end] to print memory contents");
 }
 
 memory::~memory() {

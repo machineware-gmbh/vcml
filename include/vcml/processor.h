@@ -28,12 +28,11 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
 
-#include "vcml/ports.h"
 #include "vcml/component.h"
 
 namespace vcml {
@@ -47,9 +46,7 @@ struct irq_stats {
     sc_time irq_longest;
 };
 
-class processor : public component,
-                  public irq_target,
-                  protected debugging::target
+class processor : public component, protected debugging::target
 {
 private:
     double m_run_time;
@@ -67,6 +64,7 @@ private:
     bool cmd_disas(const vector<string>& args, ostream& os);
     bool cmd_v2p(const vector<string>& args, ostream& os);
     bool cmd_stack(const vector<string>& args, ostream& os);
+    bool cmd_gdb(const vector<string>& args, ostream& os);
 
     using cpureg = debugging::cpureg;
     virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
@@ -81,8 +79,9 @@ public:
     property<int> gdb_port;
     property<bool> gdb_wait;
     property<bool> gdb_echo;
+    property<string> gdb_term;
 
-    irq_target_socket_array<> irq;
+    gpio_target_socket_array<> irq;
 
     tlm_initiator_socket insn;
     tlm_initiator_socket data;
@@ -91,7 +90,7 @@ public:
     virtual ~processor();
     VCML_KIND(processor);
 
-    processor()                 = delete;
+    processor() = delete;
     processor(const processor&) = delete;
 
     virtual void session_suspend() override;
@@ -119,10 +118,10 @@ protected:
     void log_bus_error(const tlm_initiator_socket& socket, vcml_access rwx,
                        tlm_response_status rs, u64 addr, u64 size);
 
-    virtual void irq_transport(const irq_target_socket& socket,
-                               irq_payload& irq) override;
+    virtual void gpio_notify(const gpio_target_socket& socket, bool state,
+                             gpio_vector vector) override;
 
-    virtual void interrupt(unsigned int irq, bool set, irq_vector vector);
+    virtual void interrupt(unsigned int irq, bool set, gpio_vector vector);
     virtual void interrupt(unsigned int irq, bool set);
 
     virtual void simulate(unsigned int cycles) = 0;

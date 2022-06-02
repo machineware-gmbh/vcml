@@ -26,15 +26,14 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
 namespace arm {
 
-class gic400 : public peripheral, public irq_target
+class gic400 : public peripheral
 {
 public:
     enum irq_as : address_space {
@@ -44,23 +43,23 @@ public:
     };
 
     enum gic400_params : u32 {
-        NCPU  = 8, // max supported CPUs
+        NCPU = 8,  // max supported CPUs
         NVCPU = 8, // max supported virtual CPUs
 
-        NIRQ  = 1020,
-        NRES  = 4,
-        NSGI  = 16,
-        NPPI  = 16,
-        NSPI  = 988,
+        NIRQ = 1020,
+        NRES = 4,
+        NSGI = 16,
+        NPPI = 16,
+        NSPI = 988,
         NREGS = NIRQ + NRES,
         NPRIV = NSGI + NPPI,
 
-        NLR             = 64,
+        NLR = 64,
         LR_PENDING_MASK = 0x10000000,
-        LR_ACTIVE_MASK  = 0x20000000,
-        VIRT_MIN_BPR    = 2,
+        LR_ACTIVE_MASK = 0x20000000,
+        VIRT_MIN_BPR = 2,
 
-        IDLE_PRIO    = 0xff,
+        IDLE_PRIO = 0xff,
         SPURIOUS_IRQ = 1023,
     };
 
@@ -76,7 +75,7 @@ public:
 
     enum trigger_mode {
         LEVEL = 0, // interrupt asserted when signal is active
-        EDGE  = 1  // interrupt triggered on rising edge
+        EDGE = 1   // interrupt triggered on rising edge
     };
 
     enum cpu_mask {
@@ -353,16 +352,16 @@ public:
     vifctrl vifctrl;
     vcpuif vcpuif;
 
-    irq_target_socket_array<NPPI * NCPU> ppi_in;
-    irq_target_socket_array<NSPI> spi_in;
+    gpio_target_socket_array<NPPI * NCPU> ppi_in;
+    gpio_target_socket_array<NSPI> spi_in;
 
-    irq_initiator_socket_array<NCPU> fiq_out;
-    irq_initiator_socket_array<NCPU> irq_out;
+    gpio_initiator_socket_array<NCPU> fiq_out;
+    gpio_initiator_socket_array<NCPU> irq_out;
 
-    irq_initiator_socket_array<NVCPU> vfiq_out;
-    irq_initiator_socket_array<NVCPU> virq_out;
+    gpio_initiator_socket_array<NVCPU> vfiq_out;
+    gpio_initiator_socket_array<NVCPU> virq_out;
 
-    irq_target_socket& ppi(unsigned int cpu, unsigned int irq);
+    gpio_target_socket& ppi(unsigned int cpu, unsigned int irq);
 
     unsigned int get_irq_num() const { return m_irq_num; }
     unsigned int get_cpu_num() const { return m_cpu_num; }
@@ -402,11 +401,10 @@ public:
     void update(bool virt = false);
 
     virtual void end_of_elaboration() override;
-    virtual void irq_transport(const irq_target_socket& socket,
-                               irq_payload& tx) override;
+    virtual void gpio_notify(const gpio_target_socket& socket) override;
 
-    void handle_ppi(unsigned int cpu, unsigned int idx, irq_payload& irq);
-    void handle_spi(unsigned int idx, irq_payload& irq);
+    void handle_ppi(unsigned int cpu, unsigned int idx, bool state);
+    void handle_spi(unsigned int idx, bool state);
 
 private:
     unsigned int m_irq_num;
@@ -415,7 +413,7 @@ private:
     irq_state m_irq_state[NIRQ + NRES];
 };
 
-inline irq_target_socket& gic400::ppi(unsigned int cpu, unsigned int irq) {
+inline gpio_target_socket& gic400::ppi(unsigned int cpu, unsigned int irq) {
     return ppi_in[cpu * NPPI + irq];
 }
 

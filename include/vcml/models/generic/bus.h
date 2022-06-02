@@ -157,7 +157,7 @@ template <typename T>
 inline T& bus_ports<T>::operator[](unsigned int idx) {
     if (!exists(idx)) {
         m_sockets[idx] = m_parent->create_socket<T>(idx);
-        m_next         = idx + 1;
+        m_next = idx + 1;
     }
 
     return *m_sockets[idx];

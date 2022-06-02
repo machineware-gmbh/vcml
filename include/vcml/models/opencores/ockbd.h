@@ -30,9 +30,8 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -58,7 +57,7 @@ private:
 public:
     reg<u8> khr;
 
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     tlm_target_socket in;
 
     property<string> keymap;

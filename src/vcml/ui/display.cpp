@@ -26,6 +26,10 @@
 #include "vcml/ui/sdl.h"
 #endif
 
+#ifdef HAVE_LIBRFB
+#include "vcml/ui/rfb.h"
+#endif
+
 namespace vcml {
 namespace ui {
 
@@ -47,7 +51,7 @@ void display::init(const videomode& mode, u8* fbptr) {
         shutdown();
 
     m_mode = mode;
-    m_fb   = fbptr;
+    m_fb = fbptr;
 
     if (m_fb == nullptr)
         m_fb = m_nullfb = new u8[mode.size]();
@@ -103,7 +107,7 @@ void display::remove_pointer(pointer* ptr) {
 }
 
 static bool parse_display(const string& name, string& id, u32& nr) {
-    auto it = name.rfind(":");
+    auto it = name.rfind(':');
     if (it == string::npos)
         return false;
 
@@ -123,6 +127,9 @@ unordered_map<string, function<display*(u32)>> display::types = {
 #endif
 #ifdef HAVE_SDL2
     { "sdl", sdl::create },
+#endif
+#ifdef HAVE_LIBRFB
+    { "rfb", rfb::create },
 #endif
 };
 
@@ -145,7 +152,7 @@ shared_ptr<display> display::lookup(const string& name) {
     if (it == types.end()) {
         stringstream ss;
         ss << "unknown display '" << type << "', available displays:";
-        for (auto avail : types)
+        for (const auto& avail : types)
             ss << " " << avail.first;
         VCML_REPORT("%s", ss.str().c_str());
     }
@@ -158,7 +165,7 @@ void display::register_display_type(const string& type,
                                     function<display*(u32)> creator) {
     if (stl_contains(types, type))
         VCML_ERROR("display type '%s' already registered", type.c_str());
-    types.insert({ type, creator });
+    types.insert({ type, std::move(creator) });
 }
 
 } // namespace ui

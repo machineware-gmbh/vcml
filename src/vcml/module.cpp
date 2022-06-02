@@ -23,7 +23,7 @@
 namespace vcml {
 
 bool module::cmd_clist(const vector<string>& args, ostream& os) {
-    for (auto cmd : m_commands)
+    for (const auto& cmd : m_commands)
         os << cmd.first << ",";
     return true;
 }
@@ -59,18 +59,18 @@ module::module(const sc_module_name& nm):
     trace.inherit_default();
     trace_errors.inherit_default();
     loglvl.inherit_default();
-    register_command("clist", 0, this, &module::cmd_clist,
+    register_command("clist", 0, &module::cmd_clist,
                      "returns a list of supported commands");
-    register_command("cinfo", 1, this, &module::cmd_cinfo,
+    register_command("cinfo", 1, &module::cmd_cinfo,
                      "returns information on a given command");
-    register_command("abort", 0, this, &module::cmd_abort,
+    register_command("abort", 0, &module::cmd_abort,
                      "immediately aborts the simulation");
-    register_command("version", 0, this, &module::cmd_version,
+    register_command("version", 0, &module::cmd_version,
                      "print version information about this module");
 }
 
 module::~module() {
-    for (auto it : m_commands)
+    for (const auto& it : m_commands)
         delete it.second;
 }
 
@@ -105,7 +105,7 @@ bool module::execute(const string& name, const vector<string>& args,
 
 vector<command_base*> module::get_commands() const {
     vector<command_base*> list;
-    for (auto cmd : m_commands)
+    for (const auto& cmd : m_commands)
         if (cmd.second != nullptr)
             list.push_back(cmd.second);
     return list;

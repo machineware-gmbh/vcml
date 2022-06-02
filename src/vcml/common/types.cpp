@@ -58,7 +58,7 @@ istream& operator>>(istream& is, alignment& a) {
 
     char* endp;
     u64 val = strtoull(s.c_str(), &endp, 0);
-    a       = (alignment)ctz(val);
+    a = (alignment)ctz(val);
 
     switch (*endp) {
     case 'k':

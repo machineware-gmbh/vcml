@@ -29,28 +29,25 @@
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/pci_ids.h"
 
-#include "vcml/ports.h"
-#include "vcml/peripheral.h"
-
-#include "vcml/models/generic/pci_device.h"
+#include "vcml/models/pci/device.h"
 
 namespace vcml {
 namespace virtio {
 
-using generic::pci_device;
-using generic::pci_capability;
+using pci::device;
+using pci::capability;
 
 enum virtio_cap_type : u8 {
-    VIRTIO_PCI_CAP_COMMON  = 1,
-    VIRTIO_PCI_CAP_NOTIFY  = 2,
-    VIRTIO_PCI_CAP_ISR     = 3,
-    VIRTIO_PCI_CAP_DEVICE  = 4,
+    VIRTIO_PCI_CAP_COMMON = 1,
+    VIRTIO_PCI_CAP_NOTIFY = 2,
+    VIRTIO_PCI_CAP_ISR = 3,
+    VIRTIO_PCI_CAP_DEVICE = 4,
     VIRTIO_PCI_CAP_PCI_CFG = 5,
 };
 
 class pci;
 
-struct pci_cap_virtio : pci_capability {
+struct cap_virtio : capability {
     reg<u8>* cap_len;
     reg<u8>* cfg_type;
     reg<u8>* cap_bar;
@@ -58,14 +55,14 @@ struct pci_cap_virtio : pci_capability {
     reg<u32>* length;
     reg<u32>* notify_mult;
 
-    pci_cap_virtio(const string& nm, u8 type, u8 bar, u32 offset, u32 length,
-                   u32 mult);
-    virtual ~pci_cap_virtio() = default;
+    cap_virtio(const string& nm, u8 type, u8 bar, u32 offset, u32 length,
+               u32 mult);
+    virtual ~cap_virtio() = default;
 };
 
-class pci : public pci_device, public virtio_controller
+class pci : public device, public virtio_controller
 {
-    friend struct pci_cap_virtio;
+    friend struct cap_virtio;
 
 private:
     u64 m_drv_features;
@@ -75,10 +72,10 @@ private:
 
     unordered_map<u32, virtqueue*> m_queues;
 
-    pci_cap_virtio* m_cap_common;
-    pci_cap_virtio* m_cap_notify;
-    pci_cap_virtio* m_cap_isr;
-    pci_cap_virtio* m_cap_device;
+    cap_virtio* m_cap_common;
+    cap_virtio* m_cap_notify;
+    cap_virtio* m_cap_isr;
+    cap_virtio* m_cap_device;
 
     void enable_virtqueue(u32 vqid);
     void disable_virtqueue(u32 vqid);

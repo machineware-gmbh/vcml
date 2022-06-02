@@ -20,7 +20,7 @@
 
 home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
 
-linter=$(which clang-tidy-12)
+linter=$(which clang-tidy)
 bindir=$home/BUILD
 builds=$@
 

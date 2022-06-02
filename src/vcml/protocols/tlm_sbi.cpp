@@ -27,7 +27,7 @@ tlm_extension_base* sbiext::clone() const {
 void sbiext::copy_from(const tlm_extension_base& ext) {
     VCML_ERROR_ON(typeid(this) != typeid(ext), "cannot copy extension");
     const sbiext& other = (const sbiext&)ext;
-    code                = other.code;
+    code = other.code;
 }
 
 void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info) {
@@ -36,7 +36,7 @@ void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info) {
     if (!tx_has_sbi(tx))
         tx.set_extension<sbiext>(new sbiext());
     sbiext* ext = tx.get_extension<sbiext>();
-    ext->code   = info.code;
+    ext->code = info.code;
 }
 
 void tx_set_cpuid(tlm_generic_payload& tx, int id) {

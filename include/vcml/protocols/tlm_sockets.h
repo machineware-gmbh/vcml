@@ -90,25 +90,25 @@ public:
 
     tlm_response_status access(tlm_command cmd, u64 addr, void* data,
                                unsigned int size,
-                               const tlm_sbi& info  = SBI_NONE,
+                               const tlm_sbi& info = SBI_NONE,
                                unsigned int* nbytes = nullptr);
 
     tlm_response_status read(u64 addr, void* data, unsigned int size,
-                             const tlm_sbi& info  = SBI_NONE,
+                             const tlm_sbi& info = SBI_NONE,
                              unsigned int* nbytes = nullptr);
 
     tlm_response_status write(u64 addr, const void* data, unsigned int size,
-                              const tlm_sbi& info  = SBI_NONE,
+                              const tlm_sbi& info = SBI_NONE,
                               unsigned int* nbytes = nullptr);
 
     template <typename T>
     tlm_response_status readw(u64 addr, T& data,
-                              const tlm_sbi& info  = SBI_NONE,
+                              const tlm_sbi& info = SBI_NONE,
                               unsigned int* nbytes = nullptr);
 
     template <typename T>
     tlm_response_status writew(u64 addr, const T& data,
-                               const tlm_sbi& info  = SBI_NONE,
+                               const tlm_sbi& info = SBI_NONE,
                                unsigned int* nbytes = nullptr);
 
     template <unsigned int WIDTH>

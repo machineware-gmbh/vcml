@@ -34,7 +34,7 @@ bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
               });
 
     int i = 0;
-    for (auto bm : mappings) {
+    for (const auto& bm : mappings) {
         os << std::endl
            << i++ << ": " << HEX(bm.addr.start) << ".." << HEX(bm.addr.end)
            << " -> ";
@@ -215,10 +215,10 @@ void bus::map(unsigned int port, const range& addr, u64 offset,
     }
 
     mapping m;
-    m.port   = (int)port;
-    m.addr   = addr;
+    m.port = (int)port;
+    m.addr = addr;
     m.offset = offset;
-    m.peer   = peer;
+    m.peer = peer;
     m_mappings.push_back(m);
 }
 
@@ -231,10 +231,10 @@ void bus::map_default(unsigned int port, u64 offset, const string& peer) {
     if (m_default.port != -1)
         VCML_ERROR("default bus route already mapped");
 
-    m_default.port   = port;
-    m_default.addr   = range(0ull, ~0ull);
+    m_default.port = port;
+    m_default.addr = range(0ull, ~0ull);
     m_default.offset = offset;
-    m_default.peer   = peer;
+    m_default.peer = peer;
 }
 
 unsigned int bus::bind(tlm::tlm_initiator_socket<64>& socket) {
@@ -272,12 +272,12 @@ unsigned int bus::bind_default(target_socket& socket, u64 offset) {
 
 bus::bus(const sc_module_name& nm):
     component(nm), m_mappings(), m_default(), in(this), out(this) {
-    m_default.port   = -1;
-    m_default.addr   = range(0ull, ~0ull);
+    m_default.port = -1;
+    m_default.addr = range(0ull, ~0ull);
     m_default.offset = 0;
-    m_default.peer   = "";
+    m_default.peer = "";
 
-    register_command("mmap", 0, this, &bus::cmd_mmap,
+    register_command("mmap", 0, &bus::cmd_mmap,
                      "shows the memory map of this bus");
 }
 

@@ -21,24 +21,24 @@
 namespace vcml {
 namespace virtio {
 
-pci_cap_virtio::pci_cap_virtio(const string& nm, u8 type, u8 bar, u32 off,
-                               u32 len, u32 mult):
-    pci_capability(nm, PCI_CAPABILITY_VENDOR),
+cap_virtio::cap_virtio(const string& nm, u8 type, u8 bar, u32 off, u32 len,
+                       u32 mult):
+    capability(nm, PCI_CAPABILITY_VENDOR),
     cap_len(),
     cfg_type(),
     cap_bar(),
     offset(),
     length(),
     notify_mult() {
-    u8 size  = type == VIRTIO_PCI_CAP_NOTIFY ? 20 : 16;
-    cap_len  = new_cap_reg_ro<u8>("cap_len", size);
+    u8 size = type == VIRTIO_PCI_CAP_NOTIFY ? 20 : 16;
+    cap_len = new_cap_reg_ro<u8>("cap_len", size);
     cfg_type = new_cap_reg_ro<u8>("cfg_type", type);
-    cap_bar  = new_cap_reg_ro<u8>("cap_bar", bar);
-    device->curr_cap_off += 3; // align
+    cap_bar = new_cap_reg_ro<u8>("cap_bar", bar);
+    dev->curr_cap_off += 3; // align
     offset = new_cap_reg_ro<u32>("offset", off);
     length = new_cap_reg_ro<u32>("length", len);
     if (type == VIRTIO_PCI_CAP_NOTIFY)
-        notify_mult = new_cap_reg_ro<u32>("NOTIFY_MULT", mult);
+        notify_mult = new_cap_reg_ro<u32>("notify_mult", mult);
 }
 
 static const pci_config VIRTIO_PCIE_CONFIG = {
@@ -69,8 +69,8 @@ void pci::enable_virtqueue(u32 vqid) {
     }
 
     virtio_queue_desc& qd = it->second;
-    qd.has_event_idx      = has_feature(VIRTIO_F_RING_EVENT_IDX);
-    virtio_dmifn dmifn    = [=](u64 addr, u64 len, vcml_access rw) -> u8* {
+    qd.has_event_idx = has_feature(VIRTIO_F_RING_EVENT_IDX);
+    virtio_dmifn dmifn = [=](u64 addr, u64 len, vcml_access rw) -> u8* {
         return (u8*)pci_in->pci_dma_ptr(rw, addr, len);
     };
 
@@ -141,7 +141,7 @@ bool pci::put(u32 vqid, vq_message& msg) {
     }
 
     virtqueue* q = it->second;
-    bool result  = q->put(msg);
+    bool result = q->put(msg);
     if (result && q->notify) {
         irq_status |= VIRTIO_IRQSTATUS_VQUEUE;
         pci_interrupt(true, q->vector);
@@ -194,7 +194,7 @@ tlm_response_status pci::write(const range& addr, const void* data,
 
 void pci::write_device_feature_sel(u32 val) {
     unsigned int shift = val ? 32 : 0;
-    device_feature     = (u32)(m_dev_features >> shift);
+    device_feature = (u32)(m_dev_features >> shift);
     device_feature_sel = val ? 1 : 0;
 }
 
@@ -223,7 +223,7 @@ void pci::write_device_status(u8 val) {
         log_debug("software triggered virtio device reset");
         cleanup_virtqueues();
         m_drv_features = 0;
-        device_status  = 0;
+        device_status = 0;
         return;
     }
 
@@ -288,7 +288,7 @@ u64 pci::read_queue_device() {
 
 void pci::write_queue_size(u16 val) {
     u32 vqid = queue_sel;
-    auto it  = m_device.virtqueues.find(vqid);
+    auto it = m_device.virtqueues.find(vqid);
     if (it == m_device.virtqueues.end()) {
         log_warn("programming size of invalid virtqueue %u", vqid);
         return;
@@ -306,7 +306,7 @@ void pci::write_queue_size(u16 val) {
 
 void pci::write_queue_msix_vector(u16 val) {
     u32 vqid = queue_sel;
-    auto it  = m_device.virtqueues.find(vqid);
+    auto it = m_device.virtqueues.find(vqid);
     if (it == m_device.virtqueues.end()) {
         log_warn("programming MSIX vector of invalid virtqueue %u", vqid);
         return;
@@ -324,12 +324,13 @@ void pci::write_queue_enable(u16 val) {
 }
 
 void pci::write_queue_notify_off(u16 val) {
-    return;
+    if (val != 0)
+        log_warn("nonzero notification offset not supported");
 }
 
 void pci::write_queue_desc(u64 val) {
     u32 vqid = queue_sel;
-    auto it  = m_device.virtqueues.find(vqid);
+    auto it = m_device.virtqueues.find(vqid);
     if (it == m_device.virtqueues.end()) {
         log_warn("programming descriptors of invalid virtqueue %u", vqid);
         return;
@@ -341,7 +342,7 @@ void pci::write_queue_desc(u64 val) {
 
 void pci::write_queue_driver(u64 val) {
     u32 vqid = queue_sel;
-    auto it  = m_device.virtqueues.find(vqid);
+    auto it = m_device.virtqueues.find(vqid);
     if (it == m_device.virtqueues.end()) {
         log_warn("programming driver mem of invalid virtqueue %u", vqid);
         return;
@@ -353,7 +354,7 @@ void pci::write_queue_driver(u64 val) {
 
 void pci::write_queue_device(u64 val) {
     u32 vqid = queue_sel;
-    auto it  = m_device.virtqueues.find(vqid);
+    auto it = m_device.virtqueues.find(vqid);
     if (it == m_device.virtqueues.end()) {
         log_warn("programming device mem of invalid virtqueue %u", vqid);
         return;
@@ -390,14 +391,14 @@ void pci::write_queue_notify(u32 val) {
 }
 
 u32 pci::read_irq_status() {
-    u32 val    = irq_status;
+    u32 val = irq_status;
     irq_status = 0;
     pci_interrupt(false, VIRTIO_NO_VECTOR);
     return val;
 }
 
 pci::pci(const sc_module_name& nm):
-    pci_device(nm, VIRTIO_PCIE_CONFIG),
+    pci::device(nm, VIRTIO_PCIE_CONFIG),
     virtio_controller(),
     m_drv_features(),
     m_dev_features(),
@@ -531,7 +532,7 @@ pci::~pci() {
 }
 
 void pci::reset() {
-    pci_device::reset();
+    pci::device::reset();
 
     cleanup_virtqueues();
 
@@ -553,45 +554,45 @@ void pci::reset() {
     if (use_strong_barriers)
         m_dev_features |= VIRTIO_F_ORDER_PLATFORM;
 
-    pci_class        = pci_class_code(m_device.pci_class, 1);
-    pci_device_id    = PCI_DEVICE_VIRTIO + m_device.device_id;
+    pci_class = pci_class_code(m_device.pci_class, 1);
+    pci_device_id = PCI_DEVICE_VIRTIO + m_device.device_id;
     pci_subvendor_id = m_device.vendor_id;
     pci_subdevice_id = m_device.device_id;
-    num_queues       = m_device.virtqueues.size();
+    num_queues = m_device.virtqueues.size();
 }
 
 void pci::virtio_declare_common_cap(u8 bar, u32 offset, u32 length) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_common, "common capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_common = new pci_cap_virtio("PCI_CAP_VIRTIO_COMMON",
-                                      VIRTIO_PCI_CAP_COMMON, bar, offset,
-                                      length, 0);
+    m_cap_common = new cap_virtio("PCI_CAP_VIRTIO_COMMON",
+                                  VIRTIO_PCI_CAP_COMMON, bar, offset, length,
+                                  0);
 }
 
 void pci::virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_notify, "notify capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_notify = new pci_cap_virtio(
-        "PCI_CAP_VIRTIO_NOTIFY", VIRTIO_PCI_CAP_NOTIFY, bar, off, len, mult);
+    m_cap_notify = new cap_virtio("PCI_CAP_VIRTIO_NOTIFY",
+                                  VIRTIO_PCI_CAP_NOTIFY, bar, off, len, mult);
 }
 
 void pci::virtio_declare_isr_cap(u8 bar, u32 offset, u32 length) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_isr, "isr capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_isr = new pci_cap_virtio("PCI_CAP_VIRTIO_ISR", VIRTIO_PCI_CAP_ISR,
-                                   bar, offset, length, 0);
+    m_cap_isr = new cap_virtio("PCI_CAP_VIRTIO_ISR", VIRTIO_PCI_CAP_ISR, bar,
+                               offset, length, 0);
 }
 
 void pci::virtio_declare_device_cap(u8 bar, u32 offset, u32 length) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_device, "device capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_device = new pci_cap_virtio("PCI_CAP_VIRTIO_DEVICE",
-                                      VIRTIO_PCI_CAP_DEVICE, bar, offset,
-                                      length, 0);
+    m_cap_device = new cap_virtio("PCI_CAP_VIRTIO_DEVICE",
+                                  VIRTIO_PCI_CAP_DEVICE, bar, offset, length,
+                                  0);
 }
 
 } // namespace virtio

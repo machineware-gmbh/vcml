@@ -27,9 +27,13 @@ namespace vcml {
 bool thctl_is_sysc_thread();
 bool thctl_is_in_critical();
 
+void thctl_notify();
+void thctl_block();
+
 void thctl_enter_critical();
 void thctl_exit_critical();
 void thctl_suspend();
+void thctl_flush();
 
 class thctl_guard
 {

@@ -110,7 +110,7 @@ string tlm_transaction_to_str(const tlm_generic_payload& tx) {
 
     // data array
     unsigned int size = tx.get_data_length();
-    unsigned char* c  = tx.get_data_ptr();
+    unsigned char* c = tx.get_data_ptr();
 
     ss << " [";
     if (size == 0)
@@ -224,6 +224,8 @@ public:
     virtual void write_comment(const std::string& comment) override {}
     virtual void set_time_unit(double v, sc_core::sc_time_unit tu) override {}
 
+    atomic<bool> sim_running;
+
     const bool use_phase_callbacks;
 
     mutex mtx;
@@ -232,6 +234,7 @@ public:
 
     vector<function<void(void)>> end_of_elab;
     vector<function<void(void)>> start_of_sim;
+    vector<function<void(void)>> end_of_sim;
 
     vector<function<void(void)>> deltas;
     vector<function<void(void)>> tsteps;
@@ -244,13 +247,12 @@ public:
     };
 
     sc_event timeout_event;
-    std::priority_queue<timer::event*, vector<timer::event*>, timer_compare>
-        timers;
+    priority_queue<timer::event*, vector<timer::event*>, timer_compare> timers;
 
     vector<timer::event*> pending_timers() {
         lock_guard<mutex> guard(mtx);
-        sc_time now = sc_time_stamp();
         vector<timer::event*> pending;
+        sc_time now = sc_time_stamp();
 
         while (!timers.empty()) {
             timer::event* event = timers.top();
@@ -299,19 +301,25 @@ public:
     void update() override {
         update_timer();
 
-        lock_guard<mutex> guard(mtx);
-        for (auto& fn : next_update)
+        vector<function<void(void)>> curr_update;
+
+        mtx.lock();
+        std::swap(curr_update, next_update);
+        mtx.unlock();
+
+        for (auto& fn : curr_update)
             fn();
-        next_update.clear();
     }
 
     helper_module(const char* nm):
         sc_core::sc_trace_file(),
         sc_core::sc_prim_channel(nm),
+        sim_running(true),
         use_phase_callbacks(kernel_has_phase_callbacks()),
         mtx(),
         end_of_elab(),
         start_of_sim(),
+        end_of_sim(),
         deltas(),
         tsteps(),
         timeout_event("timeout_ev"),
@@ -329,7 +337,7 @@ public:
         opts.spawn_method();
         opts.set_sensitivity(&timeout_event);
         opts.dont_initialize();
-        sc_spawn([&]() -> void { run_timer(); }, "$$$timer$$$", &opts);
+        sc_spawn([&]() -> void { run_timer(); }, "$$$$vcml_timer$$$$", &opts);
     }
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
@@ -360,7 +368,7 @@ public:
     }
 
     static helper_module& instance() {
-        static helper_module helper("$$$vcml_helper_module$$$");
+        static helper_module helper("$$$$vcml_helper_module$$$$");
         return helper;
     }
 
@@ -376,6 +384,8 @@ protected:
     }
 
     virtual void end_of_elaboration() override {
+        sim_running = true;
+
         for (auto& func : end_of_elab)
             func();
     }
@@ -384,37 +394,48 @@ protected:
         for (auto& func : start_of_sim)
             func();
     }
+
+    virtual void end_of_simulation() override {
+        sim_running = false;
+
+        for (auto& func : end_of_sim)
+            func();
+    }
 };
+
+// just make sure the helper module exists at some point during initialization,
+// since we cannot do that anymore after simulation has started
+helper_module& g_helper = helper_module::instance();
 
 void on_next_update(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.next_update.push_back(callback);
+    helper.next_update.push_back(std::move(callback));
     helper.async_request_update();
 }
 
 void on_end_of_elaboration(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.end_of_elab.push_back(callback);
+    helper.end_of_elab.push_back(std::move(callback));
 }
 
 void on_start_of_simulation(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.start_of_sim.push_back(callback);
+    helper.start_of_sim.push_back(std::move(callback));
 }
 
 void on_each_delta_cycle(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.deltas.push_back(callback);
+    helper.deltas.push_back(std::move(callback));
 }
 
 void on_each_time_step(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
-    helper.tsteps.push_back(callback);
+    helper.tsteps.push_back(std::move(callback));
 }
 
 timer::timer(function<void(timer&)> cb):
@@ -434,20 +455,21 @@ void timer::trigger() {
 void timer::cancel() {
     if (m_event) {
         m_event->owner = nullptr;
-        m_event        = nullptr;
+        m_event = nullptr;
     }
 }
 
 void timer::reset(const sc_time& delta) {
     cancel();
 
-    m_event          = new event;
-    m_event->owner   = this;
+    m_event = new event;
+    m_event->owner = this;
     m_event->timeout = m_timeout = sc_time_stamp() + delta;
-    helper_module::instance().add_timer(m_event);
+
+    g_helper.add_timer(m_event);
 }
 
-__thread struct async_worker* g_async = nullptr;
+thread_local struct async_worker* g_async = nullptr;
 
 struct async_worker {
     const size_t id;
@@ -463,6 +485,8 @@ struct async_worker {
     mutex mtx;
     condition_variable_any notify;
     thread worker;
+
+    struct sim_terminated_exception {};
 
     async_worker(size_t worker_id, sc_process_b* worker_proc):
         id(worker_id),
@@ -498,7 +522,12 @@ struct async_worker {
             if (!alive)
                 break;
 
-            task();
+            try {
+                task();
+            } catch (sim_terminated_exception& ex) {
+                alive = false;
+            }
+
             working = false;
         }
 
@@ -515,10 +544,10 @@ struct async_worker {
 
     void run_async(function<void(void)>& job) {
         mtx.lock();
-        task    = job;
+        task = job;
         working = true;
         mtx.unlock();
-        notify.notify_all();
+        notify.notify_one();
 
         while (working) {
             u64 p = progress.exchange(0);
@@ -537,8 +566,11 @@ struct async_worker {
 
     void run_sync(function<void(void)> job) {
         g_async->request = &job;
-        while (g_async->request)
+        while (g_async->request) {
+            if (!sim_running())
+                throw sim_terminated_exception();
             yield();
+        }
     }
 
     static async_worker& lookup(sc_process_b* thread) {
@@ -549,9 +581,9 @@ struct async_worker {
 
         auto it = workers.find(thread);
         if (it != workers.end())
-            return *it->second.get();
+            return *it->second;
 
-        size_t id   = workers.size();
+        size_t id = workers.size();
         auto worker = std::make_shared<async_worker>(id, thread);
         return *(workers[thread] = worker);
     }
@@ -573,7 +605,7 @@ void sc_sync(function<void(void)> job) {
     if (thctl_is_sysc_thread()) {
         job();
     } else if (g_async != nullptr) {
-        g_async->run_sync(job);
+        g_async->run_sync(std::move(job));
     } else {
         VCML_ERROR("not on systemc or async thread");
     }
@@ -626,17 +658,7 @@ sc_process_b* current_method() {
 }
 
 bool sim_running() {
-    sc_simcontext* simc = sc_get_curr_simcontext();
-    switch (simc->get_status()) {
-#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
-    case sc_core::SC_END_OF_UPDATE:
-        return true;
-    case sc_core::SC_BEFORE_TIMESTEP:
-        return true;
-#endif
-    default:
-        return simc->get_status() < sc_core::SC_STOPPED;
-    }
+    return g_helper.sim_running;
 }
 
 } // namespace vcml
@@ -648,22 +670,22 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
     is >> str;
     str = vcml::to_lower(str);
 
-    char* endptr        = nullptr;
-    sc_dt::uint64 value = strtoul(str.c_str(), &endptr, 0);
-    double fval         = value;
+    char* endptr = nullptr;
+    sc_dt::uint64 val = strtoul(str.c_str(), &endptr, 0);
+    double float_val = val;
 
     if (strcmp(endptr, "ps") == 0)
-        t = sc_time(fval, sc_core::SC_PS);
+        t = sc_time(float_val, sc_core::SC_PS);
     else if (strcmp(endptr, "ns") == 0)
-        t = sc_time(fval, sc_core::SC_NS);
+        t = sc_time(float_val, sc_core::SC_NS);
     else if (strcmp(endptr, "us") == 0)
-        t = sc_time(fval, sc_core::SC_US);
+        t = sc_time(float_val, sc_core::SC_US);
     else if (strcmp(endptr, "ms") == 0)
-        t = sc_time(fval, sc_core::SC_MS);
+        t = sc_time(float_val, sc_core::SC_MS);
     else if (strcmp(endptr, "s") == 0)
-        t = sc_time(fval, sc_core::SC_SEC);
+        t = sc_time(float_val, sc_core::SC_SEC);
     else
-        t = ::vcml::time_from_value(value);
+        t = ::vcml::time_from_value(val);
 
     return is;
 }

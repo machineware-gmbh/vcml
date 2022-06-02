@@ -29,17 +29,19 @@ namespace vcml {
 class tlm_dmi_cache
 {
 private:
+    mutable mutex m_mtx;
+
     size_t m_limit;
     vector<tlm_dmi> m_entries;
 
-    void cleanup();
+    void insert_locked(const tlm_dmi& dmi);
 
 public:
     size_t get_entry_limit() const { return m_limit; }
     void set_entry_limit(size_t lim) { m_limit = lim; }
 
-    vector<tlm_dmi>& get_entries() { return m_entries; }
-    const vector<tlm_dmi> get_entries() const { return m_entries; }
+    vector<tlm_dmi> get_entries() { return m_entries; }
+    const vector<tlm_dmi>& get_entries() const { return m_entries; }
 
     tlm_dmi_cache();
     virtual ~tlm_dmi_cache();

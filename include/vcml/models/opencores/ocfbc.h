@@ -24,12 +24,11 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/ui/console.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -81,35 +80,35 @@ private:
 
 public:
     enum control_bits : u32 {
-        CTLR_VEN   = 1 << 0,  // video enable
-        CTLR_VIE   = 1 << 1,  // vsync interrupt enable
-        CTLR_HIE   = 1 << 2,  // hsync interrupt enable
-        CTLR_VBSIE = 1 << 3,  // video bank switch interrupt enable
-        CTLR_CBSIE = 1 << 4,  // CLUT bank switch interrupt enable
-        CTLR_VBSWE = 1 << 5,  // video bank switching enable
-        CTLR_CBSWE = 1 << 6,  // CLUT bank switching enable
-        CTLR_VBL1  = 0 << 7,  // video memory burst length: 1 cycle
-        CTLR_VBL2  = 1 << 7,  // video memory burst length: 2 cycles
-        CTLR_VBL4  = 2 << 7,  // video memory burst length: 4 cycles
-        CTLR_VBL8  = 3 << 7,  // video memory burst length: 8 cycles
-        CTLR_BPP8  = 0 << 9,  // 8 bits per pixel
-        CTLR_BPP16 = 1 << 9,  // 16 bits per pixel
-        CTLR_BPP24 = 2 << 9,  // 24 bits per pixel
-        CTLR_BPP32 = 3 << 9,  // 32 bits per pixel
-        CTLR_PC    = 1 << 11, // 8 bit pseudo color
+        CTLR_VEN = 1 << 0,   // video enable
+        CTLR_VIE = 1 << 1,   // vsync interrupt enable
+        CTLR_HIE = 1 << 2,   // hsync interrupt enable
+        CTLR_VBSIE = 1 << 3, // video bank switch interrupt enable
+        CTLR_CBSIE = 1 << 4, // CLUT bank switch interrupt enable
+        CTLR_VBSWE = 1 << 5, // video bank switching enable
+        CTLR_CBSWE = 1 << 6, // CLUT bank switching enable
+        CTLR_VBL1 = 0 << 7,  // video memory burst length: 1 cycle
+        CTLR_VBL2 = 1 << 7,  // video memory burst length: 2 cycles
+        CTLR_VBL4 = 2 << 7,  // video memory burst length: 4 cycles
+        CTLR_VBL8 = 3 << 7,  // video memory burst length: 8 cycles
+        CTLR_BPP8 = 0 << 9,  // 8 bits per pixel
+        CTLR_BPP16 = 1 << 9, // 16 bits per pixel
+        CTLR_BPP24 = 2 << 9, // 24 bits per pixel
+        CTLR_BPP32 = 3 << 9, // 32 bits per pixel
+        CTLR_PC = 1 << 11,   // 8 bit pseudo color
     };
 
     enum status_bits : u32 {
-        STAT_SINT   = 1 << 0,  // system error interrupt pending
-        STAT_LUINT  = 1 << 1,  // line FIFO underrun interrupt pending
-        STAT_VINT   = 1 << 4,  // vertical interrupt pending
-        STAT_HINT   = 1 << 5,  // horizontal interrupt pending
-        STAT_VBSINT = 1 << 6,  // video bank switch interrupt pending
-        STAT_CBSINT = 1 << 7,  // CLUT bank switch interrupt pending
-        STAT_AVMP   = 1 << 16, // active video memory page
-        STAT_ACMP   = 1 << 17, // active CLUT memory page
-        STAT_HC0A   = 1 << 20, // hardware cursor 0 available
-        STAT_HC1A   = 1 << 24, // hardware cursor 1 available
+        STAT_SINT = 1 << 0,   // system error interrupt pending
+        STAT_LUINT = 1 << 1,  // line FIFO underrun interrupt pending
+        STAT_VINT = 1 << 4,   // vertical interrupt pending
+        STAT_HINT = 1 << 5,   // horizontal interrupt pending
+        STAT_VBSINT = 1 << 6, // video bank switch interrupt pending
+        STAT_CBSINT = 1 << 7, // CLUT bank switch interrupt pending
+        STAT_AVMP = 1 << 16,  // active video memory page
+        STAT_ACMP = 1 << 17,  // active CLUT memory page
+        STAT_HC0A = 1 << 20,  // hardware cursor 0 available
+        STAT_HC1A = 1 << 24,  // hardware cursor 1 available
     };
 
     reg<u32> ctlr;
@@ -120,7 +119,7 @@ public:
     reg<u32> vbara;
     reg<u32> vbarb;
 
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     tlm_target_socket in;
     tlm_initiator_socket out;
 

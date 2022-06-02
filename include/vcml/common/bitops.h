@@ -23,46 +23,63 @@
 
 namespace vcml {
 
-inline int clz(u32 val) {
-    return val ? __builtin_clz(val) : 32;
-}
+template <typename T>
+constexpr size_t width_of() {
+    return sizeof(T) * CHAR_BIT;
+};
 
-inline int clz(u64 val) {
-    return val ? __builtin_clzl(val) : 64;
-}
-
-inline int ctz(u32 val) {
-    return val ? __builtin_ctz(val) : 32;
-}
-
-inline int ctz(u64 val) {
-    return val ? __builtin_ctzl(val) : 64;
-}
-
-inline int ffs(u32 val) {
-    return __builtin_ffs(val) - 1;
-}
-
-inline int ffs(u64 val) {
-    return __builtin_ffsl(val) - 1;
+template <typename T>
+constexpr size_t popcnt(const T& val) {
+    return __builtin_popcountll((unsigned long long)val);
 }
 
 template <typename T>
-inline int fls(const T& val) {
-    return sizeof(T) * 8 - clz(val) - 1;
+constexpr size_t parity(const T& val) {
+    return __builtin_parityll((unsigned long long)val);
 }
 
 template <typename T>
-inline unsigned int popcnt(const T& val) {
-    return __builtin_popcountl((long)val);
+constexpr bool parity_odd(const T& val) {
+    return parity(val) == 1u;
 }
 
 template <typename T>
-inline bool is_pow2(const T& val) {
-    return val != 0 && popcnt(val) == 1;
+constexpr size_t parity_even(const T& val) {
+    return parity(val) == 0u;
+}
+
+template <typename T>
+constexpr bool is_pow2(const T& val) {
+    return val != 0 && popcnt(val) == 1u;
+}
+
+template <typename T>
+constexpr size_t clz(const T& val) { // count leading zeroes
+    return val ? __builtin_clzll(val) -
+                     (width_of<unsigned long long>() - width_of<T>())
+               : width_of<T>();
+}
+
+template <typename T>
+constexpr size_t ctz(const T& val) { // count trailing zeroes
+    return val ? __builtin_ctzll(val) : width_of<T>();
+}
+
+template <typename T>
+constexpr ssize_t ffs(const T& val) { // find first set
+    return __builtin_ffsll(val) - 1;
+}
+
+template <typename T>
+constexpr int fls(const T& val) { // find last set
+    return width_of<T>() - clz(val) - 1;
 }
 
 constexpr u64 bitmask(size_t length, size_t offset = 0) {
+    if (offset >= width_of<u64>())
+        return 0ull;
+    if (length >= width_of<u64>())
+        return ~0ull << offset;
     return ((1ull << length) - 1) << offset;
 }
 
@@ -83,20 +100,20 @@ inline u32 bitrev(u32 val) {
     return bitrev((u16)val) << 16 | bitrev((u16)(val >> 16));
 }
 
-inline u8 bswap(u8 val) {
+constexpr u8 bswap(u8 val) {
     return val;
 }
 
-inline u16 bswap(u16 val) {
+constexpr u16 bswap(u16 val) {
     return ((val & 0xff00) >> 8) | ((val & 0x00ff) << 8);
 }
 
-inline u32 bswap(u32 val) {
+constexpr u32 bswap(u32 val) {
     return ((val & 0xff000000) >> 24) | ((val & 0x00ff0000) >> 8) |
            ((val & 0x0000ff00) << 8) | ((val & 0x000000ff) << 24);
 }
 
-inline u64 bswap(u64 val) {
+constexpr u64 bswap(u64 val) {
     return ((val & 0xff00000000000000ull) >> 56) |
            ((val & 0x00ff000000000000ull) >> 40) |
            ((val & 0x0000ff0000000000ull) >> 24) |
@@ -110,8 +127,10 @@ inline u64 bswap(u64 val) {
 inline void memswap(void* ptr, unsigned int size) {
     u8* v = static_cast<u8*>(ptr);
     for (unsigned int i = 0; i < size / 2; i++) {
-        u8 tmp          = v[i];
-        v[i]            = v[size - i - 1];
+        u8 tmp = v[i];
+
+        v[i] = v[size - i - 1];
+
         v[size - i - 1] = tmp;
     }
 }
@@ -129,18 +148,19 @@ u16 crc16(const u8* buffer, size_t len, u16 crc = 0);
 u32 crc32(const u8* buffer, size_t len, u32 crc = ~0u);
 
 template <typename T>
-inline T extract(T val, size_t off, size_t len) {
+constexpr T extract(T val, size_t off, size_t len) {
     return (val >> off) & ((1ull << len) - 1);
 }
 
 template <typename T, typename T2>
-static inline void insert(T& val, size_t off, size_t len, T2 x) {
+constexpr void insert(T& val, size_t off, size_t len, T2 x) {
     const T mask = ((1ull << len) - 1) << off;
-    val          = (val & ~mask) | (((T)x << off) & mask);
+
+    val = (val & ~mask) | (((T)x << off) & mask);
 }
 
 template <typename T, typename T2>
-static inline T deposit(T val, size_t off, size_t len, T2 x) {
+constexpr T deposit(T val, size_t off, size_t len, T2 x) {
     const T mask = ((1ull << len) - 1) << off;
     return (val & ~mask) | (((T)x << off) & mask);
 }
@@ -155,17 +175,17 @@ struct field {
 };
 
 template <typename F>
-typename F::base get_field(typename F::base val) {
+constexpr typename F::base get_field(typename F::base val) {
     return extract(val, F::OFFSET, F::LENGTH);
 }
 
 template <typename F>
-void set_field(typename F::base& val) {
+constexpr void set_field(typename F::base& val) {
     insert(val, F::OFFSET, F::LENGTH, ~0ull);
 }
 
 template <typename F>
-void set_field(typename F::base& val, typename F::base x) {
+constexpr void set_field(typename F::base& val, typename F::base x) {
     insert(val, F::OFFSET, F::LENGTH, x);
 }
 

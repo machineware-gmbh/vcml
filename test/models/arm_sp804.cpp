@@ -23,19 +23,26 @@ class sp804_stim : public test_base
 public:
     tlm_initiator_socket out;
 
-    sc_out<bool> reset_out;
+    gpio_initiator_socket rst_out;
 
-    irq_target_socket irq1;
-    irq_target_socket irq2;
-    irq_target_socket irqc;
+    gpio_target_socket irq1;
+    gpio_target_socket irq2;
+    gpio_target_socket irqc;
 
     sp804_stim(const sc_module_name& nm):
-        test_base(nm), out("out"), irq1("irq1"), irq2("irq2"), irqc("irqc") {}
+        test_base(nm),
+        out("out"),
+        rst_out("rst_out"),
+        irq1("irq1"),
+        irq2("irq2"),
+        irqc("irqc") {
+        rst_out.bind(rst);
+    }
 
     virtual void run_test() override {
         enum addresses : u64 {
-            TIMER1_LOAD    = 0x00,
-            TIMER1_VALUE   = 0x04,
+            TIMER1_LOAD = 0x00,
+            TIMER1_VALUE = 0x04,
             TIMER1_CONTROL = 0x08,
         };
 
@@ -73,9 +80,9 @@ public:
         EXPECT_OK(out.readw(TIMER1_CONTROL, val)) << "cannot read CONTROL";
         EXPECT_NE(val, 0x20) << "TIMER1_CONTROL changed randomly";
 
-        reset_out = true;
+        rst_out = true;
         wait(10, SC_MS);
-        reset_out = false;
+        rst_out = false;
         wait(SC_ZERO_TIME);
         ASSERT_FALSE(rst);
 
@@ -86,27 +93,12 @@ public:
 };
 
 TEST(sp804timer, main) {
-    sc_signal<bool> irq1("irq1");
-    sc_signal<bool> irq2("irq2");
-    sc_signal<bool> irqc("irqc");
-
-    sc_signal<bool> rst("reset");
-    sc_signal<clock_t> clk("clock");
-
-    generic::clock sysclk("sysclk", 1 * MHz);
-    sysclk.clk.bind(clk);
-
     sp804_stim stim("stim");
     arm::sp804timer sp804("sp804");
 
     stim.out.bind(sp804.in);
-    stim.reset_out.bind(rst);
-
-    stim.clk.bind(clk);
-    stim.rst.bind(rst);
-
-    sp804.clk.bind(clk);
-    sp804.rst.bind(rst);
+    stim.clk.bind(sp804.clk);
+    stim.rst.bind(sp804.rst);
 
     sp804.irq1.bind(stim.irq1);
     sp804.irq2.bind(stim.irq2);

@@ -82,7 +82,7 @@ template <>
 void struct_u::unroll<0>(double d) {
     std::vector<std::string> bt = ::vcml::backtrace(5, 1);
     EXPECT_EQ(bt.size(), 5);
-    for (auto func : bt)
+    for (const std::string& func : bt)
         std::cout << func << std::endl;
 }
 } // namespace N

@@ -35,12 +35,12 @@ public:
     typedef function<string(const char*)> handler;
 
 private:
-    bool m_echo;
     socket m_sock;
     u16 m_port;
 
     string m_name;
 
+    atomic<bool> m_echo;
     atomic<bool> m_running;
 
     mutex m_mutex;
@@ -83,6 +83,9 @@ public:
     virtual void handle_connect(const char* peer);
     virtual void handle_disconnect();
 
+    template <typename T>
+    void register_handler(const char* cmd, string (T::*handler)(const char*));
+
     void register_handler(const char* command, handler handler);
     void unregister_handler(const char* command);
 
@@ -92,6 +95,16 @@ public:
     static const char* const ERR_UNKNOWN;  // unknown error
     static const char* const ERR_PROTOCOL; // protocol error
 };
+
+template <typename HOST>
+void rspserver::register_handler(const char* command,
+                                 string (HOST::*handler)(const char*)) {
+    HOST* host = dynamic_cast<HOST*>(this);
+    VCML_ERROR_ON(!host, "command host not found");
+    register_handler(command, [host, handler](const char* args) -> string {
+        return (host->*handler)(args);
+    });
+}
 
 } // namespace debugging
 } // namespace vcml

@@ -26,7 +26,6 @@
 
 #include "vcml/protocols/tlm.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -52,17 +51,17 @@ private:
 public:
     enum sysid_bits : u32 {
         SYSID_VERSATILE = 0x41007004,
-        SYSID_VEXPRESS  = 0x1190f500
+        SYSID_VEXPRESS = 0x1190f500
     };
 
     enum procid_bits : u32 {
         PROCID_VERSATILE = 0x02000000,
-        PROCID_VEXPRESS  = 0x0c000191
+        PROCID_VEXPRESS = 0x0c000191
     };
 
     enum lockval_bits : u16 {
         LOCKVAL_LOCK = 0xa05f,
-        LOCKVAL_M    = 0x7fff,
+        LOCKVAL_M = 0x7fff,
     };
 
     reg<u32> sys_id;

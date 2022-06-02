@@ -84,7 +84,7 @@ void report::report_segfaults() {
 
     sigemptyset(&newact.sa_mask);
     newact.sa_sigaction = &handle_segfault;
-    newact.sa_flags     = SA_SIGINFO;
+    newact.sa_flags = SA_SIGINFO;
 
     if (::sigaction(SIGSEGV, &newact, &oldact) < 0)
         VCML_ERROR("failed to install SIGSEGV signal handler");

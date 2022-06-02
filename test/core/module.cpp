@@ -27,14 +27,14 @@ class mock_module : public vcml::module
 {
 public:
     bool cmd_test(const std::vector<std::string>& args, std::ostream& os) {
-        for (auto arg : args)
+        for (const std::string& arg : args)
             os << arg;
         return true;
     }
 
     mock_module(const sc_core::sc_module_name& nm = "mock_component"):
         vcml::module(nm) {
-        register_command("test", 3, this, &mock_module::cmd_test, "test");
+        register_command("test", 3, &mock_module::cmd_test, "test");
     }
 };
 

@@ -38,6 +38,7 @@ find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
 find_package(LibVNC)
+find_package(LibRFB)
 find_package(LibSLIRP)
 find_package(SDL2)
 
@@ -83,16 +84,6 @@ add_library(vcml STATIC
     ${src}/vcml/debugging/gdbarch.cpp
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
-    ${src}/vcml/serial/backend_fd.cpp
-    ${src}/vcml/serial/backend_file.cpp
-    ${src}/vcml/serial/backend_tcp.cpp
-    ${src}/vcml/serial/backend_term.cpp
-    ${src}/vcml/serial/backend.cpp
-    ${src}/vcml/serial/port.cpp
-    ${src}/vcml/net/backend.cpp
-    ${src}/vcml/net/backend_file.cpp
-    ${src}/vcml/net/backend_tap.cpp
-    ${src}/vcml/net/adapter.cpp
     ${src}/vcml/ui/video.cpp
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
@@ -105,10 +96,14 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/tlm_host.cpp
     ${src}/vcml/protocols/tlm_sockets.cpp
     ${src}/vcml/protocols/tlm_memory.cpp
-    ${src}/vcml/protocols/irq.cpp
+    ${src}/vcml/protocols/gpio.cpp
+    ${src}/vcml/protocols/clk.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
+    ${src}/vcml/protocols/i2c.cpp
     ${src}/vcml/protocols/pci.cpp
+    ${src}/vcml/protocols/eth.cpp
+    ${src}/vcml/protocols/serial.cpp
     ${src}/vcml/protocols/virtio.cpp
     ${src}/vcml/module.cpp
     ${src}/vcml/component.cpp
@@ -122,31 +117,44 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/bus.cpp
     ${src}/vcml/models/generic/memory.cpp
     ${src}/vcml/models/generic/gpio.cpp
-    ${src}/vcml/models/generic/crossbar.cpp
     ${src}/vcml/models/generic/uart8250.cpp
     ${src}/vcml/models/generic/lan9118.cpp
     ${src}/vcml/models/generic/rtc1742.cpp
-    ${src}/vcml/models/generic/spibus.cpp
-    ${src}/vcml/models/generic/spi2sd.cpp
-    ${src}/vcml/models/generic/sdcard.cpp
-    ${src}/vcml/models/generic/sdhci.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
-    ${src}/vcml/models/generic/pci_device.cpp
-    ${src}/vcml/models/generic/pci_host.cpp
-    ${src}/vcml/models/meta/loader.cpp
-    ${src}/vcml/models/meta/simdev.cpp
-    ${src}/vcml/models/meta/throttle.cpp
+    ${src}/vcml/models/serial/backend_fd.cpp
+    ${src}/vcml/models/serial/backend_file.cpp
+    ${src}/vcml/models/serial/backend_tcp.cpp
+    ${src}/vcml/models/serial/backend_term.cpp
+    ${src}/vcml/models/serial/backend.cpp
+    ${src}/vcml/models/serial/terminal.cpp
+    ${src}/vcml/models/ethernet/backend.cpp
+    ${src}/vcml/models/ethernet/backend_file.cpp
+    ${src}/vcml/models/ethernet/backend_tap.cpp
+    ${src}/vcml/models/ethernet/bridge.cpp
+    ${src}/vcml/models/ethernet/network.cpp
+    ${src}/vcml/models/i2c/lm75.cpp
+    ${src}/vcml/models/spi/bus.cpp
+    ${src}/vcml/models/spi/spi2sd.cpp
+    ${src}/vcml/models/spi/max31855.cpp
+    ${src}/vcml/models/sd/sdcard.cpp
+    ${src}/vcml/models/sd/sdhci.cpp
+    ${src}/vcml/models/pci/device.cpp
+    ${src}/vcml/models/pci/host.cpp
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/pci.cpp
     ${src}/vcml/models/virtio/rng.cpp
     ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp
+    ${src}/vcml/models/meta/loader.cpp
+    ${src}/vcml/models/meta/simdev.cpp
+    ${src}/vcml/models/meta/throttle.cpp
     ${src}/vcml/models/opencores/ompic.cpp
     ${src}/vcml/models/opencores/ethoc.cpp
     ${src}/vcml/models/opencores/ockbd.cpp
     ${src}/vcml/models/opencores/ocfbc.cpp
     ${src}/vcml/models/opencores/ocspi.cpp
+    ${src}/vcml/models/opencores/oci2c.cpp
     ${src}/vcml/models/arm/pl011uart.cpp
     ${src}/vcml/models/arm/pl190vic.cpp
     ${src}/vcml/models/arm/sp804timer.cpp
@@ -200,11 +208,20 @@ else()
     message(STATUS "Building without VNC support")
 endif()
 
+if(LIBRFB_FOUND)
+    message(STATUS "Building with RFB support")
+    target_compile_definitions(vcml PRIVATE HAVE_LIBRFB)
+    target_sources(vcml PRIVATE ${src}/vcml/ui/rfb.cpp)
+    target_link_libraries(vcml PUBLIC ${LIBRFB_LIBRARIES})
+else()
+    message(STATUS "Building without RFB support")
+endif()
+
 if(LIBSLIRP_FOUND)
     message(STATUS "Building with SLIRP support")
     target_compile_definitions(vcml PRIVATE HAVE_LIBSLIRP)
     target_include_directories(vcml SYSTEM PRIVATE ${LIBSLIRP_INCLUDE_DIRS})
-    target_sources(vcml PRIVATE ${src}/vcml/net/backend_slirp.cpp)
+    target_sources(vcml PRIVATE ${src}/vcml/models/ethernet/backend_slirp.cpp)
     target_link_libraries(vcml PUBLIC ${LIBSLIRP_LIBRARIES})
 else()
     message(STATUS "Building without SLIRP support")

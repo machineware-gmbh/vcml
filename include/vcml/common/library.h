@@ -38,11 +38,12 @@ public:
     bool is_open() const { return m_handle != nullptr; }
 
     library();
-    library(library& other);
-    library(const string& path);
+    library(library&& other) noexcept;
     library(const string& path, int mode);
     library(const library& copy) = delete;
     virtual ~library();
+
+    library(const string& path): library(path, -1) {}
 
     void open(const string& path, int mode = -1);
     void close();

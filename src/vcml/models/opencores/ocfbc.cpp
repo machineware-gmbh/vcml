@@ -95,8 +95,8 @@ void ocfbc::write_ctrl(u32 val) {
 
         m_xres = (htim & 0xffff) + 1;
         m_yres = (vtim & 0xffff) + 1;
-        m_bpp  = OCFBC_BPP(val);
-        m_pc   = (val & CTLR_PC) == CTLR_PC;
+        m_bpp = OCFBC_BPP(val);
+        m_pc = (val & CTLR_PC) == CTLR_PC;
 
         create();
     }
@@ -180,8 +180,9 @@ void ocfbc::create() {
         break;
 
     case 2:
-        mode        = ui::videomode::r5g6b5(m_xres, m_yres);
-        mode.endian = get_endian();
+        mode = ui::videomode::r5g6b5(m_xres, m_yres);
+
+        mode.endian = endian;
         break;
 
     case 1:
@@ -213,9 +214,11 @@ void ocfbc::render() {
         tlm_response_status rs;
 
         u32 burstsz = OCFBC_VBL(ctlr);
-        u32 linesz  = m_xres * m_bpp;
+        u32 linesz = m_xres * m_bpp;
 
         u8 linebuf[linesz];
+        memset(linebuf, 0, sizeof(linebuf));
+
         u8* fb = m_fb;
 
         for (u32 y = 0; y < m_yres; y++) {
@@ -241,10 +244,10 @@ void ocfbc::render() {
 
                 for (u32 x = 0; x < linesz; x++) {
                     u32 color = to_host_endian(palette[linebuf[x]]);
-                    *fb++     = (color >> 0) & 0xff;  // b
-                    *fb++     = (color >> 8) & 0xff;  // g
-                    *fb++     = (color >> 16) & 0xff; // r
-                    *fb++     = 0xff;                 // a
+                    *fb++ = (color >> 0) & 0xff;  // b
+                    *fb++ = (color >> 8) & 0xff;  // g
+                    *fb++ = (color >> 16) & 0xff; // r
+                    *fb++ = 0xff;                 // a
                 }
             }
 
@@ -284,10 +287,13 @@ void ocfbc::update() {
         while (!(ctlr & CTLR_VEN))
             wait(m_enable);
 
-        sc_time t = sc_time_stamp();
+        const sc_time& t = sc_time_stamp();
+
         render();
+
         sc_time delta = sc_time_stamp() - t;
         sc_time frame(1.0 / clock, SC_SEC);
+
         if (delta < frame) {
             wait(frame - delta); // wait until next frame
         } else {
@@ -342,7 +348,7 @@ ocfbc::ocfbc(const sc_module_name& nm):
     SC_HAS_PROCESS(ocfbc);
     SC_THREAD(update);
 
-    register_command("info", 0, this, &ocfbc::cmd_info,
+    register_command("info", 0, &ocfbc::cmd_info,
                      "shows information about the framebuffer");
 }
 
