@@ -31,21 +31,33 @@
 #include "vcml/module.h"
 
 namespace vcml {
-namespace generic{
+namespace generic {
 
-class max31855 : public module, public spi_host {
+class max31855 : public module, public spi_host
+{
 private:
     u16 fp_temp_thermalcouple;
     u16 fp_temp_internal;
-    
+
     in_port<bool> cs;
     bool cs_mode;
 
-    u16 to_fix_point(double in, u8 decimal_pos, const int size_bits);
+    inline double fp_max(const int decimal_pos, const int size_bits) {
+        return (double)(((u16)pow(2, size_bits - 1)) - 1) /
+               (double)(1 << decimal_pos);
+    };
+
+    inline double fp_min(const int decimal_pos, const int size_bits) {
+        return (double)(-(u16)pow(2, size_bits - 1)) /
+               (double)(1 << decimal_pos);
+    };
+
+    u16 to_fix_point(const double in, const int decimal_pos,
+                     const int size_bits);
     void sample_temps();
     u8 do_spi_transport(u8 val);
     void cs_edge();
- 
+
     enum spi_states : u8 {
         BYTE0 = 0,
         BYTE1 = 1,
@@ -55,13 +67,13 @@ private:
     u8 state;
 
 public:
-    property<double>   temp_thermalcouple;
-    property<double>   temp_internal;
+    property<double> temp_thermalcouple;
+    property<double> temp_internal;
 
-    property<bool>  fault;
-    property<bool>  scv;    // Short circuit to VCC
-    property<bool>  scg;    // Short circuit to GND
-    property<bool>  oc;     // Open clamps 
+    property<bool> fault;
+    property<bool> scv; // Short circuit to VCC
+    property<bool> scg; // Short circuit to GND
+    property<bool> oc;  // Open clamps
 
     spi_target_socket spi_in;
 

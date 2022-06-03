@@ -21,22 +21,21 @@
 namespace vcml {
 namespace generic {
 
-#define FP_MAX(DP, B) ((double)(((u16)pow(2, ((B) - 1))) - 1) / (double)(1 << (DP)))
-#define FP_MIN(DP, B) ((double)(-(u16)pow(2, ((B) - 1))) / (double)(1 << (DP)))
-u16 max31855::to_fix_point(double in, u8 decimal_pos, const int size_bits) {
+u16 max31855::to_fix_point(const double in, const int decimal_pos,
+                           const int size_bits) {
     double val = 0.0;
-    if (in > FP_MAX(decimal_pos, size_bits))
-        val = FP_MAX(decimal_pos, size_bits);
-    else if (in < FP_MIN(decimal_pos, size_bits))
-        val = FP_MIN(decimal_pos, size_bits);
+    if (in > fp_max(decimal_pos, size_bits))
+        val = fp_max(decimal_pos, size_bits);
+    else if (in < fp_min(decimal_pos, size_bits))
+        val = fp_min(decimal_pos, size_bits);
     else
         val = in;
     return (u16)round(val * (1 << decimal_pos)) & (u16)(pow(2, size_bits) - 1);
 }
 
 void max31855::sample_temps() {
-    fp_temp_thermalcouple   = to_fix_point(temp_thermalcouple, 2, 14);
-    fp_temp_internal        = to_fix_point(temp_internal, 4, 12);
+    fp_temp_thermalcouple = to_fix_point(temp_thermalcouple, 2, 14);
+    fp_temp_internal = to_fix_point(temp_internal, 4, 12);
 }
 
 u8 max31855::do_spi_transport(u8 mosi) {
@@ -44,19 +43,19 @@ u8 max31855::do_spi_transport(u8 mosi) {
 
     switch (state) {
     case BYTE0:
-        miso  = (u8)(fp_temp_thermalcouple >> 6);
+        miso = (u8)(fp_temp_thermalcouple >> 6);
         state = BYTE1;
         break;
     case BYTE1:
-        miso  = (u8)((fp_temp_thermalcouple << 2) | (fault == true));
+        miso = (u8)((fp_temp_thermalcouple << 2) | (fault == true));
         state = BYTE2;
         break;
     case BYTE2:
-        miso  = (u8)(fp_temp_internal >> 4);
+        miso = (u8)(fp_temp_internal >> 4);
         state = BYTE3;
         break;
     case BYTE3:
-        miso  = (u8)((fp_temp_internal << 4) | ((scv == true) << 2) |
+        miso = (u8)((fp_temp_internal << 4) | ((scv == true) << 2) |
                     ((scg == true) << 1) | (oc == true));
         state = BYTE0;
         break;
@@ -68,7 +67,7 @@ u8 max31855::do_spi_transport(u8 mosi) {
     return miso;
 }
 
-void max31855::cs_edge(){
+void max31855::cs_edge() {
     while (true) {
         if (cs == cs_mode) {
             state = BYTE0;
@@ -79,7 +78,7 @@ void max31855::cs_edge(){
 }
 
 void max31855::spi_transport(const spi_target_socket& socket,
-                                spi_payload& spi) {
+                             spi_payload& spi) {
     spi.miso = do_spi_transport(spi.mosi);
 }
 
