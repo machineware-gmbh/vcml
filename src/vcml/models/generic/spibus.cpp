@@ -77,11 +77,11 @@ void spibus::bind(spi_initiator_socket& initiator) {
     spi_in.bind(initiator);
 }
 
-unsigned int spibus::bind(spi_target_socket& target, sc_signal<bool>& select,
+unsigned int spibus::bind(spi_target_socket& target, gpio_initiator_socket& s,
                           bool cs_active_high) {
     unsigned int port = next_free();
     spi_out[port].bind(target);
-    cs[port].bind(select);
+    s.bind(cs[port]);
     m_csmode[port] = cs_active_high;
     return port;
 }

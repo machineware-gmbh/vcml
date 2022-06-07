@@ -25,7 +25,9 @@
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
+
 #include "vcml/protocols/spi.h"
+#include "vcml/protocols/gpio.h"
 
 #include "vcml/ports.h"
 #include "vcml/component.h"
@@ -33,12 +35,10 @@
 namespace vcml {
 namespace generic {
 
-typedef port_list<spi_initiator_socket> spi_initiator_list;
-
 class spibus : public component, public spi_host
 {
 private:
-    std::map<unsigned int, bool> m_csmode;
+    unordered_map<unsigned int, bool> m_csmode;
 
     // disabled
     spibus();
@@ -46,9 +46,8 @@ private:
 
 public:
     spi_target_socket spi_in;
-    spi_initiator_list spi_out;
-
-    in_port_list<bool> cs;
+    spi_initiator_socket_array<> spi_out;
+    gpio_target_socket_array<> cs;
 
     spibus(const sc_module_name& nm);
     virtual ~spibus();
@@ -69,7 +68,7 @@ public:
     unsigned int next_free() const;
 
     void bind(spi_initiator_socket& initiator);
-    unsigned int bind(spi_target_socket& target, sc_signal<bool>& select,
+    unsigned int bind(spi_target_socket& target, gpio_initiator_socket& cs,
                       bool cs_active_high = true);
 };
 
