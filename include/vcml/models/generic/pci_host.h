@@ -27,7 +27,7 @@
 #include "vcml/component.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/pci.h"
 
 namespace vcml {
@@ -62,10 +62,10 @@ public:
 
     pci_initiator_socket_array<256> pci_out;
 
-    irq_initiator_socket irq_a;
-    irq_initiator_socket irq_b;
-    irq_initiator_socket irq_c;
-    irq_initiator_socket irq_d;
+    gpio_initiator_socket irq_a;
+    gpio_initiator_socket irq_b;
+    gpio_initiator_socket irq_c;
+    gpio_initiator_socket irq_d;
 
     pci_host(const sc_module_name& nm, bool express = true);
     virtual ~pci_host();

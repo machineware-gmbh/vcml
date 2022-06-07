@@ -25,7 +25,7 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/sd.h"
 
 #include "vcml/ports.h"
@@ -149,7 +149,7 @@ public:
 
     property<bool> dma_enabled;
 
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     tlm_target_socket in;
     tlm_initiator_socket out;
 

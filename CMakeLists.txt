@@ -106,8 +106,7 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/tlm_host.cpp
     ${src}/vcml/protocols/tlm_sockets.cpp
     ${src}/vcml/protocols/tlm_memory.cpp
-    ${src}/vcml/protocols/irq.cpp
-    ${src}/vcml/protocols/rst.cpp
+    ${src}/vcml/protocols/gpio.cpp
     ${src}/vcml/protocols/clk.cpp
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp

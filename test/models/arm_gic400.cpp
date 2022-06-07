@@ -26,14 +26,14 @@ public:
     tlm_initiator_socket vifctrl_out;
     tlm_initiator_socket vcpuif_out;
 
-    sc_vector<irq_initiator_socket> ppi_out;
-    sc_vector<irq_initiator_socket> spi_out;
+    sc_vector<gpio_initiator_socket> ppi_out;
+    sc_vector<gpio_initiator_socket> spi_out;
 
-    sc_vector<irq_target_socket> firq_in;
-    sc_vector<irq_target_socket> nirq_in;
+    sc_vector<gpio_target_socket> firq_in;
+    sc_vector<gpio_target_socket> nirq_in;
 
-    sc_vector<irq_target_socket> vfirq_in;
-    sc_vector<irq_target_socket> vnirq_in;
+    sc_vector<gpio_target_socket> vfirq_in;
+    sc_vector<gpio_target_socket> vnirq_in;
 
     gic400_stim(const sc_module_name& nm):
         test_base(nm),

@@ -17,8 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
-#include "vcml/protocols/rst.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
@@ -38,9 +37,8 @@ size_t tracer_term::trace_curr_indent = 0;
 
 array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_TLM]      = */ termcolors::MAGENTA,
-    /* [PROTO_IRQ]      = */ termcolors::YELLOW,
-    /* [PROTO_RST]      = */ termcolors::RED,
-    /* [PROTO_RST]      = */ termcolors::BLUE,
+    /* [PROTO_GPIO]     = */ termcolors::YELLOW,
+    /* [PROTO_CLK]      = */ termcolors::BLUE,
     /* [PROTO_PCI]      = */ termcolors::CYAN,
     /* [PROTO_I2C]      = */ termcolors::BRIGHT_GREEN,
     /* [PROTO_SPI]      = */ termcolors::BRIGHT_YELLOW,
@@ -97,11 +95,7 @@ void tracer_term::trace(const activity<tlm_generic_payload>& msg) {
     do_trace(msg);
 }
 
-void tracer_term::trace(const activity<irq_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<rst_payload>& msg) {
+void tracer_term::trace(const activity<gpio_payload>& msg) {
     do_trace(msg);
 }
 

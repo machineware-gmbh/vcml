@@ -68,7 +68,7 @@ class lan9118_bench : public test_base
 public:
     generic::lan9118 lan;
     tlm_initiator_socket out;
-    irq_target_socket irq;
+    gpio_target_socket irq;
 
     lan9118_bench(const sc_module_name& nm):
         test_base(nm), lan("lan9118"), out("out"), irq("irq") {

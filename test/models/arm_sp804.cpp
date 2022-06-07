@@ -23,11 +23,11 @@ class sp804_stim : public test_base
 public:
     tlm_initiator_socket out;
 
-    rst_initiator_socket rst_out;
+    gpio_initiator_socket rst_out;
 
-    irq_target_socket irq1;
-    irq_target_socket irq2;
-    irq_target_socket irqc;
+    gpio_target_socket irq1;
+    gpio_target_socket irq2;
+    gpio_target_socket irqc;
 
     sp804_stim(const sc_module_name& nm):
         test_base(nm),

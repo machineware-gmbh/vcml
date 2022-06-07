@@ -25,7 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/ports.h"
@@ -107,7 +107,7 @@ public:
 
     tlm_target_socket in;
     tlm_initiator_socket out;
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     virtio_initiator_socket virtio_out;
 
     mmio(const sc_module_name& nm);

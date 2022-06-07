@@ -26,7 +26,7 @@
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
 
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/i2c.h"
 
 #include "vcml/module.h"
@@ -75,7 +75,7 @@ public:
     property<u8> i2c_addr;
 
     i2c_target_socket i2c;
-    irq_initiator_socket alarm;
+    gpio_initiator_socket alarm;
 
     static u16 to_temp9(double temp);
     static double from_temp9(u16 t9);

@@ -112,10 +112,10 @@ public:
     tlm_initiator_socket io;
     tlm_target_socket msi;
 
-    irq_target_socket int_a;
-    irq_target_socket int_b;
-    irq_target_socket int_c;
-    irq_target_socket int_d;
+    gpio_target_socket int_a;
+    gpio_target_socket int_b;
+    gpio_target_socket int_c;
+    gpio_target_socket int_d;
 
     u64 msi_addr;
     u32 msi_data;

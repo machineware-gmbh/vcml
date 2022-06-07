@@ -73,8 +73,7 @@
 #include "vcml/ui/console.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
-#include "vcml/protocols/rst.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"

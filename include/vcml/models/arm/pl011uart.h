@@ -25,7 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/serial.h"
 
 #include "vcml/ports.h"
@@ -143,7 +143,7 @@ public:
     reg<u32, 4> cid; // Cell ID Register
 
     tlm_target_socket in;
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
 
     serial_initiator_socket serial_tx;
     serial_target_socket serial_rx;

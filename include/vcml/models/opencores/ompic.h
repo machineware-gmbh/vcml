@@ -25,7 +25,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
 #include "vcml/ports.h"
 #include "vcml/peripheral.h"
@@ -56,7 +56,7 @@ public:
     reg<u32>** control;
     reg<u32>** status;
 
-    irq_initiator_socket_array<> irq;
+    gpio_initiator_socket_array<> irq;
     tlm_target_socket in;
 
     ompic(const sc_module_name& name, unsigned int num_cores);

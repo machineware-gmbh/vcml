@@ -36,8 +36,8 @@ void component::do_reset() {
 component::component(const sc_module_name& nm, bool dmi):
     module(nm),
     tlm_host(dmi),
-    rst_host(),
     clk_host(),
+    gpio_host(),
     m_clkrst_ev("clkrst_ev"),
     clk("clk"),
     rst("rst") {
@@ -95,10 +95,28 @@ void component::clk_notify(const clk_target_socket& s, const clk_payload& tx) {
     m_clkrst_ev.notify(SC_ZERO_TIME);
 }
 
-void component::rst_notify(const rst_target_socket& s, const rst_payload& tx) {
-    if (tx.reset)
-        do_reset();
-    m_clkrst_ev.notify(SC_ZERO_TIME);
+void component::gpio_transport(const gpio_target_socket& socket,
+                               gpio_payload& tx) {
+    if (socket == rst) {
+        if (tx.state)
+            do_reset();
+        m_clkrst_ev.notify(SC_ZERO_TIME);
+    } else {
+        gpio_notify(socket, tx.state, tx.vector);
+    }
+}
+
+void component::gpio_notify(const gpio_target_socket& socket, bool state,
+                            gpio_vector vector) {
+    gpio_notify(socket, state);
+}
+
+void component::gpio_notify(const gpio_target_socket& socket, bool state) {
+    gpio_notify(socket);
+}
+
+void component::gpio_notify(const gpio_target_socket& socket) {
+    // to be overloaded
 }
 
 } // namespace vcml

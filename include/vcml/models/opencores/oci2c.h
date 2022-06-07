@@ -27,7 +27,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/i2c.h"
 
 #include "vcml/peripheral.h"
@@ -85,7 +85,7 @@ public:
     reg<u8> sr;
 
     tlm_target_socket in;
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     i2c_initiator_socket i2c;
 
     clock_t bus_hz() const { return m_hz; }

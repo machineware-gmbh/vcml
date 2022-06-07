@@ -1283,18 +1283,18 @@ void gic400::end_of_elaboration() {
     distif.setup(m_cpu_num, m_irq_num);
 }
 
-void gic400::irq_transport(const irq_target_socket& socket, irq_payload& irq) {
+void gic400::gpio_notify(const gpio_target_socket& socket) {
     switch (socket.as) {
     case IRQ_AS_PPI: {
         unsigned int cpu = ppi_in.index_of(socket) / NPPI;
         unsigned int idx = ppi_in.index_of(socket) % NPPI;
-        handle_ppi(cpu, idx, irq);
+        handle_ppi(cpu, idx, socket.read());
         break;
     }
 
     case IRQ_AS_SPI: {
         unsigned int idx = spi_in.index_of(socket);
-        handle_spi(idx, irq);
+        handle_spi(idx, socket.read());
         break;
     }
 
@@ -1303,28 +1303,29 @@ void gic400::irq_transport(const irq_target_socket& socket, irq_payload& irq) {
     }
 }
 
-void gic400::handle_ppi(unsigned int cpu, unsigned int idx, irq_payload& tx) {
+void gic400::handle_ppi(unsigned int cpu, unsigned int idx, bool state) {
     unsigned int irq = NSGI + idx;
     unsigned int mask = 1 << cpu;
 
-    set_irq_level(irq, tx.active, mask);
+    set_irq_level(irq, state, mask);
     set_irq_signaled(irq, false, gic400::ALL_CPU);
-    if (get_irq_trigger(irq) == EDGE && tx.active)
+    if (get_irq_trigger(irq) == EDGE && state)
         set_irq_pending(irq, true, mask);
 
     update();
 }
 
-void gic400::handle_spi(unsigned int idx, irq_payload& tx) {
+void gic400::handle_spi(unsigned int idx, bool state) {
     unsigned int irq = NPRIV + idx;
     unsigned int target_cpu = distif.itargets_spi[idx];
 
-    set_irq_level(irq, tx.active, gic400::ALL_CPU);
+    set_irq_level(irq, state, gic400::ALL_CPU);
     set_irq_signaled(irq, false, gic400::ALL_CPU);
-    if (get_irq_trigger(irq) == EDGE && tx.active)
+    if (get_irq_trigger(irq) == EDGE && state)
         set_irq_pending(irq, true, target_cpu);
 
     update();
 }
+
 } // namespace arm
 } // namespace vcml

@@ -310,7 +310,6 @@ void processor::processor_thread() {
 
 processor::processor(const sc_module_name& nm, const string& cpuarch):
     component(nm),
-    irq_target(),
     target(),
     m_run_time(0),
     m_cycle_count(0),
@@ -428,19 +427,19 @@ void processor::log_bus_error(const tlm_initiator_socket& socket,
     log_debug("  code = %s", status.c_str());
 }
 
-void processor::irq_transport(const irq_target_socket& socket,
-                              irq_payload& tx) {
+void processor::gpio_notify(const gpio_target_socket& socket, bool state,
+                            gpio_vector vector) {
     unsigned int irqno = irq.index_of(socket);
     irq_stats& stats = m_irq_stats[irqno];
 
-    if (tx.active == stats.irq_status) {
-        log_warn("irq %d already %s", irqno, tx.active ? "set" : "cleared");
+    if (state == stats.irq_status) {
+        log_warn("irq %d already %s", irqno, state ? "set" : "cleared");
         return;
     }
 
-    stats.irq_status = tx.active;
+    stats.irq_status = state;
 
-    if (tx.active) {
+    if (state) {
         stats.irq_count++;
         stats.irq_last = sc_time_stamp();
     } else {
@@ -450,11 +449,11 @@ void processor::irq_transport(const irq_target_socket& socket,
         stats.irq_uptime += delta;
     }
 
-    log_debug("%sing IRQ %u", tx.active ? "sett" : "clear", irqno);
-    interrupt(irqno, tx.active, tx.vector);
+    log_debug("%sing IRQ %u", state ? "sett" : "clear", irqno);
+    interrupt(irqno, state, vector);
 }
 
-void processor::interrupt(unsigned int irq, bool set, irq_vector vector) {
+void processor::interrupt(unsigned int irq, bool set, gpio_vector vector) {
     interrupt(irq, set);
 }
 
