@@ -22,11 +22,8 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
-
-#include "vcml/ports.h"
-#include "vcml/module.h"
-
 #include "vcml/protocols/base.h"
+#include "vcml/module.h"
 
 namespace vcml {
 

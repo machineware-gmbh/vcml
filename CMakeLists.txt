@@ -127,7 +127,6 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/bus.cpp
     ${src}/vcml/models/generic/memory.cpp
     ${src}/vcml/models/generic/gpio.cpp
-    ${src}/vcml/models/generic/crossbar.cpp
     ${src}/vcml/models/generic/uart8250.cpp
     ${src}/vcml/models/generic/lan9118.cpp
     ${src}/vcml/models/generic/rtc1742.cpp

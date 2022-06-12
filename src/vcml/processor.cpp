@@ -32,7 +32,6 @@ bool processor::cmd_dump(const vector<string>& args, ostream& os) {
        << "  ID 0x" << HEX(core_id(), 16) << std::endl;
 
     os << "Interrupts:" << std::endl;
-    in_port_list<bool>::iterator it;
     for (auto it : irq) {
         irq_stats stats;
         if (get_irq_stats(it.first, stats)) {

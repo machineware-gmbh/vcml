@@ -22,11 +22,8 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
-
-#include "vcml/ports.h"
-#include "vcml/module.h"
-
 #include "vcml/protocols/base.h"
+#include "vcml/module.h"
 
 namespace vcml {
 
@@ -264,7 +261,7 @@ public:
 class gpio_initiator_adapter : public module
 {
 public:
-    in_port<bool> in;
+    sc_in<bool> in;
     gpio_initiator_socket out;
 
     gpio_initiator_adapter(const sc_module_name& nm);
@@ -279,7 +276,7 @@ class gpio_target_adapter : public module, public gpio_host
 {
 public:
     gpio_target_socket in;
-    out_port<bool> out;
+    sc_out<bool> out;
 
     gpio_target_adapter(const sc_module_name& nm);
     virtual ~gpio_target_adapter() = default;

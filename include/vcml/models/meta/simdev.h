@@ -25,7 +25,6 @@
 
 #include "vcml/protocols/tlm.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {

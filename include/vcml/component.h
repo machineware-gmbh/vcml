@@ -31,7 +31,6 @@
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
 
-#include "vcml/ports.h"
 #include "vcml/module.h"
 
 namespace vcml {

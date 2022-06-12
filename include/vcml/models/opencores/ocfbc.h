@@ -29,7 +29,6 @@
 #include "vcml/properties/property.h"
 #include "vcml/ui/console.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {

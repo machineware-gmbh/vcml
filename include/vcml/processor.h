@@ -33,7 +33,6 @@
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
 
-#include "vcml/ports.h"
 #include "vcml/component.h"
 
 namespace vcml {

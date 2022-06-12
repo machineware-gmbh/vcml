@@ -29,7 +29,6 @@
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/spi.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {

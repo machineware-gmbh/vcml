@@ -29,7 +29,6 @@
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/pci_ids.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 #include "vcml/models/generic/pci_device.h"

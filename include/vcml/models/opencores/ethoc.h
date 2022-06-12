@@ -28,7 +28,6 @@
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/eth.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {

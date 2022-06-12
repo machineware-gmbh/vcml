@@ -84,7 +84,6 @@
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
-#include "vcml/ports.h"
 #include "vcml/command.h"
 #include "vcml/module.h"
 #include "vcml/component.h"
@@ -99,7 +98,6 @@
 #include "vcml/models/generic/bus.h"
 #include "vcml/models/generic/memory.h"
 #include "vcml/models/generic/gpio.h"
-#include "vcml/models/generic/crossbar.h"
 #include "vcml/models/generic/uart8250.h"
 #include "vcml/models/generic/lan9118.h"
 #include "vcml/models/generic/rtc1742.h"
