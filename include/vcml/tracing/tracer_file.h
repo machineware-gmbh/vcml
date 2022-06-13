@@ -52,6 +52,7 @@ public:
     virtual void trace(const activity<vq_message>&) override;
     virtual void trace(const activity<serial_payload>&) override;
     virtual void trace(const activity<eth_frame>&) override;
+    virtual void trace(const activity<can_frame>&) override;
 
     tracer_file(const string& filename);
     virtual ~tracer_file();
