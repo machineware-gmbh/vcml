@@ -36,24 +36,12 @@ namespace generic {
 class max31855 : public module, public spi_host
 {
 private:
-    u16 fp_temp_thermalcouple;
-    u16 fp_temp_internal;
+    u16 m_fp_temp_thermalcouple;
+    u16 m_fp_temp_internal;
 
-    in_port<bool> cs;
-    bool cs_mode;
+    in_port<bool> m_cs;
+    bool m_cs_mode;
 
-    inline double fp_max(const int decimal_pos, const int size_bits) {
-        return (double)(((u16)pow(2, size_bits - 1)) - 1) /
-               (double)(1 << decimal_pos);
-    };
-
-    inline double fp_min(const int decimal_pos, const int size_bits) {
-        return (double)(-(u16)pow(2, size_bits - 1)) /
-               (double)(1 << decimal_pos);
-    };
-
-    u16 to_fix_point(const double in, const int decimal_pos,
-                     const int size_bits);
     void sample_temps();
     u8 do_spi_transport(u8 val);
     void cs_edge();
@@ -64,7 +52,7 @@ private:
         BYTE2 = 2,
         BYTE3 = 3,
     };
-    u8 state;
+    u8 m_state;
 
 public:
     property<double> temp_thermalcouple;
@@ -76,6 +64,9 @@ public:
     property<bool> oc;  // Open clamps
 
     spi_target_socket spi_in;
+
+    static u16 to_fp_14_2(const double t);
+    static u16 to_fp_12_4(const double t);
 
     max31855(const sc_module_name& nm);
     virtual ~max31855();

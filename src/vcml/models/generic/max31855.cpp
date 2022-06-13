@@ -21,43 +21,47 @@
 namespace vcml {
 namespace generic {
 
-u16 max31855::to_fix_point(const double in, const int decimal_pos,
-                           const int size_bits) {
-    double val = 0.0;
-    if (in > fp_max(decimal_pos, size_bits))
-        val = fp_max(decimal_pos, size_bits);
-    else if (in < fp_min(decimal_pos, size_bits))
-        val = fp_min(decimal_pos, size_bits);
-    else
-        val = in;
-    return (u16)round(val * (1 << decimal_pos)) & (u16)(pow(2, size_bits) - 1);
+u16 max31855::to_fp_14_2(const double t) {
+    if (t > 2047.5)
+        return 0x1FFF;
+    if (t < -2048.0)
+        return 0x2000;
+    return (u16)round(t * 4) & (u16)0x3FFF;
+}
+
+u16 max31855::to_fp_12_4(const double t) {
+    if (t > 127.9375)
+        return 0x7FF;
+    if (t < -128)
+        return 0x800;
+    return (u16)round(t * 16) & (u16)0xFFF;
 }
 
 void max31855::sample_temps() {
-    fp_temp_thermalcouple = to_fix_point(temp_thermalcouple, 2, 14);
-    fp_temp_internal = to_fix_point(temp_internal, 4, 12);
+    m_fp_temp_thermalcouple = to_fp_14_2(temp_thermalcouple);
+    m_fp_temp_internal = to_fp_12_4(temp_internal);
 }
 
 u8 max31855::do_spi_transport(u8 mosi) {
     u8 miso = 0;
 
-    switch (state) {
+    switch (m_state) {
     case BYTE0:
-        miso = (u8)(fp_temp_thermalcouple >> 6);
-        state = BYTE1;
+        miso = (u8)(m_fp_temp_thermalcouple >> 6);
+        m_state = BYTE1;
         break;
     case BYTE1:
-        miso = (u8)((fp_temp_thermalcouple << 2) | (fault == true));
-        state = BYTE2;
+        miso = (u8)((m_fp_temp_thermalcouple << 2) | (fault == true));
+        m_state = BYTE2;
         break;
     case BYTE2:
-        miso = (u8)(fp_temp_internal >> 4);
-        state = BYTE3;
+        miso = (u8)(m_fp_temp_internal >> 4);
+        m_state = BYTE3;
         break;
     case BYTE3:
-        miso = (u8)((fp_temp_internal << 4) | ((scv == true) << 2) |
+        miso = (u8)((m_fp_temp_internal << 4) | ((scv == true) << 2) |
                     ((scg == true) << 1) | (oc == true));
-        state = BYTE0;
+        m_state = BYTE0;
         break;
     default:
         VCML_ERROR("Unknown spi transfer state");
@@ -69,8 +73,8 @@ u8 max31855::do_spi_transport(u8 mosi) {
 
 void max31855::cs_edge() {
     while (true) {
-        if (cs == cs_mode) {
-            state = BYTE0;
+        if (m_cs == m_cs_mode) {
+            m_state = BYTE0;
             sample_temps();
         }
         wait();
@@ -83,18 +87,18 @@ void max31855::spi_transport(const spi_target_socket& socket,
 }
 
 void max31855::bind(sc_signal<bool>& select, bool cs_active_high) {
-    cs.bind(select);
-    cs_mode = cs_active_high;
+    m_cs.bind(select);
+    m_cs_mode = cs_active_high;
 }
 
 max31855::max31855(const sc_module_name& nm):
     module(nm),
     spi_host(),
-    fp_temp_thermalcouple(0),
-    fp_temp_internal(0),
-    cs("cs"),
-    cs_mode(true),
-    state(BYTE0),
+    m_fp_temp_thermalcouple(25.0),
+    m_fp_temp_internal(10.0),
+    m_cs("cs"),
+    m_cs_mode(true),
+    m_state(BYTE0),
     temp_thermalcouple("temp_thermalcouple", 25),
     temp_internal("temp_internal", 10),
     fault("fault", false),
@@ -104,7 +108,7 @@ max31855::max31855(const sc_module_name& nm):
     spi_in("spi_in") {
     SC_HAS_PROCESS(max31855);
     SC_THREAD(cs_edge);
-    sensitive << cs;
+    sensitive << m_cs;
 }
 
 max31855::~max31855() {
