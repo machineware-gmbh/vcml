@@ -79,6 +79,7 @@ public:
     }
 
     virtual void run_test() override {
+        // Test temperature reading
         max31855.temp_thermalcouple = 25.0;
         max31855.temp_internal = 25.0;
         max31855.fault = false;
@@ -88,6 +89,7 @@ public:
         const u8 data1[4] = { 0b00000001, 0b10010000, 0b00011001, 0b00000000 };
         test_read(data1);
 
+        // Test negative temperature reading
         max31855.temp_thermalcouple = -0.25;
         max31855.temp_internal = -0.0625;
         max31855.fault = true;
@@ -97,6 +99,7 @@ public:
         const u8 data2[4] = { 0b11111111, 0b11111101, 0b11111111, 0b11110111 };
         test_read(data2);
 
+        // Test restricting to max temperature
         max31855.temp_thermalcouple = 4096.0;
         max31855.temp_internal = 256.0;
         max31855.fault = false;
@@ -106,6 +109,7 @@ public:
         const u8 data3[4] = { 0b01111111, 0b11111100, 0b01111111, 0b11110000 };
         test_read(data3);
 
+        // Test restricting to min temperature
         max31855.temp_thermalcouple = -4096.0;
         max31855.temp_internal = -256.0;
         max31855.fault = false;
@@ -115,6 +119,7 @@ public:
         const u8 data4[4] = { 0b10000000, 0b00000000, 0b10000000, 0b00000000 };
         test_read(data4);
 
+        // Test Chip Select
         test_cs();
     }
 };
