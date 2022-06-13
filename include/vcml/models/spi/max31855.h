@@ -30,7 +30,7 @@
 #include "vcml/module.h"
 
 namespace vcml {
-namespace generic {
+namespace spi {
 
 class max31855 : public module, public spi_host
 {
@@ -77,7 +77,7 @@ public:
     void bind(gpio_initiator_socket& s, bool cs_active_high = true);
 };
 
-} // namespace generic
+} // namespace spi
 } // namespace vcml
 
 #endif

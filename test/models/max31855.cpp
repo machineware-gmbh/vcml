@@ -21,7 +21,7 @@
 class max31855_bench : public test_base
 {
 public:
-    generic::max31855 max31855;
+    spi::max31855 max31855;
     spi_initiator_socket spi;
     gpio_initiator_socket cs;
 

@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/max31855.h"
+#include "vcml/models/spi/max31855.h"
 
 namespace vcml {
-namespace generic {
+namespace spi {
 
 u16 max31855::to_fp_14_2(const double t) {
     if (t > 2047.5)
@@ -113,5 +113,5 @@ max31855::~max31855() {
     // nothing to do
 }
 
-} // namespace generic
+} // namespace spi
 } // namespace vcml

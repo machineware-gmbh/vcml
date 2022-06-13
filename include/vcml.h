@@ -89,7 +89,6 @@
 #include "vcml/models/generic/clock.h"
 #include "vcml/models/generic/reset.h"
 #include "vcml/models/generic/bus.h"
-#include "vcml/models/generic/max31855.h"
 #include "vcml/models/generic/memory.h"
 #include "vcml/models/generic/gpio.h"
 #include "vcml/models/generic/uart8250.h"
@@ -109,6 +108,7 @@
 
 #include "vcml/models/spi/bus.h"
 #include "vcml/models/spi/spi2sd.h"
+#include "vcml/models/spi/max31855.h"
 
 #include "vcml/models/sd/sdcard.h"
 #include "vcml/models/sd/sdhci.h"
