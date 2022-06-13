@@ -23,7 +23,7 @@ class max31855_bench : public test_base
 public:
     generic::max31855 max31855;
     spi_initiator_socket spi;
-    sc_signal<bool> cs;
+    gpio_initiator_socket cs;
 
     max31855_bench(const sc_module_name& nm):
         test_base(nm), max31855("max31855"), spi("spi"), cs("cs") {

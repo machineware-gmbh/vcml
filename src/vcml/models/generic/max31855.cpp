@@ -72,12 +72,9 @@ u8 max31855::do_spi_transport(u8 mosi) {
 }
 
 void max31855::cs_edge() {
-    while (true) {
-        if (m_cs == m_cs_mode) {
-            m_state = BYTE0;
-            sample_temps();
-        }
-        wait();
+    if (m_cs == m_cs_mode) {
+        m_state = BYTE0;
+        sample_temps();
     }
 }
 
@@ -86,8 +83,8 @@ void max31855::spi_transport(const spi_target_socket& socket,
     spi.miso = do_spi_transport(spi.mosi);
 }
 
-void max31855::bind(sc_signal<bool>& select, bool cs_active_high) {
-    m_cs.bind(select);
+void max31855::bind(gpio_initiator_socket& s, bool cs_active_high) {
+    s.bind(m_cs);
     m_cs_mode = cs_active_high;
 }
 
@@ -107,8 +104,9 @@ max31855::max31855(const sc_module_name& nm):
     oc("oc", false),
     spi_in("spi_in") {
     SC_HAS_PROCESS(max31855);
-    SC_THREAD(cs_edge);
-    sensitive << m_cs;
+    SC_METHOD(cs_edge);
+    sensitive << m_cs.default_event();
+    dont_initialize();
 }
 
 max31855::~max31855() {

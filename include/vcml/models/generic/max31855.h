@@ -25,9 +25,8 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/spi.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/module.h"
 
 namespace vcml {
@@ -39,7 +38,7 @@ private:
     u16 m_fp_temp_thermalcouple;
     u16 m_fp_temp_internal;
 
-    in_port<bool> m_cs;
+    gpio_target_socket m_cs;
     bool m_cs_mode;
 
     void sample_temps();
@@ -75,7 +74,7 @@ public:
     virtual void spi_transport(const spi_target_socket& socket,
                                spi_payload& spi) override;
 
-    void bind(sc_signal<bool>& select, bool cs_active_high = true);
+    void bind(gpio_initiator_socket& s, bool cs_active_high = true);
 };
 
 } // namespace generic
