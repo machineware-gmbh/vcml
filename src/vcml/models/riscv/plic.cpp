@@ -185,7 +185,6 @@ void plic::update() {
 
 plic::plic(const sc_module_name& nm):
     peripheral(nm),
-    irq_target(),
     m_claims(),
     m_contexts(),
     priority("priority", 0x0, 0),
@@ -225,9 +224,9 @@ void plic::end_of_elaboration() {
     VCML_ERROR_ON(irqs.exists(0), "irq0 must not be used");
 }
 
-void plic::irq_transport(const irq_target_socket& sock, irq_payload& irq) {
-    unsigned int irqno = irqs.index_of(sock);
-    log_debug("irq %u %s", irqno, irq.active ? "set" : "cleared");
+void plic::gpio_notify(const gpio_target_socket& socket) {
+    unsigned int irqno = irqs.index_of(socket);
+    log_debug("irq %u %s", irqno, socket.read() ? "set" : "cleared");
     update();
 }
 

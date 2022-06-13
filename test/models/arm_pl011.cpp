@@ -23,9 +23,9 @@ class pl011_bench : public test_base
 public:
     tlm_initiator_socket out;
 
-    rst_initiator_socket reset_out;
+    gpio_initiator_socket reset_out;
 
-    irq_target_socket irq_in;
+    gpio_target_socket irq_in;
 
     arm::pl011uart uart;
 

@@ -25,10 +25,9 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/eth.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -267,7 +266,7 @@ public:
     property<clock_t> clock;
     property<string> mac;
 
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
 
     tlm_target_socket in;
     tlm_initiator_socket out;

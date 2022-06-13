@@ -26,10 +26,9 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/spi.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -62,7 +61,7 @@ public:
     reg<u32> control;
     reg<u32> bauddiv;
 
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     tlm_target_socket in;
     spi_initiator_socket spi_out;
 

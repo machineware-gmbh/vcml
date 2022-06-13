@@ -25,9 +25,8 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -91,7 +90,7 @@ public:
         reg<u32> mis;     // Masked Interrupt Status register
         reg<u32> bgload;  // Background Load register
 
-        irq_initiator_socket irq;
+        gpio_initiator_socket irq;
 
         bool is_enabled() const { return control & CONTROL_ENABLED; }
         bool is_irq_enabled() const { return control & CONTROL_IRQEN; }
@@ -127,9 +126,9 @@ public:
 
     tlm_target_socket in;
 
-    irq_base_initiator_socket irq1;
-    irq_base_initiator_socket irq2;
-    irq_initiator_socket irqc;
+    gpio_base_initiator_socket irq1;
+    gpio_base_initiator_socket irq2;
+    gpio_initiator_socket irqc;
 
     sp804timer(const sc_module_name& nm);
     virtual ~sp804timer();

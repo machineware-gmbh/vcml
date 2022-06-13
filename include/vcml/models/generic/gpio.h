@@ -24,8 +24,8 @@
 #include "vcml/common/systemc.h"
 
 #include "vcml/protocols/tlm.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -48,12 +48,12 @@ private:
 public:
     reg<u32> data;
 
-    out_port_list<bool> ports;
+    gpio_initiator_socket_array<> gpio_out;
     tlm_target_socket in;
 
     gpio(const sc_module_name& name);
     virtual ~gpio();
-    VCML_KIND(out);
+    VCML_KIND(gpio);
     virtual void reset() override;
 
     virtual void end_of_elaboration() override;

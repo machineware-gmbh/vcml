@@ -23,10 +23,7 @@
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
 #include "vcml/common/range.h"
-
 #include "vcml/protocols/tlm.h"
-
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {

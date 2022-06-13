@@ -43,8 +43,7 @@ public:
     void set_colors(bool set = true) { m_colors = set; }
 
     virtual void trace(const activity<tlm_generic_payload>&) override;
-    virtual void trace(const activity<irq_payload>&) override;
-    virtual void trace(const activity<rst_payload>&) override;
+    virtual void trace(const activity<gpio_payload>&) override;
     virtual void trace(const activity<clk_payload>&) override;
     virtual void trace(const activity<pci_payload>&) override;
     virtual void trace(const activity<i2c_payload>&) override;

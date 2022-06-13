@@ -26,7 +26,7 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/eth.h"
 
 #include "vcml/peripheral.h"
@@ -289,7 +289,7 @@ public:
     reg<u32> e2p_data;
 
     tlm_target_socket in;
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
 
     eth_initiator_socket eth_tx;
     eth_target_socket eth_rx;

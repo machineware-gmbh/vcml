@@ -20,7 +20,6 @@
 
 test_base::test_base(const sc_module_name& nm):
     component(nm),
-    irq_target(),
     m_tracer(),
     m_logger(),
     m_reset("reset"),
@@ -44,10 +43,6 @@ void test_base::run() {
 void test_base::finalize_test() {
     ASSERT_EQ(sc_core::sc_get_status(), sc_core::SC_STOPPED)
         << "simulation incomplete";
-}
-
-void test_base::irq_transport(const irq_target_socket& s, irq_payload& tx) {
-    // ignored
 }
 
 static void systemc_report_handler(const sc_report& r, const sc_actions& a) {

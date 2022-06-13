@@ -22,10 +22,7 @@
 #include "vcml/common/types.h"
 #include "vcml/common/report.h"
 #include "vcml/common/systemc.h"
-
-#include "vcml/protocols/rst.h"
-
-#include "vcml/ports.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/module.h"
 
 namespace vcml {
@@ -36,7 +33,7 @@ class reset : public module
 public:
     property<bool> state;
 
-    rst_initiator_socket rst;
+    gpio_initiator_socket rst;
 
     reset() = delete;
     reset(const sc_module_name& nm, bool init_state = false);

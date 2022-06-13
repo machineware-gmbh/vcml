@@ -25,15 +25,14 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
 namespace riscv {
 
-class plic : public peripheral, public irq_target
+class plic : public peripheral
 {
 public:
     static const size_t NIRQ = 1024;
@@ -80,8 +79,8 @@ public:
     reg<u32, NIRQ> priority;
     reg<u32, NIRQ / 32> pending;
 
-    irq_target_socket_array<NIRQ> irqs;
-    irq_initiator_socket_array<NCTX> irqt;
+    gpio_target_socket_array<NIRQ> irqs;
+    gpio_initiator_socket_array<NCTX> irqt;
 
     tlm_target_socket in;
 
@@ -93,8 +92,7 @@ public:
 
 protected:
     virtual void end_of_elaboration() override;
-    virtual void irq_transport(const irq_target_socket& socket,
-                               irq_payload& irq) override;
+    virtual void gpio_notify(const gpio_target_socket& socket) override;
 };
 
 } // namespace riscv

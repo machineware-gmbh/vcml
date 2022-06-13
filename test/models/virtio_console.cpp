@@ -28,7 +28,7 @@ public:
     virtio::console virtio_console;
 
     tlm_initiator_socket out;
-    irq_target_socket irq;
+    gpio_target_socket irq;
 
     virtio_rng_stim(const sc_module_name& nm = sc_gen_unique_name("stim")):
         test_base(nm),

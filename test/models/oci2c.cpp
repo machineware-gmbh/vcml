@@ -42,7 +42,7 @@ public:
     oci2c model;
 
     tlm_initiator_socket out;
-    irq_target_socket irq;
+    gpio_target_socket irq;
     i2c_target_socket i2c;
 
     MOCK_METHOD(i2c_response, i2c_start,

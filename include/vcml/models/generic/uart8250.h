@@ -25,10 +25,9 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/serial.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
@@ -127,7 +126,7 @@ public:
     serial_initiator_socket serial_tx;
     serial_target_socket serial_rx;
 
-    irq_initiator_socket irq;
+    gpio_initiator_socket irq;
     tlm_target_socket in;
 
     uart8250(const sc_module_name& name);

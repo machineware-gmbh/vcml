@@ -30,11 +30,11 @@ class mock_processor : public vcml::processor
 public:
     vcml::u64 cycles;
 
-    vcml::rst_initiator_socket rst_out;
+    vcml::gpio_initiator_socket rst_out;
     vcml::clk_initiator_socket clk_out;
 
-    vcml::irq_initiator_socket irq0;
-    vcml::irq_initiator_socket irq1;
+    vcml::gpio_initiator_socket irq0;
+    vcml::gpio_initiator_socket irq1;
 
     MOCK_METHOD(void, interrupt, (unsigned int, bool), (override));
     MOCK_METHOD(void, simulate2, (unsigned int));
@@ -69,7 +69,7 @@ public:
 
     virtual void end_of_elaboration() override {
         clk_out = DEFCLK;
-        rst_out.reset();
+        rst_out.pulse();
     }
 };
 

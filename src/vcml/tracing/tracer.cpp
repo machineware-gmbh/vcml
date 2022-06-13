@@ -25,10 +25,8 @@ const char* protocol_name(protocol_kind kind) {
     switch (kind) {
     case PROTO_TLM:
         return "TLM";
-    case PROTO_IRQ:
-        return "IRQ";
-    case PROTO_RST:
-        return "RST";
+    case PROTO_GPIO:
+        return "GPIO";
     case PROTO_CLK:
         return "CLK";
     case PROTO_PCI:

@@ -25,15 +25,14 @@
 #include "vcml/common/range.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/irq.h"
+#include "vcml/protocols/gpio.h"
 
-#include "vcml/ports.h"
 #include "vcml/peripheral.h"
 
 namespace vcml {
 namespace arm {
 
-class pl190vic : public peripheral, public irq_target
+class pl190vic : public peripheral
 {
 private:
     u32 m_ext_irq;
@@ -83,17 +82,16 @@ public:
 
     tlm_target_socket in;
 
-    irq_target_socket_array<NIRQ> irq_in;
-    irq_initiator_socket_array<> irq_out;
-    irq_initiator_socket_array<> fiq_out;
+    gpio_target_socket_array<NIRQ> irq_in;
+    gpio_initiator_socket_array<> irq_out;
+    gpio_initiator_socket_array<> fiq_out;
 
     pl190vic(const sc_module_name& nm);
     virtual ~pl190vic();
     VCML_KIND(arm::pl190vic);
 
     virtual void reset() override;
-    virtual void irq_transport(const irq_target_socket& socket,
-                               irq_payload& irq) override;
+    virtual void gpio_notify(const gpio_target_socket& socket) override;
 };
 
 } // namespace arm

@@ -23,11 +23,11 @@ class plic_stim : public test_base
 public:
     tlm_initiator_socket out;
 
-    irq_target_socket irqt1;
-    irq_target_socket irqt2;
+    gpio_target_socket irqt1;
+    gpio_target_socket irqt2;
 
-    irq_initiator_socket irqs1;
-    irq_initiator_socket irqs2;
+    gpio_initiator_socket irqs1;
+    gpio_initiator_socket irqs2;
 
     plic_stim(const sc_module_name& nm):
         test_base(nm),

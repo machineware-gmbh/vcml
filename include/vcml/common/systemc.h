@@ -436,6 +436,10 @@ public:
     size_t next_index() const { return m_next; }
     SOCKET& next() { return operator[](next_index()); }
 
+    bool contains(const SOCKET& socket) const {
+        return m_ids.find(&socket) != m_ids.end();
+    }
+
     size_t index_of(const SOCKET& socket) const {
         auto it = m_ids.find(&socket);
         if (it == m_ids.end())
@@ -450,6 +454,11 @@ public:
         return keys;
     }
 };
+
+template <typename SOCKET>
+bool operator==(const SOCKET& socket, const socket_array<SOCKET>& arr) {
+    return arr.contains(socket);
+}
 
 } // namespace vcml
 

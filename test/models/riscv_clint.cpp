@@ -23,11 +23,11 @@ class clint_stim : public test_base
 public:
     tlm_initiator_socket out;
 
-    irq_target_socket irq_sw_0;
-    irq_target_socket irq_sw_1;
+    gpio_target_socket irq_sw_0;
+    gpio_target_socket irq_sw_1;
 
-    irq_target_socket irq_timer_0;
-    irq_target_socket irq_timer_1;
+    gpio_target_socket irq_timer_0;
+    gpio_target_socket irq_timer_1;
 
     clint_stim(const sc_module_name& nm):
         test_base(nm),

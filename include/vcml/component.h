@@ -28,18 +28,17 @@
 #include "vcml/properties/property.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/protocols/rst.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
 
-#include "vcml/ports.h"
 #include "vcml/module.h"
 
 namespace vcml {
 
 class component : public module,
                   public tlm_host,
-                  public rst_host,
-                  public clk_host
+                  public clk_host,
+                  public gpio_host
 {
 private:
     sc_event m_clkrst_ev;
@@ -50,7 +49,7 @@ private:
 
 public:
     clk_target_socket clk;
-    rst_target_socket rst;
+    gpio_target_socket rst;
 
     component() = delete;
     component(const component&) = delete;
@@ -81,8 +80,14 @@ public:
 protected:
     virtual void clk_notify(const clk_target_socket& socket,
                             const clk_payload& tx) override;
-    virtual void rst_notify(const rst_target_socket& socket,
-                            const rst_payload& tx) override;
+
+    virtual void gpio_transport(const gpio_target_socket& socket,
+                                gpio_payload& tx) override;
+
+    virtual void gpio_notify(const gpio_target_socket& socket, bool state,
+                             gpio_vector vector);
+    virtual void gpio_notify(const gpio_target_socket& socket, bool state);
+    virtual void gpio_notify(const gpio_target_socket& socket);
 };
 
 } // namespace vcml
