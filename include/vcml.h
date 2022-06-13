@@ -104,6 +104,10 @@
 #include "vcml/models/ethernet/bridge.h"
 #include "vcml/models/ethernet/network.h"
 
+#include "vcml/models/can/backend.h"
+#include "vcml/models/can/bridge.h"
+#include "vcml/models/can/bus.h"
+
 #include "vcml/models/i2c/lm75.h"
 
 #include "vcml/models/spi/bus.h"
