@@ -19,12 +19,12 @@
 #ifndef VCML_ETHERNET_BRIDGE_H
 #define VCML_ETHERNET_BRIDGE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/report.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
-#include "vcml/module.h"
+#include "vcml/core/types.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/report.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/protocols/eth.h"

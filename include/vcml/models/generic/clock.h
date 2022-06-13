@@ -19,11 +19,12 @@
 #ifndef VCML_GENERIC_CLOCK_H
 #define VCML_GENERIC_CLOCK_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+
 #include "vcml/protocols/clk.h"
-#include "vcml/module.h"
 
 namespace vcml {
 namespace generic {

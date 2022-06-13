@@ -19,17 +19,16 @@
 #ifndef VCML_META_LOADER_H
 #define VCML_META_LOADER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/component.h"
 
 #include "vcml/debugging/loader.h"
 #include "vcml/debugging/elf_reader.h"
 #include "vcml/protocols/tlm.h"
-
-#include "vcml/component.h"
 
 namespace vcml {
 namespace meta {

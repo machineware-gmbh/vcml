@@ -19,9 +19,10 @@
 #ifndef VCML_ETHERNET_BACKEND_H
 #define VCML_ETHERNET_BACKEND_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/strings.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/strings.h"
+
 #include "vcml/protocols/eth.h"
 
 namespace vcml {

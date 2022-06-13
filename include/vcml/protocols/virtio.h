@@ -19,16 +19,14 @@
 #ifndef VCML_PROTOCOLS_VIRTIO_H
 #define VCML_PROTOCOLS_VIRTIO_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/protocols/base.h"
 #include "vcml/protocols/pci_ids.h"
-
-#include "vcml/module.h"
 
 namespace vcml {
 

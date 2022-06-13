@@ -19,9 +19,9 @@
 #ifndef VCML_BROKER_H
 #define VCML_BROKER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/systemc.h"
 
 namespace vcml {
 

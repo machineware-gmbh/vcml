@@ -16,17 +16,19 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/common/thctl.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/version.h"
-#include "vcml/component.h"
+#include "vcml/core/thctl.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/version.h"
+#include "vcml/core/component.h"
 
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/loader.h"
+
 #include "vcml/protocols/base.h"
 #include "vcml/ui/input.h"
+
 #include "vcml/models/serial/terminal.h"
 #include "vcml/models/ethernet/bridge.h"
 

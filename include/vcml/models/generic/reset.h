@@ -19,11 +19,12 @@
 #ifndef VCML_GENERIC_RESET_H
 #define VCML_GENERIC_RESET_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+
 #include "vcml/protocols/gpio.h"
-#include "vcml/module.h"
 
 namespace vcml {
 namespace generic {

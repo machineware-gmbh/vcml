@@ -19,10 +19,10 @@
 #ifndef VCML_UI_DISPLAY_H
 #define VCML_UI_DISPLAY_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/report.h"
-#include "vcml/common/thctl.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/report.h"
+#include "vcml/core/thctl.h"
 
 #include "vcml/logging/logger.h"
 

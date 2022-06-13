@@ -19,10 +19,10 @@
 #ifndef VCML_VIRTIO_PCI_H
 #define VCML_VIRTIO_PCI_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/virtio.h"

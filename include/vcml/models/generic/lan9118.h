@@ -19,17 +19,16 @@
 #ifndef VCML_MODELS_LAN9118_H
 #define VCML_MODELS_LAN9118_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/peripheral.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/eth.h"
-
-#include "vcml/peripheral.h"
 
 namespace vcml {
 namespace generic {

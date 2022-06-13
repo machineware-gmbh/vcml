@@ -19,11 +19,11 @@
 #ifndef VCML_DEBUGGING_TARGET_H
 #define VCML_DEBUGGING_TARGET_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/thctl.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/range.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/thctl.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/range.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/debugging/symtab.h"

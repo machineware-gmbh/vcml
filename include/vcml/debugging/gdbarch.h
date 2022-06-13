@@ -19,8 +19,8 @@
 #ifndef VCML_DEBUGGING_GDBARCH_H
 #define VCML_DEBUGGING_GDBARCH_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
 
 #include "vcml/debugging/target.h"
 

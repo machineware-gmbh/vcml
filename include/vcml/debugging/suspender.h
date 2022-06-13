@@ -19,11 +19,11 @@
 #ifndef VCML_DEBUGGING_SUSPENDER_H
 #define VCML_DEBUGGING_SUSPENDER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/thctl.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/thctl.h"
 
 namespace vcml {
 namespace debugging {

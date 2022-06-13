@@ -19,17 +19,16 @@
 #ifndef VCML_GENERIC_SPIBUS_H
 #define VCML_GENERIC_SPIBUS_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/gpio.h"
-
-#include "vcml/component.h"
 
 namespace vcml {
 namespace spi {

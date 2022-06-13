@@ -19,14 +19,14 @@
 #ifndef VCML_META_THROTTLE_H
 #define VCML_META_THROTTLE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/utils.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/module.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
-#include "vcml/module.h"
 
 namespace vcml {
 namespace meta {

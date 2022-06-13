@@ -19,9 +19,9 @@
 #ifndef VCML_UI_FBMODE_H
 #define VCML_UI_FBMODE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/report.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/strings.h"
 
 namespace vcml {
 namespace ui {

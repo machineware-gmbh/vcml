@@ -19,13 +19,11 @@
 #ifndef VCML_GENERIC_BUS
 #define VCML_GENERIC_BUS
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
-
-#include "vcml/command.h"
-#include "vcml/component.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
 
 namespace vcml {
 namespace generic {

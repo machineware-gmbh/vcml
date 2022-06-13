@@ -19,8 +19,9 @@
 #ifndef VCML_ETHERNET_BACKEND_SLIRP_H
 #define VCML_ETHERNET_BACKEND_SLIRP_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+
 #include "vcml/logging/logger.h"
 
 #include "vcml/models/ethernet/backend.h"

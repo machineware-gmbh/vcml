@@ -19,7 +19,7 @@
 #ifndef VCML_PROTOCOLS_PCI_IDS_H
 #define VCML_PROTOCOLS_PCI_IDS_H
 
-#include "vcml/common/types.h"
+#include "vcml/core/types.h"
 
 namespace vcml {
 

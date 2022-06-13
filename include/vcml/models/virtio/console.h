@@ -19,15 +19,14 @@
 #ifndef VCML_VIRTIO_CONSOLE_H
 #define VCML_VIRTIO_CONSOLE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
-
-#include "vcml/module.h"
 
 namespace vcml {
 namespace virtio {

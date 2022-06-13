@@ -19,10 +19,10 @@
 #ifndef VCML_VSPSERVER_H
 #define VCML_VSPSERVER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/debugging/rspserver.h"
 #include "vcml/debugging/suspender.h"

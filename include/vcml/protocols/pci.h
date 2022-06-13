@@ -19,11 +19,9 @@
 #ifndef VCML_PROTOCOLS_PCI_H
 #define VCML_PROTOCOLS_PCI_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/range.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/systemc.h"
-#include "vcml/module.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/protocols/base.h"
 #include "vcml/protocols/pci_ids.h"

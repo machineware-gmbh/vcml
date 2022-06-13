@@ -19,16 +19,15 @@
 #ifndef VCML_SERIAL_TERMINAL_H
 #define VCML_SERIAL_TERMINAL_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/protocols/serial.h"
 #include "vcml/properties/property.h"
 #include "vcml/models/serial/backend.h"
-
-#include "vcml/module.h"
 
 namespace vcml {
 namespace serial {

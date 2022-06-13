@@ -19,9 +19,9 @@
 #ifndef VCML_PROTOCOLS_TLM_HOST_H
 #define VCML_PROTOCOLS_TLM_HOST_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/protocols/tlm_sbi.h"

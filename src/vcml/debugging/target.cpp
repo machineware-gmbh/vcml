@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/module.h"
 #include "vcml/debugging/target.h"
-#include "vcml/module.h"
 
 namespace vcml {
 namespace debugging {

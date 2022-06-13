@@ -19,17 +19,16 @@
 #ifndef VCML_OPENCORES_OCFBC_H
 #define VCML_OPENCORES_OCFBC_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/peripheral.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/ui/console.h"
-
-#include "vcml/peripheral.h"
 
 namespace vcml {
 namespace opencores {
