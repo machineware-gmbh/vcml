@@ -44,7 +44,7 @@ public:
 class sdhci_harness : public test_base
 {
 public:
-    generic::sdhci sdhci;
+    sd::sdhci sdhci;
     generic::memory mem;
     mock_sdcard sdcard;
 

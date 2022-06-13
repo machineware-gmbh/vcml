@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/sdcard.h"
+#include "vcml/models/sd/sdcard.h"
 
 #define SDHC_BLKLEN 512
 
 namespace vcml {
-namespace generic {
+namespace sd {
 
 static bool check_crc7(const sd_command& tx) {
     u8 buffer[5] = {
@@ -1069,5 +1069,5 @@ void sdcard::sd_transport(const sd_target_socket& socket, sd_data& tx) {
         tx.status.write = do_data_write(tx.data);
 }
 
-} // namespace generic
+} // namespace sd
 } // namespace vcml

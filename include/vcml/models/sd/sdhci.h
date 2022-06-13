@@ -31,7 +31,7 @@
 #include "vcml/peripheral.h"
 
 namespace vcml {
-namespace generic {
+namespace sd {
 
 class sdhci : public peripheral
 {
@@ -157,12 +157,12 @@ public:
     sdhci() = delete;
     sdhci(const sc_module_name& name);
     virtual ~sdhci();
-    VCML_KIND(sdhci);
+    VCML_KIND(sd::sdhci);
 
     virtual void reset() override;
 };
 
-} // namespace generic
+} // namespace sd
 } // namespace vcml
 
 #endif

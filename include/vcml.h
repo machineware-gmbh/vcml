@@ -94,8 +94,6 @@
 #include "vcml/models/generic/uart8250.h"
 #include "vcml/models/generic/lan9118.h"
 #include "vcml/models/generic/rtc1742.h"
-#include "vcml/models/generic/sdcard.h"
-#include "vcml/models/generic/sdhci.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
 
@@ -110,6 +108,9 @@
 
 #include "vcml/models/spi/bus.h"
 #include "vcml/models/spi/spi2sd.h"
+
+#include "vcml/models/sd/sdcard.h"
+#include "vcml/models/sd/sdhci.h"
 
 #include "vcml/models/pci/device.h"
 #include "vcml/models/pci/host.h"

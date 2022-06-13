@@ -120,8 +120,6 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/uart8250.cpp
     ${src}/vcml/models/generic/lan9118.cpp
     ${src}/vcml/models/generic/rtc1742.cpp
-    ${src}/vcml/models/generic/sdcard.cpp
-    ${src}/vcml/models/generic/sdhci.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
     ${src}/vcml/models/serial/backend_fd.cpp
@@ -138,6 +136,8 @@ add_library(vcml STATIC
     ${src}/vcml/models/i2c/lm75.cpp
     ${src}/vcml/models/spi/bus.cpp
     ${src}/vcml/models/spi/spi2sd.cpp
+    ${src}/vcml/models/sd/sdcard.cpp
+    ${src}/vcml/models/sd/sdhci.cpp
     ${src}/vcml/models/pci/device.cpp
     ${src}/vcml/models/pci/host.cpp
     ${src}/vcml/models/virtio/mmio.cpp

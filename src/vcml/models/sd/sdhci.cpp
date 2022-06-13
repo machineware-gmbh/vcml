@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/sdhci.h"
+#include "vcml/models/sd/sdhci.h"
 
 namespace vcml {
-namespace generic {
+namespace sd {
 
 u8 sdhci::calc_crc7() const {
     u8 buffer[5] = {
@@ -606,5 +606,5 @@ void sdhci::reset() {
     capabilities[0] = CAPABILITY_VALUES_0;
 }
 
-} // namespace generic
+} // namespace sd
 } // namespace vcml

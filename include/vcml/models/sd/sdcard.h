@@ -28,7 +28,7 @@
 #include "vcml/component.h"
 
 namespace vcml {
-namespace generic {
+namespace sd {
 
 class sdcard : public component, public sd_host
 {
@@ -184,7 +184,7 @@ public:
     sdcard(const sc_module_name& name);
     virtual ~sdcard();
     virtual void reset() override;
-    VCML_KIND(sdcard);
+    VCML_KIND(sd::sdcard);
 
     bool is_sdhc() const { return m_ocr & OCR_CCS; }
     bool is_sdsc() const { return !is_sdhc(); }
@@ -200,7 +200,7 @@ inline void sdcard::update_status() {
     m_status |= m_state << 9;
 }
 
-} // namespace generic
+} // namespace sd
 } // namespace vcml
 
 #endif
