@@ -77,7 +77,7 @@ enum : u64 {
     MMAP_PCI_IO_SIZE = 0x1000,
 };
 
-class pcie_test_device : public generic::pci_device
+class pcie_test_device : public pci::device
 {
 public:
     pci_target_socket pci_in;
@@ -92,7 +92,7 @@ public:
     }
 
     pcie_test_device(const sc_module_name& nm):
-        pci_device(nm, TEST_CONFIG),
+        device(nm, TEST_CONFIG),
         pci_in("PCI_IN"),
         test_reg(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
         test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
@@ -118,7 +118,7 @@ public:
     generic::bus mmio_bus;
     generic::bus io_bus;
 
-    generic::pci_host pcie_root;
+    pci::host pcie_root;
     pcie_test_device pcie_device;
 
     tlm_initiator_socket mmio;

@@ -60,13 +60,6 @@
 #include "vcml/debugging/gdbserver.h"
 #include "vcml/debugging/vspserver.h"
 
-#include "vcml/serial/backend.h"
-#include "vcml/serial/terminal.h"
-
-#include "vcml/ethernet/backend.h"
-#include "vcml/ethernet/bridge.h"
-#include "vcml/ethernet/network.h"
-
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/video.h"
 #include "vcml/ui/display.h"
@@ -101,25 +94,35 @@
 #include "vcml/models/generic/uart8250.h"
 #include "vcml/models/generic/lan9118.h"
 #include "vcml/models/generic/rtc1742.h"
-#include "vcml/models/generic/spibus.h"
-#include "vcml/models/generic/spi2sd.h"
 #include "vcml/models/generic/sdcard.h"
 #include "vcml/models/generic/sdhci.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
-#include "vcml/models/generic/pci_host.h"
-#include "vcml/models/generic/pci_device.h"
-#include "vcml/models/generic/lm75.h"
 
-#include "vcml/models/meta/loader.h"
-#include "vcml/models/meta/simdev.h"
-#include "vcml/models/meta/throttle.h"
+#include "vcml/models/serial/backend.h"
+#include "vcml/models/serial/terminal.h"
+
+#include "vcml/models/ethernet/backend.h"
+#include "vcml/models/ethernet/bridge.h"
+#include "vcml/models/ethernet/network.h"
+
+#include "vcml/models/i2c/lm75.h"
+
+#include "vcml/models/spi/bus.h"
+#include "vcml/models/spi/spi2sd.h"
+
+#include "vcml/models/pci/device.h"
+#include "vcml/models/pci/host.h"
 
 #include "vcml/models/virtio/mmio.h"
 #include "vcml/models/virtio/pci.h"
 #include "vcml/models/virtio/rng.h"
 #include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
+
+#include "vcml/models/meta/loader.h"
+#include "vcml/models/meta/simdev.h"
+#include "vcml/models/meta/throttle.h"
 
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ethoc.h"

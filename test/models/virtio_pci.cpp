@@ -31,7 +31,7 @@ public:
     tlm_initiator_socket mmio;
 
     generic::bus mmio_bus;
-    generic::pci_host pci_root;
+    pci::host pci_root;
     virtio::pci virtio_pci;
 
     gpio_target_socket int_a;

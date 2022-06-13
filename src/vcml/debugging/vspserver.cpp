@@ -26,9 +26,9 @@
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/loader.h"
 #include "vcml/protocols/base.h"
-#include "vcml/serial/terminal.h"
-#include "vcml/ethernet/bridge.h"
 #include "vcml/ui/input.h"
+#include "vcml/models/serial/terminal.h"
+#include "vcml/models/ethernet/bridge.h"
 
 namespace vcml {
 namespace debugging {
