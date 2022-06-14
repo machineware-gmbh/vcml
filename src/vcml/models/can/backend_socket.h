@@ -16,53 +16,39 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/can/bridge.h"
+#ifndef VCML_CAN_BACKEND_SOCKET_H
+#define VCML_CAN_BACKEND_SOCKET_H
+
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/aio.h"
+
+#include "vcml/logging/logger.h"
+
 #include "vcml/models/can/backend.h"
-#include "vcml/models/can/backend_file.h"
-#include "vcml/models/can/backend_socket.h"
+#include "vcml/models/can/bridge.h"
 
 namespace vcml {
 namespace can {
 
-backend::backend(bridge* br): m_parent(br), m_type("unknown") {
-    m_parent->attach(this);
-}
+class backend_socket : public backend
+{
+private:
+    string m_name;
+    int m_socket;
 
-backend::~backend() {
-    if (m_parent != nullptr)
-        m_parent->detach(this);
-}
+public:
+    backend_socket(bridge* br, const string& ifname);
+    virtual ~backend_socket();
 
-void backend::send_to_guest(can_frame frame) {
-    m_parent->send_to_guest(frame);
-}
+    virtual void send_to_host(const can_frame& frame) override;
 
-backend* backend::create(bridge* br, const string& type) {
-    string kind = type.substr(0, type.find(':'));
-    typedef function<backend*(bridge*, const string&)> construct;
-    static const unordered_map<string, construct> backends = {
-        { "file", backend_file::create },
-        { "socket", backend_socket::create },
-    };
-
-    auto it = backends.find(kind);
-    if (it == backends.end()) {
-        stringstream ss;
-        ss << "unknown network backend '" << type << "'" << std::endl
-           << "the following can backends are known:" << std::endl;
-        for (const auto& avail : backends)
-            ss << "  " << avail.first;
-        VCML_REPORT("%s", ss.str().c_str());
-    }
-
-    try {
-        return it->second(br, type);
-    } catch (std::exception& ex) {
-        VCML_REPORT("%s: %s", type.c_str(), ex.what());
-    } catch (...) {
-        VCML_REPORT("%s: unknown error", type.c_str());
-    }
-}
+    static backend* create(bridge* br, const string& type);
+};
 
 } // namespace can
 } // namespace vcml
+
+#endif

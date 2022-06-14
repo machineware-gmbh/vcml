@@ -136,6 +136,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/ethernet/network.cpp
     ${src}/vcml/models/can/backend.cpp
     ${src}/vcml/models/can/backend_file.cpp
+    ${src}/vcml/models/can/backend_socket.cpp
     ${src}/vcml/models/can/bridge.cpp
     ${src}/vcml/models/can/bus.cpp
     ${src}/vcml/models/i2c/lm75.cpp
