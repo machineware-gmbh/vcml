@@ -34,19 +34,17 @@ public:
     void test_read(const u8 byte[4]) {
         spi_payload payload(0);
         cs = true;
-        wait(SC_ZERO_TIME);
         for (int i = 0; i < 4; i++) {
             payload.mosi = 0;
             spi.transport(payload);
             EXPECT_EQ(payload.miso, byte[i]);
         }
         cs = false;
-        wait(SC_ZERO_TIME);
     }
 
     void test_cs() {
         spi_payload payload(0);
-        max31855.temp_thermalcouple = 25.0;
+        max31855.temp_thermocouple = 25.0;
         max31855.temp_internal = 0.0;
         max31855.fault = true;
         max31855.scv = false;
@@ -80,7 +78,7 @@ public:
 
     virtual void run_test() override {
         // Test temperature reading
-        max31855.temp_thermalcouple = 25.0;
+        max31855.temp_thermocouple = 25.0;
         max31855.temp_internal = 25.0;
         max31855.fault = false;
         max31855.scv = false;
@@ -90,7 +88,7 @@ public:
         test_read(data1);
 
         // Test negative temperature reading
-        max31855.temp_thermalcouple = -0.25;
+        max31855.temp_thermocouple = -0.25;
         max31855.temp_internal = -0.0625;
         max31855.fault = true;
         max31855.scv = true;
@@ -100,7 +98,7 @@ public:
         test_read(data2);
 
         // Test restricting to max temperature
-        max31855.temp_thermalcouple = 4096.0;
+        max31855.temp_thermocouple = 4096.0;
         max31855.temp_internal = 256.0;
         max31855.fault = false;
         max31855.scv = false;
@@ -110,7 +108,7 @@ public:
         test_read(data3);
 
         // Test restricting to min temperature
-        max31855.temp_thermalcouple = -4096.0;
+        max31855.temp_thermocouple = -4096.0;
         max31855.temp_internal = -256.0;
         max31855.fault = false;
         max31855.scv = false;

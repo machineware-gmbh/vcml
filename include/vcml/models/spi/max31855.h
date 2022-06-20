@@ -19,31 +19,28 @@
 #ifndef VCML_MODELS_MAX31855_H
 #define VCML_MODELS_MAX31855_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/component.h"
 
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/gpio.h"
 
-#include "vcml/module.h"
-
 namespace vcml {
 namespace spi {
 
-class max31855 : public module, public spi_host
+class max31855 : public component, public spi_host
 {
 private:
-    u16 m_fp_temp_thermalcouple;
+    u16 m_fp_temp_thermocouple;
     u16 m_fp_temp_internal;
 
-    gpio_target_socket m_cs;
     bool m_cs_mode;
 
     void sample_temps();
     u8 do_spi_transport(u8 val);
-    void cs_edge();
 
     enum spi_states : u8 {
         BYTE0 = 0,
@@ -54,7 +51,7 @@ private:
     u8 m_state;
 
 public:
-    property<double> temp_thermalcouple;
+    property<double> temp_thermocouple;
     property<double> temp_internal;
 
     property<bool> fault;
@@ -63,13 +60,16 @@ public:
     property<bool> oc;  // Open clamps
 
     spi_target_socket spi_in;
+    gpio_target_socket m_cs;
 
     static u16 to_fp_14_2(const double t);
     static u16 to_fp_12_4(const double t);
 
     max31855(const sc_module_name& nm);
     virtual ~max31855();
-    VCML_KIND(generic::max31855);
+    VCML_KIND(spi::max31855);
+
+    virtual void gpio_notify(const gpio_target_socket& socket) override;
 
     virtual void spi_transport(const spi_target_socket& socket,
                                spi_payload& spi) override;
