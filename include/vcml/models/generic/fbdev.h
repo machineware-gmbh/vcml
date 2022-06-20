@@ -19,14 +19,13 @@
 #ifndef VCML_GENERIC_FBDEV_H
 #define VCML_GENERIC_FBDEV_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/ui/console.h"
-
-#include "vcml/component.h"
 
 namespace vcml {
 namespace generic {

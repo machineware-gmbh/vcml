@@ -19,10 +19,11 @@
 #ifndef VCML_VIRTIO_INPUT_H
 #define VCML_VIRTIO_INPUT_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/display.h"
@@ -30,8 +31,6 @@
 
 #include "vcml/properties/property.h"
 #include "vcml/protocols/virtio.h"
-
-#include "vcml/module.h"
 
 namespace vcml {
 namespace virtio {

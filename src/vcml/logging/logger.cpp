@@ -16,9 +16,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/module.h"
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
-#include "vcml/module.h"
 
 namespace vcml {
 

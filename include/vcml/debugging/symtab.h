@@ -19,11 +19,11 @@
 #ifndef VCML_DEBUGGING_SYMTAB_H
 #define VCML_DEBUGGING_SYMTAB_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/range.h"
 
 namespace vcml {
 namespace debugging {

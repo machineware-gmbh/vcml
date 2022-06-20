@@ -19,16 +19,15 @@
 #ifndef VCML_GENERIC_UART8250_H
 #define VCML_GENERIC_UART8250_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/peripheral.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/serial.h"
-
-#include "vcml/peripheral.h"
 
 namespace vcml {
 namespace generic {

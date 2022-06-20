@@ -19,15 +19,14 @@
 #ifndef VCML_GENERIC_SPI2SD_H
 #define VCML_GENERIC_SPI2SD_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
 
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
-
-#include "vcml/component.h"
 
 namespace vcml {
 namespace spi {

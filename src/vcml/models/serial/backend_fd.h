@@ -19,9 +19,9 @@
 #ifndef VCML_SERIAL_BACKEND_FD_H
 #define VCML_SERIAL_BACKEND_FD_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
+#include "vcml/core/types.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/report.h"
 
 #include "vcml/logging/logger.h"
 

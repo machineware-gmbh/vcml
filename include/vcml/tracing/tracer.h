@@ -19,11 +19,11 @@
 #ifndef VCML_TRACER_H
 #define VCML_TRACER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 namespace vcml {
 
@@ -37,6 +37,7 @@ struct sd_data;
 struct vq_message;
 struct serial_payload;
 struct eth_frame;
+struct can_frame;
 
 enum trace_direction : int {
     TRACE_FW = 2,
@@ -64,6 +65,7 @@ enum protocol_kind {
     PROTO_SERIAL,
     PROTO_VIRTIO,
     PROTO_ETHERNET,
+    PROTO_CAN,
     NUM_PROTOCOLS,
 };
 
@@ -90,7 +92,7 @@ template <>
 struct protocol<clk_payload> {
     static constexpr protocol_kind KIND = PROTO_CLK;
     static constexpr bool TRACE_FW = true;
-    static constexpr bool TRACE_BW = true;
+    static constexpr bool TRACE_BW = false;
 };
 
 template <>
@@ -149,6 +151,13 @@ struct protocol<eth_frame> {
     static constexpr bool TRACE_BW = false;
 };
 
+template <>
+struct protocol<can_frame> {
+    static constexpr protocol_kind KIND = PROTO_CAN;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = false;
+};
+
 class tracer
 {
 public:
@@ -195,6 +204,7 @@ public:
     virtual void trace(const activity<vq_message>&) = 0;
     virtual void trace(const activity<serial_payload>&) = 0;
     virtual void trace(const activity<eth_frame>&) = 0;
+    virtual void trace(const activity<can_frame>&) = 0;
 
     tracer();
     virtual ~tracer();

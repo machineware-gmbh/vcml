@@ -19,10 +19,10 @@
 #ifndef VCML_UI_RFB_H
 #define VCML_UI_RFB_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/logging/logger.h"
 

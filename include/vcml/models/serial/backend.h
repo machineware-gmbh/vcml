@@ -19,8 +19,8 @@
 #ifndef VCML_SERIAL_BACKEND_H
 #define VCML_SERIAL_BACKEND_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
 
 namespace vcml {
 namespace serial {

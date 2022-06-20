@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/common/systemc.h"
-#include "vcml/common/thctl.h"
-#include "vcml/common/report.h"
-#include "vcml/module.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/thctl.h"
+#include "vcml/core/report.h"
+#include "vcml/core/module.h"
 
 #include "vcml/debugging/suspender.h"
 

@@ -19,9 +19,9 @@
 #ifndef VCML_DEBUGGING_SUBSCRIBER_H
 #define VCML_DEBUGGING_SUBSCRIBER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/range.h"
 
 #include "vcml/debugging/symtab.h"
 

@@ -19,12 +19,11 @@
 #ifndef VCML_GENERIC_PCI_HOST_H
 #define VCML_GENERIC_PCI_HOST_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/range.h"
-#include "vcml/common/systemc.h"
-#include "vcml/module.h"
-
-#include "vcml/component.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"

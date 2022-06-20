@@ -19,12 +19,12 @@
 #ifndef VCML_ETHERNET_NETWORK_H
 #define VCML_ETHERNET_NETWORK_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/protocols/eth.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
-#include "vcml/module.h"
+#include "vcml/protocols/eth.h"
 
 namespace vcml {
 namespace ethernet {

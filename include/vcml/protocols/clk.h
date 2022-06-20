@@ -19,11 +19,11 @@
 #ifndef VCML_PROTOCOLS_CLK_H
 #define VCML_PROTOCOLS_CLK_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+
 #include "vcml/protocols/base.h"
-#include "vcml/module.h"
 
 namespace vcml {
 

@@ -19,9 +19,9 @@
 #ifndef VCML_UI_INPUT_H
 #define VCML_UI_INPUT_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/report.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/report.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/ui/keymap.h"

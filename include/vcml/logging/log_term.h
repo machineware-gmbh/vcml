@@ -19,8 +19,8 @@
 #ifndef VCML_LOG_TERM_H
 #define VCML_LOG_TERM_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/utils.h"
+#include "vcml/core/types.h"
+#include "vcml/core/utils.h"
 #include "vcml/logging/publisher.h"
 
 namespace vcml {

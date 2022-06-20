@@ -19,7 +19,7 @@
 #ifndef VCML_LOG_STREAM_H
 #define VCML_LOG_STREAM_H
 
-#include "vcml/common/types.h"
+#include "vcml/core/types.h"
 #include "vcml/logging/publisher.h"
 
 namespace vcml {

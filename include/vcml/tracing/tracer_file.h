@@ -19,11 +19,11 @@
 #ifndef VCML_TRACER_FILE_H
 #define VCML_TRACER_FILE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/utils.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/utils.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
 
 #include "vcml/tracing/tracer.h"
 
@@ -52,6 +52,7 @@ public:
     virtual void trace(const activity<vq_message>&) override;
     virtual void trace(const activity<serial_payload>&) override;
     virtual void trace(const activity<eth_frame>&) override;
+    virtual void trace(const activity<can_frame>&) override;
 
     tracer_file(const string& filename);
     virtual ~tracer_file();

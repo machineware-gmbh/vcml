@@ -19,14 +19,13 @@
 #ifndef VCML_GENERIC_GPIO
 #define VCML_GENERIC_GPIO
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/peripheral.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
-
-#include "vcml/peripheral.h"
 
 namespace vcml {
 namespace generic {

@@ -19,12 +19,10 @@
 #ifndef VCML_PROTOCOLS_ETH_H
 #define VCML_PROTOCOLS_ETH_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/range.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/utils.h"
-#include "vcml/module.h"
+#include "vcml/core/types.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/protocols/base.h"
 

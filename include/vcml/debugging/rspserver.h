@@ -19,10 +19,10 @@
 #ifndef VCML_RSPSERVER_H
 #define VCML_RSPSERVER_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/strings.h"
-#include "vcml/common/report.h"
-#include "vcml/common/socket.h"
+#include "vcml/core/types.h"
+#include "vcml/core/strings.h"
+#include "vcml/core/report.h"
+#include "vcml/core/socket.h"
 
 #include "vcml/logging/logger.h"
 

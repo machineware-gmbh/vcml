@@ -19,8 +19,8 @@
 #ifndef VCML_UI_KEYMAP_H
 #define VCML_UI_KEYMAP_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
 #include "vcml/logging/logger.h"
 
 #include <linux/input.h>

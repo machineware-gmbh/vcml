@@ -19,9 +19,9 @@
 #ifndef VCML_PROTOCOLS_BASE_H
 #define VCML_PROTOCOLS_BASE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/version.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/version.h"
 
 #include "vcml/tracing/tracer.h"
 #include "vcml/properties/property.h"

@@ -46,21 +46,28 @@ set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(gen ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
-configure_file(${src}/vcml/common/version.h.in
-               ${gen}/vcml/common/version.h @ONLY)
+configure_file(${src}/vcml/core/version.h.in
+               ${gen}/vcml/core/version.h @ONLY)
 
 add_library(vcml STATIC
-    ${src}/vcml/common/types.cpp
-    ${src}/vcml/common/report.cpp
-    ${src}/vcml/common/utils.cpp
-    ${src}/vcml/common/strings.cpp
-    ${src}/vcml/common/version.cpp
-    ${src}/vcml/common/aio.cpp
-    ${src}/vcml/common/thctl.cpp
-    ${src}/vcml/common/bitops.cpp
-    ${src}/vcml/common/socket.cpp
-    ${src}/vcml/common/systemc.cpp
-    ${src}/vcml/common/library.cpp
+    ${src}/vcml/core/types.cpp
+    ${src}/vcml/core/report.cpp
+    ${src}/vcml/core/utils.cpp
+    ${src}/vcml/core/strings.cpp
+    ${src}/vcml/core/version.cpp
+    ${src}/vcml/core/aio.cpp
+    ${src}/vcml/core/thctl.cpp
+    ${src}/vcml/core/bitops.cpp
+    ${src}/vcml/core/socket.cpp
+    ${src}/vcml/core/systemc.cpp
+    ${src}/vcml/core/library.cpp
+    ${src}/vcml/core/module.cpp
+    ${src}/vcml/core/component.cpp
+    ${src}/vcml/core/register.cpp
+    ${src}/vcml/core/peripheral.cpp
+    ${src}/vcml/core/processor.cpp
+    ${src}/vcml/core/system.cpp
+    ${src}/vcml/core/setup.cpp
     ${src}/vcml/logging/logger.cpp
     ${src}/vcml/logging/publisher.cpp
     ${src}/vcml/logging/log_file.cpp
@@ -103,15 +110,9 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/i2c.cpp
     ${src}/vcml/protocols/pci.cpp
     ${src}/vcml/protocols/eth.cpp
+    ${src}/vcml/protocols/can.cpp
     ${src}/vcml/protocols/serial.cpp
     ${src}/vcml/protocols/virtio.cpp
-    ${src}/vcml/module.cpp
-    ${src}/vcml/component.cpp
-    ${src}/vcml/register.cpp
-    ${src}/vcml/peripheral.cpp
-    ${src}/vcml/processor.cpp
-    ${src}/vcml/system.cpp
-    ${src}/vcml/setup.cpp
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp
@@ -133,6 +134,11 @@ add_library(vcml STATIC
     ${src}/vcml/models/ethernet/backend_tap.cpp
     ${src}/vcml/models/ethernet/bridge.cpp
     ${src}/vcml/models/ethernet/network.cpp
+    ${src}/vcml/models/can/backend.cpp
+    ${src}/vcml/models/can/backend_file.cpp
+    ${src}/vcml/models/can/backend_socket.cpp
+    ${src}/vcml/models/can/bridge.cpp
+    ${src}/vcml/models/can/bus.cpp
     ${src}/vcml/models/i2c/lm75.cpp
     ${src}/vcml/models/spi/bus.cpp
     ${src}/vcml/models/spi/spi2sd.cpp

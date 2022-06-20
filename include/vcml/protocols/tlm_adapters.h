@@ -19,12 +19,11 @@
 #ifndef VCML_PROTOCOLS_TLM_ADAPTERS_H
 #define VCML_PROTOCOLS_TLM_ADAPTERS_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/bitops.h"
-
-#include "vcml/module.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/module.h"
 
 namespace vcml {
 

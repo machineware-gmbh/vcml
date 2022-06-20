@@ -19,17 +19,13 @@
 #ifndef VCML_MODELS_LM75_H
 #define VCML_MODELS_LM75_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/systemc.h"
-#include "vcml/common/range.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/i2c.h"
-
-#include "vcml/module.h"
 
 namespace vcml {
 namespace i2c {

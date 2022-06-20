@@ -19,11 +19,12 @@
 #ifndef VCML_PROTOCOLS_GPIO_H
 #define VCML_PROTOCOLS_GPIO_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/report.h"
-#include "vcml/common/systemc.h"
+#include "vcml/core/types.h"
+#include "vcml/core/report.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+
 #include "vcml/protocols/base.h"
-#include "vcml/module.h"
 
 namespace vcml {
 
@@ -184,9 +185,13 @@ private:
     unordered_map<gpio_vector, gpio_state_tracker> m_state;
 
     struct gpio_bw_transport : public gpio_bw_transport_if {
-        gpio_initiator_socket* socket;
+        mutable gpio_initiator_socket* socket;
         gpio_bw_transport(gpio_initiator_socket* s):
             gpio_bw_transport_if(), socket(s) {}
+
+        virtual const sc_event& default_event() const override {
+            return socket->default_event();
+        }
     } m_transport;
 
     void gpio_transport(gpio_payload& tx);
@@ -220,12 +225,16 @@ private:
     vector<gpio_target_socket*> m_targets;
 
     struct gpio_fw_transport : public gpio_fw_transport_if {
-        gpio_target_socket* socket;
+        mutable gpio_target_socket* socket;
         gpio_fw_transport(gpio_target_socket* s):
             gpio_fw_transport_if(), socket(s) {}
 
         virtual void gpio_transport(gpio_payload& tx) override {
             socket->gpio_transport(tx);
+        }
+
+        virtual const sc_event& default_event() const override {
+            return socket->default_event();
         }
     } m_transport;
 

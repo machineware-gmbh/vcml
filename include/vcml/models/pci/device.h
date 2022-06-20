@@ -19,12 +19,11 @@
 #ifndef VCML_GENERIC_PCI_DEVICE_H
 #define VCML_GENERIC_PCI_DEVICE_H
 
-#include "vcml/common/types.h"
-#include "vcml/common/range.h"
-#include "vcml/common/bitops.h"
-#include "vcml/common/systemc.h"
-
-#include "vcml/peripheral.h"
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/bitops.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/peripheral.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/pci.h"

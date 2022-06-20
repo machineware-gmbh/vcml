@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/component.h"
 #include "vcml/logging/publisher.h"
-#include "vcml/component.h"
 
 namespace vcml {
 

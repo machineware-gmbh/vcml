@@ -24,6 +24,7 @@
 #include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/eth.h"
+#include "vcml/protocols/can.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
@@ -46,6 +47,7 @@ array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_SERIAL]   = */ termcolors::BRIGHT_RED,
     /* [PROTO_VIRTIO]   = */ termcolors::BRIGHT_CYAN,
     /* [PROTO_ETHERNET] = */ termcolors::BRIGHT_BLUE,
+    /* [PROTO_CAN]      = */ termcolors::RED,
 };
 
 template <typename PAYLOAD>
@@ -132,6 +134,10 @@ void tracer_term::trace(const activity<serial_payload>& msg) {
 }
 
 void tracer_term::trace(const activity<eth_frame>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<can_frame>& msg) {
     do_trace(msg);
 }
 

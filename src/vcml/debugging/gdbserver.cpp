@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/debugging/gdbserver.h"
-#include "vcml/module.h" // for commands
+#include "vcml/core/module.h" // for commands
 
 namespace vcml {
 namespace debugging {
