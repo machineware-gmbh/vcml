@@ -60,7 +60,7 @@ public:
     property<bool> oc;  // Open clamps
 
     spi_target_socket spi_in;
-    gpio_target_socket m_cs;
+    gpio_target_socket cs;
 
     static u16 to_fp_14_2(const double t);
     static u16 to_fp_12_4(const double t);
