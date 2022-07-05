@@ -555,7 +555,7 @@ gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
 
     m_handler['m'] = &gdbserver::handle_mem_read;
     m_handler['M'] = &gdbserver::handle_mem_write;
-    m_handler['X'] = &gdbserver::handle_mem_write_bin;
+    // m_handler['X'] = &gdbserver::handle_mem_write_bin;
 
     m_handler['Z'] = &gdbserver::handle_breakpoint_set;
     m_handler['z'] = &gdbserver::handle_breakpoint_delete;
