@@ -84,6 +84,7 @@ add_library(vcml STATIC
     ${src}/vcml/debugging/symtab.cpp
     ${src}/vcml/debugging/target.cpp
     ${src}/vcml/debugging/elf_reader.cpp
+    ${src}/vcml/debugging/srec_reader.cpp
     ${src}/vcml/debugging/loader.cpp
     ${src}/vcml/debugging/subscriber.cpp
     ${src}/vcml/debugging/suspender.cpp

@@ -28,12 +28,22 @@ const char* image_type_to_str(image_type type) {
         return "elf";
     case IMAGE_BIN:
         return "bin";
+    case IMAGE_SREC:
+        return "srec";
     default:
         return "unknown";
     }
 }
 
 image_type detect_image_type(const string& filename) {
+    if (ends_with(filename, ".elf") || ends_with(filename, ".so") ||
+        ends_with(filename, ".out") || ends_with(filename, ".axf"))
+        return IMAGE_ELF;
+    if (ends_with(filename, ".srec"))
+        return IMAGE_SREC;
+    if (ends_with(filename, ".bin"))
+        return IMAGE_BIN;
+
     ifstream file(filename, std::ios::in | std::ios::binary);
     if (!file)
         return IMAGE_BIN;
@@ -43,14 +53,13 @@ image_type detect_image_type(const string& filename) {
     if (!file)
         return IMAGE_BIN;
 
-    switch (head) {
-    case fourcc(
-        "\x7f"
-        "ELF"):
+    if (head == 0x464c457f)
         return IMAGE_ELF;
-    default:
-        return IMAGE_BIN;
-    }
+
+    if ((head & 0xffff) == 0x3053)
+        return IMAGE_SREC;
+
+    return IMAGE_BIN;
 }
 
 vector<image_info> images_from_string(const string& s) {
@@ -162,6 +171,17 @@ void loader::load_elf(const string& filename, u64 offset) {
             reader.read_segment(seg, buffer.data());
             copy_image(buffer.data(), seg.size, seg.phys + offset);
         }
+    }
+}
+
+void loader::load_srec(const string& filename, u64 offset) {
+    srec_reader reader(filename);
+    for (auto rec : reader.records()) {
+        u8* image = allocate_image(rec.data.size(), rec.addr + offset);
+        if (image)
+            memcpy(image, rec.data.data(), rec.data.size());
+        else
+            copy_image(rec.data.data(), rec.data.size(), rec.addr + offset);
     }
 }
 

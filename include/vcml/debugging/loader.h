@@ -25,7 +25,9 @@
 #include "vcml/core/bitops.h"
 
 #include "vcml/logging/logger.h"
+
 #include "vcml/debugging/elf_reader.h"
+#include "vcml/debugging/srec_reader.h"
 
 namespace vcml {
 namespace debugging {
@@ -33,6 +35,7 @@ namespace debugging {
 enum image_type {
     IMAGE_ELF,
     IMAGE_BIN,
+    IMAGE_SREC,
 };
 
 const char* image_type_to_str(image_type type);
@@ -60,6 +63,7 @@ private:
 protected:
     virtual void load_bin(const string& filename, u64 offset);
     virtual void load_elf(const string& filename, u64 offset);
+    virtual void load_srec(const string& filename, u64 offset);
 
     virtual u8* allocate_image(u64 size, u64 offset);
     virtual u8* allocate_image(const elf_segment& seg, u64 offset);
