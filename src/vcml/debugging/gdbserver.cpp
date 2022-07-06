@@ -29,13 +29,6 @@ union gdb_u64 {
     gdb_u64(): val() {}
 };
 
-static u8 char_unescape(const char*& s) {
-    u8 result = *s++;
-    if (result == '}')
-        result = *s++ ^ 0x20;
-    return result;
-}
-
 void gdbserver::update_status(gdb_status status) {
     if (!is_connected())
         status = m_default;
@@ -99,17 +92,11 @@ const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
     return it->second;
 }
 
-gdbserver::handler gdbserver::find_handler(const char* command) {
-    if (!stl_contains(m_handler, command[0]))
-        return &gdbserver::handle_unknown;
-    return m_handler.at(command[0]);
-}
-
-string gdbserver::handle_unknown(const char* command) {
+string gdbserver::handle_unknown(const string& cmd) {
     return "";
 }
 
-string gdbserver::handle_step(const char* command) {
+string gdbserver::handle_step(const string& cmd) {
     update_status(GDB_STEPPING);
     while (sim_running() && is_stepping()) {
         int signal = 0;
@@ -123,7 +110,7 @@ string gdbserver::handle_step(const char* command) {
     return mkstr("S%02x", GDBSIG_TRAP);
 }
 
-string gdbserver::handle_continue(const char* command) {
+string gdbserver::handle_continue(const string& cmd) {
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
         int signal = 0;
@@ -137,43 +124,43 @@ string gdbserver::handle_continue(const char* command) {
     return mkstr("S%02x", GDBSIG_TRAP);
 }
 
-string gdbserver::handle_detach(const char* command) {
+string gdbserver::handle_detach(const string& cmd) {
     disconnect();
     return "";
 }
 
-string gdbserver::handle_kill(const char* command) {
+string gdbserver::handle_kill(const string& cmd) {
     update_status(GDB_KILLED);
     suspender::quit();
     return "";
 }
 
-string gdbserver::handle_query(const char* command) {
-    if (strncmp(command, "qSupported", strlen("qSupported")) == 0) {
+string gdbserver::handle_query(const string& cmd) {
+    if (starts_with(cmd, "qSupported")) {
         string features = mkstr("PacketSize=%zx;", PACKET_SIZE);
         if (m_target_arch != nullptr)
             features += "qXfer:features:read+;";
         return features;
     }
 
-    if (strncmp(command, "qAttached", strlen("qAttached")) == 0)
+    if (starts_with(cmd, "qAttached"))
         return "1";
-    if (strncmp(command, "qOffsets", strlen("qOffsets")) == 0)
+    if (starts_with(cmd, "qOffsets"))
         return "Text=0;Data=0;Bss=0";
-    if (strncmp(command, "qRcmd", strlen("qRcmd")) == 0)
-        return handle_rcmd(command);
-    if (strncmp(command, "qXfer", strlen("qXfer")) == 0)
-        return handle_xfer(command);
+    if (starts_with(cmd, "qRcmd"))
+        return handle_rcmd(cmd);
+    if (starts_with(cmd, "qXfer"))
+        return handle_xfer(cmd);
 
-    return handle_unknown(command);
+    return handle_unknown(cmd);
 }
 
-string gdbserver::handle_rcmd(const char* command) {
+string gdbserver::handle_rcmd(const string& cmd) {
     module* mod = dynamic_cast<module*>(&m_target);
     if (mod == nullptr)
         return ERR_COMMAND;
 
-    vector<string> args = split(command, ' ');
+    vector<string> args = split(cmd, ' ');
     string cmdname = args[0];
     args.erase(args.begin());
 
@@ -184,8 +171,8 @@ string gdbserver::handle_rcmd(const char* command) {
     return ss.str();
 }
 
-string gdbserver::handle_xfer(const char* command) {
-    vector<string> args = split(command, ':');
+string gdbserver::handle_xfer(const string& cmd) {
+    vector<string> args = split(cmd, ':');
     if (args.size() != 5)
         return ERR_COMMAND;
 
@@ -220,10 +207,10 @@ string gdbserver::handle_xfer(const char* command) {
     return "";
 }
 
-string gdbserver::handle_reg_read(const char* command) {
+string gdbserver::handle_reg_read(const string& cmd) {
     unsigned int regno;
-    if (sscanf(command, "p%x", &regno) != 1) {
-        log_warn("malformed command '%s'", command);
+    if (sscanf(cmd.c_str(), "p%x", &regno) != 1) {
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -243,12 +230,12 @@ string gdbserver::handle_reg_read(const char* command) {
     return ss.str();
 }
 
-string gdbserver::handle_reg_write(const char* command) {
+string gdbserver::handle_reg_write(const string& cmd) {
     gdb_u64 val;
     unsigned int regno;
 
-    if (sscanf(command, "P%x=", &regno) != 1) {
-        log_warn("malformed command '%str'", command);
+    if (sscanf(cmd.c_str(), "P%x=", &regno) != 1) {
+        log_warn("malformed command '%str'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -258,9 +245,9 @@ string gdbserver::handle_reg_write(const char* command) {
         return "OK";
     }
 
-    const char* str = strrchr(command, '=');
+    const char* str = strrchr(cmd.c_str(), '=');
     if (str == nullptr || strlen(str + 1) != reg->size * 2) {
-        log_warn("malformed command '%s'", command);
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -280,7 +267,7 @@ string gdbserver::handle_reg_write(const char* command) {
     return "OK";
 }
 
-string gdbserver::handle_reg_read_all(const char* command) {
+string gdbserver::handle_reg_read_all(const string& cmd) {
     stringstream ss;
     ss << std::hex << std::setfill('0');
 
@@ -299,14 +286,14 @@ string gdbserver::handle_reg_read_all(const char* command) {
     return ss.str();
 }
 
-string gdbserver::handle_reg_write_all(const char* command) {
-    const char* str = command + 1;
+string gdbserver::handle_reg_write_all(const string& cmd) {
+    const char* str = cmd.c_str() + 1;
     for (const cpureg* reg : m_cpuregs) {
         if (!reg->is_writeable())
             continue;
 
         if (strlen(str) < reg->size * 2) {
-            log_warn("malformed command '%s'", command);
+            log_warn("malformed command '%s'", cmd.c_str());
             return ERR_COMMAND;
         }
 
@@ -323,10 +310,10 @@ string gdbserver::handle_reg_write_all(const char* command) {
     return "OK";
 }
 
-string gdbserver::handle_mem_read(const char* command) {
+string gdbserver::handle_mem_read(const string& cmd) {
     unsigned long long addr = 0, size = 0;
-    if (sscanf(command, "m%llx,%llx", &addr, &size) != 2) {
-        log_warn("malformed command '%s'", command);
+    if (sscanf(cmd.c_str(), "m%llx,%llx", &addr, &size) != 2) {
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -352,10 +339,10 @@ string gdbserver::handle_mem_read(const char* command) {
     return ss.str();
 }
 
-string gdbserver::handle_mem_write(const char* command) {
+string gdbserver::handle_mem_write(const string& cmd) {
     unsigned long long addr = 0, size = 0;
-    if (sscanf(command, "M%llx,%llx", &addr, &size) != 2) {
-        log_warn("malformed command '%s'", command);
+    if (sscanf(cmd.c_str(), "M%llx,%llx", &addr, &size) != 2) {
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -367,9 +354,9 @@ string gdbserver::handle_mem_write(const char* command) {
         return ERR_PARAM;
     }
 
-    const char* data = strchr(command, ':');
+    const char* data = strchr(cmd.c_str(), ':');
     if (data == nullptr) {
-        log_warn("malformed command '%s'", command);
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -388,10 +375,10 @@ string gdbserver::handle_mem_write(const char* command) {
     return "OK";
 }
 
-string gdbserver::handle_mem_write_bin(const char* command) {
+string gdbserver::handle_mem_write_bin(const string& cmd) {
     unsigned long long addr = 0, size = 0;
-    if (sscanf(command, "X%llx,%llx:", &addr, &size) != 2) {
-        log_warn("malformed command '%s'", command);
+    if (sscanf(cmd.c_str(), "X%llx,%llx:", &addr, &size) != 2) {
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -403,29 +390,30 @@ string gdbserver::handle_mem_write_bin(const char* command) {
         return ERR_PARAM;
     }
 
-    const char* data = strchr(command, ':');
+    const char* data = strchr(cmd.c_str(), ':');
     if (data == nullptr) {
-        log_warn("malformed command '%s'", command);
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
     data++;
 
-    vector<u8> buffer;
-    buffer.resize(size);
-    for (unsigned long long i = 0; i < size; i++)
-        buffer[i] = char_unescape(data);
+    size_t len = cmd.c_str() + cmd.length() - data;
+    if (len != size) {
+        log_warn("mem_write_bin expected %llu bytes, got %zu", size, len);
+        return ERR_COMMAND;
+    }
 
-    if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
+    if (m_target.write_vmem_dbg(addr, data, size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
 }
 
-string gdbserver::handle_breakpoint_set(const char* command) {
+string gdbserver::handle_breakpoint_set(const string& cmd) {
     unsigned long long type, addr, length;
-    if (sscanf(command, "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
-        log_warn("malformed command '%s'", command);
+    if (sscanf(cmd.c_str(), "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -460,10 +448,10 @@ string gdbserver::handle_breakpoint_set(const char* command) {
     return "OK";
 }
 
-string gdbserver::handle_breakpoint_delete(const char* command) {
+string gdbserver::handle_breakpoint_delete(const string& cmd) {
     unsigned long long type, addr, length;
-    if (sscanf(command, "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
-        log_warn("malformed command '%s'", command);
+    if (sscanf(cmd.c_str(), "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
+        log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
@@ -498,15 +486,15 @@ string gdbserver::handle_breakpoint_delete(const char* command) {
     return "OK";
 }
 
-string gdbserver::handle_exception(const char* command) {
+string gdbserver::handle_exception(const string& cmd) {
     return mkstr("S%02u", GDBSIG_TRAP);
 }
 
-string gdbserver::handle_thread(const char* command) {
+string gdbserver::handle_thread(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_vcont(const char* command) {
+string gdbserver::handle_vcont(const string& cmd) {
     return "";
 }
 
@@ -520,8 +508,7 @@ gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
     m_status(status),
     m_default(status),
     m_cpuregs(),
-    m_allregs(),
-    m_handler() {
+    m_allregs() {
     if (m_target_arch == nullptr)
         VCML_ERROR("architecture %s not supported", m_target.arch());
 
@@ -541,28 +528,28 @@ gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
         }
     }
 
-    m_handler['q'] = &gdbserver::handle_query;
+    register_handler("q", &gdbserver::handle_query);
 
-    m_handler['s'] = &gdbserver::handle_step;
-    m_handler['c'] = &gdbserver::handle_continue;
-    m_handler['D'] = &gdbserver::handle_detach;
-    m_handler['k'] = &gdbserver::handle_kill;
+    register_handler("s", &gdbserver::handle_step);
+    register_handler("c", &gdbserver::handle_continue);
+    register_handler("D", &gdbserver::handle_detach);
+    register_handler("k", &gdbserver::handle_kill);
 
-    m_handler['p'] = &gdbserver::handle_reg_read;
-    m_handler['P'] = &gdbserver::handle_reg_write;
-    m_handler['g'] = &gdbserver::handle_reg_read_all;
-    m_handler['G'] = &gdbserver::handle_reg_write_all;
+    register_handler("p", &gdbserver::handle_reg_read);
+    register_handler("P", &gdbserver::handle_reg_write);
+    register_handler("g", &gdbserver::handle_reg_read_all);
+    register_handler("G", &gdbserver::handle_reg_write_all);
 
-    m_handler['m'] = &gdbserver::handle_mem_read;
-    m_handler['M'] = &gdbserver::handle_mem_write;
-    // m_handler['X'] = &gdbserver::handle_mem_write_bin;
+    register_handler("m", &gdbserver::handle_mem_read);
+    register_handler("M", &gdbserver::handle_mem_write);
+    register_handler("X", &gdbserver::handle_mem_write_bin);
 
-    m_handler['Z'] = &gdbserver::handle_breakpoint_set;
-    m_handler['z'] = &gdbserver::handle_breakpoint_delete;
+    register_handler("Z", &gdbserver::handle_breakpoint_set);
+    register_handler("z", &gdbserver::handle_breakpoint_delete);
 
-    m_handler['H'] = &gdbserver::handle_thread;
-    m_handler['v'] = &gdbserver::handle_vcont;
-    m_handler['?'] = &gdbserver::handle_exception;
+    register_handler("H", &gdbserver::handle_thread);
+    register_handler("v", &gdbserver::handle_vcont);
+    register_handler("?", &gdbserver::handle_exception);
 
     if (m_status == GDB_STOPPED)
         suspend();
@@ -572,19 +559,6 @@ gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
 
 gdbserver::~gdbserver() {
     shutdown();
-}
-
-string gdbserver::handle_command(const string& command) {
-    try {
-        handler func = find_handler(command.c_str());
-        return (this->*func)(command.c_str());
-    } catch (report& rep) {
-        log.warn(rep);
-        return ERR_INTERNAL;
-    } catch (std::exception& ex) {
-        log.warn(ex);
-        return ERR_INTERNAL;
-    }
 }
 
 void gdbserver::handle_connect(const char* peer) {

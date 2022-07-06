@@ -22,11 +22,22 @@
 namespace vcml {
 namespace debugging {
 
-static string opcode(const string& s) {
-    size_t pos = s.find(',');
-    if (pos == std::string::npos)
-        return s;
-    return s.substr(0, pos);
+static bool needs_escape(char c) {
+    return c == '$' || c == '#' || c == '}' || c == '*';
+}
+
+static string rsp_escape(const string& s) {
+    stringstream ss;
+    for (char c : s) {
+        if (needs_escape(c)) {
+            c ^= 0x20;
+            ss << '}' << c;
+        } else {
+            ss << c;
+        }
+    }
+
+    return ss.str();
 }
 
 static u8 checksum(const char* str) {
@@ -62,7 +73,7 @@ void rspserver::send_packet(const char* format, ...) {
 
 void rspserver::send_packet(const string& s) {
     VCML_ERROR_ON(!is_connected(), "no connection established");
-    string esc = escape(s, "$#");
+    string esc = rsp_escape(s);
 
     stringstream ss;
     u8 sum = checksum(esc.c_str());
@@ -117,7 +128,7 @@ string rspserver::recv_packet() {
             refsum |= from_hex_ascii(m_sock.recv_char()) << 0;
 
             if (refsum != checksum) {
-                log_warn("checksum mismatch %d != %d", refsum, checksum);
+                log_warn("checksum mismatch %02x != %02x", refsum, checksum);
                 m_sock.send_char('-');
                 checksum = 0;
                 ss.str("");
@@ -131,10 +142,15 @@ string rspserver::recv_packet() {
             return ss.str();
         }
 
-        case '\\':
+        case '}':
             checksum += ch;
             ch = m_sock.recv_char();
-            // no break
+            checksum += ch;
+            ch ^= 0x20;
+            if (!needs_escape(ch))
+                log_warn("escaped invalid char 0x%02hhx", ch);
+            ss << ch;
+            break;
 
         default:
             checksum += ch;
@@ -196,9 +212,8 @@ void rspserver::run() {
                     if (is_connected())
                         send_packet(response);
                 } catch (vcml::report& r) {
-                    log_debug("%s",
-                              r.message()); // not an error, e.g. disconnect
-                    break;
+                    log_debug("%s", r.message());
+                    break; // not an error, e.g. disconnect
                 }
         } catch (vcml::report& r) {
             log.error(r);
@@ -224,10 +239,10 @@ void rspserver::shutdown() {
 
 string rspserver::handle_command(const string& command) {
     try {
-        string op = opcode(command);
-        if (!stl_contains(m_handlers, op))
-            return ""; // empty response means command not supported
-        return m_handlers[op](command.c_str());
+        for (const auto& handler : m_handlers)
+            if (starts_with(command, handler.first))
+                return handler.second(command);
+        return ""; // empty response means command not supported
     } catch (report& rep) {
         log.error(rep);
         return ERR_INTERNAL;

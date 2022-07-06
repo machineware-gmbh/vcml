@@ -46,12 +46,12 @@ vspserver* vspserver::instance() {
     return session;
 }
 
-string vspserver::handle_none(const char* command) {
+string vspserver::handle_none(const string& cmd) {
     return "";
 }
 
-string vspserver::handle_step(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_step(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -64,8 +64,8 @@ string vspserver::handle_step(const char* command) {
     return mkstr("OK,%s", m_stop_reason.c_str());
 }
 
-string vspserver::handle_cont(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_cont(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     sc_time duration = SC_MAX_TIME;
 
     if (args.size() > 1)
@@ -170,9 +170,9 @@ static void list_object(ostream& os, sc_object* obj) {
     os << "</object>";
 }
 
-string vspserver::handle_list(const char* command) {
+string vspserver::handle_list(const string& cmd) {
     string format = "xml";
-    vector<string> args = split(command, ',');
+    vector<string> args = split(cmd, ',');
     if (args.size() > 1)
         format = to_lower(args[1]);
 
@@ -186,29 +186,29 @@ string vspserver::handle_list(const char* command) {
         list_object(ss, obj);
 
     for (auto tgt : debugging::target::all())
-        ss << "<target>" << tgt->target_name() << "</target>";
+        ss << "<target>" << xml_escape(tgt->target_name()) << "</target>";
 
     for (auto loader : debugging::loader::all())
-        ss << "<loader>" << loader->loader_name() << "</loader>";
+        ss << "<loader>" << xml_escape(loader->loader_name()) << "</loader>";
 
     for (auto kbd : ui::keyboard::all())
-        ss << "<keyboard>" << kbd->input_name() << "</keyboard>";
+        ss << "<keyboard>" << xml_escape(kbd->input_name()) << "</keyboard>";
 
     for (auto ptr : ui::pointer::all())
-        ss << "<pointer>" << ptr->input_name() << "</pointer>";
+        ss << "<pointer>" << xml_escape(ptr->input_name()) << "</pointer>";
 
     for (auto terminal : serial::terminal::all())
-        ss << "<terminal>" << terminal->name() << "</terminal>";
+        ss << "<terminal>" << xml_escape(terminal->name()) << "</terminal>";
 
     for (auto bridge : ethernet::bridge::all())
-        ss << "<bridge>" << bridge->name() << "</bridge>";
+        ss << "<bridge>" << xml_escape(bridge->name()) << "</bridge>";
 
     ss << "</hierarchy>";
     return ss.str();
 }
 
-string vspserver::handle_exec(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_exec(const string& cmd) {
+    vector<string> args = split(cmd, ',');
 
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -233,19 +233,19 @@ string vspserver::handle_exec(const char* command) {
     }
 }
 
-string vspserver::handle_time(const char* command) {
+string vspserver::handle_time(const string& cmd) {
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
     return mkstr("OK,%lu,%lu", nanos, delta);
 }
 
-string vspserver::handle_rdgq(const char* command) {
+string vspserver::handle_rdgq(const string& cmd) {
     sc_time quantum = tlm::tlm_global_quantum::instance().get();
     return mkstr("OK,%lu", time_to_ns(quantum));
 }
 
-string vspserver::handle_wrgq(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_wrgq(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -259,8 +259,8 @@ string vspserver::handle_wrgq(const char* command) {
     return "OK";
 }
 
-string vspserver::handle_geta(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_geta(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -276,8 +276,8 @@ string vspserver::handle_geta(const char* command) {
     return ss.str();
 }
 
-string vspserver::handle_seta(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_seta(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -306,12 +306,12 @@ string vspserver::handle_seta(const char* command) {
     return "OK";
 }
 
-string vspserver::handle_quit(const char* command) {
+string vspserver::handle_quit(const string& cmd) {
     force_quit();
     return "OK";
 }
 
-string vspserver::handle_vers(const char* command) {
+string vspserver::handle_vers(const string& cmd) {
     stringstream ss;
     ss << "OK,";
     ss << SC_VERSION << ",";
@@ -322,8 +322,8 @@ string vspserver::handle_vers(const char* command) {
     return ss.str();
 }
 
-string vspserver::handle_mkbp(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_mkbp(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -349,8 +349,8 @@ string vspserver::handle_mkbp(const char* command) {
     return mkstr("OK,inserted breakpoint %lu", bp->id());
 }
 
-string vspserver::handle_rmbp(const char* command) {
-    vector<string> args = split(command, ',');
+string vspserver::handle_rmbp(const string& cmd) {
+    vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -381,7 +381,7 @@ void vspserver::resume_simulation(const sc_time& duration) {
                 break;
 
             case 'u': // update time
-                send_packet(handle_time(nullptr));
+                send_packet(handle_time(""));
                 break;
 
             case 'x': // quit
@@ -398,6 +398,7 @@ void vspserver::resume_simulation(const sc_time& duration) {
             }
         }
     } catch (...) {
+        log_warn("internal error while processing signals");
         pause_simulation("internal error");
         disconnect();
     }

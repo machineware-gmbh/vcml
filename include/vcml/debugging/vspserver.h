@@ -40,20 +40,20 @@ private:
 
     unordered_map<u64, const breakpoint*> m_breakpoints;
 
-    string handle_none(const char* command);
-    string handle_step(const char* command);
-    string handle_cont(const char* command);
-    string handle_list(const char* command);
-    string handle_exec(const char* command);
-    string handle_time(const char* command);
-    string handle_rdgq(const char* command);
-    string handle_wrgq(const char* command);
-    string handle_geta(const char* command);
-    string handle_seta(const char* command);
-    string handle_quit(const char* command);
-    string handle_vers(const char* command);
-    string handle_mkbp(const char* command);
-    string handle_rmbp(const char* command);
+    string handle_none(const string& command);
+    string handle_step(const string& command);
+    string handle_cont(const string& command);
+    string handle_list(const string& command);
+    string handle_exec(const string& command);
+    string handle_time(const string& command);
+    string handle_rdgq(const string& command);
+    string handle_wrgq(const string& command);
+    string handle_geta(const string& command);
+    string handle_seta(const string& command);
+    string handle_quit(const string& command);
+    string handle_vers(const string& command);
+    string handle_mkbp(const string& command);
+    string handle_rmbp(const string& command);
 
     void resume_simulation(const sc_time& duration);
     void pause_simulation(const string& reason);

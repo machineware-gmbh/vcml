@@ -32,7 +32,7 @@ namespace debugging {
 class rspserver
 {
 public:
-    typedef function<string(const char*)> handler;
+    typedef function<string(const string&)> handler;
 
 private:
     socket m_sock;
@@ -84,7 +84,7 @@ public:
     virtual void handle_disconnect();
 
     template <typename T>
-    void register_handler(const char* cmd, string (T::*handler)(const char*));
+    void register_handler(const char* cmd, string (T::*func)(const string&));
 
     void register_handler(const char* command, handler handler);
     void unregister_handler(const char* command);
@@ -98,10 +98,10 @@ public:
 
 template <typename HOST>
 void rspserver::register_handler(const char* command,
-                                 string (HOST::*handler)(const char*)) {
+                                 string (HOST::*handler)(const string&)) {
     HOST* host = dynamic_cast<HOST*>(this);
     VCML_ERROR_ON(!host, "command host not found");
-    register_handler(command, [host, handler](const char* args) -> string {
+    register_handler(command, [host, handler](const string& args) -> string {
         return (host->*handler)(args);
     });
 }
