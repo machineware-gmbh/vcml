@@ -51,7 +51,7 @@ string vmkstr(const char* format, va_list args) {
 }
 
 string trim(const string& str) {
-    static const auto nospace = [](int ch) { return !std::isspace(ch); };
+    static const auto nospace = [](int ch) { return ch && !std::isspace(ch); };
 
     string copy(str);
 
