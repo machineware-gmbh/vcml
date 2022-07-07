@@ -35,6 +35,7 @@ public:
         vector<u8> data;
     };
 
+    u64 entry() const { return m_entry; }
     string header() const { return m_header; }
     const vector<record>& records() const { return m_records; }
 
@@ -44,6 +45,7 @@ public:
     srec_reader(const srec_reader&) = delete;
 
 private:
+    u64 m_entry;
     string m_header;
     vector<record> m_records;
 };

@@ -27,6 +27,9 @@ enum record_type : char {
     SREC_DATA24 = '2',
     SREC_DATA32 = '3',
     SREC_DATA64 = '4',
+    SREC_TEXT32 = '7',
+    SREC_TEXT24 = '8',
+    SREC_TEXT16 = '9',
 };
 
 static u8 srec_byte(const string& line, size_t off) {
@@ -34,7 +37,8 @@ static u8 srec_byte(const string& line, size_t off) {
     return from_hex_ascii(line[off]) << 4 | from_hex_ascii(line[off + 1]);
 }
 
-srec_reader::srec_reader(const string& filename): m_header(), m_records() {
+srec_reader::srec_reader(const string& filename):
+    m_entry(), m_header(), m_records() {
     ifstream file(filename);
     VCML_ERROR_ON(!file, "cannot open srec file '%s'", filename.c_str());
 
@@ -48,12 +52,15 @@ srec_reader::srec_reader(const string& filename): m_header(), m_records() {
         switch (line[1]) {
         case SREC_HEADER:
         case SREC_DATA16:
+        case SREC_TEXT16:
             delim = 8;
             break;
         case SREC_DATA24:
+        case SREC_TEXT24:
             delim = 10;
             break;
         case SREC_DATA32:
+        case SREC_TEXT32:
             delim = 12;
             break;
         case SREC_DATA64:
@@ -68,13 +75,25 @@ srec_reader::srec_reader(const string& filename): m_header(), m_records() {
         for (size_t pos = 4; pos < delim; pos += 2)
             rec.addr = rec.addr << 8 | srec_byte(line, pos);
 
-        for (size_t pos = delim; pos < line.length() - 3; pos += 2)
+        for (size_t pos = delim; pos < line.length() - 2; pos += 2)
             rec.data.push_back(srec_byte(line, pos));
 
-        if (line[1] == SREC_HEADER)
-            m_header = (char*)rec.data.data();
-        else
+        switch (line[1]) {
+        case SREC_HEADER:
+            m_header = trim(string(rec.data.begin(), rec.data.end()));
+            break;
+        case SREC_TEXT16:
+        case SREC_TEXT24:
+        case SREC_TEXT32:
+            m_entry = rec.addr;
+            break;
+        case SREC_DATA16:
+        case SREC_DATA24:
+        case SREC_DATA32:
+        case SREC_DATA64:
             m_records.push_back(std::move(rec));
+            break;
+        }
     }
 }
 

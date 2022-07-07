@@ -34,8 +34,9 @@ const vector<u8> V3 = { 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77,
 TEST(srec_reader, load) {
     debugging::srec_reader reader(get_resource_path("sample.srec"));
 
-    EXPECT_EQ(reader.header(), "hello     ");
-    EXPECT_EQ(reader.records().size(), 3);
+    EXPECT_EQ(reader.header(), "hello");
+    EXPECT_EQ(reader.entry(), 0x10000);
+    ASSERT_EQ(reader.records().size(), 3);
 
     EXPECT_EQ(reader.records()[0].addr, 0x00);
     EXPECT_EQ(reader.records()[1].addr, 0x1c);
