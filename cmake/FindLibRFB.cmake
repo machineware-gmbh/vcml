@@ -16,27 +16,21 @@
  #                                                                            #
  ##############################################################################
 
-if(NOT TARGET librfb AND EXISTS $ENV{LIBRFB_HOME}/CMakeLists.txt)
-    add_subdirectory($ENV{LIBRFB_HOME} librfb EXCLUDE_FROM_ALL)
-endif()
+find_package(PkgConfig QUIET)
+pkg_check_modules(PKGCFG_LIBRFB QUIET librfb)
 
-if(TARGET librfb)
-    set(LIBRFB_FOUND TRUE)
-    set(LIBRFB_LIBRARIES librfb)
-    get_target_property(LIBRFB_INCLUDE_DIRS librfb INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(LIBRFB_VERSION librfb VERSION)
-    if(NOT LIBRFB_VERSION)
-        set(LIBRFB_VERSION "0.0.0")
-    endif()
-endif()
+find_path(LIBRFB_INCLUDE_DIRS NAMES "librfb.h"
+          HINTS $ENV{LIBRFB_HOME}/include ${PKGCFG_LIBRFB_INCLUDE_DIRS})
+
+find_library(LIBRFB_LIBRARIES NAMES rfb "rfb"
+             HINTS $ENV{LIBRFB_HOME}/lib ${PKGCFG_LIBRFB_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(LIBRFB
-    REQUIRED_VARS LIBRFB_LIBRARIES LIBRFB_INCLUDE_DIRS
-    VERSION_VAR   LIBRFB_VERSION)
-mark_as_advanced(LIBRFB_LIBRARIES LIBRFB_INCLUDE_DIRS)
+find_package_handle_standard_args(LibRFB
+    REQUIRED_VARS LIBRFB_INCLUDE_DIRS LIBRFB_LIBRARIES)
+
+mark_as_advanced(LIBRFB_INCLUDE_DIRS LIBRFB_LIBRARIES)
 
 message(DEBUG "LIBRFB_FOUND        " ${LIBRFB_FOUND})
 message(DEBUG "LIBRFB_INCLUDE_DIRS " ${LIBRFB_INCLUDE_DIRS})
 message(DEBUG "LIBRFB_LIBRARIES    " ${LIBRFB_LIBRARIES})
-message(DEBUG "LIBRFB_VERSION      " ${LIBRFB_VERSION})
