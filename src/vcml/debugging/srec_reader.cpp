@@ -70,6 +70,9 @@ srec_reader::srec_reader(const string& filename):
             continue;
         }
 
+        if (line.length() < delim)
+            continue;
+
         record rec = {};
 
         for (size_t pos = 4; pos < delim; pos += 2)
