@@ -261,7 +261,7 @@ void rspserver::handle_disconnect() {
 }
 
 void rspserver::register_handler(const char* cmd, handler h) {
-    for (auto other : m_handlers) {
+    for (const auto& other : m_handlers) {
         if (starts_with(other.first, cmd) || starts_with(cmd, other.first))
             VCML_ERROR("overlapping handlers %s %s", cmd, other.first.c_str());
     }
