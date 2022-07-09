@@ -36,17 +36,24 @@ class throttle : public module
 private:
     bool m_throttling;
 
-    void thread();
+    u64 m_start;
+    u64 m_extra;
+
+    void update();
 
 public:
     property<sc_time> update_interval;
     property<double> rtf;
 
     throttle(const sc_module_name& nm);
-    virtual ~throttle();
+    virtual ~throttle() = default;
     VCML_KIND(throttle);
 
     bool is_throttling() const { return m_throttling; }
+
+protected:
+    virtual void session_suspend() override;
+    virtual void session_resume() override;
 };
 
 } // namespace meta

@@ -31,47 +31,49 @@ static u64 do_usleep(u64 delta) {
     return d > delta ? d - delta : 0;
 }
 
-void throttle::thread() {
-    u64 start = realtime_us();
-    u64 extra = 0;
+void throttle::update() {
+    sc_time quantum = tlm::tlm_global_quantum::instance().get();
+    sc_time interval = max<sc_time>(quantum, update_interval);
+    next_trigger(interval);
 
-    while (true) {
-        sc_time quantum = tlm::tlm_global_quantum::instance().get();
-        sc_time interval = max(update_interval.get(), quantum);
-        wait(interval);
+    if (rtf > 0.0) {
+        u64 actual = realtime_us() - m_start + m_extra;
+        u64 target = time_to_us(interval) / rtf;
 
-        if (rtf > 0.0) {
-            u64 actual = realtime_us() - start + extra;
-            u64 target = time_to_us(interval) / rtf;
-
-            if (actual < target) {
-                extra = do_usleep(target - actual);
-                if (!m_throttling)
-                    log_debug("throttling started");
-                m_throttling = true;
-            } else {
-                extra = actual - target;
-                if (m_throttling)
-                    log_debug("throttling stopped");
-                m_throttling = false;
-            }
+        if (actual < target) {
+            m_extra = do_usleep(target - actual);
+            if (!m_throttling)
+                log_debug("throttling started");
+            m_throttling = true;
+        } else {
+            m_extra = actual - target;
+            if (m_throttling)
+                log_debug("throttling stopped");
+            m_throttling = false;
         }
-
-        start = realtime_us();
     }
+
+    m_start = realtime_us();
 }
 
 throttle::throttle(const sc_module_name& nm):
     module(nm),
     m_throttling(false),
+    m_start(realtime_us()),
+    m_extra(0),
     update_interval("update_interval", sc_time(10.0, SC_MS)),
     rtf("rtf", 0.0) {
     SC_HAS_PROCESS(throttle);
-    SC_THREAD(thread);
+    SC_METHOD(update);
 }
 
-throttle::~throttle() {
-    // nothing to do
+void throttle::session_suspend() {
+    m_start -= realtime_us();
+}
+
+void throttle::session_resume() {
+    m_start += realtime_us();
+    m_extra = 0;
 }
 
 } // namespace meta
