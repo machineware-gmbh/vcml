@@ -443,7 +443,7 @@ vspserver::vspserver(u16 server_port):
     suspender("vspserver"),
     subscriber(),
     m_announce(temp_dir() + mkstr("vcml_session_%hu", port())),
-    m_stop_reason("elab"),
+    m_stop_reason("elaboration"),
     m_duration() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
     session = this;
@@ -493,7 +493,7 @@ void vspserver::start() {
             sc_start();
         else {
             sc_start(m_duration);
-            pause_simulation("time");
+            pause_simulation("step");
         }
     }
 
