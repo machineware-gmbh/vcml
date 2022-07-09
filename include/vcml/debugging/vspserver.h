@@ -40,18 +40,17 @@ private:
 
     unordered_map<u64, const breakpoint*> m_breakpoints;
 
-    string handle_none(const string& command);
+    string handle_version(const string& command);
+    string handle_resume(const string& command);
     string handle_step(const string& command);
-    string handle_cont(const string& command);
+    string handle_quit(const string& command);
     string handle_list(const string& command);
     string handle_exec(const string& command);
     string handle_time(const string& command);
-    string handle_rdgq(const string& command);
-    string handle_wrgq(const string& command);
+    string handle_getq(const string& command);
+    string handle_setq(const string& command);
     string handle_geta(const string& command);
     string handle_seta(const string& command);
-    string handle_quit(const string& command);
-    string handle_vers(const string& command);
     string handle_mkbp(const string& command);
     string handle_rmbp(const string& command);
 
