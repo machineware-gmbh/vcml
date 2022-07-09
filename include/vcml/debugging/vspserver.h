@@ -41,18 +41,21 @@ private:
     unordered_map<u64, const breakpoint*> m_breakpoints;
 
     string handle_version(const string& command);
+    string handle_status(const string& command);
     string handle_resume(const string& command);
     string handle_step(const string& command);
+    string handle_stop(const string& command);
     string handle_quit(const string& command);
     string handle_list(const string& command);
     string handle_exec(const string& command);
-    string handle_time(const string& command);
     string handle_getq(const string& command);
     string handle_setq(const string& command);
     string handle_geta(const string& command);
     string handle_seta(const string& command);
     string handle_mkbp(const string& command);
     string handle_rmbp(const string& command);
+
+    bool is_running() const { return !is_suspending(); }
 
     void resume_simulation(const sc_time& duration);
     void pause_simulation(const string& reason);

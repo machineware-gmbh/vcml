@@ -152,7 +152,17 @@ string vspserver::handle_version(const string& cmd) {
     return ss.str();
 }
 
+string vspserver::handle_status(const string& cmd) {
+    u64 delta = sc_delta_count();
+    u64 nanos = time_to_ns(sc_time_stamp());
+    string status = is_running() ? "running" : ("stopped:" + m_stop_reason);
+    return mkstr("OK,%s,%lu,%lu", status.c_str(), nanos, delta);
+}
+
 string vspserver::handle_resume(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     sc_time duration = SC_MAX_TIME;
 
@@ -164,6 +174,9 @@ string vspserver::handle_resume(const string& cmd) {
 }
 
 string vspserver::handle_step(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -177,12 +190,22 @@ string vspserver::handle_step(const string& cmd) {
     return mkstr("OK,%s", m_stop_reason.c_str());
 }
 
+string vspserver::handle_stop(const string& cmd) {
+    vector<string> args = split(cmd, ',');
+    if (is_running())
+        pause_simulation(args.size() > 1 ? args[1] : "user");
+    return "OK";
+}
+
 string vspserver::handle_quit(const string& cmd) {
     force_quit();
     return "OK";
 }
 
 string vspserver::handle_list(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     string format = "xml";
     vector<string> args = split(cmd, ',');
     if (args.size() > 1)
@@ -220,8 +243,10 @@ string vspserver::handle_list(const string& cmd) {
 }
 
 string vspserver::handle_exec(const string& cmd) {
-    vector<string> args = split(cmd, ',');
+    if (is_running())
+        return "E,simulation running";
 
+    vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
 
@@ -245,18 +270,17 @@ string vspserver::handle_exec(const string& cmd) {
     }
 }
 
-string vspserver::handle_time(const string& cmd) {
-    u64 delta = sc_delta_count();
-    u64 nanos = time_to_ns(sc_time_stamp());
-    return mkstr("OK,%lu,%lu", nanos, delta);
-}
-
 string vspserver::handle_getq(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
     sc_time quantum = tlm::tlm_global_quantum::instance().get();
     return mkstr("OK,%lu", time_to_ns(quantum));
 }
 
 string vspserver::handle_setq(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -272,6 +296,9 @@ string vspserver::handle_setq(const string& cmd) {
 }
 
 string vspserver::handle_geta(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -289,6 +316,9 @@ string vspserver::handle_geta(const string& cmd) {
 }
 
 string vspserver::handle_seta(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -319,6 +349,9 @@ string vspserver::handle_seta(const string& cmd) {
 }
 
 string vspserver::handle_mkbp(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -346,6 +379,9 @@ string vspserver::handle_mkbp(const string& cmd) {
 }
 
 string vspserver::handle_rmbp(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -364,42 +400,14 @@ string vspserver::handle_rmbp(const string& cmd) {
 }
 
 void vspserver::resume_simulation(const sc_time& duration) {
+    m_stop_reason.clear();
     m_duration = duration;
     resume();
-
-    try {
-        while (!is_suspending() && sim_running()) {
-            int signal = recv_signal(100);
-            switch (signal) {
-            case 0x0:
-                break;
-
-            case 'u': // update time
-                send_packet(handle_time(""));
-                break;
-
-            case 'x': // quit
-                force_quit();
-                return;
-
-            case 'a': // pause
-                pause_simulation("user");
-                return;
-
-            default:
-                log_debug("received unknown signal 0x%x", signal);
-                break;
-            }
-        }
-    } catch (...) {
-        log_warn("internal error while processing signals");
-        pause_simulation("internal error");
-        disconnect();
-    }
 }
 
 void vspserver::pause_simulation(const string& reason) {
-    m_stop_reason = reason;
+    if (m_stop_reason.empty())
+        m_stop_reason = reason;
     suspend();
     sc_pause();
 }
@@ -435,25 +443,26 @@ vspserver::vspserver(u16 server_port):
     suspender("vspserver"),
     subscriber(),
     m_announce(temp_dir() + mkstr("vcml_session_%hu", port())),
-    m_stop_reason(),
+    m_stop_reason("elab"),
     m_duration() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
     session = this;
     atexit(&cleanup_session);
 
-    register_handler("v", &vspserver::handle_version);
-    register_handler("c", &vspserver::handle_resume);
-    register_handler("x", &vspserver::handle_quit);
-    register_handler("t", &vspserver::handle_time);
-    register_handler("s", &vspserver::handle_step);
-    register_handler("l", &vspserver::handle_list);
-    register_handler("e", &vspserver::handle_exec);
-    register_handler("q", &vspserver::handle_getq);
-    register_handler("Q", &vspserver::handle_setq);
-    register_handler("a", &vspserver::handle_geta);
-    register_handler("A", &vspserver::handle_seta);
-    register_handler("b", &vspserver::handle_mkbp);
-    register_handler("B", &vspserver::handle_rmbp);
+    register_handler("version", &vspserver::handle_version);
+    register_handler("status", &vspserver::handle_status);
+    register_handler("resume", &vspserver::handle_resume);
+    register_handler("step", &vspserver::handle_step);
+    register_handler("stop", &vspserver::handle_stop);
+    register_handler("quit", &vspserver::handle_quit);
+    register_handler("list", &vspserver::handle_list);
+    register_handler("exec", &vspserver::handle_exec);
+    register_handler("getq", &vspserver::handle_getq);
+    register_handler("setq", &vspserver::handle_setq);
+    register_handler("geta", &vspserver::handle_geta);
+    register_handler("seta", &vspserver::handle_seta);
+    register_handler("mkbp", &vspserver::handle_mkbp);
+    register_handler("rmbp", &vspserver::handle_rmbp);
 
     // Create announce file
     ofstream of(m_announce.c_str());
