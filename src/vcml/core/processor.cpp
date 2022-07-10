@@ -247,6 +247,14 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     return true;
 }
 
+unsigned int processor::simulate_cycles(unsigned int cycles) {
+    u64 count = cycle_count();
+    double start = realtime();
+    simulate(cycles);
+    m_run_time += realtime() - start;
+    return cycle_count() - count;
+}
+
 void processor::processor_thread() {
     if (gdb_port >= 0) {
         debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
@@ -290,12 +298,12 @@ void processor::processor_thread() {
             if (is_stepping())
                 num_cycles = 1;
 
-            double start = realtime();
-            simulate(num_cycles);
-            m_run_time += realtime() - start;
+            num_cycles = simulate_cycles(num_cycles);
 
-            if (is_stepping())
+            if (is_stepping() && num_cycles > 0)
                 notify_singlestep();
+            if (num_cycles == 0)
+                wait(SC_ZERO_TIME);
         } while (!needs_sync());
 
         sync();

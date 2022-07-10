@@ -69,6 +69,7 @@ private:
     virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
     virtual bool write_cpureg_dbg(const cpureg& r, vcml::u64 val) override;
 
+    unsigned int simulate_cycles(unsigned int cycles);
     void processor_thread();
 
 public:
