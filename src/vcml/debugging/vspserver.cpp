@@ -101,7 +101,7 @@ static const char* obj_version(sc_object* obj) {
 
 static void list_object(ostream& os, sc_object* obj) {
     // hide object names starting with $$$
-    if (strncmp("$$$", obj->basename(), 3) == 0)
+    if (starts_with(obj->basename(), "$$$"))
         return;
 
     os << "<object"
@@ -256,9 +256,8 @@ string vspserver::handle_exec(const string& cmd) {
         return mkstr("E,object '%s' not found", name.c_str());
 
     module* mod = dynamic_cast<module*>(obj);
-    if (mod == nullptr) {
+    if (mod == nullptr)
         return mkstr("E,object '%s' does not support commands", name.c_str());
-    }
 
     try {
         stringstream ss;
@@ -285,11 +284,7 @@ string vspserver::handle_setq(const string& cmd) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    stringstream ss(args[1]);
-    u64 t;
-    ss >> t;
-
-    sc_time quantum(t, SC_NS);
+    sc_time quantum(from_string<u64>(args[1]), SC_NS);
     tlm::tlm_global_quantum::instance().set(quantum);
 
     return "OK";
@@ -400,16 +395,19 @@ string vspserver::handle_rmbp(const string& cmd) {
 }
 
 void vspserver::resume_simulation(const sc_time& duration) {
-    m_stop_reason.clear();
-    m_duration = duration;
-    resume();
+    if (is_suspending()) {
+        m_stop_reason.clear();
+        m_duration = duration;
+        resume();
+    }
 }
 
 void vspserver::pause_simulation(const string& reason) {
-    if (m_stop_reason.empty())
+    if (!is_suspending()) {
         m_stop_reason = reason;
-    suspend();
-    sc_pause();
+        sc_pause();
+        suspend();
+    }
 }
 
 void vspserver::force_quit() {
