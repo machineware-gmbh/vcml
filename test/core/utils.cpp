@@ -100,5 +100,5 @@ TEST(utils, realtime) {
     t = vcml::realtime() - t;
 
     EXPECT_GE(t, 0.010); // >= 10ms?
-    EXPECT_LT(t, 0.011); // < 11ms?
+    EXPECT_LT(t, 0.100); // < 100ms?
 }
