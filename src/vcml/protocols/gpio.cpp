@@ -55,7 +55,7 @@ void gpio_base_initiator_socket::bind(gpio_base_target_socket& socket) {
     socket.complete_binding(*this);
 }
 
-void gpio_base_initiator_socket::bind(sc_signal<bool>& signal) {
+void gpio_base_initiator_socket::bind(sc_signal_inout_if<bool>& signal) {
     VCML_ERROR_ON(m_adapter, "socket '%s' already bound", name());
     hierarchy_guard guard(this);
     string name = mkstr("%s_adapter", basename());
@@ -88,7 +88,7 @@ void gpio_base_target_socket::bind(gpio_base_initiator_socket& other) {
     complete_binding(other);
 }
 
-void gpio_base_target_socket::bind(sc_signal<bool>& signal) {
+void gpio_base_target_socket::bind(sc_signal_inout_if<bool>& signal) {
     VCML_ERROR_ON(m_adapter, "socket '%s' already bound", name());
     hierarchy_guard guard(this);
     string name = mkstr("%s_adapter", basename());

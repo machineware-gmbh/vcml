@@ -117,7 +117,7 @@ public:
 
     using gpio_base_initiator_socket_b::bind;
     virtual void bind(gpio_base_target_socket& socket);
-    virtual void bind(sc_signal<bool>& signal);
+    virtual void bind(sc_signal_inout_if<bool>& signal);
 
     bool is_adapted() const { return m_adapter != nullptr; }
     bool is_stubbed() const { return m_stub != nullptr; }
@@ -137,7 +137,7 @@ public:
 
     using gpio_base_target_socket_b::bind;
     virtual void bind(gpio_base_initiator_socket& other);
-    virtual void bind(sc_signal<bool>& signal);
+    virtual void bind(sc_signal_inout_if<bool>& signal);
     virtual void complete_binding(gpio_base_initiator_socket& socket) {}
 
     bool is_adapted() const { return m_adapter != nullptr; }

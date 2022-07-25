@@ -147,6 +147,7 @@ using sc_core::sc_report;
 using sc_core::sc_port;
 using sc_core::sc_export;
 using sc_core::sc_signal;
+using sc_core::sc_signal_inout_if;
 using sc_core::sc_out;
 using sc_core::sc_in;
 
