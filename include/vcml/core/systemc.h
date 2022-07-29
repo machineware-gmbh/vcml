@@ -154,6 +154,8 @@ using sc_core::sc_in;
 using sc_core::sc_module_name;
 using sc_core::sc_module;
 
+using sc_core::sc_vector;
+
 void hierarchy_push(sc_module* mod);
 sc_module* hierarchy_pop();
 sc_module* hierarchy_top();
