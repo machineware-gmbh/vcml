@@ -91,9 +91,9 @@ struct eth_frame : public vector<u8> {
     eth_frame() = default;
     eth_frame(eth_frame&&) = default;
     eth_frame(const eth_frame&) = default;
-    eth_frame(const vector<u8>& raw): vector<u8>(raw) {}
-    eth_frame(vector<u8>&& frame): vector<u8>(std::move(frame)) {}
-    eth_frame(const u8* data, size_t len): vector<u8>(data, data + len) {}
+    eth_frame(const vector<u8>& raw);
+    eth_frame(vector<u8>&& frame);
+    eth_frame(const u8* data, size_t len);
     eth_frame(const mac_addr& dest, const mac_addr& src,
               const vector<u8>& payload);
 
