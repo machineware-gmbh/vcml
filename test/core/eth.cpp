@@ -20,6 +20,18 @@
 
 #include "vcml/protocols/eth.h"
 
+TEST(ethernet, macaddr) {
+    mac_addr addr("12:23:34:45:56:67");
+
+    EXPECT_EQ(addr[0], 0x12);
+    EXPECT_EQ(addr[1], 0x23);
+    EXPECT_EQ(addr[2], 0x34);
+    EXPECT_EQ(addr[3], 0x45);
+    EXPECT_EQ(addr[4], 0x56);
+    EXPECT_EQ(addr[5], 0x67);
+    EXPECT_EQ((u64)addr, 0x122334455667ul);
+}
+
 TEST(ethernet, to_string) {
     vector<u8> data = { 0x11, 0x22, 0x33, 0x44 };
     eth_frame frame("ff:ff:ff:ff:ff:ff", "12:23:34:45:56:67", data);

@@ -29,6 +29,13 @@ mac_addr::mac_addr(const char* str): bytes() {
     VCML_ERROR_ON(n != 6, "failed to parse mac address '%s'", str);
 }
 
+mac_addr::operator u64() const {
+    u64 result = 0;
+    for (size_t i = 0; i < bytes.size(); i++)
+        result |= (u64)bytes[i] << (40 - i * 8);
+    return result;
+}
+
 string mac_addr::to_string() const {
     return mkstr(format, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4],
                  bytes[5]);
@@ -73,6 +80,13 @@ eth_frame::eth_frame(const mac_addr& dest, const mac_addr& src,
         push_back(0);
 }
 
+u16 eth_frame::ether_type() const {
+    u16 type = bswap(read<u16>(12));
+    if (type == ETHER_TYPE_VLAN)
+        type = bswap(read<u16>(16));
+    return type;
+}
+
 string eth_frame::identify() const {
     if (empty())
         return "ETHERNET_EMPTY";
@@ -109,10 +123,30 @@ string eth_frame::identify() const {
         return "ETHERNET_IPv6";
     }
 
+    case ETHER_TYPE_PTP:
+        return "ETHERNET_PTP";
+
+    case ETHER_TYPE_AVTP:
+        return "ETHERNET_AVTP";
+
     default:
         return mkstr("ETHERNET_0x%02hx", type);
     }
-} // namespace vcml
+}
+
+bool eth_frame::is_nc() const {
+    u64 dest = destination();
+    return dest == 0x180c200000e && ether_type() == ETHER_TYPE_PTP;
+}
+
+bool eth_frame::is_avtp() const {
+    u64 dest = destination();
+    if (dest < 0x91e0f0000000)
+        return false;
+    if (dest > 0x91e0f000feff)
+        return false;
+    return ether_type() == ETHER_TYPE_AVTP;
+}
 
 bool eth_frame::print_payload = true;
 size_t eth_frame::print_payload_columns = 16;

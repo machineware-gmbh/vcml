@@ -53,6 +53,8 @@ struct mac_addr {
     bool operator==(const mac_addr& o) const { return bytes == o.bytes; }
     bool operator!=(const mac_addr& o) const { return !(bytes == o.bytes); }
 
+    operator u64() const;
+
     bool is_multicast() const { return bytes[0] & 1; }
     bool is_broadcast() const {
         for (const u8& val : bytes)
@@ -79,6 +81,9 @@ struct eth_frame : public vector<u8> {
         ETHER_TYPE_ARP = 0x0806,
         ETHER_TYPE_IPV4 = 0x0800,
         ETHER_TYPE_IPV6 = 0x86dd,
+        ETHER_TYPE_PTP = 0x88f7,
+        ETHER_TYPE_AVTP = 0x22f0,
+        ETHER_TYPE_VLAN = 0x8100,
     };
 
     enum : u8 {
@@ -108,7 +113,7 @@ struct eth_frame : public vector<u8> {
         return val;
     }
 
-    u16 ether_type() const { return bswap(read<u16>(12)); }
+    u16 ether_type() const;
 
     size_t payload_size() const { return size() - FRAME_HEADER_SIZE; }
     u8* payload() { return data() + FRAME_HEADER_SIZE; }
@@ -127,6 +132,9 @@ struct eth_frame : public vector<u8> {
     }
 
     string identify() const;
+
+    bool is_nc() const;
+    bool is_avtp() const;
 
     static bool print_payload;
     static size_t print_payload_columns;
