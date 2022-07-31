@@ -94,6 +94,46 @@ extern logger log;
 #define log_info(...)  log.info(__FILE__, __LINE__, __VA_ARGS__)  // NOLINT
 #define log_debug(...) log.debug(__FILE__, __LINE__, __VA_ARGS__) // NOLINT
 
+// NOLINTNEXTLINE(readability-identifier-naming)
+#define log_error_once(...)                             \
+    do {                                                \
+        static int once = 1;                            \
+        if (once) {                                     \
+            log.error(__FILE__, __LINE__, __VA_ARGS__); \
+            once = 0;                                   \
+        }                                               \
+    } while (0)
+
+// NOLINTNEXTLINE(readability-identifier-naming)
+#define log_warn_once(...)                             \
+    do {                                               \
+        static int once = 1;                           \
+        if (once) {                                    \
+            log.warn(__FILE__, __LINE__, __VA_ARGS__); \
+            once = 0;                                  \
+        }                                              \
+    } while (0)
+
+// NOLINTNEXTLINE(readability-identifier-naming)
+#define log_info_once(...)                             \
+    do {                                               \
+        static int once = 1;                           \
+        if (once) {                                    \
+            log.info(__FILE__, __LINE__, __VA_ARGS__); \
+            once = 0;                                  \
+        }                                              \
+    } while (0) // NOLINT
+
+// NOLINTNEXTLINE(readability-identifier-naming)
+#define log_debug_once(...)                             \
+    do {                                                \
+        static int once = 1;                            \
+        if (once) {                                     \
+            log.debug(__FILE__, __LINE__, __VA_ARGS__); \
+            once = 0;                                   \
+        }                                               \
+    } while (0)
+
 } // namespace vcml
 
 #endif
