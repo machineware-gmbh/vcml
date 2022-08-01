@@ -63,6 +63,8 @@ struct mac_addr {
         return true;
     }
 
+    bool is_unicast() const { return !is_multicast() && !is_broadcast(); }
+
     u32 hash_crc32() const { return crc32(bytes.data(), 6); }
 
     string to_string() const;
@@ -126,6 +128,7 @@ struct eth_frame : public vector<u8> {
 
     bool is_multicast() const { return destination().is_multicast(); }
     bool is_broadcast() const { return destination().is_broadcast(); }
+    bool is_unicast() const { return destination().is_unicast(); }
 
     bool valid() const {
         return size() >= FRAME_MIN_SIZE && size() <= FRAME_MAX_SIZE;
