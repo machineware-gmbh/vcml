@@ -230,7 +230,7 @@ private:
             gpio_fw_transport_if(), socket(s) {}
 
         virtual void gpio_transport(gpio_payload& tx) override {
-            socket->gpio_transport(tx);
+            socket->gpio_transport_internal(tx);
         }
 
         virtual const sc_event& default_event() const override {
@@ -238,7 +238,10 @@ private:
         }
     } m_transport;
 
-    void gpio_transport(gpio_payload& gpio);
+    void gpio_transport_internal(gpio_payload& gpio);
+
+protected:
+    virtual void gpio_transport(gpio_payload& gpio);
 };
 
 template <const size_t MAX_PORTS = SIZE_MAX>

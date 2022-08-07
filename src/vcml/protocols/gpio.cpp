@@ -188,17 +188,6 @@ void gpio_initiator_socket::gpio_transport(gpio_payload& tx) {
     trace_bw(tx);
 }
 
-void gpio_target_socket::gpio_transport(gpio_payload& tx) {
-    trace_fw(tx);
-    if (m_state.count(tx.vector) == 0 || m_state[tx.vector] != tx.state) {
-        m_state[tx.vector] = tx.state;
-        m_host->gpio_transport(*this, tx);
-        if (m_event)
-            m_event->notify(SC_ZERO_TIME);
-    }
-    trace_bw(tx);
-}
-
 gpio_target_socket::gpio_target_socket(const char* nm, address_space space):
     gpio_base_target_socket(nm, space),
     m_host(hierarchy_search<gpio_host>()),
@@ -251,6 +240,21 @@ bool gpio_target_socket::operator==(const gpio_target_socket& other) const {
 
 bool gpio_target_socket::operator!=(const gpio_target_socket& other) const {
     return !(operator==(other));
+}
+
+void gpio_target_socket::gpio_transport_internal(gpio_payload& tx) {
+    trace_fw(tx);
+    if (m_state.count(tx.vector) == 0 || m_state[tx.vector] != tx.state) {
+        m_state[tx.vector] = tx.state;
+        gpio_transport(tx);
+        if (m_event)
+            m_event->notify(SC_ZERO_TIME);
+    }
+    trace_bw(tx);
+}
+
+void gpio_target_socket::gpio_transport(gpio_payload& tx) {
+    m_host->gpio_transport(*this, tx);
 }
 
 gpio_initiator_stub::gpio_initiator_stub(const char* nm):
