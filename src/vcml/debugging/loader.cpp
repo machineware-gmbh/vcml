@@ -242,6 +242,9 @@ void loader::load_image(const image_info& image) {
     case IMAGE_BIN:
         load_bin(image.filename, image.offset);
         break;
+    case IMAGE_SREC:
+        load_srec(image.filename, image.offset);
+        break;
     default:
         VCML_REPORT("unknown image type %d", (int)image.type);
     }
