@@ -69,7 +69,7 @@ bool breakpoint::unsubscribe(subscriber* s) {
     if (!stl_contains(m_subscribers, s))
         return false;
 
-    stl_remove_erase(m_subscribers, s);
+    stl_remove(m_subscribers, s);
     return true;
 }
 
@@ -117,12 +117,12 @@ bool watchpoint::unsubscribe(vcml_access prot, subscriber* s) {
     size_t subscriptions = 0;
 
     if (is_read_allowed(prot) && stl_contains(m_subscribers_r, s)) {
-        stl_remove_erase(m_subscribers_r, s);
+        stl_remove(m_subscribers_r, s);
         subscriptions--;
     }
 
     if (is_write_allowed(prot) && stl_contains(m_subscribers_w, s)) {
-        stl_remove_erase(m_subscribers_w, s);
+        stl_remove(m_subscribers_w, s);
         subscriptions--;
     }
 

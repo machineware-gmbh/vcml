@@ -294,7 +294,7 @@ sd_initiator_socket::sd_initiator_socket(const char* nm, address_space as):
 
 sd_initiator_socket::~sd_initiator_socket() {
     if (m_host)
-        stl_remove_erase(m_host->m_initiator_sockets, this);
+        stl_remove(m_host->m_initiator_sockets, this);
 }
 
 void sd_initiator_socket::transport(sd_command& cmd) {
@@ -353,7 +353,7 @@ sd_target_socket::sd_target_socket(const char* nm, address_space a):
 
 sd_target_socket::~sd_target_socket() {
     if (m_host)
-        stl_remove_erase(m_host->m_target_sockets, this);
+        stl_remove(m_host->m_target_sockets, this);
 }
 
 sd_initiator_stub::sd_initiator_stub(const char* nm):

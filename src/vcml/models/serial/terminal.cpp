@@ -217,7 +217,7 @@ void terminal::attach(backend* b) {
 void terminal::detach(backend* b) {
     if (!stl_contains(m_listeners, b))
         VCML_ERROR("attempt to detach unknown backend");
-    stl_remove_erase(m_listeners, b);
+    stl_remove(m_listeners, b);
 }
 
 id_t terminal::create_backend(const string& type) {

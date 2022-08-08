@@ -99,11 +99,11 @@ void display::add_pointer(pointer* ptr) {
 }
 
 void display::remove_keyboard(keyboard* kb) {
-    stl_remove_erase(m_keyboards, kb);
+    stl_remove(m_keyboards, kb);
 }
 
 void display::remove_pointer(pointer* ptr) {
-    stl_remove_erase(m_pointers, ptr);
+    stl_remove(m_pointers, ptr);
 }
 
 static bool parse_display(const string& name, string& id, u32& nr) {

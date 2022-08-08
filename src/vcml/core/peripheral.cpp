@@ -89,7 +89,7 @@ void peripheral::add_register(reg_base* reg) {
 void peripheral::remove_register(reg_base* reg) {
     if (!stl_contains(m_registers, reg))
         VCML_ERROR("unknown register '%s'", reg->name());
-    stl_remove_erase(m_registers, reg);
+    stl_remove(m_registers, reg);
 }
 
 void peripheral::map_dmi(const tlm_dmi& dmi) {

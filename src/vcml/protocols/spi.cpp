@@ -78,7 +78,7 @@ spi_initiator_socket::spi_initiator_socket(const char* nm, address_space a):
 
 spi_initiator_socket::~spi_initiator_socket() {
     if (m_host)
-        stl_remove_erase(m_host->m_initiator_sockets, this);
+        stl_remove(m_host->m_initiator_sockets, this);
 }
 
 void spi_initiator_socket::transport(spi_payload& spi) {
@@ -104,7 +104,7 @@ spi_target_socket::spi_target_socket(const char* nm, address_space as):
 
 spi_target_socket::~spi_target_socket() {
     if (m_host)
-        stl_remove_erase(m_host->m_target_sockets, this);
+        stl_remove(m_host->m_target_sockets, this);
 }
 
 spi_initiator_stub::spi_initiator_stub(const char* nm):

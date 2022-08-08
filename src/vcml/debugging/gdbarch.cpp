@@ -81,7 +81,7 @@ gdbarch::gdbarch(const char* nm, const char* gdb, const char* abi,
 }
 
 gdbarch::~gdbarch() {
-    stl_remove_erase(all_gdbarchs(), this);
+    stl_remove(all_gdbarchs(), this);
 }
 
 void gdbarch::write_xml(const target& t, ostream& os) const {

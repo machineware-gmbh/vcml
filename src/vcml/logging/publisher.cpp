@@ -89,7 +89,7 @@ void publisher::register_publisher() {
 
 void publisher::unregister_publisher() {
     for (int l = m_min; l <= m_max; l++)
-        stl_remove_erase(publisher::publishers[l], this);
+        stl_remove(publisher::publishers[l], this);
 }
 
 bool publisher::check_filters(const logmsg& msg) const {

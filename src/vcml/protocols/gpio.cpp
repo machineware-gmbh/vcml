@@ -126,7 +126,7 @@ gpio_initiator_socket::gpio_initiator_socket(const char* nm, address_space as):
 
 gpio_initiator_socket::~gpio_initiator_socket() {
     if (m_host)
-        stl_remove_erase(m_host->m_initiator_sockets, this);
+        stl_remove(m_host->m_initiator_sockets, this);
     if (m_event)
         delete m_event;
 }
@@ -202,7 +202,7 @@ gpio_target_socket::gpio_target_socket(const char* nm, address_space space):
 }
 
 gpio_target_socket::~gpio_target_socket() {
-    stl_remove_erase(m_host->m_target_sockets, this);
+    stl_remove(m_host->m_target_sockets, this);
     if (m_event)
         delete m_event;
 }

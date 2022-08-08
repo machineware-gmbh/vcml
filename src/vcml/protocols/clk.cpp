@@ -100,7 +100,7 @@ clk_initiator_socket::clk_initiator_socket(const char* nm, address_space as):
 
 clk_initiator_socket::~clk_initiator_socket() {
     if (m_host)
-        stl_remove_erase(m_host->m_initiator_sockets, this);
+        stl_remove(m_host->m_initiator_sockets, this);
 }
 
 void clk_initiator_socket::set(clock_t hz) {
@@ -146,7 +146,7 @@ clk_target_socket::clk_target_socket(const char* nm, address_space space):
 }
 
 clk_target_socket::~clk_target_socket() {
-    stl_remove_erase(m_host->m_target_sockets, this);
+    stl_remove(m_host->m_target_sockets, this);
 }
 
 void clk_target_socket::bind(clk_base_target_socket& socket) {

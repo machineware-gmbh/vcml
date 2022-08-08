@@ -54,11 +54,11 @@ void tlm_host::register_socket(tlm_target_socket* socket) {
 }
 
 void tlm_host::unregister_socket(tlm_initiator_socket* socket) {
-    stl_remove_erase(m_initiator_sockets, socket);
+    stl_remove(m_initiator_sockets, socket);
 }
 
 void tlm_host::unregister_socket(tlm_target_socket* socket) {
-    stl_remove_erase(m_target_sockets, socket);
+    stl_remove(m_target_sockets, socket);
 }
 
 tlm_initiator_socket* tlm_host::find_tlm_initiator_socket(

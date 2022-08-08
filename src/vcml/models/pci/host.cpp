@@ -201,8 +201,8 @@ void host::pci_bar_unmap(const pci_initiator_socket& socket, int barno) {
         return entry.devno == devno && entry.barno == barno;
     };
 
-    stl_remove_erase_if(m_map_mmio, match);
-    stl_remove_erase_if(m_map_io, match);
+    stl_remove_if(m_map_mmio, match);
+    stl_remove_if(m_map_io, match);
 }
 
 void* host::pci_dma_ptr(const pci_initiator_socket& socket, vcml_access rw,

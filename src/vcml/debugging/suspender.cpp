@@ -69,7 +69,7 @@ void suspend_manager::request_pause(suspender* s) {
 
 void suspend_manager::request_resume(suspender* s) {
     lock_guard<mutex> guard(suspender_lock);
-    stl_remove_erase(suspenders, s);
+    stl_remove(suspenders, s);
     if (suspenders.empty())
         thctl_notify();
 }

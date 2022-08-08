@@ -51,7 +51,7 @@ broker::broker(const string& nm): m_name(nm), m_values() {
 }
 
 broker::~broker() {
-    stl_remove_erase(g_brokers, this);
+    stl_remove(g_brokers, this);
 }
 
 bool broker::lookup(const string& key, string& value) {
@@ -90,10 +90,9 @@ vector<pair<string, broker*>> broker::collect_unused() {
     for (auto& brkr : g_brokers) {
         for (auto& value : brkr->m_values) {
             if (value.second.uses > 0) {
-                stl_remove_erase_if(
-                    unused, [&](const pair<string, broker*>& entry) -> bool {
-                        return entry.first == value.first;
-                    });
+                stl_remove_if(unused, [&](auto& entry) -> bool {
+                    return entry.first == value.first;
+                });
             }
         }
     }

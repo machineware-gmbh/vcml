@@ -24,6 +24,54 @@
 
 namespace vcml {
 
+template <typename V, typename T>
+inline void stl_remove(V& v, const T& t) {
+    v.erase(std::remove(v.begin(), v.end(), t), v.end());
+}
+
+template <typename V, class PRED>
+inline void stl_remove_if(V& v, PRED p) {
+    v.erase(std::remove_if(v.begin(), v.end(), p), v.end());
+}
+
+template <typename T1, typename T2, class PRED>
+inline void stl_remove_if(std::map<T1, T2>& m, PRED p) {
+    for (auto it = std::begin(m); it != std::end(m);)
+        it = p(it) ? m.erase(it) : ++it;
+}
+
+template <typename T1, typename T2, class PRED>
+inline void stl_remove_if(unordered_map<T1, T2>& m, PRED p) {
+    for (auto it = std::begin(m); it != std::end(m);)
+        it = p(it) ? m.erase(it) : ++it;
+}
+
+template <typename V, typename T>
+inline bool stl_contains(const V& v, const T& t) {
+    return std::find(v.begin(), v.end(), t) != v.end();
+}
+
+template <typename T1, typename T2>
+inline bool stl_contains(const std::map<T1, T2>& m, const T1& t) {
+    return m.find(t) != m.end();
+}
+
+template <typename T1, typename T2>
+inline bool stl_contains(const std::unordered_map<T1, T2>& m, const T1& t) {
+    return m.find(t) != m.end();
+}
+
+template <typename V, class PRED>
+inline bool stl_contains_if(const V& v, PRED p) {
+    return std::find_if(v.begin(), v.end(), p) != v.end();
+}
+
+template <typename T>
+inline void stl_add_unique(vector<T>& v, const T& t) {
+    if (!stl_contains(v, t))
+        v.push_back(t);
+}
+
 string dirname(const string& path);
 string filename(const string& path);
 string filename_noext(const string& path);

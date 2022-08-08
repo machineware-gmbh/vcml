@@ -386,7 +386,7 @@ void sdl::check_clients() {
             client.exit_window();
     }
 
-    stl_remove_erase_if(m_clients, [](const sdl_client& client) -> bool {
+    stl_remove_if(m_clients, [](const sdl_client& client) -> bool {
         return client.disp == nullptr && client.window == nullptr;
     });
 }

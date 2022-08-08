@@ -153,7 +153,7 @@ void bridge::attach(backend* b) {
 void bridge::detach(backend* b) {
     if (!stl_contains(m_backends, b))
         VCML_ERROR("attempt to detach unknown backend");
-    stl_remove_erase(m_backends, b);
+    stl_remove(m_backends, b);
 }
 
 id_t bridge::create_backend(const string& type) {

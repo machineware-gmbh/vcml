@@ -256,7 +256,7 @@ pci_initiator_socket::pci_initiator_socket(const char* nm, address_space as):
 
 pci_initiator_socket::~pci_initiator_socket() {
     if (m_initiator)
-        stl_remove_erase(m_initiator->m_sockets, this);
+        stl_remove(m_initiator->m_sockets, this);
 }
 
 void pci_initiator_socket::transport(pci_payload& tx) {
@@ -277,7 +277,7 @@ pci_target_socket::pci_target_socket(const char* nm, address_space space):
 
 pci_target_socket::~pci_target_socket() {
     if (m_target)
-        stl_remove_erase(m_target->m_sockets, this);
+        stl_remove(m_target->m_sockets, this);
 }
 
 void pci_initiator_stub::pci_bar_map(const pci_bar& bar) {
