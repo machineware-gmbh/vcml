@@ -51,10 +51,13 @@ private:
     module* m_parent;
     module* m_adapter;
 
-    void invalidate_direct_mem_ptr(sc_dt::uint64 start, sc_dt::uint64 end);
-
     void trace_fw(const tlm_generic_payload& tx, const sc_time& t);
     void trace_bw(const tlm_generic_payload& tx, const sc_time& t);
+
+    void invalidate_direct_mem_ptr_int(sc_dt::uint64 start, sc_dt::uint64 end);
+
+protected:
+    virtual void invalidate_direct_mem_ptr(u64 start, u64 end);
 
 public:
     property<bool> trace;
@@ -77,7 +80,7 @@ public:
     u8* lookup_dmi_ptr(u64 start, u64 length,
                        vcml_access rw = VCML_ACCESS_READ);
 
-    tlm_dmi_cache& dmi();
+    tlm_dmi_cache& dmi_cache();
 
     void map_dmi(const tlm_dmi& dmi);
     void unmap_dmi(u64 start, u64 end);
@@ -147,7 +150,7 @@ inline u8* tlm_initiator_socket::lookup_dmi_ptr(u64 addr, u64 size,
     return lookup_dmi_ptr({ addr, addr + size - 1 }, rw);
 }
 
-inline tlm_dmi_cache& tlm_initiator_socket::dmi() {
+inline tlm_dmi_cache& tlm_initiator_socket::dmi_cache() {
     return m_dmi_cache;
 }
 

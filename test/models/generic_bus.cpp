@@ -81,24 +81,26 @@ public:
             << "bus reported success for reading from unmapped address";
 
         tlm_dmi dmi;
-        EXPECT_TRUE(out.dmi().lookup(0x0000, 0x2000, TLM_READ_COMMAND, dmi))
+        EXPECT_TRUE(
+            out.dmi_cache().lookup(0x0000, 0x2000, TLM_READ_COMMAND, dmi))
             << "bus did not forward DMI region of mem1";
-        EXPECT_TRUE(out.dmi().lookup(0x2000, 0x2000, TLM_READ_COMMAND, dmi))
+        EXPECT_TRUE(
+            out.dmi_cache().lookup(0x2000, 0x2000, TLM_READ_COMMAND, dmi))
             << "bus did not forward DMI region of mem2";
 
-        if (out.dmi().get_entries().size() > 1) {
-            EXPECT_NE(out.dmi().get_entries()[0].get_start_address(),
-                      out.dmi().get_entries()[1].get_start_address())
+        if (out.dmi_cache().get_entries().size() > 1) {
+            EXPECT_NE(out.dmi_cache().get_entries()[0].get_start_address(),
+                      out.dmi_cache().get_entries()[1].get_start_address())
                 << "bus forwarded overlapping DMI regions";
-            EXPECT_NE(out.dmi().get_entries()[0].get_dmi_ptr(),
-                      out.dmi().get_entries()[1].get_dmi_ptr())
+            EXPECT_NE(out.dmi_cache().get_entries()[0].get_dmi_ptr(),
+                      out.dmi_cache().get_entries()[1].get_dmi_ptr())
                 << "bus forwarded overlapping DMI pointers";
         }
 
         mem1.unmap_dmi(0, 0x1fff);
-        ASSERT_EQ(out.dmi().get_entries().size(), 1)
+        ASSERT_EQ(out.dmi_cache().get_entries().size(), 1)
             << "bus did not forward DMI invalidation";
-        EXPECT_EQ(out.dmi().get_entries()[0].get_start_address(), 0x2000)
+        EXPECT_EQ(out.dmi_cache().get_entries()[0].get_start_address(), 0x2000)
             << "bus invalidated wrong DMI region";
     }
 };

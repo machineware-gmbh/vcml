@@ -55,7 +55,7 @@ public:
 
         EXPECT_GT(ram.in.dmi().get_entries().size(), 0)
             << "memory does not provide DMI access";
-        EXPECT_GT(ram_port.dmi().get_entries().size(), 0)
+        EXPECT_GT(ram_port.dmi_cache().get_entries().size(), 0)
             << "did not get DMI access to memory";
 
         ASSERT_CE(rom_port.writew(0x0, 0xfefefefe, SBI_NODMI))
@@ -65,7 +65,7 @@ public:
 
         ASSERT_CE(rom_port.writew(0x0, 0xfefefefe))
             << "read-only memory permitted DMI write access";
-        rom_port.dmi().invalidate(0, -1);
+        rom_port.dmi_cache().invalidate(0, -1);
         ASSERT_CE(rom_port.writew(0x0, 0xfefefefe))
             << "read-only memory permitted write access after DMI invalidate";
 

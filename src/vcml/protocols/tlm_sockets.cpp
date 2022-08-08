@@ -20,8 +20,12 @@
 
 namespace vcml {
 
-void tlm_initiator_socket::invalidate_direct_mem_ptr(sc_dt::uint64 start,
-                                                     sc_dt::uint64 end) {
+void tlm_initiator_socket::invalidate_direct_mem_ptr_int(sc_dt::uint64 start,
+                                                         sc_dt::uint64 end) {
+    invalidate_direct_mem_ptr(start, end);
+}
+
+void tlm_initiator_socket::invalidate_direct_mem_ptr(u64 start, u64 end) {
     unmap_dmi(start, end);
     m_host->invalidate_direct_mem_ptr(*this, start, end);
 }
@@ -50,7 +54,7 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
     m_host->register_socket(this);
 
     register_invalidate_direct_mem_ptr(
-        this, &tlm_initiator_socket::invalidate_direct_mem_ptr);
+        this, &tlm_initiator_socket::invalidate_direct_mem_ptr_int);
 
     m_tx.set_extension(new sbiext());
     m_txd.set_extension(new sbiext());

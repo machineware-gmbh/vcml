@@ -68,7 +68,7 @@ public:
             << "component did respond to read command";
 
         tlm_dmi dmi; // previous read should have provided DMI access
-        ASSERT_TRUE(out.dmi().lookup(0, 4, TLM_READ_COMMAND, dmi))
+        ASSERT_TRUE(out.dmi_cache().lookup(0, 4, TLM_READ_COMMAND, dmi))
             << "component did not provide DMI mapping";
         EXPECT_TRUE(dmi.is_read_allowed())
             << "component denied previously granted DMI read access";
