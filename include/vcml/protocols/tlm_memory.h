@@ -25,6 +25,7 @@
 #include "vcml/core/systemc.h"
 
 #include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_dmi_cache.h"
 
 namespace vcml {
 
@@ -37,7 +38,7 @@ private:
 
 public:
     u8* data() const { return get_dmi_ptr(); }
-    size_t size() const;
+    size_t size() const { return dmi_get_size(*this); }
 
     void allow_read_only() { allow_read(); }
     void allow_write_only() { allow_write(); }
@@ -73,10 +74,6 @@ public:
     u8 operator[](size_t offset) const;
     u8& operator[](size_t offset);
 };
-
-inline size_t tlm_memory::size() const {
-    return get_end_address() - get_start_address() + 1;
-}
 
 inline void tlm_memory::fill(u8 val) {
     memset(data(), val, size());

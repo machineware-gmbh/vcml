@@ -40,7 +40,7 @@ static bool dmi_is_mergeable(const tlm_dmi& a, const tlm_dmi& b) {
     return true;
 }
 
-static inline tlm_dmi dmi_merge(const tlm_dmi& a, const tlm_dmi& b) {
+static tlm_dmi dmi_merge(const tlm_dmi& a, const tlm_dmi& b) {
     assert(dmi_is_mergeable(a, b));
 
     tlm_dmi result = a;

@@ -103,6 +103,10 @@ inline bool dmi_check_access(const tlm_dmi& dmi, vcml_access acs) {
     }
 }
 
+inline u64 dmi_get_size(const tlm_dmi& dmi) {
+    return dmi.get_end_address() - dmi.get_start_address() + 1;
+}
+
 inline unsigned char* dmi_get_ptr(const tlm_dmi& dmi, u64 addr) {
     return dmi.get_dmi_ptr() + addr - dmi.get_start_address();
 }
