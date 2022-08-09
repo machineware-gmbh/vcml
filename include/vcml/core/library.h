@@ -30,12 +30,16 @@ class library
 private:
     string m_path;
     void* m_handle;
+    bool m_keep;
 
     void* lookup(const string& name) const;
 
 public:
     const char* path() const { return m_path.c_str(); }
     bool is_open() const { return m_handle != nullptr; }
+
+    bool is_kept_alive() const { return m_keep; }
+    void keep_alive(bool keep = true) { m_keep = keep; }
 
     library();
     library(library&& other) noexcept;

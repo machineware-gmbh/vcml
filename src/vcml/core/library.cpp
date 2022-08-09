@@ -28,11 +28,11 @@ void* library::lookup(const string& name) const {
     return sym;
 }
 
-library::library(): m_path(), m_handle(nullptr) {
+library::library(): m_path(), m_handle(nullptr), m_keep(false) {
 }
 
 library::library(library&& other) noexcept:
-    m_path(std::move(other.m_path)), m_handle(other.m_handle) {
+    m_path(std::move(other.m_path)), m_handle(other.m_handle), m_keep(false) {
     other.m_handle = nullptr;
 }
 
@@ -41,7 +41,8 @@ library::library(const string& file, int mode): library() {
 }
 
 library::~library() {
-    close();
+    if (!m_keep)
+        close();
 }
 
 void library::open(const string& path, int mode) {
