@@ -17,7 +17,7 @@
  ##############################################################################
 
 cmake_minimum_required(VERSION 3.8)
-project(vcml VERSION 2022.01.25 LANGUAGES C CXX)
+project(vcml VERSION 2022.08.16 LANGUAGES C CXX)
 
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
