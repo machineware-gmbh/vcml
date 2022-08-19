@@ -75,6 +75,10 @@ constexpr int fls(const T& val) { // find last set
     return width_of<T>() - clz(val) - 1;
 }
 
+constexpr u64 bit(size_t offset) {
+    return 1ull << offset;
+}
+
 constexpr u64 bitmask(size_t length, size_t offset = 0) {
     if (offset >= width_of<u64>())
         return 0ull;

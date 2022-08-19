@@ -65,22 +65,22 @@ public:
 
     // clang-format off
     enum lsr_status : u8 {
-        LSR_DR   = 1 << 0, // line status data ready
-        LSR_OE   = 1 << 1, // line status overrun error
-        LSR_PE   = 1 << 2, // line status parity error
-        LSR_THRE = 1 << 5, // line status transmitter hold empty
-        LSR_TEMT = 1 << 6, // line status transmitter empty
+        LSR_DR   = bit(0), // line status data ready
+        LSR_OE   = bit(1), // line status overrun error
+        LSR_PE   = bit(2), // line status parity error
+        LSR_THRE = bit(5), // line status transmitter hold empty
+        LSR_TEMT = bit(6), // line status transmitter empty
     };
 
     enum irq_status : u8 {
-        IRQ_RDA  = 1 << 0, // enable receiver data available irq
-        IRQ_THRE = 1 << 1, // enable transmitter hold empty irq
-        IRQ_RLS  = 1 << 2, // enable receiver line status irq
-        IRQ_MST  = 1 << 3, // enable modem status irq
+        IRQ_RDA  = bit(0), // enable receiver data available irq
+        IRQ_THRE = bit(1), // enable transmitter hold empty irq
+        IRQ_RLS  = bit(2), // enable receiver line status irq
+        IRQ_MST  = bit(3), // enable modem status irq
     };
 
     enum iir_status : u8 {
-        IIR_NOIP = 1 << 0, // no interrupt pending
+        IIR_NOIP = bit(0), // no interrupt pending
         IIR_MST  = 0 << 1, // irq modem status
         IIR_THRE = 1 << 1, // irq transmitter hold empty
         IIR_RDA  = 2 << 1, // irq received data available
@@ -92,19 +92,19 @@ public:
         LCR_WL6  = 1 << 0, // word length 6 bit
         LCR_WL7  = 2 << 0, // word length 7 bit
         LCR_WL8  = 3 << 0, // word length 8 bit
-        LCR_STP  = 1 << 2, // stop bit control
-        LCR_PEN  = 1 << 3, // parity bit enable
-        LCR_EPS  = 1 << 4, // even parity select
-        LCR_SPB  = 1 << 5, // stick parity bit
-        LCR_BCB  = 1 << 6, // break control bit
-        LCR_DLAB = 1 << 7, // divisor latch access bit
+        LCR_STP  = bit(2), // stop bit control
+        LCR_PEN  = bit(3), // parity bit enable
+        LCR_EPS  = bit(4), // even parity select
+        LCR_SPB  = bit(5), // stick parity bit
+        LCR_BCB  = bit(6), // break control bit
+        LCR_DLAB = bit(7), // divisor latch access bit
     };
 
     enum fcr_status : u8 {
-        FCR_FE   = 1 << 0, // FIFO enable
-        FCR_CRF  = 1 << 1, // Clear receiver FIFO
-        FCR_CTF  = 1 << 2, // Clear transmit FIFO
-        FCR_DMA  = 1 << 3, // DMA mode control
+        FCR_FE   = bit(0), // FIFO enable
+        FCR_CRF  = bit(1), // Clear receiver FIFO
+        FCR_CTF  = bit(2), // Clear transmit FIFO
+        FCR_DMA  = bit(3), // DMA mode control
         FCR_IT1  = 0 << 6, // IRQ trigger threshold at 1 byte
         FCR_IT4  = 1 << 6, // IRQ trigger threshold at 4 bytes
         FCR_IT8  = 2 << 6, // IRQ trigger threshold at 8 bytes
