@@ -20,6 +20,26 @@
 
 namespace vcml {
 
+void sd_reset(sd_command& cmd) {
+    cmd.opcode = 0;
+    cmd.argument = 0;
+    cmd.crc = 0;
+    memset(cmd.response, 0, sizeof(cmd.response));
+    cmd.resp_len = 0;
+    cmd.appcmd = false;
+    cmd.spi = false;
+    cmd.status = SD_INCOMPLETE;
+}
+
+u8 sd_crc7(const sd_command& cmd) {
+    u8 buffer[5] = {
+        (u8)(cmd.opcode | 0x40),  (u8)(cmd.argument >> 24),
+        (u8)(cmd.argument >> 16), (u8)(cmd.argument >> 8),
+        (u8)(cmd.argument),
+    };
+    return crc7(buffer, sizeof(buffer)) | 1;
+}
+
 const char* sd_status_str(sd_status status) {
     switch (status) {
     case SD_INCOMPLETE:

@@ -21,15 +21,6 @@
 namespace vcml {
 namespace sd {
 
-u8 sdhci::calc_crc7() const {
-    u8 buffer[5] = {
-        (u8)(m_cmd.opcode | 0x40),  (u8)(m_cmd.argument >> 24),
-        (u8)(m_cmd.argument >> 16), (u8)(m_cmd.argument >> 8),
-        (u8)(m_cmd.argument >> 0),
-    };
-    return crc7(buffer, sizeof(buffer)) | 1;
-}
-
 void sdhci::reset_response(int response_reg_nr) {
     response[response_reg_nr] = 0x00000000;
 }
@@ -207,7 +198,7 @@ void sdhci::write_cmd(u16 val) {
     m_cmd.appcmd = false;
     m_cmd.opcode = (val & 0x3f00) >> 8;
     m_cmd.argument = arg;
-    m_cmd.crc = calc_crc7();
+    m_cmd.crc = sd_crc7(m_cmd);
     m_cmd.resp_len = 0;
     m_cmd.status = SD_INCOMPLETE;
 

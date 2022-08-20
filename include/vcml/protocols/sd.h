@@ -21,6 +21,7 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/report.h"
+#include "vcml/core/bitops.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/protocols/base.h"
@@ -65,6 +66,9 @@ struct sd_command {
     bool spi;
     sd_status status;
 };
+
+void sd_reset(sd_command& cmd);
+u8 sd_crc7(const sd_command& cmd);
 
 enum sd_mode {
     SD_READ,
