@@ -20,6 +20,7 @@
 #define VCML_PROTOCOLS_TLM_HOST_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/range.h"
 #include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 
@@ -49,6 +50,8 @@ protected:
     bool in_debug_transaction() const;
     const tlm_generic_payload& current_transaction() const;
     const tlm_sbi& current_sideband() const;
+    size_t current_transaction_size() const;
+    range current_transaction_address() const;
 
 public:
     void register_socket(tlm_initiator_socket* socket);
@@ -121,6 +124,14 @@ inline const tlm_generic_payload& tlm_host::current_transaction() const {
 inline const tlm_sbi& tlm_host::current_sideband() const {
     VCML_ERROR_ON(!m_sideband, "not currently servicing a transaction");
     return *m_sideband;
+}
+
+inline size_t tlm_host::current_transaction_size() const {
+    return m_payload ? m_payload->get_data_length() : 0;
+}
+
+inline range tlm_host::current_transaction_address() const {
+    return m_payload ? range(*m_payload) : range();
 }
 
 inline const vector<tlm_initiator_socket*>&
