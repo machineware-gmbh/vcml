@@ -40,6 +40,18 @@ u8 sd_crc7(const sd_command& cmd) {
     return crc7(buffer, sizeof(buffer)) | 1;
 }
 
+void sd_init_read(sd_data& cmd) {
+    cmd.mode = SD_READ;
+    cmd.data = 0;
+    cmd.status.read = SDTX_INCOMPLETE;
+}
+
+void sd_init_write(sd_data& cmd) {
+    cmd.mode = SD_WRITE;
+    cmd.data = 0;
+    cmd.status.write = SDRX_INCOMPLETE;
+}
+
 const char* sd_status_str(sd_status status) {
     switch (status) {
     case SD_INCOMPLETE:

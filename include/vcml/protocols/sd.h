@@ -84,6 +84,9 @@ struct sd_data {
     } status;
 };
 
+void sd_init_read(sd_data& data);
+void sd_init_write(sd_data& data);
+
 inline bool success(sd_status status) {
     return status > 0;
 }
