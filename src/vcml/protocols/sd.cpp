@@ -225,7 +225,7 @@ ostream& operator<<(ostream& os, const sd_command& tx) {
     stream_guard guard(os);
 
     os << (tx.appcmd ? "SD-ACMD" : "SD-CMD") << std::dec << (int)tx.opcode;
-    os << " " << sd_opcode_str(tx.opcode) << " (";
+    os << " " << sd_opcode_str(tx.opcode, tx.appcmd) << " (";
     os << HEXW(8) << tx.argument << ")";
 
     if (tx.resp_len > 0) {
