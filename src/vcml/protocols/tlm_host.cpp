@@ -172,14 +172,14 @@ void tlm_host::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
     sc_process_b* proc = current_thread();
     VCML_ERROR_ON(!proc, "b_transport outside SC_THREAD");
     m_offsets[proc] = dt;
-    do_transport(socket, tx, tx_get_sbi(tx));
+    do_transport(socket, tx, socket.current_sideband());
     dt = m_offsets[proc];
 }
 
 unsigned int tlm_host::transport_dbg(tlm_target_socket& socket,
                                      tlm_generic_payload& tx) {
     sc_time t1(sc_time_stamp());
-    unsigned int n = do_transport(socket, tx, tx_get_sbi(tx) | SBI_DEBUG);
+    unsigned int n = do_transport(socket, tx, socket.current_sideband());
     sc_time t2(sc_time_stamp());
 
     if (thctl_is_sysc_thread() && t1 != t2)

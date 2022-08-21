@@ -277,6 +277,9 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     while (self != m_curr)
         sc_core::wait(m_free_ev);
 
+    m_payload = &tx;
+    m_sideband = tx_get_sbi(tx);
+
     if (tx_is_excl(tx) && tx.is_read())
         unmap_dmi(tx);
 
@@ -296,11 +299,22 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     m_curr++;
     m_free_ev.notify();
 
+    m_payload = nullptr;
+    m_sideband = SBI_NONE;
+
     trace_bw(tx, dt);
 }
 
 unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx) {
-    return m_host->transport_dbg(*this, tx);
+    m_payload = &tx;
+    m_sideband = tx_get_sbi(tx) | SBI_DEBUG;
+
+    unsigned int n = m_host->transport_dbg(*this, tx);
+
+    m_payload = nullptr;
+    m_sideband = SBI_NONE;
+
+    return n;
 }
 
 bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
@@ -331,6 +345,8 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     m_host(hierarchy_search<tlm_host>()),
     m_parent(hierarchy_search<module>()),
     m_adapter(nullptr),
+    m_payload(nullptr),
+    m_sideband(SBI_NONE),
     trace(this, "trace", false),
     trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),
