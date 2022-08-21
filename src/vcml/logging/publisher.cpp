@@ -103,6 +103,11 @@ bool publisher::check_filters(const logmsg& msg) const {
     return false;
 }
 
+void publisher::do_publish(const logmsg& msg) {
+    lock_guard<mutex> guard(m_mtx);
+    publish(msg);
+}
+
 void publisher::set_level(log_level min, log_level max) {
     unregister_publisher();
     m_min = min;
@@ -110,15 +115,16 @@ void publisher::set_level(log_level min, log_level max) {
     register_publisher();
 }
 
-publisher::publisher(): m_min(LOG_ERROR), m_max(LOG_DEBUG) {
-    register_publisher();
+publisher::publisher(): publisher(LOG_DEBUG) {
+    // nothing to do
 }
 
-publisher::publisher(log_level max): m_min(LOG_ERROR), m_max(max) {
-    register_publisher();
+publisher::publisher(log_level max): publisher(LOG_ERROR, max) {
+    // nothing to do
 }
 
-publisher::publisher(log_level min, log_level max): m_min(min), m_max(max) {
+publisher::publisher(log_level min, log_level max):
+    m_mtx(), m_min(min), m_max(max), m_filters() {
     register_publisher();
 }
 
@@ -138,7 +144,7 @@ void publisher::publish(log_level level, const string& sender,
 
     for (auto& logger : publishers[msg.level])
         if (logger->check_filters(msg))
-            logger->publish(msg);
+            logger->do_publish(msg);
 }
 
 void publisher::publish(log_level level, const string& sender,

@@ -65,6 +65,8 @@ typedef function<bool(const logmsg& msg)> log_filter;
 class publisher
 {
 private:
+    mutable mutex m_mtx;
+
     log_level m_min;
     log_level m_max;
 
@@ -74,10 +76,7 @@ private:
     void unregister_publisher();
 
     bool check_filters(const logmsg& msg) const;
-
-    // disabled
-    publisher(const publisher&);
-    publisher& operator=(const publisher&);
+    void do_publish(const logmsg& msg);
 
     static vector<publisher*> publishers[NUM_LOG_LEVELS];
 
@@ -94,6 +93,9 @@ public:
     publisher(log_level max);
     publisher(log_level min, log_level max);
     virtual ~publisher();
+
+    publisher(const publisher&) = delete;
+    publisher& operator=(const publisher&) = delete;
 
     static bool would_publish(log_level lvl);
 

@@ -52,8 +52,11 @@ array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
 
 template <typename PAYLOAD>
 void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
+    VCML_ERROR_ON(!m_os.good(), "trace stream broken");
+
+    stringstream ss;
     if (m_colors)
-        m_os << colors[msg.kind];
+        ss << colors[msg.kind];
 
     string sender = msg.port.name();
     if (trace_name_length < sender.length())
@@ -64,26 +67,28 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
 
     vector<string> lines = split(to_string(msg.payload), '\n');
     for (const string& line : lines) {
-        m_os << "[" << protocol_name(msg.kind);
-        print_timing(m_os, msg.t, msg.cycle);
-        m_os << "] " << sender;
+        ss << "[" << protocol_name(msg.kind);
+        print_timing(ss, msg.t, msg.cycle);
+        ss << "] " << sender;
 
         if (trace_name_length > sender.length())
-            m_os << string(trace_name_length - sender.length(), ' ');
+            ss << string(trace_name_length - sender.length(), ' ');
 
-        m_os << string(trace_curr_indent, ' ');
+        ss << string(trace_curr_indent, ' ');
 
         if (is_forward_trace(msg.dir))
-            m_os << ">> ";
+            ss << ">> ";
 
         if (is_backward_trace(msg.dir))
-            m_os << "<< ";
+            ss << "<< ";
 
-        m_os << line << std::endl;
+        ss << line << std::endl;
     }
 
     if (m_colors)
-        m_os << termcolors::CLEAR;
+        ss << termcolors::CLEAR;
+
+    m_os << ss.rdbuf() << std::flush;
 
     if (msg.dir == TRACE_BW && !msg.error) {
         if (trace_curr_indent >= trace_indent_incr)
@@ -139,6 +144,10 @@ void tracer_term::trace(const activity<eth_frame>& msg) {
 
 void tracer_term::trace(const activity<can_frame>& msg) {
     do_trace(msg);
+}
+
+tracer_term::tracer_term(bool use_cerr):
+    tracer_term(use_cerr, isatty(use_cerr ? STDERR_FILENO : STDOUT_FILENO)) {
 }
 
 tracer_term::tracer_term(bool use_cerr, bool use_colors):

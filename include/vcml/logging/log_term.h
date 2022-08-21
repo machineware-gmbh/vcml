@@ -28,14 +28,15 @@ namespace vcml {
 class log_term : public publisher
 {
 private:
-    bool m_use_colors;
+    bool m_colors;
     ostream& m_os;
 
 public:
-    bool has_colors() const { return m_use_colors; }
-    void set_colors(bool set = true) { m_use_colors = set; }
+    bool has_colors() const { return m_colors; }
+    void set_colors(bool set = true) { m_colors = set; }
 
     log_term(bool use_cerr = true);
+    log_term(bool use_cerr, bool use_colors);
     virtual ~log_term();
 
     virtual void publish(const logmsg& msg) override;

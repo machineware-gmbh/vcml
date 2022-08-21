@@ -160,6 +160,9 @@ struct protocol<can_frame> {
 
 class tracer
 {
+private:
+    mutable mutex m_mtx;
+
 public:
     template <typename PAYLOAD>
     struct activity {
@@ -210,6 +213,12 @@ public:
     virtual ~tracer();
 
     template <typename PAYLOAD>
+    void do_trace(const activity<PAYLOAD>& msg) {
+        lock_guard<mutex> guard(m_mtx);
+        trace(msg);
+    }
+
+    template <typename PAYLOAD>
     static void record(trace_direction dir, const sc_object& port,
                        const PAYLOAD& payload,
                        const sc_time& t = SC_ZERO_TIME) {
@@ -227,7 +236,7 @@ public:
             };
 
             for (tracer* tr : tracers)
-                tr->trace(msg);
+                tr->do_trace(msg);
         }
     }
 

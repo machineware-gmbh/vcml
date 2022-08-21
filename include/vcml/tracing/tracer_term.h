@@ -55,7 +55,8 @@ public:
     virtual void trace(const activity<eth_frame>&) override;
     virtual void trace(const activity<can_frame>&) override;
 
-    tracer_term(bool use_cerr = false, bool use_colors = true);
+    tracer_term(bool use_cerr = false);
+    tracer_term(bool use_cerr, bool use_colors);
     virtual ~tracer_term();
 
     static size_t trace_name_length;

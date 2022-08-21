@@ -50,7 +50,7 @@ const char* protocol_name(protocol_kind kind) {
     }
 }
 
-tracer::tracer() {
+tracer::tracer(): m_mtx() {
     all().insert(this);
 }
 

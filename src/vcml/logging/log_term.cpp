@@ -21,9 +21,12 @@
 namespace vcml {
 
 log_term::log_term(bool use_cerr):
-    publisher(LOG_ERROR, LOG_DEBUG),
-    m_use_colors(isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)),
-    m_os(use_cerr ? std::cerr : std::cout) {
+    log_term(use_cerr, isatty(use_cerr ? STDERR_FILENO : STDIN_FILENO)) {
+    // nothing to do
+}
+
+log_term::log_term(bool use_cerr, bool use_colors):
+    publisher(), m_colors(use_colors), m_os(use_cerr ? std::cerr : std::cout) {
     // nothing to do
 }
 
@@ -32,12 +35,17 @@ log_term::~log_term() {
 }
 
 void log_term::publish(const logmsg& msg) {
-    if (m_use_colors)
-        m_os << colors[msg.level];
-    m_os << msg;
-    if (m_use_colors)
-        m_os << termcolors::CLEAR;
-    m_os << std::endl;
+    VCML_ERROR_ON(!m_os.good(), "log stream broken");
+
+    stringstream ss;
+    if (m_colors)
+        ss << colors[msg.level];
+    ss << msg;
+    if (m_colors)
+        ss << termcolors::CLEAR;
+    ss << std::endl;
+
+    m_os << ss.rdbuf() << std::flush;
 }
 
 const char* log_term::colors[NUM_LOG_LEVELS] = {
