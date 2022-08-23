@@ -57,7 +57,17 @@ private:
             }
 
             int ret = poll(polls.data(), polls.size(), TIMEOUT_MS);
-            VCML_ERROR_ON(ret < 0, "aio error: %s", strerror(errno));
+
+            if (ret < 0) {
+                int errnum = errno;
+
+                if (errnum == EINTR) {
+                    // ingnore interrupted system calls
+                    continue;
+                }
+                VCML_ERROR("aio error: %s", strerror(errnum));
+            }
+
             vector<pair<int, aio_handler>> scheduled;
 
             if (ret > 0 && m_running) {
