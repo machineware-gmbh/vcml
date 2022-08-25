@@ -46,9 +46,12 @@ public:
         bus.bind(out);
         bus.bind(mem1.in, 0x0000, 0x1fff, 0);
         bus.bind(mem2.in, 0x2000, 0x3fff, 0);
+        bus.bind(mem1.in, 0x6000, 0x7fff, 0);
     }
 
     virtual void run_test() override {
+        u32 data;
+
         ASSERT_OK(out.writew<u32>(0x0000, 0x11111111ul))
             << "cannot write 0x0000 (mem1 + 0x0)";
         ASSERT_OK(out.writew<u32>(0x0004, 0xfffffffful))
@@ -59,8 +62,9 @@ public:
             << "cannot write 0x2004 (mem2 + 0x4)";
         ASSERT_AE(out.writew<u16>(0x4000, 0x1234ul))
             << "bus reported success for writing to unmapped address";
+        EXPECT_OK(out.readw<u32>(0x6000, data));
+        EXPECT_EQ(data, 0x11111111ul);
 
-        u32 data;
         ASSERT_OK(out.readw<u32>(0x0000, data))
             << "cannot read 0x0000 (mem1 + 0x0)";
         EXPECT_EQ(data, 0x11111111ul)

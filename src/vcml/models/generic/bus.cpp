@@ -59,12 +59,10 @@ bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
     return true;
 }
 
-typedef tlm_utils::simple_initiator_socket_tagged<bus, 64> isock;
-typedef tlm_utils::simple_target_socket_tagged<bus, 64> tsock;
-
-bus::target_socket* bus::create_target_socket(unsigned int idx) {
+bus::target_socket<64>* bus::create_target_socket(unsigned int idx) {
     hierarchy_push();
 
+    typedef tlm_utils::simple_target_socket_tagged<bus, 64> tsock;
     string name = "in" + to_string(idx);
     tsock* sock = new tsock(name.c_str());
 
@@ -76,9 +74,10 @@ bus::target_socket* bus::create_target_socket(unsigned int idx) {
     return sock;
 }
 
-bus::initiator_socket* bus::create_initiator_socket(unsigned int idx) {
+bus::initiator_socket<64>* bus::create_initiator_socket(unsigned int idx) {
     hierarchy_push();
 
+    typedef tlm_utils::simple_initiator_socket_tagged<bus, 64> isock;
     string name = "out" + to_string(idx);
     isock* sock = new isock(name.c_str());
 
@@ -87,6 +86,16 @@ bus::initiator_socket* bus::create_initiator_socket(unsigned int idx) {
 
     hierarchy_pop();
     return sock;
+}
+
+const bus::mapping& bus::lookup(const range& addr) const {
+    for (unsigned int i = 0; i < m_mappings.size(); i++) {
+        const mapping& m = m_mappings[i];
+        if (m.addr.includes(addr))
+            return m;
+    }
+
+    return m_default;
 }
 
 void bus::cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt) {
@@ -193,14 +202,11 @@ void bus::invalidate_direct_mem_ptr(int port, sc_dt::uint64 start,
     }
 }
 
-const bus::mapping& bus::lookup(const range& addr) const {
-    for (unsigned int i = 0; i < m_mappings.size(); i++) {
-        const mapping& m = m_mappings[i];
-        if (m.addr.includes(addr))
-            return m;
-    }
-
-    return m_default;
+int bus::find_port(const sc_object& socket) const {
+    for (const mapping& m : m_mappings)
+        if (m.peer == socket.name())
+            return m.port;
+    return -1;
 }
 
 void bus::map(unsigned int port, const range& addr, u64 offset,
@@ -237,41 +243,13 @@ void bus::map_default(unsigned int port, u64 offset, const string& peer) {
     m_default.peer = peer;
 }
 
-unsigned int bus::bind(tlm::tlm_initiator_socket<64>& socket) {
-    unsigned int port = in.next_idx();
-    socket.bind(in[port]);
-    return port;
-}
-
-unsigned int bus::bind(tlm::tlm_target_socket<64>& socket, const range& addr,
-                       u64 offset) {
-    unsigned int port = out.next_idx();
-    map(port, addr, offset, socket.name());
-    out[port].bind(socket);
-    return port;
-}
-
-unsigned int bus::bind(tlm::tlm_target_socket<64>& socket, u64 start, u64 end,
-                       u64 offset) {
-    return bind(socket, range(start, end), offset);
-}
-
-unsigned int bus::bind_default(initiator_socket& socket, u64 offset) {
-    unsigned int port = out.next_idx();
-    map_default(port, offset, socket.name());
-    out[port].bind(socket);
-    return port;
-}
-
-unsigned int bus::bind_default(target_socket& socket, u64 offset) {
-    unsigned int port = out.next_idx();
-    map_default(port, offset, socket.name());
-    out[port].bind(socket);
-    return port;
-}
-
 bus::bus(const sc_module_name& nm):
-    component(nm), m_mappings(), m_default(), in(this), out(this) {
+    component(nm),
+    m_adapters(),
+    m_mappings(),
+    m_default(),
+    in(this),
+    out(this) {
     m_default.port = -1;
     m_default.addr = range(0ull, ~0ull);
     m_default.offset = 0;
@@ -282,16 +260,18 @@ bus::bus(const sc_module_name& nm):
 }
 
 bus::~bus() {
-    // nothing to do
+    for (sc_module* adapter : m_adapters)
+        delete adapter;
 }
 
 template <>
-bus::target_socket* bus::create_socket<bus::target_socket>(unsigned int idx) {
+bus::target_socket<64>* bus::create_socket<bus::target_socket<64>>(
+    unsigned int idx) {
     return create_target_socket(idx);
 }
 
 template <>
-bus::initiator_socket* bus::create_socket<bus::initiator_socket>(
+bus::initiator_socket<64>* bus::create_socket<bus::initiator_socket<64>>(
     unsigned int idx) {
     return create_initiator_socket(idx);
 }
