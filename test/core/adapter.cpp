@@ -53,7 +53,7 @@ public:
 
         // test2: out64 -> out32 -> in64
         test2_out64.bind(test2_out32);
-        test2_in64.bind(test2_out32);
+        test2_out32.bind(test2_in64.adapt());
 
         // test3: out64 -> in32 -> in64
         test3_in64.bind(test3_in32);

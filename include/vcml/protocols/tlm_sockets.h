@@ -282,6 +282,9 @@ public:
     template <unsigned int WIDTH>
     void bind(tlm::tlm_target_socket<WIDTH>& other);
 
+    template <unsigned int WIDTH = 32>
+    tlm::tlm_target_socket<WIDTH>& adapt();
+
     void stub();
 
     bool in_transaction() const;
@@ -348,6 +351,27 @@ inline void tlm_target_socket::bind(tlm::tlm_target_socket<WIDTH>& s) {
 template <>
 inline void tlm_target_socket::bind<64>(tlm::tlm_target_socket<64>& s) {
     base_type::bind(s);
+}
+
+template <unsigned int WIDTH>
+inline tlm::tlm_target_socket<WIDTH>& tlm_target_socket::adapt() {
+    typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
+    adapter_type* adapter = dynamic_cast<adapter_type*>(m_adapter);
+    VCML_ERROR_ON(m_adapter && !adapter, "socket %s already bound", name());
+    if (adapter == nullptr) {
+        const string nm = strcat(basename(), "_adapter");
+        hierarchy_guard guard(m_parent);
+        adapter = new adapter_type(nm.c_str());
+        adapter->out.bind(*this);
+        m_adapter = adapter;
+    }
+
+    return adapter->in;
+}
+
+template <>
+inline tlm::tlm_target_socket<64>& tlm_target_socket::adapt() {
+    return *this;
 }
 
 inline bool tlm_target_socket::in_transaction() const {
