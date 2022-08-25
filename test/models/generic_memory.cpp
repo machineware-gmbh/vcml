@@ -69,7 +69,7 @@ public:
         ASSERT_CE(rom_port.writew(0x0, 0xfefefefe))
             << "read-only memory permitted write access after DMI invalidate";
 
-        ASSERT_TRUE(is_aligned(ram.get_data_ptr(), VCML_ALIGN_2M))
+        ASSERT_TRUE(is_aligned(ram.data(), VCML_ALIGN_2M))
             << "memory is not 21 bit aligned";
     }
 };

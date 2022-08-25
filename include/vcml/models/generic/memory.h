@@ -55,7 +55,10 @@ public:
 
     tlm_target_socket in;
 
-    u8* get_data_ptr() const { return m_memory.data(); }
+    u8* data() const { return m_memory.data(); }
+
+    u8& operator[](size_t idx) { return m_memory[idx]; }
+    u8 operator[](size_t idx) const { return m_memory[idx]; }
 
     memory(const sc_module_name& name, u64 size, bool read_only = false,
            alignment al = VCML_ALIGN_NONE, unsigned int read_latency = 0,

@@ -45,7 +45,7 @@ public:
 
         wait(1.0, SC_SEC);
 
-        EXPECT_EQ(fb.vptr(), vmem.get_data_ptr());
+        EXPECT_EQ(fb.vptr(), vmem.data());
     }
 };
 
