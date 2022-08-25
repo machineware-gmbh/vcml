@@ -534,3 +534,49 @@ TEST(registers, natural_alignment) {
     EXPECT_EQ(mock.test_transport(tx), 0);
     EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
 }
+
+class mock_peripheral_mask : public peripheral
+{
+public:
+    reg<u32> test_reg;
+    reg<u32, 4> array_reg;
+
+    mock_peripheral_mask(const sc_module_name& nm):
+        peripheral(nm),
+        test_reg("test_reg", 0x0),
+        array_reg("array_reg", 0x10) {
+        test_reg.allow_read_write();
+        array_reg.allow_read_write();
+        test_reg.on_write_mask(0x10101010);
+        array_reg.on_write_mask({ { 1, 2, 4, 8 } });
+        clk.stub(100 * MHz);
+        rst.stub();
+    }
+};
+
+TEST(registers, masking) {
+    mock_peripheral_mask mock("masking");
+
+    u32 data = ~0u;
+    tlm_generic_payload tx;
+
+    tx_setup(tx, TLM_WRITE_COMMAND, 0, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.test_reg, 0x10101010);
+
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x10, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.array_reg[0], 1);
+
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x14, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.array_reg[1], 2);
+
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x18, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.array_reg[2], 4);
+
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x1c, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.array_reg[3], 8);
+}

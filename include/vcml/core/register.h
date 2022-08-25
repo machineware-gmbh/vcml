@@ -120,8 +120,8 @@ public:
     typedef function<DATA(size_t)> readfn_tagged;
     typedef function<void(DATA, size_t)> writefn_tagged;
 
-    void on_read(const readfn& rd) { m_read = rd; }
-    void on_read(const readfn_tagged& rd) { m_read_tagged = rd; }
+    void on_read(const readfn& rd);
+    void on_read(const readfn_tagged& rd);
 
     template <typename HOST>
     void on_read(DATA (HOST::*rd)(void), HOST* host = nullptr);
@@ -129,14 +129,17 @@ public:
     template <typename HOST>
     void on_read(DATA (HOST::*rd)(size_t), HOST* host = nullptr);
 
-    void on_write(const writefn& wr) { m_write = wr; }
-    void on_write(const writefn_tagged& wr) { m_write_tagged = wr; }
+    void on_write(const writefn& wr);
+    void on_write(const writefn_tagged& wr);
 
     template <typename HOST>
     void on_write(void (HOST::*wr)(DATA), HOST* host = nullptr);
 
     template <typename HOST>
     void on_write(void (HOST::*wr)(DATA, size_t), HOST* h = nullptr);
+
+    void on_write_mask(DATA mask);
+    void on_write_mask(const array<DATA, N>& mask);
 
     bool is_banked() const { return m_banked; }
     void set_banked(bool set = true) { m_banked = set; }
@@ -229,6 +232,19 @@ private:
 
     void init_bank(int bank);
 };
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_read(const readfn& rd) {
+    VCML_ERROR_ON(m_read, "read callback already defined");
+    VCML_ERROR_ON(m_read_tagged, "tagged read callback already defined");
+    m_read = rd;
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_read(const readfn_tagged& rd) {
+    VCML_ERROR_ON(m_read, "read callback already defined");
+    VCML_ERROR_ON(m_read_tagged, "tagged read callback already defined");
+    m_read_tagged = rd;
+}
 
 template <typename DATA, size_t N>
 template <typename HOST>
@@ -251,6 +267,20 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
 }
 
 template <typename DATA, size_t N>
+void reg<DATA, N>::on_write(const writefn& wr) {
+    VCML_ERROR_ON(m_write, "write callback already defined");
+    VCML_ERROR_ON(m_write_tagged, "tagged write callback already defined");
+    m_write = wr;
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_write(const writefn_tagged& wr) {
+    VCML_ERROR_ON(m_write, "write callback already defined");
+    VCML_ERROR_ON(m_write_tagged, "tagged write callback already defined");
+    m_write_tagged = wr;
+}
+
+template <typename DATA, size_t N>
 template <typename HOST>
 void reg<DATA, N>::on_write(void (HOST::*wr)(DATA), HOST* host) {
     if (host == nullptr)
@@ -269,6 +299,20 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
     writefn_tagged fn = std::bind(wr, host, std::placeholders::_1,
                                   std::placeholders::_2);
     on_write(fn);
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_write_mask(DATA mask) {
+    on_write([this, mask](DATA val) -> void {
+        *this = (*this & ~mask) | (val & mask);
+    });
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_write_mask(const array<DATA, N>& mask) {
+    on_write([this, mask](DATA val, size_t i) -> void {
+        current_bank(i) = (current_bank(i) & ~mask[i]) | (val & mask[i]);
+    });
 }
 
 template <typename DATA, size_t N>
