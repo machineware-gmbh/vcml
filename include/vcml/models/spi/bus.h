@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_SPIBUS_H
-#define VCML_GENERIC_SPIBUS_H
+#ifndef VCML_SPI_BUS_H
+#define VCML_SPI_BUS_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/report.h"

@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_MODELS_MAX31855_H
-#define VCML_MODELS_MAX31855_H
+#ifndef VCML_SPI_MAX31855_H
+#define VCML_SPI_MAX31855_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/report.h"
