@@ -144,6 +144,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/spi/bus.cpp
     ${src}/vcml/models/spi/spi2sd.cpp
     ${src}/vcml/models/spi/max31855.cpp
+    ${src}/vcml/models/spi/flash.cpp
     ${src}/vcml/models/sd/sdcard.cpp
     ${src}/vcml/models/sd/sdhci.cpp
     ${src}/vcml/models/pci/device.cpp
