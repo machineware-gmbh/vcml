@@ -100,7 +100,7 @@ private:
         string peer;
     };
 
-    vector<sc_module*> m_adapters;
+    vector<module*> m_adapters;
     vector<mapping> m_mappings;
     mapping m_default;
 
