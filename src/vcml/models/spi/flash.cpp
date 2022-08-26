@@ -49,6 +49,47 @@ enum sr_status_bits : u8 {
     SR_SRWD = bit(7), // status register write protect
 };
 
+void flash::load_from_disk() {
+    if (image.get().empty())
+        return;
+
+    FILE* file = fopen(image.get().c_str(), "rb");
+    if (file == nullptr) {
+        log_warn("failed to load flash image (%s)", strerror(errno));
+        return;
+    }
+
+    // check image size
+    fseek(file, 0, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
+
+    if (size < m_storage.size())
+        log_warn("flash image too small (%zu bytes)", size);
+    if (size > m_storage.size())
+        log_warn("flash image too big (%zu bytes)", size);
+
+    // read data
+    int res = 0;
+    size_t rd = 0;
+    size = min(size, m_storage.size());
+    while (rd < size) {
+        if ((res = fread(m_storage.data() + rd, 1, size - rd, file)) <= 0)
+            VCML_ERROR("error loading flash image: %s", strerror(errno));
+        rd += res;
+    }
+
+    fclose(file);
+}
+
+void flash::save_to_disk() {
+    if (readonly || image.get().empty())
+        return;
+
+    ofstream file(image, std::ios::out | std::ios::binary);
+    file.write((char*)m_storage.data(), m_storage.size());
+}
+
 void flash::decode(u8 val) {
     m_command = (command)val;
     switch (m_command) {
@@ -152,7 +193,7 @@ void flash::complete() {
     }
 }
 
-void flash::spi_transport(const spi_target_socket& socket, spi_payload& tx) {
+void flash::process(spi_payload& tx) {
     switch (m_state) {
     case STATE_IDLE:
         decode(tx.mosi);
@@ -190,45 +231,9 @@ void flash::spi_transport(const spi_target_socket& socket, spi_payload& tx) {
     }
 }
 
-void flash::load_from_disk() {
-    if (image.get().empty())
-        return;
-
-    FILE* file = fopen(image.get().c_str(), "rb");
-    if (file == nullptr) {
-        log_warn("failed to load flash image (%s)", strerror(errno));
-        return;
-    }
-
-    // check image size
-    fseek(file, 0, SEEK_END);
-    size_t size = ftell(file);
-    rewind(file);
-
-    if (size < m_storage.size())
-        log_warn("flash image too small (%zu bytes)", size);
-    if (size > m_storage.size())
-        log_warn("flash image too big (%zu bytes)", size);
-
-    // read data
-    int res = 0;
-    size_t rd = 0;
-    size = min(size, m_storage.size());
-    while (rd < size) {
-        if ((res = fread(m_storage.data() + rd, 1, size - rd, file)) <= 0)
-            VCML_ERROR("error loading flash image: %s", strerror(errno));
-        rd += res;
-    }
-
-    fclose(file);
-}
-
-void flash::save_to_disk() {
-    if (readonly || image.get().empty())
-        return;
-
-    ofstream file(image, std::ios::out | std::ios::binary);
-    file.write((char*)m_storage.data(), m_storage.size());
+void flash::spi_transport(const spi_target_socket& socket, spi_payload& tx) {
+    if (cs_in)
+        process(tx);
 }
 
 flash::flash(const sc_module_name& nm, const string& dev):
@@ -247,7 +252,8 @@ flash::flash(const sc_module_name& nm, const string& dev):
     device("device", dev),
     image("image", ""),
     readonly("readonly", false),
-    spi_in("spi_in") {
+    spi_in("spi_in"),
+    cs_in("cs_in") {
     m_info = lookup_device(device);
     m_storage.resize(m_info.num_sectors * m_info.sector_size);
 }

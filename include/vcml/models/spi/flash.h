@@ -26,6 +26,7 @@
 #include "vcml/core/component.h"
 
 #include "vcml/protocols/spi.h"
+#include "vcml/protocols/gpio.h"
 
 namespace vcml {
 namespace spi {
@@ -80,11 +81,12 @@ private:
     u8 m_buffer[16];
     vector<u8> m_storage;
 
-    void decode(u8 val);
-    void complete();
-
     void load_from_disk();
     void save_to_disk();
+
+    void decode(u8 val);
+    void complete();
+    void process(spi_payload& tx);
 
     virtual void spi_transport(const spi_target_socket& socket,
                                spi_payload& tx) override;
@@ -95,6 +97,7 @@ public:
     property<bool> readonly;
 
     spi_target_socket spi_in;
+    gpio_target_socket cs_in;
 
     flash(const sc_module_name& name, const string& device = "m25p80");
     virtual ~flash();

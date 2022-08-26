@@ -23,10 +23,12 @@ class test_harness : public test_base
 public:
     spi::flash flash;
     spi_initiator_socket spi_out;
+    gpio_initiator_socket cs_out;
 
     test_harness(const sc_module_name& nm):
-        test_base(nm), flash("flash"), spi_out("spi_out") {
+        test_base(nm), flash("flash"), spi_out("spi_out"), cs_out("cs_out") {
         spi_out.bind(flash.spi_in);
+        cs_out.bind(flash.cs_in);
         rst.bind(flash.rst);
         clk.bind(flash.clk);
     }
@@ -45,6 +47,7 @@ public:
 
     virtual void run_test() override {
         flash.reset();
+        cs_out.raise();
 
         spi_send(0x9f); // READ_IDENT
         u32 jedec_id = spi_recv() << 16 | spi_recv() << 8 | spi_recv();
