@@ -157,12 +157,12 @@ void gpio_initiator_socket::lower(gpio_vector vector) {
 }
 
 void gpio_initiator_socket::pulse(gpio_vector vector) {
-    raise(vector);
-    lower(vector);
+    write(!read(vector), vector);
+    write(!read(vector), vector);
 }
 
 gpio_initiator_socket& gpio_initiator_socket::operator=(bool set) {
-    (*this)[GPIO_NO_VECTOR] = set;
+    write(set, GPIO_NO_VECTOR);
     return *this;
 }
 
