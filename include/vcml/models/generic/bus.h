@@ -110,6 +110,9 @@ private:
     template <unsigned int W1, unsigned int W2>
     void bind_internal(initiator_socket<W1>& s1, target_socket<W2>& s2);
 
+    template <unsigned int W1, unsigned int W2>
+    void bind_internal(initiator_socket<W1>& s1, initiator_socket<W2>& s2);
+
     const mapping& lookup(const range& addr) const;
 
     void cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
@@ -178,16 +181,30 @@ inline T& bus_ports<T>::operator[](unsigned int idx) {
 }
 
 template <unsigned int W1, unsigned int W2>
-void bus::bind_internal(initiator_socket<W1>& ini, target_socket<W2>& tgt) {
+void bus::bind_internal(initiator_socket<W1>& s1, target_socket<W2>& s2) {
     if (W1 == W2) {
-        ini.bind(tgt);
+        s1.bind(s2);
     } else {
         hierarchy_guard guard(this);
-        string name = mkstr("bwa_%s_%s", ini.basename(), tgt.basename());
+        string name = mkstr("bwa_%s_%s", s1.basename(), s2.basename());
         auto* bwa = new tlm_bus_width_adapter<W1, W2>(name.c_str());
         m_adapters.push_back(bwa);
-        ini.bind(bwa->in);
-        bwa->out.bind(tgt);
+        s1.bind(bwa->in);
+        bwa->out.bind(s2);
+    }
+}
+
+template <unsigned int W1, unsigned int W2>
+void bus::bind_internal(initiator_socket<W1>& s1, initiator_socket<W2>& s2) {
+    if (W1 == W2) {
+        s1.bind(s2);
+    } else {
+        hierarchy_guard guard(this);
+        string name = mkstr("bwa_%s_%s", s1.basename(), s2.basename());
+        auto* bwa = new tlm_bus_width_adapter<W1, W2>(name.c_str());
+        m_adapters.push_back(bwa);
+        s1.bind(bwa->in);
+        bwa->out.bind(s2);
     }
 }
 
