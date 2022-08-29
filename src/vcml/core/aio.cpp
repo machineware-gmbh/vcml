@@ -38,6 +38,7 @@ private:
     void aio_thread() {
         vector<struct pollfd> polls;
         u64 curgen = 0;
+        int ret = 0;
 
         while (m_running) {
             if (curgen != m_gen) {
@@ -56,18 +57,10 @@ private:
                 continue;
             }
 
-            int ret = poll(polls.data(), polls.size(), TIMEOUT_MS);
-
-            if (ret < 0) {
-                int errnum = errno;
-
-                if (errnum == EINTR) {
-                    // ingnore interrupted system calls
-                    continue;
-                }
-                VCML_ERROR("aio error: %s", strerror(errnum));
-            }
-
+            do {
+                ret = poll(polls.data(), polls.size(), TIMEOUT_MS);
+            } while (ret < 0 && errno == EINTR);
+            VCML_ERROR_ON(ret < 0, "aio error: %s", strerror(errno));
             vector<pair<int, aio_handler>> scheduled;
 
             if (ret > 0 && m_running) {
