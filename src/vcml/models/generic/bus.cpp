@@ -190,15 +190,28 @@ bool bus::get_direct_mem_ptr(int port, tlm_generic_payload& tx, tlm_dmi& dmi) {
 
 void bus::invalidate_direct_mem_ptr(int port, sc_dt::uint64 start,
                                     sc_dt::uint64 end) {
-    for (unsigned int i = 0; i < m_mappings.size(); i++) {
-        const mapping& m = m_mappings[i];
-        if (m.port == port) {
-            u64 s = m.addr.start + start - m.offset;
-            u64 e = m.addr.start + end - m.offset;
+    VCML_ERROR_ON(start > end, "invalid dmi invalidation request");
+    for (const mapping& m : m_mappings) {
+        if (m.port != port)
+            continue;
 
-            for (auto& it : in)
-                (*it.second)->invalidate_direct_mem_ptr(s, e);
-        }
+        if (end < m.offset)
+            continue;
+
+        u64 s = start > m.offset ? start - m.offset : 0;
+        u64 e = end != ~0ull ? end - m.offset : end;
+
+        if (s >= m.addr.length())
+            continue;
+
+        if (e >= m.addr.length())
+            e = m.addr.length() - 1;
+
+        s += m.addr.start;
+        e += m.addr.start;
+
+        for (auto& it : in)
+            (*it.second)->invalidate_direct_mem_ptr(s, e);
     }
 }
 
