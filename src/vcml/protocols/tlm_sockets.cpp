@@ -22,6 +22,7 @@ namespace vcml {
 
 void tlm_initiator_socket::invalidate_direct_mem_ptr_int(sc_dt::uint64 start,
                                                          sc_dt::uint64 end) {
+    VCML_ERROR_ON(start > end, "invalid dmi invalidation request");
     invalidate_direct_mem_ptr(start, end);
 }
 
