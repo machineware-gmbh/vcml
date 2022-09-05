@@ -115,10 +115,10 @@ public:
                                unsigned int* nbytes = nullptr);
 
     template <unsigned int WIDTH>
-    void bind(tlm::tlm_initiator_socket<WIDTH>& other);
+    void bind(tlm::tlm_base_initiator_socket_b<WIDTH>& other);
 
     template <unsigned int WIDTH>
-    void bind(tlm::tlm_target_socket<WIDTH>& other);
+    void bind(tlm::tlm_base_target_socket_b<WIDTH>& other);
 
     void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
 };
@@ -195,7 +195,7 @@ inline tlm_response_status tlm_initiator_socket::writew(u64 addr,
 
 template <unsigned int WIDTH>
 inline void tlm_initiator_socket::bind(
-    tlm::tlm_initiator_socket<WIDTH>& other) {
+    tlm::tlm_base_initiator_socket_b<WIDTH>& socket) {
     typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     string nm = strcat(basename(), "_adapter");
@@ -203,18 +203,19 @@ inline void tlm_initiator_socket::bind(
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
     base_type::bind(adapter->in);
-    adapter->out.bind(other);
+    adapter->out.bind(socket);
     m_adapter = adapter;
 }
 
 template <>
 inline void tlm_initiator_socket::bind<64>(
-    tlm::tlm_initiator_socket<64>& other) {
-    base_type::bind(other);
+    tlm::tlm_base_initiator_socket_b<64>& socket) {
+    base_type::bind(socket);
 }
 
 template <unsigned int WIDTH>
-inline void tlm_initiator_socket::bind(tlm::tlm_target_socket<WIDTH>& other) {
+inline void tlm_initiator_socket::bind(
+    tlm::tlm_base_target_socket_b<WIDTH>& socket) {
     typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     string nm = strcat(basename(), "_adapter");
@@ -222,12 +223,13 @@ inline void tlm_initiator_socket::bind(tlm::tlm_target_socket<WIDTH>& other) {
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
     base_type::bind(adapter->in);
-    adapter->out.bind(other);
+    adapter->out.bind(socket);
     m_adapter = adapter;
 }
 
 template <>
-inline void tlm_initiator_socket::bind<64>(tlm::tlm_target_socket<64>& other) {
+inline void tlm_initiator_socket::bind<64>(
+    tlm::tlm_base_target_socket_b<64>& other) {
     base_type::bind(other);
 }
 
@@ -277,10 +279,10 @@ public:
     void invalidate_dmi();
 
     template <unsigned int WIDTH>
-    void bind(tlm::tlm_initiator_socket<WIDTH>& other);
+    void bind(tlm::tlm_base_initiator_socket<WIDTH>& other);
 
     template <unsigned int WIDTH>
-    void bind(tlm::tlm_target_socket<WIDTH>& other);
+    void bind(tlm::tlm_base_target_socket<WIDTH>& other);
 
     template <unsigned int WIDTH = 32>
     tlm::tlm_target_socket<WIDTH>& adapt();
@@ -318,39 +320,43 @@ inline void tlm_target_socket::unmap_dmi(const range& mem) {
 }
 
 template <unsigned int WIDTH>
-inline void tlm_target_socket::bind(tlm::tlm_initiator_socket<WIDTH>& tgt) {
+inline void tlm_target_socket::bind(
+    tlm::tlm_base_initiator_socket<WIDTH>& socket) {
     typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     const string nm = strcat(basename(), "_adapter");
 
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
-    tgt.bind(adapter->in);
+    socket.bind(adapter->in);
     adapter->out.bind(*this);
     m_adapter = adapter;
 }
 
 template <>
-inline void tlm_target_socket::bind<64>(tlm::tlm_initiator_socket<64>& s) {
-    base_type::bind(s);
+inline void tlm_target_socket::bind<64>(
+    tlm::tlm_base_initiator_socket<64>& socket) {
+    base_type::bind(socket);
 }
 
 template <unsigned int WIDTH>
-inline void tlm_target_socket::bind(tlm::tlm_target_socket<WIDTH>& s) {
+inline void tlm_target_socket::bind(
+    tlm::tlm_base_target_socket<WIDTH>& socket) {
     typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     const string nm = strcat(basename(), "_adapter");
 
     hierarchy_guard guard(m_parent);
     adapter_type* adapter = new adapter_type(nm.c_str());
-    s.bind(adapter->in);
+    socket.bind(adapter->in);
     adapter->out.bind(*this);
     m_adapter = adapter;
 }
 
 template <>
-inline void tlm_target_socket::bind<64>(tlm::tlm_target_socket<64>& s) {
-    base_type::bind(s);
+inline void tlm_target_socket::bind<64>(
+    tlm::tlm_base_target_socket<64>& socket) {
+    base_type::bind(socket);
 }
 
 template <unsigned int WIDTH>
