@@ -49,47 +49,6 @@ enum sr_status_bits : u8 {
     SR_SRWD = bit(7), // status register write protect
 };
 
-void flash::load_from_disk() {
-    if (image.get().empty())
-        return;
-
-    FILE* file = fopen(image.get().c_str(), "rb");
-    if (file == nullptr) {
-        log_warn("failed to load flash image (%s)", strerror(errno));
-        return;
-    }
-
-    // check image size
-    fseek(file, 0, SEEK_END);
-    size_t size = ftell(file);
-    rewind(file);
-
-    if (size < m_storage.size())
-        log_warn("flash image too small (%zu bytes)", size);
-    if (size > m_storage.size())
-        log_warn("flash image too big (%zu bytes)", size);
-
-    // read data
-    int res = 0;
-    size_t rd = 0;
-    size = min(size, m_storage.size());
-    while (rd < size) {
-        if ((res = fread(m_storage.data() + rd, 1, size - rd, file)) <= 0)
-            VCML_ERROR("error loading flash image: %s", strerror(errno));
-        rd += res;
-    }
-
-    fclose(file);
-}
-
-void flash::save_to_disk() {
-    if (readonly || image.get().empty())
-        return;
-
-    ofstream file(image, std::ios::out | std::ios::binary);
-    file.write((char*)m_storage.data(), m_storage.size());
-}
-
 void flash::decode(u8 val) {
     m_command = (command)val;
     switch (m_command) {
@@ -152,7 +111,9 @@ void flash::decode(u8 val) {
         break;
 
     case CMD_BULK_ERASE:
-        memset(m_storage.data(), 0xff, m_storage.size());
+        m_file.seekp(0);
+        for (size_t i = 0; i < size(); i++)
+            m_file.put(0xff);
         m_state = STATE_IDLE;
         break;
 
@@ -183,7 +144,9 @@ void flash::complete() {
         break;
 
     case CMD_SECTOR_ERASE:
-        memset(m_storage.data() + m_address, 0xff, m_info.sector_size);
+        m_file.seekp(m_address);
+        for (size_t i = 0; i < sector_size(); i++)
+            m_file.put(0xff);
         m_state = STATE_IDLE;
         break;
 
@@ -208,14 +171,16 @@ void flash::process(spi_payload& tx) {
 
     case STATE_PROGRAMMING:
         if (m_write_enable) {
-            m_storage[m_address] = tx.mosi;
-            m_address = (m_address + 1) % m_storage.size();
+            m_file.seekp(m_address);
+            m_file.put(tx.mosi);
+            m_address = (m_address + 1) % size();
         }
         break;
 
     case STATE_READING_STORAGE:
-        tx.miso = m_storage[m_address];
-        m_address = (m_address + 1) % m_storage.size();
+        m_file.seekg(m_address);
+        tx.miso = m_file.get();
+        m_address = (m_address + 1) % size();
         break;
 
     case STATE_READING_BUFFER:
@@ -248,18 +213,22 @@ flash::flash(const sc_module_name& nm, const string& dev):
     m_write_enable(),
     m_address(),
     m_buffer(),
-    m_storage(),
+    m_file(),
     device("device", dev),
     image("image", ""),
     readonly("readonly", false),
     spi_in("spi_in"),
     cs_in("cs_in") {
     m_info = lookup_device(device);
-    m_storage.resize(m_info.num_sectors * m_info.sector_size);
+    if (image != "") {
+        m_file.open(image);
+        if (!m_file.is_open())
+            log_warn("failed to open image file '%s'", image.get().c_str());
+    }
 }
 
 flash::~flash() {
-    save_to_disk();
+    // nothing to do
 }
 
 void flash::reset() {
@@ -269,7 +238,7 @@ void flash::reset() {
     m_needed = 0;
     m_state = STATE_IDLE;
     m_command = CMD_NOP;
-    load_from_disk();
+    m_file.flush();
 }
 
 } // namespace spi

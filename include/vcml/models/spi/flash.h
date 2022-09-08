@@ -79,10 +79,8 @@ private:
     u64 m_address;
 
     u8 m_buffer[16];
-    vector<u8> m_storage;
 
-    void load_from_disk();
-    void save_to_disk();
+    fstream m_file;
 
     void decode(u8 val);
     void complete();
@@ -98,6 +96,10 @@ public:
 
     spi_target_socket spi_in;
     gpio_target_socket cs_in;
+
+    size_t sector_size() const { return m_info.sector_size; }
+    size_t sector_count() const { return m_info.num_sectors; }
+    size_t size() const { return sector_count() * sector_size(); }
 
     flash(const sc_module_name& name, const string& device = "m25p80");
     virtual ~flash();
