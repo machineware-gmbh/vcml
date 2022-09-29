@@ -21,6 +21,13 @@
 class pci_harness : public test_base, public pci_initiator, public pci_target
 {
 private:
+    using pci_target::pci_bar_map;
+    using pci_target::pci_bar_unmap;
+    using pci_target::pci_dma_ptr;
+    using pci_target::pci_dma_read;
+    using pci_target::pci_dma_write;
+    using pci_target::pci_interrupt;
+
     // PCI initiator interface
     MOCK_METHOD(void, pci_bar_map,
                 (const pci_initiator_socket& socket, const pci_bar& bar));

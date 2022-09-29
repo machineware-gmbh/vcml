@@ -31,7 +31,7 @@ public:
     }
 
     virtual void run_test() override {
-        u32 data;
+        u32 data = 0;
         sc_time now = local_time_stamp();
         EXPECT_AE(out.writew(0x1234, data))
             << "stub did not response with programmed status";
