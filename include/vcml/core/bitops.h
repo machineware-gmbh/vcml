@@ -158,8 +158,7 @@ constexpr T extract(T val, size_t off, size_t len) {
 
 template <typename T, typename T2>
 constexpr void insert(T& val, size_t off, size_t len, T2 x) {
-    const T mask = ((1ull << len) - 1) << off;
-
+    const T mask = bitmask(len, off);
     val = (val & ~mask) | (((T)x << off) & mask);
 }
 
@@ -176,6 +175,7 @@ struct field {
     enum : size_t { LENGTH = LEN };
     enum : T { MASK = bitmask(LEN, OFF) };
     constexpr operator T() const noexcept { return MASK; }
+    static constexpr T set(T v) noexcept { return (v << OFFSET) & MASK; }
 };
 
 template <typename F>
