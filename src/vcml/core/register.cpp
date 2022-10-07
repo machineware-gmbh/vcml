@@ -62,7 +62,7 @@ void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
         return;
     }
 
-    if (info.level < m_level) {
+    if (info.level < m_level && !info.is_debug) {
         tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
         return;
     }
