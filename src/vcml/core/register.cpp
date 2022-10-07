@@ -36,6 +36,7 @@ reg_base::reg_base(address_space space, const string& regname, u64 addr,
     m_wsync(false),
     m_wback(true),
     m_natural(false),
+    m_level(0),
     m_host(hierarchy_search<peripheral>()),
     as(space),
     tag() {
@@ -57,6 +58,11 @@ void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     }
 
     if (tx.is_write() && !is_writeable() && !info.is_debug) {
+        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
+        return;
+    }
+
+    if (info.level < m_level) {
         tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
         return;
     }

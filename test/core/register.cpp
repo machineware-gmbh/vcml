@@ -223,6 +223,34 @@ TEST(registers, permissions) {
     EXPECT_EQ(local, cycle * mock.read_latency);
 }
 
+TEST(registers, privilege) {
+    mock_peripheral mock;
+
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
+
+    tlm::tlm_generic_payload tx;
+    u8 buffer[] = { 0x11, 0x22, 0x33, 0x44 };
+
+    local = sc_core::SC_ZERO_TIME;
+    mock.test_reg_b.set_privilege_level(1);
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
+
+    EXPECT_CALL(mock, reg_write(_)).Times(0);
+    EXPECT_EQ(mock.test_transport(tx), 0);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
+    EXPECT_EQ(local, cycle * mock.write_latency);
+
+    tlm_sbi sbi = sbi_level(1);
+    local = sc_core::SC_ZERO_TIME;
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
+
+    EXPECT_CALL(mock, reg_write(_));
+    EXPECT_EQ(mock.transport(tx, sbi, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(local, cycle * mock.write_latency);
+}
+
 TEST(registers, misaligned_accesses) {
     mock_peripheral mock;
 
@@ -519,18 +547,22 @@ TEST(registers, natural_alignment) {
     ASSERT_TRUE(mock.test_reg_b.is_natural_accesses_only());
 
     tx_setup(tx, TLM_READ_COMMAND, 4, &data, sizeof(data));
+    EXPECT_CALL(mock, reg_read());
     EXPECT_EQ(mock.test_transport(tx), sizeof(data));
     EXPECT_EQ(tx.get_response_status(), TLM_OK_RESPONSE);
 
     tx_setup(tx, TLM_READ_COMMAND, 4, &data, sizeof(u8));
+    EXPECT_CALL(mock, reg_read()).Times(0);
     EXPECT_EQ(mock.test_transport(tx), 0);
     EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
 
     tx_setup(tx, TLM_READ_COMMAND, 5, &data, sizeof(data));
+    EXPECT_CALL(mock, reg_read()).Times(0);
     EXPECT_EQ(mock.test_transport(tx), 0);
     EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
 
     tx_setup(tx, TLM_READ_COMMAND, 5, &data, sizeof(u8));
+    EXPECT_CALL(mock, reg_read()).Times(0);
     EXPECT_EQ(mock.test_transport(tx), 0);
     EXPECT_EQ(tx.get_response_status(), TLM_COMMAND_ERROR_RESPONSE);
 }
