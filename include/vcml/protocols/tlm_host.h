@@ -123,7 +123,7 @@ inline int tlm_host::current_cpu() const {
 }
 
 inline int tlm_host::current_privilege() const {
-    return m_sideband ? m_sideband->level : 0;
+    return m_sideband ? m_sideband->privilege : 0;
 }
 
 inline const tlm_generic_payload& tlm_host::current_transaction() const {

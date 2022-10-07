@@ -65,10 +65,10 @@ public:
     property<bool> allow_dmi;
 
     int get_cpuid() const { return m_sbi.cpuid; }
-    int get_level() const { return m_sbi.level; }
+    int get_privilege() const { return m_sbi.privilege; }
 
     void set_cpuid(int cpuid);
-    void set_level(int level);
+    void set_privilege(int level);
 
     tlm_initiator_socket() = delete;
     tlm_initiator_socket(const char* n, address_space a = VCML_AS_DEFAULT);
@@ -140,9 +140,9 @@ inline void tlm_initiator_socket::set_cpuid(int cpuid) {
     VCML_ERROR_ON(m_sbi.cpuid != cpuid, "cpuid too large");
 }
 
-inline void tlm_initiator_socket::set_level(int level) {
-    m_sbi.level = level;
-    VCML_ERROR_ON(m_sbi.level != level, "level too large");
+inline void tlm_initiator_socket::set_privilege(int level) {
+    m_sbi.privilege = level;
+    VCML_ERROR_ON(m_sbi.privilege != level, "sbi privilege too large");
 }
 
 inline u8* tlm_initiator_socket::lookup_dmi_ptr(u64 addr, u64 size,

@@ -36,7 +36,7 @@ struct tlm_sbi {
             bool is_lock : 1;
 
             int cpuid : 20;
-            int level : 20;
+            int privilege : 20;
         };
 
         u64 code;
@@ -55,9 +55,9 @@ struct tlm_sbi {
         is_excl(excl),
         is_lock(lock),
         cpuid(cpu),
-        level(lvl) {
+        privilege(lvl) {
         VCML_ERROR_ON(cpuid != cpu, "sbi cpuid too large");
-        VCML_ERROR_ON(level != lvl, "sbi level too large");
+        VCML_ERROR_ON(privilege != lvl, "sbi privilege level too large");
     }
 
     tlm_sbi& operator=(const tlm_sbi& other);
@@ -168,7 +168,7 @@ inline int tx_cpuid(const tlm_generic_payload& tx) {
 }
 
 inline int tx_level(const tlm_generic_payload& tx) {
-    return tx_get_sbi(tx).level;
+    return tx_get_sbi(tx).privilege;
 }
 
 void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info);

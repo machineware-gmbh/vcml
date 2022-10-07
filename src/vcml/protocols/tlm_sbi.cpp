@@ -42,14 +42,14 @@ void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info) {
 void tx_set_cpuid(tlm_generic_payload& tx, int id) {
     tlm_sbi info;
     info.cpuid = id;
-    VCML_ERROR_ON(info.cpuid != id, "coreid too large");
+    VCML_ERROR_ON(info.cpuid != id, "cpuid too large");
     tx_set_sbi(tx, SBI_NONE | info);
 }
 
 void tx_set_level(tlm_generic_payload& tx, int lvl) {
     tlm_sbi info;
-    info.level = lvl;
-    VCML_ERROR_ON(info.level != lvl, "privlvl too large");
+    info.privilege = lvl;
+    VCML_ERROR_ON(info.privilege != lvl, "privilege level too large");
     tx_set_sbi(tx, SBI_NONE | info);
 }
 

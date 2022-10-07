@@ -233,7 +233,7 @@ TEST(registers, privilege) {
     u8 buffer[] = { 0x11, 0x22, 0x33, 0x44 };
 
     local = sc_core::SC_ZERO_TIME;
-    mock.test_reg_b.set_privilege_level(1);
+    mock.test_reg_b.set_privilege(1);
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 
     EXPECT_CALL(mock, reg_write(_)).Times(0);
