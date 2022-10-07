@@ -685,7 +685,7 @@ void reg<DATA, N>::init_bank(int bank) {
 
 #define VCML_LOG_REG_FIELD_CHANGE(field, reg, val)                      \
     do {                                                                \
-        vcml::u64 from = reg.get_field<field>();                        \
+        vcml::u64 from = vcml::get_field<field>(reg);                   \
         vcml::u64 to = vcml::get_field<field>(val);                     \
         if (from != to)                                                 \
             log_debug(#field " changed from 0x%lx to 0x%lx", from, to); \
