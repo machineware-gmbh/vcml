@@ -55,7 +55,10 @@ struct tlm_sbi {
         is_excl(excl),
         is_lock(lock),
         cpuid(cpu),
-        level(lvl) {}
+        level(lvl) {
+        VCML_ERROR_ON(cpuid != cpu, "sbi cpuid too large");
+        VCML_ERROR_ON(level != lvl, "sbi level too large");
+    }
 
     tlm_sbi& operator=(const tlm_sbi& other);
     tlm_sbi& operator&=(const tlm_sbi& other);
