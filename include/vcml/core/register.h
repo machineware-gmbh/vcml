@@ -44,7 +44,7 @@ private:
     bool m_wsync;
     bool m_wback;
     bool m_natural;
-    u16 m_level;
+    int m_level;
     peripheral* m_host;
 
     void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
@@ -88,8 +88,8 @@ public:
     bool is_natural_accesses_only() const { return m_natural; }
     void natural_accesses_only(bool only = true) { m_natural = only; }
 
-    u16 privilege_level() const { return m_level; }
-    void set_privilege_level(u16 lvl) { m_level = lvl; }
+    int privilege_level() const { return m_level; }
+    void set_privilege_level(int lvl) { m_level = lvl; }
 
     peripheral* get_host() const { return m_host; }
     int current_cpu() const;
