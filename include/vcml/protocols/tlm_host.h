@@ -48,6 +48,8 @@ private:
 protected:
     bool in_transaction() const;
     bool in_debug_transaction() const;
+    int current_cpu() const;
+    int current_privilege() const;
     const tlm_generic_payload& current_transaction() const;
     const tlm_sbi& current_sideband() const;
     size_t current_transaction_size() const;
@@ -114,6 +116,14 @@ inline bool tlm_host::in_transaction() const {
 
 inline bool tlm_host::in_debug_transaction() const {
     return m_sideband && m_sideband->is_debug;
+}
+
+inline int tlm_host::current_cpu() const {
+    return m_sideband ? m_sideband->cpuid : -1;
+}
+
+inline int tlm_host::current_privilege() const {
+    return m_sideband ? m_sideband->level : 0;
 }
 
 inline const tlm_generic_payload& tlm_host::current_transaction() const {
