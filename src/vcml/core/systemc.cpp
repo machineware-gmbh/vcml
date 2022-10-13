@@ -661,6 +661,28 @@ bool sim_running() {
     return g_helper.sim_running;
 }
 
+string call_origin() {
+    if (!thctl_is_sysc_thread()) {
+        string name = get_thread_name();
+        return mkstr("thread '%s'", name.c_str());
+    }
+
+    sc_core::sc_simcontext* simc = sc_core::sc_get_curr_simcontext();
+    if (simc) {
+        sc_process_b* proc = current_process();
+        if (proc) {
+            sc_object* parent = proc->get_parent_object();
+            return parent ? parent->name() : proc->name();
+        }
+
+        sc_module* module = simc->hierarchy_curr();
+        if (module)
+            return module->name();
+    }
+
+    return "";
+}
+
 } // namespace vcml
 
 namespace sc_core {

@@ -51,7 +51,7 @@ size_t vq_message::copy_out(const void* ptr, size_t size, size_t offset) {
 
         size_t n = min(size, buf.size - offset);
         u8* dest = dmi(buf.addr + offset, n, VCML_ACCESS_WRITE);
-        VCML_ERROR_ON(!dest, "no DMI pointer for 0x%016lx", buf.addr);
+        VCML_ERROR_ON(!dest, "no DMI pointer for 0x%016llx", buf.addr);
 
         offset = 0;
 
@@ -80,7 +80,7 @@ size_t vq_message::copy_in(void* ptr, size_t size, size_t offset) {
 
         size_t n = min(size, buf.size - offset);
         const u8* src = dmi(buf.addr + offset, n, VCML_ACCESS_READ);
-        VCML_ERROR_ON(!src, "no DMI pointer for 0x%016lx", buf.addr);
+        VCML_ERROR_ON(!src, "no DMI pointer for 0x%016llx", buf.addr);
 
         offset = 0;
 
@@ -213,9 +213,9 @@ bool split_virtqueue::validate() {
 
     if (!m_desc || !m_avail || !m_used) {
         log_warn("failed to get virtqueue DMI pointers");
-        log_warn("  descriptors at 0x%lx -> %p", addr_desc, m_desc);
-        log_warn("  driver ring at 0x%lx -> %p", addr_driver, m_avail);
-        log_warn("  device ring at 0x%lx -> %p", addr_device, m_used);
+        log_warn("  descriptors at 0x%llx -> %p", addr_desc, m_desc);
+        log_warn("  driver ring at 0x%llx -> %p", addr_driver, m_avail);
+        log_warn("  device ring at 0x%llx -> %p", addr_device, m_used);
         return false;
     }
 
@@ -225,9 +225,9 @@ bool split_virtqueue::validate() {
     }
 
     log_debug("created split virtqueue %u with size %u", id, limit);
-    log_debug("  descriptors at 0x%lx -> %p", addr_desc, m_desc);
-    log_debug("  driver ring at 0x%lx -> %p", addr_driver, m_avail);
-    log_debug("  device ring at 0x%lx -> %p", addr_device, m_used);
+    log_debug("  descriptors at 0x%llx -> %p", addr_desc, m_desc);
+    log_debug("  driver ring at 0x%llx -> %p", addr_driver, m_avail);
+    log_debug("  device ring at 0x%llx -> %p", addr_device, m_used);
 
     return m_desc && m_avail && m_used;
 }
@@ -282,8 +282,7 @@ virtio_status split_virtqueue::do_get(vq_message& msg) {
     while (true) {
         if (lookup_desc_ptr(desc) == nullptr) {
             log_warn(
-                "cannot get DMI pointer for descriptor at address "
-                "0x%016lx",
+                "cannot get DMI pointer for descriptor at address 0x%016llx",
                 desc->addr);
             return VIRTIO_ERR_NODMI;
         }
@@ -360,23 +359,23 @@ bool packed_virtqueue::validate() {
 
     if (!m_desc || (has_event_idx && (!m_driver || !m_device))) {
         log_warn("failed to get DMI pointers for packed virtqueue");
-        log_warn("  descriptors at 0x%lx -> %p", addr_desc, m_desc);
+        log_warn("  descriptors at 0x%llx -> %p", addr_desc, m_desc);
 
         if (!has_event_idx)
             return false;
 
-        log_warn("  driver events at 0x%lx -> %p", addr_driver, m_driver);
-        log_warn("  device events at 0x%lx -> %p", addr_device, m_device);
+        log_warn("  driver events at 0x%llx -> %p", addr_driver, m_driver);
+        log_warn("  device events at 0x%llx -> %p", addr_device, m_device);
         return false;
     }
 
     log_debug("created packed virtqueue %u with size %u", id, limit);
-    log_debug("  descriptors at 0x%lx -> %p", addr_desc, m_desc);
+    log_debug("  descriptors at 0x%llx -> %p", addr_desc, m_desc);
 
     if (m_driver)
-        log_debug("  driver events at 0x%lx -> %p", addr_driver, m_driver);
+        log_debug("  driver events at 0x%llx -> %p", addr_driver, m_driver);
     if (m_device)
-        log_debug("  device events at 0x%lx -> %p", addr_device, m_device);
+        log_debug("  device events at 0x%llx -> %p", addr_device, m_device);
 
     return true;
 }
@@ -432,8 +431,7 @@ virtio_status packed_virtqueue::do_get(vq_message& msg) {
 
         if (lookup_desc_ptr(desc) == nullptr) {
             log_warn(
-                "cannot get DMI pointer for descriptor at address "
-                "0x%016lx",
+                "cannot get DMI pointer for descriptor at address 0x%016llx",
                 desc->addr);
             return VIRTIO_ERR_NODMI;
         }
@@ -592,6 +590,7 @@ bool virtio_target_stub::notify(u32 vqid) {
 void virtio_target_stub::read_features(u64& features) {
     features = 0;
 }
+
 bool virtio_target_stub::write_features(u64 features) {
     return false;
 }

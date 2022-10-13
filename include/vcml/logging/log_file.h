@@ -20,7 +20,6 @@
 #define VCML_LOG_FILE_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
 #include "vcml/logging/publisher.h"
 
 namespace vcml {

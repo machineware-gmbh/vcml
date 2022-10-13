@@ -52,44 +52,48 @@
 #include <time.h>
 #include <unistd.h>
 
-#define VCML_DECL_PRINTF(strpos, argpos) \
-    __attribute__((format(printf, (strpos), (argpos))))
-
-#define VCML_DECL_PACKED __attribute__((packed))
+#include <mwr.h>
 
 namespace vcml {
 
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
+using mwr::u8;
+using mwr::u16;
+using mwr::u32;
+using mwr::u64;
 
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
+using mwr::i8;
+using mwr::i16;
+using mwr::i32;
+using mwr::i64;
 
-using ::clock_t;
+using mwr::f32;
+using mwr::f64;
 
-const clock_t Hz = 1;           // NOLINT(readability-identifier-naming)
-const clock_t kHz = 1000 * Hz;  // NOLINT(readability-identifier-naming)
-const clock_t MHz = 1000 * kHz; // NOLINT(readability-identifier-naming)
-const clock_t GHz = 1000 * MHz; // NOLINT(readability-identifier-naming)
-const clock_t THz = 1000 * GHz; // NOLINT(readability-identifier-naming)
+using mwr::string;
+using mwr::clock_t;
+using mwr::size_t;
+using mwr::id_t;
 
-using std::size_t;
+using mwr::Hz;
+using mwr::kHz;
+using mwr::MHz;
+using mwr::GHz;
+using mwr::THz;
 
-const size_t KiB = 1024;       // NOLINT(readability-identifier-naming)
-const size_t MiB = 1024 * KiB; // NOLINT(readability-identifier-naming)
-const size_t GiB = 1024 * MiB; // NOLINT(readability-identifier-naming)
-const size_t TiB = 1024 * GiB; // NOLINT(readability-identifier-naming)
-
-typedef std::size_t id_t;
+using mwr::KiB;
+using mwr::MiB;
+using mwr::GiB;
+using mwr::TiB;
 
 template <typename T>
 struct typeinfo {
     static const char* name() { return "unknown"; }
 };
+
+template <typename T>
+inline const char* type_name() {
+    return typeinfo<T>::name();
+}
 
 #define VCML_TYPEINFO(T)                         \
     template <>                                  \
@@ -110,11 +114,7 @@ VCML_TYPEINFO(i64);
 VCML_TYPEINFO(bool);
 VCML_TYPEINFO(float);
 VCML_TYPEINFO(double);
-
-template <typename T>
-inline const char* type_name() {
-    return typeinfo<T>::name();
-}
+VCML_TYPEINFO(string);
 
 using std::min;
 using std::max;
@@ -152,6 +152,93 @@ using std::lock_guard;
 using std::condition_variable;
 using std::condition_variable_any;
 using std::thread;
+
+using std::stringstream;
+using std::ostringstream;
+using std::istringstream;
+
+using mwr::mkstr;
+using mwr::vmkstr;
+using mwr::trim;
+using mwr::to_lower;
+using mwr::to_upper;
+using mwr::escape;
+using mwr::unescape;
+using mwr::split;
+using mwr::join;
+using mwr::replace;
+using mwr::to_string;
+using mwr::from_string;
+using mwr::to_hex_ascii;
+using mwr::from_hex_ascii;
+using mwr::contains;
+using mwr::starts_with;
+using mwr::ends_with;
+using mwr::is_number;
+using mwr::strcat;
+
+using mwr::stl_remove;
+using mwr::stl_remove_if;
+using mwr::stl_remove_if;
+using mwr::stl_remove_if;
+using mwr::stl_contains;
+using mwr::stl_contains;
+using mwr::stl_contains;
+using mwr::stl_contains_if;
+using mwr::stl_add_unique;
+
+using mwr::dirname;
+using mwr::filename;
+using mwr::filename_noext;
+using mwr::curr_dir;
+using mwr::temp_dir;
+using mwr::progname;
+using mwr::username;
+
+using mwr::file_exists;
+
+using mwr::timestamp;
+using mwr::timestamp_us;
+
+using mwr::fd_peek;
+using mwr::fd_read;
+using mwr::fd_write;
+
+using mwr::backtrace;
+using mwr::get_thread_name;
+using mwr::set_thread_name;
+
+using mwr::stream_guard;
+
+using mwr::width_of;
+using mwr::popcnt;
+using mwr::parity;
+using mwr::parity_odd;
+using mwr::parity_even;
+using mwr::is_pow2;
+using mwr::clz;
+using mwr::ctz;
+using mwr::ffs;
+using mwr::fls;
+using mwr::bit;
+using mwr::bitmask;
+using mwr::fourcc;
+using mwr::bitrev;
+using mwr::bswap;
+using mwr::memswap;
+using mwr::crc7;
+using mwr::crc16;
+using mwr::crc32;
+
+using mwr::extract;
+using mwr::sextract;
+using mwr::signext;
+using mwr::deposit;
+using mwr::field;
+using mwr::get_field;
+using mwr::set_field;
+
+bool is_debug_build();
 
 inline bool is_set(int flags, int set) {
     return (flags & set) == set;

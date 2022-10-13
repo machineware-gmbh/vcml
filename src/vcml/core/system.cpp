@@ -41,7 +41,7 @@ system::system(const sc_module_name& nm):
     quantum("quantum", sc_time(1, SC_US)),
     duration("duration", SC_ZERO_TIME) {
     if (backtrace)
-        report::report_segfaults();
+        mwr::report_segfaults();
 
     if (duration > SC_ZERO_TIME)
         SC_THREAD(timeout);

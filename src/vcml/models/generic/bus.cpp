@@ -170,13 +170,13 @@ bool bus::get_direct_mem_ptr(int port, tlm_generic_payload& tx, tlm_dmi& dmi) {
 
         // check if target gave more DMI space than it has address space
         if (s < dest.addr.start) {
-            log_warn("truncating DMI start from 0x%016lx to 0x%016lx", s,
+            log_warn("truncating DMI start from 0x%016llx to 0x%016llx", s,
                      dest.addr.start);
             s = dest.addr.start;
         }
 
         if (e > dest.addr.end) {
-            log_warn("truncating DMI end from 0x%016lx to 0x%016lx", e,
+            log_warn("truncating DMI end from 0x%016llx to 0x%016llx", e,
                      dest.addr.end);
             e = dest.addr.end;
         }
@@ -227,8 +227,8 @@ void bus::map(unsigned int port, const range& addr, u64 offset,
     const mapping& other = lookup(addr);
     if (other.port != -1 && other.port != m_default.port) {
         VCML_ERROR(
-            "Cannot map %d:0x%016lx..0x%016lx to '%s', because it "
-            "overlaps with %d:0x%016lx..0x%016lx mapped to '%s'",
+            "Cannot map %d:0x%016llx..0x%016llx to '%s', because it "
+            "overlaps with %d:0x%016llx..0x%016llx mapped to '%s'",
             port, addr.start, addr.end, peer.c_str(), other.port,
             other.addr.start, other.addr.end, other.peer.c_str());
     }

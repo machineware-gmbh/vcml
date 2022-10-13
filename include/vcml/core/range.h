@@ -94,7 +94,7 @@ inline range::range(): start(0), end(0) {
 
 inline range::range(u64 s, u64 e): start(s), end(e) {
     // allow zero-sized ranges
-    VCML_ERROR_ON(e + 1 < s, "invalid range: %016lx..%016lx", s, e);
+    VCML_ERROR_ON(e + 1 < s, "invalid range: %016llx..%016llx", s, e);
 }
 
 inline range::range(const tlm_generic_payload& tx):
@@ -151,7 +151,7 @@ inline std::istream& operator>>(std::istream& is, vcml::range& r) {
     string s;
     is >> s;
     u64 start = 0, end = 0;
-    if (sscanf(s.c_str(), "0x%lx..0x%lx", &start, &end) == 2) {
+    if (sscanf(s.c_str(), "0x%llx..0x%llx", &start, &end) == 2) {
         r.start = start;
         r.end = end;
     } else

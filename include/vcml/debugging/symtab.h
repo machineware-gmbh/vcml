@@ -20,9 +20,6 @@
 #define VCML_DEBUGGING_SYMTAB_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/bitops.h"
-#include "vcml/core/strings.h"
-#include "vcml/core/utils.h"
 #include "vcml/core/range.h"
 
 namespace vcml {

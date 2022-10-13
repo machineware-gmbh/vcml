@@ -21,7 +21,6 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/report.h"
-#include "vcml/core/strings.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
 

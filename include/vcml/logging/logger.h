@@ -20,8 +20,6 @@
 #define VCML_LOGGER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
-#include "vcml/core/utils.h"
 #include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 
@@ -54,23 +52,23 @@ public:
     logger(const logger&) = default;
 
     void log(log_level lvl, const char* format, ...) const
-        VCML_DECL_PRINTF(3, 4);
+        MWR_DECL_PRINTF(3, 4);
     void log(log_level lvl, const char* file, int line, const char* format,
-             ...) const VCML_DECL_PRINTF(5, 6);
+             ...) const MWR_DECL_PRINTF(5, 6);
 
-    void error(const char* format, ...) const VCML_DECL_PRINTF(2, 3);
-    void warn(const char* format, ...) const VCML_DECL_PRINTF(2, 3);
-    void info(const char* format, ...) const VCML_DECL_PRINTF(2, 3);
-    void debug(const char* format, ...) const VCML_DECL_PRINTF(2, 3);
+    void error(const char* format, ...) const MWR_DECL_PRINTF(2, 3);
+    void warn(const char* format, ...) const MWR_DECL_PRINTF(2, 3);
+    void info(const char* format, ...) const MWR_DECL_PRINTF(2, 3);
+    void debug(const char* format, ...) const MWR_DECL_PRINTF(2, 3);
 
     void error(const char* file, int line, const char* format, ...) const
-        VCML_DECL_PRINTF(4, 5);
+        MWR_DECL_PRINTF(4, 5);
     void warn(const char* file, int line, const char* format, ...) const
-        VCML_DECL_PRINTF(4, 5);
+        MWR_DECL_PRINTF(4, 5);
     void info(const char* file, int line, const char* format, ...) const
-        VCML_DECL_PRINTF(4, 5);
+        MWR_DECL_PRINTF(4, 5);
     void debug(const char* file, int line, const char* format, ...) const
-        VCML_DECL_PRINTF(4, 5);
+        MWR_DECL_PRINTF(4, 5);
 
     void error(const std::exception& ex) const;
     void warn(const std::exception& ex) const;

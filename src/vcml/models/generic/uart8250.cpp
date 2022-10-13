@@ -132,7 +132,7 @@ u8 uart8250::read_lsr() {
 
 void uart8250::write_thr(u8 val) {
     if (lcr & LCR_DLAB) {
-        insert(m_divisor, 0, 8, val);
+        m_divisor = deposit(m_divisor, 0, 8, val);
         calibrate();
         return;
     }
@@ -148,7 +148,7 @@ void uart8250::write_thr(u8 val) {
 
 void uart8250::write_ier(u8 val) {
     if (lcr & LCR_DLAB) {
-        insert(m_divisor, 8, 8, val);
+        m_divisor = deposit(m_divisor, 8, 8, val);
         calibrate();
         return;
     }

@@ -21,9 +21,7 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/range.h"
-#include "vcml/core/bitops.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/utils.h"
 
 #include "vcml/protocols/base.h"
 

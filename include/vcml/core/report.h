@@ -22,7 +22,6 @@
 #include <exception>
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
 
 namespace vcml {
 
@@ -51,9 +50,6 @@ public:
     virtual ~report() throw();
 
     virtual const char* what() const throw();
-
-    static void report_segfaults();
-    static unsigned int max_backtrace_length;
 };
 
 inline const vector<string> report::backtrace() const {

@@ -37,17 +37,17 @@ size_t tracer_term::trace_indent_incr = 1;
 size_t tracer_term::trace_curr_indent = 0;
 
 array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
-    /* [PROTO_TLM]      = */ termcolors::MAGENTA,
-    /* [PROTO_GPIO]     = */ termcolors::YELLOW,
-    /* [PROTO_CLK]      = */ termcolors::BLUE,
-    /* [PROTO_PCI]      = */ termcolors::CYAN,
-    /* [PROTO_I2C]      = */ termcolors::BRIGHT_GREEN,
-    /* [PROTO_SPI]      = */ termcolors::BRIGHT_YELLOW,
-    /* [PROTO_SD]       = */ termcolors::BRIGHT_MAGENTA,
-    /* [PROTO_SERIAL]   = */ termcolors::BRIGHT_RED,
-    /* [PROTO_VIRTIO]   = */ termcolors::BRIGHT_CYAN,
-    /* [PROTO_ETHERNET] = */ termcolors::BRIGHT_BLUE,
-    /* [PROTO_CAN]      = */ termcolors::RED,
+    /* [PROTO_TLM]      = */ mwr::termcolors::MAGENTA,
+    /* [PROTO_GPIO]     = */ mwr::termcolors::YELLOW,
+    /* [PROTO_CLK]      = */ mwr::termcolors::BLUE,
+    /* [PROTO_PCI]      = */ mwr::termcolors::CYAN,
+    /* [PROTO_I2C]      = */ mwr::termcolors::BRIGHT_GREEN,
+    /* [PROTO_SPI]      = */ mwr::termcolors::BRIGHT_YELLOW,
+    /* [PROTO_SD]       = */ mwr::termcolors::BRIGHT_MAGENTA,
+    /* [PROTO_SERIAL]   = */ mwr::termcolors::BRIGHT_RED,
+    /* [PROTO_VIRTIO]   = */ mwr::termcolors::BRIGHT_CYAN,
+    /* [PROTO_ETHERNET] = */ mwr::termcolors::BRIGHT_BLUE,
+    /* [PROTO_CAN]      = */ mwr::termcolors::RED,
 };
 
 template <typename PAYLOAD>
@@ -86,7 +86,7 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
     }
 
     if (m_colors)
-        ss << termcolors::CLEAR;
+        ss << mwr::termcolors::CLEAR;
 
     m_os << ss.rdbuf() << std::flush;
 

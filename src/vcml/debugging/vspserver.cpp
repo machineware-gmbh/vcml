@@ -17,7 +17,6 @@
  ******************************************************************************/
 
 #include "vcml/core/thctl.h"
-#include "vcml/core/utils.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/version.h"
 #include "vcml/core/component.h"
@@ -156,7 +155,7 @@ string vspserver::handle_status(const string& cmd) {
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
     string status = is_running() ? "running" : ("stopped:" + m_stop_reason);
-    return mkstr("OK,%s,%lu,%lu", status.c_str(), nanos, delta);
+    return mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
 }
 
 string vspserver::handle_resume(const string& cmd) {
@@ -273,7 +272,7 @@ string vspserver::handle_getq(const string& cmd) {
     if (is_running())
         return "E,simulation running";
     sc_time quantum = tlm::tlm_global_quantum::instance().get();
-    return mkstr("OK,%lu", time_to_ns(quantum));
+    return mkstr("OK,%llu", time_to_ns(quantum));
 }
 
 string vspserver::handle_setq(const string& cmd) {
@@ -284,7 +283,7 @@ string vspserver::handle_setq(const string& cmd) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    sc_time quantum(from_string<u64>(args[1]), SC_NS);
+    sc_time quantum((double)from_string<u64>(args[1]), SC_NS);
     tlm::tlm_global_quantum::instance().set(quantum);
 
     return "OK";
@@ -367,10 +366,10 @@ string vspserver::handle_mkbp(const string& cmd) {
 
     const breakpoint* bp = tgt->insert_breakpoint(addr, this);
     if (bp == nullptr)
-        return mkstr("E,failed to insert breakpoint at 0x%lx", addr);
+        return mkstr("E,failed to insert breakpoint at 0x%llx", addr);
 
     m_breakpoints[bp->id()] = bp;
-    return mkstr("OK,inserted breakpoint %lu", bp->id());
+    return mkstr("OK,inserted breakpoint %llu", bp->id());
 }
 
 string vspserver::handle_rmbp(const string& cmd) {
@@ -384,7 +383,7 @@ string vspserver::handle_rmbp(const string& cmd) {
     u64 bpid = from_string<u64>(args[1]);
     auto it = m_breakpoints.find(bpid);
     if (it == m_breakpoints.end())
-        return mkstr("E,invalid breakpoint id: %lu", bpid);
+        return mkstr("E,invalid breakpoint id: %llu", bpid);
 
     target& tgt = it->second->owner();
     if (!tgt.remove_breakpoint(it->second, this))
@@ -423,17 +422,17 @@ void vspserver::notify_step_complete(target& tgt) {
 }
 
 void vspserver::notify_breakpoint_hit(const breakpoint& bp) {
-    pause_simulation(mkstr("breakpoint:%lu", bp.id()));
+    pause_simulation(mkstr("breakpoint:%llu", bp.id()));
 }
 
 void vspserver::notify_watchpoint_read(const watchpoint& wp,
                                        const range& addr) {
-    pause_simulation(mkstr("rwatchpoint:%lu", wp.id()));
+    pause_simulation(mkstr("rwatchpoint:%llu", wp.id()));
 }
 
 void vspserver::notify_watchpoint_write(const watchpoint& wp,
                                         const range& addr, u64 newval) {
-    pause_simulation(mkstr("wwatchpoint:%lu", wp.id()));
+    pause_simulation(mkstr("wwatchpoint:%llu", wp.id()));
 }
 
 vspserver::vspserver(u16 server_port):

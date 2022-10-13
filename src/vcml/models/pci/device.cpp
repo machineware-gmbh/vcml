@@ -541,7 +541,7 @@ void device::update_bars() {
             log_debug("unmapping BAR%d", barno);
             pci_bar_unmap(barno);
         } else {
-            log_debug("mapping BAR%d to %s 0x%lx..0x%lx", barno,
+            log_debug("mapping BAR%d to %s 0x%llx..0x%llx", barno,
                       bar->is_io ? "IO" : "MMIO", bar->addr,
                       bar->addr + bar->size - 1);
             pci_bar_map(m_bars[barno]);

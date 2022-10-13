@@ -354,7 +354,7 @@ void sdl_client::draw_window() {
 
     // all times in microseconds
     const u64 update_interval = 1000000;
-    u64 delta = realtime_us() - time_frame;
+    u64 delta = timestamp_us() - time_frame;
     if (delta >= update_interval) {
         u64 now = time_to_us(sc_time_stamp());
         double rtf = (double)(now - time_sim) / delta;
@@ -364,7 +364,7 @@ void sdl_client::draw_window() {
         string caption = mkstr("%s %.1f fps %.2f rtf", name, fps, rtf);
         SDL_SetWindowTitle(window, caption.c_str());
 
-        time_frame = realtime_us();
+        time_frame = timestamp_us();
         time_sim = now;
         frames = 0;
     }

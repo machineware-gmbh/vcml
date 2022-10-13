@@ -22,7 +22,6 @@
 #include "vcml/core/types.h"
 #include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/bitops.h"
 #include "vcml/core/module.h"
 
 namespace vcml {

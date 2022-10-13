@@ -32,14 +32,14 @@ u64 cpureg::read() const {
     if (!host->read_cpureg_dbg(*this, val))
         VCML_ERROR("failed to read cpureg %s", name.c_str());
     if (width() < 64 && val >= 1ul << width())
-        VCML_ERROR("value 0x%lx exceeds size of %s", val, name.c_str());
+        VCML_ERROR("value 0x%llx exceeds size of %s", val, name.c_str());
 
     return val;
 }
 
 void cpureg::write(u64 val) const {
     if (width() < 64 && val >= 1ul << width())
-        VCML_ERROR("value 0x%lx exceeds size of %s", val, name.c_str());
+        VCML_ERROR("value 0x%llx exceeds size of %s", val, name.c_str());
     if (host == nullptr)
         VCML_ERROR("cpureg %s has no target", name.c_str());
     if (!is_writeable())

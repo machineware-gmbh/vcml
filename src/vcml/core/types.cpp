@@ -17,8 +17,6 @@
  ******************************************************************************/
 
 #include "vcml/core/types.h"
-#include "vcml/core/bitops.h"
-#include "vcml/core/strings.h"
 
 namespace vcml {
 

@@ -78,7 +78,7 @@ void fbdev::end_of_elaboration() {
     component::end_of_elaboration();
 
     range vmem(addr, addr + size() - 1);
-    log_debug("video memory at 0x%016lx..0x%016lx", vmem.start, vmem.end);
+    log_debug("video memory at 0x%016llx..0x%016llx", vmem.start, vmem.end);
 
     if (!m_console.has_display())
         return;
@@ -90,7 +90,7 @@ void fbdev::end_of_elaboration() {
 
     m_vptr = out.lookup_dmi_ptr(vmem, VCML_ACCESS_READ);
     if (m_vptr == nullptr) {
-        log_warn("failed to get DMI pointer for 0x%016lx", addr.get());
+        log_warn("failed to get DMI pointer for 0x%016llx", addr.get());
         return;
     }
 

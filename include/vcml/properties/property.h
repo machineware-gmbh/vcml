@@ -20,7 +20,6 @@
 #define VCML_PROPERTY_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
 #include "vcml/core/report.h"
 
 #include "vcml/logging/logger.h"

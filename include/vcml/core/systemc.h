@@ -33,10 +33,7 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
-#include "vcml/core/bitops.h"
 #include "vcml/core/report.h"
-#include "vcml/core/utils.h"
 
 #define SYSTEMC_VERSION_2_3_0a 20120701 // NOLINT
 #define SYSTEMC_VERSION_2_3_1a 20140417 // NOLINT
@@ -373,6 +370,8 @@ sc_process_b* current_thread();
 sc_process_b* current_method();
 
 bool sim_running();
+
+string call_origin();
 
 template <typename SOCKET, const size_t LIMIT = SIZE_MAX>
 class socket_array

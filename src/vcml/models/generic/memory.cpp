@@ -51,7 +51,7 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
 
 u8* memory::allocate_image(u64 sz, u64 off) {
     if (off >= size)
-        VCML_REPORT("offset 0x%lx exceeds memory size", off);
+        VCML_REPORT("offset 0x%llx exceeds memory size", off);
 
     if (sz + off > size)
         VCML_REPORT("image too big for memory");
@@ -61,7 +61,7 @@ u8* memory::allocate_image(u64 sz, u64 off) {
 
 void memory::copy_image(const u8* image, u64 sz, u64 off) {
     if (off >= size)
-        VCML_REPORT("offset 0x%lx exceeds memory size", off);
+        VCML_REPORT("offset 0x%llx exceeds memory size", off);
 
     if (sz + off > size)
         VCML_REPORT("image too big for memory");

@@ -31,6 +31,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(FindGithubRepo)
 include(GenVersionInfo)
 include(Sanitizer)
 
@@ -42,6 +43,8 @@ find_package(LibRFB)
 find_package(LibSLIRP)
 find_package(SDL2)
 
+find_github_repo(mwr "machineware-gmbh/mwr")
+
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(gen ${CMAKE_CURRENT_BINARY_DIR}/gen)
@@ -52,12 +55,9 @@ configure_file(${src}/vcml/core/version.h.in
 add_library(vcml STATIC
     ${src}/vcml/core/types.cpp
     ${src}/vcml/core/report.cpp
-    ${src}/vcml/core/utils.cpp
-    ${src}/vcml/core/strings.cpp
     ${src}/vcml/core/version.cpp
     ${src}/vcml/core/aio.cpp
     ${src}/vcml/core/thctl.cpp
-    ${src}/vcml/core/bitops.cpp
     ${src}/vcml/core/socket.cpp
     ${src}/vcml/core/systemc.cpp
     ${src}/vcml/core/library.cpp
@@ -173,7 +173,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/riscv/simdev.cpp)
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
-set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
+#set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
 set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
 set_target_properties(vcml PROPERTIES SOVERSION "${VCML_VERSION_MAJOR}")
 
@@ -189,6 +189,7 @@ target_include_directories(vcml PRIVATE ${src})
 target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 target_include_directories(vcml SYSTEM PUBLIC ${LIBELF_INCLUDE_DIRS})
 
+target_link_libraries(vcml PUBLIC mwr)
 target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
 target_link_libraries(vcml PUBLIC ${LIBELF_LIBRARIES})
 target_link_libraries(vcml PUBLIC -rdynamic)

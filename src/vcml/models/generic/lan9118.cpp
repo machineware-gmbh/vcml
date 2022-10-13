@@ -1397,7 +1397,7 @@ void lan9118::update_irq() {
     }
 
     sc_time throttle = m_deas_limit - sc_time_stamp();
-    log_debug("interrupt throttled for %luns", time_to_ns(throttle));
+    log_debug("interrupt throttled for %lluns", time_to_ns(throttle));
     m_deas_ev.notify(throttle);
     irq_cfg |= IRQ_CFG_DEAS_STS;
 }

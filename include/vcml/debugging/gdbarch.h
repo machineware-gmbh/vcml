@@ -20,8 +20,6 @@
 #define VCML_DEBUGGING_GDBARCH_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
-
 #include "vcml/debugging/target.h"
 
 namespace vcml {

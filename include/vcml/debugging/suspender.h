@@ -20,9 +20,7 @@
 #define VCML_DEBUGGING_SUSPENDER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/strings.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/utils.h"
 #include "vcml/core/thctl.h"
 
 namespace vcml {

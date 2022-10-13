@@ -127,10 +127,10 @@ void loader::load_bin(const string& filename, u64 offset) {
     ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
     VCML_REPORT_ON(!file, "cannot open file");
 
-    u64 size = file.tellg();
+    size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    log_debug("loading binary file '%s' (%lu bytes) to offset 0x%lx",
+    log_debug("loading binary file '%s' (%zu bytes) to offset 0x%llx",
               filename.c_str(), size, offset);
 
     // let model allocate our image copy buffer first; this way we can load
@@ -156,11 +156,11 @@ void loader::load_bin(const string& filename, u64 offset) {
 
 void loader::load_elf(const string& filename, u64 offset) {
     elf_reader reader(filename);
-    log_debug("loading elf file '%s' with %zu segments to offset 0x%016lx",
+    log_debug("loading elf file '%s' with %zu segments to offset 0x%016llx",
               filename.c_str(), reader.segments().size(), offset);
 
     for (auto seg : reader.segments()) {
-        log_debug("loading elf segment 0x%016lx..0x%016lx", seg.phys,
+        log_debug("loading elf segment 0x%016llx..0x%016llx", seg.phys,
                   seg.phys + seg.size - 1);
 
         u8* image = allocate_image(seg.size, seg.phys + offset);

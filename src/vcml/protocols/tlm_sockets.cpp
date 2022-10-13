@@ -242,9 +242,7 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
 
         if (m_tx.get_response_status() == TLM_INCOMPLETE_RESPONSE) {
             m_parent->log_warn(
-                "received incomplete response from target "
-                "at 0x%016lx",
-                addr);
+                "received incomplete response from target at 0x%016llx", addr);
             break;
         }
 

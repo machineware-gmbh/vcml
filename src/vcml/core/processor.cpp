@@ -249,9 +249,9 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 
 unsigned int processor::simulate_cycles(unsigned int cycles) {
     u64 count = cycle_count();
-    double start = realtime();
+    double start = timestamp();
     simulate(cycles);
-    m_run_time += realtime() - start;
+    m_run_time += timestamp() - start;
     return cycle_count() - count;
 }
 
@@ -348,7 +348,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
             }
 
             u64 n = load_symbols_from_elf(symfile);
-            log_debug("loaded %lu symbols from '%s'", n, symfile.c_str());
+            log_debug("loaded %llu symbols from '%s'", n, symfile.c_str());
         }
     }
 
@@ -425,11 +425,11 @@ void processor::log_bus_error(const tlm_initiator_socket& socket,
 
     string status = tlm_response_to_str(rs);
     log_debug("detected bus error during %s operation", op.c_str());
-    log_debug("  addr = 0x%016lx", addr);
-    log_debug("  pc   = 0x%016lx", program_counter());
-    log_debug("  lr   = 0x%016lx", link_register());
-    log_debug("  sp   = 0x%016lx", stack_pointer());
-    log_debug("  size = %zu bytes", size);
+    log_debug("  addr = 0x%016llx", addr);
+    log_debug("  pc   = 0x%016llx", program_counter());
+    log_debug("  lr   = 0x%016llx", link_register());
+    log_debug("  sp   = 0x%016llx", stack_pointer());
+    log_debug("  size = %llu bytes", size);
     log_debug("  port = %s", data.name());
     log_debug("  code = %s", status.c_str());
 }
@@ -492,10 +492,10 @@ void processor::end_of_elaboration() {
 void processor::fetch_cpuregs() {
     for (auto it : m_regprops) {
         const debugging::cpureg* reg = find_cpureg(it.first);
-        VCML_ERROR_ON(!reg, "no cpureg %lu", it.first);
+        VCML_ERROR_ON(!reg, "no cpureg %llu", it.first);
 
         property_base* prop = it.second;
-        VCML_ERROR_ON(!prop, "no propery for cpureg %lu", it.first);
+        VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
 
         u64 val = 0;
         if (reg->is_readable())
@@ -515,7 +515,7 @@ void processor::fetch_cpuregs() {
             dynamic_cast<property<u64>*>(prop)->set((u64)val);
             break;
         default:
-            VCML_ERROR("register %s has illegal size: %lu bytes",
+            VCML_ERROR("register %s has illegal size: %llu bytes",
                        reg->name.c_str(), reg->size);
         }
     }
@@ -524,10 +524,10 @@ void processor::fetch_cpuregs() {
 void processor::flush_cpuregs() {
     for (auto it : m_regprops) {
         const debugging::cpureg* reg = find_cpureg(it.first);
-        VCML_ERROR_ON(!reg, "no cpureg %lu", it.first);
+        VCML_ERROR_ON(!reg, "no cpureg %llu", it.first);
 
         property_base* prop = it.second;
-        VCML_ERROR_ON(!prop, "no propery for cpureg %lu", it.first);
+        VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
 
         if (!reg->is_writeable())
             continue;
@@ -547,14 +547,14 @@ void processor::flush_cpuregs() {
             val = dynamic_cast<property<u64>*>(prop)->get();
             break;
         default:
-            VCML_ERROR("register %s has illegal size: %lu bytes",
+            VCML_ERROR("register %s has illegal size: %llu bytes",
                        reg->name.c_str(), reg->size);
         }
 
         const u64 mask = bitmask(reg->width());
         if (reg->size < 8 && val > mask) {
-            log_warn("truncating value 0x%lx for %lu bit cpu register %s", val,
-                     reg->width(), reg->name.c_str());
+            log_warn("truncating value 0x%llx for %llu bit cpu register %s",
+                     val, reg->width(), reg->name.c_str());
             val &= mask;
         }
 
@@ -591,7 +591,7 @@ void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
             prop = new property<u64>(regnm, defval);
             break;
         default:
-            VCML_ERROR("cpureg %s has illegal size %lu", regnm, reg.size);
+            VCML_ERROR("cpureg %s has illegal size %llu", regnm, reg.size);
         }
     }
 
@@ -641,8 +641,8 @@ bool processor::write_cpureg_dbg(const cpureg& reg, vcml::u64 val) {
         dynamic_cast<property<u64>*>(prop)->set((u64)val);
         break;
     default:
-        VCML_ERROR("register %s has illegal size: %lu bytes", reg.name.c_str(),
-                   reg.size);
+        VCML_ERROR("register %s has illegal size: %llu bytes",
+                   reg.name.c_str(), reg.size);
     }
 
     return true;
@@ -655,7 +655,7 @@ u64 processor::read_pmem_dbg(u64 addr, void* buffer, u64 size) {
         if (success(insn.read(addr, buffer, size, SBI_DEBUG)))
             return size;
     } catch (report& r) {
-        log_warn("error reading %lu bytes to memory at address 0x%lx: %s",
+        log_warn("error reading %llu bytes to memory at address 0x%llx: %s",
                  size, addr, r.message());
     }
 
@@ -669,7 +669,7 @@ u64 processor::write_pmem_dbg(u64 addr, const void* buffer, u64 size) {
         if (success(insn.write(addr, buffer, size, SBI_DEBUG)))
             return size;
     } catch (report& r) {
-        log_warn("error writing %lu bytes to memory at address 0x%lx: %s",
+        log_warn("error writing %llu bytes to memory at address 0x%llx: %s",
                  size, addr, r.message());
     }
 

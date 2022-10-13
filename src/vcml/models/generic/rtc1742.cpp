@@ -95,7 +95,7 @@ void rtc1742::load_nvram(const string& filename) {
 
     if (nbytes > size) {
         nbytes = size;
-        log_warn("image file '%s' to big, truncating after %lu bytes",
+        log_warn("image file '%s' to big, truncating after %llu bytes",
                  filename.c_str(), nbytes);
     }
 

@@ -42,17 +42,17 @@ void log_term::publish(const logmsg& msg) {
         ss << colors[msg.level];
     ss << msg;
     if (m_colors)
-        ss << termcolors::CLEAR;
+        ss << mwr::termcolors::CLEAR;
     ss << std::endl;
 
     m_os << ss.rdbuf() << std::flush;
 }
 
 const char* log_term::colors[NUM_LOG_LEVELS] = {
-    /* [LOG_ERROR] = */ termcolors::RED,
-    /* [LOG_WARN]  = */ termcolors::YELLOW,
-    /* [LOG_INFO]  = */ termcolors::GREEN,
-    /* [LOG_DEBUG] = */ termcolors::BLUE,
+    /* [LOG_ERROR] = */ mwr::termcolors::RED,
+    /* [LOG_WARN]  = */ mwr::termcolors::YELLOW,
+    /* [LOG_INFO]  = */ mwr::termcolors::GREEN,
+    /* [LOG_DEBUG] = */ mwr::termcolors::BLUE,
 };
 
 } // namespace vcml
