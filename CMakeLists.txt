@@ -35,6 +35,8 @@ include(FindGithubRepo)
 include(GenVersionInfo)
 include(Sanitizer)
 
+find_github_repo(mwr "machineware-gmbh/mwr")
+
 find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
 find_package(LibELF REQUIRED)
@@ -42,8 +44,6 @@ find_package(LibVNC)
 find_package(LibRFB)
 find_package(LibSLIRP)
 find_package(SDL2)
-
-find_github_repo(mwr "machineware-gmbh/mwr")
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
