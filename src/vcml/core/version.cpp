@@ -46,6 +46,9 @@
 #error VCML_VERSION_STRING undefined
 #endif
 
+#include <mwr/utils/modules.h>
+MWR_DECLARE_MODULE(vcml, VCML)
+
 namespace vcml {
 
 unsigned int library_version() {

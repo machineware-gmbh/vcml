@@ -192,10 +192,10 @@ target_include_directories(vcml SYSTEM PUBLIC ${LIBELF_INCLUDE_DIRS})
 target_link_libraries(vcml PUBLIC mwr)
 target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
 target_link_libraries(vcml PUBLIC ${LIBELF_LIBRARIES})
-target_link_libraries(vcml PUBLIC -rdynamic)
-target_link_libraries(vcml PUBLIC -pthread)
 target_link_libraries(vcml PUBLIC -lrt)
 target_link_libraries(vcml PUBLIC -ldl)
+
+target_link_options(vcml PUBLIC LINKER:SHELL:-u,vcml_register_module)
 
 if(SDL2_FOUND)
     message(STATUS "Building with SDL support")
