@@ -682,12 +682,12 @@ void reg<DATA, N>::init_bank(int bank) {
             log_debug(#bit " bit %s", val& bit ? "set" : "cleared"); \
     } while (0)
 
-#define VCML_LOG_REG_FIELD_CHANGE(field, reg, val)                      \
-    do {                                                                \
-        vcml::u64 from = vcml::get_field<field>(reg);                   \
-        vcml::u64 to = vcml::get_field<field>(val);                     \
-        if (from != to)                                                 \
-            log_debug(#field " changed from 0x%lx to 0x%lx", from, to); \
+#define VCML_LOG_REG_FIELD_CHANGE(field, reg, val)                        \
+    do {                                                                  \
+        vcml::u64 from = vcml::get_field<field>(reg);                     \
+        vcml::u64 to = vcml::get_field<field>(val);                       \
+        if (from != to)                                                   \
+            log_debug(#field " changed from 0x%llx to 0x%llx", from, to); \
     } while (0)
 
 #endif
