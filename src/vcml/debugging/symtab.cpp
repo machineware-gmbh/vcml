@@ -134,7 +134,7 @@ void symtab::merge(const symtab& other) {
 }
 
 u64 symtab::load_elf(const string& filename) {
-    if (!file_exists(filename))
+    if (!mwr::file_exists(filename))
         return 0;
 
     elf_reader loader(filename);

@@ -91,7 +91,7 @@ bool processor::cmd_read(const vector<string>& args, ostream& os) {
 }
 
 bool processor::cmd_symbols(const vector<string>& args, ostream& os) {
-    if (!file_exists(args[0])) {
+    if (!mwr::file_exists(args[0])) {
         os << "File not found: " << args[0];
         return false;
     }
@@ -223,7 +223,7 @@ bool processor::cmd_stack(const vector<string>& args, ostream& os) {
 }
 
 bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
-    if (!vcml::file_exists(gdb_term)) {
+    if (!mwr::file_exists(gdb_term)) {
         os << "gdbterm not found at " << gdb_term.str() << std::endl;
         return false;
     }
@@ -249,9 +249,9 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 
 unsigned int processor::simulate_cycles(unsigned int cycles) {
     u64 count = cycle_count();
-    double start = timestamp();
+    double start = mwr::timestamp();
     simulate(cycles);
-    m_run_time += timestamp() - start;
+    m_run_time += mwr::timestamp() - start;
     return cycle_count() - count;
 }
 
@@ -342,7 +342,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
             if (symfile.empty())
                 continue;
 
-            if (!file_exists(symfile)) {
+            if (!mwr::file_exists(symfile)) {
                 log_warn("cannot open file '%s'", symfile.c_str());
                 continue;
             }

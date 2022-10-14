@@ -66,7 +66,7 @@ bool setup::parse_command_line(int argc, char** argv) {
                 return false;
             }
 
-            if (!file_exists(argv[i + 1])) {
+            if (!mwr::file_exists(argv[i + 1])) {
                 PRINT("Error: config file not found '%s'\n", argv[i + 1]);
                 return false;
             }

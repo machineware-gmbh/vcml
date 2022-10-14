@@ -260,7 +260,7 @@ void socket::accept_async() {
         disconnect();
 
     m_async = thread(std::bind(&socket::accept, this));
-    set_thread_name(m_async, mkstr("socket_%hu", port()));
+    mwr::set_thread_name(m_async, mkstr("socket_%hu", port()));
 }
 
 void socket::connect(const string& host, u16 port) {
@@ -317,7 +317,7 @@ size_t socket::peek(time_t timeoutms) {
     if (m_async.joinable())
         m_async.join();
 
-    if (!fd_peek(m_conn, timeoutms))
+    if (!mwr::fd_peek(m_conn, timeoutms))
         return 0;
 
     char buf[32];

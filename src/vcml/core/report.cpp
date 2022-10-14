@@ -33,7 +33,7 @@ report::report(const string& msg, const char* file, int line):
     m_time(sc_time_stamp().to_seconds()),
     m_file(file),
     m_line(line),
-    m_backtrace(vcml::backtrace(mwr::max_backtrace_length, 2)) {
+    m_backtrace(mwr::backtrace(mwr::max_backtrace_length, 2)) {
     // nothing to do
 }
 

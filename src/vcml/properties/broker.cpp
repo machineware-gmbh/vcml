@@ -41,11 +41,11 @@ string broker::expand(const string& s) {
 static vector<broker*> g_brokers;
 
 broker::broker(const string& nm): m_name(nm), m_values() {
-    define("app", progname(), 1);
-    define("bin", dirname(progname()), 1);
-    define("pwd", curr_dir(), 1);
-    define("tmp", temp_dir(), 1);
-    define("usr", username(), 1);
+    define("app", mwr::progname(), 1);
+    define("bin", mwr::dirname(mwr::progname()), 1);
+    define("pwd", mwr::curr_dir(), 1);
+    define("tmp", mwr::temp_dir(), 1);
+    define("usr", mwr::username(), 1);
     define("pid", getpid(), 1);
     g_brokers.push_back(this);
 }

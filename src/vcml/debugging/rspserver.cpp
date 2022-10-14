@@ -196,7 +196,7 @@ void rspserver::disconnect() {
 
 void rspserver::run_async() {
     m_thread = thread(std::bind(&rspserver::run, this));
-    set_thread_name(m_thread, m_name);
+    mwr::set_thread_name(m_thread, m_name);
 }
 
 void rspserver::run() {

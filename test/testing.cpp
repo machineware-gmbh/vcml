@@ -78,14 +78,14 @@ string get_resource_path(const string& name) {
     }
 
     string res_dir = args[1];
-    if (!file_exists(res_dir)) {
+    if (!mwr::file_exists(res_dir)) {
         ADD_FAILURE() << "test resource path does not exist: " << res_dir;
         std::abort();
     }
 
-    string resource = args[1] + "/" + name;
-    EXPECT_TRUE(file_exists(resource)) << "resource " << name << " not found";
-    return resource;
+    string res = args[1] + "/" + name;
+    EXPECT_TRUE(mwr::file_exists(res)) << "resource " << name << " not found";
+    return res;
 }
 
 extern "C" int main(int argc, char** argv) {

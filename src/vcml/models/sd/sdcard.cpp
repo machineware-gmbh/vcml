@@ -426,7 +426,7 @@ void sdcard::init_image() {
         return;
     }
 
-    if (!file_exists(image))
+    if (!mwr::file_exists(image))
         VCML_ERROR("cannot access image file '%s'", image.get().c_str());
 
     log_debug("using image at '%s'", image.get().c_str());

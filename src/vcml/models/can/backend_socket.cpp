@@ -70,7 +70,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 
     aio_notify(m_socket, [&](int fd) -> void {
         can_frame frame;
-        if (fd_read(fd, &frame, sizeof(frame)) != sizeof(frame)) {
+        if (mwr::fd_read(fd, &frame, sizeof(frame)) != sizeof(frame)) {
             log_error("error reading %s: %s", m_name.c_str(), strerror(errno));
             aio_cancel(fd);
             return;
@@ -89,7 +89,7 @@ backend_socket::~backend_socket() {
 
 void backend_socket::send_to_host(const can_frame& frame) {
     if (m_socket > -1)
-        fd_write(m_socket, &frame, sizeof(frame));
+        mwr::fd_write(m_socket, &frame, sizeof(frame));
 }
 
 backend* backend_socket::create(bridge* br, const string& type) {

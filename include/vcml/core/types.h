@@ -187,27 +187,6 @@ using mwr::stl_contains;
 using mwr::stl_contains_if;
 using mwr::stl_add_unique;
 
-using mwr::dirname;
-using mwr::filename;
-using mwr::filename_noext;
-using mwr::curr_dir;
-using mwr::temp_dir;
-using mwr::progname;
-using mwr::username;
-
-using mwr::file_exists;
-
-using mwr::timestamp;
-using mwr::timestamp_us;
-
-using mwr::fd_peek;
-using mwr::fd_read;
-using mwr::fd_write;
-
-using mwr::backtrace;
-using mwr::get_thread_name;
-using mwr::set_thread_name;
-
 using mwr::stream_guard;
 
 using mwr::width_of;

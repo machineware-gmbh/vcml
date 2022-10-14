@@ -22,9 +22,9 @@ namespace vcml {
 namespace meta {
 
 static u64 do_usleep(u64 delta) {
-    u64 start = timestamp_us();
+    u64 start = mwr::timestamp_us();
     usleep(delta);
-    u64 end = timestamp_us();
+    u64 end = mwr::timestamp_us();
     if (start >= end)
         return 0;
     u64 d = end - start;
@@ -37,7 +37,7 @@ void throttle::update() {
     next_trigger(interval);
 
     if (rtf > 0.0) {
-        u64 actual = timestamp_us() - m_start + m_extra;
+        u64 actual = mwr::timestamp_us() - m_start + m_extra;
         u64 target = time_to_us(interval) / rtf;
 
         if (actual < target) {
@@ -53,13 +53,13 @@ void throttle::update() {
         }
     }
 
-    m_start = timestamp_us();
+    m_start = mwr::timestamp_us();
 }
 
 throttle::throttle(const sc_module_name& nm):
     module(nm),
     m_throttling(false),
-    m_start(timestamp_us()),
+    m_start(mwr::timestamp_us()),
     m_extra(0),
     update_interval("update_interval", sc_time(10.0, SC_MS)),
     rtf("rtf", 0.0) {
@@ -68,11 +68,11 @@ throttle::throttle(const sc_module_name& nm):
 }
 
 void throttle::session_suspend() {
-    m_start -= timestamp_us();
+    m_start -= mwr::timestamp_us();
 }
 
 void throttle::session_resume() {
-    m_start += timestamp_us();
+    m_start += mwr::timestamp_us();
     m_extra = 0;
 }
 

@@ -197,7 +197,7 @@ u64 elf_reader::read_segment(const elf_segment& segment, u8* dest) {
     if (lseek(m_fd, segment.offset, SEEK_SET) != (ssize_t)segment.offset)
         VCML_ERROR("cannot seek within ELF file '%s'", filename());
 
-    if (fd_read(m_fd, dest, segment.filesz) != segment.filesz)
+    if (mwr::fd_read(m_fd, dest, segment.filesz) != segment.filesz)
         VCML_ERROR("cannot read ELF file '%s'", filename());
 
     if (lseek(m_fd, 0, SEEK_SET) != 0)

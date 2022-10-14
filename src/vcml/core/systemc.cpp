@@ -500,7 +500,7 @@ struct async_worker {
         notify(),
         worker(std::bind(&async_worker::work, this)) {
         VCML_ERROR_ON(!process, "invalid parent process");
-        set_thread_name(worker, mkstr("vcml_async_%zu", id));
+        mwr::set_thread_name(worker, mkstr("vcml_async_%zu", id));
     }
 
     ~async_worker() {
@@ -663,7 +663,7 @@ bool sim_running() {
 
 string call_origin() {
     if (!thctl_is_sysc_thread()) {
-        string name = get_thread_name();
+        string name = mwr::get_thread_name();
         return mkstr("thread '%s'", name.c_str());
     }
 

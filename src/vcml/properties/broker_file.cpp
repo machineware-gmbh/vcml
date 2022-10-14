@@ -72,9 +72,9 @@ void broker_file::parse_expr(string expr, const string& file, size_t line) {
     // check for include directive
     if (starts_with(expr, "%include ")) {
         string incl = expand(trim(expr.substr(9)));
-        define("dir", dirname(incl), 1);
+        define("dir", mwr::dirname(incl), 1);
         parse_file(incl);
-        define("dir", dirname(file), 1);
+        define("dir", mwr::dirname(file), 1);
         return;
     }
 
@@ -166,8 +166,8 @@ void broker_file::resolve(const string& key, const string& val,
 
 broker_file::broker_file(const string& file):
     broker(file), m_errors(0), m_filename(file) {
-    define("dir", dirname(file), 1);
-    define("cfg", filename_noext(file), 1);
+    define("dir", mwr::dirname(file), 1);
+    define("cfg", mwr::filename_noext(file), 1);
 
     parse_file(file);
 

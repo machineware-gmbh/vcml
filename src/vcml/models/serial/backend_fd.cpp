@@ -34,7 +34,7 @@ bool backend_fd::read(u8& val) {
 }
 
 void backend_fd::write(u8 val) {
-    fd_write(m_fd, &val, sizeof(val));
+    mwr::fd_write(m_fd, &val, sizeof(val));
 }
 
 backend* backend_fd::create(terminal* term, const string& type) {

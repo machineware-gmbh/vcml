@@ -85,7 +85,7 @@ private:
 public:
     aio(): m_mtx(), m_handlers(), m_gen(), m_running(true), m_thread() {
         m_thread = thread(std::bind(&aio::aio_thread, this));
-        set_thread_name(m_thread, "aio_thread");
+        mwr::set_thread_name(m_thread, "aio_thread");
     }
 
     virtual ~aio() {

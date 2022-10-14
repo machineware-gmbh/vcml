@@ -34,7 +34,7 @@ u32 hwrng::read_rng() {
     VCML_ERROR_ON(fd < 0, "failed to open %s: %s", src, strerror(errno));
 
     u32 data = 0;
-    if (!fd_read(fd, &data, sizeof(data)))
+    if (!mwr::fd_read(fd, &data, sizeof(data)))
         VCML_ERROR("failed to read %s: %s", src, strerror(errno));
 
     if (close(fd) < 0)

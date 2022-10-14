@@ -75,14 +75,14 @@ enum keys : u8 {
 };
 
 bool backend_term::read(u8& value) {
-    if (!fd_peek(STDIN_FILENO))
+    if (!mwr::fd_peek(STDIN_FILENO))
         return false;
 
     u8 ch;
-    fd_read(STDIN_FILENO, &ch, sizeof(ch));
+    mwr::fd_read(STDIN_FILENO, &ch, sizeof(ch));
 
     if (ch == CTRL_A) { // ctrl-a
-        fd_read(STDIN_FILENO, &ch, sizeof(ch));
+        mwr::fd_read(STDIN_FILENO, &ch, sizeof(ch));
         if (ch == 'x' || ch == CTRL_X || ch == g_term.c_cc[VINTR]) {
             terminate();
             return false;
@@ -97,7 +97,7 @@ bool backend_term::read(u8& value) {
 }
 
 void backend_term::write(u8 val) {
-    fd_write(STDOUT_FILENO, &val, sizeof(val));
+    mwr::fd_write(STDOUT_FILENO, &val, sizeof(val));
 }
 
 backend* backend_term::create(terminal* term, const string& type) {

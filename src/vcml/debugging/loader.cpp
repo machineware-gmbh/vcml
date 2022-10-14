@@ -78,7 +78,7 @@ vector<image_info> images_from_string(const string& s) {
         image_type type = IMAGE_BIN;
         u64 offset = 0;
 
-        if (file_exists(file))
+        if (mwr::file_exists(file))
             type = detect_image_type(file);
 
         if (vec.size() > 1)
@@ -232,7 +232,7 @@ void loader::load_image(const string& file, u64 offset, image_type type) {
 }
 
 void loader::load_image(const image_info& image) {
-    if (!file_exists(image.filename))
+    if (!mwr::file_exists(image.filename))
         VCML_REPORT("file not found");
 
     switch (image.type) {

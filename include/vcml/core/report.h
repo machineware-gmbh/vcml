@@ -75,20 +75,8 @@ inline const vector<string> report::backtrace() const {
         }                                \
     } while (0)
 
-#define VCML_ERROR(...)                                \
-    do {                                               \
-        fprintf(stderr, "%s:%d ", __FILE__, __LINE__); \
-        fprintf(stderr, __VA_ARGS__);                  \
-        fprintf(stderr, "\n");                         \
-        abort();                                       \
-    } while (0)
-
-#define VCML_ERROR_ON(condition, ...) \
-    do {                              \
-        if (condition) {              \
-            VCML_ERROR(__VA_ARGS__);  \
-        }                             \
-    } while (0)
+#define VCML_ERROR    MWR_ERROR
+#define VCML_ERROR_ON MWR_ERROR_ON
 
 } // namespace vcml
 

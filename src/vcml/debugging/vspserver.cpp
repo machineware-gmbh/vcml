@@ -439,7 +439,7 @@ vspserver::vspserver(u16 server_port):
     rspserver(server_port),
     suspender("vspserver"),
     subscriber(),
-    m_announce(temp_dir() + mkstr("vcml_session_%hu", port())),
+    m_announce(mwr::temp_dir() + mkstr("vcml_session_%hu", port())),
     m_stop_reason("elaboration"),
     m_duration() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
@@ -463,8 +463,8 @@ vspserver::vspserver(u16 server_port):
 
     // Create announce file
     ofstream of(m_announce.c_str());
-    of << "localhost:" << std::dec << port() << ":" << username() << ":"
-       << progname() << std::endl;
+    of << "localhost:" << std::dec << port() << ":" << mwr::username() << ":"
+       << mwr::progname() << std::endl;
 }
 
 vspserver::~vspserver() {
@@ -499,7 +499,7 @@ void vspserver::start() {
 }
 
 void vspserver::cleanup() {
-    if (!file_exists(m_announce))
+    if (!mwr::file_exists(m_announce))
         return;
 
     if (remove(m_announce.c_str())) {

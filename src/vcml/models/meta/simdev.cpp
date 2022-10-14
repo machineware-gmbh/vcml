@@ -42,7 +42,7 @@ u64 simdev::read_sclk() {
 }
 
 u64 simdev::read_hclk() {
-    return timestamp_us();
+    return mwr::timestamp_us();
 }
 
 void simdev::write_sout(u32 val) {

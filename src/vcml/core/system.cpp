@@ -32,8 +32,8 @@ void system::timeout() {
 
 system::system(const sc_module_name& nm):
     module(nm),
-    name("name", progname()),
-    desc("desc", progname()),
+    name("name", mwr::progname()),
+    desc("desc", mwr::progname()),
     config("config", ""),
     backtrace("backtrace", true),
     session("session", -1),

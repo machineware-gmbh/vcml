@@ -87,7 +87,7 @@ backend_tap::~backend_tap() {
 
 void backend_tap::send_to_host(const eth_frame& frame) {
     if (m_fd >= 0)
-        fd_write(m_fd, frame.data(), frame.size());
+        mwr::fd_write(m_fd, frame.data(), frame.size());
 }
 
 backend* backend_tap::create(bridge* br, const string& type) {

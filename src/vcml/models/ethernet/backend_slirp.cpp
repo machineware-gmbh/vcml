@@ -195,7 +195,7 @@ slirp_network::slirp_network(unsigned int id):
         log_debug("created slirp ipv6 network %04x::", 0xfec0 + id);
 
     m_thread = thread(std::bind(&slirp_network::slirp_thread, this));
-    set_thread_name(m_thread, mkstr("slirp_thread_%u", id));
+    mwr::set_thread_name(m_thread, mkstr("slirp_thread_%u", id));
 }
 
 slirp_network::~slirp_network() {

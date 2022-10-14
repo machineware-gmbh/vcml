@@ -308,7 +308,7 @@ void vnc::init(const videomode& mode, u8* fb) {
 
     m_running = true;
     m_thread = thread(&vnc::run, this);
-    set_thread_name(m_thread, name());
+    mwr::set_thread_name(m_thread, name());
 }
 
 void vnc::render(u32 x, u32 y, u32 w, u32 h) {
