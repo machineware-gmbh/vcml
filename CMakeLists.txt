@@ -16,7 +16,7 @@
  #                                                                            #
  ##############################################################################
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.11)
 project(vcml VERSION 2022.10.09 LANGUAGES C CXX)
 
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
@@ -55,7 +55,6 @@ configure_file(${src}/vcml/core/version.h.in
 add_library(vcml STATIC
     ${src}/vcml/core/types.cpp
     ${src}/vcml/core/report.cpp
-    ${src}/vcml/core/version.cpp
     ${src}/vcml/core/aio.cpp
     ${src}/vcml/core/thctl.cpp
     ${src}/vcml/core/socket.cpp
@@ -194,8 +193,6 @@ target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
 target_link_libraries(vcml PUBLIC ${LIBELF_LIBRARIES})
 target_link_libraries(vcml PUBLIC -lrt)
 target_link_libraries(vcml PUBLIC -ldl)
-
-target_link_options(vcml PUBLIC LINKER:SHELL:-u,vcml_register_module)
 
 if(SDL2_FOUND)
     message(STATUS "Building with SDL support")

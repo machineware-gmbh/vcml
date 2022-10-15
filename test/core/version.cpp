@@ -37,6 +37,6 @@ TEST(version, vstr) {
     EXPECT_GT(std::strlen(VCML_VERSION_STRING), 0);
     EXPECT_GE(std::strlen(VCML_GIT_REV), std::strlen(VCML_GIT_REV_SHORT));
 
-    EXPECT_EQ(vcml::library_version(), VCML_VERSION);
-    EXPECT_TRUE(vcml::version_check());
+    EXPECT_NE(mwr::modules::find("vcml"), nullptr);
+    EXPECT_NE(mwr::modules::find("systemc"), nullptr);
 }

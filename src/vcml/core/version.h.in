@@ -29,14 +29,4 @@
 #define VCML_VERSION          @VCML_VERSION_INT@
 #define VCML_VERSION_STRING   "@VCML_VERSION_STRING@"
 
-namespace vcml {
-
-unsigned int library_version();
-
-inline bool version_check() {
-    return library_version() == VCML_VERSION;
-}
-
-} // namespace vcml
-
 #endif

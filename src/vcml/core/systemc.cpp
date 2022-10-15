@@ -16,10 +16,24 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/version.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/thctl.h"
 
 namespace vcml {
+
+#define SYSC_VERSION_MAJOR SC_VERSION_MAJOR
+#define SYSC_VERSION_MINOR SC_VERSION_MINOR
+#define SYSC_VERSION_PATCH SC_VERSION_PATCH
+
+#define SYSC_GIT_REV       "n/a"
+#define SYSC_GIT_REV_SHORT "n/a"
+
+#define SYSC_VERSION        SYSTEMC_VERSION
+#define SYSC_VERSION_STRING SC_VERSION
+
+MWR_DECLARE_MODULE(SYSC, "systemc")
+MWR_DECLARE_MODULE(VCML, "vcml")
 
 sc_object* find_object(const string& name) {
     return sc_core::sc_find_object(name.c_str());
