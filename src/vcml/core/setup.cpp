@@ -57,8 +57,18 @@ setup::setup(int argc, char** argv):
     if (!mwr::options::parse(argc, argv))
         exit_usage();
 
+#ifdef VCML_DEBUG
     log_level min = LOG_ERROR;
-    log_level max = m_log_debug ? LOG_DEBUG : LOG_INFO;
+    log_level max = LOG_DEBUG;
+#else
+    log_level min = LOG_ERROR;
+    log_level max = LOG_INFO;
+#endif
+
+    if (m_log_debug.has_value())
+        max = m_log_debug ? LOG_DEBUG : LOG_INFO;
+    if (m_log_delta.has_value())
+        publisher::print_delta_cycle = m_log_delta;
 
     for (const string& file : m_log_files.values()) {
         publisher* pub = new log_file(file);
