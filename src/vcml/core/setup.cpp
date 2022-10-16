@@ -32,7 +32,7 @@ static bool exit_usage() {
 static bool exit_version() {
     std::cerr << "Modules of " << mwr::filename(mwr::progname()) << ":"
               << std::endl;
-    mwr::modules::print_versions(std::cerr);
+    mwr::modules::print_modules(std::cerr);
     exit(EXIT_FAILURE);
 }
 
