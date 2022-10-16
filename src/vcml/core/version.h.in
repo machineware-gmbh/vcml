@@ -29,4 +29,8 @@
 #define VCML_VERSION          @VCML_VERSION_INT@
 #define VCML_VERSION_STRING   "@VCML_VERSION_STRING@"
 
+#include <mwr.h>
+
+MWR_DECLARE_MODULE(VCML, "vcml");
+
 #endif

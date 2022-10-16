@@ -33,7 +33,6 @@ namespace vcml {
 #define SYSC_VERSION_STRING SC_VERSION
 
 MWR_DECLARE_MODULE(SYSC, "systemc")
-MWR_DECLARE_MODULE(VCML, "vcml")
 
 sc_object* find_object(const string& name) {
     return sc_core::sc_find_object(name.c_str());
