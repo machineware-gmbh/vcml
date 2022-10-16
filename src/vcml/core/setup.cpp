@@ -18,103 +18,61 @@
 
 #include "vcml/core/setup.h"
 
-#define PRINT(...) fprintf(stderr, ##__VA_ARGS__)
+#include <locale.h>
 
 namespace vcml {
 
-static void exit_usage(const char* arg0, int code) {
-    PRINT("Usage: %s [program arguments]\n", arg0);
-    PRINT("  -l | --log [file]         Enable logging to <file>|stdout\n");
-    PRINT("       --log-debug          Activate debug logging\n");
-    PRINT("       --log-delta          Include delta cycle in logs\n");
-    PRINT("  -t | --trace [file]       Enable tracing to <file>|stdout\n");
-    PRINT("  -f | --config-file <file> Read configuration from <file>\n");
-    PRINT("  -c | --config  <x>=<y>    Set property <x> to value <y>\n");
-    PRINT("  -h | --help               Print this message\n");
-    exit(code);
+static bool exit_usage() {
+    std::cerr << "Usage: " << mwr::filename(mwr::progname()) << " <arguments>"
+              << std::endl;
+    mwr::options::print_help(std::cerr);
+    exit(EXIT_FAILURE);
 }
 
-bool setup::parse_command_line(int argc, char** argv) {
-    for (int i = 1; i < argc; i++) {
-        const char* arg = argv[i];
-        m_args.push_back(arg);
-
-        if (!strcmp(arg, "--help") | !strcmp(arg, "-h")) {
-            exit_usage(argv[0], EXIT_SUCCESS);
-
-        } else if (!strcmp(arg, "--log-debug")) {
-            m_log_debug = !m_log_debug;
-
-        } else if (!strcmp(arg, "--log-delta")) {
-            publisher::print_delta_cycle = !publisher::print_delta_cycle;
-
-        } else if (!strcmp(arg, "--log") || !strcmp(arg, "-l")) {
-            if (i >= argc - 1 || *argv[i + 1] == '-')
-                m_log_stdout = !m_log_stdout;
-            else
-                stl_add_unique(m_log_files, string(argv[++i]));
-
-        } else if (!strcmp(arg, "--trace") || !strcmp(arg, "-t")) {
-            if (i >= argc - 1 || *argv[i + 1] == '-')
-                m_trace_stdout = !m_trace_stdout;
-            else
-                stl_add_unique(m_trace_files, string(argv[++i]));
-
-        } else if (!strcmp(arg, "--config-file") || !strcmp(arg, "-f")) {
-            if (i >= argc - 1 || *argv[i + 1] == '-') {
-                PRINT("Error: %s expects <file> argument\n", arg);
-                return false;
-            }
-
-            if (!mwr::file_exists(argv[i + 1])) {
-                PRINT("Error: config file not found '%s'\n", argv[i + 1]);
-                return false;
-            }
-
-            m_config_files.push_back(argv[++i]);
-        }
-    }
-
-    return true;
+static bool exit_version() {
+    std::cerr << "Modules of " << mwr::filename(mwr::progname()) << ":"
+              << std::endl;
+    mwr::modules::print_versions(std::cerr);
+    exit(EXIT_FAILURE);
 }
 
 setup* setup::s_instance = nullptr;
 
 setup::setup(int argc, char** argv):
-#ifdef VCML_DEBUG
-    m_log_debug(true),
-#else
-    m_log_debug(false),
-#endif
-    m_log_stdout(false),
-    m_trace_stdout(false),
-    m_log_files(),
-    m_trace_files(),
-    m_config_files(),
+    m_log_debug("--log-debug", "Activate verbose debug logging"),
+    m_log_delta("--log-delta", "Include delta cycles in log"),
+    m_log_stdout("--log-stdout", "Send log output to stdout"),
+    m_log_files("--log-file", "-l", "Send log output to file"),
+    m_trace_stdout("--trace-stdout", "Send tracing output to stdout"),
+    m_trace_files("--trace", "-t", "Send tracing output to file"),
+    m_config_files("--file", "-f", "Load configuration from file"),
+    m_config_options("--config", "-c", "Specify individual property values"),
+    m_help("--help", "-h", "Prints this message", exit_usage),
+    m_version("--version", "Prints module version information", exit_version),
     m_publishers(),
     m_brokers() {
     VCML_ERROR_ON(s_instance != nullptr, "setup already created");
     s_instance = this;
 
-    if (!parse_command_line(argc, argv))
-        exit_usage(argv[0], EXIT_FAILURE);
+    if (!mwr::options::parse(argc, argv))
+        exit_usage();
 
     log_level min = LOG_ERROR;
     log_level max = m_log_debug ? LOG_DEBUG : LOG_INFO;
 
-    for (const string& file : m_log_files) {
+    for (const string& file : m_log_files.values()) {
         publisher* pub = new log_file(file);
         pub->set_level(min, max);
         m_publishers.push_back(pub);
     }
 
-    if (m_log_stdout || m_log_files.empty()) {
+    if (m_log_stdout.value() || !m_log_files.has_value()) {
         publisher* pub = new log_term(true);
         pub->set_level(min, max);
         m_publishers.push_back(pub);
     }
 
-    for (const string& file : m_trace_files) {
+    for (const string& file : m_trace_files.values()) {
         tracer* t = new tracer_file(file);
         m_tracers.push_back(t);
     }
@@ -124,10 +82,12 @@ setup::setup(int argc, char** argv):
         m_tracers.push_back(t);
     }
 
-    m_brokers.push_back(new broker_arg(argc, argv));
+    if (m_config_options.has_value())
+        m_brokers.push_back(new broker_arg(argc, argv));
+
     m_brokers.push_back(new broker_env());
 
-    for (const string& file : m_config_files)
+    for (const string& file : m_config_files.values())
         m_brokers.push_back(new broker_file(file));
 }
 
@@ -149,6 +109,8 @@ setup* setup::instance() {
 }
 
 int main(int argc, char** argv) {
+    setlocale(LC_ALL, "");
+
 #ifndef VCML_DEBUG
     // disable deprecated warning for release builds
     sc_core::sc_report_handler::set_actions("/IEEE_Std_1666/deprecated",
@@ -177,7 +139,7 @@ int main(int argc, char** argv) {
 
 } // namespace vcml
 
-extern "C" int main(int argc, char** argv) __attribute__((weak));
+extern "C" int main(int argc, char** argv) MWR_DECL_WEAK;
 extern "C" int main(int argc, char** argv) {
     return vcml::main(argc, argv);
 }

@@ -44,20 +44,23 @@ namespace vcml {
 class setup
 {
 private:
-    bool m_log_debug;
-    bool m_log_stdout;
-    bool m_trace_stdout;
+    mwr::option<bool> m_log_debug;
+    mwr::option<bool> m_log_delta;
+    mwr::option<bool> m_log_stdout;
+    mwr::option<string> m_log_files;
 
-    vector<string> m_args;
-    vector<string> m_log_files;
-    vector<string> m_trace_files;
-    vector<string> m_config_files;
+    mwr::option<bool> m_trace_stdout;
+    mwr::option<string> m_trace_files;
+
+    mwr::option<string> m_config_files;
+    mwr::option<string> m_config_options;
+
+    mwr::option<bool> m_help;
+    mwr::option<bool> m_version;
 
     vector<publisher*> m_publishers;
     vector<tracer*> m_tracers;
     vector<broker*> m_brokers;
-
-    bool parse_command_line(int argc, char** argv);
 
     static setup* s_instance;
 
@@ -67,18 +70,28 @@ public:
     virtual ~setup();
 
     bool is_logging_debug() const { return m_log_debug; }
+    bool is_logging_delta() const { return m_log_delta; }
     bool is_logging_stdout() const { return m_log_stdout; }
-    bool trace_stdout() const { return m_trace_stdout; }
+    bool is_tracing_stdout() const { return m_trace_stdout; }
 
-    const vector<string>& log_files() const { return m_log_files; }
-    const vector<string>& trace_files() const { return m_trace_files; }
-    const vector<string>& config_files() const { return m_config_files; }
-
-    unsigned int argc() const { return m_args.size(); }
-    const vector<string>& argv() const { return m_args; }
+    const vector<string>& log_files() const;
+    const vector<string>& trace_files() const;
+    const vector<string>& config_files() const;
 
     static setup* instance();
 };
+
+inline const vector<string>& setup::log_files() const {
+    return m_log_files.values();
+}
+
+inline const vector<string>& setup::trace_files() const {
+    return m_trace_files.values();
+}
+
+inline const vector<string>& setup::config_files() const {
+    return m_config_files.values();
+}
 
 int main(int argc, char** argv);
 
