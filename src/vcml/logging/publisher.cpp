@@ -159,14 +159,10 @@ void publisher::publish(log_level level, const string& sender,
 
     ss << rep.message();
 
-    string origin = sender;
-    if (origin.empty())
-        origin = rep.origin();
-
     // always force printing of source locations of reports
     bool print = print_source;
     print_source = true;
-    publish(level, origin, ss.str(), rep.file(), rep.line());
+    publish(level, sender, ss.str(), rep.file(), rep.line());
     print_source = print;
 }
 

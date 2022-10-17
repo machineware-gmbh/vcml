@@ -20,7 +20,6 @@
 #define VCML_ARM_PL011UART_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
 #include "vcml/core/peripheral.h"

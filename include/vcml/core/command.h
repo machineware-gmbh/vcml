@@ -20,7 +20,6 @@
 #define VCML_COMMAND_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 
 #define VCML_NO_ARGS (::std::vector<::std::string>())
 

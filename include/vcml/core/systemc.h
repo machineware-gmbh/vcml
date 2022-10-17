@@ -33,7 +33,6 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 
 #define SYSTEMC_VERSION_2_3_0a 20120701 // NOLINT
 #define SYSTEMC_VERSION_2_3_1a 20140417 // NOLINT

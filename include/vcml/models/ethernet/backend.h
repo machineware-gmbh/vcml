@@ -20,8 +20,6 @@
 #define VCML_ETHERNET_BACKEND_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
-
 #include "vcml/protocols/eth.h"
 
 namespace vcml {

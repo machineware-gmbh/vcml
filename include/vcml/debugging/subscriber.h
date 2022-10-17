@@ -20,7 +20,6 @@
 #define VCML_DEBUGGING_SUBSCRIBER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/range.h"
 
 #include "vcml/debugging/symtab.h"

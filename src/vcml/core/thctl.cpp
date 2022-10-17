@@ -17,7 +17,6 @@
  ******************************************************************************/
 
 #include "vcml/core/thctl.h"
-#include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 
 namespace vcml {

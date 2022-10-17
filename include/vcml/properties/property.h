@@ -20,10 +20,7 @@
 #define VCML_PROPERTY_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
-
 #include "vcml/logging/logger.h"
-
 #include "vcml/properties/property_base.h"
 #include "vcml/properties/broker.h"
 

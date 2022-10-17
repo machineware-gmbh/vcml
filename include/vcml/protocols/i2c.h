@@ -20,7 +20,6 @@
 #define VCML_PROTOCOLS_I2C_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/protocols/base.h"

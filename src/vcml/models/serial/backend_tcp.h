@@ -20,7 +20,6 @@
 #define VCML_SERIAL_BACKEND_TCP_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/socket.h"
 
 #include "vcml/logging/logger.h"

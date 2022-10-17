@@ -20,8 +20,6 @@
 #define VCML_GDBSERVER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
-
 #include "vcml/logging/logger.h"
 
 #include "vcml/debugging/target.h"

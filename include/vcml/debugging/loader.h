@@ -20,8 +20,6 @@
 #define VCML_DEBUGGING_LOADER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
-
 #include "vcml/logging/logger.h"
 
 #include "vcml/debugging/elf_reader.h"

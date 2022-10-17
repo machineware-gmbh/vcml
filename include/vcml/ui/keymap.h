@@ -20,7 +20,6 @@
 #define VCML_UI_KEYMAP_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/logging/logger.h"
 
 #include <linux/input.h>

@@ -20,14 +20,12 @@
 #define VCML_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/version.h"
 #include "vcml/core/thctl.h"
 #include "vcml/core/socket.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
 #include "vcml/core/aio.h"
-#include "vcml/core/library.h"
 #include "vcml/core/command.h"
 #include "vcml/core/module.h"
 #include "vcml/core/component.h"

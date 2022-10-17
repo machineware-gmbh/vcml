@@ -20,7 +20,6 @@
 #define VCML_SYSTEM_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/module.h"
 
 #include "vcml/debugging/vspserver.h"

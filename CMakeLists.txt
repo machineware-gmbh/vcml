@@ -54,12 +54,10 @@ configure_file(${src}/vcml/core/version.h.in
 
 add_library(vcml STATIC
     ${src}/vcml/core/types.cpp
-    ${src}/vcml/core/report.cpp
     ${src}/vcml/core/aio.cpp
     ${src}/vcml/core/thctl.cpp
     ${src}/vcml/core/socket.cpp
     ${src}/vcml/core/systemc.cpp
-    ${src}/vcml/core/library.cpp
     ${src}/vcml/core/module.cpp
     ${src}/vcml/core/component.cpp
     ${src}/vcml/core/register.cpp
@@ -191,8 +189,6 @@ target_include_directories(vcml SYSTEM PUBLIC ${LIBELF_INCLUDE_DIRS})
 target_link_libraries(vcml PUBLIC mwr)
 target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
 target_link_libraries(vcml PUBLIC ${LIBELF_LIBRARIES})
-target_link_libraries(vcml PUBLIC -lrt)
-target_link_libraries(vcml PUBLIC -ldl)
 
 if(SDL2_FOUND)
     message(STATUS "Building with SDL support")

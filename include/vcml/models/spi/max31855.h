@@ -20,7 +20,6 @@
 #define VCML_SPI_MAX31855_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
 #include "vcml/core/component.h"

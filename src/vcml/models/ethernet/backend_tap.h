@@ -20,7 +20,6 @@
 #define VCML_ETHERNET_BACKEND_TAP_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/aio.h"
 
 #include "vcml/logging/logger.h"

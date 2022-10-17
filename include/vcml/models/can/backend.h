@@ -20,8 +20,6 @@
 #define VCML_CAN_BACKEND_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
-
 #include "vcml/protocols/can.h"
 
 namespace vcml {

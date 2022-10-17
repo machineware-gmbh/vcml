@@ -20,7 +20,6 @@
 #define VCML_PROTOCOLS_TLM_ADAPTERS_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
 

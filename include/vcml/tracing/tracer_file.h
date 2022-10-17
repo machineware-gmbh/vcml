@@ -20,7 +20,6 @@
 #define VCML_TRACER_FILE_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/tracing/tracer.h"

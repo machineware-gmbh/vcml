@@ -20,7 +20,6 @@
 #define VCML_SERIAL_BACKEND_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 
 namespace vcml {
 namespace serial {

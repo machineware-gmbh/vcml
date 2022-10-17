@@ -54,6 +54,11 @@
 
 #include <mwr.h>
 
+#define VCML_ERROR     MWR_ERROR
+#define VCML_ERROR_ON  MWR_ERROR_ON
+#define VCML_REPORT    MWR_REPORT
+#define VCML_REPORT_ON MWR_REPORT_ON
+
 namespace vcml {
 
 using mwr::u8;
@@ -156,6 +161,8 @@ using std::thread;
 using std::stringstream;
 using std::ostringstream;
 using std::istringstream;
+
+using mwr::report;
 
 using mwr::mkstr;
 using mwr::vmkstr;

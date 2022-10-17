@@ -20,7 +20,6 @@
 #define VCML_DEBUGGING_SREC_READER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 
 namespace vcml {
 namespace debugging {

@@ -20,7 +20,6 @@
 #define VCML_SOCKET_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/report.h"
 
 namespace vcml {
 
