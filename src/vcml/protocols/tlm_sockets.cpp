@@ -263,6 +263,18 @@ void tlm_initiator_socket::stub(tlm_response_status r) {
     base_type::bind(m_stub->in);
 }
 
+void tlm_target_socket::b_transport_int(tlm_generic_payload& tx, sc_time& t) {
+    b_transport(tx, t);
+}
+
+unsigned int tlm_target_socket::transport_dbg_int(tlm_generic_payload& tx) {
+    return transport_dbg(tx);
+}
+
+bool tlm_target_socket::get_dmi_ptr_int(tlm_generic_payload& tx, tlm_dmi& d) {
+    return get_dmi_ptr(tx, d);
+}
+
 void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     trace_fw(tx, dt);
 
@@ -358,9 +370,9 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
 
     m_host->register_socket(this);
 
-    register_b_transport(this, &tlm_target_socket::b_transport);
-    register_transport_dbg(this, &tlm_target_socket::transport_dbg);
-    register_get_direct_mem_ptr(this, &tlm_target_socket::get_dmi_ptr);
+    register_b_transport(this, &tlm_target_socket::b_transport_int);
+    register_transport_dbg(this, &tlm_target_socket::transport_dbg_int);
+    register_get_direct_mem_ptr(this, &tlm_target_socket::get_dmi_ptr_int);
 }
 
 tlm_target_socket::~tlm_target_socket() {

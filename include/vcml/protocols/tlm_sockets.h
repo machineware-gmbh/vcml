@@ -251,9 +251,14 @@ private:
     void trace_fw(const tlm_generic_payload& tx, const sc_time& t);
     void trace_bw(const tlm_generic_payload& tx, const sc_time& t);
 
-    void b_transport(tlm_generic_payload& tx, sc_time& dt);
-    unsigned int transport_dbg(tlm_generic_payload& tx);
-    bool get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
+    void b_transport_int(tlm_generic_payload& tx, sc_time& dt);
+    unsigned int transport_dbg_int(tlm_generic_payload& tx);
+    bool get_dmi_ptr_int(tlm_generic_payload& tx, tlm_dmi& dmi);
+
+protected:
+    virtual void b_transport(tlm_generic_payload& tx, sc_time& dt);
+    virtual unsigned int transport_dbg(tlm_generic_payload& tx);
+    virtual bool get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
 
 public:
     property<bool> trace;
