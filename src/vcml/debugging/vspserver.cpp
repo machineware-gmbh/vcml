@@ -169,7 +169,7 @@ string vspserver::handle_resume(const string& cmd) {
         duration = from_string<sc_time>(args[1]);
 
     resume_simulation(duration);
-    return mkstr("OK,%s", m_stop_reason.c_str());
+    return mkstr("OK");
 }
 
 string vspserver::handle_step(const string& cmd) {
@@ -186,7 +186,7 @@ string vspserver::handle_step(const string& cmd) {
 
     tgt->request_singlestep(this);
     resume_simulation(SC_MAX_TIME);
-    return mkstr("OK,%s", m_stop_reason.c_str());
+    return mkstr("OK");
 }
 
 string vspserver::handle_stop(const string& cmd) {
