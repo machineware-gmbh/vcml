@@ -20,8 +20,8 @@ Currently, versions >= 2.3.0 are supported. Furthermore, you need `cmake`,
 `libelf` and, optionally, `libvncserver` if you also want graphics support.
 This is how to build and install them:
 
-1. Download and build SystemC (here `systemc-2.3.2`). Make sure to set the
-   environment variables `SYSTEMC_HOME` and `TARGET_ARCH` accordingly:
+1. *Optional*: download and build SystemC (here `systemc-2.3.2`). Make sure to
+   set the environment variables `SYSTEMC_HOME` and `TARGET_ARCH` accordingly:
     ```
     wget http://www.accellera.org/images/downloads/standards/systemc/systemc-2.3.2.tar.gz
     tar -xzf systemc-2.3.2.tar.gz && cd systemc-2.3.2
@@ -31,6 +31,13 @@ This is how to build and install them:
     ../configure --prefix=$SYSTEMC_HOME --enable-optimize --enable-static
     make -j 4 && make install
     ```
+    *Note*: if you choose to skip this step, `vcml` will automatically download
+    SystemC from `github.com/machineware-gmbh/systemc.git` during configuration
+    and set the environment variables accordingly for this build.
+
+    *Note*: you can provide your own SystemC installation by specifing your own
+    `SYSTEMC_HOME` and `TARGET_ARCH` variables. Versions starting from `2.3.0`
+    are supported.
 
 2. Install `libelf` and `cmake`:
     ```
@@ -50,14 +57,25 @@ This is how to build and install them:
     sudo yum install libvncserver-devel   # Centos
     ```
 
-5. Chose directories for building and deployment:
+5. Clone VCML repository and initialize submodules:
+    ```
+    git clone https://github.com/machineware-gmbh/vcml.git --recursive
+    ```
+    or, alternatively
+    ```
+    git clone https://github.com/machineware-gmbh/vcml.git
+    git submodule init
+    git submodule update
+    ```
+
+6. Chose directories for building and deployment:
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
     <build-dir>   location to store object files, e.g. /home/jan/vcml/BUILD
     <install-dir> output directory for binaries,  e.g. /opt/vcml
     ```
 
-6. Configure and build the project using `cmake`. During configuration you must
+7. Configure and build the project using `cmake`. During configuration you must
    state whether or not to build the utility programs and unit tests:
      * `-DVCML_BUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
      * `-DVCML_BUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
@@ -75,7 +93,7 @@ This is how to build and install them:
    If building with `-DVCML_BUILD_TESTS=ON` you can run all unit tests using
    `make test` within `<build-dir>`.
 
-7. After installation, the following new files should be present:
+8. After installation, the following new files should be present:
     ```
     <install-dir>/lib/libvcml.a   # library
     <install-dir>/include/vcml.h  # library header
@@ -83,7 +101,7 @@ This is how to build and install them:
     <install-dir>/bin/            # utility programs
     ```
 
-8. Update your environment so that other projects can reference your build:
+9. Update your environment so that other projects can reference your build:
     ```
     export VCML_HOME=<install-dir>
     ```
@@ -97,7 +115,7 @@ builds and should therefore not be used for VPs that are used productively,
 e.g. for target software development. To maintain both builds from a single
 source repository, try the following:
 ```
-git clone https://github.com/machineware-gmbh/vcml.git && cd vcml
+git clone https://github.com/machineware-gmbh/vcml.git --recursive && cd vcml
 home=$PWD
 for type in "DEBUG" "RELEASE"; do
     install="$home/BUILD/$type"
