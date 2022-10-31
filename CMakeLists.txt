@@ -39,7 +39,6 @@ find_github_repo(mwr "machineware-gmbh/mwr")
 
 find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
-find_package(LibELF REQUIRED)
 find_package(LibVNC)
 find_package(LibRFB)
 find_package(LibSLIRP)
@@ -78,7 +77,6 @@ add_library(vcml STATIC
     ${src}/vcml/properties/broker_file.cpp
     ${src}/vcml/debugging/symtab.cpp
     ${src}/vcml/debugging/target.cpp
-    ${src}/vcml/debugging/elf_reader.cpp
     ${src}/vcml/debugging/loader.cpp
     ${src}/vcml/debugging/subscriber.cpp
     ${src}/vcml/debugging/suspender.cpp
@@ -181,11 +179,9 @@ target_include_directories(vcml PUBLIC ${inc})
 target_include_directories(vcml PUBLIC ${gen})
 target_include_directories(vcml PRIVATE ${src})
 target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
-target_include_directories(vcml SYSTEM PUBLIC ${LIBELF_INCLUDE_DIRS})
 
 target_link_libraries(vcml PUBLIC mwr)
 target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
-target_link_libraries(vcml PUBLIC ${LIBELF_LIBRARIES})
 
 if(SDL2_FOUND)
     message(STATUS "Building with SDL support")

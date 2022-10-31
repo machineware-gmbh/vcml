@@ -17,7 +17,6 @@
  ******************************************************************************/
 
 #include "vcml/debugging/symtab.h"
-#include "vcml/debugging/elf_reader.h"
 
 namespace vcml {
 namespace debugging {
@@ -137,8 +136,31 @@ u64 symtab::load_elf(const string& filename) {
     if (!mwr::file_exists(filename))
         return 0;
 
-    elf_reader loader(filename);
-    return loader.read_symbols(*this);
+    mwr::elf reader(filename);
+    endianess endian = reader.is_big_endian() ? ENDIAN_BIG : ENDIAN_LITTLE;
+
+    for (const auto& symbol : reader.symbols()) {
+        switch (symbol.kind) {
+        case mwr::elf::KIND_OBJECT:
+        case mwr::elf::KIND_COMMON:
+        case mwr::elf::KIND_TLS:
+            insert({ symbol.name, SYMKIND_OBJECT, endian, symbol.size,
+                     symbol.virt, symbol.phys });
+            break;
+
+        case mwr::elf::KIND_FUNC:
+            insert({ symbol.name, SYMKIND_FUNCTION, endian, symbol.size,
+                     symbol.virt, symbol.phys });
+            break;
+
+        case mwr::elf::KIND_UNKNOWN:
+        case mwr::elf::KIND_NONE:
+        default:
+            break;
+        }
+    }
+
+    return reader.symbols().size();
 }
 
 void symtab::insert_function(const symbol& sym) {

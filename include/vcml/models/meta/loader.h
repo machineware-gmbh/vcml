@@ -24,7 +24,6 @@
 #include "vcml/core/component.h"
 
 #include "vcml/debugging/loader.h"
-#include "vcml/debugging/elf_reader.h"
 #include "vcml/protocols/tlm.h"
 
 namespace vcml {
@@ -46,11 +45,10 @@ public:
 
 protected:
     virtual u8* allocate_image(u64 size, u64 offset) override;
-    virtual u8* allocate_image(const debugging::elf_segment& seg,
-                               u64 offset) override;
+    virtual u8* allocate_image(const elf_segment& seg, u64 offset) override;
 
     virtual void copy_image(const u8* img, u64 size, u64 offset) override;
-    virtual void copy_image(const u8* img, const debugging::elf_segment& s,
+    virtual void copy_image(const u8* img, const elf_segment& s,
                             u64 offset) override;
 
     virtual void before_end_of_elaboration() override;

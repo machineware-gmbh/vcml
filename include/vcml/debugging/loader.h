@@ -22,8 +22,6 @@
 #include "vcml/core/types.h"
 #include "vcml/logging/logger.h"
 
-#include "vcml/debugging/elf_reader.h"
-
 namespace vcml {
 namespace debugging {
 
@@ -59,6 +57,8 @@ protected:
     virtual void load_bin(const string& filename, u64 offset);
     virtual void load_elf(const string& filename, u64 offset);
     virtual void load_srec(const string& filename, u64 offset);
+
+    typedef mwr::elf::segment elf_segment;
 
     virtual u8* allocate_image(u64 size, u64 offset);
     virtual u8* allocate_image(const elf_segment& seg, u64 offset);
