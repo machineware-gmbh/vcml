@@ -52,7 +52,6 @@
 
 #include "vcml/debugging/symtab.h"
 #include "vcml/debugging/elf_reader.h"
-#include "vcml/debugging/srec_reader.h"
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/loader.h"
 #include "vcml/debugging/subscriber.h"

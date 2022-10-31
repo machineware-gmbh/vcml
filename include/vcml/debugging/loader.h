@@ -23,7 +23,6 @@
 #include "vcml/logging/logger.h"
 
 #include "vcml/debugging/elf_reader.h"
-#include "vcml/debugging/srec_reader.h"
 
 namespace vcml {
 namespace debugging {

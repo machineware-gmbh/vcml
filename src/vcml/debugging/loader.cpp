@@ -175,7 +175,7 @@ void loader::load_elf(const string& filename, u64 offset) {
 }
 
 void loader::load_srec(const string& filename, u64 offset) {
-    srec_reader reader(filename);
+    mwr::srec reader(filename);
     for (auto rec : reader.records()) {
         u8* image = allocate_image(rec.data.size(), rec.addr + offset);
         if (image)
