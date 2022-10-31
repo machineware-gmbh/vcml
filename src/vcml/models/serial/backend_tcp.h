@@ -20,8 +20,6 @@
 #define VCML_SERIAL_BACKEND_TCP_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/socket.h"
-
 #include "vcml/logging/logger.h"
 #include "vcml/models/serial/backend.h"
 
@@ -31,7 +29,7 @@ namespace serial {
 class backend_tcp : public backend
 {
 private:
-    socket m_socket;
+    mwr::socket m_socket;
 
 public:
     u16 port() const { return m_socket.port(); }

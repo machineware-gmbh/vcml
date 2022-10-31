@@ -56,7 +56,6 @@ add_library(vcml STATIC
     ${src}/vcml/core/types.cpp
     ${src}/vcml/core/aio.cpp
     ${src}/vcml/core/thctl.cpp
-    ${src}/vcml/core/socket.cpp
     ${src}/vcml/core/systemc.cpp
     ${src}/vcml/core/module.cpp
     ${src}/vcml/core/component.cpp

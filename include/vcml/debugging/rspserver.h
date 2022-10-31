@@ -20,8 +20,6 @@
 #define VCML_RSPSERVER_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/socket.h"
-
 #include "vcml/logging/logger.h"
 
 namespace vcml {
@@ -33,9 +31,9 @@ public:
     typedef function<string(const string&)> handler;
 
 private:
-    socket m_sock;
-    u16 m_port;
+    mwr::socket m_sock;
 
+    u16 m_port;
     string m_name;
 
     atomic<bool> m_echo;
