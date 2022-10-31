@@ -48,7 +48,7 @@ static bool tap_read(int fd, vector<u8>& buf) {
 
 void backend_tap::close_tap() {
     if (m_fd >= 0) {
-        aio_cancel(m_fd);
+        mwr::aio_cancel(m_fd);
         close(m_fd);
         m_fd = -1;
     }
@@ -69,11 +69,11 @@ backend_tap::backend_tap(bridge* br, int devno): backend(br) {
 
     m_type = mkstr("tap:%d", devno);
 
-    aio_notify(m_fd, [&](int fd) -> void {
+    mwr::aio_notify(m_fd, [&](int fd) -> void {
         eth_frame frame;
         if (!tap_read(fd, frame)) {
             log_error("error reading tap device: %s", strerror(errno));
-            aio_cancel(fd);
+            mwr::aio_cancel(fd);
             return;
         }
 

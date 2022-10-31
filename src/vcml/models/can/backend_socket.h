@@ -21,8 +21,6 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/aio.h"
-
 #include "vcml/logging/logger.h"
 
 #include "vcml/models/can/backend.h"

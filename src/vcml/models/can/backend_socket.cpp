@@ -68,11 +68,11 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
     if (bind(m_socket, (struct sockaddr*)&addr, sizeof(addr)) < 0)
         VCML_REPORT("failed to bind %s: %s", m_name.c_str(), strerror(errno));
 
-    aio_notify(m_socket, [&](int fd) -> void {
+    mwr::aio_notify(m_socket, [&](int fd) -> void {
         can_frame frame;
         if (mwr::fd_read(fd, &frame, sizeof(frame)) != sizeof(frame)) {
             log_error("error reading %s: %s", m_name.c_str(), strerror(errno));
-            aio_cancel(fd);
+            mwr::aio_cancel(fd);
             return;
         }
 
@@ -83,8 +83,11 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 }
 
 backend_socket::~backend_socket() {
-    if (m_socket > -1)
+    if (m_socket > -1) {
+        mwr::aio_cancel(m_socket);
         close(m_socket);
+        m_socket = -1;
+    }
 }
 
 void backend_socket::send_to_host(const can_frame& frame) {

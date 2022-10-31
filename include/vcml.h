@@ -24,7 +24,6 @@
 #include "vcml/core/thctl.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
-#include "vcml/core/aio.h"
 #include "vcml/core/command.h"
 #include "vcml/core/module.h"
 #include "vcml/core/component.h"

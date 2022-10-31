@@ -20,8 +20,6 @@
 #define VCML_SERIAL_BACKEND_TERM_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/aio.h"
-
 #include "vcml/logging/logger.h"
 #include "vcml/models/serial/backend.h"
 
