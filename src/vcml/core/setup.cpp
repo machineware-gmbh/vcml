@@ -97,8 +97,13 @@ setup::setup(int argc, char** argv):
 
     m_brokers.push_back(new broker_env());
 
-    for (const string& file : m_config_files.values())
-        m_brokers.push_back(new broker_file(file));
+    try {
+        for (const string& file : m_config_files.values())
+            m_brokers.push_back(new broker_file(file));
+    } catch (std::exception& ex) {
+        log.error(ex);
+        exit(EXIT_FAILURE);
+    }
 }
 
 setup::~setup() {

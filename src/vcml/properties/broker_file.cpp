@@ -22,11 +22,21 @@
 namespace vcml {
 
 void broker_file::parse_file(const string& file) {
+    if (!mwr::file_exists(file)) {
+        log_error("no such file: %s", file.c_str());
+        m_errors++;
+        return;
+    }
+
     size_t lno = 0;
     string line, prev;
     ifstream stream(file.c_str());
 
-    VCML_ERROR_ON(!stream.good(), "cannot read '%s'", file.c_str());
+    if (!stream.good()) {
+        log_error("cannot read '%s'", file.c_str());
+        m_errors++;
+        return;
+    }
 
     try {
         while (std::getline(stream, line)) {
@@ -171,7 +181,10 @@ broker_file::broker_file(const string& file):
 
     parse_file(file);
 
-    VCML_ERROR_ON(m_errors, "%zu errors parsing %s", m_errors, file.c_str());
+    if (m_errors > 1)
+        VCML_REPORT("%zu errors parsing %s", m_errors, file.c_str());
+    else if (m_errors)
+        VCML_REPORT("error parsing %s", file.c_str());
 }
 
 broker_file::~broker_file() {
