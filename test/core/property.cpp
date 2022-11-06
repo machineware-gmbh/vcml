@@ -107,4 +107,38 @@ TEST(property, init) {
     test.prop_array_string[3] = "z z";
     EXPECT_EQ(std::string(test.prop_array_string.str()),
               "abc def x\\ y z\\ z");
+
+    std::stringstream ss;
+
+    ss << test.prop_str;
+    EXPECT_EQ(ss.str(), test.prop_str.str());
+    ss.str("");
+
+    ss << test.prop_u64;
+    EXPECT_EQ(ss.str(), test.prop_u64.str());
+    ss.str("");
+
+    ss << test.prop_u32;
+    EXPECT_EQ(ss.str(), test.prop_u32.str());
+    ss.str("");
+
+    ss << test.prop_u16;
+    EXPECT_EQ(ss.str(), test.prop_u16.str());
+    ss.str("");
+
+    ss << test.prop_u8;
+    EXPECT_EQ(ss.str(), test.prop_u8.str());
+    ss.str("");
+
+    ss << test.prop_i32;
+    EXPECT_EQ(ss.str(), test.prop_i32.str());
+    ss.str("");
+
+    ss << test.prop_array;
+    EXPECT_EQ(ss.str(), test.prop_array.str());
+    ss.str("");
+
+    ss << test.prop_array_string;
+    EXPECT_EQ(ss.str(), test.prop_array_string.str());
+    ss.str("");
 }

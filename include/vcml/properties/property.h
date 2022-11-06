@@ -422,6 +422,12 @@ inline bool property<T, N>::operator>=(const T2& other) {
     return !operator<(other);
 }
 
+template <typename T, const unsigned int N>
+ostream& operator<<(std::ostream& os, const property<T, N>& prop) {
+    os << prop.str();
+    return os;
+}
+
 } // namespace vcml
 
 #endif
