@@ -78,7 +78,7 @@ string get_resource_path(const string& name) {
     }
 
     string res_dir = args[1];
-    if (!mwr::file_exists(res_dir)) {
+    if (!mwr::directory_exists(res_dir)) {
         ADD_FAILURE() << "test resource path does not exist: " << res_dir;
         std::abort();
     }
