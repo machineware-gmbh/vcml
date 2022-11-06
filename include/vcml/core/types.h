@@ -39,8 +39,6 @@
 #include <iomanip>
 #include <fstream>
 #include <memory>
-#include <optional>
-#include <variant>
 #include <functional>
 #include <atomic>
 #include <mutex>
@@ -144,9 +142,6 @@ using std::ofstream;
 
 using std::shared_ptr;
 using std::unique_ptr;
-
-using std::variant;
-using std::optional;
 
 using std::function;
 
