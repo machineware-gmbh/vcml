@@ -32,7 +32,14 @@ static bool exit_usage() {
 static bool exit_version() {
     std::cerr << "Modules of " << mwr::filename(mwr::progname()) << ":"
               << std::endl;
-    mwr::modules::print_modules(std::cerr);
+    mwr::modules::print_versions(std::cerr);
+    exit(EXIT_FAILURE);
+}
+
+static bool exit_license() {
+    std::cerr << "Modules of " << mwr::filename(mwr::progname()) << ":"
+              << std::endl;
+    mwr::modules::print_licenses(std::cerr);
     exit(EXIT_FAILURE);
 }
 
@@ -49,6 +56,7 @@ setup::setup(int argc, char** argv):
     m_config_options("--config", "-c", "Specify individual property values"),
     m_help("--help", "-h", "Prints this message", exit_usage),
     m_version("--version", "Prints module version information", exit_version),
+    m_license("--license", "Prints module license information", exit_license),
     m_publishers(),
     m_brokers() {
     VCML_ERROR_ON(s_instance != nullptr, "setup already created");

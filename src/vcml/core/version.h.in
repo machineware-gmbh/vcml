@@ -31,6 +31,6 @@
 
 #include <mwr.h>
 
-MWR_DECLARE_MODULE(VCML, "vcml");
+MWR_DECLARE_MODULE(VCML, "vcml", "Apache-2.0");
 
 #endif
