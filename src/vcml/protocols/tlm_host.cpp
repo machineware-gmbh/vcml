@@ -189,8 +189,7 @@ unsigned int tlm_host::transport_dbg(tlm_target_socket& socket,
 }
 
 bool tlm_host::get_direct_mem_ptr(tlm_target_socket& socket,
-                                  const tlm_generic_payload& tx,
-                                  tlm_dmi& dmi) {
+                                  tlm_generic_payload& tx, tlm_dmi& dmi) {
     return true;
 }
 

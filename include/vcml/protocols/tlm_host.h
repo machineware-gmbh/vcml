@@ -96,8 +96,7 @@ public:
                                        tlm_generic_payload& tx);
 
     virtual bool get_direct_mem_ptr(tlm_target_socket& origin,
-                                    const tlm_generic_payload& tx,
-                                    tlm_dmi& dmi);
+                                    tlm_generic_payload& tx, tlm_dmi& dmi);
 
     virtual void invalidate_direct_mem_ptr(tlm_initiator_socket& origin,
                                            u64 start, u64 end);
