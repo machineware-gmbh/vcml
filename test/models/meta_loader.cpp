@@ -69,7 +69,7 @@ public:
     }
 };
 
-TEST(virtio, rng) {
+TEST(loader, simulate) {
     loader_test stim;
     sc_core::sc_start();
 }

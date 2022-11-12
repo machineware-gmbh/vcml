@@ -163,13 +163,13 @@ void loader::load_elf(const string& filename, u64 offset) {
         log_debug("loading elf segment 0x%016llx..0x%016llx", seg.phys,
                   seg.phys + seg.size - 1);
 
-        u8* image = allocate_image(seg.size, seg.phys + offset);
+        u8* image = allocate_image(seg, offset);
         if (image) {
             reader.read_segment(seg, image);
         } else {
             vector<u8> buffer(seg.size);
             reader.read_segment(seg, buffer.data());
-            copy_image(buffer.data(), seg.size, seg.phys + offset);
+            copy_image(buffer.data(), seg, offset);
         }
     }
 }
