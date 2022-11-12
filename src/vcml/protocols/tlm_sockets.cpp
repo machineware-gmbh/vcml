@@ -336,10 +336,8 @@ bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
     if (!allow_dmi)
         return false;
 
-    if (!m_dmi_cache.lookup(tx, dmi))
-        return false;
-
-    if (!m_host->get_direct_mem_ptr(*this, tx, dmi))
+    if (!m_dmi_cache.lookup(tx, dmi) &&
+        !m_host->get_direct_mem_ptr(*this, tx, dmi))
         return false;
 
     return m_exmon.override_dmi(tx, dmi);
