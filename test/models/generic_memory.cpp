@@ -53,7 +53,7 @@ public:
         EXPECT_EQ(data, 0x5566778811223344ull)
             << "data read from address 4 is invalid";
 
-        EXPECT_GT(ram.in.dmi().get_entries().size(), 0)
+        EXPECT_GT(ram.in.dmi_cache().get_entries().size(), 0)
             << "memory does not provide DMI access";
         EXPECT_GT(ram_port.dmi_cache().get_entries().size(), 0)
             << "did not get DMI access to memory";

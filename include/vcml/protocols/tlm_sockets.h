@@ -44,7 +44,7 @@ private:
     tlm_generic_payload m_tx;
     tlm_generic_payload m_txd;
     tlm_sbi m_sbi;
-    tlm_dmi_cache m_dmi_cache;
+    tlm_dmi_cache* m_dmi_cache;
     tlm_target_stub* m_stub;
     tlm_host* m_host;
     module* m_parent;
@@ -150,15 +150,19 @@ inline u8* tlm_initiator_socket::lookup_dmi_ptr(u64 addr, u64 size,
 }
 
 inline tlm_dmi_cache& tlm_initiator_socket::dmi_cache() {
-    return m_dmi_cache;
+    if (!m_dmi_cache)
+        m_dmi_cache = new tlm_dmi_cache();
+    return *m_dmi_cache;
 }
 
 inline void tlm_initiator_socket::map_dmi(const tlm_dmi& dmi) {
-    m_dmi_cache.insert(dmi);
+    if (m_dmi_cache)
+        m_dmi_cache->insert(dmi);
 }
 
 inline void tlm_initiator_socket::unmap_dmi(u64 start, u64 end) {
-    m_dmi_cache.invalidate(start, end);
+    if (m_dmi_cache)
+        m_dmi_cache->invalidate(start, end);
 }
 
 inline tlm_response_status tlm_initiator_socket::read(u64 addr, void* data,
@@ -238,7 +242,7 @@ private:
     int m_curr;
     int m_next;
     sc_event m_free_ev;
-    tlm_dmi_cache m_dmi_cache;
+    tlm_dmi_cache* m_dmi_cache;
     tlm_exmon m_exmon;
     tlm_initiator_stub* m_stub;
     tlm_host* m_host;
@@ -273,7 +277,7 @@ public:
 
     VCML_KIND(tlm_target_socket);
 
-    tlm_dmi_cache& dmi() { return m_dmi_cache; }
+    tlm_dmi_cache& dmi_cache();
     tlm_exmon& exmon() { return m_exmon; }
 
     void map_dmi(const tlm_dmi& dmi);
@@ -315,8 +319,14 @@ inline void tlm_target_socket::trace_bw(const tlm_generic_payload& tx,
         tracer::record(TRACE_BW, *this, tx, t);
 }
 
+inline tlm_dmi_cache& tlm_target_socket::dmi_cache() {
+    if (!m_dmi_cache)
+        m_dmi_cache = new tlm_dmi_cache();
+    return *m_dmi_cache;
+}
+
 inline void tlm_target_socket::map_dmi(const tlm_dmi& dmi) {
-    m_dmi_cache.insert(dmi);
+    dmi_cache().insert(dmi);
 }
 
 inline void tlm_target_socket::unmap_dmi(const range& mem) {

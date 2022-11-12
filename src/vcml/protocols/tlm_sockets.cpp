@@ -62,10 +62,12 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
 }
 
 tlm_initiator_socket::~tlm_initiator_socket() {
-    if (m_adapter != nullptr)
+    if (m_adapter)
         delete m_adapter;
-    if (m_stub != nullptr)
+    if (m_stub)
         delete m_stub;
+    if (m_dmi_cache)
+        delete m_dmi_cache;
 }
 
 u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access rw) {
@@ -73,7 +75,7 @@ u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access rw) {
         return nullptr;
 
     tlm_dmi dmi;
-    if (m_dmi_cache.lookup(mem, rw, dmi))
+    if (dmi_cache().lookup(mem, rw, dmi))
         return dmi_get_ptr(dmi, mem.start);
 
     tlm_generic_payload tx;
@@ -172,7 +174,7 @@ tlm_response_status tlm_initiator_socket::access_dmi(tlm_command cmd, u64 addr,
 
     tlm_dmi dmi;
     tlm_command elevate = info.is_debug ? TLM_READ_COMMAND : cmd;
-    if (!m_dmi_cache.lookup(addr, size, elevate, dmi))
+    if (!dmi_cache().lookup(addr, size, elevate, dmi))
         return TLM_INCOMPLETE_RESPONSE;
 
     if (info.is_sync && !info.is_debug)
@@ -296,9 +298,9 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
 
     tx.set_dmi_allowed(false);
 
-    if (allow_dmi) {
+    if (allow_dmi && m_dmi_cache) {
         tlm_dmi dmi;
-        if (m_dmi_cache.lookup(tx, dmi))
+        if (m_dmi_cache->lookup(tx, dmi))
             tx.set_dmi_allowed(true);
     }
 
@@ -336,7 +338,7 @@ bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
     if (!allow_dmi)
         return false;
 
-    if (!m_dmi_cache.lookup(tx, dmi) &&
+    if (!(m_dmi_cache && m_dmi_cache->lookup(tx, dmi)) &&
         !m_host->get_direct_mem_ptr(*this, tx, dmi))
         return false;
 
@@ -348,7 +350,7 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     m_curr(0),
     m_next(0),
     m_free_ev(strcat(nm, "_free").c_str()),
-    m_dmi_cache(),
+    m_dmi_cache(nullptr),
     m_exmon(),
     m_stub(nullptr),
     m_host(hierarchy_search<tlm_host>()),
@@ -374,34 +376,42 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
 }
 
 tlm_target_socket::~tlm_target_socket() {
-    if (m_host != nullptr)
+    if (m_host)
         m_host->unregister_socket(this);
-    if (m_adapter != nullptr)
+    if (m_adapter)
         delete m_adapter;
-    if (m_stub != nullptr)
+    if (m_stub)
         delete m_stub;
+    if (m_dmi_cache)
+        delete m_dmi_cache;
 }
 
 void tlm_target_socket::unmap_dmi(u64 start, u64 end) {
-    m_dmi_cache.invalidate(start, end);
+    if (m_dmi_cache)
+        m_dmi_cache->invalidate(start, end);
     (*this)->invalidate_direct_mem_ptr(start, end);
 }
 
 void tlm_target_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
-    for (auto dmi : m_dmi_cache.get_entries()) {
-        if (dmi.get_read_latency() != rd || dmi.get_write_latency() != wr) {
-            (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
-                                               dmi.get_end_address());
-            dmi.set_read_latency(rd);
-            dmi.set_write_latency(wr);
+    if (m_dmi_cache) {
+        for (auto dmi : m_dmi_cache->get_entries()) {
+            if (dmi.get_read_latency() != rd ||
+                dmi.get_write_latency() != wr) {
+                (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
+                                                   dmi.get_end_address());
+                dmi.set_read_latency(rd);
+                dmi.set_write_latency(wr);
+            }
         }
     }
 }
 
 void tlm_target_socket::invalidate_dmi() {
-    for (const tlm_dmi& dmi : m_dmi_cache.get_entries()) {
-        (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
-                                           dmi.get_end_address());
+    if (m_dmi_cache) {
+        for (const tlm_dmi& dmi : m_dmi_cache->get_entries()) {
+            (*this)->invalidate_direct_mem_ptr(dmi.get_start_address(),
+                                               dmi.get_end_address());
+        }
     }
 }
 
