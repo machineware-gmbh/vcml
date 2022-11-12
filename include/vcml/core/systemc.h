@@ -399,6 +399,7 @@ private:
         string nm = mkstr("%s[%zu]", m_name.c_str(), idx);
         socket = new SOCKET(nm.c_str(), m_space);
         m_ids[socket] = idx;
+        m_next = max(m_next, idx + 1);
         return *socket;
     }
 
