@@ -29,214 +29,163 @@
 namespace vcml {
 namespace generic {
 
-class bus;
-
-template <typename T>
-class bus_ports
-{
-private:
-    unsigned int m_next;
-    bus* m_parent;
-    std::map<unsigned int, T*> m_sockets;
-
-public:
-    bus_ports() = delete;
-    bus_ports(bus* parent);
-    virtual ~bus_ports();
-
-    bool exists(unsigned int idx) const;
-
-    unsigned int next_idx() const { return m_next; }
-    T& next() { return operator[](next_idx()); }
-
-    T& operator[](unsigned int idx);
-    const T& operator[](unsigned int idx) const;
-
-    typedef typename std::map<unsigned int, T*>::iterator iterator;
-
-    iterator begin() { return m_sockets.begin(); }
-    iterator end() { return m_sockets.end(); }
-};
-
-template <typename T>
-inline bus_ports<T>::bus_ports(bus* parent):
-    m_next(0), m_parent(parent), m_sockets() {
-    VCML_ERROR_ON(parent == nullptr, "bus_ports parent must not be NULL");
-}
-
-template <typename T>
-inline bus_ports<T>::~bus_ports() {
-    for (auto it : m_sockets)
-        delete it.second;
-}
-
-template <typename T>
-inline bool bus_ports<T>::exists(unsigned int idx) const {
-    return m_sockets.find(idx) != m_sockets.end();
-}
-
-template <typename T>
-inline const T& bus_ports<T>::operator[](unsigned int idx) const {
-    VCML_ERROR_ON(!exists(idx), "bus port %d does not exist", idx);
-    return *m_sockets.at(idx);
-}
-
 class bus : public component
 {
-public:
-    template <unsigned int BUSWIDTH>
-    using initiator_socket = tlm::tlm_initiator_socket<BUSWIDTH>;
-    template <unsigned int BUSWIDTH>
-    using target_socket = tlm::tlm_target_socket<BUSWIDTH>;
-
 private:
-    bool cmd_mmap(const vector<string>& args, ostream& os);
-
-    struct mapping {
-        int port;
-        range addr;
-        u64 offset;
-        string peer;
+    enum : size_t {
+        TARGET_NONE = SIZE_MAX,
+        SOURCE_ANY = SIZE_MAX,
     };
 
-    vector<module*> m_adapters;
-    vector<mapping> m_mappings;
+    struct mapping {
+        size_t target;
+        size_t source;
+        range addr;
+        u64 offset;
+
+        bool operator<(const mapping& m) const;
+    };
+
+    std::map<size_t, sc_object*> m_target_peers;
+    std::map<size_t, sc_object*> m_source_peers;
+
+    size_t find_target_port(sc_object& peer) const;
+    size_t find_source_port(sc_object& peer) const;
+
+    const char* target_peer_name(size_t port) const;
+    const char* source_peer_name(size_t port) const;
+
+    set<mapping> m_mappings;
     mapping m_default;
 
-    target_socket<64>* create_target_socket(unsigned int idx);
-    initiator_socket<64>* create_initiator_socket(unsigned int idx);
+    const mapping& lookup(tlm_target_socket& src, const range& addr) const;
 
-    template <unsigned int W1, unsigned int W2>
-    void bind_internal(initiator_socket<W1>& s1, target_socket<W2>& s2);
-
-    template <unsigned int W1, unsigned int W2>
-    void bind_internal(initiator_socket<W1>& s1, initiator_socket<W2>& s2);
-
-    const mapping& lookup(const range& addr) const;
-
-    void cb_b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
-    unsigned int cb_transport_dbg(int port, tlm_generic_payload& tx);
-    bool cb_get_direct_mem_ptr(int port, tlm_generic_payload& tx,
-                               tlm_dmi& dmi);
-    void cb_invalidate_direct_mem_ptr(int port, sc_dt::uint64 s,
-                                      sc_dt::uint64 e);
-
-    using component::b_transport;
-    using component::transport_dbg;
-    using component::get_direct_mem_ptr;
-    using component::invalidate_direct_mem_ptr;
+    bool cmd_mmap(const vector<string>& args, ostream& os);
 
 protected:
-    void b_transport(int port, tlm_generic_payload& tx, sc_time& dt);
-    unsigned int transport_dbg(int port, tlm_generic_payload& tx);
-    bool get_direct_mem_ptr(int port, tlm_generic_payload& tx, tlm_dmi& dmi);
-    void invalidate_direct_mem_ptr(int port, sc_dt::uint64 start,
-                                   sc_dt::uint64 end);
+    virtual void b_transport(tlm_target_socket& origin,
+                             tlm_generic_payload& tx, sc_time& dt) override;
+
+    virtual unsigned int transport_dbg(tlm_target_socket& origin,
+                                       tlm_generic_payload& tx) override;
+
+    virtual bool get_direct_mem_ptr(tlm_target_socket& origin,
+                                    tlm_generic_payload& tx,
+                                    tlm_dmi& dmi) override;
+
+    virtual void invalidate_direct_mem_ptr(tlm_initiator_socket& origin,
+                                           u64 start, u64 end) override;
 
 public:
-    bus_ports<target_socket<64>> in;
-    bus_ports<initiator_socket<64>> out;
+    tlm_target_socket_array<> in;
+    tlm_initiator_socket_array<> out;
 
-    int find_port(const sc_object& socket) const;
+    void map(size_t target, const range& addr);
+    void map(size_t target, const range& addr, u64 offset);
+    void map(size_t target, const range& addr, u64 offset, size_t source);
 
-    void map(unsigned int port, const range& addr, u64 offset = 0,
-             const string& peer = "");
-    void map(unsigned int port, u64 start, u64 end, u64 offset = 0,
-             const string& peer = "");
-    void map_default(unsigned int port, u64 offset = 0,
-                     const string& peer = "");
+    void map(size_t target, u64 lo, u64 hi);
+    void map(size_t target, u64 lo, u64 hi, u64 offset);
+    void map(size_t target, u64 lo, u64 hi, u64 offset, size_t source);
 
-    template <unsigned int BUSWIDTH>
-    unsigned int bind(initiator_socket<BUSWIDTH>& socket);
+    void map_default(size_t target, u64 offset = 0);
 
-    template <unsigned int BUSWIDTH>
-    unsigned int bind(target_socket<BUSWIDTH>& socket, const range& addr,
-                      u64 offset = 0);
+    template <typename SOURCE>
+    size_t bind(SOURCE& s);
 
-    template <unsigned int BUSWIDTH>
-    unsigned int bind(target_socket<BUSWIDTH>& socket, u64 start, u64 end,
-                      u64 offset = 0);
+    template <typename TARGET>
+    size_t bind(TARGET& s, const range& addr, u64 offset = 0);
+    template <typename TARGET>
+    size_t bind(TARGET& s, u64 lo, u64 hi, u64 offset = 0);
+    template <typename SOURCE, typename TARGET>
+    size_t bind(SOURCE& s, TARGET& d, const range& addr, u64 offset = 0);
+    template <typename SOURCE, typename TARGET>
+    size_t bind(SOURCE& source, TARGET& d, u64 lo, u64 hi, u64 offset = 0);
 
-    template <unsigned int BUSWIDTH>
-    unsigned int bind_default(initiator_socket<BUSWIDTH>& s, u64 offset = 0);
+    template <typename SOCKET>
+    size_t bind_default(SOCKET& s, u64 offset = 0);
 
     bus() = delete;
     bus(const sc_module_name& nm);
     virtual ~bus();
     VCML_KIND(bus);
-
-    template <typename T>
-    T* create_socket(unsigned int idx);
 };
 
-template <typename T>
-inline T& bus_ports<T>::operator[](unsigned int idx) {
-    if (!exists(idx)) {
-        m_sockets[idx] = m_parent->create_socket<T>(idx);
-        m_next = idx + 1;
-    }
-
-    return *m_sockets[idx];
+inline void bus::map(size_t target, const range& addr) {
+    map(target, addr, 0);
 }
 
-template <unsigned int W1, unsigned int W2>
-void bus::bind_internal(initiator_socket<W1>& s1, target_socket<W2>& s2) {
-    if (W1 == W2) {
-        s1.bind(s2);
-    } else {
-        hierarchy_guard guard(this);
-        string name = mkstr("bwa_%s_%s", s1.basename(), s2.basename());
-        auto* bwa = new tlm_bus_width_adapter<W1, W2>(name.c_str());
-        m_adapters.push_back(bwa);
-        s1.bind(bwa->in);
-        bwa->out.bind(s2);
-    }
+inline void bus::map(size_t target, const range& addr, u64 offset) {
+    map(target, addr, offset, SOURCE_ANY);
 }
 
-template <unsigned int W1, unsigned int W2>
-void bus::bind_internal(initiator_socket<W1>& s1, initiator_socket<W2>& s2) {
-    if (W1 == W2) {
-        s1.bind(s2);
-    } else {
-        hierarchy_guard guard(this);
-        string name = mkstr("bwa_%s_%s", s1.basename(), s2.basename());
-        auto* bwa = new tlm_bus_width_adapter<W1, W2>(name.c_str());
-        m_adapters.push_back(bwa);
-        s1.bind(bwa->in);
-        bwa->out.bind(s2);
-    }
+inline void bus::map(size_t target, u64 lo, u64 hi) {
+    map(target, range(lo, hi));
 }
 
-template <unsigned int WIDTH>
-unsigned int bus::bind(initiator_socket<WIDTH>& socket) {
-    unsigned int port = in.next_idx();
-    bind_internal(socket, in[port]);
+inline void bus::map(size_t target, u64 lo, u64 hi, u64 offset) {
+    map(target, range(lo, hi), offset);
+}
+
+inline void bus::map(size_t target, u64 lo, u64 hi, u64 offset, size_t src) {
+    map(target, range(lo, hi), offset, src);
+}
+
+template <typename SOURCE>
+size_t bus::bind(SOURCE& source) {
+    size_t port = find_source_port(source);
+    if (port == TARGET_NONE) {
+        port = in.next_index();
+        in[port].bind(source);
+        m_source_peers[port] = &source;
+    }
+
     return port;
 }
 
-template <unsigned int WIDTH>
-unsigned int bus::bind(target_socket<WIDTH>& socket, const range& addr,
-                       u64 offset) {
-    int port = find_port(socket);
-    if (port < 0) {
-        port = out.next_idx();
-        bind_internal(out[port], socket);
+template <typename TARGET>
+size_t bus::bind(TARGET& target, const range& addr, u64 offset) {
+    size_t port = find_target_port(target);
+    if (port == TARGET_NONE) {
+        port = out.next_index();
+        out[port].bind(target);
+        m_target_peers[port] = &target;
     }
 
-    map(port, addr, offset, socket.name());
+    map(port, addr, offset);
     return port;
 }
 
-template <unsigned int WIDTH>
-unsigned int bus::bind(target_socket<WIDTH>& s, u64 start, u64 end, u64 off) {
-    return bind(s, range(start, end), off);
+template <typename TARGET>
+size_t bus::bind(TARGET& target, u64 lo, u64 hi, u64 offset) {
+    return bind(target, range(lo, hi), offset);
 }
 
-template <unsigned int BUSWIDTH>
-unsigned int bus::bind_default(initiator_socket<BUSWIDTH>& s, u64 offset) {
-    unsigned int port = out.next_idx();
-    map_default(port, offset, s.name());
-    bind_internal(out[port], s);
+template <typename SOURCE, typename TARGET>
+size_t bus::bind(SOURCE& source, TARGET& target, const range& addr, u64 off) {
+    size_t source_port = bind(source);
+    size_t target_port = find_target_port(target);
+    if (target_port == TARGET_NONE) {
+        target_port = out.next_index();
+        out[target_port].bind(target);
+        m_target_peers[target_port] = &target;
+    }
+
+    map(target_port, addr, off, source_port);
+    return target_port;
+}
+
+template <typename SOURCE, typename TARGET>
+size_t bus::bind(SOURCE& source, TARGET& target, u64 lo, u64 hi, u64 offset) {
+    return bind(source, target, range(lo, hi), offset);
+}
+
+template <typename TARGET>
+size_t bus::bind_default(TARGET& target, u64 offset) {
+    size_t port = out.next_index();
+    map_default(port, offset);
+    out[port].bind(target);
+    m_target_peers[port] = &target;
     return port;
 }
 
