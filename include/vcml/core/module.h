@@ -59,6 +59,7 @@ public:
     virtual void session_suspend();
     virtual void session_resume();
 
+    bool execute(const string& name, ostream& os);
     bool execute(const string& name, const vector<string>& args, ostream& os);
 
     template <class T>
@@ -94,6 +95,10 @@ inline void module::hierarchy_push() {
 inline void module::hierarchy_pop() {
     sc_module* top = vcml::hierarchy_pop();
     VCML_ERROR_ON(top != this, "broken hierarchy");
+}
+
+inline bool module::execute(const string& name, ostream& os) {
+    return execute(name, std::vector<string>(), os);
 }
 
 template <class T>

@@ -21,8 +21,6 @@
 
 #include "vcml/core/types.h"
 
-#define VCML_NO_ARGS (::std::vector<::std::string>())
-
 namespace vcml {
 
 class command_base
