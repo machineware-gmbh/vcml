@@ -51,7 +51,8 @@ public:
 
     component() = delete;
     component(const component&) = delete;
-    component(const sc_module_name& nm, bool allow_dmi = true);
+    component(const sc_module_name& nm);
+    component(const sc_module_name& nm, bool dmi, unsigned int bus_width);
     virtual ~component();
     VCML_KIND(component);
 
@@ -87,6 +88,10 @@ protected:
     virtual void gpio_notify(const gpio_target_socket& socket, bool state);
     virtual void gpio_notify(const gpio_target_socket& socket);
 };
+
+inline component::component(const sc_module_name& nm):
+    component(nm, true, 64) {
+}
 
 } // namespace vcml
 

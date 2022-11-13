@@ -63,6 +63,8 @@ public:
     property<bool> trace_errors;
     property<bool> allow_dmi;
 
+    property<unsigned int> bus_width;
+
     int get_cpuid() const { return m_sbi.cpuid; }
     int get_privilege() const { return m_sbi.privilege; }
 
@@ -268,6 +270,8 @@ public:
     property<bool> trace;
     property<bool> trace_errors;
     property<bool> allow_dmi;
+
+    property<unsigned int> bus_width;
 
     const address_space as;
 

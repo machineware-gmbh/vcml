@@ -85,13 +85,14 @@ vector<tlm_target_socket*> tlm_host::find_tlm_target_sockets(
     return sockets;
 }
 
-tlm_host::tlm_host(bool allow_dmi):
+tlm_host::tlm_host(bool allow_dmi, unsigned int bus_width):
     m_offsets(),
     m_initiator_sockets(),
     m_target_sockets(),
     m_payload(nullptr),
     m_sideband(nullptr),
-    allow_dmi("allow_dmi", true) {
+    allow_dmi("allow_dmi", allow_dmi),
+    bus_width("bus_width", bus_width) {
 }
 
 sc_time& tlm_host::local_time(sc_process_b* proc) {

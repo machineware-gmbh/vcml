@@ -33,9 +33,9 @@ void component::do_reset() {
     reset();
 }
 
-component::component(const sc_module_name& nm, bool dmi):
+component::component(const sc_module_name& nm, bool dmi, unsigned int bus):
     module(nm),
-    tlm_host(dmi),
+    tlm_host(dmi, bus),
     clk_host(),
     gpio_host(),
     m_clkrst_ev("clkrst_ev"),

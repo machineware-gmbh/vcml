@@ -68,7 +68,8 @@ public:
 
     vector<tlm_target_socket*> find_tlm_target_sockets(address_space as) const;
 
-    tlm_host(bool allow_dmi = true);
+    tlm_host(): tlm_host(true, 64) {}
+    tlm_host(bool allow_dmi, unsigned int bus_width);
     virtual ~tlm_host() = default;
 
     sc_time& local_time(sc_process_b* proc = nullptr);
@@ -106,6 +107,7 @@ public:
                                    const tlm_sbi& info);
 
     property<bool> allow_dmi;
+    property<unsigned int> bus_width;
 };
 
 inline bool tlm_host::in_transaction() const {

@@ -44,13 +44,15 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
     m_adapter(nullptr),
     trace(this, "trace", false),
     trace_errors(this, "trace_errors", false),
-    allow_dmi(this, "allow_dmi", true) {
+    allow_dmi(this, "allow_dmi", true),
+    bus_width(this, "bus_width", tlm_base_initiator_socket::get_bus_width()) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
     VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
 
     trace.inherit_default();
     trace_errors.inherit_default();
     allow_dmi.inherit_default();
+    bus_width.inherit_default();
 
     m_host->register_socket(this);
 
@@ -236,8 +238,11 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
 
     unsigned int done = 0;
     while (done < size) {
-        unsigned int burstsz = min(size - done, get_bus_width() / 8);
-        tx_setup(m_tx, cmd, addr + done, (u8*)data + done, burstsz);
+        unsigned int sz = size - done;
+        if (bus_width && sz > bus_width)
+            sz = bus_width;
+
+        tx_setup(m_tx, cmd, addr + done, (u8*)data + done, sz);
 
         unsigned int bytes = send(m_tx, info);
         done += bytes;
@@ -280,7 +285,7 @@ bool tlm_target_socket::get_dmi_ptr_int(tlm_generic_payload& tx, tlm_dmi& d) {
 void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     trace_fw(tx, dt);
 
-    if (tx_size(tx) > get_bus_width() / 8) {
+    if (bus_width && tx_size(tx) > bus_width / 8) {
         tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
         trace_bw(tx, dt);
         return;
@@ -361,12 +366,14 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     trace(this, "trace", false),
     trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),
+    bus_width(this, "bus_width", tlm_base_target_socket::get_bus_width()),
     as(a) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
 
     trace.inherit_default();
     trace_errors.inherit_default();
     allow_dmi.inherit_default();
+    bus_width.inherit_default();
 
     m_host->register_socket(this);
 
