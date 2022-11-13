@@ -24,8 +24,10 @@ namespace vcml {
 unsigned int tlm_host::do_transport(tlm_target_socket& socket,
                                     tlm_generic_payload& tx,
                                     const tlm_sbi& info) {
-    m_payload = &tx;
-    m_sideband = &info;
+    sc_process_b* proc = current_process();
+
+    m_processes[proc].tx = &tx;
+    m_processes[proc].sbi = &info;
 
     if (tx.get_response_status() != TLM_INCOMPLETE_RESPONSE)
         VCML_ERROR("invalid in-bound transaction response status");
@@ -35,8 +37,8 @@ unsigned int tlm_host::do_transport(tlm_target_socket& socket,
     if (tx.get_response_status() == TLM_INCOMPLETE_RESPONSE)
         VCML_ERROR("invalid out-bound transaction response status");
 
-    m_payload = nullptr;
-    m_sideband = nullptr;
+    m_processes[proc].tx = nullptr;
+    m_processes[proc].sbi = nullptr;
 
     return n;
 }
@@ -86,23 +88,18 @@ vector<tlm_target_socket*> tlm_host::find_tlm_target_sockets(
 }
 
 tlm_host::tlm_host(bool allow_dmi, unsigned int bus_width):
-    m_offsets(),
+    m_processes(),
     m_initiator_sockets(),
     m_target_sockets(),
-    m_payload(nullptr),
-    m_sideband(nullptr),
     allow_dmi("allow_dmi", allow_dmi),
     bus_width("bus_width", bus_width) {
 }
 
 sc_time& tlm_host::local_time(sc_process_b* proc) {
-    if (proc == nullptr)
-        proc = current_process();
+    if (!stl_contains(m_processes, proc))
+        m_processes[proc].time = SC_ZERO_TIME;
 
-    if (!stl_contains(m_offsets, proc))
-        m_offsets[proc] = SC_ZERO_TIME;
-
-    sc_time& local = m_offsets[proc];
+    sc_time& local = m_processes[proc].time;
     update_local_time(local);
     return local;
 }
@@ -112,8 +109,6 @@ sc_time tlm_host::local_time_stamp(sc_process_b* proc) {
 }
 
 bool tlm_host::needs_sync(sc_process_b* proc) {
-    if (proc == nullptr)
-        proc = current_process();
     if (!is_thread(proc))
         return false;
 
@@ -122,8 +117,6 @@ bool tlm_host::needs_sync(sc_process_b* proc) {
 }
 
 void tlm_host::sync(sc_process_b* proc) {
-    if (proc == nullptr)
-        proc = current_process();
     if (proc == nullptr || proc->proc_kind() != sc_core::SC_THREAD_PROC_)
         VCML_ERROR("attempt to sync outside of SC_THREAD process");
 
@@ -172,9 +165,9 @@ void tlm_host::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
                            sc_time& dt) {
     sc_process_b* proc = current_thread();
     VCML_ERROR_ON(!proc, "b_transport outside SC_THREAD");
-    m_offsets[proc] = dt;
+    m_processes[proc].time = dt;
     do_transport(socket, tx, socket.current_sideband());
-    dt = m_offsets[proc];
+    dt = m_processes[proc].time;
 }
 
 unsigned int tlm_host::transport_dbg(tlm_target_socket& socket,

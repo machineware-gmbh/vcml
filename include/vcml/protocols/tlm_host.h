@@ -34,25 +34,34 @@ class tlm_target_socket;
 class tlm_host
 {
 private:
-    std::unordered_map<sc_process_b*, sc_time> m_offsets;
+    struct proc_data {
+        sc_time time;
+        tlm_generic_payload* tx;
+        const tlm_sbi* sbi;
+        proc_data(): time(SC_ZERO_TIME), tx(nullptr), sbi(nullptr) {}
+    };
+
+    mutable std::unordered_map<sc_process_b*, proc_data> m_processes;
     vector<tlm_initiator_socket*> m_initiator_sockets;
     vector<tlm_target_socket*> m_target_sockets;
-
-    const tlm_generic_payload* m_payload;
-    const tlm_sbi* m_sideband;
 
     unsigned int do_transport(tlm_target_socket& socket,
                               tlm_generic_payload& tx, const tlm_sbi& info);
 
 protected:
-    bool in_transaction() const;
-    bool in_debug_transaction() const;
-    int current_cpu() const;
-    int current_privilege() const;
-    const tlm_generic_payload& current_transaction() const;
-    const tlm_sbi& current_sideband() const;
-    size_t current_transaction_size() const;
-    range current_transaction_address() const;
+    bool in_transaction(sc_process_b* proc = current_process()) const;
+    bool in_debug_transaction(sc_process_b* proc = current_process()) const;
+    int current_cpu(sc_process_b* proc = current_process()) const;
+    int current_privilege(sc_process_b* proc = current_process()) const;
+
+    const tlm_generic_payload& current_transaction(
+        sc_process_b* proc = current_process()) const;
+    const tlm_sbi& current_sideband(
+        sc_process_b* proc = current_process()) const;
+    size_t current_transaction_size(
+        sc_process_b* proc = current_process()) const;
+    range current_transaction_address(
+        sc_process_b* proc = current_process()) const;
 
 public:
     void register_socket(tlm_initiator_socket* socket);
@@ -72,11 +81,11 @@ public:
     tlm_host(bool allow_dmi, unsigned int bus_width);
     virtual ~tlm_host() = default;
 
-    sc_time& local_time(sc_process_b* proc = nullptr);
-    sc_time local_time_stamp(sc_process_b* proc = nullptr);
+    sc_time& local_time(sc_process_b* proc = current_process());
+    sc_time local_time_stamp(sc_process_b* proc = current_process());
 
-    bool needs_sync(sc_process_b* proc = nullptr);
-    void sync(sc_process_b* proc = nullptr);
+    bool needs_sync(sc_process_b* proc = current_process());
+    void sync(sc_process_b* proc = current_process());
 
     void map_dmi(const tlm_dmi& dmi);
     void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a,
@@ -110,38 +119,39 @@ public:
     property<unsigned int> bus_width;
 };
 
-inline bool tlm_host::in_transaction() const {
-    return m_payload != nullptr;
+inline bool tlm_host::in_transaction(sc_process_b* proc) const {
+    return m_processes[proc].tx != nullptr;
 }
 
-inline bool tlm_host::in_debug_transaction() const {
-    return m_sideband && m_sideband->is_debug;
+inline bool tlm_host::in_debug_transaction(sc_process_b* proc) const {
+    return m_processes[proc].sbi && m_processes[proc].sbi->is_debug;
 }
 
-inline int tlm_host::current_cpu() const {
-    return m_sideband ? m_sideband->cpuid : -1;
+inline int tlm_host::current_cpu(sc_process_b* proc) const {
+    return m_processes[proc].sbi ? m_processes[proc].sbi->cpuid : -1;
 }
 
-inline int tlm_host::current_privilege() const {
-    return m_sideband ? m_sideband->privilege : 0;
+inline int tlm_host::current_privilege(sc_process_b* proc) const {
+    return m_processes[proc].sbi ? m_processes[proc].sbi->privilege : 0;
 }
 
-inline const tlm_generic_payload& tlm_host::current_transaction() const {
-    VCML_ERROR_ON(!m_payload, "not currently servicing a transaction");
-    return *m_payload;
+inline const tlm_generic_payload& tlm_host::current_transaction(
+    sc_process_b* proc) const {
+    VCML_ERROR_ON(!m_processes[proc].tx, "no current transaction");
+    return *m_processes[proc].tx;
 }
 
-inline const tlm_sbi& tlm_host::current_sideband() const {
-    VCML_ERROR_ON(!m_sideband, "not currently servicing a transaction");
-    return *m_sideband;
+inline const tlm_sbi& tlm_host::current_sideband(sc_process_b* proc) const {
+    VCML_ERROR_ON(!m_processes[proc].sbi, "no current transaction");
+    return *m_processes[proc].sbi;
 }
 
-inline size_t tlm_host::current_transaction_size() const {
-    return m_payload ? m_payload->get_data_length() : 0;
+inline size_t tlm_host::current_transaction_size(sc_process_b* proc) const {
+    return m_processes[proc].tx ? m_processes[proc].tx->get_data_length() : 0;
 }
 
-inline range tlm_host::current_transaction_address() const {
-    return m_payload ? range(*m_payload) : range();
+inline range tlm_host::current_transaction_address(sc_process_b* proc) const {
+    return m_processes[proc].tx ? range(*m_processes[proc].tx) : range();
 }
 
 inline const vector<tlm_initiator_socket*>&
