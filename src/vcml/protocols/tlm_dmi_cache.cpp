@@ -87,20 +87,24 @@ void tlm_dmi_cache::insert(const tlm_dmi& dmi) {
     insert_locked(dmi);
 }
 
-void tlm_dmi_cache::invalidate(u64 start, u64 end) {
-    invalidate(range(start, end));
+bool tlm_dmi_cache::invalidate(u64 start, u64 end) {
+    return invalidate(range(start, end));
 }
 
-void tlm_dmi_cache::invalidate(const range& r) {
+bool tlm_dmi_cache::invalidate(const range& r) {
     lock_guard<mutex> guard(m_mtx);
     vector<tlm_dmi> entries(m_entries.rbegin(), m_entries.rend());
     m_entries.clear();
+
+    size_t invalidations = 0;
 
     for (const tlm_dmi& dmi : entries) {
         if (!r.overlaps(dmi)) {
             insert_locked(dmi);
             continue;
         }
+
+        invalidations++;
 
         if (r.start > 0) {
             tlm_dmi front(dmi);
@@ -116,6 +120,8 @@ void tlm_dmi_cache::invalidate(const range& r) {
                 insert_locked(back);
         }
     }
+
+    return invalidations > 0;
 }
 
 bool tlm_dmi_cache::lookup(const range& r, vcml_access rwx, tlm_dmi& out) {

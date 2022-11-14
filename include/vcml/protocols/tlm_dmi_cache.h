@@ -47,8 +47,8 @@ public:
 
     void insert(const tlm_dmi& dmi);
 
-    void invalidate(u64 start, u64 end);
-    void invalidate(const range& r);
+    bool invalidate(u64 start, u64 end);
+    bool invalidate(const range& r);
 
     bool lookup(const range& r, vcml_access rwx, tlm_dmi& dmi);
     bool lookup(const range& addr, tlm_command c, tlm_dmi& dmi);

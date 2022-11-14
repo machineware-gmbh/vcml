@@ -298,15 +298,17 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     m_payload = &tx;
     m_sideband = tx_get_sbi(tx);
 
-    if (tx_is_excl(tx) && tx.is_read())
-        unmap_dmi(tx);
-
     tx.set_dmi_allowed(false);
 
-    if (allow_dmi && m_dmi_cache) {
-        tlm_dmi dmi;
-        if (m_dmi_cache->lookup(tx, dmi))
+    tlm_dmi dmi;
+    if (allow_dmi && m_dmi_cache && m_dmi_cache->lookup(tx, dmi)) {
+        if (tx_is_excl(tx) && tx.is_read()) {
+            u64 lo = tx.get_address();
+            u64 hi = lo + tx_size(tx) - 1;
+            (*this)->invalidate_direct_mem_ptr(lo, hi);
+        } else {
             tx.set_dmi_allowed(true);
+        }
     }
 
     if (m_exmon.update(tx))
@@ -397,9 +399,8 @@ tlm_target_socket::~tlm_target_socket() {
 }
 
 void tlm_target_socket::unmap_dmi(u64 start, u64 end) {
-    if (m_dmi_cache)
-        m_dmi_cache->invalidate(start, end);
-    (*this)->invalidate_direct_mem_ptr(start, end);
+    if (m_dmi_cache && m_dmi_cache->invalidate(start, end))
+        (*this)->invalidate_direct_mem_ptr(start, end);
 }
 
 void tlm_target_socket::remap_dmi(const sc_time& rd, const sc_time& wr) {
