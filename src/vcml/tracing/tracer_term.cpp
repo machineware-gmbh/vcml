@@ -62,7 +62,7 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
     if (trace_name_length < sender.length())
         trace_name_length = sender.length();
 
-    if (!msg.error && msg.dir == TRACE_FW)
+    if (msg.dir == TRACE_FW)
         trace_curr_indent += trace_indent_incr;
 
     vector<string> lines = split(to_string(msg.payload), '\n');
@@ -90,7 +90,7 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
 
     m_os << ss.rdbuf() << std::flush;
 
-    if (msg.dir == TRACE_BW && !msg.error) {
+    if (msg.dir == TRACE_BW && trace_curr_indent) {
         if (trace_curr_indent >= trace_indent_incr)
             trace_curr_indent -= trace_indent_incr;
         else
