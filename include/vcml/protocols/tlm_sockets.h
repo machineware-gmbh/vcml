@@ -243,7 +243,7 @@ class tlm_target_socket : public simple_target_socket<tlm_target_socket, 64>
 private:
     int m_curr;
     int m_next;
-    sc_event m_free_ev;
+    sc_event* m_free_ev;
     tlm_dmi_cache* m_dmi_cache;
     tlm_exmon m_exmon;
     tlm_initiator_stub* m_stub;
@@ -253,6 +253,8 @@ private:
 
     tlm_generic_payload* m_payload;
     tlm_sbi m_sideband;
+
+    void wait_free();
 
     void trace_fw(const tlm_generic_payload& tx, const sc_time& t);
     void trace_bw(const tlm_generic_payload& tx, const sc_time& t);
@@ -310,6 +312,12 @@ public:
     size_t current_transaction_size() const;
     range current_transaction_address() const;
 };
+
+inline void tlm_target_socket::wait_free() {
+    if (!m_free_ev)
+        m_free_ev = new sc_event(strcat(basename(), "_free").c_str());
+    sc_core::wait(*m_free_ev);
+}
 
 inline void tlm_target_socket::trace_fw(const tlm_generic_payload& tx,
                                         const sc_time& t) {

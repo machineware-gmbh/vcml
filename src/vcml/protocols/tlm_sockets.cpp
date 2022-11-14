@@ -293,7 +293,7 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
 
     int self = m_next++;
     while (self != m_curr)
-        sc_core::wait(m_free_ev);
+        wait_free();
 
     m_payload = &tx;
     m_sideband = tx_get_sbi(tx);
@@ -315,7 +315,8 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
         tx.set_response_status(TLM_OK_RESPONSE);
 
     m_curr++;
-    m_free_ev.notify();
+    if (m_free_ev)
+        m_free_ev->notify();
 
     m_payload = nullptr;
     m_sideband = SBI_NONE;
@@ -354,7 +355,7 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     simple_target_socket<tlm_target_socket, 64>(nm),
     m_curr(0),
     m_next(0),
-    m_free_ev(strcat(nm, "_free").c_str()),
+    m_free_ev(nullptr),
     m_dmi_cache(nullptr),
     m_exmon(),
     m_stub(nullptr),
@@ -391,6 +392,8 @@ tlm_target_socket::~tlm_target_socket() {
         delete m_stub;
     if (m_dmi_cache)
         delete m_dmi_cache;
+    if (m_free_ev)
+        delete m_free_ev;
 }
 
 void tlm_target_socket::unmap_dmi(u64 start, u64 end) {
