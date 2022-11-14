@@ -137,7 +137,7 @@ void bus::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
 
     u64 addr = tx.get_address();
     tx.set_address(addr - m.addr.start + m.offset);
-    out[m.target]->b_transport(tx, dt);
+    out[m.target].b_transport(tx, dt);
     tx.set_address(addr);
 }
 

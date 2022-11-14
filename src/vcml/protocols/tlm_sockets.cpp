@@ -99,6 +99,12 @@ u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access rw) {
     return dmi_get_ptr(dmi, mem.start);
 }
 
+void tlm_initiator_socket::b_transport(tlm_generic_payload& tx, sc_time& t) {
+    trace_fw(tx, t);
+    (*this)->b_transport(tx, t);
+    trace_bw(tx, t);
+}
+
 unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
                                         const tlm_sbi& info) try {
     unsigned int bytes = 0;
@@ -137,9 +143,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
         sc_time& offset = m_host->local_time();
         sc_time local = sc_time_stamp() + offset;
 
-        trace_fw(tx, offset);
-        (*this)->b_transport(tx, offset);
-        trace_bw(tx, offset);
+        b_transport(tx, offset);
 
         sc_time now = sc_time_stamp() + offset;
         VCML_ERROR_ON(now < local, "b_transport time went backwards");

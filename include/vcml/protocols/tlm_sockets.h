@@ -86,6 +86,8 @@ public:
     void map_dmi(const tlm_dmi& dmi);
     void unmap_dmi(u64 start, u64 end);
 
+    void b_transport(tlm_generic_payload& tx, sc_time& t);
+
     unsigned int send(tlm_generic_payload& tx, const tlm_sbi& info = SBI_NONE);
 
     tlm_response_status access_dmi(tlm_command c, u64 addr, void* data,
