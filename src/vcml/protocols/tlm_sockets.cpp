@@ -239,8 +239,8 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
     unsigned int done = 0;
     while (done < size) {
         unsigned int sz = size - done;
-        if (bus_width && sz > bus_width)
-            sz = bus_width;
+        if (bus_width && sz > bus_width / 8)
+            sz = bus_width / 8;
 
         tx_setup(m_tx, cmd, addr + done, (u8*)data + done, sz);
 
