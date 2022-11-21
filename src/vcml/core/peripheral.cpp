@@ -64,6 +64,9 @@ void peripheral::reset() {
 
     for (auto r : m_registers)
         r->reset();
+
+    for (auto reg : m_registers)
+        std::cout << reg->name() << " " << reg->get_range() << std::endl;
 }
 
 void peripheral::add_register(reg_base* reg) {
@@ -79,11 +82,10 @@ void peripheral::add_register(reg_base* reg) {
                 r->name());
     }
 
-    m_registers.push_back(reg);
-    std::sort(m_registers.begin(), m_registers.end(),
-              [](const reg_base* a, const reg_base* b) -> bool {
-                  return a->get_address() < b->get_address();
-              });
+    mwr::stl_insert_sorted(m_registers, reg,
+                           [](const reg_base* a, const reg_base* b) -> bool {
+                               return a->get_address() < b->get_address();
+                           });
 }
 
 void peripheral::remove_register(reg_base* reg) {
