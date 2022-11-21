@@ -68,8 +68,8 @@ public:
     int get_cpuid() const { return m_sbi.cpuid; }
     int get_privilege() const { return m_sbi.privilege; }
 
-    void set_cpuid(int cpuid);
-    void set_privilege(int level);
+    void set_cpuid(u64 cpuid);
+    void set_privilege(u64 level);
 
     tlm_initiator_socket() = delete;
     tlm_initiator_socket(const char* n, address_space a = VCML_AS_DEFAULT);
@@ -138,14 +138,12 @@ inline void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
         tracer::record(TRACE_BW, *this, tx, t);
 }
 
-inline void tlm_initiator_socket::set_cpuid(int cpuid) {
+inline void tlm_initiator_socket::set_cpuid(u64 cpuid) {
     m_sbi.cpuid = cpuid;
-    VCML_ERROR_ON(m_sbi.cpuid != cpuid, "cpuid too large");
 }
 
-inline void tlm_initiator_socket::set_privilege(int level) {
+inline void tlm_initiator_socket::set_privilege(u64 level) {
     m_sbi.privilege = level;
-    VCML_ERROR_ON(m_sbi.privilege != level, "sbi privilege too large");
 }
 
 inline u8* tlm_initiator_socket::lookup_dmi_ptr(u64 addr, u64 size,

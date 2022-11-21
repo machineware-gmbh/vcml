@@ -52,6 +52,7 @@ TEST(peripheral, transporting) {
     local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 0, buffer, 4);
 
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, read(range(tx), buffer, SBI_NONE, VCML_AS_DEFAULT))
         .WillOnce(Return(tlm::TLM_INCOMPLETE_RESPONSE));
     EXPECT_CALL(mock, write(_, _, _, _)).Times(0); // NOLINT
@@ -81,6 +82,8 @@ TEST(peripheral, transporting_debug) {
 
     local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_READ_COMMAND, 4, buffer, 16);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, read(range(tx), buffer, SBI_DEBUG, VCML_AS_DEFAULT))
         .Times(1);
 
@@ -116,6 +119,8 @@ TEST(peripheral, transport_streaming) {
     npulses = tx.get_data_length() / tx.get_streaming_width();
 
     EXPECT_CALL(mock, read(_, _, _, _)).Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(range(tx), _, SBI_NONE, VCML_AS_DEFAULT))
         .Times(npulses)
         .WillRepeatedly(Return(TLM_OK_RESPONSE));
@@ -153,6 +158,8 @@ TEST(peripheral, transporting_byte_enable) {
     local = sc_core::SC_ZERO_TIME;
 
     EXPECT_CALL(mock, read(_, _, _, _)).Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(range(tx), buf, SBI_NONE, VCML_AS_DEFAULT))
         .Times(0);
 
@@ -216,6 +223,8 @@ TEST(peripheral, transporting_byte_enable_with_streaming) {
     npulses = tx.get_data_length() / tx.get_streaming_width();
 
     EXPECT_CALL(mock, read(_, _, _, _)).Times(0);
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     EXPECT_CALL(mock, write(range(tx), buf, SBI_NONE, VCML_AS_DEFAULT))
         .Times(0);
 

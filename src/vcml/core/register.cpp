@@ -36,6 +36,7 @@ reg_base::reg_base(address_space space, const string& regname, u64 addr,
     m_wsync(false),
     m_wback(true),
     m_natural(false),
+    m_secure(0),
     m_privilege(0),
     m_host(hierarchy_search<peripheral>()),
     as(space),
@@ -62,9 +63,16 @@ void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
         return;
     }
 
-    if (info.privilege < m_privilege && !info.is_debug) {
-        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-        return;
+    if (!info.is_debug) {
+        if (m_privilege > info.privilege) {
+            tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
+            return;
+        }
+
+        if (m_secure && !info.is_secure) {
+            tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
+            return;
+        }
     }
 
     unsigned char* ptr = tx.get_data_ptr();

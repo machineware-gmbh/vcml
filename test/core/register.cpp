@@ -223,6 +223,33 @@ TEST(registers, permissions) {
     EXPECT_EQ(local, cycle * mock.read_latency);
 }
 
+TEST(registers, secure) {
+    mock_peripheral mock;
+
+    sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
+    sc_core::sc_time& local = mock.local_time();
+
+    tlm::tlm_generic_payload tx;
+    u8 buffer[] = { 0x11, 0x22, 0x33, 0x44 };
+
+    local = sc_core::SC_ZERO_TIME;
+    mock.test_reg_b.set_secure();
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
+
+    EXPECT_CALL(mock, reg_write(_)).Times(0);
+    EXPECT_EQ(mock.test_transport(tx), 0);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
+    EXPECT_EQ(local, cycle * mock.write_latency);
+
+    local = sc_core::SC_ZERO_TIME;
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
+
+    EXPECT_CALL(mock, reg_write(_));
+    EXPECT_EQ(mock.transport(tx, SBI_SECURE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(local, cycle * mock.write_latency);
+}
+
 TEST(registers, privilege) {
     mock_peripheral mock;
 
@@ -241,7 +268,7 @@ TEST(registers, privilege) {
     EXPECT_EQ(tx.get_response_status(), tlm::TLM_COMMAND_ERROR_RESPONSE);
     EXPECT_EQ(local, cycle * mock.write_latency);
 
-    tlm_sbi sbi = sbi_level(1);
+    tlm_sbi sbi = sbi_privilege(1);
     local = sc_core::SC_ZERO_TIME;
     tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
 

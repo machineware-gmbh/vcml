@@ -25,67 +25,39 @@
 namespace vcml {
 
 struct tlm_sbi {
-    union {
-        struct {
-            bool is_debug : 1;
-            bool is_nodmi : 1;
-            bool is_sync : 1;
-            bool is_insn : 1;
-            bool is_excl : 1;
-            bool is_lock : 1;
+    bool is_debug;
+    bool is_nodmi;
+    bool is_sync;
+    bool is_insn;
+    bool is_excl;
+    bool is_lock;
+    bool is_secure;
 
-            int cpuid : 20;
-            int privilege : 20;
-        };
+    u64 cpuid;
+    u64 privilege;
+    u64 asid;
 
-        u64 code;
-    };
-
-    tlm_sbi() = default;
     tlm_sbi(const tlm_sbi&) = default;
     tlm_sbi(tlm_sbi&&) = default;
 
+    tlm_sbi();
     tlm_sbi(bool debug, bool nodmi, bool sync, bool insn, bool excl, bool lock,
-            int cpu = 0, int lvl = 0):
-        is_debug(debug),
-        is_nodmi(nodmi),
-        is_sync(sync),
-        is_insn(insn),
-        is_excl(excl),
-        is_lock(lock),
-        cpuid(cpu),
-        privilege(lvl) {
-        VCML_ERROR_ON(cpuid != cpu, "sbi cpuid too large");
-        VCML_ERROR_ON(privilege != lvl, "sbi privilege level too large");
-    }
+            bool secure, u64 cpu = 0, u64 privilege = 0, u64 asid = 0);
+
+    void copy(const tlm_sbi& other);
 
     tlm_sbi& operator=(const tlm_sbi& other);
     tlm_sbi& operator&=(const tlm_sbi& other);
     tlm_sbi& operator|=(const tlm_sbi& other);
+    tlm_sbi& operator^=(const tlm_sbi& other);
 
     tlm_sbi operator&(const tlm_sbi& other) const;
     tlm_sbi operator|(const tlm_sbi& other) const;
+    tlm_sbi operator^(const tlm_sbi& other) const;
 
     bool operator==(const tlm_sbi& other) const;
     bool operator!=(const tlm_sbi& other) const;
 };
-
-static_assert(sizeof(tlm_sbi) == sizeof(u64), "sideband too large");
-
-inline tlm_sbi& tlm_sbi::operator=(const tlm_sbi& other) {
-    code = other.code;
-    return *this;
-}
-
-inline tlm_sbi& tlm_sbi::operator&=(const tlm_sbi& other) {
-    code &= other.code;
-    return *this;
-}
-
-inline tlm_sbi& tlm_sbi::operator|=(const tlm_sbi& other) {
-    code |= other.code;
-    return *this;
-}
 
 inline tlm_sbi tlm_sbi::operator&(const tlm_sbi& other) const {
     tlm_sbi result(*this);
@@ -98,27 +70,36 @@ inline tlm_sbi tlm_sbi::operator|(const tlm_sbi& other) const {
 }
 
 inline bool tlm_sbi::operator==(const tlm_sbi& other) const {
-    return code == other.code;
+    return is_debug == other.is_debug && is_nodmi == other.is_nodmi &&
+           is_sync == other.is_sync && is_insn == other.is_insn &&
+           is_excl == other.is_excl && is_lock == other.is_lock &&
+           is_secure == other.is_secure && cpuid == other.cpuid &&
+           privilege == other.privilege && asid == other.asid;
 }
 
 inline bool tlm_sbi::operator!=(const tlm_sbi& other) const {
-    return code != other.code;
+    return !operator==(other);
 }
 
-const tlm_sbi SBI_NONE = { false, false, false, false, false, false };
-const tlm_sbi SBI_DEBUG = { true, false, false, false, false, false };
-const tlm_sbi SBI_NODMI = { false, true, false, false, false, false };
-const tlm_sbi SBI_SYNC = { false, false, true, false, false, false };
-const tlm_sbi SBI_INSN = { false, false, false, true, false, false };
-const tlm_sbi SBI_EXCL = { false, false, false, false, true, false };
-const tlm_sbi SBI_LOCK = { false, false, false, false, false, true };
+extern const tlm_sbi SBI_NONE;
+extern const tlm_sbi SBI_DEBUG;
+extern const tlm_sbi SBI_NODMI;
+extern const tlm_sbi SBI_SYNC;
+extern const tlm_sbi SBI_INSN;
+extern const tlm_sbi SBI_EXCL;
+extern const tlm_sbi SBI_LOCK;
+extern const tlm_sbi SBI_SECURE;
 
-inline tlm_sbi sbi_cpuid(int cpu) {
-    return tlm_sbi(false, false, false, false, false, false, cpu, 0);
+inline tlm_sbi sbi_cpuid(u64 cpu) {
+    return tlm_sbi(false, false, false, false, false, false, false, cpu, 0, 0);
 }
 
-inline tlm_sbi sbi_level(int lvl) {
-    return tlm_sbi(false, false, false, false, false, false, 0, lvl);
+inline tlm_sbi sbi_privilege(u64 lvl) {
+    return tlm_sbi(false, false, false, false, false, false, false, 0, lvl, 0);
+}
+
+inline tlm_sbi sbi_asid(u64 id) {
+    return tlm_sbi(false, false, false, false, false, false, false, 0, 0, id);
 }
 
 class sbiext : public tlm_extension<sbiext>, public tlm_sbi
@@ -162,17 +143,35 @@ inline bool tx_is_lock(const tlm_generic_payload& tx) {
     return tx_get_sbi(tx).is_lock;
 }
 
-inline int tx_cpuid(const tlm_generic_payload& tx) {
+inline bool tx_is_secure(const tlm_generic_payload& tx) {
+    return tx_get_sbi(tx).is_secure;
+}
+
+inline u64 tx_cpuid(const tlm_generic_payload& tx) {
     return tx_get_sbi(tx).cpuid;
 }
 
-inline int tx_level(const tlm_generic_payload& tx) {
+inline u64 tx_privilege(const tlm_generic_payload& tx) {
     return tx_get_sbi(tx).privilege;
 }
 
+inline u64 tx_asid(const tlm_generic_payload& tx) {
+    return tx_get_sbi(tx).asid;
+}
+
 void tx_set_sbi(tlm_generic_payload& tx, const tlm_sbi& info);
-void tx_set_cpuid(tlm_generic_payload& tx, int id);
-void tx_set_level(tlm_generic_payload& tx, int lvl);
+
+inline void tx_set_cpuid(tlm_generic_payload& tx, u64 id) {
+    tx_set_sbi(tx, sbi_cpuid(id));
+}
+
+inline void tx_set_privilege(tlm_generic_payload& tx, u64 lvl) {
+    tx_set_sbi(tx, sbi_privilege(lvl));
+}
+
+inline void tx_set_asid(tlm_generic_payload& tx, u64 asid) {
+    tx_set_sbi(tx, sbi_asid(asid));
+}
 
 } // namespace vcml
 
