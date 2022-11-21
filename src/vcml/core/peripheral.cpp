@@ -64,9 +64,6 @@ void peripheral::reset() {
 
     for (auto r : m_registers)
         r->reset();
-
-    for (auto reg : m_registers)
-        std::cout << reg->name() << " " << reg->get_range() << std::endl;
 }
 
 void peripheral::add_register(reg_base* reg) {
