@@ -104,12 +104,30 @@ void gpio_base_target_socket::stub() {
     m_stub->gpio_out.bind(*this);
 }
 
-bool gpio_initiator_socket::gpio_state_tracker::operator=(bool st) {
-    if (state == st)
-        return state;
+void gpio_initiator_socket::gpio_state_tracker::write(bool val) {
+    if (state != val) {
+        state = val;
+        parent->gpio_transport(*this);
+    }
+}
 
-    state = st;
-    parent->gpio_transport(*this);
+bool gpio_initiator_socket::gpio_state_tracker::operator=(bool val) {
+    write(val);
+    return state;
+}
+
+bool gpio_initiator_socket::gpio_state_tracker::operator|=(bool val) {
+    write(state | val);
+    return state;
+}
+
+bool gpio_initiator_socket::gpio_state_tracker::operator&=(bool val) {
+    write(state & val);
+    return state;
+}
+
+bool gpio_initiator_socket::gpio_state_tracker::operator^=(bool val) {
+    write(state ^ val);
     return state;
 }
 
@@ -163,6 +181,21 @@ void gpio_initiator_socket::pulse(gpio_vector vector) {
 
 gpio_initiator_socket& gpio_initiator_socket::operator=(bool set) {
     write(set, GPIO_NO_VECTOR);
+    return *this;
+}
+
+gpio_initiator_socket& gpio_initiator_socket::operator|=(bool set) {
+    write(read(GPIO_NO_VECTOR) | set, GPIO_NO_VECTOR);
+    return *this;
+}
+
+gpio_initiator_socket& gpio_initiator_socket::operator&=(bool set) {
+    write(read(GPIO_NO_VECTOR) & set, GPIO_NO_VECTOR);
+    return *this;
+}
+
+gpio_initiator_socket& gpio_initiator_socket::operator^=(bool set) {
+    write(read(GPIO_NO_VECTOR) ^ set, GPIO_NO_VECTOR);
     return *this;
 }
 

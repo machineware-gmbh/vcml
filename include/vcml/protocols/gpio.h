@@ -157,8 +157,13 @@ class gpio_initiator_socket : public gpio_base_initiator_socket
 public:
     struct gpio_state_tracker : gpio_payload {
         gpio_initiator_socket* parent;
-        bool operator=(bool state);
-        operator bool() const { return state; }
+        bool read() const { return state; }
+        void write(bool val);
+        bool operator=(bool val);
+        bool operator|=(bool val);
+        bool operator&=(bool val);
+        bool operator^=(bool val);
+        operator bool() const { return read(); }
     };
 
     gpio_initiator_socket(const char* n, address_space a = VCML_AS_DEFAULT);
@@ -176,6 +181,9 @@ public:
     void pulse(gpio_vector vector = GPIO_NO_VECTOR);
 
     gpio_initiator_socket& operator=(bool set);
+    gpio_initiator_socket& operator|=(bool set);
+    gpio_initiator_socket& operator&=(bool set);
+    gpio_initiator_socket& operator^=(bool set);
     gpio_state_tracker& operator[](gpio_vector vector);
 
 private:
