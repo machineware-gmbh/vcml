@@ -51,6 +51,7 @@ private:
 protected:
     bool in_transaction(sc_process_b* proc = current_process()) const;
     bool in_debug_transaction(sc_process_b* proc = current_process()) const;
+    bool in_secure_transaction(sc_process_b* proc = current_process()) const;
     int current_cpu(sc_process_b* proc = current_process()) const;
     int current_privilege(sc_process_b* proc = current_process()) const;
 
@@ -125,6 +126,10 @@ inline bool tlm_host::in_transaction(sc_process_b* proc) const {
 
 inline bool tlm_host::in_debug_transaction(sc_process_b* proc) const {
     return m_processes[proc].sbi && m_processes[proc].sbi->is_debug;
+}
+
+inline bool tlm_host::in_secure_transaction(sc_process_b* proc) const {
+    return m_processes[proc].sbi && m_processes[proc].sbi->is_secure;
 }
 
 inline int tlm_host::current_cpu(sc_process_b* proc) const {
