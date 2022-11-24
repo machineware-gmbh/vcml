@@ -74,7 +74,8 @@ module::~module() {
 }
 
 const char* module::version() const {
-    return VCML_VERSION_STRING;
+    module* parent = dynamic_cast<module*>(get_parent_object());
+    return parent ? parent->version() : VCML_VERSION_STRING;
 }
 
 void module::session_suspend() {
