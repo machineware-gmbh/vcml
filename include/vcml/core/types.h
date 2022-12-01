@@ -218,6 +218,7 @@ using mwr::deposit;
 using mwr::field;
 using mwr::get_field;
 using mwr::set_field;
+using mwr::set_bit;
 
 bool is_debug_build();
 

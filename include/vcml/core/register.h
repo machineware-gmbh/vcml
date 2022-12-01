@@ -226,6 +226,9 @@ public:
     template <typename F>
     void set_field(DATA val);
 
+    template <const DATA BIT>
+    void set_bit(bool set);
+
 private:
     bool m_banked;
     DATA m_init[N];
@@ -663,6 +666,13 @@ template <typename F>
 inline void reg<DATA, N>::set_field(DATA val) {
     for (size_t i = 0; i < N; i++)
         vcml::set_field<F>(current_bank(i), val);
+}
+
+template <typename DATA, size_t N>
+template <const DATA BIT>
+inline void reg<DATA, N>::set_bit(bool set) {
+    for (size_t i = 0; i < N; i++)
+        vcml::set_bit<BIT>(current_bank(i), set);
 }
 
 template <typename DATA, size_t N>
