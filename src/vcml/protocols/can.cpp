@@ -58,10 +58,16 @@ bool can_frame::operator!=(const can_frame& other) {
 ostream& operator<<(ostream& os, const can_frame& frame) {
     stream_guard guard(os);
     os << "CAN";
+    if (frame.is_fdf())
+        os << "FD";
     if (frame.is_rtr())
-        os << "_RTR";
+        os << " +rtr";
     if (frame.is_err())
-        os << "_ERR";
+        os << " +err";
+    if (frame.is_brs())
+        os << " +brs";
+    if (frame.is_esi())
+        os << " +esi";
 
     os << mkstr(" %x [%02hhx]", frame.id(), frame.flags);
 

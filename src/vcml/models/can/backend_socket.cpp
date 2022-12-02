@@ -60,6 +60,8 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
                        sizeof(enable))) {
             VCML_ERROR("error enabling canfd: %s", strerror(errno));
         }
+
+        log_debug("using CAN-FD mode");
     }
 
     struct sockaddr_can addr;
@@ -68,13 +70,21 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
     if (bind(m_socket, (struct sockaddr*)&addr, sizeof(addr)) < 0)
         VCML_REPORT("failed to bind %s: %s", m_name.c_str(), strerror(errno));
 
-    mwr::aio_notify(m_socket, [&](int fd) -> void {
+    mwr::aio_notify(m_socket, [=](int fd) -> void {
         can_frame frame;
         if (mwr::fd_read(fd, &frame, sizeof(frame)) != sizeof(frame)) {
             log_error("error reading %s: %s", m_name.c_str(), strerror(errno));
             mwr::aio_cancel(fd);
             return;
         }
+
+        // Linux VCAN has already translated DLC to length in bytes, undo that
+        // before we forward the frame to the devices.
+        frame.dlc = len2dlc(frame.dlc);
+
+        // CANFD_FDF allows dual-use of the can_frame for FD and non-FD frames
+        if (mtu >= CANFD_MTU)
+            frame.flags |= CANFD_FDF;
 
         send_to_guest(frame);
     });
@@ -91,8 +101,11 @@ backend_socket::~backend_socket() {
 }
 
 void backend_socket::send_to_host(const can_frame& frame) {
-    if (m_socket > -1)
-        mwr::fd_write(m_socket, &frame, sizeof(frame));
+    if (m_socket > -1) {
+        can_frame copy(frame);
+        copy.dlc = dlc2len(copy.dlc);
+        mwr::fd_write(m_socket, &copy, sizeof(copy));
+    }
 }
 
 backend* backend_socket::create(bridge* br, const string& type) {

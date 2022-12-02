@@ -33,20 +33,30 @@ size_t dlc2len(u8 dlc);
 enum can_msgid_flags : u32 {
     CAN_SID = bitmask(11),
     CAN_EID = bitmask(29),
-    CAN_EFF = 1u << 31, // extended frame format (29 bit id)
-    CAN_RTR = 1u << 30, // remote transmission request
-    CAN_ERR = 1u << 29, // error message frame
+    CAN_EFF = bit(31), // extended frame format (29 bit id)
+    CAN_RTR = bit(30), // remote transmission request
+    CAN_ERR = bit(29), // error message frame
+};
+
+enum can_flags : u8 {
+    CANFD_BRS = bit(0),
+    CANFD_ESI = bit(1),
+    CANFD_FDF = bit(2),
 };
 
 struct can_frame {
     u32 msgid;
     u8 dlc;
     u8 flags;
-    u8 data[64];
+    u8 data[64] MWR_DECL_ALIGN(8);
 
     bool is_eff() const { return msgid & CAN_EFF; }
     bool is_rtr() const { return msgid & CAN_RTR; }
     bool is_err() const { return msgid & CAN_ERR; }
+
+    bool is_brs() const { return flags & CANFD_BRS; }
+    bool is_esi() const { return flags & CANFD_ESI; }
+    bool is_fdf() const { return flags & CANFD_FDF; }
 
     u32 id() const { return msgid & (is_eff() ? CAN_EID : CAN_SID); }
     size_t length() const { return dlc2len(dlc); }
