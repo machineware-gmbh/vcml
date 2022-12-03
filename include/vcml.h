@@ -82,6 +82,7 @@
 #include "vcml/models/generic/reset.h"
 #include "vcml/models/generic/bus.h"
 #include "vcml/models/generic/memory.h"
+#include "vcml/models/generic/gate.h"
 #include "vcml/models/generic/gpio.h"
 #include "vcml/models/generic/uart8250.h"
 #include "vcml/models/generic/lan9118.h"
