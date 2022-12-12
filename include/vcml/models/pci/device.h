@@ -105,7 +105,7 @@ struct cap_msix : capability {
         u64 addr;
         u32 data;
         u32 ctrl;
-    } * msix_table;
+    }* msix_table;
 
     u32* msix_pba;
 

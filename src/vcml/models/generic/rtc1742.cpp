@@ -116,14 +116,14 @@ void rtc1742::save_nvram(const string& filename) {
 }
 
 bool rtc1742::cmd_load(const vector<string>& args, ostream& os) {
-    const string filename = args[0];
+    const string& filename = args[0];
     load_nvram(filename);
     os << "loaded " << filename << " into nvram";
     return true;
 }
 
 bool rtc1742::cmd_save(const vector<string>& args, ostream& os) {
-    const string filename = args[0];
+    const string& filename = args[0];
     save_nvram(filename);
     os << "saved nvram to " << filename;
     return true;

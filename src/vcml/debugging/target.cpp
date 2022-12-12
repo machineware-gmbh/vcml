@@ -93,6 +93,7 @@ target::~target() {
 
 vector<cpureg> target::cpuregs() const {
     vector<cpureg> regs;
+    regs.reserve(m_cpuregs.size());
     for (auto& reg : m_cpuregs)
         regs.push_back(reg.second);
     return regs;

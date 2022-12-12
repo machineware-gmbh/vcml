@@ -48,6 +48,10 @@ bool module::cmd_version(const vector<string>& args, ostream& os) {
     return true;
 }
 
+// clang-format-15 seems to get confused when your class is named 'module', so
+// we need to disable formatting here. If we rename this to module1::module1,
+// no errors are reported. If we rename it back, the errors return...
+// clang-format off
 module::module(const sc_module_name& nm):
     sc_module(nm),
     m_commands(),
@@ -67,6 +71,7 @@ module::module(const sc_module_name& nm):
     register_command("version", 0, &module::cmd_version,
                      "print version information about this module");
 }
+// clang-format on
 
 module::~module() {
     for (const auto& it : m_commands)

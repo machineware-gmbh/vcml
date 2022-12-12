@@ -91,7 +91,7 @@ vector<image_info> images_from_string(const string& s) {
 }
 
 bool loader::cmd_load(const vector<string>& args, ostream& os) {
-    string image = args[0];
+    const string& image = args[0];
     u64 offset = 0ull;
 
     if (args.size() > 1)
@@ -102,7 +102,7 @@ bool loader::cmd_load(const vector<string>& args, ostream& os) {
 }
 
 bool loader::cmd_load_bin(const vector<string>& args, ostream& os) {
-    string image = args[0];
+    const string& image = args[0];
     u64 offset = 0ull;
 
     if (args.size() > 1)
@@ -113,7 +113,7 @@ bool loader::cmd_load_bin(const vector<string>& args, ostream& os) {
 }
 
 bool loader::cmd_load_elf(const vector<string>& args, ostream& os) {
-    string image = args[0];
+    const string& image = args[0];
     u64 offset = 0ull;
 
     if (args.size() > 1)
