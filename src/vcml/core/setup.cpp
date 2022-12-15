@@ -132,8 +132,6 @@ setup* setup::instance() {
 }
 
 int main(int argc, char** argv) {
-    setlocale(LC_ALL, "");
-
 #ifndef VCML_DEBUG
     // disable deprecated warning for release builds
     sc_core::sc_report_handler::set_actions("/IEEE_Std_1666/deprecated",
