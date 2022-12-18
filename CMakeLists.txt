@@ -123,6 +123,10 @@ add_library(vcml STATIC
     ${src}/vcml/models/serial/backend_term.cpp
     ${src}/vcml/models/serial/backend.cpp
     ${src}/vcml/models/serial/terminal.cpp
+    ${src}/vcml/models/block/backend_file.cpp
+    ${src}/vcml/models/block/backend_ram.cpp
+    ${src}/vcml/models/block/backend.cpp
+    ${src}/vcml/models/block/drive.cpp
     ${src}/vcml/models/ethernet/backend.cpp
     ${src}/vcml/models/ethernet/backend_file.cpp
     ${src}/vcml/models/ethernet/backend_tap.cpp
