@@ -29,10 +29,15 @@ namespace block {
 class backend_ram : public backend
 {
 protected:
-    size_t m_capacity;
-    u8* m_buf;
-    u8* m_pos;
-    u8* m_end;
+    enum : size_t {
+        SECTOR_SIZE = 512,
+    };
+
+    size_t m_pos;
+    size_t m_cap;
+    std::map<u64, u8*> m_sectors;
+
+    u8* get_page(u64 addr);
 
 public:
     backend_ram(size_t cap, bool readonly);

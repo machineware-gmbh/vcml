@@ -22,50 +22,90 @@ namespace vcml {
 namespace block {
 
 backend_ram::backend_ram(size_t cap, bool readonly):
-    backend("ramdisk", readonly), m_capacity(cap), m_buf(), m_pos(), m_end() {
-    m_buf = m_pos = new u8[m_capacity];
-    m_end = m_buf + m_capacity;
+    backend("ramdisk", readonly), m_pos(), m_cap(cap), m_sectors() {
 }
 
 backend_ram::~backend_ram() {
-    if (m_buf)
-        delete[] m_buf;
+    for (const auto& sector : m_sectors)
+        delete[] sector.second;
 }
 
 size_t backend_ram::capacity() {
-    return m_capacity;
+    return m_cap;
 }
 
 size_t backend_ram::pos() {
-    return m_pos - m_buf;
+    return m_pos;
 }
 
 void backend_ram::seek(size_t pos) {
     VCML_REPORT_ON(pos > capacity(), "attempt to seek beyond end of buffer");
-    m_pos = m_buf + pos;
+    m_pos = pos;
 }
 
 void backend_ram::read(vector<u8>& buffer) {
-    if (m_pos + buffer.size() > m_end)
+    if (m_pos + buffer.size() > m_cap)
         VCML_REPORT("attempt to read beyond end of buffer");
-    memcpy(buffer.data(), m_pos, buffer.size());
+
+    size_t done = 0;
+    while (done < buffer.size()) {
+        size_t off = m_pos % SECTOR_SIZE;
+        size_t num = min(SECTOR_SIZE - off, buffer.size() - done);
+        auto it = m_sectors.find(m_pos / SECTOR_SIZE);
+        if (it == m_sectors.end())
+            memset(buffer.data() + done, 0, num);
+        else
+            memcpy(buffer.data() + done, it->second + off, num);
+
+        done += num;
+        m_pos += num;
+    }
 }
 
 void backend_ram::write(const vector<u8>& buffer) {
-    if (m_pos + buffer.size() > m_end)
+    if (m_pos + buffer.size() > m_cap)
         VCML_REPORT("attempt to write beyond end of buffer");
-    memcpy(m_pos, buffer.data(), buffer.size());
+
+    size_t done = 0;
+    while (done < buffer.size()) {
+        size_t off = m_pos % SECTOR_SIZE;
+        size_t num = min(SECTOR_SIZE - off, buffer.size() - done);
+        u8*& sector = m_sectors[m_pos / SECTOR_SIZE];
+        if (!sector)
+            sector = new u8[SECTOR_SIZE]();
+
+        memcpy(sector + off, buffer.data() + done, num);
+        m_pos += num;
+        done += num;
+    }
 }
 
 void backend_ram::write(u8 data, size_t count) {
-    if (m_pos + count > m_end)
+    if (m_pos + count > m_cap)
         VCML_REPORT("attempt to read beyond end of buffer");
-    memset(m_pos, data, count);
+
+    size_t done = 0;
+    while (done < count) {
+        size_t off = m_pos % SECTOR_SIZE;
+        size_t num = min(SECTOR_SIZE - off, count - done);
+        u8*& sector = m_sectors[m_pos / SECTOR_SIZE];
+        if (!sector && data)
+            sector = new u8[SECTOR_SIZE]();
+
+        if (sector)
+            memset(sector + off, data, num);
+
+        m_pos += count;
+        done += count;
+    }
 }
 
 void backend_ram::save(ostream& os) {
-    os.write((char*)m_buf, m_capacity);
-    VCML_REPORT_ON(!os.good(), "I/O error");
+    for (const auto& sector : m_sectors) {
+        os.seekp(sector.first * SECTOR_SIZE);
+        os.write((char*)sector.second, SECTOR_SIZE);
+        VCML_REPORT_ON(!os, "error saving disk: %s", strerror(errno));
+    }
 }
 
 } // namespace block

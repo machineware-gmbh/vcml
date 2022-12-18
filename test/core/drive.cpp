@@ -37,9 +37,49 @@ TEST(drive, ramdisk) {
 
     EXPECT_EQ(a, b);
 
+    EXPECT_EQ(drive.stats.num_bytes_written, a.size());
+    EXPECT_EQ(drive.stats.num_bytes_read, b.size());
+    EXPECT_EQ(drive.stats.num_write_req, 1);
+    EXPECT_EQ(drive.stats.num_read_req, 1);
+    EXPECT_EQ(drive.stats.num_seek_req, 2);
+    EXPECT_EQ(drive.stats.num_req, 4);
+    EXPECT_EQ(drive.stats.num_write_err, 0);
+    EXPECT_EQ(drive.stats.num_read_err, 0);
+    EXPECT_EQ(drive.stats.num_seek_err, 0);
+    EXPECT_EQ(drive.stats.num_err, 0);
+
     EXPECT_FALSE(drive.seek(8 * MiB + 1));
     EXPECT_TRUE(drive.seek(8 * MiB - 1));
     EXPECT_FALSE(drive.write(a));
+
+    EXPECT_EQ(drive.stats.num_bytes_written, a.size());
+    EXPECT_EQ(drive.stats.num_bytes_read, b.size());
+    EXPECT_EQ(drive.stats.num_write_req, 2);
+    EXPECT_EQ(drive.stats.num_read_req, 1);
+    EXPECT_EQ(drive.stats.num_seek_req, 4);
+    EXPECT_EQ(drive.stats.num_req, 7);
+    EXPECT_EQ(drive.stats.num_write_err, 1);
+    EXPECT_EQ(drive.stats.num_read_err, 0);
+    EXPECT_EQ(drive.stats.num_seek_err, 1);
+    EXPECT_EQ(drive.stats.num_err, 2);
+
+    EXPECT_TRUE(drive.seek(4 * MiB));
+    EXPECT_TRUE(drive.read(b));
+    EXPECT_EQ(b[0], 0);
+    EXPECT_EQ(b[1], 0);
+    EXPECT_EQ(b[2], 0);
+    EXPECT_EQ(b[3], 0);
+
+    EXPECT_EQ(drive.stats.num_bytes_written, a.size());
+    EXPECT_EQ(drive.stats.num_bytes_read, 8);
+    EXPECT_EQ(drive.stats.num_write_req, 2);
+    EXPECT_EQ(drive.stats.num_read_req, 2);
+    EXPECT_EQ(drive.stats.num_seek_req, 5);
+    EXPECT_EQ(drive.stats.num_req, 9);
+    EXPECT_EQ(drive.stats.num_write_err, 1);
+    EXPECT_EQ(drive.stats.num_read_err, 0);
+    EXPECT_EQ(drive.stats.num_seek_err, 1);
+    EXPECT_EQ(drive.stats.num_err, 2);
 }
 
 static void create_file(const string& path, size_t size) {
