@@ -18,68 +18,68 @@
 
 #include "testing.h"
 
-TEST(drive, ramdisk) {
+TEST(disk, ramdisk) {
     log_term log;
     log.set_level(LOG_DEBUG);
 
-    block::drive drive("drive", "ramdisk:8MiB");
-    EXPECT_EQ(drive.capacity(), 8 * MiB);
-    EXPECT_EQ(drive.pos(), 0);
-    EXPECT_EQ(drive.remaining(), drive.capacity());
+    block::disk disk("disk", "ramdisk:8MiB");
+    EXPECT_EQ(disk.capacity(), 8 * MiB);
+    EXPECT_EQ(disk.pos(), 0);
+    EXPECT_EQ(disk.remaining(), disk.capacity());
 
     vector<u8> a{ 0x12, 0x34, 0x56, 0x78 };
     vector<u8> b{ 0x00, 0x00, 0x00, 0x00 };
 
-    EXPECT_TRUE(drive.seek(0xffe));
-    EXPECT_TRUE(drive.write(a));
-    EXPECT_TRUE(drive.seek(0xffe));
-    EXPECT_TRUE(drive.read(b));
+    EXPECT_TRUE(disk.seek(0xffe));
+    EXPECT_TRUE(disk.write(a));
+    EXPECT_TRUE(disk.seek(0xffe));
+    EXPECT_TRUE(disk.read(b));
 
     EXPECT_EQ(a, b);
 
-    EXPECT_EQ(drive.stats.num_bytes_written, a.size());
-    EXPECT_EQ(drive.stats.num_bytes_read, b.size());
-    EXPECT_EQ(drive.stats.num_write_req, 1);
-    EXPECT_EQ(drive.stats.num_read_req, 1);
-    EXPECT_EQ(drive.stats.num_seek_req, 2);
-    EXPECT_EQ(drive.stats.num_req, 4);
-    EXPECT_EQ(drive.stats.num_write_err, 0);
-    EXPECT_EQ(drive.stats.num_read_err, 0);
-    EXPECT_EQ(drive.stats.num_seek_err, 0);
-    EXPECT_EQ(drive.stats.num_err, 0);
+    EXPECT_EQ(disk.stats.num_bytes_written, a.size());
+    EXPECT_EQ(disk.stats.num_bytes_read, b.size());
+    EXPECT_EQ(disk.stats.num_write_req, 1);
+    EXPECT_EQ(disk.stats.num_read_req, 1);
+    EXPECT_EQ(disk.stats.num_seek_req, 2);
+    EXPECT_EQ(disk.stats.num_req, 4);
+    EXPECT_EQ(disk.stats.num_write_err, 0);
+    EXPECT_EQ(disk.stats.num_read_err, 0);
+    EXPECT_EQ(disk.stats.num_seek_err, 0);
+    EXPECT_EQ(disk.stats.num_err, 0);
 
-    EXPECT_FALSE(drive.seek(8 * MiB + 1));
-    EXPECT_TRUE(drive.seek(8 * MiB - 1));
-    EXPECT_FALSE(drive.write(a));
+    EXPECT_FALSE(disk.seek(8 * MiB + 1));
+    EXPECT_TRUE(disk.seek(8 * MiB - 1));
+    EXPECT_FALSE(disk.write(a));
 
-    EXPECT_EQ(drive.stats.num_bytes_written, a.size());
-    EXPECT_EQ(drive.stats.num_bytes_read, b.size());
-    EXPECT_EQ(drive.stats.num_write_req, 2);
-    EXPECT_EQ(drive.stats.num_read_req, 1);
-    EXPECT_EQ(drive.stats.num_seek_req, 4);
-    EXPECT_EQ(drive.stats.num_req, 7);
-    EXPECT_EQ(drive.stats.num_write_err, 1);
-    EXPECT_EQ(drive.stats.num_read_err, 0);
-    EXPECT_EQ(drive.stats.num_seek_err, 1);
-    EXPECT_EQ(drive.stats.num_err, 2);
+    EXPECT_EQ(disk.stats.num_bytes_written, a.size());
+    EXPECT_EQ(disk.stats.num_bytes_read, b.size());
+    EXPECT_EQ(disk.stats.num_write_req, 2);
+    EXPECT_EQ(disk.stats.num_read_req, 1);
+    EXPECT_EQ(disk.stats.num_seek_req, 4);
+    EXPECT_EQ(disk.stats.num_req, 7);
+    EXPECT_EQ(disk.stats.num_write_err, 1);
+    EXPECT_EQ(disk.stats.num_read_err, 0);
+    EXPECT_EQ(disk.stats.num_seek_err, 1);
+    EXPECT_EQ(disk.stats.num_err, 2);
 
-    EXPECT_TRUE(drive.seek(4 * MiB));
-    EXPECT_TRUE(drive.read(b));
+    EXPECT_TRUE(disk.seek(4 * MiB));
+    EXPECT_TRUE(disk.read(b));
     EXPECT_EQ(b[0], 0);
     EXPECT_EQ(b[1], 0);
     EXPECT_EQ(b[2], 0);
     EXPECT_EQ(b[3], 0);
 
-    EXPECT_EQ(drive.stats.num_bytes_written, a.size());
-    EXPECT_EQ(drive.stats.num_bytes_read, 8);
-    EXPECT_EQ(drive.stats.num_write_req, 2);
-    EXPECT_EQ(drive.stats.num_read_req, 2);
-    EXPECT_EQ(drive.stats.num_seek_req, 5);
-    EXPECT_EQ(drive.stats.num_req, 9);
-    EXPECT_EQ(drive.stats.num_write_err, 1);
-    EXPECT_EQ(drive.stats.num_read_err, 0);
-    EXPECT_EQ(drive.stats.num_seek_err, 1);
-    EXPECT_EQ(drive.stats.num_err, 2);
+    EXPECT_EQ(disk.stats.num_bytes_written, a.size());
+    EXPECT_EQ(disk.stats.num_bytes_read, 8);
+    EXPECT_EQ(disk.stats.num_write_req, 2);
+    EXPECT_EQ(disk.stats.num_read_req, 2);
+    EXPECT_EQ(disk.stats.num_seek_req, 5);
+    EXPECT_EQ(disk.stats.num_req, 9);
+    EXPECT_EQ(disk.stats.num_write_err, 1);
+    EXPECT_EQ(disk.stats.num_read_err, 0);
+    EXPECT_EQ(disk.stats.num_seek_err, 1);
+    EXPECT_EQ(disk.stats.num_err, 2);
 }
 
 static void create_file(const string& path, size_t size) {
@@ -88,66 +88,66 @@ static void create_file(const string& path, size_t size) {
     of.write("\0", 1);
 }
 
-TEST(drive, file) {
+TEST(disk, file) {
     log_term log;
     log.set_level(LOG_DEBUG);
 
     create_file("my.disk", 8 * MiB);
 
-    block::drive drive("drive", "my.disk");
-    EXPECT_EQ(drive.capacity(), 8 * MiB);
-    EXPECT_EQ(drive.pos(), 0);
-    EXPECT_EQ(drive.remaining(), drive.capacity());
+    block::disk disk("disk", "my.disk");
+    EXPECT_EQ(disk.capacity(), 8 * MiB);
+    EXPECT_EQ(disk.pos(), 0);
+    EXPECT_EQ(disk.remaining(), disk.capacity());
 
     vector<u8> a{ 0x12, 0x34, 0x56, 0x78 };
     vector<u8> b{ 0x00, 0x00, 0x00, 0x00 };
 
-    EXPECT_TRUE(drive.seek(0xffe));
-    EXPECT_TRUE(drive.write(a));
-    EXPECT_TRUE(drive.seek(0xffe));
-    EXPECT_TRUE(drive.read(b));
+    EXPECT_TRUE(disk.seek(0xffe));
+    EXPECT_TRUE(disk.write(a));
+    EXPECT_TRUE(disk.seek(0xffe));
+    EXPECT_TRUE(disk.read(b));
 
     EXPECT_EQ(a, b);
 
-    EXPECT_FALSE(drive.seek(8 * MiB + 1));
-    EXPECT_TRUE(drive.seek(8 * MiB - 1));
-    EXPECT_FALSE(drive.write(a));
+    EXPECT_FALSE(disk.seek(8 * MiB + 1));
+    EXPECT_TRUE(disk.seek(8 * MiB - 1));
+    EXPECT_FALSE(disk.write(a));
 
     std::remove("my.disk");
 }
 
-TEST(drive, nothing) {
+TEST(disk, nothing) {
     log_term log;
     log.set_level(LOG_DEBUG);
 
-    block::drive drive("drive", "nothing");
-    EXPECT_EQ(drive.capacity(), 0);
-    EXPECT_EQ(drive.pos(), 0);
-    EXPECT_EQ(drive.remaining(), drive.capacity());
+    block::disk disk("disk", "nothing");
+    EXPECT_EQ(disk.capacity(), 0);
+    EXPECT_EQ(disk.pos(), 0);
+    EXPECT_EQ(disk.remaining(), disk.capacity());
 }
 
-TEST(drive, perm_okay) {
+TEST(disk, perm_okay) {
     log_term log;
     log.set_level(LOG_DEBUG);
 
     create_file("readonly", 1 * MiB);
     chmod("readonly", S_IREAD);
 
-    block::drive drive("drive", "readonly", true);
-    EXPECT_EQ(drive.capacity(), 1 * MiB);
+    block::disk disk("disk", "readonly", true);
+    EXPECT_EQ(disk.capacity(), 1 * MiB);
 
     std::remove("readonly");
 }
 
-TEST(drive, perm_fail) {
+TEST(disk, perm_fail) {
     log_term log;
     log.set_level(LOG_DEBUG);
 
     create_file("readonly", 1 * MiB);
     chmod("readonly", S_IREAD);
 
-    block::drive drive("drive", "readonly", false);
-    EXPECT_EQ(drive.capacity(), 0);
+    block::disk disk("disk", "readonly", false);
+    EXPECT_EQ(disk.capacity(), 0);
 
     std::remove("readonly");
 }

@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/block/drive.h"
+#include "vcml/models/block/disk.h"
 
 namespace vcml {
 namespace block {
 
-bool drive::cmd_show_stats(const vector<string>& args, ostream& os) {
+bool disk::cmd_show_stats(const vector<string>& args, ostream& os) {
     os << "bytes read     " << stats.num_bytes_read << std::endl;
     os << "bytes written  " << stats.num_bytes_written << std::endl;
     os << "seek requests  " << stats.num_seek_req << std::endl;
@@ -35,7 +35,7 @@ bool drive::cmd_show_stats(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool drive::cmd_save_image(const vector<string>& args, ostream& os) {
+bool disk::cmd_save_image(const vector<string>& args, ostream& os) {
     const string& file = args[1];
     ofstream stream(file.c_str(), ofstream::binary);
     if (!stream.good()) {
@@ -52,7 +52,7 @@ bool drive::cmd_save_image(const vector<string>& args, ostream& os) {
     }
 }
 
-drive::drive(const sc_module_name& nm, const string& img, bool ro):
+disk::disk(const sc_module_name& nm, const string& img, bool ro):
     module(nm),
     m_backend(nullptr),
     stats(),
@@ -60,29 +60,30 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro):
     readonly("readonly", ro) {
     try {
         m_backend = backend::create(image, readonly);
+        readonly = !m_backend || m_backend->readonly();
     } catch (std::exception& ex) {
         log_warn("%s", ex.what());
     }
 }
 
-drive::~drive() {
+disk::~disk() {
     if (m_backend)
         delete m_backend;
 }
 
-size_t drive::capacity() {
+size_t disk::capacity() {
     return m_backend ? m_backend->capacity() : 0;
 }
 
-size_t drive::pos() {
+size_t disk::pos() {
     return m_backend ? m_backend->pos() : 0;
 }
 
-size_t drive::remaining() {
+size_t disk::remaining() {
     return m_backend ? m_backend->remaining() : 0;
 }
 
-bool drive::seek(size_t pos) {
+bool disk::seek(size_t pos) {
     stats.num_seek_req++;
     stats.num_req++;
 
@@ -100,7 +101,7 @@ bool drive::seek(size_t pos) {
     return false;
 }
 
-bool drive::read(vector<u8>& buffer) {
+bool disk::read(vector<u8>& buffer) {
     stats.num_read_req++;
     stats.num_req++;
 
@@ -119,7 +120,7 @@ bool drive::read(vector<u8>& buffer) {
     return false;
 }
 
-bool drive::write(const vector<u8>& buffer) {
+bool disk::write(const vector<u8>& buffer) {
     stats.num_write_req++;
     stats.num_req++;
 
@@ -140,7 +141,7 @@ bool drive::write(const vector<u8>& buffer) {
     return false;
 }
 
-bool drive::write(u8 data, size_t count) {
+bool disk::write(u8 data, size_t count) {
     stats.num_write_req++;
     stats.num_req++;
 

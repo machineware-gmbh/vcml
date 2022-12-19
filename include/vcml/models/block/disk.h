@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_BLOCK_DRIVE_H
-#define VCML_BLOCK_DRIVE_H
+#ifndef VCML_BLOCK_DISK_H
+#define VCML_BLOCK_DISK_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -29,7 +29,7 @@
 namespace vcml {
 namespace block {
 
-class drive : public module
+class disk : public module
 {
 private:
     backend* m_backend;
@@ -54,9 +54,11 @@ public:
     property<string> image;
     property<bool> readonly;
 
-    drive(const sc_module_name& name, const string& img = "",
-          bool readonly = false);
-    virtual ~drive();
+    bool has_backing() const { return m_backend != nullptr; }
+
+    disk(const sc_module_name& name, const string& img = "",
+         bool readonly = false);
+    virtual ~disk();
     VCML_KIND(block::drive);
 
     size_t capacity();

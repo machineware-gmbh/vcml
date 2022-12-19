@@ -56,7 +56,11 @@ backend* backend::create(const string& image, bool readonly) {
     }
 
     // if no image specification is given we test if its just a path
-    return new backend_file(image, readonly);
+    if (mwr::file_exists(image))
+        return new backend_file(image, readonly);
+
+    // disks can work without a backend
+    return nullptr;
 }
 
 } // namespace block
