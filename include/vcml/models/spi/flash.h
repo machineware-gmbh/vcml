@@ -26,6 +26,8 @@
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/gpio.h"
 
+#include "vcml/models/block/disk.h"
+
 namespace vcml {
 namespace spi {
 
@@ -78,8 +80,6 @@ private:
 
     u8 m_buffer[16];
 
-    fstream m_file;
-
     void decode(u8 val);
     void complete();
     void process(spi_payload& tx);
@@ -91,6 +91,8 @@ public:
     property<string> device;
     property<string> image;
     property<bool> readonly;
+
+    block::disk disk;
 
     spi_target_socket spi_in;
     gpio_target_socket cs_in;

@@ -111,9 +111,8 @@ void flash::decode(u8 val) {
         break;
 
     case CMD_BULK_ERASE:
-        m_file.seekp(0);
-        for (size_t i = 0; i < size(); i++)
-            m_file.put(0xff);
+        disk.seek(0);
+        disk.wzero(size());
         m_state = STATE_IDLE;
         break;
 
@@ -144,9 +143,8 @@ void flash::complete() {
         break;
 
     case CMD_SECTOR_ERASE:
-        m_file.seekp(m_address);
-        for (size_t i = 0; i < sector_size(); i++)
-            m_file.put(0xff);
+        disk.seek(m_address);
+        disk.wzero(sector_size());
         m_state = STATE_IDLE;
         break;
 
@@ -171,15 +169,15 @@ void flash::process(spi_payload& tx) {
 
     case STATE_PROGRAMMING:
         if (m_write_enable) {
-            m_file.seekp(m_address);
-            m_file.put(tx.mosi);
+            disk.seek(m_address);
+            disk.write(&tx.mosi, 1);
             m_address = (m_address + 1) % size();
         }
         break;
 
     case STATE_READING_STORAGE:
-        m_file.seekg(m_address);
-        tx.miso = m_file.get();
+        disk.seek(m_address);
+        disk.read(&tx.miso, 1);
         m_address = (m_address + 1) % size();
         break;
 
@@ -213,18 +211,13 @@ flash::flash(const sc_module_name& nm, const string& dev):
     m_write_enable(),
     m_address(),
     m_buffer(),
-    m_file(),
     device("device", dev),
     image("image", ""),
     readonly("readonly", false),
+    disk("disk", image, readonly),
     spi_in("spi_in"),
     cs_in("cs_in") {
     m_info = lookup_device(device);
-    if (image != "") {
-        m_file.open(image);
-        if (!m_file.is_open())
-            log_warn("failed to open image file '%s'", image.get().c_str());
-    }
 }
 
 flash::~flash() {
@@ -238,7 +231,7 @@ void flash::reset() {
     m_needed = 0;
     m_state = STATE_IDLE;
     m_command = CMD_NOP;
-    m_file.flush();
+    disk.flush();
 }
 
 } // namespace spi
