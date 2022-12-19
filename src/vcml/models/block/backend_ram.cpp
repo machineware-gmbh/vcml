@@ -91,6 +91,7 @@ void backend_ram::wzero(size_t size, bool may_unmap) {
 
         if (num == SECTOR_SIZE && may_unmap) {
             discard(SECTOR_SIZE);
+            done += SECTOR_SIZE;
             continue;
         }
 
