@@ -49,8 +49,10 @@ public:
     virtual void seek(size_t pos) override;
     virtual void read(u8* buffer, size_t size) override;
     virtual void write(const u8* buffer, size_t size) override;
-    virtual void write(u8 data, size_t count) override;
+    virtual void wzero(size_t size, bool may_unmap) override;
+    virtual void discard(size_t size) override;
     virtual void save(ostream& os) override;
+    virtual void flush() override;
 };
 
 } // namespace block

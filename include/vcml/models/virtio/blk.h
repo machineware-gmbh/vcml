@@ -33,21 +33,10 @@ namespace virtio {
 class blk : public module, public virtio_device
 {
 private:
-    enum virtqueues : int {
-        VIRTQUEUE_REQUEST = 0,
-    };
-
-    enum features : u64 {
-        VIRTIO_BLK_F_SIZE_MAX = bit(1),
-        VIRTIO_BLK_F_SEG_MAX = bit(2),
-        VIRTIO_BLK_F_GEOMETRY = bit(4),
-        VIRTIO_BLK_F_RO = bit(5),
-        VIRTIO_BLK_F_BLK_SIZE = bit(6),
-        VIRTIO_BLK_F_FLUSH = bit(9),
-        VIRTIO_BLK_F_TOPOLOGY = bit(10),
-        VIRTIO_BLK_F_CONFIG_WCE = bit(11),
-        VIRTIO_BLK_F_DISCARD = bit(13),
-        VIRTIO_BLK_F_WRITE_ZEROES = bit(14),
+    struct virtio_blk_req {
+        u32 type;
+        u32 reserved;
+        u64 sector;
     };
 
     struct config {
@@ -82,6 +71,11 @@ private:
     } m_config;
 
     bool process_command(vq_message& msg);
+    bool process_in(virtio_blk_req& req, vq_message& msg);
+    bool process_out(virtio_blk_req& req, vq_message& msg);
+    bool process_flush(virtio_blk_req& req, vq_message& msg);
+    bool process_discard(virtio_blk_req& req, vq_message& msg);
+    bool process_write_zeroes(virtio_blk_req& req, vq_message& msg);
 
     virtual void identify(virtio_device_desc& desc) override;
     virtual bool notify(u32 vqid) override;
@@ -95,6 +89,10 @@ private:
 public:
     property<string> image;
     property<bool> readonly;
+
+    property<u32> max_size;
+    property<u32> max_discard_sectors;
+    property<u32> max_write_zeroes_sectors;
 
     block::disk disk;
 

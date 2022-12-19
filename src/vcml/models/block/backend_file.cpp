@@ -65,16 +65,12 @@ void backend_file::write(const u8* buffer, size_t size) {
     VCML_REPORT_ON(!m_stream, "error writing: %s", strerror(errno));
 }
 
-void backend_file::write(u8 data, size_t count) {
-    VCML_REPORT_ON(count > remaining(), "writing beyond end of file");
-    while (count--)
-        m_stream << data;
-    m_stream << std::flush;
-    VCML_REPORT_ON(!m_stream, "error reading: %s", strerror(errno));
-}
-
 void backend_file::save(ostream& os) {
     os << m_stream.rdbuf();
+}
+
+void backend_file::flush() {
+    m_stream << std::flush;
 }
 
 } // namespace block

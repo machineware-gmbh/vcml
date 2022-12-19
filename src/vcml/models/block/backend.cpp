@@ -32,6 +32,24 @@ size_t backend::remaining() {
     return capacity() - pos();
 }
 
+void backend::wzero(size_t size, bool may_unmap) {
+    static const u8 zero[512] = {};
+    while (size > 0) {
+        size_t n = min(size, sizeof(zero));
+        write(zero, n);
+        size -= n;
+    }
+}
+
+void backend::discard(size_t size) {
+    size_t cur = pos();
+    seek(cur + size);
+}
+
+void backend::flush() {
+    // nothing to do
+}
+
 static size_t parse_capacity(const string& desc) {
     string s = to_lower(desc);
     char* endptr = nullptr;

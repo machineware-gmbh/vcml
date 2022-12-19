@@ -44,10 +44,14 @@ public:
         size_t num_seek_req;
         size_t num_read_req;
         size_t num_write_req;
+        size_t num_flush_req;
+        size_t num_discard_req;
         size_t num_req;
         size_t num_seek_err;
         size_t num_read_err;
         size_t num_write_err;
+        size_t num_flush_err;
+        size_t num_discard_err;
         size_t num_err;
     } stats;
 
@@ -68,7 +72,9 @@ public:
     bool seek(size_t pos);
     bool read(u8* buffer, size_t size);
     bool write(const u8* buffer, size_t size);
-    bool write(u8 data, size_t count);
+    bool wzero(size_t size, bool may_unmap = true);
+    bool discard(size_t size);
+    bool flush();
 };
 
 } // namespace block

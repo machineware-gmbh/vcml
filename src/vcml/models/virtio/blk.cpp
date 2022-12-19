@@ -21,8 +21,27 @@
 namespace vcml {
 namespace virtio {
 
+enum virtqueues : int {
+    VIRTQUEUE_REQUEST = 0,
+    VIRTQUEUE0_LENGTH = 256,
+};
+
 enum : size_t {
-    SECTOR_SIZE = 512,
+    SECTOR_BITS = 9,
+    SECTOR_SIZE = 1u << 9,
+};
+
+enum features : u64 {
+    VIRTIO_BLK_F_SIZE_MAX = bit(1),
+    VIRTIO_BLK_F_SEG_MAX = bit(2),
+    VIRTIO_BLK_F_GEOMETRY = bit(4),
+    VIRTIO_BLK_F_RO = bit(5),
+    VIRTIO_BLK_F_BLK_SIZE = bit(6),
+    VIRTIO_BLK_F_FLUSH = bit(9),
+    VIRTIO_BLK_F_TOPOLOGY = bit(10),
+    VIRTIO_BLK_F_CONFIG_WCE = bit(11),
+    VIRTIO_BLK_F_DISCARD = bit(13),
+    VIRTIO_BLK_F_WRITE_ZEROES = bit(14),
 };
 
 enum virtio_blk_type : u32 {
@@ -39,10 +58,14 @@ enum virtio_blk_status : u8 {
     VIRTIO_BLK_S_UNSUPP = 2,
 };
 
-struct virtio_blk_req {
-    u32 type;
-    u32 reserved;
+enum virtio_blk_flags : u32 {
+    VIRTIO_BLK_FLAG_UNMAP = bit(0),
+};
+
+struct virtio_blk_dwz {
     u64 sector;
+    u32 num_sectors;
+    u32 flags;
 };
 
 static void put_status(vq_message& msg, u8 status) {
@@ -63,71 +86,20 @@ bool blk::process_command(vq_message& msg) {
     }
 
     switch (req.type) {
-    case VIRTIO_BLK_T_IN: {
-        size_t length = msg.length_out() - 1;
-        log_debug("read sector %llu, %zu bytes", req.sector, length);
-        if (length % SECTOR_SIZE) {
-            log_warn("data length is not a multiple of sector size");
-            put_status(msg, VIRTIO_BLK_S_IOERR);
-            return true;
-        }
+    case VIRTIO_BLK_T_IN:
+        return process_in(req, msg);
 
-        if (!disk.seek(req.sector * SECTOR_SIZE)) {
-            log_warn("seek request failed for sector %llu", req.sector);
-            put_status(msg, VIRTIO_BLK_S_IOERR);
-            return true;
-        }
+    case VIRTIO_BLK_T_OUT:
+        return process_out(req, msg);
 
-        u8 sector[SECTOR_SIZE];
-        for (size_t count = 0; count < length; count += SECTOR_SIZE) {
-            if (!disk.read(sector, SECTOR_SIZE)) {
-                log_warn("disk read request failed");
-                put_status(msg, VIRTIO_BLK_S_IOERR);
-                return true;
-            }
+    case VIRTIO_BLK_T_FLUSH:
+        return process_flush(req, msg);
 
-            msg.copy_out(sector, count);
-        }
+    case VIRTIO_BLK_T_DISCARD:
+        return process_discard(req, msg);
 
-        put_status(msg, VIRTIO_BLK_S_OK);
-        return true;
-    }
-
-    case VIRTIO_BLK_T_OUT: {
-        size_t length = msg.length_in() - sizeof(req);
-        log_debug("write sector %llu, %zu bytes", req.sector, length);
-        if (length % SECTOR_SIZE) {
-            log_warn("data length is not a multiple of sector size");
-            put_status(msg, VIRTIO_BLK_S_IOERR);
-            return true;
-        }
-
-        if (!disk.seek(req.sector * SECTOR_SIZE)) {
-            log_warn("seek request failed for sector %llu", req.sector);
-            put_status(msg, VIRTIO_BLK_S_IOERR);
-            return true;
-        }
-
-        u8 sector[SECTOR_SIZE];
-        for (size_t count = 0; count < length; count += SECTOR_SIZE) {
-            msg.copy_in(sector, count + sizeof(req));
-
-            if (!disk.write(sector, SECTOR_SIZE)) {
-                log_warn("disk write request failed");
-                put_status(msg, VIRTIO_BLK_S_IOERR);
-                return true;
-            }
-        }
-
-        put_status(msg, VIRTIO_BLK_S_OK);
-        return true;
-    }
-
-    case VIRTIO_BLK_T_FLUSH: {
-        log_debug("flush disk request");
-        put_status(msg, VIRTIO_BLK_S_OK);
-        return true;
-    }
+    case VIRTIO_BLK_T_WRITE_ZEROES:
+        return process_write_zeroes(req, msg);
 
     default:
         log_warn("unsupported request: %u", req.type);
@@ -136,12 +108,122 @@ bool blk::process_command(vq_message& msg) {
     }
 }
 
+bool blk::process_in(virtio_blk_req& req, vq_message& msg) {
+    size_t length = msg.length_out() - 1;
+    log_debug("read sector %llu, %zu bytes", req.sector, length);
+    if (length % SECTOR_SIZE) {
+        log_warn("data length is not a multiple of sector size");
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    if (!disk.seek(req.sector * SECTOR_SIZE)) {
+        log_warn("seek request failed for sector %llu", req.sector);
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    u8 sector[SECTOR_SIZE];
+    for (size_t count = 0; count < length; count += SECTOR_SIZE) {
+        if (!disk.read(sector, SECTOR_SIZE)) {
+            log_warn("disk read request failed");
+            put_status(msg, VIRTIO_BLK_S_IOERR);
+            return true;
+        }
+
+        msg.copy_out(sector, count);
+    }
+
+    put_status(msg, VIRTIO_BLK_S_OK);
+    return true;
+}
+
+bool blk::process_out(virtio_blk_req& req, vq_message& msg) {
+    size_t length = msg.length_in() - sizeof(req);
+    log_debug("write sector %llu, %zu bytes", req.sector, length);
+    if (length % SECTOR_SIZE) {
+        log_warn("data length is not a multiple of sector size");
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    if (!disk.seek(req.sector * SECTOR_SIZE)) {
+        log_warn("seek request failed for sector %llu", req.sector);
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    u8 sector[SECTOR_SIZE];
+    for (size_t count = 0; count < length; count += SECTOR_SIZE) {
+        msg.copy_in(sector, count + sizeof(req));
+
+        if (!disk.write(sector, SECTOR_SIZE)) {
+            log_warn("disk write request failed");
+            put_status(msg, VIRTIO_BLK_S_IOERR);
+            return true;
+        }
+    }
+
+    put_status(msg, VIRTIO_BLK_S_OK);
+    return true;
+}
+
+bool blk::process_flush(virtio_blk_req& req, vq_message& msg) {
+    log_debug("flush disk request");
+    if (!disk.flush()) {
+        log_warn("disk flush request failed");
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    put_status(msg, VIRTIO_BLK_S_OK);
+    return true;
+}
+
+bool blk::process_discard(virtio_blk_req& req, vq_message& msg) {
+    virtio_blk_dwz dwz;
+    if (msg.copy_in(dwz, sizeof(req)) != sizeof(dwz)) {
+        log_error("unable to read discard arguments");
+        return false;
+    }
+
+    size_t length = dwz.num_sectors * SECTOR_SIZE;
+    log_warn("discard sector %llu, %zu bytes", dwz.sector, length);
+    put_status(msg, VIRTIO_BLK_S_OK);
+    return true;
+}
+
+bool blk::process_write_zeroes(virtio_blk_req& req, vq_message& msg) {
+    virtio_blk_dwz dwz;
+    if (msg.copy_in(dwz, sizeof(req)) != sizeof(dwz)) {
+        log_error("unable to read discard arguments");
+        return false;
+    }
+
+    if (!disk.seek(dwz.sector * SECTOR_SIZE)) {
+        log_warn("seek request failed for sector %llu", dwz.sector);
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    size_t length = dwz.num_sectors * SECTOR_SIZE;
+    log_warn("write zeros to sector %llu, %zu bytes", dwz.sector, length);
+    if (!disk.wzero(length, dwz.flags & VIRTIO_BLK_FLAG_UNMAP)) {
+        log_warn("write zero request failed for sector %llu", dwz.sector);
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
+    put_status(msg, VIRTIO_BLK_S_OK);
+    return true;
+}
+
 void blk::identify(virtio_device_desc& desc) {
     reset();
     desc.device_id = VIRTIO_DEVICE_BLOCK;
     desc.vendor_id = VIRTIO_VENDOR_VCML;
     desc.pci_class = PCI_CLASS_STORAGE_SCSI;
-    desc.request_virtqueue(VIRTQUEUE_REQUEST, 256);
+    desc.request_virtqueue(VIRTQUEUE_REQUEST, VIRTQUEUE0_LENGTH);
 }
 
 bool blk::notify(u32 vqid) {
@@ -166,13 +248,13 @@ bool blk::notify(u32 vqid) {
 }
 
 void blk::read_features(u64& features) {
-    features = 0;
-    features |= VIRTIO_BLK_F_FLUSH;
-    features |= VIRTIO_BLK_F_DISCARD;
-    features |= VIRTIO_BLK_F_WRITE_ZEROES;
-
+    features = VIRTIO_BLK_F_FLUSH;
     if (disk.readonly)
         features |= VIRTIO_BLK_F_RO;
+    if (m_config.max_discard_sectors)
+        features |= VIRTIO_BLK_F_DISCARD;
+    if (m_config.max_write_zeroes_sectors)
+        features |= VIRTIO_BLK_F_WRITE_ZEROES;
     if (m_config.size_max)
         features |= VIRTIO_BLK_F_SIZE_MAX;
     if (m_config.seg_max)
@@ -207,27 +289,21 @@ blk::blk(const sc_module_name& nm):
     m_config(),
     image("image", ""),
     readonly("readonly", false),
+    max_size("max_size", 4096),
+    max_discard_sectors("max_discard_sectors", 4096),
+    max_write_zeroes_sectors("max_write_zeroes_sectors", 4096),
     disk("disk", image, readonly),
     virtio_in("virtio_in") {
     m_config.capacity = disk.capacity() / SECTOR_SIZE;
     m_config.blk_size = 512;
-
-    // m_config.size_max;
-    // m_config.seg_max;
-    // m_config.geometry.cylinders;
-    // m_config.geometry.heads;
-    // m_config.geometry.sectors;
-    // m_config.topology.physical_block_exp;
-    // m_config.topology.alignment_offset;
-    // m_config.topology.min_io_size;
-    // m_config.topology.opt_io_size;
-    // m_config.writeback;
-    // m_config.max_discard_sectors;
-    // m_config.max_discard_seg;
-    // m_config.discard_sector_alignment;
-    // m_config.max_write_zeroes_sectors;
-    // m_config.max_write_zeroes_seg;
-    // m_config.write_zeroes_may_unmap;
+    m_config.size_max = max_size;
+    m_config.seg_max = VIRTQUEUE0_LENGTH - 2;
+    m_config.max_discard_sectors = max_discard_sectors;
+    m_config.max_discard_seg = 1;
+    m_config.discard_sector_alignment = m_config.blk_size >> SECTOR_BITS;
+    m_config.max_write_zeroes_sectors = max_write_zeroes_sectors;
+    m_config.max_write_zeroes_seg = 1;
+    m_config.write_zeroes_may_unmap = true;
 }
 
 blk::~blk() {

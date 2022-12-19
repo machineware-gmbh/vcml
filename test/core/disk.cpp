@@ -151,3 +151,23 @@ TEST(disk, perm_fail) {
 
     std::remove("readonly");
 }
+
+TEST(ramdisk, unmap_zero) {
+    log_term log;
+    log.set_level(LOG_DEBUG);
+
+    block::disk disk("disk", "ramdisk:4KiB", false);
+    EXPECT_TRUE(disk.wzero(4 * KiB, false));
+    EXPECT_TRUE(disk.seek(0));
+    EXPECT_TRUE(disk.discard(4 * KiB));
+
+    EXPECT_EQ(disk.stats.num_bytes_written, 4 * KiB);
+    EXPECT_EQ(disk.stats.num_seek_req, 1);
+    EXPECT_EQ(disk.stats.num_seek_err, 0);
+    EXPECT_EQ(disk.stats.num_write_req, 1);
+    EXPECT_EQ(disk.stats.num_write_err, 0);
+    EXPECT_EQ(disk.stats.num_discard_req, 1);
+    EXPECT_EQ(disk.stats.num_discard_err, 0);
+    EXPECT_EQ(disk.stats.num_req, 3);
+    EXPECT_EQ(disk.stats.num_err, 0);
+}

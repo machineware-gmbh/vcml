@@ -80,23 +80,48 @@ void backend_ram::write(const u8* buffer, size_t size) {
     }
 }
 
-void backend_ram::write(u8 data, size_t count) {
-    if (m_pos + count > m_cap)
-        VCML_REPORT("attempt to read beyond end of buffer");
+void backend_ram::wzero(size_t size, bool may_unmap) {
+    if (m_pos + size > m_cap)
+        VCML_REPORT("attempt to write beyond end of buffer");
 
     size_t done = 0;
-    while (done < count) {
+    while (done < size) {
         size_t off = m_pos % SECTOR_SIZE;
-        size_t num = min(SECTOR_SIZE - off, count - done);
+        size_t num = min(SECTOR_SIZE - off, size - done);
+
+        if (num == SECTOR_SIZE && may_unmap) {
+            discard(SECTOR_SIZE);
+            continue;
+        }
+
         u8*& sector = m_sectors[m_pos / SECTOR_SIZE];
-        if (!sector && data)
+        if (!sector)
             sector = new u8[SECTOR_SIZE]();
+        else
+            memset(sector + off, 0, num);
 
-        if (sector)
-            memset(sector + off, data, num);
+        m_pos += size;
+        done += size;
+    }
+}
 
-        m_pos += count;
-        done += count;
+void backend_ram::discard(size_t size) {
+    if (m_pos + size > m_cap)
+        VCML_REPORT("attempt to discard beyond end of buffer");
+
+    size_t done = 0;
+    while (done < size) {
+        size_t off = m_pos % SECTOR_SIZE;
+        size_t num = min(SECTOR_SIZE - off, size - done);
+
+        auto it = m_sectors.find(m_pos / SECTOR_SIZE);
+        if (it != m_sectors.end() && num == SECTOR_SIZE) {
+            delete[] it->second;
+            m_sectors.erase(it);
+        }
+
+        m_pos += size;
+        done += size;
     }
 }
 
@@ -106,6 +131,10 @@ void backend_ram::save(ostream& os) {
         os.write((char*)sector.second, SECTOR_SIZE);
         VCML_REPORT_ON(!os, "error saving disk: %s", strerror(errno));
     }
+}
+
+void backend_ram::flush() {
+    // nothing to do
 }
 
 } // namespace block
