@@ -188,7 +188,7 @@ bool blk::process_discard(virtio_blk_req& req, vq_message& msg) {
     }
 
     size_t length = dwz.num_sectors * SECTOR_SIZE;
-    log_warn("discard sector %llu, %zu bytes", dwz.sector, length);
+    log_debug("discard sector %llu, %zu bytes", dwz.sector, length);
     put_status(msg, VIRTIO_BLK_S_OK);
     return true;
 }
@@ -207,7 +207,7 @@ bool blk::process_write_zeroes(virtio_blk_req& req, vq_message& msg) {
     }
 
     size_t length = dwz.num_sectors * SECTOR_SIZE;
-    log_warn("write zeros to sector %llu, %zu bytes", dwz.sector, length);
+    log_debug("write zeros to sector %llu, %zu bytes", dwz.sector, length);
     if (!disk.wzero(length, dwz.flags & VIRTIO_BLK_FLAG_UNMAP)) {
         log_warn("write zero request failed for sector %llu", dwz.sector);
         put_status(msg, VIRTIO_BLK_S_IOERR);
