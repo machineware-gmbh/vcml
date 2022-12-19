@@ -43,38 +43,38 @@ void backend_ram::seek(size_t pos) {
     m_pos = pos;
 }
 
-void backend_ram::read(vector<u8>& buffer) {
-    if (m_pos + buffer.size() > m_cap)
+void backend_ram::read(u8* buffer, size_t size) {
+    if (m_pos + size > m_cap)
         VCML_REPORT("attempt to read beyond end of buffer");
 
     size_t done = 0;
-    while (done < buffer.size()) {
+    while (done < size) {
         size_t off = m_pos % SECTOR_SIZE;
-        size_t num = min(SECTOR_SIZE - off, buffer.size() - done);
+        size_t num = min(SECTOR_SIZE - off, size - done);
         auto it = m_sectors.find(m_pos / SECTOR_SIZE);
         if (it == m_sectors.end())
-            memset(buffer.data() + done, 0, num);
+            memset(buffer + done, 0, num);
         else
-            memcpy(buffer.data() + done, it->second + off, num);
+            memcpy(buffer + done, it->second + off, num);
 
         done += num;
         m_pos += num;
     }
 }
 
-void backend_ram::write(const vector<u8>& buffer) {
-    if (m_pos + buffer.size() > m_cap)
+void backend_ram::write(const u8* buffer, size_t size) {
+    if (m_pos + size > m_cap)
         VCML_REPORT("attempt to write beyond end of buffer");
 
     size_t done = 0;
-    while (done < buffer.size()) {
+    while (done < size) {
         size_t off = m_pos % SECTOR_SIZE;
-        size_t num = min(SECTOR_SIZE - off, buffer.size() - done);
+        size_t num = min(SECTOR_SIZE - off, size - done);
         u8*& sector = m_sectors[m_pos / SECTOR_SIZE];
         if (!sector)
             sector = new u8[SECTOR_SIZE]();
 
-        memcpy(sector + off, buffer.data() + done, num);
+        memcpy(sector + off, buffer + done, num);
         m_pos += num;
         done += num;
     }

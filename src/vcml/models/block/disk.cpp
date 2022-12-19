@@ -101,14 +101,14 @@ bool disk::seek(size_t pos) {
     return false;
 }
 
-bool disk::read(vector<u8>& buffer) {
+bool disk::read(u8* buffer, size_t size) {
     stats.num_read_req++;
     stats.num_req++;
 
     if (m_backend) {
         try {
-            m_backend->read(buffer);
-            stats.num_bytes_read += buffer.size();
+            m_backend->read(buffer, size);
+            stats.num_bytes_read += size;
             return true;
         } catch (std::exception& ex) {
             log.warn(ex);
@@ -120,15 +120,15 @@ bool disk::read(vector<u8>& buffer) {
     return false;
 }
 
-bool disk::write(const vector<u8>& buffer) {
+bool disk::write(const u8* buffer, size_t size) {
     stats.num_write_req++;
     stats.num_req++;
 
     if (m_backend) {
         try {
             if (!m_backend->readonly()) {
-                m_backend->write(buffer);
-                stats.num_bytes_written += buffer.size();
+                m_backend->write(buffer, size);
+                stats.num_bytes_written += size;
             }
             return true;
         } catch (std::exception& ex) {

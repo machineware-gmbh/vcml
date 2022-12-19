@@ -27,18 +27,18 @@ TEST(disk, ramdisk) {
     EXPECT_EQ(disk.pos(), 0);
     EXPECT_EQ(disk.remaining(), disk.capacity());
 
-    vector<u8> a{ 0x12, 0x34, 0x56, 0x78 };
-    vector<u8> b{ 0x00, 0x00, 0x00, 0x00 };
+    u8 a[] = { 0x12, 0x34, 0x56, 0x78 };
+    u8 b[] = { 0x00, 0x00, 0x00, 0x00 };
 
     EXPECT_TRUE(disk.seek(0xffe));
-    EXPECT_TRUE(disk.write(a));
+    EXPECT_TRUE(disk.write(a, sizeof(a)));
     EXPECT_TRUE(disk.seek(0xffe));
-    EXPECT_TRUE(disk.read(b));
+    EXPECT_TRUE(disk.read(b, sizeof(b)));
 
-    EXPECT_EQ(a, b);
+    EXPECT_EQ(memcmp(a, b, sizeof(a)), 0);
 
-    EXPECT_EQ(disk.stats.num_bytes_written, a.size());
-    EXPECT_EQ(disk.stats.num_bytes_read, b.size());
+    EXPECT_EQ(disk.stats.num_bytes_written, sizeof(a));
+    EXPECT_EQ(disk.stats.num_bytes_read, sizeof(b));
     EXPECT_EQ(disk.stats.num_write_req, 1);
     EXPECT_EQ(disk.stats.num_read_req, 1);
     EXPECT_EQ(disk.stats.num_seek_req, 2);
@@ -50,10 +50,10 @@ TEST(disk, ramdisk) {
 
     EXPECT_FALSE(disk.seek(8 * MiB + 1));
     EXPECT_TRUE(disk.seek(8 * MiB - 1));
-    EXPECT_FALSE(disk.write(a));
+    EXPECT_FALSE(disk.write(a, sizeof(a)));
 
-    EXPECT_EQ(disk.stats.num_bytes_written, a.size());
-    EXPECT_EQ(disk.stats.num_bytes_read, b.size());
+    EXPECT_EQ(disk.stats.num_bytes_written, sizeof(a));
+    EXPECT_EQ(disk.stats.num_bytes_read, sizeof(b));
     EXPECT_EQ(disk.stats.num_write_req, 2);
     EXPECT_EQ(disk.stats.num_read_req, 1);
     EXPECT_EQ(disk.stats.num_seek_req, 4);
@@ -64,13 +64,13 @@ TEST(disk, ramdisk) {
     EXPECT_EQ(disk.stats.num_err, 2);
 
     EXPECT_TRUE(disk.seek(4 * MiB));
-    EXPECT_TRUE(disk.read(b));
+    EXPECT_TRUE(disk.read(b, sizeof(b)));
     EXPECT_EQ(b[0], 0);
     EXPECT_EQ(b[1], 0);
     EXPECT_EQ(b[2], 0);
     EXPECT_EQ(b[3], 0);
 
-    EXPECT_EQ(disk.stats.num_bytes_written, a.size());
+    EXPECT_EQ(disk.stats.num_bytes_written, sizeof(a));
     EXPECT_EQ(disk.stats.num_bytes_read, 8);
     EXPECT_EQ(disk.stats.num_write_req, 2);
     EXPECT_EQ(disk.stats.num_read_req, 2);
@@ -99,19 +99,19 @@ TEST(disk, file) {
     EXPECT_EQ(disk.pos(), 0);
     EXPECT_EQ(disk.remaining(), disk.capacity());
 
-    vector<u8> a{ 0x12, 0x34, 0x56, 0x78 };
-    vector<u8> b{ 0x00, 0x00, 0x00, 0x00 };
+    u8 a[] = { 0x12, 0x34, 0x56, 0x78 };
+    u8 b[] = { 0x00, 0x00, 0x00, 0x00 };
 
     EXPECT_TRUE(disk.seek(0xffe));
-    EXPECT_TRUE(disk.write(a));
+    EXPECT_TRUE(disk.write(a, sizeof(a)));
     EXPECT_TRUE(disk.seek(0xffe));
-    EXPECT_TRUE(disk.read(b));
+    EXPECT_TRUE(disk.read(b, sizeof(b)));
 
-    EXPECT_EQ(a, b);
+    EXPECT_EQ(memcmp(a, b, sizeof(a)), 0);
 
     EXPECT_FALSE(disk.seek(8 * MiB + 1));
     EXPECT_TRUE(disk.seek(8 * MiB - 1));
-    EXPECT_FALSE(disk.write(a));
+    EXPECT_FALSE(disk.write(a, sizeof(a)));
 
     std::remove("my.disk");
 }

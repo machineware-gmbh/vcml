@@ -46,8 +46,8 @@ public:
     virtual size_t remaining();
 
     virtual void seek(size_t pos) = 0;
-    virtual void read(vector<u8>& buffer) = 0;
-    virtual void write(const vector<u8>& buffer) = 0;
+    virtual void read(u8* buffer, size_t size) = 0;
+    virtual void write(const u8* buffer, size_t size) = 0;
     virtual void write(u8 data, size_t count) = 0;
     virtual void save(ostream& os) = 0;
 

@@ -66,8 +66,8 @@ public:
     size_t remaining();
 
     bool seek(size_t pos);
-    bool read(vector<u8>& buffer);
-    bool write(const vector<u8>& buffer);
+    bool read(u8* buffer, size_t size);
+    bool write(const u8* buffer, size_t size);
     bool write(u8 data, size_t count);
 };
 

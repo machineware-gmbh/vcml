@@ -53,15 +53,15 @@ void backend_file::seek(size_t pos) {
     m_stream.seekp(pos);
 }
 
-void backend_file::read(vector<u8>& buffer) {
-    VCML_REPORT_ON(buffer.size() > remaining(), "reading beyond end of file");
-    m_stream.read((char*)buffer.data(), buffer.size());
+void backend_file::read(u8* buffer, size_t size) {
+    VCML_REPORT_ON(size > remaining(), "reading beyond end of file");
+    m_stream.read((char*)buffer, size);
     VCML_REPORT_ON(!m_stream, "error reading: %s", strerror(errno));
 }
 
-void backend_file::write(const vector<u8>& buffer) {
-    VCML_REPORT_ON(buffer.size() > remaining(), "writing beyond end of file");
-    m_stream.write((char*)buffer.data(), buffer.size());
+void backend_file::write(const u8* buffer, size_t size) {
+    VCML_REPORT_ON(size > remaining(), "writing beyond end of file");
+    m_stream.write((char*)buffer, size);
     VCML_REPORT_ON(!m_stream, "error writing: %s", strerror(errno));
 }
 

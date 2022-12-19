@@ -43,14 +43,14 @@ public:
     backend_ram(size_t cap, bool readonly);
     virtual ~backend_ram();
 
-    virtual size_t capacity();
-    virtual size_t pos();
+    virtual size_t capacity() override;
+    virtual size_t pos() override;
 
-    virtual void seek(size_t pos);
-    virtual void read(vector<u8>& buffer);
-    virtual void write(const vector<u8>& buffer);
-    virtual void write(u8 data, size_t count);
-    virtual void save(ostream& os);
+    virtual void seek(size_t pos) override;
+    virtual void read(u8* buffer, size_t size) override;
+    virtual void write(const u8* buffer, size_t size) override;
+    virtual void write(u8 data, size_t count) override;
+    virtual void save(ostream& os) override;
 };
 
 } // namespace block
