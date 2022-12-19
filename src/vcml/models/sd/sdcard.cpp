@@ -236,18 +236,14 @@ void sdcard::setup_tx_blk(size_t offset) {
         return;
     }
 
-    if ((offset + blklen) > capacity) {
+    if ((offset + blklen) > disk.capacity()) {
         m_status |= OUT_OF_RANGE;
         return;
     }
 
     m_curoff = offset;
-
-    if (m_image.is_open()) {
-        m_image.seekg(m_curoff, std::ios::beg);
-        m_image.read((char*)m_buffer, blklen);
-        VCML_ERROR_ON(!m_image.good(), "I/O error while reading image");
-    }
+    disk.seek(m_curoff);
+    disk.read(m_buffer, blklen);
 
     if (m_do_crc) {
         u16 crc = crc16(m_buffer, m_blklen);
@@ -268,7 +264,7 @@ void sdcard::setup_rx_blk(size_t offset) {
         return;
     }
 
-    if ((offset + blklen) > capacity) {
+    if ((offset + blklen) > disk.capacity()) {
         m_status |= OUT_OF_RANGE;
         return;
     }
@@ -291,7 +287,7 @@ void sdcard::init_ocr() {
     m_ocr |= OCR_VDD_34_35;
     m_ocr |= OCR_VDD_35_36;
 
-    if (capacity > 1 * GiB)
+    if (disk.capacity() > 1 * GiB)
         m_ocr |= OCR_CCS;
 }
 
@@ -324,7 +320,7 @@ void sdcard::init_cid() {
 void sdcard::init_csd_sdsc() {
     u32 read_bl_len = fls(m_blklen);
     u32 c_size_mult = 7; // 2^(7+2) = 512
-    u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2)));
+    u32 c_size = disk.capacity() / (m_blklen * (1 << (c_size_mult + 2)));
     u32 sector_size = 7; // 128 blocks erasable at once (max)
     u32 wpgrp_size = 7;  // 128 blocks per write-protect group
 
@@ -333,7 +329,7 @@ void sdcard::init_csd_sdsc() {
         c_size -= 1;
 
     log_debug("using SDSC specification");
-    log_debug("  capacity: %zu bytes", capacity.get());
+    log_debug("  capacity: %zu bytes", disk.capacity());
     log_debug("  blocklen: %zu bytes", m_blklen);
     log_debug("    c_size: %u bytes", c_size);
     log_debug("    c_mult: %ux", 1 << (c_size_mult + 2));
@@ -358,14 +354,14 @@ void sdcard::init_csd_sdsc() {
 
 void sdcard::init_csd_sdhc() {
     u32 c_size_mult = 8; // 2^(8+2) = 1024, fixed by spec
-    u32 c_size = capacity / (m_blklen * (1 << (c_size_mult + 2)));
+    u32 c_size = disk.capacity() / (m_blklen * (1 << (c_size_mult + 2)));
 
     // prevent underflow if capacity < 512k
     if (c_size > 0)
         c_size -= 1;
 
     log_debug("using SDHC/SDXC specification");
-    log_debug("  capacity: %zu bytes", capacity.get());
+    log_debug("  capacity: %zu bytes", disk.capacity());
     log_debug("  blocklen: %zu bytes", m_blklen);
     log_debug("    c_size: %u bytes", c_size);
     log_debug("    c_mult: %ux", 1 << (c_size_mult + 2));
@@ -411,50 +407,6 @@ void sdcard::init_scr() {
 
 void sdcard::init_sts() {
     memset(m_sts, 0, sizeof(m_sts));
-}
-
-void sdcard::init_image() {
-    if (image.get().empty()) {
-        log_info("no image file specified, discarding all written data");
-        if (capacity == 0u) {
-            capacity = 2 * GiB;
-            log_info("no capacity specified, assuming 2GB");
-        } else if (capacity % (256 * KiB)) {
-            VCML_ERROR("capacity must be multiples of 256kB");
-        }
-
-        return;
-    }
-
-    if (!mwr::file_exists(image))
-        VCML_ERROR("cannot access image file '%s'", image.get().c_str());
-
-    log_debug("using image at '%s'", image.get().c_str());
-    if (!readonly) {
-        auto flags = std::ios::binary | std::ios::in | std::ios::out;
-        m_image.open(image.get().c_str(), flags);
-    }
-
-    if (!m_image.is_open()) {
-        log_debug("opening image read-only");
-        m_image.open(image.get().c_str(), std::ios::binary | std::ios::in);
-    }
-
-    if (!m_image.is_open())
-        VCML_ERROR("cannot open '%s'", image.get().c_str());
-
-    size_t imgsz = m_image.seekg(0, std::ios::end).tellg();
-    if (capacity == 0u) {
-        if (imgsz % 1024)
-            VCML_ERROR("image size must be multiples of 1kB");
-        capacity = imgsz;
-        log_debug("capacity set to image size %zu bytes", imgsz);
-    } else if (capacity > imgsz) {
-        log_warn("capacity too big for image, truncating");
-        capacity = imgsz & ~0x3ff; // round down to kB boundary
-    } else if (capacity < imgsz) {
-        log_warn("image larger than capacity, truncating");
-    }
 }
 
 void sdcard::switch_function(u32 arg) {
@@ -878,7 +830,7 @@ sd_status_tx sdcard::do_data_read(u8& val) {
 
         size_t blklen = is_sdhc() ? SDHC_BLKLEN : m_blklen;
         size_t offset = m_curoff + blklen;
-        if (offset >= capacity)
+        if (offset >= disk.capacity())
             return SDTX_OK_COMPLETE;
 
         setup_tx_blk(m_curoff + blklen);
@@ -918,22 +870,15 @@ sd_status_rx sdcard::do_data_write(u8 val) {
         return SDRX_ERR_CRC;
     }
 
-    if (m_image.is_open() && !readonly) {
-        m_image.seekp(m_curoff, std::ios::beg);
-        m_image.write((char*)m_buffer, blklen);
-        if (!m_image.good()) {
-            log_debug("I/O error while writing image");
-            m_image.clear();
-        }
-    }
-
+    disk.seek(m_curoff);
+    disk.write(m_buffer, blklen);
     m_numblk++;
 
     if (m_curcmd == 24) // writing only single block?
         return SDRX_OK_COMPLETE;
 
     size_t offset = m_curoff + blklen;
-    if (offset + blklen > capacity) // reached end of card memory?
+    if (offset + blklen > disk.capacity()) // reached end of card memory?
         return SDRX_OK_COMPLETE;
 
     setup_rx_blk(offset); // continue writing
@@ -946,7 +891,6 @@ sdcard::sdcard(const sc_module_name& nm):
     m_spi(false),
     m_do_crc(true),
     m_blklen(SDHC_BLKLEN),
-    m_image(),
     m_status(0),
     m_hvs(0),
     m_rca(0),
@@ -963,11 +907,12 @@ sdcard::sdcard(const sc_module_name& nm):
     m_curoff(),
     m_numblk(),
     m_state(IDLE),
-    capacity("capacity", 0),
     image("image", ""),
     readonly("readonly", false),
+    disk("disk", image, readonly),
     sd_in("sd_in") {
-    init_image();
+    if (disk.capacity() % 1024)
+        log_warn("image size should be multiples of 1kB");
 
     init_ocr();
     init_cid();

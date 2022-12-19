@@ -24,6 +24,7 @@
 #include "vcml/core/component.h"
 
 #include "vcml/protocols/sd.h"
+#include "vcml/models/block/disk.h"
 
 namespace vcml {
 namespace sd {
@@ -34,7 +35,6 @@ private:
     bool m_spi;
     bool m_do_crc;
     size_t m_blklen;
-    fstream m_image;
 
     u32 m_status; // Card Status Register
     u32 m_hvs;    // Host Voltage Supply
@@ -95,8 +95,6 @@ private:
     void init_sts();
 
     void update_status();
-
-    void init_image();
 
     void switch_function(u32 arg);
 
@@ -173,9 +171,10 @@ public:
         OCR_POWERED_UP = 1 << 31,
     };
 
-    property<size_t> capacity;
     property<string> image;
     property<bool> readonly;
+
+    block::disk disk;
 
     sd_target_socket sd_in;
 
