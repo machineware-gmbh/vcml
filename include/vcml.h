@@ -94,7 +94,7 @@
 #include "vcml/models/serial/terminal.h"
 
 #include "vcml/models/block/backend.h"
-#include "vcml/models/block/drive.h"
+#include "vcml/models/block/disk.h"
 
 #include "vcml/models/ethernet/backend.h"
 #include "vcml/models/ethernet/bridge.h"
@@ -120,6 +120,7 @@
 #include "vcml/models/virtio/mmio.h"
 #include "vcml/models/virtio/pci.h"
 #include "vcml/models/virtio/rng.h"
+#include "vcml/models/virtio/blk.h"
 #include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
 

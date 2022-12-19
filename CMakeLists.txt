@@ -126,7 +126,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/block/backend_file.cpp
     ${src}/vcml/models/block/backend_ram.cpp
     ${src}/vcml/models/block/backend.cpp
-    ${src}/vcml/models/block/drive.cpp
+    ${src}/vcml/models/block/disk.cpp
     ${src}/vcml/models/ethernet/backend.cpp
     ${src}/vcml/models/ethernet/backend_file.cpp
     ${src}/vcml/models/ethernet/backend_tap.cpp
@@ -149,6 +149,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/pci.cpp
     ${src}/vcml/models/virtio/rng.cpp
+    ${src}/vcml/models/virtio/blk.cpp
     ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp
     ${src}/vcml/models/meta/loader.cpp
