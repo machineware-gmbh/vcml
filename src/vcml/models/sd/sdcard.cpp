@@ -872,6 +872,8 @@ sd_status_rx sdcard::do_data_write(u8 val) {
 
     disk.seek(m_curoff);
     disk.write(m_buffer, blklen);
+    disk.flush();
+
     m_numblk++;
 
     if (m_curcmd == 24) // writing only single block?
