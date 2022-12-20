@@ -178,7 +178,8 @@ public:
 
     sd_target_socket sd_in;
 
-    sdcard(const sc_module_name& name);
+    sdcard(const sc_module_name& name, const string& image = "ramdisk:2GiB",
+           bool readonly = false);
     virtual ~sdcard();
     virtual void reset() override;
     VCML_KIND(sd::sdcard);

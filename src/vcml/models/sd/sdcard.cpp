@@ -887,7 +887,7 @@ sd_status_rx sdcard::do_data_write(u8 val) {
     return SDRX_OK_BLK_DONE;
 }
 
-sdcard::sdcard(const sc_module_name& nm):
+sdcard::sdcard(const sc_module_name& nm, const string& img, bool ro):
     component(nm),
     sd_host(),
     m_spi(false),
@@ -909,8 +909,8 @@ sdcard::sdcard(const sc_module_name& nm):
     m_curoff(),
     m_numblk(),
     m_state(IDLE),
-    image("image", ""),
-    readonly("readonly", false),
+    image("image", img),
+    readonly("readonly", ro),
     disk("disk", image, readonly),
     sd_in("sd_in") {
     if (disk.capacity() % 1024)
@@ -924,7 +924,7 @@ sdcard::sdcard(const sc_module_name& nm):
 }
 
 sdcard::~sdcard() {
-    /* nothing to do */
+    // nothing to do
 }
 
 void sdcard::reset() {
