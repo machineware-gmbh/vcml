@@ -291,7 +291,7 @@ void sdl_client::init_window() {
         VCML_ERROR("cannot create SDL window: %s", SDL_GetError());
 
     window_id = SDL_GetWindowID(window);
-    renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
     if (renderer == nullptr)
         VCML_ERROR("cannot create SDL renderer: %s", SDL_GetError());
 
