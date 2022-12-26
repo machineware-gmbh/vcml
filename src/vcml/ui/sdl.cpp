@@ -360,9 +360,16 @@ void sdl_client::draw_window() {
         double rtf = (double)(now - time_sim) / delta;
         double fps = (double)frames / (delta / 1e6);
 
+        size_t millis = (now % 1000000) / 1000;
+        size_t times = now / 1000000;
+        size_t hours = times / 3600;
+        size_t minutes = (times % 3600) / 60;
+        size_t seconds = times % 60;
+
         const char* name = disp->name();
-        string caption = mkstr("%s %.1f fps %.2f rtf", name, fps, rtf);
-        SDL_SetWindowTitle(window, caption.c_str());
+        string cap = mkstr("%s fps:%.1f rtf:%.2f %02zu:%02zu:%02zu.%03zu",
+                           name, fps, rtf, hours, minutes, seconds, millis);
+        SDL_SetWindowTitle(window, cap.c_str());
 
         time_frame = mwr::timestamp_us();
         time_sim = now;
