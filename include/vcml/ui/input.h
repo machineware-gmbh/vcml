@@ -41,7 +41,7 @@ enum mouse_button : u32 {
 
 enum event_type : u32 {
     EVTYPE_KEY = 1u,
-    EVTYPE_PTR = 2u,
+    EVTYPE_REL = 2u,
 };
 
 struct input_event {
@@ -51,16 +51,18 @@ struct input_event {
         struct {
             u32 code;
             u32 state;
+            u32 reserved;
         } key;
 
         struct {
-            u32 x;
-            u32 y;
-        } ptr;
+            i32 x;
+            i32 y;
+            i32 w;
+        } rel;
     };
 
     bool is_key() const { return type == EVTYPE_KEY; }
-    bool is_ptr() const { return type == EVTYPE_PTR; }
+    bool is_rel() const { return type == EVTYPE_REL; }
 };
 
 class input
@@ -74,7 +76,7 @@ private:
 protected:
     void push_event(const input_event& ev);
     void push_key(u32 key, u32 state);
-    void push_ptr(u32 x, u32 y);
+    void push_rel(i32 x, i32 y, i32 w);
 
 public:
     const char* input_name() const { return m_name.c_str(); }
@@ -129,14 +131,16 @@ private:
     queue<input_event> m_events;
 
     u32 m_buttons;
-    u32 m_prev_x;
-    u32 m_prev_y;
+    u32 m_abs_x;
+    u32 m_abs_y;
+    u32 m_abs_w;
 
     static unordered_map<string, pointer*> s_pointers;
 
 public:
-    u32 x() const { return m_prev_x; }
-    u32 y() const { return m_prev_y; }
+    u32 x() const { return m_abs_x; }
+    u32 y() const { return m_abs_y; }
+    u32 w() const { return m_abs_w; }
 
     bool left() const { return m_buttons & BUTTON_LEFT; }
     bool middle() const { return m_buttons & BUTTON_MIDDLE; }
@@ -146,7 +150,7 @@ public:
     virtual ~pointer();
 
     void notify_btn(u32 btn, bool down);
-    void notify_pos(u32 x, u32 y);
+    void notify_rel(i32 x, i32 y, i32 w);
 
     static vector<pointer*> all();
     static pointer* find(const char* name);

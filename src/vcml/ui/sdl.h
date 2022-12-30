@@ -47,6 +47,7 @@ struct sdl_client {
     void notify_key(u32 keysym, bool down);
     void notify_btn(SDL_MouseButtonEvent& event);
     void notify_pos(SDL_MouseMotionEvent& event);
+    void notify_wheel(SDL_MouseWheelEvent& event);
 
     void init_window();
     void exit_window();

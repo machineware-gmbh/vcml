@@ -81,9 +81,9 @@ void display::notify_btn(u32 button, bool down) {
         ptr->notify_btn(button, down);
 }
 
-void display::notify_pos(u32 x, u32 y) {
+void display::notify_rel(i32 x, i32 y, i32 w) {
     for (pointer* ptr : m_pointers)
-        ptr->notify_pos(x, y);
+        ptr->notify_rel(x, y, w);
 }
 
 void display::add_keyboard(keyboard* kb) {

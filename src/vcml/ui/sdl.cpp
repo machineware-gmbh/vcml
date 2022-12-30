@@ -233,7 +233,7 @@ static int sdl_format_from_fbmode(const videomode& mode) {
     case FORMAT_R8G8B8X8:
         return SDL_PIXELFORMAT_RGBX8888;
     case FORMAT_A8B8G8R8:
-        return SDL_PIXELFORMAT_ARGB8888;
+        return SDL_PIXELFORMAT_ABGR8888;
     case FORMAT_X8B8G8R8:
         return SDL_PIXELFORMAT_BGR888;
     case FORMAT_B8G8R8A8:
@@ -272,10 +272,13 @@ void sdl_client::notify_btn(SDL_MouseButtonEvent& event) {
 }
 
 void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
-    u32 x = event.x > 0 ? (u32)event.x : 0u;
-    u32 y = event.y > 0 ? (u32)event.y : 0u;
     if (disp != nullptr)
-        disp->notify_pos(x, y);
+        disp->notify_rel(event.xrel, event.yrel, 0);
+}
+
+void sdl_client::notify_wheel(SDL_MouseWheelEvent& event) {
+    if (disp != nullptr)
+        disp->notify_rel(0, 0, event.y);
 }
 
 void sdl_client::init_window() {
@@ -451,6 +454,13 @@ void sdl::poll_events() {
             auto client = find_by_window_id(event.button.windowID);
             if (client)
                 client->notify_btn(event.button);
+            break;
+        }
+
+        case SDL_MOUSEWHEEL: {
+            auto client = find_by_window_id(event.wheel.windowID);
+            if (client)
+                client->notify_wheel(event.wheel);
             break;
         }
 

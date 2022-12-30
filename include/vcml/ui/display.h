@@ -78,7 +78,7 @@ public:
 
     virtual void notify_key(u32 keysym, bool down);
     virtual void notify_btn(u32 button, bool down);
-    virtual void notify_pos(u32 x, u32 y);
+    virtual void notify_rel(i32 x, i32 y, i32 w);
 
     virtual void add_keyboard(keyboard* kb);
     virtual void add_pointer(pointer* ptr);

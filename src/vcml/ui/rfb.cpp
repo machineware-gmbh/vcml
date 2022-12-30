@@ -308,7 +308,7 @@ void rfb::ptr_event(u32 mask, u32 x, u32 y) {
     m_buttons = mask;
 
     if (m_ptr_x != x || m_ptr_y != y) {
-        display::notify_pos(x, y);
+        display::notify_rel(x - m_ptr_x, y - m_ptr_y, 0);
         m_ptr_x = x;
         m_ptr_y = y;
     }

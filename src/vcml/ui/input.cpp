@@ -34,11 +34,12 @@ void input::push_key(u32 key, u32 state) {
     push_event(ev);
 }
 
-void input::push_ptr(u32 x, u32 y) {
+void input::push_rel(i32 x, i32 y, i32 w) {
     input_event ev = {};
-    ev.type = EVTYPE_PTR;
-    ev.ptr.x = x;
-    ev.ptr.y = y;
+    ev.type = EVTYPE_REL;
+    ev.rel.x = x;
+    ev.rel.y = y;
+    ev.rel.w = w;
     push_event(ev);
 }
 
@@ -154,7 +155,7 @@ keyboard* keyboard::find(const char* name) {
 }
 
 pointer::pointer(const char* name):
-    input(name), m_buttons(), m_prev_x(), m_prev_y() {
+    input(name), m_buttons(), m_abs_x(), m_abs_y(), m_abs_w() {
     if (stl_contains(s_pointers, string(name)))
         VCML_ERROR("pointer input device '%s' already exists", name);
     s_pointers[name] = this;
@@ -202,12 +203,13 @@ void pointer::notify_btn(u32 button, bool down) {
     m_buttons = buttons;
 }
 
-void pointer::notify_pos(u32 x, u32 y) {
-    if (x != m_prev_x || y != m_prev_y)
-        push_ptr(x, y);
+void pointer::notify_rel(i32 x, i32 y, i32 w) {
+    if (x || y || w)
+        push_rel(x, y, w);
 
-    m_prev_x = x;
-    m_prev_y = y;
+    m_abs_x += x;
+    m_abs_y += y;
+    m_abs_w += w;
 }
 
 unordered_map<string, pointer*> pointer::s_pointers;
