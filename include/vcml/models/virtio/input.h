@@ -96,9 +96,8 @@ private:
     queue<vq_message> m_messages;
 
     void push_key(u16 key, u32 down) { m_events.push({ EV_KEY, key, down }); }
-
+    void push_rel(u16 axis, u32 val) { m_events.push({ EV_REL, axis, val }); }
     void push_abs(u16 axis, u32 val) { m_events.push({ EV_ABS, axis, val }); }
-
     void push_sync() { m_events.push({ EV_SYN, SYN_REPORT, 0 }); }
 
     void config_update_name();
@@ -124,6 +123,7 @@ private:
 public:
     const property<bool> touchpad;
     const property<bool> keyboard;
+    const property<bool> mouse;
 
     const property<u64> pollrate;
 

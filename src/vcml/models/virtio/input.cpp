@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "vcml/models/virtio/input.h"
+#include "vcml/core/version.h"
 
 namespace vcml {
 namespace virtio {
@@ -26,7 +27,7 @@ void input::config_update_name() {
         return;
 
     m_config.size = snprintf(m_config.u.string, sizeof(m_config.u.string),
-                             "virtio input device");
+                             "vcml-virtio-input");
 }
 
 void input::config_update_serial() {
@@ -34,17 +35,17 @@ void input::config_update_serial() {
         return;
 
     m_config.size = snprintf(m_config.u.string, sizeof(m_config.u.string),
-                             "1234567890");
+                             VCML_VERSION_STRING);
 }
 
 void input::config_update_devids() {
     if (m_config.subsel)
         return;
 
-    m_config.u.ids.bustype = 1;
-    m_config.u.ids.vendor = 2;
-    m_config.u.ids.product = 3;
-    m_config.u.ids.version = 4;
+    m_config.u.ids.bustype = BUS_VIRTUAL;
+    m_config.u.ids.vendor = 0xcafe;
+    m_config.u.ids.product = 0x0001;
+    m_config.u.ids.version = 1;
     m_config.size = sizeof(m_config.u.ids);
 }
 
@@ -72,6 +73,12 @@ void input::config_update_evbits() {
 
         if (touchpad) {
             events.set(BTN_LEFT);
+            events.set(BTN_TOUCH);
+            events.set(BTN_TOOL_FINGER);
+        }
+
+        if (mouse) {
+            events.set(BTN_LEFT);
             events.set(BTN_RIGHT);
             events.set(BTN_MIDDLE);
         }
@@ -82,6 +89,15 @@ void input::config_update_evbits() {
         if (touchpad) {
             events.set(ABS_X);
             events.set(ABS_Y);
+        }
+
+        break;
+
+    case EV_REL:
+        if (mouse) {
+            events.set(REL_X);
+            events.set(REL_Y);
+            events.set(REL_WHEEL);
         }
 
         break;
@@ -160,34 +176,57 @@ void input::config_update() {
 }
 
 void input::update() {
+    size_t n = m_events.size();
     ui::input_event event = {};
-    while (m_keyboard.pop_event(event)) {
+    while (m_keyboard.pop_event(event))
         push_key(event.key.code, event.key.state);
-        push_sync();
-    }
 
     while (m_pointer.pop_event(event)) {
-        if (event.is_key()) {
-            push_key(event.key.code, event.key.state);
-            push_sync();
-        } else if (event.is_ptr()) {
-            size_t xres = m_console.xres();
-            size_t yres = m_console.yres();
-            VCML_ERROR_ON(!xres, "console width cannot be zero");
-            VCML_ERROR_ON(!yres, "console height cannot be zero");
+        if (mouse) {
+            if (event.is_rel()) {
+                if (event.rel.x)
+                    push_rel(REL_X, event.rel.x);
+                if (event.rel.y)
+                    push_rel(REL_Y, event.rel.y);
+                if (event.rel.w)
+                    push_rel(REL_WHEEL, event.rel.w);
+            }
 
-            size_t x = (event.ptr.x * xmax) / xres;
-            size_t y = (event.ptr.y * ymax) / yres;
-            VCML_ERROR_ON(x != (u32)x, "pointer out of range");
-            VCML_ERROR_ON(y != (u32)y, "pointer out of range");
+            if (event.is_key() &&
+                (event.key.code == BTN_LEFT || event.key.code == BTN_MIDDLE ||
+                 event.key.code == BTN_RIGHT)) {
+                push_key(event.key.code, event.key.state);
+            }
+        }
 
-            push_abs(ABS_X, x);
-            push_abs(ABS_Y, y);
-            push_sync();
+        if (touchpad) {
+            if (event.is_key() && event.key.code == BTN_LEFT) {
+                push_key(BTN_TOOL_FINGER, event.key.state);
+                push_key(event.key.code, event.key.state);
+            }
+
+            if (event.is_rel()) {
+                size_t xres = m_console.xres();
+                size_t yres = m_console.yres();
+                VCML_ERROR_ON(!xres, "console width cannot be zero");
+                VCML_ERROR_ON(!yres, "console height cannot be zero");
+
+                size_t x = (m_pointer.x() * xmax) / xres;
+                size_t y = (m_pointer.x() * ymax) / yres;
+                VCML_ERROR_ON(x != (u32)x, "pointer out of range");
+                VCML_ERROR_ON(y != (u32)y, "pointer out of range");
+
+                push_key(BTN_TOUCH, 1);
+                push_abs(ABS_X, x);
+                push_abs(ABS_Y, y);
+            }
         }
     }
 
-    if (!m_events.empty() && !m_messages.empty()) {
+    if (m_events.size() > n)
+        push_sync();
+
+    while (!m_events.empty() && !m_messages.empty()) {
         vq_message msg(m_messages.front());
         input_event event(m_events.front());
 
@@ -261,8 +300,9 @@ input::input(const sc_module_name& nm):
     m_keyboard(name()),
     m_pointer(name()),
     m_console(),
-    touchpad("touchpad", true),
+    touchpad("touchpad", false),
     keyboard("keyboard", true),
+    mouse("mouse", true),
     pollrate("pollrate", 1000),
     keymap("keymap", "us"),
     xmax("xmax", 0x7fff),
@@ -272,10 +312,10 @@ input::input(const sc_module_name& nm):
 
     if (keyboard)
         m_console.notify(m_keyboard);
-    if (touchpad)
+    if (touchpad || mouse)
         m_console.notify(m_pointer);
 
-    if (keyboard || touchpad) {
+    if (keyboard || touchpad || mouse) {
         SC_HAS_PROCESS(input);
         SC_METHOD(update);
     }
