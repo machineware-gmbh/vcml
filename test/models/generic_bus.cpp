@@ -152,6 +152,11 @@ public:
         EXPECT_EQ(data, 0x55555555)
             << "unexpected data from memory at privately mapped area";
 
+        bus.lenient = true;
+        EXPECT_OK(out1.writew<u32>(0xc000, data));
+        bus.lenient = false;
+        EXPECT_AE(out1.writew<u32>(0xc000, data));
+
         bus.execute("mmap", std::cout);
         std::cout << std::endl;
     }

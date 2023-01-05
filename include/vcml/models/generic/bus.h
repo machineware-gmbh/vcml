@@ -59,6 +59,7 @@ private:
     mapping m_default;
 
     const mapping& lookup(tlm_target_socket& src, const range& addr) const;
+    void handle_bus_error(tlm_generic_payload& tx) const;
 
     bool cmd_mmap(const vector<string>& args, ostream& os);
 
@@ -77,6 +78,8 @@ protected:
                                            u64 start, u64 end) override;
 
 public:
+    property<bool> lenient;
+
     tlm_target_socket_array<> in;
     tlm_initiator_socket_array<> out;
 

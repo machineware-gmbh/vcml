@@ -94,6 +94,19 @@ const bus::mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
     return m_default;
 }
 
+void bus::handle_bus_error(tlm_generic_payload& tx) const {
+    if (lenient) {
+        if (tx.is_read())
+            memset(tx.get_data_ptr(), 0, tx.get_data_length());
+        tx.set_response_status(TLM_OK_RESPONSE);
+        log_warn("ignoring %s access to unmapped area [%llx..%llx]",
+                 tx.is_read() ? "read" : "write", tx.get_address(),
+                 tx.get_address() + tx_size(tx) - 1);
+    } else {
+        tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+    }
+}
+
 void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
     for (const auto& m : m_mappings) {
         if (!m.addr.overlaps(addr))
@@ -131,7 +144,7 @@ void bus::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
                       sc_time& dt) {
     const mapping& m = lookup(socket, tx);
     if (m.target == TARGET_NONE) {
-        tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+        handle_bus_error(tx);
         return;
     }
 
@@ -145,7 +158,7 @@ unsigned int bus::transport_dbg(tlm_target_socket& origin,
                                 tlm_generic_payload& tx) {
     const mapping& m = lookup(origin, tx);
     if (m.target == TARGET_NONE) {
-        tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+        handle_bus_error(tx);
         return 0;
     }
 
@@ -222,7 +235,12 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
 }
 
 bus::bus(const sc_module_name& nm):
-    component(nm), m_mappings(), m_default(), in("in"), out("out") {
+    component(nm),
+    m_mappings(),
+    m_default(),
+    lenient("lenient", false),
+    in("in"),
+    out("out") {
     m_default.target = -1;
     m_default.source = -1;
     m_default.addr = range(0ull, ~0ull);
