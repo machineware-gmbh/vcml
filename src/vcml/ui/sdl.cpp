@@ -260,6 +260,16 @@ static int sdl_format_from_fbmode(const videomode& mode) {
 }
 
 void sdl_client::notify_key(u32 keysym, bool down) {
+    if (keysym == SDLK_g && (SDL_GetModState() & (KMOD_CTRL | KMOD_ALT))) {
+        if (down) {
+            grabbing = !grabbing;
+            SDL_SetWindowGrab(window, grabbing ? SDL_TRUE : SDL_FALSE);
+            SDL_ShowCursor(grabbing ? SDL_FALSE : SDL_TRUE);
+        }
+
+        return;
+    }
+
     u32 symbol = sdl_keysym_to_vcml_keysym(keysym);
     if (symbol != KEYSYM_NONE && disp != nullptr)
         disp->notify_key(symbol, down);
