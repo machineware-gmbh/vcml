@@ -28,7 +28,7 @@ class tlm_initiator_stub : public sc_module,
                            protected tlm::tlm_bw_transport_if<>
 {
 public:
-    tlm::tlm_initiator_socket<64> out;
+    tlm::tlm_initiator_socket<> out;
 
     tlm_initiator_stub() = delete;
     tlm_initiator_stub(const tlm_initiator_stub&) = delete;
@@ -53,7 +53,7 @@ private:
     tlm_response_status m_response;
 
 public:
-    tlm::tlm_target_socket<64> in;
+    tlm::tlm_target_socket<> in;
 
     tlm_target_stub() = delete;
     tlm_target_stub(const tlm_target_stub&) = delete;

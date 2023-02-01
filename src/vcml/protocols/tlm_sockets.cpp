@@ -33,7 +33,7 @@ void tlm_initiator_socket::invalidate_direct_mem_ptr(u64 start, u64 end) {
 
 tlm_initiator_socket::tlm_initiator_socket(const char* nm,
                                            address_space space):
-    simple_initiator_socket<tlm_initiator_socket, 64>(nm),
+    simple_initiator_socket<tlm_initiator_socket>(nm),
     m_tx(),
     m_txd(),
     m_sbi(SBI_NONE),
@@ -323,7 +323,7 @@ bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
 }
 
 tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
-    simple_target_socket<tlm_target_socket, 64>(nm),
+    simple_target_socket<tlm_target_socket>(nm),
     m_curr(0),
     m_next(0),
     m_free_ev(nullptr),

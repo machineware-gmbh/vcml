@@ -38,7 +38,7 @@
 namespace vcml {
 
 class tlm_initiator_socket
-    : public simple_initiator_socket<tlm_initiator_socket, 64>
+    : public simple_initiator_socket<tlm_initiator_socket>
 {
 private:
     tlm_generic_payload m_tx;
@@ -199,7 +199,7 @@ inline tlm_response_status tlm_initiator_socket::writew(u64 addr,
 template <unsigned int WIDTH>
 inline void tlm_initiator_socket::bind(
     tlm::tlm_base_initiator_socket_b<WIDTH>& socket) {
-    typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
+    typedef tlm_bus_width_adapter<32, WIDTH> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     string nm = strcat(basename(), "_adapter");
 
@@ -211,15 +211,15 @@ inline void tlm_initiator_socket::bind(
 }
 
 template <>
-inline void tlm_initiator_socket::bind<64>(
-    tlm::tlm_base_initiator_socket_b<64>& socket) {
+inline void tlm_initiator_socket::bind<32>(
+    tlm::tlm_base_initiator_socket_b<32>& socket) {
     base_type::bind(socket);
 }
 
 template <unsigned int WIDTH>
 inline void tlm_initiator_socket::bind(
     tlm::tlm_base_target_socket_b<WIDTH>& socket) {
-    typedef tlm_bus_width_adapter<64, WIDTH> adapter_type;
+    typedef tlm_bus_width_adapter<32, WIDTH> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     string nm = strcat(basename(), "_adapter");
 
@@ -231,12 +231,12 @@ inline void tlm_initiator_socket::bind(
 }
 
 template <>
-inline void tlm_initiator_socket::bind<64>(
-    tlm::tlm_base_target_socket_b<64>& other) {
+inline void tlm_initiator_socket::bind<32>(
+    tlm::tlm_base_target_socket_b<32>& other) {
     base_type::bind(other);
 }
 
-class tlm_target_socket : public simple_target_socket<tlm_target_socket, 64>
+class tlm_target_socket : public simple_target_socket<tlm_target_socket>
 {
 private:
     int m_curr;
@@ -294,7 +294,7 @@ public:
     template <unsigned int WIDTH>
     void bind(tlm::tlm_base_target_socket<WIDTH>& other);
 
-    template <unsigned int WIDTH = 32>
+    template <unsigned int WIDTH>
     tlm::tlm_target_socket<WIDTH>& adapt();
 
     void stub();
@@ -344,7 +344,7 @@ inline void tlm_target_socket::unmap_dmi(const range& mem) {
 template <unsigned int WIDTH>
 inline void tlm_target_socket::bind(
     tlm::tlm_base_initiator_socket<WIDTH>& socket) {
-    typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
+    typedef tlm_bus_width_adapter<WIDTH, 32> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     const string nm = strcat(basename(), "_adapter");
 
@@ -356,15 +356,15 @@ inline void tlm_target_socket::bind(
 }
 
 template <>
-inline void tlm_target_socket::bind<64>(
-    tlm::tlm_base_initiator_socket<64>& socket) {
+inline void tlm_target_socket::bind<32>(
+    tlm::tlm_base_initiator_socket<32>& socket) {
     base_type::bind(socket);
 }
 
 template <unsigned int WIDTH>
 inline void tlm_target_socket::bind(
     tlm::tlm_base_target_socket<WIDTH>& socket) {
-    typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
+    typedef tlm_bus_width_adapter<WIDTH, 32> adapter_type;
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     const string nm = strcat(basename(), "_adapter");
 
@@ -376,14 +376,14 @@ inline void tlm_target_socket::bind(
 }
 
 template <>
-inline void tlm_target_socket::bind<64>(
-    tlm::tlm_base_target_socket<64>& socket) {
+inline void tlm_target_socket::bind<32>(
+    tlm::tlm_base_target_socket<32>& socket) {
     base_type::bind(socket);
 }
 
 template <unsigned int WIDTH>
 inline tlm::tlm_target_socket<WIDTH>& tlm_target_socket::adapt() {
-    typedef tlm_bus_width_adapter<WIDTH, 64> adapter_type;
+    typedef tlm_bus_width_adapter<WIDTH, 32> adapter_type;
     adapter_type* adapter = dynamic_cast<adapter_type*>(m_adapter);
     VCML_ERROR_ON(m_adapter && !adapter, "socket %s already bound", name());
     if (adapter == nullptr) {
@@ -398,7 +398,7 @@ inline tlm::tlm_target_socket<WIDTH>& tlm_target_socket::adapt() {
 }
 
 template <>
-inline tlm::tlm_target_socket<64>& tlm_target_socket::adapt() {
+inline tlm::tlm_target_socket<32>& tlm_target_socket::adapt() {
     return *this;
 }
 
