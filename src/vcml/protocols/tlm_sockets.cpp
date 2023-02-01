@@ -44,15 +44,13 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
     m_adapter(nullptr),
     trace(this, "trace", false),
     trace_errors(this, "trace_errors", false),
-    allow_dmi(this, "allow_dmi", true),
-    bus_width(this, "bus_width", tlm_base_initiator_socket::get_bus_width()) {
+    allow_dmi(this, "allow_dmi", true) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
     VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
 
     trace.inherit_default();
     trace_errors.inherit_default();
     allow_dmi.inherit_default();
-    bus_width.inherit_default();
 
     m_host->register_socket(this);
 
@@ -221,50 +219,23 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
         }
     }
 
-    // if DMI was not successful, send a regular transaction; debug
-    // transactions can be arbitrarily wide; none debug transactions
-    // must be split up if they are wider than socket bus width.
+    // if DMI was not successful, send a regular transaction
+    auto& tx = info.is_debug ? m_txd : m_tx;
+    tx_setup(tx, cmd, addr, data, size);
+    size = send(tx, info);
 
-    if (info.is_debug) {
-        tx_setup(m_txd, cmd, addr, data, size);
-        size = send(m_txd, info);
+    // transport_dbg does not always change response status
+    tlm_response_status rs = tx.get_response_status();
+    if (rs == TLM_INCOMPLETE_RESPONSE && info.is_debug)
+        rs = TLM_OK_RESPONSE;
 
-        // transport_dbg does not always change response status
-        tlm_response_status rs = m_txd.get_response_status();
-        if (rs == TLM_INCOMPLETE_RESPONSE)
-            rs = TLM_OK_RESPONSE;
-
-        if (sz != nullptr)
-            *sz = size;
-
-        return rs;
-    }
-
-    unsigned int done = 0;
-    while (done < size) {
-        unsigned int sz = size - done;
-        if (bus_width && sz > bus_width / 8)
-            sz = bus_width / 8;
-
-        tx_setup(m_tx, cmd, addr + done, (u8*)data + done, sz);
-
-        unsigned int bytes = send(m_tx, info);
-        done += bytes;
-
-        if (m_tx.get_response_status() == TLM_INCOMPLETE_RESPONSE) {
-            m_parent->log_warn(
-                "received incomplete response from target at 0x%016llx", addr);
-            break;
-        }
-
-        if (bytes == 0 || failed(m_tx))
-            break;
-    }
+    if (rs == TLM_INCOMPLETE_RESPONSE)
+        m_parent->log_warn("got incomplete response from 0x%016llx", addr);
 
     if (sz != nullptr)
-        *sz = done;
+        *sz = size;
 
-    return m_tx.get_response_status();
+    return rs;
 }
 
 void tlm_initiator_socket::stub(tlm_response_status r) {
@@ -288,12 +259,6 @@ bool tlm_target_socket::get_dmi_ptr_int(tlm_generic_payload& tx, tlm_dmi& d) {
 
 void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     trace_fw(tx, dt);
-
-    if (bus_width && tx_size(tx) > bus_width / 8) {
-        tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
-        trace_bw(tx, dt);
-        return;
-    }
 
     int self = m_next++;
     while (self != m_curr)
@@ -373,14 +338,12 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     trace(this, "trace", false),
     trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),
-    bus_width(this, "bus_width", tlm_base_target_socket::get_bus_width()),
     as(a) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
 
     trace.inherit_default();
     trace_errors.inherit_default();
     allow_dmi.inherit_default();
-    bus_width.inherit_default();
 
     m_host->register_socket(this);
 

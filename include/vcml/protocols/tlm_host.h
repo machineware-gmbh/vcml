@@ -117,7 +117,6 @@ public:
                                    const tlm_sbi& info);
 
     property<bool> allow_dmi;
-    property<unsigned int> bus_width;
 };
 
 inline bool tlm_host::in_transaction(sc_process_b* proc) const {

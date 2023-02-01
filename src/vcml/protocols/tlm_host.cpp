@@ -91,8 +91,7 @@ tlm_host::tlm_host(bool allow_dmi, unsigned int bus_width):
     m_processes(),
     m_initiator_sockets(),
     m_target_sockets(),
-    allow_dmi("allow_dmi", allow_dmi),
-    bus_width("bus_width", bus_width) {
+    allow_dmi("allow_dmi", allow_dmi) {
 }
 
 sc_time& tlm_host::local_time(sc_process_b* proc) {
