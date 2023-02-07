@@ -22,7 +22,7 @@
 namespace vcml {
 
 struct thctl {
-    const thread::id sysc_thread;
+    thread::id sysc_thread;
     atomic<thread::id> curr_owner;
 
     mutex sysc_mutex;
@@ -43,6 +43,8 @@ struct thctl {
 
     void suspend();
     void flush();
+
+    void set_sysc_thread(thread::id id);
 
     static thctl& instance();
 };
@@ -121,6 +123,10 @@ void thctl::flush() {
         suspend();
 }
 
+void thctl::set_sysc_thread(thread::id id) {
+    sysc_thread = id;
+}
+
 thctl& thctl::instance() {
     static thctl singleton;
     return singleton;
@@ -159,6 +165,10 @@ void thctl_suspend() {
 
 void thctl_flush() {
     thctl::instance().flush();
+}
+
+void thctl_set_sysc_thread(thread::id id) {
+    thctl::instance().set_sysc_thread(id);
 }
 
 } // namespace vcml

@@ -35,6 +35,8 @@ void thctl_exit_critical();
 void thctl_suspend();
 void thctl_flush();
 
+void thctl_set_sysc_thread(thread::id id = std::this_thread::get_id());
+
 class thctl_guard
 {
 private:
