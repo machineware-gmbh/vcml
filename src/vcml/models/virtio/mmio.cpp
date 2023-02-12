@@ -148,8 +148,11 @@ bool mmio::notify() {
 tlm_response_status mmio::read(const range& addr, void* data,
                                const tlm_sbi& info) {
     const range& regbase = config_gen.get_range();
-    if (addr.start <= regbase.end && addr.end > regbase.end)
-        return TLM_ADDRESS_ERROR_RESPONSE;
+    if (addr.start <= regbase.end) {
+        memset(data, 0xff, addr.length());
+        return TLM_OK_RESPONSE;
+    }
+
     if (!virtio_out->read_config(addr - regbase.end - 1, data))
         return TLM_ADDRESS_ERROR_RESPONSE;
 
@@ -164,8 +167,8 @@ tlm_response_status mmio::write(const range& addr, const void* data,
     }
 
     const range& regbase = config_gen.get_range();
-    if (addr.start <= regbase.end && addr.end > regbase.end)
-        return TLM_ADDRESS_ERROR_RESPONSE;
+    if (addr.start <= regbase.end)
+        return TLM_OK_RESPONSE;
 
     if (!virtio_out->write_config(addr - regbase.end - 1, data))
         return TLM_ADDRESS_ERROR_RESPONSE;
