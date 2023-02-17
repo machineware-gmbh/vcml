@@ -86,6 +86,8 @@ public:
     template <typename PAYLOAD>
     void trace_bw(const sc_object& port, const PAYLOAD& tx,
                   const sc_time& t = SC_ZERO_TIME) const;
+
+    bool is_local_process(sc_process_b* proc = current_process()) const;
 };
 
 inline void module::hierarchy_push() {
@@ -145,6 +147,10 @@ template <typename PAYLOAD>
 void module::trace_bw(const sc_object& port, const PAYLOAD& tx,
                       const sc_time& t) const {
     record(TRACE_BW, port, tx, t);
+}
+
+inline bool module::is_local_process(sc_process_b* proc) const {
+    return is_parent(this, proc);
 }
 
 } // namespace vcml

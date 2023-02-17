@@ -23,7 +23,7 @@ using namespace ::testing;
 
 #include "vcml.h"
 
-class mock_module : public vcml::module
+class cmd_test_module : public vcml::module
 {
 public:
     bool cmd_test(const std::vector<std::string>& args, std::ostream& os) {
@@ -32,14 +32,14 @@ public:
         return true;
     }
 
-    mock_module(const sc_core::sc_module_name& nm = "mock_component"):
+    cmd_test_module(const sc_core::sc_module_name& nm = "cmd_test_module"):
         vcml::module(nm) {
-        register_command("test", 3, &mock_module::cmd_test, "test");
+        register_command("test", 3, &cmd_test_module::cmd_test, "test");
     }
 };
 
 TEST(module, commands) {
-    mock_module mod("mock_module");
+    cmd_test_module mod;
 
     vcml::command_base* cmd = mod.get_command("test");
     ASSERT_NE(cmd, nullptr);
@@ -47,11 +47,41 @@ TEST(module, commands) {
     EXPECT_EQ(cmd->argc(), 3);
 
     std::stringstream ss;
-    EXPECT_TRUE(
-        mod.execute("test", std::vector<std::string>({ "a", "b", "c" }), ss));
+    EXPECT_TRUE(mod.execute("test", { "a", "b", "c" }, ss));
     EXPECT_EQ(ss.str(), "abc");
 
     ss.str("");
-    EXPECT_FALSE(mod.execute("test", std::vector<std::string>(), ss));
+    EXPECT_FALSE(mod.execute("test", ss));
     EXPECT_FALSE(ss.str().empty());
+}
+
+class proc_test_module : public vcml::module
+{
+public:
+    size_t thread_calls;
+    size_t method_calls;
+
+    void thread() {
+        EXPECT_TRUE(is_local_process());
+        thread_calls++;
+    }
+
+    void method() {
+        EXPECT_TRUE(is_local_process());
+        method_calls++;
+    }
+
+    proc_test_module(const sc_core::sc_module_name& nm = "proc_test_module"):
+        vcml::module(nm), thread_calls(0), method_calls(0) {
+        SC_HAS_PROCESS(proc_test_module);
+        SC_THREAD(thread);
+        SC_METHOD(method);
+    }
+};
+
+TEST(module, local_processes) {
+    proc_test_module mod;
+    sc_start(1.0, sc_core::SC_SEC);
+    ASSERT_EQ(mod.thread_calls, 1);
+    ASSERT_EQ(mod.method_calls, 1);
 }
