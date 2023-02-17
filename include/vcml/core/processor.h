@@ -123,7 +123,7 @@ protected:
     virtual void interrupt(unsigned int irq, bool set);
 
     virtual void simulate(unsigned int cycles) = 0;
-    virtual void update_local_time(sc_time& local_time) override;
+    virtual void update_local_time(sc_time& time, sc_process_b* proc) override;
     virtual void end_of_elaboration() override;
 
     virtual void fetch_cpuregs();

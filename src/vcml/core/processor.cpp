@@ -468,11 +468,13 @@ void processor::interrupt(unsigned int irq, bool set) {
     // to be overloaded
 }
 
-void processor::update_local_time(sc_time& local_time) {
-    u64 cycles = cycle_count();
-    VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
-    local_time += clock_cycles(cycles - m_cycle_count);
-    m_cycle_count = cycles;
+void processor::update_local_time(sc_time& local_time, sc_process_b* proc) {
+    if (is_local_process(proc)) {
+        u64 cycles = cycle_count();
+        VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
+        local_time += clock_cycles(cycles - m_cycle_count);
+        m_cycle_count = cycles;
+    }
 }
 
 void processor::end_of_elaboration() {

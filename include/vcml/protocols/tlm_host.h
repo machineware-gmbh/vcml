@@ -98,7 +98,7 @@ public:
 
     virtual void invalidate_dmi(u64 start, u64 end);
 
-    virtual void update_local_time(sc_time& local_time);
+    virtual void update_local_time(sc_time& local_time, sc_process_b* proc);
 
     virtual void b_transport(tlm_target_socket& origin,
                              tlm_generic_payload& tx, sc_time& dt);

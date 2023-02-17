@@ -99,7 +99,7 @@ sc_time& tlm_host::local_time(sc_process_b* proc) {
         m_processes[proc].time = SC_ZERO_TIME;
 
     sc_time& local = m_processes[proc].time;
-    update_local_time(local);
+    update_local_time(local, proc);
     return local;
 }
 
@@ -156,7 +156,7 @@ void tlm_host::invalidate_dmi(u64 start, u64 end) {
     // to be overloaded
 }
 
-void tlm_host::update_local_time(sc_time& local_time) {
+void tlm_host::update_local_time(sc_time& local_time, sc_process_b* proc) {
     // to be overloaded
 }
 
