@@ -70,6 +70,23 @@ sc_module* hierarchy_top() {
     return simc->hierarchy_curr();
 }
 
+bool is_parent(const sc_object* obj, const sc_object* child) {
+    if (obj == child)
+        return false;
+
+    for (sc_object* parent = child->get_parent_object(); parent != nullptr;
+         parent = parent->get_parent_object()) {
+        if (parent == obj)
+            return true;
+    }
+
+    return false;
+}
+
+bool is_child(const sc_object* obj, const sc_object* parent) {
+    return is_parent(parent, obj);
+}
+
 const char* tlm_response_to_str(tlm_response_status status) {
     switch (status) {
     case TLM_OK_RESPONSE:

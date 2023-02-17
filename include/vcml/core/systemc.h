@@ -170,6 +170,9 @@ inline MODULE* hierarchy_search(sc_object* start = nullptr) {
     return nullptr;
 }
 
+bool is_parent(const sc_object* obj, const sc_object* child);
+bool is_child(const sc_object* obj, const sc_object* parent);
+
 class hierarchy_guard
 {
 private:
