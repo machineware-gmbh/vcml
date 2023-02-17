@@ -12,14 +12,15 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ${{matrix.os}}
 
     strategy:
       fail-fast: false
       matrix:
           systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3]
+          os: [ubuntu-20.04, ubuntu-22.04]
 
-    name: Build - SystemC ${{matrix.systemc}}
+    name: Build ${{matrix.os}} - SystemC ${{matrix.systemc}}
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
@@ -40,7 +41,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/systemc
-        key: cache-systemc-${{matrix.systemc}}-${{runner.os}}
+        key: cache-systemc-${{matrix.systemc}}-${{matrix.os}}
 
     - name: Download SystemC
       if: steps.cache-systemc.outputs.cache-hit != 'true'
