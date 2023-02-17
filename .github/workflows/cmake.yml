@@ -20,7 +20,7 @@ jobs:
           systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3]
           os: [ubuntu-20.04, ubuntu-22.04]
 
-    name: Build ${{matrix.os}} - SystemC ${{matrix.systemc}}
+    name: SystemC ${{matrix.systemc}} - ${{matrix.os}}
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
