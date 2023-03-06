@@ -228,21 +228,16 @@ void blk::identify(virtio_device_desc& desc) {
 
 bool blk::notify(u32 vqid) {
     vq_message msg;
-    int count = 0;
 
     while (virtio_in->get(vqid, msg)) {
         log_debug("received message from virtqueue %u with %u bytes", vqid,
                   msg.length());
 
         process_command(msg);
-        count++;
 
         if (!virtio_in->put(vqid, msg))
             return false;
     }
-
-    if (!count)
-        log_warn("notify without messages");
 
     return true;
 }
