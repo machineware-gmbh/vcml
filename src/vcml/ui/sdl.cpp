@@ -497,6 +497,9 @@ void sdl::ui_run() {
         draw_windows();
     }
 
+    while (m_attached)
+        SDL_Delay(1);
+
     check_clients();
     SDL_Quit();
 }
