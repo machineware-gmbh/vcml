@@ -263,8 +263,7 @@ void sdl_client::notify_key(u32 keysym, bool down) {
     if (keysym == SDLK_g && (SDL_GetModState() & (KMOD_CTRL | KMOD_ALT))) {
         if (down) {
             grabbing = !grabbing;
-            SDL_SetWindowGrab(window, grabbing ? SDL_TRUE : SDL_FALSE);
-            SDL_ShowCursor(grabbing ? SDL_FALSE : SDL_TRUE);
+            SDL_SetRelativeMouseMode(grabbing ? SDL_TRUE : SDL_FALSE);
         }
 
         return;
