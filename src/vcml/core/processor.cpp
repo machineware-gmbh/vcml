@@ -260,10 +260,8 @@ u64 processor::simulate_cycles(unsigned int cycles) {
 
 void processor::processor_thread() {
     if (gdb_port >= 0) {
-        debugging::gdb_status status = gdb_wait ? debugging::GDB_STOPPED
-                                                : debugging::GDB_RUNNING;
-
-        m_gdb = new debugging::gdbserver(gdb_port, *this, status);
+        auto run = gdb_wait ? debugging::GDB_STOPPED : debugging::GDB_RUNNING;
+        m_gdb = new debugging::gdbserver(gdb_port, *this, run);
         m_gdb->echo(gdb_echo);
 
         if (gdb_port == 0)
@@ -273,17 +271,8 @@ void processor::processor_thread() {
                  gdb_wait ? "waiting" : "listening", m_gdb->port());
     }
 
-    if (async.get()) {
-        if (async_rate <= 0u) {
-            log_error("async_rate must be larger than 0! Using default %d",
-                      async_rate.get_default());
-            async_rate.set(async_rate.get_default());
-        }
-        if (async_rate > 10u) {
-            log_warn("async_rate is larger than 10 - value: %d",
-                     async_rate.get());
-        }
-    }
+    if (async && async_rate > 10u)
+        log_warn("async_rate is larger than 10 - value: %u", async_rate.get());
 
     wait(SC_ZERO_TIME);
 
@@ -294,7 +283,7 @@ void processor::processor_thread() {
         // check for standby requests
         wait_clock_reset();
 
-        if (async.get() && !is_stepping()) {
+        if (async && !is_stepping()) {
             vcml::sc_async([&]() { running = processor_thread_async(); });
         } else {
             running = processor_thread_sync();
@@ -309,42 +298,36 @@ void processor::processor_thread() {
 
 bool processor::processor_thread_async() {
     sc_time& lt = local_time();
-    const sc_time& global_quantum = tlm::tlm_global_quantum::instance().get();
+    const sc_time& quantum = tlm::tlm_global_quantum::instance().get();
 
     sc_progress(lt);
     lt = SC_ZERO_TIME;
 
     while (true) {
-        log_debug("simulate_cycles start %lluns", mwr::timestamp_ns());
-
-        debugging::suspender::handle_requests();
         if (!sim_running())
             return false;
 
-        u64 step_size = (global_quantum / clock_cycle()) / async_rate.get();
-        for (sc_time advance = sc_async_timestamp() - sc_time_stamp();
-             advance < global_quantum;
-             advance = sc_async_timestamp() - sc_time_stamp()) {
-            u64 cycles_left = (global_quantum - advance) / clock_cycle();
+        for (sc_time offset = async_time_offset(); offset < quantum;
+             offset = async_time_offset()) {
+            u64 step_size = (quantum / clock_cycle()) / async_rate;
+            u64 cycles_left = (quantum - offset) / clock_cycle();
 
+            // fall back to sequential simulation when single-stepping
             if (is_stepping())
-                cycles_left = 1;
-            else if (cycles_left == 1)
-                break; // do not do a single cycle to avoid tb flushes
+                return true;
 
-            simulate_cycles(cycles_left > step_size ? step_size : cycles_left);
+            // do not execute a single cycle to avoid tb flushes
+            if (cycles_left == 1)
+                break;
 
+            simulate_cycles(min(cycles_left, step_size));
             update_local_time(lt, current_process());
-
             sc_progress(lt);
             lt = SC_ZERO_TIME;
         }
 
-        log_debug("simulate_cycles end %lluns", mwr::timestamp_ns());
-
-        while (sim_running() &&
-               sc_async_timestamp() - sc_async_timestamp() >= global_quantum) {
-        }
+        while (sim_running() && async_time_offset() >= quantum)
+            mwr::cpu_yield();
     }
 }
 
@@ -360,8 +343,8 @@ bool processor::processor_thread_sync() {
             sc_time time_left = quantum - local_time();
             num_cycles = time_left / clock_cycle();
 
-            // if there will be less than one clock_cycle left
-            // in the current quantum -> do one more instruction
+            // if there will be less than one clock_cycle left in the current
+            // quantum -> do one more instruction
             if (time_left % clock_cycle() != SC_ZERO_TIME)
                 ++num_cycles;
         }
@@ -369,9 +352,7 @@ bool processor::processor_thread_sync() {
         if (is_stepping())
             num_cycles = 1;
 
-        log_debug("simulate_cycles start %lluns", mwr::timestamp_ns());
         num_cycles = simulate_cycles(num_cycles);
-        log_debug("simulate_cycles end %lluns", mwr::timestamp_ns());
 
         if (is_stepping() && num_cycles > 0)
             notify_singlestep();

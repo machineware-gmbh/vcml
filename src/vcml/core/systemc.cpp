@@ -567,14 +567,6 @@ struct async_worker {
         g_async = nullptr;
     }
 
-    static void yield() {
-#if defined(__x86_64__)
-        asm volatile("pause" ::: "memory");
-#elif defined(__aarch64__)
-        asm volatile("yield" ::: "memory");
-#endif
-    }
-
     void run_async(function<void(void)>& job) {
         mtx.lock();
         task = job;
@@ -584,14 +576,13 @@ struct async_worker {
 
         while (working) {
             u64 p = progress.exchange(0);
-            sc_thread_pos = sc_core::sc_time_stamp() + time_from_value(p);
+            sc_thread_pos = sc_time_stamp() + time_from_value(p);
             sc_core::wait(time_from_value(p));
 
             if (request) {
                 p = progress.exchange(0);
                 if (p > 0) {
-                    sc_thread_pos = sc_core::sc_time_stamp() +
-                                    time_from_value(p);
+                    sc_thread_pos = sc_time_stamp() + time_from_value(p);
                     sc_core::wait(time_from_value(p));
                 }
 
@@ -610,13 +601,11 @@ struct async_worker {
         while (g_async->request) {
             if (!sim_running())
                 throw sim_terminated_exception();
-            yield();
+            mwr::cpu_yield();
         }
     }
 
-    sc_time get_sc_thread_timestamp() {
-        return sc_thread_pos + time_from_value(progress);
-    }
+    sc_time timestamp() { return sc_thread_pos + time_from_value(progress); }
 
     static async_worker& lookup(sc_process_b* thread) {
         VCML_ERROR_ON(!thread, "invalid thread");
@@ -660,11 +649,14 @@ bool sc_is_async() {
     return g_async != nullptr;
 }
 
-sc_time sc_async_timestamp() {
-    if (!sc_is_async()) {
-        return sc_core::sc_time_stamp();
-    }
-    return g_async->get_sc_thread_timestamp();
+sc_time async_time_stamp() {
+    if (sc_is_async())
+        return g_async->timestamp();
+    return sc_time_stamp();
+}
+
+sc_time async_time_offset() {
+    return async_time_stamp() - sc_time_stamp();
 }
 
 bool is_thread(sc_process_b* proc) {
