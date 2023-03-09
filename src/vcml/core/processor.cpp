@@ -17,6 +17,9 @@
  ******************************************************************************/
 
 #include "vcml/core/processor.h"
+#include <sysc/kernel/sc_simcontext.h>
+#include <chrono>
+#include <thread>
 
 #define HEX(x, w)                                                  \
     std::setfill('0') << std::setw(w) << std::hex << x << std::dec \
@@ -247,7 +250,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     return true;
 }
 
-unsigned int processor::simulate_cycles(unsigned int cycles) {
+u64 processor::simulate_cycles(unsigned int cycles) {
     u64 count = cycle_count();
     double start = mwr::timestamp();
     simulate(cycles);
@@ -270,49 +273,115 @@ void processor::processor_thread() {
                  gdb_wait ? "waiting" : "listening", m_gdb->port());
     }
 
+    if (async.get()) {
+        if (async_rate <= 0u) {
+            log_error("async_rate must be larger than 0! Using default %d",
+                      async_rate.get_default());
+            async_rate.set(async_rate.get_default());
+        }
+        if (async_rate > 10u) {
+            log_warn("async_rate is larger than 10 - value: %d",
+                     async_rate.get());
+        }
+    }
+
     wait(SC_ZERO_TIME);
 
-    while (true) {
+    bool running = true;
+    while (running) {
         sc_time now = local_time_stamp();
 
         // check for standby requests
         wait_clock_reset();
 
-        do {
-            debugging::suspender::handle_requests();
-            if (!sim_running())
-                return;
-
-            unsigned int num_cycles = 1;
-            sc_time quantum = tlm_global_quantum::instance().get();
-            if (quantum > clock_cycle() && quantum > local_time()) {
-                sc_time time_left = quantum - local_time();
-                num_cycles = time_left / clock_cycle();
-
-                // if there will be less than one clock_cycle left
-                // in the current quantum -> do one more instruction
-                if (time_left % clock_cycle() != SC_ZERO_TIME)
-                    ++num_cycles;
-            }
-
-            if (is_stepping())
-                num_cycles = 1;
-
-            num_cycles = simulate_cycles(num_cycles);
-
-            if (is_stepping() && num_cycles > 0)
-                notify_singlestep();
-            if (num_cycles == 0)
-                wait(SC_ZERO_TIME);
-        } while (!needs_sync());
-
-        sync();
+        if (async.get() && !is_stepping()) {
+            vcml::sc_async([&]() { running = processor_thread_async(); });
+        } else {
+            running = processor_thread_sync();
+        }
 
         // check that local time advanced beyond quantum start time
         // if we fail here, we most likely have a broken cycle_count()
         if (local_time_stamp() == now)
             VCML_ERROR("processor %s is stuck in time", name());
     }
+}
+
+bool processor::processor_thread_async() {
+    sc_time& lt = local_time();
+    const sc_time& global_quantum = tlm::tlm_global_quantum::instance().get();
+
+    sc_progress(lt);
+    lt = SC_ZERO_TIME;
+
+    while (true) {
+        log_debug("simulate_cycles start %lluns", mwr::timestamp_ns());
+
+        debugging::suspender::handle_requests();
+        if (!sim_running())
+            return false;
+
+        u64 step_size = (global_quantum / clock_cycle()) / async_rate.get();
+        for (sc_time advance = sc_async_timestamp() - sc_time_stamp();
+             advance < global_quantum;
+             advance = sc_async_timestamp() - sc_time_stamp()) {
+            u64 cycles_left = (global_quantum - advance) / clock_cycle();
+
+            if (is_stepping())
+                cycles_left = 1;
+            else if (cycles_left == 1)
+                break; // do not do a single cycle to avoid tb flushes
+
+            simulate_cycles(cycles_left > step_size ? step_size : cycles_left);
+
+            update_local_time(lt, current_process());
+
+            sc_progress(lt);
+            lt = SC_ZERO_TIME;
+        }
+
+        log_debug("simulate_cycles end %lluns", mwr::timestamp_ns());
+
+        while (sim_running() &&
+               sc_async_timestamp() - sc_async_timestamp() >= global_quantum) {
+        }
+    }
+}
+
+bool processor::processor_thread_sync() {
+    do {
+        debugging::suspender::handle_requests();
+        if (!sim_running())
+            return false;
+
+        unsigned int num_cycles = 1;
+        sc_time quantum = tlm_global_quantum::instance().get();
+        if (quantum > clock_cycle() && quantum > local_time()) {
+            sc_time time_left = quantum - local_time();
+            num_cycles = time_left / clock_cycle();
+
+            // if there will be less than one clock_cycle left
+            // in the current quantum -> do one more instruction
+            if (time_left % clock_cycle() != SC_ZERO_TIME)
+                ++num_cycles;
+        }
+
+        if (is_stepping())
+            num_cycles = 1;
+
+        log_debug("simulate_cycles start %lluns", mwr::timestamp_ns());
+        num_cycles = simulate_cycles(num_cycles);
+        log_debug("simulate_cycles end %lluns", mwr::timestamp_ns());
+
+        if (is_stepping() && num_cycles > 0)
+            notify_singlestep();
+        if (num_cycles == 0)
+            wait(SC_ZERO_TIME);
+    } while (!needs_sync());
+
+    sync();
+
+    return true;
 }
 
 processor::processor(const sc_module_name& nm, const string& cpuarch):
@@ -329,6 +398,8 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     gdb_wait("gdb_wait", false),
     gdb_echo("gdb_echo", false),
     gdb_term("gdb_term", "gdbterm"),
+    async("async", false),
+    async_rate("async_rate", 5),
     irq("irq"),
     insn("insn"),
     data("data") {

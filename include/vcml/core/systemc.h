@@ -362,6 +362,8 @@ void sc_async(function<void(void)> job);
 void sc_progress(const sc_time& delta);
 void sc_sync(function<void(void)> job);
 
+sc_time sc_async_timestamp();
+
 bool sc_is_async();
 
 bool is_thread(sc_process_b* proc = nullptr);

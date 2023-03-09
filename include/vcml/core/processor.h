@@ -67,8 +67,10 @@ private:
     virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
     virtual bool write_cpureg_dbg(const cpureg& r, vcml::u64 val) override;
 
-    unsigned int simulate_cycles(unsigned int cycles);
+    u64 simulate_cycles(unsigned int cycles);
     void processor_thread();
+    bool processor_thread_sync();
+    bool processor_thread_async();
 
 public:
     property<string> cpuarch;
@@ -78,6 +80,9 @@ public:
     property<bool> gdb_wait;
     property<bool> gdb_echo;
     property<string> gdb_term;
+
+    property<bool> async;
+    property<unsigned int> async_rate;
 
     gpio_target_socket_array<> irq;
 

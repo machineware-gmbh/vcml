@@ -516,6 +516,8 @@ struct async_worker {
     condition_variable_any notify;
     thread worker;
 
+    sc_time sc_thread_pos;
+
     struct sim_terminated_exception {};
 
     async_worker(size_t worker_id, sc_process_b* worker_proc):
@@ -528,7 +530,8 @@ struct async_worker {
         request(nullptr),
         mtx(),
         notify(),
-        worker(std::bind(&async_worker::work, this)) {
+        worker(std::bind(&async_worker::work, this)),
+        sc_thread_pos(sc_time_stamp()) {
         VCML_ERROR_ON(!process, "invalid parent process");
         mwr::set_thread_name(worker, mkstr("vcml_async_%zu", id));
     }
@@ -581,9 +584,17 @@ struct async_worker {
 
         while (working) {
             u64 p = progress.exchange(0);
+            sc_thread_pos = sc_core::sc_time_stamp() + time_from_value(p);
             sc_core::wait(time_from_value(p));
 
             if (request) {
+                p = progress.exchange(0);
+                if (p > 0) {
+                    sc_thread_pos = sc_core::sc_time_stamp() +
+                                    time_from_value(p);
+                    sc_core::wait(time_from_value(p));
+                }
+
                 (*request)();
                 request = nullptr;
             }
@@ -601,6 +612,10 @@ struct async_worker {
                 throw sim_terminated_exception();
             yield();
         }
+    }
+
+    sc_time get_sc_thread_timestamp() {
+        return sc_thread_pos + time_from_value(progress);
     }
 
     static async_worker& lookup(sc_process_b* thread) {
@@ -643,6 +658,13 @@ void sc_sync(function<void(void)> job) {
 
 bool sc_is_async() {
     return g_async != nullptr;
+}
+
+sc_time sc_async_timestamp() {
+    if (!sc_is_async()) {
+        return sc_core::sc_time_stamp();
+    }
+    return g_async->get_sc_thread_timestamp();
 }
 
 bool is_thread(sc_process_b* proc) {
