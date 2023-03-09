@@ -23,6 +23,9 @@ race:from_value
 
 # the sc_time copy constructors reports a race on simcontext m_curr_time when
 # we call sc_time_stamp from threads other than the main SystemC thread
+race:sc_core::sc_time::operator=
+race:sc_core::sc_time::from_value_and_unit
+race:sc_core::sc_time::from_value
 race:sc_core::sc_time::sc_time
 
 # the async update list does not lock-protect its internal pending-requests
