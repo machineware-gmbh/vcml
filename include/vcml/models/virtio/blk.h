@@ -74,6 +74,7 @@ private:
     bool process_in(virtio_blk_req& req, vq_message& msg);
     bool process_out(virtio_blk_req& req, vq_message& msg);
     bool process_flush(virtio_blk_req& req, vq_message& msg);
+    bool process_get_id(virtio_blk_req& req, vq_message& msg);
     bool process_discard(virtio_blk_req& req, vq_message& msg);
     bool process_write_zeroes(virtio_blk_req& req, vq_message& msg);
 

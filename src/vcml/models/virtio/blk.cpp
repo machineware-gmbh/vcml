@@ -48,6 +48,7 @@ enum virtio_blk_type : u32 {
     VIRTIO_BLK_T_IN = 0,
     VIRTIO_BLK_T_OUT = 1,
     VIRTIO_BLK_T_FLUSH = 4,
+    VIRTIO_BLK_T_GET_ID = 8,
     VIRTIO_BLK_T_DISCARD = 11,
     VIRTIO_BLK_T_WRITE_ZEROES = 13,
 };
@@ -94,6 +95,9 @@ bool blk::process_command(vq_message& msg) {
 
     case VIRTIO_BLK_T_FLUSH:
         return process_flush(req, msg);
+
+    case VIRTIO_BLK_T_GET_ID:
+        return process_get_id(req, msg);
 
     case VIRTIO_BLK_T_DISCARD:
         return process_discard(req, msg);
@@ -176,6 +180,15 @@ bool blk::process_flush(virtio_blk_req& req, vq_message& msg) {
         return true;
     }
 
+    put_status(msg, VIRTIO_BLK_S_OK);
+    return true;
+}
+
+bool blk::process_get_id(virtio_blk_req& req, vq_message& msg) {
+    log_debug("get_id request");
+    char buffer[20] = {};
+    snprintf(buffer, sizeof(buffer), "%s", disk.serial.get().c_str());
+    msg.copy_in(buffer);
     put_status(msg, VIRTIO_BLK_S_OK);
     return true;
 }
