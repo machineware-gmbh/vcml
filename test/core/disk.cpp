@@ -152,6 +152,22 @@ TEST(disk, perm_fail) {
     std::remove("readonly");
 }
 
+TEST(disk, serial) {
+    create_file("file1", 1 * MiB);
+    create_file("file2", 1 * MiB);
+
+    block::disk disk1("disk1", "file1");
+    block::disk disk2("disk2", "file2");
+
+    string serial1 = disk1.serial;
+    string serial2 = disk2.serial;
+
+    EXPECT_NE(serial1, serial2);
+
+    std::remove("file1");
+    std::remove("file2");
+}
+
 TEST(ramdisk, unmap_zero) {
     log_term log;
     log.set_level(LOG_DEBUG);

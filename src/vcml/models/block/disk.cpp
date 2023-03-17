@@ -56,11 +56,17 @@ bool disk::cmd_save_image(const vector<string>& args, ostream& os) {
     }
 }
 
+static string default_serial() {
+    static size_t n = 0;
+    return mkstr("vcml-disk-%zu", n++);
+}
+
 disk::disk(const sc_module_name& nm, const string& img, bool ro):
     module(nm),
     m_backend(nullptr),
     stats(),
     image("image", img),
+    serial("serial", default_serial()),
     readonly("readonly", ro) {
     try {
         m_backend = backend::create(image, readonly);

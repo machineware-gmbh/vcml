@@ -56,6 +56,7 @@ public:
     } stats;
 
     property<string> image;
+    property<string> serial;
     property<bool> readonly;
 
     bool has_backing() const { return m_backend != nullptr; }
