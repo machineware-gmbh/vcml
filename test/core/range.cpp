@@ -118,3 +118,17 @@ TEST(range, tostring) {
     std::string t = to_string(b);
     EXPECT_EQ(t, "0xababababcdcdcdcd..0xfefefefe12121212");
 }
+
+TEST(range, limits) {
+    vcml::range a(4, 3);
+    EXPECT_EQ(a.length(), 0);
+
+    vcml::range b(0, -1ll);
+    EXPECT_EQ(a.length(), 0);
+
+    vcml::range c(~0ull - 15, ~0ull);
+    EXPECT_EQ(c.length(), 16);
+
+    ASSERT_DEATH({ vcml::range d(5, 3); },
+                 "invalid range: 0000000000000005..0000000000000003");
+}

@@ -92,8 +92,7 @@ inline range::range(): start(0), end(0) {
 }
 
 inline range::range(u64 s, u64 e): start(s), end(e) {
-    // allow zero-sized ranges
-    VCML_ERROR_ON(e + 1 < s, "invalid range: %016llx..%016llx", s, e);
+    VCML_ERROR_ON(e < s && s - e > 1, "invalid range: %016llx..%016llx", s, e);
 }
 
 inline range::range(const tlm_generic_payload& tx):
