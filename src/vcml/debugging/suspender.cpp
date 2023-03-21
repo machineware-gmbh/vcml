@@ -80,7 +80,11 @@ bool suspend_manager::is_suspending(const suspender* s) const {
 
 size_t suspend_manager::count() const {
     lock_guard<mutex> guard(suspender_lock);
-    return suspenders.size();
+    size_t n = 0;
+    for (auto s : suspenders)
+        if (s->check_suspension_point())
+            n++;
+    return n;
 }
 
 suspender* suspend_manager::current() const {
@@ -160,6 +164,10 @@ suspender::suspender(const string& name):
 suspender::~suspender() {
     if (is_suspending())
         resume();
+}
+
+bool suspender::check_suspension_point() {
+    return true;
 }
 
 bool suspender::is_suspending() const {

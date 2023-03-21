@@ -68,6 +68,8 @@ private:
                                          const range& addr,
                                          u64 newval) override;
 
+    virtual bool check_suspension_point() override;
+
     const cpureg* lookup_cpureg(unsigned int gdbno);
 
     enum breakpoint_type {

@@ -81,6 +81,8 @@ private:
 
     string m_name;
 
+    atomic<bool> m_suspendable;
+
     endianess m_endian;
     unordered_map<u64, cpureg> m_cpuregs;
     symtab m_symbols;
@@ -106,6 +108,9 @@ protected:
     void notify_watchpoint_write(const range& addr, u64 newval);
 
 public:
+    bool is_suspenable() const { return m_suspendable; }
+    void set_suspendable(bool val) { m_suspendable = val; }
+
     void set_little_endian();
     void set_big_endian();
 

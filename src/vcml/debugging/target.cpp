@@ -68,6 +68,7 @@ void target::define_cpuregs(const vector<cpureg>& regs) {
 target::target():
     m_mtx(),
     m_name(),
+    m_suspendable(true),
     m_endian(ENDIAN_UNKNOWN),
     m_cpuregs(),
     m_symbols(),

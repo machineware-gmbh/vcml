@@ -253,7 +253,9 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 u64 processor::simulate_cycles(unsigned int cycles) {
     u64 count = cycle_count();
     double start = mwr::timestamp();
+    set_suspendable(false);
     simulate(cycles);
+    set_suspendable(true);
     m_run_time += mwr::timestamp() - start;
     return cycle_count() - count;
 }

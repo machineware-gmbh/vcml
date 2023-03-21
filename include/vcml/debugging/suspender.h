@@ -41,6 +41,8 @@ public:
     explicit suspender(const string& nm);
     virtual ~suspender();
 
+    virtual bool check_suspension_point();
+
     bool is_suspending() const;
 
     void suspend(bool wait = true);

@@ -85,6 +85,10 @@ void gdbserver::notify_watchpoint_write(const watchpoint& wp,
     update_status(GDB_STOPPED);
 }
 
+bool gdbserver::check_suspension_point() {
+    return m_target.is_suspenable();
+}
+
 const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
     auto it = m_allregs.find(gdbno);
     if (it == m_allregs.end())
