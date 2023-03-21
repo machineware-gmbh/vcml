@@ -122,7 +122,7 @@ inline bool mmio::has_feature(u64 feature) const {
 }
 
 inline bool mmio::device_ready() const {
-    return status == VIRTIO_STATUS_DEVICE_READY;
+    return virtio_device_ready(status);
 }
 
 } // namespace virtio

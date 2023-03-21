@@ -172,7 +172,7 @@ inline bool pci::has_feature(u64 feature) const {
 }
 
 inline bool pci::device_ready() const {
-    return device_status == VIRTIO_STATUS_DEVICE_READY;
+    return virtio_device_ready(device_status);
 }
 
 } // namespace virtio

@@ -87,16 +87,22 @@ enum virtio_device_status : u32 {
     VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1u << 6,
     VIRTIO_STATUS_FAILED = 1u << 7,
 
-    VIRTIO_STATUS_FEATURE_CHECK = VIRTIO_STATUS_ACKNOWLEDGE |
-                                  VIRTIO_STATUS_DRIVER |
+    VIRTIO_STATUS_FEATURE_CHECK = VIRTIO_STATUS_DRIVER |
                                   VIRTIO_STATUS_FEATURES_OK,
-    VIRTIO_STATUS_DEVICE_READY = VIRTIO_STATUS_ACKNOWLEDGE |
-                                 VIRTIO_STATUS_DRIVER |
+    VIRTIO_STATUS_DEVICE_READY = VIRTIO_STATUS_DRIVER |
                                  VIRTIO_STATUS_FEATURES_OK |
                                  VIRTIO_STATUS_DRIVER_OK,
 
     VIRTIO_STATUS_MASK = bitmask(8),
 };
+
+constexpr bool virtio_feature_check(u32 sts) {
+    return (sts & VIRTIO_STATUS_FEATURE_CHECK) == VIRTIO_STATUS_FEATURE_CHECK;
+}
+
+constexpr bool virtio_device_ready(u32 sts) {
+    return (sts & VIRTIO_STATUS_DEVICE_READY) == VIRTIO_STATUS_DEVICE_READY;
+}
 
 enum virtio_irq_status : u32 {
     VIRTIO_IRQSTATUS_VQUEUE = 1u << 0,

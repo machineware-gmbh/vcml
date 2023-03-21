@@ -302,7 +302,7 @@ void mmio::write_status(u32 val) {
 
     status = val;
 
-    if (val == VIRTIO_STATUS_FEATURE_CHECK) {
+    if (virtio_feature_check(val)) {
         if (m_drv_features & ~m_dev_features)
             status &= ~VIRTIO_STATUS_FEATURES_OK;
         else if (!virtio_out->write_features(m_drv_features))

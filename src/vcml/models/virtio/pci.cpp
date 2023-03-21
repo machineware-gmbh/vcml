@@ -234,7 +234,7 @@ void pci::write_device_status(u8 val) {
 
     device_status = val;
 
-    if (val == VIRTIO_STATUS_FEATURE_CHECK) {
+    if (virtio_feature_check(val)) {
         if (m_drv_features & ~m_dev_features)
             device_status &= ~VIRTIO_STATUS_FEATURES_OK;
         else if (!virtio_out->write_features(m_drv_features))
