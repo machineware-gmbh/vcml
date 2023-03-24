@@ -68,17 +68,18 @@ static size_t parse_capacity(const string& desc) {
 }
 
 backend* backend::create(const string& image, bool readonly) {
+    if (image.empty()) // default ramdisk if nothing else was specified
+        return new backend_ram(2 * GiB, readonly);
+
     if (starts_with(image, "ramdisk:")) {
         size_t cap = parse_capacity(image.substr(8));
         return new backend_ram(cap, readonly);
     }
 
     // if no image specification is given we test if its just a path
-    if (mwr::file_exists(image))
-        return new backend_file(image, readonly);
-
-    // disks can work without a backend
-    return nullptr;
+    if (!mwr::file_exists(image))
+        VCML_REPORT("cannot access '%s'", image.c_str());
+    return new backend_file(image, readonly);
 }
 
 } // namespace block

@@ -178,7 +178,7 @@ public:
 
     sd_target_socket sd_in;
 
-    sdcard(const sc_module_name& name, const string& image = "ramdisk:2GiB",
+    sdcard(const sc_module_name& name, const string& image = "",
            bool readonly = false);
     virtual ~sdcard();
     virtual void reset() override;
