@@ -70,7 +70,7 @@ void clint::update_timer() {
 
         if (mtime >= mcomp)
             log_debug("triggering hart %zu timer interrupt", it.first);
-        else
+        else if (mcomp != ~0ull)
             m_trigger.notify(clock_cycles(mcomp - mtime));
     }
 }
