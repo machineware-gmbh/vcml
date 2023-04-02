@@ -341,6 +341,8 @@ public:
             fn();
     }
 
+    VCML_KIND(helper_module);
+
     helper_module(const char* nm):
         sc_core::sc_trace_file(),
         sc_core::sc_prim_channel(nm),
