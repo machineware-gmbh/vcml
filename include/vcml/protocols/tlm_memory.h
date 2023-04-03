@@ -34,10 +34,16 @@ private:
     void* m_base;
     size_t m_size;
     bool m_discard;
+    string m_shared;
+
+    int init_shared(const string& shared, size_t size);
 
 public:
     u8* data() const { return get_dmi_ptr(); }
     size_t size() const { return dmi_get_size(*this); }
+
+    bool is_shared() const { return !m_shared.empty(); }
+    const char* shared_name() const { return m_shared.c_str(); }
 
     void allow_read_only() { allow_read(); }
     void allow_write_only() { allow_write(); }
@@ -45,12 +51,16 @@ public:
     void discard_writes(bool discard = true) { m_discard = discard; }
 
     tlm_memory();
-    tlm_memory(size_t size, alignment al = VCML_ALIGN_NONE);
+    tlm_memory(size_t size);
+    tlm_memory(size_t size, alignment al);
+    tlm_memory(const string& shared, size_t size);
+    tlm_memory(const string& shared, size_t size, alignment al);
     tlm_memory(const tlm_memory&) = delete;
     tlm_memory(tlm_memory&& other) noexcept;
     virtual ~tlm_memory();
 
     void init(size_t size, alignment al);
+    void init(const string& shared, size_t size, alignment al);
     void free();
     void fill(u8 data);
 
@@ -73,6 +83,10 @@ public:
     u8 operator[](size_t offset) const;
     u8& operator[](size_t offset);
 };
+
+inline void tlm_memory::init(size_t size, alignment al) {
+    init("", size, al);
+}
 
 inline void tlm_memory::fill(u8 val) {
     memset(data(), val, size());

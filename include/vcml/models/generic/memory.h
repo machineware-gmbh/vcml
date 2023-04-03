@@ -49,6 +49,7 @@ public:
     property<alignment> align;
     property<bool> discard_writes;
     property<bool> readonly;
+    property<string> shared;
     property<string> images;
     property<u8> poison;
 

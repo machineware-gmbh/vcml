@@ -100,3 +100,22 @@ TEST(memory, move) {
     EXPECT_EQ(orig.data(), nullptr) << "memory pointer not cleared after move";
     EXPECT_EQ(move.data(), data) << "memory pointer not moved";
 }
+
+TEST(memory, sharing) {
+    const size_t size = 4 * KiB;
+    const string name = "/vcml-test-shared";
+    tlm_memory a(name, size);
+    tlm_memory b(name, size);
+
+    for (size_t i = 0; i < size; i++) {
+        a[i] = (u8)i;
+        ASSERT_EQ(a[i], b[i]) << "mismatch at position " << i;
+    }
+}
+
+TEST(memory, sharing_wrong_size) {
+    const size_t size = 2 * KiB;
+    const string name = "/vcml-test-shared-size";
+    tlm_memory a(name, size + 1);
+    EXPECT_DEATH({ tlm_memory b(name, size); }, "unexpected size");
+}

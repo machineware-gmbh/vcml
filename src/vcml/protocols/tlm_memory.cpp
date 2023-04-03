@@ -19,15 +19,61 @@
 #include "vcml/protocols/tlm_memory.h"
 
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 namespace vcml {
 
+int tlm_memory::init_shared(const string& shared, size_t size) {
+    VCML_ERROR_ON(is_shared(), "shared memory already initialized");
+    m_shared = shared;
+    int fd = shm_open(m_shared.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+    if (fd < 0 && errno != EEXIST) {
+        VCML_ERROR("cannot access shared memory '%s': %s", m_shared.c_str(),
+                   strerror(errno));
+    }
+
+    if (fd >= 0) {
+        int res = ftruncate(fd, m_size);
+        VCML_ERROR_ON(res, "ftruncate failed: %s", strerror(errno));
+        return fd;
+    }
+
+    fd = shm_open(m_shared.c_str(), O_RDWR | O_CREAT, 0600);
+    VCML_ERROR_ON(fd < 0, "cannot access shared memory '%s': %s",
+                  m_shared.c_str(), strerror(errno));
+
+    struct stat stat {};
+    VCML_ERROR_ON(fstat(fd, &stat), "fstat failed: %s", strerror(errno));
+    if ((size_t)stat.st_size != m_size) {
+        VCML_ERROR(
+            "shared memory '%s' has unexpected size: expected %zu, actual %zu",
+            m_shared.c_str(), m_size, (size_t)stat.st_size);
+    }
+
+    return fd;
+}
+
 tlm_memory::tlm_memory():
-    tlm_dmi(), m_base(nullptr), m_size(0), m_discard(false) {
+    tlm_dmi(), m_base(nullptr), m_size(0), m_discard(false), m_shared() {
+}
+
+tlm_memory::tlm_memory(size_t size): tlm_memory() {
+    init(size, VCML_ALIGN_NONE);
 }
 
 tlm_memory::tlm_memory(size_t size, alignment align): tlm_memory() {
     init(size, align);
+}
+
+tlm_memory::tlm_memory(const string& shared, size_t size): tlm_memory() {
+    init(shared, size, VCML_ALIGN_NONE);
+}
+
+tlm_memory::tlm_memory(const string& shared, size_t size, alignment align):
+    tlm_memory() {
+    init(shared, size, align);
 }
 
 tlm_memory::tlm_memory(tlm_memory&& other) noexcept:
@@ -44,7 +90,7 @@ tlm_memory::~tlm_memory() {
     free();
 }
 
-void tlm_memory::init(size_t size, alignment al) {
+void tlm_memory::init(const string& shared, size_t size, alignment al) {
     VCML_ERROR_ON(m_size, "memory already initialized");
 
     // mmap automatically aligns up to 4k, for larger alignments we
@@ -52,10 +98,18 @@ void tlm_memory::init(size_t size, alignment al) {
     u64 extra = (al > VCML_ALIGN_4K) ? (1ull << al) - 1 : 0;
     m_size = size + extra;
 
-    const int perms = PROT_READ | PROT_WRITE;
-    const int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
+    int fd = -1;
+    if (!shared.empty())
+        fd = init_shared(shared, m_size);
 
-    m_base = mmap(0, m_size, perms, flags, -1, 0);
+    int perms = PROT_READ | PROT_WRITE;
+    int flags = MAP_NORESERVE;
+    if (is_shared())
+        flags |= MAP_SHARED;
+    else
+        flags |= MAP_PRIVATE | MAP_ANON;
+
+    m_base = mmap(0, m_size, perms, flags, fd, 0);
     VCML_ERROR_ON(m_base == MAP_FAILED, "mmap failed: %s", strerror(errno));
     u8* ptr = (u8*)(((u64)m_base + extra) & ~extra);
     VCML_ERROR_ON(!is_aligned(ptr, al), "memory alignment failed");
@@ -73,6 +127,10 @@ void tlm_memory::free() {
         VCML_ERROR_ON(ret, "munmap failed: %d", ret);
     }
 
+    if (!m_shared.empty())
+        shm_unlink(m_shared.c_str());
+
+    m_shared = "";
     m_base = nullptr;
     m_size = 0;
 

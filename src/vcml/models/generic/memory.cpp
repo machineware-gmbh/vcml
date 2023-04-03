@@ -78,13 +78,14 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
     align("align", al),
     discard_writes("discard_writes", false),
     readonly("readonly", read_only),
+    shared("shared", ""),
     images("images", ""),
     poison("poison", 0x00),
     in("in") {
     VCML_ERROR_ON(size == 0u, "memory size cannot be 0");
     VCML_ERROR_ON(al > VCML_ALIGN_1G, "requested alignment too big");
 
-    m_memory.init(size, align);
+    m_memory.init(shared, size, align);
     m_memory.set_read_latency(read_cycles());
     m_memory.set_write_latency(write_cycles());
 
