@@ -40,7 +40,7 @@ int tlm_memory::init_shared(const string& shared, size_t size) {
         return fd;
     }
 
-    fd = shm_open(m_shared.c_str(), O_RDWR | O_CREAT, 0600);
+    fd = shm_open(m_shared.c_str(), O_RDWR, 0600);
     VCML_ERROR_ON(fd < 0, "cannot access shared memory '%s': %s",
                   m_shared.c_str(), strerror(errno));
 
