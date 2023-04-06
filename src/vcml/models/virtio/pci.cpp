@@ -565,7 +565,7 @@ void pci::virtio_declare_common_cap(u8 bar, u32 offset, u32 length) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_common, "common capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_common = new cap_virtio("PCI_CAP_VIRTIO_COMMON",
+    m_cap_common = new cap_virtio("pci_cap_virtio_common",
                                   VIRTIO_PCI_CAP_COMMON, bar, offset, length,
                                   0);
 }
@@ -574,7 +574,7 @@ void pci::virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_notify, "notify capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_notify = new cap_virtio("PCI_CAP_VIRTIO_NOTIFY",
+    m_cap_notify = new cap_virtio("pci_cap_virtio_notify",
                                   VIRTIO_PCI_CAP_NOTIFY, bar, off, len, mult);
 }
 
@@ -582,7 +582,7 @@ void pci::virtio_declare_isr_cap(u8 bar, u32 offset, u32 length) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_isr, "isr capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_isr = new cap_virtio("PCI_CAP_VIRTIO_ISR", VIRTIO_PCI_CAP_ISR, bar,
+    m_cap_isr = new cap_virtio("pci_cap_virtio_isr", VIRTIO_PCI_CAP_ISR, bar,
                                offset, length, 0);
 }
 
@@ -590,7 +590,7 @@ void pci::virtio_declare_device_cap(u8 bar, u32 offset, u32 length) {
     hierarchy_guard guard(this);
     VCML_ERROR_ON(m_cap_device, "device capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
-    m_cap_device = new cap_virtio("PCI_CAP_VIRTIO_DEVICE",
+    m_cap_device = new cap_virtio("pci_cap_virtio_device",
                                   VIRTIO_PCI_CAP_DEVICE, bar, offset, length,
                                   0);
 }

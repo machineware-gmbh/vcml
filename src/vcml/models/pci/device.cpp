@@ -208,7 +208,7 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
     pci_int_pin(PCI_AS_CFG, "pci_int_pin", 0x3d, cfg.int_pin),
     pci_min_grant(PCI_AS_CFG, "pci_min_grant", 0x3e, pci_get_min_grant(cfg)),
     pci_max_latency(PCI_AS_CFG, "pci_max_latency", 0x3f, pci_get_max_lat(cfg)),
-    pcie_xcap(PCI_AS_CFG, "PCIE_XCAP", 0x100, 0),
+    pcie_xcap(PCI_AS_CFG, "pcie_xcap", 0x100, 0),
     curr_cap_ptr(0),
     curr_cap_off(64),
     m_bars(),
@@ -333,22 +333,22 @@ void device::pci_declare_bar(int barno, u64 size, u32 type) {
 
 void device::pci_declare_pm_cap(u16 pm_caps) {
     hierarchy_guard guard(this);
-    VCML_ERROR_ON(m_pm, "PCI_CAP_PM already declared");
-    m_pm = new cap_pm("PCI_CAP_PM", pm_caps);
+    VCML_ERROR_ON(m_pm, "pci_cap_pm already declared");
+    m_pm = new cap_pm("pci_cap_pm", pm_caps);
 }
 
 void device::pci_declare_msi_cap(u16 msi_ctrl) {
     hierarchy_guard guard(this);
-    VCML_ERROR_ON(m_msi, "PCI_CAP_MSI already declared");
-    m_msi = new cap_msi("PCI_CAP_MSI", msi_ctrl);
+    VCML_ERROR_ON(m_msi, "pci_cap_msi already declared");
+    m_msi = new cap_msi("pci_cap_msi", msi_ctrl);
     SC_HAS_PROCESS(device);
     SC_THREAD(msi_process);
 }
 
 void device::pci_declare_msix_cap(u32 bar, size_t nvec, u32 offset) {
     hierarchy_guard guard(this);
-    VCML_ERROR_ON(m_msix, "PCI_CAP_MSIX already declared");
-    m_msix = new cap_msix("PCI_CAP_MSIX", bar, nvec, offset);
+    VCML_ERROR_ON(m_msix, "pci_cap_msix already declared");
+    m_msix = new cap_msix("pci_cap_msix", bar, nvec, offset);
     SC_HAS_PROCESS(device);
     SC_THREAD(msix_process);
 }
