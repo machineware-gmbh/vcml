@@ -470,7 +470,7 @@ sdhci::sdhci(const sc_module_name& nm):
     m_cmd(),
     m_bufptr(0),
     m_dma_start("dma_start"),
-    sdma_system_address("SDMA_SYSTEM_ADDRESS", 0x000, 0x00000000),
+    sdma_system_address("sdma_system_address", 0x000, 0x00000000),
     block_size("block_size", 0x004, 0x0000),
     block_count_16_bit("block_count_16_bit", 0x006, 0x0000),
     arg("arg", 0x008, 0x00000000),
