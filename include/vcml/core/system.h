@@ -21,6 +21,7 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/module.h"
+#include "vcml/core/register.h"
 
 #include "vcml/debugging/vspserver.h"
 

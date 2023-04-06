@@ -20,6 +20,25 @@
 
 namespace vcml {
 
+static mwr::option<bool> list_properties("--list-properties",
+                                         "Prints a list of all properties");
+
+static void list_object_properties(sc_object* obj) {
+    for (auto attr : obj->attr_cltn()) {
+        property_base* prop = dynamic_cast<property_base*>(attr);
+        reg_base* reg = dynamic_cast<reg_base*>(attr);
+        if (prop != nullptr) {
+            if (reg != nullptr)
+                printf("%s: reg<%s>\n", prop->fullname(), prop->type());
+            else
+                printf("%s: property<%s>\n", prop->fullname(), prop->type());
+        }
+    }
+
+    for (auto child : obj->get_child_objects())
+        list_object_properties(child);
+}
+
 SC_HAS_PROCESS(system);
 
 void system::timeout() {
@@ -55,6 +74,11 @@ system::~system() {
 }
 
 int system::run() {
+    if (list_properties) {
+        list_object_properties(this);
+        return EXIT_SUCCESS;
+    }
+
     broker::report_unused();
     tlm::tlm_global_quantum::instance().set(quantum);
     if (session >= 0) {
