@@ -119,6 +119,9 @@ VCML_TYPEINFO(float);
 VCML_TYPEINFO(double);
 VCML_TYPEINFO(string);
 
+VCML_TYPEINFO(size_t);
+VCML_TYPEINFO(clock_t);
+
 using std::min;
 using std::max;
 
@@ -247,6 +250,8 @@ typedef enum vcml_endianess {
     ENDIAN_BIG = 2,
 } endianess;
 
+VCML_TYPEINFO(endianess);
+
 istream& operator>>(istream& is, endianess& e);
 ostream& operator<<(ostream& os, endianess e);
 
@@ -290,6 +295,8 @@ typedef enum vcml_alignment {
     VCML_ALIGN_512M = 29,
     VCML_ALIGN_1G = 30,
 } alignment;
+
+VCML_TYPEINFO(alignment);
 
 istream& operator>>(istream& is, alignment& a);
 ostream& operator<<(ostream& os, alignment a);
