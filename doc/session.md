@@ -8,7 +8,7 @@ interactive mode, you can either:
 example via the command line: `-c system.session=4444`)
 * modify your `sc_main` so that it uses `vcml:debugging::vspserver` instead of
 `sc_start`:
-```
+```cxx
 int sc_main(int argc,  const char** argv) {
     my_module top("top");
     vcml::debugging::vspserver session(4444);
@@ -31,7 +31,7 @@ such as [`viper`](https://github.com/machineware-gmbh/viper/) or
 ----
 ## VCML Session Protocol (VSP)
 Communication between UI tool and simulation is conducted according to the VCML
-Session Protocol (VSP), which has been modelled after the
+Session Protocol (VSP), which has been modeled after the
 [GDB remote serial protocol](https://sourceware.org/gdb/current/onlinedocs/gdb/Remote-Protocol.html).
 Communication packets have the following layout:
 
@@ -47,18 +47,18 @@ escape characters that have special meaning: `$`, `#`, `*` and `}` characters
 must be prefixed with a `}` character if they occur normally in the payload and
 should not be interpreted according to their control character meaning.
 
-Normally, the VSP payload is a string of comma-seperated values representing
+Normally, the VSP payload is a string of comma-separated values representing
 the command and its arguments. If a comma is not to be used as an argument
 separator, it must be escaped using a backslash (in C strings, the backslash
 must also be escaped, resulting in the character sequence `\\,`).
-Response packets returns their data in comma-separated lists as well, with the
+Response packets return their data in comma-separated lists as well, with the
 first element always indicating response status: `OK` for success and `E` for
 errors.
 
 VSP commands can be divided into two groups currently, with more likely being
-added in the future. General simulation commands control global SystemC state
-and simulation progress, while target commands interact with processors, such
-as breakpoints and single-stepping.
+added in the future. General simulation commands control the global SystemC
+state and simulation progress, while target commands interact with processors,
+such as breakpoints and single-stepping.
 
 ### General Commands
 The following general VSP commands have been defined with `[optional]` and
@@ -73,15 +73,15 @@ simulator. It does not receive any arguments:
 #### Status
 The status command queries the current time-stamp, delta-cycle and runstate.
 The runstate can either be `running` or `stopped:<reason>`. Stop reason is a
-string indicated what caused the simulation to stop.
+string indicating what caused the simulation to stop.
 * Command: `$status#**`
-* Response: `$runstate,time-stamp-ns,delta-cycle#**`
+* Response: `$OK,runstate,time-stamp-ns,delta-cycle#**`
 
 Valid stop reasons include (but are not limited to):
 * `target:<name>`: target `<name>` completed its requested single-step
 * `breakpoint:<id>`: one processor in the simulation hits breakpoint `<id>`
 * `rwatchpoint:<id>`: watchpoint `<id>` is being read from
-* `wwatchpoint:<id>`: watchpoint `<id>` is being written to
+* `watchpoint:<id>`: watchpoint `<id>` is being written to
 * `step`: requested simulation duration has elapsed
 * `elaboration`: simulator has completed elaboration and is ready to simulate
 * The stop command can define custom exit reason strings to be used
@@ -106,7 +106,7 @@ Sends a termination request to the simulation. The current delta-cycle will be
 finished and `vspserver::start` will return normally, allowing all cleanup
 routines to complete naturally. While this command will be acknowledged using a
 `+`, no response will be transmitted and the simulator is expected to terminate
-afterwards.
+afterward.
 * Command: `$quit#**`
 * Response: `<none>`
 
@@ -115,7 +115,7 @@ The list command queries a listing of the entire object hierarchy of the
 simulation. The command accepts an optional first argument, specifying the
 desired format in which the hierarchy should be reported. The default (and
 currently only supported format) is `xml`. This command may only be issued when
-the simulation is stopped, otherwise an error response will be returned.
+the simulation is stopped, otherwise, an error response will be returned.
 * Command: `$list[,format]#**`
 * Response: `$OK,<hierarchy>...</hierarchy>#**`
 
@@ -135,7 +135,7 @@ Retrieves the global quantum in nanoseconds.
 * Response: `$OK,<quantum-ns>#**`
 
 #### Set Quantum
-Set the global quantum from given value in nanoseconds.
+Set the global quantum from a given value in nanoseconds.
 * Command: `$setq,<quantum-ns>#**`
 * Response: `$OK#**`
 
@@ -175,7 +175,7 @@ reports the global `id` under which the breakpoint can be referenced.
 * Response: `$OK,inserted breakpoint <id>#**`
 
 #### Remove Breakpoint
-Removes a breakpoint globally identifed via its `<id>`.
+Removes a breakpoint globally identified via its `<id>`.
 * Command: `$rmbp,<id>#**`
 * Response: `$OK#**`
 
