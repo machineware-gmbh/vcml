@@ -331,7 +331,7 @@ mmio::mmio(const sc_module_name& nm):
     queue_num("queue_num", 0x38, 0),
     queue_ready("queue_ready", 0x44, 0),
     queue_notify("queue_notify", 0x50, 0),
-    interrupt_status("v", 0x60, 0),
+    interrupt_status("interrupt_status", 0x60, 0),
     interrupt_ack("interrupt_ack", 0x64, 0),
     status("status", 0x70, 0),
     queue_desc_lo("queue_desc_lo", 0x80, 0),
