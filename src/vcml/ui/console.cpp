@@ -36,7 +36,7 @@ console::console():
 }
 
 console::~console() {
-    // nothing to do
+    shutdown();
 }
 
 void console::notify(keyboard& kbd) {
