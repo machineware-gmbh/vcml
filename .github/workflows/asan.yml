@@ -35,7 +35,7 @@ jobs:
     - name: Setup Dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install libelf-dev libsdl2-dev libvncserver-dev libslirp-dev ninja-build
+        sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libvncserver-dev libslirp-dev ninja-build
 
     - name: Cache SystemC
       id: cache-systemc
