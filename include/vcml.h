@@ -49,6 +49,7 @@
 #include "vcml/properties/broker_arg.h"
 #include "vcml/properties/broker_env.h"
 #include "vcml/properties/broker_file.h"
+#include "vcml/properties/broker_lua.h"
 
 #include "vcml/debugging/symtab.h"
 #include "vcml/debugging/target.h"

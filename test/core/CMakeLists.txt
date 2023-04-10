@@ -60,3 +60,8 @@ core_test("tracing")
 core_test("timer")
 core_test("memory")
 core_test("disk")
+
+if(LUA_FOUND)
+    core_test("lua")
+endif()
+

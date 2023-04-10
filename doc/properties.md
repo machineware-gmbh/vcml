@@ -17,6 +17,8 @@ Properties can be provided with values using *Property Brokers*:
 * `vcml::broker_env`: property values are retrieved from environment
 variables.
 
+* `vcml::broker_lua`: property values are defined by a LUA scriptfile.
+
 ----
 ## Scalar Properties
 Scalar properties refer to properties wrapping a scalar data type, such as
@@ -236,6 +238,50 @@ Note that this assigment is ambiguous: property `my.module.int_prop`
 would also receive that value.
 
 ----
+### Configuration via LUA Scripting
+If VCML is built with LUA support, the `vcml::broker_lua` class is available.
+It receives a path to a LUA script file (typically ending with `.lua`) and
+executes it. Inside the script, a new global variable called `vp` is
+available to query and set simulation properties as well as for providing
+general information about the simulation. The following table lists the
+methods provided by `vp` to the LUA script:
+
+| Method                     | Description                           |
+| -------------------------- | ------------------------------------- |
+| `vp.define(string, string)`| Defines the value of a property       |
+| `vp.lookup(string)`        | Returnes the value of a property      |
+| `vp.debug(string)`         | Prints a debug log message            |
+| `vp.info(string)`          | Prints a information log message      |
+| `vp.warn(string)`          | Prints a warning log message          |
+| `vp.error(string)`         | Prints a error log message            |
+
+Furthermore, `vp` provides the following data fields:
+
+| Field                       | Type     | Description                      |
+| --------------------------- | -------- | -------------------------------- |
+| `vp.vcml_version_string`    | `string` | String version of VCML           |
+| `vp.vcml_version`           | `int`    | Integer version of VCML          |
+| `vp.systemc_version_string` | `string` | String version of SystemC        |
+| `vp.systemc_version`        | `int`    | Integer version of SystemC       |
+| `vp.username`               | `string` | User that started the simulation |
+| `vp.pid`                    | `int`    | Process ID of the simulation     |
+| `vp.curdir`                 | `string` | Current working directory        |
+| `vp.cfgdir`                 | `string` | Directory of the LUA config file |
+| `vp.simdir`                 | `string` | Directory of the vp binary       |
+| `vp.config`                 | `string` | Name of the LUA config file      |
+
+Below is a simple example of a LUA config file that computes an address and an
+images to load for a `vcml::generic::memory` component:
+
+```
+addr = 0x8000000 + 0x1000
+image = vp.cfgdir .. '../roms/kernel.bin@' .. addr
+vp.debug('using image ' .. image)
+vp.define('system.memory.images', image)
+vp['system.memory.images'] = image -- alternative way to define image
+```
+
+----
 ### Configuration using Custom Providers
 All custom property brokers should inherit from `vcml::broker`.
 Afterwards, two options exist for providing initialization values:
@@ -250,4 +296,4 @@ This method should return `true` when a suitable value has been found and
 `false` otherwise.
 
 ----
-Documentation updated December 2021
+Documentation updated April 2023
