@@ -2,13 +2,15 @@ name: cmake
 
 on:
   push:
-    branches: [main]
+    branches:
+      - 'main'
+      - 'dev**'
   pull_request:
-    branches: [main]
+    branches:
+      - 'main'
 
 env:
   BUILD_TYPE: Release
-  TARGET_ARCH: linux64
 
 jobs:
   build:
@@ -17,8 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3]
-          os: [ubuntu-20.04, ubuntu-22.04]
+        systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3]
+        os: [ubuntu-20.04, ubuntu-22.04, self-hosted-ubuntu-22.04-arm64]
+        exclude:
+          - systemc: 2.3.0a
+            os: self-hosted-ubuntu-22.04-arm64
+          - systemc: 2.3.1a
+            os: self-hosted-ubuntu-22.04-arm64
 
     name: SystemC ${{matrix.systemc}} - ${{matrix.os}}
 
@@ -32,6 +39,7 @@ jobs:
         submodules: 'recursive'
 
     - name: Setup Dependencies
+      if: contains(matrix.os, 'self-hosted') == false
       run: |
         sudo apt-get update -y -qq
         sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libvncserver-dev libslirp-dev ninja-build

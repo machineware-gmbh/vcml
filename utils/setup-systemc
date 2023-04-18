@@ -20,7 +20,7 @@
 
 root="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
 
-url="http://www.accellera.org/images/downloads/standards/systemc/"
+url="https://www.accellera.org/images/downloads/standards/systemc"
 
 prefix=$PWD
 version=2.3.3
@@ -93,7 +93,7 @@ fi
 mkdir -p $home && cd $home
 
 if [ ! -d $src ]; then
-    test -f $src.tar.gz || wget $url/$src.tar.gz
+    test -f $src.tar.gz || curl -O $url/$src.tar.gz
     tar -xzf $src.tar.gz
 
     for p in $(ls $root/patches/systemc-$version-*.patch); do
