@@ -57,12 +57,12 @@ jobs:
 
     - name: Generate Coverage Report
       run: |
-        mkdir -p coverage-report
-        gcovr --html-details -f 'include/*' -f 'src/*' --output coverage-report/mwr.html
+        mkdir -p vcml-coverage-report
+        gcovr --html-details -f 'include/*' -f 'src/*' --output coverage-report/vcml.html
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v3
       with:
-        name: coverage-report
-        path: coverage-report/
+        name: vcml-coverage-report
+        path: vcml-coverage-report/
 
