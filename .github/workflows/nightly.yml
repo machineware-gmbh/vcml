@@ -10,7 +10,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
@@ -31,7 +31,7 @@ jobs:
     - name: Setup Dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install libelf-dev libsdl2-dev libvncserver-dev libslirp-dev ninja-build
+        sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libvncserver-dev libslirp-dev ninja-build
 
     - name: Cache SystemC
       id: cache-systemc
