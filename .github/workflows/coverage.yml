@@ -1,0 +1,68 @@
+name: coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  BUILD_TYPE: Release
+  TARGET_ARCH: linux64
+
+jobs:
+  build:
+    name: coverage
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+          systemc: [2.3.3]
+
+    env:
+      SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Setup Dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libvncserver-dev libslirp-dev ninja-build
+
+    - name: Cache SystemC
+      id: cache-systemc
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/systemc
+        key: cache-systemc-${{matrix.systemc}}-${{runner.os}}
+
+    - name: Download SystemC
+      if: steps.cache-systemc.outputs.cache-hit != 'true'
+      run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
+
+    - name: Configure Project
+      run: cmake -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_COVERAGE=ON -DVCML_BUILD_TESTS=ON
+
+    - name: Build Project
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)
+
+    - name: Run Tests
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Generate Coverage Report
+      run: |
+        mkdir -p coverage-report
+        gcovr --html-details -f 'include/*' -f 'src/*' --output coverage-report/mwr.html
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage-report/
+

@@ -13,6 +13,7 @@ are also provided, such as memories, memory-mapped buses, UARTs, etc.
 [![Lint Status](https://github.com/machineware-gmbh/vcml/workflows/lint/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/lint.yml)
 [![Code Style](https://github.com/machineware-gmbh/vcml/workflows/style/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/style.yml)
 [![Nightly Status](https://github.com/machineware-gmbh/vcml/workflows/nightly/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/nightly.yml)
+[![Coverage Status](https://github.com/machineware-gmbh/vcml/workflows/coverage/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/coverage.yml)
 
 ----
 ## Build & Installation
