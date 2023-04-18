@@ -61,9 +61,6 @@ public:
     spi_target_socket spi_in;
     gpio_target_socket cs;
 
-    static u16 to_fp_14_2(const double t);
-    static u16 to_fp_12_4(const double t);
-
     max31855(const sc_module_name& nm);
     virtual ~max31855();
     VCML_KIND(spi::max31855);
