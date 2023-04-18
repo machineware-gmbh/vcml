@@ -21,20 +21,20 @@
 namespace vcml {
 namespace spi {
 
-u16 max31855::to_fp_14_2(const double t) {
+static u16 to_fp_14_2(double t) {
     if (t > 2047.5)
-        return 0x1FFF;
+        return 0x1fff;
     if (t < -2048.0)
         return 0x2000;
-    return (u16)round(t * 4) & (u16)0x3FFF;
+    return (i16)round(t * 4) & 0x3fff;
 }
 
-u16 max31855::to_fp_12_4(const double t) {
+static u16 to_fp_12_4(double t) {
     if (t > 127.9375)
-        return 0x7FF;
+        return 0x7ff;
     if (t < -128)
         return 0x800;
-    return (u16)round(t * 16) & (u16)0xFFF;
+    return (i16)round(t * 16) & 0xfff;
 }
 
 void max31855::sample_temps() {
