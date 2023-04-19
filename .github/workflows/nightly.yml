@@ -42,7 +42,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/systemc
-        key: cache-systemc-${{matrix.systemc}}-${{runner.os}}
+        key: cache-systemc-${{matrix.systemc}}-${{runner.arch}}-${{matrix.os}}
 
     - name: Download SystemC
       if: steps.cache-systemc.outputs.cache-hit != 'true'

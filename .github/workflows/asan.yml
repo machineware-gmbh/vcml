@@ -17,7 +17,7 @@ env:
 
 jobs:
   sanitize:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: ${{matrix.sanitizer}}
 
     strategy:
@@ -45,7 +45,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/systemc
-        key: cache-systemc-asan-${{matrix.systemc}}-${{runner.os}}
+        key: cache-systemc-${{matrix.systemc}}-${{runner.arch}}-sanitizer
 
     - name: Download SystemC
       if: steps.cache-systemc.outputs.cache-hit != 'true'
