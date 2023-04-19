@@ -2,9 +2,12 @@ name: asan
 
 on:
   push:
-    branches: [main]
+    branches:
+      - 'main'
+      - 'dev**'
   pull_request:
-    branches: [main]
+    branches:
+      - 'main'
 
 env:
   TARGET_ARCH: linux64
