@@ -2,9 +2,12 @@ name: coverage
 
 on:
   push:
-    branches: [main]
+    branches:
+      - 'main'
+      - 'dev**'
   pull_request:
-    branches: [main]
+    branches:
+      - 'main'
 
 env:
   BUILD_TYPE: Release
