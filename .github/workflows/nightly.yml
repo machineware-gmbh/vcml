@@ -15,11 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3]
-        os: [ubuntu-22.04, self-hosted-ubuntu-22.04-arm64]
-        exclude:
-          - systemc: 2.3.0a
-            os: self-hosted-ubuntu-22.04-arm64
-          - systemc: 2.3.1a
+        os: [ubuntu-22.04]
+        include:
+          - systemc: 2.3.3
             os: self-hosted-ubuntu-22.04-arm64
 
     name: SystemC ${{matrix.systemc}} (${{runner.arch}})
