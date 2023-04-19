@@ -18,8 +18,15 @@
  #                                                                            #
  ##############################################################################
 
+formatter=clang-format-15
 home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
 check_dirs="$home/src/ $home/include/ $home/test/core $home/test/models"
 headers=$(find $check_dirs -name '*.h')
 sources=$(find $check_dirs -name '*.cpp')
-exec clang-format --Werror $headers $sources $@
+
+if ! $formatter --version >/dev/null 2>&1; then
+    echo >&2 "Error: $formatter not found"
+    exit 1
+fi
+
+exec $formatter --Werror $headers $sources $@
