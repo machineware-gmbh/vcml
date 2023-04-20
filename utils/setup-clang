@@ -1,8 +1,8 @@
-#!/bin/bash -e
+#!/bin/bash
 
  ##############################################################################
  #                                                                            #
- # Copyright 2021 Jan Henrik Weinstock                                        #
+ # Copyright 2023 MachineWare GmbH                                            #
  #                                                                            #
  # Licensed under the Apache License, Version 2.0 (the "License");            #
  # you may not use this file except in compliance with the License.           #
@@ -18,12 +18,27 @@
  #                                                                            #
  ##############################################################################
 
+CC=$(which clang 2>/dev/null)
+test ! -z "$CC" || { echo "clang not found"; exit 1; }
+export CC
+
+CXX=$(which clang++ 2>/dev/null)
+test ! -z "$CXX" || { echo "clang++ not found"; exit 1; }
+export CXX
+
 home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
-linter="$(which clang-tidy);--extra-arg=-std=c++17" 
+linter=$(which clang-tidy 2>/dev/null)
 bindir=$home/BUILD
 builds=$@
 
-[ -z "$builds" ] && builds="DEBUG RELEASE ASAN"
+[ -z "$builds" ] && builds="DEBUG RELEASE ASAN TSAN UBSAN"
+
+echo "CC     $CC"
+echo "CXX    $CXX"
+echo "linter $linter"
+echo "builds $builds"
+
+set -e
 
 for type in $builds; do (
     prefix=$home/BUILD/$type
