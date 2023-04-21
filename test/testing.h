@@ -40,7 +40,7 @@ using namespace ::vcml;
 #define EXPECT_SUCCESS(fn) EXPECT_TRUE(vcml::success(fn))
 #define EXPECT_FAILURE(fn) EXPECT_TRUE(vcml::failure(fn))
 
-class test_base: public component
+class test_base : public component
 {
 private:
     tracer_term m_tracer;
