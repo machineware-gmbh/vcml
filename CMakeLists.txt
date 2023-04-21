@@ -59,7 +59,7 @@ if(VCML_USE_SDL2)
     find_package(SDL2)
 endif()
 if(VCML_USE_LUA)
-    find_package(Lua)
+    find_package(Lua "5.3")
 endif()
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
