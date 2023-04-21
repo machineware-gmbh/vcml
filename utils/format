@@ -2,7 +2,7 @@
 
  ##############################################################################
  #                                                                            #
- # Copyright 2022 Jan Henrik Weinstock                                        #
+ # Copyright 2023 MachineWare GmbH                                            #
  #                                                                            #
  # Licensed under the Apache License, Version 2.0 (the "License");            #
  # you may not use this file except in compliance with the License.           #
@@ -18,15 +18,8 @@
  #                                                                            #
  ##############################################################################
 
-formatter=clang-format-15
-home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
-check_dirs="$home/src/ $home/include/ $home/test/core $home/test/models"
-headers=$(find $check_dirs -name '*.h')
-sources=$(find $check_dirs -name '*.cpp')
-
-if ! $formatter --version >/dev/null 2>&1; then
-    echo >&2 "Error: $formatter not found"
-    exit 1
-fi
-
-exec $formatter --Werror $headers $sources $@
+home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
+formatter="$home/cmake/Tools/$(uname -s)/clang-format-15.$(arch)"
+srcdirs="$home/src $home/include $home/test"
+sources=$(find $srcdirs -name '*.h' -or -name '*.cpp' | grep -v googletest)
+exec $formatter --Werror $sources $@

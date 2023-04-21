@@ -13,11 +13,6 @@ jobs:
   style:
     runs-on: ubuntu-22.04
     steps:
-    - name: Install clang-format-15
-      run: |
-        sudo apt-get update -y -qq
-        sudo apt-get install clang-format-15
-
     - name: Checkout
       uses: actions/checkout@v3
       with:
