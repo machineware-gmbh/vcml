@@ -20,7 +20,7 @@ jobs:
           - systemc: 2.3.3
             os: self-hosted-ubuntu-22.04-arm64
 
-    name: SystemC ${{matrix.systemc}} (${{runner.arch}})
+    name: SystemC ${{matrix.systemc}} (${{matrix.os}})
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
