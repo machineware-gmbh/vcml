@@ -21,6 +21,22 @@
 namespace vcml {
 namespace i2c {
 
+constexpr u16 to_temp9(double t) {
+    if (t < -55.0)
+        return 0b110010010;
+    if (t > 125.0)
+        return 0b011111010;
+
+    i16 x = t * 2.0;
+    return (u16)x & 0x1ff;
+}
+
+constexpr double from_temp9(u16 t9) {
+    if (t9 > 0xff)
+        t9 |= 0xfe00;
+    return (i16)t9 / 2.0;
+}
+
 bool lm75::cmd_set_temp(const vector<string>& args, ostream& os) {
     double val = 0.0;
     if (sscanf(args[0].c_str(), "%lf", &val) != 1)
@@ -136,22 +152,6 @@ void lm75::save_buffer() {
     }
 
     irq_update();
-}
-
-u16 lm75::to_temp9(double t) {
-    if (t < -55.0)
-        return 0b110010010;
-    if (t > 125.0)
-        return 0b011111010;
-
-    i16 x = t * 2.0;
-    return (u16)x & 0x1ff;
-}
-
-double lm75::from_temp9(u16 t9) {
-    if (t9 > 0xff)
-        t9 |= 0xfe00;
-    return (i16)t9 / 2.0;
 }
 
 lm75::lm75(const sc_module_name& nm, u8 address):

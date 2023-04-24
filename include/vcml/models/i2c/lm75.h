@@ -49,8 +49,8 @@ public:
     enum reg_address : u8 {
         REG_TEMP = 0,
         REG_CONF = 1,
-        REG_HIGH = 2,
-        REG_HYST = 3,
+        REG_HYST = 2,
+        REG_HIGH = 3,
     };
 
     enum config_bits : u8 {
@@ -71,9 +71,6 @@ public:
 
     i2c_target_socket i2c;
     gpio_initiator_socket alarm;
-
-    static u16 to_temp9(double temp);
-    static double from_temp9(u16 t9);
 
     lm75(const sc_module_name& nm, u8 addr = 0x48);
     virtual ~lm75() = default;
