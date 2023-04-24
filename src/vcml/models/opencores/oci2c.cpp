@@ -37,8 +37,10 @@ void oci2c::write_cmd(u8 val) {
     if (!(ctr & CTR_EN))
         return;
 
-    if (val & CMD_IACK)
+    if (val & CMD_IACK) {
         sr &= ~SR_IF;
+        update();
+    }
 
     sr |= SR_TIP;
 
