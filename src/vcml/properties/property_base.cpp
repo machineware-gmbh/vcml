@@ -39,7 +39,8 @@ property_base::property_base(sc_object* parent, const char* nm):
     m_parent(parent),
     m_fullname(gen_hierarchy_name(nm, parent)) {
     VCML_ERROR_ON(!m_parent, "property '%s' has no parent object", nm);
-    m_parent->add_attribute(*this);
+    if (!m_parent->add_attribute(*this))
+        VCML_ERROR("property %s already defined", fullname());
 }
 
 property_base::~property_base() {
