@@ -61,7 +61,7 @@ jobs:
     - name: Generate Coverage Report
       run: |
         mkdir -p vcml-coverage-report
-        gcovr --html-details -f 'include/*' -f 'src/*' --output vcml-coverage-report/vcml.html
+        gcovr --html-details -f 'include/*' -f 'src/*' --output vcml-coverage-report/vcml.html --exclude-lines-by-pattern '\s*(VCML|MWR)_ERROR.*'
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v3
