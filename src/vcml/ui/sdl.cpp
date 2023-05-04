@@ -527,7 +527,7 @@ void sdl::register_display(display* disp) {
     m_attached++;
 
     if (!m_uithread.joinable()) {
-        m_uithread = thread(std::bind(&sdl::ui_run, this));
+        m_uithread = thread(&sdl::ui_run, this);
         mwr::set_thread_name(m_uithread, "sdl_ui_thread");
     }
 }

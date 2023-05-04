@@ -532,10 +532,10 @@ struct async_worker {
         request(nullptr),
         mtx(),
         notify(),
-        worker(std::bind(&async_worker::work, this)),
+        worker(&async_worker::work, this),
         sc_thread_pos(sc_time_stamp()) {
         VCML_ERROR_ON(!process, "invalid parent process");
-        mwr::set_thread_name(worker, mkstr("vcml_async_%zu", id));
+        mwr::set_thread_name(worker, mkstr("vcml_async:%zu", id));
     }
 
     ~async_worker() {

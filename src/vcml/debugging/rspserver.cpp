@@ -50,7 +50,7 @@ static u8 checksum(const char* str) {
 rspserver::rspserver(u16 port):
     m_sock(port),
     m_port(m_sock.port()),
-    m_name(mkstr("rsp_%hu", m_port)),
+    m_name(mkstr("rsp:%hu", m_port)),
     m_echo(false),
     m_running(false),
     m_mutex(),
@@ -195,7 +195,7 @@ void rspserver::disconnect() {
 }
 
 void rspserver::run_async() {
-    m_thread = thread(std::bind(&rspserver::run, this));
+    m_thread = thread(&rspserver::run, this);
     mwr::set_thread_name(m_thread, m_name);
 }
 
