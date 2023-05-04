@@ -21,52 +21,8 @@
 
 #include "vcml/debugging/suspender.h"
 
-#include <termios.h>
-
 namespace vcml {
 namespace serial {
-
-static terminal* g_owner = nullptr;
-static struct termios g_term;
-
-static void cleanup_term() {
-    tcsetattr(STDIN_FILENO, TCSANOW, &g_term);
-}
-
-static void setup_term() {
-    tcgetattr(STDIN_FILENO, &g_term);
-
-    termios attr = g_term;
-    attr.c_lflag &= ~(ICANON | ECHO | ISIG);
-    attr.c_cc[VMIN] = 1;
-    attr.c_cc[VTIME] = 0;
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &attr);
-
-    atexit(cleanup_term);
-}
-
-void backend_term::terminate() {
-    cleanup_term();
-
-    if (m_exit_requested || !sim_running())
-        exit(EXIT_SUCCESS);
-
-    m_exit_requested = true;
-    debugging::suspender::quit();
-}
-
-backend_term::backend_term(terminal* term):
-    backend(term, "term"), m_exit_requested(false) {
-    VCML_REPORT_ON(g_owner, "stdin already used by %s", g_owner->name());
-    VCML_REPORT_ON(!isatty(STDIN_FILENO), "not a terminal");
-    g_owner = term;
-    setup_term();
-}
-
-backend_term::~backend_term() {
-    cleanup_term();
-    g_owner = nullptr;
-}
 
 enum keys : u8 {
     CTRL_A = 0x1,
@@ -74,30 +30,78 @@ enum keys : u8 {
     CTRL_X = 0x18,
 };
 
+static terminal* g_owner = nullptr;
+
+void backend_term::terminate() {
+    if (m_exit_requested || !sim_running())
+        exit(EXIT_SUCCESS);
+
+    m_exit_requested = true;
+    debugging::suspender::quit();
+}
+
+void backend_term::iothread() {
+    mwr::set_thread_name(m_iothread, "term_iothread");
+    while (m_backend_active && sim_running()) {
+        if (mwr::fd_peek(m_fd, 100)) {
+            u8 ch;
+            if (!mwr::fd_read(m_fd, &ch, sizeof(ch)))
+                return; // EOF
+
+            if (ch == CTRL_A) { // ctrl-a
+                mwr::fd_read(m_fd, &ch, sizeof(ch));
+                if (ch == 'x' || ch == CTRL_X) {
+                    terminate();
+                    return;
+                }
+
+                if (ch == 'a')
+                    ch = CTRL_A;
+            }
+
+            lock_guard<mutex> lock(m_mtx);
+            m_fifo.push(ch);
+        }
+    }
+}
+
+backend_term::backend_term(terminal* term):
+    backend(term, "term"),
+    m_fd(STDIN_FILENO),
+    m_exit_requested(false),
+    m_backend_active(true),
+    m_iothread(),
+    m_mtx(),
+    m_fifo() {
+    VCML_REPORT_ON(g_owner, "stdin already used by %s", g_owner->name());
+    VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
+    g_owner = term;
+    mwr::tty_push(m_fd, true);
+    mwr::tty_set(m_fd, false, false);
+    m_iothread = thread(&backend_term::iothread, this);
+}
+
+backend_term::~backend_term() {
+    m_backend_active = false;
+    if (m_iothread.joinable())
+        m_iothread.join();
+
+    mwr::tty_pop(m_fd);
+    g_owner = nullptr;
+}
+
 bool backend_term::read(u8& value) {
-    if (!mwr::fd_peek(STDIN_FILENO))
+    lock_guard<mutex> lock(m_mtx);
+    if (m_fifo.empty())
         return false;
 
-    u8 ch;
-    mwr::fd_read(STDIN_FILENO, &ch, sizeof(ch));
-
-    if (ch == CTRL_A) { // ctrl-a
-        mwr::fd_read(STDIN_FILENO, &ch, sizeof(ch));
-        if (ch == 'x' || ch == CTRL_X || ch == g_term.c_cc[VINTR]) {
-            terminate();
-            return false;
-        }
-
-        if (ch == 'a')
-            ch = CTRL_A;
-    }
-
-    value = ch;
+    value = m_fifo.front();
+    m_fifo.pop();
     return true;
 }
 
 void backend_term::write(u8 val) {
-    mwr::fd_write(STDOUT_FILENO, &val, sizeof(val));
+    mwr::fd_write(m_fd, &val, sizeof(val));
 }
 
 backend* backend_term::create(terminal* term, const string& type) {

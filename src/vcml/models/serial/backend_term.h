@@ -29,8 +29,16 @@ namespace serial {
 class backend_term : public backend
 {
 private:
-    bool m_exit_requested;
+    int m_fd;
 
+    atomic<bool> m_exit_requested;
+    atomic<bool> m_backend_active;
+
+    thread m_iothread;
+    mutable mutex m_mtx;
+    queue<u8> m_fifo;
+
+    void iothread();
     void terminate();
 
 public:
