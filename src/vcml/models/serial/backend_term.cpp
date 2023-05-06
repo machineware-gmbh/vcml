@@ -33,8 +33,10 @@ enum keys : u8 {
 static terminal* g_owner = nullptr;
 
 void backend_term::terminate() {
-    if (m_exit_requested || !sim_running())
+    if (m_exit_requested || !sim_running()) {
+        log_info("forced exit");
         exit(EXIT_SUCCESS);
+    }
 
     m_exit_requested = true;
     debugging::suspender::quit();
@@ -44,14 +46,16 @@ void backend_term::iothread() {
     while (m_backend_active && sim_running()) {
         if (mwr::fd_peek(m_fd, 100)) {
             u8 ch;
-            if (!mwr::fd_read(m_fd, &ch, sizeof(ch)))
+            if (!mwr::fd_read(m_fd, &ch, sizeof(ch))) {
+                log_warn("eof while reading stdin");
                 return; // EOF
+            }
 
             if (ch == CTRL_A) { // ctrl-a
                 mwr::fd_read(m_fd, &ch, sizeof(ch));
                 if (ch == 'x' || ch == 'X' || ch == CTRL_X) {
                     terminate();
-                    return;
+                    continue;
                 }
 
                 if (ch == 'a')
@@ -71,7 +75,8 @@ backend_term::backend_term(terminal* term):
     m_backend_active(true),
     m_iothread(),
     m_mtx(),
-    m_fifo() {
+    m_fifo(),
+    log("terminal") {
     VCML_REPORT_ON(g_owner, "stdin already used by %s", g_owner->name());
     VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
     g_owner = term;
