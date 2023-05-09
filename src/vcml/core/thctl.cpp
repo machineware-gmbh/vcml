@@ -30,7 +30,7 @@ struct thctl {
     condition_variable_any cvar;
 
     thctl();
-    ~thctl() = default;
+    ~thctl();
 
     bool is_sysc_thread() const;
     bool is_in_critical() const;
@@ -56,6 +56,10 @@ thctl::thctl():
     nwaiting(0),
     cvar() {
     sysc_mutex.lock();
+}
+
+thctl::~thctl() {
+    notify();
 }
 
 bool thctl::is_sysc_thread() const {
@@ -96,6 +100,8 @@ void thctl::enter_critical() {
 void thctl::exit_critical() {
     if (curr_owner != std::this_thread::get_id())
         VCML_ERROR("thread not in critical section");
+    if (nwaiting <= 0)
+        VCML_ERROR("no thread in critical section");
 
     if (!sim_running())
         return;
