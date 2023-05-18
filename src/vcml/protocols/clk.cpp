@@ -128,10 +128,15 @@ void clk_initiator_socket::clk_transport(const clk_payload& tx) {
     trace_bw(tx);
 }
 
-void clk_target_socket::clk_transport(const clk_payload& tx) {
+void clk_target_socket::clk_transport_internal(const clk_payload& tx) {
     trace_fw(tx);
-    m_host->clk_notify(*this, tx);
+    if (tx.oldhz != tx.newhz)
+        clk_transport(tx);
     trace_bw(tx);
+}
+
+void clk_target_socket::clk_transport(const clk_payload& tx) {
+    m_host->clk_notify(*this, tx);
 }
 
 clk_target_socket::clk_target_socket(const char* nm, address_space space):

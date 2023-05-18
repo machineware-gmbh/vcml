@@ -208,14 +208,17 @@ private:
             clk_fw_transport_if(), socket(s) {}
 
         virtual void clk_transport(const clk_payload& tx) override {
-            socket->clk_transport(tx);
+            socket->clk_transport_internal(tx);
         }
     } m_transport;
 
     clk_base_initiator_socket* m_initiator;
     vector<clk_base_target_socket*> m_targets;
 
-    void clk_transport(const clk_payload& tx);
+    void clk_transport_internal(const clk_payload& tx);
+
+protected:
+    virtual void clk_transport(const clk_payload& tx);
 };
 
 template <const size_t MAX_PORTS = SIZE_MAX>
