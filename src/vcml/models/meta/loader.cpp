@@ -23,7 +23,7 @@ namespace meta {
 
 loader::loader(const sc_module_name& nm, const string& imginit):
     component(nm),
-    debugging::loader(name()),
+    debugging::loader(*this, true),
     images("images", imginit),
     insn("insn"),
     data("data") {

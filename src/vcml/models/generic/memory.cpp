@@ -72,7 +72,7 @@ void memory::copy_image(const u8* image, u64 sz, u64 off) {
 memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
                unsigned int rl, unsigned int wl):
     peripheral(nm, host_endian(), rl, wl),
-    debugging::loader(name()),
+    debugging::loader(*this, true),
     m_memory(),
     size("size", sz),
     align("align", al),

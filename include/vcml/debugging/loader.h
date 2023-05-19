@@ -20,6 +20,7 @@
 #define VCML_DEBUGGING_LOADER_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/module.h"
 #include "vcml/logging/logger.h"
 
 namespace vcml {
@@ -45,7 +46,8 @@ vector<image_info> images_from_string(const string& s);
 class loader
 {
 private:
-    string m_name;
+    module& m_owner;
+    logger& m_log;
 
     bool cmd_load(const vector<string>& args, ostream& os);
     bool cmd_load_bin(const vector<string>& args, ostream& os);
@@ -67,9 +69,11 @@ protected:
     virtual void copy_image(const u8* img, const elf_segment& seg, u64 off);
 
 public:
-    const char* loader_name() const { return m_name.c_str(); }
+    module& owner() { return m_owner; }
+    const module& owner() const { return m_owner; }
+    const char* loader_name() const { return m_owner.name(); }
 
-    loader(const string& name);
+    loader(module& owner, bool reg_cmds);
     virtual ~loader();
 
     void load_image(const string& filename, u64 offset = 0);

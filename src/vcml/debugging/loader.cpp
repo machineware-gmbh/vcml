@@ -130,8 +130,8 @@ void loader::load_bin(const string& filename, u64 offset) {
     size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    log_debug("loading binary file '%s' (%zu bytes) to offset 0x%llx",
-              filename.c_str(), size, offset);
+    m_log.debug("loading binary file '%s' (%zu bytes) to offset 0x%llx",
+                filename.c_str(), size, offset);
 
     // let model allocate our image copy buffer first; this way we can load
     // directly into DMI memory, if the model can get a pointer for us
@@ -156,12 +156,12 @@ void loader::load_bin(const string& filename, u64 offset) {
 
 void loader::load_elf(const string& filename, u64 offset) {
     mwr::elf reader(filename);
-    log_debug("loading elf file '%s' with %zu segments to offset 0x%016llx",
-              filename.c_str(), reader.segments().size(), offset);
+    m_log.debug("loading elf file '%s' with %zu segments to offset 0x%016llx",
+                filename.c_str(), reader.segments().size(), offset);
 
     for (auto seg : reader.segments()) {
-        log_debug("loading elf segment 0x%016llx..0x%016llx", seg.phys,
-                  seg.phys + seg.size - 1);
+        m_log.debug("loading elf segment 0x%016llx..0x%016llx", seg.phys,
+                    seg.phys + seg.size - 1);
 
         u8* image = allocate_image(seg, offset);
         if (image) {
@@ -199,28 +199,28 @@ void loader::copy_image(const u8* img, const elf_segment& seg, u64 off) {
 
 unordered_map<string, loader*> loader::s_loaders;
 
-loader::loader(const string& name): m_name(name) {
-    if (stl_contains(s_loaders, name))
-        VCML_ERROR("image loader '%s' already exists", name.c_str());
+loader::loader(module& mod, bool reg_cmds): m_owner(mod), m_log(mod.log) {
+    if (stl_contains(s_loaders, string(loader_name())))
+        VCML_ERROR("image loader '%s' already exists", loader_name());
 
-    s_loaders[name] = this;
+    s_loaders[loader_name()] = this;
 
-    module* m = dynamic_cast<module*>(find_object(name));
-    if (m != nullptr) {
-        m->register_command("load", 1, this, &loader::cmd_load,
-                            "load <image> [offset] to load the contents of "
-                            "file <image> to memory with an optional offset");
-        m->register_command("load_bin", 1, this, &loader::cmd_load_bin,
-                            "load_bin <image> [offset] to load the binary "
-                            "file <image> to memory with an optional offset");
-        m->register_command("load_elf", 1, this, &loader::cmd_load_elf,
-                            "load_elf <image> [offset] to load the ELF "
-                            "file <image> to memory with an optional offset");
-    }
+    if (!reg_cmds)
+        return;
+
+    m_owner.register_command("load", 1, this, &loader::cmd_load,
+                             "load <image> [offset] to load the contents of "
+                             "file <image> to memory with an optional offset");
+    m_owner.register_command("load_bin", 1, this, &loader::cmd_load_bin,
+                             "load_bin <image> [offset] to load the binary "
+                             "file <image> to memory with an optional offset");
+    m_owner.register_command("load_elf", 1, this, &loader::cmd_load_elf,
+                             "load_elf <image> [offset] to load the ELF "
+                             "file <image> to memory with an optional offset");
 }
 
 loader::~loader() {
-    s_loaders.erase(m_name);
+    s_loaders.erase(loader_name());
 }
 
 void loader::load_image(const string& file, u64 offset) {
@@ -260,11 +260,11 @@ void loader::load_images(const vector<image_info>& images) {
         try {
             load_image(image);
         } catch (std::exception& ex) {
-            log_warn("failed to load image '%s': %s", image.filename.c_str(),
-                     ex.what());
+            m_log.warn("failed to load image '%s': %s", image.filename.c_str(),
+                       ex.what());
         } catch (...) {
-            log_warn("unkown error while loading image '%s'",
-                     image.filename.c_str());
+            m_log.warn("unkown error while loading image '%s'",
+                       image.filename.c_str());
         }
     }
 }
