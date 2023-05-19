@@ -42,8 +42,17 @@ void broker_file::parse_file(const string& file) {
         while (std::getline(stream, line)) {
             lno++;
 
+            // remove comments
+            size_t pos = line.find('#');
+            if (pos != line.npos)
+                line.erase(pos);
+
             // remove white spaces
-            line = trim(line);
+            line = rtrim(line);
+
+            // prepend buffer from previous lines
+            line = strcat(prev, line);
+            prev = "";
 
             if (line.empty())
                 continue;
@@ -54,11 +63,8 @@ void broker_file::parse_file(const string& file) {
                 continue;
             }
 
-            // prepend buffer from previous lines
-            line = strcat(prev, line);
-            prev = "";
-
-            parse_expr(line, file, lno);
+            // trim again and parse
+            parse_expr(ltrim(line), file, lno);
         }
     } catch (std::exception& ex) {
         m_errors++;
@@ -71,11 +77,8 @@ void broker_file::parse_file(const string& file) {
     }
 }
 
-void broker_file::parse_expr(string expr, const string& file, size_t line) {
-    // remove comments
-    size_t pos = expr.find('#');
-    if (pos != expr.npos)
-        expr.erase(pos);
+void broker_file::parse_expr(const string& expr, const string& file,
+                             size_t line) {
     if (expr.empty())
         return;
 

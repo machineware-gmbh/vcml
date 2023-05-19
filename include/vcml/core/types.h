@@ -169,6 +169,8 @@ using mwr::report;
 
 using mwr::mkstr;
 using mwr::vmkstr;
+using mwr::ltrim;
+using mwr::rtrim;
 using mwr::trim;
 using mwr::to_lower;
 using mwr::to_upper;
