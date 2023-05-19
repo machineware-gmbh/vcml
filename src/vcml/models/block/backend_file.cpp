@@ -28,7 +28,8 @@ backend_file::backend_file(const string& path, bool readonly):
         flags |= std::ios_base::out;
 
     m_stream.open(m_path.c_str(), flags);
-    VCML_REPORT_ON(!m_stream, "error opening %s", m_path.c_str());
+    if (!m_stream)
+        VCML_REPORT("error opening %s: %s", m_path.c_str(), strerror(errno));
 
     m_stream.seekg(0, std::ios_base::end);
     m_capacity = m_stream.tellg();

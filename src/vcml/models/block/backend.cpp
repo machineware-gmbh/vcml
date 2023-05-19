@@ -77,8 +77,6 @@ backend* backend::create(const string& image, bool readonly) {
     }
 
     // if no image specification is given we test if its just a path
-    if (!mwr::file_exists(image))
-        VCML_REPORT("cannot access '%s'", image.c_str());
     return new backend_file(image, readonly);
 }
 
