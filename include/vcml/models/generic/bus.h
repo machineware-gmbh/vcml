@@ -93,6 +93,16 @@ public:
 
     void map_default(size_t target, u64 offset = 0);
 
+    void stub(const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
+    void stub(u64 lo, u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
+
+    template <typename SOURCE>
+    void stub(SOURCE& s, const range& addr,
+              tlm_response_status rs = TLM_OK_RESPONSE);
+    template <typename SOURCE>
+    void stub(SOURCE& s, u64 lo, u64 hi,
+              tlm_response_status rs = TLM_OK_RESPONSE);
+
     template <typename SOURCE>
     size_t bind(SOURCE& s);
 
@@ -132,6 +142,29 @@ inline void bus::map(size_t target, u64 lo, u64 hi, u64 offset) {
 
 inline void bus::map(size_t target, u64 lo, u64 hi, u64 offset, size_t src) {
     map(target, range(lo, hi), offset, src);
+}
+
+inline void bus::stub(const range& addr, tlm_response_status rs) {
+    size_t target_port = out.next_index();
+    out[target_port].stub(rs);
+    map(target_port, addr);
+}
+
+inline void bus::stub(u64 lo, u64 hi, tlm_response_status rs) {
+    stub(range(lo, hi), rs);
+}
+
+template <typename SOURCE>
+inline void bus::stub(SOURCE& s, const range& addr, tlm_response_status rs) {
+    size_t source_port = bind(s);
+    size_t target_port = out.next_index();
+    out[target_port].stub(rs);
+    map(target_port, addr, 0, source_port);
+}
+
+template <typename SOURCE>
+inline void bus::stub(SOURCE& s, u64 lo, u64 hi, tlm_response_status rs) {
+    stub(s, range(lo, hi), rs);
 }
 
 template <typename SOURCE>

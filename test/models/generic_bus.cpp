@@ -64,6 +64,9 @@ public:
 
         bus.bind(out1, mem1.in, 0xa000, 0xbfff);
         bus.bind(out2, mem2.in, 0xc000, 0xdfff);
+
+        bus.stub(0xe000, 0xe7ff);
+        bus.stub(out2, 0xe800, 0xefff);
     }
 
     virtual void run_test() override {
@@ -156,6 +159,15 @@ public:
         EXPECT_OK(out1.writew<u32>(0xc000, data));
         bus.lenient = false;
         EXPECT_AE(out1.writew<u32>(0xc000, data));
+
+        EXPECT_OK(out1.readw<u32>(0xe000, data))
+            << "cannot read from stubbed address area";
+        EXPECT_OK(out1.writew<u32>(0xe0f0, data))
+            << "cannot write to stubbed address range";
+        EXPECT_AE(out1.readw<u32>(0xe800, data))
+            << "unexpected data from privately stubbed area";
+        EXPECT_OK(out2.readw<u32>(0xe800, data))
+            << "cannot read from privately stubbed area";
 
         bus.execute("mmap", std::cout);
         std::cout << std::endl;

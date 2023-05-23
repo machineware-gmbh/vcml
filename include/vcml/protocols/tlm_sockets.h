@@ -121,6 +121,7 @@ public:
     template <unsigned int WIDTH>
     void bind(tlm::tlm_base_target_socket_b<WIDTH>& other);
 
+    bool is_stubbed() const { return m_stub != nullptr; }
     void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
 };
 
@@ -297,6 +298,7 @@ public:
     template <unsigned int WIDTH>
     tlm::tlm_target_socket<WIDTH>& adapt();
 
+    bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 
     bool in_transaction() const;

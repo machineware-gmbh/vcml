@@ -43,9 +43,13 @@ size_t bus::find_source_port(sc_object& peer) const {
 
 const char* bus::target_peer_name(size_t port) const {
     auto it = m_target_peers.find(port);
-    if (it == m_target_peers.end())
-        return out[port].name();
-    return it->second->name();
+    if (it != m_target_peers.end())
+        return it->second->name();
+
+    auto& socket = out[port];
+    if (socket.is_stubbed())
+        return "stubbed";
+    return out[port].name();
 }
 
 const char* bus::source_peer_name(size_t port) const {
