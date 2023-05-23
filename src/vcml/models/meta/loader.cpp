@@ -50,15 +50,17 @@ u8* loader::allocate_image(const elf_segment& seg, u64 off) {
     return port.lookup_dmi_ptr(seg.phys + off, seg.size, VCML_ACCESS_NONE);
 }
 
-void loader::copy_image(const u8* img, u64 size, u64 offset) {
-    if (failed(data.write(offset, img, size, SBI_DEBUG)))
-        VCML_REPORT("bus error");
+void loader::copy_image(const u8* img, u64 size, u64 off) {
+    if (failed(data.write(off, img, size, SBI_DEBUG)))
+        VCML_REPORT("bus error writing [%llx..%llx]", off, off + size - 1);
 }
 
-void loader::copy_image(const u8* img, const elf_segment& seg, u64 offset) {
+void loader::copy_image(const u8* img, const elf_segment& seg, u64 off) {
     auto& port = seg.x ? insn : data;
-    if (failed(port.write(seg.phys + offset, img, seg.size, SBI_DEBUG)))
-        VCML_REPORT("bus error");
+    if (failed(port.write(seg.phys + off, img, seg.size, SBI_DEBUG))) {
+        VCML_REPORT("bus error writing [%llx..%llx]", seg.phys + off,
+                    seg.phys + off + seg.size - 1);
+    }
 }
 
 void loader::before_end_of_elaboration() {
