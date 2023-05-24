@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/opencores/ethoc.h"
+#include "vcml/models/ethernet/ethoc.h"
 
 #define ETH_ALEN           6
 #define ETH_FRAME_LEN      1514
@@ -123,7 +123,7 @@
 #define ETHOC_PHYID2 0x5c90
 
 namespace vcml {
-namespace opencores {
+namespace ethernet {
 
 void ethoc::tx_process() {
     while (true) {
@@ -578,5 +578,5 @@ void ethoc::reset() {
     irq = false;
 }
 
-} // namespace opencores
+} // namespace ethernet
 } // namespace vcml

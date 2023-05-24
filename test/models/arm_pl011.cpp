@@ -27,7 +27,7 @@ public:
 
     gpio_target_socket irq_in;
 
-    arm::pl011uart uart;
+    serial::pl011 uart;
 
     pl011_bench(const sc_module_name& nm):
         test_base(nm),
@@ -57,11 +57,11 @@ public:
         // check initial UART status
         u32 val = 0;
         EXPECT_OK(out.readw(PL011_UARTFR, val));
-        EXPECT_TRUE(val & arm::pl011uart::FR_RXFE) << "RX FIFO not empty";
-        EXPECT_TRUE(val & arm::pl011uart::FR_TXFE) << "TX FIFO not empty";
+        EXPECT_TRUE(val & serial::pl011::FR_RXFE) << "RX FIFO not empty";
+        EXPECT_TRUE(val & serial::pl011::FR_TXFE) << "TX FIFO not empty";
 
         // enable UART and transmission
-        val = arm::pl011uart::CR_TXE | arm::pl011uart::CR_UARTEN;
+        val = serial::pl011::CR_TXE | serial::pl011::CR_UARTEN;
         EXPECT_OK(out.writew(PL011_UARTCR, val)) << "cannot write UARTCR";
 
         // send data
@@ -72,11 +72,11 @@ public:
         // check raw interrupt status
         val = 0;
         EXPECT_OK(out.readw(PL011_UARTRIS, val)) << "cannot read UARTRIS";
-        EXPECT_EQ(val, arm::pl011uart::RIS_TX) << "bogus irq state returned";
+        EXPECT_EQ(val, serial::pl011::RIS_TX) << "bogus irq state returned";
         EXPECT_FALSE(irq_in) << "spurious interrupt received";
 
         // set interrupt mask, await interrupt
-        val = arm::pl011uart::RIS_TX;
+        val = serial::pl011::RIS_TX;
         EXPECT_OK(out.writew(PL011_UARTIMSC, val)) << "cannot write UARTIMSC";
         EXPECT_TRUE(irq_in) << "interrupt did not trigger";
 
@@ -89,8 +89,8 @@ public:
 
         val = 0;
         EXPECT_OK(out.readw(PL011_UARTFR, val));
-        EXPECT_TRUE(val & arm::pl011uart::FR_RXFE) << "RX FIFO not reset";
-        EXPECT_TRUE(val & arm::pl011uart::FR_TXFE) << "TX FIFO not reset";
+        EXPECT_TRUE(val & serial::pl011::FR_RXFE) << "RX FIFO not reset";
+        EXPECT_TRUE(val & serial::pl011::FR_TXFE) << "TX FIFO not reset";
         EXPECT_FALSE(irq_in) << "interrupt state did not reset";
     }
 };

@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/lan9118.h"
+#include "vcml/models/ethernet/lan9118.h"
 
 namespace vcml {
-namespace generic {
+namespace ethernet {
 
 enum phy_cr_bits : u16 {
     PHY_CONTROL_COL_TEST = 1u << 7,
@@ -1410,5 +1410,5 @@ void lan9118::eth_link_down() {
     phy.set_link_status(false);
 }
 
-} // namespace generic
+} // namespace ethernet
 } // namespace vcml

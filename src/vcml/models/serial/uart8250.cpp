@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/uart8250.h"
+#include "vcml/models/serial/uart8250.h"
 
 namespace vcml {
-namespace generic {
+namespace serial {
 
 static serial_bits uart8250_data_bits(u8 lcr) {
     return (serial_bits)(SERIAL_5_BITS + (lcr & 3));
@@ -291,5 +291,5 @@ void uart8250::reset() {
     m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
 }
 
-} // namespace generic
+} // namespace serial
 } // namespace vcml

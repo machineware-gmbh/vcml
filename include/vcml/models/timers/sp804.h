@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_ARM_SP804TIMER_H
-#define VCML_ARM_SP804TIMER_H
+#ifndef VCML_TIMERS_SP804_H
+#define VCML_TIMERS_SP804_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -28,16 +28,16 @@
 #include "vcml/protocols/gpio.h"
 
 namespace vcml {
-namespace arm {
+namespace timers {
 
-class sp804timer : public peripheral
+class sp804 : public peripheral
 {
 private:
     void update_irqc();
 
     // disabled
-    sp804timer();
-    sp804timer(const sp804timer&);
+    sp804();
+    sp804(const sp804&);
 
 public:
     enum amba_ids : u32 {
@@ -51,7 +51,7 @@ public:
         sc_event m_ev;
         sc_time m_prev;
         sc_time m_next;
-        sp804timer* m_timer;
+        sp804* m_timer;
 
         void trigger();
         void schedule(u32 ticks);
@@ -101,7 +101,7 @@ public:
 
         timer(const sc_module_name& nm);
         virtual ~timer();
-        VCML_KIND(arm::sp804timer::timer);
+        VCML_KIND(arm::sp804::timer);
 
         virtual void reset() override;
     };
@@ -128,9 +128,9 @@ public:
     gpio_base_initiator_socket irq2;
     gpio_initiator_socket irqc;
 
-    sp804timer(const sc_module_name& nm);
-    virtual ~sp804timer();
-    VCML_KIND(arm::sp804timer);
+    sp804(const sc_module_name& nm);
+    virtual ~sp804();
+    VCML_KIND(arm::sp804);
 
     virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
                                  address_space as) override;
@@ -138,15 +138,15 @@ public:
     virtual void reset() override;
 };
 
-inline int sp804timer::timer::get_prescale_stages() const {
+inline int sp804::timer::get_prescale_stages() const {
     return ((control >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) << 2;
 }
 
-inline int sp804timer::timer::get_prescale_divider() const {
+inline int sp804::timer::get_prescale_divider() const {
     return 1 << get_prescale_stages();
 }
 
-} // namespace arm
+} // namespace timers
 } // namespace vcml
 
 #endif

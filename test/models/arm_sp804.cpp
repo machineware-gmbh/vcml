@@ -58,10 +58,10 @@ public:
         EXPECT_OK(out.readw(TIMER1_VALUE, val));
         EXPECT_GE(val, 0x100) << "counter changed while disabled";
 
-        val = arm::sp804timer::timer::CONTROL_ENABLED |
-              arm::sp804timer::timer::CONTROL_IRQEN |
-              arm::sp804timer::timer::CONTROL_ONESHOT |
-              arm::sp804timer::timer::CONTROL_32BIT;
+        val = timers::sp804::timer::CONTROL_ENABLED |
+              timers::sp804::timer::CONTROL_IRQEN |
+              timers::sp804::timer::CONTROL_ONESHOT |
+              timers::sp804::timer::CONTROL_32BIT;
         EXPECT_OK(out.writew(TIMER1_CONTROL, val)) << "cannot write CONTROL";
 
         wait(irqc.default_event());
@@ -92,9 +92,9 @@ public:
     }
 };
 
-TEST(sp804timer, main) {
+TEST(sp804, main) {
     sp804_stim stim("stim");
-    arm::sp804timer sp804("sp804");
+    timers::sp804 sp804("sp804");
 
     stim.out.bind(sp804.in);
     stim.clk.bind(sp804.clk);

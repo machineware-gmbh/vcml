@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/arm/pl011uart.h"
+#include "vcml/models/serial/pl011.h"
 
 namespace vcml {
-namespace arm {
+namespace serial {
 
-void pl011uart::serial_receive(u8 data) {
+void pl011::serial_receive(u8 data) {
     if (is_enabled() || is_rx_enabled()) {
         if (m_fifo.size() < m_fifo_size)
             m_fifo.push(data);
@@ -29,7 +29,7 @@ void pl011uart::serial_receive(u8 data) {
     }
 }
 
-void pl011uart::update() {
+void pl011::update() {
     // update flags
     fr &= ~(FR_RXFE | FR_RXFF | FR_TXFF);
     fr |= FR_TXFE; // tx FIFO is always empty
@@ -51,7 +51,7 @@ void pl011uart::update() {
     irq.write(mis != 0);
 }
 
-u16 pl011uart::read_dr() {
+u16 pl011::read_dr() {
     u16 val = 0;
     if (!m_fifo.empty()) {
         val = m_fifo.front();
@@ -65,7 +65,7 @@ u16 pl011uart::read_dr() {
     return val;
 }
 
-void pl011uart::write_dr(u16 val) {
+void pl011::write_dr(u16 val) {
     if (!is_tx_enabled())
         return;
 
@@ -77,20 +77,20 @@ void pl011uart::write_dr(u16 val) {
     update();
 }
 
-void pl011uart::write_rsr(u8 val) {
+void pl011::write_rsr(u8 val) {
     //  A write to this register clears the framing, parity, break,
     //  and overrun errors. The data value is not important.
 }
 
-void pl011uart::write_ibrd(u16 val) {
+void pl011::write_ibrd(u16 val) {
     ibrd = val & LCR_IBRD_M;
 }
 
-void pl011uart::write_fbrd(u16 val) {
+void pl011::write_fbrd(u16 val) {
     fbrd = val & LCR_FBRD_M;
 }
 
-void pl011uart::write_lcr(u8 val) {
+void pl011::write_lcr(u8 val) {
     if ((val & LCR_FEN) && !(lcr & LCR_FEN))
         log_debug("FIFO enabled");
     if (!(val & LCR_FEN) && (lcr & LCR_FEN))
@@ -101,7 +101,7 @@ void pl011uart::write_lcr(u8 val) {
     lcr = val & LCR_H_M;
 }
 
-void pl011uart::write_cr(u16 val) {
+void pl011::write_cr(u16 val) {
     if (!is_enabled() && (val & CR_UARTEN))
         log_debug("device enabled");
     if (is_enabled() && !(val & CR_UARTEN))
@@ -118,22 +118,22 @@ void pl011uart::write_cr(u16 val) {
     cr = val;
 }
 
-void pl011uart::write_ifls(u16 val) {
+void pl011::write_ifls(u16 val) {
     ifls = val & 0x3f; // TODO implement interrupt FIFO level select
 }
 
-void pl011uart::write_imsc(u16 val) {
+void pl011::write_imsc(u16 val) {
     imsc = val & RIS_M;
     update();
 }
 
-void pl011uart::write_icr(u16 val) {
+void pl011::write_icr(u16 val) {
     ris &= ~(val & RIS_M);
     icr = 0;
     update();
 }
 
-pl011uart::pl011uart(const sc_module_name& nm):
+pl011::pl011(const sc_module_name& nm):
     peripheral(nm),
     serial_host(),
     m_fifo_size(),
@@ -160,12 +160,12 @@ pl011uart::pl011uart(const sc_module_name& nm):
     serial_rx("serial_rx") {
     dr.sync_always();
     dr.allow_read_write();
-    dr.on_read(&pl011uart::read_dr);
-    dr.on_write(&pl011uart::write_dr);
+    dr.on_read(&pl011::read_dr);
+    dr.on_write(&pl011::write_dr);
 
     rsr.sync_always();
     rsr.allow_read_write();
-    rsr.on_write(&pl011uart::write_rsr);
+    rsr.on_write(&pl011::write_rsr);
 
     fr.sync_always();
     fr.allow_read_only();
@@ -175,27 +175,27 @@ pl011uart::pl011uart(const sc_module_name& nm):
 
     ibrd.sync_always();
     ibrd.allow_read_write();
-    ibrd.on_write(&pl011uart::write_ibrd);
+    ibrd.on_write(&pl011::write_ibrd);
 
     fbrd.sync_always();
     fbrd.allow_read_write();
-    fbrd.on_write(&pl011uart::write_fbrd);
+    fbrd.on_write(&pl011::write_fbrd);
 
     lcr.sync_always();
     lcr.allow_read_write();
-    lcr.on_write(&pl011uart::write_lcr);
+    lcr.on_write(&pl011::write_lcr);
 
     cr.sync_always();
     cr.allow_read_write();
-    cr.on_write(&pl011uart::write_cr);
+    cr.on_write(&pl011::write_cr);
 
     ifls.sync_always();
     ifls.allow_read_write();
-    ifls.on_write(&pl011uart::write_ifls);
+    ifls.on_write(&pl011::write_ifls);
 
     imsc.sync_always();
     imsc.allow_read_write();
-    imsc.on_write(&pl011uart::write_imsc);
+    imsc.on_write(&pl011::write_imsc);
 
     ris.sync_always();
     ris.allow_read_only();
@@ -205,7 +205,7 @@ pl011uart::pl011uart(const sc_module_name& nm):
 
     icr.sync_always();
     icr.allow_write_only();
-    icr.on_write(&pl011uart::write_icr);
+    icr.on_write(&pl011::write_icr);
 
     dmac.sync_never();
     dmac.allow_read_write(); // not implemented
@@ -217,11 +217,11 @@ pl011uart::pl011uart(const sc_module_name& nm):
     cid.allow_read_only();
 }
 
-pl011uart::~pl011uart() {
+pl011::~pl011() {
     // nothing to do
 }
 
-void pl011uart::reset() {
+void pl011::reset() {
     peripheral::reset();
 
     for (unsigned int i = 0; i < pid.count(); i++)
@@ -236,5 +236,5 @@ void pl011uart::reset() {
     irq = false;
 }
 
-} // namespace arm
+} // namespace serial
 } // namespace vcml

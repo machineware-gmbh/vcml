@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_OPENCORES_ETHOC_H
-#define VCML_OPENCORES_ETHOC_H
+#ifndef VCML_ETHERNET_ETHOC_H
+#define VCML_ETHERNET_ETHOC_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/range.h"
@@ -29,7 +29,7 @@
 #include "vcml/protocols/eth.h"
 
 namespace vcml {
-namespace opencores {
+namespace ethernet {
 
 class ethoc : public peripheral, public eth_host
 {
@@ -274,7 +274,7 @@ public:
 
     ethoc(const sc_module_name& name);
     virtual ~ethoc();
-    VCML_KIND(opencores::ethoc);
+    VCML_KIND(ethernet::ethoc);
 
     virtual void reset() override;
 
@@ -314,7 +314,7 @@ inline void ethoc::set_mac_addr(u8 addr[6]) {
         m_mac[i] = addr[i];
 }
 
-} // namespace opencores
+} // namespace ethernet
 } // namespace vcml
 
 #endif

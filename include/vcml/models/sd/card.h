@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_SDCARD_H
-#define VCML_GENERIC_SDCARD_H
+#ifndef VCML_SD_CARD_H
+#define VCML_SD_CARD_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -29,7 +29,7 @@
 namespace vcml {
 namespace sd {
 
-class sdcard : public component, public sd_host
+class card : public component, public sd_host
 {
 private:
     bool m_spi;
@@ -106,8 +106,8 @@ private:
     sd_status_rx do_data_write(u8 val);
 
     // disabled
-    sdcard();
-    sdcard(const sdcard&);
+    card();
+    card(const card&);
 
 public:
     enum status_bits {
@@ -178,11 +178,11 @@ public:
 
     sd_target_socket sd_in;
 
-    sdcard(const sc_module_name& name, const string& image = "",
-           bool readonly = false);
-    virtual ~sdcard();
+    card(const sc_module_name& name, const string& image = "",
+         bool readonly = false);
+    virtual ~card();
     virtual void reset() override;
-    VCML_KIND(sd::sdcard);
+    VCML_KIND(sd::card);
 
     bool is_sdhc() const { return m_ocr & OCR_CCS; }
     bool is_sdsc() const { return !is_sdhc(); }
@@ -193,7 +193,7 @@ public:
                               sd_data& data) override;
 };
 
-inline void sdcard::update_status() {
+inline void card::update_status() {
     m_status &= ~(0xf << 9);
     m_status |= m_state << 9;
 }

@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_UART8250_H
-#define VCML_GENERIC_UART8250_H
+#ifndef VCML_SERIAL_UART8250_H
+#define VCML_SERIAL_UART8250_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -29,7 +29,7 @@
 #include "vcml/protocols/serial.h"
 
 namespace vcml {
-namespace generic {
+namespace serial {
 
 class uart8250 : public peripheral, public serial_host
 {
@@ -129,14 +129,14 @@ public:
 
     uart8250(const sc_module_name& name);
     virtual ~uart8250();
-    VCML_KIND(uart8250);
+    VCML_KIND(serial::uart8250);
     virtual void reset() override;
 
     uart8250() = delete;
     uart8250(const uart8250&) = delete;
 };
 
-} // namespace generic
+} // namespace serial
 } // namespace vcml
 
 #endif

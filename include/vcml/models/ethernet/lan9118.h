@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_MODELS_LAN9118_H
-#define VCML_MODELS_LAN9118_H
+#ifndef VCML_ETHERNET_LAN9118_H
+#define VCML_ETHERNET_LAN9118_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -29,7 +29,7 @@
 #include "vcml/protocols/eth.h"
 
 namespace vcml {
-namespace generic {
+namespace ethernet {
 
 class lan9118;
 
@@ -62,7 +62,7 @@ public:
 
     lan9118_phy(const sc_module_name& name, lan9118& lan);
     virtual ~lan9118_phy();
-    VCML_KIND(lan9118_phy);
+    VCML_KIND(ethernet::lan9118_phy);
     virtual void reset() override;
 
     sc_time rxtx_delay(size_t bytes) const;
@@ -100,7 +100,7 @@ public:
 
     lan9118_mac(const sc_module_name& name, lan9118& lan);
     virtual ~lan9118_mac();
-    VCML_KIND(lan9118_mac);
+    VCML_KIND(ethernet::lan9118_mac);
     virtual void reset() override;
 
     bool filter(const mac_addr& dest) const;
@@ -298,7 +298,7 @@ public:
 
     lan9118(const sc_module_name& name);
     virtual ~lan9118();
-    VCML_KIND(lan9118);
+    VCML_KIND(ethernet::lan9118);
     virtual void reset() override;
 
     void update_irq();
@@ -308,7 +308,7 @@ protected:
     virtual void eth_link_down() override;
 };
 
-} // namespace generic
+} // namespace ethernet
 } // namespace vcml
 
 #endif

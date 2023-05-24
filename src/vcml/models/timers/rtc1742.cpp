@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/rtc1742.h"
+#include "vcml/models/timers/rtc1742.h"
 
 namespace vcml {
-namespace generic {
+namespace timers {
 
 static u8 bin2bcd(u8 val) {
     return (val / 10) << 4 | (val % 10);
@@ -223,5 +223,5 @@ void rtc1742::reset() {
     peripheral::reset();
 }
 
-} // namespace generic
+} // namespace timers
 } // namespace vcml

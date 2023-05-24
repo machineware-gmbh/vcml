@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_RTC1742_H
-#define VCML_GENERIC_RTC1742_H
+#ifndef VCML_TIMER_RTC1742_H
+#define VCML_TIMER_RTC1742_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -27,7 +27,7 @@
 #include "vcml/protocols/tlm.h"
 
 namespace vcml {
-namespace generic {
+namespace timers {
 
 class rtc1742 : public peripheral
 {
@@ -98,7 +98,7 @@ public:
 
     rtc1742(const sc_module_name& nm, u32 nvramsz = NVMEM_2K);
     virtual ~rtc1742();
-    VCML_KIND(rtc1742);
+    VCML_KIND(timers::rtc1742);
 
     virtual void reset() override;
 };
@@ -112,7 +112,7 @@ inline time_t rtc1742::sysc_timestamp() const {
     return m_real_timestamp + (time_t)delta.to_seconds();
 }
 
-} // namespace generic
+} // namespace timers
 } // namespace vcml
 
 #endif

@@ -130,9 +130,6 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/memory.cpp
     ${src}/vcml/models/generic/gate.cpp
     ${src}/vcml/models/generic/gpio.cpp
-    ${src}/vcml/models/generic/uart8250.cpp
-    ${src}/vcml/models/generic/lan9118.cpp
-    ${src}/vcml/models/generic/rtc1742.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
     ${src}/vcml/models/serial/backend_fd.cpp
@@ -141,6 +138,10 @@ add_library(vcml STATIC
     ${src}/vcml/models/serial/backend_term.cpp
     ${src}/vcml/models/serial/backend.cpp
     ${src}/vcml/models/serial/terminal.cpp
+    ${src}/vcml/models/serial/uart8250.cpp
+    ${src}/vcml/models/serial/pl011.cpp
+    ${src}/vcml/models/timers/rtc1742.cpp
+    ${src}/vcml/models/timers/sp804.cpp
     ${src}/vcml/models/block/backend_file.cpp
     ${src}/vcml/models/block/backend_ram.cpp
     ${src}/vcml/models/block/backend.cpp
@@ -150,17 +151,21 @@ add_library(vcml STATIC
     ${src}/vcml/models/ethernet/backend_tap.cpp
     ${src}/vcml/models/ethernet/bridge.cpp
     ${src}/vcml/models/ethernet/network.cpp
+    ${src}/vcml/models/ethernet/lan9118.cpp
+    ${src}/vcml/models/ethernet/ethoc.cpp
     ${src}/vcml/models/can/backend.cpp
     ${src}/vcml/models/can/backend_file.cpp
     ${src}/vcml/models/can/backend_socket.cpp
     ${src}/vcml/models/can/bridge.cpp
     ${src}/vcml/models/can/bus.cpp
     ${src}/vcml/models/i2c/lm75.cpp
+    ${src}/vcml/models/i2c/oci2c.cpp
     ${src}/vcml/models/spi/bus.cpp
     ${src}/vcml/models/spi/spi2sd.cpp
     ${src}/vcml/models/spi/max31855.cpp
     ${src}/vcml/models/spi/flash.cpp
-    ${src}/vcml/models/sd/sdcard.cpp
+    ${src}/vcml/models/spi/ocspi.cpp
+    ${src}/vcml/models/sd/card.cpp
     ${src}/vcml/models/sd/sdhci.cpp
     ${src}/vcml/models/pci/device.cpp
     ${src}/vcml/models/pci/host.cpp
@@ -174,14 +179,9 @@ add_library(vcml STATIC
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp
     ${src}/vcml/models/opencores/ompic.cpp
-    ${src}/vcml/models/opencores/ethoc.cpp
     ${src}/vcml/models/opencores/ockbd.cpp
     ${src}/vcml/models/opencores/ocfbc.cpp
-    ${src}/vcml/models/opencores/ocspi.cpp
-    ${src}/vcml/models/opencores/oci2c.cpp
-    ${src}/vcml/models/arm/pl011uart.cpp
     ${src}/vcml/models/arm/pl190vic.cpp
-    ${src}/vcml/models/arm/sp804timer.cpp
     ${src}/vcml/models/arm/syscon.cpp
     ${src}/vcml/models/arm/gic400.cpp
     ${src}/vcml/models/riscv/clint.cpp

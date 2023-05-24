@@ -16,7 +16,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/sd/sdcard.h"
+#include "vcml/models/sd/card.h"
 
 #define SDHC_BLKLEN 512
 
@@ -33,11 +33,11 @@ static bool check_crc7(const sd_command& tx) {
     return (crc7(buffer, sizeof(buffer)) | 1) == tx.crc;
 }
 
-void sdcard::make_r0(sd_command& tx) {
+void card::make_r0(sd_command& tx) {
     tx.resp_len = 0;
 }
 
-void sdcard::make_r1(sd_command& tx) {
+void card::make_r1(sd_command& tx) {
     if (m_spi) {
         make_r1_spi(tx);
         return;
@@ -58,7 +58,7 @@ void sdcard::make_r1(sd_command& tx) {
                   CSD_OVERWRITE | WP_ERASE_SKIP | ERASE_RESET | AKE_SEQ_ERROR);
 }
 
-void sdcard::make_r2(sd_command& tx) {
+void card::make_r2(sd_command& tx) {
     if (m_spi) {
         make_r2_spi(tx);
         return;
@@ -81,7 +81,7 @@ void sdcard::make_r2(sd_command& tx) {
     tx.resp_len = 17;     // 136 bit
 }
 
-void sdcard::make_r3(sd_command& tx) {
+void card::make_r3(sd_command& tx) {
     if (m_spi) {
         make_r3_spi(tx);
         return;
@@ -96,7 +96,7 @@ void sdcard::make_r3(sd_command& tx) {
     tx.resp_len = 6;
 }
 
-void sdcard::make_r6(sd_command& tx) {
+void card::make_r6(sd_command& tx) {
     tx.response[0] = 0x03;
     tx.response[1] = m_rca >> 8;
     tx.response[2] = m_rca & 0xff;
@@ -120,7 +120,7 @@ void sdcard::make_r6(sd_command& tx) {
     tx.resp_len = 6;
 }
 
-void sdcard::make_r7(sd_command& tx) {
+void card::make_r7(sd_command& tx) {
     if (m_spi) {
         make_r7_spi(tx);
         return;
@@ -135,7 +135,7 @@ void sdcard::make_r7(sd_command& tx) {
     tx.resp_len = 6;
 }
 
-void sdcard::make_r1_spi(sd_command& tx) {
+void card::make_r1_spi(sd_command& tx) {
     VCML_ERROR_ON(!m_spi, "not in SPI mode");
     update_status();
 
@@ -161,7 +161,7 @@ void sdcard::make_r1_spi(sd_command& tx) {
                   ERASE_RESET);
 }
 
-void sdcard::make_r2_spi(sd_command& tx) {
+void card::make_r2_spi(sd_command& tx) {
     VCML_ERROR_ON(!m_spi, "not in SPI mode");
 
     make_r1_spi(tx);
@@ -187,7 +187,7 @@ void sdcard::make_r2_spi(sd_command& tx) {
         tx.response[1] |= SPI_OUT_OF_RANGE;
 }
 
-void sdcard::make_r3_spi(sd_command& tx) {
+void card::make_r3_spi(sd_command& tx) {
     VCML_ERROR_ON(!m_spi, "not in SPI mode");
 
     make_r1_spi(tx);
@@ -199,7 +199,7 @@ void sdcard::make_r3_spi(sd_command& tx) {
     tx.resp_len = 5;
 }
 
-void sdcard::make_r7_spi(sd_command& tx) {
+void card::make_r7_spi(sd_command& tx) {
     VCML_ERROR_ON(!m_spi, "not in SPI mode");
 
     make_r1_spi(tx);
@@ -211,7 +211,7 @@ void sdcard::make_r7_spi(sd_command& tx) {
     tx.resp_len = 5;
 }
 
-void sdcard::setup_tx(u8* data, size_t len) {
+void card::setup_tx(u8* data, size_t len) {
     VCML_ERROR_ON(!len, "attempt to transmit zero bytes");
 
     m_bufptr = data;
@@ -220,7 +220,7 @@ void sdcard::setup_tx(u8* data, size_t len) {
     m_state = SENDING;
 }
 
-void sdcard::setup_rx(u8* data, size_t len) {
+void card::setup_rx(u8* data, size_t len) {
     VCML_ERROR_ON(!len, "attempt to receive zero bytes");
 
     m_bufptr = data;
@@ -229,7 +229,7 @@ void sdcard::setup_rx(u8* data, size_t len) {
     m_state = RECEIVING;
 }
 
-void sdcard::setup_tx_blk(size_t offset) {
+void card::setup_tx_blk(size_t offset) {
     size_t blklen = is_sdhc() ? SDHC_BLKLEN : m_blklen;
     if (offset % blklen) {
         m_status |= ADDRESS_ERROR;
@@ -257,7 +257,7 @@ void sdcard::setup_tx_blk(size_t offset) {
     setup_tx(m_buffer, blklen + 2);
 }
 
-void sdcard::setup_rx_blk(size_t offset) {
+void card::setup_rx_blk(size_t offset) {
     size_t blklen = is_sdhc() ? SDHC_BLKLEN : m_blklen;
     if (offset % blklen) {
         m_status |= ADDRESS_ERROR;
@@ -274,7 +274,7 @@ void sdcard::setup_rx_blk(size_t offset) {
     setup_rx(m_buffer, blklen + 2);
 }
 
-void sdcard::init_ocr() {
+void card::init_ocr() {
     m_ocr = 0;
 
     m_ocr |= OCR_VDD_27_28;
@@ -291,7 +291,7 @@ void sdcard::init_ocr() {
         m_ocr |= OCR_CCS;
 }
 
-void sdcard::init_cid() {
+void card::init_cid() {
     m_cid[0] = 0xBB; // manufacturer ID
 
     m_cid[1] = 'J'; // OEM ID
@@ -317,7 +317,7 @@ void sdcard::init_cid() {
     m_cid[15] = crc7(m_cid, sizeof(m_cid) - 1);
 }
 
-void sdcard::init_csd_sdsc() {
+void card::init_csd_sdsc() {
     u32 read_bl_len = fls(m_blklen);
     u32 c_size_mult = 7; // 2^(7+2) = 512
     u32 c_size = disk.capacity() / (m_blklen * (1 << (c_size_mult + 2)));
@@ -352,7 +352,7 @@ void sdcard::init_csd_sdsc() {
     m_csd[15] = crc7(m_csd, sizeof(m_csd) - 1) | 1;
 }
 
-void sdcard::init_csd_sdhc() {
+void card::init_csd_sdhc() {
     u32 c_size_mult = 8; // 2^(8+2) = 1024, fixed by spec
     u32 c_size = disk.capacity() / (m_blklen * (1 << (c_size_mult + 2)));
 
@@ -384,7 +384,7 @@ void sdcard::init_csd_sdhc() {
     m_csd[15] = crc7(m_csd, sizeof(m_csd) - 1) | 1;
 }
 
-void sdcard::init_csd() {
+void card::init_csd() {
     VCML_ERROR_ON(!is_pow2(m_blklen), "invalid block size");
 
     if (is_sdhc())
@@ -393,7 +393,7 @@ void sdcard::init_csd() {
         init_csd_sdsc();
 }
 
-void sdcard::init_scr() {
+void card::init_scr() {
     m_scr[0] = 0 << 4 | 2;
     m_scr[1] = 2 << 4 | (1 + 4); // security & bus widths
     m_scr[2] = 0;                // no extended security
@@ -405,11 +405,11 @@ void sdcard::init_scr() {
     m_scr[7] = 0;
 }
 
-void sdcard::init_sts() {
+void card::init_sts() {
     memset(m_sts, 0, sizeof(m_sts));
 }
 
-void sdcard::switch_function(u32 arg) {
+void card::switch_function(u32 arg) {
     bool update = arg & 0x80000000;
     if (update)
         log_debug("function update requested");
@@ -472,7 +472,7 @@ void sdcard::switch_function(u32 arg) {
     m_swf[65] = crc & 0xff;
 }
 
-sd_status sdcard::do_normal_command(sd_command& tx) {
+sd_status card::do_normal_command(sd_command& tx) {
     switch (tx.opcode) {
     case 0: // GO_IDLE_STATE (SD/SPI)
         m_state = IDLE;
@@ -732,7 +732,7 @@ sd_status sdcard::do_normal_command(sd_command& tx) {
     return SD_ERR_ILLEGAL;
 }
 
-sd_status sdcard::do_application_command(sd_command& tx) {
+sd_status card::do_application_command(sd_command& tx) {
     switch (tx.opcode) {
     case 6: // SET_BUS_WIDTH (SD only)
         if (m_spi)
@@ -808,7 +808,7 @@ sd_status sdcard::do_application_command(sd_command& tx) {
     return SD_ERR_ILLEGAL;
 }
 
-sd_status_tx sdcard::do_data_read(u8& val) {
+sd_status_tx card::do_data_read(u8& val) {
     val = 0xff;
 
     if (m_state != SENDING) {
@@ -841,7 +841,7 @@ sd_status_tx sdcard::do_data_read(u8& val) {
     return SDTX_OK;
 }
 
-sd_status_rx sdcard::do_data_write(u8 val) {
+sd_status_rx card::do_data_write(u8 val) {
     if (m_state != RECEIVING) {
         log_debug("attempt to write to card that is not receiving");
         return SDRX_ERR_ILLEGAL;
@@ -887,7 +887,7 @@ sd_status_rx sdcard::do_data_write(u8 val) {
     return SDRX_OK_BLK_DONE;
 }
 
-sdcard::sdcard(const sc_module_name& nm, const string& img, bool ro):
+card::card(const sc_module_name& nm, const string& img, bool ro):
     component(nm),
     sd_host(),
     m_spi(false),
@@ -923,11 +923,11 @@ sdcard::sdcard(const sc_module_name& nm, const string& img, bool ro):
     init_sts();
 }
 
-sdcard::~sdcard() {
+card::~card() {
     // nothing to do
 }
 
-void sdcard::reset() {
+void card::reset() {
     m_status = 0;
     m_state = IDLE;
 
@@ -940,7 +940,7 @@ void sdcard::reset() {
     component::reset();
 }
 
-sd_status sdcard::do_command(sd_command& tx) {
+sd_status card::do_command(sd_command& tx) {
     if (!check_crc7(tx))
         return SD_ERR_CRC;
 
@@ -950,7 +950,7 @@ sd_status sdcard::do_command(sd_command& tx) {
         return do_normal_command(tx);
 }
 
-void sdcard::sd_transport(const sd_target_socket& socket, sd_command& tx) {
+void card::sd_transport(const sd_target_socket& socket, sd_command& tx) {
     tx.appcmd = (m_status & APP_CMD);
     tx.resp_len = 0;
 
@@ -1009,7 +1009,7 @@ void sdcard::sd_transport(const sd_target_socket& socket, sd_command& tx) {
     }
 }
 
-void sdcard::sd_transport(const sd_target_socket& socket, sd_data& tx) {
+void card::sd_transport(const sd_target_socket& socket, sd_data& tx) {
     if (tx.mode == SD_READ)
         tx.status.read = do_data_read(tx.data);
     if (tx.mode == SD_WRITE)

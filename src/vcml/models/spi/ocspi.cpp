@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/opencores/ocspi.h"
+#include "vcml/models/spi/ocspi.h"
 
 namespace vcml {
-namespace opencores {
+namespace spi {
 
 void ocspi::write_txdata(u8 val) {
     txdata = rxdata.get();
@@ -136,5 +136,5 @@ void ocspi::reset() {
     peripheral::reset();
 }
 
-} // namespace opencores
+} // namespace spi
 } // namespace vcml

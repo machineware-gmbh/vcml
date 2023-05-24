@@ -16,10 +16,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/opencores/oci2c.h"
+#include "vcml/models/i2c/oci2c.h"
 
 namespace vcml {
-namespace opencores {
+namespace i2c {
 
 void oci2c::write_ctr(u8 val) {
     if ((val & CTR_EN) && !(ctr & CTR_EN)) {
@@ -111,5 +111,5 @@ void oci2c::reset() {
     peripheral::reset();
 }
 
-} // namespace opencores
+} // namespace i2c
 } // namespace vcml

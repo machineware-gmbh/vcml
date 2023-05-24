@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_SDHCI_H
-#define VCML_GENERIC_SDHCI_H
+#ifndef VCML_SD_SDHCI_H
+#define VCML_SD_SDHCI_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"

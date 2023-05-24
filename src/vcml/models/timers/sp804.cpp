@@ -16,12 +16,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/arm/sp804timer.h"
+#include "vcml/models/timers/sp804.h"
 
 namespace vcml {
-namespace arm {
+namespace timers {
 
-void sp804timer::timer::trigger() {
+void sp804::timer::trigger() {
     irq = false;
 
     if (is_enabled()) {
@@ -35,7 +35,7 @@ void sp804timer::timer::trigger() {
     m_timer->update_irqc();
 }
 
-void sp804timer::timer::schedule(u32 ticks) {
+void sp804::timer::schedule(u32 ticks) {
     m_ev.cancel();
 
     if (!is_enabled())
@@ -52,7 +52,7 @@ void sp804timer::timer::schedule(u32 ticks) {
     m_ev.notify(delta);
 }
 
-u32 sp804timer::timer::read_value() {
+u32 sp804::timer::read_value() {
     if (!is_enabled())
         return load;
 
@@ -60,43 +60,43 @@ u32 sp804timer::timer::read_value() {
     return load * (1.0 - delta);
 }
 
-u32 sp804timer::timer::read_ris() {
+u32 sp804::timer::read_ris() {
     return irq.read() ? 0x1 : 0x0;
 }
 
-u32 sp804timer::timer::read_mis() {
+u32 sp804::timer::read_mis() {
     return is_irq_enabled() ? read_ris() : 0x0;
 }
 
-void sp804timer::timer::write_load(u32 val) {
+void sp804::timer::write_load(u32 val) {
     load = val;
     bgload = val;
     schedule(val);
 }
 
-void sp804timer::timer::write_control(u32 val) {
+void sp804::timer::write_control(u32 val) {
     if (((val >> CTLR_PRESCALE_O) & CTLR_PRESCALE_M) == 3)
         log_warn("invalid prescaler value defined");
     control = val & (u32)CONTROL_M;
     schedule(load);
 }
 
-void sp804timer::timer::write_intclr(u32 val) {
+void sp804::timer::write_intclr(u32 val) {
     irq = false;
     m_timer->update_irqc();
 }
 
-void sp804timer::timer::write_bgload(u32 val) {
+void sp804::timer::write_bgload(u32 val) {
     load = val;
     bgload = val;
 }
 
-sp804timer::timer::timer(const sc_module_name& nm):
+sp804::timer::timer(const sc_module_name& nm):
     peripheral(nm),
     m_ev("event"),
     m_prev(SC_ZERO_TIME),
     m_next(SC_ZERO_TIME),
-    m_timer(dynamic_cast<sp804timer*>(get_parent_object())),
+    m_timer(dynamic_cast<sp804*>(get_parent_object())),
     load("load", 0x00, 0x00000000),
     value("value", 0x04, 0xffffffff),
     control("control", 0x08, 0x00000020),
@@ -139,20 +139,20 @@ sp804timer::timer::timer(const sc_module_name& nm):
     dont_initialize();
 }
 
-sp804timer::timer::~timer() {
+sp804::timer::~timer() {
     // nothing to do
 }
 
-void sp804timer::timer::reset() {
+void sp804::timer::reset() {
     peripheral::reset();
     m_ev.cancel();
 }
 
-void sp804timer::update_irqc() {
+void sp804::update_irqc() {
     irqc = timer1.irq || timer2.irq;
 }
 
-sp804timer::sp804timer(const sc_module_name& nm):
+sp804::sp804(const sc_module_name& nm):
     peripheral(nm),
     timer1("timer1"),
     timer2("timer2"),
@@ -186,12 +186,12 @@ sp804timer::sp804timer(const sc_module_name& nm):
     rst.bind(timer2.rst);
 }
 
-sp804timer::~sp804timer() {
+sp804::~sp804() {
     // nothing to do
 }
 
-unsigned int sp804timer::receive(tlm_generic_payload& tx, const tlm_sbi& info,
-                                 address_space as) {
+unsigned int sp804::receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                            address_space as) {
     u64 addr = tx.get_address();
 
     if ((addr >= TIMER1_START) && (addr <= TIMER1_END)) {
@@ -211,7 +211,7 @@ unsigned int sp804timer::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     return peripheral::receive(tx, info, as);
 }
 
-void sp804timer::reset() {
+void sp804::reset() {
     peripheral::reset();
 
     for (unsigned int i = 0; i < pid.count(); i++)
@@ -223,5 +223,5 @@ void sp804timer::reset() {
     irqc = false;
 }
 
-} // namespace arm
+} // namespace timers
 } // namespace vcml

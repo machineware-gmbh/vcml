@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_OPENCORES_OCI2C_H
-#define VCML_OPENCORES_OCI2C_H
+#ifndef VCML_I2C_OCI2C_H
+#define VCML_I2C_OCI2C_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/range.h"
@@ -29,7 +29,7 @@
 #include "vcml/protocols/i2c.h"
 
 namespace vcml {
-namespace opencores {
+namespace i2c {
 
 class oci2c : public peripheral
 {
@@ -88,11 +88,11 @@ public:
 
     oci2c(const sc_module_name& nm, u8 reg_shift = 0);
     virtual ~oci2c();
-    VCML_KIND(opencores::oci2c);
+    VCML_KIND(i2c::oci2c);
     virtual void reset() override;
 };
 
-} // namespace opencores
+} // namespace i2c
 } // namespace vcml
 
 #endif

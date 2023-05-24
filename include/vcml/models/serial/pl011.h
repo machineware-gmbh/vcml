@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_ARM_PL011UART_H
-#define VCML_ARM_PL011UART_H
+#ifndef VCML_SERIAL_PL011_H
+#define VCML_SERIAL_PL011_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -29,9 +29,9 @@
 #include "vcml/protocols/serial.h"
 
 namespace vcml {
-namespace arm {
+namespace serial {
 
-class pl011uart : public peripheral, public serial_host
+class pl011 : public peripheral, public serial_host
 {
 private:
     unsigned int m_fifo_size;
@@ -54,8 +54,8 @@ private:
     void write_icr(u16 val);
 
     // disabled
-    pl011uart();
-    pl011uart(const pl011uart&);
+    pl011();
+    pl011(const pl011&);
 
 public:
     enum amba_ids : u32 {
@@ -149,14 +149,14 @@ public:
     bool is_rx_enabled() const { return cr & CR_RXE; }
     bool is_tx_enabled() const { return cr & CR_TXE; }
 
-    pl011uart(const sc_module_name& name);
-    virtual ~pl011uart();
-    VCML_KIND(arm::pl011uart);
+    pl011(const sc_module_name& name);
+    virtual ~pl011();
+    VCML_KIND(serial::pl011);
 
     virtual void reset() override;
 };
 
-} // namespace arm
+} // namespace serial
 } // namespace vcml
 
 #endif

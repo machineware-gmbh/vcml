@@ -85,14 +85,16 @@
 #include "vcml/models/generic/memory.h"
 #include "vcml/models/generic/gate.h"
 #include "vcml/models/generic/gpio.h"
-#include "vcml/models/generic/uart8250.h"
-#include "vcml/models/generic/lan9118.h"
-#include "vcml/models/generic/rtc1742.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
 
 #include "vcml/models/serial/backend.h"
 #include "vcml/models/serial/terminal.h"
+#include "vcml/models/serial/uart8250.h"
+#include "vcml/models/serial/pl011.h"
+
+#include "vcml/models/timers/rtc1742.h"
+#include "vcml/models/timers/sp804.h"
 
 #include "vcml/models/block/backend.h"
 #include "vcml/models/block/disk.h"
@@ -100,19 +102,23 @@
 #include "vcml/models/ethernet/backend.h"
 #include "vcml/models/ethernet/bridge.h"
 #include "vcml/models/ethernet/network.h"
+#include "vcml/models/ethernet/lan9118.h"
+#include "vcml/models/ethernet/ethoc.h"
 
 #include "vcml/models/can/backend.h"
 #include "vcml/models/can/bridge.h"
 #include "vcml/models/can/bus.h"
 
 #include "vcml/models/i2c/lm75.h"
+#include "vcml/models/i2c/oci2c.h"
 
 #include "vcml/models/spi/bus.h"
 #include "vcml/models/spi/spi2sd.h"
 #include "vcml/models/spi/max31855.h"
 #include "vcml/models/spi/flash.h"
+#include "vcml/models/spi/ocspi.h"
 
-#include "vcml/models/sd/sdcard.h"
+#include "vcml/models/sd/card.h"
 #include "vcml/models/sd/sdhci.h"
 
 #include "vcml/models/pci/device.h"
@@ -130,20 +136,17 @@
 #include "vcml/models/meta/throttle.h"
 
 #include "vcml/models/opencores/ompic.h"
-#include "vcml/models/opencores/ethoc.h"
 #include "vcml/models/opencores/ockbd.h"
 #include "vcml/models/opencores/ocfbc.h"
-#include "vcml/models/opencores/ocspi.h"
-#include "vcml/models/opencores/oci2c.h"
 
-#include "vcml/models/arm/pl011uart.h"
 #include "vcml/models/arm/pl190vic.h"
-#include "vcml/models/arm/sp804timer.h"
 #include "vcml/models/arm/syscon.h"
 #include "vcml/models/arm/gic400.h"
 
 #include "vcml/models/riscv/clint.h"
 #include "vcml/models/riscv/plic.h"
 #include "vcml/models/riscv/simdev.h"
+
+#include "vcml/models/deprecated.h"
 
 #endif

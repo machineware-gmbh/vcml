@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_OPENCORES_OCSPI_H
-#define VCML_OPENCORES_OCSPI_H
+#ifndef VCML_SPI_OCSPI_H
+#define VCML_SPI_OCSPI_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -30,7 +30,7 @@
 #include "vcml/protocols/spi.h"
 
 namespace vcml {
-namespace opencores {
+namespace spi {
 
 class ocspi : public peripheral
 {
@@ -67,12 +67,12 @@ public:
 
     ocspi(const sc_module_name& name);
     virtual ~ocspi();
-    VCML_KIND(opencores::ocspi);
+    VCML_KIND(spi::ocspi);
 
     virtual void reset() override;
 };
 
-} // namespace opencores
+} // namespace spi
 } // namespace vcml
 
 #endif

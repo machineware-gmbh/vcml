@@ -66,7 +66,7 @@ enum lan9117_phy_csr : u32 {
 class lan9118_bench : public test_base
 {
 public:
-    generic::lan9118 lan;
+    ethernet::lan9118 lan;
     tlm_initiator_socket out;
     gpio_target_socket irq;
 
