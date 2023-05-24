@@ -1,0 +1,113 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright 2023 MachineWare GmbH                                            *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *     http://www.apache.org/licenses/LICENSE-2.0                             *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ *                                                                            *
+ ******************************************************************************/
+
+#ifndef VCML_SERIAL_NRF51_H
+#define VCML_SERIAL_NRF51_H
+
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/peripheral.h"
+
+#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/serial.h"
+
+namespace vcml {
+namespace serial {
+
+class nrf51 : public peripheral, public serial_host
+{
+private:
+    static constexpr size_t FIFO_SIZE = 6;
+
+    queue<u8> m_fifo;
+
+    bool m_enabled;
+    bool m_rx_enabled;
+    bool m_tx_enabled;
+
+    bool is_enabled() const { return m_enabled; }
+    bool is_rx_enabled() const { return is_enabled() && m_rx_enabled; }
+    bool is_tx_enabled() const { return is_enabled() && m_tx_enabled; }
+
+    u32 read_rxd();
+
+    void write_startrx(u32 val);
+    void write_stoprx(u32 val);
+    void write_starttx(u32 val);
+    void write_stoptx(u32 val);
+    void write_suspend(u32 val);
+    void write_enable(u32 val);
+    void write_inten(u32 val);
+    void write_intenset(u32 val);
+    void write_intenclr(u32 val);
+    void write_errsrc(u32 val);
+    void write_txd(u32 val);
+    void write_baudrate(u32 val);
+    void write_config(u32 val);
+
+    void update();
+
+    // serial_host
+    void serial_receive(u8 data) override;
+
+public:
+    reg<u32> startrx;
+    reg<u32> stoprx;
+    reg<u32> starttx;
+    reg<u32> stoptx;
+    reg<u32> suspend;
+
+    reg<u32> cts;
+    reg<u32> ncts;
+    reg<u32> rxdrdy;
+    reg<u32> txdrdy;
+    reg<u32> error;
+    reg<u32> rxto;
+
+    reg<u32> inten;
+    reg<u32> intenset;
+    reg<u32> intenclr;
+    reg<u32> errsrc;
+    reg<u32> enable;
+    reg<u32> pselrts;
+    reg<u32> pseltxd;
+    reg<u32> pselcts;
+    reg<u32> pselrxd;
+    reg<u32> rxd;
+    reg<u32> txd;
+    reg<u32> baudrate;
+    reg<u32> config;
+
+    serial_initiator_socket serial_tx;
+    serial_target_socket serial_rx;
+
+    gpio_initiator_socket irq;
+    tlm_target_socket in;
+
+    nrf51(const sc_module_name& name);
+    virtual ~nrf51();
+    VCML_KIND(serial::nrf51);
+    virtual void reset() override;
+};
+
+} // namespace serial
+} // namespace vcml
+
+#endif
