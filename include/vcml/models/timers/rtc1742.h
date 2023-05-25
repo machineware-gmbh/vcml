@@ -16,8 +16,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_TIMER_RTC1742_H
-#define VCML_TIMER_RTC1742_H
+#ifndef VCML_TIMERS_RTC1742_H
+#define VCML_TIMERS_RTC1742_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
