@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Jan Henrik Weinstock                                        *
+ * Copyright 2023 MachineWare GmbH                                            *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -16,58 +16,50 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <future>
 #include "testing.h"
 
-class timer_test : public test_base
+class nrf51_test : public test_base
 {
 public:
-    timer_test(const sc_module_name& nm): test_base(nm) {}
+    timers::nrf51 nrf51;
+    tlm_initiator_socket out;
+    gpio_target_socket irq;
+
+    enum : u64 {
+        NRF51_START = 0x0,
+        NRF51_STOP = 0x4,
+        NRF51_COUNT = 0x8,
+        NRF51_CLEAR = 0xc,
+        NRF51_SHUTDOWN = 0x10,
+        NRF51_CAPTURE0 = 0x40,
+        NRF51_COMPARE0 = 0x140,
+        NRF51_SHORTS = 0x200,
+        NRF51_INTENSET = 0x304,
+        NRF51_INTENCLR = 0x308,
+        NRF51_MODE = 0x504,
+        NRF51_BITMODE = 0x508,
+        NRF51_PRESCALER = 0x510,
+        NRF51_CC = 0x540,
+    };
+
+    nrf51_test(const sc_module_name& nm):
+        test_base(nm), nrf51("nrf51"), out("out"), irq("irq") {
+        out.bind(nrf51.in);
+        nrf51.irq.bind(irq);
+        rst.bind(nrf51.rst);
+        clk.bind(nrf51.clk);
+        EXPECT_STREQ(nrf51.kind(), "vcml::timers::nrf51");
+    }
 
     virtual void run_test() override {
-        timer t1(1, SC_MS, [](timer& t) -> void {
-            EXPECT_EQ(sc_time_stamp(), t.timeout());
-        });
+        // u32 data;
 
-        timer t2(1, SC_US, [](timer& t) -> void {
-            EXPECT_EQ(sc_time_stamp(), t.timeout());
-            t.reset(1, SC_US);
-        });
-
-        EXPECT_EQ(t1.count(), 0);
-        EXPECT_EQ(t2.count(), 0);
-
-        wait(1, SC_MS);
-
-        EXPECT_EQ(t1.count(), 1);
-        EXPECT_EQ(t2.count(), 1000);
-
-        atomic<bool> running(true);
-
-        std::promise<void> promise;
-        std::future<void> future = promise.get_future();
-
-        std::thread async([&]() -> void {
-            EXPECT_TRUE(running);
-            EXPECT_FALSE(thctl_is_sysc_thread());
-            timer t3(10, SC_US, [&](timer& t) -> void {
-                EXPECT_GE(sc_time_stamp(), t.timeout());
-                EXPECT_TRUE(thctl_is_sysc_thread());
-                running = false;
-                promise.set_value();
-            });
-
-            future.wait();
-        });
-
-        while (running)
-            wait(1, SC_US);
-
-        async.join();
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irq) << "irq did not reset";
     }
 };
 
-TEST(timer, test) {
-    timer_test test("timer");
+TEST(timer, nrf51) {
+    nrf51_test test("test");
     sc_core::sc_start();
 }

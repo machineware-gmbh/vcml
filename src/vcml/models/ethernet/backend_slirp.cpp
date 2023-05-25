@@ -98,16 +98,16 @@ static int64_t slirp_clock_ns(void* opaque) {
 }
 
 static void* slirp_timer_new(SlirpTimerCb cb, void* obj, void* opaque) {
-    return new timer([cb, obj](timer& t) -> void { (*cb)(obj); });
+    return new async_timer([cb, obj](async_timer& t) -> void { (*cb)(obj); });
 }
 
 static void slirp_timer_free(void* t, void* opaque) {
     if (t)
-        delete (timer*)t;
+        delete (async_timer*)t;
 }
 
 static void slirp_timer_mod(void* t, int64_t expire_time, void* opaque) {
-    ((timer*)t)->reset(expire_time, SC_MS);
+    ((async_timer*)t)->reset(expire_time, SC_MS);
 }
 
 static void slirp_register_poll_fd(int fd, void* opaque) {

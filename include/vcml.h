@@ -96,6 +96,7 @@
 
 #include "vcml/models/timers/rtc1742.h"
 #include "vcml/models/timers/sp804.h"
+#include "vcml/models/timers/nrf51.h"
 
 #include "vcml/models/block/backend.h"
 #include "vcml/models/block/disk.h"

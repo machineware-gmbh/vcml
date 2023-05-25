@@ -321,27 +321,27 @@ void on_end_of_simulation(function<void(void)> callback);
 void on_each_delta_cycle(function<void(void)> callback);
 void on_each_time_step(function<void(void)> callback);
 
-class timer
+class async_timer
 {
 public:
     struct event {
-        timer* owner;
+        async_timer* owner;
         sc_time timeout;
     };
 
     size_t count() const { return m_triggers; }
     const sc_time& timeout() const { return m_timeout; }
 
-    timer(function<void(timer&)> cb);
-    ~timer();
+    async_timer(function<void(async_timer&)> cb);
+    ~async_timer();
 
-    timer(const sc_time& delta, function<void(timer&)> cb):
-        timer(std::move(cb)) {
+    async_timer(const sc_time& delta, function<void(async_timer&)> cb):
+        async_timer(std::move(cb)) {
         reset(delta);
     }
 
-    timer(double t, sc_time_unit tu, function<void(timer&)> cb):
-        timer(std::move(cb)) {
+    async_timer(double t, sc_time_unit tu, function<void(async_timer&)> cb):
+        async_timer(std::move(cb)) {
         reset(t, tu);
     }
 
@@ -355,7 +355,7 @@ private:
     size_t m_triggers;
     sc_time m_timeout;
     event* m_event;
-    function<void(timer&)> m_cb;
+    function<void(async_timer&)> m_cb;
 };
 
 void sc_async(function<void(void)> job);

@@ -58,7 +58,7 @@ core_test("suspender")
 core_test("async")
 core_test("stubs")
 core_test("tracing")
-core_test("timer")
+core_test("async_timer")
 core_test("memory")
 core_test("disk")
 

@@ -270,22 +270,24 @@ public:
     vector<function<void(void)>> tsteps;
 
     struct timer_compare {
-        inline bool operator()(const timer::event* a,
-                               const timer::event* b) const {
+        inline bool operator()(const async_timer::event* a,
+                               const async_timer::event* b) const {
             return a->timeout > b->timeout;
         }
     };
 
     sc_event timeout_event;
-    priority_queue<timer::event*, vector<timer::event*>, timer_compare> timers;
+    priority_queue<async_timer::event*, vector<async_timer::event*>,
+                   timer_compare>
+        timers;
 
-    vector<timer::event*> pending_timers() {
+    vector<async_timer::event*> pending_timers() {
         lock_guard<mutex> guard(mtx);
-        vector<timer::event*> pending;
+        vector<async_timer::event*> pending;
         sc_time now = sc_time_stamp();
 
         while (!timers.empty()) {
-            timer::event* event = timers.top();
+            async_timer::event* event = timers.top();
             if (event->timeout > now)
                 break;
 
@@ -312,7 +314,7 @@ public:
     }
 
     void run_timer() {
-        vector<timer::event*> pending = pending_timers();
+        vector<async_timer::event*> pending = pending_timers();
         for (auto event : pending) {
             if (event->owner)
                 event->owner->trigger();
@@ -322,7 +324,7 @@ public:
         update_timer();
     }
 
-    void add_timer(timer::event* ev) {
+    void add_timer(async_timer::event* ev) {
         lock_guard<mutex> guard(mtx);
         timers.push(ev);
         async_request_update();
@@ -470,28 +472,28 @@ void on_each_time_step(function<void(void)> callback) {
     helper.tsteps.push_back(std::move(callback));
 }
 
-timer::timer(function<void(timer&)> cb):
+async_timer::async_timer(function<void(async_timer&)> cb):
     m_triggers(0), m_timeout(), m_event(nullptr), m_cb(std::move(cb)) {
 }
 
-timer::~timer() {
+async_timer::~async_timer() {
     cancel();
 }
 
-void timer::trigger() {
+void async_timer::trigger() {
     m_event = nullptr;
     m_triggers++;
     m_cb(*this);
 }
 
-void timer::cancel() {
+void async_timer::cancel() {
     if (m_event) {
         m_event->owner = nullptr;
         m_event = nullptr;
     }
 }
 
-void timer::reset(const sc_time& delta) {
+void async_timer::reset(const sc_time& delta) {
     cancel();
 
     m_event = new event;
