@@ -127,6 +127,7 @@ void nrf51::write_clear(u32 val) {
     if (val == 1u) {
         count = 0;
         m_start = sc_time_stamp();
+        update();
     }
 }
 
