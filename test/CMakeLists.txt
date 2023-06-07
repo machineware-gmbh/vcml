@@ -34,6 +34,7 @@ set(VCML_TEST_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 add_library(testing testing.cpp)
 target_include_directories(testing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(testing vcml gtest gmock)
+target_compile_options(testing PUBLIC -Wall -Werror)
 
 add_subdirectory(core)
 add_subdirectory(models)
