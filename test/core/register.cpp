@@ -621,7 +621,7 @@ TEST(registers, masking) {
 
     tx_setup(tx, TLM_WRITE_COMMAND, 0, &data, sizeof(data));
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
-    EXPECT_EQ(mock.test_reg, 0x10101010);
+    EXPECT_EQ(mock.test_reg, 0x10101010u);
 
     tx_setup(tx, TLM_WRITE_COMMAND, 0x10, &data, sizeof(data));
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);

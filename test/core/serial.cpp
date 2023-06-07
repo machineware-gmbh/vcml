@@ -60,7 +60,7 @@ MATCHER_P(serial_match_socket, socket, "Matches a serial socket") {
 }
 
 MATCHER_P2(serial_match_tx, data, baud, "Matches a serial payload") {
-    return (arg.data & arg.mask) == data && arg.baud == baud;
+    return (arg.data & arg.mask) == (u32)data && arg.baud == baud;
 }
 
 class serial_bench : public test_base, public serial_host
