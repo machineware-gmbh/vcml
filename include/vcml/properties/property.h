@@ -20,6 +20,7 @@
 #define VCML_PROPERTY_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/range.h"
 #include "vcml/logging/logger.h"
 #include "vcml/properties/property_base.h"
 #include "vcml/properties/broker.h"
@@ -68,6 +69,9 @@ public:
     void set_default(const T& defval);
 
     void inherit_default();
+
+    const char* c_str() const;
+    size_t length() const;
 
     operator T() const;
     T operator~() const;
@@ -271,6 +275,23 @@ inline void property<T, N>::inherit_default() {
 
     if (prop != nullptr)
         set_default(prop->get());
+}
+
+template <typename T, const unsigned int N>
+const char* property<T, N>::c_str() const {
+    if constexpr (std::is_same_v<T, string>)
+        return get().c_str();
+    else
+        return m_str.c_str();
+}
+
+template <typename T, const unsigned int N>
+size_t property<T, N>::length() const {
+    if constexpr (std::is_same_v<T, string>)
+        return get().length();
+    if constexpr (std::is_same_v<T, range>)
+        return get().length();
+    return size();
 }
 
 template <typename T, const unsigned int N>

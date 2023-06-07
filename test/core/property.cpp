@@ -33,18 +33,20 @@ public:
     vcml::property<std::string> not_inited;
     vcml::property<vcml::u32, 4> prop_array;
     vcml::property<std::string, 4> prop_array_string;
+    vcml::property<vcml::range> prop_range;
 
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
         prop_str("prop_str", "abc"),
-        prop_u64("prop_u64", 0xFFFFFFFFFFFFFFFF),
-        prop_u32("prop_u32", 0xFFFFFFFF),
-        prop_u16("prop_u16", 0xFFFF),
-        prop_u8("prop_u8", 0xFF),
+        prop_u64("prop_u64", 0xffffffffffffffff),
+        prop_u32("prop_u32", 0xffffffff),
+        prop_u16("prop_u16", 0xffff),
+        prop_u8("prop_u8", 0xff),
         prop_i32("prop_i32", -1),
         not_inited("prop_not_inited", "not_inited"),
         prop_array("prop_array", 7),
-        prop_array_string("prop_array_string", "not_inited") {}
+        prop_array_string("prop_array_string", "not_inited"),
+        prop_range("prop_range", { 1, 2 }) {}
 
     virtual ~test_component() { /* nothing to do */
     }
@@ -60,27 +62,29 @@ TEST(property, init) {
     broker.define("test.prop_i32", "-2");
     broker.define("test.prop_array", "1 2 3 4");
     broker.define("test.prop_array_string", "abc def x\\ y zzz");
+    broker.define("test.prop_range", "0x10..0x1f");
 
     test_component test("test");
     EXPECT_EQ((std::string)test.prop_str, "hello world");
     EXPECT_EQ((std::string)test.prop_str.str(), "hello world");
+    EXPECT_STREQ(test.prop_str.c_str(), "hello world");
     EXPECT_EQ(test.prop_str.get_default(), "abc");
 
     EXPECT_EQ(test.prop_u64, 0x123456789ABCDEF0);
     EXPECT_EQ(std::string(test.prop_u64.str()), "1311768467463790320");
-    EXPECT_EQ(test.prop_u64.get_default(), 0xFFFFFFFFFFFFFFFF);
+    EXPECT_EQ(test.prop_u64.get_default(), 0xffffffffffffffff);
 
     EXPECT_EQ(test.prop_u32, 12345678);
     EXPECT_EQ(std::string(test.prop_u32.str()), "12345678");
-    EXPECT_EQ(test.prop_u32.get_default(), 0xFFFFFFFF);
+    EXPECT_EQ(test.prop_u32.get_default(), 0xffffffff);
 
     EXPECT_EQ(test.prop_u16, 12345);
     EXPECT_EQ(std::string(test.prop_u16.str()), "12345");
-    EXPECT_EQ(test.prop_u16.get_default(), 0xFFFF);
+    EXPECT_EQ(test.prop_u16.get_default(), 0xffff);
 
     EXPECT_EQ(test.prop_u8, 123);
     EXPECT_EQ(std::string(test.prop_u8.str()), "123");
-    EXPECT_EQ(test.prop_u8.get_default(), 0xFF);
+    EXPECT_EQ(test.prop_u8.get_default(), 0xff);
 
     EXPECT_EQ(test.prop_i32, -2);
     EXPECT_EQ(std::string(test.prop_i32.str()), "-2");
@@ -103,6 +107,11 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array_string[2], "x y");
     EXPECT_EQ(test.prop_array_string[3], "zzz");
     EXPECT_EQ(std::string(test.prop_array_string.str()), "abc def x\\ y zzz");
+
+    EXPECT_EQ(test.prop_range.get(), vcml::range(0x10, 0x1f));
+    EXPECT_EQ(test.prop_range.get_default(), vcml::range(1, 2));
+    EXPECT_STREQ(test.prop_range.str(), "0x00000010..0x0000001f");
+    EXPECT_EQ(test.prop_range.length(), 0x1f - 0x10 + 1);
 
     test.prop_array_string[3] = "z z";
     EXPECT_EQ(std::string(test.prop_array_string.str()),
