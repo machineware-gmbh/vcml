@@ -69,7 +69,7 @@ private:
     // sd_status  m_status;
 
     u16 m_bufptr;
-    u8 m_buffer[514]; // 512 block length + 2 bytes CRC
+    u8 m_buffer[4096];
 
     void reset_response(int response_reg_nr);
     void store_response();
