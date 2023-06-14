@@ -14,3 +14,7 @@ race:sc_core::sc_time::sc_time
 # vector when checking if there are any pending requests via vector->size()
 race:sc_core::sc_prim_channel_registry::async_update_list::pending
 race:sc_core::sc_prim_channel_registry::async_update_list::append
+
+# fibers are considered as individual threads, and we call suspend() from the
+# main thread, but sometimes also from vcml processor SC_THREADS
+mutex:vcml::thctl::suspend
