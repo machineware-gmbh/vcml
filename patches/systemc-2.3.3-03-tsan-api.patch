@@ -1,0 +1,153 @@
+diff -aruN systemc/src/sysc/kernel/sc_cor_qt.cpp systemc-tsan/src/sysc/kernel/sc_cor_qt.cpp
+--- systemc/src/sysc/kernel/sc_cor_qt.cpp	2023-06-14 10:58:40.896253050 +0200
++++ systemc-tsan/src/sysc/kernel/sc_cor_qt.cpp	2023-06-14 11:00:39.936398188 +0200
+@@ -53,21 +53,67 @@
+ //  Sanitizer helpers
+ // ----------------------------------------------------------------------------
+ 
++// We use weak references to the sanitizer API instead of relying on the usual
++// "ifdef __SANITIZE_ADDRESS__" preprocessor guards. Reasons:
++// 1. We can notify sanitizers in the main program, even if the kernel was
++//    compiled without -fsanitize=xyz
++// 2. We do not have to check for the presence of the sanitizer API. For
++//    example, the __tsan_xxx API is not available in GCC 9 (Ubuntu 20.04),
++//    but is required for correct operation in GCC 11 (Ubuntu 22.04)
++// Note that we assume only one sanitizer is active and, thus, will only call
++// the first API that is found (e.g. __sanitizer_abc before __tsan_xyz)
+ static void __sanitizer_start_switch_fiber(void** fake, void* stack_base,
+     size_t size) __attribute__((weakref("__sanitizer_start_switch_fiber")));
+ static void __sanitizer_finish_switch_fiber(void* fake, void** stack_base,
+     size_t* size) __attribute__((weakref("__sanitizer_finish_switch_fiber")));
+ 
+-static void __sanitizer_start_switch_cor_qt( sc_cor_qt* next ) {
+-    if (&__sanitizer_start_switch_fiber != NULL) {
+-        __sanitizer_start_switch_fiber( NULL, next->m_stack,
++static void* __tsan_get_current_fiber()
++    __attribute__((weakref("__tsan_get_current_fiber")));
++static void* __tsan_create_fiber(unsigned int flags)
++    __attribute__((weakref("__tsan_create_fiber")));
++static void __tsan_destroy_fiber(void* fiber)
++    __attribute__((weakref("__tsan_destroy_fiber")));
++static void __tsan_switch_to_fiber(void* fiber, unsigned int flags)
++    __attribute__((weakref("__tsan_switch_to_fiber")));
++static void* __tsan_cleanup = NULL;
++
++static inline __attribute__((always_inline)) bool sanitizer_present() {
++    return &__sanitizer_start_switch_fiber != NULL &&
++           &__sanitizer_finish_switch_fiber != NULL;
++}
++
++static inline __attribute__((always_inline)) bool tsan_present() {
++    return &__tsan_get_current_fiber != NULL &&
++           &__tsan_create_fiber != NULL &&
++           &__tsan_destroy_fiber != NULL &&
++           &__tsan_switch_to_fiber != NULL;
++}
++
++static inline __attribute__((always_inline))
++void sanitizer_start_switch( sc_cor_qt* next, void** context_save ) {
++    if( sanitizer_present() ) {
++        __sanitizer_start_switch_fiber( context_save, next->m_stack,
+                                         next->m_stack_size );
++    } else if( tsan_present() ) {
++        if( context_save != NULL )
++            *context_save = __tsan_get_current_fiber();
++        else
++            __tsan_cleanup = __tsan_get_current_fiber();
+     }
+ }
+ 
+-static void __sanitizer_finish_switch_cor_qt() {
+-    if (&__sanitizer_finish_switch_fiber != NULL) {
+-        __sanitizer_finish_switch_fiber( NULL, NULL, NULL );
++static inline __attribute__((always_inline))
++void sanitizer_finish_switch( sc_cor_qt* next, void* context_save ) {
++    if( sanitizer_present() ) {
++        __sanitizer_finish_switch_fiber( context_save, NULL, NULL );
++    } else if( tsan_present() ) {
++        if( context_save == NULL )
++            context_save = __tsan_create_fiber( 0 );
++        __tsan_switch_to_fiber( context_save, 0 );
++        if( __tsan_cleanup != NULL ) {
++            __tsan_destroy_fiber( __tsan_cleanup );
++            __tsan_cleanup = NULL;
++        }
+     }
+ }
+ 
+@@ -178,16 +224,23 @@
+ 
+ // create a new coroutine
+ 
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Wcast-function-type"
+ extern "C"
+ void
+ sc_cor_qt_wrapper( void* arg, void* cor, qt_userf_t* fn )
+ {
+     curr_cor = reinterpret_cast<sc_cor_qt*>( cor );
++    sanitizer_finish_switch( curr_cor, NULL );
++
+     // invoke the user function
+     (*(sc_cor_fn*) fn)( arg );
+     // not reached
+ }
++#pragma GCC diagnostic pop
+ 
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Wcast-function-type"
+ sc_cor*
+ sc_cor_pkg_qt::create( std::size_t stack_size, sc_cor_fn* fn, void* arg )
+ {
+@@ -195,7 +248,8 @@
+     cor->m_pkg = this;
+     cor->m_stack_size = stack_size;
+     cor->m_stack = mmap(NULL, cor->m_stack_size, PROT_READ | PROT_WRITE,
+-                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++                        MAP_PRIVATE | MAP_ANON, -1, 0);
++
+ #ifdef HAVE_VALGRIND_H
+     cor->m_vgid = VALGRIND_STACK_REGISTER(cor->m_stack, (char*)cor->m_stack + cor->m_stack_size - 1);
+ #endif
+@@ -206,6 +260,7 @@
+ 			           sc_cor_qt_wrapper );
+     return cor;
+ }
++#pragma GCC diagnostic pop
+ 
+ 
+ // yield to the next coroutine
+@@ -215,7 +270,6 @@
+ sc_cor_qt_yieldhelp( qt_t* sp, void* old_cor, void* )
+ {
+     reinterpret_cast<sc_cor_qt*>( old_cor )->m_sp = sp;
+-    __sanitizer_finish_switch_cor_qt();
+     return 0;
+ }
+ 
+@@ -225,8 +279,14 @@
+     sc_cor_qt* new_cor = static_cast<sc_cor_qt*>( next_cor );
+     sc_cor_qt* old_cor = curr_cor;
+     curr_cor = new_cor;
+-    __sanitizer_start_switch_cor_qt( new_cor );
++
++    void* sanitizer_context = NULL;
++
++    sanitizer_start_switch( new_cor, &sanitizer_context );
++
+     QUICKTHREADS_BLOCK( sc_cor_qt_yieldhelp, old_cor, 0, new_cor->m_sp );
++
++    sanitizer_finish_switch( old_cor, sanitizer_context );
+ }
+ 
+ 
+@@ -245,6 +305,9 @@
+     sc_cor_qt* new_cor = static_cast<sc_cor_qt*>( next_cor );
+     sc_cor_qt* old_cor = curr_cor;
+     curr_cor = new_cor;
++
++    sanitizer_start_switch( new_cor, NULL );
++
+     QUICKTHREADS_ABORT( sc_cor_qt_aborthelp, old_cor, 0, new_cor->m_sp );
+ }
+ 
