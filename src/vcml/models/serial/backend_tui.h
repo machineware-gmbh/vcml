@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright (C) 2022 MachineWare GmbH                                        *
+ * Copyright (C) 2023 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
  *                                                                            *
  * This is work is licensed under the terms described in the LICENSE file     *
@@ -8,39 +8,41 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SERIAL_BACKEND_H
-#define VCML_SERIAL_BACKEND_H
+#ifndef VCML_SERIAL_BACKEND_TUI_H
+#define VCML_SERIAL_BACKEND_TUI_H
 
 #include "vcml/core/types.h"
+#include "vcml/logging/logger.h"
+#include "vcml/models/serial/backend.h"
+
+#include <ncurses.h>
 
 namespace vcml {
 namespace serial {
 
-class terminal;
-
-class backend
+class backend_tui : public backend
 {
-protected:
-    terminal* m_term;
-    string m_type;
+private:
+    int m_fd;
+
+    atomic<bool> m_exit_requested;
+    atomic<bool> m_backend_active;
+
+    thread m_iothread;
+    mutable mutex m_mtx;
+    queue<u8> m_fifo;
+
+    void iothread();
+    void terminate();
 
 public:
-    backend(terminal* term, const string& type);
-    virtual ~backend();
+    logger log;
 
-    backend() = delete;
-    backend(const backend&) = delete;
-    backend(backend&&) = default;
+    backend_tui(terminal* term);
+    virtual ~backend_tui();
 
-    terminal* term() const { return m_term; }
-
-    const char* type() const { return m_type.c_str(); }
-
-    virtual bool read(u8& val) = 0;
-    virtual void write(u8 val) = 0;
-
-    void capture_stdin();
-    void release_stdin();
+    virtual bool read(u8& val) override;
+    virtual void write(u8 val) override;
 
     static backend* create(terminal* term, const string& type);
 };

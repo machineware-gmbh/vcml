@@ -16,6 +16,10 @@
 #include "vcml/models/serial/backend_fd.h"
 #include "vcml/models/serial/backend_term.h"
 
+#ifdef HAVE_NCURSES
+#include "vcml/models/serial/backend_tui.h"
+#endif
+
 namespace vcml {
 namespace serial {
 
@@ -30,6 +34,19 @@ backend::~backend() {
         m_term->detach(this);
 }
 
+static backend* stdin_owner = nullptr;
+
+void backend::capture_stdin() {
+    VCML_ERROR_ON(stdin_owner, "stdin already owned by %s on %s",
+                  stdin_owner->type(), stdin_owner->term()->name());
+    stdin_owner = this;
+}
+
+void backend::release_stdin() {
+    if (stdin_owner == this)
+        stdin_owner = nullptr;
+}
+
 backend* backend::create(terminal* term, const string& type) {
     string kind = type.substr(0, type.find(':'));
     typedef function<backend*(terminal*, const string&)> construct;
@@ -37,6 +54,9 @@ backend* backend::create(terminal* term, const string& type) {
         { "file", backend_file::create }, { "tcp", backend_tcp::create },
         { "stderr", backend_fd::create }, { "stdout", backend_fd::create },
         { "term", backend_term::create },
+#ifdef HAVE_NCURSES
+        { "tui", backend_tui::create },
+#endif
     };
 
     auto it = backends.find(kind);

@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/models/serial/terminal.h"
-#include "vcml/models/serial/backend_term.h"
+#include "vcml/models/serial/backend_tui.h"
 
 #include "vcml/debugging/suspender.h"
 
@@ -22,7 +22,7 @@ enum keys : u8 {
     CTRL_X = 0x18,
 };
 
-void backend_term::terminate() {
+void backend_tui::terminate() {
     if (m_exit_requested || !sim_running()) {
         log_info("forced exit");
         exit(EXIT_SUCCESS);
@@ -32,7 +32,7 @@ void backend_term::terminate() {
     debugging::suspender::quit();
 }
 
-void backend_term::iothread() {
+void backend_tui::iothread() {
     while (m_backend_active && sim_running()) {
         if (mwr::fd_peek(m_fd, 100)) {
             u8 ch;
@@ -58,7 +58,7 @@ void backend_term::iothread() {
     }
 }
 
-backend_term::backend_term(terminal* term):
+backend_tui::backend_tui(terminal* term):
     backend(term, "term"),
     m_fd(STDIN_FILENO),
     m_exit_requested(false),
@@ -67,15 +67,15 @@ backend_term::backend_term(terminal* term):
     m_mtx(),
     m_fifo(),
     log("terminal") {
-    capture_stdin();
     VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
+    capture_stdin();
     mwr::tty_push(m_fd, true);
     mwr::tty_set(m_fd, false, false);
-    m_iothread = thread(&backend_term::iothread, this);
-    mwr::set_thread_name(m_iothread, "term_iothread");
+    m_iothread = thread(&backend_tui::iothread, this);
+    mwr::set_thread_name(m_iothread, "tui_iothread");
 }
 
-backend_term::~backend_term() {
+backend_tui::~backend_tui() {
     m_backend_active = false;
     if (m_iothread.joinable())
         m_iothread.join();
@@ -84,7 +84,7 @@ backend_term::~backend_term() {
     release_stdin();
 }
 
-bool backend_term::read(u8& value) {
+bool backend_tui::read(u8& value) {
     lock_guard<mutex> lock(m_mtx);
     if (m_fifo.empty())
         return false;
@@ -94,12 +94,13 @@ bool backend_term::read(u8& value) {
     return true;
 }
 
-void backend_term::write(u8 val) {
+void backend_tui::write(u8 val) {
+    // ToDo: draw a TUI frame with the new character appended
     mwr::fd_write(m_fd, &val, sizeof(val));
 }
 
-backend* backend_term::create(terminal* term, const string& type) {
-    return new backend_term(term);
+backend* backend_tui::create(terminal* term, const string& type) {
+    return new backend_tui(term);
 }
 
 } // namespace serial
