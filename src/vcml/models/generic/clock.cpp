@@ -15,14 +15,11 @@ namespace generic {
 
 clock::clock(const sc_module_name& nm, clock_t init_hz):
     module(nm), hz("hz", init_hz), clk("clk") {
+    clk = hz;
 }
 
 clock::~clock() {
     // nothing to do
-}
-
-void clock::end_of_elaboration() {
-    clk = hz;
 }
 
 } // namespace generic

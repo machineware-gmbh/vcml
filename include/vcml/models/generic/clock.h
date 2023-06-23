@@ -33,9 +33,6 @@ public:
     clock(const sc_module_name& nm, clock_t hz);
     virtual ~clock();
     VCML_KIND(clock);
-
-protected:
-    virtual void end_of_elaboration() override;
 };
 
 } // namespace generic
