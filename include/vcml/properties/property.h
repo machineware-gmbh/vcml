@@ -19,7 +19,7 @@
 
 namespace vcml {
 
-template <typename T, const unsigned int N = 1>
+template <typename T, size_t N = 1>
 class property : public property_base
 {
 private:
@@ -47,15 +47,18 @@ public:
     virtual size_t count() const override;
     virtual const char* type() const override;
 
+    constexpr bool is_inited() const { return m_inited; }
+    constexpr bool is_default() const { return !m_inited; }
+
     const T& get() const;
     T& get();
 
-    const T& get(unsigned int idx) const;
-    T& get(unsigned int idx);
+    const T& get(size_t idx) const;
+    T& get(size_t idx);
 
     void set(const T& val);
     void set(const T val[N]);
-    void set(const T& val, unsigned int idx);
+    void set(const T& val, size_t idx);
 
     const T& get_default() const;
     void set_default(const T& defval);
@@ -68,8 +71,8 @@ public:
     operator T() const;
     T operator~() const;
 
-    const T& operator[](unsigned int idx) const;
-    T& operator[](unsigned int idx);
+    const T& operator[](size_t idx) const;
+    T& operator[](size_t idx);
 
     property<T, N>& operator=(const property<T, N>& other);
 
@@ -110,13 +113,13 @@ public:
     bool operator>(const T2& other);
 };
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 property<T, N>::property(const char* nm, const T& def):
     property_base(nm), m_value(), m_defval(def), m_inited(false), m_str() {
     property<T, N>::reset();
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 property<T, N>::property(sc_object* parent, const char* nm, const T& def):
     property_base(parent, nm),
     m_value(),
@@ -126,14 +129,14 @@ property<T, N>::property(sc_object* parent, const char* nm, const T& def):
     property<T, N>::reset();
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 property<T, N>::~property() {
     // nothing to do
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline void property<T, N>::reset() {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         m_value[i] = m_defval;
 
     string init;
@@ -141,13 +144,13 @@ inline void property<T, N>::reset() {
         property<T, N>::str(init);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline const char* property<T, N>::str() const {
     static const string delim = " ";
 
     m_str = "";
 
-    for (unsigned int i = 0; i < (N - 1); i++)
+    for (size_t i = 0; i < (N - 1); i++)
         m_str += escape(to_string<T>(m_value[i]), delim) + delim;
     m_str += escape(to_string<T>(m_value[N - 1]), delim);
 
@@ -160,11 +163,11 @@ inline const char* property<string, 1>::str() const {
     return m_str.c_str();
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline void property<T, N>::str(const string& s) {
     m_inited = true;
     vector<string> args = split(s);
-    unsigned int size = args.size();
+    size_t size = args.size();
 
     if (size < N) {
         log_warn("property %s has not enough initializers", name().c_str());
@@ -172,7 +175,7 @@ inline void property<T, N>::str(const string& s) {
         log_warn("property %s has too many initializers", name().c_str());
     }
 
-    for (unsigned int i = 0; i < min(N, size); i++)
+    for (size_t i = 0; i < min(N, size); i++)
         m_value[i] = from_string<T>(trim(args[i]));
 }
 
@@ -182,77 +185,77 @@ inline void property<string, 1>::str(const string& s) {
     m_value[0] = s;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline size_t property<T, N>::size() const {
     return sizeof(T);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline size_t property<T, N>::count() const {
     return N;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline const char* property<T, N>::type() const {
     return type_name<T>();
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 const T& property<T, N>::get() const {
     return get(0);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline T& property<T, N>::get() {
     return get(0);
 }
 
-template <typename T, const unsigned int N>
-const T& property<T, N>::get(unsigned int idx) const {
-    VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+template <typename T, size_t N>
+const T& property<T, N>::get(size_t idx) const {
+    VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
     return m_value[idx];
 }
 
-template <typename T, const unsigned int N>
-inline T& property<T, N>::get(unsigned int idx) {
-    VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+template <typename T, size_t N>
+inline T& property<T, N>::get(size_t idx) {
+    VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
     return m_value[idx];
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline void property<T, N>::set(const T& val) {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         m_value[i] = val;
     m_inited = true;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline void property<T, N>::set(const T val[N]) {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         m_value[i] = val[i];
     m_inited = true;
 }
 
-template <typename T, const unsigned int N>
-inline void property<T, N>::set(const T& val, unsigned int idx) {
-    VCML_ERROR_ON(idx >= N, "index %d out of bounds", idx);
+template <typename T, size_t N>
+inline void property<T, N>::set(const T& val, size_t idx) {
+    VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
     m_value[idx] = val;
     m_inited = true;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline const T& property<T, N>::get_default() const {
     return m_defval;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline void property<T, N>::set_default(const T& defval) {
     m_defval = defval;
     if (!m_inited)
         set(defval);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline void property<T, N>::inherit_default() {
     if (m_inited)
         return;
@@ -269,7 +272,7 @@ inline void property<T, N>::inherit_default() {
         set_default(prop->get());
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 const char* property<T, N>::c_str() const {
     if constexpr (std::is_same_v<T, string>)
         return get().c_str();
@@ -277,7 +280,7 @@ const char* property<T, N>::c_str() const {
         return m_str.c_str();
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 size_t property<T, N>::length() const {
     if constexpr (std::is_same_v<T, string>)
         return get().length();
@@ -286,156 +289,156 @@ size_t property<T, N>::length() const {
     return size();
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline property<T, N>::operator T() const {
     return get(0);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline T property<T, N>::operator~() const {
     return ~get(0);
 }
 
-template <typename T, const unsigned int N>
-inline const T& property<T, N>::operator[](unsigned int idx) const {
+template <typename T, size_t N>
+inline const T& property<T, N>::operator[](size_t idx) const {
     return get(idx);
 }
 
-template <typename T, const unsigned int N>
-inline T& property<T, N>::operator[](unsigned int idx) {
+template <typename T, size_t N>
+inline T& property<T, N>::operator[](size_t idx) {
     return get(idx);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 inline property<T, N>& property<T, N>::operator=(const property<T, N>& o) {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         set(o.m_value[i], i);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator=(const T2& other) {
     set(other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator+=(const T2& other) {
     set(get() + other, 0);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator-=(const T2& other) {
     set(get() - other, 0);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator*=(const T2& other) {
     set(get() * other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator/=(const T2& other) {
     set(get() / other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator%=(const T2& other) {
     set(get() % other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator&=(const T2& other) {
     set(get() & other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator|=(const T2& other) {
     set(get() | other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator^=(const T2& other) {
     set(get() ^ other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator<<=(const T2& other) {
     set(get() << other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator>>=(const T2& other) {
     set(get() >> other);
     return *this;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator==(const T2& other) {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         if (m_value[i] != other)
             return false;
     return true;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator<(const T2& other) {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         if (m_value[i] >= other)
             return false;
     return true;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator>(const T2& other) {
-    for (unsigned int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         if (m_value[i] <= other)
             return false;
     return true;
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator!=(const T2& other) {
     return !operator==(other);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator<=(const T2& other) {
     return !operator>(other);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator>=(const T2& other) {
     return !operator<(other);
 }
 
-template <typename T, const unsigned int N>
+template <typename T, size_t N>
 ostream& operator<<(std::ostream& os, const property<T, N>& prop) {
     os << prop.str();
     return os;
