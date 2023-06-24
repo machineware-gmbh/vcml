@@ -37,8 +37,6 @@
 
 #include "vcml/properties/property_base.h"
 #include "vcml/properties/property.h"
-#include "vcml/properties/property_void.h"
-#include "vcml/properties/property_vector.h"
 #include "vcml/properties/broker.h"
 #include "vcml/properties/broker_arg.h"
 #include "vcml/properties/broker_env.h"
