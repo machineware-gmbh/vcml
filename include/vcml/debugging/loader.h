@@ -72,7 +72,7 @@ public:
     void load_image(const string& filename, u64 offset, image_type type);
     void load_image(const image_info& image);
 
-    void load_images(const string& images);
+    void load_images(const vector<string>& images);
     void load_images(const vector<image_info>& images);
 
     static loader* find(const string& name);

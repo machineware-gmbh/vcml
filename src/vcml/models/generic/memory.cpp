@@ -71,7 +71,7 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
     discard_writes("discard_writes", false),
     readonly("readonly", read_only),
     shared("shared", ""),
-    images("images", ""),
+    images("images"),
     poison("poison", 0x00),
     in("in") {
     VCML_ERROR_ON(size == 0u, "memory size cannot be 0");

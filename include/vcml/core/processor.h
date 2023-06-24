@@ -44,7 +44,7 @@ private:
     debugging::gdbserver* m_gdb;
 
     unordered_map<unsigned int, irq_stats> m_irq_stats;
-    unordered_map<u64, property_base*> m_regprops;
+    unordered_map<u64, property<void>*> m_regprops;
 
     bool cmd_dump(const vector<string>& args, ostream& os);
     bool cmd_read(const vector<string>& args, ostream& os);

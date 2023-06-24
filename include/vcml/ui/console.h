@@ -33,7 +33,7 @@ private:
     unordered_set<shared_ptr<display>> m_displays;
 
 public:
-    property<string> displays;
+    property<vector<string>> displays;
 
     bool has_display() const { return !m_displays.empty(); }
 

@@ -42,7 +42,7 @@ public:
     property<bool> discard_writes;
     property<bool> readonly;
     property<string> shared;
-    property<string> images;
+    property<vector<string>> images;
     property<u8> poison;
 
     tlm_target_socket in;

@@ -54,10 +54,9 @@ image_type detect_image_type(const string& filename) {
     return IMAGE_BIN;
 }
 
-vector<image_info> images_from_string(const string& s) {
+vector<image_info> images_from_string(const vector<string>& vec) {
     vector<image_info> images;
-    vector<string> token = split(s);
-    for (string cur : token) {
+    for (string cur : vec) {
         cur = trim(cur);
         if (cur.empty())
             continue;
@@ -242,7 +241,7 @@ void loader::load_image(const image_info& image) {
     }
 }
 
-void loader::load_images(const string& files) {
+void loader::load_images(const vector<string>& files) {
     auto images = images_from_string(files);
     load_images(images);
 }

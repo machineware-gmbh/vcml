@@ -27,7 +27,7 @@ public:
         dmem("dmem", 0x2000),
         ibus("ibus"),
         dbus("dbus"),
-        loader("loader", get_resource_path("elf.elf")) {
+        loader("loader", { get_resource_path("elf.elf") }) {
         ibus.bind(loader.insn);
         ibus.bind(imem.in, { 0x400000, 0x400fff });
 

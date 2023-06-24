@@ -14,9 +14,8 @@ namespace vcml {
 namespace ui {
 
 console::console():
-    m_keyboards(), m_pointers(), m_displays(), displays("displays", "") {
-    vector<string> types = split(displays);
-    for (const string& type : types) {
+    m_keyboards(), m_pointers(), m_displays(), displays("displays") {
+    for (const string& type : displays) {
         try {
             auto disp = display::lookup(type);
             if (disp)

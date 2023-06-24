@@ -542,30 +542,14 @@ void processor::fetch_cpuregs() {
         const debugging::cpureg* reg = find_cpureg(it.first);
         VCML_ERROR_ON(!reg, "no cpureg %llu", it.first);
 
-        property_base* prop = it.second;
+        auto* prop = it.second;
         VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
 
         u64 val = 0;
         if (reg->is_readable())
             val = reg->read();
 
-        switch (reg->size) {
-        case 1:
-            dynamic_cast<property<u8>*>(prop)->set((u8)val);
-            break;
-        case 2:
-            dynamic_cast<property<u16>*>(prop)->set((u16)val);
-            break;
-        case 4:
-            dynamic_cast<property<u32>*>(prop)->set((u32)val);
-            break;
-        case 8:
-            dynamic_cast<property<u64>*>(prop)->set((u64)val);
-            break;
-        default:
-            VCML_ERROR("register %s has illegal size: %llu bytes",
-                       reg->name.c_str(), reg->size);
-        }
+        prop->set(val);
     }
 }
 
@@ -574,30 +558,13 @@ void processor::flush_cpuregs() {
         const debugging::cpureg* reg = find_cpureg(it.first);
         VCML_ERROR_ON(!reg, "no cpureg %llu", it.first);
 
-        property_base* prop = it.second;
+        auto* prop = it.second;
         VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
 
         if (!reg->is_writeable())
             continue;
 
-        u64 val = 0;
-        switch (reg->size) {
-        case 1:
-            val = dynamic_cast<property<u8>*>(prop)->get();
-            break;
-        case 2:
-            val = dynamic_cast<property<u16>*>(prop)->get();
-            break;
-        case 4:
-            val = dynamic_cast<property<u32>*>(prop)->get();
-            break;
-        case 8:
-            val = dynamic_cast<property<u64>*>(prop)->get();
-            break;
-        default:
-            VCML_ERROR("register %s has illegal size: %llu bytes",
-                       reg->name.c_str(), reg->size);
-        }
+        u64 val = prop->get();
 
         const u64 mask = bitmask(reg->width());
         if (reg->size < 8 && val > mask) {
@@ -622,47 +589,31 @@ void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
                 VCML_ERROR("cannot read cpureg %s", regnm);
         }
 
-        property_base*& prop = m_regprops[reg.regno];
+        auto*& prop = m_regprops[reg.regno];
         VCML_ERROR_ON(prop, "property %s already exists", regnm);
-
-        switch (reg.size) {
-        case 1:
-            prop = new property<u8>(regnm, defval);
-            break;
-        case 2:
-            prop = new property<u16>(regnm, defval);
-            break;
-        case 4:
-            prop = new property<u32>(regnm, defval);
-            break;
-        case 8:
-            prop = new property<u64>(regnm, defval);
-            break;
-        default:
-            VCML_ERROR("cpureg %s has illegal size %llu", regnm, reg.size);
-        }
+        prop = new property<void>(regnm, reg.size, 1);
     }
 
     log_debug("defined %zu cpu registers", regs.size());
     flush_cpuregs();
 }
 
-bool processor::read_reg_dbg(vcml::u64 idx, vcml::u64& val) {
+bool processor::read_reg_dbg(vcml::u64 idx, u64& val) {
     return false; // to be overloaded
 }
 
-bool processor::write_reg_dbg(vcml::u64 idx, vcml::u64 val) {
+bool processor::write_reg_dbg(vcml::u64 idx, u64 val) {
     return false; // to be overloaded
 }
 
-bool processor::read_cpureg_dbg(const cpureg& reg, vcml::u64& val) {
+bool processor::read_cpureg_dbg(const cpureg& reg, u64& val) {
     if (!reg.is_readable())
         return false;
 
     return read_reg_dbg(reg.regno, val);
 }
 
-bool processor::write_cpureg_dbg(const cpureg& reg, vcml::u64 val) {
+bool processor::write_cpureg_dbg(const cpureg& reg, u64 val) {
     if (!reg.is_writeable())
         return false;
 
@@ -673,26 +624,8 @@ bool processor::write_cpureg_dbg(const cpureg& reg, vcml::u64 val) {
     if (it == m_regprops.end())
         VCML_ERROR("no propery for cpureg %s", reg.name.c_str());
 
-    property_base* prop = it->second;
-
-    switch (reg.size) {
-    case 1:
-        dynamic_cast<property<u8>*>(prop)->set((u8)val);
-        break;
-    case 2:
-        dynamic_cast<property<u16>*>(prop)->set((u16)val);
-        break;
-    case 4:
-        dynamic_cast<property<u32>*>(prop)->set((u32)val);
-        break;
-    case 8:
-        dynamic_cast<property<u64>*>(prop)->set((u64)val);
-        break;
-    default:
-        VCML_ERROR("register %s has illegal size: %llu bytes",
-                   reg.name.c_str(), reg.size);
-    }
-
+    auto* prop = it->second;
+    prop->set(val);
     return true;
 }
 

@@ -24,12 +24,13 @@ namespace meta {
 class loader : public component, public debugging::loader
 {
 public:
-    property<string> images;
+    property<vector<string>> images;
 
     tlm_initiator_socket insn;
     tlm_initiator_socket data;
 
-    loader(const sc_module_name& nm, const string& images = "");
+    loader(const sc_module_name& nm);
+    loader(const sc_module_name& nm, const vector<string>& images);
     virtual ~loader();
     VCML_KIND(loader);
 

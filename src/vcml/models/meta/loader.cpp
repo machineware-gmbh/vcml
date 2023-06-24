@@ -13,7 +13,15 @@
 namespace vcml {
 namespace meta {
 
-loader::loader(const sc_module_name& nm, const string& imginit):
+loader::loader(const sc_module_name& nm):
+    component(nm),
+    debugging::loader(*this, true),
+    images("images"),
+    insn("insn"),
+    data("data") {
+}
+
+loader::loader(const sc_module_name& nm, const vector<string>& imginit):
     component(nm),
     debugging::loader(*this, true),
     images("images", imginit),

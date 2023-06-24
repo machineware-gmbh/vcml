@@ -150,9 +150,11 @@ inline const char* property<T, N>::str() const {
 
     m_str = "";
 
-    for (size_t i = 0; i < (N - 1); i++)
-        m_str += escape(to_string<T>(m_value[i]), delim) + delim;
-    m_str += escape(to_string<T>(m_value[N - 1]), delim);
+    if (N > 0) {
+        for (size_t i = 0; i < (N - 1); i++)
+            m_str += escape(to_string<T>(m_value[i]), delim) + delim;
+        m_str += escape(to_string<T>(m_value[N - 1]), delim);
+    }
 
     return m_str.c_str();
 }
@@ -540,9 +542,11 @@ inline const char* property<void, N>::str() const {
 
     m_str = "";
 
-    for (size_t i = 0; i < m_count - 1; i++)
-        m_str += escape(to_string(get(i)), delim) + delim;
-    m_str += escape(to_string(get(m_count - 1)), delim);
+    if (m_count > 0) {
+        for (size_t i = 0; i < m_count - 1; i++)
+            m_str += escape(to_string(get(i)), delim) + delim;
+        m_str += escape(to_string(get(m_count - 1)), delim);
+    }
 
     return m_str.c_str();
 }
@@ -552,16 +556,16 @@ inline void property<void, N>::str(const string& s) {
     m_inited = true;
 
     vector<string> args = split(s);
-    size_t size = args.size();
+    size_t count = args.size();
 
-    if (size < m_size) {
+    if (count < m_count) {
         log_warn("property %s has not enough initializers", name().c_str());
-    } else if (size > m_size) {
+    } else if (count > m_count) {
         log_warn("property %s has too many initializers", name().c_str());
     }
 
     u8* ptr = m_data;
-    for (size_t i = 0; i < min(m_size, size); i++, ptr += m_size) {
+    for (size_t i = 0; i < min(m_count, count); i++, ptr += m_size) {
         u64 val = from_string<u64>(trim(args[i]));
         if (mwr::encode_size(val) / 8u > m_size) {
             log_warn("property %s initialization value too big: 0x%llx",
@@ -667,6 +671,9 @@ public:
     void set_default(vector<T>&& def);
     void inherit_default();
 
+    operator const vector<T>&() const { return get(); }
+    operator vector<T>&() { return get(); }
+
     const T& operator[](size_t idx) const { return get(idx); }
     T& operator[](size_t idx) { return get(idx); }
 
@@ -741,9 +748,11 @@ inline const char* property<vector<T>, 1>::str() const {
 
     m_str = "";
 
-    for (size_t i = 0; i < count() - 1; i++)
-        m_str += escape(to_string(get(i)), delim) + delim;
-    m_str += escape(to_string(get(count() - 1)), delim);
+    if (count() > 0) {
+        for (size_t i = 0; i < count() - 1; i++)
+            m_str += escape(to_string(get(i)), delim) + delim;
+        m_str += escape(to_string(get(count() - 1)), delim);
+    }
 
     return m_str.c_str();
 }
