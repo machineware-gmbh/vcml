@@ -27,6 +27,7 @@ public:
     vcml::property<std::string, 4> prop_array_string;
     vcml::property<vcml::range> prop_range;
     vcml::property<void> prop_void;
+    vcml::property<std::vector<vcml::i32>> prop_vector;
 
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
@@ -40,7 +41,8 @@ public:
         prop_array("prop_array", 7),
         prop_array_string("prop_array_string", "not_inited"),
         prop_range("prop_range", { 1, 2 }),
-        prop_void("prop_void", 4, 2) {
+        prop_void("prop_void", 4, 2),
+        prop_vector("prop_vector", { 1, 2, 3 }) {
         // nothing to do
     }
 
@@ -59,6 +61,7 @@ TEST(property, init) {
     broker.define("test.prop_array_string", "abc def x\\ y zzz");
     broker.define("test.prop_range", "0x10..0x1f");
     broker.define("test.prop_void", "0xaabbccdd 0x11223344");
+    broker.define("test.prop_vector", "-1, -2, -3, -4");
 
     test_component test("test");
     EXPECT_TRUE(test.prop_str.is_inited());
@@ -140,6 +143,21 @@ TEST(property, init) {
     test.prop_void.str("4 5");
     EXPECT_STREQ(test.prop_void.str(), "4 5");
 
+    EXPECT_STREQ(test.prop_vector.type(), "vector<i32>");
+    EXPECT_EQ(test.prop_vector.get_default().size(), 3);
+    EXPECT_TRUE(test.prop_vector.is_inited());
+    EXPECT_FALSE(test.prop_vector.is_default());
+    EXPECT_EQ(test.prop_vector.count(), 4);
+    EXPECT_EQ(test.prop_vector.size(), sizeof(vcml::i32));
+    vcml::i32 cmp = -1;
+    for (vcml::i32 val : test.prop_vector)
+        EXPECT_EQ(val, cmp--);
+    EXPECT_STREQ(test.prop_vector.str(), "-1 -2 -3 -4");
+    EXPECT_EQ(test.prop_vector[0], -1);
+    EXPECT_EQ(test.prop_vector[1], -2);
+    EXPECT_EQ(test.prop_vector[2], -3);
+    EXPECT_EQ(test.prop_vector[3], -4);
+
     std::stringstream ss;
 
     ss << test.prop_str;
@@ -176,5 +194,9 @@ TEST(property, init) {
 
     ss << test.prop_void;
     EXPECT_EQ(ss.str(), test.prop_void.str());
+    ss.str("");
+
+    ss << test.prop_vector;
+    EXPECT_EQ(ss.str(), test.prop_vector.str());
     ss.str("");
 }
