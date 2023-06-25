@@ -582,6 +582,11 @@ void processor::define_cpureg_r(id_t regno, const string& name, size_t size,
     define_cpureg(regno, name, size, n, VCML_ACCESS_READ);
 }
 
+void processor::define_cpureg_w(id_t regno, const string& name, size_t size,
+                                size_t n) {
+    define_cpureg(regno, name, size, n, VCML_ACCESS_WRITE);
+}
+
 void processor::define_cpureg_rw(id_t regno, const string& name, size_t size,
                                  size_t n) {
     define_cpureg(regno, name, size, n, VCML_ACCESS_READ_WRITE);

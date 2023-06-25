@@ -131,6 +131,7 @@ protected:
                                size_t n, int prot) override;
 
     void define_cpureg_r(id_t reg, const string& nm, size_t sz, size_t n = 1);
+    void define_cpureg_w(id_t reg, const string& nm, size_t sz, size_t n = 1);
     void define_cpureg_rw(id_t reg, const string& nm, size_t sz, size_t n = 1);
 
     virtual bool read_reg_dbg(id_t regno, void* buf, size_t len);
