@@ -572,9 +572,16 @@ void processor::flush_cpuregs() {
 void processor::define_cpureg(id_t regno, const string& name, size_t size,
                               size_t n, int prot) {
     target::define_cpureg(regno, name, size, n, prot);
+
+    u64 defval = 0;
+    if (is_read_allowed(prot)) {
+        if (!read_reg_dbg(regno, &defval, sizeof(defval)))
+            VCML_ERROR("failed to initialize cpureg %s", name.c_str());
+    }
+
     auto*& prop = m_regprops[regno];
     VCML_ERROR_ON(prop, "property %s already exists", name.c_str());
-    prop = new property<void>(name.c_str(), size, n);
+    prop = new property<void>(name.c_str(), size, n, defval);
 }
 
 void processor::define_cpureg_r(id_t regno, const string& name, size_t size,
