@@ -55,9 +55,10 @@ private:
     bool cmd_stack(const vector<string>& args, ostream& os);
     bool cmd_gdb(const vector<string>& args, ostream& os);
 
-    using cpureg = debugging::cpureg;
-    virtual bool read_cpureg_dbg(const cpureg& r, vcml::u64& val) override;
-    virtual bool write_cpureg_dbg(const cpureg& r, vcml::u64 val) override;
+    virtual bool read_cpureg_dbg(const debugging::cpureg& reg, void* buf,
+                                 size_t len) override;
+    virtual bool write_cpureg_dbg(const debugging::cpureg& reg, const void*,
+                                  size_t len) override;
 
     u64 simulate_cycles(unsigned int cycles);
     void processor_thread();
@@ -126,10 +127,10 @@ protected:
     virtual void fetch_cpuregs();
     virtual void flush_cpuregs();
 
-    virtual void define_cpuregs(const vector<cpureg>& regs) override;
+    virtual void define_cpuregs(const vector<debugging::cpureg>& r) override;
 
-    virtual bool read_reg_dbg(vcml::u64 idx, vcml::u64& val);
-    virtual bool write_reg_dbg(vcml::u64 idx, vcml::u64 val);
+    virtual bool read_reg_dbg(id_t regno, void* buf, size_t len);
+    virtual bool write_reg_dbg(id_t regno, const void* buf, size_t len);
 
     virtual u64 read_pmem_dbg(u64 addr, void* ptr, u64 sz) override;
     virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;

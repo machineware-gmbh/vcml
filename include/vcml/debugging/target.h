@@ -27,15 +27,15 @@ namespace debugging {
 class target;
 
 struct cpureg {
-    u64 regno;
+    id_t regno;
     string name;
-    u64 size;
+    size_t size;
     int prot;
     target* host;
 
     cpureg(const cpureg&) = default;
 
-    cpureg(): regno(~0ul), name(), size(), prot(), host() {}
+    cpureg(): regno(), name(), size(), prot(), host() {}
 
     cpureg(u64 no, const string& nm, u64 sz, int p):
         regno(no), name(nm), size(sz), prot(p), host() {}
@@ -48,8 +48,8 @@ struct cpureg {
     bool is_write_only() const { return prot == VCML_ACCESS_WRITE; }
     bool is_read_write() const { return prot == VCML_ACCESS_READ_WRITE; }
 
-    u64 read() const;
-    void write(u64 val) const;
+    bool read(void* buf, size_t len) const;
+    bool write(const void* buf, size_t len) const;
 };
 
 struct disassembly {
@@ -76,7 +76,7 @@ private:
     atomic<bool> m_suspendable;
 
     endianess m_endian;
-    unordered_map<u64, cpureg> m_cpuregs;
+    unordered_map<id_t, cpureg> m_cpuregs;
     symtab m_symbols;
 
     vector<subscriber*> m_steppers;
@@ -87,6 +87,10 @@ private:
     static unordered_map<string, target*> s_targets;
 
 protected:
+    virtual void define_cpureg(id_t regno, const string& name, size_t size,
+                               int prot = VCML_ACCESS_READ_WRITE);
+    virtual void define_cpureg(id_t regno, const string& name, size_t size,
+                               size_t n, int prot = VCML_ACCESS_READ_WRITE);
     virtual void define_cpuregs(const vector<cpureg>& regs);
 
     virtual bool insert_breakpoint(u64 addr);
@@ -123,8 +127,8 @@ public:
     const cpureg* find_cpureg(u64 regno) const;
     const cpureg* find_cpureg(const string& name) const;
 
-    virtual bool read_cpureg_dbg(const cpureg& reg, u64& val);
-    virtual bool write_cpureg_dbg(const cpureg& reg, u64 val);
+    virtual bool read_cpureg_dbg(const cpureg& reg, void* buf, size_t len);
+    virtual bool write_cpureg_dbg(const cpureg& reg, const void*, size_t len);
 
     virtual u64 read_pmem_dbg(u64 addr, void* buffer, u64 size);
     virtual u64 write_pmem_dbg(u64 addr, const void* buffer, u64 size);

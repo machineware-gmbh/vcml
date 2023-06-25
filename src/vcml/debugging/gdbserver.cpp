@@ -214,7 +214,9 @@ string gdbserver::handle_reg_read(const string& cmd) {
     if (reg == nullptr || !reg->is_readable())
         return "xxxxxxxx"; // respond with "contents unknown"
 
-    u64 val = reg->read();
+    u64 val = 0;
+    if (!reg->read(&val, sizeof(val)))
+        return ERR_INTERNAL;
     if (!m_target.is_host_endian())
         memswap(&val, reg->size);
 
@@ -259,7 +261,9 @@ string gdbserver::handle_reg_write(const string& cmd) {
     if (!m_target.is_host_endian())
         memswap(val.ptr, reg->size);
 
-    reg->write(val.val);
+    if (!reg->write(val.ptr, sizeof(val)))
+        return ERR_INTERNAL;
+
     return "OK";
 }
 
@@ -271,7 +275,10 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
         if (!reg->is_readable())
             continue;
 
-        u64 val = reg->read();
+        u64 val = 0;
+        if (!reg->read(&val, sizeof(val)))
+            return ERR_INTERNAL;
+
         if (!m_target.is_host_endian())
             memswap(&val, reg->size);
 
@@ -300,7 +307,8 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
         if (!m_target.is_host_endian())
             memswap(val.ptr, reg->size);
 
-        reg->write(val.val);
+        if (!reg->write(val.ptr, sizeof(val)))
+            return ERR_INTERNAL;
     }
 
     return "OK";

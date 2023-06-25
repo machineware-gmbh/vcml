@@ -545,11 +545,11 @@ void processor::fetch_cpuregs() {
         auto* prop = it.second;
         VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
 
-        u64 val = 0;
-        if (reg->is_readable())
-            val = reg->read();
+        if (!reg->is_readable())
+            continue;
 
-        prop->set(val);
+        if (!reg->read(prop->raw_ptr(), prop->raw_len()))
+            log_warn("failed to fetch cpureg %s", reg->name.c_str());
     }
 }
 
@@ -564,16 +564,8 @@ void processor::flush_cpuregs() {
         if (!reg->is_writeable())
             continue;
 
-        u64 val = prop->get();
-
-        const u64 mask = bitmask(reg->width());
-        if (reg->size < 8 && val > mask) {
-            log_warn("truncating value 0x%llx for %llu bit cpu register %s",
-                     val, reg->width(), reg->name.c_str());
-            val &= mask;
-        }
-
-        reg->write(val);
+        if (!reg->write(prop->raw_ptr(), prop->raw_len()))
+            log_warn("failed to flush cpureg %s", reg->name.c_str());
     }
 }
 
@@ -585,7 +577,7 @@ void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
 
         const char* regnm = reg.name.c_str();
         if (reg.is_readable()) {
-            if (!read_reg_dbg(reg.regno, defval))
+            if (!read_reg_dbg(reg.regno, &defval, sizeof(defval)))
                 VCML_ERROR("cannot read cpureg %s", regnm);
         }
 
@@ -598,34 +590,30 @@ void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
     flush_cpuregs();
 }
 
-bool processor::read_reg_dbg(vcml::u64 idx, u64& val) {
+bool processor::read_reg_dbg(id_t regno, void* buf, size_t len) {
     return false; // to be overloaded
 }
 
-bool processor::write_reg_dbg(vcml::u64 idx, u64 val) {
+bool processor::write_reg_dbg(id_t idx, const void* buf, size_t len) {
     return false; // to be overloaded
 }
 
-bool processor::read_cpureg_dbg(const cpureg& reg, u64& val) {
-    if (!reg.is_readable())
-        return false;
-
-    return read_reg_dbg(reg.regno, val);
+bool processor::read_cpureg_dbg(const debugging::cpureg& reg, void* buf,
+                                size_t len) {
+    return read_reg_dbg(reg.regno, buf, len);
 }
 
-bool processor::write_cpureg_dbg(const cpureg& reg, u64 val) {
-    if (!reg.is_writeable())
-        return false;
-
-    if (!write_reg_dbg(reg.regno, val))
+bool processor::write_cpureg_dbg(const debugging::cpureg& reg, const void* buf,
+                                 size_t len) {
+    if (!write_reg_dbg(reg.regno, buf, len))
         return false;
 
     auto it = m_regprops.find(reg.regno);
-    if (it == m_regprops.end())
-        VCML_ERROR("no propery for cpureg %s", reg.name.c_str());
+    if (it != m_regprops.end()) {
+        auto* prop = it->second;
+        memcpy(prop->raw_ptr(), buf, min(prop->raw_len(), len));
+    }
 
-    auto* prop = it->second;
-    prop->set(val);
     return true;
 }
 

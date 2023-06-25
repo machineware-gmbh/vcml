@@ -14,33 +14,39 @@
 namespace vcml {
 namespace debugging {
 
-u64 cpureg::read() const {
-    u64 val;
-
-    if (host == nullptr)
-        VCML_ERROR("cpureg %s has no target", name.c_str());
-    if (!is_readable())
-        VCML_ERROR("cannot read cpureg %s", name.c_str());
-    if (!host->read_cpureg_dbg(*this, val))
-        VCML_ERROR("failed to read cpureg %s", name.c_str());
-    if (width() < 64 && val >= 1ul << width())
-        VCML_ERROR("value 0x%llx exceeds size of %s", val, name.c_str());
-
-    return val;
+bool cpureg::read(void* buf, size_t len) const {
+    VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
+    if (len < size || !is_readable())
+        return false;
+    return host->read_cpureg_dbg(*this, buf, size);
 }
 
-void cpureg::write(u64 val) const {
-    if (width() < 64 && val >= 1ul << width())
-        VCML_ERROR("value 0x%llx exceeds size of %s", val, name.c_str());
-    if (host == nullptr)
-        VCML_ERROR("cpureg %s has no target", name.c_str());
-    if (!is_writeable())
-        VCML_ERROR("cannot write cpureg %s", name.c_str());
-    if (!host->write_cpureg_dbg(*this, val))
-        VCML_ERROR("failed to read cpureg %s", name.c_str());
+bool cpureg::write(const void* buf, size_t len) const {
+    VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
+    if (len < size || !is_writeable())
+        return false;
+    return host->write_cpureg_dbg(*this, buf, size);
 }
 
 unordered_map<string, target*> target::s_targets;
+
+void target::define_cpureg(id_t regno, const string& name, size_t size,
+                           int prot) {
+    define_cpureg(regno, name, size, 1, prot);
+}
+
+void target::define_cpureg(id_t regno, const string& name, size_t size,
+                           size_t count, int prot) {
+    if (stl_contains(m_cpuregs, regno))
+        VCML_ERROR("cpureg %u (%s) already defined", regno, name.c_str());
+
+    cpureg& newreg = m_cpuregs[regno];
+    newreg.regno = regno;
+    newreg.size = size;
+    newreg.prot = prot;
+    newreg.name = name;
+    newreg.host = this;
+}
 
 void target::define_cpuregs(const vector<cpureg>& regs) {
     for (const auto& reg : regs) {
@@ -119,11 +125,11 @@ const cpureg* target::find_cpureg(const string& name) const {
     return nullptr;
 }
 
-bool target::read_cpureg_dbg(const cpureg& reg, u64& val) {
+bool target::read_cpureg_dbg(const cpureg& reg, void* buf, size_t len) {
     return false; // to be overloaded
 }
 
-bool target::write_cpureg_dbg(const cpureg& reg, u64 val) {
+bool target::write_cpureg_dbg(const cpureg& reg, const void* buf, size_t len) {
     return false; // to be overloaded
 }
 
