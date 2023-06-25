@@ -48,21 +48,6 @@ void target::define_cpureg(id_t regno, const string& name, size_t size,
     newreg.host = this;
 }
 
-void target::define_cpuregs(const vector<cpureg>& regs) {
-    for (const auto& reg : regs) {
-        const char* regname = reg.name.c_str();
-        if (m_cpuregs.find(reg.regno) != m_cpuregs.end())
-            VCML_ERROR("cpureg %s already defined", regname);
-
-        cpureg& newreg = m_cpuregs[reg.regno];
-        newreg.regno = reg.regno;
-        newreg.size = reg.size;
-        newreg.prot = reg.prot;
-        newreg.name = reg.name;
-        newreg.host = this;
-    }
-}
-
 target::target():
     m_mtx(),
     m_name(),

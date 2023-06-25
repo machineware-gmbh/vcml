@@ -127,7 +127,11 @@ protected:
     virtual void fetch_cpuregs();
     virtual void flush_cpuregs();
 
-    virtual void define_cpuregs(const vector<debugging::cpureg>& r) override;
+    virtual void define_cpureg(id_t regno, const string& name, size_t size,
+                               size_t n, int prot) override;
+
+    void define_cpureg_r(id_t reg, const string& nm, size_t sz, size_t n = 1);
+    void define_cpureg_rw(id_t reg, const string& nm, size_t sz, size_t n = 1);
 
     virtual bool read_reg_dbg(id_t regno, void* buf, size_t len);
     virtual bool write_reg_dbg(id_t regno, const void* buf, size_t len);

@@ -91,7 +91,6 @@ protected:
                                int prot = VCML_ACCESS_READ_WRITE);
     virtual void define_cpureg(id_t regno, const string& name, size_t size,
                                size_t n, int prot = VCML_ACCESS_READ_WRITE);
-    virtual void define_cpuregs(const vector<cpureg>& regs);
 
     virtual bool insert_breakpoint(u64 addr);
     virtual bool remove_breakpoint(u64 addr);

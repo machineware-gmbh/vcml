@@ -569,25 +569,22 @@ void processor::flush_cpuregs() {
     }
 }
 
-void processor::define_cpuregs(const vector<debugging::cpureg>& regs) {
-    target::define_cpuregs(regs);
+void processor::define_cpureg(id_t regno, const string& name, size_t size,
+                              size_t n, int prot) {
+    target::define_cpureg(regno, name, size, n, prot);
+    auto*& prop = m_regprops[regno];
+    VCML_ERROR_ON(prop, "property %s already exists", name.c_str());
+    prop = new property<void>(name.c_str(), size, n);
+}
 
-    for (const auto& reg : regs) {
-        u64 defval = 0;
+void processor::define_cpureg_r(id_t regno, const string& name, size_t size,
+                                size_t n) {
+    define_cpureg(regno, name, size, n, VCML_ACCESS_READ);
+}
 
-        const char* regnm = reg.name.c_str();
-        if (reg.is_readable()) {
-            if (!read_reg_dbg(reg.regno, &defval, sizeof(defval)))
-                VCML_ERROR("cannot read cpureg %s", regnm);
-        }
-
-        auto*& prop = m_regprops[reg.regno];
-        VCML_ERROR_ON(prop, "property %s already exists", regnm);
-        prop = new property<void>(regnm, reg.size, 1);
-    }
-
-    log_debug("defined %zu cpu registers", regs.size());
-    flush_cpuregs();
+void processor::define_cpureg_rw(id_t regno, const string& name, size_t size,
+                                 size_t n) {
+    define_cpureg(regno, name, size, n, VCML_ACCESS_READ_WRITE);
 }
 
 bool processor::read_reg_dbg(id_t regno, void* buf, size_t len) {
