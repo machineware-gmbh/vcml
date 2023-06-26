@@ -47,7 +47,7 @@ static void write_vec_init(const cpureg* reg, ostream& os) {
     };
 
     for (auto& vec : vec_lanes) {
-        if (vec.size <= reg->count * reg->size * 8) {
+        if (vec.size <= reg->total_width()) {
             os << "<vector id=\"" << vec.id << "\""
                << "  type=\"" << vec.gdb_type << "\""
                << "  count=\"" << reg->total_width() / vec.size << "\" />"
@@ -73,7 +73,7 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
 
     u64 vec_size = 0;
     for (size_t i = 0; i < cpuregs.size(); i++) {
-        if (cpuregs[i]->count < 1) {
+        if (cpuregs[i]->count < 2) {
             os << "<reg name=\"" << registers[i] << "\""
                << "  regnum=\"" << cpuregs[i]->regno << "\""
                << "  bitsize=\"" << cpuregs[i]->width() << "\" />"
@@ -84,7 +84,7 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
                 vec_size = cpuregs[i]->total_size();
             } else if (vec_size != cpuregs[i]->total_size())
                 VCML_ERROR(
-                    "all vector registers must have the same total length");
+                    "all vector registers must have the same total size");
 
             os << "<reg name=\"" << registers[i] << "\""
                << "  regnum=\"" << cpuregs[i]->regno << "\""
