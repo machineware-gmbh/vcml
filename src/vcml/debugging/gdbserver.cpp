@@ -201,8 +201,11 @@ string gdbserver::handle_reg_read(const string& cmd) {
     }
 
     const cpureg* reg = lookup_cpureg(regno);
-    if (reg == nullptr || !reg->is_readable())
-        return reg == nullptr ? "xxxxxxxx" : string(reg->total_size() * 2, 'x'); // respond with "contents unknown"
+    if (reg == nullptr)
+        return "xxxxxxxx"; // respond with "contents unknown"
+    if (!reg->is_readable())
+        return string(reg->total_size() * 2,
+                      'x'); // respond with "contents unknown"
 
     vector<u8> val(reg->total_size());
     if (!reg->read(val.data(), reg->total_size()))
