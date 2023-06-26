@@ -254,7 +254,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
     }
 
     if (!m_target.is_host_endian()) {
-        for (size_t i = 0; i < reg->total_size(); i += reg->total_size())
+        for (size_t i = 0; i < reg->total_size(); i += reg->size)
             memswap(val.data() + i, reg->size);
     }
 
