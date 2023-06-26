@@ -203,12 +203,13 @@ string gdbserver::handle_reg_read(const string& cmd) {
     const cpureg* reg = lookup_cpureg(regno);
     if (reg == nullptr)
         return "xxxxxxxx"; // respond with "contents unknown"
-    if (!reg->is_readable())
+    if (!reg->is_readable()) {
         return string(reg->total_size() * 2,
                       'x'); // respond with "contents unknown"
+    }
 
     vector<u8> val(reg->total_size());
-    if (!reg->read(val.data(), reg->total_size()))
+    if (!reg->read(val.data(), val.size()))
         return ERR_INTERNAL;
 
     stringstream ss;
@@ -219,7 +220,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
     }
 
     for (u8 v : val)
-        ss << std::setw(2) << (u64)v;
+        ss << mkstr("%02hhx", v);
 
     return ss.str();
 }
@@ -246,7 +247,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
     }
 
     str++; // step beyond '='
-    for (u64 byte = 0; byte < reg->total_size(); byte++, str += 2) {
+    for (u64 byte = 0; byte < val.size(); byte++, str += 2) {
         if (sscanf(str, "%02hhx", val.data() + byte) != 1) {
             log_warn("error parsing register value near %s", str);
             return ERR_COMMAND;
@@ -254,11 +255,11 @@ string gdbserver::handle_reg_write(const string& cmd) {
     }
 
     if (!m_target.is_host_endian()) {
-        for (size_t i = 0; i < reg->total_size(); i += reg->size)
+        for (size_t i = 0; i < val.size(); i += reg->size)
             memswap(val.data() + i, reg->size);
     }
 
-    if (!reg->write(val.data(), reg->total_size()))
+    if (!reg->write(val.data(), val.size()))
         return ERR_INTERNAL;
 
     return "OK";
@@ -273,16 +274,16 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
             continue;
 
         vector<u8> val(reg->total_size());
-        if (!reg->read(val.data(), reg->total_size()))
+        if (!reg->read(val.data(), val.size()))
             return ERR_INTERNAL;
 
         if (!m_target.is_host_endian()) {
-            for (size_t i = 0; i < reg->total_size(); i += reg->size)
+            for (size_t i = 0; i < val.size(); i += reg->size)
                 memswap(val.data() + i, reg->size);
         }
 
         for (u8 v : val)
-            ss << std::setw(2) << (u64)v;
+            ss << mkstr("%02hhx", v);
     }
 
     return ss.str();
@@ -300,15 +301,15 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
         }
 
         vector<u8> val(reg->total_size());
-        for (u64 byte = 0; byte < reg->size; byte++, str += 2)
+        for (u64 byte = 0; byte < val.size(); byte++, str += 2)
             sscanf(str, "%02hhx", val.data() + byte);
 
         if (!m_target.is_host_endian()) {
-            for (size_t i = 0; i < reg->total_size(); i += reg->size)
+            for (size_t i = 0; i < val.size(); i += reg->size)
                 memswap(val.data() + i, reg->size);
         }
 
-        if (!reg->write(val.data(), reg->total_size()))
+        if (!reg->write(val.data(), val.size()))
             return ERR_INTERNAL;
     }
 

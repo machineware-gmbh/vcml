@@ -40,7 +40,7 @@ static void write_vec_init(const cpureg* reg, ostream& os) {
         const char suffix;
     };
 
-    static constexpr vec_type_size vec_lanes[]{
+    static constexpr vec_type_size vec_lanes[] = {
         { "uint128", "quads", 128, 'q' }, { "uint64", "longs", 64, 'l' },
         { "uint32", "words", 32, 'w' },   { "uint16", "shorts", 16, 's' },
         { "uint8", "bytes", 8, 'b' },
@@ -54,13 +54,16 @@ static void write_vec_init(const cpureg* reg, ostream& os) {
                << std::endl;
         }
     }
+
     os << "<union id=\"vector_union\">" << std::endl;
+
     for (auto& vec : vec_lanes) {
         if (vec.size <= reg->total_width()) {
             os << "<field name=\"" << vec.suffix << "\""
                << "  type=\"" << vec.id << "\"/>" << std::endl;
         }
     }
+
     os << "</union>";
 }
 
@@ -71,9 +74,9 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
 
     os << "<feature name=\"" << name << "\">" << std::endl;
 
-    u64 vec_size = 0;
+    size_t vec_size = 0;
     for (size_t i = 0; i < cpuregs.size(); i++) {
-        if (cpuregs[i]->count < 2) {
+        if (cpuregs[i]->count <= 1) {
             os << "<reg name=\"" << registers[i] << "\""
                << "  regnum=\"" << cpuregs[i]->regno << "\""
                << "  bitsize=\"" << cpuregs[i]->width() << "\" />"
@@ -82,9 +85,12 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
             if (vec_size == 0) {
                 write_vec_init(cpuregs[i], os);
                 vec_size = cpuregs[i]->total_size();
-            } else if (vec_size != cpuregs[i]->total_size())
+            } else if (vec_size != cpuregs[i]->total_size()) {
                 VCML_ERROR(
-                    "all vector registers must have the same total size");
+                    "vector register %s should be size %zu, but it is %zu",
+                    cpuregs[i]->name.c_str(), vec_size,
+                    cpuregs[i]->total_size());
+            }
 
             os << "<reg name=\"" << registers[i] << "\""
                << "  regnum=\"" << cpuregs[i]->regno << "\""
