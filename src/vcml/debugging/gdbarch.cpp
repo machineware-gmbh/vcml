@@ -32,6 +32,39 @@ bool gdbfeature::collect_regs(const target& t, vector<const cpureg*>& regs,
     return missing.empty();
 }
 
+
+void gdbfeature::write_vec_init(const cpureg* reg, ostream& os) const {
+    struct VEC_TYPE_SIZE {
+        const char* gdb_type;
+        const char* id;
+        size_t size;
+        const char suffix;
+    };
+
+    static constexpr VEC_TYPE_SIZE vec_lanes[]{
+        { "uint128", "quads", 128, 'q' }, { "uint64", "longs", 64, 'l' },
+        { "uint32", "words", 32, 'w' },   { "uint16", "shorts", 16, 's' },
+        { "uint8", "bytes", 8, 'b' },
+    };
+
+    for (auto& vec : vec_lanes) {
+        if (vec.size <= reg->count * reg->size * 8) {
+            os << "<vector id=\"" << vec.id << "\""
+               << "  type=\"" << vec.gdb_type << "\""
+               << "  count=\"" << reg->total_width() / vec.size
+               << "\" />" << std::endl;
+        }
+    }
+    os << "<union id=\"vector_union\">" << std::endl;
+    for (auto& vec : vec_lanes) {
+        if (vec.size <= reg->total_width()) {
+            os << "<field name=\"" << vec.suffix << "\""
+               << "  type=\"" << vec.id << "\"/>" << std::endl;
+        }
+    }
+    os << "</union>";
+}
+
 void gdbfeature::write_xml(const target& t, ostream& os) const {
     vector<const cpureg*> cpuregs;
     if (!collect_regs(t, cpuregs) || cpuregs.empty())
@@ -39,10 +72,26 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
 
     os << "<feature name=\"" << name << "\">" << std::endl;
 
+    u64 vec_len = 0;
     for (size_t i = 0; i < cpuregs.size(); i++) {
-        os << "<reg name=\"" << registers[i] << "\""
-           << "  regnum=\"" << cpuregs[i]->regno << "\""
-           << "  bitsize=\"" << cpuregs[i]->size * 8 << "\" />" << std::endl;
+        if (cpuregs[i]->count < 1) {
+            os << "<reg name=\"" << registers[i] << "\""
+               << "  regnum=\"" << cpuregs[i]->regno << "\""
+               << "  bitsize=\"" << cpuregs[i]->width() << "\" />"
+               << std::endl;
+        } else {
+            if (vec_len == 0) {
+                write_vec_init(cpuregs[i], os);
+                vec_len = cpuregs[i]->total_length();
+            } else if (vec_len != cpuregs[i]->total_length())
+                VCML_ERROR(
+                    "all vector registers must have the same total length");
+
+            os << "<reg name=\"" << registers[i] << "\""
+               << "  regnum=\"" << cpuregs[i]->regno << "\""
+               << "  bitsize=\"" << cpuregs[i]->total_width() << "\""
+               << "  group=\"vector\"" << "  type=\"vector_union\" />" << std::endl;
+        }
     }
 
     os << "</feature>" << std::endl;
@@ -163,6 +212,11 @@ const gdbarch gdbarch::RISCV = gdbarch(
             "fa4", "fa5", "fa6",  "fa7",  "fs2",    "fs3",  "fs4",
             "fs5", "fs6", "fs7",  "fs8",  "fs9",    "fs10", "fs11",
             "ft8", "ft9", "ft10", "ft11", "fflags", "frm",  "fcsr" } },
+        { "org.gnu.gdb.riscv.vector",
+          { "v0",  "v1",  "v2",  "v3",  "v4",  "v5",  "v6",  "v7",
+            "v8",  "v9",  "v10", "v11", "v12", "v13", "v14", "v15",
+            "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23",
+            "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31" } },
         { "org.gnu.gdb.riscv.virtual", { "priv" } },
     });
 

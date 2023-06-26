@@ -193,8 +193,8 @@ string gdbserver::handle_xfer(const string& cmd) {
         if (length > m_target_xml.length())
             length = m_target_xml.length();
 
-        if (offset > m_target_xml.length() - length)
-            return ERR_COMMAND;
+         if (offset > m_target_xml.length())
+             return ERR_COMMAND;
 
         bool more = offset + length < m_target_xml.length();
         return (more ? "m" : "l") + m_target_xml.substr(offset, length);

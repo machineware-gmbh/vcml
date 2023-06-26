@@ -30,17 +30,20 @@ struct cpureg {
     id_t regno;
     string name;
     size_t size;
+    size_t count;
     int prot;
     target* host;
 
     cpureg(const cpureg&) = default;
 
-    cpureg(): regno(), name(), size(), prot(), host() {}
+    cpureg(): regno(), name(), size(), count(), prot(), host() {}
 
-    cpureg(u64 no, const string& nm, u64 sz, int p):
-        regno(no), name(nm), size(sz), prot(p), host() {}
+    cpureg(u64 no, const string& nm, u64 sz, u64 cnt, int p):
+        regno(no), name(nm), size(sz), count(cnt), prot(p), host() {}
 
     u64 width() const { return size * 8; }
+    u64 total_length() const { return size * count; }
+    u64 total_width() const { return total_length() * 8; }
 
     bool is_readable() const { return is_read_allowed(prot); }
     bool is_writeable() const { return is_write_allowed(prot); }
