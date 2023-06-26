@@ -469,7 +469,7 @@ public:
 
     virtual size_t size() const override { return m_size; }
     virtual size_t count() const override { return m_count; }
-    virtual const char* type() const override { return "void"; }
+    virtual const char* type() const override;
 
     constexpr bool is_inited() const { return m_inited; }
     constexpr bool is_default() const { return !m_inited; }
@@ -572,6 +572,22 @@ inline void property<void, N>::str(const string& s) {
                      name().c_str(), val);
         }
         memcpy(ptr, &val, m_size);
+    }
+}
+
+template <size_t N>
+inline const char* property<void, N>::type() const {
+    switch (m_size) {
+    case 1:
+        return "u8";
+    case 2:
+        return "u16";
+    case 4:
+        return "u32";
+    case 8:
+        return "u64";
+    default:
+        return "void";
     }
 }
 
