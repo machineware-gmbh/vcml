@@ -43,6 +43,7 @@ void target::define_cpureg(id_t regno, const string& name, size_t size,
     cpureg& newreg = m_cpuregs[regno];
     newreg.regno = regno;
     newreg.size = size;
+    newreg.count = count;
     newreg.prot = prot;
     newreg.name = name;
     newreg.host = this;

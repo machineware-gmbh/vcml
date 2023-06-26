@@ -193,8 +193,8 @@ string gdbserver::handle_xfer(const string& cmd) {
         if (length > m_target_xml.length())
             length = m_target_xml.length();
 
-         if (offset > m_target_xml.length())
-             return ERR_COMMAND;
+        if (offset > m_target_xml.length())
+            return ERR_COMMAND;
 
         bool more = offset + length < m_target_xml.length();
         return (more ? "m" : "l") + m_target_xml.substr(offset, length);
@@ -214,22 +214,26 @@ string gdbserver::handle_reg_read(const string& cmd) {
     if (reg == nullptr || !reg->is_readable())
         return "xxxxxxxx"; // respond with "contents unknown"
 
-    u64 val = 0;
-    if (!reg->read(&val, sizeof(val)))
+    vector<u8> val(reg->total_size());
+    if (!reg->read(val.data(), reg->total_size()))
         return ERR_INTERNAL;
-    if (!m_target.is_host_endian())
-        memswap(&val, reg->size);
 
     stringstream ss;
     ss << std::hex << std::setfill('0');
-    for (u32 shift = 0; shift < reg->width(); shift += 8)
-        ss << std::setw(2) << ((val >> shift) & 0xff);
+    for (size_t i = 0; i < reg->count; i++) {
+        u64 v = 0;
+        memcpy(&v, &(val.data()[i * reg->size]), reg->size);
+        if (!m_target.is_host_endian())
+            memswap(&v, sizeof(v));
+
+        for (u32 shift = 0; shift < reg->total_width(); shift += 8)
+            ss << std::setw(2) << ((v >> shift) & 0xff);
+    }
 
     return ss.str();
 }
 
 string gdbserver::handle_reg_write(const string& cmd) {
-    gdb_u64 val;
     unsigned int regno;
 
     if (sscanf(cmd.c_str(), "P%x=", &regno) != 1) {
@@ -243,25 +247,30 @@ string gdbserver::handle_reg_write(const string& cmd) {
         return "OK";
     }
 
+    vector<u8> val(reg->total_size());
     const char* str = strrchr(cmd.c_str(), '=');
-    if (str == nullptr || strlen(str + 1) != reg->size * 2) {
+    if (str == nullptr || strlen(str + 1) != reg->count * 8 * 2) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
 
     str++; // step beyond '='
 
-    for (u64 i = 0; i < reg->size; i++, str += 2) {
-        if (sscanf(str, "%02hhx", val.ptr + i) != 1) {
-            log_warn("error parsing register value near %s", str);
-            return ERR_COMMAND;
+    for (u64 i = 0; i < reg->count; i++) {
+        u64 v = 0;
+        for (u64 byte = 0; byte < reg->size; byte++, str += 2) {
+            if (sscanf(str, "%02hhx", (u8*)&v + byte) != 1) {
+                log_warn("error parsing register value near %s", str);
+                return ERR_COMMAND;
+            }
         }
+
+        if (!m_target.is_host_endian())
+            memswap(&v, sizeof(v));
+        memcpy(&(val.data()[i * reg->size]), &v, reg->size);
     }
 
-    if (!m_target.is_host_endian())
-        memswap(val.ptr, reg->size);
-
-    if (!reg->write(val.ptr, sizeof(val)))
+    if (!reg->write(val.data(), reg->total_size()))
         return ERR_INTERNAL;
 
     return "OK";
@@ -275,15 +284,19 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
         if (!reg->is_readable())
             continue;
 
-        u64 val = 0;
-        if (!reg->read(&val, sizeof(val)))
+        vector<u64> val(reg->total_size());
+        if (!reg->read(&val, reg->total_size()))
             return ERR_INTERNAL;
 
-        if (!m_target.is_host_endian())
-            memswap(&val, reg->size);
+        for (size_t i = 0; i < reg->count; i++) {
+            u64 v = 0;
+            memcpy(&v, &(val.data()[i * reg->size]), reg->size);
+            if (!m_target.is_host_endian())
+                memswap(&v, sizeof(v));
 
-        for (u32 shift = 0; shift < reg->width(); shift += 8)
-            ss << std::setw(2) << ((val >> shift) & 0xff);
+            for (u32 shift = 0; shift < reg->width(); shift += 8)
+                ss << std::setw(2) << ((v >> shift) & 0xff);
+        }
     }
 
     return ss.str();
@@ -295,19 +308,23 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
         if (!reg->is_writeable())
             continue;
 
-        if (strlen(str) < reg->size * 2) {
+        if (strlen(str) < reg->count * 8 * 2) {
             log_warn("malformed command '%s'", cmd.c_str());
             return ERR_COMMAND;
         }
 
-        gdb_u64 val;
-        for (u64 byte = 0; byte < reg->size; byte++, str += 2)
-            sscanf(str, "%02hhx", val.ptr + byte);
+        vector<u8> val(reg->total_size());
+        for (size_t i = 0; i < reg->count; i++) {
+            u64 v = 0;
+            for (u64 byte = 0; byte < reg->size; byte++, str += 2)
+                sscanf(str, "%02hhx", (u8*)&v + byte);
 
-        if (!m_target.is_host_endian())
-            memswap(val.ptr, reg->size);
+            if (!m_target.is_host_endian())
+                memswap(&v, sizeof(v));
+            memcpy(&(val.data()[i * reg->size]), &v, reg->size);
+        }
 
-        if (!reg->write(val.ptr, sizeof(val)))
+        if (!reg->write(val.data(), reg->total_size()))
             return ERR_INTERNAL;
     }
 

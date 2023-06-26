@@ -32,7 +32,6 @@ bool gdbfeature::collect_regs(const target& t, vector<const cpureg*>& regs,
     return missing.empty();
 }
 
-
 void gdbfeature::write_vec_init(const cpureg* reg, ostream& os) const {
     struct VEC_TYPE_SIZE {
         const char* gdb_type;
@@ -51,8 +50,8 @@ void gdbfeature::write_vec_init(const cpureg* reg, ostream& os) const {
         if (vec.size <= reg->count * reg->size * 8) {
             os << "<vector id=\"" << vec.id << "\""
                << "  type=\"" << vec.gdb_type << "\""
-               << "  count=\"" << reg->total_width() / vec.size
-               << "\" />" << std::endl;
+               << "  count=\"" << reg->total_width() / vec.size << "\" />"
+               << std::endl;
         }
     }
     os << "<union id=\"vector_union\">" << std::endl;
@@ -72,7 +71,7 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
 
     os << "<feature name=\"" << name << "\">" << std::endl;
 
-    u64 vec_len = 0;
+    u64 vec_size = 0;
     for (size_t i = 0; i < cpuregs.size(); i++) {
         if (cpuregs[i]->count < 1) {
             os << "<reg name=\"" << registers[i] << "\""
@@ -80,17 +79,18 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
                << "  bitsize=\"" << cpuregs[i]->width() << "\" />"
                << std::endl;
         } else {
-            if (vec_len == 0) {
+            if (vec_size == 0) {
                 write_vec_init(cpuregs[i], os);
-                vec_len = cpuregs[i]->total_length();
-            } else if (vec_len != cpuregs[i]->total_length())
+                vec_size = cpuregs[i]->total_size();
+            } else if (vec_size != cpuregs[i]->total_size())
                 VCML_ERROR(
                     "all vector registers must have the same total length");
 
             os << "<reg name=\"" << registers[i] << "\""
                << "  regnum=\"" << cpuregs[i]->regno << "\""
                << "  bitsize=\"" << cpuregs[i]->total_width() << "\""
-               << "  group=\"vector\"" << "  type=\"vector_union\" />" << std::endl;
+               << "  group=\"vector\""
+               << "  type=\"vector_union\" />" << std::endl;
         }
     }
 
