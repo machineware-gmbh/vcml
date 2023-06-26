@@ -14,13 +14,6 @@
 namespace vcml {
 namespace debugging {
 
-union gdb_u64 {
-    u64 val;
-    u8 ptr[8];
-
-    gdb_u64(): val() {}
-};
-
 void gdbserver::update_status(gdb_status status) {
     if (!is_connected())
         status = m_default;

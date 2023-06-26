@@ -28,7 +28,6 @@ struct gdbfeature {
     bool supported(const target& t) const;
     bool supported(const target& t, vector<string>& missing) const;
 
-    void write_vec_init(const cpureg* reg, ostream& os) const;
     void write_xml(const target& t, ostream& os) const;
 };
 

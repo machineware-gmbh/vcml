@@ -38,7 +38,7 @@ void target::define_cpureg(id_t regno, const string& name, size_t size,
 void target::define_cpureg(id_t regno, const string& name, size_t size,
                            size_t count, int prot) {
     if (stl_contains(m_cpuregs, regno))
-        VCML_ERROR("cpureg %lu (%s) already defined", regno, name.c_str());
+        VCML_ERROR("cpureg %zu (%s) already defined", regno, name.c_str());
 
     cpureg& newreg = m_cpuregs[regno];
     newreg.regno = regno;

@@ -32,15 +32,15 @@ bool gdbfeature::collect_regs(const target& t, vector<const cpureg*>& regs,
     return missing.empty();
 }
 
-void gdbfeature::write_vec_init(const cpureg* reg, ostream& os) const {
-    struct VEC_TYPE_SIZE {
+static void write_vec_init(const cpureg* reg, ostream& os) {
+    struct vec_type_size {
         const char* gdb_type;
         const char* id;
         size_t size;
         const char suffix;
     };
 
-    static constexpr VEC_TYPE_SIZE vec_lanes[]{
+    static constexpr vec_type_size vec_lanes[]{
         { "uint128", "quads", 128, 'q' }, { "uint64", "longs", 64, 'l' },
         { "uint32", "words", 32, 'w' },   { "uint16", "shorts", 16, 's' },
         { "uint8", "bytes", 8, 'b' },
