@@ -74,13 +74,6 @@ bool gdbserver::check_suspension_point() {
     return m_target.is_suspenable();
 }
 
-const cpureg* gdbserver::lookup_cpureg(unsigned int gdbno) {
-    auto it = m_allregs.find(gdbno);
-    if (it == m_allregs.end())
-        return nullptr;
-    return it->second;
-}
-
 string gdbserver::handle_unknown(const string& cmd) {
     return "";
 }
@@ -200,7 +193,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    const cpureg* reg = lookup_cpureg(regno);
+    const cpureg* reg = m_target.find_cpureg(regno);
     if (reg == nullptr)
         return "xxxxxxxx"; // respond with "contents unknown"
     if (!reg->is_readable()) {
@@ -233,7 +226,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    const cpureg* reg = lookup_cpureg(regno);
+    const cpureg* reg = m_target.find_cpureg(regno);
     if (reg == nullptr) {
         log_warn("unknown register id: %u", regno);
         return "OK";
@@ -513,8 +506,7 @@ gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
     m_target_xml(),
     m_status(status),
     m_default(status),
-    m_cpuregs(),
-    m_allregs() {
+    m_cpuregs() {
     if (m_target_arch == nullptr)
         VCML_ERROR("architecture %s not supported", m_target.arch());
 
@@ -525,13 +517,10 @@ gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
 
     for (const auto& feature : m_target_arch->features) {
         vector<const cpureg*> cpuregs;
-        if (feature.collect_regs(m_target, cpuregs)) {
+        if (feature.collect_regs(m_target, cpuregs))
             log_debug("gdb feature %s is supported", feature.name);
-            for (const cpureg* reg : cpuregs)
-                m_allregs.insert({ reg->regno, reg });
-        } else {
+        else
             log_debug("gdb feature %s is not supported", feature.name);
-        }
     }
 
     register_handler("q", &gdbserver::handle_query);

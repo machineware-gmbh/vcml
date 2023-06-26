@@ -45,7 +45,6 @@ private:
     gdb_status m_default;
 
     vector<const cpureg*> m_cpuregs;
-    unordered_map<u64, const cpureg*> m_allregs;
 
     void update_status(gdb_status status);
 
@@ -61,8 +60,6 @@ private:
                                          u64 newval) override;
 
     virtual bool check_suspension_point() override;
-
-    const cpureg* lookup_cpureg(unsigned int gdbno);
 
     enum breakpoint_type {
         GDB_BREAKPOINT_SW = 0,

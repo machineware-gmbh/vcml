@@ -183,6 +183,10 @@ bool target::virt_to_phys(u64 vaddr, u64& paddr) {
     return false; // to be overloaded
 }
 
+void target::write_gdb_xml_feature(ostream& os) {
+    // to be overloaded
+}
+
 const char* target::arch() {
     return nullptr; // to be overloaded
 }

@@ -141,6 +141,8 @@ public:
     virtual bool page_size(u64& size);
     virtual bool virt_to_phys(u64 vaddr, u64& paddr);
 
+    virtual void write_gdb_xml_feature(ostream& os);
+
     virtual const char* arch();
 
     virtual u64 core_id();

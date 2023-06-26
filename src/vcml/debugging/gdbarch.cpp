@@ -131,7 +131,7 @@ gdbarch::~gdbarch() {
     stl_remove(all_gdbarchs(), this);
 }
 
-void gdbarch::write_xml(const target& t, ostream& os) const {
+void gdbarch::write_xml(target& t, ostream& os) const {
     os << "<?xml version=\"1.0\"?>" << std::endl
        << "<!DOCTYPE target SYSTEM \"gdb-target.dtd\">" << std::endl
        << "<target version=\"1.0\">" << std::endl;
@@ -142,6 +142,8 @@ void gdbarch::write_xml(const target& t, ostream& os) const {
 
     for (auto& feat : features)
         feat.write_xml(t, os);
+
+    t.write_gdb_xml_feature(os);
 
     os << "</target>" << std::endl;
 }

@@ -58,7 +58,7 @@ struct gdbarch {
             const vector<gdbfeature>& features);
     ~gdbarch();
 
-    void write_xml(const target& t, ostream& os) const;
+    void write_xml(target& t, ostream& os) const;
 
     bool collect_core_regs(const target& t, vector<const cpureg*>& r) const;
 
