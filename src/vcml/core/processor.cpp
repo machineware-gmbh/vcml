@@ -575,7 +575,7 @@ void processor::define_cpureg(id_t regno, const string& name, size_t size,
 
     u64 defval = 0;
     if (is_read_allowed(prot)) {
-        if (!read_reg_dbg(regno, &defval, sizeof(defval)))
+        if (!read_reg_dbg(regno, &defval, min(size, sizeof(defval))))
             VCML_ERROR("failed to initialize cpureg %s", name.c_str());
     }
 
