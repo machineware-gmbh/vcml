@@ -558,8 +558,6 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
 
 gdbserver::~gdbserver() {
     shutdown();
-    for (auto gtgt : m_targets)
-        delete gtgt;
 }
 
 void gdbserver::handle_connect(const char* peer) {
@@ -574,11 +572,7 @@ void gdbserver::handle_disconnect() {
 }
 
 void gdbserver::add_target(target* tgt) {
-    auto gtgt = new gdb_target{ .tid = tgt->core_id() + 1,
-                                .pid = 1,
-                                .xml = "",
-                                .tgt = tgt };
-    m_targets.push_back(gtgt);
+    m_targets.emplace_back(tgt->core_id() + 1, 1, "", *tgt);
 }
 
 } // namespace debugging

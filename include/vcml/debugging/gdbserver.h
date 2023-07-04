@@ -35,18 +35,21 @@ enum gdb_signal {
     GDBSIG_KILL = 9,
 };
 
-struct gdb_target {
-    u64 tid;
-    u64 pid;
-    string xml;
-    vector<const cpureg*> cpuregs;
-    target* tgt;
-};
-
 class gdbserver : public rspserver, private subscriber, private suspender
 {
 private:
-    vector<gdb_target*> m_targets;
+    struct gdb_target {
+        u64 tid;
+        u64 pid;
+        string xml;
+        vector<const cpureg*> cpuregs;
+        target& tgt;
+
+        gdb_target(u64 t, u64 p, const char* x, target& tg):
+            tid(t), pid(p), xml(x), cpuregs(), tgt(tg) {}
+    };
+
+    vector<gdb_target> m_targets;
     target* m_target;
     const gdbarch* m_target_arch;
     string m_target_xml;
