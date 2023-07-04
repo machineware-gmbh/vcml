@@ -45,7 +45,7 @@ private:
         vector<const cpureg*> cpuregs;
         target& tgt;
 
-        gdb_target(u64 t, u64 p, const char* x, target& tg):
+        gdb_target(u64 t, u64 p, const string& x, target& tg):
             tid(t), pid(p), xml(x), cpuregs(), tgt(tg) {}
     };
 
