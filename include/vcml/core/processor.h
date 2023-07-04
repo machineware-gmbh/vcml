@@ -35,7 +35,7 @@ struct irq_stats {
     sc_time irq_longest;
 };
 
-class processor : public component, protected debugging::target
+class processor : public component, public debugging::target
 {
 private:
     double m_run_time;

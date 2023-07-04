@@ -36,7 +36,7 @@ void gdbserver::update_status(gdb_status status) {
         break;
 
     case GDB_STEPPING:
-        m_target.request_singlestep(this);
+        m_target->request_singlestep(this);
         resume();
         break;
 
@@ -71,7 +71,7 @@ void gdbserver::notify_watchpoint_write(const watchpoint& wp,
 }
 
 bool gdbserver::check_suspension_point() {
-    return m_target.is_suspenable();
+    return m_target->is_suspenable();
 }
 
 string gdbserver::handle_unknown(const string& cmd) {
@@ -138,7 +138,7 @@ string gdbserver::handle_query(const string& cmd) {
 }
 
 string gdbserver::handle_rcmd(const string& cmd) {
-    module* mod = dynamic_cast<module*>(&m_target);
+    module* mod = dynamic_cast<module*>(m_target);
     if (mod == nullptr)
         return ERR_COMMAND;
 
@@ -172,7 +172,7 @@ string gdbserver::handle_xfer(const string& cmd) {
     if (object == "features" && annex == "target.xml") {
         if (m_target_xml.empty()) {
             stringstream ss;
-            m_target_arch->write_xml(m_target, ss);
+            m_target_arch->write_xml(*m_target, ss);
             m_target_xml = ss.str();
         }
 
@@ -193,7 +193,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    const cpureg* reg = m_target.find_cpureg(regno);
+    const cpureg* reg = m_target->find_cpureg(regno);
     if (reg == nullptr)
         return "xxxxxxxx"; // respond with "contents unknown"
     if (!reg->is_readable()) {
@@ -207,7 +207,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
 
     stringstream ss;
     ss << std::hex << std::setfill('0');
-    if (!m_target.is_host_endian()) {
+    if (!m_target->is_host_endian()) {
         for (size_t i = 0; i < reg->total_size(); i += reg->size)
             memswap(val.data() + i, reg->size);
     }
@@ -226,7 +226,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    const cpureg* reg = m_target.find_cpureg(regno);
+    const cpureg* reg = m_target->find_cpureg(regno);
     if (reg == nullptr) {
         log_warn("unknown register id: %u", regno);
         return "OK";
@@ -247,7 +247,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
         }
     }
 
-    if (!m_target.is_host_endian()) {
+    if (!m_target->is_host_endian()) {
         for (size_t i = 0; i < val.size(); i += reg->size)
             memswap(val.data() + i, reg->size);
     }
@@ -270,7 +270,7 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
         if (!reg->read(val.data(), val.size()))
             return ERR_INTERNAL;
 
-        if (!m_target.is_host_endian()) {
+        if (!m_target->is_host_endian()) {
             for (size_t i = 0; i < val.size(); i += reg->size)
                 memswap(val.data() + i, reg->size);
         }
@@ -297,7 +297,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
         for (u64 byte = 0; byte < val.size(); byte++, str += 2)
             sscanf(str, "%02hhx", val.data() + byte);
 
-        if (!m_target.is_host_endian()) {
+        if (!m_target->is_host_endian()) {
             for (size_t i = 0; i < val.size(); i += reg->size)
                 memswap(val.data() + i, reg->size);
         }
@@ -329,7 +329,7 @@ string gdbserver::handle_mem_read(const string& cmd) {
 
     stringstream ss;
     ss << std::hex << std::setfill('0');
-    if (m_target.read_vmem_dbg(addr, buffer.data(), size) != size)
+    if (m_target->read_vmem_dbg(addr, buffer.data(), size) != size)
         log_debug("failed to read 0x%llx..0x%llx", addr, addr + size - 1);
 
     for (unsigned long long i = 0; i < size; i++)
@@ -368,7 +368,7 @@ string gdbserver::handle_mem_write(const string& cmd) {
                     from_hex_ascii(data[2 * i + 1]);
     }
 
-    if (m_target.write_vmem_dbg(addr, buffer.data(), size) != size)
+    if (m_target->write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
@@ -403,7 +403,7 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    if (m_target.write_vmem_dbg(addr, data, size) != size)
+    if (m_target->write_vmem_dbg(addr, data, size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
@@ -420,22 +420,22 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
     switch (type) {
     case GDB_BREAKPOINT_SW:
     case GDB_BREAKPOINT_HW:
-        if (!m_target.insert_breakpoint(addr, this))
+        if (!m_target->insert_breakpoint(addr, this))
             return ERR_INTERNAL;
         break;
 
     case GDB_WATCHPOINT_WRITE:
-        if (!m_target.insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
+        if (!m_target->insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
             return ERR_INTERNAL;
         break;
 
     case GDB_WATCHPOINT_READ:
-        if (!m_target.insert_watchpoint(wp, VCML_ACCESS_READ, this))
+        if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ, this))
             return ERR_INTERNAL;
         break;
 
     case GDB_WATCHPOINT_ACCESS:
-        if (!m_target.insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
+        if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
             return ERR_INTERNAL;
         break;
 
@@ -458,22 +458,22 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
     switch (type) {
     case GDB_BREAKPOINT_SW:
     case GDB_BREAKPOINT_HW:
-        if (!m_target.remove_breakpoint(addr, this))
+        if (!m_target->remove_breakpoint(addr, this))
             return ERR_INTERNAL;
         break;
 
     case GDB_WATCHPOINT_WRITE:
-        if (!m_target.remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
+        if (!m_target->remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
             return ERR_INTERNAL;
         break;
 
     case GDB_WATCHPOINT_READ:
-        if (!m_target.remove_watchpoint(wp, VCML_ACCESS_READ, this))
+        if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ, this))
             return ERR_INTERNAL;
         break;
 
     case GDB_WATCHPOINT_ACCESS:
-        if (!m_target.remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
+        if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
             return ERR_INTERNAL;
         break;
 
@@ -497,27 +497,31 @@ string gdbserver::handle_vcont(const string& cmd) {
     return "";
 }
 
-gdbserver::gdbserver(u16 port, target& stub, gdb_status status):
+gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     rspserver(port),
     subscriber(),
     suspender(mkstr("gdbserver_%hu", port)),
-    m_target(stub),
-    m_target_arch(gdbarch::lookup(m_target.arch())),
+    m_targets(),
+    m_target(stubs[0]),
+    m_target_arch(gdbarch::lookup(m_target->arch())),
     m_target_xml(),
     m_status(status),
     m_default(status),
     m_cpuregs() {
+    for (auto tgt : stubs)
+        add_target(tgt);
+
     if (m_target_arch == nullptr)
-        VCML_ERROR("architecture %s not supported", m_target.arch());
+        VCML_ERROR("architecture %s not supported", m_target->arch());
 
-    if (!m_target_arch->collect_core_regs(m_target, m_cpuregs))
-        VCML_ERROR("target does not support %s", m_target.arch());
+    if (!m_target_arch->collect_core_regs(*m_target, m_cpuregs))
+        VCML_ERROR("target does not support %s", m_target->arch());
 
-    log_debug("gdb architecture %s is supported", m_target.arch());
+    log_debug("gdb architecture %s is supported", m_target->arch());
 
     for (const auto& feature : m_target_arch->features) {
         vector<const cpureg*> cpuregs;
-        if (feature.collect_regs(m_target, cpuregs))
+        if (feature.collect_regs(*m_target, cpuregs))
             log_debug("gdb feature %s is supported", feature.name);
         else
             log_debug("gdb feature %s is not supported", feature.name);
@@ -565,6 +569,10 @@ void gdbserver::handle_disconnect() {
     log_debug("gdb disconnected");
     if (sim_running())
         update_status(m_default);
+}
+
+void gdbserver::add_target(target* tgt) {
+    m_targets.emplace_back(tgt->core_id() + 1, 1, "", *tgt);
 }
 
 } // namespace debugging

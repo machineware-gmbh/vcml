@@ -38,7 +38,19 @@ enum gdb_signal {
 class gdbserver : public rspserver, private subscriber, private suspender
 {
 private:
-    target& m_target;
+    struct gdb_target {
+        u64 tid;
+        u64 pid;
+        string xml;
+        vector<const cpureg*> cpuregs;
+        target& tgt;
+
+        gdb_target(u64 t, u64 p, const string& x, target& tg):
+            tid(t), pid(p), xml(x), cpuregs(), tgt(tg) {}
+    };
+
+    vector<gdb_target> m_targets;
+    target* m_target;
     const gdbarch* m_target_arch;
     string m_target_xml;
     atomic<gdb_status> m_status;
@@ -107,11 +119,16 @@ public:
 
     gdbserver() = delete;
     gdbserver(const gdbserver&) = delete;
-    gdbserver(u16 port, target& stub, gdb_status status = GDB_STOPPED);
+    gdbserver(u16 port, vector<target*> stubs,
+              gdb_status status = GDB_STOPPED);
+    gdbserver(u16 port, target& stub, gdb_status status = GDB_STOPPED):
+        gdbserver(port, { &stub }, status) {}
     virtual ~gdbserver();
 
     virtual void handle_connect(const char* peer) override;
     virtual void handle_disconnect() override;
+
+    void add_target(target* tgt);
 };
 
 } // namespace debugging
