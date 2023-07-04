@@ -51,12 +51,24 @@ private:
 
     vector<gdb_target> m_targets;
     target* m_target;
+    gdb_target* m_c_target;
+    gdb_target* m_g_target;
     const gdbarch* m_target_arch;
     string m_target_xml;
     atomic<gdb_status> m_status;
     gdb_status m_default;
+    bool m_support_processes;
 
     vector<const cpureg*> m_cpuregs;
+
+    enum gdb_spec_ids {
+        GDB_ALL_TARGETS = -1,
+        GDB_ANY_TARGET = 0,
+        GDB_FIRST_TARGET = 1
+    };
+
+    bool parse_ids(const string& ids, int& pid, int& tid) const;
+    gdb_target* find_target(int pid, int tid);
 
     void update_status(gdb_status status);
 
@@ -86,6 +98,8 @@ private:
     string handle_query(const string& command);
     string handle_rcmd(const string& command);
     string handle_xfer(const string& command);
+    string handle_threadinfo(const string& command, size_t& idx);
+    string handle_extra_threadinfo(const string& command);
     string handle_step(const string& command);
     string handle_continue(const string& command);
     string handle_detach(const string& command);
@@ -104,6 +118,7 @@ private:
 
     string handle_exception(const string& command);
     string handle_thread(const string& command);
+    string handle_thread_alive(const string& command);
     string handle_vcont(const string& command);
 
 public:

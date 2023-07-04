@@ -14,6 +14,38 @@
 namespace vcml {
 namespace debugging {
 
+bool gdbserver::parse_ids(const string& ids, int& pid, int& tid) const {
+    if (m_support_processes) {
+        if (sscanf(ids.c_str(), "%x.%x", &pid, &tid) != 2)
+            return false;
+        return true;
+    }
+
+    pid = GDB_FIRST_TARGET;
+    if (sscanf(ids.c_str(), "%x", &tid) != 1)
+        return false;
+    return true;
+}
+
+gdbserver::gdb_target* gdbserver::find_target(int pid, int tid) {
+    if (tid == GDB_ALL_TARGETS || pid == GDB_ALL_TARGETS)
+        return nullptr;
+    if (pid == GDB_ANY_TARGET)
+        pid = 1;
+    if (tid == GDB_ANY_TARGET)
+        return &m_targets[0];
+
+    auto func = [tid, pid](gdb_target& t) {
+        return t.tid == (u64)tid && t.pid == (u64)pid;
+    };
+    auto gtgt = find_if(m_targets.begin(), m_targets.end(), func);
+
+    if (gtgt == m_targets.end())
+        return nullptr;
+
+    return &(*gtgt);
+}
+
 void gdbserver::update_status(gdb_status status) {
     if (!is_connected())
         status = m_default;
@@ -134,6 +166,19 @@ string gdbserver::handle_query(const string& cmd) {
     if (starts_with(cmd, "qXfer"))
         return handle_xfer(cmd);
 
+    static size_t last_idx = 0;
+    if (starts_with(cmd, "qfThreadInfo")) {
+        last_idx = 0;
+        return handle_threadinfo(cmd, last_idx);
+    }
+    if (starts_with(cmd, "qsThreadInfo"))
+        return handle_threadinfo(cmd, last_idx);
+
+    if (starts_with(cmd, "qThreadExtraInfo,"))
+        return handle_extra_threadinfo(cmd);
+    if (starts_with(cmd, "qC"))
+        return mkstr("QC%llx", m_targets[0].tid);
+
     return handle_unknown(cmd);
 }
 
@@ -184,6 +229,48 @@ string gdbserver::handle_xfer(const string& cmd) {
     }
 
     return "";
+}
+
+string gdbserver::handle_threadinfo(const string& cmd, size_t& idx) {
+    if (idx >= m_targets.size())
+        return "l";
+
+    stringstream ss;
+    ss << "m";
+
+    for (; idx < m_targets.size(); idx++) {
+        string s = mkstr("%llx,", m_targets[idx].tid);
+        if (s.size() + ss.str().size() > BUFFER_SIZE) {
+            idx--;
+            break;
+        }
+        ss << s;
+    }
+
+    return ss.str();
+}
+
+string gdbserver::handle_extra_threadinfo(const string& cmd) {
+    const char* str = cmd.c_str();
+    str += 17;
+    int pid, tid;
+    if (!parse_ids(str, pid, tid)) {
+        log_warn("malformed command %s", cmd.c_str());
+        return ERR_COMMAND;
+    }
+
+    gdb_target* gtgt = find_target(pid, tid);
+    if (!gtgt) {
+        log_warn("unknown target ids %d:%d", pid, tid);
+        return ERR_PARAM;
+    }
+
+    const char* info = gtgt->tgt.target_name();
+    stringstream ss;
+    for (size_t i = 0; i < strlen(info); i++)
+        ss << mkstr("%02x", info[i]);
+
+    return ss.str();
 }
 
 string gdbserver::handle_reg_read(const string& cmd) {
@@ -490,6 +577,55 @@ string gdbserver::handle_exception(const string& cmd) {
 }
 
 string gdbserver::handle_thread(const string& cmd) {
+    const char* str = cmd.c_str();
+    str += 2;
+    int pid = 0;
+    int tid = 0;
+
+    bool is_c = starts_with(cmd, "Hc");
+    bool is_g = starts_with(cmd, "Hg");
+    if (!is_c && !is_g) {
+        log_warn("malformed command %s", cmd.c_str());
+        return ERR_COMMAND;
+    }
+
+    if (!parse_ids(str, pid, tid)) {
+        log_warn("malformed command %s", cmd.c_str());
+        return ERR_COMMAND;
+    }
+
+    if (pid != GDB_ALL_TARGETS && tid != GDB_ALL_TARGETS) {
+        auto gtgt = find_target(pid, tid);
+        if (!gtgt) {
+            log_warn("unknown target ids %d.%d", pid, tid);
+            return ERR_PARAM;
+        }
+
+        if (is_c)
+            m_c_target = gtgt;
+        else
+            m_g_target = gtgt;
+    }
+
+    return "OK";
+}
+
+string gdbserver::handle_thread_alive(const string& cmd) {
+    const char* str = cmd.c_str();
+    str++;
+
+    int pid = 0;
+    int tid = 0;
+    if (!parse_ids(str, pid, tid)) {
+        log_warn("malformed command %s", cmd.c_str());
+        return ERR_COMMAND;
+    }
+
+    if (!find_target(pid, tid)) {
+        log_warn("target %d:%d is dead", pid, tid);
+        return ERR_PARAM;
+    }
+
     return "OK";
 }
 
@@ -503,10 +639,13 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     suspender(mkstr("gdbserver_%hu", port)),
     m_targets(),
     m_target(stubs[0]),
+    m_c_target(),
+    m_g_target(),
     m_target_arch(gdbarch::lookup(m_target->arch())),
     m_target_xml(),
     m_status(status),
     m_default(status),
+    m_support_processes(false),
     m_cpuregs() {
     for (auto tgt : stubs)
         add_target(tgt);
@@ -547,6 +686,7 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     register_handler("z", &gdbserver::handle_breakpoint_delete);
 
     register_handler("H", &gdbserver::handle_thread);
+    register_handler("T", &gdbserver::handle_thread_alive);
     register_handler("v", &gdbserver::handle_vcont);
     register_handler("?", &gdbserver::handle_exception);
 
