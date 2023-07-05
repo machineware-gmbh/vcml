@@ -150,9 +150,20 @@ string gdbserver::handle_kill(const string& cmd) {
 }
 
 string gdbserver::handle_query(const string& cmd) {
+    if (m_targets.size() == 0) {
+        log_warn("no available target");
+        return ERR_INTERNAL;
+    }
+
+    m_q_target = &m_targets[0];
+    if (!m_q_target) {
+        log_warn("no target specified");
+        return ERR_INTERNAL;
+    }
+
     if (starts_with(cmd, "qSupported")) {
         string features = mkstr("PacketSize=%zx;", PACKET_SIZE);
-        if (m_target_arch != nullptr)
+        if (m_q_target->arch != nullptr)
             features += "qXfer:features:read+;";
         return features;
     }
@@ -166,24 +177,23 @@ string gdbserver::handle_query(const string& cmd) {
     if (starts_with(cmd, "qXfer"))
         return handle_xfer(cmd);
 
-    static size_t last_idx = 0;
     if (starts_with(cmd, "qfThreadInfo")) {
-        last_idx = 0;
-        return handle_threadinfo(cmd, last_idx);
+        m_query_idx = 0;
+        return handle_threadinfo(cmd);
     }
     if (starts_with(cmd, "qsThreadInfo"))
-        return handle_threadinfo(cmd, last_idx);
+        return handle_threadinfo(cmd);
 
     if (starts_with(cmd, "qThreadExtraInfo,"))
         return handle_extra_threadinfo(cmd);
     if (starts_with(cmd, "qC"))
-        return mkstr("QC%llx", m_targets[0].tid);
+        return mkstr("QC%llx", m_q_target->tid);
 
     return handle_unknown(cmd);
 }
 
 string gdbserver::handle_rcmd(const string& cmd) {
-    module* mod = dynamic_cast<module*>(m_target);
+    module* mod = dynamic_cast<module*>(&m_q_target->tgt);
     if (mod == nullptr)
         return ERR_COMMAND;
 
@@ -215,33 +225,33 @@ string gdbserver::handle_xfer(const string& cmd) {
         return ERR_COMMAND;
 
     if (object == "features" && annex == "target.xml") {
-        if (m_target_xml.empty()) {
+        if (m_q_target->xml.empty()) {
             stringstream ss;
-            m_target_arch->write_xml(*m_target, ss);
-            m_target_xml = ss.str();
+            m_q_target->arch->write_xml(m_q_target->tgt, ss);
+            m_q_target->xml = ss.str();
         }
 
-        if (offset > m_target_xml.length())
+        if (offset > m_q_target->xml.length())
             return ERR_COMMAND;
 
-        bool more = offset + length < m_target_xml.length();
-        return (more ? "m" : "l") + m_target_xml.substr(offset, length);
+        bool more = offset + length < m_q_target->xml.length();
+        return (more ? "m" : "l") + m_q_target->xml.substr(offset, length);
     }
 
     return "";
 }
 
-string gdbserver::handle_threadinfo(const string& cmd, size_t& idx) {
-    if (idx >= m_targets.size())
+string gdbserver::handle_threadinfo(const string& cmd) {
+    if (m_query_idx >= m_targets.size())
         return "l";
 
     stringstream ss;
     ss << "m";
 
-    for (; idx < m_targets.size(); idx++) {
-        string s = mkstr("%llx,", m_targets[idx].tid);
+    for (; m_query_idx < m_targets.size(); m_query_idx++) {
+        string s = mkstr("%llx,", m_targets[m_query_idx].tid);
         if (s.size() + ss.str().size() > BUFFER_SIZE) {
-            idx--;
+            m_query_idx--;
             break;
         }
         ss << s;
@@ -253,7 +263,7 @@ string gdbserver::handle_threadinfo(const string& cmd, size_t& idx) {
 string gdbserver::handle_extra_threadinfo(const string& cmd) {
     const char* str = cmd.c_str();
     str += 17;
-    int pid, tid;
+    int pid = 0, tid = 0;
     if (!parse_ids(str, pid, tid)) {
         log_warn("malformed command %s", cmd.c_str());
         return ERR_COMMAND;
@@ -261,14 +271,14 @@ string gdbserver::handle_extra_threadinfo(const string& cmd) {
 
     gdb_target* gtgt = find_target(pid, tid);
     if (!gtgt) {
-        log_warn("unknown target ids %d:%d", pid, tid);
+        log_warn("unknown target ids %d.%d", pid, tid);
         return ERR_PARAM;
     }
 
     const char* info = gtgt->tgt.target_name();
     stringstream ss;
     for (size_t i = 0; i < strlen(info); i++)
-        ss << mkstr("%02x", info[i]);
+        ss << mkstr("%02hhx", info[i]);
 
     return ss.str();
 }
@@ -280,7 +290,12 @@ string gdbserver::handle_reg_read(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    const cpureg* reg = m_target->find_cpureg(regno);
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
+    const cpureg* reg = m_g_target->tgt.find_cpureg(regno);
     if (reg == nullptr)
         return "xxxxxxxx"; // respond with "contents unknown"
     if (!reg->is_readable()) {
@@ -294,7 +309,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
 
     stringstream ss;
     ss << std::hex << std::setfill('0');
-    if (!m_target->is_host_endian()) {
+    if (!m_g_target->tgt.is_host_endian()) {
         for (size_t i = 0; i < reg->total_size(); i += reg->size)
             memswap(val.data() + i, reg->size);
     }
@@ -307,13 +322,17 @@ string gdbserver::handle_reg_read(const string& cmd) {
 
 string gdbserver::handle_reg_write(const string& cmd) {
     unsigned int regno;
-
     if (sscanf(cmd.c_str(), "P%x=", &regno) != 1) {
         log_warn("malformed command '%str'", cmd.c_str());
         return ERR_COMMAND;
     }
 
-    const cpureg* reg = m_target->find_cpureg(regno);
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
+    const cpureg* reg = m_g_target->tgt.find_cpureg(regno);
     if (reg == nullptr) {
         log_warn("unknown register id: %u", regno);
         return "OK";
@@ -334,7 +353,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
         }
     }
 
-    if (!m_target->is_host_endian()) {
+    if (!m_g_target->tgt.is_host_endian()) {
         for (size_t i = 0; i < val.size(); i += reg->size)
             memswap(val.data() + i, reg->size);
     }
@@ -349,7 +368,12 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
     stringstream ss;
     ss << std::hex << std::setfill('0');
 
-    for (const cpureg* reg : m_cpuregs) {
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
+    for (const cpureg* reg : m_g_target->cpuregs) {
         if (!reg->is_readable())
             continue;
 
@@ -357,7 +381,7 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
         if (!reg->read(val.data(), val.size()))
             return ERR_INTERNAL;
 
-        if (!m_target->is_host_endian()) {
+        if (!m_g_target->tgt.is_host_endian()) {
             for (size_t i = 0; i < val.size(); i += reg->size)
                 memswap(val.data() + i, reg->size);
         }
@@ -370,8 +394,13 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
 }
 
 string gdbserver::handle_reg_write_all(const string& cmd) {
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
     const char* str = cmd.c_str() + 1;
-    for (const cpureg* reg : m_cpuregs) {
+    for (const cpureg* reg : m_g_target->cpuregs) {
         if (!reg->is_writeable())
             continue;
 
@@ -384,7 +413,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
         for (u64 byte = 0; byte < val.size(); byte++, str += 2)
             sscanf(str, "%02hhx", val.data() + byte);
 
-        if (!m_target->is_host_endian()) {
+        if (!m_g_target->tgt.is_host_endian()) {
             for (size_t i = 0; i < val.size(); i += reg->size)
                 memswap(val.data() + i, reg->size);
         }
@@ -414,9 +443,14 @@ string gdbserver::handle_mem_read(const string& cmd) {
     vector<u8> buffer;
     buffer.resize(size);
 
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
     stringstream ss;
     ss << std::hex << std::setfill('0');
-    if (m_target->read_vmem_dbg(addr, buffer.data(), size) != size)
+    if (m_g_target->tgt.read_vmem_dbg(addr, buffer.data(), size) != size)
         log_debug("failed to read 0x%llx..0x%llx", addr, addr + size - 1);
 
     for (unsigned long long i = 0; i < size; i++)
@@ -455,7 +489,12 @@ string gdbserver::handle_mem_write(const string& cmd) {
                     from_hex_ascii(data[2 * i + 1]);
     }
 
-    if (m_target->write_vmem_dbg(addr, buffer.data(), size) != size)
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
+    if (m_g_target->tgt.write_vmem_dbg(addr, buffer.data(), size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
@@ -490,7 +529,12 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
         return ERR_COMMAND;
     }
 
-    if (m_target->write_vmem_dbg(addr, data, size) != size)
+    if (!m_g_target) {
+        log_warn("no specified target");
+        return ERR_INTERNAL;
+    }
+
+    if (m_g_target->tgt.write_vmem_dbg(addr, data, size) != size)
         return ERR_UNKNOWN;
 
     return "OK";
@@ -507,23 +551,31 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
     switch (type) {
     case GDB_BREAKPOINT_SW:
     case GDB_BREAKPOINT_HW:
-        if (!m_target->insert_breakpoint(addr, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.insert_breakpoint(addr, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     case GDB_WATCHPOINT_WRITE:
-        if (!m_target->insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     case GDB_WATCHPOINT_READ:
-        if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.insert_watchpoint(wp, VCML_ACCESS_READ, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     case GDB_WATCHPOINT_ACCESS:
-        if (!m_target->insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     default:
@@ -545,23 +597,31 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
     switch (type) {
     case GDB_BREAKPOINT_SW:
     case GDB_BREAKPOINT_HW:
-        if (!m_target->remove_breakpoint(addr, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.remove_breakpoint(addr, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     case GDB_WATCHPOINT_WRITE:
-        if (!m_target->remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     case GDB_WATCHPOINT_READ:
-        if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.remove_watchpoint(wp, VCML_ACCESS_READ, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     case GDB_WATCHPOINT_ACCESS:
-        if (!m_target->remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
-            return ERR_INTERNAL;
+        for (auto& gtgt : m_targets) {
+            if (!gtgt.tgt.remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
+                return ERR_INTERNAL;
+        }
         break;
 
     default:
@@ -579,8 +639,7 @@ string gdbserver::handle_exception(const string& cmd) {
 string gdbserver::handle_thread(const string& cmd) {
     const char* str = cmd.c_str();
     str += 2;
-    int pid = 0;
-    int tid = 0;
+    int pid = 0, tid = 0;
 
     bool is_c = starts_with(cmd, "Hc");
     bool is_g = starts_with(cmd, "Hg");
@@ -614,15 +673,14 @@ string gdbserver::handle_thread_alive(const string& cmd) {
     const char* str = cmd.c_str();
     str++;
 
-    int pid = 0;
-    int tid = 0;
+    int pid = 0, tid = 0;
     if (!parse_ids(str, pid, tid)) {
         log_warn("malformed command %s", cmd.c_str());
         return ERR_COMMAND;
     }
 
     if (!find_target(pid, tid)) {
-        log_warn("target %d:%d is dead", pid, tid);
+        log_warn("target %d.%d is dead", pid, tid);
         return ERR_PARAM;
     }
 
@@ -641,14 +699,23 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     m_target(stubs[0]),
     m_c_target(),
     m_g_target(),
+    m_q_target(),
     m_target_arch(gdbarch::lookup(m_target->arch())),
     m_target_xml(),
     m_status(status),
     m_default(status),
     m_support_processes(false),
+    m_query_idx(0),
     m_cpuregs() {
+    if (stubs.size() == 0)
+        VCML_ERROR("at least one target must be provided at construction");
+
     for (auto tgt : stubs)
         add_target(tgt);
+
+    m_c_target = &m_targets[0];
+    m_g_target = &m_targets[0];
+    m_q_target = &m_targets[0];
 
     if (m_target_arch == nullptr)
         VCML_ERROR("architecture %s not supported", m_target->arch());
@@ -712,7 +779,17 @@ void gdbserver::handle_disconnect() {
 }
 
 void gdbserver::add_target(target* tgt) {
-    m_targets.emplace_back(tgt->core_id() + 1, 1, "", *tgt);
+    VCML_ERROR_ON(!tgt, "target cannot be a nullptr");
+
+    const gdbarch* arch = gdbarch::lookup(tgt->arch());
+    if (arch == nullptr)
+        VCML_ERROR("architecture %s not supported", tgt->arch());
+
+    vector<const cpureg*> cpuregs;
+    if (!arch->collect_core_regs(*tgt, cpuregs))
+        VCML_ERROR("target does not support %s", tgt->arch());
+
+    m_targets.emplace_back(tgt->core_id() + 1, 1, arch, cpuregs, *tgt);
 }
 
 } // namespace debugging
