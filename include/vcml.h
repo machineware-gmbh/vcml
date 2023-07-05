@@ -24,8 +24,10 @@
 #include "vcml/core/processor.h"
 #include "vcml/core/system.h"
 #include "vcml/core/setup.h"
+#include "vcml/core/ncurses.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/logging/log_tui.h"
 
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"
@@ -53,6 +55,7 @@
 #include "vcml/ui/video.h"
 #include "vcml/ui/display.h"
 #include "vcml/ui/console.h"
+#include "vcml/ui/tui.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"

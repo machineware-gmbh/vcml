@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright (C) 2023 MachineWare GmbH                                        *
+ * Copyright (C) 2022 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
  *                                                                            *
  * This is work is licensed under the terms described in the LICENSE file     *
@@ -8,46 +8,34 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SERIAL_BACKEND_TUI_H
-#define VCML_SERIAL_BACKEND_TUI_H
+#ifndef VCML_LOG_TUI_H
+#define VCML_LOG_TUI_H
 
 #include "vcml/core/types.h"
-#include "vcml/logging/logger.h"
-#include "vcml/models/serial/backend.h"
+#include "mwr/logging/publisher.h"
 
 #include "vcml/ui/tui.h"
 
 namespace vcml {
-namespace serial {
 
-class backend_tui : public backend
+class log_tui : public mwr::publisher
 {
 private:
-    atomic<bool> m_exit_requested;
-    atomic<bool> m_backend_active;
-
-    thread m_iothread;
-    mutable mutex m_mtx;
-    queue<u8> m_fifo;
-
-    ncurses::window& m_win;
-
-    void iothread();
-    void terminate();
+    bool m_colors;
 
 public:
-    logger log;
+    bool has_colors() const { return m_colors; }
+    void set_colors(bool set = true) { m_colors = set; }
 
-    backend_tui(terminal* term);
-    virtual ~backend_tui();
+    log_tui() = delete;
+    log_tui(bool use_colors);
+    virtual ~log_tui() = default;
 
-    virtual bool read(u8& val) override;
-    virtual void write(u8 val) override;
+    virtual void publish(const mwr::logmsg& msg) override;
 
-    static backend* create(terminal* term, const string& type);
+    static const int COLORS[mwr::log_level::NUM_LOG_LEVELS];
 };
 
-} // namespace serial
 } // namespace vcml
 
 #endif

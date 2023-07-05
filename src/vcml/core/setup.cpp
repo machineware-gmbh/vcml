@@ -9,6 +9,9 @@
  ******************************************************************************/
 
 #include "vcml/core/setup.h"
+#ifdef HAVE_NCURSES
+#include "vcml/ui/tui.h"
+#endif
 
 #include <locale.h>
 
@@ -74,7 +77,11 @@ setup::setup(int argc, char** argv):
     }
 
     if (m_log_stdout.value() || !m_log_files.has_value()) {
+#ifdef HAVE_NCURSES
+        mwr::publisher* pub = new log_tui(true);
+#else
         mwr::publisher* pub = new mwr::publishers::terminal(true);
+#endif
         pub->set_level(min, max);
         m_publishers.push_back(pub);
     }

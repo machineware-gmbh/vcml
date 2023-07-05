@@ -8,7 +8,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/serial/terminal.h"
 #include "vcml/models/serial/backend_tui.h"
 
 #include "vcml/debugging/suspender.h"
@@ -34,15 +33,12 @@ void backend_tui::terminate() {
 
 void backend_tui::iothread() {
     while (m_backend_active && sim_running()) {
-        if (mwr::fd_peek(m_fd, 100)) {
-            u8 ch;
-            if (!mwr::fd_read(m_fd, &ch, sizeof(ch))) {
-                log_warn("eof while reading stdin");
-                return; // EOF
-            }
-
+        i8 ch = m_win.get_char();
+        if (ch != ERR) {
             if (ch == CTRL_A) { // ctrl-a
-                mwr::fd_read(m_fd, &ch, sizeof(ch));
+                m_win.set_timeout(-1);
+                ch = m_win.get_char();
+                m_win.set_timeout();
                 if (ch == 'x' || ch == 'X' || ch == CTRL_X) {
                     terminate();
                     continue;
@@ -59,18 +55,14 @@ void backend_tui::iothread() {
 }
 
 backend_tui::backend_tui(terminal* term):
-    backend(term, "term"),
-    m_fd(STDIN_FILENO),
+    backend(term, "tui"),
     m_exit_requested(false),
     m_backend_active(true),
     m_iothread(),
     m_mtx(),
     m_fifo(),
-    log("terminal") {
-    VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
-    capture_stdin();
-    mwr::tty_push(m_fd, true);
-    mwr::tty_set(m_fd, false, false);
+    m_win(ui::tui::instance()->get_tui_window()),
+    log("tui") {
     m_iothread = thread(&backend_tui::iothread, this);
     mwr::set_thread_name(m_iothread, "tui_iothread");
 }
@@ -79,9 +71,6 @@ backend_tui::~backend_tui() {
     m_backend_active = false;
     if (m_iothread.joinable())
         m_iothread.join();
-
-    mwr::tty_pop(m_fd);
-    release_stdin();
 }
 
 bool backend_tui::read(u8& value) {
@@ -95,8 +84,8 @@ bool backend_tui::read(u8& value) {
 }
 
 void backend_tui::write(u8 val) {
-    // ToDo: draw a TUI frame with the new character appended
-    mwr::fd_write(m_fd, &val, sizeof(val));
+    m_win.write(val);
+    m_win.refresh();
 }
 
 backend* backend_tui::create(terminal* term, const string& type) {

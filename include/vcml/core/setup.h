@@ -13,6 +13,9 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/thctl.h"
+#include "vcml/core/ncurses.h"
+
+#include "vcml/logging/log_tui.h"
 
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"

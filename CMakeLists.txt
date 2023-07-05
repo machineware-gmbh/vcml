@@ -257,8 +257,13 @@ if(NCURSES_FOUND)
     message(STATUS "Building with ncurses support")
     target_compile_definitions(vcml PRIVATE HAVE_NCURSES)
     target_include_directories(vcml SYSTEM PRIVATE ${NCURSES_INCLUDE_DIR})
-    target_sources(vcml PRIVATE ${src}/vcml/models/serial/backend_tui.cpp)
+    target_sources(vcml PRIVATE ${src}/vcml/logging/log_tui.cpp 
+                        PRIVATE ${src}/vcml/models/serial/backend_tui.cpp
+                        PRIVATE ${src}/vcml/core/ncurses.cpp
+                        PRIVATE ${src}/vcml/ui/tui.cpp)
     target_link_libraries(vcml PUBLIC ${NCURSES_LIBRARIES})
+    # Shush SystemC
+    set(DISABLE_COPYRIGHT_MESSAGE true)
 else()
     message(STATUS "Building without ncurses support")
 endif()
