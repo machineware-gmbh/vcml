@@ -41,23 +41,27 @@ private:
     struct gdb_target {
         u64 tid;
         u64 pid;
+        const gdbarch* arch;
         string xml;
         vector<const cpureg*> cpuregs;
         target& tgt;
 
-        gdb_target(u64 t, u64 p, const string& x, target& tg):
-            tid(t), pid(p), xml(x), cpuregs(), tgt(tg) {}
+        gdb_target(u64 t, u64 p, const gdbarch* a, vector<const cpureg*>& c,
+                   target& tg):
+            tid(t), pid(p), arch(a), xml(), cpuregs(c), tgt(tg) {}
     };
 
     vector<gdb_target> m_targets;
     target* m_target;
     gdb_target* m_c_target;
     gdb_target* m_g_target;
+    gdb_target* m_q_target;
     const gdbarch* m_target_arch;
     string m_target_xml;
     atomic<gdb_status> m_status;
     gdb_status m_default;
     bool m_support_processes;
+    size_t m_query_idx;
 
     vector<const cpureg*> m_cpuregs;
 
@@ -98,7 +102,7 @@ private:
     string handle_query(const string& command);
     string handle_rcmd(const string& command);
     string handle_xfer(const string& command);
-    string handle_threadinfo(const string& command, size_t& idx);
+    string handle_threadinfo(const string& command);
     string handle_extra_threadinfo(const string& command);
     string handle_step(const string& command);
     string handle_continue(const string& command);
