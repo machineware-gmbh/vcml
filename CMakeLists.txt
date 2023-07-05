@@ -1,6 +1,6 @@
  ##############################################################################
  #                                                                            #
- # Copyright (C) 2022 MachineWare GmbH                                        #
+ # Copyright (C) 2023 MachineWare GmbH                                        #
  # All Rights Reserved                                                        #
  #                                                                            #
  # This is work is licensed under the terms described in the LICENSE file     #
@@ -9,7 +9,7 @@
  ##############################################################################
 
 cmake_minimum_required(VERSION 3.11)
-project(vcml VERSION 2023.06.17 LANGUAGES C CXX)
+project(vcml VERSION 2023.07.05 LANGUAGES C CXX)
 
 option(VCML_USE_SDL2 "Use SDL2 for rendering" ON)
 option(VCML_USE_VNC "Use VNC for rendering" ON)
