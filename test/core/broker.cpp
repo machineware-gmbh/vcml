@@ -24,7 +24,7 @@
 
 TEST(broker, file) {
     string s;
-    log_term logger;
+    mwr::publishers::terminal logger;
     broker_file broker(get_resource_path("test.cfg"));
 
     EXPECT_DEF(broker, "a", "b");

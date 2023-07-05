@@ -13,7 +13,7 @@
 test_base::test_base(const sc_module_name& nm):
     component(nm),
     m_tracer(),
-    m_logger(),
+    m_publisher(),
     m_reset("reset"),
     m_clock("clock", 100 * MHz) {
     m_reset.rst.bind(rst);

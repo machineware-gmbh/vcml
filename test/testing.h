@@ -36,7 +36,7 @@ class test_base : public component
 {
 private:
     tracer_term m_tracer;
-    log_term m_logger;
+    mwr::publishers::terminal m_publisher;
 
     generic::reset m_reset;
     generic::clock m_clock;

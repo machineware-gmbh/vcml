@@ -39,7 +39,6 @@ setup* setup::s_instance = nullptr;
 
 setup::setup(int argc, char** argv):
     m_log_debug("--log-debug", "Activate verbose debug logging"),
-    m_log_delta("--log-delta", "Include delta cycles in log"),
     m_log_stdout("--log-stdout", "Send log output to stdout"),
     m_log_files("--log-file", "-l", "Send log output to file"),
     m_trace_stdout("--trace-stdout", "Send tracing output to stdout"),
@@ -67,17 +66,15 @@ setup::setup(int argc, char** argv):
 
     if (m_log_debug.has_value())
         max = m_log_debug ? LOG_DEBUG : LOG_INFO;
-    if (m_log_delta.has_value())
-        publisher::print_delta_cycle = m_log_delta;
 
     for (const string& file : m_log_files.values()) {
-        publisher* pub = new log_file(file);
+        mwr::publisher* pub = new mwr::publishers::file(file);
         pub->set_level(min, max);
         m_publishers.push_back(pub);
     }
 
     if (m_log_stdout.value() || !m_log_files.has_value()) {
-        publisher* pub = new log_term(true);
+        mwr::publisher* pub = new mwr::publishers::terminal(true);
         pub->set_level(min, max);
         m_publishers.push_back(pub);
     }

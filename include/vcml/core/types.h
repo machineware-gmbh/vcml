@@ -11,10 +11,6 @@
 #ifndef VCML_TYPES_H
 #define VCML_TYPES_H
 
-#if __cplusplus < 201103L
-#error Please compile with c++11
-#endif
-
 #include <vector>
 #include <queue>
 #include <deque>
@@ -221,6 +217,15 @@ using mwr::field;
 using mwr::get_field;
 using mwr::set_field;
 using mwr::set_bit;
+
+using mwr::log_level;
+
+VCML_TYPEINFO(log_level);
+
+using mwr::LOG_DEBUG;
+using mwr::LOG_INFO;
+using mwr::LOG_WARN;
+using mwr::LOG_ERROR;
 
 bool is_debug_build();
 

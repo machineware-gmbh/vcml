@@ -14,12 +14,6 @@
 #include "vcml/core/types.h"
 #include "vcml/core/thctl.h"
 
-#include "vcml/logging/logger.h"
-#include "vcml/logging/publisher.h"
-#include "vcml/logging/log_term.h"
-#include "vcml/logging/log_file.h"
-#include "vcml/logging/log_stream.h"
-
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"
 #include "vcml/tracing/tracer_term.h"
@@ -37,7 +31,6 @@ class setup
 {
 private:
     mwr::option<bool> m_log_debug;
-    mwr::option<bool> m_log_delta;
     mwr::option<bool> m_log_stdout;
     mwr::option<string> m_log_files;
 
@@ -51,7 +44,7 @@ private:
     mwr::option<bool> m_version;
     mwr::option<bool> m_license;
 
-    vector<publisher*> m_publishers;
+    vector<mwr::publisher*> m_publishers;
     vector<tracer*> m_tracers;
     vector<broker*> m_brokers;
 
@@ -63,7 +56,6 @@ public:
     virtual ~setup();
 
     bool is_logging_debug() const { return m_log_debug; }
-    bool is_logging_delta() const { return m_log_delta; }
     bool is_logging_stdout() const { return m_log_stdout; }
     bool is_tracing_stdout() const { return m_trace_stdout; }
 

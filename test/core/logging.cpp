@@ -46,25 +46,25 @@ MATCHER(match_source, "checks if log message source information makes sense") {
            strcmp(arg.source.file, __FILE__) == 0 && arg.source.line != -1;
 }
 
-class mock_publisher : public vcml::publisher
+class mock_publisher : public mwr::publisher
 {
 public:
-    mock_publisher(): vcml::publisher(vcml::LOG_ERROR, vcml::LOG_INFO) {}
-    MOCK_METHOD(void, publish, (const vcml::logmsg&), (override));
+    mock_publisher(): mwr::publisher(vcml::LOG_ERROR, vcml::LOG_INFO) {}
+    MOCK_METHOD(void, publish, (const mwr::logmsg&), (override));
 };
 
 TEST(publisher, levels) {
-    vcml::log_term cons;
+    mwr::publishers::terminal cons;
     mock_publisher publisher;
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_INFO))).Times(1);
     vcml::log_info("this is an informational message");
 
     publisher.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
     cons.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
-    EXPECT_TRUE(vcml::publisher::would_publish(vcml::LOG_ERROR));
-    EXPECT_TRUE(vcml::publisher::would_publish(vcml::LOG_WARN));
-    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_INFO));
-    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_DEBUG));
+    EXPECT_TRUE(mwr::publisher::can_publish(vcml::LOG_ERROR));
+    EXPECT_TRUE(mwr::publisher::can_publish(vcml::LOG_WARN));
+    EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_INFO));
+    EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_DEBUG));
     EXPECT_CALL(publisher, publish(_)).Times(0);
     vcml::log_info("this is an informational message");
 
@@ -75,10 +75,10 @@ TEST(publisher, levels) {
 
     publisher.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
     cons.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
-    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_ERROR));
-    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_WARN));
-    EXPECT_FALSE(vcml::publisher::would_publish(vcml::LOG_INFO));
-    EXPECT_TRUE(vcml::publisher::would_publish(vcml::LOG_DEBUG));
+    EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_ERROR));
+    EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_WARN));
+    EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_INFO));
+    EXPECT_TRUE(mwr::publisher::can_publish(vcml::LOG_DEBUG));
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_DEBUG))).Times(1);
     vcml::log_debug("this is a debug message");
     vcml::log_info("this is an informational message");
@@ -93,7 +93,7 @@ TEST(publisher, levels) {
 }
 
 TEST(logging, component) {
-    vcml::log_term cons;
+    mwr::publishers::terminal cons;
     mock_publisher publisher;
 
     cons.set_level(vcml::LOG_DEBUG);
@@ -126,7 +126,7 @@ public:
 };
 
 TEST(logging, hierarchy) {
-    vcml::log_term cons;
+    mwr::publishers::terminal cons;
     mock_publisher publisher;
 
     cons.set_level(vcml::LOG_DEBUG);
@@ -150,7 +150,7 @@ TEST(logging, hierarchy) {
 }
 
 TEST(logging, reporting) {
-    vcml::log_term cons;
+    mwr::publishers::terminal cons;
     mock_publisher publisher;
     vcml::report rep("This is an error report", __FILE__, __LINE__);
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_ERROR))).Times(1);

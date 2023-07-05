@@ -12,7 +12,7 @@
 
 TEST(core, lua) {
     string s;
-    log_term logger;
+    mwr::publishers::terminal logger;
     broker_lua lua(get_resource_path("test.lua"));
 
     const vector<pair<string, string>> properties = {

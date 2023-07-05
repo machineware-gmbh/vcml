@@ -11,7 +11,7 @@
 #include "testing.h"
 
 TEST(disk, ramdisk) {
-    log_term log;
+    mwr::publishers::terminal log;
     log.set_level(LOG_DEBUG);
 
     block::disk disk("disk", "ramdisk:8MiB");
@@ -81,7 +81,7 @@ static void create_file(const string& path, size_t size) {
 }
 
 TEST(disk, file) {
-    log_term log;
+    mwr::publishers::terminal log;
     log.set_level(LOG_DEBUG);
 
     create_file("my.disk", 8 * MiB);
@@ -109,7 +109,7 @@ TEST(disk, file) {
 }
 
 TEST(disk, nothing) {
-    log_term log;
+    mwr::publishers::terminal log;
     log.set_level(LOG_DEBUG);
 
     block::disk disk("disk", "nothing");
@@ -119,7 +119,7 @@ TEST(disk, nothing) {
 }
 
 TEST(disk, perm_okay) {
-    log_term log;
+    mwr::publishers::terminal log;
     log.set_level(LOG_DEBUG);
 
     create_file("readonly", 1 * MiB);
@@ -132,7 +132,7 @@ TEST(disk, perm_okay) {
 }
 
 TEST(disk, perm_fail) {
-    log_term log;
+    mwr::publishers::terminal log;
     log.set_level(LOG_DEBUG);
 
     create_file("readonly", 1 * MiB);
@@ -161,7 +161,7 @@ TEST(disk, serial) {
 }
 
 TEST(ramdisk, unmap_zero) {
-    log_term log;
+    mwr::publishers::terminal log;
     log.set_level(LOG_DEBUG);
 
     block::disk disk("disk", "ramdisk:4KiB", false);

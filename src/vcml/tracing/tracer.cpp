@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "vcml/tracing/tracer.h"
-#include "vcml/logging/publisher.h"
 
 namespace vcml {
 
@@ -52,7 +51,7 @@ tracer::~tracer() {
 
 void tracer::print_timing(ostream& os, const sc_time& time, u64 delta) {
     // use same formatting as logger
-    publisher::print_timing(os, time, delta);
+    mwr::publisher::print_timing(os, time_to_ns(time));
 }
 
 unordered_set<tracer*>& tracer::all() {
