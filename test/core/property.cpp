@@ -199,4 +199,9 @@ TEST(property, init) {
     ss << test.prop_vector;
     EXPECT_EQ(ss.str(), test.prop_vector.str());
     ss.str("");
+
+    EXPECT_EQ(vcml::broker::get_or_default("test.prop_u32", 321), 12345678);
+    EXPECT_EQ(vcml::broker::get_or_default("test.prop_u33", 321), 321);
+    EXPECT_EQ(vcml::broker::get_or_default<int>("test.prop_u32"), 12345678);
+    EXPECT_EQ(vcml::broker::get_or_default<int>("test.prop_u33"), 0);
 }

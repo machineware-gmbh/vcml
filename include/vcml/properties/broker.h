@@ -48,6 +48,9 @@ public:
     template <typename T>
     static broker* init(const string& key, T& value);
 
+    template <typename T>
+    static T get_or_default(const string& key, const T& def = T());
+
     static vector<pair<string, broker*>> collect_unused();
     static void report_unused();
 };
@@ -78,6 +81,14 @@ inline broker* broker::init(const string& key, T& value) {
 
 template <>
 broker* broker::init(const string& key, string& value);
+
+template <typename T>
+inline T broker::get_or_default(const string& key, const T& defval) {
+    T val;
+    if (init<T>(key, val))
+        return val;
+    return defval;
+}
 
 } // namespace vcml
 
