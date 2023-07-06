@@ -65,6 +65,8 @@ private:
 
     vector<const cpureg*> m_cpuregs;
 
+    mutable mutex m_mtx;
+
     enum gdb_spec_ids {
         GDB_ALL_TARGETS = -1,
         GDB_ANY_TARGET = 0,
@@ -74,7 +76,7 @@ private:
     bool parse_ids(const string& ids, int& pid, int& tid) const;
     gdb_target* find_target(int pid, int tid);
 
-    void update_status(gdb_status status);
+    void update_status(gdb_status status, u64 pid = 1, u64 tid = 1);
 
     virtual void notify_step_complete(target& tgt) override;
 

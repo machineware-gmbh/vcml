@@ -46,7 +46,8 @@ gdbserver::gdb_target* gdbserver::find_target(int pid, int tid) {
     return &(*gtgt);
 }
 
-void gdbserver::update_status(gdb_status status) {
+void gdbserver::update_status(gdb_status status, u64 pid, u64 tid) {
+    lock_guard<mutex> guard(m_mtx);
     if (!is_connected())
         status = m_default;
 
@@ -60,15 +61,17 @@ void gdbserver::update_status(gdb_status status) {
 
     switch ((m_status = status)) {
     case GDB_STOPPED:
+        if (prev_status != GDB_STOPPED) {
+            m_c_target = find_target(pid, tid);
+            m_g_target = m_c_target;
+            if (!m_c_target)
+                VCML_ERROR("stopped because of unknown target");
+        }
         suspend();
         break;
 
     case GDB_RUNNING:
-        resume();
-        break;
-
     case GDB_STEPPING:
-        m_target->request_singlestep(this);
         resume();
         break;
 
@@ -85,21 +88,21 @@ void gdbserver::update_status(gdb_status status) {
 }
 
 void gdbserver::notify_step_complete(target& tgt) {
-    update_status(GDB_STOPPED);
+    update_status(GDB_STOPPED, 1, tgt.core_id() + 1);
 }
 
 void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
-    update_status(GDB_STOPPED);
+    update_status(GDB_STOPPED, 1, bp.owner().core_id() + 1);
 }
 
 void gdbserver::notify_watchpoint_read(const watchpoint& wp,
                                        const range& addr) {
-    update_status(GDB_STOPPED);
+    update_status(GDB_STOPPED, 1, wp.owner().core_id() + 1);
 }
 
 void gdbserver::notify_watchpoint_write(const watchpoint& wp,
                                         const range& addr, u64 newval) {
-    update_status(GDB_STOPPED);
+    update_status(GDB_STOPPED, 1, wp.owner().core_id() + 1);
 }
 
 bool gdbserver::check_suspension_point() {
@@ -111,6 +114,13 @@ string gdbserver::handle_unknown(const string& cmd) {
 }
 
 string gdbserver::handle_step(const string& cmd) {
+    if (!m_c_target) {
+        log_warn("no target specified");
+        return ERR_INTERNAL;
+    }
+
+    m_c_target->tgt.request_singlestep(this);
+
     update_status(GDB_STEPPING);
     while (sim_running() && is_stepping()) {
         int signal = 0;
@@ -121,10 +131,18 @@ string gdbserver::handle_step(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    return mkstr("S%02x", GDBSIG_TRAP);
+    return mkstr("T%02xthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
 }
 
 string gdbserver::handle_continue(const string& cmd) {
+    if (!m_c_target) {
+        log_warn("no target specified");
+        return ERR_INTERNAL;
+    }
+
+    for (auto& gtgt : m_targets)
+        gtgt.tgt.set_running(true);
+
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
         int signal = 0;
@@ -135,7 +153,7 @@ string gdbserver::handle_continue(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    return mkstr("S%02x", GDBSIG_TRAP);
+    return mkstr("T%02xthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
 }
 
 string gdbserver::handle_detach(const string& cmd) {
@@ -633,7 +651,12 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
 }
 
 string gdbserver::handle_exception(const string& cmd) {
-    return mkstr("S%02u", GDBSIG_TRAP);
+    if (!m_c_target) {
+        log_warn("no target specified");
+        return ERR_INTERNAL;
+    }
+
+    return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
 }
 
 string gdbserver::handle_thread(const string& cmd) {
@@ -706,7 +729,8 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     m_default(status),
     m_support_processes(false),
     m_query_idx(0),
-    m_cpuregs() {
+    m_cpuregs(),
+    m_mtx() {
     if (stubs.size() == 0)
         VCML_ERROR("at least one target must be provided at construction");
 
@@ -788,6 +812,14 @@ void gdbserver::add_target(target* tgt) {
     vector<const cpureg*> cpuregs;
     if (!arch->collect_core_regs(*tgt, cpuregs))
         VCML_ERROR("target does not support %s", tgt->arch());
+
+    for (const auto& feature : arch->features) {
+        vector<const cpureg*> feature_cpuregs;
+        if (feature.collect_regs(*tgt, feature_cpuregs))
+            log_debug("gdb feature %s is supported", feature.name);
+        else
+            log_debug("gdb feature %s is not supported", feature.name);
+    }
 
     m_targets.emplace_back(tgt->core_id() + 1, 1, arch, cpuregs, *tgt);
 }
