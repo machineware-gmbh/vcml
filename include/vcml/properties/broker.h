@@ -84,10 +84,9 @@ broker* broker::init(const string& key, string& value);
 
 template <typename T>
 inline T broker::get_or_default(const string& key, const T& defval) {
-    T val;
-    if (init<T>(key, val))
-        return val;
-    return defval;
+    T val = defval;
+    init<T>(key, val);
+    return val;
 }
 
 } // namespace vcml
