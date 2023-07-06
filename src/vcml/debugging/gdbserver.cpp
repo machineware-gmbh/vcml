@@ -106,7 +106,7 @@ void gdbserver::notify_watchpoint_write(const watchpoint& wp,
 }
 
 bool gdbserver::check_suspension_point() {
-    return m_target->is_suspenable();
+    return m_target->is_suspendable();
 }
 
 string gdbserver::handle_unknown(const string& cmd) {
