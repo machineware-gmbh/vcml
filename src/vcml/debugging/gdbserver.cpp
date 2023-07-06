@@ -140,9 +140,6 @@ string gdbserver::handle_continue(const string& cmd) {
         return ERR_INTERNAL;
     }
 
-    for (auto& gtgt : m_targets)
-        gtgt.tgt.set_running(true);
-
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
         int signal = 0;
