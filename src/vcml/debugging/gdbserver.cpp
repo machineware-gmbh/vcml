@@ -655,12 +655,7 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
 }
 
 string gdbserver::handle_exception(const string& cmd) {
-    if (!m_c_target) {
-        log_warn("no target specified");
-        return ERR_INTERNAL;
-    }
-
-    return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
+    return mkstr("S%02u", GDBSIG_TRAP);
 }
 
 string gdbserver::handle_thread(const string& cmd) {
@@ -733,9 +728,7 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     m_default(status),
     m_support_processes(false),
     m_query_idx(0),
-    m_next_tid(1),
-    m_cpuregs(),
-    m_mtx() {
+    m_cpuregs() {
     if (stubs.size() == 0)
         VCML_ERROR("at least one target must be provided at construction");
 
