@@ -47,14 +47,10 @@ gdbserver::gdb_target* gdbserver::find_target(int pid, int tid) {
 }
 
 gdbserver::gdb_target* gdbserver::find_target(target& tgt) {
-    auto func = [&tgt](gdb_target& t) { return &tgt == &t.tgt; };
-
-    auto gtgt = find_if(m_targets.begin(), m_targets.end(), func);
-
-    if (gtgt == m_targets.end())
-        return nullptr;
-
-    return &(*gtgt);
+    for (auto& gtgt : m_targets)
+        if (&gtgt.tgt == &tgt)
+            return &gtgt;
+    return nullptr;
 }
 
 void gdbserver::update_status(gdb_status status, gdb_target* gtgt) {
