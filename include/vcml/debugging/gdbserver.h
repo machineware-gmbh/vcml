@@ -52,17 +52,15 @@ private:
     };
 
     vector<gdb_target> m_targets;
-    target* m_target;
     gdb_target* m_c_target;
     gdb_target* m_g_target;
     gdb_target* m_q_target;
-    const gdbarch* m_target_arch;
-    string m_target_xml;
     atomic<gdb_status> m_status;
     gdb_status m_default;
     bool m_support_processes;
     size_t m_query_idx;
     u64 m_next_tid;
+    const range* m_hit_wp_addr;
 
     vector<const cpureg*> m_cpuregs;
 
@@ -78,7 +76,10 @@ private:
     gdb_target* find_target(int pid, int tid);
     gdb_target* find_target(target& tgt);
 
-    void update_status(gdb_status status, gdb_target* gtgt = nullptr);
+    string create_stop_reply();
+
+    void update_status(gdb_status status, gdb_target* gtgt = nullptr,
+                       const range* wp_addr = nullptr);
 
     virtual void notify_step_complete(target& tgt) override;
 
@@ -142,7 +143,7 @@ public:
 
     gdbserver() = delete;
     gdbserver(const gdbserver&) = delete;
-    gdbserver(u16 port, vector<target*> stubs,
+    gdbserver(u16 port, const vector<target*>& stubs,
               gdb_status status = GDB_STOPPED);
     gdbserver(u16 port, target& stub, gdb_status status = GDB_STOPPED):
         gdbserver(port, { &stub }, status) {}

@@ -53,7 +53,19 @@ gdbserver::gdb_target* gdbserver::find_target(target& tgt) {
     return nullptr;
 }
 
-void gdbserver::update_status(gdb_status status, gdb_target* gtgt) {
+string gdbserver::create_stop_reply() {
+    stringstream ss;
+    ss << mkstr("T%02xthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
+
+    if (m_hit_wp_addr)
+        ss << mkstr("swatch:%llx;", m_hit_wp_addr->start);
+    m_hit_wp_addr = nullptr;
+
+    return ss.str();
+}
+
+void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
+                              const range* wp_addr) {
     lock_guard<mutex> guard(m_mtx);
     if (!is_connected())
         status = m_default;
@@ -73,6 +85,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt) {
                 m_c_target = gtgt;
                 m_g_target = gtgt;
             }
+            m_hit_wp_addr = wp_addr;
         }
         suspend();
         break;
@@ -104,16 +117,20 @@ void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
 
 void gdbserver::notify_watchpoint_read(const watchpoint& wp,
                                        const range& addr) {
-    update_status(GDB_STOPPED, find_target(wp.owner()));
+    update_status(GDB_STOPPED, find_target(wp.owner()), &addr);
 }
 
 void gdbserver::notify_watchpoint_write(const watchpoint& wp,
                                         const range& addr, u64 newval) {
-    update_status(GDB_STOPPED, find_target(wp.owner()));
+    update_status(GDB_STOPPED, find_target(wp.owner()), &addr);
 }
 
 bool gdbserver::check_suspension_point() {
-    return m_target->is_suspendable();
+    for (auto& gtgt : m_targets) {
+        if (!gtgt.tgt.is_suspendable())
+            return false;
+    }
+    return true;
 }
 
 string gdbserver::handle_unknown(const string& cmd) {
@@ -125,6 +142,9 @@ string gdbserver::handle_step(const string& cmd) {
         log_warn("no target specified");
         return ERR_INTERNAL;
     }
+
+    for (auto& gtgt : m_targets)
+        gtgt.tgt.set_running(true);
 
     m_c_target->tgt.request_singlestep(this);
 
@@ -138,7 +158,7 @@ string gdbserver::handle_step(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    return mkstr("T%02xthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
+    return create_stop_reply();
 }
 
 string gdbserver::handle_continue(const string& cmd) {
@@ -146,6 +166,9 @@ string gdbserver::handle_continue(const string& cmd) {
         log_warn("no target specified");
         return ERR_INTERNAL;
     }
+
+    for (auto& gtgt : m_targets)
+        gtgt.tgt.set_running(true);
 
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
@@ -157,7 +180,7 @@ string gdbserver::handle_continue(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    return mkstr("T%02xthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
+    return create_stop_reply();
 }
 
 string gdbserver::handle_detach(const string& cmd) {
@@ -187,6 +210,7 @@ string gdbserver::handle_query(const string& cmd) {
         string features = mkstr("PacketSize=%zx;", PACKET_SIZE);
         if (m_q_target->arch != nullptr)
             features += "qXfer:features:read+;";
+        features += "vCont+";
         return features;
     }
 
@@ -660,6 +684,14 @@ string gdbserver::handle_exception(const string& cmd) {
         return ERR_INTERNAL;
     }
 
+    // Cleanup because of first connection
+    for (auto& gtgt : m_targets) {
+        for (auto& bp : gtgt.tgt.breakpoints())
+            gtgt.tgt.remove_breakpoint(bp, this);
+        for (auto& wp: gtgt.tgt.watchpoints())
+            gtgt.tgt.remove_watchpoint(wp->address(), VCML_ACCESS_READ_WRITE, this);
+    }
+
     return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
 }
 
@@ -715,20 +747,121 @@ string gdbserver::handle_thread_alive(const string& cmd) {
 }
 
 string gdbserver::handle_vcont(const string& cmd) {
-    return "";
+    if (!starts_with(cmd, "vCont"))
+        return "";
+
+    if (cmd == "vCont?")
+        return "s;S;c;C";
+
+    vector<string> args = split(cmd, ';');
+    if (args.size() <= 1) {
+        log_warn("malformed command %s", cmd.c_str());
+        return ERR_COMMAND;
+    }
+    args.erase(args.begin());
+
+    vector<gdb_target*> m_unused_targets(m_targets.size());
+    for (size_t i = 0; i < m_targets.size(); i++)
+        m_unused_targets[i] = &m_targets[i];
+
+    gdb_status stat = GDB_RUNNING;
+    for (auto& a : args) {
+        int pid = 0, tid = 0;
+
+        if (starts_with(a, "c")) {
+            if (a[1] == ':') {
+                if (!parse_ids(a.c_str() + 2, pid, tid)) {
+                    log_warn("malformed command %s", cmd.c_str());
+                    return ERR_COMMAND;
+                }
+
+                if (tid == 0)
+                    goto continue_all;
+
+                auto gtgt = find_target(pid, tid);
+                if (!gtgt) {
+                    log_warn("unknown target ids %d.%d", pid, tid);
+                    return ERR_PARAM;
+                }
+
+                if (!stl_contains(m_unused_targets, gtgt))
+                    continue;
+
+                gtgt->tgt.set_running(true);
+                stl_remove(m_unused_targets, gtgt);
+            } else {
+            continue_all:
+                for (auto gtgt : m_unused_targets)
+                    gtgt->tgt.set_running(true);
+
+                m_unused_targets.clear();
+                break;
+            }
+        } else if (starts_with(a, "s")) {
+            if (a[1] == ':') {
+                stat = GDB_STEPPING;
+
+                if (!parse_ids(a.c_str() + 2, pid, tid)) {
+                    log_warn("malformed command %s", cmd.c_str());
+                    return ERR_COMMAND;
+                }
+
+                if (tid == 0)
+                    goto step_all;
+
+                auto gtgt = find_target(pid, tid);
+                if (!gtgt) {
+                    log_warn("unknown target ids %d.%d", pid, tid);
+                    return ERR_PARAM;
+                }
+
+                if (!stl_contains(m_unused_targets, gtgt))
+                    continue;
+
+                gtgt->tgt.set_running(true);
+                gtgt->tgt.request_singlestep(this);
+                stl_remove(m_unused_targets, gtgt);
+            } else {
+            step_all:
+                for (auto gtgt : m_unused_targets) {
+                    gtgt->tgt.set_running(true);
+                    gtgt->tgt.request_singlestep(this);
+                }
+
+                m_unused_targets.clear();
+                break;
+            }
+        } else {
+            log_warn("malformed command %s", cmd.c_str());
+            return ERR_COMMAND;
+        }
+    }
+
+    for (auto gtgt : m_unused_targets)
+        gtgt->tgt.set_running(false);
+
+    update_status(stat);
+    while (sim_running() && (is_stepping() || is_running())) {
+        int signal = 0;
+        if ((signal = recv_signal(1))) {
+            log_debug("received signal %d", signal);
+            break;
+        }
+    }
+
+    update_status(GDB_STOPPED);
+    return create_stop_reply();
 }
 
-gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
+gdbserver::gdbserver(u16 port, const vector<target*>& stubs,
+                     gdb_status status):
     rspserver(port),
     subscriber(),
     suspender(mkstr("gdbserver_%hu", port)),
     m_targets(),
-    m_target(stubs[0]),
     m_c_target(),
     m_g_target(),
     m_q_target(),
-    m_target_arch(gdbarch::lookup(m_target->arch())),
-    m_target_xml(),
     m_status(status),
     m_default(status),
     m_support_processes(false),
@@ -745,22 +878,6 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     m_c_target = &m_targets[0];
     m_g_target = &m_targets[0];
     m_q_target = &m_targets[0];
-
-    if (m_target_arch == nullptr)
-        VCML_ERROR("architecture %s not supported", m_target->arch());
-
-    if (!m_target_arch->collect_core_regs(*m_target, m_cpuregs))
-        VCML_ERROR("target does not support %s", m_target->arch());
-
-    log_debug("gdb architecture %s is supported", m_target->arch());
-
-    for (const auto& feature : m_target_arch->features) {
-        vector<const cpureg*> cpuregs;
-        if (feature.collect_regs(*m_target, cpuregs))
-            log_debug("gdb feature %s is supported", feature.name);
-        else
-            log_debug("gdb feature %s is not supported", feature.name);
-    }
 
     register_handler("q", &gdbserver::handle_query);
 
