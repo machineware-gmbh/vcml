@@ -774,10 +774,11 @@ string gdbserver::handle_vcont(const string& cmd) {
     gdb_status stat = GDB_RUNNING;
     for (auto& a : args) {
         int pid = 0, tid = 0;
-
-        if (starts_with(a, "c")) {
-            if (a[1] == ':') {
-                if (!parse_ids(a.c_str() + 2, pid, tid)) {
+        // Ignore signals for "C" and "S"
+        if (starts_with(a, "c") || starts_with(a, "C")) {
+            if (contains(a, ":")) {
+                auto s = split(a, ':');
+                if (!parse_ids(s[1].c_str(), pid, tid)) {
                     log_warn("malformed command %s", cmd.c_str());
                     return ERR_COMMAND;
                 }
@@ -804,11 +805,12 @@ string gdbserver::handle_vcont(const string& cmd) {
                 m_unused_targets.clear();
                 break;
             }
-        } else if (starts_with(a, "s")) {
-            if (a[1] == ':') {
+        } else if (starts_with(a, "s") || starts_with(a, "S")) {
+            if (contains(a, ":")) {
                 stat = GDB_STEPPING;
 
-                if (!parse_ids(a.c_str() + 2, pid, tid)) {
+                auto s = split(a, ':');
+                if (!parse_ids(s[1].c_str(), pid, tid)) {
                     log_warn("malformed command %s", cmd.c_str());
                     return ERR_COMMAND;
                 }
