@@ -778,7 +778,7 @@ string gdbserver::handle_vcont(const string& cmd) {
         if (starts_with(a, "c") || starts_with(a, "C")) {
             if (contains(a, ":")) {
                 auto s = split(a, ':');
-                if (!parse_ids(s[1].c_str(), pid, tid)) {
+                if (!parse_ids(s[1], pid, tid)) {
                     log_warn("malformed command %s", cmd.c_str());
                     return ERR_COMMAND;
                 }
@@ -810,7 +810,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                 stat = GDB_STEPPING;
 
                 auto s = split(a, ':');
-                if (!parse_ids(s[1].c_str(), pid, tid)) {
+                if (!parse_ids(s[1], pid, tid)) {
                     log_warn("malformed command %s", cmd.c_str());
                     return ERR_COMMAND;
                 }
