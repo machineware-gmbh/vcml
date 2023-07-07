@@ -737,7 +737,7 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     m_default(status),
     m_support_processes(false),
     m_query_idx(0),
-    m_next_tid(0),
+    m_next_tid(1),
     m_cpuregs(),
     m_mtx() {
     if (stubs.size() == 0)
