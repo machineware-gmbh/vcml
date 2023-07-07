@@ -78,6 +78,8 @@ private:
 
     atomic<bool> m_suspendable;
 
+    atomic<bool> m_running;
+
     endianess m_endian;
     unordered_map<id_t, cpureg> m_cpuregs;
     symtab m_symbols;
@@ -108,6 +110,9 @@ protected:
 public:
     bool is_suspendable() const { return m_suspendable; }
     void set_suspendable(bool val) { m_suspendable = val; }
+
+    bool is_running() const { return m_running; }
+    void set_running(bool val) { m_running = val; }
 
     void set_little_endian();
     void set_big_endian();

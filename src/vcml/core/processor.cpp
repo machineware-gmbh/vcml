@@ -310,6 +310,9 @@ bool processor::processor_thread_async() {
             if (is_stepping())
                 return true;
 
+            if (!is_running())
+                return true;
+
             // do not execute a single cycle to avoid tb flushes
             if (cycles_left == 1)
                 break;
@@ -345,6 +348,9 @@ bool processor::processor_thread_sync() {
 
         if (is_stepping())
             num_cycles = 1;
+
+        if (!is_running())
+            num_cycles = 0;
 
         num_cycles = simulate_cycles(num_cycles);
 
