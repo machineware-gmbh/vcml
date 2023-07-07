@@ -688,8 +688,9 @@ string gdbserver::handle_exception(const string& cmd) {
     for (auto& gtgt : m_targets) {
         for (auto& bp : gtgt.tgt.breakpoints())
             gtgt.tgt.remove_breakpoint(bp, this);
-        for (auto& wp: gtgt.tgt.watchpoints())
-            gtgt.tgt.remove_watchpoint(wp->address(), VCML_ACCESS_READ_WRITE, this);
+        for (auto& wp : gtgt.tgt.watchpoints())
+            gtgt.tgt.remove_watchpoint(wp->address(), VCML_ACCESS_READ_WRITE,
+                                       this);
     }
 
     return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
