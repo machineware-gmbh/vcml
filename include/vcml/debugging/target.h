@@ -106,7 +106,7 @@ protected:
     void notify_watchpoint_write(const range& addr, u64 newval);
 
 public:
-    bool is_suspenable() const { return m_suspendable; }
+    bool is_suspendable() const { return m_suspendable; }
     void set_suspendable(bool val) { m_suspendable = val; }
 
     void set_little_endian();

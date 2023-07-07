@@ -85,7 +85,7 @@ private:
     vector<subscriber*> m_subscribers_w;
 
 public:
-    target& owner() { return m_target; }
+    target& owner() const { return m_target; }
     u64 id() const { return m_id; }
     u64 hit_count() const { return m_count; }
     const range& address() const { return m_addr; }
