@@ -57,15 +57,18 @@ string gdbserver::create_stop_reply() {
     stringstream ss;
     ss << mkstr("T%02xthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
 
-    if (m_hit_wp_addr)
-        ss << mkstr("swatch:%llx;", m_hit_wp_addr->start);
+    if (m_hit_wp_addr && m_hit_wp_type != VCML_ACCESS_NONE) {
+        const char wp_type = m_hit_wp_type == VCML_ACCESS_READ ? 'r' : 'a';
+        ss << mkstr("%cwatch:%llx;", wp_type, m_hit_wp_addr->start);
+    }
     m_hit_wp_addr = nullptr;
+    m_hit_wp_type = VCML_ACCESS_NONE;
 
     return ss.str();
 }
 
 void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
-                              const range* wp_addr) {
+                              const range* wp_addr, vcml_access wp_type) {
     lock_guard<mutex> guard(m_mtx);
     if (!is_connected())
         status = m_default;
@@ -86,6 +89,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
                 m_g_target = gtgt;
             }
             m_hit_wp_addr = wp_addr;
+            m_hit_wp_type = wp_type;
         }
         suspend();
         break;
@@ -117,12 +121,14 @@ void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
 
 void gdbserver::notify_watchpoint_read(const watchpoint& wp,
                                        const range& addr) {
-    update_status(GDB_STOPPED, find_target(wp.owner()), &addr);
+    update_status(GDB_STOPPED, find_target(wp.owner()), &wp.address(),
+                  VCML_ACCESS_READ);
 }
 
 void gdbserver::notify_watchpoint_write(const watchpoint& wp,
                                         const range& addr, u64 newval) {
-    update_status(GDB_STOPPED, find_target(wp.owner()), &addr);
+    update_status(GDB_STOPPED, find_target(wp.owner()), &wp.address(),
+                  VCML_ACCESS_WRITE);
 }
 
 bool gdbserver::check_suspension_point() {
@@ -776,7 +782,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                     return ERR_COMMAND;
                 }
 
-                if (tid == 0)
+                if (tid == GDB_ALL_TARGETS)
                     goto continue_all;
 
                 auto gtgt = find_target(pid, tid);
@@ -807,7 +813,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                     return ERR_COMMAND;
                 }
 
-                if (tid == 0)
+                if (tid == GDB_ALL_TARGETS)
                     goto step_all;
 
                 auto gtgt = find_target(pid, tid);
@@ -868,6 +874,8 @@ gdbserver::gdbserver(u16 port, const vector<target*>& stubs,
     m_support_processes(false),
     m_query_idx(0),
     m_next_tid(1),
+    m_hit_wp_addr(),
+    m_hit_wp_type(VCML_ACCESS_NONE),
     m_cpuregs(),
     m_mtx() {
     if (stubs.size() == 0)

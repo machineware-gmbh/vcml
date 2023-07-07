@@ -61,6 +61,7 @@ private:
     size_t m_query_idx;
     u64 m_next_tid;
     const range* m_hit_wp_addr;
+    vcml_access m_hit_wp_type;
 
     vector<const cpureg*> m_cpuregs;
 
@@ -79,7 +80,8 @@ private:
     string create_stop_reply();
 
     void update_status(gdb_status status, gdb_target* gtgt = nullptr,
-                       const range* wp_addr = nullptr);
+                       const range* wp_addr = nullptr,
+                       vcml_access wp_type = VCML_ACCESS_NONE);
 
     virtual void notify_step_complete(target& tgt) override;
 
