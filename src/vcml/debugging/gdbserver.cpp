@@ -46,7 +46,18 @@ gdbserver::gdb_target* gdbserver::find_target(int pid, int tid) {
     return &(*gtgt);
 }
 
-void gdbserver::update_status(gdb_status status, u64 pid, u64 tid) {
+gdbserver::gdb_target* gdbserver::find_target(target& tgt) {
+    auto func = [&tgt](gdb_target& t) { return &tgt == &t.tgt; };
+
+    auto gtgt = find_if(m_targets.begin(), m_targets.end(), func);
+
+    if (gtgt == m_targets.end())
+        return nullptr;
+
+    return &(*gtgt);
+}
+
+void gdbserver::update_status(gdb_status status, gdb_target* gtgt) {
     lock_guard<mutex> guard(m_mtx);
     if (!is_connected())
         status = m_default;
@@ -62,10 +73,10 @@ void gdbserver::update_status(gdb_status status, u64 pid, u64 tid) {
     switch ((m_status = status)) {
     case GDB_STOPPED:
         if (prev_status != GDB_STOPPED) {
-            m_c_target = find_target(pid, tid);
-            m_g_target = m_c_target;
-            if (!m_c_target)
-                VCML_ERROR("stopped because of unknown target");
+            if (gtgt) {
+                m_c_target = gtgt;
+                m_g_target = gtgt;
+            }
         }
         suspend();
         break;
@@ -88,21 +99,21 @@ void gdbserver::update_status(gdb_status status, u64 pid, u64 tid) {
 }
 
 void gdbserver::notify_step_complete(target& tgt) {
-    update_status(GDB_STOPPED, 1, tgt.core_id() + 1);
+    update_status(GDB_STOPPED, find_target(tgt));
 }
 
 void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
-    update_status(GDB_STOPPED, 1, bp.owner().core_id() + 1);
+    update_status(GDB_STOPPED, find_target(bp.owner()));
 }
 
 void gdbserver::notify_watchpoint_read(const watchpoint& wp,
                                        const range& addr) {
-    update_status(GDB_STOPPED, 1, wp.owner().core_id() + 1);
+    update_status(GDB_STOPPED, find_target(wp.owner()));
 }
 
 void gdbserver::notify_watchpoint_write(const watchpoint& wp,
                                         const range& addr, u64 newval) {
-    update_status(GDB_STOPPED, 1, wp.owner().core_id() + 1);
+    update_status(GDB_STOPPED, find_target(wp.owner()));
 }
 
 bool gdbserver::check_suspension_point() {
@@ -726,6 +737,7 @@ gdbserver::gdbserver(u16 port, vector<target*> stubs, gdb_status status):
     m_default(status),
     m_support_processes(false),
     m_query_idx(0),
+    m_next_tid(0),
     m_cpuregs(),
     m_mtx() {
     if (stubs.size() == 0)
@@ -808,17 +820,19 @@ void gdbserver::add_target(target* tgt) {
 
     vector<const cpureg*> cpuregs;
     if (!arch->collect_core_regs(*tgt, cpuregs))
-        VCML_ERROR("target does not support %s", tgt->arch());
+        VCML_ERROR("%s does not support %s", tgt->target_name(), tgt->arch());
 
     for (const auto& feature : arch->features) {
         vector<const cpureg*> feature_cpuregs;
         if (feature.collect_regs(*tgt, feature_cpuregs))
-            log_debug("gdb feature %s is supported", feature.name);
+            log_debug("gdb feature %s is supported by %s", feature.name,
+                      tgt->target_name());
         else
-            log_debug("gdb feature %s is not supported", feature.name);
+            log_debug("gdb feature %s is not supported by %s", feature.name,
+                      tgt->target_name());
     }
 
-    m_targets.emplace_back(tgt->core_id() + 1, 1, arch, cpuregs, *tgt);
+    m_targets.emplace_back(m_next_tid++, 1, arch, cpuregs, *tgt);
 }
 
 } // namespace debugging

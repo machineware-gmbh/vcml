@@ -62,6 +62,7 @@ private:
     gdb_status m_default;
     bool m_support_processes;
     size_t m_query_idx;
+    u64 m_next_tid;
 
     vector<const cpureg*> m_cpuregs;
 
@@ -75,8 +76,9 @@ private:
 
     bool parse_ids(const string& ids, int& pid, int& tid) const;
     gdb_target* find_target(int pid, int tid);
+    gdb_target* find_target(target& tgt);
 
-    void update_status(gdb_status status, u64 pid = 1, u64 tid = 1);
+    void update_status(gdb_status status, gdb_target* gtgt = nullptr);
 
     virtual void notify_step_complete(target& tgt) override;
 
