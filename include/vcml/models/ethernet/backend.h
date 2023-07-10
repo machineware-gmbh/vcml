@@ -13,6 +13,7 @@
 
 #include "vcml/core/types.h"
 #include "vcml/protocols/eth.h"
+#include "vcml/logging/logger.h"
 
 namespace vcml {
 namespace ethernet {
@@ -26,6 +27,8 @@ protected:
     string m_type;
 
 public:
+    logger& log;
+
     bridge* parent() { return m_parent; }
     const char* type() const { return m_type.c_str(); }
 

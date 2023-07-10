@@ -12,6 +12,7 @@
 #define VCML_SERIAL_BACKEND_H
 
 #include "vcml/core/types.h"
+#include "vcml/logging/logger.h"
 
 namespace vcml {
 namespace serial {
@@ -25,6 +26,8 @@ protected:
     string m_type;
 
 public:
+    logger& log;
+
     backend(terminal* term, const string& type);
     virtual ~backend();
 

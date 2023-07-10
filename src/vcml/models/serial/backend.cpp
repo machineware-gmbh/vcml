@@ -24,8 +24,7 @@ namespace vcml {
 namespace serial {
 
 backend::backend(terminal* term, const string& type):
-    m_term(term), m_type(type) {
-    VCML_ERROR_ON(!term, "backend created without terminal");
+    m_term(term), m_type(type), log(term->log) {
     m_term->attach(this);
 }
 

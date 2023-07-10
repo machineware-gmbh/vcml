@@ -16,7 +16,7 @@
 namespace vcml {
 namespace can {
 
-backend::backend(bridge* br): m_parent(br), m_type("unknown") {
+backend::backend(bridge* br): m_parent(br), m_type("unknown"), log(br->log) {
     m_parent->attach(this);
 }
 
