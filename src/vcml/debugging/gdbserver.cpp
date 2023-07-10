@@ -91,7 +91,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
             m_hit_wp_addr = wp_addr;
             m_hit_wp_type = wp_type;
         }
-        suspend();
+        suspend(true);
         break;
 
     case GDB_RUNNING:
@@ -166,8 +166,6 @@ string gdbserver::handle_step(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    while (!simulation_suspended()) {
-    };
 
     return create_stop_reply();
 }
@@ -191,8 +189,6 @@ string gdbserver::handle_continue(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    while (!simulation_suspended()) {
-    };
 
     return create_stop_reply();
 }
@@ -867,8 +863,6 @@ string gdbserver::handle_vcont(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-    while (!simulation_suspended()) {
-    };
 
     return create_stop_reply();
 }
@@ -938,8 +932,6 @@ gdbserver::~gdbserver() {
 void gdbserver::handle_connect(const char* peer) {
     log_debug("gdb connected to %s", peer);
     update_status(GDB_STOPPED);
-    while (!simulation_suspended()) {
-    };
 }
 
 void gdbserver::handle_disconnect() {
