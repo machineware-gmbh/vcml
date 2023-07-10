@@ -253,21 +253,6 @@ u64 processor::simulate_cycles(unsigned int cycles) {
 }
 
 void processor::processor_thread() {
-    if (gdb_port >= 0) {
-        auto run = gdb_wait ? debugging::GDB_STOPPED : debugging::GDB_RUNNING;
-        m_gdb = new debugging::gdbserver(gdb_port, *this, run);
-        m_gdb->echo(gdb_echo);
-
-        if (gdb_port == 0)
-            gdb_port = m_gdb->port();
-
-        log_info("%s for GDB connection on port %hu",
-                 gdb_wait ? "waiting" : "listening", m_gdb->port());
-    }
-
-    if (async && async_rate > 10u)
-        log_warn("async_rate is larger than 10 - value: %u", async_rate.get());
-
     wait(SC_ZERO_TIME);
 
     bool running = true;
@@ -291,6 +276,9 @@ void processor::processor_thread() {
 }
 
 bool processor::processor_thread_async() {
+    if (async && async_rate > 10u)
+        log_warn("async_rate is larger than 10 - value: %u", async_rate.get());
+
     sc_time& lt = local_time();
     const sc_time& quantum = tlm::tlm_global_quantum::instance().get();
 
@@ -540,6 +528,18 @@ void processor::end_of_elaboration() {
         stats.irq_last = SC_ZERO_TIME;
         stats.irq_uptime = SC_ZERO_TIME;
         stats.irq_longest = SC_ZERO_TIME;
+    }
+
+    if (gdb_port >= 0) {
+        auto run = gdb_wait ? debugging::GDB_STOPPED : debugging::GDB_RUNNING;
+        m_gdb = new debugging::gdbserver(gdb_port, *this, run);
+        m_gdb->echo(gdb_echo);
+
+        if (gdb_port == 0)
+            gdb_port = m_gdb->port();
+
+        log_info("%s for GDB connection on port %hu",
+                 gdb_wait ? "waiting" : "listening", m_gdb->port());
     }
 }
 
