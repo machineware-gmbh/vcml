@@ -16,7 +16,7 @@ namespace debugging {
 
 bool gdbserver::parse_ids(const string& ids, int& pid, int& tid) const {
     if (m_support_processes) {
-        if (sscanf(ids.c_str(), "%x.%x", &pid, &tid) != 2)
+        if (sscanf(ids.c_str(), "p%x.%x", &pid, &tid) != 2)
             return false;
         return true;
     }
@@ -216,7 +216,7 @@ string gdbserver::handle_query(const string& cmd) {
         string features = mkstr("PacketSize=%zx;", PACKET_SIZE);
         if (m_q_target->arch != nullptr)
             features += "qXfer:features:read+;";
-        features += "vCont+";
+        features += "vContSupported+;";
         return features;
     }
 
