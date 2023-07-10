@@ -134,7 +134,7 @@ void gdbserver::notify_watchpoint_write(const watchpoint& wp,
 bool gdbserver::check_suspension_point() {
     if (!m_c_target) {
         if (!m_targets.size())
-           VCML_ERROR("no target available");
+            VCML_ERROR("no target available");
         return m_targets[0].tgt.is_suspendable();
     }
 
