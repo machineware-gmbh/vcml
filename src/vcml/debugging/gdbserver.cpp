@@ -132,11 +132,7 @@ void gdbserver::notify_watchpoint_write(const watchpoint& wp,
 }
 
 bool gdbserver::check_suspension_point() {
-    for (auto& gtgt : m_targets) {
-        if (!gtgt.tgt.is_suspendable())
-            return false;
-    }
-    return true;
+    return m_c_target->tgt.is_suspendable();
 }
 
 string gdbserver::handle_unknown(const string& cmd) {
@@ -164,6 +160,9 @@ string gdbserver::handle_step(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
+    while (!simulation_suspended()) {
+    };
+
     return create_stop_reply();
 }
 
@@ -186,6 +185,9 @@ string gdbserver::handle_continue(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
+    while (!simulation_suspended()) {
+    };
+
     return create_stop_reply();
 }
 
@@ -859,6 +861,9 @@ string gdbserver::handle_vcont(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
+    while (!simulation_suspended()) {
+    };
+
     return create_stop_reply();
 }
 
@@ -927,6 +932,8 @@ gdbserver::~gdbserver() {
 void gdbserver::handle_connect(const char* peer) {
     log_debug("gdb connected to %s", peer);
     update_status(GDB_STOPPED);
+    while (!simulation_suspended()) {
+    };
 }
 
 void gdbserver::handle_disconnect() {
