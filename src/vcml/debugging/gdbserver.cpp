@@ -91,7 +91,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
             m_hit_wp_addr = wp_addr;
             m_hit_wp_type = wp_type;
         }
-        suspend(true);
+        suspend();
         break;
 
     case GDB_RUNNING:
@@ -132,12 +132,13 @@ void gdbserver::notify_watchpoint_write(const watchpoint& wp,
 }
 
 bool gdbserver::check_suspension_point() {
-    for (auto& gtgt : m_targets) {
-        if (!gtgt.tgt.is_suspendable())
-            return false;
+    if (!m_c_target) {
+        if (!m_targets.size())
+           VCML_ERROR("no target available");
+        return m_targets[0].tgt.is_suspendable();
     }
 
-    return true;
+    return m_c_target->tgt.is_suspendable();
 }
 
 string gdbserver::handle_unknown(const string& cmd) {
@@ -145,11 +146,6 @@ string gdbserver::handle_unknown(const string& cmd) {
 }
 
 string gdbserver::handle_step(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     if (!m_c_target) {
         log_warn("no target specified");
         return ERR_INTERNAL;
@@ -170,22 +166,13 @@ string gdbserver::handle_step(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-
-    thctl_block();
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
+    while (!simulation_suspended()) {
+    };
 
     return create_stop_reply();
 }
 
 string gdbserver::handle_continue(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     if (!m_c_target) {
         log_warn("no target specified");
         return ERR_INTERNAL;
@@ -204,12 +191,8 @@ string gdbserver::handle_continue(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-
-    thctl_block();
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
+    while (!simulation_suspended()) {
+    };
 
     return create_stop_reply();
 }
@@ -226,11 +209,6 @@ string gdbserver::handle_kill(const string& cmd) {
 }
 
 string gdbserver::handle_query(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     if (m_targets.size() == 0) {
         log_warn("no available target");
         return ERR_INTERNAL;
@@ -366,11 +344,6 @@ string gdbserver::handle_extra_threadinfo(const string& cmd) {
 }
 
 string gdbserver::handle_reg_read(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned int regno;
     if (sscanf(cmd.c_str(), "p%x", &regno) != 1) {
         log_warn("malformed command '%s'", cmd.c_str());
@@ -408,11 +381,6 @@ string gdbserver::handle_reg_read(const string& cmd) {
 }
 
 string gdbserver::handle_reg_write(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned int regno;
     if (sscanf(cmd.c_str(), "P%x=", &regno) != 1) {
         log_warn("malformed command '%str'", cmd.c_str());
@@ -457,11 +425,6 @@ string gdbserver::handle_reg_write(const string& cmd) {
 }
 
 string gdbserver::handle_reg_read_all(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     stringstream ss;
     ss << std::hex << std::setfill('0');
 
@@ -491,11 +454,6 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
 }
 
 string gdbserver::handle_reg_write_all(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     if (!m_g_target) {
         log_warn("no specified target");
         return ERR_INTERNAL;
@@ -528,11 +486,6 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
 }
 
 string gdbserver::handle_mem_read(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned long long addr = 0, size = 0;
     if (sscanf(cmd.c_str(), "m%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
@@ -567,11 +520,6 @@ string gdbserver::handle_mem_read(const string& cmd) {
 }
 
 string gdbserver::handle_mem_write(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned long long addr = 0, size = 0;
     if (sscanf(cmd.c_str(), "M%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
@@ -613,11 +561,6 @@ string gdbserver::handle_mem_write(const string& cmd) {
 }
 
 string gdbserver::handle_mem_write_bin(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned long long addr = 0, size = 0;
     if (sscanf(cmd.c_str(), "X%llx,%llx:", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
@@ -658,11 +601,6 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
 }
 
 string gdbserver::handle_breakpoint_set(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned long long type, addr, length;
     if (sscanf(cmd.c_str(), "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
         log_warn("malformed command '%s'", cmd.c_str());
@@ -709,11 +647,6 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
 }
 
 string gdbserver::handle_breakpoint_delete(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     unsigned long long type, addr, length;
     if (sscanf(cmd.c_str(), "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
         log_warn("malformed command '%s'", cmd.c_str());
@@ -760,14 +693,18 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
 }
 
 string gdbserver::handle_exception(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     if (!m_c_target) {
         log_warn("no target specified");
         return ERR_INTERNAL;
+    }
+
+    // Cleanup because of first connection
+    for (auto& gtgt : m_targets) {
+        for (auto& bp : gtgt.tgt.breakpoints())
+            gtgt.tgt.remove_breakpoint(bp, this);
+        for (auto& wp : gtgt.tgt.watchpoints())
+            gtgt.tgt.remove_watchpoint(wp->address(), VCML_ACCESS_READ_WRITE,
+                                       this);
     }
 
     return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
@@ -825,11 +762,6 @@ string gdbserver::handle_thread_alive(const string& cmd) {
 }
 
 string gdbserver::handle_vcont(const string& cmd) {
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
-
     if (!starts_with(cmd, "vCont"))
         return "";
 
@@ -935,12 +867,8 @@ string gdbserver::handle_vcont(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
-
-    thctl_block();
-    if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
-        return ERR_INTERNAL;
-    }
+    while (!simulation_suspended()) {
+    };
 
     return create_stop_reply();
 }
@@ -998,7 +926,7 @@ gdbserver::gdbserver(u16 port, const vector<target*>& stubs,
     register_handler("?", &gdbserver::handle_exception);
 
     if (m_status == GDB_STOPPED)
-        suspend(true);
+        suspend();
 
     run_async();
 }
@@ -1010,6 +938,8 @@ gdbserver::~gdbserver() {
 void gdbserver::handle_connect(const char* peer) {
     log_debug("gdb connected to %s", peer);
     update_status(GDB_STOPPED);
+    while (!simulation_suspended()) {
+    };
 }
 
 void gdbserver::handle_disconnect() {
