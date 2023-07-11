@@ -16,7 +16,6 @@ option(VCML_USE_VNC "Use VNC for rendering" ON)
 option(VCML_USE_RFB "Use RFB for rendering" OFF)
 option(VCML_USE_SLIRP "Use SLIRP for networking" ON)
 option(VCML_USE_LUA "Use LUA for scripting" ON)
-option(VCML_USE_NCURSES "Use ncurses for TUI" ON)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
@@ -53,9 +52,6 @@ if(VCML_USE_SDL2)
 endif()
 if(VCML_USE_LUA)
     find_package(Lua "5.3")
-endif()
-if(VCML_USE_NCURSES)
-    find_package(Curses)
 endif()
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -128,6 +124,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/serial/backend_file.cpp
     ${src}/vcml/models/serial/backend_tcp.cpp
     ${src}/vcml/models/serial/backend_term.cpp
+    ${src}/vcml/models/serial/backend_tui.cpp
     ${src}/vcml/models/serial/backend.cpp
     ${src}/vcml/models/serial/terminal.cpp
     ${src}/vcml/models/serial/uart8250.cpp
@@ -251,16 +248,6 @@ if(LUA_FOUND)
 else()
     message(STATUS "Building without LUA support")
     target_sources(vcml PRIVATE ${src}/vcml/properties/broker_nolua.cpp)
-endif()
-
-if(NCURSES_FOUND)
-    message(STATUS "Building with ncurses support")
-    target_compile_definitions(vcml PRIVATE HAVE_NCURSES)
-    target_include_directories(vcml SYSTEM PRIVATE ${NCURSES_INCLUDE_DIR})
-    target_sources(vcml PRIVATE ${src}/vcml/models/serial/backend_tui.cpp)
-    target_link_libraries(vcml PUBLIC ${NCURSES_LIBRARIES})
-else()
-    message(STATUS "Building without ncurses support")
 endif()
 
 if(VCML_COVERAGE)

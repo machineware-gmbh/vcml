@@ -15,8 +15,6 @@
 #include "vcml/logging/logger.h"
 #include "vcml/models/serial/backend.h"
 
-#include <ncurses.h>
-
 namespace vcml {
 namespace serial {
 
@@ -36,8 +34,6 @@ private:
     void terminate();
 
 public:
-    logger log;
-
     backend_tui(terminal* term);
     virtual ~backend_tui();
 

@@ -65,8 +65,7 @@ backend_tui::backend_tui(terminal* term):
     m_backend_active(true),
     m_iothread(),
     m_mtx(),
-    m_fifo(),
-    log("terminal") {
+    m_fifo() {
     VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
     capture_stdin();
     mwr::tty_push(m_fd, true);
