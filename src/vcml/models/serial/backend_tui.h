@@ -15,8 +15,6 @@
 #include "vcml/logging/logger.h"
 #include "vcml/models/serial/backend.h"
 
-#include <ncurses.h>
-
 namespace vcml {
 namespace serial {
 
@@ -32,12 +30,16 @@ private:
     mutable mutex m_mtx;
     queue<u8> m_fifo;
 
+    static u32 m_max_cols;
+    atomic<u64> m_last_time_sim;
+    atomic<u64> m_last_time_host;
+
     void iothread();
     void terminate();
 
-public:
-    logger log;
+    void draw_statusbar(const bool now = false);
 
+public:
     backend_tui(terminal* term);
     virtual ~backend_tui();
 
@@ -45,6 +47,8 @@ public:
     virtual void write(u8 val) override;
 
     static backend* create(terminal* term, const string& type);
+
+    static void update_max_cols();
 };
 
 } // namespace serial

@@ -15,10 +15,7 @@
 #include "vcml/models/serial/backend_tcp.h"
 #include "vcml/models/serial/backend_fd.h"
 #include "vcml/models/serial/backend_term.h"
-
-#ifdef HAVE_NCURSES
 #include "vcml/models/serial/backend_tui.h"
-#endif
 
 namespace vcml {
 namespace serial {
@@ -52,10 +49,7 @@ backend* backend::create(terminal* term, const string& type) {
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create }, { "tcp", backend_tcp::create },
         { "stderr", backend_fd::create }, { "stdout", backend_fd::create },
-        { "term", backend_term::create },
-#ifdef HAVE_NCURSES
-        { "tui", backend_tui::create },
-#endif
+        { "term", backend_term::create }, { "tui", backend_tui::create },
     };
 
     auto it = backends.find(kind);
