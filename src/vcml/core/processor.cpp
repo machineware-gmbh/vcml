@@ -344,8 +344,8 @@ bool processor::processor_thread_sync() {
 
         if (is_stepping() && num_cycles > 0)
             notify_singlestep();
-        if (num_cycles == 0)
-            wait(SC_ZERO_TIME);
+        if (num_cycles == 0 && is_running())
+            wait(quantum);
     } while (!needs_sync());
 
     sync();
