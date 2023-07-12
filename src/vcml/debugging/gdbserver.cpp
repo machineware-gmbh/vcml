@@ -171,6 +171,12 @@ string gdbserver::handle_step(const string& cmd) {
 
     update_status(GDB_STOPPED);
 
+    thctl_block();
+    if (!simulation_suspended()) {
+        log_warn("simulation is not suspended");
+        return ERR_INTERNAL;
+    }
+
     return create_stop_reply();
 }
 
@@ -198,6 +204,12 @@ string gdbserver::handle_continue(const string& cmd) {
     }
 
     update_status(GDB_STOPPED);
+
+    thctl_block();
+    if (!simulation_suspended()) {
+        log_warn("simulation is not suspended");
+        return ERR_INTERNAL;
+    }
 
     return create_stop_reply();
 }
