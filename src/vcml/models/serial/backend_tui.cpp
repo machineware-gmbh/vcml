@@ -17,13 +17,12 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#define STSBAR_UPD_INTVL 1000000
+static size_t max_cols = 80;
 
-vcml::u32 vcml::serial::backend_tui::m_max_cols = 0;
-
-void winsize_sighandler(int sig) {
-    VCML_ERROR_ON(sig != SIGWINCH, "Wrong signal received!");
-    vcml::serial::backend_tui::update_max_cols();
+static void update_window_size(int sig) {
+    struct winsize tty_size;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &tty_size);
+    max_cols = tty_size.ws_col;
 }
 
 namespace vcml {
@@ -47,8 +46,19 @@ void backend_tui::terminate() {
 
 void backend_tui::iothread() {
     while (m_backend_active && sim_running()) {
+        u64 now_host = mwr::timestamp_us();
+        u64 now_sim = time_to_us(sc_time_stamp());
+        if (now_host > m_time_host) {
+            m_rtf = (double)(now_sim - m_time_sim) / (now_host - m_time_host);
+            m_time_host = now_host;
+            m_time_sim = now_sim;
+        }
+
+        m_mtx.lock();
         draw_statusbar();
-        if (mwr::fd_peek(m_fd, 100)) {
+        m_mtx.unlock();
+
+        if (mwr::fd_peek(m_fd, 500)) {
             u8 ch;
             if (!mwr::fd_read(m_fd, &ch, sizeof(ch))) {
                 log_warn("eof while reading stdin");
@@ -72,40 +82,30 @@ void backend_tui::iothread() {
     }
 }
 
-void backend_tui::draw_statusbar(const bool now) {
-    const u64 now_sim = time_to_us(sc_time_stamp());
-    const u64 now_host = mwr::timestamp_us();
-    const u64 delta_host = now_host - m_last_time_host;
-    if (delta_host >= STSBAR_UPD_INTVL || now) {
-        const double rtf = (double)(now_sim - m_last_time_sim) / delta_host;
+void backend_tui::draw_statusbar() {
+    const u64 now = time_to_us(sc_time_stamp());
+    const size_t millis = (now % 1000000) / 1000;
+    const size_t times = now / 1000000;
+    const size_t hours = times / 3600;
+    const size_t minutes = (times % 3600) / 60;
+    const size_t seconds = times % 60;
 
-        const size_t millis = (now_sim % 1000000) / 1000;
-        const size_t times = now_sim / 1000000;
-        const size_t hours = times / 3600;
-        const size_t minutes = (times % 3600) / 60;
-        const size_t seconds = times % 60;
+    string text = mkstr(
+        " time %02zu:%02zu:%02zu.%03zu   delta %lld   rtf %.2f", hours,
+        minutes, seconds, millis, sc_delta_count(), m_rtf);
+    text.append(max_cols - text.length() - 1, ' ');
 
-        string text = mkstr(
-            "+===== time %02zu:%02zu:%02zu.%03zu === "
-            "delta %lld === rtf "
-            "%.2f ",
-            hours, minutes, seconds, millis, sc_delta_count(), rtf);
-        text.append(m_max_cols - text.length() - 1, '=');
-        text.append("+");
+    const string statusbar = mkstr(
+        "\n"      // begin status bar
+        "\x1b[7m" // invert colors
+        "%s"      // print status bar
+        "\x1b[0m" // restore colors
+        "\x1b[F"  // return to previous line
+        "\x1b[K"  // clear line
+        "%s",     // print line buffer
+        text.c_str(), m_linebuf.c_str());
 
-        const string statusbar = mkstr(
-            "\x1b[s"     // save cursor position
-            "\x1b[?25l"  // hide cursor
-            "\x1b[1;1H"  // move cursor to top left
-            "%s"         // statusbar text
-            "\x1b[u"     // reset cursor position
-            "\x1b[?25h", // show cursor
-            text.c_str());
-
-        mwr::fd_write(m_fd, statusbar.c_str(), statusbar.length());
-        m_last_time_sim = now_sim;
-        m_last_time_host = now_host;
-    }
+    mwr::fd_write(m_fd, statusbar.c_str(), statusbar.length());
 }
 
 backend_tui::backend_tui(terminal* term):
@@ -116,15 +116,17 @@ backend_tui::backend_tui(terminal* term):
     m_iothread(),
     m_mtx(),
     m_fifo(),
-    m_last_time_sim(time_to_us(sc_time_stamp())),
-    m_last_time_host(mwr::timestamp_us()) {
+    m_time_sim(time_to_us(sc_time_stamp())),
+    m_time_host(mwr::timestamp_us()),
+    m_rtf(),
+    m_linebuf() {
     VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
     capture_stdin();
     mwr::tty_push(m_fd, true);
     mwr::tty_set(m_fd, false, false);
 
-    update_max_cols();
-    std::signal(SIGWINCH, winsize_sighandler);
+    update_window_size(0);
+    std::signal(SIGWINCH, update_window_size);
 
     m_iothread = thread(&backend_tui::iothread, this);
     mwr::set_thread_name(m_iothread, "tui_iothread");
@@ -150,19 +152,19 @@ bool backend_tui::read(u8& value) {
 }
 
 void backend_tui::write(u8 val) {
-    mwr::fd_write(m_fd, &val, sizeof(val));
-    if (val == '\n') // re-draw statusbar when screen scrolls
-        draw_statusbar(true);
+    lock_guard<mutex> lock(m_mtx);
+    m_linebuf.push_back(val);
+    if (val == '\n') {
+        string line = mkstr("\r\x1b[K%s", m_linebuf.c_str());
+        mwr::fd_write(m_fd, line.data(), line.size());
+        m_linebuf.clear();
+    }
+
+    draw_statusbar();
 }
 
 backend* backend_tui::create(terminal* term, const string& type) {
     return new backend_tui(term);
-}
-
-void backend_tui::update_max_cols() {
-    struct winsize tty_size;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &tty_size);
-    m_max_cols = tty_size.ws_col;
 }
 
 } // namespace serial

@@ -30,14 +30,15 @@ private:
     mutable mutex m_mtx;
     queue<u8> m_fifo;
 
-    static u32 m_max_cols;
-    atomic<u64> m_last_time_sim;
-    atomic<u64> m_last_time_host;
+    atomic<u64> m_time_sim;
+    atomic<u64> m_time_host;
+    double m_rtf;
+    string m_linebuf;
 
     void iothread();
     void terminate();
 
-    void draw_statusbar(const bool now = false);
+    void draw_statusbar();
 
 public:
     backend_tui(terminal* term);
@@ -47,8 +48,6 @@ public:
     virtual void write(u8 val) override;
 
     static backend* create(terminal* term, const string& type);
-
-    static void update_max_cols();
 };
 
 } // namespace serial
