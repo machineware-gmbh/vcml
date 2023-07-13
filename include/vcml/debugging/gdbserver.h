@@ -79,6 +79,8 @@ private:
 
     string create_stop_reply();
 
+    void cancel_singlestep();
+
     void update_status(gdb_status status, gdb_target* gtgt = nullptr,
                        const range* wp_addr = nullptr,
                        vcml_access wp_type = VCML_ACCESS_NONE);

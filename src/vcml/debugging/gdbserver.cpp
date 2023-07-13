@@ -67,6 +67,11 @@ string gdbserver::create_stop_reply() {
     return ss.str();
 }
 
+void gdbserver::cancel_singlestep() {
+    for (auto& gtgt : m_targets)
+        gtgt.tgt.cancel_singlestep(this);
+}
+
 void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
                               const range* wp_addr, vcml_access wp_type) {
     lock_guard<mutex> guard(m_mtx);
@@ -155,6 +160,8 @@ string gdbserver::handle_step(const string& cmd) {
         return ERR_INTERNAL;
     }
 
+    cancel_singlestep();
+
     for (auto& gtgt : m_targets)
         gtgt.tgt.set_running(true);
 
@@ -190,6 +197,8 @@ string gdbserver::handle_continue(const string& cmd) {
         log_warn("no target specified");
         return ERR_INTERNAL;
     }
+
+    cancel_singlestep();
 
     for (auto& gtgt : m_targets)
         gtgt.tgt.set_running(true);
@@ -847,6 +856,8 @@ string gdbserver::handle_vcont(const string& cmd) {
     for (size_t i = 0; i < m_targets.size(); i++)
         m_unused_targets[i] = &m_targets[i];
 
+    cancel_singlestep();
+
     gdb_status stat = GDB_RUNNING;
     for (auto& a : args) {
         int pid = 0, tid = 0;
@@ -872,6 +883,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                     continue;
 
                 gtgt->tgt.set_running(true);
+
                 stl_remove(m_unused_targets, gtgt);
             } else {
             continue_all:
@@ -998,7 +1010,7 @@ gdbserver::gdbserver(u16 port, const vector<target*>& stubs,
     register_handler("?", &gdbserver::handle_exception);
 
     if (m_status == GDB_STOPPED)
-        suspend(true);
+        suspend();
 
     run_async();
 }
@@ -1010,6 +1022,10 @@ gdbserver::~gdbserver() {
 void gdbserver::handle_connect(const char* peer) {
     log_debug("gdb connected to %s", peer);
     update_status(GDB_STOPPED);
+
+    thctl_block();
+    if (!simulation_suspended())
+        log_warn("simulation is not suspended");
 }
 
 void gdbserver::handle_disconnect() {

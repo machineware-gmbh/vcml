@@ -175,6 +175,7 @@ public:
 
     bool is_stepping() const;
     void request_singlestep(subscriber* subscr);
+    void cancel_singlestep(subscriber* subscr);
     void notify_singlestep();
 
     static vector<target*> all();
@@ -225,6 +226,11 @@ inline bool target::is_stepping() const {
 inline void target::request_singlestep(subscriber* subscr) {
     lock_guard<mutex> guard(m_mtx);
     stl_add_unique(m_steppers, subscr);
+}
+
+inline void target::cancel_singlestep(subscriber* subcr) {
+    lock_guard<mutex> guard(m_mtx);
+    stl_remove(m_steppers, subcr);
 }
 
 } // namespace debugging
