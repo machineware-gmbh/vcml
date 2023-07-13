@@ -34,8 +34,6 @@ private:
     void terminate();
 
 public:
-    logger log;
-
     backend_term(terminal* term);
     virtual ~backend_term();
 
