@@ -1010,7 +1010,7 @@ gdbserver::gdbserver(u16 port, const vector<target*>& stubs,
     register_handler("?", &gdbserver::handle_exception);
 
     if (m_status == GDB_STOPPED)
-        suspend(true);
+        suspend();
 
     run_async();
 }
@@ -1022,6 +1022,10 @@ gdbserver::~gdbserver() {
 void gdbserver::handle_connect(const char* peer) {
     log_debug("gdb connected to %s", peer);
     update_status(GDB_STOPPED);
+
+    thctl_block();
+    if (!simulation_suspended())
+        log_warn("simulation is not suspended");
 }
 
 void gdbserver::handle_disconnect() {
