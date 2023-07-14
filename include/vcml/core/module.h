@@ -48,6 +48,8 @@ public:
     void hierarchy_push();
     void hierarchy_pop();
 
+    sc_object* find_child(const string& name) const;
+
     virtual void session_suspend();
     virtual void session_resume();
 
@@ -89,6 +91,10 @@ inline void module::hierarchy_push() {
 inline void module::hierarchy_pop() {
     sc_module* top = vcml::hierarchy_pop();
     VCML_ERROR_ON(top != this, "broken hierarchy");
+}
+
+inline sc_object* module::find_child(const string& name) const {
+    return vcml::find_child(*this, name);
 }
 
 inline bool module::execute(const string& name, ostream& os) {

@@ -79,6 +79,25 @@ bool is_child(const sc_object* obj, const sc_object* parent) {
     return is_parent(parent, obj);
 }
 
+sc_object* find_child(const sc_object& parent, const string& name) {
+    size_t pos = name.find(SC_HIERARCHY_CHAR);
+    string cur = name.substr(0, pos);
+    string rem = pos != std::string::npos ? name.substr(pos + 1) : "";
+
+    if (cur.empty())
+        return nullptr;
+
+    for (auto child : parent.get_child_objects()) {
+        if (cur == child->basename()) {
+            if (rem.empty())
+                return child;
+            return find_child(*child, rem);
+        }
+    }
+
+    return nullptr;
+}
+
 const char* tlm_response_to_str(tlm_response_status status) {
     switch (status) {
     case TLM_OK_RESPONSE:
