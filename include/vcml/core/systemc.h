@@ -371,7 +371,7 @@ bool sim_running();
 string call_origin();
 
 template <typename SOCKET, const size_t LIMIT = SIZE_MAX>
-class socket_array
+class socket_array : public sc_object
 {
 public:
     typedef unordered_map<size_t, SOCKET*> map_type;
@@ -380,43 +380,21 @@ public:
     typedef typename map_type::const_iterator const_iterator;
 
 private:
-    string m_name;
     size_t m_next;
     address_space m_space;
-    sc_module* m_parent;
     map_type m_sockets;
     revmap_type m_ids;
 
-    SOCKET& lookup(size_t idx) {
-        SOCKET*& socket = m_sockets[idx];
-        if (socket)
-            return *socket;
-
-        VCML_ERROR_ON(idx >= LIMIT, "socket out of bounds: %zu", idx);
-        hierarchy_guard guard(m_parent);
-        string nm = mkstr("%s[%zu]", m_name.c_str(), idx);
-        socket = new SOCKET(nm.c_str(), m_space);
-        m_ids[socket] = idx;
-        m_next = max(m_next, idx + 1);
-        return *socket;
-    }
-
 public:
-    const char* name() const { return m_name.c_str(); }
-
     socket_array(const char* nm, address_space as = VCML_AS_DEFAULT):
-        m_name(nm),
-        m_next(0),
-        m_space(as),
-        m_parent(hierarchy_top()),
-        m_sockets() {
-        VCML_ERROR_ON(!m_parent, "port_array outside sc_module");
-    }
+        sc_object(nm), m_next(0), m_space(as), m_sockets(), m_ids() {}
 
     virtual ~socket_array() {
         for (auto socket : m_sockets)
             delete socket.second;
     }
+
+    VCML_KIND(socket_array)
 
     iterator begin() { return m_sockets.begin(); }
     iterator end() { return m_sockets.end(); }
@@ -424,13 +402,26 @@ public:
     const_iterator begin() const { return m_sockets.cbegin(); }
     const_iterator end() const { return m_sockets.cend(); }
 
-    SOCKET& operator[](size_t idx) { return lookup(idx); }
+    SOCKET& get(size_t idx) {
+        SOCKET*& socket = m_sockets[idx];
+        if (socket)
+            return *socket;
+
+        VCML_ERROR_ON(idx >= LIMIT, "socket out of bounds: %zu", idx);
+        hierarchy_guard guard(this);
+        string nm = mkstr("%s[%zu]", basename(), idx);
+        socket = new SOCKET(nm.c_str(), m_space);
+        m_ids[socket] = idx;
+        m_next = max(m_next, idx + 1);
+        return *socket;
+    }
+
+    SOCKET& operator[](size_t idx) { return get(idx); }
     const SOCKET& operator[](size_t idx) const {
         VCML_ERROR_ON(!exists(idx), "socket %zu not found", idx);
         return *m_sockets.at(idx);
     }
 
-    const char* name() { return m_name.c_str(); }
     size_t count() const { return m_sockets.size(); }
     bool exists(size_t idx) const { return stl_contains(m_sockets, idx); }
     size_t next_index() const { return m_next; }
