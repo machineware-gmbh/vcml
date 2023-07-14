@@ -83,6 +83,9 @@ void backend_tui::iothread() {
 }
 
 void backend_tui::draw_statusbar() {
+    if (!sc_core::sc_start_of_simulation_invoked())
+        return;
+
     const u64 now = time_to_us(sc_time_stamp());
     const size_t millis = (now % 1000000) / 1000;
     const size_t times = now / 1000000;
