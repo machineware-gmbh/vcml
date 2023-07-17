@@ -12,21 +12,22 @@
 
 namespace vcml {
 
-unordered_map<string, model_create_fn>& modeldb::all() {
-    static unordered_map<string, model_create_fn> instance;
-    return instance;
+model::model(const sc_module_name& name, const string& kind):
+    m_impl(create(kind, name)) {
+    // nothing to do
 }
 
-model modeldb::create(const string& type, const sc_module_name& name) {
+module* model::create(const string& type, const sc_module_name& name) {
     vector<string> args = split(type);
     string kind = args[0];
     args.erase(args.begin());
 
-    auto it = all().find(kind);
-    if (it != all().end()) {
-        model mod(it->second(name, args));
+    auto it = modeldb().find(kind);
+    if (it != modeldb().end()) {
+        module* mod(it->second(name, args));
+        VCML_ERROR_ON(!mod, "failed to create instance of %s", kind.c_str());
         if (kind != mod->kind()) {
-            mod->log.warn("module kind mismatch, expected %s, actual %s",
+            mod->log.warn("module kind mismatch, expected %s, is %s",
                           kind.c_str(), mod->kind());
         }
 
@@ -34,16 +35,21 @@ model modeldb::create(const string& type, const sc_module_name& name) {
     }
 
     std::cout << "known models:" << std::endl;
-    for (auto [name, proc] : all())
+    for (auto [name, proc] : modeldb())
         std::cout << "  " << name << std::endl;
     VCML_ERROR("model not found: %s", type.c_str());
 }
 
-void modeldb::register_model(const string& kind, model_create_fn create) {
-    auto it = all().find(kind);
-    if (it != all().end())
+void model::register_model(const string& kind, create_fn create) {
+    auto it = modeldb().find(kind);
+    if (it != modeldb().end())
         VCML_ERROR("model %s already defined", kind.c_str());
-    all()[kind] = create;
+    modeldb()[kind] = create;
+}
+
+std::map<string, model::create_fn>& model::modeldb() {
+    static std::map<string, create_fn> db;
+    return db;
 }
 
 } // namespace vcml

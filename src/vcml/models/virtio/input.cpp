@@ -328,5 +328,9 @@ void input::end_of_simulation() {
     m_console.shutdown();
 }
 
+VCML_EXPORT_MODEL(vcml::virtio::input, name, args) {
+    return new input(name);
+}
+
 } // namespace virtio
 } // namespace vcml

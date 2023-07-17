@@ -17,18 +17,27 @@
 
 namespace vcml {
 
-using model = shared_ptr<module>;
-typedef module* (*model_create_fn)(const sc_module_name&,
-                                   const vector<string>&);
-
-class modeldb
+class model
 {
-private:
-    static unordered_map<string, model_create_fn>& all();
-
 public:
-    static model create(const string& kind, const sc_module_name& name);
-    static void register_model(const string& kind, model_create_fn fn);
+    typedef module* (*create_fn)(const sc_module_name&, const vector<string>&);
+
+    model(const sc_module_name& name, const string& kind);
+    virtual ~model() = default;
+
+    model(const model& other) = default;
+    model(model&& other) = default;
+
+    operator module&() const { return *m_impl; }
+    shared_ptr<module> operator->() const { return m_impl; }
+
+    static void register_model(const string& kind, create_fn fn);
+
+private:
+    shared_ptr<module> m_impl;
+
+    static module* create(const string& kind, const sc_module_name& name);
+    static std::map<string, create_fn>& modeldb();
 };
 
 } // namespace vcml
@@ -38,7 +47,7 @@ public:
         const sc_core::sc_module_name& name,                                \
         const std::vector<std::string>& args);                              \
     static MWR_DECL_CONSTRUCTOR void MWR_CAT(register_model_, __LINE__)() { \
-        modeldb::register_model(#kind, MWR_CAT(create_model_, __LINE__));   \
+        model::register_model(#kind, MWR_CAT(create_model_, __LINE__));     \
     }                                                                       \
     static vcml::module* MWR_CAT(create_model_, __LINE__)(                  \
         const sc_core::sc_module_name& name,                                \

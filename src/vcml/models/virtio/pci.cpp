@@ -587,5 +587,9 @@ void pci::virtio_declare_device_cap(u8 bar, u32 offset, u32 length) {
                                   0);
 }
 
+VCML_EXPORT_MODEL(vcml::virtio::pci, name, args) {
+    return new pci(name);
+}
+
 } // namespace virtio
 } // namespace vcml

@@ -15,6 +15,7 @@
 #include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
+#include "vcml/core/model.h"
 
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"

@@ -33,11 +33,16 @@ VCML_EXPORT_MODEL(my_model, name, args) {
 }
 
 TEST(model, create) {
-    auto m = modeldb::create("my_model abc def hij", "m");
+    vcml::model m("m", "my_model abc def hij");
     EXPECT_STREQ(m->kind(), "my_model");
     EXPECT_STREQ(m->name(), "m");
 }
 
 TEST(mode, nonexistent) {
-    EXPECT_DEATH(modeldb::create("nothing", "m");, "model not found: nothing");
+    EXPECT_DEATH(vcml::model("m", "nothing"), "model not found: nothing");
+}
+
+TEST(mode, duplicate) {
+    EXPECT_DEATH(vcml::model::register_model("my_model", nullptr),
+                 "model my_model already defined");
 }

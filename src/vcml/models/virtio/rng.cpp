@@ -74,5 +74,9 @@ void rng::reset() {
     m_seed = (unsigned int)sc_time_stamp().value();
 }
 
+VCML_EXPORT_MODEL(vcml::virtio::rng, name, args) {
+    return new rng(name);
+}
+
 } // namespace virtio
 } // namespace vcml

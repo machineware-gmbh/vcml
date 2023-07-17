@@ -314,5 +314,9 @@ void blk::reset() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::virtio::blk, name, args) {
+    return new blk(name);
+}
+
 } // namespace virtio
 } // namespace vcml
