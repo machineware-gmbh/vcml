@@ -670,6 +670,26 @@ public:
     virtual ~virtio_target_stub() = default;
 };
 
+virtio_base_initiator_socket& virtio_initiator(const sc_object& parent,
+                                               const string& port);
+virtio_base_target_socket& virtio_target(const sc_object& parent,
+                                         const string& port);
+
+void virtio_stub(const sc_object& obj, const string& port);
+void virtio_bind(const sc_object& obj1, const string& port1,
+                 const sc_object& obj2, const string& port2);
+
+template <typename T>
+inline void virtio_stub(const shared_ptr<T>& obj, const string& port) {
+    virtio_stub(*obj, port);
+}
+
+template <typename T>
+inline void virtio_bind(const shared_ptr<T>& obj1, const string& port1,
+                        const shared_ptr<T>& obj2, const string& port2) {
+    virtio_bind(*obj1, port1, *obj2, port2);
+}
+
 } // namespace vcml
 
 #endif

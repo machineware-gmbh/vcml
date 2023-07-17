@@ -77,13 +77,13 @@ public:
         virtio_out2("virtio_out2"),
         virtio_in2("virtio_in2") {
         // test hierarchy binding
-        virtio_out.bind(virtio_out_h);
-        virtio_in_h.bind(virtio_in);
-        virtio_out_h.bind(virtio_in_h);
+        virtio_bind(*this, "virtio_out", *this, "virtio_out_h");
+        virtio_bind(*this, "virtio_in_h", *this, "virtio_in");
+        virtio_bind(*this, "virtio_out_h", *this, "virtio_in_h");
 
         // test stubbing
-        virtio_out2.stub();
-        virtio_in2.stub();
+        virtio_stub(*this, "virtio_out2");
+        virtio_stub(*this, "virtio_in2");
 
         EXPECT_TRUE(find_object("virtio.virtio_out2_stub"));
         EXPECT_TRUE(find_object("virtio.virtio_in2_stub"));

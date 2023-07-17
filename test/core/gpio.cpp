@@ -49,16 +49,22 @@ public:
         a_out("a_out"),
         signal("signal"),
         a_in("a_in") {
-        out.bind(in[0]);
+        // check socket lookup
+        EXPECT_EQ(&out, &gpio_initiator(*this, "out"));
+        EXPECT_EQ(&out2, &gpio_initiator(*this, "out2"));
+        EXPECT_EQ(&out2, &gpio_initiator(*this, "out2"));
+
+        // check simple binding
+        gpio_bind(*this, "out", *this, "in", 0);
 
         // check hierarchical binding: out -> h_out -> h_in -> in[1]
-        out.bind(h_out);
-        h_in.bind(in[1]);
-        h_out.bind(h_in);
+        gpio_bind(*this, "out", *this, "h_out");
+        gpio_bind(*this, "h_in", *this, "in", 1);
+        gpio_bind(*this, "h_out", *this, "h_in");
 
         // check stubbing
-        out2.stub();
-        in[2].stub();
+        gpio_stub(*this, "out2");
+        gpio_stub(*this, "in", 2);
         EXPECT_TRUE(out2.is_stubbed());
         EXPECT_TRUE(in[2].is_stubbed());
 
