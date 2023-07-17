@@ -54,6 +54,7 @@ core_test("tracing")
 core_test("async_timer")
 core_test("memory")
 core_test("disk")
+core_tesT("model")
 
 if(LUA_FOUND)
     core_test("lua")

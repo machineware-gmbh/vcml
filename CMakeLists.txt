@@ -72,6 +72,7 @@ add_library(vcml STATIC
     ${src}/vcml/core/processor.cpp
     ${src}/vcml/core/system.cpp
     ${src}/vcml/core/setup.cpp
+    ${src}/vcml/core/model.cpp
     ${src}/vcml/logging/logger.cpp
     ${src}/vcml/tracing/tracer.cpp
     ${src}/vcml/tracing/tracer_file.cpp

@@ -24,6 +24,7 @@
 #include "vcml/core/processor.h"
 #include "vcml/core/system.h"
 #include "vcml/core/setup.h"
+#include "vcml/core/model.h"
 
 #include "vcml/logging/logger.h"
 
