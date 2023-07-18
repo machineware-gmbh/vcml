@@ -293,43 +293,6 @@ void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
 void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
                const sc_object& obj2, const string& port2, size_t idx2);
 
-template <typename T>
-inline void gpio_stub(const shared_ptr<T>& obj, const string& port) {
-    gpio_stub(*obj, port);
-}
-
-template <typename T>
-inline void gpio_stub(const shared_ptr<T>& obj, const string& port, size_t i) {
-    gpio_stub(*obj, port, i);
-}
-
-template <typename T>
-inline void gpio_bind(const shared_ptr<T>& obj1, const string& port1,
-                      const shared_ptr<T>& obj2, const string& port2) {
-    gpio_bind(*obj1, port1, *obj2, port2);
-}
-
-template <typename T>
-inline void gpio_bind(const shared_ptr<T>& obj1, const string& port1,
-                      const shared_ptr<T>& obj2, const string& port2,
-                      size_t idx2) {
-    gpio_bind(*obj1, port1, *obj2, port2, idx2);
-}
-
-template <typename T>
-inline void gpio_bind(const shared_ptr<T>& obj1, const string& port1,
-                      size_t idx1, const shared_ptr<T>& obj2,
-                      const string& port2) {
-    gpio_bind(*obj1, port1, idx1, obj2, port2);
-}
-
-template <typename T>
-inline void gpio_bind(const shared_ptr<T>& obj1, const string& port1,
-                      size_t idx1, const shared_ptr<T>& obj2,
-                      const string& port2, size_t idx2) {
-    gpio_bind(*obj1, port1, idx1, *obj2, port2, idx2);
-}
-
 } // namespace vcml
 
 #endif
