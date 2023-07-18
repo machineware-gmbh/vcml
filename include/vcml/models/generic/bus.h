@@ -70,6 +70,9 @@ protected:
                                            u64 start, u64 end) override;
 
 public:
+    using initiator_t = tlm::tlm_base_initiator_socket<>;
+    using target_t = tlm::tlm_base_target_socket<>;
+
     property<bool> lenient;
 
     tlm_target_array in;
@@ -216,6 +219,30 @@ size_t bus::bind_default(TARGET& target, u64 offset) {
     m_target_peers[port] = &target;
     return port;
 }
+
+void tlm_stub(bus& bus, const sc_object& host, const string& port,
+              const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
+void tlm_stub(bus& bus, const sc_object& host, const string& port, size_t idx,
+              const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
+void tlm_stub(bus& bus, const sc_object& host, const string& port, u64 lo,
+              u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
+void tlm_stub(bus& bus, const sc_object& host, const string& port, size_t idx,
+              u64 lo, u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
+
+void tlm_bind(bus& bus, const sc_object& host, const string& port);
+void tlm_bind(bus& bus, const sc_object& host, const string& port, size_t idx);
+void tlm_bind(bus& bus, const sc_object& host, const string& port,
+              const range& addr, u64 offset = 0);
+void tlm_bind(bus& bus, const sc_object& host, const string& port, size_t idx,
+              const range& addr, u64 offset);
+void tlm_bind(bus& bus, const sc_object& host, const string& port, u64 lo,
+              u64 hi, u64 offset = 0);
+void tlm_bind(bus& bus, const sc_object& host, const string& port, size_t idx,
+              u64 lo, u64 hi, u64 offset);
+void tlm_bind_default(bus& bus, const sc_object& host, const string& port,
+                      u64 offset = 0);
+void tlm_bind_default(bus& bus, const sc_object& host, const string& port,
+                      size_t idx, u64 offset);
 
 } // namespace generic
 } // namespace vcml

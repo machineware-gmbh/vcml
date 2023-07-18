@@ -38,27 +38,27 @@ public:
         out1("out1"),
         out2("out2"),
         in("in") {
-        clk.bind(mem1.clk);
-        clk.bind(mem2.clk);
-        clk.bind(bus.clk);
+        clk_bind(*this, "clk", mem1, "clk");
+        clk_bind(*this, "clk", mem2, "clk");
+        clk_bind(*this, "clk", bus, "clk");
 
-        rst.bind(mem1.rst);
-        rst.bind(mem2.rst);
-        rst.bind(bus.rst);
+        gpio_bind(*this, "rst", mem1, "rst");
+        gpio_bind(*this, "rst", mem2, "rst");
+        gpio_bind(*this, "rst", bus, "rst");
 
-        bus.bind(out1);
-        bus.bind(out2);
+        tlm_bind(bus, *this, "out1");
+        tlm_bind(bus, *this, "out2");
 
-        bus.bind(mem1.in, 0x0000, 0x1fff, 0);
-        bus.bind(mem2.in, 0x2000, 0x3fff, 0);
-        bus.bind(mem1.in, 0x6000, 0x7fff, 0);
-        bus.bind(in, 0x8000, 0x9fff, 0x10000);
+        tlm_bind(bus, mem1, "in", 0x0000, 0x1fff, 0);
+        tlm_bind(bus, mem2, "in", 0x2000, 0x3fff, 0);
+        tlm_bind(bus, mem1, "in", 0x6000, 0x7fff, 0);
+        tlm_bind(bus, *this, "in", 0x8000, 0x9fff, 0x10000);
 
         bus.bind(out1, mem1.in, 0xa000, 0xbfff);
         bus.bind(out2, mem2.in, 0xc000, 0xdfff);
 
         bus.stub(0xe000, 0xe7ff);
-        bus.stub(out2, 0xe800, 0xefff);
+        tlm_stub(bus, *this, "out2", 0xe800, 0xefff);
     }
 
     virtual void run_test() override {

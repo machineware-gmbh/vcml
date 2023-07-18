@@ -426,6 +426,29 @@ inline range tlm_target_socket::current_transaction_address() const {
 using tlm_initiator_array = socket_array<tlm_initiator_socket>;
 using tlm_target_array = socket_array<tlm_target_socket>;
 
+tlm::tlm_base_initiator_socket<>& tlm_initiator(const sc_object& parent,
+                                                const string& port);
+tlm::tlm_base_initiator_socket<>& tlm_initiator(const sc_object& parent,
+                                                const string& port,
+                                                size_t idx);
+
+tlm::tlm_base_target_socket<>& tlm_target(const sc_object& parent,
+                                          const string& port);
+tlm::tlm_base_target_socket<>& tlm_target(const sc_object& parent,
+                                          const string& port, size_t idx);
+
+void tlm_stub(const sc_object& obj, const string& port);
+void tlm_stub(const sc_object& obj, const string& port, size_t idx);
+
+void tlm_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void tlm_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void tlm_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void tlm_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+
 } // namespace vcml
 
 #endif

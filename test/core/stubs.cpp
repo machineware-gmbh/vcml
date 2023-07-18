@@ -19,7 +19,7 @@ public:
     test_harness(const sc_module_name& nm):
         test_base(nm), out("out"), in("in") {
         out.stub(TLM_ADDRESS_ERROR_RESPONSE);
-        in.stub();
+        tlm_stub(*this, "in");
     }
 
     virtual void run_test() override {
