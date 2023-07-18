@@ -151,31 +151,10 @@ class sd_target_stub;
 class sd_host
 {
 public:
-    friend class sd_initiator_socket;
-    friend class sd_target_socket;
-
-    typedef vector<sd_initiator_socket*> sd_initiator_sockets;
-    typedef vector<sd_target_socket*> sd_target_sockets;
-
-    const sd_initiator_sockets& all_sd_initiator_sockets() const {
-        return m_initiator_sockets;
-    }
-
-    const sd_target_sockets& all_sd_target_sockets() const {
-        return m_target_sockets;
-    }
-
-    sd_target_sockets all_sd_target_sockets(address_space);
-
     sd_host() = default;
     virtual ~sd_host() = default;
-
     virtual void sd_transport(const sd_target_socket&, sd_command&) = 0;
     virtual void sd_transport(const sd_target_socket&, sd_data&) = 0;
-
-private:
-    sd_initiator_sockets m_initiator_sockets;
-    sd_target_sockets m_target_sockets;
 };
 
 struct sd_protocol_types {
@@ -232,13 +211,8 @@ public:
     void stub();
 };
 
-template <const size_t MAX_PORTS = SIZE_MAX>
-using sd_base_initiator_socket_array = socket_array<sd_base_initiator_socket,
-                                                    MAX_PORTS>;
-
-template <const size_t MAX_PORTS = SIZE_MAX>
-using sd_base_target_socket_array = socket_array<sd_base_target_socket,
-                                                 MAX_PORTS>;
+using sd_base_initiator_array = socket_array<sd_base_initiator_socket>;
+using sd_base_target_array = socket_array<sd_base_target_socket>;
 
 class sd_initiator_socket : public sd_base_initiator_socket
 {
@@ -253,7 +227,7 @@ private:
 
 public:
     sd_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
-    virtual ~sd_initiator_socket();
+    virtual ~sd_initiator_socket() = default;
     VCML_KIND(sd_initiator_socket);
 
     void transport(sd_command& cmd);
@@ -286,15 +260,12 @@ private:
 
 public:
     sd_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
-    virtual ~sd_target_socket();
+    virtual ~sd_target_socket() = default;
     VCML_KIND(sd_target_socket);
 };
 
-template <const size_t MAX_PORTS = SIZE_MAX>
-using sd_initiator_socket_array = socket_array<sd_initiator_socket, MAX_PORTS>;
-
-template <const size_t MAX_PORTS = SIZE_MAX>
-using sd_target_socket_array = socket_array<sd_target_socket, MAX_PORTS>;
+using sd_initiator_array = socket_array<sd_initiator_socket>;
+using sd_target_array = socket_array<sd_target_socket>;
 
 class sd_initiator_stub : private sd_bw_transport_if
 {
@@ -315,6 +286,27 @@ public:
     sd_target_stub(const char* name);
     virtual ~sd_target_stub() = default;
 };
+
+sd_base_initiator_socket& sd_initiator(const sc_object& parent,
+                                       const string& port);
+sd_base_initiator_socket& sd_initiator(const sc_object& parent,
+                                       const string& port, size_t idx);
+
+sd_base_target_socket& sd_target(const sc_object& parent, const string& port);
+sd_base_target_socket& sd_target(const sc_object& parent, const string& port,
+                                 size_t idx);
+
+void sd_stub(const sc_object& obj, const string& port);
+void sd_stub(const sc_object& obj, const string& port, size_t idx);
+
+void sd_bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
+             const string& port2);
+void sd_bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
+             const string& port2, size_t idx2);
+void sd_bind(const sc_object& obj1, const string& port1, size_t idx1,
+             const sc_object& obj2, const string& port2);
+void sd_bind(const sc_object& obj1, const string& port1, size_t idx1,
+             const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

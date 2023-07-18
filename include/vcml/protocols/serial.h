@@ -95,33 +95,11 @@ class serial_target_stub;
 class serial_host
 {
 public:
-    friend class serial_initiator_socket;
-    friend class serial_target_socket;
-
-    typedef set<serial_initiator_socket*> serial_initiator_sockets;
-    typedef set<serial_target_socket*> serial_target_sockets;
-
-    const serial_initiator_sockets& all_serial_initiator_sockets() const {
-        return m_initiator_sockets;
-    }
-
-    const serial_target_sockets& all_serial_target_sockets() const {
-        return m_target_sockets;
-    }
-
     serial_host() = default;
     virtual ~serial_host() = default;
-    serial_host(serial_host&&) = delete;
-    serial_host(const serial_host&) = delete;
-
-protected:
     virtual void serial_receive(const serial_target_socket&, serial_payload&);
     virtual void serial_receive(const serial_target_socket&, u8 data);
     virtual void serial_receive(u8 data);
-
-private:
-    serial_initiator_sockets m_initiator_sockets;
-    serial_target_sockets m_target_sockets;
 };
 
 class serial_fw_transport_if : public sc_core::sc_interface
@@ -172,6 +150,9 @@ public:
     void stub();
 };
 
+using serial_base_initiator_array = socket_array<serial_base_initiator_socket>;
+using serial_base_target_array = socket_array<serial_base_target_socket>;
+
 class serial_initiator_socket : public serial_base_initiator_socket
 {
 private:
@@ -204,7 +185,7 @@ public:
     sc_time cycle() const;
 
     serial_initiator_socket(const char* name, address_space = VCML_AS_DEFAULT);
-    virtual ~serial_initiator_socket();
+    virtual ~serial_initiator_socket() = default;
     VCML_KIND(serial_initiator_socket);
 
     void send(u8 data);
@@ -231,7 +212,7 @@ private:
 
 public:
     serial_target_socket(const char* name, address_space as = VCML_AS_DEFAULT);
-    virtual ~serial_target_socket();
+    virtual ~serial_target_socket() = default;
     VCML_KIND(serial_target_socket);
 };
 
@@ -254,18 +235,30 @@ public:
     virtual ~serial_target_stub() = default;
 };
 
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using serial_base_initiator_socket_array = socket_array<
-    serial_base_initiator_socket, MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using serial_base_target_socket_array = socket_array<serial_base_target_socket,
-                                                     MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using serial_initiator_socket_array = socket_array<serial_initiator_socket,
-                                                   MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using serial_target_socket_array = socket_array<serial_target_socket,
-                                                MAX_SOCKETS>;
+using serial_initiator_array = socket_array<serial_initiator_socket>;
+using serial_target_array = socket_array<serial_target_socket>;
+
+serial_base_initiator_socket& serial_initiator(const sc_object& parent,
+                                               const string& port);
+serial_base_initiator_socket& serial_initiator(const sc_object& parent,
+                                               const string& port, size_t idx);
+
+serial_base_target_socket& serial_target(const sc_object& parent,
+                                         const string& port);
+serial_base_target_socket& serial_target(const sc_object& parent,
+                                         const string& port, size_t idx);
+
+void serial_stub(const sc_object& obj, const string& port);
+void serial_stub(const sc_object& obj, const string& port, size_t idx);
+
+void serial_bind(const sc_object& obj1, const string& port1,
+                 const sc_object& obj2, const string& port2);
+void serial_bind(const sc_object& obj1, const string& port1,
+                 const sc_object& obj2, const string& port2, size_t idx2);
+void serial_bind(const sc_object& obj1, const string& port1, size_t idx1,
+                 const sc_object& obj2, const string& port2);
+void serial_bind(const sc_object& obj1, const string& port1, size_t idx1,
+                 const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

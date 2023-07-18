@@ -57,37 +57,10 @@ class clk_target_stub;
 class clk_host
 {
 public:
-    friend class clk_initiator_socket;
-    friend class clk_target_socket;
-
-    typedef vector<clk_initiator_socket*> clk_initiator_sockets;
-    typedef vector<clk_target_socket*> clk_target_sockets;
-
-    const clk_initiator_sockets& all_clk_initiator_sockets() const;
-    const clk_target_sockets& all_clk_target_sockets() const;
-
-    clk_target_sockets all_clk_target_sockets(address_space as) const;
-
     clk_host() = default;
-
     virtual ~clk_host() = default;
-
     virtual void clk_notify(const clk_target_socket&, const clk_payload&) = 0;
-
-private:
-    clk_initiator_sockets m_initiator_sockets;
-    clk_target_sockets m_target_sockets;
 };
-
-inline const clk_host::clk_initiator_sockets&
-clk_host::all_clk_initiator_sockets() const {
-    return m_initiator_sockets;
-}
-
-inline const clk_host::clk_target_sockets& clk_host::all_clk_target_sockets()
-    const {
-    return m_target_sockets;
-}
 
 typedef multi_initiator_socket<clk_fw_transport_if, clk_bw_transport_if>
     clk_base_initiator_socket_b;
@@ -130,19 +103,14 @@ public:
     void stub(clock_t hz = 100 * MHz);
 };
 
-template <const size_t MAX_PORTS = SIZE_MAX>
-using clk_base_initiator_socket_array = socket_array<clk_base_initiator_socket,
-                                                     MAX_PORTS>;
-
-template <const size_t MAX_PORTS = SIZE_MAX>
-using clk_base_target_socket_array = socket_array<clk_base_target_socket,
-                                                  MAX_PORTS>;
+using clk_base_initiator_array = socket_array<clk_base_initiator_socket>;
+using clk_base_target_array = socket_array<clk_base_target_socket>;
 
 class clk_initiator_socket : public clk_base_initiator_socket
 {
 public:
     clk_initiator_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
-    virtual ~clk_initiator_socket();
+    virtual ~clk_initiator_socket() = default;
     VCML_KIND(clk_initiator_socket);
 
     clock_t get() const { return m_hz; }
@@ -178,7 +146,7 @@ class clk_target_socket : public clk_base_target_socket
 {
 public:
     clk_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
-    virtual ~clk_target_socket();
+    virtual ~clk_target_socket() = default;
     VCML_KIND(clk_target_socket);
 
     using clk_base_target_socket::bind;
@@ -213,12 +181,8 @@ protected:
     virtual void clk_transport(const clk_payload& tx);
 };
 
-template <const size_t MAX_PORTS = SIZE_MAX>
-using clk_initiator_socket_array = socket_array<clk_initiator_socket,
-                                                MAX_PORTS>;
-
-template <const size_t MAX_PORTS = SIZE_MAX>
-using clk_target_socket_array = socket_array<clk_target_socket, MAX_PORTS>;
+using clk_initiator_array = socket_array<clk_initiator_socket>;
+using clk_target_array = socket_array<clk_target_socket>;
 
 class clk_initiator_stub : private clk_bw_transport_if
 {
@@ -243,6 +207,28 @@ public:
     clk_target_stub(const char* nm);
     virtual ~clk_target_stub() = default;
 };
+
+clk_base_initiator_socket& clk_initiator(const sc_object& parent,
+                                         const string& port);
+clk_base_initiator_socket& clk_initiator(const sc_object& parent,
+                                         const string& port, size_t idx);
+
+clk_base_target_socket& clk_target(const sc_object& parent,
+                                   const string& port);
+clk_base_target_socket& clk_target(const sc_object& parent, const string& port,
+                                   size_t idx);
+
+void clk_stub(const sc_object& obj, const string& port);
+void clk_stub(const sc_object& obj, const string& port, size_t idx);
+
+void clk_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void clk_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void clk_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void clk_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

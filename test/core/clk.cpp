@@ -52,8 +52,8 @@ public:
     clk_base_target_socket clk_in_h;
     clk_target_socket clk_in;
 
-    clk_initiator_socket_array<> clk_array_out;
-    clk_target_socket_array<> clk_array_in;
+    clk_initiator_array clk_array_out;
+    clk_target_array clk_array_in;
 
     clk_bench(const sc_module_name& nm):
         test_base(nm),
@@ -67,22 +67,22 @@ public:
         EXPECT_FALSE(clk_out_h.is_bound());
         EXPECT_FALSE(clk_in_h.is_bound());
         EXPECT_FALSE(clk_in.is_bound());
-        clk_out.bind(clk_out_h);
-        clk_in_h.bind(clk_in);
-        clk_out_h.bind(clk_in_h);
+        clk_bind(*this, "clk_out", *this, "clk_out_h");
+        clk_bind(*this, "clk_in_h", *this, "clk_in");
+        clk_bind(*this, "clk_out_h", *this, "clk_in_h");
         EXPECT_TRUE(clk_out.is_bound());
         EXPECT_TRUE(clk_out_h.is_bound());
         EXPECT_TRUE(clk_in_h.is_bound());
         EXPECT_TRUE(clk_in.is_bound());
         EXPECT_FALSE(clk_array_out[5].is_stubbed());
         EXPECT_FALSE(clk_array_in[6].is_stubbed());
-        clk_array_out[5].stub();
-        clk_array_in[6].stub(0);
+        clk_stub(*this, "clk_array_out", 5);
+        clk_target(*this, "clk_array_in", 6).stub(0);
         EXPECT_TRUE(clk_array_out[5].is_stubbed());
         EXPECT_TRUE(clk_array_in[6].is_stubbed());
 
         // test binding multiple targets to one initiator
-        clk_out.bind(clk_array_in[6]);
+        clk_bind(*this, "clk_out", *this, "clk_array_in", 6);
 
         // did the port get created?
         EXPECT_TRUE(find_object("clk.clk_array_out[5]"));

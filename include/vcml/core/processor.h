@@ -77,7 +77,7 @@ public:
     property<bool> async;
     property<unsigned int> async_rate;
 
-    gpio_target_socket_array<> irq;
+    gpio_target_array irq;
 
     tlm_initiator_socket insn;
     tlm_initiator_socket data;

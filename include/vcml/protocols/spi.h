@@ -35,29 +35,9 @@ class spi_target_stub;
 class spi_host
 {
 public:
-    friend class spi_initiator_socket;
-    friend class spi_target_socket;
-
-    typedef vector<spi_initiator_socket*> spi_initiator_sockets;
-    typedef vector<spi_target_socket*> spi_target_sockets;
-
-    const spi_initiator_sockets& all_spi_initiator_sockets() const {
-        return m_initiator_sockets;
-    }
-
-    const spi_target_sockets& all_spi_target_sockets() const {
-        return m_target_sockets;
-    }
-
-    spi_target_sockets all_spi_target_sockets(address_space);
-
     spi_host() = default;
     virtual ~spi_host() = default;
     virtual void spi_transport(const spi_target_socket&, spi_payload&) = 0;
-
-private:
-    spi_initiator_sockets m_initiator_sockets;
-    spi_target_sockets m_target_sockets;
 };
 
 class spi_fw_transport_if : public sc_core::sc_interface
@@ -107,13 +87,8 @@ public:
     void stub();
 };
 
-template <const size_t MAX_PORTS = SIZE_MAX>
-using spi_base_initiator_socket_array = socket_array<spi_base_initiator_socket,
-                                                     MAX_PORTS>;
-
-template <const size_t MAX_PORTS = SIZE_MAX>
-using spi_base_target_socket_array = socket_array<spi_base_target_socket,
-                                                  MAX_PORTS>;
+using spi_base_initiator_array = socket_array<spi_base_initiator_socket>;
+using spi_base_target_array = socket_array<spi_base_target_socket>;
 
 class spi_initiator_socket : public spi_base_initiator_socket
 {
@@ -128,7 +103,7 @@ private:
 
 public:
     spi_initiator_socket(const char* nm, address_space = VCML_AS_DEFAULT);
-    virtual ~spi_initiator_socket();
+    virtual ~spi_initiator_socket() = default;
     VCML_KIND(spi_initiator_socket);
 
     void transport(spi_payload& spi);
@@ -152,16 +127,12 @@ private:
 
 public:
     spi_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
-    virtual ~spi_target_socket();
+    virtual ~spi_target_socket() = default;
     VCML_KIND(spi_target_socket);
 };
 
-template <const size_t MAX_PORTS = SIZE_MAX>
-using spi_initiator_socket_array = socket_array<spi_initiator_socket,
-                                                MAX_PORTS>;
-
-template <const size_t MAX_PORTS = SIZE_MAX>
-using spi_target_socket_array = socket_array<spi_target_socket, MAX_PORTS>;
+using spi_initiator_array = socket_array<spi_initiator_socket>;
+using spi_target_array = socket_array<spi_target_socket>;
 
 class spi_initiator_stub : private spi_bw_transport_if
 {
@@ -181,6 +152,28 @@ public:
     spi_target_stub(const char* name);
     virtual ~spi_target_stub() = default;
 };
+
+spi_base_initiator_socket& spi_initiator(const sc_object& parent,
+                                         const string& port);
+spi_base_initiator_socket& spi_initiator(const sc_object& parent,
+                                         const string& port, size_t idx);
+
+spi_base_target_socket& spi_target(const sc_object& parent,
+                                   const string& port);
+spi_base_target_socket& spi_target(const sc_object& parent, const string& port,
+                                   size_t idx);
+
+void spi_stub(const sc_object& obj, const string& port);
+void spi_stub(const sc_object& obj, const string& port, size_t idx);
+
+void spi_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void spi_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void spi_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void spi_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

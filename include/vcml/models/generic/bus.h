@@ -72,8 +72,8 @@ protected:
 public:
     property<bool> lenient;
 
-    tlm_target_socket_array<> in;
-    tlm_initiator_socket_array<> out;
+    tlm_target_array in;
+    tlm_initiator_array out;
 
     void map(size_t target, const range& addr);
     void map(size_t target, const range& addr, u64 offset);

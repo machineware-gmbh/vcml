@@ -92,7 +92,7 @@ pl190vic::pl190vic(const sc_module_name& nm):
     pid("pid", 0xfe0),
     cid("cid", 0xff0),
     in("in"),
-    irq_in("irq_in"),
+    irq_in("irq_in", NIRQ),
     irq_out("irq_out"),
     fiq_out("fiq_out") {
     irqs.allow_read_only();

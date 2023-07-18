@@ -59,7 +59,7 @@ host::host(const sc_module_name& nm, bool express):
     cfg_in("cfg_in", PCI_AS_CFG),
     mmio_in("mmio_in", PCI_AS_MMIO),
     io_in("io_in", PCI_AS_IO),
-    pci_out("pci_out"),
+    pci_out("pci_out", 256u),
     irq_a("irq_a"),
     irq_b("irq_b"),
     irq_c("irq_c"),

@@ -48,8 +48,8 @@ public:
     reg<u64, NHARTS> mtimecmp;
     reg<u64> mtime;
 
-    gpio_initiator_socket_array<NHARTS> irq_sw;
-    gpio_initiator_socket_array<NHARTS> irq_timer;
+    gpio_initiator_array irq_sw;
+    gpio_initiator_array irq_timer;
 
     tlm_target_socket in;
 

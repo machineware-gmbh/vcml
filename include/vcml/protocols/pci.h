@@ -344,13 +344,8 @@ public:
     void stub();
 };
 
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using pci_base_initiator_socket_array = socket_array<pci_base_initiator_socket,
-                                                     MAX_SOCKETS>;
-
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using pci_base_target_socket_array = socket_array<pci_base_target_socket,
-                                                  MAX_SOCKETS>;
+using pci_base_initiator_array = socket_array<pci_base_initiator_socket>;
+using pci_base_target_array = socket_array<pci_base_target_socket>;
 
 class pci_initiator_socket : public pci_base_initiator_socket
 {
@@ -422,11 +417,8 @@ constexpr size_t pci_devno(size_t dev, size_t fn = 0) {
     return (dev & 31u) << 3 | (fn & 7u);
 }
 
-template <const size_t MAX = SIZE_MAX>
-using pci_initiator_socket_array = socket_array<pci_initiator_socket, MAX>;
-
-template <const size_t MAX = SIZE_MAX>
-using pci_target_socket_array = socket_array<pci_target_socket, MAX>;
+using pci_initiator_array = socket_array<pci_initiator_socket>;
+using pci_target_array = socket_array<pci_target_socket>;
 
 class pci_initiator_stub : private pci_bw_transport_if
 {
@@ -454,6 +446,18 @@ public:
     pci_target_stub(const char* name);
     virtual ~pci_target_stub() = default;
 };
+
+void pci_stub(const sc_object& obj, const string& port);
+void pci_stub(const sc_object& obj, const string& port, size_t idx);
+
+void pci_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void pci_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void pci_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void pci_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

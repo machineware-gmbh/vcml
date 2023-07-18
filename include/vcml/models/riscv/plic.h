@@ -69,8 +69,8 @@ public:
     reg<u32, NIRQ> priority;
     reg<u32, NIRQ / 32> pending;
 
-    gpio_target_socket_array<NIRQ> irqs;
-    gpio_initiator_socket_array<NCTX> irqt;
+    gpio_target_array irqs;
+    gpio_initiator_array irqt;
 
     tlm_target_socket in;
 

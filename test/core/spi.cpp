@@ -23,8 +23,8 @@ public:
     spi_base_initiator_socket spi_out_h;
     spi_base_target_socket spi_in_h;
 
-    spi_initiator_socket_array<> spi_out_arr;
-    spi_target_socket_array<> spi_in_arr;
+    spi_initiator_array spi_out_arr;
+    spi_target_array spi_in_arr;
 
     spi_harness(const sc_module_name& nm):
         test_base(nm),
@@ -36,24 +36,16 @@ public:
         spi_out_arr("spi_out_arr"),
         spi_in_arr("spi_in_arr") {
         // test hierarchy binding
-        spi_out.bind(spi_out_h);
-        spi_in_h.bind(spi_in);
-        spi_out_h.bind(spi_in_h);
+        spi_bind(*this, "spi_out", *this, "spi_out_h");
+        spi_bind(*this, "spi_in_h", *this, "spi_in");
+        spi_bind(*this, "spi_out_h", *this, "spi_in_h");
 
         // test stubbing
-        spi_out_arr[33].stub();
-        spi_in_arr[44].stub();
+        spi_stub(*this, "spi_out_arr", 33);
+        spi_stub(*this, "spi_in_arr", 44);
 
         EXPECT_TRUE(find_object("spi.spi_out_arr[33]_stub"));
         EXPECT_TRUE(find_object("spi.spi_in_arr[44]_stub"));
-
-        auto initiators = all_spi_initiator_sockets();
-        auto targets = all_spi_target_sockets();
-        auto sockets = all_spi_target_sockets(VCML_AS_TEST);
-
-        EXPECT_EQ(initiators.size(), 2) << "spi initiators did not register";
-        EXPECT_EQ(targets.size(), 2) << "spi targets did not register";
-        EXPECT_EQ(sockets.size(), 1) << "spi targets in wrong address space";
     }
 
     virtual void spi_transport(const spi_target_socket& socket,

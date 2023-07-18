@@ -90,13 +90,6 @@ i2c_initiator_socket::i2c_initiator_socket(const char* nm, address_space as):
     m_host(hierarchy_search<i2c_host>()),
     m_transport(this) {
     bind(m_transport);
-    if (m_host)
-        m_host->m_initiator_sockets.insert(this);
-}
-
-i2c_initiator_socket::~i2c_initiator_socket() {
-    if (m_host)
-        m_host->m_initiator_sockets.erase(this);
 }
 
 i2c_response i2c_initiator_socket::start(u8 address, tlm_command cmd) {
@@ -207,12 +200,6 @@ i2c_target_socket::i2c_target_socket(const char* nm, address_space as):
     m_transport(this) {
     bind(m_transport);
     VCML_ERROR_ON(!m_host, "socket %s declared outside i2c_host", name());
-    m_host->m_target_sockets.insert(this);
-}
-
-i2c_target_socket::~i2c_target_socket() {
-    if (m_host)
-        m_host->m_target_sockets.erase(this);
 }
 
 i2c_initiator_stub::i2c_initiator_stub(const char* nm):
@@ -229,6 +216,227 @@ i2c_target_stub::i2c_target_stub(const char* nm):
     i2c_fw_transport_if(),
     i2c_in(mkstr("%s_stub", nm).c_str(), VCML_AS_DEFAULT) {
     i2c_in.bind(*this);
+}
+
+static i2c_base_initiator_socket* get_initiator_socket(sc_object* port) {
+    return dynamic_cast<i2c_base_initiator_socket*>(port);
+}
+
+static i2c_base_target_socket* get_target_socket(sc_object* port) {
+    return dynamic_cast<i2c_base_target_socket*>(port);
+}
+
+static i2c_base_initiator_socket* get_initiator_socket(sc_object* array,
+                                                       size_t idx) {
+    auto* base = dynamic_cast<i2c_base_initiator_array*>(array);
+    if (base)
+        return &base->get(idx);
+    auto* main = dynamic_cast<i2c_initiator_array*>(array);
+    if (main)
+        return &main->get(idx);
+    return nullptr;
+}
+
+static i2c_base_target_socket* get_target_socket(sc_object* array,
+                                                 size_t idx) {
+    auto* base = dynamic_cast<i2c_base_target_array*>(array);
+    if (base)
+        return &base->get(idx);
+    auto* main = dynamic_cast<i2c_target_array*>(array);
+    if (main)
+        return &main->get(idx);
+    return nullptr;
+}
+
+i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
+                                         const string& port) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_initiator_socket(child);
+    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
+    return *sock;
+}
+
+i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
+                                         const string& port, size_t idx) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_initiator_socket(child, idx);
+    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
+    return *sock;
+}
+
+i2c_base_target_socket& i2c_target(const sc_object& parent,
+                                   const string& port) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_target_socket(child);
+    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
+    return *sock;
+}
+
+i2c_base_target_socket& i2c_target(const sc_object& parent, const string& port,
+                                   size_t idx) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_target_socket(child, idx);
+    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
+    return *sock;
+}
+
+void i2c_set_address(const sc_object& obj, const string& port, u8 addr) {
+    sc_object* child = find_child(obj, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
+    auto* tgt = dynamic_cast<i2c_target_socket*>(child);
+    VCML_ERROR_ON(!tgt, "%s is not a valid i2c socket", child->name());
+    tgt->set_address(addr);
+}
+
+void i2c_set_address(const sc_object& o, const string& port, size_t i, u8 a) {
+    sc_object* child = find_child(o, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", o.name(), port.c_str());
+    auto* tgt = dynamic_cast<i2c_target_array*>(child);
+    VCML_ERROR_ON(!tgt, "%s is not a valid i2c socket array", child->name());
+    tgt->get(i).set_address(a);
+}
+
+void i2c_stub(const sc_object& obj, const string& port) {
+    sc_object* child = find_child(obj, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
+
+    auto* ini = get_initiator_socket(child);
+    auto* tgt = get_target_socket(child);
+
+    if (!ini && !tgt)
+        VCML_ERROR("%s is not a valid i2c socket", child->name());
+
+    if (ini)
+        ini->stub();
+    if (tgt)
+        tgt->stub();
+}
+
+void i2c_stub(const sc_object& obj, const string& port, size_t idx) {
+    sc_object* child = find_child(obj, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
+
+    i2c_base_initiator_socket* isock = get_initiator_socket(child, idx);
+    if (isock) {
+        isock->stub();
+        return;
+    }
+
+    i2c_base_target_socket* tsock = get_target_socket(child, idx);
+    if (tsock) {
+        tsock->stub();
+        return;
+    }
+
+    VCML_ERROR("%s is not a valid i2c socket array", child->name());
+}
+
+void i2c_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1);
+    auto* i2 = get_initiator_socket(p2);
+    auto* t1 = get_target_socket(p1);
+    auto* t2 = get_target_socket(p2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
+}
+
+void i2c_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1);
+    auto* i2 = get_initiator_socket(p2, idx2);
+    auto* t1 = get_target_socket(p1);
+    auto* t2 = get_target_socket(p2, idx2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
+}
+
+void i2c_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1, idx1);
+    auto* i2 = get_initiator_socket(p2);
+    auto* t1 = get_target_socket(p1, idx1);
+    auto* t2 = get_target_socket(p2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
+}
+
+void i2c_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1, idx1);
+    auto* i2 = get_initiator_socket(p2, idx2);
+    auto* t1 = get_target_socket(p1, idx1);
+    auto* t2 = get_target_socket(p2, idx2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
 }
 
 } // namespace vcml

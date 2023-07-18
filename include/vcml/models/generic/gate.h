@@ -31,7 +31,7 @@ public:
         LOGIC_NOR,
     };
 
-    gpio_target_socket_array<> in;
+    gpio_target_array in;
     gpio_initiator_socket out;
 
     gate(const sc_module_name& name, logic_type type);

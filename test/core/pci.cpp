@@ -47,11 +47,11 @@ private:
     }
 
 public:
-    pci_initiator_socket_array<> pci_out;
-    pci_target_socket_array<> pci_in;
+    pci_initiator_array pci_out;
+    pci_target_array pci_in;
 
-    pci_base_initiator_socket_array<> pci_out_h;
-    pci_base_target_socket_array<> pci_in_h;
+    pci_base_initiator_array pci_out_h;
+    pci_base_target_array pci_in_h;
 
     pci_initiator_socket pci_out_nocon;
     pci_target_socket pci_in_nocon;
@@ -67,13 +67,13 @@ public:
         pci_out_nocon("pci_out_nocon"),
         pci_in_nocon("pci_in_nocon") {
         for (int i = 0; i < 4; i++) {
-            pci_out[i].bind(pci_out_h[i]);
-            pci_in_h[i].bind(pci_in[i]);
-            pci_out_h[i].bind(pci_in_h[i]);
+            pci_bind(*this, "pci_out", i, *this, "pci_out_h", i);
+            pci_bind(*this, "pci_in_h", i, *this, "pci_in", i);
+            pci_bind(*this, "pci_out_h", i, *this, "pci_in_h", i);
         }
 
-        pci_out_nocon.stub();
-        pci_in_nocon.stub();
+        pci_stub(*this, "pci_out_nocon");
+        pci_stub(*this, "pci_in_nocon");
 
         EXPECT_TRUE(find_object("pci.pci_out_nocon_stub"));
         EXPECT_TRUE(find_object("pci.pci_in_nocon_stub"));

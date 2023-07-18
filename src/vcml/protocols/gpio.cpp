@@ -311,10 +311,10 @@ static gpio_base_target_socket* get_target_socket(sc_object* port) {
 
 static gpio_base_initiator_socket* get_initiator_socket(sc_object* array,
                                                         size_t idx) {
-    auto* base = dynamic_cast<gpio_base_initiator_socket_array<>*>(array);
+    auto* base = dynamic_cast<gpio_base_initiator_array*>(array);
     if (base)
         return &base->get(idx);
-    auto* main = dynamic_cast<gpio_initiator_socket_array<>*>(array);
+    auto* main = dynamic_cast<gpio_initiator_array*>(array);
     if (main)
         return &main->get(idx);
     return nullptr;
@@ -322,10 +322,10 @@ static gpio_base_initiator_socket* get_initiator_socket(sc_object* array,
 
 static gpio_base_target_socket* get_target_socket(sc_object* array,
                                                   size_t idx) {
-    auto* base = dynamic_cast<gpio_base_target_socket_array<>*>(array);
+    auto* base = dynamic_cast<gpio_base_target_array*>(array);
     if (base)
         return &base->get(idx);
-    auto* main = dynamic_cast<gpio_target_socket_array<>*>(array);
+    auto* main = dynamic_cast<gpio_target_array*>(array);
     if (main)
         return &main->get(idx);
     return nullptr;

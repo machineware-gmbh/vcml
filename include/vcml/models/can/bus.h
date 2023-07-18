@@ -32,8 +32,8 @@ protected:
     void can_receive(const can_target_socket&, can_frame& frame) override;
 
 public:
-    can_initiator_socket_array<> can_tx;
-    can_target_socket_array<> can_rx;
+    can_initiator_array can_tx;
+    can_target_array can_rx;
 
     bus(const sc_module_name& nm);
     virtual ~bus() = default;

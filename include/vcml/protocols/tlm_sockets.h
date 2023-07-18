@@ -423,11 +423,8 @@ inline range tlm_target_socket::current_transaction_address() const {
     return m_payload ? range(*m_payload) : range();
 }
 
-template <const size_t MAX = SIZE_MAX>
-using tlm_initiator_socket_array = socket_array<tlm_initiator_socket, MAX>;
-
-template <const size_t MAX = SIZE_MAX>
-using tlm_target_socket_array = socket_array<tlm_target_socket, MAX>;
+using tlm_initiator_array = socket_array<tlm_initiator_socket>;
+using tlm_target_array = socket_array<tlm_target_socket>;
 
 } // namespace vcml
 

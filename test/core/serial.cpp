@@ -63,8 +63,8 @@ public:
     serial_base_target_socket serial_rx_h;
     serial_target_socket serial_rx;
 
-    serial_initiator_socket_array<> serial_array_tx;
-    serial_target_socket_array<> serial_array_rx;
+    serial_initiator_array serial_array_tx;
+    serial_target_array serial_array_rx;
 
     serial_bench(const sc_module_name& nm):
         test_base(nm),
@@ -75,13 +75,13 @@ public:
         serial_rx("serial_rx"),
         serial_array_tx("serial_array_tx"),
         serial_array_rx("serial_array_rx") {
-        serial_tx.bind(serial_tx_h);
-        serial_rx_h.bind(serial_rx);
-        serial_tx_h.bind(serial_rx_h);
+        serial_bind(*this, "serial_tx", *this, "serial_tx_h");
+        serial_bind(*this, "serial_rx_h", *this, "serial_rx");
+        serial_bind(*this, "serial_tx_h", *this, "serial_rx_h");
 
-        serial_array_tx[4].bind(serial_array_rx[4]);
-        serial_array_tx[5].stub();
-        serial_array_rx[6].stub();
+        serial_bind(*this, "serial_array_tx", 4, *this, "serial_array_rx", 4);
+        serial_stub(*this, "serial_array_tx", 5);
+        serial_stub(*this, "serial_array_rx", 6);
 
         // did the ports get created?
         EXPECT_TRUE(find_object("serial.serial_array_tx[4]"));

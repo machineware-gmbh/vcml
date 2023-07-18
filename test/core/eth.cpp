@@ -64,8 +64,8 @@ public:
     eth_base_target_socket eth_rx_h;
     eth_target_socket eth_rx;
 
-    eth_initiator_socket_array<> eth_array_tx;
-    eth_target_socket_array<> eth_array_rx;
+    eth_initiator_array eth_array_tx;
+    eth_target_array eth_array_rx;
 
     ethernet_bench(const sc_module_name& nm):
         test_base(nm),
@@ -76,13 +76,13 @@ public:
         eth_rx("eth_rx"),
         eth_array_tx("eth_array_tx"),
         eth_array_rx("eth_array_rx") {
-        eth_tx.bind(eth_tx_h);
-        eth_rx_h.bind(eth_rx);
-        eth_tx_h.bind(eth_rx_h);
+        eth_bind(*this, "eth_tx", *this, "eth_tx_h");
+        eth_bind(*this, "eth_rx_h", *this, "eth_rx");
+        eth_bind(*this, "eth_tx_h", *this, "eth_rx_h");
 
-        eth_array_tx[4].bind(eth_array_rx[4]);
-        eth_array_tx[5].stub();
-        eth_array_rx[6].stub();
+        eth_bind(*this, "eth_array_tx", 4, *this, "eth_array_rx", 4);
+        eth_stub(*this, "eth_array_tx", 5);
+        eth_stub(*this, "eth_array_rx", 6);
 
         // did the ports get created?
         EXPECT_TRUE(find_object("eth.eth_array_tx[4]"));

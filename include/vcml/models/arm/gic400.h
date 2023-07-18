@@ -341,14 +341,14 @@ public:
     vifctrl vifctrl;
     vcpuif vcpuif;
 
-    gpio_target_socket_array<NPPI * NCPU> ppi_in;
-    gpio_target_socket_array<NSPI> spi_in;
+    gpio_target_array ppi_in;
+    gpio_target_array spi_in;
 
-    gpio_initiator_socket_array<NCPU> fiq_out;
-    gpio_initiator_socket_array<NCPU> irq_out;
+    gpio_initiator_array fiq_out;
+    gpio_initiator_array irq_out;
 
-    gpio_initiator_socket_array<NVCPU> vfiq_out;
-    gpio_initiator_socket_array<NVCPU> virq_out;
+    gpio_initiator_array vfiq_out;
+    gpio_initiator_array virq_out;
 
     gpio_target_socket& ppi(unsigned int cpu, unsigned int irq);
 

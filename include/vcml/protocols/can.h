@@ -75,36 +75,14 @@ class can_target_stub;
 class can_host
 {
 public:
-    friend class can_initiator_socket;
-    friend class can_target_socket;
-
-    typedef set<can_initiator_socket*> can_initiator_sockets;
-    typedef set<can_target_socket*> can_target_sockets;
-
-    const can_initiator_sockets& all_can_initiator_sockets() const {
-        return m_initiator_sockets;
-    }
-
-    const can_target_sockets& all_can_target_sockets() const {
-        return m_target_sockets;
-    }
-
-    can_initiator_socket* find_can_initiator(const string& name) const;
-    can_target_socket* find_can_target(const string& name) const;
-
     can_host() = default;
     virtual ~can_host() = default;
-    can_host(can_host&&) = delete;
-    can_host(const can_host&) = delete;
 
-protected:
     virtual void can_receive(const can_target_socket& sock, can_frame& frame);
     virtual void can_receive(can_frame& frame);
     virtual bool can_rx_pop(can_frame& frame);
 
 private:
-    can_initiator_sockets m_initiator_sockets;
-    can_target_sockets m_target_sockets;
     queue<can_frame> m_rx_queue;
 };
 
@@ -156,6 +134,9 @@ public:
     void stub();
 };
 
+using can_base_initiator_array = socket_array<can_base_initiator_socket>;
+using can_base_target_array = socket_array<can_base_target_socket>;
+
 class can_initiator_socket : public can_base_initiator_socket
 {
 private:
@@ -170,7 +151,7 @@ private:
 
 public:
     can_initiator_socket(const char* name, address_space = VCML_AS_DEFAULT);
-    virtual ~can_initiator_socket();
+    virtual ~can_initiator_socket() = default;
     VCML_KIND(can_initiator_socket);
 
     void send(can_frame& frame);
@@ -195,7 +176,7 @@ private:
 
 public:
     can_target_socket(const char* name, address_space as = VCML_AS_DEFAULT);
-    virtual ~can_target_socket();
+    virtual ~can_target_socket() = default;
     VCML_KIND(can_target_socket);
 };
 
@@ -218,17 +199,30 @@ public:
     virtual ~can_target_stub() = default;
 };
 
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using can_base_initiator_socket_array = socket_array<can_base_initiator_socket,
-                                                     MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using can_base_target_socket_array = socket_array<can_base_target_socket,
-                                                  MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using can_initiator_socket_array = socket_array<can_initiator_socket,
-                                                MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using can_target_socket_array = socket_array<can_target_socket, MAX_SOCKETS>;
+using can_initiator_array = socket_array<can_initiator_socket>;
+using can_target_array = socket_array<can_target_socket>;
+
+can_base_initiator_socket& can_initiator(const sc_object& parent,
+                                         const string& port);
+can_base_initiator_socket& can_initiator(const sc_object& parent,
+                                         const string& port, size_t idx);
+
+can_base_target_socket& can_target(const sc_object& parent,
+                                   const string& port);
+can_base_target_socket& can_target(const sc_object& parent, const string& port,
+                                   size_t idx);
+
+void can_stub(const sc_object& obj, const string& port);
+void can_stub(const sc_object& obj, const string& port, size_t idx);
+
+void can_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void can_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void can_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void can_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

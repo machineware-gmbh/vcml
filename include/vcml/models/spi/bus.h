@@ -35,8 +35,8 @@ private:
 
 public:
     spi_target_socket spi_in;
-    spi_initiator_socket_array<> spi_out;
-    gpio_target_socket_array<> cs;
+    spi_initiator_array spi_out;
+    gpio_target_array cs;
 
     bus(const sc_module_name& nm);
     virtual ~bus();

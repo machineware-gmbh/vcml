@@ -13,28 +13,28 @@
 namespace vcml {
 namespace generic {
 
-static bool calc_and(const gpio_target_socket_array<>& in) {
+static bool calc_and(const gpio_target_array& in) {
     for (const auto& port : in)
         if (!port.second->read())
             return false;
     return true;
 }
 
-static bool calc_nand(const gpio_target_socket_array<>& in) {
+static bool calc_nand(const gpio_target_array& in) {
     for (const auto& port : in)
         if (!port.second->read())
             return true;
     return false;
 }
 
-static bool calc_or(const gpio_target_socket_array<>& in) {
+static bool calc_or(const gpio_target_array& in) {
     for (const auto& port : in)
         if (port.second->read())
             return true;
     return false;
 }
 
-static bool calc_nor(const gpio_target_socket_array<>& in) {
+static bool calc_nor(const gpio_target_array& in) {
     for (const auto& port : in)
         if (port.second->read())
             return false;

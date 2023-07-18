@@ -28,7 +28,7 @@ class gpio_test_harness : public test_base
 public:
     gpio_initiator_socket out;
     gpio_initiator_socket out2;
-    gpio_target_socket_array<> in;
+    gpio_target_array in;
 
     // for testing hierarchical binding
     gpio_base_initiator_socket h_out;

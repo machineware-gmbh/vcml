@@ -23,8 +23,8 @@ public:
     sd_base_initiator_socket sd_out_h;
     sd_base_target_socket sd_in_h;
 
-    sd_initiator_socket_array<> sd_out_arr;
-    sd_target_socket_array<> sd_in_arr;
+    sd_initiator_array sd_out_arr;
+    sd_target_array sd_in_arr;
 
     sd_harness(const sc_module_name& nm):
         test_base(nm),
@@ -36,24 +36,16 @@ public:
         sd_out_arr("sd_out_arr"),
         sd_in_arr("sd_in_arr") {
         // test hierarchy binding
-        sd_out.bind(sd_out_h);
-        sd_in_h.bind(sd_in);
-        sd_out_h.bind(sd_in_h);
+        sd_bind(*this, "sd_out", *this, "sd_out_h");
+        sd_bind(*this, "sd_in_h", *this, "sd_in");
+        sd_bind(*this, "sd_out_h", *this, "sd_in_h");
 
         // test stubbing
-        sd_out_arr[28].stub();
-        sd_in_arr[29].stub();
+        sd_stub(*this, "sd_out_arr", 28);
+        sd_stub(*this, "sd_in_arr", 29);
 
         EXPECT_TRUE(find_object("sd.sd_out_arr[28]_stub"));
         EXPECT_TRUE(find_object("sd.sd_in_arr[29]_stub"));
-
-        auto initiators = all_sd_initiator_sockets();
-        auto targets = all_sd_target_sockets();
-        auto sockets = all_sd_target_sockets(VCML_AS_TEST);
-
-        EXPECT_EQ(initiators.size(), 2) << "sd initiators did not register";
-        EXPECT_EQ(targets.size(), 2) << "sd targets did not register";
-        EXPECT_EQ(sockets.size(), 1) << "sd targets in wrong address space";
     }
 
     virtual void sd_transport(const sd_target_socket& socket,

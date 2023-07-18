@@ -373,7 +373,7 @@ bool sim_running();
 
 string call_origin();
 
-template <typename SOCKET, const size_t LIMIT = SIZE_MAX>
+template <typename SOCKET>
 class socket_array : public sc_object
 {
 public:
@@ -384,13 +384,32 @@ public:
 
 private:
     size_t m_next;
+    size_t m_max;
     address_space m_space;
     map_type m_sockets;
     revmap_type m_ids;
 
 public:
-    socket_array(const char* nm, address_space as = VCML_AS_DEFAULT):
-        sc_object(nm), m_next(0), m_space(as), m_sockets(), m_ids() {}
+    socket_array(const char* nm):
+        sc_object(nm),
+        m_next(0),
+        m_max(SIZE_MAX),
+        m_space(VCML_AS_DEFAULT),
+        m_sockets(),
+        m_ids() {
+        // nothing to do
+    }
+
+    socket_array(const char* nm, size_t max): socket_array(nm) { m_max = max; }
+    socket_array(const char* nm, address_space as): socket_array(nm) {
+        m_space = as;
+    }
+
+    socket_array(const char* nm, size_t max, address_space as):
+        socket_array(nm) {
+        m_space = as;
+        m_max = max;
+    }
 
     virtual ~socket_array() {
         for (auto socket : m_sockets)
@@ -410,7 +429,7 @@ public:
         if (socket)
             return *socket;
 
-        VCML_ERROR_ON(idx >= LIMIT, "socket out of bounds: %zu", idx);
+        VCML_ERROR_ON(idx >= m_max, "socket out of bounds: %zu", idx);
         hierarchy_guard guard(this);
         string nm = mkstr("%s[%zu]", basename(), idx);
         socket = new SOCKET(nm.c_str(), m_space);

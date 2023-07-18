@@ -251,6 +251,9 @@ public:
     void stub();
 };
 
+using eth_base_initiator_array = socket_array<eth_base_initiator_socket>;
+using eth_base_target_array = socket_array<eth_base_target_socket>;
+
 class eth_initiator_socket : public eth_base_initiator_socket
 {
 private:
@@ -322,17 +325,30 @@ public:
     virtual ~eth_target_stub() = default;
 };
 
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using eth_base_initiator_socket_array = socket_array<eth_base_initiator_socket,
-                                                     MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using eth_base_target_socket_array = socket_array<eth_base_target_socket,
-                                                  MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using eth_initiator_socket_array = socket_array<eth_initiator_socket,
-                                                MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using eth_target_socket_array = socket_array<eth_target_socket, MAX_SOCKETS>;
+using eth_initiator_array = socket_array<eth_initiator_socket>;
+using eth_target_array = socket_array<eth_target_socket>;
+
+eth_base_initiator_socket& eth_initiator(const sc_object& parent,
+                                         const string& port);
+eth_base_initiator_socket& eth_initiator(const sc_object& parent,
+                                         const string& port, size_t idx);
+
+eth_base_target_socket& eth_target(const sc_object& parent,
+                                   const string& port);
+eth_base_target_socket& eth_target(const sc_object& parent, const string& port,
+                                   size_t idx);
+
+void eth_stub(const sc_object& obj, const string& port);
+void eth_stub(const sc_object& obj, const string& port, size_t idx);
+
+void eth_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void eth_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void eth_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void eth_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

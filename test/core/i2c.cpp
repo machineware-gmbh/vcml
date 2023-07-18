@@ -62,8 +62,8 @@ public:
     i2c_base_target_socket i2c_in_h;
     i2c_target_socket i2c_in;
 
-    i2c_initiator_socket_array<> i2c_array_out;
-    i2c_target_socket_array<> i2c_array_in;
+    i2c_initiator_array i2c_array_out;
+    i2c_target_array i2c_array_in;
 
     i2c_bench(const sc_module_name& nm):
         test_base(nm),
@@ -74,25 +74,26 @@ public:
         i2c_in("i2c_in"),
         i2c_array_out("i2c_array_out"),
         i2c_array_in("i2c_array_in") {
-        i2c_in.set_address(42);
+        i2c_set_address(*this, "i2c_in", 42);
+        EXPECT_EQ(i2c_in.address(), 42);
 
-        i2c_out.bind(i2c_out_h);
-        i2c_in_h.bind(i2c_in);
-        i2c_out_h.bind(i2c_in_h);
+        i2c_bind(*this, "i2c_out", *this, "i2c_out_h");
+        i2c_bind(*this, "i2c_in_h", *this, "i2c_in");
+        i2c_bind(*this, "i2c_out_h", *this, "i2c_in_h");
 
-        i2c_array_out[5].stub();
-        i2c_array_in[6].stub();
+        i2c_stub(*this, "i2c_array_out", 5);
+        i2c_stub(*this, "i2c_array_in", 6);
 
         // test binding multiple targets to one initiator
-        i2c_out.bind(i2c_array_in[43]);
-        i2c_out.bind(i2c_array_in[44]);
-        i2c_out.bind(i2c_array_in[45]);
-        i2c_out.bind(i2c_array_in[46]);
+        i2c_bind(*this, "i2c_out", *this, "i2c_array_in", 43);
+        i2c_bind(*this, "i2c_out", *this, "i2c_array_in", 44);
+        i2c_bind(*this, "i2c_out", *this, "i2c_array_in", 45);
+        i2c_bind(*this, "i2c_out", *this, "i2c_array_in", 46);
 
-        i2c_array_in[43].set_address(43);
-        i2c_array_in[44].set_address(44);
-        i2c_array_in[45].set_address(45);
-        i2c_array_in[46].set_address(46);
+        i2c_set_address(*this, "i2c_array_in", 43, 43);
+        i2c_set_address(*this, "i2c_array_in", 44, 44);
+        i2c_set_address(*this, "i2c_array_in", 45, 45);
+        i2c_set_address(*this, "i2c_array_in", 46, 46);
 
         // did the port get created?
         EXPECT_TRUE(find_object("i2c.i2c_array_out[5]"));

@@ -72,34 +72,15 @@ class i2c_target_stub;
 class i2c_host
 {
 public:
-    friend class i2c_initiator_socket;
-    friend class i2c_target_socket;
-
-    typedef set<i2c_initiator_socket*> i2c_initiator_sockets;
-    typedef set<i2c_target_socket*> i2c_target_sockets;
-
-    const i2c_initiator_sockets& all_i2c_initiator_sockets() const {
-        return m_initiator_sockets;
-    }
-
-    const i2c_target_sockets& all_i2c_target_sockets() const {
-        return m_target_sockets;
-    }
-
     i2c_host() = default;
     virtual ~i2c_host() = default;
     i2c_host(i2c_host&&) = delete;
     i2c_host(const i2c_host&) = delete;
 
-protected:
     virtual i2c_response i2c_start(const i2c_target_socket&, tlm_command) = 0;
     virtual i2c_response i2c_stop(const i2c_target_socket&) = 0;
     virtual i2c_response i2c_read(const i2c_target_socket&, u8& data) = 0;
     virtual i2c_response i2c_write(const i2c_target_socket&, u8 data) = 0;
-
-private:
-    i2c_initiator_sockets m_initiator_sockets;
-    i2c_target_sockets m_target_sockets;
 };
 
 class i2c_fw_transport_if : public sc_core::sc_interface
@@ -150,6 +131,9 @@ public:
     void stub();
 };
 
+using i2c_base_initiator_array = socket_array<i2c_base_initiator_socket>;
+using i2c_base_target_array = socket_array<i2c_base_target_socket>;
+
 class i2c_initiator_socket : public i2c_base_initiator_socket
 {
 private:
@@ -164,7 +148,7 @@ private:
 
 public:
     i2c_initiator_socket(const char* name, address_space as = VCML_AS_DEFAULT);
-    virtual ~i2c_initiator_socket();
+    virtual ~i2c_initiator_socket() = default;
     VCML_KIND(i2c_initiator_socket);
 
     i2c_response start(u8 address, tlm_command cmd = TLM_IGNORE_COMMAND);
@@ -199,7 +183,7 @@ public:
     void set_address(u8 address);
 
     i2c_target_socket(const char* name, address_space as = VCML_AS_DEFAULT);
-    virtual ~i2c_target_socket();
+    virtual ~i2c_target_socket() = default;
     VCML_KIND(i2c_target_socket);
 };
 
@@ -222,17 +206,33 @@ public:
     virtual ~i2c_target_stub() = default;
 };
 
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using i2c_base_initiator_socket_array = socket_array<i2c_base_initiator_socket,
-                                                     MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using i2c_base_target_socket_array = socket_array<i2c_base_target_socket,
-                                                  MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using i2c_initiator_socket_array = socket_array<i2c_initiator_socket,
-                                                MAX_SOCKETS>;
-template <const size_t MAX_SOCKETS = SIZE_MAX>
-using i2c_target_socket_array = socket_array<i2c_target_socket, MAX_SOCKETS>;
+using i2c_initiator_array = socket_array<i2c_initiator_socket>;
+using i2c_target_array = socket_array<i2c_target_socket>;
+
+i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
+                                         const string& port);
+i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
+                                         const string& port, size_t idx);
+
+i2c_base_target_socket& i2c_target(const sc_object& parent,
+                                   const string& port);
+i2c_base_target_socket& i2c_target(const sc_object& parent, const string& port,
+                                   size_t idx);
+
+void i2c_set_address(const sc_object&, const string& port, u8 addr);
+void i2c_set_address(const sc_object&, const string& port, size_t i, u8 addr);
+
+void i2c_stub(const sc_object& obj, const string& port);
+void i2c_stub(const sc_object& obj, const string& port, size_t idx);
+
+void i2c_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2);
+void i2c_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2);
+void i2c_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2);
+void i2c_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

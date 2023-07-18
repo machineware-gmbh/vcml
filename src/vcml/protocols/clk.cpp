@@ -27,15 +27,6 @@ ostream& operator<<(ostream& os, const clk_payload& clk) {
     return os << "]";
 }
 
-clk_host::clk_target_sockets clk_host::all_clk_target_sockets(
-    address_space as) const {
-    clk_target_sockets sockets;
-    for (auto& socket : m_target_sockets)
-        if (socket->as == as)
-            sockets.push_back(socket);
-    return sockets;
-}
-
 clk_base_initiator_socket::clk_base_initiator_socket(const char* nm,
                                                      address_space as):
     clk_base_initiator_socket_b(nm, as), m_stub(nullptr) {
@@ -86,13 +77,6 @@ clk_initiator_socket::clk_initiator_socket(const char* nm, address_space as):
     m_hz(0),
     m_transport(this) {
     bind(m_transport);
-    if (m_host)
-        m_host->m_initiator_sockets.push_back(this);
-}
-
-clk_initiator_socket::~clk_initiator_socket() {
-    if (m_host)
-        stl_remove(m_host->m_initiator_sockets, this);
 }
 
 void clk_initiator_socket::set(clock_t hz) {
@@ -138,12 +122,7 @@ clk_target_socket::clk_target_socket(const char* nm, address_space space):
     m_initiator(nullptr),
     m_targets() {
     VCML_ERROR_ON(!m_host, "%s declared outside clk_target", name());
-    m_host->m_target_sockets.push_back(this);
     clk_base_target_socket::bind(m_transport);
-}
-
-clk_target_socket::~clk_target_socket() {
-    stl_remove(m_host->m_target_sockets, this);
 }
 
 void clk_target_socket::bind(clk_base_target_socket& socket) {
@@ -187,6 +166,211 @@ void clk_target_stub::clk_transport(const clk_payload& clk) {
 clk_target_stub::clk_target_stub(const char* nm):
     clk_fw_transport_if(), clk_in(mkstr("%s_stub", nm).c_str()) {
     clk_in.bind(*(clk_fw_transport_if*)this);
+}
+
+static clk_base_initiator_socket* get_initiator_socket(sc_object* port) {
+    return dynamic_cast<clk_base_initiator_socket*>(port);
+}
+
+static clk_base_target_socket* get_target_socket(sc_object* port) {
+    return dynamic_cast<clk_base_target_socket*>(port);
+}
+
+static clk_base_initiator_socket* get_initiator_socket(sc_object* array,
+                                                       size_t idx) {
+    auto* base = dynamic_cast<clk_base_initiator_array*>(array);
+    if (base)
+        return &base->get(idx);
+    auto* main = dynamic_cast<clk_initiator_array*>(array);
+    if (main)
+        return &main->get(idx);
+    return nullptr;
+}
+
+static clk_base_target_socket* get_target_socket(sc_object* array,
+                                                 size_t idx) {
+    auto* base = dynamic_cast<clk_base_target_array*>(array);
+    if (base)
+        return &base->get(idx);
+    auto* main = dynamic_cast<clk_target_array*>(array);
+    if (main)
+        return &main->get(idx);
+    return nullptr;
+}
+
+clk_base_initiator_socket& clk_initiator(const sc_object& parent,
+                                         const string& port) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_initiator_socket(child);
+    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
+    return *sock;
+}
+
+clk_base_initiator_socket& clk_initiator(const sc_object& parent,
+                                         const string& port, size_t idx) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_initiator_socket(child, idx);
+    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
+    return *sock;
+}
+
+clk_base_target_socket& clk_target(const sc_object& parent,
+                                   const string& port) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_target_socket(child);
+    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
+    return *sock;
+}
+
+clk_base_target_socket& clk_target(const sc_object& parent, const string& port,
+                                   size_t idx) {
+    sc_object* child = find_child(parent, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
+    auto* sock = get_target_socket(child, idx);
+    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
+    return *sock;
+}
+
+void clk_stub(const sc_object& obj, const string& port) {
+    sc_object* child = find_child(obj, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
+
+    auto* ini = get_initiator_socket(child);
+    auto* tgt = get_target_socket(child);
+
+    if (!ini && !tgt)
+        VCML_ERROR("%s is not a valid clk socket", child->name());
+
+    if (ini)
+        ini->stub();
+    if (tgt)
+        tgt->stub();
+}
+
+void clk_stub(const sc_object& obj, const string& port, size_t idx) {
+    sc_object* child = find_child(obj, port);
+    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
+
+    clk_base_initiator_socket* isock = get_initiator_socket(child, idx);
+    if (isock) {
+        isock->stub();
+        return;
+    }
+
+    clk_base_target_socket* tsock = get_target_socket(child, idx);
+    if (tsock) {
+        tsock->stub();
+        return;
+    }
+
+    VCML_ERROR("%s is not a valid clk socket array", child->name());
+}
+
+void clk_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1);
+    auto* i2 = get_initiator_socket(p2);
+    auto* t1 = get_target_socket(p1);
+    auto* t2 = get_target_socket(p2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid clk port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid clk port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
+}
+
+void clk_bind(const sc_object& obj1, const string& port1,
+              const sc_object& obj2, const string& port2, size_t idx2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1);
+    auto* i2 = get_initiator_socket(p2, idx2);
+    auto* t1 = get_target_socket(p1);
+    auto* t2 = get_target_socket(p2, idx2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid clk port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid clk port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
+}
+
+void clk_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1, idx1);
+    auto* i2 = get_initiator_socket(p2);
+    auto* t1 = get_target_socket(p1, idx1);
+    auto* t2 = get_target_socket(p2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid clk port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid clk port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
+}
+
+void clk_bind(const sc_object& obj1, const string& port1, size_t idx1,
+              const sc_object& obj2, const string& port2, size_t idx2) {
+    auto* p1 = find_child(obj1, port1);
+    auto* p2 = find_child(obj2, port2);
+
+    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
+    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
+
+    auto* i1 = get_initiator_socket(p1, idx1);
+    auto* i2 = get_initiator_socket(p2, idx2);
+    auto* t1 = get_target_socket(p1, idx1);
+    auto* t2 = get_target_socket(p2, idx2);
+
+    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid clk port", p1->name());
+    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid clk port", p2->name());
+
+    if (i1 && i2)
+        i1->bind(*i2);
+    else if (i1 && t2)
+        i1->bind(*t2);
+    else if (t1 && i2)
+        i2->bind(*t1);
+    else if (t1 && t2)
+        t1->bind(*t2);
 }
 
 } // namespace vcml
