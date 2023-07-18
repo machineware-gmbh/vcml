@@ -42,12 +42,13 @@ private:
 
 } // namespace vcml
 
-#define VCML_EXPORT_MODEL(kind, name, args)                                 \
+#define VCML_EXPORT_MODEL(type, name, args)                                 \
     static vcml::module* MWR_CAT(create_model_, __LINE__)(                  \
         const sc_core::sc_module_name& name,                                \
         const std::vector<std::string>& args);                              \
     static MWR_DECL_CONSTRUCTOR void MWR_CAT(register_model_, __LINE__)() { \
-        model::register_model(#kind, MWR_CAT(create_model_, __LINE__));     \
+        vcml::model::register_model(type::KIND,                             \
+                                    MWR_CAT(create_model_, __LINE__));      \
     }                                                                       \
     static vcml::module* MWR_CAT(create_model_, __LINE__)(                  \
         const sc_core::sc_module_name& name,                                \

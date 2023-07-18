@@ -128,7 +128,7 @@ void console::reset() {
     m_config.max_nr_ports = 1;
 }
 
-VCML_EXPORT_MODEL(vcml::virtio::console, name, args) {
+VCML_EXPORT_MODEL(console, name, args) {
     return new console(name);
 }
 

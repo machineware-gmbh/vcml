@@ -441,7 +441,7 @@ void mmio::reset() {
         m_dev_features |= VIRTIO_F_ORDER_PLATFORM;
 }
 
-VCML_EXPORT_MODEL(vcml::virtio::mmio, name, args) {
+VCML_EXPORT_MODEL(mmio, name, args) {
     return new mmio(name);
 }
 
