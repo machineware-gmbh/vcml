@@ -226,16 +226,18 @@ const sc_event& gpio_target_socket::default_event() {
     return *m_event;
 }
 
-void gpio_target_socket::bind(gpio_target_socket& socket) {
+void gpio_target_socket::bind(base_type& base) {
+    auto* socket = dynamic_cast<gpio_base_target_socket*>(&base);
+    VCML_ERROR_ON(!socket, "%s cannot bind to unknown socket type", name());
     if (m_initiator != nullptr)
-        m_initiator->bind(socket);
+        m_initiator->bind(*socket);
     else
-        m_targets.push_back(&socket);
+        m_targets.push_back(socket);
 }
 
 void gpio_target_socket::complete_binding(gpio_base_initiator_socket& socket) {
     m_initiator = &socket;
-    for (gpio_target_socket* target : m_targets)
+    for (gpio_base_target_socket* target : m_targets)
         target->bind(socket);
     m_targets.clear();
 }

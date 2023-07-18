@@ -150,7 +150,7 @@ public:
     VCML_KIND(clk_target_socket);
 
     using clk_base_target_socket::bind;
-    virtual void bind(clk_base_target_socket& other);
+    virtual void bind(base_type& other) override;
     virtual void complete_binding(clk_base_initiator_socket& socket) override;
 
     clock_t read() const;

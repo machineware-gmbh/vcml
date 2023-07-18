@@ -172,7 +172,7 @@ public:
     VCML_KIND(gpio_target_socket);
 
     using gpio_base_target_socket::bind;
-    virtual void bind(gpio_target_socket& other);
+    virtual void bind(base_type& other) override;
     virtual void complete_binding(gpio_base_initiator_socket& socket) override;
 
     const sc_event& default_event();
@@ -189,7 +189,7 @@ private:
     sc_event* m_event;
     unordered_map<gpio_vector, bool> m_state;
     gpio_base_initiator_socket* m_initiator;
-    vector<gpio_target_socket*> m_targets;
+    vector<gpio_base_target_socket*> m_targets;
 
     struct gpio_fw_transport : public gpio_fw_transport_if {
         mutable gpio_target_socket* socket;

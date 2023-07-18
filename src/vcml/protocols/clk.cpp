@@ -125,11 +125,13 @@ clk_target_socket::clk_target_socket(const char* nm, address_space space):
     clk_base_target_socket::bind(m_transport);
 }
 
-void clk_target_socket::bind(clk_base_target_socket& socket) {
+void clk_target_socket::bind(base_type& base) {
+    auto* socket = dynamic_cast<clk_base_target_socket*>(&base);
+    VCML_ERROR_ON(!socket, "%s cannot bind to unknown socket type", name());
     if (m_initiator != nullptr)
-        m_initiator->bind(socket);
+        m_initiator->bind(*socket);
     else
-        m_targets.push_back(&socket);
+        m_targets.push_back(socket);
 }
 
 void clk_target_socket::complete_binding(clk_base_initiator_socket& socket) {
