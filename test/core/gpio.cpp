@@ -83,14 +83,6 @@ public:
         // did the adapters get created?
         EXPECT_TRUE(find_object("gpio.a_out_adapter"));
         EXPECT_TRUE(find_object("gpio.a_in_adapter"));
-
-        auto initiators = all_gpio_initiator_sockets();
-        auto targets = all_gpio_target_sockets();
-        auto sockets = all_gpio_target_sockets(0);
-
-        EXPECT_EQ(initiators.size(), 3) << "gpio initiators did not register";
-        EXPECT_EQ(targets.size(), 5) << "gpio targets did not register";
-        EXPECT_FALSE(sockets.empty()) << "gpio targets in wrong address space";
     }
 
     MOCK_METHOD(void, gpio_notify,

@@ -57,37 +57,10 @@ class gpio_target_adapter;
 class gpio_host
 {
 public:
-    friend class gpio_initiator_socket;
-    friend class gpio_target_socket;
-
-    typedef vector<gpio_initiator_socket*> gpio_initiator_sockets;
-    typedef vector<gpio_target_socket*> gpio_target_sockets;
-
-    const gpio_initiator_sockets& all_gpio_initiator_sockets() const;
-    const gpio_target_sockets& all_gpio_target_sockets() const;
-
-    gpio_target_sockets all_gpio_target_sockets(address_space as) const;
-
     gpio_host() = default;
-
     virtual ~gpio_host() = default;
-
     virtual void gpio_transport(const gpio_target_socket&, gpio_payload&) = 0;
-
-private:
-    gpio_initiator_sockets m_initiator_sockets;
-    gpio_target_sockets m_target_sockets;
 };
-
-inline const gpio_host::gpio_initiator_sockets&
-gpio_host::all_gpio_initiator_sockets() const {
-    return m_initiator_sockets;
-}
-
-inline const gpio_host::gpio_target_sockets&
-gpio_host::all_gpio_target_sockets() const {
-    return m_target_sockets;
-}
 
 typedef multi_initiator_socket<gpio_fw_transport_if, gpio_bw_transport_if>
     gpio_base_initiator_socket_b;

@@ -21,15 +21,6 @@ ostream& operator<<(ostream& os, const gpio_payload& tx) {
     return os;
 }
 
-gpio_host::gpio_target_sockets gpio_host::all_gpio_target_sockets(
-    address_space as) const {
-    gpio_target_sockets sockets;
-    for (auto& socket : m_target_sockets)
-        if (socket->as == as)
-            sockets.push_back(socket);
-    return sockets;
-}
-
 gpio_base_initiator_socket::gpio_base_initiator_socket(const char* nm,
                                                        address_space as):
     gpio_base_initiator_socket_b(nm, as), m_stub(nullptr), m_adapter(nullptr) {
@@ -130,13 +121,9 @@ gpio_initiator_socket::gpio_initiator_socket(const char* nm, address_space as):
     m_state(),
     m_transport(this) {
     bind(m_transport);
-    if (m_host)
-        m_host->m_initiator_sockets.push_back(this);
 }
 
 gpio_initiator_socket::~gpio_initiator_socket() {
-    if (m_host)
-        stl_remove(m_host->m_initiator_sockets, this);
     if (m_event)
         delete m_event;
 }
@@ -222,12 +209,10 @@ gpio_target_socket::gpio_target_socket(const char* nm, address_space space):
     m_targets(),
     m_transport(this) {
     VCML_ERROR_ON(!m_host, "%s declared outside gpio_host", name());
-    m_host->m_target_sockets.push_back(this);
     bind(m_transport);
 }
 
 gpio_target_socket::~gpio_target_socket() {
-    stl_remove(m_host->m_target_sockets, this);
     if (m_event)
         delete m_event;
 }

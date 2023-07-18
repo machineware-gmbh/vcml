@@ -37,7 +37,7 @@ module* model::create(const string& type, const sc_module_name& name) {
     std::cout << "known models:" << std::endl;
     for (auto [name, proc] : modeldb())
         std::cout << "  " << name << std::endl;
-    VCML_ERROR("model not found: %s", type.c_str());
+    VCML_ERROR("model not found: %s", kind.c_str());
 }
 
 void model::register_model(const string& kind, create_fn create) {
