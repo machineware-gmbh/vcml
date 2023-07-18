@@ -96,7 +96,10 @@ void backend_tui::draw_statusbar() {
     string text = mkstr(
         " time %02zu:%02zu:%02zu.%03zu   delta %lld   rtf %.2f", hours,
         minutes, seconds, millis, sc_delta_count(), m_rtf);
-    text.append(max_cols - text.length() - 1, ' ');
+    if (text.length() < max_cols)
+        text.append(max_cols - text.length(), ' ');
+    else
+        text = text.substr(0, max_cols);
 
     const string statusbar = mkstr(
         "\n"      // begin status bar
@@ -156,11 +159,12 @@ bool backend_tui::read(u8& value) {
 
 void backend_tui::write(u8 val) {
     lock_guard<mutex> lock(m_mtx);
-    m_linebuf.push_back(val);
-    if (val == '\n') {
-        string line = mkstr("\r\x1b[K%s", m_linebuf.c_str());
+    if (val == '\n' || m_linebuf.length() >= max_cols) {
+        string line = mkstr("\r\x1b[K%s\n", m_linebuf.c_str());
         mwr::fd_write(m_fd, line.data(), line.size());
         m_linebuf.clear();
+    } else {
+        m_linebuf.push_back(val);
     }
 
     draw_statusbar();
