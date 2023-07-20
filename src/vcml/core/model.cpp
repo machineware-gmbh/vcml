@@ -47,6 +47,11 @@ void model::register_model(const string& kind, create_fn create) {
     modeldb()[kind] = create;
 }
 
+void model::list_models(ostream& os) {
+    for (auto [name, func] : modeldb())
+        os << name << std::endl;
+}
+
 std::map<string, model::create_fn>& model::modeldb() {
     static std::map<string, create_fn> db;
     return db;

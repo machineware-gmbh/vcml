@@ -328,7 +328,7 @@ void input::end_of_simulation() {
     m_console.shutdown();
 }
 
-VCML_EXPORT_MODEL(input, name, args) {
+VCML_EXPORT_MODEL(vcml::virtio::input, name, args) {
     return new input(name);
 }
 

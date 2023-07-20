@@ -33,7 +33,7 @@ VCML_EXPORT_MODEL(my_model, name, args) {
 }
 
 TEST(model, create) {
-    vcml::model m("m", "vcml::my_model abc def hij");
+    vcml::model m("m", "my_model abc def hij");
     EXPECT_STREQ(m->kind(), "vcml::my_model");
     EXPECT_STREQ(m->name(), "m");
 }
@@ -43,6 +43,6 @@ TEST(mode, nonexistent) {
 }
 
 TEST(mode, duplicate) {
-    EXPECT_DEATH(vcml::model::register_model("vcml::my_model", nullptr),
-                 "model vcml::my_model already defined");
+    EXPECT_DEATH(vcml::model::register_model("my_model", nullptr),
+                 "model my_model already defined");
 }

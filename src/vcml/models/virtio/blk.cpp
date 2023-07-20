@@ -314,7 +314,7 @@ void blk::reset() {
     // nothing to do
 }
 
-VCML_EXPORT_MODEL(blk, name, args) {
+VCML_EXPORT_MODEL(vcml::virtio::blk, name, args) {
     return new blk(name);
 }
 
