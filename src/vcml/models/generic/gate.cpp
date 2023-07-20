@@ -41,6 +41,13 @@ static bool calc_nor(const gpio_target_array& in) {
     return true;
 }
 
+static bool calc_xor(const gpio_target_array& in) {
+    bool result = false;
+    for (const auto& port : in)
+        result ^= port.second->read();
+    return result;
+}
+
 gate::gate(const sc_module_name& nm, logic_type type):
     module(nm), in("in"), out("out"), m_type(type) {
     // nothing to do
@@ -58,6 +65,8 @@ const char* gate::kind() const {
         return "gate_nand";
     case LOGIC_NOR:
         return "gate_nor";
+    case LOGIC_XOR:
+        return "gate_xor";
     default:
         return "gate";
     }
@@ -84,11 +93,38 @@ void gate::gpio_transport(const gpio_target_socket& socket, gpio_payload& tx) {
     case LOGIC_NOR:
         txout.state = calc_nor(in);
         break;
+    case LOGIC_XOR:
+        txout.state = calc_xor(in);
+        break;
     default:
         break;
     }
 
     out->gpio_transport(txout);
+}
+
+VCML_EXPORT_MODEL(vcml::generic::not_gate, name, args) {
+    return new gate(name, gate::LOGIC_NOT);
+}
+
+VCML_EXPORT_MODEL(vcml::generic::and_gate, name, args) {
+    return new gate(name, gate::LOGIC_AND);
+}
+
+VCML_EXPORT_MODEL(vcml::generic::or_gate, name, args) {
+    return new gate(name, gate::LOGIC_OR);
+}
+
+VCML_EXPORT_MODEL(vcml::generic::nand_gate, name, args) {
+    return new gate(name, gate::LOGIC_NAND);
+}
+
+VCML_EXPORT_MODEL(vcml::generic::nor_gate, name, args) {
+    return new gate(name, gate::LOGIC_NOR);
+}
+
+VCML_EXPORT_MODEL(vcml::generic::xor_gate, name, args) {
+    return new gate(name, gate::LOGIC_XOR);
 }
 
 } // namespace generic
