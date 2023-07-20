@@ -43,6 +43,7 @@ private:
     mwr::option<bool> m_help;
     mwr::option<bool> m_version;
     mwr::option<bool> m_license;
+    mwr::option<bool> m_models;
 
     vector<mwr::publisher*> m_publishers;
     vector<tracer*> m_tracers;

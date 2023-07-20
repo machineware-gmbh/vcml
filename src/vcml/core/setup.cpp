@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/core/setup.h"
+#include "vcml/core/model.h"
 
 #include <locale.h>
 
@@ -35,6 +36,13 @@ static bool exit_license() {
     exit(EXIT_FAILURE);
 }
 
+static bool exit_models() {
+    std::cerr << "Models of " << mwr::filename(mwr::progname()) << ":"
+              << std::endl;
+    model::list_models(std::cerr);
+    exit(EXIT_FAILURE);
+}
+
 setup* setup::s_instance = nullptr;
 
 setup::setup(int argc, char** argv):
@@ -48,6 +56,7 @@ setup::setup(int argc, char** argv):
     m_help("--help", "-h", "Prints this message", exit_usage),
     m_version("--version", "Prints module version information", exit_version),
     m_license("--license", "Prints module license information", exit_license),
+    m_models("--list-models", "Prints all supported models", exit_models),
     m_publishers(),
     m_brokers() {
     VCML_ERROR_ON(s_instance != nullptr, "setup already created");
