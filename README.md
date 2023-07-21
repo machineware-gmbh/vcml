@@ -91,6 +91,8 @@ This is how to build and install them:
    cmake -DCMAKE_INSTALL_PREFIX=<install-dir> -DCMAKE_BUILD_TYPE=RELEASE <source-dir>
    make -j 4
    sudo make install
+   sudo make -C mwr install
+   sudo make -C systemc install # if you skipped step 1
    ```
    If building with `-DVCML_BUILD_TESTS=ON` you can run all unit tests using
    `make test` within `<build-dir>`.
