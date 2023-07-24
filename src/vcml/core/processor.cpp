@@ -514,7 +514,6 @@ void processor::update_local_time(sc_time& local_time, sc_process_b* proc) {
         VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
         local_time += clock_cycles(cycles - m_cycle_count);
         m_cycle_count = cycles;
-        //std::cout << name() << ": " << m_cycle_count << std::endl;
     }
 }
 
