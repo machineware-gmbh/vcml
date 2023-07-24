@@ -546,12 +546,16 @@ static const struct insn_descr debug_insn_desc[] = {
     { .opcode = 0x00, .opmask = 0x00, .size = 0, .exec = NULL, }
 };
 
-static inline insn_descr* fetch_insn(insn_descr const& insns,pl330::channel& channel) {
-    //get pc
+static inline insn_descr* fetch_insn(insn_descr const* insns,pl330::channel& channel) {
+    //get pc & load insn opcode byte
     u8 opcode = in.read(channel.cpc, 1);
-    //load insn
     //iterate over insn_desc to find correct one
     //return insn
+    for (u32 i; i< insns.size(); i++) {
+        if (insn[i].opcode == opcode)
+            return insn
+    }
+    return NULL;
 }
 
 void pl330::execute_cycle() {
@@ -565,7 +569,6 @@ void pl330::execute_cycle() {
             break;
         }
     }
-
 }
 
 void pl330::manager_execute_cycle(){
@@ -608,6 +611,10 @@ pl330::manager::manager(const sc_module_name& nm) :
 
 }
 
+void pl330::pl330_thread() {
+    execute_cycle();
+}
+
 pl330::pl330(const sc_module_name& nm):
     peripheral(nm),
     num_channels("num_channels", 8),
@@ -632,8 +639,8 @@ pl330::pl330(const sc_module_name& nm):
     wd("wd", 0xE80),
     periph_id("periph_id", 0xFE0),
     pcell_id("pcell_id", 0xFF0), //,{0xB105F00D}),
-    in("in"),
+    in("in"),//todo do i need to configure dmi for this one and "out"?!
     out("out") {
     SC_HAS_PROCESS(pl330);
-    SC_THREAD(execute_cycle);
+    SC_THREAD(pl330_thread);
 }

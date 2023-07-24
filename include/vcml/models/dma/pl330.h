@@ -50,7 +50,7 @@ public:
 
 public:
 
-    struct channel : module { //TODO should be sc_module for name hirarchy of regs but peripheral/component/module/sc_module which one?
+    class channel : module { //TODO should be sc_module for name hirarchy of regs but peripheral/component/module/sc_module which one?
         enum state : u8 {
             Stopped = 0x0,
             Executing = 0x1,
@@ -98,7 +98,7 @@ public:
         channel(const sc_module_name& nm, u32 tag); //todo from the tag we can derive the base adress for all the registers
     };
 
-    struct manager : module { //TODO should MAYBE be sc_module for name hirarchy of regs
+    class manager : module { //TODO should MAYBE be sc_module for name hirarchy of regs
         enum state : u8 {
             Stopped = 0x0,
             Executing = 0x1,
@@ -106,7 +106,7 @@ public:
             Updating_pc = 0x3,
             Waiting_for_event = 0x4,
             Faulting = 0xF,
-        } state; // TODO: these are is channel status register [3:0] bit patterns, it should probably only exist once
+        }; // TODO: these are is channel status register [3:0] bit patterns, it should probably only exist once
         enum fault : u8 {
             undef_instr = 0x0,
             operand_invalid = 0x1,
@@ -154,6 +154,7 @@ public:
     tlm_target_socket in;
     tlm_initiator_socket out;
 
+    void pl330_thread();
     void execute_cycle();
     void channel_execute_cycle(channel& channel);
     void manager_execute_cycle();
