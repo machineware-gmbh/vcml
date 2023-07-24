@@ -337,15 +337,15 @@ bool processor::processor_thread_sync() {
         if (is_stepping())
             num_cycles = 1;
 
-        if (!is_running())
-            num_cycles = 0;
-
-        num_cycles = simulate_cycles(num_cycles);
+        if (is_running())
+            num_cycles = simulate_cycles(num_cycles);
+        else
+            wait(num_cycles * clock_cycle());
 
         if (is_stepping() && num_cycles > 0)
             notify_singlestep();
-        if (num_cycles == 0 && is_running())
-            wait(quantum);
+        if (is_running() && num_cycles == 0)
+            wait(quantum - local_time());
     } while (!needs_sync());
 
     sync();
@@ -514,6 +514,7 @@ void processor::update_local_time(sc_time& local_time, sc_process_b* proc) {
         VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
         local_time += clock_cycles(cycles - m_cycle_count);
         m_cycle_count = cycles;
+        //std::cout << name() << ": " << m_cycle_count << std::endl;
     }
 }
 
