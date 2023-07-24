@@ -39,7 +39,7 @@ static void pl330_dmaaddh(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *arg
 static void pl330_dmaadnh(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
     pl330_dmaadxh(ch, args, !!(opcode & 0b10), true);
-    //TODO check if this does the right theng twos-complement can be tricky and it doesnt look right to me
+    //TODO check if this does the right thing twos-complement can be tricky and it doesnt look right to me
 }
 
 static void pl330_dmaend(pl330::pl330_channel *ch, uint8_t opcode,
@@ -497,16 +497,15 @@ struct insn_descr { // TODO: maybe this only lives in the implementation, commen
     u32 opcode;
     u32 opmask;
     u32 size;
-    void (*exec)(pl330_channel*, u8 opcode, u8* args, int len); //todo: make this generic over channel and manager somehow maybe this should just have a pointer to the pl330 itself
+    void (*exec)(pl330_channel*, u8 opcode, u8* args, int len); //todo: make this generic over channel and manager somehow maybe this should just have a pointer to the pl330 itself and the tag where manager = num_channels?!
 };
 
 /* NULL terminated array of the instruction descriptions. */
-static const vcml::arm::pl330::insn_descr insn_descr[] = {
+static const struct insn_descr ch_insn_descr[] = {
     { .opcode = 0x54, .opmask = 0xFD, .size = 3, .exec = pl330_dmaaddh, }, // Add Halfword
     { .opcode = 0x5c, .opmask = 0xFD, .size = 3, .exec = pl330_dmaadnh, }, // Add Negative Halfword
     { .opcode = 0x00, .opmask = 0xFF, .size = 1, .exec = pl330_dmaend, }, // End
     { .opcode = 0x35, .opmask = 0xFF, .size = 2, .exec = pl330_dmaflushp, }, // Flush and Notify Peripheral
-    { .opcode = 0xA0, .opmask = 0xFD, .size = 6, .exec = pl330_dmago, }, // Go
     { .opcode = 0x04, .opmask = 0xFC, .size = 1, .exec = pl330_dmald, }, // Load
     { .opcode = 0x25, .opmask = 0xFD, .size = 2, .exec = pl330_dmaldp, }, // Load and Notify Peripheral
     { .opcode = 0x20, .opmask = 0xFD, .size = 2, .exec = pl330_dmalp, }, // Loop
@@ -528,20 +527,59 @@ static const vcml::arm::pl330::insn_descr insn_descr[] = {
     { .opcode = 0x00, .opmask = 0x00, .size = 0, .exec = NULL, }
 };
 
+/* NULL terminated array of the instruction descriptions. */
+static const struct insn_descr mn_insn_descr[] = {
+    { .opcode = 0x00, .opmask = 0xFF, .size = 1, .exec = pl330_dmaend, }, // End
+    { .opcode = 0xA0, .opmask = 0xFD, .size = 6, .exec = pl330_dmago, }, // Go
+    { .opcode = 0x01, .opmask = 0xFF, .size = 1, .exec = pl330_dmakill, }, // Kill
+    { .opcode = 0x18, .opmask = 0xFF, .size = 1, .exec = pl330_dmanop, }, // NOP
+    { .opcode = 0x34, .opmask = 0xFF, .size = 2, .exec = pl330_dmasev, }, // Send Event
+    { .opcode = 0x36, .opmask = 0xFF, .size = 2, .exec = pl330_dmawfe, }, // Wait For Event
+    { .opcode = 0x00, .opmask = 0x00, .size = 0, .exec = NULL, }
+};
+
 /* Instructions which can be issued via debug registers. */
-static const vcml::arm::pl330::insn_descr debug_insn_desc[] = {
+static const struct insn_descr debug_insn_desc[] = {
     { .opcode = 0xA0, .opmask = 0xFD, .size = 6, .exec = pl330_dmago, },
     { .opcode = 0x01, .opmask = 0xFF, .size = 1, .exec = pl330_dmakill, },
     { .opcode = 0x34, .opmask = 0xFF, .size = 2, .exec = pl330_dmasev, },
     { .opcode = 0x00, .opmask = 0x00, .size = 0, .exec = NULL, }
 };
 
+static inline insn_descr* fetch_insn(insn_descr const& insns,pl330::channel& channel) {
+    //get pc
+    u8 opcode = in.read(channel.cpc, 1);
+    //load insn
+    //iterate over insn_desc to find correct one
+    //return insn
+}
 
-void pl330::execute_cycle(){
-    manager_execute_cycle();
-    for(auto& channel : channels){//todo: wrong not round-robin
-        channel_execute_cycle(channel);
+void pl330::execute_cycle() {
+    manager_execute_cycle();//todo this is already not cycle accurate because we do both manager and channel thread in a single cycle but they actually alternate via the spec, however qumu just does everything in one cycle and in the wrong order.
+
+    for (u32 i = 0; i < num_channels; i++) {
+        u32 rr_tag = (last_rr_channel + i + 1) % num_channels;
+        if (!(channels[rr_tag].is_state(channel::state::Stopped))) {
+            channel_execute_cycle(channels[rr_tag]);
+            last_rr_channel = channels[rr_tag].tag;
+            break;
+        }
     }
+
+}
+
+void pl330::manager_execute_cycle(){
+// do an insn fetch with correct insns array
+}
+
+void pl330::channel_execute_cycle(channel& channel){
+    //check state
+    // fetch one instruction and see if it can be placed in queue, stall if queue was not available
+    // if it was placed/executed advance pc?! or rather do that in the functions?!
+
+    //do actual work (the above just transfer commands)
+    //check if axi read/write is available and clear one command form the MFIFO
+    //if MFIFO has space move read command (or if not available write command) to it
 }
 
 pl330::channel::channel(const sc_module_name& nm, mwr::u32 tag) :
@@ -555,9 +593,9 @@ pl330::channel::channel(const sc_module_name& nm, mwr::u32 tag) :
     lc0("lc0", 0x40c + tag * 0x20),
     lc1("lc1", 0x410 + tag * 0x20),
     tag(tag),
-    stall(false)
-{
-
+    stall(false) {
+    if (tag > 7)
+        VCML_ERROR("Too many channels specified for pl330");
 }
 
 pl330::manager::manager(const sc_module_name& nm) :
@@ -572,7 +610,8 @@ pl330::manager::manager(const sc_module_name& nm) :
 
 pl330::pl330(const sc_module_name& nm):
     peripheral(nm),
-    channels("channel", 8,
+    num_channels("num_channels", 8),
+    channels("channel", num_channels,
              [this](const char* nm, u32 tag) { return new channel(nm, tag); }),
     manager("manager"),
     fsrc("fsrc", 0x034),

@@ -63,7 +63,7 @@ public:
             Completing = 0x9,             // channel_thread only
             Faulting_completing = 0xE,    // channel_thread only
             Faulting = 0xF,
-        } state; // TODO: these are is channel status register [3:0] bit patterns, it should probably only exist once
+        }; // TODO: these are is channel status register [3:0] bit patterns, it should probably only exist once
         enum fault : u8 {
             undef_instr = 0x0,
             operand_invalid = 0x1,
@@ -91,6 +91,10 @@ public:
         reg<u32> lc1; // loop counter 1 register      0x410 + tag * 0x20 //iterations [7:0]
         u32 tag;      // aka channel id
         bool stall;
+
+        inline bool is_state(u8 state) const {return (get_state() == state); }
+        inline u8 get_state() const { return csr & 0x7;}
+
         channel(const sc_module_name& nm, u32 tag); //todo from the tag we can derive the base adress for all the registers
     };
 
@@ -118,6 +122,8 @@ public:
         bool stall;
         manager(const sc_module_name& nm);
     };
+
+    property<u32> num_channels;
 
     sc_vector<channel> channels;
     manager manager;
@@ -148,11 +154,17 @@ public:
     tlm_target_socket in;
     tlm_initiator_socket out;
 
-    void execute_cycle(); //todo: sc_thread
-    void channel_execute_cycle();
+    void execute_cycle();
+    void channel_execute_cycle(channel& channel);
     void manager_execute_cycle();
+
+    //todo debug functionality
+
     void reset();
     pl330(const sc_module_name& nm);
+
+private:
+    u32 last_rr_channel = 0;
 };
 
 } // namespace arm
