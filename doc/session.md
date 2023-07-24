@@ -16,17 +16,13 @@ int sc_main(int argc,  const char** argv) {
     return 0;
 }
 ```
-Once you have a running session, you can connect to it using GUI or CLI tools
-such as [`viper`](https://github.com/machineware-gmbh/viper/) or
-[`pyvp`](https://github.com/machineware-gmbh/pyvp), enabling you to:
+Once you have a running session, you can connect to it using GUI or CLI tools,
+such as MachineWare's ViPER GUI or Python PyVP CI scripting framework, enabling you to:
 * Pause, step and resume the simulation
 * List simulation information, such as time, cycle, quantum, kernel- and modeling library version
 * View and modify `vcml::properties` (including processor and peripheral registers)
 * View processor disassembly, memory content, bus memory maps, terminal output
 * List and execute `vcml::module` commands
-
-<a href="https://raw.githubusercontent.com/machineware-gmbh/viper/master/pictures/uart.png"><img src="https://raw.githubusercontent.com/machineware-gmbh/viper/master/pictures/uart.png" alt="viper uart view, Windows" width="400" /></a>
-<a href="https://raw.githubusercontent.com/machineware-gmbh/viper/master/pictures/smp2.png"><img src="https://raw.githubusercontent.com/machineware-gmbh/viper/master/pictures/smp2.png" alt="viper smp cpu view, Ubuntu" width="400" /></a>
 
 ----
 ## VCML Session Protocol (VSP)
