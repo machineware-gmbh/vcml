@@ -1,6 +1,7 @@
 
 #include "vcml/models/dma/pl330.h"
 using namespace vcml::arm;
+using namespace mwr;
 
 /*
  * For information about instructions see PL330 Technical Reference Manual.
@@ -32,12 +33,12 @@ inline static void pl330_dmaadxh(pl330::pl330_channel *ch, uint8_t *args, bool r
 
 static void pl330_dmaaddh(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
-    pl330_dmaadxh(ch, args, extract32(opcode, 1, 1), false);//TODO extract extracts the ra bit implement!
+    pl330_dmaadxh(ch, args, !!(opcode & 0b10), false);
 }
 
 static void pl330_dmaadnh(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
-    pl330_dmaadxh(ch, args, extract32(opcode, 1, 1), true);//TODO extract extracts the ra bit implement!
+    pl330_dmaadxh(ch, args, !!(opcode & 0b10), true);
     //TODO check if this does the right theng twos-complement can be tricky and it doesnt look right to me
 }
 
@@ -80,7 +81,7 @@ static void pl330_dmaflushp(pl330::pl330_channel *ch, uint8_t opcode,
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
-    periph_id = (args[0] >> 3) & 0x1f; //TODO: somehow the periph_id is not allowed to be 0x11111 ?! why according to the spec 31 should be fine
+    periph_id = (args[0] >> 3) & 0x1f;
     if (periph_id >= ch->parent->num_periph_req) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
@@ -105,7 +106,7 @@ static void pl330_dmago(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args,
         pl330_fault(ch, PL330_FAULT_UNDEF_INSTR);
         return;
     }
-    ns = !!(opcode & 2);//TODO:weird !! operator, i guess its a c thing (it converts any non-zero values to '1', zero stays zero)
+    ns = !!(opcode & 0b10);
     chan_id = args[0] & 7;
     if ((args[0] >> 3)) {//top 5 bit of first byte should be 0 as per the spec
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
@@ -153,7 +154,7 @@ static void pl330_dmakill(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *arg
 
 static void pl330_dmald(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
-    uint8_t bs = opcode & 3;//TODO ffs koennt ihr euch mal einigen wie ihr bits lesen wollt?! use extract8?!
+    uint8_t bs = opcode & 0b11;
     uint32_t size, num;
     bool inc;
 
@@ -179,8 +180,8 @@ static void pl330_dmald(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args,
         num = ((ch->control >> 4) & 0xf) + 1;//TODO: find out what this does in the ccr
     }
     size = (uint32_t)1 << ((ch->control >> 1) & 0x7);
-    inc = !!(ch->control & 1);
-    //TODO comment put into read queue or stall
+    inc = !!(ch->control & 0b1);
+    //TODO comment put into read queue unless stall
     ch->stall = pl330_queue_put_insn(&ch->parent->read_queue, ch->src,
                                      size, num, inc, 0, ch->tag);
     if (!ch->stall) {
@@ -211,7 +212,6 @@ static void pl330_dmaldp(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args
 
 static void pl330_dmalp(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
-
     if (ch->is_manager) {
         pl330_fault(ch, PL330_FAULT_UNDEF_INSTR);
         return;
@@ -219,24 +219,24 @@ static void pl330_dmalp(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args,
 
     uint8_t lc = (opcode & 2) >> 1;
 
-    ch->lc[lc] = args[0];//TODO aaahhh lc = loopCounter which is a size 2 array
+    ch->lc[lc] = args[0];
 }
 
 static void pl330_dmalpend(pl330::pl330_channel *ch, uint8_t opcode,
                            uint8_t *args, int len)
 {
-    uint8_t nf = (opcode & 0x10) >> 4;
-    uint8_t bs = opcode & 3;
-    uint8_t lc = (opcode & 4) >> 2;
+    uint8_t nf = (opcode & 0b1'0000) >> 4;
+    uint8_t bs = opcode & 0b11;
+    uint8_t lc = (opcode & 0b100) >> 2;
 
 //    trace_pl330_dmalpend(nf, bs, lc, ch->lc[lc], ch->request_flag);
 
-    if (bs == 2) {
+    if (bs == 0b10) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
-    if ((bs == 1 && ch->request_flag == PL330_BURST) ||
-        (bs == 3 && ch->request_flag == PL330_SINGLE)) {
+    if ((bs == 0b01 && ch->request_flag == PL330_BURST) ||
+        (bs == 0b11 && ch->request_flag == PL330_SINGLE)) {
         /* Perform NOP */
         return;
     }
@@ -257,17 +257,17 @@ static void pl330_dmalpend(pl330::pl330_channel *ch, uint8_t opcode,
 
 static void pl330_dmamov(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
-    uint8_t rd = args[0] & 7;
+    uint8_t rd = args[0] & 0b0111;
     uint32_t im;
 
     switch (rd) {
-    case 0:
+    case 0b000:
         ch->sar = im;
         break;
-    case 1:
+    case 0b001:
         ch->ccr = im;
         break;
-    case 2:
+    case 0b010:
         ch->dar = im;
         break;
     default:
@@ -297,11 +297,11 @@ static void pl330_dmasev(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args
 {
     uint8_t ev_id;
 
-    if (args[0] & 7) {
+    if (args[0] & 0b0111) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
-    ev_id = (args[0] >> 3) & 0x1f;
+    ev_id = (args[0] >> 3) & 0b0001'1111;
     if (ev_id >= ch->parent->num_events) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
@@ -321,7 +321,7 @@ static void pl330_dmasev(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args
 
 static void pl330_dmast(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args, int len)
 {
-    uint8_t bs = opcode & 3;
+    uint8_t bs = opcode & 0b11;
     uint32_t size, num;
     bool inc;
 
@@ -330,18 +330,18 @@ static void pl330_dmast(pl330::pl330_channel *ch, uint8_t opcode, uint8_t *args,
         return;
     }
 
-    if (bs == 2) {
+    if (bs == 0b10) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
-    if ((bs == 1 && ch->request_flag == PL330_BURST) ||
-        (bs == 3 && ch->request_flag == PL330_SINGLE)) {
+    if ((bs == 0b01 && ch->request_flag == PL330_BURST) ||
+        (bs == 0b11 && ch->request_flag == PL330_SINGLE)) {
         /* Perform NOP */
         return;
     }
-    num = ((ch->ccr >> 18) & 0xf) + 1;
-    size = (uint32_t)1 << ((ch->ccr >> 15) & 0x7);
-    inc = !!((ch->ccr >> 14) & 1);
+    num = ((ch->ccr >> 18) & 0b1111) + 1;
+    size = (uint32_t)1 << ((ch->ccr >> 15) & 0b111);
+    inc = !!((ch->ccr >> 14) & 0b1);
     ch->stall = pl330_queue_put_insn(&ch->parent->write_queue, ch->dar,
                                      size, num, inc, 0, ch->tag);
     if (!ch->stall) {
@@ -359,11 +359,11 @@ static void pl330_dmastp(pl330::pl330_channel *ch, uint8_t opcode,
         pl330_fault(ch, PL330_FAULT_UNDEF_INSTR);
         return;
     }
-    if (args[0] & 7) {
+    if (args[0] & 0b111) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
-    periph_id = (args[0] >> 3) & 0x1f;
+    periph_id = (args[0] >> 3) & 0x0001'1111;
     if (periph_id >= ch->parent->num_periph_req) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
@@ -381,9 +381,9 @@ static void pl330_dmastz(pl330::pl330_channel *ch, uint8_t opcode,
     uint32_t size, num;
     bool inc;
 
-    num = ((ch->ccr >> 18) & 0xf) + 1;
+    num = ((ch->ccr >> 18) & 0b1111) + 1;
     size = (uint32_t)1 << ((ch->ccr >> 15) & 0x7);
-    inc = !!((ch->ccr >> 14) & 1);
+    inc = !!((ch->ccr >> 14) & 0b1);
     ch->stall = pl330_queue_put_insn(&ch->parent->write_queue, ch->dar,
                                      size, num, inc, 1, ch->tag);
     if (inc) {
@@ -397,7 +397,7 @@ static void pl330_dmawfe(pl330::pl330_channel *ch, uint8_t opcode,
     uint8_t ev_id;
     int i;
 
-    if (args[0] & 5) {
+    if (args[0] & 0b101) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
@@ -434,14 +434,14 @@ static void pl330_dmawfe(pl330::pl330_channel *ch, uint8_t opcode,
 static void pl330_dmawfp(pl330::pl330_channel *ch, uint8_t opcode,
                          uint8_t *args, int len)
 {
-    uint8_t bs = opcode & 3;
+    uint8_t bs = opcode & 0b11;
     uint8_t periph_id;
 
     if (ch->is_manager) {
         pl330_fault(ch, PL330_FAULT_UNDEF_INSTR);
         return;
     }
-    if (args[0] & 7) {
+    if (args[0] & 0b111) {
         pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
@@ -455,15 +455,15 @@ static void pl330_dmawfp(pl330::pl330_channel *ch, uint8_t opcode,
         return;
     }
     switch (bs) {
-    case 0: /* S */
+    case 0b00: /* S */
         ch->request_flag = PL330_SINGLE;
         ch->wfp_sbp = 0;
         break;
-    case 1: /* P */
+    case 0b01: /* P */
         ch->request_flag = PL330_BURST;
         ch->wfp_sbp = 2;
         break;
-    case 2: /* B */
+    case 0b10: /* B */
         ch->request_flag = PL330_BURST;
         ch->wfp_sbp = 1;
         break;
@@ -490,33 +490,41 @@ static void pl330_dmawmb(pl330::pl330_channel *ch, uint8_t opcode,
     } else {
         ch->state = vcml::arm::pl330::Executing;
     }
+
 }
+
+struct insn_descr { // TODO: maybe this only lives in the implementation, comment: i dont like this exec, this is very "C" to me in a bad way
+    u32 opcode;
+    u32 opmask;
+    u32 size;
+    void (*exec)(pl330_channel*, u8 opcode, u8* args, int len); //todo: make this generic over channel and manager somehow maybe this should just have a pointer to the pl330 itself
+};
 
 /* NULL terminated array of the instruction descriptions. */
 static const vcml::arm::pl330::insn_descr insn_descr[] = {
-    { .opcode = 0x54, .opmask = 0xFD, .size = 3, .exec = pl330_dmaaddh, },
-    { .opcode = 0x5c, .opmask = 0xFD, .size = 3, .exec = pl330_dmaadnh, },
-    { .opcode = 0x00, .opmask = 0xFF, .size = 1, .exec = pl330_dmaend, },
-    { .opcode = 0x35, .opmask = 0xFF, .size = 2, .exec = pl330_dmaflushp, },
-    { .opcode = 0xA0, .opmask = 0xFD, .size = 6, .exec = pl330_dmago, },
-    { .opcode = 0x04, .opmask = 0xFC, .size = 1, .exec = pl330_dmald, },
-    { .opcode = 0x25, .opmask = 0xFD, .size = 2, .exec = pl330_dmaldp, },
-    { .opcode = 0x20, .opmask = 0xFD, .size = 2, .exec = pl330_dmalp, },
+    { .opcode = 0x54, .opmask = 0xFD, .size = 3, .exec = pl330_dmaaddh, }, // Add Halfword
+    { .opcode = 0x5c, .opmask = 0xFD, .size = 3, .exec = pl330_dmaadnh, }, // Add Negative Halfword
+    { .opcode = 0x00, .opmask = 0xFF, .size = 1, .exec = pl330_dmaend, }, // End
+    { .opcode = 0x35, .opmask = 0xFF, .size = 2, .exec = pl330_dmaflushp, }, // Flush and Notify Peripheral
+    { .opcode = 0xA0, .opmask = 0xFD, .size = 6, .exec = pl330_dmago, }, // Go
+    { .opcode = 0x04, .opmask = 0xFC, .size = 1, .exec = pl330_dmald, }, // Load
+    { .opcode = 0x25, .opmask = 0xFD, .size = 2, .exec = pl330_dmaldp, }, // Load and Notify Peripheral
+    { .opcode = 0x20, .opmask = 0xFD, .size = 2, .exec = pl330_dmalp, }, // Loop
     /* dmastp  must be before dmalpend in this list, because their maps
      * are overlapping
      */
-    { .opcode = 0x29, .opmask = 0xFD, .size = 2, .exec = pl330_dmastp, },
-    { .opcode = 0x28, .opmask = 0xE8, .size = 2, .exec = pl330_dmalpend, },
-    { .opcode = 0x01, .opmask = 0xFF, .size = 1, .exec = pl330_dmakill, },
-    { .opcode = 0xBC, .opmask = 0xFF, .size = 6, .exec = pl330_dmamov, },
-    { .opcode = 0x18, .opmask = 0xFF, .size = 1, .exec = pl330_dmanop, },
-    { .opcode = 0x12, .opmask = 0xFF, .size = 1, .exec = pl330_dmarmb, },
-    { .opcode = 0x34, .opmask = 0xFF, .size = 2, .exec = pl330_dmasev, },
-    { .opcode = 0x08, .opmask = 0xFC, .size = 1, .exec = pl330_dmast, },
-    { .opcode = 0x0C, .opmask = 0xFF, .size = 1, .exec = pl330_dmastz, },
-    { .opcode = 0x36, .opmask = 0xFF, .size = 2, .exec = pl330_dmawfe, },
-    { .opcode = 0x30, .opmask = 0xFC, .size = 2, .exec = pl330_dmawfp, },
-    { .opcode = 0x13, .opmask = 0xFF, .size = 1, .exec = pl330_dmawmb, },
+    { .opcode = 0x29, .opmask = 0xFD, .size = 2, .exec = pl330_dmastp, }, // Store and Notify peripheral
+    { .opcode = 0x28, .opmask = 0xE8, .size = 2, .exec = pl330_dmalpend, }, // Loop End
+    { .opcode = 0x01, .opmask = 0xFF, .size = 1, .exec = pl330_dmakill, }, // Kill
+    { .opcode = 0xBC, .opmask = 0xFF, .size = 6, .exec = pl330_dmamov, }, // Move
+    { .opcode = 0x18, .opmask = 0xFF, .size = 1, .exec = pl330_dmanop, }, // NOP
+    { .opcode = 0x12, .opmask = 0xFF, .size = 1, .exec = pl330_dmarmb, }, // Read Memory Barrier
+    { .opcode = 0x34, .opmask = 0xFF, .size = 2, .exec = pl330_dmasev, }, // Send Event
+    { .opcode = 0x08, .opmask = 0xFC, .size = 1, .exec = pl330_dmast, }, // Store
+    { .opcode = 0x0C, .opmask = 0xFF, .size = 1, .exec = pl330_dmastz, }, // Store Zero
+    { .opcode = 0x36, .opmask = 0xFF, .size = 2, .exec = pl330_dmawfe, }, // Wait For Event
+    { .opcode = 0x30, .opmask = 0xFC, .size = 2, .exec = pl330_dmawfp, }, // Wait For Peripheral
+    { .opcode = 0x13, .opmask = 0xFF, .size = 1, .exec = pl330_dmawmb, }, // Write Memory Barrier
     { .opcode = 0x00, .opmask = 0x00, .size = 0, .exec = NULL, }
 };
 
@@ -527,3 +535,66 @@ static const vcml::arm::pl330::insn_descr debug_insn_desc[] = {
     { .opcode = 0x34, .opmask = 0xFF, .size = 2, .exec = pl330_dmasev, },
     { .opcode = 0x00, .opmask = 0x00, .size = 0, .exec = NULL, }
 };
+
+
+void pl330::execute_cycle(){
+    manager_execute_cycle();
+    for(auto& channel : channels){//todo: wrong not round-robin
+        channel_execute_cycle(channel);
+    }
+}
+
+pl330::channel::channel(const sc_module_name& nm, mwr::u32 tag) :
+    module(nm),
+    ftr("ftr", 0x040 + tag * 0x04),
+    csr("csr", 0x100 + tag * 0x08),
+    cpc("cpc", 0x104 + tag * 0x08),
+    sar("sar", 0x400 + tag * 0x20),
+    dar("dar", 0x404 + tag * 0x20),
+    ccr("ccr", 0x404 + tag * 0x20),
+    lc0("lc0", 0x40c + tag * 0x20),
+    lc1("lc1", 0x410 + tag * 0x20),
+    tag(tag),
+    stall(false)
+{
+
+}
+
+pl330::manager::manager(const sc_module_name& nm) :
+    module(nm),
+    dsr("dsr",0x000),
+    dpc("dpc",0x004),
+    fsrd("fsrd",0x030),
+    ftrd("ftrd",0x038)
+{
+
+}
+
+pl330::pl330(const sc_module_name& nm):
+    peripheral(nm),
+    channels("channel", 8,
+             [this](const char* nm, u32 tag) { return new channel(nm, tag); }),
+    manager("manager"),
+    fsrc("fsrc", 0x034),
+    inten("inten", 0x020),
+    int_event_ris("int_event_ris", 0x024),
+    intmis("intmis", 0x028),
+    intclr("intclr", 0x02C),
+    dbgstatus("dbgstatus", 0xD00),
+    dbgcmd("dbgcmd", 0xD04),
+    dbginst0("dbginst0", 0xD08),
+    dbginst1("dbginst1", 0xD0C),
+    cr0("cr0", 0xE00),
+    cr1("cr1", 0xE04),
+    cr2("cr2", 0xE08),
+    cr3("cr3", 0xE0C),
+    cr4("cr4", 0xE10),
+    crd("crd", 0xE14),
+    wd("wd", 0xE80),
+    periph_id("periph_id", 0xFE0),
+    pcell_id("pcell_id", 0xFF0), //,{0xB105F00D}),
+    in("in"),
+    out("out") {
+    SC_HAS_PROCESS(pl330);
+    SC_THREAD(execute_cycle);
+}
