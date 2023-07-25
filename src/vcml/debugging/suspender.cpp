@@ -90,8 +90,7 @@ void suspend_manager::quit() {
     lock_guard<mutex> guard(suspender_lock);
     if (!is_quitting)
         on_next_update([]() -> void {
-            if (sc_core::sc_get_simulator_status() !=
-                sc_core::SC_SIM_USER_STOP)
+            if (!is_stop_requested())
                 sc_stop();
         });
 

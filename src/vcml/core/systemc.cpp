@@ -716,6 +716,10 @@ sc_process_b* current_method() {
     return proc;
 }
 
+bool is_stop_requested() {
+    return sc_core::sc_get_simulator_status() != sc_core::SC_SIM_USER_STOP;
+}
+
 bool sim_running() {
     return g_helper.sim_running;
 }
