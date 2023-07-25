@@ -27,12 +27,12 @@ void simdev::write_finish(u32 val) {
 
     case FINISH_PASS:
         log_info("simulation exit requested by cpu %d", current_cpu());
-        sc_core::sc_stop();
+        request_stop();
         break;
 
     case FINISH_RESET:
         log_info("simulation reset requested by cpu %d", current_cpu());
-        sc_core::sc_stop();
+        request_stop();
         break;
 
     default:

@@ -369,6 +369,8 @@ sc_process_b* current_thread();
 sc_process_b* current_method();
 
 bool is_stop_requested();
+void request_stop();
+
 bool sim_running();
 
 string call_origin();

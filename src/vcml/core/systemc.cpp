@@ -720,6 +720,11 @@ bool is_stop_requested() {
     return sc_core::sc_get_simulator_status() == sc_core::SC_SIM_USER_STOP;
 }
 
+void request_stop() {
+    if (!is_stop_requested())
+        sc_stop();
+}
+
 bool sim_running() {
     return g_helper.sim_running;
 }

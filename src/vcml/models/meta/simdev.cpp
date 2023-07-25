@@ -15,7 +15,7 @@ namespace meta {
 
 void simdev::write_stop(u32 val) {
     log_info("stopping simulation upon request (%u)", val);
-    sc_stop();
+    request_stop();
 }
 
 void simdev::write_exit(u32 val) {

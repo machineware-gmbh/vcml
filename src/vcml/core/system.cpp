@@ -37,7 +37,7 @@ void system::timeout() {
     VCML_ERROR_ON(duration == SC_ZERO_TIME, "timeout with zero duration");
     while (true) {
         wait(duration);
-        sc_stop();
+        request_stop();
     }
 }
 
