@@ -89,7 +89,10 @@ suspender* suspend_manager::current() const {
 void suspend_manager::quit() {
     lock_guard<mutex> guard(suspender_lock);
     if (!is_quitting)
-        on_next_update([]() -> void { sc_stop(); });
+        on_next_update([]() -> void {
+            if (!is_stop_requested())
+                sc_stop();
+        });
 
     is_quitting = true;
     suspenders.clear();
