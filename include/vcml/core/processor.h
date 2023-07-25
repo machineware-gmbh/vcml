@@ -69,9 +69,9 @@ public:
     property<string> cpuarch;
     property<string> symbols;
 
-    property<int> gdb_port;
     property<bool> gdb_wait;
     property<bool> gdb_echo;
+    property<int> gdb_port;
     property<string> gdb_term;
 
     property<bool> async;
