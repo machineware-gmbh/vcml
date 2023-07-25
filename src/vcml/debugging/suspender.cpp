@@ -89,7 +89,11 @@ suspender* suspend_manager::current() const {
 void suspend_manager::quit() {
     lock_guard<mutex> guard(suspender_lock);
     if (!is_quitting)
-        on_next_update([]() -> void { sc_stop(); });
+        on_next_update([]() -> void {
+            if (sc_core::sc_get_simulator_status() !=
+                sc_core::SC_SIM_USER_STOP)
+                sc_stop();
+        });
 
     is_quitting = true;
     suspenders.clear();
