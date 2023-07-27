@@ -13,7 +13,7 @@
 namespace vcml {
 namespace generic {
 
-clock::clock(const sc_module_name& nm, clock_t init_hz):
+clock::clock(const sc_module_name& nm, hz_t init_hz):
     module(nm), hz("hz", init_hz), clk("clk") {
     clk = hz;
 }

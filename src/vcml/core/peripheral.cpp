@@ -227,7 +227,7 @@ tlm_response_status peripheral::write(const range& addr, const void* data,
     return TLM_INCOMPLETE_RESPONSE; // to be overloaded
 }
 
-void peripheral::handle_clock_update(clock_t oldclk, clock_t newclk) {
+void peripheral::handle_clock_update(hz_t oldclk, hz_t newclk) {
     const sc_time rlat = clock_cycles(read_latency);
     const sc_time wlat = clock_cycles(write_latency);
     component::remap_dmi(rlat, wlat);

@@ -113,7 +113,7 @@ public:
     tlm_target_socket in;
     tlm_initiator_socket out;
 
-    property<clock_t> clock;
+    property<hz_t> clock;
 
     ocfbc(const sc_module_name& name);
     virtual ~ocfbc();

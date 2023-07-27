@@ -66,7 +66,7 @@ public:
     virtual unsigned int transport(tlm_generic_payload& tx,
                                    const tlm_sbi& sideband, address_space as);
 
-    virtual void handle_clock_update(clock_t oldclk, clock_t newclk);
+    virtual void handle_clock_update(hz_t oldclk, hz_t newclk);
 
 protected:
     virtual void clk_notify(const clk_target_socket& socket,

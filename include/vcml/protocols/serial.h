@@ -43,7 +43,7 @@ enum serial_parity {
     SERIAL_PARITY_SPACE
 };
 
-typedef clock_t baud_t;
+typedef hz_t baud_t;
 
 enum : baud_t {
     SERIAL_1200BD = 1200,

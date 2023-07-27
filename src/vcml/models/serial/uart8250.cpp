@@ -45,7 +45,7 @@ void uart8250::calibrate() {
     }
 
     baud_t baud = clock_hz() / (m_divisor * 16);
-    log_debug("setup divisor %u (%ld baud)", m_divisor, baud);
+    log_debug("setup divisor %hu (%zu baud)", m_divisor, baud);
     serial_tx.set_baud(baud);
 }
 

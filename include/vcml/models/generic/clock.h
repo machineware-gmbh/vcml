@@ -23,14 +23,14 @@ namespace generic {
 class clock : public module
 {
 public:
-    property<clock_t> hz;
+    property<hz_t> hz;
     clk_initiator_socket clk;
 
     clock() = delete;
 
     clock(const clock&) = delete;
 
-    clock(const sc_module_name& nm, clock_t hz);
+    clock(const sc_module_name& nm, hz_t hz);
     virtual ~clock();
     VCML_KIND(clock);
 };

@@ -95,7 +95,7 @@ public:
     virtual tlm_response_status write(const range& addr, const void* data,
                                       const tlm_sbi& info);
 
-    virtual void handle_clock_update(clock_t oldclk, clock_t newclk) override;
+    virtual void handle_clock_update(hz_t oldclk, hz_t newclk) override;
 };
 
 inline bool peripheral::is_little_endian() const {

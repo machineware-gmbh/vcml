@@ -36,7 +36,7 @@ void sp804::timer::schedule(u32 ticks) {
     if (!is_32bit())
         ticks &= 0xffff;
 
-    clock_t effclk = clk / get_prescale_divider();
+    hz_t effclk = clk / get_prescale_divider();
     sc_time delta((double)ticks / (double)effclk, SC_SEC);
 
     m_prev = sc_time_stamp();

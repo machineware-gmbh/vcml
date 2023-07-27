@@ -63,9 +63,8 @@ using mwr::f32;
 using mwr::f64;
 
 using mwr::string;
-using mwr::clock_t;
 using mwr::size_t;
-using mwr::id_t;
+using mwr::hz_t;
 
 using mwr::Hz;
 using mwr::kHz;
@@ -110,7 +109,6 @@ VCML_TYPEINFO(double);
 VCML_TYPEINFO(string);
 
 VCML_TYPEINFO(size_t);
-VCML_TYPEINFO(clock_t);
 
 using std::min;
 using std::max;

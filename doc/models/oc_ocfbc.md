@@ -12,7 +12,7 @@ This model has the following properties:
 | Property        | Type        | Default    | Description           |
 | --------------- | ----------- | ---------- | --------------------- |
 | `vncport`       | `u16`       | `0`        | VNC server port       |
-| `clock`         | `clock_t`   | `60`       | Screen refresh rate   |
+| `clock`         | `hz_t`      | `60`       | Screen refresh rate   |
 | `read_latency`  | `sc_time`   | `0ns`      | Extra read delay      |
 | `write_latency` | `sc_time`   | `0ns`      | Extra write delay     |
 | `backends`      | `string`    | `<empty>`  | Ignored               |

@@ -64,7 +64,7 @@ void clk_base_target_socket::bind(clk_base_initiator_socket& other) {
     complete_binding(other);
 }
 
-void clk_base_target_socket::stub(clock_t hz) {
+void clk_base_target_socket::stub(hz_t hz) {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     hierarchy_guard guard(this);
     m_stub = new clk_initiator_stub(basename(), hz);
@@ -79,7 +79,7 @@ clk_initiator_socket::clk_initiator_socket(const char* nm, address_space as):
     bind(m_transport);
 }
 
-void clk_initiator_socket::set(clock_t hz) {
+void clk_initiator_socket::set(hz_t hz) {
     if (hz < 0)
         hz = 0;
 
@@ -92,7 +92,7 @@ void clk_initiator_socket::set(clock_t hz) {
     }
 }
 
-clk_initiator_socket& clk_initiator_socket::operator=(clock_t hz) {
+clk_initiator_socket& clk_initiator_socket::operator=(hz_t hz) {
     set(hz);
     return *this;
 }
@@ -143,7 +143,7 @@ void clk_target_socket::complete_binding(clk_base_initiator_socket& socket) {
     m_targets.clear();
 }
 
-clock_t clk_target_socket::read() const {
+hz_t clk_target_socket::read() const {
     const clk_bw_transport_if* iface = get_base_port().get_interface(0);
     if (iface == nullptr)
         return 0;
@@ -152,11 +152,11 @@ clock_t clk_target_socket::read() const {
 }
 
 sc_time clk_target_socket::cycle() const {
-    clock_t hz = read();
+    hz_t hz = read();
     return hz ? sc_time(1.0 / hz, SC_SEC) : SC_ZERO_TIME;
 }
 
-clk_initiator_stub::clk_initiator_stub(const char* nm, clock_t hz):
+clk_initiator_stub::clk_initiator_stub(const char* nm, hz_t hz):
     clk_bw_transport_if(), m_hz(hz), clk_out(mkstr("%s_stub", nm).c_str()) {
     clk_out.bind(*(clk_bw_transport_if*)this);
 }

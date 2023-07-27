@@ -160,7 +160,7 @@ void nrf51::write_baudrate(u32 val) {
     baudrate = val;
     baud_t bd = nrf51_baud(val);
     if (bd)
-        log_debug("setting baud rate to %lu", bd);
+        log_debug("setting baud rate to %zuu", bd);
     else
         log_warn("invalid baud rate: 0x%08x", val);
     serial_tx.set_baud(bd);

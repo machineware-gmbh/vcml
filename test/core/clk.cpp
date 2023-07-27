@@ -41,7 +41,7 @@ MATCHER_P(clk_match_socket, name, "Matches a clk socket by name") {
 }
 
 MATCHER_P2(clk_match_payload, oldhz, newhz, "Matches a clk payload") {
-    return arg.oldhz == oldhz && arg.newhz == newhz;
+    return arg.oldhz == (vcml::hz_t)oldhz && arg.newhz == (vcml::hz_t)newhz;
 }
 
 class clk_bench : public test_base

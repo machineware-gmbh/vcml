@@ -55,7 +55,7 @@ public:
     tlm_target_socket in;
     spi_initiator_socket spi_out;
 
-    property<clock_t> clock;
+    property<hz_t> clock;
 
     ocspi(const sc_module_name& name);
     virtual ~ocspi();

@@ -26,7 +26,7 @@ namespace i2c {
 class oci2c : public peripheral
 {
 private:
-    clock_t m_hz;
+    hz_t m_hz;
 
     u8 m_tx;
     u8 m_rx;
@@ -76,7 +76,7 @@ public:
     gpio_initiator_socket irq;
     i2c_initiator_socket i2c;
 
-    clock_t bus_hz() const { return m_hz; }
+    hz_t bus_hz() const { return m_hz; }
 
     oci2c(const sc_module_name& nm, u8 reg_shift = 0);
     virtual ~oci2c();

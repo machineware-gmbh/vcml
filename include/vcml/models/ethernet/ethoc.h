@@ -253,7 +253,7 @@ public:
     reg<u32> eth_hash1_adr; // HASH1 register
     reg<u32> eth_txctrl;    // transmit control register
 
-    property<clock_t> clock;
+    property<hz_t> clock;
     property<string> mac;
 
     gpio_initiator_socket irq;
