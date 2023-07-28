@@ -21,7 +21,8 @@ namespace serial {
 class backend_tui : public backend
 {
 private:
-    int m_fd;
+    int m_fdin;
+    int m_fdout;
 
     atomic<bool> m_exit_requested;
     atomic<bool> m_backend_active;

@@ -58,15 +58,15 @@ void backend_tui::iothread() {
         draw_statusbar();
         m_mtx.unlock();
 
-        if (mwr::fd_peek(m_fd, 500)) {
+        if (mwr::fd_peek(m_fdin, 500)) {
             u8 ch;
-            if (!mwr::fd_read(m_fd, &ch, sizeof(ch))) {
+            if (!mwr::fd_read(m_fdin, &ch, sizeof(ch))) {
                 log_warn("eof while reading stdin");
                 return; // EOF
             }
 
             if (ch == CTRL_A) { // ctrl-a
-                mwr::fd_read(m_fd, &ch, sizeof(ch));
+                mwr::fd_read(m_fdin, &ch, sizeof(ch));
                 if (ch == 'x' || ch == 'X' || ch == CTRL_X) {
                     terminate();
                     continue;
@@ -111,12 +111,13 @@ void backend_tui::draw_statusbar() {
         "%s",     // print line buffer
         text.c_str(), m_linebuf.c_str());
 
-    mwr::fd_write(m_fd, statusbar.c_str(), statusbar.length());
+    mwr::fd_write(m_fdout, statusbar.c_str(), statusbar.length());
 }
 
 backend_tui::backend_tui(terminal* term):
     backend(term, "term"),
-    m_fd(STDIN_FILENO),
+    m_fdin(STDIN_FILENO),
+    m_fdout(STDOUT_FILENO),
     m_exit_requested(false),
     m_backend_active(true),
     m_iothread(),
@@ -126,10 +127,10 @@ backend_tui::backend_tui(terminal* term):
     m_time_host(mwr::timestamp_us()),
     m_rtf(),
     m_linebuf() {
-    VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
+    VCML_REPORT_ON(!isatty(m_fdin), "not a terminal");
     capture_stdin();
-    mwr::tty_push(m_fd, true);
-    mwr::tty_set(m_fd, false, false);
+    mwr::tty_push(m_fdin, true);
+    mwr::tty_set(m_fdin, false, false);
 
     update_window_size(0);
     std::signal(SIGWINCH, update_window_size);
@@ -143,7 +144,7 @@ backend_tui::~backend_tui() {
     if (m_iothread.joinable())
         m_iothread.join();
 
-    mwr::tty_pop(m_fd);
+    mwr::tty_pop(m_fdin);
     release_stdin();
 }
 
@@ -161,7 +162,7 @@ void backend_tui::write(u8 val) {
     lock_guard<mutex> lock(m_mtx);
     if (val == '\n' || m_linebuf.length() >= max_cols) {
         string line = mkstr("\r\x1b[K%s\n", m_linebuf.c_str());
-        mwr::fd_write(m_fd, line.data(), line.size());
+        mwr::fd_write(m_fdout, line.data(), line.size());
         m_linebuf.clear();
     } else {
         m_linebuf.push_back(val);

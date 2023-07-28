@@ -34,15 +34,15 @@ void backend_term::terminate() {
 
 void backend_term::iothread() {
     while (m_backend_active && sim_running()) {
-        if (mwr::fd_peek(m_fd, 100)) {
+        if (mwr::fd_peek(m_fdin, 100)) {
             u8 ch;
-            if (!mwr::fd_read(m_fd, &ch, sizeof(ch))) {
+            if (!mwr::fd_read(m_fdin, &ch, sizeof(ch))) {
                 log_warn("eof while reading stdin");
                 return; // EOF
             }
 
             if (ch == CTRL_A) { // ctrl-a
-                mwr::fd_read(m_fd, &ch, sizeof(ch));
+                mwr::fd_read(m_fdin, &ch, sizeof(ch));
                 if (ch == 'x' || ch == 'X' || ch == CTRL_X) {
                     terminate();
                     continue;
@@ -60,16 +60,17 @@ void backend_term::iothread() {
 
 backend_term::backend_term(terminal* term):
     backend(term, "term"),
-    m_fd(STDIN_FILENO),
+    m_fdin(STDIN_FILENO),
+    m_fdout(STDOUT_FILENO),
     m_exit_requested(false),
     m_backend_active(true),
     m_iothread(),
     m_mtx(),
     m_fifo() {
     capture_stdin();
-    VCML_REPORT_ON(!isatty(m_fd), "not a terminal");
-    mwr::tty_push(m_fd, true);
-    mwr::tty_set(m_fd, false, false);
+    VCML_REPORT_ON(!isatty(m_fdin), "not a terminal");
+    mwr::tty_push(m_fdin, true);
+    mwr::tty_set(m_fdin, false, false);
     m_iothread = thread(&backend_term::iothread, this);
     mwr::set_thread_name(m_iothread, "term_iothread");
 }
@@ -79,7 +80,7 @@ backend_term::~backend_term() {
     if (m_iothread.joinable())
         m_iothread.join();
 
-    mwr::tty_pop(m_fd);
+    mwr::tty_pop(m_fdin);
     release_stdin();
 }
 
@@ -94,7 +95,7 @@ bool backend_term::read(u8& value) {
 }
 
 void backend_term::write(u8 val) {
-    mwr::fd_write(m_fd, &val, sizeof(val));
+    mwr::fd_write(m_fdout, &val, sizeof(val));
 }
 
 backend* backend_term::create(terminal* term, const string& type) {
