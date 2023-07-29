@@ -215,5 +215,9 @@ void rtc1742::reset() {
     peripheral::reset();
 }
 
+VCML_EXPORT_MODEL(vcml::timers::rtc1742, name, args) {
+    return new rtc1742(name);
+}
+
 } // namespace timers
 } // namespace vcml

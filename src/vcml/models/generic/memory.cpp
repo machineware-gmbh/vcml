@@ -113,5 +113,12 @@ tlm_response_status memory::write(const range& addr, const void* data,
     return m_memory.write(addr, data, info.is_debug);
 }
 
+VCML_EXPORT_MODEL(vcml::generic::memory, name, args) {
+    size_t size = 4 * KiB;
+    if (!args.empty())
+        size = from_string<size_t>(args[0]);
+    return new memory(name, size);
+}
+
 } // namespace generic
 } // namespace vcml

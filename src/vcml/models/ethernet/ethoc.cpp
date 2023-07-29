@@ -570,5 +570,9 @@ void ethoc::reset() {
     irq = false;
 }
 
+VCML_EXPORT_MODEL(vcml::ethernet::ethoc, name, args) {
+    return new ethoc(name);
+}
+
 } // namespace ethernet
 } // namespace vcml

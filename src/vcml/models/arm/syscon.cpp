@@ -105,5 +105,9 @@ void syscon::write_sys_cfgstat(u32 val) {
     sys_cfgstat = val & 0x3;
 }
 
+VCML_EXPORT_MODEL(vcml::arm::syscon, name, args) {
+    return new syscon(name);
+}
+
 } // namespace arm
 } // namespace vcml

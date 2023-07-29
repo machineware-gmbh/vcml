@@ -43,6 +43,5 @@ TEST(mode, nonexistent) {
 }
 
 TEST(mode, duplicate) {
-    EXPECT_DEATH(vcml::model::register_model("my_model", nullptr),
-                 "model my_model already defined");
+    EXPECT_FALSE(vcml::model::define("my_model", nullptr));
 }

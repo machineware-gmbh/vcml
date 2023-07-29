@@ -14,6 +14,7 @@
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
+#include "vcml/core/model.h"
 #include "vcml/core/peripheral.h"
 
 #include "vcml/debugging/loader.h"

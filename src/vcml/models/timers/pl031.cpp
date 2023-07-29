@@ -133,5 +133,9 @@ void pl031::reset() {
     update();
 };
 
+VCML_EXPORT_MODEL(vcml::timers::pl031, name, args) {
+    return new pl031(name);
+}
+
 } // namespace timers
 } // namespace vcml

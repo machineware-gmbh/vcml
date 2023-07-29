@@ -136,5 +136,9 @@ void gpio::end_of_elaboration() {
     VCML_ERROR_ON(!valid_binding, "invalid port binding");
 }
 
+VCML_EXPORT_MODEL(vcml::generic::gpio, name, args) {
+    return new gpio(name);
+}
+
 } // namespace generic
 } // namespace vcml

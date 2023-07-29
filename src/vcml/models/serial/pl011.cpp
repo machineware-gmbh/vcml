@@ -228,5 +228,9 @@ void pl011::reset() {
     irq = false;
 }
 
+VCML_EXPORT_MODEL(vcml::serial::pl011, name, args) {
+    return new pl011(name);
+}
+
 } // namespace serial
 } // namespace vcml

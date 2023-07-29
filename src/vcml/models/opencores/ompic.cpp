@@ -105,5 +105,11 @@ ompic::~ompic() {
     delete[] m_status;
 }
 
+VCML_EXPORT_MODEL(vcml::opencores::ompic, name, args) {
+    VCML_ERROR_ON(args.empty(), "usage: vcml::opencores::ompic <ncpus>");
+    unsigned int ncpus = from_string<unsigned int>(args[0]);
+    return new ompic(name, ncpus);
+}
+
 } // namespace opencores
 } // namespace vcml

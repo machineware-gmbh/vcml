@@ -1402,5 +1402,9 @@ void lan9118::eth_link_down() {
     phy.set_link_status(false);
 }
 
+VCML_EXPORT_MODEL(vcml::ethernet::lan9118, name, args) {
+    return new lan9118(name);
+}
+
 } // namespace ethernet
 } // namespace vcml

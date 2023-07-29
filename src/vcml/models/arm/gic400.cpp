@@ -1319,5 +1319,9 @@ void gic400::handle_spi(unsigned int idx, bool state) {
     update();
 }
 
+VCML_EXPORT_MODEL(vcml::arm::gic400, name, args) {
+    return new gic400(name);
+}
+
 } // namespace arm
 } // namespace vcml

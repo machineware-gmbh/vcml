@@ -249,5 +249,9 @@ void nrf51::reset() {
     update();
 }
 
+VCML_EXPORT_MODEL(vcml::timers::nrf51, name, args) {
+    return new nrf51(name);
+}
+
 } // namespace timers
 } // namespace vcml

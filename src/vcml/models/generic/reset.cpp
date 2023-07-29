@@ -26,5 +26,9 @@ void reset::end_of_elaboration() {
     rst = state;
 }
 
+VCML_EXPORT_MODEL(vcml::generic::reset, name, args) {
+    return new reset(name);
+}
+
 } // namespace generic
 } // namespace vcml

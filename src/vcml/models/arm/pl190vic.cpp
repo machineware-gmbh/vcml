@@ -156,5 +156,9 @@ void pl190vic::gpio_notify(const gpio_target_socket& socket) {
     update();
 }
 
+VCML_EXPORT_MODEL(vcml::arm::pl190, name, args) {
+    return new pl190vic(name);
+}
+
 } // namespace arm
 } // namespace vcml

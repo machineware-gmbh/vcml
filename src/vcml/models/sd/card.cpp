@@ -1008,5 +1008,17 @@ void card::sd_transport(const sd_target_socket& socket, sd_data& tx) {
         tx.status.write = do_data_write(tx.data);
 }
 
+VCML_EXPORT_MODEL(vcml::sd::card, name, args) {
+    if (args.empty())
+        return new card(name);
+    return new card(name, args[0]);
+}
+
+VCML_EXPORT_MODEL(vcml::sd::rocard, name, args) {
+    if (args.empty())
+        return new card(name, "", true);
+    return new card(name, args[0], true);
+}
+
 } // namespace sd
 } // namespace vcml

@@ -52,5 +52,9 @@ simdev::~simdev() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::riscv::simdev, name, args) {
+    return new simdev(name);
+}
+
 } // namespace riscv
 } // namespace vcml

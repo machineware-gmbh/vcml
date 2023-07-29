@@ -241,5 +241,9 @@ vector<terminal*> terminal::all() {
     return all;
 }
 
+VCML_EXPORT_MODEL(vcml::serial::terminal, name, args) {
+    return new terminal(name);
+}
+
 } // namespace serial
 } // namespace vcml

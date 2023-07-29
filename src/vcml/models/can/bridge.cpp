@@ -176,5 +176,9 @@ vector<bridge*> bridge::all() {
     return all;
 }
 
+VCML_EXPORT_MODEL(vcml::can::bridge, name, args) {
+    return new bridge(name);
+}
+
 } // namespace can
 } // namespace vcml

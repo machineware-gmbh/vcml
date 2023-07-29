@@ -283,5 +283,13 @@ void uart8250::reset() {
     m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
 }
 
+VCML_EXPORT_MODEL(vcml::serial::uart8250, name, args) {
+    return new uart8250(name);
+}
+
+VCML_EXPORT_MODEL(vcml::serial::uart16550, name, args) {
+    return new uart8250(name);
+}
+
 } // namespace serial
 } // namespace vcml

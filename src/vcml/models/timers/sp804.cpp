@@ -215,5 +215,9 @@ void sp804::reset() {
     irqc = false;
 }
 
+VCML_EXPORT_MODEL(vcml::timers::sp804, name, args) {
+    return new sp804(name);
+}
+
 } // namespace timers
 } // namespace vcml

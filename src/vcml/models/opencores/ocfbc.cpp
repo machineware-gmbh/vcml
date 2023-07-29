@@ -354,5 +354,9 @@ void ocfbc::end_of_simulation() {
     peripheral::end_of_simulation();
 }
 
+VCML_EXPORT_MODEL(vcml::opencores::ocfbc, name, args) {
+    return new ocfbc(name);
+}
+
 } // namespace opencores
 } // namespace vcml

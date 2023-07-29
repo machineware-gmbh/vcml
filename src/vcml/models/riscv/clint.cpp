@@ -106,5 +106,9 @@ void clint::reset() {
     m_time_reset = sc_time_stamp();
 }
 
+VCML_EXPORT_MODEL(vcml::riscv::clint, name, args) {
+    return new clint(name);
+}
+
 } // namespace riscv
 } // namespace vcml

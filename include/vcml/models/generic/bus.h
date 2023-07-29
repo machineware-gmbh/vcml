@@ -15,6 +15,7 @@
 #include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/component.h"
+#include "vcml/core/model.h"
 
 #include "vcml/protocols/tlm.h"
 
@@ -220,29 +221,32 @@ size_t bus::bind_default(TARGET& target, u64 offset) {
     return port;
 }
 
-void tlm_stub(bus& bus, const sc_object& host, const string& port,
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
-void tlm_stub(bus& bus, const sc_object& host, const string& port, size_t idx,
-              const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
-void tlm_stub(bus& bus, const sc_object& host, const string& port, u64 lo,
-              u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
-void tlm_stub(bus& bus, const sc_object& host, const string& port, size_t idx,
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
+              size_t idx, const range& addr,
+              tlm_response_status rs = TLM_OK_RESPONSE);
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               u64 lo, u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
+              size_t idx, u64 lo, u64 hi,
+              tlm_response_status rs = TLM_OK_RESPONSE);
 
-void tlm_bind(bus& bus, const sc_object& host, const string& port);
-void tlm_bind(bus& bus, const sc_object& host, const string& port, size_t idx);
-void tlm_bind(bus& bus, const sc_object& host, const string& port,
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port);
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
+              size_t idx);
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, u64 offset = 0);
-void tlm_bind(bus& bus, const sc_object& host, const string& port, size_t idx,
-              const range& addr, u64 offset);
-void tlm_bind(bus& bus, const sc_object& host, const string& port, u64 lo,
-              u64 hi, u64 offset = 0);
-void tlm_bind(bus& bus, const sc_object& host, const string& port, size_t idx,
-              u64 lo, u64 hi, u64 offset);
-void tlm_bind_default(bus& bus, const sc_object& host, const string& port,
-                      u64 offset = 0);
-void tlm_bind_default(bus& bus, const sc_object& host, const string& port,
-                      size_t idx, u64 offset);
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
+              size_t idx, const range& addr, u64 offset);
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
+              u64 lo, u64 hi, u64 offset = 0);
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
+              size_t idx, u64 lo, u64 hi, u64 offset);
+void tlm_bind_default(sc_object& bus, const sc_object& host,
+                      const string& port, u64 offset = 0);
+void tlm_bind_default(sc_object& bus, const sc_object& host,
+                      const string& port, size_t idx, u64 offset);
 
 } // namespace generic
 } // namespace vcml

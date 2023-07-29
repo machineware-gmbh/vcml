@@ -68,5 +68,9 @@ void throttle::session_resume() {
     m_extra = 0;
 }
 
+VCML_EXPORT_MODEL(vcml::meta::throttle, name, args) {
+    return new throttle(name);
+}
+
 } // namespace meta
 } // namespace vcml

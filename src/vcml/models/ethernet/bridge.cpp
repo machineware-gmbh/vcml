@@ -176,5 +176,9 @@ vector<bridge*> bridge::all() {
     return all;
 }
 
+VCML_EXPORT_MODEL(vcml::ethernet::bridge, name, args) {
+    return new bridge(name);
+}
+
 } // namespace ethernet
 } // namespace vcml

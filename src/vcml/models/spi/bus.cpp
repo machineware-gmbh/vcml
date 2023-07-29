@@ -78,5 +78,9 @@ unsigned int bus::bind(spi_target_socket& target, gpio_initiator_socket& s,
     return port;
 }
 
+VCML_EXPORT_MODEL(vcml::spi::bus, name, args) {
+    return new bus(name);
+}
+
 } // namespace spi
 } // namespace vcml

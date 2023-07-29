@@ -40,11 +40,13 @@ module* model::create(const string& type, const sc_module_name& name) {
     VCML_ERROR("model not found: %s", kind.c_str());
 }
 
-void model::register_model(const string& kind, create_fn create) {
+bool model::define(const string& kind, create_fn create) {
     auto it = modeldb().find(kind);
     if (it != modeldb().end())
-        VCML_ERROR("model %s already defined", kind.c_str());
+        return false;
+
     modeldb()[kind] = create;
+    return true;
 }
 
 void model::list_models(ostream& os) {

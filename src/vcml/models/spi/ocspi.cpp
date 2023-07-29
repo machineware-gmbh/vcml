@@ -128,5 +128,9 @@ void ocspi::reset() {
     peripheral::reset();
 }
 
+VCML_EXPORT_MODEL(vcml::spi::ocspi, name, args) {
+    return new ocspi(name);
+}
+
 } // namespace spi
 } // namespace vcml

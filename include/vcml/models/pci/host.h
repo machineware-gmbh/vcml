@@ -15,6 +15,7 @@
 #include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/component.h"
+#include "vcml/core/model.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"

@@ -239,5 +239,13 @@ void host::pci_interrupt(const pci_initiator_socket& socket, pci_irq irq,
     }
 }
 
+VCML_EXPORT_MODEL(vcml::pci::host, name, args) {
+    return new host(name, false);
+}
+
+VCML_EXPORT_MODEL(vcml::pcie::host, name, args) {
+    return new host(name, true);
+}
+
 } // namespace pci
 } // namespace vcml

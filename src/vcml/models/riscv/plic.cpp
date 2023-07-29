@@ -222,5 +222,9 @@ void plic::gpio_notify(const gpio_target_socket& socket) {
     update();
 }
 
+VCML_EXPORT_MODEL(vcml::riscv::plic, name, args) {
+    return new plic(name);
+}
+
 } // namespace riscv
 } // namespace vcml

@@ -22,5 +22,12 @@ clock::~clock() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::generic::clock, name, args) {
+    hz_t defclk = 100 * MHz;
+    if (!args.empty())
+        defclk = from_string<hz_t>(args[0]);
+    return new clock(name, defclk);
+}
+
 } // namespace generic
 } // namespace vcml

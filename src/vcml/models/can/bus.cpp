@@ -35,5 +35,9 @@ void bus::bind(can_initiator_socket& tx, can_target_socket& rx) {
     m_next_id++;
 }
 
+VCML_EXPORT_MODEL(vcml::can::bus, name, args) {
+    return new bus(name);
+}
+
 } // namespace can
 } // namespace vcml

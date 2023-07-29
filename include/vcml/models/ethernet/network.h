@@ -14,6 +14,7 @@
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
+#include "vcml/core/model.h"
 
 #include "vcml/protocols/eth.h"
 

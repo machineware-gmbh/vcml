@@ -322,5 +322,9 @@ void nrf51::reset() {
     update();
 }
 
+VCML_EXPORT_MODEL(vcml::serial::nrf51, name, args) {
+    return new nrf51(name);
+}
+
 } // namespace serial
 } // namespace vcml

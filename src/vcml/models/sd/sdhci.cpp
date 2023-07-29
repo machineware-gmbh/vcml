@@ -589,5 +589,9 @@ void sdhci::reset() {
     capabilities[0] = CAPABILITY_VALUES_0;
 }
 
+VCML_EXPORT_MODEL(vcml::sd::sdhci, name, args) {
+    return new sdhci(name);
+}
+
 } // namespace sd
 } // namespace vcml

@@ -55,5 +55,9 @@ void hwrng::reset() {
         srand(seed);
 }
 
+VCML_EXPORT_MODEL(vcml::generic::hwrng, name, args) {
+    return new hwrng(name);
+}
+
 } // namespace generic
 } // namespace vcml

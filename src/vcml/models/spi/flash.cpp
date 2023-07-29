@@ -226,5 +226,41 @@ void flash::reset() {
     disk.flush();
 }
 
+VCML_EXPORT_MODEL(vcml::spi::m25p05, name, args) {
+    return new flash(name, "m25p05");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p10, name, args) {
+    return new flash(name, "m25p10");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p20, name, args) {
+    return new flash(name, "m25p20");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p40, name, args) {
+    return new flash(name, "m25p40");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p80, name, args) {
+    return new flash(name, "m25p80");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p16, name, args) {
+    return new flash(name, "m25p16");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p32, name, args) {
+    return new flash(name, "m25p32");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p64, name, args) {
+    return new flash(name, "m25p64");
+}
+
+VCML_EXPORT_MODEL(vcml::spi::m25p128, name, args) {
+    return new flash(name, "m25p128");
+}
+
 } // namespace spi
 } // namespace vcml

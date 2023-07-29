@@ -73,5 +73,9 @@ void loader::before_end_of_elaboration() {
     }
 }
 
+VCML_EXPORT_MODEL(vcml::meta::loader, name, args) {
+    return new loader(name, args);
+}
+
 } // namespace meta
 } // namespace vcml

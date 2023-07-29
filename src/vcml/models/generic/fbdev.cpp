@@ -95,5 +95,16 @@ void fbdev::end_of_simulation() {
     component::end_of_simulation();
 }
 
+VCML_EXPORT_MODEL(vcml::generic::fbdev, name, args) {
+    if (args.empty())
+        return new fbdev(name);
+
+    u32 w = 1280;
+    u32 h = 720;
+    int n = sscanf(args[0].c_str(), "%ux%u", &w, &h);
+    VCML_ERROR_ON(n != 2, "invalid format string: %s", args[0].c_str());
+    return new fbdev(name, w, h);
+}
+
 } // namespace generic
 } // namespace vcml

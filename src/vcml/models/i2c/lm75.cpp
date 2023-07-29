@@ -216,5 +216,9 @@ i2c_response lm75::i2c_write(const i2c_target_socket& socket, u8 data) {
     return I2C_ACK;
 }
 
+VCML_EXPORT_MODEL(vcml::i2c::lm75, name, args) {
+    return new lm75(name);
+}
+
 } // namespace i2c
 } // namespace vcml

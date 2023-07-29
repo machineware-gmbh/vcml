@@ -182,5 +182,9 @@ void spi2sd::spi_transport(const spi_target_socket& socket, spi_payload& spi) {
     spi.miso = do_spi_transport(spi.mosi);
 }
 
+VCML_EXPORT_MODEL(vcml::spi::spi2sd, name, args) {
+    return new spi2sd(name);
+}
+
 } // namespace spi
 } // namespace vcml

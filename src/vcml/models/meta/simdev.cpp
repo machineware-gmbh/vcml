@@ -95,5 +95,9 @@ void simdev::reset() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::meta::simdev, name, args) {
+    return new simdev(name);
+}
+
 } // namespace meta
 } // namespace vcml

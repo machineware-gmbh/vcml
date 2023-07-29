@@ -35,5 +35,9 @@ void network::bind(eth_initiator_socket& tx, eth_target_socket& rx) {
     m_next_id++;
 }
 
+VCML_EXPORT_MODEL(vcml::ethernet::network, name, args) {
+    return new network(name);
+}
+
 } // namespace ethernet
 } // namespace vcml

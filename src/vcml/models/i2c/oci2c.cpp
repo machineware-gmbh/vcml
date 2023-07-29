@@ -103,5 +103,13 @@ void oci2c::reset() {
     peripheral::reset();
 }
 
+VCML_EXPORT_MODEL(vcml::i2c::oci2c, name, args) {
+    if (args.empty())
+        return new oci2c(name);
+
+    u8 shift = from_string<u8>(args[0]);
+    return new oci2c(name, shift);
+}
+
 } // namespace i2c
 } // namespace vcml

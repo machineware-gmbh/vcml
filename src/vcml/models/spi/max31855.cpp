@@ -103,5 +103,9 @@ max31855::~max31855() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::spi::max31855, name, args) {
+    return new max31855(name);
+}
+
 } // namespace spi
 } // namespace vcml

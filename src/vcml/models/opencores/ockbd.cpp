@@ -91,5 +91,9 @@ void ockbd::end_of_simulation() {
     peripheral::end_of_simulation();
 }
 
+VCML_EXPORT_MODEL(vcml::opencores::ockbd, name, args) {
+    return new ockbd(name);
+}
+
 } // namespace opencores
 } // namespace vcml
