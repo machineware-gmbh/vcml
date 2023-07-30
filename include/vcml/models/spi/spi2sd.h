@@ -60,6 +60,9 @@ private:
     spi2sd(const spi2sd&);
 
 public:
+    property<bool> cs_active_high;
+
+    gpio_target_socket cs;
     spi_target_socket spi_in;
     sd_initiator_socket sd_out;
 

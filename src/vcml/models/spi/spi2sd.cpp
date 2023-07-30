@@ -170,6 +170,8 @@ spi2sd::spi2sd(const sc_module_name& nm):
     m_argbytes(0),
     m_rspbytes(0),
     m_cmd(),
+    cs_active_high("cs_active_high", false),
+    cs("cs"),
     spi_in("spi_in"),
     sd_out("sd_out") {
 }
@@ -179,7 +181,8 @@ spi2sd::~spi2sd() {
 }
 
 void spi2sd::spi_transport(const spi_target_socket& socket, spi_payload& spi) {
-    spi.miso = do_spi_transport(spi.mosi);
+    if (cs == cs_active_high)
+        spi.miso = do_spi_transport(spi.mosi);
 }
 
 VCML_EXPORT_MODEL(vcml::spi::spi2sd, name, args) {
