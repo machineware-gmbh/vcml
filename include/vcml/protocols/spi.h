@@ -53,10 +53,10 @@ public:
     typedef spi_payload protocol_types;
 };
 
-typedef base_initiator_socket<spi_fw_transport_if, spi_bw_transport_if>
+typedef multi_initiator_socket<spi_fw_transport_if, spi_bw_transport_if>
     spi_base_initiator_socket_b;
 
-typedef base_target_socket<spi_fw_transport_if, spi_bw_transport_if>
+typedef multi_target_socket<spi_fw_transport_if, spi_bw_transport_if>
     spi_base_target_socket_b;
 
 class spi_base_initiator_socket : public spi_base_initiator_socket_b

@@ -59,7 +59,10 @@ spi_initiator_socket::spi_initiator_socket(const char* nm, address_space a):
 
 void spi_initiator_socket::transport(spi_payload& spi) {
     trace_fw(spi);
-    (*this)->spi_transport(spi);
+
+    for (int i = 0; i < size(); i++)
+        get_interface(i)->spi_transport(spi);
+
     trace_bw(spi);
 }
 
