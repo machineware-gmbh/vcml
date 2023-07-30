@@ -30,15 +30,19 @@ bool cpureg::write(const void* buf, size_t len) const {
 
 unordered_map<string, target*> target::s_targets;
 
-void target::define_cpureg(id_t regno, const string& name, size_t size,
+void target::define_cpureg(size_t regno, const string& name, size_t size,
                            int prot) {
     define_cpureg(regno, name, size, 1, prot);
 }
 
-void target::define_cpureg(id_t regno, const string& name, size_t size,
+void target::define_cpureg(size_t regno, const string& name, size_t size,
                            size_t count, int prot) {
-    if (stl_contains(m_cpuregs, regno))
-        VCML_ERROR("cpureg %u (%s) already defined", regno, name.c_str());
+    const cpureg* other = find_cpureg(regno);
+    if (other != nullptr) {
+        if (other->name == name)
+            VCML_ERROR("cpureg %s already defined", name.c_str());
+        VCML_ERROR("regno %zu already used by %s", regno, other->name.c_str());
+    }
 
     cpureg& newreg = m_cpuregs[regno];
     newreg.regno = regno;
@@ -85,7 +89,7 @@ vector<cpureg> target::cpuregs() const {
     return regs;
 }
 
-const cpureg* target::find_cpureg(u64 regno) const {
+const cpureg* target::find_cpureg(size_t regno) const {
     auto it = m_cpuregs.find(regno);
     return it != m_cpuregs.end() ? &(it->second) : nullptr;
 }

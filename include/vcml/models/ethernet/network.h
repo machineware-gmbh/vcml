@@ -24,7 +24,7 @@ namespace ethernet {
 class network : public module, public eth_host
 {
 protected:
-    id_t m_next_id;
+    size_t m_next_id;
 
     const eth_initiator_socket& peer_of(const eth_target_socket& rx) const {
         return eth_tx[eth_rx.index_of(rx)];

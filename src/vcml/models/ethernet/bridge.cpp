@@ -15,7 +15,7 @@ namespace ethernet {
 
 bool bridge::cmd_create_backend(const vector<string>& args, ostream& os) {
     try {
-        id_t id = create_backend(args[0]);
+        size_t id = create_backend(args[0]);
         os << "created backend " << id;
         return true;
     } catch (std::exception& ex) {
@@ -32,7 +32,7 @@ bool bridge::cmd_destroy_backend(const vector<string>& args, ostream& os) {
             m_dynamic_backends.clear();
             return true;
         } else {
-            id_t id = from_string<id_t>(arg);
+            size_t id = from_string<size_t>(arg);
             if (!destroy_backend(id))
                 os << "invalid backend id: " << id;
         }
@@ -148,12 +148,12 @@ void bridge::detach(backend* b) {
     stl_remove(m_backends, b);
 }
 
-id_t bridge::create_backend(const string& type) {
+size_t bridge::create_backend(const string& type) {
     m_dynamic_backends[m_next_id] = backend::create(this, type);
     return m_next_id++;
 }
 
-bool bridge::destroy_backend(id_t id) {
+bool bridge::destroy_backend(size_t id) {
     auto it = m_dynamic_backends.find(id);
     if (it == m_dynamic_backends.end())
         return false;

@@ -28,8 +28,8 @@ public:
     vcml::gpio_initiator_socket irq0;
     vcml::gpio_initiator_socket irq1;
 
-    MOCK_METHOD(void, interrupt, (unsigned int, bool), (override));
-    MOCK_METHOD(void, simulate2, (unsigned int));
+    MOCK_METHOD(void, interrupt, (size_t, bool), (override));
+    MOCK_METHOD(void, simulate2, (size_t));
     MOCK_METHOD(void, reset, (), (override));
     MOCK_METHOD(void, handle_clock_update, (vcml::hz_t, vcml::hz_t),
                 (override));
@@ -50,7 +50,7 @@ public:
 
     virtual vcml::u64 cycle_count() const override { return cycles; }
 
-    virtual void simulate(unsigned int n) override {
+    virtual void simulate(size_t n) override {
         const sc_core::sc_time& now = sc_core::sc_time_stamp();
         ASSERT_EQ(local_time_stamp(), now);
 

@@ -27,7 +27,7 @@ namespace debugging {
 class target;
 
 struct cpureg {
-    id_t regno;
+    size_t regno;
     string name;
     size_t size;
     size_t count;
@@ -81,7 +81,7 @@ private:
     atomic<bool> m_running;
 
     endianess m_endian;
-    unordered_map<id_t, cpureg> m_cpuregs;
+    unordered_map<size_t, cpureg> m_cpuregs;
     symtab m_symbols;
 
     vector<subscriber*> m_steppers;
@@ -92,9 +92,9 @@ private:
     static unordered_map<string, target*> s_targets;
 
 protected:
-    virtual void define_cpureg(id_t regno, const string& name, size_t size,
+    virtual void define_cpureg(size_t regno, const string& name, size_t size,
                                int prot = VCML_ACCESS_READ_WRITE);
-    virtual void define_cpureg(id_t regno, const string& name, size_t size,
+    virtual void define_cpureg(size_t regno, const string& name, size_t size,
                                size_t n, int prot = VCML_ACCESS_READ_WRITE);
 
     virtual bool insert_breakpoint(u64 addr);
@@ -131,7 +131,7 @@ public:
 
     vector<cpureg> cpuregs() const;
 
-    const cpureg* find_cpureg(u64 regno) const;
+    const cpureg* find_cpureg(size_t regno) const;
     const cpureg* find_cpureg(const string& name) const;
 
     virtual bool read_cpureg_dbg(const cpureg& reg, void* buf, size_t len);

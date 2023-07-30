@@ -59,7 +59,7 @@ static bool parse_config(const string& config, baud_t& baud,
 
 bool terminal::cmd_create_backend(const vector<string>& args, ostream& os) {
     try {
-        id_t id = create_backend(args[0]);
+        size_t id = create_backend(args[0]);
         os << "created backend " << id;
         return true;
     } catch (std::exception& ex) {
@@ -76,7 +76,7 @@ bool terminal::cmd_destroy_backend(const vector<string>& args, ostream& os) {
             m_backends.clear();
             return true;
         } else {
-            id_t id = from_string<id_t>(arg);
+            size_t id = from_string<size_t>(arg);
             if (!destroy_backend(id))
                 os << "invalid backend id: " << id;
         }
@@ -93,7 +93,7 @@ bool terminal::cmd_list_backends(const vector<string>& args, ostream& os) {
     }
 
     for (const string& arg : args) {
-        id_t id = from_string<id_t>(arg);
+        size_t id = from_string<size_t>(arg);
 
         auto it = m_backends.find(id);
         os << id << ": ";
@@ -212,13 +212,13 @@ void terminal::detach(backend* b) {
     stl_remove(m_listeners, b);
 }
 
-id_t terminal::create_backend(const string& type) {
+size_t terminal::create_backend(const string& type) {
     hierarchy_guard guard(this);
     m_backends[m_next_id] = backend::create(this, type);
     return m_next_id++;
 }
 
-bool terminal::destroy_backend(id_t id) {
+bool terminal::destroy_backend(size_t id) {
     auto it = m_backends.find(id);
     if (it == m_backends.end())
         return false;

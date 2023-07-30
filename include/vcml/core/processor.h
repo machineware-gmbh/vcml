@@ -27,8 +27,8 @@
 namespace vcml {
 
 struct irq_stats {
-    unsigned int irq;
-    unsigned int irq_count;
+    size_t irq;
+    size_t irq_count;
     bool irq_status;
     sc_time irq_last;
     sc_time irq_uptime;
@@ -43,7 +43,7 @@ private:
 
     debugging::gdbserver* m_gdb;
 
-    unordered_map<unsigned int, irq_stats> m_irq_stats;
+    unordered_map<size_t, irq_stats> m_irq_stats;
     unordered_map<u64, property<void>*> m_regprops;
 
     bool cmd_dump(const vector<string>& args, ostream& os);
@@ -60,7 +60,7 @@ private:
     virtual bool write_cpureg_dbg(const debugging::cpureg& reg, const void*,
                                   size_t len) override;
 
-    u64 simulate_cycles(unsigned int cycles);
+    u64 simulate_cycles(size_t cycles);
     void processor_thread();
     bool processor_thread_sync();
     bool processor_thread_async();
@@ -99,7 +99,7 @@ public:
 
     virtual void reset() override;
 
-    bool get_irq_stats(unsigned int irq, irq_stats& stats) const;
+    bool get_irq_stats(size_t irq, irq_stats& stats) const;
 
     template <typename T>
     inline tlm_response_status fetch(u64 addr, T& data);
@@ -117,25 +117,28 @@ protected:
     virtual void gpio_notify(const gpio_target_socket& socket, bool state,
                              gpio_vector vector) override;
 
-    virtual void interrupt(unsigned int irq, bool set, gpio_vector vector);
-    virtual void interrupt(unsigned int irq, bool set);
+    virtual void interrupt(size_t irq, bool set, gpio_vector vector);
+    virtual void interrupt(size_t irq, bool set);
 
-    virtual void simulate(unsigned int cycles) = 0;
+    virtual void simulate(size_t cycles) = 0;
     virtual void update_local_time(sc_time& time, sc_process_b* proc) override;
     virtual void end_of_elaboration() override;
 
     virtual void fetch_cpuregs();
     virtual void flush_cpuregs();
 
-    virtual void define_cpureg(id_t regno, const string& name, size_t size,
-                               size_t n, int prot) override;
+    virtual void define_cpureg(size_t regno, const string& name, size_t size,
+                               size_t count, int prot) override;
 
-    void define_cpureg_r(id_t reg, const string& nm, size_t sz, size_t n = 1);
-    void define_cpureg_w(id_t reg, const string& nm, size_t sz, size_t n = 1);
-    void define_cpureg_rw(id_t reg, const string& nm, size_t sz, size_t n = 1);
+    void define_cpureg_r(size_t regno, const string& name, size_t size,
+                         size_t count = 1);
+    void define_cpureg_w(size_t regno, const string& name, size_t size,
+                         size_t count = 1);
+    void define_cpureg_rw(size_t regno, const string& name, size_t size,
+                          size_t count = 1);
 
-    virtual bool read_reg_dbg(id_t regno, void* buf, size_t len);
-    virtual bool write_reg_dbg(id_t regno, const void* buf, size_t len);
+    virtual bool read_reg_dbg(size_t regno, void* buf, size_t len);
+    virtual bool write_reg_dbg(size_t regno, const void* buf, size_t len);
 
     virtual u64 read_pmem_dbg(u64 addr, void* ptr, u64 sz) override;
     virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;

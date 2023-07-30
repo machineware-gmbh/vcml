@@ -28,8 +28,8 @@ class backend;
 class bridge : public module, public can_host
 {
 private:
-    id_t m_next_id;
-    unordered_map<id_t, backend*> m_dynamic_backends;
+    size_t m_next_id;
+    unordered_map<size_t, backend*> m_dynamic_backends;
     vector<backend*> m_backends;
 
     mutable mutex m_mtx;
@@ -62,8 +62,8 @@ public:
     void attach(backend* b);
     void detach(backend* b);
 
-    id_t create_backend(const string& type);
-    bool destroy_backend(id_t id);
+    size_t create_backend(const string& type);
+    bool destroy_backend(size_t id);
 
     static bridge* find(const string& name);
     static vector<bridge*> all();

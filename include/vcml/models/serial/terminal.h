@@ -39,8 +39,8 @@ private:
     };
 
     history m_hist;
-    id_t m_next_id;
-    unordered_map<id_t, backend*> m_backends;
+    size_t m_next_id;
+    unordered_map<size_t, backend*> m_backends;
     vector<backend*> m_listeners;
 
     bool cmd_create_backend(const vector<string>& args, ostream& os);
@@ -68,8 +68,8 @@ public:
     void attach(backend* b);
     void detach(backend* b);
 
-    id_t create_backend(const string& type);
-    bool destroy_backend(id_t id);
+    size_t create_backend(const string& type);
+    bool destroy_backend(size_t id);
 
     void fetch_history(vector<u8>& hist) { m_hist.fetch(hist); }
     void clear_history() { m_hist.clear(); }

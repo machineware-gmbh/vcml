@@ -24,7 +24,7 @@ namespace can {
 class bus : public module, public can_host
 {
 protected:
-    id_t m_next_id;
+    size_t m_next_id;
 
     const can_initiator_socket& peer_of(const can_target_socket& rx) const {
         return can_tx[can_rx.index_of(rx)];

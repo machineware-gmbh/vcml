@@ -242,7 +242,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     return true;
 }
 
-u64 processor::simulate_cycles(unsigned int cycles) {
+u64 processor::simulate_cycles(size_t cycles) {
     u64 count = cycle_count();
     double start = mwr::timestamp();
     set_suspendable(false);
@@ -439,7 +439,7 @@ void processor::session_resume() {
     flush_cpuregs();
 }
 
-bool processor::get_irq_stats(unsigned int irq, irq_stats& stats) const {
+bool processor::get_irq_stats(size_t irq, irq_stats& stats) const {
     if (m_irq_stats.find(irq) == m_irq_stats.end())
         return false;
 
@@ -476,11 +476,11 @@ void processor::log_bus_error(const tlm_initiator_socket& socket,
 
 void processor::gpio_notify(const gpio_target_socket& socket, bool state,
                             gpio_vector vector) {
-    unsigned int irqno = irq.index_of(socket);
+    size_t irqno = irq.index_of(socket);
     irq_stats& stats = m_irq_stats[irqno];
 
     if (state == stats.irq_status) {
-        log_warn("irq %d already %s", irqno, state ? "set" : "cleared");
+        log_warn("irq %zu already %s", irqno, state ? "set" : "cleared");
         return;
     }
 
@@ -496,15 +496,15 @@ void processor::gpio_notify(const gpio_target_socket& socket, bool state,
         stats.irq_uptime += delta;
     }
 
-    log_debug("%sing IRQ %u", state ? "sett" : "clear", irqno);
+    log_debug("%sing IRQ %zu", state ? "sett" : "clear", irqno);
     interrupt(irqno, state, vector);
 }
 
-void processor::interrupt(unsigned int irq, bool set, gpio_vector vector) {
+void processor::interrupt(size_t irq, bool set, gpio_vector vector) {
     interrupt(irq, set);
 }
 
-void processor::interrupt(unsigned int irq, bool set) {
+void processor::interrupt(size_t irq, bool set) {
     // to be overloaded
 }
 
@@ -575,9 +575,9 @@ void processor::flush_cpuregs() {
     }
 }
 
-void processor::define_cpureg(id_t regno, const string& name, size_t size,
-                              size_t n, int prot) {
-    target::define_cpureg(regno, name, size, n, prot);
+void processor::define_cpureg(size_t regno, const string& name, size_t size,
+                              size_t nelem, int prot) {
+    target::define_cpureg(regno, name, size, nelem, prot);
 
     u64 defval = 0;
     if (is_read_allowed(prot)) {
@@ -587,29 +587,29 @@ void processor::define_cpureg(id_t regno, const string& name, size_t size,
 
     auto*& prop = m_regprops[regno];
     VCML_ERROR_ON(prop, "property %s already exists", name.c_str());
-    prop = new property<void>(name.c_str(), size, n, defval);
+    prop = new property<void>(name.c_str(), size, nelem, defval);
 }
 
-void processor::define_cpureg_r(id_t regno, const string& name, size_t size,
-                                size_t n) {
-    define_cpureg(regno, name, size, n, VCML_ACCESS_READ);
+void processor::define_cpureg_r(size_t regno, const string& name, size_t size,
+                                size_t count) {
+    define_cpureg(regno, name, size, count, VCML_ACCESS_READ);
 }
 
-void processor::define_cpureg_w(id_t regno, const string& name, size_t size,
-                                size_t n) {
-    define_cpureg(regno, name, size, n, VCML_ACCESS_WRITE);
+void processor::define_cpureg_w(size_t regno, const string& name, size_t size,
+                                size_t count) {
+    define_cpureg(regno, name, size, count, VCML_ACCESS_WRITE);
 }
 
-void processor::define_cpureg_rw(id_t regno, const string& name, size_t size,
-                                 size_t n) {
-    define_cpureg(regno, name, size, n, VCML_ACCESS_READ_WRITE);
+void processor::define_cpureg_rw(size_t regno, const string& name, size_t size,
+                                 size_t count) {
+    define_cpureg(regno, name, size, count, VCML_ACCESS_READ_WRITE);
 }
 
-bool processor::read_reg_dbg(id_t regno, void* buf, size_t len) {
+bool processor::read_reg_dbg(size_t regno, void* buf, size_t len) {
     return false; // to be overloaded
 }
 
-bool processor::write_reg_dbg(id_t idx, const void* buf, size_t len) {
+bool processor::write_reg_dbg(size_t regno, const void* buf, size_t len) {
     return false; // to be overloaded
 }
 
