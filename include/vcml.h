@@ -133,6 +133,8 @@
 #include "vcml/models/opencores/ockbd.h"
 #include "vcml/models/opencores/ocfbc.h"
 
+#include "vcml/models/dma/pl330.h"
+
 #include "vcml/models/arm/pl190vic.h"
 #include "vcml/models/arm/syscon.h"
 #include "vcml/models/arm/gic400.h"

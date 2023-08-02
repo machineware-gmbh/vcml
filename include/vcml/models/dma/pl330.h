@@ -14,136 +14,112 @@
 namespace vcml {
 namespace dma {
 
-template <typename QueueItem>
-class TaggedMultiDequeue {
+template <typename QUEUE_ITEM>
+class tagged_multi_queue
+{
 public:
-    TaggedMultiDequeue(int maxSum) : max_sum(maxSum), current_sum(0) {}
+    tagged_multi_queue(int max_total_items) : max_sum(max_total_items), current_sum(0) {}
 
-    void enqueue(const QueueItem& item) {
+    bool push(const QUEUE_ITEM& item) {
         if (current_sum + itemSize <= max_sum) {
             queues[item.tag].push_back(item);
             tags.push_back(item.tag);
             current_sum += itemSize;
-        } else {
-            // Handle exceeding sum (e.g., reject or dequeue items with the lowest priority)
-            while (!tags.empty() && current_sum + itemSize > max_sum) {
-                int frontTag = tags.front();
-                QueueItem frontItem = queues[frontTag].front();
-                queues[frontTag].pop_front();
-                tags.pop_front();
-                current_sum -= itemSize;
-            }
-            if (current_sum + itemSize <= max_sum) {
-                queues[item.tag].push_back(item);
-                tags.push_back(item.tag);
-                current_sum += itemSize;
-            } else {
-                // Handle further cases of exceeding sum (e.g., throw an exception)
-            }
+            return true;
         }
+        return false;
     }
 
-    void push(const QueueItem& item) {
-        if (current_sum + itemSize <= max_sum) {
-            queues[item.tag].push_back(item);
-            tags.push_front(item.tag);
-            current_sum += itemSize;
-        } else {
-            // Handle exceeding sum (e.g., reject or pop items with the lowest priority)
-            while (!tags.empty() && current_sum + itemSize > max_sum) {
-                int backTag = tags.back();
-                QueueItem backItem = queues[backTag].back();
-                queues[backTag].pop_back();
-                tags.pop_back();
-                current_sum -= itemSize;
-            }
-            if (current_sum + itemSize <= max_sum) {
-                queues[item.tag].push_back(item);
-                tags.push_front(item.tag);
-                current_sum += itemSize;
-            } else {
-                // Handle further cases of exceeding sum (e.g., throw an exception)
-            }
-        }
-    }
-
-    QueueItem dequeue() {
+    std::optional<QUEUE_ITEM> pop() {
         if (tags.empty()) {
-            // Handle empty dequeue (e.g., throw an exception)
+            return std::nullopt;
         }
         int frontTag = tags.front();
-        QueueItem frontItem = queues[frontTag].front();
+        QUEUE_ITEM frontItem = queues[frontTag].front();
         queues[frontTag].pop_front();
         tags.pop_front();
         current_sum -= itemSize;
-        return frontItem;
+        return std::make_optional(frontItem);
     }
 
-    QueueItem pop() {
-        if (tags.empty()) {
-            // Handle empty pop (e.g., throw an exception)
+    const QUEUE_ITEM& front() const {
+        return queues.at(tags.front()).front();
+    }
+
+    std::optional<QUEUE_ITEM> pop(int tag) {
+        if (queues[tag].empty()) {
+            return std::nullopt;
         }
-        int backTag = tags.back();
-        QueueItem backItem = queues[backTag].back();
-        queues[backTag].pop_back();
-        tags.pop_back();
+        QUEUE_ITEM Item = queues[tag].front();
+        queues[tag].pop_front();
+        tags.erase(std::find(tags.begin(), tags.end(), tag));
         current_sum -= itemSize;
-        return backItem;
+        return std::make_optional(Item);
+    }
+
+    void remove_tagged(int tag) {
+        queues[tag].clear();
+        tags.erase(std::remove(tags.begin(), tags.end(), tag), tags.end());
     }
 
     bool empty() const {
         return tags.empty();
     }
 
-    bool emptyTag(int tag) const {
-        return queues[tag].empty();
+    inline bool emptyTag(int tag) const {
+        return queues.at(tag).empty();
     }
 
-    size_t size() const {
+    inline size_t size() const {
         return tags.size();
     }
 
-    size_t sizeTag(int tag) const {
+    inline size_t num_free() const {
+        return max_sum - current_sum;
+    }
+
+    inline size_t sizeTag(int tag) const {
         return queues[tag].size();
     }
 
 private:
-    std::unordered_map<int, std::deque<QueueItem>> queues;
+    std::unordered_map<int, std::deque<QUEUE_ITEM>> queues;
     std::deque<int> tags;
     int max_sum;
     int current_sum;
-    static constexpr int itemSize = sizeof(QueueItem); // You may adjust this based on your actual data size
+    static constexpr int itemSize = sizeof(
+        QUEUE_ITEM); // You may adjust this based on your actual data size
 };
 
 class pl330 : public peripheral
 {
+public:
     enum pl330_configs : u32 {
         NIRQ = 999, //todo tbd
         NPER = 999,
         QUEUE_SIZE = 16,
+        INSN_MAXSIZE = 6,
 
     };
-public:
     struct queue_entry {
-        u32 insn_addr;
-        u32 insn_len;
-        u8 tag;
-        u8 seqn;
+        u32 data_addr;
+        u32 data_len;
+        u8 burst_len_counter;
+        bool inc;
+        bool zero_flag;
+        u32 tag;
+        u32 seqn;
     };
-    TaggedMultiDequeue<queue_entry> read_queue, write_queue;
+    tagged_multi_queue<queue_entry> read_queue, write_queue;
 
-    class MFIFO
-    {
-    private:
-        u8* buf;
-        u8* tag;
+    struct mfifo_entry {//todo this is wip i am not sure how to model this well in c++
+        u8 buf;
+        u8 tag;
         u32 head;
         u32 num;
-        u32 size;
-
-    public:
-        // todo mfifo public api
-    } MFIO; // TODO: what data structure (in qemu this is a ringbuffer)
+        u32 buf_size;
+    };
+    tagged_multi_queue<mfifo_entry> mfifo;
 
 
 
@@ -191,6 +167,7 @@ public:
         u32 tag;      // aka channel id
         bool stall;
         u32 request_flag;
+        u32 watchdog_timer;
 
         inline bool is_state(u8 state) const {return (get_state() == state); }
         inline u32 get_state() const { return csr & 0x7;}
@@ -223,6 +200,7 @@ public:
         reg<u32> fsrd; // Fault Status DMA Manager Register    // fsrd[1] HIGH = manager is faulting
         reg<u32> ftrd; // Fault Type DMA Manager Register      // see faults
         bool stall;
+        u32 watchdog_timer;
 
         inline bool is_state(u8 state) const {return (get_state() == state); }
         inline u32 get_state() const { return dsr & 0x7;}
@@ -262,9 +240,13 @@ public:
     reg<u8, 4> periph_id; // 0xFE0-0xFEC RO Peripheral Identification Registers // reserved[7:1] | integration_cfg[0] || revision [7:4] | designer_1 [3:0] || designer_0 [7:4]  part_number_0 [3:0] || part_number_0 [7:0]
     reg<u8, 4> pcell_id; // 0xFF0-0xFFC RO Component Identification Registers // return 0xB105F00D
 
+
+    u8 periph_busy[NPER];
+
     tlm_target_socket in;
     tlm_initiator_socket dma;
-    tlm_initiator_socket_array<NIRQ> irq;
+    // tlm_initiator_socket irq; // todo irqs need to be modelled (and undertood)
+
 
     void pl330_thread();
     void execute_cycle();

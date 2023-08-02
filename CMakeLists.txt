@@ -173,6 +173,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/arm/syscon.cpp
     ${src}/vcml/models/arm/gic400.cpp
     ${src}/vcml/models/arm/gicv2m.cpp
+    ${src}/vcml/models/dma/pl330.cpp
     ${src}/vcml/models/riscv/clint.cpp
     ${src}/vcml/models/riscv/plic.cpp
     ${src}/vcml/models/riscv/aclint.cpp
