@@ -2,6 +2,15 @@
 // Created by rubenware on 7/13/23.
 //
 
+//TODO:
+//synch policies for registers
+//irq stuff
+//mfifo structure
+//faulting logic
+//check state transitions
+//test
+//debug instructions
+
 #ifndef VCML_PL330_H
 #define VCML_PL330_H
 
@@ -99,7 +108,10 @@ public:
         NPER = 999,
         QUEUE_SIZE = 16,
         INSN_MAXSIZE = 6,
-
+    };
+    enum amba_ids : u32 {
+        AMBA_PID = 0x00241330, // Peripheral ID
+        AMBA_CID = 0xb105f00d, // PrimeCell ID
     };
     struct queue_entry {
         u32 data_addr;
@@ -121,11 +133,7 @@ public:
     };
     tagged_multi_queue<mfifo_entry> mfifo;
 
-
-
-public:
-
-    class channel : public module { //TODO should be sc_module for name hirarchy of regs but peripheral/component/module/sc_module which one?
+    class channel : public module {
     public:
         enum state : u8 {
             Stopped = 0x0,
@@ -155,15 +163,14 @@ public:
             lockup_err = 0x1F, // channel_thread only
         };
         //pl330* parent; //todo see if i need this
-        reg<u32> ftr; // channel fault type register  0x040 + tag * 0x04 // see fault
-        reg<u32> csr; // channel status register      0x100 + tag * 0x08 // S/NS [21] | dmawfp_periph [15] | dmawfp_b_ns [14] | wfp wakeup number [8:4] | status [3:0]
-        reg<u32> cpc; // channel pc register          0x104 + tag * 0x08
-        reg<u32> sar; // source address register      0x400 + tag * 0x20
-        reg<u32> dar; // destination address register 0x404 + tag * 0x20
-        // ccr:  endian_swap_siqe [27:25] | dst_cache_ctrl [27:15] | dst_prot_ctr [14:22] | dst_burst_len [21:18] | dst_burst_size [17:15] | dst_inc [14] | src_cache_ctrl [13:11] | src_prot_ctrl [10:8] | src_burst_len [7:4] | src_burst_size [3:1] | src_inc [0]
-        reg<u32> ccr; // channel control register     0x408 + tag * 0x20
-        reg<u32> lc0; // loop counter 0 register      0x40c + tag * 0x20 //iterations [7:0]
-        reg<u32> lc1; // loop counter 1 register      0x410 + tag * 0x20 //iterations [7:0]
+        reg<u32> ftr; // channel fault type register
+        reg<u32> csr; // channel status register
+        reg<u32> cpc; // channel pc register
+        reg<u32> sar; // source address register
+        reg<u32> dar; // destination address register
+        reg<u32> ccr; // channel control register
+        reg<u32> lc0; // loop counter 0 register
+        reg<u32> lc1; // loop counter 1 register
         u32 tag;      // aka channel id
         bool stall;
         u32 request_flag;
@@ -172,12 +179,13 @@ public:
         inline bool is_state(u8 state) const {return (get_state() == state); }
         inline u32 get_state() const { return csr & 0x7;}
         inline void set_state(u32 new_state) { csr = (csr & ~0x7) | new_state;}
-        VCML_KIND(dma::pl330::channel);
 
-        channel(const sc_module_name& nm, u32 tag); //todo from the tag we can derive the base adress for all the registers
+        virtual ~channel() = default;
+        VCML_KIND(dma::pl330::channel);
+        channel(const sc_module_name& nm, u32 tag);
     };
 
-    class manager : public module { //TODO should MAYBE be sc_module for name hirarchy of regs
+    class manager : public module {
     public:
         enum state : u8 {
             Stopped = 0x0,
@@ -195,10 +203,10 @@ public:
             instr_fetch_err = 0x10,
             dbg_instr = 0x1E,
         };
-        reg<u32> dsr;  // DMA Manager Status Register          // S/NS [9] | Wakeup_event for dmawfe [8:4] | DMA status [3:0]
+        reg<u32> dsr;  // DMA Manager Status Register
         reg<u32> dpc;  // DMA Program Counter Register
-        reg<u32> fsrd; // Fault Status DMA Manager Register    // fsrd[1] HIGH = manager is faulting
-        reg<u32> ftrd; // Fault Type DMA Manager Register      // see faults
+        reg<u32> fsrd; // Fault Status DMA Manager Register
+        reg<u32> ftrd; // Fault Type DMA Manager Register
         bool stall;
         u32 watchdog_timer;
 
@@ -206,6 +214,7 @@ public:
         inline u32 get_state() const { return dsr & 0x7;}
         inline void set_state(u32 new_state) { dsr = (dsr & ~0x7) | new_state;}
 
+        virtual ~manager() = default;
         VCML_KIND(dma::pl330::manager);
         manager(const sc_module_name& nm);
     };
@@ -237,8 +246,8 @@ public:
     reg<u32> crd; // DMA Configuration Register //TODO: lines in data buffer (mfifo?), depth of read queue, issuing cap of read transactions, depth of write queue, issuing cap of write transactions, data bus width of AXI (amba)
     reg<u32> wd;  // Watchdog Register
 
-    reg<u8, 4> periph_id; // 0xFE0-0xFEC RO Peripheral Identification Registers // reserved[7:1] | integration_cfg[0] || revision [7:4] | designer_1 [3:0] || designer_0 [7:4]  part_number_0 [3:0] || part_number_0 [7:0]
-    reg<u8, 4> pcell_id; // 0xFF0-0xFFC RO Component Identification Registers // return 0xB105F00D
+    reg<u32, 4> periph_id; // 0xFE0-0xFEC RO Peripheral Identification Registers // reserved[7:1] | integration_cfg[0] || revision [7:4] | designer_1 [3:0] || designer_0 [7:4]  part_number_0 [3:0] || part_number_0 [7:0]
+    reg<u32, 4> pcell_id; // 0xFF0-0xFFC RO Component Identification Registers // return 0xB105F00D
 
 
     u8 periph_busy[NPER];
@@ -255,8 +264,10 @@ public:
 
     //todo debug functionality
 
-    void reset();
     pl330(const sc_module_name& nm);
+    virtual ~pl330();
+    VCML_KIND(dma::pl330);
+    virtual void reset() override;
 
 private:
     u32 last_rr_channel = 0;

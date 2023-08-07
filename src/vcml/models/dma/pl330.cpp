@@ -799,15 +799,6 @@ static void channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
             //todo if wdt is too high fault/abort here
     }
     return;
-
-    //  fetch one instruction and see if it can be placed in queue, stall if
-    //  queue was not available if it was placed/executed advance pc?! or
-    //  rather do that in the functions?!
-
-    // do actual work (the above just transfer commands)
-    // check if axi read/write is available and clear one command form the
-    // MFIFO if MFIFO has space move read command (or if not available write
-    // command) to it
 }
 
 void pl330::channel_execute_cycle(channel& channel){
@@ -819,7 +810,7 @@ void pl330::channel_execute_cycle(channel& channel){
     //one insn form read queue
     if(! read_queue.empty() && read_queue.front().data_len <= mfifo.num_free()) {//todo i couldnt find a reason for why we only execute the top of the queues during the cycle of the same channel but this is what qemu does
         auto insn = read_queue.front();
-        int len = insn.data_len - (insn.data_addr & (insn.data_len -1));//todo not sure what this does but they do this in qemu
+        int len = insn.data_len - (insn.data_addr & (insn.data_len -1)); //otherwise in case of an unaligned address the first read would be too long
         u8 buffer[len];//todo make static maybe
         dma.read(insn.data_addr,(void*)buffer,len);
         if ( mfifo.push({buffer[1],(u8)channel.tag,0,0,0})) {//todo mfifo this is not correct
@@ -834,7 +825,7 @@ void pl330::channel_execute_cycle(channel& channel){
     //one insn from write queue
     if (!write_queue.empty() && mfifo.front().tag == channel.tag) {
         auto insn = write_queue.front();
-        int len = insn.data_len - (insn.data_addr & (insn.data_len - 1)); // todo not sure what this does but they do this in qemu
+        int len = insn.data_len - (insn.data_addr & (insn.data_len - 1)); //otherwise in case of an unaligned address the first write would be too long
         u8 buffer[insn.data_len]; // todo make static maybe
         if (insn.zero_flag) {
             for (int i = 0; i < len; i++) {
@@ -848,13 +839,12 @@ void pl330::channel_execute_cycle(channel& channel){
         }
         dma.write(insn.data_addr,(void*)buffer,len);
         if (insn.inc)
-            insn.data_len += len;
+            insn.data_addr += len;
         insn.burst_len_counter--;
         if(!insn.burst_len_counter) {
             write_queue.pop();
         }
     }
-    //big TODO what to do about unaligned reads and writes, it looks to me like qemu is ignoring them, or is that what the weird "len" does? they make the mfifo way more complicated
 }
 
 pl330::channel::channel(const sc_module_name& nm, mwr::u32 tag):
@@ -912,6 +902,22 @@ void pl330::pl330_thread() {
     execute_cycle();
 }
 
+
+pl330::~pl330(){
+    //for now do nothing
+}
+
+void pl330::reset() {
+    peripheral::reset();
+
+    for (size_t i = 0; i < periph_id.count(); i++)
+        periph_id[i] = (AMBA_PID >> (i * 8)) & 0xff;
+
+    for (size_t i = 0; i < pcell_id.count(); i++)
+        pcell_id[i] = (AMBA_CID >> (i * 8)) & 0xff;
+
+}
+
 pl330::pl330(const sc_module_name& nm):
     peripheral(nm),
     read_queue(16),
@@ -937,9 +943,9 @@ pl330::pl330(const sc_module_name& nm):
     cr4("cr4", 0xE10),
     crd("crd", 0xE14),
     wd("wd", 0xE80),
-    periph_id("periph_id", 0xFE0),
-    pcell_id("pcell_id", 0xFF0), //,{0xB105F00D}),
-    in("in"), // todo do i need to configure dmi for this one and "out"?!
+    periph_id("periph_id", 0xfe0, 0x00000000), //,{0x00241330} or 0x30, 0x13, 0x24, 0x00
+    pcell_id("pcell_id", 0xff0, 0x00000000), //,{0xB105F00D}), or 0x0d, oxf0, 0x05, 0xb1
+    in("in"),
     dma("dma") {
     fsrc.allow_read_only();
     inten.allow_read_write();
