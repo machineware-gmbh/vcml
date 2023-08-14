@@ -30,10 +30,10 @@ public:
     tagged_multi_queue(int max_total_items) : max_sum(max_total_items), current_sum(0) {}
 
     bool push(const QUEUE_ITEM& item) {
-        if (current_sum + itemSize <= max_sum) {
+        if (current_sum + 1 <= max_sum) {
             queues[item.tag].push_back(item);
             tags.push_back(item.tag);
-            current_sum += itemSize;
+            current_sum += 1;
             return true;
         }
         return false;
@@ -47,7 +47,7 @@ public:
         QUEUE_ITEM frontItem = queues[frontTag].front();
         queues[frontTag].pop_front();
         tags.pop_front();
-        current_sum -= itemSize;
+        current_sum -= 1;
         return std::make_optional(frontItem);
     }
 
@@ -62,7 +62,7 @@ public:
         QUEUE_ITEM Item = queues[tag].front();
         queues[tag].pop_front();
         tags.erase(std::find(tags.begin(), tags.end(), tag));
-        current_sum -= itemSize;
+        current_sum -= 1;
         return std::make_optional(Item);
     }
 
@@ -96,17 +96,16 @@ private:
     std::deque<int> tags;
     int max_sum;
     int current_sum;
-    static constexpr int itemSize = sizeof(
-        QUEUE_ITEM); // You may adjust this based on your actual data size
 };
 
 class pl330 : public peripheral
 {
 public:
     enum pl330_configs : u32 {
-        NIRQ = 999, //todo tbd
-        NPER = 999,
+        NIRQ = 6, //max = 32 todo tbd
+        NPER = 6, //max = 32
         QUEUE_SIZE = 16,
+        MFIFO_LINES = 256,//max = 1024
         INSN_MAXSIZE = 6,
     };
     enum amba_ids : u32 {
@@ -116,7 +115,7 @@ public:
     struct queue_entry {
         u32 data_addr;
         u32 data_len;
-        u8 burst_len_counter;
+        u32 burst_len_counter;
         bool inc;
         bool zero_flag;
         u32 tag;
@@ -127,9 +126,6 @@ public:
     struct mfifo_entry {//todo this is wip i am not sure how to model this well in c++
         u8 buf;
         u8 tag;
-        u32 head;
-        u32 num;
-        u32 buf_size;
     };
     tagged_multi_queue<mfifo_entry> mfifo;
 
@@ -258,9 +254,7 @@ public:
 
 
     void pl330_thread();
-    void execute_cycle();
-    void channel_execute_cycle(channel& channel);
-    void manager_execute_cycle();
+    int channel_execute_cycle(channel& channel);
 
     //todo debug functionality
 
@@ -270,7 +264,7 @@ public:
     virtual void reset() override;
 
 private:
-    u32 last_rr_channel = 0;
+    bool execute_debug = false;
 };
 
 } // namespace arm
