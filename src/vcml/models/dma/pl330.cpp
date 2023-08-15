@@ -153,12 +153,12 @@ static void pl330_dmaadnh(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
-    std::cout<< "pl330_dmaend" <<std::endl;
+//    std::cout<< "pl330_dmaend" <<std::endl;
     if (ch->get_state() == pl330::channel::Executing) {
         /* Wait for all transfers to complete */
         if (! dma->mfifo.emptyTag(ch->tag) || ! dma->read_queue.emptyTag(ch->tag) ||
             ! dma->write_queue.emptyTag(ch->tag) ) {
-            ch->stall = 1;
+            ch->stall = true;
             return;
         }
     }
@@ -171,7 +171,7 @@ static void pl330_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_mn_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
                             uint8_t* args, int len) {
-    std::cout<< "pl330_mn_dmaend" <<std::endl;
+//    std::cout<< "pl330_mn_dmaend" <<std::endl;
     dma->manager.set_state(pl330::manager::Stopped);
 }
 
@@ -201,7 +201,7 @@ static void pl330_dmaflushp(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmago(pl330* dma, pl330::channel* ch, uint8_t opcode,
                         uint8_t* args, int len) {
-    std::cout<< "pl330_dmago" <<std::endl;
+//    std::cout<< "pl330_dmago" <<std::endl;
     uint8_t chan_id;
     uint32_t ns;
     uint32_t pc;
@@ -273,7 +273,7 @@ static void pl330_mn_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmald(pl330* dma, pl330::channel* ch, uint8_t opcode,
                         uint8_t* args, int len) {
-    std::cout<< "pl330_dmald" <<std::endl;
+//    std::cout<< "pc: " <<ch->cpc<< " pl330_dmald from: " << ch->sar <<std::endl;
     uint8_t bs = opcode & 0b11;
     uint32_t size, num;
     bool inc;
@@ -297,7 +297,7 @@ static void pl330_dmald(pl330* dma, pl330::channel* ch, uint8_t opcode,
     size = (uint32_t)1 << ch->ccr.get_field<CCR_SRC_BURST_SIZE>();
     inc = ch->ccr & ccr_bits::SRC_INC;
     // TODO comment put into read queue unless stall
-    dma->read_queue.push({ch->sar, size, num, inc, 0, ch->tag});
+    ch->stall = ! dma->read_queue.push({ch->sar, size, num, inc, 0, ch->tag});
     if (!ch->stall) {
         //        trace_pl330_dmald(ch->tag, ch->src, size, num, inc ? 'Y' :
         //        'N');
@@ -331,7 +331,7 @@ static void pl330_dmaldp(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmalp(pl330* dma, pl330::channel* ch, uint8_t opcode,
                         uint8_t* args, int len) {
-    std::cout<< "pl330_dmalp" <<std::endl;
+//    std::cout<<"pc: " <<ch->cpc<< " pl330_dmalp" <<std::endl;
     uint8_t lc = (opcode & 0b10) >> 1;
     switch (lc) {
     case 0:
@@ -345,7 +345,7 @@ static void pl330_dmalp(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmalpend(pl330* dma, pl330::channel* ch, uint8_t opcode,
                            uint8_t* args, int len) {
-    std::cout<< "pl330_dmalpend" <<std::endl;
+//    std::cout<< "pl330_dmalpend" <<std::endl;
     uint8_t nf = (opcode & 0b1'0000) >> 4;
     uint8_t bs = opcode & 0b11;
     uint8_t lc = (opcode & 0b100) >> 2;
@@ -379,7 +379,7 @@ static void pl330_dmalpend(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmamov(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
-    std::cout<< "pl330_dmamov" <<std::endl;
+//    std::cout<<"pc: "<<ch->cpc << " pl330_dmamov" <<std::endl;
     uint8_t rd = args[0] & 0b0111;
 
     if ((args[0] >> 3)) {
@@ -425,7 +425,6 @@ static void pl330_dmarmb(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmasev(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
-    std::cout<< "pl330_dmasev" <<std::endl;
     uint8_t ev_id;
 
     if (args[0] & 0b0111) {
@@ -433,6 +432,7 @@ static void pl330_dmasev(pl330* dma, pl330::channel* ch, uint8_t opcode,
         return;
     }
     ev_id = (args[0] >> 3) & 0b0001'1111;
+//    std::cout<< "pc: " << ch->cpc << " pl330_dmasev event id: " << (u32)ev_id <<std::endl;
     if (ev_id >= dma->cr0.get_field<CR0_NUM_EVENTS>()) {
         //pl330_fault(ch, pl330::channel::operand_invalid);
         return;
@@ -444,7 +444,7 @@ static void pl330_dmasev(pl330* dma, pl330::channel* ch, uint8_t opcode,
     if (dma->inten & (1 << ev_id)) {
         dma->intmis |= (1 << ev_id);
         //        trace_pl330_dmasev_evirq(ev_id);
-//        qemu_irq_raise(dma->irq[ev_id]); //todo implement interrupts
+        dma->irq[ev_id] = true;
     }
     //    trace_pl330_dmasev_event(ev_id);
     dma->int_event_ris |= (1 << ev_id);
@@ -479,7 +479,7 @@ static void pl330_mn_dmasev(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmast(pl330* dma, pl330::channel* ch, uint8_t opcode,
                         uint8_t* args, int len) {
-    std::cout<< "pl330_dmast" <<std::endl;
+//    std::cout<<"pc: " << ch->cpc <<" pl330_dmast to:" << ch->dar <<std::endl;
     uint8_t bs = opcode & 0b11;
     uint32_t size, num;
     bool inc;
@@ -496,7 +496,7 @@ static void pl330_dmast(pl330* dma, pl330::channel* ch, uint8_t opcode,
     num = ch->ccr.get_field<CCR_DST_BURST_LEN>() + 1;
     size = (uint32_t)1 << ch->ccr.get_field<CCR_DST_BURST_SIZE>();
     inc = ch->ccr & ccr_bits::DST_INC;
-    ch->stall = dma->write_queue.push({ch->dar, size, num,
+    ch->stall = ! dma->write_queue.push({ch->dar, size, num,
                                      inc, 0, ch->tag});
     if (!ch->stall) {
         //        trace_pl330_dmast(ch->tag, ch->dar, size, num, inc ? 'Y' :
@@ -884,7 +884,6 @@ int pl330::channel_execute_cycle(channel& channel){
               std::cout << "dma read failed" << std::endl;
 
         if ( mfifo.num_free() >= len) {
-            std::cout << "writing " << len << " byte into MFIFO" << std::endl;
             for (u32 i = 0; i < len; i++) {
                 mfifo.push({buffer[i],(u8)channel.tag});
             }
@@ -907,8 +906,8 @@ int pl330::channel_execute_cycle(channel& channel){
               buffer[i] = 0;
             }
         } else {
-            std::cout << "reading " << len << " byte from MFIFO" << std::endl;
             for (int i = 0; i < len; i++) {
+              assert(!mfifo.empty());
               buffer[i] = mfifo.pop().value().buf;
             }
         }
@@ -1007,7 +1006,7 @@ void pl330::reset() {
     cr0.set_field<CR0_NUM_PERIPH_REQ>(NPER-1);
     cr0.set_field<CR0_NUM_EVENTS>(NIRQ-1);
     crd.set_field<CRD_DATA_BUFFER_DEP>(MFIFO_LINES-1);
-    crd.set_field<CRD_DATA_WIDTH>(0b011);// 0b011 = 64-bit
+    crd.set_field<CRD_DATA_WIDTH>(0b010);// 0b011 = 64-bit
     crd.set_field<CRD_RD_CAP>(0);
     crd.set_field<CRD_RD_Q_DEP>(QUEUE_SIZE-1);
     crd.set_field<CRD_WR_CAP>(0);
@@ -1071,7 +1070,8 @@ pl330::pl330(const sc_module_name& nm):
     periph_id("periph_id", 0xfe0, 0x00000000), //,{0x00241330} or 0x30, 0x13, 0x24, 0x00
     pcell_id("pcell_id", 0xff0, 0x00000000), //,{0xB105F00D}), or 0x0d, oxf0, 0x05, 0xb1
     in("in"),
-    dma("dma") {
+    dma("dma"),
+    irq("irq",32u){
     fsrc.allow_read_only();
     inten.allow_read_write();
 
@@ -1079,7 +1079,20 @@ pl330::pl330(const sc_module_name& nm):
     int_event_ris.sync_always();
 
     intmis.allow_read_only();
+
     intclr.allow_write_only();
+    intclr.sync_on_write();
+    intclr.on_write([&](u32 v, size_t i) -> void {
+              u32 irq_clear_mask = (v & inten);
+              for (u32 j=0;j<32;j++){
+                  if(irq_clear_mask & (1 << j))
+                      irq[j] = false;
+              }
+        intclr &= ~irq_clear_mask;
+
+        m_dma.notify(SC_ZERO_TIME);
+    });
+
     dbgstatus.allow_read_only();
 
     dbgcmd.allow_write_only();//todo somehow when writing 0b00 this should trigger execution but doesnt

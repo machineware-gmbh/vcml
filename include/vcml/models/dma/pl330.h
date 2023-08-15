@@ -14,7 +14,7 @@
 #ifndef VCML_PL330_H
 #define VCML_PL330_H
 
-#include "vcml/core/peripheral.h"
+#include <vcml.h>
 
 #include <deque>
 #include <unordered_map>
@@ -239,7 +239,7 @@ public:
     reg<u32> cr2; // Configuration Register 2 //provides boot_addr
     reg<u32> cr3; // Configuration Register 3 //security state of event-interrupt resources after reset
     reg<u32> cr4; // Configuration Register 4 //security state of peripheral request ifs after reset
-    reg<u32> crd; // DMA Configuration Register //TODO: lines in data buffer (mfifo?), depth of read queue, issuing cap of read transactions, depth of write queue, issuing cap of write transactions, data bus width of AXI (amba)
+    reg<u32> crd; // DMA Configuration Register
     reg<u32> wd;  // Watchdog Register
 
     reg<u32, 4> periph_id; // 0xFE0-0xFEC RO Peripheral Identification Registers // reserved[7:1] | integration_cfg[0] || revision [7:4] | designer_1 [3:0] || designer_0 [7:4]  part_number_0 [3:0] || part_number_0 [7:0]
@@ -250,7 +250,7 @@ public:
 
     tlm_target_socket in;
     tlm_initiator_socket dma;
-    // tlm_initiator_socket irq; // todo irqs need to be modelled (and undertood)
+    gpio_initiator_array irq; // todo irqs need to be modelled (and understood)
 
 
     void pl330_thread();
