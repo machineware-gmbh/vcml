@@ -22,19 +22,8 @@ option(VCML_BUILD_PIC   "Build position independent code" ON)
 option(VCML_COVERAGE "Enable generation of code coverage data" OFF)
 set(VCML_LINTER "" CACHE STRING "Code linter to use")
 
-if(VCML_BUILD_PIC)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif()
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(FindGithubRepo)
-include(GenVersionInfo)
-include(Sanitizer)
-
+include(cmake/common.cmake)
 find_github_repo(mwr "machineware-gmbh/mwr")
-
 find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
 
@@ -186,7 +175,7 @@ set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
 set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
 set_target_properties(vcml PROPERTIES SOVERSION "${VCML_VERSION_MAJOR}")
 
-target_compile_options(vcml PRIVATE -Wall -Werror)
+target_compile_options(vcml PRIVATE ${MWR_COMPILER_WARN_FLAGS})
 target_compile_features(vcml PUBLIC cxx_std_17)
 target_compile_definitions(vcml PUBLIC $<$<CONFIG:DEBUG>:VCML_DEBUG>)
 target_compile_definitions(vcml PUBLIC SC_INCLUDE_DYNAMIC_PROCESSES)

@@ -11,6 +11,7 @@
 macro(core_test test)
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} testing)
+    target_compile_options(${test} PRIVATE ${MWR_COMPILER_WARN_FLAGS})
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
     add_test(NAME core/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})

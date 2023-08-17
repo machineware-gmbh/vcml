@@ -43,16 +43,16 @@ private:
 
 } // namespace vcml
 
-#define VCML_EXPORT_MODEL(type, name, args)                                 \
-    static vcml::module* MWR_CAT(create_model_, __LINE__)(                  \
-        const sc_core::sc_module_name& name,                                \
-        const std::vector<std::string>& args);                              \
-    static MWR_DECL_CONSTRUCTOR void MWR_CAT(register_model_, __LINE__)() { \
-        if (!vcml::model::define(#type, MWR_CAT(create_model_, __LINE__)))  \
-            VCML_ERROR("model '%s' already defined", #type);                \
-    }                                                                       \
-    static vcml::module* MWR_CAT(create_model_, __LINE__)(                  \
-        const sc_core::sc_module_name& name,                                \
+#define VCML_EXPORT_MODEL(type, name, args)                                \
+    static vcml::module* MWR_CAT(create_model_, __LINE__)(                 \
+        const sc_core::sc_module_name& name,                               \
+        const std::vector<std::string>& args);                             \
+    MWR_CONSTRUCTOR(MWR_CAT(register_model_, __LINE__)) {                  \
+        if (!vcml::model::define(#type, MWR_CAT(create_model_, __LINE__))) \
+            VCML_ERROR("model '%s' already defined", #type);               \
+    }                                                                      \
+    static vcml::module* MWR_CAT(create_model_, __LINE__)(                 \
+        const sc_core::sc_module_name& name,                               \
         const std::vector<std::string>& args)
 
 #endif

@@ -11,6 +11,7 @@
 macro(model_test test)
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} testing)
+    target_compile_options(${test} PRIVATE ${MWR_COMPILER_WARN_FLAGS})
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
     add_test(NAME models/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
     set_tests_properties(models/${test} PROPERTIES ENVIRONMENT "{VCML_ENVVAR}")
