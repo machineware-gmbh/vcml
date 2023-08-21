@@ -128,13 +128,13 @@ inline static void pl330_dmaadxh(pl330::channel* ch, uint8_t* args, bool ra,
 
 static void pl330_dmaaddh(pl330* dma, pl330::channel* ch, uint8_t opcode,
                           uint8_t* args, int len) {
-    std::cout << "pl330_dmaaddh" << std::endl;
+    // std::cout << "pl330_dmaaddh" << std::endl;
     pl330_dmaadxh(ch, args, !!(opcode & 0b10), false);
 }
 
 static void pl330_dmaadnh(pl330* dma, pl330::channel* ch, uint8_t opcode,
                           uint8_t* args, int len) {
-    std::cout << "pl330_dmaadnh" << std::endl;
+    // std::cout << "pl330_dmaadnh" << std::endl;
     pl330_dmaadxh(ch, args, !!(opcode & 0b10), true);
 }
 
@@ -165,7 +165,7 @@ static void pl330_mn_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
 // flush peripheral
 static void pl330_dmaflushp(pl330* dma, pl330::channel* ch, uint8_t opcode,
                             uint8_t* args, int len) {
-    std::cout << "pl330_dmaflushp" << std::endl;
+    // std::cout << "pl330_dmaflushp" << std::endl;
     uint8_t periph_id;
 
     if (args[0] & 7) {
@@ -190,8 +190,8 @@ static void pl330_dmago(pl330* dma, pl330::channel* ch, uint8_t opcode,
     uint32_t ns;
     uint32_t pc;
 
-    //    std::cout<< "pl330_dmago" <<std::endl;
-    //    trace_pl330_dmago();
+    // std::cout<< "pl330_dmago" <<std::endl;
+    // trace_pl330_dmago();
     ns = !!(opcode & 0b10);
     chan_id = args[0] & 7;
     if ((args[0] >> 3)) {
@@ -230,7 +230,7 @@ static void pl330_dmago(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
                           uint8_t* args, int len) {
-    std::cout << "pl330_dmakill" << std::endl;
+    // std::cout << "pl330_dmakill" << std::endl;
     if (ch->is_state(pl330::channel::Faulting) ||
         ch->is_state(pl330::channel::Faulting_completing)) {
         /* This is the only way for a channel to leave the faulting state */
@@ -253,14 +253,14 @@ static void pl330_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_mn_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
                              uint8_t* args, int len) {
-    std::cout << "pl330_mn_dmakill" << std::endl;
+    // std::cout << "pl330_mn_dmakill" << std::endl;
     dma->manager.set_state(pl330::manager::Stopped);
 }
 
 static void pl330_dmald(pl330* dma, pl330::channel* ch, uint8_t opcode,
                         uint8_t* args, int len) {
-    //    std::cout<< "pc: " <<ch->cpc<< " pl330_dmald from: " << ch->sar
-    //    <<std::endl;
+    // std::cout << "pc: " << ch->cpc << " pl330_dmald from: " << ch->sar
+    //           << std::endl;
     uint8_t bs = opcode & 0b11;
     uint32_t size, num;
     bool inc;
@@ -295,7 +295,7 @@ static void pl330_dmald(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmaldp(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
-    std::cout << "pl330_dmaldp" << std::endl;
+    // std::cout << "pl330_dmaldp" << std::endl;
 
     if (args[0] & 7) {
         // pl330_fault(ch, pl330::channel::operand_invalid);
@@ -364,6 +364,7 @@ static void pl330_dmamov(pl330* dma, pl330::channel* ch, uint8_t opcode,
         // pl330_fault(ch, PL330_FAULT_OPERAND_INVALID);
         return;
     }
+    // todo abort if [9] is 0 and channel is ns==1
     uint32_t im = (((uint32_t)args[4]) << 24) | (((uint32_t)args[3]) << 16) |
                   (((uint32_t)args[2]) << 8) | (((uint32_t)args[1]));
 
@@ -476,9 +477,10 @@ static void pl330_dmast(pl330* dma, pl330::channel* ch, uint8_t opcode,
     ch->stall = !dma->write_queue.push(
         pl330::queue_entry{ ch->dar, size, num, inc, 0, ch->tag });
     if (!ch->stall) {
-        //  std::cout<<"pc: " << ch->cpc <<" pl330_dmast to:" << ch->dar
-        //  <<std::endl; trace_pl330_dmast(ch->tag, ch->dar, size, num, inc ?
-        //  'Y' : 'N');
+        // std::cout << "pc: " << ch->cpc << " pl330_dmast to:" << ch->dar
+        //           << std::endl;
+        //   trace_pl330_dmast(ch->tag, ch->dar, size, num, inc ?
+        //   'Y' : 'N');
         ch->dar += inc ? size * num - (ch->dar & (size - 1)) : 0;
     }
 }
@@ -735,7 +737,6 @@ static void run_channels(pl330& dma) {
     for (auto& channel : dma.channels) {
         if (!(channel.is_state(pl330::channel::Stopped))) {
             run_channel(dma, channel);
-            break;
         }
     }
 }
@@ -802,7 +803,6 @@ static void handle_debug_insn(pl330& dma) {
     } else {
         insn.exec(&dma, nullptr, opcode, args, insn.size);
     }
-
     dma.dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
 }
 
@@ -820,7 +820,7 @@ static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
         return 0;
 
     execute_insn(dma, channel, insn);
-    if (!channel.stall) {
+    if (!channel.stall && !channel.is_state(pl330::channel::Stopped)) {
         channel.cpc += insn->size;
         channel.watchdog_timer = 0;
         return 1;
@@ -935,8 +935,10 @@ pl330::manager::manager(const sc_module_name& nm):
 void pl330::pl330_thread() {
     while (true) {
         wait(m_dma);
-        if (execute_debug)
+        if (execute_debug) {
             handle_debug_insn(*this);
+            execute_debug = false;
+        }
         run_manager(*this);
         run_channels(*this);
         // todo re-trigger if any channels are in states where they might have
@@ -984,9 +986,10 @@ void pl330::reset() {
         channel.watchdog_timer = 0;
         channel.stall = false;
     }
-    // reset mfifo
-    // reset queues
 
+    read_queue.reset();
+    write_queue.reset();
+    mfifo.reset();
     // reset id registers
     for (size_t i = 0; i < periph_id.count(); i++)
         periph_id[i] = (AMBA_PID >> (i * 8)) & 0xff;
@@ -1020,10 +1023,10 @@ pl330::pl330(const sc_module_name& nm):
     cr4("cr4", 0xE10),
     crd("crd", 0xE14),
     wd("wd", 0xE80),
-    periph_id("periph_id", 0xfe0,
-              0x00000000), //,{0x00241330} or 0x30, 0x13, 0x24, 0x00
-    pcell_id("pcell_id", 0xff0,
-             0x00000000), //,{0xB105F00D}), or 0x0d, oxf0, 0x05, 0xb1
+    //{0x00241330} or 0x30, 0x13, 0x24, 0x00
+    periph_id("periph_id", 0xfe0, 0x00000000),
+    //{0xB105F00D}), or 0x0d, oxf0, 0x05, 0xb1
+    pcell_id("pcell_id", 0xff0, 0x00000000),
     in("in"),
     dma("dma"),
     irq("irq", 32ul) {
@@ -1046,7 +1049,8 @@ pl330::pl330(const sc_module_name& nm):
             if (irq_clear_mask & (1 << j))
                 irq[j] = false;
         }
-        intclr &= ~irq_clear_mask;
+        int_event_ris &= ~irq_clear_mask;
+        intmis &= ~irq_clear_mask;
         m_dma.notify(SC_ZERO_TIME);
     });
 

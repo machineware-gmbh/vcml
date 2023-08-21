@@ -3,13 +3,10 @@
 //
 
 // TODO:
-// synch policies for registers
 // irq stuff
-// mfifo structure
 // faulting logic
 // check state transitions
 // test
-// debug instructions
 
 #ifndef VCML_PL330_H
 #define VCML_PL330_H
@@ -66,12 +63,19 @@ public:
         return std::make_optional(Item);
     }
 
-    void remove_tagged(int tag) {
+    void clear(int tag) {
         queues[tag].clear();
         tags.erase(std::remove(tags.begin(), tags.end(), tag), tags.end());
     }
+    inline void remove_tagged(int tag) { clear(tag); }
 
-    bool empty() const { return tags.empty(); }
+    void clear() {
+        queues.clear(); // assumes QUEUE_ITEM does not contain owning pointers
+        tags.clear();
+    }
+    inline void reset() { clear(); }
+
+    inline bool empty() const { return tags.empty(); }
 
     inline bool empty(int tag) const { return queues.at(tag).empty(); }
 
@@ -220,48 +224,28 @@ public:
     sc_vector<channel> channels;
     manager manager;
 
-    reg<u32> fsrc; //@0x034 RO Fault Status DMA Channel Register // for [7:0]
-                   //fsrc[N] HIGH = Channel N is faulting
+    reg<u32> fsrc; // Fault Status DMA Channel Register
 
-    reg<u32> inten; // Interrupt Enable Register           // inten[N] HIGH to
-                    // also send interrupt when event N is happening
-    reg<u32> int_event_ris; // Event-Interrupt Raw Status Register //
-                            // int_event_ris[N] HIGH = event N active
-    reg<u32> intmis; // Interrupt Status Register           // intmis[N] HIGH =
-                     // interrupt N active
-    reg<u32> intclr; // Interrupt Clear Register            // intclr[N] LOW =
-                     // nothing, HIGH = clear inq[N] after event, if inten[N]
-                     // is HIGH
+    reg<u32> inten;         // Interrupt Enable Register
+    reg<u32> int_event_ris; // Event-Interrupt Raw Status Register
+    reg<u32> intmis;        // Interrupt Status Register
+    reg<u32> intclr;        // Interrupt Clear Register
 
-    reg<u32> dbgstatus; // Debug Status Register           // dbgstatus [0],
-                        // 1=busy, 0=idle
-    reg<u32> dbgcmd; // Debug Command Register          // dbgcmd [1:0] //TODO:
-                     // all patterns except 0b00 are reserved, do we need this
-                     // register?!
-    reg<u32> dbginst0; // Debug Instructions-0 Register   // insn byte 2
-                       // [31:24] | insn byte 1 [23:16] | ch_nr [10:8] |
-                       // manager(0)/channel(1) thread [0]
-    reg<u32>
-        dbginst1; // Debug Instructions-1 Register   // upper instruction bytes
-                  // insn byte 6 | insn byte 5 | insn byte 4 | insn byte 3
+    reg<u32> dbgstatus; // Debug Status Register
+    reg<u32> dbgcmd;    // Debug Command Register
+    reg<u32> dbginst0;  // Debug Instructions-0 Register
+    reg<u32> dbginst1;  // Debug Instructions-1 Register
 
     reg<u32> cr0; // Configuration Register 0
     reg<u32> cr1; // Configuration Register 1 //TODO: probably not needed?!
-    reg<u32> cr2; // Configuration Register 2 //provides boot_addr
-    reg<u32> cr3; // Configuration Register 3 //security state of
-                  // event-interrupt resources after reset
-    reg<u32> cr4; // Configuration Register 4 //security state of peripheral
-                  // request ifs after reset
+    reg<u32> cr2; // Configuration Register 2
+    reg<u32> cr3; // Configuration Register 3
+    reg<u32> cr4; // Configuration Register 4
     reg<u32> crd; // DMA Configuration Register
     reg<u32> wd;  // Watchdog Register
 
-    reg<u32, 4>
-        periph_id; // 0xFE0-0xFEC RO Peripheral Identification Registers //
-                   // reserved[7:1] | integration_cfg[0] || revision [7:4] |
-                   // designer_1 [3:0] || designer_0 [7:4]  part_number_0 [3:0]
-                   // || part_number_0 [7:0]
-    reg<u32, 4> pcell_id; // 0xFF0-0xFFC RO Component Identification Registers
-                          // // return 0xB105F00D
+    reg<u32, 4> periph_id; // Peripheral Identification Registers
+    reg<u32, 4> pcell_id;  // Component Identification Registers
 
     u8 periph_busy[NPER];
 
