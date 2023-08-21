@@ -25,71 +25,75 @@ class tagged_multi_queue
 {
 public:
     tagged_multi_queue(int max_total_items):
-        max_sum(max_total_items), current_sum(0) {}
+        m_max_sum(max_total_items), m_current_sum(0) {}
 
     bool push(const QUEUE_ITEM& item) {
-        if (current_sum + 1 <= max_sum) {
-            queues[item.tag].push_back(item);
-            tags.push_back(item.tag);
-            current_sum += 1;
+        if (m_current_sum + 1 <= m_max_sum) {
+            m_queues[item.tag].push_back(item);
+            m_tags.push_back(item.tag);
+            m_current_sum += 1;
             return true;
         }
         return false;
     }
 
     std::optional<QUEUE_ITEM> pop() {
-        if (tags.empty()) {
+        if (m_tags.empty()) {
             return std::nullopt;
         }
-        int frontTag = tags.front();
-        QUEUE_ITEM frontItem = queues[frontTag].front();
-        queues[frontTag].pop_front();
-        tags.pop_front();
-        current_sum -= 1;
-        return std::make_optional(frontItem);
+        int front_tag = m_tags.front();
+        QUEUE_ITEM front_item = m_queues[front_tag].front();
+        m_queues[front_tag].pop_front();
+        m_tags.pop_front();
+        m_current_sum -= 1;
+        return std::make_optional(front_item);
     }
 
-    const QUEUE_ITEM& front() const { return queues.at(tags.front()).front(); }
-    QUEUE_ITEM& front_mut() { return queues.at(tags.front()).front(); }
+    const QUEUE_ITEM& front() const {
+        return m_queues.at(m_tags.front()).front();
+    }
+    QUEUE_ITEM& front_mut() { return m_queues.at(m_tags.front()).front(); }
 
     std::optional<QUEUE_ITEM> pop(int tag) {
-        if (queues[tag].empty()) {
+        if (m_queues[tag].empty()) {
             return std::nullopt;
         }
-        QUEUE_ITEM Item = queues[tag].front();
-        queues[tag].pop_front();
-        tags.erase(std::find(tags.begin(), tags.end(), tag));
-        current_sum -= 1;
-        return std::make_optional(Item);
+        QUEUE_ITEM item = m_queues[tag].front();
+        m_queues[tag].pop_front();
+        m_tags.erase(std::find(m_tags.begin(), m_tags.end(), tag));
+        m_current_sum -= 1;
+        return std::make_optional(item);
     }
 
     void clear(int tag) {
-        queues[tag].clear();
-        tags.erase(std::remove(tags.begin(), tags.end(), tag), tags.end());
+        m_queues[tag].clear();
+        m_tags.erase(std::remove(m_tags.begin(), m_tags.end(), tag),
+                     m_tags.end());
     }
     inline void remove_tagged(int tag) { clear(tag); }
 
     void clear() {
-        queues.clear(); // assumes QUEUE_ITEM does not contain owning pointers
-        tags.clear();
+        m_queues
+            .clear(); // assumes QUEUE_ITEM does not contain owning pointers
+        m_tags.clear();
     }
     inline void reset() { clear(); }
 
-    inline bool empty() const { return tags.empty(); }
+    inline bool empty() const { return m_tags.empty(); }
 
-    inline bool empty(int tag) const { return queues.at(tag).empty(); }
+    inline bool empty(int tag) const { return m_queues.at(tag).empty(); }
 
-    inline size_t size() const { return tags.size(); }
+    inline size_t size() const { return m_tags.size(); }
 
-    inline size_t num_free() const { return max_sum - current_sum; }
+    inline size_t num_free() const { return m_max_sum - m_current_sum; }
 
-    inline size_t sizeTag(int tag) const { return queues[tag].size(); }
+    inline size_t sizeTag(int tag) const { return m_queues[tag].size(); }
 
 private:
-    std::unordered_map<int, std::deque<QUEUE_ITEM>> queues;
-    std::deque<int> tags;
-    int max_sum;
-    int current_sum;
+    std::unordered_map<int, std::deque<QUEUE_ITEM>> m_queues;
+    std::deque<int> m_tags;
+    int m_max_sum;
+    int m_current_sum;
 };
 
 class pl330 : public peripheral

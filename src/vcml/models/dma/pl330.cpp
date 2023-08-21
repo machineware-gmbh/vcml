@@ -766,7 +766,6 @@ static void run_manager(pl330& dma) {
                 VCML_ERROR("pl330 manager watchdog timeout");
         }
     }
-    return;
 }
 
 static void handle_debug_insn(pl330& dma) {
@@ -793,6 +792,10 @@ static void handle_debug_insn(pl330& dma) {
     for (auto& insn_candidate : debug_insn_desc) {
         if ((opcode & insn_candidate.opmask) == insn_candidate.opcode)
             insn = insn_candidate;
+    }
+    if (!insn.exec) {
+        std::cout << "Pl330 invalid debug instruction opcode" << std::endl;
+        return;
     }
 
     // check target
