@@ -16,19 +16,19 @@ enum fsrd_bits {
 typedef field<0, 8, u32> FSRC_FAULT_STATUS;
 
 enum ftrd_bits {
-    FTRD_MASK = pl330::manager::undef_instr | pl330::manager::operand_invalid |
-                pl330::manager::dmago_err | pl330::manager::evnt_err |
-                pl330::manager::instr_fetch_err | pl330::manager::dbg_instr,
+    FTRD_MASK = pl330::manager::UNDEF_INSTR | pl330::manager::OPERAND_INVALID |
+                pl330::manager::DMAGO_ERR | pl330::manager::EVNT_ERR |
+                pl330::manager::INSTR_FETCH_ERR | pl330::manager::DBG_INSTR,
 };
 
 enum ftr_bits {
-    FTR_MASK = pl330::channel::undef_instr | pl330::channel::operand_invalid |
-               pl330::channel::ch_evnt_err | pl330::channel::ch_periph_err |
-               pl330::channel::ch_rdwr_err | pl330::channel::mfifo_err |
-               pl330::channel::st_data_unavailable |
-               pl330::channel::instr_fetch_err |
-               pl330::channel::data_write_err | pl330::channel::data_read_err |
-               pl330::channel::dbg_instr | pl330::channel::lockup_err,
+    FTR_MASK = pl330::channel::UNDEF_INSTR | pl330::channel::OPERAND_INVALID |
+               pl330::channel::CH_EVNT_ERR | pl330::channel::CH_PERIPH_ERR |
+               pl330::channel::CH_RDWR_ERR | pl330::channel::MFIFO_ERR |
+               pl330::channel::ST_DATA_UNAVAILABLE |
+               pl330::channel::INSTR_FETCH_ERR |
+               pl330::channel::DATA_WRITE_ERR | pl330::channel::DATA_READ_ERR |
+               pl330::channel::DBG_INSTR | pl330::channel::LOCKUP_ERR,
 };
 
 enum csr_bits {
@@ -141,7 +141,7 @@ static void pl330_dmaadnh(pl330* dma, pl330::channel* ch, uint8_t opcode,
 static void pl330_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
     //    std::cout<< "pl330_dmaend" <<std::endl;
-    if (ch->get_state() == pl330::channel::Executing) {
+    if (ch->get_state() == pl330::channel::EXECUTING) {
         /* Wait for all transfers to complete */
         if (!dma->mfifo.empty(ch->tag) || !dma->read_queue.empty(ch->tag) ||
             !dma->write_queue.empty(ch->tag)) {
@@ -153,13 +153,13 @@ static void pl330_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
     dma->mfifo.remove_tagged(ch->tag);
     dma->read_queue.remove_tagged(ch->tag);
     dma->write_queue.remove_tagged(ch->tag);
-    ch->set_state(pl330::channel::Stopped);
+    ch->set_state(pl330::channel::STOPPED);
 }
 
 static void pl330_mn_dmaend(pl330* dma, pl330::channel* ch, uint8_t opcode,
                             uint8_t* args, int len) {
     //    std::cout<< "pl330_mn_dmaend" <<std::endl;
-    dma->manager.set_state(pl330::manager::Stopped);
+    dma->manager.set_state(pl330::manager::STOPPED);
 }
 
 // flush peripheral
@@ -208,7 +208,7 @@ static void pl330_dmago(pl330* dma, pl330::channel* ch, uint8_t opcode,
     auto& channel = dma->channels[chan_id];
     pc = (((uint32_t)args[4]) << 24) | (((uint32_t)args[3]) << 16) |
          (((uint32_t)args[2]) << 8) | (((uint32_t)args[1]));
-    if (!channel.is_state(pl330::channel::Stopped)) {
+    if (!channel.is_state(pl330::channel::STOPPED)) {
         // pl330_fault(dma->manager,pl330::manager::operand_invalid);
         //  TODO: as per the spec if the channel is not Stopped DMANOP should
         //  be performed instead (not a fault)
@@ -225,14 +225,14 @@ static void pl330_dmago(pl330* dma, pl330::channel* ch, uint8_t opcode,
     }
     set_bit<CNS>(channel.csr, ns);
     channel.cpc = pc;
-    channel.set_state(pl330::channel::Executing);
+    channel.set_state(pl330::channel::EXECUTING);
 }
 
 static void pl330_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
                           uint8_t* args, int len) {
     // std::cout << "pl330_dmakill" << std::endl;
-    if (ch->is_state(pl330::channel::Faulting) ||
-        ch->is_state(pl330::channel::Faulting_completing)) {
+    if (ch->is_state(pl330::channel::FAULTING) ||
+        ch->is_state(pl330::channel::FAULTING_COMPLETING)) {
         /* This is the only way for a channel to leave the faulting state */
         ch->ftr &= ~FTR_MASK;
         //        dma->num_faulting--;
@@ -241,20 +241,20 @@ static void pl330_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
         //            qemu_irq_lower(dma->irq_abort); // todo not qemu
         //        }
     }
-    ch->set_state(pl330::channel::Killing);
+    ch->set_state(pl330::channel::KILLING);
     // TODO: according to spec a channel thread should wait for AXI
     // transactions with its TAG as ID to complete here, but it isn't instead
     // it just removes them
     dma->mfifo.remove_tagged(ch->tag);
     dma->read_queue.remove_tagged(ch->tag);
     dma->write_queue.remove_tagged(ch->tag);
-    ch->set_state(pl330::channel::Stopped);
+    ch->set_state(pl330::channel::STOPPED);
 }
 
 static void pl330_mn_dmakill(pl330* dma, pl330::channel* ch, uint8_t opcode,
                              uint8_t* args, int len) {
     // std::cout << "pl330_mn_dmakill" << std::endl;
-    dma->manager.set_state(pl330::manager::Stopped);
+    dma->manager.set_state(pl330::manager::STOPPED);
 }
 
 static void pl330_dmald(pl330* dma, pl330::channel* ch, uint8_t opcode,
@@ -394,11 +394,11 @@ static void pl330_dmarmb(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
     std::cout << "pl330_dmarmb" << std::endl;
     if (!dma->read_queue.empty(ch->tag)) {
-        ch->set_state(pl330::channel::At_barrier);
+        ch->set_state(pl330::channel::AT_BARRIER);
         ch->stall = 1;
         return;
     } else {
-        ch->set_state(pl330::channel::Executing);
+        ch->set_state(pl330::channel::EXECUTING);
     }
 }
 
@@ -534,15 +534,15 @@ static void pl330_dmawfe(pl330* dma, pl330::channel* ch, uint8_t opcode,
         return;
     }
     ch->csr.set_field<CSR_WAKEUP_NUMBER>(ev_id);
-    ch->set_state(pl330::channel::Waiting_for_event);
+    ch->set_state(pl330::channel::WAITING_FOR_EVENT);
     if (~dma->inten & dma->int_event_ris & 1 << ev_id) {
-        ch->set_state(pl330::channel::Executing);
+        ch->set_state(pl330::channel::EXECUTING);
         /* If anyone else is currently waiting on the same event, let them
          * clear the ev_status, so they pick up event as well
          */
         for (u32 i = 0; i < dma->cr0.get_field<CR0_NUM_CHNLS>(); ++i) {
             pl330::channel* peer = &dma->channels[i];
-            if (peer->is_state(pl330::channel::Waiting_for_event) &&
+            if (peer->is_state(pl330::channel::WAITING_FOR_EVENT) &&
                 ch->csr.get_field<CSR_WAKEUP_NUMBER>() == ev_id) {
                 return;
             }
@@ -572,15 +572,15 @@ static void pl330_mn_dmawfe(pl330* dma, pl330::channel* ch, uint8_t opcode,
         return;
     }
     dma->manager.dsr.set_field<DSR_WAKEUP_EVENT>(ev_id);
-    dma->manager.set_state(pl330::manager::Waiting_for_event);
+    dma->manager.set_state(pl330::manager::WAITING_FOR_EVENT);
     if (~dma->inten & dma->int_event_ris & (1 << ev_id)) {
-        dma->manager.set_state(pl330::manager::Executing);
+        dma->manager.set_state(pl330::manager::EXECUTING);
         /* If anyone else is currently waiting on the same event, let them
          * clear the ev_status, so they pick up event as well
          */
         for (u32 i = 0; i < dma->cr0.get_field<CR0_NUM_CHNLS>(); ++i) {
             pl330::channel* peer = &dma->channels[i];
-            if (peer->is_state(pl330::manager::Waiting_for_event) &&
+            if (peer->is_state(pl330::manager::WAITING_FOR_EVENT) &&
                 dma->manager.dsr.get_field<DSR_WAKEUP_EVENT>() == ev_id) {
                 return;
             }
@@ -632,10 +632,10 @@ static void pl330_dmawfp(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
     if (dma->periph_busy[periph_id]) { // TODO: how do we wait for a peripheral
                                        // in vcml?!
-        ch->set_state(pl330::channel::Waiting_for_peripheral);
+        ch->set_state(pl330::channel::WAITING_FOR_PERIPHERAL);
         ch->stall = 1;
-    } else if (ch->is_state(pl330::channel::Waiting_for_peripheral)) {
-        ch->set_state(pl330::channel::Executing);
+    } else if (ch->is_state(pl330::channel::WAITING_FOR_PERIPHERAL)) {
+        ch->set_state(pl330::channel::EXECUTING);
     }
 }
 
@@ -643,11 +643,11 @@ static void pl330_dmawmb(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
     std::cout << "pl330_dmawmb" << std::endl;
     if (!dma->write_queue.empty(ch->tag)) {
-        ch->set_state(pl330::channel::At_barrier);
+        ch->set_state(pl330::channel::AT_BARRIER);
         ch->stall = 1;
         return;
     } else {
-        ch->set_state(pl330::channel::Executing);
+        ch->set_state(pl330::channel::EXECUTING);
     }
 }
 
@@ -660,7 +660,7 @@ struct insn_descr {
 
 // clang-format off
 /* Instructions which can be issued via channel threads. */
-static const insn_descr ch_insn_descr[] = {
+static const insn_descr CH_INSN_DESCR[] = {
     {.opcode = 0x54, .opmask = 0xFD, .size = 3, .exec = pl330_dmaaddh,},
     {.opcode = 0x5c, .opmask = 0xFD, .size = 3, .exec = pl330_dmaadnh,},
     {.opcode = 0x00, .opmask = 0xFF, .size = 1, .exec = pl330_dmaend,},
@@ -682,7 +682,7 @@ static const insn_descr ch_insn_descr[] = {
 }; //todo consider reordering for speed
 
 /* Instructions which can be issued via the manager thread. */
-static const insn_descr mn_insn_descr[] = {
+static const insn_descr MN_INSN_DESCR[] = {
     {.opcode = 0x00,.opmask = 0xFF,.size = 1,.exec = pl330_mn_dmaend,},
     {.opcode = 0xA0,.opmask = 0xFD,.size = 6,.exec = pl330_dmago,},
     {.opcode = 0x01,.opmask = 0xFF,.size = 1,.exec = pl330_mn_dmakill,},
@@ -692,11 +692,10 @@ static const insn_descr mn_insn_descr[] = {
 };
 
 /* Instructions which can be issued via debug registers. */
-static const insn_descr debug_insn_desc[] = {
+static const insn_descr DEBUG_INSN_DESC[] = {
     {.opcode = 0xA0,.opmask = 0xFD,.size = 6,.exec = pl330_dmago,},
     {.opcode = 0x01,.opmask = 0xFF,.size = 1,.exec = pl330_dmakill,},
-    {.opcode = 0x34,.opmask = 0xFF,.size = 2,.exec = pl330_dmasev,
-    },
+    {.opcode = 0x34,.opmask = 0xFF,.size = 2,.exec = pl330_dmasev,},
 };
 // clang-format on
 
@@ -704,7 +703,7 @@ static inline const insn_descr* fetch_ch_insn(pl330* dma,
                                               pl330::channel& channel) {
     u8 opcode;
     dma->dma.read(channel.cpc, &opcode, 1);
-    for (auto& insn_candidate : ch_insn_descr) {
+    for (auto& insn_candidate : CH_INSN_DESCR) {
         if (insn_candidate.opcode == (opcode & insn_candidate.opmask))
             return &insn_candidate;
     }
@@ -714,7 +713,7 @@ static inline const insn_descr* fetch_ch_insn(pl330* dma,
 static inline const insn_descr* fetch_mn_insn(pl330* dma) {
     u8 opcode;
     dma->dma.read(dma->manager.dpc, &opcode, 1);
-    for (auto& insn_candidate : mn_insn_descr) {
+    for (auto& insn_candidate : MN_INSN_DESCR) {
         if (insn_candidate.opcode == (opcode & insn_candidate.opmask))
             return &insn_candidate;
     }
@@ -735,22 +734,22 @@ static void run_channel(pl330& dma, pl330::channel& channel) {
 
 static void run_channels(pl330& dma) {
     for (auto& channel : dma.channels) {
-        if (!(channel.is_state(pl330::channel::Stopped))) {
+        if (!(channel.is_state(pl330::channel::STOPPED))) {
             run_channel(dma, channel);
         }
     }
 }
 
 static void run_manager(pl330& dma) {
-    if (!dma.manager.is_state(pl330::manager::Executing) &&
-        !dma.manager.is_state(pl330::manager::Waiting_for_event)) {
+    if (!dma.manager.is_state(pl330::manager::EXECUTING) &&
+        !dma.manager.is_state(pl330::manager::WAITING_FOR_EVENT)) {
         return;
     }
     uint8_t buffer[pl330::INSN_MAXSIZE];
     dma.manager.stall = false;
     while (((!dma.manager.stall) &&
-            dma.manager.is_state(pl330::manager::Waiting_for_event)) ||
-           dma.manager.is_state(pl330::manager::Executing)) {
+            dma.manager.is_state(pl330::manager::WAITING_FOR_EVENT)) ||
+           dma.manager.is_state(pl330::manager::EXECUTING)) {
         const insn_descr* insn = fetch_mn_insn(&dma);
         if (!insn)
             break;
@@ -760,7 +759,7 @@ static void run_manager(pl330& dma) {
         if (!dma.manager.stall) {
             dma.manager.dpc += insn->size;
             dma.manager.watchdog_timer = 0;
-        } else if (dma.manager.is_state(pl330::channel::Executing)) {
+        } else if (dma.manager.is_state(pl330::channel::EXECUTING)) {
             dma.manager.watchdog_timer += 1;
             if (dma.manager.watchdog_timer > pl330::WD_TIMEOUT)
                 VCML_ERROR("pl330 manager watchdog timeout");
@@ -789,7 +788,7 @@ static void handle_debug_insn(pl330& dma) {
 
     //    check if insn exists
     insn_descr insn = { 0, 0, 0, nullptr };
-    for (auto& insn_candidate : debug_insn_desc) {
+    for (auto& insn_candidate : DEBUG_INSN_DESC) {
         if ((opcode & insn_candidate.opmask) == insn_candidate.opcode)
             insn = insn_candidate;
     }
@@ -811,10 +810,10 @@ static void handle_debug_insn(pl330& dma) {
 
 static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
     // check state
-    if (!channel.is_state(pl330::channel::Executing) &&
-        !channel.is_state(pl330::channel::Waiting_for_peripheral) &&
-        !channel.is_state(pl330::channel::At_barrier) &&
-        !channel.is_state(pl330::channel::Waiting_for_event)) {
+    if (!channel.is_state(pl330::channel::EXECUTING) &&
+        !channel.is_state(pl330::channel::WAITING_FOR_PERIPHERAL) &&
+        !channel.is_state(pl330::channel::AT_BARRIER) &&
+        !channel.is_state(pl330::channel::WAITING_FOR_EVENT)) {
         return 0;
     }
     channel.stall = false;
@@ -823,11 +822,11 @@ static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
         return 0;
 
     execute_insn(dma, channel, insn);
-    if (!channel.stall && !channel.is_state(pl330::channel::Stopped)) {
+    if (!channel.stall && !channel.is_state(pl330::channel::STOPPED)) {
         channel.cpc += insn->size;
         channel.watchdog_timer = 0;
         return 1;
-    } else if (channel.is_state(pl330::channel::Executing)) {
+    } else if (channel.is_state(pl330::channel::EXECUTING)) {
         channel.watchdog_timer += 1;
         if (channel.watchdog_timer > pl330::WD_TIMEOUT)
             VCML_ERROR("pl330 channel %d watchdog timeout", channel.tag);
@@ -938,9 +937,9 @@ pl330::manager::manager(const sc_module_name& nm):
 void pl330::pl330_thread() {
     while (true) {
         wait(m_dma);
-        if (execute_debug) {
+        if (m_execute_debug) {
             handle_debug_insn(*this);
-            execute_debug = false;
+            m_execute_debug = false;
         }
         run_manager(*this);
         run_channels(*this);
@@ -985,7 +984,7 @@ void pl330::reset() {
         channel.cpc = 0;
         channel.ccr = 0;
         channel.ftr = 0;
-        channel.set_state(channel::Stopped);
+        channel.set_state(channel::STOPPED);
         channel.watchdog_timer = 0;
         channel.stall = false;
     }
@@ -1008,7 +1007,7 @@ pl330::pl330(const sc_module_name& nm):
     mfifo(MFIFO_LINES * 8), // todo mfifo is not correct yet
     num_channels("num_channels", 8),
     channels("channel", num_channels,
-             [this](const char* nm, u32 tag) { return new channel(nm, tag); }),
+             [](const char* nm, u32 tag) { return new channel(nm, tag); }),
     manager("manager"),
     fsrc("fsrc", 0x034),
     inten("inten", 0x020),
@@ -1064,7 +1063,7 @@ pl330::pl330(const sc_module_name& nm):
     dbgcmd.sync_on_write();
     dbgcmd.on_write([&](u32 v, size_t i) -> void {
         if ((v & 0b11) == 0)
-            execute_debug = true;
+            m_execute_debug = true;
         dbgcmd = v;
         m_dma.notify(SC_ZERO_TIME);
     });

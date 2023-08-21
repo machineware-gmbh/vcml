@@ -87,7 +87,7 @@ public:
 
     inline size_t num_free() const { return m_max_sum - m_current_sum; }
 
-    inline size_t sizeTag(int tag) const { return m_queues[tag].size(); }
+    inline size_t size_tag(int tag) const { return m_queues[tag].size(); }
 
 private:
     std::unordered_map<int, std::deque<QUEUE_ITEM>> m_queues;
@@ -133,31 +133,31 @@ public:
     {
     public:
         enum state : u8 {
-            Stopped = 0x0,
-            Executing = 0x1,
-            Cache_miss = 0x2,
-            Updating_pc = 0x3,
-            Waiting_for_event = 0x4,
-            At_barrier = 0x5,
-            Waiting_for_peripheral = 0x7,
-            Killing = 0x8,
-            Completing = 0x9,
-            Faulting_completing = 0xE,
-            Faulting = 0xF,
+            STOPPED = 0x0,
+            EXECUTING = 0x1,
+            CACHE_MISS = 0x2,
+            UPDATING_PC = 0x3,
+            WAITING_FOR_EVENT = 0x4,
+            AT_BARRIER = 0x5,
+            WAITING_FOR_PERIPHERAL = 0x7,
+            KILLING = 0x8,
+            COMPLETING = 0x9,
+            FAULTING_COMPLETING = 0xE,
+            FAULTING = 0xF,
         };
         enum fault : u8 {
-            undef_instr = 0x0,
-            operand_invalid = 0x1,
-            ch_evnt_err = 0x5,
-            ch_periph_err = 0x6,
-            ch_rdwr_err = 0x7,
-            mfifo_err = 0xC,
-            st_data_unavailable = 0xD,
-            instr_fetch_err = 0x10,
-            data_write_err = 0x11,
-            data_read_err = 0x12,
-            dbg_instr = 0x1E,
-            lockup_err = 0x1F,
+            UNDEF_INSTR = 0x0,
+            OPERAND_INVALID = 0x1,
+            CH_EVNT_ERR = 0x5,
+            CH_PERIPH_ERR = 0x6,
+            CH_RDWR_ERR = 0x7,
+            MFIFO_ERR = 0xC,
+            ST_DATA_UNAVAILABLE = 0xD,
+            INSTR_FETCH_ERR = 0x10,
+            DATA_WRITE_ERR = 0x11,
+            DATA_READ_ERR = 0x12,
+            DBG_INSTR = 0x1E,
+            LOCKUP_ERR = 0x1F,
         };
         // pl330* parent; //todo see if i need this
         reg<u32> ftr; // channel fault type register
@@ -188,20 +188,20 @@ public:
     {
     public:
         enum state : u8 {
-            Stopped = 0x0,
-            Executing = 0x1,
-            Cache_miss = 0x2,
-            Updating_pc = 0x3,
-            Waiting_for_event = 0x4,
-            Faulting = 0xF,
+            STOPPED = 0x0,
+            EXECUTING = 0x1,
+            CACHE_MISS = 0x2,
+            UPDATING_PC = 0x3,
+            WAITING_FOR_EVENT = 0x4,
+            FAULTING = 0xF,
         };
         enum fault : u8 {
-            undef_instr = 0x0,
-            operand_invalid = 0x1,
-            dmago_err = 0x4,
-            evnt_err = 0x5,
-            instr_fetch_err = 0x10,
-            dbg_instr = 0x1E,
+            UNDEF_INSTR = 0x0,
+            OPERAND_INVALID = 0x1,
+            DMAGO_ERR = 0x4,
+            EVNT_ERR = 0x5,
+            INSTR_FETCH_ERR = 0x10,
+            DBG_INSTR = 0x1E,
         };
         reg<u32> dsr;  // DMA Manager Status Register
         reg<u32> dpc;  // DMA Program Counter Register
@@ -268,7 +268,7 @@ public:
     virtual void reset() override;
 
 private:
-    bool execute_debug = false;
+    bool m_execute_debug = false;
 };
 
 } // namespace dma
