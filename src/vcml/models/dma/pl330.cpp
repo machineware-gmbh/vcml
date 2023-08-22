@@ -357,7 +357,6 @@ static void pl330_dmalpend(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmamov(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
-    //    std::cout<<"pc: "<<ch->cpc << " pl330_dmamov" <<std::endl;
     uint8_t rd = args[0] & 0b0111;
 
     if ((args[0] >> 3)) {
@@ -367,6 +366,9 @@ static void pl330_dmamov(pl330* dma, pl330::channel* ch, uint8_t opcode,
     // todo abort if [9] is 0 and channel is ns==1
     uint32_t im = (((uint32_t)args[4]) << 24) | (((uint32_t)args[3]) << 16) |
                   (((uint32_t)args[2]) << 8) | (((uint32_t)args[1]));
+
+    // std::cout<<"pc: "<<ch->cpc << " pl330_dmamov " << (u32)rd << " " << im
+    // <<std::endl;
 
     switch (rd) {
     case 0b000:
@@ -477,7 +479,7 @@ static void pl330_dmast(pl330* dma, pl330::channel* ch, uint8_t opcode,
     ch->stall = !dma->write_queue.push(
         pl330::queue_entry{ ch->dar, size, num, inc, 0, ch->tag });
     if (!ch->stall) {
-        // std::cout << "pc: " << ch->cpc << " pl330_dmast to:" << ch->dar
+        // std::cout << "pc: " << ch->cpc << " pl330_dmast to: " << ch->dar
         //           << std::endl;
         //   trace_pl330_dmast(ch->tag, ch->dar, size, num, inc ?
         //   'Y' : 'N');
@@ -487,7 +489,7 @@ static void pl330_dmast(pl330* dma, pl330::channel* ch, uint8_t opcode,
 
 static void pl330_dmastp(pl330* dma, pl330::channel* ch, uint8_t opcode,
                          uint8_t* args, int len) {
-    std::cout << "pl330_dmastp" << std::endl;
+    // std::cout << "pl330_dmastp" << std::endl;
     uint8_t periph_id;
 
     if (args[0] & 0b111) {

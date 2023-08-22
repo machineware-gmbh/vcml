@@ -16,38 +16,38 @@
 
 #include "testing.h"
 
-static inline void emit_sev(u8* buf, size_t& write_offset, u32 ev_id) {
-    buf[write_offset++] = 0b00110100;
-    buf[write_offset++] = ev_id << 3;
+static inline void emit_sev(u8*& buf, u32 ev_id) {
+    buf[0] = 0b00110100;
+    buf[1] = ev_id << 3;
+    buf += 2;
 }
 
-static inline void emit_end(u8* buf, size_t& write_offset) {
-    buf[write_offset] = 0b00000000;
-    write_offset += 1;
+static inline void emit_end(u8*& buf) {
+    buf[0] = 0b00000000;
+    buf += 1;
 }
 
-static inline void emit_ld(u8* buf, size_t& write_offset) {
-    buf[write_offset] = 0b00000100;
-    write_offset += 1;
+static inline void emit_ld(u8*& buf) {
+    buf[0] = 0b00000100;
+    buf += 1;
 }
 
-static inline void emit_st(u8* buf, size_t& write_offset) {
-    buf[write_offset] = 0b00001000;
-    write_offset += 1;
+static inline void emit_st(u8*& buf) {
+    buf[0] = 0b00001000;
+    buf += 1;
 }
 
-static inline void emit_rw_loop(u8* buf, size_t& write_offset,
-                                u32 iterations) {
-    buf[write_offset + 0] = 0b00100000;                  // DMALP
-    buf[write_offset + 1] = static_cast<u8>(iterations); // DMALP arg
-    write_offset += 2;
+static inline void emit_rw_loop(u8*& buf, u32 iterations) {
+    buf[0] = 0b00100000;                  // DMALP
+    buf[1] = static_cast<u8>(iterations); // DMALP arg
+    buf += 2;
 
-    emit_ld(buf, write_offset);
-    emit_st(buf, write_offset);
+    emit_ld(buf);
+    emit_st(buf);
 
-    buf[write_offset + 0] = 0b00111000; // DMALPEND
-    buf[write_offset + 1] = 0x2;        // DMALPEND arg
-    write_offset += 2;
+    buf[0] = 0b00111000; // DMALPEND
+    buf[1] = 0x2;        // DMALPEND arg
+    buf += 2;
 }
 
 enum move_target {
@@ -56,23 +56,21 @@ enum move_target {
     DAR = 2,
 };
 
-static inline void emit_mov(u8* buf, size_t& write_offset, move_target target,
-                            u32 val) {
-    buf[write_offset + 0] = 0b10111100; // DMAMOV
-    buf[write_offset + 1] = static_cast<u8>(target);
-    buf[write_offset + 2] = static_cast<u8>(val >> 0);
-    buf[write_offset + 3] = static_cast<u8>(val >> 8);
-    buf[write_offset + 4] = static_cast<u8>(val >> 16);
-    buf[write_offset + 5] = static_cast<u8>(val >> 24);
-    write_offset += 6;
+static inline void emit_mov(u8*& buf, move_target target, u32 val) {
+    buf[0] = 0b10111100; // DMAMOV
+    buf[1] = static_cast<u8>(target);
+    buf[2] = static_cast<u8>(val >> 0);
+    buf[3] = static_cast<u8>(val >> 8);
+    buf[4] = static_cast<u8>(val >> 16);
+    buf[5] = static_cast<u8>(val >> 24);
+    buf += 6;
 }
 
-static inline void emit_configuration(u8* buf, size_t& write_offset,
-                                      bool non_secure, u32 src_burst_size,
-                                      u32 src_burst_len, u32 src_address,
-                                      u32 src_increment, u32 dst_burst_size,
-                                      u32 dst_burst_len, u32 dst_address,
-                                      u32 dst_increment) {
+static inline void emit_configuration(u8*& buf, bool non_secure,
+                                      u32 src_burst_size, u32 src_burst_len,
+                                      u32 src_address, u32 src_increment,
+                                      u32 dst_burst_size, u32 dst_burst_len,
+                                      u32 dst_address, u32 dst_increment) {
     u32 ccr_val = 0;
     ccr_val |= ((non_secure & 0b1) << 9) | ((non_secure & 0b1) << 23) |
                ((src_burst_size & 0b111) << 1) |
@@ -81,9 +79,9 @@ static inline void emit_configuration(u8* buf, size_t& write_offset,
                ((dst_burst_len & 0b1111) << 18) |
                ((dst_increment & 0b1) << 14);
 
-    emit_mov(buf, write_offset, CCR, ccr_val);
-    emit_mov(buf, write_offset, SAR, src_address);
-    emit_mov(buf, write_offset, DAR, dst_address);
+    emit_mov(buf, CCR, ccr_val);
+    emit_mov(buf, SAR, src_address);
+    emit_mov(buf, DAR, dst_address);
 }
 
 class pl330_bench : public test_base
@@ -121,8 +119,10 @@ public:
                            (0b10100000 | channel_non_secure << 1) << 16 |
                            (channel_nr & 0xf) << 24;
         out.write(dma.dbginst0.get_address(), &dbginst0_val, 4);
+
         u32 dbginst1_val = start_address;
         out.write(dma.dbginst1.get_address(), &dbginst1_val, 4);
+
         u32 dbgctr_val = 0b00;
         out.write(dma.dbgcmd.get_address(), &dbgctr_val, 4);
     }
@@ -137,24 +137,24 @@ public:
     virtual void run_test() override {
         dma.reset();
         auto* data_char_ptr = mem.data();
-        u8* channel_insn_buffer = &data_char_ptr[0x1000];
-        u32 src_buffer_addr = 0x2000;
-        u32 dst_buffer_addr = 0x3000;
-        size_t insn_buffer_write_offset = 0;
+        u8* const channel_insn_buffer = &data_char_ptr[0x1000];
+        const u32 src_buffer_addr = 0x2000;
+        const u32 dst_buffer_addr = 0x3000;
+        u8* insn_buf_tail = channel_insn_buffer;
 
         for (int i = 0; i < 16; i++) {
             (&data_char_ptr[src_buffer_addr])[i] = i;
         }
 
-        emit_configuration(channel_insn_buffer, insn_buffer_write_offset,
-                           !!(dma.channels[0].csr & (1 << 21)), 1u, 1u,
-                           src_buffer_addr, 1u, 1u, 1u, dst_buffer_addr, 1u);
-        emit_rw_loop(channel_insn_buffer, insn_buffer_write_offset, 16);
+        emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
+                           1u, 1u, src_buffer_addr, 1u, 1u, 1u,
+                           dst_buffer_addr, 1u);
+        emit_rw_loop(insn_buf_tail, 16);
 
         u32 ev_id = 0;
         set_ev_to_irq(ev_id);
-        emit_sev(channel_insn_buffer, insn_buffer_write_offset, ev_id);
-        emit_end(channel_insn_buffer, insn_buffer_write_offset);
+        emit_sev(insn_buf_tail, ev_id);
+        emit_end(insn_buf_tail);
 
         execute_dbg_insn(0, 0x1000);
 
