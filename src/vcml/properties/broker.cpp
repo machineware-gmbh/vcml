@@ -38,7 +38,11 @@ broker::broker(const string& nm): m_name(nm), m_values() {
     define("pwd", mwr::curr_dir(), 1);
     define("tmp", mwr::temp_dir(), 1);
     define("usr", mwr::username(), 1);
+#if defined(MWR_MSVC)
     define("pid", _getpid(), 1);
+#else
+    define("pid", getpid(), 1);
+#endif
     g_brokers.push_back(this);
 }
 
