@@ -12,12 +12,6 @@
 #include "vcml/logging/logger.h"
 #include "vcml/core/version.h"
 
-#if defined(MWR_MSVC)
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-
 #include <lua.hpp>
 
 namespace vcml {
@@ -102,7 +96,7 @@ static int do_lookup(lua_State* lua) {
 }
 
 static bool g_define_globals = []() -> bool {
-    const char* env = getenv("VCML_LUA_DEFINE_GLOBALS");
+    auto env = mwr::getenv("VCML_LUA_DEFINE_GLOBALS");
     return env && *env == '1';
 }();
 
@@ -170,11 +164,7 @@ broker_lua::broker_lua(const string& file): broker("lua") {
     const vector<pair<string, long long>> integers = {
         { "vcml_version", VCML_VERSION },
         { "systemc_version", SYSTEMC_VERSION },
-#if defined(MWR_MSVC)
-        { "pid", _getpid() },
-#else
-        { "pid", getpid() },
-#endif
+        { "pid", mwr::getpid() },
     };
 
     const vector<pair<string, string>> strings = {
