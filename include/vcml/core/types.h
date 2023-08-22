@@ -41,9 +41,11 @@
 
 #include <mwr.h>
 
+#if defined(MWR_MSVC)
 #pragma warning(disable : 4244) // implicit cast to smaller type
 #pragma warning(disable : 4267) // return cast to smaller type
 #pragma warning(disable : 4200) // nonstandard extension used
+#endif
 
 #define VCML_ERROR     MWR_ERROR
 #define VCML_ERROR_ON  MWR_ERROR_ON
