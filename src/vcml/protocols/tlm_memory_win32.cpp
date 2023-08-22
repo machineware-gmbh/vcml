@@ -17,7 +17,7 @@ namespace vcml {
 int tlm_memory::init_shared(const string& shared, size_t size) {
     VCML_ERROR_ON(is_shared(), "shared memory already initialized");
     m_shared = shared;
-     //mkstr("Global\\%s", shared.c_str());
+    // mkstr("Global\\%s", shared.c_str());
 
     DWORD szhi = (DWORD)(size >> 32);
     DWORD szlo = (DWORD)(size >> 0);

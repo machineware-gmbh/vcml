@@ -11,6 +11,12 @@
 #include "vcml/properties/broker.h"
 #include "vcml/logging/logger.h"
 
+#if defined(MWR_MSVC)
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace vcml {
 
 string broker::expand(const string& s) {

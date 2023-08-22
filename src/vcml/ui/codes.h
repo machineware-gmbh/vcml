@@ -13,8 +13,8 @@
  * under the terms of the GNU General Public License version 2 as published by
  * the Free Software Foundation.
  */
-#ifndef _UAPI_INPUT_EVENT_CODES_H
-#define _UAPI_INPUT_EVENT_CODES_H
+#ifndef UAPI_INPUT_EVENT_CODES_H
+#define UAPI_INPUT_EVENT_CODES_H
 
 /*
  * Device properties and quirks
@@ -35,10 +35,10 @@
  * Event types
  */
 
-//#define EV_SYN       0x00
-//#define EV_KEY       0x01
-//#define EV_REL       0x02
-//#define EV_ABS       0x03
+// #define EV_SYN       0x00
+// #define EV_KEY       0x01
+// #define EV_REL       0x02
+// #define EV_ABS       0x03
 #define EV_MSC       0x04
 #define EV_SW        0x05
 #define EV_LED       0x11
@@ -54,7 +54,7 @@
  * Synchronization events.
  */
 
-//#define SYN_REPORT    0
+// #define SYN_REPORT    0
 #define SYN_CONFIG    1
 #define SYN_MT_REPORT 2
 #define SYN_DROPPED   3
@@ -615,8 +615,9 @@
 #define KEY_ASSISTANT       0x247 /* AL Context-aware desktop assistant */
 #define KEY_KBD_LAYOUT_NEXT 0x248 /* AC Next Keyboard Layout Select */
 #define KEY_EMOJI_PICKER    0x249 /* Show/hide emoji picker (HUTRR101) */
-#define KEY_DICTATE         0x24a /* Start or Stop Voice Dictation Session (HUTRR99) \
-                                   */
+#define KEY_DICTATE                                          \
+    0x24a /* Start or Stop Voice Dictation Session (HUTRR99) \
+           */
 #define KEY_CAMERA_ACCESS_ENABLE \
     0x24b /* Enables programmatic access to camera devices. (HUTRR72) */
 #define KEY_CAMERA_ACCESS_DISABLE \

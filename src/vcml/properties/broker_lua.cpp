@@ -12,6 +12,12 @@
 #include "vcml/logging/logger.h"
 #include "vcml/core/version.h"
 
+#if defined(MWR_MSVC)
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <lua.hpp>
 
 namespace vcml {
@@ -164,7 +170,11 @@ broker_lua::broker_lua(const string& file): broker("lua") {
     const vector<pair<string, long long>> integers = {
         { "vcml_version", VCML_VERSION },
         { "systemc_version", SYSTEMC_VERSION },
+#if defined(MWR_MSVC)
+        { "pid", _getpid() },
+#else
         { "pid", getpid() },
+#endif
     };
 
     const vector<pair<string, string>> strings = {

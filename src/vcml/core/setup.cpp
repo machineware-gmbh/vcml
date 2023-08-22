@@ -170,5 +170,4 @@ MWR_DECL_WEAK
 int main(int argc, char** argv) {
     return vcml::main(argc, argv);
 }
-
 }
