@@ -97,7 +97,7 @@ static int do_lookup(lua_State* lua) {
 
 static bool g_define_globals = []() -> bool {
     auto env = mwr::getenv("VCML_LUA_DEFINE_GLOBALS");
-    return env && *env == '1';
+    return env && *env == "1";
 }();
 
 static int do_define_globals(lua_State* lua) {
