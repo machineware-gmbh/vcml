@@ -16,13 +16,13 @@ namespace debugging {
 
 bool gdbserver::parse_ids(const string& ids, int& pid, int& tid) const {
     if (m_support_processes) {
-        if (sscanf(ids.c_str(), "p%x.%x", &pid, &tid) != 2)
+        if (sscanf_s(ids.c_str(), "p%x.%x", &pid, &tid) != 2)
             return false;
         return true;
     }
 
     pid = GDB_FIRST_TARGET;
-    if (sscanf(ids.c_str(), "%x", &tid) != 1)
+    if (sscanf_s(ids.c_str(), "%x", &tid) != 1)
         return false;
     return true;
 }
@@ -316,7 +316,7 @@ string gdbserver::handle_xfer(const string& cmd) {
         return ERR_COMMAND;
 
     size_t offset = 0, length = 0;
-    if (sscanf(args[4].c_str(), "%zx,%zx", &offset, &length) != 2)
+    if (sscanf_s(args[4].c_str(), "%zx,%zx", &offset, &length) != 2)
         return ERR_COMMAND;
 
     if (object == "features" && annex == "target.xml") {
@@ -385,7 +385,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
     }
 
     unsigned int regno;
-    if (sscanf(cmd.c_str(), "p%x", &regno) != 1) {
+    if (sscanf_s(cmd.c_str(), "p%x", &regno) != 1) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
@@ -427,7 +427,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
     }
 
     unsigned int regno;
-    if (sscanf(cmd.c_str(), "P%x=", &regno) != 1) {
+    if (sscanf_s(cmd.c_str(), "P%x=", &regno) != 1) {
         log_warn("malformed command '%str'", cmd.c_str());
         return ERR_COMMAND;
     }
@@ -452,7 +452,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
 
     str++; // step beyond '='
     for (u64 byte = 0; byte < val.size(); byte++, str += 2) {
-        if (sscanf(str, "%02hhx", val.data() + byte) != 1) {
+        if (sscanf_s(str, "%02hhx", val.data() + byte) != 1) {
             log_warn("error parsing register value near %s", str);
             return ERR_COMMAND;
         }
@@ -526,7 +526,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
 
         vector<u8> val(reg->total_size());
         for (u64 byte = 0; byte < val.size(); byte++, str += 2)
-            sscanf(str, "%02hhx", val.data() + byte);
+            sscanf_s(str, "%02hhx", val.data() + byte);
 
         if (!m_g_target->tgt.is_host_endian()) {
             for (size_t i = 0; i < val.size(); i += reg->size)
@@ -547,7 +547,7 @@ string gdbserver::handle_mem_read(const string& cmd) {
     }
 
     unsigned long long addr = 0, size = 0;
-    if (sscanf(cmd.c_str(), "m%llx,%llx", &addr, &size) != 2) {
+    if (sscanf_s(cmd.c_str(), "m%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
@@ -586,7 +586,7 @@ string gdbserver::handle_mem_write(const string& cmd) {
     }
 
     unsigned long long addr = 0, size = 0;
-    if (sscanf(cmd.c_str(), "M%llx,%llx", &addr, &size) != 2) {
+    if (sscanf_s(cmd.c_str(), "M%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
@@ -632,7 +632,7 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
     }
 
     unsigned long long addr = 0, size = 0;
-    if (sscanf(cmd.c_str(), "X%llx,%llx:", &addr, &size) != 2) {
+    if (sscanf_s(cmd.c_str(), "X%llx,%llx:", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
@@ -677,7 +677,7 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
     }
 
     unsigned long long type, addr, length;
-    if (sscanf(cmd.c_str(), "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
+    if (sscanf_s(cmd.c_str(), "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }
@@ -728,7 +728,7 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
     }
 
     unsigned long long type, addr, length;
-    if (sscanf(cmd.c_str(), "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
+    if (sscanf_s(cmd.c_str(), "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
         log_warn("malformed command '%s'", cmd.c_str());
         return ERR_COMMAND;
     }

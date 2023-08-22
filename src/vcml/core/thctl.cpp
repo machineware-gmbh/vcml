@@ -51,6 +51,7 @@ thctl::thctl():
 }
 
 thctl::~thctl() {
+    sysc_mutex.unlock();
     notify();
 }
 

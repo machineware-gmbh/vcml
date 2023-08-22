@@ -23,6 +23,7 @@ namespace vcml {
 class tlm_memory : public tlm_dmi
 {
 private:
+    void* m_handle;
     void* m_base;
     size_t m_size;
     bool m_discard;

@@ -16,16 +16,17 @@ namespace vcml {
 
 int tlm_memory::init_shared(const string& shared, size_t size) {
     VCML_ERROR_ON(is_shared(), "shared memory already initialized");
-    m_shared = mkstr("Global\\%s", shared.c_str());
+    m_shared = shared;
+     //mkstr("Global\\%s", shared.c_str());
 
     DWORD szhi = (DWORD)(size >> 32);
     DWORD szlo = (DWORD)(size >> 0);
     m_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
                                  szhi, szlo, m_shared.c_str());
-    std::cout << GetLastError() << std::endl;
     if (m_handle == NULL)
-        VCML_ERROR("failed to allocate shared memory at %s", shared.c_str());
-    m_base = MapViewOfFile(m_handle, FILE_MAP_ALL_ACCESS, 0, 0, size);
+        VCML_ERROR("failed to allocate shared memory %s", shared.c_str());
+
+    m_base = MapViewOfFile(m_handle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     VCML_ERROR_ON(!m_base, "MapViewOfFile failed: %u", GetLastError());
 
     MEMORY_BASIC_INFORMATION info;
@@ -43,7 +44,7 @@ int tlm_memory::init_shared(const string& shared, size_t size) {
 
 tlm_memory::tlm_memory():
     tlm_dmi(),
-    m_handle(INVALID_HANDLE_VALUE),
+    m_handle(nullptr),
     m_base(nullptr),
     m_size(0),
     m_discard(false),
@@ -109,7 +110,7 @@ void tlm_memory::init(const string& shared, size_t size, alignment al) {
 }
 
 void tlm_memory::free() {
-    if (m_handle != INVALID_HANDLE_VALUE) {
+    if (m_handle) {
         if (m_base)
             UnmapViewOfFile(m_base);
         CloseHandle(m_handle);

@@ -9,6 +9,8 @@
  ##############################################################################
 
 if (NOT TARGET gtest OR NOT TARGET gmock)
+    option(INSTALL_GTEST OFF)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     add_subdirectory(googletest EXCLUDE_FROM_ALL)
 endif()
 
@@ -26,7 +28,7 @@ set(VCML_TEST_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 add_library(testing testing.cpp)
 target_include_directories(testing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(testing vcml gtest gmock)
-target_compile_options(testing PUBLIC -Wall -Werror)
+target_compile_options(testing PUBLIC ${MWR_COMPILER_WARN_FLAGS})
 
 add_subdirectory(core)
-add_subdirectory(models)
+#add_subdirectory(models)

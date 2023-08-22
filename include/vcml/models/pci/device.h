@@ -65,8 +65,8 @@ struct cap_msi : capability {
     reg<u32>* msi_mask;
     reg<u32>* msi_pending;
 
-    size_t max_vectors() const { return 1u << ((*msi_control >> 1) & 7); }
-    size_t num_vectors() const { return 1u << ((*msi_control >> 4) & 7); }
+    size_t max_vectors() const { return 1ull << ((*msi_control >> 1) & 7); }
+    size_t num_vectors() const { return 1ull << ((*msi_control >> 4) & 7); }
 
     bool is_enabled() const { return *msi_control & PCI_MSI_ENABLE; }
     bool is_64bit() const { return *msi_control & PCI_MSI_64BIT; }

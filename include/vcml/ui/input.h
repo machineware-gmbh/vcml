@@ -18,6 +18,13 @@
 namespace vcml {
 namespace ui {
 
+constexpr u32 EV_SYN = 0x00;
+constexpr u32 EV_KEY = 0x01;
+constexpr u32 EV_REL = 0x02;
+constexpr u32 EV_ABS = 0x03;
+
+constexpr u32 SYN_REPORT = 0;
+
 enum key_state : u32 {
     VCML_KEY_UP = 0u,
     VCML_KEY_DOWN = 1u,

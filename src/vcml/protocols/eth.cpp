@@ -15,9 +15,9 @@ namespace vcml {
 const char* mac_addr::format = "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx";
 
 mac_addr::mac_addr(const char* str): bytes() {
-    int n = sscanf(str, mac_addr::format, bytes.data(), bytes.data() + 1,
-                   bytes.data() + 2, bytes.data() + 3, bytes.data() + 4,
-                   bytes.data() + 5);
+    int n = sscanf_s(str, mac_addr::format, bytes.data(), bytes.data() + 1,
+                     bytes.data() + 2, bytes.data() + 3, bytes.data() + 4,
+                     bytes.data() + 5);
     VCML_ERROR_ON(n != 6, "failed to parse mac address '%s'", str);
 }
 

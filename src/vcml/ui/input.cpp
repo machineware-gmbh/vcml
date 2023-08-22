@@ -8,6 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/ui/codes.h"
 #include "vcml/ui/input.h"
 
 namespace vcml {

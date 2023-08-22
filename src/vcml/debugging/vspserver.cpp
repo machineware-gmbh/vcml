@@ -23,6 +23,8 @@
 #include "vcml/models/serial/terminal.h"
 #include "vcml/models/ethernet/bridge.h"
 
+#include <filesystem>
+
 namespace vcml {
 namespace debugging {
 
@@ -494,9 +496,10 @@ void vspserver::cleanup() {
     if (!mwr::file_exists(m_announce))
         return;
 
-    if (remove(m_announce.c_str())) {
+    std::error_code ec;
+    if (!std::filesystem::remove(m_announce)) {
         log_warn("failed to remove file '%s': %s", m_announce.c_str(),
-                 strerror(errno));
+                 ec.message().c_str());
     }
 }
 

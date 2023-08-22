@@ -18,4 +18,5 @@ setup.sh
 
 # Ignore MSVC files
 .vs/
+CMakeSettings.json
 

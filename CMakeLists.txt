@@ -71,41 +71,40 @@ add_library(vcml STATIC
     ${src}/vcml/properties/broker_arg.cpp
     ${src}/vcml/properties/broker_env.cpp
     ${src}/vcml/properties/broker_file.cpp
-    #${src}/vcml/debugging/symtab.cpp
-    #${src}/vcml/debugging/target.cpp
-    #${src}/vcml/debugging/loader.cpp
-    #${src}/vcml/debugging/subscriber.cpp
-    #${src}/vcml/debugging/suspender.cpp
-    #${src}/vcml/debugging/rspserver.cpp
-    #${src}/vcml/debugging/gdbarch.cpp
-    #${src}/vcml/debugging/gdbserver.cpp
-    #${src}/vcml/debugging/vspserver.cpp
-    #${src}/vcml/ui/video.cpp
-    #${src}/vcml/ui/keymap.cpp
-    #${src}/vcml/ui/input.cpp
-    #${src}/vcml/ui/display.cpp
-    #${src}/vcml/ui/console.cpp
-    #${src}/vcml/protocols/tlm_sbi.cpp
-    #${src}/vcml/protocols/tlm_exmon.cpp
-    #${src}/vcml/protocols/tlm_dmi_cache.cpp
-    #${src}/vcml/protocols/tlm_stubs.cpp
-    #${src}/vcml/protocols/tlm_host.cpp
-    #${src}/vcml/protocols/tlm_sockets.cpp
-    #${src}/vcml/protocols/tlm_memory.cpp
-    #${src}/vcml/protocols/gpio.cpp
-    #${src}/vcml/protocols/clk.cpp
-    #${src}/vcml/protocols/spi.cpp
-    #${src}/vcml/protocols/sd.cpp
-    #${src}/vcml/protocols/i2c.cpp
-    #${src}/vcml/protocols/pci.cpp
-    #${src}/vcml/protocols/eth.cpp
-    #${src}/vcml/protocols/can.cpp
-    #${src}/vcml/protocols/serial.cpp
-    #${src}/vcml/protocols/virtio.cpp
-    #${src}/vcml/models/generic/clock.cpp
-    #${src}/vcml/models/generic/reset.cpp
-    #${src}/vcml/models/generic/bus.cpp
-    #${src}/vcml/models/generic/memory.cpp
+    ${src}/vcml/debugging/symtab.cpp
+    ${src}/vcml/debugging/target.cpp
+    ${src}/vcml/debugging/loader.cpp
+    ${src}/vcml/debugging/subscriber.cpp
+    ${src}/vcml/debugging/suspender.cpp
+    ${src}/vcml/debugging/rspserver.cpp
+    ${src}/vcml/debugging/gdbarch.cpp
+    ${src}/vcml/debugging/gdbserver.cpp
+    ${src}/vcml/debugging/vspserver.cpp
+    ${src}/vcml/ui/video.cpp
+    ${src}/vcml/ui/keymap.cpp
+    ${src}/vcml/ui/input.cpp
+    ${src}/vcml/ui/display.cpp
+    ${src}/vcml/ui/console.cpp
+    ${src}/vcml/protocols/tlm_sbi.cpp
+    ${src}/vcml/protocols/tlm_exmon.cpp
+    ${src}/vcml/protocols/tlm_dmi_cache.cpp
+    ${src}/vcml/protocols/tlm_stubs.cpp
+    ${src}/vcml/protocols/tlm_host.cpp
+    ${src}/vcml/protocols/tlm_sockets.cpp
+    ${src}/vcml/protocols/gpio.cpp
+    ${src}/vcml/protocols/clk.cpp
+    ${src}/vcml/protocols/spi.cpp
+    ${src}/vcml/protocols/sd.cpp
+    ${src}/vcml/protocols/i2c.cpp
+    ${src}/vcml/protocols/pci.cpp
+    ${src}/vcml/protocols/eth.cpp
+    ${src}/vcml/protocols/can.cpp
+    ${src}/vcml/protocols/serial.cpp
+    ${src}/vcml/protocols/virtio.cpp
+    ${src}/vcml/models/generic/clock.cpp
+    ${src}/vcml/models/generic/reset.cpp
+    ${src}/vcml/models/generic/bus.cpp
+    ${src}/vcml/models/generic/memory.cpp
     #${src}/vcml/models/generic/gate.cpp
     #${src}/vcml/models/generic/gpio.cpp
     #${src}/vcml/models/generic/hwrng.cpp
@@ -170,6 +169,12 @@ add_library(vcml STATIC
     #${src}/vcml/models/riscv/plic.cpp
     #${src}/vcml/models/riscv/simdev.cpp
 )
+
+if(MSVC)
+    target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_win32.cpp)
+else()
+    target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_posix.cpp)
+endif()
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
@@ -251,10 +256,10 @@ install(DIRECTORY ${inc}/ DESTINATION include)
 install(DIRECTORY ${gen}/ DESTINATION include)
 
 if(VCML_BUILD_UTILS)
-    #add_subdirectory(utils)
+    add_subdirectory(utils)
 endif()
 
 if(VCML_BUILD_TESTS)
     enable_testing()
-    #add_subdirectory(test)
+    add_subdirectory(test)
 endif()
