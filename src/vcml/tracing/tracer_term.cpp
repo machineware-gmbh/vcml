@@ -139,7 +139,7 @@ void tracer_term::trace(const activity<can_frame>& msg) {
 }
 
 tracer_term::tracer_term(bool use_cerr):
-    tracer_term(use_cerr, isatty(use_cerr ? STDERR_FILENO : STDOUT_FILENO)) {
+    tracer_term(use_cerr, mwr::is_tty(use_cerr ? STDERR_FILENO : STDOUT_FILENO)) {
 }
 
 tracer_term::tracer_term(bool use_cerr, bool use_colors):

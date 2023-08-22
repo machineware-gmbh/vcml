@@ -14,8 +14,6 @@
 #include "vcml/core/types.h"
 #include "vcml/logging/logger.h"
 
-#include <linux/input.h>
-
 namespace vcml {
 namespace ui {
 

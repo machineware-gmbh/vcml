@@ -38,9 +38,12 @@
 #include <stdint.h>
 #include <limits.h>
 #include <time.h>
-#include <unistd.h>
 
 #include <mwr.h>
+
+#pragma warning(disable : 4244) // implicit cast to smaller type
+#pragma warning(disable : 4267) // return cast to smaller type
+#pragma warning(disable : 4200) // nonstandard extension used
 
 #define VCML_ERROR     MWR_ERROR
 #define VCML_ERROR_ON  MWR_ERROR_ON
@@ -108,7 +111,9 @@ VCML_TYPEINFO(float);
 VCML_TYPEINFO(double);
 VCML_TYPEINFO(string);
 
+#ifndef MWR_MSVC
 VCML_TYPEINFO(size_t);
+#endif
 
 using std::min;
 using std::max;

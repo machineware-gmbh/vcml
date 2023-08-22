@@ -23,22 +23,18 @@ broker_env::~broker_env() {
 bool broker_env::defines(const string& name) const {
     string nm = name;
     std::replace(nm.begin(), nm.end(), SC_HIERARCHY_CHAR, '_');
-    return std::getenv(nm.c_str()) != nullptr;
+    return mwr::getenv(name).has_value();
 }
 
 bool broker_env::lookup(const string& name, string& val) {
     string nm = name;
     std::replace(nm.begin(), nm.end(), SC_HIERARCHY_CHAR, '_');
 
-    const char* env = std::getenv(nm.c_str());
-    if (env == nullptr)
+    auto env = mwr::getenv(nm);
+    if (!env)
         return false;
 
-    const size_t max_size = string().max_size() - 1;
-    if (strlen(env) > max_size)
-        return false;
-
-    val = string(env);
+    val = env.value();
     return true;
 }
 

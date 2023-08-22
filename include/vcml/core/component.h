@@ -57,7 +57,7 @@ public:
     sc_time clock_cycle() const { return clk.cycle(); }
     sc_time clock_cycles(size_t n) const { return clk.cycles(n); }
 
-    double clock_hz() const { return clk.read(); }
+    hz_t clock_hz() const { return clk.read(); }
 
     virtual unsigned int transport(tlm_target_socket& socket,
                                    tlm_generic_payload& tx,

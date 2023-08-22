@@ -141,7 +141,7 @@ inline std::istream& operator>>(std::istream& is, vcml::range& r) {
     string s;
     is >> s;
     u64 start = 0, end = 0;
-    if (sscanf(s.c_str(), "0x%llx..0x%llx", &start, &end) == 2) {
+    if (sscanf_s(s.c_str(), "0x%llx..0x%llx", &start, &end) == 2) {
         r.start = start;
         r.end = end;
     } else
