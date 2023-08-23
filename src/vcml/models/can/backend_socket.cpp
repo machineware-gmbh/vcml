@@ -87,7 +87,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 backend_socket::~backend_socket() {
     if (m_socket > -1) {
         mwr::aio_cancel(m_socket);
-        close(m_socket);
+        mwr::fd_close(m_socket);
         m_socket = -1;
     }
 }
