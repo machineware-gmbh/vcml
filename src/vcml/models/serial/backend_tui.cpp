@@ -23,7 +23,7 @@ static size_t max_cols = 80;
 
 static void update_window_size(int sig) {
     struct winsize tty_size;
-    ioctl(STDOUT_FDNO, TIOCGWINSZ, &tty_size);
+    ioctl(mwr::STDOUT_FDNO, TIOCGWINSZ, &tty_size);
     max_cols = tty_size.ws_col;
 }
 
