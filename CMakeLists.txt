@@ -15,6 +15,7 @@ option(VCML_USE_SDL2 "Use SDL2 for rendering" ON)
 option(VCML_USE_VNC "Use VNC for rendering" ON)
 option(VCML_USE_RFB "Use RFB for rendering" OFF)
 option(VCML_USE_SLIRP "Use SLIRP for networking" ON)
+option(VCML_USE_TAP "Use TAP for networking" ON)
 option(VCML_USE_LUA "Use LUA for scripting" ON)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
@@ -42,6 +43,10 @@ endif()
 if(VCML_USE_LUA)
     find_package(Lua "5.3")
 endif()
+if(VCML_USE_TAP)
+    check_include_file("linux/if_tun.h" TAP_FOUND)
+endif()
+
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -127,13 +132,12 @@ add_library(vcml STATIC
     ${src}/vcml/models/block/backend_ram.cpp
     ${src}/vcml/models/block/backend.cpp
     ${src}/vcml/models/block/disk.cpp
-    #${src}/vcml/models/ethernet/backend.cpp
-    #${src}/vcml/models/ethernet/backend_file.cpp
-    #${src}/vcml/models/ethernet/backend_tap.cpp
-    #${src}/vcml/models/ethernet/bridge.cpp
-    #${src}/vcml/models/ethernet/network.cpp
-    #${src}/vcml/models/ethernet/lan9118.cpp
-    #${src}/vcml/models/ethernet/ethoc.cpp
+    ${src}/vcml/models/ethernet/backend.cpp
+    ${src}/vcml/models/ethernet/backend_file.cpp
+    ${src}/vcml/models/ethernet/bridge.cpp
+    ${src}/vcml/models/ethernet/network.cpp
+    ${src}/vcml/models/ethernet/lan9118.cpp
+    ${src}/vcml/models/ethernet/ethoc.cpp
     #${src}/vcml/models/can/backend.cpp
     #${src}/vcml/models/can/backend_file.cpp
     #${src}/vcml/models/can/backend_socket.cpp
@@ -233,6 +237,14 @@ if(LIBSLIRP_FOUND)
     target_link_libraries(vcml PUBLIC ${LIBSLIRP_LIBRARIES})
 else()
     message(STATUS "Building without SLIRP support")
+endif()
+
+if(TAP_FOUND)
+    message(STATUS "Building with TAP support")
+    target_compile_definitions(vcml PRIVATE HAVE_TAP)
+    target_sources(vcml PRIVATE ${src}/vcml/models/ethernet/backend_tap.cpp)
+else()
+    message(STATUS "Building without TAP support")
 endif()
 
 if(LUA_FOUND)
