@@ -1,0 +1,38 @@
+name: windows
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev**'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  windows:
+    name: windows
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019, windows-2022]
+        cfg: [Release]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Configure
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.cfg}} -j $(nproc)
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{matrix.cfg}} --verbose
+
