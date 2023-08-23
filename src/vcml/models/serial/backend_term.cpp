@@ -60,15 +60,15 @@ void backend_term::iothread() {
 
 backend_term::backend_term(terminal* term):
     backend(term, "term"),
-    m_fdin(STDIN_FILENO),
-    m_fdout(STDOUT_FILENO),
+    m_fdin(STDIN_FDNO),
+    m_fdout(STDOUT_FDNO),
     m_exit_requested(false),
     m_backend_active(true),
     m_iothread(),
     m_mtx(),
     m_fifo() {
     capture_stdin();
-    VCML_REPORT_ON(!isatty(m_fdin), "not a terminal");
+    VCML_REPORT_ON(!mwr::is_tty(m_fdin), "not a terminal");
     mwr::tty_push(m_fdin, true);
     mwr::tty_set(m_fdin, false, false);
     m_iothread = thread(&backend_term::iothread, this);

@@ -14,16 +14,20 @@
 #include "vcml/debugging/suspender.h"
 
 #include <csignal>
-#include <sys/ioctl.h>
-#include <unistd.h>
 
 static size_t max_cols = 80;
 
+#ifdef MWR_LINUX
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 static void update_window_size(int sig) {
     struct winsize tty_size;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &tty_size);
+    ioctl(STDOUT_FDNO, TIOCGWINSZ, &tty_size);
     max_cols = tty_size.ws_col;
 }
+
+#endif
 
 namespace vcml {
 namespace serial {
@@ -116,8 +120,8 @@ void backend_tui::draw_statusbar() {
 
 backend_tui::backend_tui(terminal* term):
     backend(term, "term"),
-    m_fdin(STDIN_FILENO),
-    m_fdout(STDOUT_FILENO),
+    m_fdin(STDIN_FDNO),
+    m_fdout(STDOUT_FDNO),
     m_exit_requested(false),
     m_backend_active(true),
     m_iothread(),
@@ -127,13 +131,15 @@ backend_tui::backend_tui(terminal* term):
     m_time_host(mwr::timestamp_us()),
     m_rtf(),
     m_linebuf() {
-    VCML_REPORT_ON(!isatty(m_fdin), "not a terminal");
+    VCML_REPORT_ON(!mwr::is_tty(m_fdin), "not a terminal");
     capture_stdin();
     mwr::tty_push(m_fdin, true);
     mwr::tty_set(m_fdin, false, false);
 
+#ifdef MWR_LINUX
     update_window_size(0);
     std::signal(SIGWINCH, update_window_size);
+#endif
 
     m_iothread = thread(&backend_tui::iothread, this);
     mwr::set_thread_name(m_iothread, "tui_iothread");

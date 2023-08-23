@@ -233,6 +233,10 @@ using mwr::LOG_INFO;
 using mwr::LOG_WARN;
 using mwr::LOG_ERROR;
 
+using mwr::STDIN_FDNO;
+using mwr::STDOUT_FDNO;
+using mwr::STDERR_FDNO;
+
 bool is_debug_build();
 
 inline bool is_set(int flags, int set) {

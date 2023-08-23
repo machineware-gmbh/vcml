@@ -8,9 +8,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <unistd.h>
-#include <fcntl.h>
-
 #include "vcml/models/generic/hwrng.h"
 
 namespace vcml {
@@ -20,17 +17,9 @@ u32 hwrng::read_rng() {
     if (pseudo)
         return (u32)rand();
 
-    static const char* src = "/dev/urandom";
-
-    int fd = open(src, O_RDONLY);
-    VCML_ERROR_ON(fd < 0, "failed to open %s: %s", src, strerror(errno));
-
     u32 data = 0;
-    if (!mwr::fd_read(fd, &data, sizeof(data)))
-        VCML_ERROR("failed to read %s: %s", src, strerror(errno));
-
-    if (close(fd) < 0)
-        VCML_ERROR("failed to close %s: %s", src, strerror(errno));
+    if (!mwr::fill_random(&data, sizeof(data)))
+        log_warn("failed to get random data");
 
     return data;
 }

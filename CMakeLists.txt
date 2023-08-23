@@ -105,28 +105,28 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp
     ${src}/vcml/models/generic/memory.cpp
-    #${src}/vcml/models/generic/gate.cpp
-    #${src}/vcml/models/generic/gpio.cpp
-    #${src}/vcml/models/generic/hwrng.cpp
-    #${src}/vcml/models/generic/fbdev.cpp
-    #${src}/vcml/models/serial/backend_fd.cpp
-    #${src}/vcml/models/serial/backend_file.cpp
-    #${src}/vcml/models/serial/backend_tcp.cpp
-    #${src}/vcml/models/serial/backend_term.cpp
-    #${src}/vcml/models/serial/backend_tui.cpp
-    #${src}/vcml/models/serial/backend.cpp
-    #${src}/vcml/models/serial/terminal.cpp
-    #${src}/vcml/models/serial/uart8250.cpp
-    #${src}/vcml/models/serial/pl011.cpp
-    #${src}/vcml/models/serial/nrf51.cpp
-    #${src}/vcml/models/timers/rtc1742.cpp
-    #${src}/vcml/models/timers/sp804.cpp
-    #${src}/vcml/models/timers/nrf51.cpp
-    #${src}/vcml/models/timers/pl031.cpp
-    #${src}/vcml/models/block/backend_file.cpp
-    #${src}/vcml/models/block/backend_ram.cpp
-    #${src}/vcml/models/block/backend.cpp
-    #${src}/vcml/models/block/disk.cpp
+    ${src}/vcml/models/generic/gate.cpp
+    ${src}/vcml/models/generic/gpio.cpp
+    ${src}/vcml/models/generic/hwrng.cpp
+    ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/serial/backend_fd.cpp
+    ${src}/vcml/models/serial/backend_file.cpp
+    ${src}/vcml/models/serial/backend_tcp.cpp
+    ${src}/vcml/models/serial/backend_term.cpp
+    ${src}/vcml/models/serial/backend_tui.cpp
+    ${src}/vcml/models/serial/backend.cpp
+    ${src}/vcml/models/serial/terminal.cpp
+    ${src}/vcml/models/serial/uart8250.cpp
+    ${src}/vcml/models/serial/pl011.cpp
+    ${src}/vcml/models/serial/nrf51.cpp
+    ${src}/vcml/models/timers/rtc1742.cpp
+    ${src}/vcml/models/timers/sp804.cpp
+    ${src}/vcml/models/timers/nrf51.cpp
+    ${src}/vcml/models/timers/pl031.cpp
+    ${src}/vcml/models/block/backend_file.cpp
+    ${src}/vcml/models/block/backend_ram.cpp
+    ${src}/vcml/models/block/backend.cpp
+    ${src}/vcml/models/block/disk.cpp
     #${src}/vcml/models/ethernet/backend.cpp
     #${src}/vcml/models/ethernet/backend_file.cpp
     #${src}/vcml/models/ethernet/backend_tap.cpp

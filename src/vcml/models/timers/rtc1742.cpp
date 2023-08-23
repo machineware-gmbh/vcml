@@ -27,6 +27,16 @@ static char* strtime(struct tm* t) {
     return str;
 }
 
+#if defined(MWR_MSVC)
+static time_t timegm(struct tm* tm) {
+    time_t local = mktime(tm);
+    struct tm tmp = *tm;
+    gmtime_s(&tmp, &local);
+    time_t utc = mktime(&tmp);
+    return utc - local;
+}
+#endif
+
 void rtc1742::load_time() {
     // If SystemC time is chosen (default), calculate the current time
     // stamp based on the real time when the simulation was started plus

@@ -581,6 +581,7 @@ struct async_worker {
             working = false;
         }
 
+        mtx.unlock();
         g_async = nullptr;
     }
 
