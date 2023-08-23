@@ -43,7 +43,7 @@ u8 max31855::do_spi_transport(u8 mosi) {
         m_state = BYTE1;
         break;
     case BYTE1:
-        miso = (u8)((m_fp_temp_thermocouple << 2) | (fault == true));
+        miso = (u8)((m_fp_temp_thermocouple << 2) | (fault ? 1 : 0));
         m_state = BYTE2;
         break;
     case BYTE2:
@@ -51,8 +51,8 @@ u8 max31855::do_spi_transport(u8 mosi) {
         m_state = BYTE3;
         break;
     case BYTE3:
-        miso = (u8)((m_fp_temp_internal << 4) | ((scv == true) << 2) |
-                    ((scg == true) << 1) | (oc == true));
+        miso = (u8)((m_fp_temp_internal << 4) | (scv ? 4 : 0) | 
+                    (scg ? 2 : 0) | (oc ? 1 : 0));
         m_state = BYTE0;
         break;
     default:

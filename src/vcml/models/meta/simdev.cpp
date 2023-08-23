@@ -48,7 +48,7 @@ void simdev::write_serr(u32 val) {
 }
 
 u32 simdev::read_prng() {
-    return random();
+    return rand();
 }
 
 simdev::simdev(const sc_module_name& nm):

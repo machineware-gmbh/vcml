@@ -17,6 +17,7 @@ option(VCML_USE_RFB "Use RFB for rendering" OFF)
 option(VCML_USE_SLIRP "Use SLIRP for networking" ON)
 option(VCML_USE_TAP "Use TAP for networking" ON)
 option(VCML_USE_LUA "Use LUA for scripting" ON)
+option(VCML_USE_SOCKETCAN "Use CAN sockets" ON)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
@@ -46,7 +47,9 @@ endif()
 if(VCML_USE_TAP)
     check_include_file("linux/if_tun.h" TAP_FOUND)
 endif()
-
+if(VCML_USE_SOCKETCAN)
+    check_include_file("linux/can/raw.h" SOCKETCAN_FOUND)
+endif()
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(inc ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -138,41 +141,39 @@ add_library(vcml STATIC
     ${src}/vcml/models/ethernet/network.cpp
     ${src}/vcml/models/ethernet/lan9118.cpp
     ${src}/vcml/models/ethernet/ethoc.cpp
-    #${src}/vcml/models/can/backend.cpp
-    #${src}/vcml/models/can/backend_file.cpp
-    #${src}/vcml/models/can/backend_socket.cpp
-    #${src}/vcml/models/can/bridge.cpp
-    #${src}/vcml/models/can/bus.cpp
-    #${src}/vcml/models/i2c/lm75.cpp
-    #${src}/vcml/models/i2c/oci2c.cpp
-    #${src}/vcml/models/spi/bus.cpp
-    #${src}/vcml/models/spi/spi2sd.cpp
-    #${src}/vcml/models/spi/max31855.cpp
-    #${src}/vcml/models/spi/flash.cpp
-    #${src}/vcml/models/spi/ocspi.cpp
-    #${src}/vcml/models/sd/card.cpp
-    #${src}/vcml/models/sd/sdhci.cpp
-    #${src}/vcml/models/pci/device.cpp
-    #${src}/vcml/models/pci/host.cpp
-    #${src}/vcml/models/virtio/mmio.cpp
-    #${src}/vcml/models/virtio/pci.cpp
-    #${src}/vcml/models/virtio/rng.cpp
-    #${src}/vcml/models/virtio/blk.cpp
-    #${src}/vcml/models/virtio/console.cpp
-    #${src}/vcml/models/virtio/input.cpp
-    #${src}/vcml/models/meta/loader.cpp
-    #${src}/vcml/models/meta/simdev.cpp
-    #${src}/vcml/models/meta/throttle.cpp
-    #${src}/vcml/models/opencores/ompic.cpp
-    #${src}/vcml/models/opencores/ockbd.cpp
-    #${src}/vcml/models/opencores/ocfbc.cpp
-    #${src}/vcml/models/arm/pl190vic.cpp
-    #${src}/vcml/models/arm/syscon.cpp
-    #${src}/vcml/models/arm/gic400.cpp
-    #${src}/vcml/models/riscv/clint.cpp
-    #${src}/vcml/models/riscv/plic.cpp
-    #${src}/vcml/models/riscv/simdev.cpp
-)
+    ${src}/vcml/models/can/backend.cpp
+    ${src}/vcml/models/can/backend_file.cpp
+    ${src}/vcml/models/can/bridge.cpp
+    ${src}/vcml/models/can/bus.cpp
+    ${src}/vcml/models/i2c/lm75.cpp
+    ${src}/vcml/models/i2c/oci2c.cpp
+    ${src}/vcml/models/spi/bus.cpp
+    ${src}/vcml/models/spi/spi2sd.cpp
+    ${src}/vcml/models/spi/max31855.cpp
+    ${src}/vcml/models/spi/flash.cpp
+    ${src}/vcml/models/spi/ocspi.cpp
+    ${src}/vcml/models/sd/card.cpp
+    ${src}/vcml/models/sd/sdhci.cpp
+    ${src}/vcml/models/pci/device.cpp
+    ${src}/vcml/models/pci/host.cpp
+    ${src}/vcml/models/virtio/mmio.cpp
+    ${src}/vcml/models/virtio/pci.cpp
+    ${src}/vcml/models/virtio/rng.cpp
+    ${src}/vcml/models/virtio/blk.cpp
+    ${src}/vcml/models/virtio/console.cpp
+    ${src}/vcml/models/virtio/input.cpp
+    ${src}/vcml/models/meta/loader.cpp
+    ${src}/vcml/models/meta/simdev.cpp
+    ${src}/vcml/models/meta/throttle.cpp
+    ${src}/vcml/models/opencores/ompic.cpp
+    ${src}/vcml/models/opencores/ockbd.cpp
+    ${src}/vcml/models/opencores/ocfbc.cpp
+    ${src}/vcml/models/arm/pl190vic.cpp
+    ${src}/vcml/models/arm/syscon.cpp
+    ${src}/vcml/models/arm/gic400.cpp
+    ${src}/vcml/models/riscv/clint.cpp
+    ${src}/vcml/models/riscv/plic.cpp
+    ${src}/vcml/models/riscv/simdev.cpp)
 
 if(MSVC)
     target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_win32.cpp)
@@ -245,6 +246,14 @@ if(TAP_FOUND)
     target_sources(vcml PRIVATE ${src}/vcml/models/ethernet/backend_tap.cpp)
 else()
     message(STATUS "Building without TAP support")
+endif()
+
+if(SOCKETCAN_FOUND)
+    message(STATUS "Bulding with SOCKETCAN support")
+    target_compile_definitions(vcml PRIVATE HAVE_SOCKETCAN)
+    target_sources(vcml PRIVATE ${src}/vcml/models/can/backend_socket.cpp)
+else()
+    message(STATUS "Building without SOCKETCAN support")
 endif()
 
 if(LUA_FOUND)

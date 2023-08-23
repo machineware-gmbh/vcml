@@ -208,8 +208,8 @@ void ocfbc::render() {
         u32 burstsz = OCFBC_VBL(ctlr);
         u32 linesz = m_xres * m_bpp;
 
-        u8 linebuf[linesz];
-        memset(linebuf, 0, sizeof(linebuf));
+        u8* linebuf = new u8[linesz];
+        memset(linebuf, 0, linesz);
 
         u8* fb = m_fb;
 
@@ -250,6 +250,8 @@ void ocfbc::render() {
                 irq = true;
             }
         }
+
+        delete[] linebuf;
     }
 
     if (ctlr & CTLR_CBSWE) {

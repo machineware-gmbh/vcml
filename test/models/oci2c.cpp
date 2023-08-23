@@ -14,7 +14,7 @@ using oci2c = vcml::i2c::oci2c;
 
 // oci2c registers are always 8bit wide, but we can test with 8/16/32bit data
 // register accesses by specifying a register shift (e.g. u32 -> shift 2)
-template <typename DATA, const u8 REG_SHIFT = ffs(sizeof(DATA))>
+template <typename DATA, const u8 REG_SHIFT>
 class oci2c_bench : public test_base, public i2c_host
 {
 public:
@@ -195,6 +195,6 @@ public:
 };
 
 TEST(oci2c, simulate) {
-    oci2c_bench<u32> test("bench");
+    oci2c_bench<u32, 2> test("bench");
     sc_core::sc_start();
 }

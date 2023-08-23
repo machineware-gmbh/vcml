@@ -29,8 +29,6 @@ private:
         VIRTQUEUE_REQUEST = 0,
     };
 
-    unsigned int m_seed;
-
     virtual void identify(virtio_device_desc& desc) override;
     virtual bool notify(u32 vqid) override;
 
@@ -42,6 +40,9 @@ private:
 
 public:
     virtio_target_socket virtio_in;
+
+    property<bool> pseudo;
+    property<u32> seed;
 
     rng(const sc_module_name& nm);
     virtual ~rng();

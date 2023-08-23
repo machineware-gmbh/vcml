@@ -10,6 +10,7 @@
 
 #include "vcml/models/virtio/input.h"
 #include "vcml/core/version.h"
+#include "vcml/ui/codes.h"
 
 namespace vcml {
 namespace virtio {
@@ -34,7 +35,7 @@ void input::config_update_devids() {
     if (m_config.subsel)
         return;
 
-    m_config.u.ids.bustype = BUS_VIRTUAL;
+    m_config.u.ids.bustype = 0x6; // BUS_VIRTUAL
     m_config.u.ids.vendor = 0xcafe;
     m_config.u.ids.product = 0x0001;
     m_config.u.ids.version = 1;
@@ -52,11 +53,11 @@ void input::config_update_evbits() {
     bitset<1024> events;
 
     switch (m_config.subsel) {
-    case EV_SYN:
-        events.set(SYN_REPORT);
+    case ui::EV_SYN:
+        events.set(ui::SYN_REPORT);
         break;
 
-    case EV_KEY:
+    case ui::EV_KEY:
         if (keyboard) {
             auto keys = ui::keymap::lookup(keymap);
             for (auto key : keys.layout)
@@ -77,7 +78,7 @@ void input::config_update_evbits() {
 
         break;
 
-    case EV_ABS:
+    case ui::EV_ABS:
         if (touchpad) {
             events.set(ABS_X);
             events.set(ABS_Y);
@@ -85,7 +86,7 @@ void input::config_update_evbits() {
 
         break;
 
-    case EV_REL:
+    case ui::EV_REL:
         if (mouse) {
             events.set(REL_X);
             events.set(REL_Y);
@@ -224,7 +225,7 @@ void input::update() {
 
         msg.copy_out(event);
 
-        if (event.type == EV_SYN && event.code == SYN_REPORT) {
+        if (event.type == ui::EV_SYN && event.code == ui::SYN_REPORT) {
             log_debug("event sync");
         } else {
             log_debug("event type %hu, code %hu, value %u", event.type,

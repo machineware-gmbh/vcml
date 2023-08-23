@@ -34,5 +34,5 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{matrix.cfg}} --verbose
+      run: ctest -C ${{matrix.cfg}} --output-on-failure
 

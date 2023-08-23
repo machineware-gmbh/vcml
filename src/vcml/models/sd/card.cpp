@@ -312,7 +312,7 @@ void card::init_cid() {
 void card::init_csd_sdsc() {
     u32 read_bl_len = fls(m_blklen);
     u32 c_size_mult = 7; // 2^(7+2) = 512
-    u32 c_size = disk.capacity() / (m_blklen * (1 << (c_size_mult + 2)));
+    u32 c_size = disk.capacity() / (m_blklen * (1ull << (c_size_mult + 2)));
     u32 sector_size = 7; // 128 blocks erasable at once (max)
     u32 wpgrp_size = 7;  // 128 blocks per write-protect group
 
@@ -346,7 +346,7 @@ void card::init_csd_sdsc() {
 
 void card::init_csd_sdhc() {
     u32 c_size_mult = 8; // 2^(8+2) = 1024, fixed by spec
-    u32 c_size = disk.capacity() / (m_blklen * (1 << (c_size_mult + 2)));
+    u32 c_size = disk.capacity() / (m_blklen * (1ull << (c_size_mult + 2)));
 
     // prevent underflow if capacity < 512k
     if (c_size > 0)
