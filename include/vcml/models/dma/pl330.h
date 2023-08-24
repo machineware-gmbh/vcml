@@ -255,12 +255,10 @@ public:
 
     tlm_target_socket in;
     tlm_initiator_socket dma;
-    gpio_initiator_array irq; // todo irqs need to be modelled (and understood)
+    gpio_initiator_array irq;
+    gpio_initiator_socket irq_abort;
 
     void pl330_thread();
-    int channel_execute_cycle(channel& channel);
-
-    // todo debug functionality
 
     pl330(const sc_module_name& nm);
     virtual ~pl330();

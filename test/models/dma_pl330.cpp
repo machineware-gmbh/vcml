@@ -107,6 +107,7 @@ public:
         out.bind(dma.in);
         dma.dma.bind(mem.in);
         dma.irq[0].bind(irq_in);
+        dma.irq_abort.stub();
         reset_out.bind(dma.rst);
         reset_out.bind(mem.rst);
         clk.bind(mem.clk);
