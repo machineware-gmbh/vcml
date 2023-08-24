@@ -30,7 +30,7 @@ jobs:
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.cfg}} -j $(nproc)
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.cfg}}
 
     - name: Test
       working-directory: ${{github.workspace}}/build
