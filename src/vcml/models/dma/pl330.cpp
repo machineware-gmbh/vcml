@@ -110,6 +110,7 @@ static void pl330_handle_ch_fault(pl330& dma, pl330::channel& ch,
     bool first_fault = !((dma.fsrc & 0x7) && (dma.manager.fsrd & 0x1));
     dma.fsrc |= 0b1 << ch.tag;
     ch.set_state(pl330::channel::FAULTING);
+    ch.log.warn("Dma channel faulting with fault: %d", fault);
     if (first_fault)
         dma.irq_abort = true;
 }
@@ -119,6 +120,7 @@ static void pl330_handle_mn_fault(pl330& dma, pl330::manager::fault fault) {
     bool first_fault = !((dma.fsrc & 0x7) && (dma.manager.fsrd & 0x1));
     dma.manager.fsrd |= 0b1;
     dma.manager.set_state(pl330::manager::FAULTING);
+    dma.manager.log.warn("Dma manager faulting with fault: %d", fault);
     if (first_fault)
         dma.irq_abort = true;
 }
@@ -133,7 +135,7 @@ static void pl330_handle_mn_fault(pl330& dma, pl330::manager::fault fault) {
  *   LEN - number of elements in ARGS array
  */
 
-inline static void pl330_dmaadxh(pl330::channel* ch, uint8_t* args, bool ra,
+static inline void pl330_dmaadxh(pl330::channel* ch, uint8_t* args, bool ra,
                                  bool neg) {
     uint32_t im = (args[1] << 8) | args[0];
     if (neg)
@@ -274,8 +276,7 @@ static void pl330_dmald(pl330* dma, pl330::channel* ch, uint8_t opcode,
     bool inc;
 
     if (bs == 0b10) {
-        ch->log.warn("Invalid operand during DMALD instruction");
-        // pl330_fault(ch, pl330::channel::operand_invalid);
+        pl330_handle_ch_fault(*dma, *ch, pl330::channel::OPERAND_INVALID);
         return;
     }
     // DMALD[S|B] missmatch -> nop case
@@ -827,7 +828,7 @@ static inline void run_channel(pl330& dma, pl330::channel& channel) {
     }
 }
 
-static void run_channels(pl330& dma) {
+static inline void run_channels(pl330& dma) {
     for (auto& channel : dma.channels) {
         if (!(channel.is_state(pl330::channel::STOPPED))) {
             run_channel(dma, channel);
@@ -905,6 +906,20 @@ static void handle_debug_insn(pl330& dma) {
     dma.dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
 }
 
+void pl330::pl330_thread() {
+    while (true) {
+        wait(m_dma);
+        if (m_execute_debug) {
+            handle_debug_insn(*this);
+            m_execute_debug = false;
+        }
+        run_manager(*this);
+        run_channels(*this);
+        // todo re-trigger if any channels are in states where they might have
+        // just been waiting for other channels, or sth ?! test!
+    }
+}
+
 pl330::channel::channel(const sc_module_name& nm, mwr::u32 tag):
     module(nm),
     ftr("ftr", 0x040 + tag * 0x04),
@@ -949,20 +964,6 @@ pl330::manager::manager(const sc_module_name& nm):
     ftrd.sync_never();
 }
 
-void pl330::pl330_thread() {
-    while (true) {
-        wait(m_dma);
-        if (m_execute_debug) {
-            handle_debug_insn(*this);
-            m_execute_debug = false;
-        }
-        run_manager(*this);
-        run_channels(*this);
-        // todo re-trigger if any channels are in states where they might have
-        // just been waiting for other channels, or sth ?!
-    }
-}
-
 pl330::~pl330() {
     // for now do nothing
 }
@@ -985,23 +986,26 @@ void pl330::reset() {
     crd.set_field<CRD_WR_Q_DEP>(QUEUE_SIZE - 1);
 
     // reset dmac
-    inten = 0;
-    int_event_ris = 0;
-    intmis = 0;
-    dbgstatus = 0;
-    fsrc = 0;
+    inten.reset();
+    int_event_ris.reset();
+    intmis.reset();
+    dbgstatus.reset();
+    fsrc.reset();
     // reset manager
     manager.dsr.set_bit<dsr_bits::DNS>(!!(cr0 & cr0_bits::MGR_NS_AT_RST));
+    manager.dpc.reset();
+    manager.fsrd.reset();
+    manager.ftrd.reset();
     // reset channels
-    for (auto& channel : channels) {
-        channel.sar = 0;
-        channel.dar = 0;
-        channel.cpc = 0;
-        channel.ccr = 0;
-        channel.ftr = 0;
-        channel.set_state(channel::STOPPED);
-        channel.watchdog_timer = 0;
-        channel.stall = false;
+    for (auto& ch : channels) {
+        ch.sar.reset();
+        ch.dar.reset();
+        ch.cpc.reset();
+        ch.ccr.reset();
+        ch.ftr.reset();
+        ch.set_state(channel::STOPPED);
+        ch.watchdog_timer = 0;
+        ch.stall = false;
     }
 
     read_queue.reset();
