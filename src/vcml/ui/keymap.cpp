@@ -8,7 +8,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/ui/codes.h"
 #include "vcml/ui/keymap.h"
 
 namespace vcml {

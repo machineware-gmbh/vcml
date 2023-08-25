@@ -91,12 +91,15 @@ private:
     void push_key(u16 key, u32 down) {
         m_events.push({ ui::EV_KEY, key, down });
     }
+
     void push_rel(u16 axis, u32 val) {
         m_events.push({ ui::EV_REL, axis, val });
     }
+
     void push_abs(u16 axis, u32 val) {
         m_events.push({ ui::EV_ABS, axis, val });
     }
+
     void push_sync() { m_events.push({ ui::EV_SYN, ui::SYN_REPORT, 0 }); }
 
     void config_update_name();
