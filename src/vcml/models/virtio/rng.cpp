@@ -30,8 +30,12 @@ bool rng::notify(u32 vqid) {
                   msg.length());
 
         vector<u8> random(msg.length_out());
-        for (auto& elem : random)
-            elem = rand_r(&m_seed);
+        if (pseudo) {
+            for (auto& elem : random)
+                elem = rand();
+        } else {
+            mwr::fill_random(random.data(), random.size());
+        }
 
         count++;
         msg.copy_out(random);
@@ -63,7 +67,11 @@ bool rng::write_config(const range& addr, const void* ptr) {
 }
 
 rng::rng(const sc_module_name& nm):
-    module(nm), virtio_device(), m_seed(0), virtio_in("virtio_in") {
+    module(nm),
+    virtio_device(),
+    virtio_in("virtio_in"),
+    pseudo("pseudo", false),
+    seed("seed", 0) {
 }
 
 rng::~rng() {
@@ -71,7 +79,8 @@ rng::~rng() {
 }
 
 void rng::reset() {
-    m_seed = (unsigned int)sc_time_stamp().value();
+    if (pseudo)
+        srand(seed);
 }
 
 VCML_EXPORT_MODEL(vcml::virtio::rng, name, args) {

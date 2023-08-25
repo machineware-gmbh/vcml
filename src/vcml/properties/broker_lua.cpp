@@ -96,8 +96,8 @@ static int do_lookup(lua_State* lua) {
 }
 
 static bool g_define_globals = []() -> bool {
-    const char* env = getenv("VCML_LUA_DEFINE_GLOBALS");
-    return env && *env == '1';
+    auto env = mwr::getenv("VCML_LUA_DEFINE_GLOBALS");
+    return env && *env == "1";
 }();
 
 static int do_define_globals(lua_State* lua) {
@@ -164,7 +164,7 @@ broker_lua::broker_lua(const string& file): broker("lua") {
     const vector<pair<string, long long>> integers = {
         { "vcml_version", VCML_VERSION },
         { "systemc_version", SYSTEMC_VERSION },
-        { "pid", getpid() },
+        { "pid", mwr::getpid() },
     };
 
     const vector<pair<string, string>> strings = {

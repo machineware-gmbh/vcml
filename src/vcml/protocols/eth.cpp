@@ -10,6 +10,10 @@
 
 #include "vcml/protocols/eth.h"
 
+#if defined(MWR_MSVC)
+#define sscanf sscanf_s
+#endif
+
 namespace vcml {
 
 const char* mac_addr::format = "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx";

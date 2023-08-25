@@ -136,7 +136,7 @@ void slirp_network::slirp_thread() {
         m_mtx.unlock();
 
         if (fds.empty()) {
-            usleep(timeout * 1000);
+            mwr::usleep(timeout * 1000);
             continue;
         }
 

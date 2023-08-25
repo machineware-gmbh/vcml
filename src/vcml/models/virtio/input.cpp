@@ -34,7 +34,7 @@ void input::config_update_devids() {
     if (m_config.subsel)
         return;
 
-    m_config.u.ids.bustype = BUS_VIRTUAL;
+    m_config.u.ids.bustype = 0x6; // BUS_VIRTUAL
     m_config.u.ids.vendor = 0xcafe;
     m_config.u.ids.product = 0x0001;
     m_config.u.ids.version = 1;
@@ -52,11 +52,11 @@ void input::config_update_evbits() {
     bitset<1024> events;
 
     switch (m_config.subsel) {
-    case EV_SYN:
-        events.set(SYN_REPORT);
+    case ui::EV_SYN:
+        events.set(ui::SYN_REPORT);
         break;
 
-    case EV_KEY:
+    case ui::EV_KEY:
         if (keyboard) {
             auto keys = ui::keymap::lookup(keymap);
             for (auto key : keys.layout)
@@ -64,32 +64,32 @@ void input::config_update_evbits() {
         }
 
         if (touchpad) {
-            events.set(BTN_LEFT);
-            events.set(BTN_TOUCH);
-            events.set(BTN_TOOL_FINGER);
+            events.set(ui::BTN_LEFT);
+            events.set(ui::BTN_TOUCH);
+            events.set(ui::BTN_TOOL_FINGER);
         }
 
         if (mouse) {
-            events.set(BTN_LEFT);
-            events.set(BTN_RIGHT);
-            events.set(BTN_MIDDLE);
+            events.set(ui::BTN_LEFT);
+            events.set(ui::BTN_RIGHT);
+            events.set(ui::BTN_MIDDLE);
         }
 
         break;
 
-    case EV_ABS:
+    case ui::EV_ABS:
         if (touchpad) {
-            events.set(ABS_X);
-            events.set(ABS_Y);
+            events.set(ui::ABS_X);
+            events.set(ui::ABS_Y);
         }
 
         break;
 
-    case EV_REL:
+    case ui::EV_REL:
         if (mouse) {
-            events.set(REL_X);
-            events.set(REL_Y);
-            events.set(REL_WHEEL);
+            events.set(ui::REL_X);
+            events.set(ui::REL_Y);
+            events.set(ui::REL_WHEEL);
         }
 
         break;
@@ -112,13 +112,13 @@ void input::config_update_evbits() {
 
 void input::config_update_absinfo() {
     switch (m_config.subsel) {
-    case ABS_X:
+    case ui::ABS_X:
         m_config.u.abs.min = 0;
         m_config.u.abs.max = xmax;
         m_config.size = sizeof(m_config.u.abs);
         break;
 
-    case ABS_Y:
+    case ui::ABS_Y:
         m_config.u.abs.min = 0;
         m_config.u.abs.max = ymax;
         m_config.size = sizeof(m_config.u.abs);
@@ -177,23 +177,23 @@ void input::update() {
         if (mouse) {
             if (event.is_rel()) {
                 if (event.rel.x)
-                    push_rel(REL_X, event.rel.x);
+                    push_rel(ui::REL_X, event.rel.x);
                 if (event.rel.y)
-                    push_rel(REL_Y, event.rel.y);
+                    push_rel(ui::REL_Y, event.rel.y);
                 if (event.rel.w)
-                    push_rel(REL_WHEEL, event.rel.w);
+                    push_rel(ui::REL_WHEEL, event.rel.w);
             }
 
-            if (event.is_key() &&
-                (event.key.code == BTN_LEFT || event.key.code == BTN_MIDDLE ||
-                 event.key.code == BTN_RIGHT)) {
+            if (event.is_key() && (event.key.code == ui::BTN_LEFT ||
+                                   event.key.code == ui::BTN_MIDDLE ||
+                                   event.key.code == ui::BTN_RIGHT)) {
                 push_key(event.key.code, event.key.state);
             }
         }
 
         if (touchpad) {
-            if (event.is_key() && event.key.code == BTN_LEFT) {
-                push_key(BTN_TOOL_FINGER, event.key.state);
+            if (event.is_key() && event.key.code == ui::BTN_LEFT) {
+                push_key(ui::BTN_TOOL_FINGER, event.key.state);
                 push_key(event.key.code, event.key.state);
             }
 
@@ -208,9 +208,9 @@ void input::update() {
                 VCML_ERROR_ON(x != (u32)x, "pointer out of range");
                 VCML_ERROR_ON(y != (u32)y, "pointer out of range");
 
-                push_key(BTN_TOUCH, 1);
-                push_abs(ABS_X, x);
-                push_abs(ABS_Y, y);
+                push_key(ui::BTN_TOUCH, 1);
+                push_abs(ui::ABS_X, x);
+                push_abs(ui::ABS_Y, y);
             }
         }
     }
@@ -224,7 +224,7 @@ void input::update() {
 
         msg.copy_out(event);
 
-        if (event.type == EV_SYN && event.code == SYN_REPORT) {
+        if (event.type == ui::EV_SYN && event.code == ui::SYN_REPORT) {
             log_debug("event sync");
         } else {
             log_debug("event type %hu, code %hu, value %u", event.type,

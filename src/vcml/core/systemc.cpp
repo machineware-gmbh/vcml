@@ -196,6 +196,7 @@ static inline bool test_kernel_has_phase_callbacks() {
         callbacks_tester t;
         return true;
     } catch (sc_core::sc_report& r) {
+        (void)r;
         return false;
     }
 }
@@ -573,12 +574,14 @@ struct async_worker {
             try {
                 task();
             } catch (sim_terminated_exception& ex) {
+                (void)ex;
                 alive = false;
             }
 
             working = false;
         }
 
+        mtx.unlock();
         g_async = nullptr;
     }
 
@@ -762,7 +765,7 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
 
     char* endptr = nullptr;
     sc_dt::uint64 val = strtoul(str.c_str(), &endptr, 0);
-    double float_val = val;
+    double float_val = (double)val;
 
     if (strcmp(endptr, "ps") == 0)
         t = sc_time(float_val, sc_core::SC_PS);

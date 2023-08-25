@@ -72,7 +72,7 @@ bool gpio::cmd_clear(const vector<string>& args, ostream& os) {
 u32 gpio::read_data() {
     u32 result = 0;
     for (auto gpio : gpio_out) {
-        VCML_ERROR_ON(gpio.first > 31, "invalid GPIO%lu", gpio.first);
+        VCML_ERROR_ON(gpio.first > 31, "invalid GPIO%zu", gpio.first);
 
         if (gpio.second->read())
             result |= (1 << gpio.first);
@@ -83,7 +83,7 @@ u32 gpio::read_data() {
 
 void gpio::write_data(u32 val) {
     for (auto port : gpio_out) {
-        VCML_ERROR_ON(port.first > 31, "invalid GPIO%lu", port.first);
+        VCML_ERROR_ON(port.first > 31, "invalid GPIO%zu", port.first);
 
         u32 mask = (1 << port.first);
         if ((val & mask) && !port.second->read()) {

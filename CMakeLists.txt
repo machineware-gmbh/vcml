@@ -15,7 +15,9 @@ option(VCML_USE_SDL2 "Use SDL2 for rendering" ON)
 option(VCML_USE_VNC "Use VNC for rendering" ON)
 option(VCML_USE_RFB "Use RFB for rendering" OFF)
 option(VCML_USE_SLIRP "Use SLIRP for networking" ON)
+option(VCML_USE_TAP "Use TAP for networking" ON)
 option(VCML_USE_LUA "Use LUA for scripting" ON)
+option(VCML_USE_SOCKETCAN "Use CAN sockets" ON)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_BUILD_PIC   "Build position independent code" ON)
@@ -41,6 +43,12 @@ if(VCML_USE_SDL2)
 endif()
 if(VCML_USE_LUA)
     find_package(Lua "5.3")
+endif()
+if(VCML_USE_TAP)
+    check_include_file("linux/if_tun.h" TAP_FOUND)
+endif()
+if(VCML_USE_SOCKETCAN)
+    check_include_file("linux/can/raw.h" SOCKETCAN_FOUND)
 endif()
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -91,7 +99,6 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/tlm_stubs.cpp
     ${src}/vcml/protocols/tlm_host.cpp
     ${src}/vcml/protocols/tlm_sockets.cpp
-    ${src}/vcml/protocols/tlm_memory.cpp
     ${src}/vcml/protocols/gpio.cpp
     ${src}/vcml/protocols/clk.cpp
     ${src}/vcml/protocols/spi.cpp
@@ -130,14 +137,12 @@ add_library(vcml STATIC
     ${src}/vcml/models/block/disk.cpp
     ${src}/vcml/models/ethernet/backend.cpp
     ${src}/vcml/models/ethernet/backend_file.cpp
-    ${src}/vcml/models/ethernet/backend_tap.cpp
     ${src}/vcml/models/ethernet/bridge.cpp
     ${src}/vcml/models/ethernet/network.cpp
     ${src}/vcml/models/ethernet/lan9118.cpp
     ${src}/vcml/models/ethernet/ethoc.cpp
     ${src}/vcml/models/can/backend.cpp
     ${src}/vcml/models/can/backend_file.cpp
-    ${src}/vcml/models/can/backend_socket.cpp
     ${src}/vcml/models/can/bridge.cpp
     ${src}/vcml/models/can/bus.cpp
     ${src}/vcml/models/i2c/lm75.cpp
@@ -169,6 +174,12 @@ add_library(vcml STATIC
     ${src}/vcml/models/riscv/clint.cpp
     ${src}/vcml/models/riscv/plic.cpp
     ${src}/vcml/models/riscv/simdev.cpp)
+
+if(MSVC)
+    target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_win32.cpp)
+else()
+    target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_posix.cpp)
+endif()
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
@@ -227,6 +238,22 @@ if(LIBSLIRP_FOUND)
     target_link_libraries(vcml PUBLIC ${LIBSLIRP_LIBRARIES})
 else()
     message(STATUS "Building without SLIRP support")
+endif()
+
+if(TAP_FOUND)
+    message(STATUS "Building with TAP support")
+    target_compile_definitions(vcml PRIVATE HAVE_TAP)
+    target_sources(vcml PRIVATE ${src}/vcml/models/ethernet/backend_tap.cpp)
+else()
+    message(STATUS "Building without TAP support")
+endif()
+
+if(SOCKETCAN_FOUND)
+    message(STATUS "Bulding with SOCKETCAN support")
+    target_compile_definitions(vcml PRIVATE HAVE_SOCKETCAN)
+    target_sources(vcml PRIVATE ${src}/vcml/models/can/backend_socket.cpp)
+else()
+    message(STATUS "Building without SOCKETCAN support")
 endif()
 
 if(LUA_FOUND)

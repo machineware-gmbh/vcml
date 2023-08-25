@@ -13,8 +13,7 @@
 
 #include "vcml/core/types.h"
 #include "vcml/logging/logger.h"
-
-#include <linux/input.h>
+#include "vcml/ui/codes.h"
 
 namespace vcml {
 namespace ui {

@@ -11,7 +11,10 @@
 #include "vcml/models/ethernet/bridge.h"
 #include "vcml/models/ethernet/backend.h"
 #include "vcml/models/ethernet/backend_file.h"
+
+#ifdef HAVE_TAP
 #include "vcml/models/ethernet/backend_tap.h"
+#endif
 
 #ifdef HAVE_LIBSLIRP
 #include "vcml/models/ethernet/backend_slirp.h"
@@ -38,7 +41,9 @@ backend* backend::create(bridge* br, const string& type) {
     typedef function<backend*(bridge*, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create },
+#ifdef HAVE_TAP
         { "tap", backend_tap::create },
+#endif
 #ifdef HAVE_LIBSLIRP
         { "slirp", backend_slirp::create },
 #endif

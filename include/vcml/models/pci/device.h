@@ -65,8 +65,8 @@ struct cap_msi : capability {
     reg<u32>* msi_mask;
     reg<u32>* msi_pending;
 
-    size_t max_vectors() const { return 1u << ((*msi_control >> 1) & 7); }
-    size_t num_vectors() const { return 1u << ((*msi_control >> 4) & 7); }
+    size_t max_vectors() const { return 1ull << ((*msi_control >> 1) & 7); }
+    size_t num_vectors() const { return 1ull << ((*msi_control >> 4) & 7); }
 
     bool is_enabled() const { return *msi_control & PCI_MSI_ENABLE; }
     bool is_64bit() const { return *msi_control & PCI_MSI_64BIT; }
@@ -265,7 +265,7 @@ private:
 
 template <typename T>
 reg<T>* capability::new_cap_reg(const string& regnm, T val, vcml_access rw) {
-    hierarchy_guard guard(device);
+    hierarchy_guard guard(dev);
     string nm = mkstr("%s_%s", name.c_str(), regnm.c_str());
     reg<T>* r = new reg<T>(PCI_AS_CFG, nm, dev->curr_cap_off, val);
     if (is_write_allowed(rw))

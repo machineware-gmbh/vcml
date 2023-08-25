@@ -13,7 +13,7 @@
 
 #define VCML_MODEL_DEPRECATED(oldns, oldname, newns, newname) \
     namespace oldns {                                         \
-    typedef ::newns::newname oldname MWR_DECL_DEPRECATED;     \
+    typedef MWR_DECL_DEPRECATED ::newns::newname oldname;     \
     }
 
 VCML_MODEL_DEPRECATED(vcml::generic, rtc1742, vcml::timers, rtc1742)

@@ -16,3 +16,7 @@ setup.sh
 .cproject
 .settings/
 
+# Ignore MSVC files
+.vs/
+CMakeSettings.json
+

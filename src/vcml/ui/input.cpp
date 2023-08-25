@@ -75,6 +75,17 @@ keyboard::~keyboard() {
     s_keyboards.erase(input_name());
 }
 
+#define KEY_LEFTSHIFT  42
+#define KEY_RIGHTSHIFT 54
+#define KEY_LEFTALT    56
+#define KEY_RIGHTALT   100
+#define KEY_CAPSLOCK   58
+
+#define BTN_TOUCH  0x14a
+#define BTN_LEFT   0x110
+#define BTN_RIGHT  0x111
+#define BTN_MIDDLE 0x112
+
 void keyboard::notify_key(u32 sym, bool down) {
     u32 state = down ? VCML_KEY_DOWN : VCML_KEY_UP;
     if (down && sym == m_prev_sym)

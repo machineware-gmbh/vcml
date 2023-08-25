@@ -492,7 +492,7 @@ void device::write_msi_addr(u32 val) {
 }
 
 void device::write_msi_mask(u32 val) {
-    *m_msi->msi_mask = val & ((1ul << m_msi->num_vectors()) - 1);
+    *m_msi->msi_mask = val & ((1ull << m_msi->num_vectors()) - 1);
     m_msi_notify.notify(SC_ZERO_TIME);
 }
 

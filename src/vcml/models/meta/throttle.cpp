@@ -15,7 +15,7 @@ namespace meta {
 
 static u64 do_usleep(u64 delta) {
     u64 start = mwr::timestamp_us();
-    usleep(delta);
+    mwr::usleep(delta);
     u64 end = mwr::timestamp_us();
     if (start >= end)
         return 0;

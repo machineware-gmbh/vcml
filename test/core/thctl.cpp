@@ -25,7 +25,7 @@ public:
             ASSERT_FALSE(thctl_is_sysc_thread());
             thctl_guard lock;
             crit_count++;
-            usleep(1000);
+            mwr::usleep(1000);
             crit1_done = true;
             EXPECT_EQ(crit_count, 1);
             crit_count--;
@@ -35,7 +35,7 @@ public:
             ASSERT_FALSE(thctl_is_sysc_thread());
             thctl_guard lock;
             crit_count++;
-            usleep(1000);
+            mwr::usleep(1000);
             crit2_done = true;
             EXPECT_EQ(crit_count, 1);
             crit_count--;

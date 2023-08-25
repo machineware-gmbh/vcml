@@ -40,7 +40,7 @@ struct can_frame {
     u32 msgid;
     u8 dlc;
     u8 flags;
-    u8 data[64] MWR_DECL_ALIGN(8);
+    u8 MWR_DECL_ALIGN(8) data[64];
 
     bool is_eff() const { return msgid & CAN_EFF; }
     bool is_rtr() const { return msgid & CAN_RTR; }

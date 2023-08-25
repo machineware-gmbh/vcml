@@ -24,7 +24,7 @@ public:
         EXPECT_FALSE(thctl_is_sysc_thread());
 
         while (t < duration) {
-            usleep(1000);
+            mwr::usleep(1000);
             t += step;
             sc_progress(step);
         }
