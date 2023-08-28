@@ -3,83 +3,57 @@
 
 # VCML Models: PL330 (DMA330)
 
-model consists of a manager and up to 8 DMA threads.
-up to 32 peripheral interfaces and up to 32 events or interrupts can be configured
-The dma executes a custom dma assembly language however this is often abstracted away using a driver.
-The model does model instruction faults, however stalling behaviour is only approximated and stalling cannot be varified against this model.
-The peripheral interfaces are a work in progress.
+The model comprises a manager along with up to 8 DMA threads.
+It allows configuration of up to 32 peripheral interfaces and up to 32 events or interrupts.
+The DMA executes a custom DMA assembly language, although this complexity is frequently hidden by a driver abstraction.
+While the model does simulate instruction faults, its representation of stalling behavior is only an approximation, and verification against this model cannot confirm stalling. 
+
+`Note: Peripheral interfaces are currently not suported.
+The development of peripheral interfaces is currently ongoing.`
 
 ----
 ## Properties
 This model has the following properties:
 
-| Property        | Type        | Default   | Description        |
-| --------------- | ----------- | --------- | ------------------ |
-| `clock`         | `hz_t`      | `3686400` | UART clock (in Hz) |
-| `read_latency`  | `sc_time`   | `0ns`     | Extra read delay   |
-| `write_latency` | `sc_time`   | `0ns`     | Extra write delay  |
-| `backends`      | `string`    | `<empty>` | List of backends   |
-| `allow_dmi`     | `bool`      | `true`    | Ignored            |
-| `loglvl`        | `log_level` | `info`    | Logging threshold  |
-| `trace_errors`  | `bool`      | `false`   | Report TLM errors  |
-
-* `trace: bool`
-* `trace_errors: bool`
-* `loglvl: log_level`
-* `allow_dmi: bool`
-* `endian: endianess`
-* `read_latency: u32`
-* `write_latency: u32`
-* `enable_periph: bool`
-* `num_channels: u32`
-* `num_irq: u32`
-* `num_periph: u32`
-* `queue_size: u32`
-* `mfifo_width: u32`
-* `mfifo_lines: u32`
-* `clk.trace: bool`
-* `clk.trace_errors: bool`
-* `rst.trace: bool`
-* `rst.trace_errors: bool`
-* `channel_0.trace: bool`
-* `channel_0.trace_errors: bool`
-* `channel_0.loglvl: log_level`
-* `channel_1.trace: bool`
-* `channel_1.trace_errors: bool`
-* `channel_1.loglvl: log_level`
-* `channel_2.trace: bool`
-* `channel_2.trace_errors: bool`
-* `channel_2.loglvl: log_level`
-* `channel_3.trace: bool`
-* `channel_3.trace_errors: bool`
-* `channel_3.loglvl: log_level`
-* `channel_4.trace: bool`
-* `channel_4.trace_errors: bool`
-* `channel_4.loglvl: log_level`
-* `channel_5.trace: bool`
-* `channel_5.trace_errors: bool`
-* `channel_5.loglvl: log_level`
-* `channel_6.trace: bool`
-* `channel_6.trace_errors: bool`
-* `channel_6.loglvl: log_level`
-* `channel_7.trace: bool`
-* `channel_7.trace_errors: bool`
-* `channel_7.loglvl: log_level`
-* `manager.trace: bool`
-* `manager.trace_errors: bool`
-* `manager.loglvl: log_level`
-* `in.trace: bool`
-* `in.trace_errors: bool`
-* `in.allow_dmi: bool`
-* `dma.trace: bool`
-* `dma.trace_errors: bool`
-* `dma.allow_dmi: bool`
-* `irq_abort.trace: bool`
-* `irq_abort.trace_errors: bool`
-* `irq[0].trace: bool`
-* `irq[0].trace_errors: bool`
-* `irq_abort_stub.trace: bool`
-* `irq_abort_stub.trace_errors: bool`
+| Property                     | Type        | Default         | Description                             |
+|------------------------------|-------------|-----------------|-----------------------------------------|
+| `trace`                      | `bool`      | `false`         | Enable Tracing                          |
+| `trace_errors`               | `bool`      | `false`         | Enable Error Tracing                    |
+| `loglvl`                     | `log_level` | `info`          | Logging threshold                       |
+| `allow_dmi`                  | `bool`      | `true`          | `unused(?)`                             |
+| `endian`                     | `endianess` | `host_endian()` | `todo description`                      |
+| `read_latency`               | `u32`       | `0ns`           | Extra read delay                        |
+| `write_latency`              | `u32`       | `0ns`           | Extra write delay                       |
+| `enable_periph`              | `bool`      | `false`         | Peripheral Interface enable bit         |
+| `num_channels`               | `u32`       | 8               | Number of Channels                      |
+| `num_irq`                    | `u32`       | 6               | Maximum Number of Events/IRQs           |
+| `num_periph`                 | `u32`       | 6               | Maximum Number of Peripheral Interfaces |
+| `queue_size`                 | `u32`       | 16              | Read/Write Queue Size in Instructions   |
+| `mfifo_width`                | `u32`       | `32-bit`        | Mfifo Line Data Width                   |
+| `mfifo_lines`                | `u32`       | 256             | Mfifo Maximum Number of Lines           |
+| `clk.trace`                  | `bool`      | `false`         | Enable Tracing for clk                  |
+| `clk.trace_errors`           | `bool`      | `false`         | Enable Error Tracing for clk            |
+| `rst.trace`                  | `bool`      | `false`         | Enable Tracing for rst                  |
+| `rst.trace_errors`           | `bool`      | `false`         | Enable Error Tracing for rst            |
+| `channel_X.trace`            | `bool`      | `false`         | Enable Tracing for channel X            |
+| `channel_X.trace_errors`     | `bool`      | `false`         | Enable Error Tracing for Channel X      |
+| `channel_X.loglvl`           | `log_level` | `info`          | Logging threshold                       |
+| `manager.trace`              | `bool`      | `false`         | Enable Tracing for Manager              |
+| `manager.trace_errors`       | `bool`      | `false`         | Enable Error Tracing for Manager        |
+| `manager.loglvl`             | `log_level` | `info`          | Logging threshold                       |
+| `in.trace`                   | `bool`      | `false`         | Enable Tracing for in                   |
+| `in.trace_errors`            | `bool`      | `false`         | Enable Error Tracing for in             |
+| `in.allow_dmi`               | `bool`      | `true`          | `todo description`                      |
+| `periph_irq[X].trace`        | `bool`      | `false`         | Enable Tracing for periph_irq[X]        |
+| `periph_irq[X].trace_errors` | `bool`      | `false`         | Enable Error Tracing for periph_irq[X]  |
+| `periph_irq[X].allow_dmi`    | `bool`      | `true`          | `todo description`                      |
+| `dma.trace`                  | `bool`      | `false`         | Enable Tracing for dma                  |
+| `dma.trace_errors`           | `bool`      | `false`         | Enable Error Tracing for dma            |
+| `dma.allow_dmi`              | `bool`      | `true`          | `todo description`                      |
+| `irq_abort.trace`            | `bool`      | `false`         | Enable Tracing for irq_abort            |
+| `irq_abort.trace_errors`     | `bool`      | `false`         | Enable Error Tracing irq_abort          |
+| `irq[X].trace`               | `bool`      | `false`         | Enable Tracing for irq[X]               |
+| `irq[X].trace_errors`        | `bool`      | `false`         | Enable Error Tracing for irq[X]         |
 
 ----
 ## Hardware Interface
@@ -87,7 +61,7 @@ The following ports and sockets must be connected prior to simulating:
 
 | Port         | Type                    | Description                              |
 |--------------|-------------------------|------------------------------------------|
-| `IN`         | `tlm_target_socket<>`   | Input socket for bus requests            |
+| `IN`         | `tlm_target_socket`     | Input socket for bus requests            |
 | `DMA`        | `tlm_initiator_socket`  | Initiator socket for memory transactions |
 | `IRQ`        | `gpio_initiator_array`  | Interrupt port array                     |
 | `IRQ_ABORT`  | `gpio_initiator_socket` | Interrupt port                           |
@@ -97,57 +71,50 @@ The following ports and sockets must be connected prior to simulating:
 ## Software Interface
 The model exposes the following memory mapped registers:
 
-| Name  | Offset | Access | Width | Description                             |
-| ----- | ------ | ------ | ----- | --------------------------------------- |
-| `THR` | `+0x0` |  R/W   | 8 bit | Rx Buffer (R) / Tx Buffer (W) Register  |
-| `IER` | `+0x1` |  R/W   | 8 bit | Interrupt Enable Register               |
-| `IIR` | `+0x2` |  R/W   | 8 bit | Interrupt Ident. (R) / FIFO Control (W) |
-| `LCR` | `+0x3` |  R/W   | 8 bit | Line Control Register                   |
-| `MCR` | `+0x4` |  R/W   | 8 bit | Modem Control Register                  |
-| `LSR` | `+0x5` |  R     | 8 bit | Line Status Register                    |
-| `MSR` | `+0x6` |  R     | 8 bit | Modem Status Register                   |
-| `SCR` | `+0x7` |  R/W   | 8 bit | Scratchpad Register                     |
-
-* `fsrc: u32`
-* `inten: u32`
-* `int_event_ris: u32`
-* `intmis: u32`
-* `intclr: u32`
-* `dbgstatus: u32`
-* `dbgcmd: u32`
-* `dbginst0: u32`
-* `dbginst1: u32`
-* `cr0: u32`
-* `cr1: u32`
-* `cr2: u32`
-* `cr3: u32`
-* `cr4: u32`
-* `crd: u32`
-* `wd: u32`
-* `periph_id: u32`
-* `pcell_id: u32`
-* `channel_X.ftr: u32`
-* `channel_X.csr: u32`
-* `channel_X.cpc: u32`
-* `channel_X.sar: u32`
-* `channel_X.dar: u32`
-* `channel_X.ccr: u32`
-* `channel_X.lc0: u32`
-* `channel_X.lc1: u32`
-* `manager.dsr: u32`
-* `manager.dpc: u32`
-* `manager.fsrd: u32`
-* `manager.ftrd: u32`
+| Name            | Offset              | Access | Width    | Description                         |
+|-----------------|---------------------|--------|----------|-------------------------------------|
+| `manager.DSR`   | `+0x000`            | R      | 32 bit   | Manager Status Register             |
+| `manager.DPC`   | `+0x004`            | R      | 32 bit   | Manager PC Register                 |
+| `INTEN`         | `+0x020`            | R/W    | 32 bit   | Interrupt Enable Register           |
+| `INT_EVENT_RIS` | `+0x024`            | R      | 32 bit   | Event-Interrupt Raw Status Register |
+| `INTMIS`        | `+0x028`            | R      | 32 bit   | Interrupt Status Register           |
+| `INTCLR`        | `+0x02c`            | W      | 32 bit   | Interrupt Clear Register            |
+| `manager.FSRD`  | `+0x030`            | R      | 32 bit   | Manager Fault Status Register       |
+| `FSRC`          | `+0x034`            | R      | 32 bit   | Channel Fault Status Register       |
+| `manager.FTRD`  | `+0x038`            | R      | 32 bit   | Manager Fault Type Register         |
+| `channel_X.FTR` | `+0x040 + X * 0x04` | R      | 32 bit   | Channel X Fault Type Register       |
+| `channel_X.CSR` | `+0x100 + X * 0x08` | R      | 32 bit   | Channel X Status Register           |
+| `channel_X.CPC` | `+0x104 + X * 0x08` | R      | 32 bit   | Channel X PC Register               |
+| `channel_X.SAR` | `+0x400 + X * 0x20` | R      | 32 bit   | Channel X Source Address            |
+| `channel_X.DAR` | `+0x404 + X * 0x20` | R      | 32 bit   | Channel X Destination Address       |
+| `channel_X.CCR` | `+0x408 + X * 0x20` | R      | 32 bit   | Channel X Control Register          |
+| `channel_X.LC0` | `+0x40c + X * 0x20` | R      | 32 bit   | Channel X Loop Counter 0            |
+| `channel_X.LC1` | `+0x410 + X * 0x20` | R      | 32 bit   | Channel X Loop Counter 1            |
+| `DBGSTATUS`     | `+0xd00`            | R      | 32 bit   | Debug Status Register               |
+| `DBGCMD`        | `+0xd04`            | W      | 32 bit   | Debug Command Register              |
+| `DBGINST0`      | `+0xd08`            | W      | 32 bit   | Debug Instruction Register 0        |
+| `DBGINST1`      | `+0xd0c`            | W      | 32 bit   | Debug Instruction Register 1        |
+| `CR0`           | `+0xe00`            | R      | 32 bit   | Configuration Register 0            |
+| `CR1`           | `+0xe04`            | R      | 32 bit   | Configuration Register 1            |
+| `CR2`           | `+0xe08`            | R      | 32 bit   | Configuration Register 2            |
+| `CR3`           | `+0xe0c`            | R      | 32 bit   | Configuration Register 3            |
+| `CR4`           | `+0xe10`            | R      | 32 bit   | Configuration Register 4            |
+| `CRD`           | `+0xe14`            | R      | 32 bit   | Manager Configuration Register      |
+| `WD`            | `+0xe80`            | R/W    | 32 bit   | Watchdog Register                   |
+| `PERIPH_ID`     | `+0xfe0`            | R      | 4x32 bit | Peripheral Identification Register  |
+| `PCELL_ID`      | `+0xff0`            | R      | 4x32 bit | Component Identification Register   |
 
 This device model works with Linux:
 
-* bullet point 1
-* bullet point2
+The DMATest module can be used to confirm the correct functioning of DMA channels,
+ensuring reliable and efficient DMA data transfer.
+To run DMATest it needs to be included in the linux configuration.
 
-describe dmatest and point out that driver needs to be included in linux config
-
+Example of usage:
 `modprobe dmatest timeout=2000 iterations=1 channel=dma0chan0 run=1`
 
+
+The pl330 dma model can be included in the device tree as follows:
 ```
 pdma0: pdma@12680000 {
         compatible = "arm,pl330", "arm,primecell";
