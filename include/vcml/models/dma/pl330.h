@@ -1,12 +1,12 @@
-//
-// Created by rubenware on 7/13/23.
-//
-
-// TODO:
-// irq stuff
-// faulting logic
-// check state transitions
-// test
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2023 MachineWare GmbH                                        *
+ * All Rights Reserved                                                        *
+ *                                                                            *
+ * This is work is licensed under the terms described in the LICENSE file     *
+ * found in the root directory of this source tree.                           *
+ *                                                                            *
+ ******************************************************************************/
 
 #ifndef VCML_PL330_H
 #define VCML_PL330_H

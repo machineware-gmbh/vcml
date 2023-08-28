@@ -1,5 +1,15 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2023 MachineWare GmbH                                        *
+ * All Rights Reserved                                                        *
+ *                                                                            *
+ * This is work is licensed under the terms described in the LICENSE file     *
+ * found in the root directory of this source tree.                           *
+ *                                                                            *
+ ******************************************************************************/
 
 #include "vcml/models/dma/pl330.h"
+
 namespace vcml::dma {
 using namespace mwr;
 

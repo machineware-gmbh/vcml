@@ -1,6 +1,4 @@
 
-
-
 # VCML Models: PL330 (DMA330)
 
 The model comprises a manager along with up to 8 DMA threads.

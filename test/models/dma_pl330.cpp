@@ -8,12 +8,6 @@
  *                                                                            *
  ******************************************************************************/
 
-/*
- * Things to test:
- * Thread instructions Manager/channel
- * Expected execution of DMA instructions
- * */
-
 #include "testing.h"
 
 static inline void emit_sev(u8*& buf, u32 ev_id) {
