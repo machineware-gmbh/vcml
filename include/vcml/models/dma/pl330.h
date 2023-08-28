@@ -100,12 +100,13 @@ class pl330 : public peripheral
 {
 public:
     enum pl330_configs : u32 {
-        NIRQ = 6, // max = 32 todo tbd
-        NPER = 6, // max = 32
-        QUEUE_SIZE = 16,
-        MFIFO_LINES = 256, // max = 1024
         INSN_MAXSIZE = 6,
         WD_TIMEOUT = 1024,
+    };
+    enum mfifo_width : u32 {
+        MFIFO_32BIT = 0b010,
+        MFIFO_64BIT = 0b011,
+        MFIFO_128BIT = 0b100,
     };
     enum amba_ids : u32 {
         AMBA_PID = 0x00241330, // Peripheral ID
@@ -118,16 +119,12 @@ public:
         bool inc;
         bool zero_flag;
         u32 tag;
-        u32 seqn;
     };
-    tagged_multi_queue<queue_entry> read_queue, write_queue;
 
-    struct mfifo_entry { // todo this is wip i am not sure how to model this
-                         // well in c++
+    struct mfifo_entry {
         u8 buf;
         u8 tag;
     };
-    tagged_multi_queue<mfifo_entry> mfifo;
 
     class channel : public module
     {
@@ -159,7 +156,6 @@ public:
             DBG_INSTR = 0x1E,
             LOCKUP_ERR = 0x1F,
         };
-        // pl330* parent; //todo see if i need this
         reg<u32> ftr; // channel fault type register
         reg<u32> csr; // channel status register
         reg<u32> cpc; // channel pc register
@@ -223,7 +219,16 @@ public:
 
     sc_event m_dma;
 
+    property<bool> enable_periph;
     property<u32> num_channels;
+    property<u32> num_irq;
+    property<u32> num_periph;
+    property<u32> queue_size;
+    property<u32> mfifo_width;
+    property<u32> mfifo_lines;
+
+    tagged_multi_queue<queue_entry> read_queue, write_queue;
+    tagged_multi_queue<mfifo_entry> mfifo;
 
     sc_vector<channel> channels;
     manager manager;
@@ -244,14 +249,17 @@ public:
     reg<u32> cr1; // Configuration Register 1 //TODO: probably not needed?!
     reg<u32> cr2; // Configuration Register 2
     reg<u32> cr3; // Configuration Register 3
-    reg<u32> cr4; // Configuration Register 4
+    reg<u32> cr4; // Configuration Register 4 // security state op peripheral
+                  // requests
     reg<u32> crd; // DMA Configuration Register
     reg<u32> wd;  // Watchdog Register
 
     reg<u32, 4> periph_id; // Peripheral Identification Registers
     reg<u32, 4> pcell_id;  // Component Identification Registers
 
-    u8 periph_busy[NPER];
+    u8 periph_busy[6]; // todo do we need this in addition to periph_irq?! its
+                       // not parameter configurable
+    gpio_target_array periph_irq;
 
     tlm_target_socket in;
     tlm_initiator_socket dma;

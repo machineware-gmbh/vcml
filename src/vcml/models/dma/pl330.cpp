@@ -972,18 +972,18 @@ void pl330::reset() {
     peripheral::reset();
 
     // set control registers //todo many of these should probably be properties
-    cr0.set_bit<PERIPH_REQ>(0b0);
+    cr0.set_bit<PERIPH_REQ>(enable_periph);
     cr0.set_bit<BOOT_EN>(0b1);
     cr0.set_bit<MGR_NS_AT_RST>(0b0);
     cr0.set_field<CR0_NUM_CHNLS>(num_channels - 1);
-    cr0.set_field<CR0_NUM_PERIPH_REQ>(NPER - 1);
-    cr0.set_field<CR0_NUM_EVENTS>(NIRQ - 1);
-    crd.set_field<CRD_DATA_BUFFER_DEP>(MFIFO_LINES - 1);
-    crd.set_field<CRD_DATA_WIDTH>(0b010); // 0b011 = 64-bit
+    cr0.set_field<CR0_NUM_PERIPH_REQ>(num_periph - 1);
+    cr0.set_field<CR0_NUM_EVENTS>(num_irq - 1);
+    crd.set_field<CRD_DATA_BUFFER_DEP>(mfifo_lines - 1);
+    crd.set_field<CRD_DATA_WIDTH>(mfifo_width); // 0b011 = 64-bit
     crd.set_field<CRD_RD_CAP>(0);
-    crd.set_field<CRD_RD_Q_DEP>(QUEUE_SIZE - 1);
+    crd.set_field<CRD_RD_Q_DEP>(queue_size - 1);
     crd.set_field<CRD_WR_CAP>(0);
-    crd.set_field<CRD_WR_Q_DEP>(QUEUE_SIZE - 1);
+    crd.set_field<CRD_WR_Q_DEP>(queue_size - 1);
 
     // reset dmac
     inten.reset();
@@ -1021,10 +1021,16 @@ void pl330::reset() {
 
 pl330::pl330(const sc_module_name& nm):
     peripheral(nm),
-    read_queue(QUEUE_SIZE),
-    write_queue(QUEUE_SIZE),
-    mfifo(MFIFO_LINES * 8), // todo mfifo is not correct yet
+    enable_periph("enable_periph", false),
     num_channels("num_channels", 8),
+    num_irq("num_irq", 6),
+    num_periph("num_periph", 6),
+    queue_size("queue_size", 16),
+    mfifo_width("mfifo_width", MFIFO_32BIT),
+    mfifo_lines("mfifo_lines", 256),
+    read_queue(queue_size),
+    write_queue(queue_size),
+    mfifo(mfifo_lines * 8 * (1 << (mfifo_width - 2))),
     channels("channel", num_channels,
              [](const char* nm, u32 tag) { return new channel(nm, tag); }),
     manager("manager"),
@@ -1048,10 +1054,14 @@ pl330::pl330(const sc_module_name& nm):
     periph_id("periph_id", 0xfe0, 0x00000000),
     //{0xB105F00D}), or 0x0d, oxf0, 0x05, 0xb1
     pcell_id("pcell_id", 0xff0, 0x00000000),
+    periph_irq("periph_irq", 32ul),
     in("in"),
     dma("dma"),
     irq("irq", 32ul),
     irq_abort("irq_abort") {
+    assert(num_irq.get() <= 32);
+    assert(num_periph.get() <= 32);
+
     fsrc.allow_read_only();
     fsrc.sync_never();
     inten.allow_read_write();
