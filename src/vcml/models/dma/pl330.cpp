@@ -682,41 +682,41 @@ struct insn_descr {
 // clang-format off
 /* Instructions which can be issued via channel threads. */
 static const insn_descr CH_INSN_DESCR[] = {
-    {.opcode = 0x54, .opmask = 0xFD, .size = 3, .exec = pl330_dmaaddh,},
-    {.opcode = 0x5c, .opmask = 0xFD, .size = 3, .exec = pl330_dmaadnh,},
-    {.opcode = 0x00, .opmask = 0xFF, .size = 1, .exec = pl330_dmaend,},
-    {.opcode = 0x35, .opmask = 0xFF, .size = 2, .exec = pl330_dmaflushp,},
-    {.opcode = 0x04, .opmask = 0xFC, .size = 1, .exec = pl330_dmald,},
-    {.opcode = 0x25, .opmask = 0xFD, .size = 2, .exec = pl330_dmaldp,},
-    {.opcode = 0x20, .opmask = 0xFD, .size = 2, .exec = pl330_dmalp,},
-    {.opcode = 0x29, .opmask = 0xFD, .size = 2, .exec = pl330_dmastp,},
-    {.opcode = 0x28, .opmask = 0xE8, .size = 2, .exec = pl330_dmalpend,},
-    {.opcode = 0xBC, .opmask = 0xFF, .size = 6, .exec = pl330_dmamov,},
-    {.opcode = 0x18, .opmask = 0xFF, .size = 1, .exec = pl330_dmanop,},
-    {.opcode = 0x12, .opmask = 0xFF, .size = 1, .exec = pl330_dmarmb,},
-    {.opcode = 0x34, .opmask = 0xFF, .size = 2, .exec = pl330_dmasev,},
-    {.opcode = 0x08, .opmask = 0xFC, .size = 1, .exec = pl330_dmast,},
-    {.opcode = 0x0C, .opmask = 0xFF, .size = 1, .exec = pl330_dmastz,},
-    {.opcode = 0x36, .opmask = 0xFF, .size = 2, .exec = pl330_dmawfe,},
-    {.opcode = 0x30, .opmask = 0xFC, .size = 2, .exec = pl330_dmawfp,},
-    {.opcode = 0x13, .opmask = 0xFF, .size = 1, .exec = pl330_dmawmb,},
+    {0x54, 0xFD, 3, pl330_dmaaddh,},
+    {0x5c, 0xFD, 3, pl330_dmaadnh,},
+    {0x00, 0xFF, 1, pl330_dmaend,},
+    {0x35, 0xFF, 2, pl330_dmaflushp,},
+    {0x04, 0xFC, 1, pl330_dmald,},
+    {0x25, 0xFD, 2, pl330_dmaldp,},
+    {0x20, 0xFD, 2, pl330_dmalp,},
+    {0x29, 0xFD, 2, pl330_dmastp,},
+    {0x28, 0xE8, 2, pl330_dmalpend,},
+    {0xBC, 0xFF, 6, pl330_dmamov,},
+    {0x18, 0xFF, 1, pl330_dmanop,},
+    {0x12, 0xFF, 1, pl330_dmarmb,},
+    {0x34, 0xFF, 2, pl330_dmasev,},
+    {0x08, 0xFC, 1, pl330_dmast,},
+    {0x0C, 0xFF, 1, pl330_dmastz,},
+    {0x36, 0xFF, 2, pl330_dmawfe,},
+    {0x30, 0xFC, 2, pl330_dmawfp,},
+    {0x13, 0xFF, 1, pl330_dmawmb,},
 }; //todo consider reordering for speed
 
 /* Instructions which can be issued via the manager thread. */
 static const insn_descr MN_INSN_DESCR[] = {
-    {.opcode = 0x00,.opmask = 0xFF,.size = 1,.exec = pl330_mn_dmaend,},
-    {.opcode = 0xA0,.opmask = 0xFD,.size = 6,.exec = pl330_dmago,},
-    {.opcode = 0x01,.opmask = 0xFF,.size = 1,.exec = pl330_mn_dmakill,},
-    {.opcode = 0x18,.opmask = 0xFF,.size = 1,.exec = pl330_dmanop,},
-    {.opcode = 0x34,.opmask = 0xFF,.size = 2,.exec = pl330_mn_dmasev,},
-    {.opcode = 0x36,.opmask = 0xFF,.size = 2,.exec = pl330_mn_dmawfe,},
+    {0x00, 0xFF, 1, pl330_mn_dmaend,},
+    {0xA0, 0xFD, 6, pl330_dmago,},
+    {0x01, 0xFF, 1, pl330_mn_dmakill,},
+    {0x18, 0xFF, 1, pl330_dmanop,},
+    {0x34, 0xFF, 2, pl330_mn_dmasev,},
+    {0x36, 0xFF, 2, pl330_mn_dmawfe,},
 };
 
 /* Instructions which can be issued via debug registers. */
 static const insn_descr DEBUG_INSN_DESC[] = {
-    {.opcode = 0xA0,.opmask = 0xFD,.size = 6,.exec = pl330_dmago,},
-    {.opcode = 0x01,.opmask = 0xFF,.size = 1,.exec = pl330_dmakill,},
-    {.opcode = 0x34,.opmask = 0xFF,.size = 2,.exec = pl330_dmasev,},
+    {0xA0, 0xFD, 6, pl330_dmago,},
+    {0x01, 0xFF, 1, pl330_dmakill,},
+    {0x34, 0xFF, 2, pl330_dmasev,},
 };
 // clang-format on
 
@@ -787,7 +787,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // crop length otherwise in case of an unaligned address the first read
         // would be too long
         u32 len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        u8 buffer[len];
+        u8 buffer[pl330::INSN_MAXSIZE];
         if (failed(dma.dma.read(insn.data_addr, (void*)buffer, len)))
             std::cout << "dma read failed" << std::endl;
 
@@ -810,7 +810,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // crop length otherwise in case of an unaligned address the first read
         // would be too long
         int len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        u8 buffer[len];
+        u8 buffer[pl330::INSN_MAXSIZE];
         if (insn.zero_flag) {
             for (int i = 0; i < len; i++) {
                 buffer[i] = 0;
@@ -1064,10 +1064,10 @@ pl330::pl330(const sc_module_name& nm):
     periph_id("periph_id", 0xfe0, 0x00000000),
     //{0xB105F00D}), or 0x0d, oxf0, 0x05, 0xb1
     pcell_id("pcell_id", 0xff0, 0x00000000),
-    periph_irq("periph_irq", 32ul),
+    periph_irq("periph_irq", size_t(32)),
     in("in"),
     dma("dma"),
-    irq("irq", 32ul),
+    irq("irq", size_t(32)),
     irq_abort("irq_abort") {
     assert(num_irq.get() <= 32);
     assert(num_periph.get() <= 32);
