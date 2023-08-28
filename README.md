@@ -136,6 +136,26 @@ build you want to use:
 * `export VCML_HOME=(...)/vcml/BUILD/RELEASE` for the release build
 
 ----
+## Windows Build & Installation
+Windows builds are currently supported using
+[Microsoft Visual Studio](https://visualstudio.microsoft.com/de/).
+There are two ways to build `vcml` on Windows:
+
+1. Using Visual Studio IDE:
+  - Launch Visual Studio
+  - In the Open Dialog click on `Clone a Repository`
+  - Enter `https://github.com/machineware-gmbh/vcml` and click `Clone`
+  - Once Visual Studio has cloned the project, double-click on the `vcml` folder
+  - Run `Build All` from the build menu.
+
+2. Using the command line:
+  - Install [Git for Windows](https://git-scm.com/download/win)
+  - Launch `git-bash` (installed by Git for Windows)
+  - Run `git clone --recursive https://github.com:machineware-gmbh/vcml`
+  - Run `cmake -B BUILD -G "Visual Studio 17" -DCMAKE_BUILD_TYPE=[DEBUG|RELEASE]`
+  - Run `cmake --build BUILD`
+
+----
 ## Documentation
 Some basic documentation about this library and its models can be found
 [here](doc/main.md).
