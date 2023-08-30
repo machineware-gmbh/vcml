@@ -10,7 +10,7 @@ on:
       - 'main'
 
 env:
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug
   TARGET_ARCH: linux64
 
 jobs:
