@@ -13,91 +13,85 @@
 
 #include <vcml.h>
 
-#include <deque>
-#include <unordered_map>
-#include <vector>
-
 namespace vcml {
 namespace dma {
 
-template <typename QUEUE_ITEM>
-class tagged_multi_queue
-{
-public:
-    tagged_multi_queue(int max_total_items):
-        m_max_sum(max_total_items), m_current_sum(0) {}
-
-    bool push(const QUEUE_ITEM& item) {
-        if (m_current_sum + 1 <= m_max_sum) {
-            m_queues[item.tag].push_back(item);
-            m_tags.push_back(item.tag);
-            m_current_sum += 1;
-            return true;
-        }
-        return false;
-    }
-
-    std::optional<QUEUE_ITEM> pop() {
-        if (m_tags.empty()) {
-            return std::nullopt;
-        }
-        int front_tag = m_tags.front();
-        QUEUE_ITEM front_item = m_queues[front_tag].front();
-        m_queues[front_tag].pop_front();
-        m_tags.pop_front();
-        m_current_sum -= 1;
-        return std::make_optional(front_item);
-    }
-
-    const QUEUE_ITEM& front() const {
-        return m_queues.at(m_tags.front()).front();
-    }
-    QUEUE_ITEM& front_mut() { return m_queues.at(m_tags.front()).front(); }
-
-    std::optional<QUEUE_ITEM> pop(int tag) {
-        if (m_queues[tag].empty()) {
-            return std::nullopt;
-        }
-        QUEUE_ITEM item = m_queues[tag].front();
-        m_queues[tag].pop_front();
-        m_tags.erase(std::find(m_tags.begin(), m_tags.end(), tag));
-        m_current_sum -= 1;
-        return std::make_optional(item);
-    }
-
-    void clear(int tag) {
-        m_queues[tag].clear();
-        m_tags.erase(std::remove(m_tags.begin(), m_tags.end(), tag),
-                     m_tags.end());
-    }
-    inline void remove_tagged(int tag) { clear(tag); }
-
-    void clear() {
-        m_queues
-            .clear(); // assumes QUEUE_ITEM does not contain owning pointers
-        m_tags.clear();
-    }
-    inline void reset() { clear(); }
-
-    inline bool empty() const { return m_tags.empty(); }
-
-    inline bool empty(int tag) const { return m_queues.at(tag).empty(); }
-
-    inline size_t size() const { return m_tags.size(); }
-
-    inline size_t num_free() const { return m_max_sum - m_current_sum; }
-
-    inline size_t size_tag(int tag) const { return m_queues[tag].size(); }
-
-private:
-    std::unordered_map<int, std::deque<QUEUE_ITEM>> m_queues;
-    std::deque<int> m_tags;
-    int m_max_sum;
-    int m_current_sum;
-};
-
 class pl330 : public peripheral
 {
+    template <typename T>
+    class tagged_multi_queue
+    {
+    public:
+        tagged_multi_queue(int max_total_items):
+            m_max_sum(max_total_items), m_current_sum(0) {}
+
+        bool push(const T& item) {
+            if (m_current_sum + 1 <= m_max_sum) {
+                m_queues[item.tag].push_back(item);
+                m_tags.push_back(item.tag);
+                m_current_sum += 1;
+                return true;
+            }
+            return false;
+        }
+
+        std::optional<T> pop() {
+            if (m_tags.empty()) {
+                return std::nullopt;
+            }
+            int front_tag = m_tags.front();
+            T front_item = m_queues[front_tag].front();
+            m_queues[front_tag].pop_front();
+            m_tags.pop_front();
+            m_current_sum -= 1;
+            return std::make_optional(front_item);
+        }
+
+        const T& front() const { return m_queues.at(m_tags.front()).front(); }
+        T& front_mut() { return m_queues.at(m_tags.front()).front(); }
+
+        std::optional<T> pop(int tag) {
+            if (m_queues[tag].empty()) {
+                return std::nullopt;
+            }
+            T item = m_queues[tag].front();
+            m_queues[tag].pop_front();
+            m_tags.erase(std::find(m_tags.begin(), m_tags.end(), tag));
+            m_current_sum -= 1;
+            return std::make_optional(item);
+        }
+
+        void clear(int tag) {
+            m_queues[tag].clear();
+            m_tags.erase(std::remove(m_tags.begin(), m_tags.end(), tag),
+                         m_tags.end());
+        }
+        void remove_tagged(int tag) { clear(tag); }
+
+        void clear() {
+            m_queues.clear(); // assumes QUEUE_ITEM does not contain owning
+                              // pointers
+            m_tags.clear();
+        }
+        void reset() { clear(); }
+
+        bool empty() const { return m_tags.empty(); }
+
+        bool empty(int tag) const { return m_queues.at(tag).empty(); }
+
+        size_t size() const { return m_tags.size(); }
+
+        size_t num_free() const { return m_max_sum - m_current_sum; }
+
+        size_t size_tag(int tag) const { return m_queues[tag].size(); }
+
+    private:
+        std::unordered_map<int, std::deque<T>> m_queues;
+        std::deque<int> m_tags;
+        int m_max_sum;
+        int m_current_sum;
+    };
+
 public:
     enum pl330_configs : u32 {
         INSN_MAXSIZE = 6,
@@ -142,6 +136,7 @@ public:
             FAULTING_COMPLETING = 0xE,
             FAULTING = 0xF,
         };
+
         enum fault : u8 {
             UNDEF_INSTR = 0x0,
             OPERAND_INVALID = 0x1,
@@ -156,6 +151,7 @@ public:
             DBG_INSTR = 0x1E,
             LOCKUP_ERR = 0x1F,
         };
+
         reg<u32> ftr; // channel fault type register
         reg<u32> csr; // channel status register
         reg<u32> cpc; // channel pc register
@@ -164,16 +160,15 @@ public:
         reg<u32> ccr; // channel control register
         reg<u32> lc0; // loop counter 0 register
         reg<u32> lc1; // loop counter 1 register
-        u32 tag;      // aka channel id
+
+        u32 tag; // aka channel id
         bool stall;
         u32 request_flag;
         u32 watchdog_timer;
 
-        inline bool is_state(u8 state) const { return (get_state() == state); }
-        inline u32 get_state() const { return csr & 0x7; }
-        inline void set_state(u32 new_state) {
-            csr = (csr & ~0x7) | new_state;
-        }
+        bool is_state(u8 state) const { return (get_state() == state); }
+        u32 get_state() const { return csr & 0x7; }
+        void set_state(u32 new_state) { csr = (csr & ~0x7) | new_state; }
 
         virtual ~channel() = default;
         VCML_KIND(dma::pl330::channel);
@@ -191,26 +186,27 @@ public:
             WAITING_FOR_EVENT = 0x4,
             FAULTING = 0xF,
         };
+
         enum fault : u8 {
             UNDEF_INSTR = 0x0,
             OPERAND_INVALID = 0x1,
             DMAGO_ERR = 0x4,
             EVNT_ERR = 0x5,
             INSTR_FETCH_ERR = 0x10,
-            DBG_INSTR = 0x1E,
+            DBG_INSTR = 0x1e,
         };
+
         reg<u32> dsr;  // DMA Manager Status Register
         reg<u32> dpc;  // DMA Program Counter Register
         reg<u32> fsrd; // Fault Status DMA Manager Register
         reg<u32> ftrd; // Fault Type DMA Manager Register
+
         bool stall;
         u32 watchdog_timer;
 
-        inline bool is_state(u8 state) const { return (get_state() == state); }
-        inline u32 get_state() const { return dsr & 0x7; }
-        inline void set_state(u32 new_state) {
-            dsr = (dsr & ~0x7) | new_state;
-        }
+        bool is_state(u8 state) const { return (get_state() == state); }
+        u32 get_state() const { return dsr & 0x7; }
+        void set_state(u32 new_state) { dsr = (dsr & ~0x7) | new_state; }
 
         virtual ~manager() = default;
         VCML_KIND(dma::pl330::manager);
