@@ -56,19 +56,19 @@ gate::gate(const sc_module_name& nm, logic_type type):
 const char* gate::kind() const {
     switch (m_type) {
     case LOGIC_NOT:
-        return "gate_not";
+        return "vcml::gate_not";
     case LOGIC_AND:
-        return "gate_and";
+        return "vcml::gate_and";
     case LOGIC_OR:
-        return "gate_or";
+        return "vcml::gate_or";
     case LOGIC_NAND:
-        return "gate_nand";
+        return "vcml::gate_nand";
     case LOGIC_NOR:
-        return "gate_nor";
+        return "vcml::gate_nor";
     case LOGIC_XOR:
-        return "gate_xor";
+        return "vcml::gate_xor";
     default:
-        return "gate";
+        return "vcml::gate";
     }
 }
 
