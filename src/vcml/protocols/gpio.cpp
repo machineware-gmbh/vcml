@@ -295,12 +295,20 @@ void gpio_initiator_adapter::update() {
 }
 
 gpio_target_adapter::gpio_target_adapter(const sc_module_name& nm):
-    module(nm), gpio_host(), in("in"), out("out") {
+    module(nm), gpio_host(), in("in"), out("out"), m_trigger("trigger") {
+    SC_HAS_PROCESS(gpio_target_adapter);
+    SC_METHOD(update);
+    sensitive << m_trigger;
+    dont_initialize();
+}
+
+void gpio_target_adapter::update() {
+    out = in;
 }
 
 void gpio_target_adapter::gpio_transport(const gpio_target_socket& socket,
                                          gpio_payload& tx) {
-    out = tx.state;
+    m_trigger.notify(SC_ZERO_TIME);
 }
 
 static gpio_base_initiator_socket* get_initiator_socket(sc_object* port) {

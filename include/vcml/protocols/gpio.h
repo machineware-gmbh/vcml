@@ -258,6 +258,10 @@ public:
     VCML_KIND(gpio_target_adapter);
 
 private:
+    sc_event m_trigger;
+
+    void update();
+
     virtual void gpio_transport(const gpio_target_socket& socket,
                                 gpio_payload& tx) override;
 };
