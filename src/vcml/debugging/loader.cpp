@@ -22,6 +22,8 @@ const char* image_type_to_str(image_type type) {
         return "bin";
     case IMAGE_SREC:
         return "srec";
+    case IMAGE_UIMAGE:
+        return "uimage";
     default:
         return "unknown";
     }
@@ -50,6 +52,9 @@ image_type detect_image_type(const string& filename) {
 
     if ((head & 0xffff) == 0x3053)
         return IMAGE_SREC;
+
+    if (head == 0x56190527)
+        return IMAGE_UIMAGE;
 
     return IMAGE_BIN;
 }
@@ -114,6 +119,28 @@ bool loader::cmd_load_elf(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool loader::cmd_load_srec(const vector<string>& args, ostream& os) {
+    const string& image = args[0];
+    u64 offset = 0ull;
+
+    if (args.size() > 1)
+        offset = strtoull(args[1].c_str(), NULL, 0);
+
+    load_image(image, offset, IMAGE_SREC);
+    return true;
+}
+
+bool loader::cmd_load_uimage(const vector<string>& args, ostream& os) {
+    const string& image = args[0];
+    u64 offset = 0ull;
+
+    if (args.size() > 1)
+        offset = strtoull(args[1].c_str(), NULL, 0);
+
+    load_image(image, offset, IMAGE_UIMAGE);
+    return true;
+}
+
 void loader::load_bin(const string& filename, u64 offset) {
     ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
     VCML_REPORT_ON(!file, "cannot open file");
@@ -126,8 +153,7 @@ void loader::load_bin(const string& filename, u64 offset) {
 
     // let model allocate our image copy buffer first; this way we can load
     // directly into DMI memory, if the model can get a pointer for us
-    u8* image = allocate_image(size, offset);
-    if (image) {
+    if (u8* image = allocate_image(size, offset)) {
         file.read((char*)image, size);
         VCML_REPORT_ON(!file, "cannot read file");
     } else {
@@ -154,8 +180,7 @@ void loader::load_elf(const string& filename, u64 offset) {
         m_log.debug("loading elf segment 0x%016llx..0x%016llx", seg.phys,
                     seg.phys + seg.size - 1);
 
-        u8* image = allocate_image(seg, offset);
-        if (image) {
+        if (u8* image = allocate_image(seg, offset)) {
             reader.read_segment(seg, image);
         } else {
             vector<u8> buffer(seg.size);
@@ -167,12 +192,30 @@ void loader::load_elf(const string& filename, u64 offset) {
 
 void loader::load_srec(const string& filename, u64 offset) {
     mwr::srec reader(filename);
+
+    m_log.debug("loading srec file '%s' (%zu records) to offset 0x%llx",
+                filename.c_str(), reader.records().size(), offset);
+
     for (auto rec : reader.records()) {
-        u8* image = allocate_image(rec.data.size(), rec.addr + offset);
-        if (image)
+        if (u8* image = allocate_image(rec.data.size(), rec.addr + offset))
             memcpy(image, rec.data.data(), rec.data.size());
         else
             copy_image(rec.data.data(), rec.data.size(), rec.addr + offset);
+    }
+}
+
+void loader::load_uimage(const string& filename, u64 offset) {
+    mwr::uimage reader(filename);
+
+    m_log.debug("loading uImage file '%s' (%zu bytes) to offset 0x%llx",
+                filename.c_str(), reader.size(), offset);
+
+    if (u8* image = allocate_image(reader.size(), offset))
+        reader.read(image, reader.size());
+    else {
+        vector<u8> buffer(reader.size());
+        reader.read(buffer.data(), buffer.size());
+        copy_image(buffer.data(), buffer.size(), offset);
     }
 }
 
@@ -208,6 +251,12 @@ loader::loader(module& mod, bool reg_cmds): m_owner(mod), m_log(mod.log) {
     m_owner.register_command("load_elf", 1, this, &loader::cmd_load_elf,
                              "load_elf <image> [offset] to load the ELF "
                              "file <image> to memory with an optional offset");
+    m_owner.register_command("load_srec", 1, this, &loader::cmd_load_srec,
+                             "load_srec <image> [offset] to load the SREC "
+                             "file <image> to memory with an optional offset");
+    m_owner.register_command("load_uimage", 1, this, &loader::cmd_load_uimage,
+                             "load_uimage <image> [offset] to load the uImage "
+                             "file <image> to memory with an optional offset");
 }
 
 loader::~loader() {
@@ -235,6 +284,9 @@ void loader::load_image(const image_info& image) {
         break;
     case IMAGE_SREC:
         load_srec(image.filename, image.offset);
+        break;
+    case IMAGE_UIMAGE:
+        load_uimage(image.filename, image.offset);
         break;
     default:
         VCML_REPORT("unknown image type %d", (int)image.type);

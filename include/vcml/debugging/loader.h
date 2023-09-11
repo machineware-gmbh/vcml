@@ -22,6 +22,7 @@ enum image_type {
     IMAGE_ELF,
     IMAGE_BIN,
     IMAGE_SREC,
+    IMAGE_UIMAGE,
 };
 
 const char* image_type_to_str(image_type type);
@@ -44,6 +45,8 @@ private:
     bool cmd_load(const vector<string>& args, ostream& os);
     bool cmd_load_bin(const vector<string>& args, ostream& os);
     bool cmd_load_elf(const vector<string>& args, ostream& os);
+    bool cmd_load_srec(const vector<string>& args, ostream& os);
+    bool cmd_load_uimage(const vector<string>& args, ostream& os);
 
     static unordered_map<string, loader*> s_loaders;
 
@@ -51,6 +54,7 @@ protected:
     virtual void load_bin(const string& filename, u64 offset);
     virtual void load_elf(const string& filename, u64 offset);
     virtual void load_srec(const string& filename, u64 offset);
+    virtual void load_uimage(const string& filename, u64 offset);
 
     typedef mwr::elf::segment elf_segment;
 
