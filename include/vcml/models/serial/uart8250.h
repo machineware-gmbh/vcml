@@ -129,6 +129,8 @@ public:
     uart8250(const uart8250&) = delete;
 };
 
+using uart16550 = uart8250;
+
 } // namespace serial
 } // namespace vcml
 
