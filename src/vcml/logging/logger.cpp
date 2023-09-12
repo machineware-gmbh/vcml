@@ -32,12 +32,12 @@ bool logger::can_log(log_level lvl) const {
 
 logger log; // global default logger
 
-} // namespace vcml
-
-namespace mwr {
-
-mwr::u64 log_time() {
-    return vcml::time_to_ns(sc_core::sc_time_stamp());
+u64 log_systemc_time() {
+    return time_to_ns(sc_time_stamp());
 }
 
-} // namespace mwr
+MWR_CONSTRUCTOR(init_systemc_log_time) {
+    mwr::publisher::current_timestamp = log_systemc_time;
+}
+
+} // namespace vcml
