@@ -372,7 +372,7 @@ inline void tlm_target_socket::bind(
 template <>
 inline void tlm_target_socket::bind<32>(
     tlm::tlm_base_target_socket<32>& socket) {
-    base_type::bind(socket);
+    socket.tlm::tlm_base_target_socket<32>::bind(*this);
 }
 
 template <unsigned int WIDTH>
