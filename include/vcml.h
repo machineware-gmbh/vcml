@@ -137,6 +137,7 @@
 
 #include "vcml/models/riscv/clint.h"
 #include "vcml/models/riscv/plic.h"
+#include "vcml/models/riscv/aclint.h"
 #include "vcml/models/riscv/simdev.h"
 
 #include "vcml/models/deprecated.h"
