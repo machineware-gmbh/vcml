@@ -62,6 +62,7 @@ public:
     bool is_readable() const { return is_read_allowed(m_access); }
     bool is_writeable() const { return is_write_allowed(m_access); }
 
+    void deny_access() { m_access = VCML_ACCESS_NONE; }
     void allow_read_only() { m_access = VCML_ACCESS_READ; }
     void allow_write_only() { m_access = VCML_ACCESS_WRITE; }
     void allow_read_write() { m_access = VCML_ACCESS_READ_WRITE; }

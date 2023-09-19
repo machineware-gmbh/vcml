@@ -174,6 +174,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/riscv/clint.cpp
     ${src}/vcml/models/riscv/plic.cpp
     ${src}/vcml/models/riscv/aclint.cpp
+    ${src}/vcml/models/riscv/aplic.cpp
     ${src}/vcml/models/riscv/simdev.cpp)
 
 if(MSVC)
