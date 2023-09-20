@@ -16,7 +16,7 @@ namespace riscv {
 
 enum domaincfg_bits : u32 {
     DOMAINCFG_BE = bit(0),
-    DOMAINCFG_DM = bit(1),
+    DOMAINCFG_DM = bit(2),
     DOMAINCFG_IE = bit(8),
     DOMAINCFG_MASK = DOMAINCFG_BE | DOMAINCFG_DM | DOMAINCFG_IE,
 };
@@ -41,9 +41,13 @@ enum sourcecfg_bits : u32 {
 
 using TARGETCFG_HART = field<18, 14, u32>;
 using TARGETCFG_PRIO = field<0, 8, u32>;
+using TARGETCFG_GIDX = field<12, 6, u32>;
+using TARGETCFG_EIID = field<0, 11, u32>;
 
 enum targetcfg_bits : u32 {
-    TARGETCFG_MASK = TARGETCFG_HART::MASK | TARGETCFG_PRIO::MASK,
+    TARGETCFG_DM_MASK = TARGETCFG_HART::MASK | TARGETCFG_PRIO::MASK,
+    TARGETCFG_MSI_MASK = TARGETCFG_HART::MASK | TARGETCFG_GIDX::MASK |
+                         TARGETCFG_EIID::MASK,
 };
 
 using MSICFG_PPN = field<0, 12, u32>;
@@ -66,8 +70,11 @@ enum genmsi_bits {
     GENMSI_MASK = GENMSI_EIID::MASK | GENMSI_HART::MASK,
 };
 
+using TOPI_EIID = field<16, 10, u32>;
+using TOPI_PRIO = field<0, 8, u32>;
+
 bool aplic::is_msi() const {
-    return m_parent ? m_parent->is_msi() : domaincfg & DOMAINCFG_DM;
+    return m_parent ? m_parent->is_msi() : !(domaincfg & DOMAINCFG_DM);
 }
 
 void aplic::set_pending(irqinfo* irq, bool pending) {
@@ -150,6 +157,43 @@ u32 aplic::read_genmsi() {
     return genmsi;
 }
 
+u32 aplic::read_topi(size_t idx) {
+    u32 best_irq = -1;
+    u32 best_prio = -1;
+    u32 threshold = idcs[idx]->ithreshold;
+
+    for (irqinfo& irq : m_irqs) {
+        u32 hart = get_field<TARGETCFG_HART>(irq.targetcfg);
+        u32 prio = get_field<TARGETCFG_PRIO>(irq.targetcfg);
+        if (irq.enabled && irq.pending && hart == idx && prio <= best_prio &&
+            (threshold == 0 || prio < threshold)) {
+            best_irq = irq.idx;
+            best_prio = prio;
+        }
+    }
+
+    if (best_irq > NIRQ)
+        return 0;
+
+    u32 topi = 0;
+    set_field<TOPI_EIID>(topi, best_irq);
+    set_field<TOPI_PRIO>(topi, best_prio);
+    return topi;
+}
+
+u32 aplic::read_claimi(size_t idx) {
+    u32 topi = read_topi(idx);
+    if (!topi) {
+        idcs[idx]->iforce = 0;
+        return 0;
+    }
+
+    u32 eiid = get_field<TOPI_EIID>(topi);
+    m_irqs[eiid - 1].pending = false;
+    send_irq(idx);
+    return topi;
+}
+
 void aplic::write_domaincfg(u32 val) {
     u32 mask = DOMAINCFG_MASK;
     if (irq_out.count() == 0)
@@ -191,10 +235,32 @@ void aplic::write_targetcfg(u32 val, size_t idx) {
 
     if (irq->sourcecfg & SOURCECFG_D)
         irq->targetcfg = 0;
+    else if (domaincfg & DOMAINCFG_DM)
+        irq->targetcfg = val & TARGETCFG_DM_MASK;
     else
-        irq->targetcfg = val & TARGETCFG_MASK;
+        irq->targetcfg = val & TARGETCFG_MSI_MASK;
 
     update(irq);
+}
+
+void aplic::write_mmsiaddrcfg(u32 val) {
+    if (!(mmsiaddrcfgh & XMSIADDR_L))
+        mmsiaddrcfg = val;
+}
+
+void aplic::write_mmsiaddrcfgh(u32 val) {
+    if (!(mmsiaddrcfgh & XMSIADDR_L))
+        mmsiaddrcfgh = val & XMSIADDR_MASK;
+}
+
+void aplic::write_smsiaddrcfg(u32 val) {
+    if (!(smsiaddrcfgh & XMSIADDR_L))
+        smsiaddrcfg = val;
+}
+
+void aplic::write_smsiaddrcfgh(u32 val) {
+    if (!(smsiaddrcfgh & XMSIADDR_L))
+        smsiaddrcfgh = val & XMSIADDR_MASK;
 }
 
 void aplic::write_setip(u32 val, size_t idx) {
@@ -300,10 +366,25 @@ void aplic::write_genmsi(u32 val) {
     genmsi &= ~GENMSI_BUSY;
 }
 
-void aplic::notify(size_t idx, bool level) {
-    VCML_ERROR_ON(idx >= NIRQ, "invalid irq: %zu", idx);
+void aplic::write_idelivery(u32 val, size_t idx) {
+    idcs[idx]->idelivery = val & 1;
+    update();
+}
 
-    irqinfo* irq = m_irqs + idx;
+void aplic::write_iforce(u32 val, size_t idx) {
+    idcs[idx]->iforce = val & 1;
+    update();
+}
+
+void aplic::write_ithreshold(u32 val, size_t idx) {
+    idcs[idx]->ithreshold = val & 0xff;
+    update();
+}
+
+void aplic::notify(size_t idx, bool level) {
+    VCML_ERROR_ON(idx == 0 || idx >= NIRQ, "invalid irq: %zu", idx);
+
+    irqinfo* irq = m_irqs + idx - 1;
     if (irq->sourcecfg & SOURCECFG_D) {
         u32 cidx = get_field<SOURCECFG_CI>(irq->sourcecfg);
         if (cidx < m_children.size())
@@ -316,7 +397,7 @@ void aplic::notify(size_t idx, bool level) {
     if (irq->pending)
         return;
 
-    switch (get_field<SOURCECFG_CI>(irq->sourcecfg)) {
+    switch (get_field<SOURCECFG_SM>(irq->sourcecfg)) {
     case SM_EDGE_RISE:
     case SM_LEVEL_HI:
         if (level) {
@@ -346,21 +427,33 @@ void aplic::update() {
 }
 
 void aplic::update(irqinfo* irq) {
-    // TODO
+    if (!irq->enabled || !irq->pending)
+        return;
+
+    if (is_msi()) {
+        irq->pending = false;
+
+        u32 hart = get_field<TARGETCFG_HART>(irq->targetcfg);
+        u32 gidx = get_field<TARGETCFG_GIDX>(irq->targetcfg);
+        u32 eiid = get_field<TARGETCFG_EIID>(irq->targetcfg);
+
+        send_msi(hart, gidx, eiid);
+    } else {
+        u32 hart = get_field<TARGETCFG_HART>(irq->targetcfg);
+        send_irq(hart);
+    }
 }
 
 void aplic::send_msi(u32 target, u32 guest, u32 eiid) {
-    aplic* root = this;
-    while (root->m_parent)
-        root = root->m_parent;
+    aplic* r = root();
 
     u32 msicfglo, msicfghi;
     if (mmode) {
-        msicfglo = root->mmsiaddrcfg;
-        msicfghi = root->mmsiaddrcfgh;
+        msicfglo = r->mmsiaddrcfg;
+        msicfghi = r->mmsiaddrcfgh;
     } else {
-        msicfglo = root->smsiaddrcfg;
-        msicfghi = root->smsiaddrcfgh;
+        msicfglo = r->smsiaddrcfg;
+        msicfghi = r->smsiaddrcfgh;
     }
 
     if (mmode && guest > 0) {
@@ -390,26 +483,49 @@ void aplic::send_msi(u32 target, u32 guest, u32 eiid) {
     }
 }
 
+void aplic::send_irq(u32 hart) {
+    hartidc* idc = idcs[hart];
+    if (!idc || !irq_out.exists(hart))
+        return;
+
+    u32 enabled = domaincfg & DOMAINCFG_IE;
+    u32 itop = read_topi(hart);
+    u32 idelivery = idc->idelivery;
+    u32 iforce = idc->iforce;
+
+    irq_out[hart] = enabled && idelivery && (iforce || itop);
+}
+
 aplic::hartidc::hartidc(size_t hart):
     idelivery(mkstr("idelivery%zu", hart), offset(hart) + 0x00, 0),
     iforce(mkstr("iforce%zu", hart), offset(hart) + 0x04, 0),
     ithreshold(mkstr("ithreshold%zu", hart), offset(hart) + 0x08, 0),
     topi(mkstr("topi%zu", hart), offset(hart) + 0x18, 0),
     claimi(mkstr("claimi%zu", hart), offset(hart) + 0x1c, 0) {
+    idelivery.tag = hart;
     idelivery.sync_always();
     idelivery.allow_read_write();
+    idelivery.on_write(&aplic::write_idelivery);
 
+    iforce.tag = hart;
     iforce.sync_always();
     iforce.allow_read_write();
+    iforce.on_write(&aplic::write_iforce);
 
+    ithreshold.tag = hart;
     ithreshold.sync_always();
     ithreshold.allow_read_write();
+    ithreshold.on_write(&aplic::write_ithreshold);
 
+    topi.tag = hart;
     topi.sync_always();
     topi.allow_read_write();
+    topi.on_read(&aplic::read_topi);
 
+    claimi.tag = hart;
     claimi.sync_always();
     claimi.allow_read_write();
+    claimi.on_read(&aplic::read_claimi);
 }
 
 aplic::hartidc::~hartidc() {
@@ -458,15 +574,19 @@ aplic::aplic(const sc_module_name& nm, aplic* parent):
 
     mmsiaddrcfg.sync_always();
     mmsiaddrcfg.natural_accesses_only();
+    mmsiaddrcfg.on_write(&aplic::write_mmsiaddrcfg);
 
     mmsiaddrcfgh.sync_always();
     mmsiaddrcfgh.natural_accesses_only();
+    mmsiaddrcfgh.on_write(&aplic::write_mmsiaddrcfgh);
 
     smsiaddrcfg.sync_always();
     smsiaddrcfg.natural_accesses_only();
+    smsiaddrcfg.on_write(&aplic::write_smsiaddrcfg);
 
     smsiaddrcfgh.sync_always();
     smsiaddrcfgh.natural_accesses_only();
+    smsiaddrcfgh.on_write(&aplic::write_smsiaddrcfgh);
 
     if (mmode) {
         mmsiaddrcfg.allow_read_write();
@@ -568,7 +688,7 @@ void aplic::reset() {
         m_irqs[i].idx = i + 1;
         m_irqs[i].sourcecfg = 0;
         m_irqs[i].targetcfg = 0;
-        m_irqs[i].connected = irq_in.exists(i);
+        m_irqs[i].connected = root()->irq_in.exists(i + 1);
         m_irqs[i].enabled = false;
         m_irqs[i].pending = false;
     }

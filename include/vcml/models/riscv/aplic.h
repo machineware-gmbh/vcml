@@ -37,6 +37,8 @@ private:
     bool is_mmode() const { return m_parent ? m_parent->is_mmode() : mmode; }
     bool is_smode() const { return !is_mmode(); }
 
+    aplic* root() { return m_parent ? m_parent->root() : this; }
+
     bool is_msi() const;
 
     struct irqinfo {
@@ -62,10 +64,16 @@ private:
     u32 read_in(size_t idx);
     u32 read_setie(size_t idx);
     u32 read_genmsi();
+    u32 read_topi(size_t idx);
+    u32 read_claimi(size_t idx);
 
     void write_domaincfg(u32 val);
     void write_sourcecfg(u32 val, size_t idx);
     void write_targetcfg(u32 val, size_t idx);
+    void write_mmsiaddrcfg(u32 val);
+    void write_mmsiaddrcfgh(u32 val);
+    void write_smsiaddrcfg(u32 val);
+    void write_smsiaddrcfgh(u32 val);
     void write_setip(u32 val, size_t idx);
     void write_setipnum(u32 val);
     void write_clrip(u32 val, size_t idx);
@@ -77,6 +85,9 @@ private:
     void write_setipnum_le(u32 val);
     void write_setipnum_be(u32 val);
     void write_genmsi(u32 val);
+    void write_idelivery(u32 val, size_t idx);
+    void write_iforce(u32 val, size_t idx);
+    void write_ithreshold(u32 val, size_t idx);
 
     void notify(size_t irq, bool level);
 
@@ -84,6 +95,7 @@ private:
     void update(irqinfo* irq);
 
     void send_msi(u32 hart, u32 guest, u32 eiid);
+    void send_irq(u32 hart);
 
 public:
     struct hartidc {
