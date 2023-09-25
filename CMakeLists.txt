@@ -20,7 +20,6 @@ option(VCML_USE_LUA "Use LUA for scripting" ON)
 option(VCML_USE_SOCKETCAN "Use CAN sockets" ON)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
-option(VCML_BUILD_PIC   "Build position independent code" ON)
 option(VCML_COVERAGE "Enable generation of code coverage data" OFF)
 set(VCML_LINTER "" CACHE STRING "Code linter to use")
 
