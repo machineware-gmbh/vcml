@@ -60,7 +60,7 @@ bool bridge::cmd_list_backends(const vector<string>& args, ostream& os) {
     return true;
 }
 
-void bridge::eth_receive(eth_frame& frame) {
+void bridge::eth_receive(const eth_frame& frame) {
     send_to_host(frame);
 }
 

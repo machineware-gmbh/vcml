@@ -40,7 +40,7 @@ private:
     bool cmd_destroy_backend(const vector<string>& args, ostream& os);
     bool cmd_list_backends(const vector<string>& args, ostream& os);
 
-    virtual void eth_receive(eth_frame& frame) override;
+    virtual void eth_receive(const eth_frame& frame) override;
 
     void eth_transmit();
 

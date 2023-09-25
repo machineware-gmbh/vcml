@@ -160,6 +160,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/virtio/pci.cpp
     ${src}/vcml/models/virtio/rng.cpp
     ${src}/vcml/models/virtio/blk.cpp
+    ${src}/vcml/models/virtio/net.cpp
     ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp
     ${src}/vcml/models/meta/loader.cpp

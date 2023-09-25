@@ -120,6 +120,7 @@
 #include "vcml/models/virtio/pci.h"
 #include "vcml/models/virtio/rng.h"
 #include "vcml/models/virtio/blk.h"
+#include "vcml/models/virtio/net.h"
 #include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
 

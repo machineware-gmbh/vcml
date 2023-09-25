@@ -95,8 +95,8 @@ public:
         EXPECT_TRUE(find_object("eth.eth_array_rx[6]_stub"));
     }
 
-    MOCK_METHOD(void, eth_receive, (const eth_target_socket&, eth_frame&),
-                (override));
+    MOCK_METHOD(void, eth_receive,
+                (const eth_target_socket&, const eth_frame&), (override));
 
     MOCK_METHOD(void, eth_link_up, (), (override));
     MOCK_METHOD(void, eth_link_down, (), (override));

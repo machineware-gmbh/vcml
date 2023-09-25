@@ -202,12 +202,13 @@ eth_host::eth_host():
                            "link_status [sockets...] shows link status");
 }
 
-void eth_host::eth_receive(const eth_target_socket& sock, eth_frame& frame) {
+void eth_host::eth_receive(const eth_target_socket& sock,
+                           const eth_frame& frame) {
     eth_receive(frame);
 }
 
-void eth_host::eth_receive(eth_frame& frame) {
-    m_rx_queue.push(std::move(frame));
+void eth_host::eth_receive(const eth_frame& frame) {
+    m_rx_queue.push(frame);
 }
 
 bool eth_host::eth_rx_pop(eth_frame& frame) {

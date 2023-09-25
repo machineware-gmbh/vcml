@@ -61,6 +61,11 @@ struct mac_addr {
     string to_string() const;
 
     static const char* format;
+
+    static mac_addr temporary() {
+        return mac_addr(rand() & 0xfe, rand() & 0xff, rand() & 0xff,
+                        rand() & 0xff, rand() & 0xff, rand() & 0xff);
+    }
 };
 
 struct eth_frame : public vector<u8> {
@@ -89,6 +94,7 @@ struct eth_frame : public vector<u8> {
     eth_frame() = default;
     eth_frame(eth_frame&&) = default;
     eth_frame(const eth_frame&) = default;
+    eth_frame(size_t length): vector<u8>(length) {}
     eth_frame(const vector<u8>& raw);
     eth_frame(vector<u8>&& frame);
     eth_frame(const u8* data, size_t len);
@@ -176,8 +182,8 @@ public:
     eth_host(const eth_host&) = delete;
 
 protected:
-    virtual void eth_receive(const eth_target_socket& sock, eth_frame& frame);
-    virtual void eth_receive(eth_frame& frame);
+    virtual void eth_receive(const eth_target_socket&, const eth_frame& frame);
+    virtual void eth_receive(const eth_frame& frame);
     virtual bool eth_rx_pop(eth_frame& frame);
 
     virtual void eth_link_up();

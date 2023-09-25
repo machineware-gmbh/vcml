@@ -30,7 +30,7 @@ protected:
         return eth_tx[eth_rx.index_of(rx)];
     }
 
-    void eth_receive(const eth_target_socket&, eth_frame& frame) override;
+    void eth_receive(const eth_target_socket&, const eth_frame&) override;
 
 public:
     eth_initiator_array eth_tx;

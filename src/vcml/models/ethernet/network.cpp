@@ -13,11 +13,11 @@
 namespace vcml {
 namespace ethernet {
 
-void network::eth_receive(const eth_target_socket& rx, eth_frame& frame) {
+void network::eth_receive(const eth_target_socket& rx, const eth_frame& fr) {
     const eth_initiator_socket& sender = peer_of(rx);
     for (auto& tx : eth_tx) {
         if (tx.second != &sender)
-            tx.second->send(frame);
+            tx.second->send(fr);
     }
 }
 
