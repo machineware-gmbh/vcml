@@ -107,8 +107,14 @@ public:
         ASSERT_OK(out.readw(NET_VQ_MAX, data));
         EXPECT_EQ(data, 256);
 
-        // other queues should not exist
+        // ctrl queue should exist, but its unused
         data = 2;
+        ASSERT_OK(out.writew(NET_VQ_SEL, data));
+        ASSERT_OK(out.readw(NET_VQ_MAX, data));
+        EXPECT_EQ(data, 64);
+
+        // other queues should not exist
+        data = 3;
         ASSERT_OK(out.writew(NET_VQ_SEL, data));
         ASSERT_OK(out.readw(NET_VQ_MAX, data));
         EXPECT_EQ(data, 0);

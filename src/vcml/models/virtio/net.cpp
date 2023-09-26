@@ -85,6 +85,8 @@ bool net::handle_tx(vq_message& msg) {
 
     if (frame.size() < eth_frame::FRAME_MIN_SIZE)
         frame.resize(eth_frame::FRAME_MIN_SIZE);
+    if (frame.size() > m_config.mtu)
+        log_warn("packet exceeds MTU: %zu bytes", frame.size());
 
     eth_tx.send(frame);
     return true;
@@ -123,22 +125,34 @@ void net::identify(virtio_device_desc& desc) {
     desc.pci_class = PCI_CLASS_NETWORK_ETHERNET;
     desc.request_virtqueue(VIRTQUEUE_RX, 256);
     desc.request_virtqueue(VIRTQUEUE_TX, 256);
+    desc.request_virtqueue(VIRTQUEUE_CTRL, 64);
 }
 
 bool net::notify(u32 vqid) {
-    if (is_rx(vqid))
+    switch (vqid) {
+    case VIRTQUEUE_RX:
         m_rxev.notify(SC_ZERO_TIME);
-    else
+        return true;
+    case VIRTQUEUE_TX:
         m_txev.notify(SC_ZERO_TIME);
-    return true;
+        return true;
+    case VIRTQUEUE_CTRL:
+        // unused
+        return true;
+    default:
+        log_warn("invalid virtqueue notified: %u", vqid);
+        return false;
+    }
 }
 
 void net::read_features(u64& features) {
-    features = VIRTIO_NET_F_MAC;
+    features = VIRTIO_NET_F_MAC | VIRTIO_NET_F_MAC;
 }
 
 bool net::write_features(u64 features) {
-    if (features & ~VIRTIO_NET_F_MAC & 0xffffff) {
+    u64 supported = 0;
+    read_features(supported);
+    if (features & 0xffffff & ~supported) {
         log_warn("unsupported features requested: 0x%llx", features);
         return false;
     }
@@ -192,6 +206,7 @@ net::net(const sc_module_name& nm):
     m_rxev("rxev"),
     m_txev("txev"),
     mac("mac"),
+    mtu("mtu", 1500),
     virtio_in("virtio_in"),
     eth_tx("eth_tx"),
     eth_rx("eth_rx") {
@@ -224,7 +239,7 @@ void net::reset() {
         m_config.status |= VIRTIO_NET_S_LINK_UP;
 
     m_config.max_vq_pairs = 1;
-    m_config.mtu = 0;
+    m_config.mtu = mtu;
 }
 
 VCML_EXPORT_MODEL(vcml::virtio::net, name, args) {

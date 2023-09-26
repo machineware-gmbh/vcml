@@ -29,12 +29,11 @@ private:
     enum virtqueues : int {
         VIRTQUEUE_RX = 0,
         VIRTQUEUE_TX = 1,
+        VIRTQUEUE_CTRL,
     };
 
-    constexpr bool is_rx(u32 vqid) { return (vqid & 1) == VIRTQUEUE_RX; }
-    constexpr bool is_tx(u32 vqid) { return (vqid & 1) == VIRTQUEUE_TX; }
-
     enum features : u64 {
+        VIRTIO_NET_F_MTU = bit(3),
         VIRTIO_NET_F_MAC = bit(5),
     };
 
@@ -71,6 +70,7 @@ private:
 
 public:
     property<string> mac;
+    property<u16> mtu;
 
     virtio_target_socket virtio_in;
     eth_initiator_socket eth_tx;
