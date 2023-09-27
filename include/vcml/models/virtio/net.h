@@ -25,7 +25,7 @@ namespace virtio {
 
 class net : public module, public virtio_device, public eth_host
 {
-private:
+public:
     enum virtqueues : int {
         VIRTQUEUE_RX = 0,
         VIRTQUEUE_TX = 1,
@@ -35,8 +35,16 @@ private:
     enum features : u64 {
         VIRTIO_NET_F_MTU = bit(3),
         VIRTIO_NET_F_MAC = bit(5),
+        VIRTIO_NET_F_STATUS = bit(16),
+        VIRTIO_NET_F_CTRL_VQ = bit(17),
+        VIRTIO_NET_F_CTRL_RX = bit(18),
+        VIRTIO_NET_F_CTRL_VLAN = bit(19),
+        VIRTIO_NET_F_CTRL_RX_EXTRA = bit(20),
+        VIRTIO_NET_F_CTRL_ANNOUNCE = bit(21),
+        VIRTIO_NET_F_CTRL_MAC_ADDR = bit(23),
     };
 
+private:
     struct config {
         u8 mac[6];
         u16 status;
@@ -46,8 +54,25 @@ private:
 
     mac_addr m_mac;
 
+    bool m_promisc;
+    bool m_allmulti;
+    bool m_alluni;
+    bool m_nomulti;
+    bool m_nouni;
+    bool m_nobcast;
+
+    vector<mac_addr> m_unicast;
+    vector<mac_addr> m_multicast;
+
     sc_event m_rxev;
     sc_event m_txev;
+
+    bool filter(const eth_frame& frame);
+
+    void handle_ctrl();
+    void handle_ctrl_rx(vq_message& msg);
+    void handle_ctrl_announce(vq_message& msg);
+    void handle_ctrl_mac_addr(vq_message& msg);
 
     bool handle_rx(vq_message& msg, eth_frame& frame);
     bool handle_tx(vq_message& msg);

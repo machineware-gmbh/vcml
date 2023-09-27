@@ -22,6 +22,16 @@ public:
     tlm_initiator_socket out;
     gpio_target_socket irq;
 
+    static constexpr u64
+        EXPECTED_FEATURES = virtio::net::VIRTIO_NET_F_MTU |
+                            virtio::net::VIRTIO_NET_F_MAC |
+                            virtio::net::VIRTIO_NET_F_STATUS |
+                            virtio::net::VIRTIO_NET_F_CTRL_VQ |
+                            virtio::net::VIRTIO_NET_F_CTRL_RX |
+                            virtio::net::VIRTIO_NET_F_CTRL_RX_EXTRA |
+                            virtio::net::VIRTIO_NET_F_CTRL_ANNOUNCE |
+                            virtio::net::VIRTIO_NET_F_CTRL_MAC_ADDR;
+
     virtio_net_stim(const sc_module_name& nm = sc_gen_unique_name("stim")):
         test_base(nm),
         bus("bus"),
@@ -84,7 +94,7 @@ public:
 
         ASSERT_OK(out.writew(NET_DEVF_SEL, 0u));
         ASSERT_OK(out.readw(NET_DEVF, data));
-        ASSERT_EQ(data & 0xffffff, bit(5)); // F_CSUM
+        ASSERT_EQ(data & 0xffffff, EXPECTED_FEATURES);
         ASSERT_OK(out.writew(NET_DRVF_SEL, 0u));
         ASSERT_OK(out.writew(NET_DRVF, data));
 
@@ -96,25 +106,25 @@ public:
         ASSERT_TRUE(data & VIRTIO_STATUS_FEATURES_OK);
 
         // test rx queue
-        data = 0;
+        data = virtio::net::VIRTQUEUE_RX;
         ASSERT_OK(out.writew(NET_VQ_SEL, data));
         ASSERT_OK(out.readw(NET_VQ_MAX, data));
         EXPECT_EQ(data, 256);
 
         // test tx queue
-        data = 1;
+        data = virtio::net::VIRTQUEUE_TX;
         ASSERT_OK(out.writew(NET_VQ_SEL, data));
         ASSERT_OK(out.readw(NET_VQ_MAX, data));
         EXPECT_EQ(data, 256);
 
-        // ctrl queue should exist, but its unused
-        data = 2;
+        // ctrl queue should exist
+        data = virtio::net::VIRTQUEUE_CTRL;
         ASSERT_OK(out.writew(NET_VQ_SEL, data));
         ASSERT_OK(out.readw(NET_VQ_MAX, data));
         EXPECT_EQ(data, 64);
 
         // other queues should not exist
-        data = 3;
+        data = virtio::net::VIRTQUEUE_CTRL + 1;
         ASSERT_OK(out.writew(NET_VQ_SEL, data));
         ASSERT_OK(out.readw(NET_VQ_MAX, data));
         EXPECT_EQ(data, 0);
