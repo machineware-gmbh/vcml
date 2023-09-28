@@ -150,11 +150,11 @@ public:
         void write_cpendsgir(u8 value, size_t idx);
 
     public:
-        typedef field<0, 1> CTLR_ENABLE;
-
         reg<u32> ctlr;  // Distributor Control register
         reg<u32> typer; // IRQ Controller Type register
         reg<u32> iidr;  // Implementer Identification register
+
+        reg<u32, 31> igroupr; // Interrupt Group register
 
         reg<u32> isenabler_ppi;     // IRQ Set Enable register
         reg<u32, 31> isenabler_spi; // SPI Set Enable register
@@ -408,10 +408,14 @@ inline gpio_target_socket& gic400::ppi(unsigned int cpu, unsigned int irq) {
 }
 
 inline void gic400::enable_irq(unsigned int irq, unsigned int mask) {
+    if (m_irq_state[irq].enabled == 0 && mask)
+        log_debug("enabled irq %u", irq);
     m_irq_state[irq].enabled |= mask;
 }
 
 inline void gic400::disable_irq(unsigned int irq, unsigned int mask) {
+    if (m_irq_state[irq].enabled && mask == 0)
+        log_debug("disabled irq %u", irq);
     m_irq_state[irq].enabled &= ~mask;
 }
 

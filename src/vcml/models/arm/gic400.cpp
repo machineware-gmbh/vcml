@@ -69,23 +69,29 @@ u16 gic400::distif::ppi_enabled_mask(int cpu) {
     return value;
 }
 
+enum distif_ctlr_bits : u32 {
+    CTRL_ENABLE_GROUP0 = bit(0),
+    CTRL_ENABLE_GROUP1 = bit(1),
+    CTRL_MASK = CTRL_ENABLE_GROUP0 | CTRL_ENABLE_GROUP1,
+};
+
 void gic400::distif::write_ctlr(u32 val) {
-    if ((val & CTLR_ENABLE()) && !(ctlr & CTLR_ENABLE()))
-        log_debug("(CTLR) irq forwarding enabled");
-    if (!(val & CTLR_ENABLE()) && (ctlr & CTLR_ENABLE()))
-        log_debug("(CTLR) irq forwarding disabled");
-    ctlr = val & CTLR_ENABLE();
+    VCML_LOG_REG_BIT_CHANGE(CTRL_ENABLE_GROUP0, ctlr, val);
+    VCML_LOG_REG_BIT_CHANGE(CTRL_ENABLE_GROUP1, ctlr, val);
+    ctlr = val & CTRL_MASK;
     m_parent->update();
 }
 
 u32 gic400::distif::read_typer() {
-    return 0xff;
+    u32 itlines = ((m_parent->get_irq_num() + 31) / 32 - 1) & 0x1f;
+    u32 cpu_num = (m_parent->get_cpu_num() - 1) & 0x3;
+    return (cpu_num << 5) | itlines;
 }
 
 u32 gic400::distif::read_isenabler_ppi() {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ISER) invalid cpu %d, assuming 0", cpu);
+        log_warn("(iser) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -96,7 +102,7 @@ u32 gic400::distif::read_isenabler_ppi() {
 void gic400::distif::write_isenabler_ppi(u32 val) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ISER) invalid cpu %d, assuming 0", cpu);
+        log_warn("(iser) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -146,18 +152,18 @@ void gic400::distif::write_isenabler_spi(u32 val, size_t idx) {
 u32 gic400::distif::read_icenabler_ppi() {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ICER) invalid cpu %d, assuming 0", cpu);
+        log_warn("(icer) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
     u32 mask = ppi_enabled_mask(cpu);
-    return (mask << 16) | 0xFFFF; // SGIs are always enabled
+    return (mask << 16) | 0xffff; // SGIs are always enabled
 }
 
 void gic400::distif::write_icenabler_ppi(u32 val) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ICER) invalid cpu %d, assuming 0", cpu);
+        log_warn("(icer) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -197,7 +203,7 @@ void gic400::distif::write_icenabler_spi(u32 val, size_t idx) {
 u32 gic400::distif::read_ispendr_ppi() {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ISPR) invalid cpu %d, assuming 0", cpu);
+        log_warn("(ispr) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -207,7 +213,7 @@ u32 gic400::distif::read_ispendr_ppi() {
 void gic400::distif::write_ispendr_ppi(u32 value) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ISPR) invalid cpu %d, assuming 0", cpu);
+        log_warn("(ispr) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -239,7 +245,7 @@ void gic400::distif::write_sspr(u32 value, size_t idx) {
 u32 gic400::distif::read_icpendr_ppi() {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
+        log_warn("(icpendr0) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -249,7 +255,7 @@ u32 gic400::distif::read_icpendr_ppi() {
 void gic400::distif::write_icpendr_ppi(u32 value) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ICPENDR0) invalid cpu %d, assuming 0", cpu);
+        log_warn("(icpendr0) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -281,7 +287,7 @@ void gic400::distif::write_icpendr_spi(u32 val, size_t idx) {
 u32 gic400::distif::read_isactiver_ppi() {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ISACTIVER0) invalid cpu %d, assuming 0", cpu);
+        log_warn("(isactivr0) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -311,7 +317,7 @@ u32 gic400::distif::read_isactiver_spi(size_t idx) {
 void gic400::distif::write_icactiver_ppi(u32 val) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(ICAR) invalid cpu %d, assuming 0", cpu);
+        log_warn("(icar) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -333,7 +339,7 @@ void gic400::distif::write_icactiver_spi(u32 val, size_t idx) {
 u32 gic400::distif::read_itargets_ppi(size_t idx) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(INTT) invalid cpu %d, assuming 0", cpu);
+        log_warn("(intt) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -378,13 +384,13 @@ void gic400::distif::write_icfgr_spi(u32 value, size_t idx) {
 void gic400::distif::write_sgir(u32 value) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(SCTL) invalid cpu %d, assuming 0", cpu);
+        log_warn("(sctl) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
     unsigned int src_cpu = 1 << cpu;
-    unsigned int sgi_num = (value >> 0) & 0x0F;
-    unsigned int targets = (value >> 16) & 0xFF;
+    unsigned int sgi_num = (value >> 0) & 0x0f;
+    unsigned int targets = (value >> 16) & 0xff;
     unsigned int filters = (value >> 24) & 0x03;
 
     switch (filters) {
@@ -417,7 +423,7 @@ void gic400::distif::write_sgir(u32 value) {
 void gic400::distif::write_spendsgir(u8 value, size_t idx) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(SGIS) invalid cpu %d, assuming 0", cpu);
+        log_warn("(sgis) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -433,7 +439,7 @@ void gic400::distif::write_spendsgir(u8 value, size_t idx) {
 void gic400::distif::write_cpendsgir(u8 value, size_t idx) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(SGIC) invalid cpu %d, assuming 0", cpu);
+        log_warn("(sgic) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -449,34 +455,35 @@ void gic400::distif::write_cpendsgir(u8 value, size_t idx) {
 gic400::distif::distif(const sc_module_name& nm):
     peripheral(nm),
     m_parent(dynamic_cast<gic400*>(get_parent_object())),
-    ctlr("CTLR", 0x000, 0x00000000),
-    typer("TYPER", 0x004, 0x00000000),
-    iidr("IIDR", 0x008, 0x00000000),
-    isenabler_ppi("ISENABLER_PPI", 0x100, 0x0000FFFF),
-    isenabler_spi("ISENABLER_SPI", 0x104, 0x00000000),
-    icenabler_ppi("ICENABLER_PPI", 0x180, 0x0000FFFF),
-    icenabler_spi("ICENABLER_SPI", 0x184, 0x00000000),
-    ispendr_ppi("ISPENDR_PPI", 0x200, 0x00000000),
-    ispendr_spi("ISPENDR_SPI", 0x204, 0x00000000),
-    icpendr_ppi("ICPENDR_PPI", 0x280, 0x00000000),
-    icpendr_spi("ICPENDR_SPI", 0x284, 0x00000000),
-    isactiver_ppi("ISACTIVER_PPI", 0x300),
-    isactiver_spi("ISACTIVER_SPI", 0x304),
-    icactiver_ppi("ICACTIVER_PPI", 0x380, 0x00000000),
-    icactiver_spi("ICACTIVER_SPI", 0x384, 0x00000000),
-    ipriority_sgi("IPRIORITY_SGI", 0x400, 0x00),
-    ipriority_ppi("IPRIORITY_PPI", 0x410, 0x00),
-    ipriority_spi("IPRIORITY_SPI", 0x420, 0x00),
-    itargets_ppi("ITARGETS_PPI", 0x800),
-    itargets_spi("ITARGETS_SPI", 0x820),
-    icfgr_sgi("ICFGR_SGI", 0xC00, 0xAAAAAAAA),
-    icfgr_ppi("ICFGR_PPI", 0xC04, 0xAAAAAAAA),
-    icfgr_spi("ICFGR_SPI", 0xC08),
-    sgir("SGIR", 0xF00),
-    cpendsgir("SGIC", 0xF10),
-    spendsgir("SPENDSGIR", 0xF20),
-    cidr("CIDR", 0xFF0),
-    in("IN") {
+    ctlr("ctlr", 0x000, 0x00000000),
+    typer("typer", 0x004, 0x00000000),
+    iidr("iidr", 0x008, 0x00000000),
+    igroupr("igroupr", 0x80, 0x00000000),
+    isenabler_ppi("isenabler_ppi", 0x100, 0x0000ffff),
+    isenabler_spi("isenabler_spi", 0x104, 0x00000000),
+    icenabler_ppi("icenabler_ppi", 0x180, 0x0000ffff),
+    icenabler_spi("icenabler_spi", 0x184, 0x00000000),
+    ispendr_ppi("ispendr_ppi", 0x200, 0x00000000),
+    ispendr_spi("ispendr_spi", 0x204, 0x00000000),
+    icpendr_ppi("icpendr_ppi", 0x280, 0x00000000),
+    icpendr_spi("icpendr_spi", 0x284, 0x00000000),
+    isactiver_ppi("isactiver_ppi", 0x300),
+    isactiver_spi("isactiver_spi", 0x304),
+    icactiver_ppi("icactiver_ppi", 0x380, 0x00000000),
+    icactiver_spi("icactiver_spi", 0x384, 0x00000000),
+    ipriority_sgi("ipriority_sgi", 0x400, 0x00),
+    ipriority_ppi("ipriority_ppi", 0x410, 0x00),
+    ipriority_spi("ipriority_spi", 0x420, 0x00),
+    itargets_ppi("itargets_ppi", 0x800),
+    itargets_spi("itargets_spi", 0x820),
+    icfgr_sgi("icfgr_sgi", 0xc00, 0xaaaaaaaa),
+    icfgr_ppi("icfgr_ppi", 0xc04, 0xaaaaaaaa),
+    icfgr_spi("icfgr_spi", 0xc08),
+    sgir("sgir", 0xf00),
+    cpendsgir("cpendsgir", 0xf10),
+    spendsgir("spendsgir", 0xf20),
+    cidr("cidr", 0xff0),
+    in("in") {
     VCML_ERROR_ON(!m_parent, "gic400 parent module not found");
 
     ctlr.sync_on_write();
@@ -489,6 +496,9 @@ gic400::distif::distif(const sc_module_name& nm):
 
     iidr.sync_never();
     iidr.allow_read_only();
+
+    igroupr.sync_always();
+    igroupr.allow_read_write();
 
     isenabler_ppi.set_banked();
     isenabler_ppi.sync_always();
@@ -609,11 +619,7 @@ void gic400::distif::reset() {
     peripheral::reset();
 
     for (unsigned int i = 0; i < cidr.count(); i++)
-        cidr[i] = (AMBA_PCID >> (i * 8)) & 0xFF;
-}
-
-void gic400::distif::setup(unsigned int num_cpu, unsigned int num_irq) {
-    typer = ((num_cpu & 0x7) << 5) | (0xF & ((num_irq / 32) - 1));
+        cidr[i] = (AMBA_PCID >> (i * 8)) & 0xff;
 }
 
 void gic400::distif::set_sgi_pending(u8 value, unsigned int sgi,
@@ -646,9 +652,9 @@ void gic400::cpuif::set_current_irq(unsigned int cpu, unsigned int irq) {
 
 void gic400::cpuif::write_ctlr(u32 val) {
     if ((val & CTLR_ENABLE()) && !(ctlr & CTLR_ENABLE()))
-        log_debug("(CTLR) enabling cpu %d", current_cpu());
+        log_debug("(ctlr) enabling cpu %d", current_cpu());
     if (!(val & CTLR_ENABLE()) && (ctlr & CTLR_ENABLE()))
-        log_debug("(CTLR) disabling cpu %d", current_cpu());
+        log_debug("(ctlr) disabling cpu %d", current_cpu());
     ctlr = val & CTLR_ENABLE();
 }
 
@@ -664,7 +670,7 @@ void gic400::cpuif::write_bpr(u32 val) {
 void gic400::cpuif::write_eoir(u32 val) {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(EOIR) invalid cpu %d, assuming 0", cpu);
+        log_warn("(eoi) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -673,12 +679,12 @@ void gic400::cpuif::write_eoir(u32 val) {
 
     unsigned int irq = val & 0x3ff; // interrupt id stored in bits [9..0]
     if (irq >= m_parent->get_irq_num()) {
-        log_warn("(EOI) invalid irq %d ignored", irq);
+        log_warn("(eoi) invalid irq %d ignored", irq);
         return;
     }
 
     if (irq == m_curr_irq[cpu]) {
-        log_debug("(EOI) cpu %d eois irq %d", cpu, irq);
+        log_debug("(eoi) cpu %d eois irq %d", cpu, irq);
         set_current_irq(cpu, m_prev_irq[irq][cpu]);
         m_parent->set_irq_active(irq, false, 1 << cpu);
         m_parent->update();
@@ -700,7 +706,7 @@ void gic400::cpuif::write_eoir(u32 val) {
 u32 gic400::cpuif::read_iar() {
     int cpu = current_cpu();
     if (cpu < 0) {
-        log_warn("(IACK) invalid cpu %d, assuming 0", cpu);
+        log_warn("(iar) invalid cpu %d, assuming 0", cpu);
         cpu = 0;
     }
 
@@ -709,7 +715,7 @@ u32 gic400::cpuif::read_iar() {
                        ? (gic400::ALL_CPU)
                        : (1 << cpu);
 
-    log_debug("(IACK) cpu %d acknowledges irq %d", cpu, irq);
+    log_debug("(iar) cpu %d acknowledges irq %d", cpu, irq);
 
     // check if CPU is acknowledging a not pending interrupt
     if (irq == SPURIOUS_IRQ ||
@@ -744,19 +750,19 @@ u32 gic400::cpuif::read_iar() {
 gic400::cpuif::cpuif(const sc_module_name& nm):
     peripheral(nm),
     m_parent(dynamic_cast<gic400*>(get_parent_object())),
-    ctlr("CTLR", 0x00, 0x0),
-    pmr("PMR", 0x04, 0x0),
-    bpr("BPR", 0x08, 0x0),
-    iar("IAR", 0x0C, 0x0),
-    eoir("EOIR", 0x10, 0x0),
-    rpr("RPR", 0x14, IDLE_PRIO),
-    hppir("HPPIR", 0x18, SPURIOUS_IRQ),
-    abpr("ABPR", 0x1C, 0x0),
-    apr("APR", 0xD0, 0x00000000),
-    iidr("IIDR", 0xFC, AMBA_IFID),
-    cidr("CIDR", 0xFF0),
-    dir("DIR", 0x1000),
-    in("IN") {
+    ctlr("ctlr", 0x00, 0x0),
+    pmr("pmr", 0x04, 0x0),
+    bpr("bpr", 0x08, 0x0),
+    iar("iar", 0x0c, 0x0),
+    eoir("eoir", 0x10, 0x0),
+    rpr("rpr", 0x14, IDLE_PRIO),
+    hppir("hppir", 0x18, SPURIOUS_IRQ),
+    abpr("abpr", 0x1c, 0x0),
+    apr("apr", 0xd0, 0x00000000),
+    iidr("iidr", 0xfc, AMBA_IFID),
+    cidr("cidr", 0xff0),
+    dir("dir", 0x1000),
+    in("in") {
     VCML_ERROR_ON(!m_parent, "gic400 parent module not found");
 
     ctlr.set_banked();
@@ -818,7 +824,7 @@ void gic400::cpuif::reset() {
     peripheral::reset();
 
     for (unsigned int i = 0; i < cidr.count(); i++)
-        cidr[i] = (AMBA_PCID >> (i * 8)) & 0xFF;
+        cidr[i] = (AMBA_PCID >> (i * 8)) & 0xff;
 
     for (unsigned int irq = 0; irq < NIRQ; irq++)
         for (unsigned int cpu = 0; cpu < NCPU; cpu++)
@@ -845,7 +851,7 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
     if (hw == 0) {
         u8 eoi = (val >> 19) & 0b1;
         if (eoi == 1)
-            log_error("(LR) maintenance IRQ not implemented");
+            log_error("(lr) maintenance IRQ not implemented");
         u8 cpu_id = (val >> 10) & 0b111;
         set_lr_cpuid(idx, cpu, cpu_id);
         set_lr_hw(idx, cpu, false);
@@ -950,12 +956,12 @@ gic400::vifctrl::vifctrl(const sc_module_name& nm):
     peripheral(nm),
     m_parent(dynamic_cast<gic400*>(get_parent_object())),
     m_lr_state(),
-    hcr("HCR", 0x0),
-    vtr("VTR", 0x04, 0x0),
-    vmcr("VMCR", 0x08),
-    apr("APR", 0xF0, 0x0),
-    lr("LR", 0x100, 0x0),
-    in("IN") {
+    hcr("hcr", 0x0),
+    vtr("vtr", 0x04, 0x0),
+    vmcr("vmcr", 0x08),
+    apr("apr", 0xf0, 0x0),
+    lr("lr", 0x100, 0x0),
+    in("in") {
     hcr.set_banked();
     hcr.allow_read_write();
     hcr.on_write(&vifctrl::write_hcr);
@@ -983,7 +989,7 @@ gic400::vifctrl::~vifctrl() {
 
 void gic400::vcpuif::write_ctlr(u32 val) {
     if (val > 1)
-        log_error("(vCTLR) using unimplemented features");
+        log_error("(vctlr) using unimplemented features");
     ctlr = val;
 }
 
@@ -1011,7 +1017,7 @@ u32 gic400::vcpuif::read_iar() {
 
     m_vifctrl->set_lr_pending(lr, cpu, false);
 
-    log_debug("(vIACK) cpu %d acknowledges virq %d", cpu, irq);
+    log_debug("(viack) cpu %d acknowledges virq %d", cpu, irq);
     m_parent->update(true);
     u8 cpu_id = m_vifctrl->get_lr_cpuid(lr, cpu);
     return ((cpu_id & 0x111) << 10 | irq);
@@ -1019,14 +1025,14 @@ u32 gic400::vcpuif::read_iar() {
 
 void gic400::vcpuif::write_eoir(u32 val) {
     u8 cpu = current_cpu();
-    u32 irq = val & 0x1FF;
+    u32 irq = val & 0x1ff;
 
     if (irq >= m_parent->get_irq_num()) {
-        log_warn("(EOI) invalid irq %d ignored", irq);
+        log_warn("(eoir) invalid irq %d ignored", irq);
         return;
     }
 
-    log_debug("(vEOIR) cpu%d eois virq %d", cpu, irq);
+    log_debug("(veoir) cpu%d eois virq %d", cpu, irq);
 
     // drop priority and update APR
     m_vifctrl->apr.bank(cpu) &= m_parent->vifctrl.apr.bank(cpu) - 1;
@@ -1061,12 +1067,12 @@ gic400::vcpuif::vcpuif(const sc_module_name& nm, class vifctrl* ctrl):
     ctlr("ctlr", 0x00, 0x0),
     pmr("pmr", 0x04, 0x0),
     bpr("bpr", 0x08, 2),
-    iar("iar", 0x0C, 0x0),
+    iar("iar", 0x0c, 0x0),
     eoir("eoir", 0x10, 0x0),
     rpr("rpr", 0x14, IDLE_PRIO),
     hppir("hppir", 0x18, SPURIOUS_IRQ),
-    apr("apr", 0xD0, 0x00000000),
-    iidr("iidr", 0xFC, AMBA_IFID),
+    apr("apr", 0xd0, 0x00000000),
+    iidr("iidr", 0xfc, AMBA_IFID),
     in("in") {
     ctlr.set_banked();
     ctlr.allow_read_write();
@@ -1149,14 +1155,14 @@ void gic400::update(bool virt) {
             vcpuif.hppir.bank(cpu) = SPURIOUS_IRQ;
 
         if (!virt && (distif.ctlr == 0u || cpuif.ctlr.bank(cpu) == 0u)) {
-            log_debug("Disabling IRQ[%d]", cpu);
-            irq_out[cpu].write(false);
-            continue; // TODO check if continue or return
+            log_debug("disabling cpu%u irq", cpu);
+            irq_out[cpu] = false;
+            continue;
         }
 
         if (virt && (vifctrl.hcr.bank(cpu) == 0u)) {
-            log_debug("Disabling VIRQ[%d]", cpu);
-            virq_out[cpu].write(false);
+            log_debug("disabling cpu%u virq", cpu);
+            virq_out[cpu] = false;
             continue;
         }
 
@@ -1200,11 +1206,11 @@ void gic400::update(bool virt) {
         } else {
             for (unsigned int lr_idx = 0; lr_idx < NLR; lr_idx++) {
                 if (vifctrl.is_lr_pending(lr_idx, cpu)) {
-                    u8 prio = (vifctrl.lr.bank(cpu, lr_idx) & (0x1F << 23)) >>
+                    u8 prio = (vifctrl.lr.bank(cpu, lr_idx) & (0x1f << 23)) >>
                               23;
                     if (prio < best_prio) {
                         best_prio = prio;
-                        best_irq = (vifctrl.lr.bank(cpu, lr_idx) & 0x1FF);
+                        best_irq = (vifctrl.lr.bank(cpu, lr_idx) & 0x1ff);
                     }
                 }
             }
@@ -1228,14 +1234,16 @@ void gic400::update(bool virt) {
         }
 
         if (!virt) {
-            if (irq_out[cpu].read() != level)
-                log_debug("%sing %s[%u] for irq %u", level ? "sett" : "clear",
-                          "IRQ", cpu, best_irq);
-            irq_out[cpu].write(level); // FIRQ or NIRQ?
+            if (irq_out[cpu].read() != level) {
+                log_debug("%sing cpu%u irq for irq%u",
+                          level ? "sett" : "clear", cpu, best_irq);
+            }
+            irq_out[cpu].write(level);
         } else {
-            if (virq_out[cpu].read() != level)
-                log_debug("%sing %s[%u] for irq %u", level ? "sett" : "clear",
-                          "VIRQ", cpu, best_irq);
+            if (virq_out[cpu].read() != level) {
+                log_debug("%sing cpu%u virq for irq %u",
+                          level ? "sett" : "clear", cpu, best_irq);
+            }
             virq_out[cpu].write(level);
         }
     }
@@ -1258,11 +1266,11 @@ void gic400::end_of_elaboration() {
     m_irq_num = NPRIV;
 
     // determine the number of processors from the connected IRQs
-    for (auto cpu : irq_out)
-        m_cpu_num = max<unsigned int>(m_cpu_num, cpu.first + 1);
+    for (auto& [cpu, port] : irq_out)
+        m_cpu_num = max<unsigned int>(m_cpu_num, cpu + 1);
 
-    for (auto spi : spi_in) {
-        unsigned int irq = spi.first + NPRIV;
+    for (auto& [spi, port] : spi_in) {
+        unsigned int irq = spi + NPRIV;
 
         if (irq >= NIRQ)
             VCML_ERROR("too many interrupts (%u)", irq);
@@ -1272,7 +1280,6 @@ void gic400::end_of_elaboration() {
     }
 
     log_debug("found %u cpus with %u irqs in total", m_cpu_num, m_irq_num);
-    distif.setup(m_cpu_num, m_irq_num);
 }
 
 void gic400::gpio_notify(const gpio_target_socket& socket) {
