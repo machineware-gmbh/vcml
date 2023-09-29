@@ -433,7 +433,7 @@ vspserver::vspserver(u16 server_port):
     rspserver(server_port),
     suspender("vspserver"),
     subscriber(),
-    m_announce(mwr::temp_dir() + mkstr("vcml_session_%hu", port())),
+    m_announce(mwr::temp_dir() + mkstr("/vcml_session_%hu", port())),
     m_stop_reason("elaboration"),
     m_duration() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
