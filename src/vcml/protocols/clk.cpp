@@ -236,7 +236,7 @@ clk_base_target_socket& clk_target(const sc_object& parent, const string& port,
     return *sock;
 }
 
-void clk_stub(const sc_object& obj, const string& port) {
+void clk_stub(const sc_object& obj, const string& port, hz_t hz) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
@@ -249,10 +249,10 @@ void clk_stub(const sc_object& obj, const string& port) {
     if (ini)
         ini->stub();
     if (tgt)
-        tgt->stub();
+        tgt->stub(hz);
 }
 
-void clk_stub(const sc_object& obj, const string& port, size_t idx) {
+void clk_stub(const sc_object& obj, const string& port, size_t idx, hz_t hz) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
@@ -264,7 +264,7 @@ void clk_stub(const sc_object& obj, const string& port, size_t idx) {
 
     clk_base_target_socket* tsock = get_target_socket(child, idx);
     if (tsock) {
-        tsock->stub();
+        tsock->stub(hz);
         return;
     }
 

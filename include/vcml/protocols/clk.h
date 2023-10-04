@@ -218,8 +218,8 @@ clk_base_target_socket& clk_target(const sc_object& parent,
 clk_base_target_socket& clk_target(const sc_object& parent, const string& port,
                                    size_t idx);
 
-void clk_stub(const sc_object& obj, const string& port);
-void clk_stub(const sc_object& obj, const string& port, size_t idx);
+void clk_stub(const sc_object& obj, const string& port, hz_t hz = 100 * MHz);
+void clk_stub(const sc_object& obj, const string& port, size_t idx, hz_t hz);
 
 void clk_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2);
