@@ -156,7 +156,7 @@ bool pci::notify() {
 tlm_response_status pci::read(const range& addr, void* data,
                               const tlm_sbi& info, address_space as) {
     if (as != virtio_as())
-        return TLM_ADDRESS_ERROR_RESPONSE;
+        return device::read(addr, data, info, as);
 
     static const range device(0x3000, 0x3fff);
     if (device.includes(addr)) {
@@ -171,7 +171,7 @@ tlm_response_status pci::read(const range& addr, void* data,
 tlm_response_status pci::write(const range& addr, const void* data,
                                const tlm_sbi& info, address_space as) {
     if (as != virtio_as())
-        return TLM_ADDRESS_ERROR_RESPONSE;
+        return device::write(addr, data, info, as);
 
     static const range device(0x3000, 0x3fff);
     if (device.includes(addr)) {
