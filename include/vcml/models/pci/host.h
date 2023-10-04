@@ -60,7 +60,7 @@ public:
 
     host(const sc_module_name& nm, bool express = true);
     virtual ~host();
-    VCML_KIND(pci::host);
+    virtual const char* kind() const override;
 
 protected:
     u32 pci_devno(const pci_initiator_socket& socket) const {

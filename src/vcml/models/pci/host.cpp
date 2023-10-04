@@ -70,6 +70,13 @@ host::~host() {
     // nothing to do
 }
 
+const char* host::kind() const {
+    if (pcie)
+        return "vcml::pcie::host";
+    else
+        return "vcml::pci::host";
+}
+
 unsigned int host::transport(tlm_generic_payload& tx, const tlm_sbi& sideband,
                              address_space space) {
     if (tx.get_command() == TLM_IGNORE_COMMAND)
