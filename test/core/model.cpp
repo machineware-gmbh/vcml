@@ -38,6 +38,12 @@ TEST(model, create) {
     EXPECT_STREQ(m->name(), "m");
 }
 
+TEST(model, empty) {
+    vcml::model m("m", "empty");
+    EXPECT_STREQ(m->kind(), "vcml::module");
+    EXPECT_STREQ(m->name(), "m");
+}
+
 TEST(mode, nonexistent) {
     EXPECT_DEATH(vcml::model("m", "nothing"), "model not found: nothing");
 }

@@ -59,4 +59,8 @@ std::map<string, model::create_fn>& model::modeldb() {
     return db;
 }
 
+VCML_EXPORT_MODEL(empty, name, args) {
+    return new module(name);
+}
+
 } // namespace vcml
