@@ -196,6 +196,14 @@ const gdbarch gdbarch::ARM = gdbarch(
             "d11", "d12", "d13", "d14", "d15", "fpscr" } },
     });
 
+const gdbarch gdbarch::ARM_M = gdbarch(
+    "arm-m", "arm", "none",
+    {
+        { "org.gnu.gdb.arm.m-profile",
+          { "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "sp", "lr", "pc", "xpsr" } },
+    });
+
 const gdbarch gdbarch::OR1K = gdbarch(
     "or1k", "or1k", "none",
     {
