@@ -32,6 +32,29 @@ using namespace ::vcml;
 #define EXPECT_SUCCESS(fn) EXPECT_TRUE(vcml::success(fn))
 #define EXPECT_FAILURE(fn) EXPECT_TRUE(vcml::failure(fn))
 
+MATCHER_P2(match_log, lvl, txt, "Matches a log message on level and text") {
+    if (arg.level != lvl)
+        return false;
+
+    for (const string& line : arg.lines)
+        if (line.find(txt) != std::string::npos)
+            return true;
+
+    return false;
+}
+
+class mock_publisher : public mwr::publisher
+{
+public:
+    mock_publisher(): mwr::publisher(LOG_ERROR, LOG_DEBUG) {}
+    mock_publisher(log_level min, log_level max): mwr::publisher(min, max) {}
+    MOCK_METHOD(void, publish, (const mwr::logmsg&), (override));
+
+    void expect(log_level lvl, const string& message) {
+        EXPECT_CALL(*this, publish(match_log(lvl, message)));
+    }
+};
+
 class test_base : public component
 {
 private:

@@ -73,21 +73,33 @@ int system::run() {
 
     broker::report_unused();
     tlm::tlm_global_quantum::instance().set(quantum);
-    if (session >= 0) {
-        vcml::debugging::vspserver vspsession(session);
-        vspsession.echo(session_debug);
-        vspsession.start();
-    } else if (duration != sc_core::SC_ZERO_TIME) {
-        log_info("starting simulation until %s using %s quantum",
-                 duration.get().to_string().c_str(),
-                 quantum.get().to_string().c_str());
-        sc_core::sc_start();
-        log_info("simulation stopped");
-    } else {
-        log_info("starting infinite simulation using %s quantum",
-                 quantum.get().to_string().c_str());
-        sc_core::sc_start();
-        log_info("simulation stopped");
+
+    try {
+        if (session >= 0) {
+            vcml::debugging::vspserver vspsession(session);
+            vspsession.echo(session_debug);
+            vspsession.start();
+        } else if (duration != sc_core::SC_ZERO_TIME) {
+            log_info("starting simulation until %s using %s quantum",
+                     duration.get().to_string().c_str(),
+                     quantum.get().to_string().c_str());
+            sc_core::sc_start();
+            log_info("simulation stopped");
+        } else {
+            log_info("starting infinite simulation using %s quantum",
+                     quantum.get().to_string().c_str());
+            sc_core::sc_start();
+            log_info("simulation stopped");
+        }
+    } catch (sc_report& rep) {
+        log_error("%s", rep.what());
+        return EXIT_FAILURE;
+    } catch (std::exception& ex) {
+        log_error("Caught c++ exception: %s", ex.what());
+        return EXIT_FAILURE;
+    } catch (...) {
+        log_error("Caught unknown exception");
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
