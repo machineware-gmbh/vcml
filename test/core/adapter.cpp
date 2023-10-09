@@ -78,7 +78,7 @@ public:
     }
 };
 
-TEST(generic_memory, access) {
+TEST(adapter, test) {
     test_harness test("harness");
     sc_core::sc_start();
 }
