@@ -59,8 +59,16 @@ std::map<string, model::create_fn>& model::modeldb() {
     return db;
 }
 
+class empty : public module
+{
+public:
+    empty(const sc_module_name& nm): module(nm) {}
+    virtual ~empty() = default;
+    virtual const char* kind() const override { return "empty"; }
+};
+
 VCML_EXPORT_MODEL(empty, name, args) {
-    return new module(name);
+    return new empty(name);
 }
 
 } // namespace vcml

@@ -40,7 +40,7 @@ TEST(model, create) {
 
 TEST(model, empty) {
     vcml::model m("m", "empty");
-    EXPECT_STREQ(m->kind(), "vcml::module");
+    EXPECT_STREQ(m->kind(), "empty");
     EXPECT_STREQ(m->name(), "m");
 }
 
