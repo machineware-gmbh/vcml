@@ -134,7 +134,7 @@ virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi):
     addr_device(desc.device),
     has_event_idx(desc.has_event_idx),
     notify(false),
-    vector(VIRTIO_NO_VECTOR),
+    vector(desc.vector),
     dmi(std::move(dmi)),
     parent(hierarchy_search<module>()),
     log(this) {
