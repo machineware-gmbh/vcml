@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef AVP_ARM_GIC400_H
-#define AVP_ARM_GIC400_H
+#ifndef VCML_ARM_GIC400_H
+#define VCML_ARM_GIC400_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -198,8 +198,6 @@ public:
         virtual void reset() override;
         virtual void end_of_elaboration() override;
 
-        void setup(unsigned int num_cpu, unsigned int num_irq);
-
         void set_sgi_pending(u8 value, unsigned int sgi, unsigned int cpu,
                              bool set);
     };
@@ -377,8 +375,6 @@ public:
     void set_irq_trigger(unsigned int irq, trigger_mode t);
     void set_irq_signaled(unsigned int irq, bool signaled, unsigned int m);
     bool irq_signaled(unsigned int irq, unsigned int mask);
-    bool is_edge_triggered(unsigned int irq) const;
-    bool is_level_triggered(unsigned int irq) const;
 
     bool test_pending(unsigned int irq, unsigned int mask);
 
