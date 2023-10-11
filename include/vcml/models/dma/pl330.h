@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PL330_H
-#define VCML_PL330_H
+#ifndef VCML_DMA_PL330_H
+#define VCML_DMA_PL330_H
 
 #include <vcml.h>
 
@@ -19,11 +19,14 @@ namespace dma {
 class pl330 : public peripheral
 {
     template <typename T>
-    class tagged_multi_queue
+    class tagged_queue
     {
     public:
-        tagged_multi_queue(int max_total_items):
-            m_max_sum(max_total_items), m_current_sum(0) {}
+        tagged_queue(int max_total_items):
+            m_queues(),
+            m_tags(),
+            m_max_sum(max_total_items),
+            m_current_sum(0) {}
 
         bool push(const T& item) {
             if (m_current_sum + 1 <= m_max_sum) {
@@ -36,9 +39,8 @@ class pl330 : public peripheral
         }
 
         std::optional<T> pop() {
-            if (m_tags.empty()) {
+            if (m_tags.empty())
                 return std::nullopt;
-            }
             int front_tag = m_tags.front();
             T front_item = m_queues[front_tag].front();
             m_queues[front_tag].pop_front();
@@ -51,9 +53,8 @@ class pl330 : public peripheral
         T& front_mut() { return m_queues.at(m_tags.front()).front(); }
 
         std::optional<T> pop(int tag) {
-            if (m_queues[tag].empty()) {
+            if (m_queues[tag].empty())
                 return std::nullopt;
-            }
             T item = m_queues[tag].front();
             m_queues[tag].pop_front();
             m_tags.erase(std::find(m_tags.begin(), m_tags.end(), tag));
@@ -66,13 +67,14 @@ class pl330 : public peripheral
             m_tags.erase(std::remove(m_tags.begin(), m_tags.end(), tag),
                          m_tags.end());
         }
+
         void remove_tagged(int tag) { clear(tag); }
 
         void clear() {
-            m_queues.clear(); // assumes QUEUE_ITEM does not contain owning
-                              // pointers
+            m_queues.clear();
             m_tags.clear();
         }
+
         void reset() { clear(); }
 
         bool empty() const { return m_tags.empty(); }
@@ -143,13 +145,13 @@ public:
             CH_EVNT_ERR = 0x5,
             CH_PERIPH_ERR = 0x6,
             CH_RDWR_ERR = 0x7,
-            MFIFO_ERR = 0xC,
-            ST_DATA_UNAVAILABLE = 0xD,
+            MFIFO_ERR = 0xc,
+            ST_DATA_UNAVAILABLE = 0xd,
             INSTR_FETCH_ERR = 0x10,
             DATA_WRITE_ERR = 0x11,
             DATA_READ_ERR = 0x12,
-            DBG_INSTR = 0x1E,
-            LOCKUP_ERR = 0x1F,
+            DBG_INSTR = 0x1e,
+            LOCKUP_ERR = 0x1f,
         };
 
         reg<u32> ftr; // channel fault type register
@@ -161,7 +163,7 @@ public:
         reg<u32> lc0; // loop counter 0 register
         reg<u32> lc1; // loop counter 1 register
 
-        u32 tag; // aka channel id
+        u32 tag; // aka channel number
         bool stall;
         u32 request_flag;
         u32 watchdog_timer;
@@ -170,9 +172,9 @@ public:
         u32 get_state() const { return csr & 0x7; }
         void set_state(u32 new_state) { csr = (csr & ~0x7) | new_state; }
 
+        channel(const sc_module_name& nm, u32 tag);
         virtual ~channel() = default;
         VCML_KIND(dma::pl330::channel);
-        channel(const sc_module_name& nm, u32 tag);
     };
 
     class manager : public module
@@ -213,7 +215,6 @@ public:
         manager(const sc_module_name& nm);
     };
 
-    sc_event m_dma;
 
     property<bool> enable_periph;
     property<u32> num_channels;
@@ -223,8 +224,8 @@ public:
     property<u32> mfifo_width;
     property<u32> mfifo_lines;
 
-    tagged_multi_queue<queue_entry> read_queue, write_queue;
-    tagged_multi_queue<mfifo_entry> mfifo;
+    tagged_queue<queue_entry> read_queue, write_queue;
+    tagged_queue<mfifo_entry> mfifo;
 
     sc_vector<channel> channels;
     manager manager;
@@ -262,18 +263,19 @@ public:
     gpio_initiator_array irq;
     gpio_initiator_socket irq_abort;
 
-    void pl330_thread();
-
     pl330(const sc_module_name& nm);
     virtual ~pl330();
     VCML_KIND(dma::pl330);
     virtual void reset() override;
 
 private:
-    bool m_execute_debug = false;
+    void pl330_thread();
+
+    sc_event m_dma;
+    bool m_execute_debug;
 };
 
 } // namespace dma
 } // namespace vcml
 
-#endif // VCML_PL330_H
+#endif // VCML_DMA_PL330_H

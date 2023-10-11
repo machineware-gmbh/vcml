@@ -115,15 +115,15 @@ Example of usage:
 The pl330 dma model can be included in the device tree as follows:
 ```
 pdma0: pdma@12680000 {
-        compatible = "arm,pl330", "arm,primecell";
-        reg = <0x12680000 0x1000>;
-        interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
-        #dma-cells = <1>;
-        #dma-channels = <8>;
-        #dma-requests = <32>;
-        clocks = <&clk24mhz>, <&clk24mhz>;
-        clock-names = "uartclk", "apb_pclk";
-    };
+    compatible = "arm,pl330", "arm,primecell";
+    reg = <0x12680000 0x1000>;
+    interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
+    #dma-cells = <1>;
+    #dma-channels = <8>;
+    #dma-requests = <32>;
+    clocks = <&clk24mhz>, <&clk24mhz>;
+    clock-names = "uartclk", "apb_pclk";
+};
 ```
 
 ----

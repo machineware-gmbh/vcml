@@ -11,11 +11,12 @@
 #include "vcml/models/dma/pl330.h"
 
 namespace vcml::dma {
-using namespace mwr;
+//using namespace mwr;
 
-enum dsr_bits {
+enum dsr_bits : u32 {
     DNS = bit(9), // Manager security status
 };
+
 typedef field<0, 4, u32> DSR_DMA_STATUS;
 typedef field<4, 5, u32> DSR_WAKEUP_EVENT;
 
@@ -25,13 +26,13 @@ enum fsrd_bits {
 
 typedef field<0, 8, u32> FSRC_FAULT_STATUS;
 
-enum ftrd_bits {
+enum ftrd_bits : u32 {
     FTRD_MASK = pl330::manager::UNDEF_INSTR | pl330::manager::OPERAND_INVALID |
                 pl330::manager::DMAGO_ERR | pl330::manager::EVNT_ERR |
                 pl330::manager::INSTR_FETCH_ERR | pl330::manager::DBG_INSTR,
 };
 
-enum ftr_bits {
+enum ftr_bits : u32 {
     FTR_MASK = pl330::channel::UNDEF_INSTR | pl330::channel::OPERAND_INVALID |
                pl330::channel::CH_EVNT_ERR | pl330::channel::CH_PERIPH_ERR |
                pl330::channel::CH_RDWR_ERR | pl330::channel::MFIFO_ERR |
@@ -41,18 +42,20 @@ enum ftr_bits {
                pl330::channel::DBG_INSTR | pl330::channel::LOCKUP_ERR,
 };
 
-enum csr_bits {
+enum csr_bits : u32 {
     DMAWFP_B_NS = bit(14),
     DMAWFP_PERIPH = bit(15),
     CNS = bit(21),
 };
+
 typedef field<0, 4, u32> CSR_CHANNEL_STATUS;
 typedef field<4, 5, u32> CSR_WAKEUP_NUMBER;
 
-enum ccr_bits {
+enum ccr_bits : u32 {
     SRC_INC = bit(0),
     DST_INC = bit(14),
 };
+
 typedef field<1, 3, u32> CCR_SRC_BURST_SIZE;
 typedef field<4, 4, u32> CCR_SRC_BURST_LEN;
 typedef field<8, 3, u32> CCR_SRC_PROT_CTRL;
@@ -66,17 +69,18 @@ typedef field<28, 3, u32> CCR_ENDIAN_SWAP_SIZE;
 typedef field<0, 8, u32> LCO_LOOP_COUNTER_ITERATIONS;
 typedef field<0, 8, u32> LC1_LOOP_COUNTER_ITERATIONS;
 
-enum dbgstatus_bits {
+enum dbgstatus_bits : u32 {
     DBGSTATUS = bit(0),
 };
 
-enum dbgcmd_bits {
+enum dbgcmd_bits : u32 {
     DBGCMD = bit(0),
 };
 
-enum dbginst0_bits {
+enum dbginst0_bits : u32 {
     DEBUG_THREAD = bit(0),
 };
+
 typedef field<8, 3, u32> DBGINST0_CHANNEL_NUMBER;
 typedef field<16, 8, u32> DBGINST0_INSTRUCTION_BYTE0;
 typedef field<24, 8, u32> DBGINST0_INSTRUCTION_BYTE1;
@@ -86,11 +90,12 @@ typedef field<8, 8, u32> DBGINST1_INSTRUCTION_BYTE3;
 typedef field<16, 8, u32> DBGINST1_INSTRUCTION_BYTE4;
 typedef field<24, 8, u32> DBGINST1_INSTRUCTION_BYTE5;
 
-enum cr0_bits {
+enum cr0_bits : u32 {
     PERIPH_REQ = bit(0),
     BOOT_EN = bit(1),
     MGR_NS_AT_RST = bit(2),
 };
+
 typedef field<4, 3, u32> CR0_NUM_CHNLS;
 typedef field<12, 5, u32> CR0_NUM_PERIPH_REQ; // Number of peripheral requests
 typedef field<17, 5, u32> CR0_NUM_EVENTS;     // Number of interrupt outputs
@@ -105,14 +110,15 @@ typedef field<12, 3, u32> CRD_RD_CAP;           // TODO what does this do?
 typedef field<16, 4, u32> CRD_RD_Q_DEP;         // depth of the read queue
 typedef field<20, 10, u32> CRD_DATA_BUFFER_DEP; // number of lines of mfifo
 
-enum wd_bits {
+enum wd_bits : u32 {
     WD_IRQ_ONLY = bit(0),
 };
 
-enum request_type {
+enum request_type : u32 {
     SINGLE = 0b00,
     BURST = 0b01,
 };
+
 
 static void pl330_handle_ch_fault(pl330& dma, pl330::channel& ch,
                                   pl330::channel::fault fault) {
@@ -135,16 +141,6 @@ static void pl330_handle_mn_fault(pl330& dma, pl330::manager::fault fault) {
         dma.irq_abort = true;
 }
 
-/*
- * For information about instructions see PL330 Technical Reference Manual.
- *
- * Arguments:
- *   CH - channel executing the instruction
- *   OPCODE - opcode
- *   ARGS - array of 8-bit arguments
- *   LEN - number of elements in ARGS array
- */
-
 static inline void pl330_insn_dmaadxh(pl330::channel* ch, u8* args, bool ra,
                                       bool neg) {
     u32 im = (args[1] << 8) | args[0];
@@ -159,19 +155,16 @@ static inline void pl330_insn_dmaadxh(pl330::channel* ch, u8* args, bool ra,
 
 static void pl330_insn_dmaaddh(pl330* dma, pl330::channel* ch, u8 opcode,
                                u8* args, int len) {
-    // std::cout << "pl330_insn_dmaaddh" << std::endl;
     pl330_insn_dmaadxh(ch, args, !!(opcode & 0b10), false);
 }
 
 static void pl330_insn_dmaadnh(pl330* dma, pl330::channel* ch, u8 opcode,
                                u8* args, int len) {
-    // std::cout << "pl330_insn_dmaadnh" << std::endl;
     pl330_insn_dmaadxh(ch, args, !!(opcode & 0b10), true);
 }
 
 static void pl330_insn_dmaend(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    //    std::cout<< "pl330_insn_dmaend" << std::endl;
     if (ch->get_state() == pl330::channel::EXECUTING) {
         /* Wait for all transfers to complete */
         if (!dma->mfifo.empty(ch->tag) || !dma->read_queue.empty(ch->tag) ||
@@ -189,14 +182,12 @@ static void pl330_insn_dmaend(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_mn_insn_dmaend(pl330* dma, pl330::channel* ch, u8 opcode,
                                  u8* args, int len) {
-    //    std::cout<< "pl330_mn_insn_dmaend" << std::endl;
     dma->manager.set_state(pl330::manager::STOPPED);
 }
 
 // flush peripheral
 static void pl330_insn_dmaflushp(pl330* dma, pl330::channel* ch, u8 opcode,
                                  u8* args, int len) {
-    // std::cout << "pl330_insn_dmaflushp" << std::endl;
     u8 periph_id;
 
     if (args[0] & 7) {
@@ -221,8 +212,6 @@ static void pl330_insn_dmago(pl330* dma, pl330::channel* ch, u8 opcode,
     u32 ns;
     u32 pc;
 
-    // std::cout<< "pl330_insn_dmago" << std::endl;
-    // trace_pl330_dmago();
     ns = !!(opcode & 0b10);
     chan_id = args[0] & 7;
     if ((args[0] >> 3)) {
@@ -251,7 +240,6 @@ static void pl330_insn_dmago(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
                                u8* args, int len) {
-    // std::cout << "pl330_insn_dmakill" << std::endl;
     if (ch->is_state(pl330::channel::FAULTING) ||
         ch->is_state(pl330::channel::FAULTING_COMPLETING)) {
         /* This is the only way for a channel to leave the faulting state */
@@ -259,7 +247,6 @@ static void pl330_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
         dma->fsrc &= ~(1 << ch->tag);
         bool faulting = (dma->fsrc & 0x7) && (dma->manager.fsrd & 0x1);
         if (!faulting) {
-            //  trace_pl330_dmakill();
             dma->irq_abort = false;
         }
     }
@@ -275,7 +262,6 @@ static void pl330_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_mn_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
                                   u8* args, int len) {
-    // std::cout << "pl330_mn_insn_dmakill" << std::endl;
     dma->manager.set_state(pl330::manager::STOPPED);
 }
 
@@ -292,7 +278,7 @@ static void pl330_insn_dmald(pl330* dma, pl330::channel* ch, u8 opcode,
     // DMALD[S|B] missmatch -> nop case
     if ((bs == 0b01 && ch->request_flag == request_type::BURST) ||
         (bs == 0b11 && ch->request_flag == request_type::SINGLE)) {
-        /* Perform NOP */
+        // Perform NOP
         return;
     }
     // DMALD case
@@ -307,30 +293,23 @@ static void pl330_insn_dmald(pl330* dma, pl330::channel* ch, u8 opcode,
     ch->stall = !dma->read_queue.push(
         pl330::queue_entry{ ch->sar, size, num, inc, 0, ch->tag });
     if (!ch->stall) {
-        // std::cout << "pc: " << ch->cpc << " pl330_insn_dmald from: " <<
-        // ch->sar
-        //           << std::endl;
-        //  trace_pl330_dmald(ch->tag, ch->src, size, num, inc ? 'Y' :
-        //  'N');
         ch->sar += inc ? size * num - (ch->sar & (size - 1)) : 0;
     }
 }
 
 static void pl330_insn_dmaldp(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    // std::cout << "pl330_insn_dmaldp" << std::endl;
-
     if (args[0] & 7) {
-        // pl330_fault(ch, pl330::channel::operand_invalid);
+        pl330_handle_ch_fault(*dma, *ch, pl330::channel::OPERAND_INVALID);
         return;
     }
     u8 periph_id = (args[0] >> 3) & 0x1f;
     if (periph_id >= dma->cr0.get_field<CR0_NUM_PERIPH_REQ>()) {
-        // pl330_fault(ch, pl330::channel::operand_invalid);
+        pl330_handle_ch_fault(*dma, *ch, pl330::channel::OPERAND_INVALID);
         return;
     }
     if (ch->csr & csr_bits::CNS && !(dma->cr4 & (1 << periph_id))) {
-        // pl330_fault(ch, pl330::channel::ch_periph_err);
+        pl330_handle_ch_fault(*dma, *ch, pl330::channel::CH_PERIPH_ERR);
         return;
     }
     pl330_insn_dmald(dma, ch, opcode, args, len);
@@ -338,7 +317,6 @@ static void pl330_insn_dmaldp(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmalp(pl330* dma, pl330::channel* ch, u8 opcode,
                              u8* args, int len) {
-    //    std::cout<<"pc: " <<ch->cpc<< " pl330_insn_dmalp" << std::endl;
     bool lc = opcode & 0b10;
     if (lc)
         ch->lc1.set_field<LC1_LOOP_COUNTER_ITERATIONS>(args[0]);
@@ -348,31 +326,25 @@ static void pl330_insn_dmalp(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmalpend(pl330* dma, pl330::channel* ch, u8 opcode,
                                 u8* args, int len) {
-    //    std::cout<< "pl330_insn_dmalpend" << std::endl;
     bool nf = opcode & 0b1'0000;
     u8 bs = opcode & 0b11;
     bool lc = opcode & 0b100;
 
-    //    trace_pl330_dmalpend(nf, bs, lc, ch->lc[lc], ch->request_flag);
-
     if (bs == 0b10) {
-        // pl330_fault(ch, pl330::channel::operand_invalid);
+        pl330_handle_ch_fault(*dma, *ch, pl330::channel::OPERAND_INVALID);
         return;
     }
     if ((bs == 0b01 && ch->request_flag == request_type::BURST) ||
         (bs == 0b11 && ch->request_flag == request_type::SINGLE))
-        /* Perform NOP */
+        // Perform NOP
         return;
 
     if (!nf || (lc ? ch->lc1 : ch->lc0)) {
         if (nf)
             lc ? ch->lc1-- : ch->lc0--;
-        //  trace_pl330_dmalpiter();
         ch->cpc -= args[0];
         ch->cpc -= len + 1;
-        /* "ch->pc -= args[0] + len + 1" is incorrect when args[0] == 256 */
-    } else {
-        //        trace_pl330_dmalpfallthrough();
+        // "ch->pc -= args[0] + len + 1" is incorrect when args[0] == 256
     }
 }
 
@@ -389,10 +361,6 @@ static void pl330_insn_dmamov(pl330* dma, pl330::channel* ch, u8 opcode,
     // todo abort if [9] is 0 and channel is ns==1
     u32 im = (((u32)args[4]) << 24) | (((u32)args[3]) << 16) |
              (((u32)args[2]) << 8) | (((u32)args[1]));
-
-    // std::cout<<"pc: "<<ch->cpc << " pl330_insn_dmamov " << (u32)rd << " " <<
-    // im
-    // << std::endl;
 
     switch (rd) {
     case 0b000:
@@ -412,13 +380,11 @@ static void pl330_insn_dmamov(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmanop(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    std::cout << "pl330_insn_dmanop" << std::endl;
-    /* NOP is NOP. */
+    // Perform NOP
 }
 
 static void pl330_insn_dmarmb(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    std::cout << "pl330_insn_dmarmb" << std::endl;
     if (!dma->read_queue.empty(ch->tag)) {
         ch->set_state(pl330::channel::AT_BARRIER);
         ch->stall = 1;
@@ -447,11 +413,8 @@ static void pl330_insn_dmasev(pl330* dma, pl330::channel* ch, u8 opcode,
     }
     if (dma->inten & (1 << ev_id)) {
         dma->intmis |= (1 << ev_id);
-        //  trace_pl330_dmasev_evirq(ev_id);
         dma->irq[ev_id] = true;
     }
-    //    std::cout<< "pc: " << ch->cpc << " pl330_insn_dmasev event id: " <<
-    //    (u32)ev_id << std::endl; trace_pl330_dmasev_event(ev_id);
     dma->int_event_ris |= (1 << ev_id);
 }
 
@@ -474,11 +437,8 @@ static void pl330_mn_insn_dmasev(pl330* dma, pl330::channel* ch, u8 opcode,
     }
     if (dma->inten & (1 << ev_id)) {
         dma->intmis |= (1 << ev_id);
-        //  trace_pl330_insn_dmasev_evirq(ev_id);
         dma->irq[ev_id] = true;
     }
-    std::cout << "pl330_mn_insn_dmasev" << std::endl;
-    //    trace_pl330_insn_dmasev_event(ev_id);
     dma->int_event_ris |= (1 << ev_id);
 }
 
@@ -492,7 +452,7 @@ static void pl330_insn_dmast(pl330* dma, pl330::channel* ch, u8 opcode,
     }
     if ((bs == 0b01 && ch->request_flag == request_type::BURST) ||
         (bs == 0b11 && ch->request_flag == request_type::SINGLE)) {
-        /* Perform NOP */
+        // Perform NOP
         return;
     }
 
@@ -502,18 +462,12 @@ static void pl330_insn_dmast(pl330* dma, pl330::channel* ch, u8 opcode,
     ch->stall = !dma->write_queue.push(
         pl330::queue_entry{ ch->dar, size, num, inc, 0, ch->tag });
     if (!ch->stall) {
-        // std::cout << "pc: " << ch->cpc << " pl330_insn_dmast to: " <<
-        // ch->dar
-        //           << std::endl;
-        //   trace_pl330_dmast(ch->tag, ch->dar, size, num, inc ?
-        //   'Y' : 'N');
         ch->dar += inc ? size * num - (ch->dar & (size - 1)) : 0;
     }
 }
 
 static void pl330_insn_dmastp(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    // std::cout << "pl330_insn_dmastp" << std::endl;
     if (args[0] & 0b111) {
         pl330_handle_ch_fault(*dma, *ch, pl330::channel::OPERAND_INVALID);
         return;
@@ -532,7 +486,6 @@ static void pl330_insn_dmastp(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmastz(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    std::cout << "pl330_insn_dmastz" << std::endl;
     u32 num = ch->ccr.get_field<CCR_DST_BURST_LEN>() + 1;
     u32 size = (u32)1 << ((ch->ccr >> 15) & 0x7);
     bool inc = !!((ch->ccr >> 14) & 0b1);
@@ -572,8 +525,6 @@ static void pl330_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
             }
         }
         dma->int_event_ris &= ~(1 << ev_id);
-        std::cout << "pl330_insn_dmawfe" << std::endl;
-        //        trace_pl330_dmawfe(ev_id);
     } else {
         ch->stall = 1;
     }
@@ -581,7 +532,6 @@ static void pl330_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_mn_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
                                  u8* args, int len) {
-    std::cout << "pl330_mn_insn_dmawfe" << std::endl;
     if (args[0] & 0b101) {
         pl330_handle_mn_fault(*dma, pl330::manager::OPERAND_INVALID);
         return;
@@ -610,7 +560,6 @@ static void pl330_mn_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
             }
         }
         dma->int_event_ris &= ~(1 << ev_id);
-        //        trace_pl330_dmawfe(ev_id);
     } else {
         ch->stall = 1;
     }
@@ -618,7 +567,6 @@ static void pl330_mn_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmawfp(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    std::cout << "pl330_insn_dmawfp" << std::endl;
     u8 bs = opcode & 0b11;
 
     if (args[0] & 0b111) {
@@ -635,16 +583,16 @@ static void pl330_insn_dmawfp(pl330* dma, pl330::channel* ch, u8 opcode,
         return;
     }
     switch (bs) {
-    case 0b00: /* S */
+    case 0b00: // S
         ch->request_flag = request_type::SINGLE;
         ch->csr.set_bit<DMAWFP_B_NS>(0);
         ch->csr.set_bit<DMAWFP_PERIPH>(0);
         break;
-    case 0b01: /* P */
+    case 0b01: // P
         ch->request_flag = request_type::BURST;
         ch->csr.set_bit<DMAWFP_PERIPH>(1);
         break;
-    case 0b10: /* B */
+    case 0b10: // B
         ch->request_flag = request_type::BURST;
         ch->csr.set_bit<DMAWFP_B_NS>(1);
         ch->csr.set_bit<DMAWFP_PERIPH>(0);
@@ -665,7 +613,6 @@ static void pl330_insn_dmawfp(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmawmb(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
-    std::cout << "pl330_insn_dmawmb" << std::endl;
     if (!dma->write_queue.empty(ch->tag)) {
         ch->set_state(pl330::channel::AT_BARRIER);
         ch->stall = 1;
@@ -683,43 +630,43 @@ struct insn_descr {
 };
 
 // clang-format off
-/* Instructions which can be issued via channel threads. */
+// Instructions which can be issued via channel threads.
 static const insn_descr CH_INSN_DESCR[] = {
-    {0x54, 0xfd, 3, pl330_insn_dmaaddh,},
-    {0x5c, 0xfd, 3, pl330_insn_dmaadnh,},
-    {0x00, 0xff, 1, pl330_insn_dmaend,},
-    {0x35, 0xff, 2, pl330_insn_dmaflushp,},
-    {0x04, 0xfc, 1, pl330_insn_dmald,},
-    {0x25, 0xfd, 2, pl330_insn_dmaldp,},
-    {0x20, 0xfd, 2, pl330_insn_dmalp,},
-    {0x29, 0xfd, 2, pl330_insn_dmastp,},
-    {0x28, 0xe8, 2, pl330_insn_dmalpend,},
-    {0xbc, 0xff, 6, pl330_insn_dmamov,},
-    {0x18, 0xff, 1, pl330_insn_dmanop,},
-    {0x12, 0xff, 1, pl330_insn_dmarmb,},
-    {0x34, 0xff, 2, pl330_insn_dmasev,},
-    {0x08, 0xfc, 1, pl330_insn_dmast,},
-    {0x0c, 0xff, 1, pl330_insn_dmastz,},
-    {0x36, 0xff, 2, pl330_insn_dmawfe,},
-    {0x30, 0xfc, 2, pl330_insn_dmawfp,},
-    {0x13, 0xff, 1, pl330_insn_dmawmb,},
-}; //todo consider reordering for speed
-
-/* Instructions which can be issued via the manager thread. */
-static const insn_descr MN_INSN_DESCR[] = {
-    {0x00, 0xff, 1, pl330_mn_insn_dmaend,},
-    {0xa0, 0xfd, 6, pl330_insn_dmago,},
-    {0x01, 0xff, 1, pl330_mn_insn_dmakill,},
-    {0x18, 0xff, 1, pl330_insn_dmanop,},
-    {0x34, 0xff, 2, pl330_mn_insn_dmasev,},
-    {0x36, 0xff, 2, pl330_mn_insn_dmawfe,},
+    {0x54, 0xfd, 3, pl330_insn_dmaaddh},
+    {0x5c, 0xfd, 3, pl330_insn_dmaadnh},
+    {0x00, 0xff, 1, pl330_insn_dmaend},
+    {0x35, 0xff, 2, pl330_insn_dmaflushp},
+    {0x04, 0xfc, 1, pl330_insn_dmald},
+    {0x25, 0xfd, 2, pl330_insn_dmaldp},
+    {0x20, 0xfd, 2, pl330_insn_dmalp},
+    {0x29, 0xfd, 2, pl330_insn_dmastp},
+    {0x28, 0xe8, 2, pl330_insn_dmalpend},
+    {0xbc, 0xff, 6, pl330_insn_dmamov},
+    {0x18, 0xff, 1, pl330_insn_dmanop},
+    {0x12, 0xff, 1, pl330_insn_dmarmb},
+    {0x34, 0xff, 2, pl330_insn_dmasev},
+    {0x08, 0xfc, 1, pl330_insn_dmast},
+    {0x0c, 0xff, 1, pl330_insn_dmastz},
+    {0x36, 0xff, 2, pl330_insn_dmawfe},
+    {0x30, 0xfc, 2, pl330_insn_dmawfp},
+    {0x13, 0xff, 1, pl330_insn_dmawmb},
 };
 
-/* Instructions which can be issued via debug registers. */
+// Instructions which can be issued via the manager thread.
+static const insn_descr MN_INSN_DESCR[] = {
+    {0x00, 0xff, 1, pl330_mn_insn_dmaend},
+    {0xa0, 0xfd, 6, pl330_insn_dmago},
+    {0x01, 0xff, 1, pl330_mn_insn_dmakill},
+    {0x18, 0xff, 1, pl330_insn_dmanop},
+    {0x34, 0xff, 2, pl330_mn_insn_dmasev},
+    {0x36, 0xff, 2, pl330_mn_insn_dmawfe},
+};
+
+// Instructions which can be issued via debug registers.
 static const insn_descr DEBUG_INSN_DESC[] = {
-    {0xa0, 0xfd, 6, pl330_insn_dmago,},
-    {0x01, 0xff, 1, pl330_insn_dmakill,},
-    {0x34, 0xff, 2, pl330_insn_dmasev,},
+    {0xa0, 0xfd, 6, pl330_insn_dmago},
+    {0x01, 0xff, 1, pl330_insn_dmakill},
+    {0x34, 0xff, 2, pl330_insn_dmasev},
 };
 // clang-format on
 
@@ -727,20 +674,18 @@ static inline const insn_descr* fetch_ch_insn(pl330* dma,
                                               pl330::channel& channel) {
     u8 opcode;
     dma->dma.read(channel.cpc, &opcode, 1);
-    for (auto& insn_candidate : CH_INSN_DESCR) {
+    for (auto& insn_candidate : CH_INSN_DESCR)
         if (insn_candidate.opcode == (opcode & insn_candidate.opmask))
             return &insn_candidate;
-    }
     return nullptr;
 }
 
 static inline const insn_descr* fetch_mn_insn(pl330* dma) {
     u8 opcode;
     dma->dma.read(dma->manager.dpc, &opcode, 1);
-    for (auto& insn_candidate : MN_INSN_DESCR) {
+    for (auto& insn_candidate : MN_INSN_DESCR)
         if (insn_candidate.opcode == (opcode & insn_candidate.opmask))
             return &insn_candidate;
-    }
     return nullptr;
 }
 
@@ -792,7 +737,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         u32 len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
         u8 buffer[pl330::INSN_MAXSIZE];
         if (failed(dma.dma.read(insn.data_addr, (void*)buffer, len)))
-            std::cout << "dma read failed" << std::endl;
+            dma.log.warn("Dma channel read failed");
 
         if (dma.mfifo.num_free() >= len) {
             for (u32 i = 0; i < len; i++) {
@@ -815,9 +760,8 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         int len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
         u8 buffer[pl330::INSN_MAXSIZE];
         if (insn.zero_flag) {
-            for (int i = 0; i < len; i++) {
+            for (int i = 0; i < len; i++)
                 buffer[i] = 0;
-            }
         } else {
             for (int i = 0; i < len; i++) {
                 assert(!dma.mfifo.empty());
@@ -825,7 +769,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
             }
         }
         if (failed(dma.dma.write(insn.data_addr, (void*)buffer, len)))
-            std::cout << "dma write failed" << std::endl;
+            dma.log.warn("Dma channel write failed");
         if (insn.inc)
             insn.data_addr += len;
         insn.burst_len_counter--;
@@ -884,9 +828,8 @@ static void handle_debug_insn(pl330& dma) {
     u8 chan_id;
 
     // check dbg status idle
-    if (dma.dbgstatus & dbgstatus_bits::DBGSTATUS) {
+    if (dma.dbgstatus & dbgstatus_bits::DBGSTATUS)
         return; // dbg busy case
-    }
     dma.dbgstatus.set_bit<DBGSTATUS>(true); // set dbg busy
 
     chan_id = (dma.dbginst0 >> 8) & 0x07;
@@ -899,12 +842,11 @@ static void handle_debug_insn(pl330& dma) {
 
     //    check if insn exists
     insn_descr insn = { 0, 0, 0, nullptr };
-    for (auto& insn_candidate : DEBUG_INSN_DESC) {
+    for (auto& insn_candidate : DEBUG_INSN_DESC)
         if ((opcode & insn_candidate.opmask) == insn_candidate.opcode)
             insn = insn_candidate;
-    }
     if (!insn.exec) {
-        std::cout << "Pl330 invalid debug instruction opcode" << std::endl;
+        dma.log.warn("Pl330 invalid debug instruction opcode");
         return;
     }
 
@@ -1063,15 +1005,15 @@ pl330::pl330(const sc_module_name& nm):
     cr4("cr4", 0xe10),
     crd("crd", 0xe14),
     wd("wd", 0xe80),
-    //{0x00241330} or 0x30, 0x13, 0x24, 0x00
     periph_id("periph_id", 0xfe0, 0x00000000),
-    //{0xb105f00d}), or 0x0d, oxf0, 0x05, 0xb1
     pcell_id("pcell_id", 0xff0, 0x00000000),
     periph_irq("periph_irq", size_t(32)),
     in("in"),
     dma("dma"),
     irq("irq", size_t(32)),
-    irq_abort("irq_abort") {
+    irq_abort("irq_abort"),
+    m_dma(),
+    m_execute_debug(false){
     assert(num_irq.get() <= 32);
     assert(num_periph.get() <= 32);
 
@@ -1090,10 +1032,9 @@ pl330::pl330(const sc_module_name& nm):
     intclr.sync_on_write();
     intclr.on_write([&](u32 v, size_t i) -> void {
         u32 irq_clear_mask = v & inten;
-        for (u32 j = 0; j < 32; j++) {
+        for (u32 j = 0; j < 32; j++)
             if (irq_clear_mask & (1 << j))
                 irq[j] = false;
-        }
         int_event_ris &= ~irq_clear_mask;
         intmis &= ~irq_clear_mask;
         m_dma.notify(SC_ZERO_TIME);
