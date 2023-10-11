@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef AVP_ARM_GIC400_H
-#define AVP_ARM_GIC400_H
+#ifndef VCML_ARM_GIC400_H
+#define VCML_ARM_GIC400_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"

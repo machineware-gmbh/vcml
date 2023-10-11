@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef AVP_ARM_GICV2M_H
-#define AVP_ARM_GICV2M_H
+#ifndef VCML_ARM_GICV2M_H
+#define VCML_ARM_GICV2M_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
