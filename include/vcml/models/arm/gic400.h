@@ -23,6 +23,8 @@
 namespace vcml {
 namespace arm {
 
+using cpu_mask_t = u8;
+
 class gic400 : public peripheral
 {
 public:
@@ -58,17 +60,17 @@ public:
         AMBA_IFID = 0x0202143b,
     };
 
-    enum handling_model {
+    enum handling_model : size_t {
         N_N = 0, // all processors handle the interrupt
         N_1 = 1  // only one processor handles interrupt
     };
 
-    enum trigger_mode {
+    enum trigger_mode : size_t {
         LEVEL = 0, // interrupt asserted when signal is active
         EDGE = 1   // interrupt triggered on rising edge
     };
 
-    enum cpu_mask {
+    enum cpu_mask : cpu_mask_t {
         ALL_CPU = bit(NCPU) - 1,
     };
 
@@ -92,7 +94,7 @@ public:
         u8 prio;
         u16 virtual_id;
         u16 physical_id;
-        u8 cpu_id;
+        cpu_mask_t cpu_id;
 
         list_entry();
     };
@@ -102,9 +104,9 @@ public:
     private:
         gic400* m_parent;
 
-        u32 int_pending_mask(int cpu);
-        u32 spi_pending_mask(int cpu);
-        u16 ppi_enabled_mask(int cpu);
+        u32 int_pending_mask(size_t cpu);
+        u32 spi_pending_mask(size_t cpu);
+        u16 ppi_enabled_mask(size_t cpu);
 
         void write_ctlr(u32 value);
 
@@ -198,7 +200,7 @@ public:
         virtual void reset() override;
         virtual void end_of_elaboration() override;
 
-        void set_sgi_pending(u8 value, size_t sgi, int cpu, bool set);
+        void set_sgi_pending(u8 value, size_t sgi, size_t cpu, bool set);
     };
 
     class cpuif : public peripheral
@@ -209,7 +211,7 @@ public:
         u32 m_curr_irq[NCPU];
         u32 m_prev_irq[NREGS][NCPU];
 
-        void set_current_irq(int cpu_id, size_t irq);
+        void set_current_irq(size_t cpu, size_t irq);
 
         void write_ctlr(u32 val);
         void write_pmr(u32 val);
@@ -274,21 +276,21 @@ public:
 
         tlm_target_socket in;
 
-        u8 get_irq_priority(int cpu, size_t irq);
+        u8 get_irq_priority(size_t cpu, size_t irq);
         // list register state control
-        bool is_lr_pending(u8 lr, u8 core_id);
-        void set_lr_pending(u8 lr, u8 core_id, bool p);
-        bool is_lr_active(u8 lr, u8 core_id);
-        void set_lr_active(u8 lr, u8 core_id, bool p);
-        void set_lr_cpuid(u8 lr, u8 core_id, u8 cpu_id);
-        u8 get_lr_cpuid(u8 lr, u8 core_id);
-        void set_lr_hw(u8 lr, u8 core_id, bool p);
-        bool is_lr_hw(u8 lr, u8 core_id);
-        u8 get_lr(size_t irq, u8 core_id);
-        void set_lr_prio(u8 lr, u8 core_id, u32 prio);
-        void set_lr_vid(u8 lr, u8 core_id, u16 virt_id);
-        void set_lr_physid(u8 lr, u8 core_id, u16 phys_id);
-        u16 get_lr_physid(u8 lr, u8 core_id);
+        bool is_lr_pending(size_t lr, size_t cpu);
+        void set_lr_pending(size_t lr, size_t cpu, bool p);
+        bool is_lr_active(size_t lr, size_t cpu);
+        void set_lr_active(size_t lr, size_t cpu, bool p);
+        void set_lr_cpuid(size_t lr, size_t cpu, cpu_mask_t cpu_id);
+        u8 get_lr_cpuid(size_t lr, size_t cpu);
+        void set_lr_hw(size_t lr, size_t cpu, bool p);
+        bool is_lr_hw(size_t lr, size_t cpu);
+        u8 get_lr(size_t irq, size_t cpu);
+        void set_lr_prio(size_t lr, size_t cpu, u32 prio);
+        void set_lr_vid(size_t lr, size_t cpu, u16 virt_id);
+        void set_lr_physid(size_t lr, size_t cpu, u16 phys_id);
+        u16 get_lr_physid(size_t lr, size_t cpu);
 
         vifctrl(const sc_module_name& nm);
         virtual ~vifctrl();
@@ -348,106 +350,106 @@ public:
     gpio_initiator_array vfiq_out;
     gpio_initiator_array virq_out;
 
-    gpio_target_socket& ppi(int cpu, size_t irq);
+    gpio_target_socket& ppi(size_t cpu, size_t irq);
 
     size_t get_irq_num() const { return m_irq_num; }
     size_t get_cpu_num() const { return m_cpu_num; }
 
     // interrupt state control
-    void enable_irq(size_t irq, size_t mask);
-    void disable_irq(size_t irq, size_t mask);
-    bool is_irq_enabled(size_t irq, size_t mask);
+    void enable_irq(size_t irq, u8 mask);
+    void disable_irq(size_t irq, u8 mask);
+    bool is_irq_enabled(size_t irq, u8 mask);
 
-    bool is_irq_pending(size_t irq, size_t mask);
-    void set_irq_pending(size_t irq, bool p, size_t m);
+    bool is_irq_pending(size_t irq, u8 mask);
+    void set_irq_pending(size_t irq, bool p, u8 m);
 
-    bool is_irq_active(size_t irq, size_t mask);
-    void set_irq_active(size_t irq, bool a, size_t m);
+    bool is_irq_active(size_t irq, u8 mask);
+    void set_irq_active(size_t irq, bool a, u8 m);
 
-    bool get_irq_level(size_t irq, size_t mask);
-    void set_irq_level(size_t irq, bool l, size_t mask);
+    bool get_irq_level(size_t irq, u8 mask);
+    void set_irq_level(size_t irq, bool l, u8 mask);
 
     handling_model get_irq_model(size_t irq);
     void set_irq_model(size_t irq, handling_model m);
 
     trigger_mode get_irq_trigger(size_t irq);
     void set_irq_trigger(size_t irq, trigger_mode t);
-    void set_irq_signaled(size_t irq, bool signaled, size_t m);
-    bool irq_signaled(size_t irq, size_t mask);
+    void set_irq_signaled(size_t irq, bool signaled, u8 m);
+    bool irq_signaled(size_t irq, u8 mask);
 
-    bool test_pending(size_t irq, size_t mask);
+    bool test_pending(size_t irq, u8 mask);
 
     gic400(const sc_module_name& nm);
     virtual ~gic400();
     VCML_KIND(arm::gic400);
 
-    u8 get_irq_priority(int cpu, size_t irq);
+    u8 get_irq_priority(size_t cpu, size_t irq);
 
     void update(bool virt = false);
 
     virtual void end_of_elaboration() override;
     virtual void gpio_notify(const gpio_target_socket& socket) override;
 
-    void handle_ppi(int cpu, size_t idx, bool state);
+    void handle_ppi(size_t cpu, size_t idx, bool state);
     void handle_spi(size_t idx, bool state);
 
 private:
     size_t m_irq_num;
-    int m_cpu_num;
+    cpu_mask_t m_cpu_num;
 
     irq_state m_irq_state[NIRQ + NRES];
 };
 
-inline gpio_target_socket& gic400::ppi(int cpu, size_t irq) {
+inline gpio_target_socket& gic400::ppi(size_t cpu, size_t irq) {
     return ppi_in[cpu * NPPI + irq];
 }
 
-inline void gic400::enable_irq(size_t irq, size_t mask) {
+inline void gic400::enable_irq(size_t irq, u8 mask) {
     if (m_irq_state[irq].enabled == 0 && mask)
         log_debug("enabled irq %zu", irq);
     m_irq_state[irq].enabled |= mask;
 }
 
-inline void gic400::disable_irq(size_t irq, size_t mask) {
+inline void gic400::disable_irq(size_t irq, u8 mask) {
     if (m_irq_state[irq].enabled && mask == 0)
         log_debug("disabled irq %zu", irq);
     m_irq_state[irq].enabled &= ~mask;
 }
 
-inline bool gic400::is_irq_enabled(size_t irq, size_t mask) {
+inline bool gic400::is_irq_enabled(size_t irq, u8 mask) {
     return (m_irq_state[irq].enabled & mask) != 0;
 }
 
-inline void gic400::set_irq_pending(size_t irq, bool pending, size_t mask) {
+inline void gic400::set_irq_pending(size_t irq, bool pending, u8 mask) {
     if (pending)
         m_irq_state[irq].pending |= mask;
     else
         m_irq_state[irq].pending &= ~mask;
 }
 
-inline bool gic400::is_irq_pending(size_t irq, size_t mask) {
+inline bool gic400::is_irq_pending(size_t irq, u8 mask) {
     return (m_irq_state[irq].pending & mask) != 0;
 }
 
-inline void gic400::set_irq_active(size_t irq, bool active, size_t mask) {
+inline void gic400::set_irq_active(size_t irq, bool active, u8 mask) {
     if (active)
         m_irq_state[irq].active |= mask;
     else
         m_irq_state[irq].active &= ~mask;
 }
 
-inline bool gic400::is_irq_active(size_t irq, size_t mask) {
+inline bool gic400::is_irq_active(size_t irq, u8 mask) {
     return (m_irq_state[irq].active & mask) != 0;
 }
 
-inline void gic400::set_irq_level(size_t irq, bool level, size_t mask) {
+inline void gic400::set_irq_level(size_t irq, bool level, u8 mask) {
     if (level)
         m_irq_state[irq].level |= mask;
     else
         m_irq_state[irq].level &= ~mask;
 }
 
-inline bool gic400::get_irq_level(size_t irq, size_t mask) {
+inline bool gic400::get_irq_level(size_t irq, u8 mask) {
     return (m_irq_state[irq].level & mask) != 0;
 }
 
@@ -467,69 +469,69 @@ inline void gic400::set_irq_trigger(size_t irq, trigger_mode t) {
     m_irq_state[irq].trigger = t;
 }
 
-inline void gic400::set_irq_signaled(size_t irq, bool signaled, size_t mask) {
+inline void gic400::set_irq_signaled(size_t irq, bool signaled, u8 mask) {
     if (signaled)
         m_irq_state[irq].signaled |= mask;
     else
         m_irq_state[irq].signaled &= ~mask;
 }
 
-inline bool gic400::irq_signaled(size_t irq, size_t mask) {
+inline bool gic400::irq_signaled(size_t irq, u8 mask) {
     return (m_irq_state[irq].signaled & mask) != 0;
 }
 
-inline bool gic400::test_pending(size_t irq, size_t mask) {
+inline bool gic400::test_pending(size_t irq, u8 mask) {
     return (is_irq_pending(irq, mask) ||
             (get_irq_trigger(irq) == LEVEL && get_irq_level(irq, mask) &&
              !irq_signaled(irq, mask)));
 }
 
-inline bool gic400::vifctrl::is_lr_pending(u8 lr, u8 core_id) {
-    return m_lr_state[core_id][lr].pending;
+inline bool gic400::vifctrl::is_lr_pending(size_t lr, size_t cpu) {
+    return m_lr_state[cpu][lr].pending;
 }
 
-inline void gic400::vifctrl::set_lr_pending(u8 lr, u8 core_id, bool p) {
-    m_lr_state[core_id][lr].pending = p;
+inline void gic400::vifctrl::set_lr_pending(size_t lr, size_t cpu, bool p) {
+    m_lr_state[cpu][lr].pending = p;
 }
 
-inline void gic400::vifctrl::set_lr_prio(u8 lr, u8 core_id, u32 prio) {
-    m_lr_state[core_id][lr].prio = prio;
+inline void gic400::vifctrl::set_lr_prio(size_t lr, size_t cpu, u32 prio) {
+    m_lr_state[cpu][lr].prio = prio;
 }
 
-inline void gic400::vifctrl::set_lr_vid(u8 lr, u8 core_id, u16 virt_id) {
-    m_lr_state[core_id][lr].virtual_id = virt_id;
+inline void gic400::vifctrl::set_lr_vid(size_t lr, size_t cpu, u16 virt_id) {
+    m_lr_state[cpu][lr].virtual_id = virt_id;
 }
 
-inline void gic400::vifctrl::set_lr_physid(u8 lr, u8 core_id, u16 phys_id) {
-    m_lr_state[core_id][lr].physical_id = phys_id;
+inline void gic400::vifctrl::set_lr_physid(size_t lr, size_t cpu, u16 phys_id) {
+    m_lr_state[cpu][lr].physical_id = phys_id;
 }
 
-inline u16 gic400::vifctrl::get_lr_physid(u8 lr, u8 core_id) {
-    return m_lr_state[core_id][lr].physical_id;
+inline u16 gic400::vifctrl::get_lr_physid(size_t lr, size_t cpu) {
+    return m_lr_state[cpu][lr].physical_id;
 }
 
-inline bool gic400::vifctrl::is_lr_active(u8 lr, u8 core_id) {
-    return m_lr_state[core_id][lr].active;
+inline bool gic400::vifctrl::is_lr_active(size_t lr, size_t cpu) {
+    return m_lr_state[cpu][lr].active;
 }
 
-inline void gic400::vifctrl::set_lr_active(u8 lr, u8 core_id, bool p) {
-    m_lr_state[core_id][lr].active = p;
+inline void gic400::vifctrl::set_lr_active(size_t lr, size_t cpu, bool p) {
+    m_lr_state[cpu][lr].active = p;
 }
 
-inline void gic400::vifctrl::set_lr_cpuid(u8 lr, u8 core_id, u8 cpu_id) {
-    m_lr_state[core_id][lr].cpu_id = cpu_id;
+inline void gic400::vifctrl::set_lr_cpuid(size_t lr, size_t cpu, cpu_mask_t cpu_id) {
+    m_lr_state[cpu][lr].cpu_id = cpu_id;
 }
 
-inline u8 gic400::vifctrl::get_lr_cpuid(u8 lr, u8 core_id) {
-    return m_lr_state[core_id][lr].cpu_id;
+inline u8 gic400::vifctrl::get_lr_cpuid(size_t lr, size_t cpu) {
+    return m_lr_state[cpu][lr].cpu_id;
 }
 
-inline void gic400::vifctrl::set_lr_hw(u8 lr, u8 core_id, bool p) {
-    m_lr_state[core_id][lr].hw = p;
+inline void gic400::vifctrl::set_lr_hw(size_t lr, size_t cpu, bool p) {
+    m_lr_state[cpu][lr].hw = p;
 }
 
-inline bool gic400::vifctrl::is_lr_hw(u8 lr, u8 core_id) {
-    return m_lr_state[core_id][lr].hw;
+inline bool gic400::vifctrl::is_lr_hw(size_t lr, size_t cpu) {
+    return m_lr_state[cpu][lr].hw;
 }
 
 } // namespace arm

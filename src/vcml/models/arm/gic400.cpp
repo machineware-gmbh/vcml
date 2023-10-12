@@ -17,6 +17,15 @@ constexpr bool is_software_interrupt(size_t irq) {
     return irq < gic400::NSGI;
 }
 
+inline size_t get_cpu(const peripheral& p, const char* reg) {
+    int cpu = p.current_cpu();
+    if (cpu < 0) {
+        log_warn("(%s) invalid cpu %d, assuming 0", reg, cpu);
+        cpu = 0;
+    }
+    return static_cast<size_t>(cpu);
+}
+
 gic400::irq_state::irq_state():
     enabled(0),
     pending(0),
@@ -39,17 +48,17 @@ gic400::list_entry::list_entry():
     // nothing to do
 }
 
-u32 gic400::distif::int_pending_mask(int cpu) {
+u32 gic400::distif::int_pending_mask(size_t cpu) {
     u32 value = 0;
 
-    size_t mask = bit(cpu);
+    u8 mask = bit(cpu);
     for (size_t irq = 0; irq < NPRIV; irq++)
         if (m_parent->test_pending(irq, mask))
             value |= bit(irq);
     return value;
 }
 
-u32 gic400::distif::spi_pending_mask(int cpu) {
+u32 gic400::distif::spi_pending_mask(size_t cpu) {
     u32 value = 0;
 
     size_t offset = NPRIV + cpu * 32;
@@ -59,7 +68,7 @@ u32 gic400::distif::spi_pending_mask(int cpu) {
     return value;
 }
 
-u16 gic400::distif::ppi_enabled_mask(int cpu) {
+u16 gic400::distif::ppi_enabled_mask(size_t cpu) {
     u16 value = 0;
 
     size_t mask = bit(cpu);
@@ -89,22 +98,14 @@ u32 gic400::distif::read_typer() {
 }
 
 u32 gic400::distif::read_isenabler_ppi() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(iser) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "iser");
 
     u32 mask = ppi_enabled_mask(cpu);
     return (mask << 16) | 0xffff; // SGIs are always enabled
 }
 
 void gic400::distif::write_isenabler_ppi(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(iser) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "iser");
 
     size_t irq = NSGI;
     size_t mask = bit(cpu);
@@ -150,22 +151,14 @@ void gic400::distif::write_isenabler_spi(u32 val, size_t idx) {
 }
 
 u32 gic400::distif::read_icenabler_ppi() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(icer) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "icer");
 
     u32 mask = ppi_enabled_mask(cpu);
     return (mask << 16) | 0xffff; // SGIs are always enabled
 }
 
 void gic400::distif::write_icenabler_ppi(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(icer) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "icer");
 
     size_t irq = NSGI;
     size_t mask = bit(cpu);
@@ -201,21 +194,13 @@ void gic400::distif::write_icenabler_spi(u32 val, size_t idx) {
 }
 
 u32 gic400::distif::read_ispendr_ppi() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(ispr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "ispr");
 
     return int_pending_mask(cpu);
 }
 
 void gic400::distif::write_ispendr_ppi(u32 value) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(ispr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "ispr");
 
     size_t irq = NSGI;
     size_t mask = bit(cpu);
@@ -243,24 +228,16 @@ void gic400::distif::write_sspr(u32 value, size_t idx) {
 }
 
 u32 gic400::distif::read_icpendr_ppi() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(icpendr0) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "icpendr0");
 
     return int_pending_mask(cpu);
 }
 
 void gic400::distif::write_icpendr_ppi(u32 value) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(icpendr0) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "icpendr0");
 
     size_t irq = NSGI;
-    size_t mask = bit(cpu);
+    u8 mask = bit(cpu);
 
     for (; irq < NPRIV; irq++) {
         if (value & bit(irq))
@@ -285,15 +262,11 @@ void gic400::distif::write_icpendr_spi(u32 val, size_t idx) {
 }
 
 u32 gic400::distif::read_isactiver_ppi() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(isactivr0) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "isactivr0");
 
     u32 value = 0;
 
-    size_t mask = 1 << cpu;
+    u8 mask = 1 << cpu;
     for (size_t l = 0; l < NPRIV; l++) {
         if (m_parent->is_irq_active(l, mask))
             value |= bit(l);
@@ -315,13 +288,9 @@ u32 gic400::distif::read_isactiver_spi(size_t idx) {
 }
 
 void gic400::distif::write_icactiver_ppi(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(icar) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "icar");
 
-    size_t mask = bit(cpu);
+    u8 mask = bit(cpu);
     for (size_t irq = 0; irq < 32; irq++) {
         if (val & bit(irq))
             m_parent->set_irq_active(irq, false, mask);
@@ -337,14 +306,8 @@ void gic400::distif::write_icactiver_spi(u32 val, size_t idx) {
 }
 
 u32 gic400::distif::read_itargets_ppi(size_t idx) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(intt) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
-
     // local cpu is always target for its own SGIs and PPIs
-    return 0x01010101 << cpu;
+    return 0x01010101 << get_cpu(*this, "intt");
 }
 
 void gic400::distif::write_icfgr(u32 value) {
@@ -382,11 +345,7 @@ void gic400::distif::write_icfgr_spi(u32 value, size_t idx) {
 }
 
 void gic400::distif::write_sgir(u32 value) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(sctl) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "sctl");
 
     size_t src_cpu = bit(cpu);
     size_t sgi_num = extract(value, 0, 4);
@@ -421,11 +380,7 @@ void gic400::distif::write_sgir(u32 value) {
 }
 
 void gic400::distif::write_spendsgir(u8 value, size_t idx) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(sgis) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "sgis");
 
     size_t mask = bit(cpu);
     size_t irq = idx;
@@ -437,11 +392,7 @@ void gic400::distif::write_spendsgir(u8 value, size_t idx) {
 }
 
 void gic400::distif::write_cpendsgir(u8 value, size_t idx) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(sgic) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "sgic");
 
     size_t mask = bit(cpu);
     size_t irq = idx;
@@ -622,7 +573,7 @@ void gic400::distif::reset() {
         cidr[i] = extract(AMBA_PCID, i * 8, 8);
 }
 
-void gic400::distif::set_sgi_pending(u8 value, size_t sgi, int cpu, bool set) {
+void gic400::distif::set_sgi_pending(u8 value, size_t sgi, size_t cpu, bool set) {
     if (set) {
         spendsgir.bank(cpu, sgi) |= value;
         cpendsgir.bank(cpu, sgi) |= value;
@@ -638,7 +589,7 @@ void gic400::distif::end_of_elaboration() {
         m_parent->enable_irq(irq, gic400::ALL_CPU);
 }
 
-void gic400::cpuif::set_current_irq(int cpu, size_t irq) {
+void gic400::cpuif::set_current_irq(size_t cpu, size_t irq) {
     m_curr_irq[cpu] = irq;
 
     if (irq == SPURIOUS_IRQ)
@@ -651,9 +602,9 @@ void gic400::cpuif::set_current_irq(int cpu, size_t irq) {
 
 void gic400::cpuif::write_ctlr(u32 val) {
     if ((val & CTLR_ENABLE()) && !(ctlr & CTLR_ENABLE()))
-        log_debug("(ctlr) enabling cpu %d", current_cpu());
+        log_debug("(ctlr) enabling cpu %zu", get_cpu(*this, "ctlr"));
     if (!(val & CTLR_ENABLE()) && (ctlr & CTLR_ENABLE()))
-        log_debug("(ctlr) disabling cpu %d", current_cpu());
+        log_debug("(ctlr) disabling cpu %zu", get_cpu(*this, "ctlr"));
     ctlr = val & CTLR_ENABLE();
 }
 
@@ -667,11 +618,7 @@ void gic400::cpuif::write_bpr(u32 val) {
 }
 
 void gic400::cpuif::write_eoir(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(eoi) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "eoi");
 
     if (m_curr_irq[cpu] == SPURIOUS_IRQ)
         return; // no active IRQ
@@ -683,7 +630,7 @@ void gic400::cpuif::write_eoir(u32 val) {
     }
 
     if (irq == m_curr_irq[cpu]) {
-        log_debug("(eoi) cpu %d eois irq %zu", cpu, irq);
+        log_debug("(eoi) cpu %zu eois irq %zu", cpu, irq);
         set_current_irq(cpu, m_prev_irq[irq][cpu]);
         m_parent->set_irq_active(irq, false, bit(cpu));
         m_parent->update();
@@ -703,18 +650,14 @@ void gic400::cpuif::write_eoir(u32 val) {
 }
 
 u32 gic400::cpuif::read_iar() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(iar) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "iar");
 
     u32 irq = hppir.bank(cpu);
     size_t cpu_mask = (m_parent->get_irq_model(irq) == gic400::N_1)
                           ? (gic400::ALL_CPU)
                           : bit(cpu);
 
-    log_debug("(iar) cpu %d acknowledges irq %d", cpu, irq);
+    log_debug("(iar) cpu %zu acknowledges irq %d", cpu, irq);
 
     // check if CPU is acknowledging a not pending interrupt
     if (irq == SPURIOUS_IRQ ||
@@ -834,7 +777,7 @@ void gic400::cpuif::reset() {
 }
 
 void gic400::vifctrl::write_hcr(u32 val) {
-    hcr.bank(current_cpu()) = val;
+    hcr.bank(get_cpu(*this, "hcr")) = val;
     m_parent->update(true);
 }
 
@@ -843,11 +786,7 @@ u32 gic400::vifctrl::read_vtr() {
 }
 
 void gic400::vifctrl::write_lr(u32 val, size_t idx) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(lr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "lr");
 
     u8 state = extract(val, 28, 2);
     u8 hw = extract(val, 31, 1);
@@ -856,14 +795,14 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
         u8 eoi = extract(val, 19, 1);
         if (eoi == 1)
             log_error("(lr) maintenance IRQ not implemented");
-        u8 cpu_id = (val >> 10) & 0b111;
+        cpu_mask_t cpu_id = extract(val, 10, 3);
         set_lr_cpuid(idx, cpu, cpu_id);
         set_lr_hw(idx, cpu, false);
         set_lr_physid(idx, cpu, 0);
     } else {
         set_lr_cpuid(idx, cpu, 0);
         set_lr_hw(idx, cpu, true);
-        u16 physid = (val >> 10) & 0x1ff;
+        u16 physid = extract(val, 10, 9);
         set_lr_physid(idx, cpu, physid);
     }
 
@@ -877,7 +816,7 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
     }
 
     u32 prio = extract(val, 23, 5);
-    u32 irq = extract(val, 0, 9);
+    u16 irq = extract(val, 0, 9);
 
     set_lr_prio(idx, cpu, prio);
     set_lr_vid(idx, cpu, irq);
@@ -887,11 +826,7 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
 }
 
 u32 gic400::vifctrl::read_lr(size_t idx) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(lr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "lr");
 
     // update pending and active bit
     if (is_lr_pending(idx, cpu))
@@ -908,11 +843,7 @@ u32 gic400::vifctrl::read_lr(size_t idx) {
 }
 
 void gic400::vifctrl::write_vmcr(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(vmcr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "vmcr");
 
     u8 pmask = extract(val, 27, 5);
     u8 bpr = extract(val, 21, 0x02);
@@ -924,11 +855,7 @@ void gic400::vifctrl::write_vmcr(u32 val) {
 }
 
 u32 gic400::vifctrl::read_vmcr() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(vmcr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "vmcr");
 
     u8 pmask = extract(m_parent->vcpuif.pmr.bank(cpu), 3, 5);
     u8 bpr = extract(m_parent->vcpuif.bpr.bank(cpu), 0, 2);
@@ -938,11 +865,7 @@ u32 gic400::vifctrl::read_vmcr() {
 }
 
 void gic400::vifctrl::write_apr(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(apr) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "apr");
 
     u8 prio = IDLE_PRIO;
     if (val != 0)
@@ -951,7 +874,7 @@ void gic400::vifctrl::write_apr(u32 val) {
     apr = val;
 }
 
-u8 gic400::vifctrl::get_irq_priority(int cpu, size_t irq) {
+u8 gic400::vifctrl::get_irq_priority(size_t cpu, size_t irq) {
     for (size_t i = 0; i < NLR; i++) {
         if (m_lr_state[cpu][i].virtual_id == irq &&
             (m_lr_state[cpu][i].active || m_lr_state[cpu][i].pending)) {
@@ -959,11 +882,11 @@ u8 gic400::vifctrl::get_irq_priority(int cpu, size_t irq) {
         }
     }
 
-    log_error("failed getting LR prio for irq %zu on cpu %d", irq, cpu);
+    log_error("failed getting LR prio for irq %zu on cpu %zu", irq, cpu);
     return 0;
 }
 
-u8 gic400::vifctrl::get_lr(size_t irq, u8 cpu) {
+u8 gic400::vifctrl::get_lr(size_t irq, size_t cpu) {
     for (size_t i = 0; i < NLR; i++) {
         if (m_lr_state[cpu][i].virtual_id == irq &&
             (m_lr_state[cpu][i].active || m_lr_state[cpu][i].pending)) {
@@ -971,7 +894,7 @@ u8 gic400::vifctrl::get_lr(size_t irq, u8 cpu) {
         }
     }
 
-    log_error("failed getting LR for irq %zu on cpu%d", irq, cpu);
+    log_error("failed getting LR for irq %zu on cpu %zu", irq, cpu);
     return 0;
 }
 
@@ -1021,11 +944,7 @@ void gic400::vcpuif::write_bpr(u32 val) {
 }
 
 u32 gic400::vcpuif::read_iar() {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(iar) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "iar");
 
     u32 irq = hppir.bank(cpu);
     if (irq == SPURIOUS_IRQ ||
@@ -1044,18 +963,14 @@ u32 gic400::vcpuif::read_iar() {
 
     m_vifctrl->set_lr_pending(lr, cpu, false);
 
-    log_debug("(viack) cpu %d acknowledges virq %d", cpu, irq);
+    log_debug("(viack) cpu %zu acknowledges virq %d", cpu, irq);
     m_parent->update(true);
     u8 cpu_id = m_vifctrl->get_lr_cpuid(lr, cpu);
     return ((cpu_id & 0x111) << 10 | irq);
 }
 
 void gic400::vcpuif::write_eoir(u32 val) {
-    int cpu = current_cpu();
-    if (cpu < 0) {
-        log_warn("(eoir) invalid cpu %d, assuming 0", cpu);
-        cpu = 0;
-    }
+    size_t cpu = get_cpu(*this, "eoir");
 
     u32 irq = extract(val, 0, 9);
 
@@ -1064,7 +979,7 @@ void gic400::vcpuif::write_eoir(u32 val) {
         return;
     }
 
-    log_debug("(veoir) cpu%d eois virq %d", cpu, irq);
+    log_debug("(veoir) cpu %zu eois virq %d", cpu, irq);
 
     // drop priority and update APR
     m_vifctrl->apr.bank(cpu) &= m_parent->vifctrl.apr.bank(cpu) - 1;
@@ -1083,7 +998,7 @@ void gic400::vcpuif::write_eoir(u32 val) {
         if (!(physid < NSGI || physid > NIRQ)) {
             m_parent->set_irq_active(physid, false, bit(cpu));
         } else {
-            log_error("unexpected physical id %d for cpu %d in LR %d", physid,
+            log_error("unexpected physical id %d for cpu %zu in LR %d", physid,
                       cpu, lr);
         }
     }
@@ -1177,7 +1092,7 @@ gic400::~gic400() {
 void gic400::update(bool virt) {
     for (int cpu = 0; cpu < m_cpu_num; cpu++) {
         size_t irq;
-        size_t mask = bit(cpu);
+        cpu_mask_t mask = bit(cpu);
         size_t best_irq = SPURIOUS_IRQ;
         size_t best_prio = IDLE_PRIO;
 
@@ -1282,7 +1197,7 @@ void gic400::update(bool virt) {
     }
 }
 
-u8 gic400::get_irq_priority(int cpu, size_t irq) {
+u8 gic400::get_irq_priority(size_t cpu, size_t irq) {
     if (irq < NSGI)
         return distif.ipriority_sgi.bank(cpu, irq);
     else if (irq < NPRIV)
@@ -1335,9 +1250,9 @@ void gic400::gpio_notify(const gpio_target_socket& socket) {
     }
 }
 
-void gic400::handle_ppi(int cpu, size_t idx, bool state) {
+void gic400::handle_ppi(size_t cpu, size_t idx, bool state) {
     size_t irq = NSGI + idx;
-    size_t mask = bit(cpu);
+    cpu_mask_t mask = bit(cpu);
 
     set_irq_level(irq, state, mask);
     set_irq_signaled(irq, false, gic400::ALL_CPU);

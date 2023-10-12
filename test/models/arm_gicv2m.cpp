@@ -11,8 +11,8 @@
 #include "testing.h"
 
 enum test_config : size_t {
-    base_spi = 46,
-    num_spi = 127,
+    BASE_SPI = 46,
+    NUM_SPI = 127,
 };
 
 class gicv2m_stim : public test_base
@@ -38,10 +38,10 @@ public:
 
         u32 val = ~0;
         EXPECT_OK(out.readw(TYPER_ADDR, val)) << "failed to read TYPER reg";
-        EXPECT_EQ(val, base_spi << 16 | num_spi);
+        EXPECT_EQ(val, BASE_SPI << 16 | NUM_SPI);
 
         Sequence s;
-        for (size_t i = base_spi; i < base_spi + num_spi; i++) {
+        for (size_t i = BASE_SPI; i < BASE_SPI + NUM_SPI; i++) {
             EXPECT_CALL(*this, gpio_notify(Ref(in[i]), true, GPIO_NO_VECTOR))
                 .InSequence(s);
             EXPECT_CALL(*this, gpio_notify(Ref(in[i]), false, GPIO_NO_VECTOR))
@@ -51,7 +51,7 @@ public:
         }
 
         EXPECT_CALL(*this, gpio_notify(_, _, _)).Times(0).InSequence(s);
-        EXPECT_OK(out.writew(SETSPI_ADDR, base_spi + num_spi))
+        EXPECT_OK(out.writew(SETSPI_ADDR, BASE_SPI + NUM_SPI))
             << "failed to write SETSPI reg";
 
         val = ~0;
@@ -62,8 +62,8 @@ public:
 
 TEST(gicv2m, gicv2m) {
     vcml::broker broker("test");
-    broker.define("gicv2m.base_spi", base_spi);
-    broker.define("gicv2m.num_spi", num_spi);
+    broker.define("gicv2m.base_spi", BASE_SPI);
+    broker.define("gicv2m.num_spi", NUM_SPI);
 
     gicv2m_stim stim("gicv2m_stim");
     arm::gicv2m gicv2m("gicv2m");
@@ -73,7 +73,7 @@ TEST(gicv2m, gicv2m) {
 
     stim.out.bind(gicv2m.in);
 
-    for (size_t i = base_spi; i < base_spi + num_spi; i++)
+    for (size_t i = BASE_SPI; i < BASE_SPI + NUM_SPI; i++)
         gicv2m.out[i].bind(stim.in[i]);
 
     sc_core::sc_start();
