@@ -362,7 +362,7 @@ void gic400::distif::write_sgir(u32 value) {
         break;
     case 0x2:
         // forward interrupt only to writing CPU
-        targets = 1 << cpu;
+        targets = bit(cpu);
         break;
     default:
         log_warn("bad SGI target filter");
