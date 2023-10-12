@@ -32,7 +32,7 @@ public:
         IRQ_AS_SPI,
     };
 
-    enum gic400_params : u32 {
+    enum gic400_params : size_t {
         NCPU = 8,  // max supported CPUs
         NVCPU = 8, // max supported virtual CPUs
 
@@ -69,7 +69,7 @@ public:
     };
 
     enum cpu_mask {
-        ALL_CPU = (1 << NCPU) - 1,
+        ALL_CPU = bit(NCPU) - 1,
     };
 
     struct irq_state {
@@ -198,8 +198,7 @@ public:
         virtual void reset() override;
         virtual void end_of_elaboration() override;
 
-        void set_sgi_pending(u8 value, unsigned int sgi, unsigned int cpu,
-                             bool set);
+        void set_sgi_pending(u8 value, size_t sgi, int cpu, bool set);
     };
 
     class cpuif : public peripheral
@@ -210,7 +209,7 @@ public:
         u32 m_curr_irq[NCPU];
         u32 m_prev_irq[NREGS][NCPU];
 
-        void set_current_irq(unsigned int cpu_id, unsigned int irq);
+        void set_current_irq(int cpu_id, size_t irq);
 
         void write_ctlr(u32 val);
         void write_pmr(u32 val);
@@ -275,7 +274,7 @@ public:
 
         tlm_target_socket in;
 
-        u8 get_irq_priority(unsigned int cpu, unsigned int irq);
+        u8 get_irq_priority(int cpu, size_t irq);
         // list register state control
         bool is_lr_pending(u8 lr, u8 core_id);
         void set_lr_pending(u8 lr, u8 core_id, bool p);
@@ -285,7 +284,7 @@ public:
         u8 get_lr_cpuid(u8 lr, u8 core_id);
         void set_lr_hw(u8 lr, u8 core_id, bool p);
         bool is_lr_hw(u8 lr, u8 core_id);
-        u8 get_lr(unsigned int irq, u8 core_id);
+        u8 get_lr(size_t irq, u8 core_id);
         void set_lr_prio(u8 lr, u8 core_id, u32 prio);
         void set_lr_vid(u8 lr, u8 core_id, u16 virt_id);
         void set_lr_physid(u8 lr, u8 core_id, u16 phys_id);
@@ -349,141 +348,137 @@ public:
     gpio_initiator_array vfiq_out;
     gpio_initiator_array virq_out;
 
-    gpio_target_socket& ppi(unsigned int cpu, unsigned int irq);
+    gpio_target_socket& ppi(int cpu, size_t irq);
 
-    unsigned int get_irq_num() const { return m_irq_num; }
-    unsigned int get_cpu_num() const { return m_cpu_num; }
+    size_t get_irq_num() const { return m_irq_num; }
+    size_t get_cpu_num() const { return m_cpu_num; }
 
     // interrupt state control
-    void enable_irq(unsigned int irq, unsigned int mask);
-    void disable_irq(unsigned int irq, unsigned int mask);
-    bool is_irq_enabled(unsigned int irq, unsigned int mask);
+    void enable_irq(size_t irq, size_t mask);
+    void disable_irq(size_t irq, size_t mask);
+    bool is_irq_enabled(size_t irq, size_t mask);
 
-    bool is_irq_pending(unsigned int irq, unsigned int mask);
-    void set_irq_pending(unsigned int irq, bool p, unsigned int m);
+    bool is_irq_pending(size_t irq, size_t mask);
+    void set_irq_pending(size_t irq, bool p, size_t m);
 
-    bool is_irq_active(unsigned int irq, unsigned int mask);
-    void set_irq_active(unsigned int irq, bool a, unsigned int m);
+    bool is_irq_active(size_t irq, size_t mask);
+    void set_irq_active(size_t irq, bool a, size_t m);
 
-    bool get_irq_level(unsigned int irq, unsigned int mask);
-    void set_irq_level(unsigned int irq, bool l, unsigned int mask);
+    bool get_irq_level(size_t irq, size_t mask);
+    void set_irq_level(size_t irq, bool l, size_t mask);
 
-    handling_model get_irq_model(unsigned int irq);
-    void set_irq_model(unsigned int irq, handling_model m);
+    handling_model get_irq_model(size_t irq);
+    void set_irq_model(size_t irq, handling_model m);
 
-    trigger_mode get_irq_trigger(unsigned int irq);
-    void set_irq_trigger(unsigned int irq, trigger_mode t);
-    void set_irq_signaled(unsigned int irq, bool signaled, unsigned int m);
-    bool irq_signaled(unsigned int irq, unsigned int mask);
+    trigger_mode get_irq_trigger(size_t irq);
+    void set_irq_trigger(size_t irq, trigger_mode t);
+    void set_irq_signaled(size_t irq, bool signaled, size_t m);
+    bool irq_signaled(size_t irq, size_t mask);
 
-    bool test_pending(unsigned int irq, unsigned int mask);
+    bool test_pending(size_t irq, size_t mask);
 
     gic400(const sc_module_name& nm);
     virtual ~gic400();
     VCML_KIND(arm::gic400);
 
-    u8 get_irq_priority(unsigned int cpu, unsigned int irq);
+    u8 get_irq_priority(int cpu, size_t irq);
 
     void update(bool virt = false);
 
     virtual void end_of_elaboration() override;
     virtual void gpio_notify(const gpio_target_socket& socket) override;
 
-    void handle_ppi(unsigned int cpu, unsigned int idx, bool state);
-    void handle_spi(unsigned int idx, bool state);
+    void handle_ppi(int cpu, size_t idx, bool state);
+    void handle_spi(size_t idx, bool state);
 
 private:
-    unsigned int m_irq_num;
-    unsigned int m_cpu_num;
+    size_t m_irq_num;
+    int m_cpu_num;
 
     irq_state m_irq_state[NIRQ + NRES];
 };
 
-inline gpio_target_socket& gic400::ppi(unsigned int cpu, unsigned int irq) {
+inline gpio_target_socket& gic400::ppi(int cpu, size_t irq) {
     return ppi_in[cpu * NPPI + irq];
 }
 
-inline void gic400::enable_irq(unsigned int irq, unsigned int mask) {
+inline void gic400::enable_irq(size_t irq, size_t mask) {
     if (m_irq_state[irq].enabled == 0 && mask)
-        log_debug("enabled irq %u", irq);
+        log_debug("enabled irq %zu", irq);
     m_irq_state[irq].enabled |= mask;
 }
 
-inline void gic400::disable_irq(unsigned int irq, unsigned int mask) {
+inline void gic400::disable_irq(size_t irq, size_t mask) {
     if (m_irq_state[irq].enabled && mask == 0)
-        log_debug("disabled irq %u", irq);
+        log_debug("disabled irq %zu", irq);
     m_irq_state[irq].enabled &= ~mask;
 }
 
-inline bool gic400::is_irq_enabled(unsigned int irq, unsigned int mask) {
+inline bool gic400::is_irq_enabled(size_t irq, size_t mask) {
     return (m_irq_state[irq].enabled & mask) != 0;
 }
 
-inline void gic400::set_irq_pending(unsigned int irq, bool pending,
-                                    unsigned int mask) {
+inline void gic400::set_irq_pending(size_t irq, bool pending, size_t mask) {
     if (pending)
         m_irq_state[irq].pending |= mask;
     else
         m_irq_state[irq].pending &= ~mask;
 }
 
-inline bool gic400::is_irq_pending(unsigned int irq, unsigned int mask) {
+inline bool gic400::is_irq_pending(size_t irq, size_t mask) {
     return (m_irq_state[irq].pending & mask) != 0;
 }
 
-inline void gic400::set_irq_active(unsigned int irq, bool active,
-                                   unsigned int mask) {
+inline void gic400::set_irq_active(size_t irq, bool active, size_t mask) {
     if (active)
         m_irq_state[irq].active |= mask;
     else
         m_irq_state[irq].active &= ~mask;
 }
 
-inline bool gic400::is_irq_active(unsigned int irq, unsigned int mask) {
+inline bool gic400::is_irq_active(size_t irq, size_t mask) {
     return (m_irq_state[irq].active & mask) != 0;
 }
 
-inline void gic400::set_irq_level(unsigned int irq, bool level,
-                                  unsigned int mask) {
+inline void gic400::set_irq_level(size_t irq, bool level, size_t mask) {
     if (level)
         m_irq_state[irq].level |= mask;
     else
         m_irq_state[irq].level &= ~mask;
 }
 
-inline bool gic400::get_irq_level(unsigned int irq, unsigned int mask) {
+inline bool gic400::get_irq_level(size_t irq, size_t mask) {
     return (m_irq_state[irq].level & mask) != 0;
 }
 
-inline gic400::handling_model gic400::get_irq_model(unsigned int irq) {
+inline gic400::handling_model gic400::get_irq_model(size_t irq) {
     return m_irq_state[irq].model;
 }
 
-inline void gic400::set_irq_model(unsigned int irq, handling_model m) {
+inline void gic400::set_irq_model(size_t irq, handling_model m) {
     m_irq_state[irq].model = m;
 }
 
-inline gic400::trigger_mode gic400::get_irq_trigger(unsigned int irq) {
+inline gic400::trigger_mode gic400::get_irq_trigger(size_t irq) {
     return m_irq_state[irq].trigger;
 }
 
-inline void gic400::set_irq_trigger(unsigned int irq, trigger_mode t) {
+inline void gic400::set_irq_trigger(size_t irq, trigger_mode t) {
     m_irq_state[irq].trigger = t;
 }
 
-inline void gic400::set_irq_signaled(unsigned int irq, bool signaled,
-                                     unsigned int mask) {
+inline void gic400::set_irq_signaled(size_t irq, bool signaled, size_t mask) {
     if (signaled)
         m_irq_state[irq].signaled |= mask;
     else
         m_irq_state[irq].signaled &= ~mask;
 }
 
-inline bool gic400::irq_signaled(unsigned int irq, unsigned int mask) {
+inline bool gic400::irq_signaled(size_t irq, size_t mask) {
     return (m_irq_state[irq].signaled & mask) != 0;
 }
 
-inline bool gic400::test_pending(unsigned int irq, unsigned int mask) {
+inline bool gic400::test_pending(size_t irq, size_t mask) {
     return (is_irq_pending(irq, mask) ||
             (get_irq_trigger(irq) == LEVEL && get_irq_level(irq, mask) &&
              !irq_signaled(irq, mask)));
