@@ -730,8 +730,10 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // would be too long
         u32 len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
         u8 buffer[pl330::INSN_MAXSIZE];
-        if (failed(dma.dma.read(insn.data_addr, (void*)buffer, len)))
-            dma.log.warn("Dma channel read failed");
+        if (failed(dma.dma.read(insn.data_addr, (void*)buffer, len))) {
+            dma.log.error("Dma channel read failed");
+            VCML_ERROR("PL33 DMA read failed");
+        }
 
         if (dma.mfifo.num_free() >= len) {
             for (u32 i = 0; i < len; i++) {
@@ -762,8 +764,10 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
                 buffer[i] = dma.mfifo.pop().value().buf;
             }
         }
-        if (failed(dma.dma.write(insn.data_addr, (void*)buffer, len)))
-            dma.log.warn("Dma channel write failed");
+        if (failed(dma.dma.write(insn.data_addr, (void*)buffer, len))) {
+            dma.log.error("Dma channel write failed");
+            VCML_ERROR("PL33 DMA write failed");
+        }
         if (insn.inc)
             insn.data_addr += len;
         insn.burst_len_counter--;
