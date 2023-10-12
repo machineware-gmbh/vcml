@@ -215,7 +215,6 @@ public:
         manager(const sc_module_name& nm);
     };
 
-
     property<bool> enable_periph;
     property<u32> num_channels;
     property<u32> num_irq;

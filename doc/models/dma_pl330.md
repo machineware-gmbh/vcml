@@ -1,16 +1,18 @@
-
 # VCML Models: PL330 (DMA330)
 
 The model comprises a manager along with up to 8 DMA threads.
 It allows configuration of up to 32 peripheral interfaces and up to 32 events or interrupts.
 The DMA executes a custom DMA assembly language, although this complexity is frequently hidden by a driver abstraction.
-While the model does simulate instruction faults, its representation of stalling behavior is only an approximation, and verification against this model cannot confirm stalling. 
+While the model does simulate instruction faults, its representation of stalling behavior is only an approximation, and
+verification against this model cannot confirm stalling.
 
 `Note: Peripheral interfaces are currently not suported.
 The development of peripheral interfaces is currently ongoing.`
 
 ----
+
 ## Properties
+
 This model has the following properties:
 
 | Property                     | Type        | Default         | Description                             |
@@ -54,7 +56,9 @@ This model has the following properties:
 | `irq[X].trace_errors`        | `bool`      | `false`         | Enable Error Tracing for irq[X]         |
 
 ----
+
 ## Hardware Interface
+
 The following ports and sockets must be connected prior to simulating:
 
 | Port         | Type                    | Description                              |
@@ -66,7 +70,9 @@ The following ports and sockets must be connected prior to simulating:
 | `PERIPH_IRQ` | `gpio_target_array`     | Interrupt receiver port array            |
 
 ----
+
 ## Software Interface
+
 The model exposes the following memory mapped registers:
 
 | Name            | Offset              | Access | Width    | Description                         |
@@ -111,8 +117,8 @@ To run DMATest it needs to be included in the linux configuration.
 Example of usage:
 `modprobe dmatest timeout=2000 iterations=1 channel=dma0chan0 run=1`
 
-
 The pl330 dma model can be included in the device tree as follows:
+
 ```
 pdma0: pdma@12680000 {
     compatible = "arm,pl330", "arm,primecell";

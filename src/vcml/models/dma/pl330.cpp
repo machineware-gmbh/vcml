@@ -11,7 +11,6 @@
 #include "vcml/models/dma/pl330.h"
 
 namespace vcml::dma {
-//using namespace mwr;
 
 enum dsr_bits : u32 {
     DNS = bit(9), // Manager security status
@@ -119,7 +118,6 @@ enum request_type : u32 {
     BURST = 0b01,
 };
 
-
 static void pl330_handle_ch_fault(pl330& dma, pl330::channel& ch,
                                   pl330::channel::fault fault) {
     ch.ftr |= 0b1 << fault;
@@ -166,7 +164,7 @@ static void pl330_insn_dmaadnh(pl330* dma, pl330::channel* ch, u8 opcode,
 static void pl330_insn_dmaend(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
     if (ch->get_state() == pl330::channel::EXECUTING) {
-        /* Wait for all transfers to complete */
+        // Wait for all transfers to complete
         if (!dma->mfifo.empty(ch->tag) || !dma->read_queue.empty(ch->tag) ||
             !dma->write_queue.empty(ch->tag)) {
             ch->stall = true;
@@ -203,7 +201,7 @@ static void pl330_insn_dmaflushp(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, pl330::channel::OPERAND_INVALID);
         return;
     }
-    /* Do nothing */
+    // Do nothing
 }
 
 static void pl330_insn_dmago(pl330* dma, pl330::channel* ch, u8 opcode,
@@ -226,7 +224,7 @@ static void pl330_insn_dmago(pl330* dma, pl330::channel* ch, u8 opcode,
     pc = (((u32)args[4]) << 24) | (((u32)args[3]) << 16) |
          (((u32)args[2]) << 8) | (((u32)args[1]));
     if (!channel.is_state(pl330::channel::STOPPED)) {
-        /* Perform NOP */
+        // Perform NOP
         return;
     }
     if ((dma->manager.dsr & DNS) && !ns) {
@@ -242,7 +240,7 @@ static void pl330_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
                                u8* args, int len) {
     if (ch->is_state(pl330::channel::FAULTING) ||
         ch->is_state(pl330::channel::FAULTING_COMPLETING)) {
-        /* This is the only way for a channel to leave the faulting state */
+        // This is the only way for a channel to leave the faulting state
         ch->ftr &= ~FTR_MASK;
         dma->fsrc &= ~(1 << ch->tag);
         bool faulting = (dma->fsrc & 0x7) && (dma->manager.fsrd & 0x1);
@@ -514,9 +512,8 @@ static void pl330_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
     ch->set_state(pl330::channel::WAITING_FOR_EVENT);
     if (~dma->inten & dma->int_event_ris & 1 << ev_id) {
         ch->set_state(pl330::channel::EXECUTING);
-        /* If anyone else is currently waiting on the same event, let them
-         * clear the ev_status, so they pick up event as well
-         */
+        // If anyone else is currently waiting on the same event, let them
+        // clear the ev_status, so they pick up event as well
         for (u32 i = 0; i < dma->cr0.get_field<CR0_NUM_CHNLS>(); ++i) {
             pl330::channel* peer = &dma->channels[i];
             if (peer->is_state(pl330::channel::WAITING_FOR_EVENT) &&
@@ -549,9 +546,8 @@ static void pl330_mn_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
     dma->manager.set_state(pl330::manager::WAITING_FOR_EVENT);
     if (~dma->inten & dma->int_event_ris & (1 << ev_id)) {
         dma->manager.set_state(pl330::manager::EXECUTING);
-        /* If anyone else is currently waiting on the same event, let them
-         * clear the ev_status, so they pick up event as well
-         */
+        // If anyone else is currently waiting on the same event, let them
+        // clear the ev_status, so they pick up event as well
         for (u32 i = 0; i < dma->cr0.get_field<CR0_NUM_CHNLS>(); ++i) {
             pl330::channel* peer = &dma->channels[i];
             if (peer->is_state(pl330::manager::WAITING_FOR_EVENT) &&
@@ -629,46 +625,44 @@ struct insn_descr {
     void (*exec)(pl330*, pl330::channel*, u8 opcode, u8* args, int len);
 };
 
-// clang-format off
 // Instructions which can be issued via channel threads.
 static const insn_descr CH_INSN_DESCR[] = {
-    {0x54, 0xfd, 3, pl330_insn_dmaaddh},
-    {0x5c, 0xfd, 3, pl330_insn_dmaadnh},
-    {0x00, 0xff, 1, pl330_insn_dmaend},
-    {0x35, 0xff, 2, pl330_insn_dmaflushp},
-    {0x04, 0xfc, 1, pl330_insn_dmald},
-    {0x25, 0xfd, 2, pl330_insn_dmaldp},
-    {0x20, 0xfd, 2, pl330_insn_dmalp},
-    {0x29, 0xfd, 2, pl330_insn_dmastp},
-    {0x28, 0xe8, 2, pl330_insn_dmalpend},
-    {0xbc, 0xff, 6, pl330_insn_dmamov},
-    {0x18, 0xff, 1, pl330_insn_dmanop},
-    {0x12, 0xff, 1, pl330_insn_dmarmb},
-    {0x34, 0xff, 2, pl330_insn_dmasev},
-    {0x08, 0xfc, 1, pl330_insn_dmast},
-    {0x0c, 0xff, 1, pl330_insn_dmastz},
-    {0x36, 0xff, 2, pl330_insn_dmawfe},
-    {0x30, 0xfc, 2, pl330_insn_dmawfp},
-    {0x13, 0xff, 1, pl330_insn_dmawmb},
+    { 0x54, 0xfd, 3, pl330_insn_dmaaddh },
+    { 0x5c, 0xfd, 3, pl330_insn_dmaadnh },
+    { 0x00, 0xff, 1, pl330_insn_dmaend },
+    { 0x35, 0xff, 2, pl330_insn_dmaflushp },
+    { 0x04, 0xfc, 1, pl330_insn_dmald },
+    { 0x25, 0xfd, 2, pl330_insn_dmaldp },
+    { 0x20, 0xfd, 2, pl330_insn_dmalp },
+    { 0x29, 0xfd, 2, pl330_insn_dmastp },
+    { 0x28, 0xe8, 2, pl330_insn_dmalpend },
+    { 0xbc, 0xff, 6, pl330_insn_dmamov },
+    { 0x18, 0xff, 1, pl330_insn_dmanop },
+    { 0x12, 0xff, 1, pl330_insn_dmarmb },
+    { 0x34, 0xff, 2, pl330_insn_dmasev },
+    { 0x08, 0xfc, 1, pl330_insn_dmast },
+    { 0x0c, 0xff, 1, pl330_insn_dmastz },
+    { 0x36, 0xff, 2, pl330_insn_dmawfe },
+    { 0x30, 0xfc, 2, pl330_insn_dmawfp },
+    { 0x13, 0xff, 1, pl330_insn_dmawmb },
 };
 
 // Instructions which can be issued via the manager thread.
 static const insn_descr MN_INSN_DESCR[] = {
-    {0x00, 0xff, 1, pl330_mn_insn_dmaend},
-    {0xa0, 0xfd, 6, pl330_insn_dmago},
-    {0x01, 0xff, 1, pl330_mn_insn_dmakill},
-    {0x18, 0xff, 1, pl330_insn_dmanop},
-    {0x34, 0xff, 2, pl330_mn_insn_dmasev},
-    {0x36, 0xff, 2, pl330_mn_insn_dmawfe},
+    { 0x00, 0xff, 1, pl330_mn_insn_dmaend },
+    { 0xa0, 0xfd, 6, pl330_insn_dmago },
+    { 0x01, 0xff, 1, pl330_mn_insn_dmakill },
+    { 0x18, 0xff, 1, pl330_insn_dmanop },
+    { 0x34, 0xff, 2, pl330_mn_insn_dmasev },
+    { 0x36, 0xff, 2, pl330_mn_insn_dmawfe },
 };
 
 // Instructions which can be issued via debug registers.
 static const insn_descr DEBUG_INSN_DESC[] = {
-    {0xa0, 0xfd, 6, pl330_insn_dmago},
-    {0x01, 0xff, 1, pl330_insn_dmakill},
-    {0x34, 0xff, 2, pl330_insn_dmasev},
+    { 0xa0, 0xfd, 6, pl330_insn_dmago },
+    { 0x01, 0xff, 1, pl330_insn_dmakill },
+    { 0x34, 0xff, 2, pl330_insn_dmasev },
 };
-// clang-format on
 
 static inline const insn_descr* fetch_ch_insn(pl330* dma,
                                               pl330::channel& channel) {
@@ -829,7 +823,7 @@ static void handle_debug_insn(pl330& dma) {
 
     // check dbg status idle
     if (dma.dbgstatus & dbgstatus_bits::DBGSTATUS)
-        return; // dbg busy case
+        return;                             // dbg busy case
     dma.dbgstatus.set_bit<DBGSTATUS>(true); // set dbg busy
 
     chan_id = (dma.dbginst0 >> 8) & 0x07;
@@ -1013,7 +1007,7 @@ pl330::pl330(const sc_module_name& nm):
     irq("irq", size_t(32)),
     irq_abort("irq_abort"),
     m_dma(),
-    m_execute_debug(false){
+    m_execute_debug(false) {
     assert(num_irq.get() <= 32);
     assert(num_periph.get() <= 32);
 
