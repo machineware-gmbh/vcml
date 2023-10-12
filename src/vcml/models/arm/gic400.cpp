@@ -573,7 +573,8 @@ void gic400::distif::reset() {
         cidr[i] = extract(AMBA_PCID, i * 8, 8);
 }
 
-void gic400::distif::set_sgi_pending(u8 value, size_t sgi, size_t cpu, bool set) {
+void gic400::distif::set_sgi_pending(u8 value, size_t sgi, size_t cpu,
+                                     bool set) {
     if (set) {
         spendsgir.bank(cpu, sgi) |= value;
         cpendsgir.bank(cpu, sgi) |= value;

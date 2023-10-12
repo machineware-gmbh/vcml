@@ -502,7 +502,8 @@ inline void gic400::vifctrl::set_lr_vid(size_t lr, size_t cpu, u16 virt_id) {
     m_lr_state[cpu][lr].virtual_id = virt_id;
 }
 
-inline void gic400::vifctrl::set_lr_physid(size_t lr, size_t cpu, u16 phys_id) {
+inline void gic400::vifctrl::set_lr_physid(size_t lr, size_t cpu,
+                                           u16 phys_id) {
     m_lr_state[cpu][lr].physical_id = phys_id;
 }
 
@@ -518,7 +519,8 @@ inline void gic400::vifctrl::set_lr_active(size_t lr, size_t cpu, bool p) {
     m_lr_state[cpu][lr].active = p;
 }
 
-inline void gic400::vifctrl::set_lr_cpuid(size_t lr, size_t cpu, cpu_mask_t cpu_id) {
+inline void gic400::vifctrl::set_lr_cpuid(size_t lr, size_t cpu,
+                                          cpu_mask_t cpu_id) {
     m_lr_state[cpu][lr].cpu_id = cpu_id;
 }
 
