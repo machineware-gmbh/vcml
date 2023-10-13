@@ -23,11 +23,11 @@
 namespace vcml {
 namespace arm {
 
-using cpu_mask_t = u8;
-
 class gic400 : public peripheral
 {
 public:
+    using cpu_mask_t = u8;
+
     enum irq_as : address_space {
         IRQ_AS_SGI,
         IRQ_AS_PPI,
@@ -60,12 +60,12 @@ public:
         AMBA_IFID = 0x0202143b,
     };
 
-    enum handling_model : size_t {
+    enum handling_model {
         N_N = 0, // all processors handle the interrupt
         N_1 = 1  // only one processor handles interrupt
     };
 
-    enum trigger_mode : size_t {
+    enum trigger_mode {
         LEVEL = 0, // interrupt asserted when signal is active
         EDGE = 1   // interrupt triggered on rising edge
     };

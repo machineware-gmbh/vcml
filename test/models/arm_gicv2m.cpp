@@ -76,5 +76,7 @@ TEST(gicv2m, gicv2m) {
     for (size_t i = BASE_SPI; i < BASE_SPI + NUM_SPI; i++)
         gicv2m.out[i].bind(stim.in[i]);
 
+    EXPECT_STREQ(gicv2m.kind(), "vcml::arm::gicv2m");
+
     sc_core::sc_start();
 }
