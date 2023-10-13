@@ -95,19 +95,11 @@ class pl330 : public peripheral
     };
 
 public:
-    enum pl330_configs : u32 {
-        INSN_MAXSIZE = 6,
-        WD_TIMEOUT = 1024,
-    };
-    enum mfifo_width : u32 {
-        MFIFO_32BIT = 0b010,
-        MFIFO_64BIT = 0b011,
-        MFIFO_128BIT = 0b100,
-    };
     enum amba_ids : u32 {
         AMBA_PID = 0x00241330, // Peripheral ID
         AMBA_CID = 0xb105f00d, // PrimeCell ID
     };
+
     struct queue_entry {
         u32 data_addr;
         u32 data_len;
@@ -196,16 +188,14 @@ public:
     reg<u32> cr1; // Configuration Register 1
     reg<u32> cr2; // Configuration Register 2
     reg<u32> cr3; // Configuration Register 3
-    reg<u32> cr4; // Configuration Register 4 // security state op peripheral
-                  // requests
+    reg<u32> cr4; // Configuration Register 4
     reg<u32> crd; // DMA Configuration Register
     reg<u32> wd;  // Watchdog Register
 
     reg<u32, 4> periph_id; // Peripheral Identification Registers
     reg<u32, 4> pcell_id;  // Component Identification Registers
 
-    u8 periph_busy[6]; // todo do we need this in addition to periph_irq?! its
-                       // not parameter configurable
+    u8 periph_busy[6];
     gpio_target_array periph_irq;
 
     tlm_target_socket in;
@@ -220,6 +210,9 @@ public:
 
 private:
     void pl330_thread();
+    void run_manager();
+    void run_channels();
+    void handle_debug_instruction();
 
     sc_event m_dma;
     bool m_execute_debug;

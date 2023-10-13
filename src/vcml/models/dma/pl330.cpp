@@ -12,6 +12,11 @@
 
 namespace vcml::dma {
 
+enum pl330_configs : u32 {
+    PL330_INSN_MAXSIZE = 6,
+    PL330_WD_TIMEOUT = 1024,
+};
+
 enum ch_state : u8 {
     CHS_STOPPED = 0x0,
     CHS_EXECUTING = 0x1,
@@ -35,6 +40,12 @@ enum mn_state : u8 {
     MNS_FAULTING = 0xF,
 };
 
+enum pl_330_mfifo_width : u32 {
+    MFIFO_32BIT = 0b010,
+    MFIFO_64BIT = 0b011,
+    MFIFO_128BIT = 0b100,
+};
+
 enum dsr_bits : u32 {
     DSR_DNS = bit(9), // Manager security status
 };
@@ -43,7 +54,7 @@ typedef field<0, 4, u32> DSR_DMA_STATUS;
 typedef field<4, 5, u32> DSR_WAKEUP_EVENT;
 
 enum fsrd_bits {
-    FS_MGR = bit(0), // Manager fault state
+    FSRD_FS_MGR = bit(0),
 };
 
 typedef field<0, 8, u32> FSRC_FAULT_STATUS;
@@ -131,6 +142,7 @@ enum cr0_bits : u32 {
     CR0_PERIPH_REQ = bit(0),
     CR0_BOOT_EN = bit(1),
     CR0_MGR_NS_AT_RST = bit(2),
+    CR0_RESET_VALUE = 0x3ff002,
 };
 
 typedef field<4, 3, u32> CR0_NUM_CHNLS;
@@ -147,6 +159,10 @@ typedef field<12, 3, u32> CRD_RD_CAP;
 typedef field<16, 4, u32> CRD_RD_Q_DEP;
 typedef field<20, 10, u32> CRD_DATA_BUFFER_DEP;
 
+enum crd_bits : u32 {
+    CRD_RESET_VALUE = (0x7 << 4) & (0x7 << 12),
+};
+
 enum wd_bits : u32 {
     WD_IRQ_ONLY = bit(0),
 };
@@ -159,11 +175,12 @@ enum request_type : u32 {
 static void pl330_handle_ch_fault(pl330& dma, pl330::channel& ch,
                                   ftr_bits fault) {
     ch.ftr |= 0b1 << fault;
-    bool first_fault = !((dma.fsrc & 0x7) && (dma.manager.fsrd & 0x1));
+    bool is_first_fault = !(get_field<FSRC_FAULT_STATUS>(dma.fsrc) &&
+                            (dma.manager.fsrd & FSRD_FS_MGR));
     dma.fsrc |= 0b1 << ch.chid;
     ch.set_state(CHS_FAULTING);
     ch.log.warn("Dma channel faulting with fault: %d", fault);
-    if (first_fault)
+    if (is_first_fault)
         dma.irq_abort = true;
 }
 
@@ -322,7 +339,7 @@ static void pl330_insn_dmald(pl330* dma, pl330::channel* ch, u8 opcode,
         num = ch->ccr.get_field<CCR_SRC_BURST_LEN>() + 1;
 
     size = (u32)1 << ch->ccr.get_field<CCR_SRC_BURST_SIZE>();
-    inc = ch->ccr & ccr_bits::CCR_SRC_INC;
+    inc = ch->ccr & CCR_SRC_INC;
 
     ch->stall = !dma->read_queue.push(
         pl330::queue_entry{ ch->sar, size, num, inc, 0, ch->chid });
@@ -491,7 +508,7 @@ static void pl330_insn_dmast(pl330* dma, pl330::channel* ch, u8 opcode,
 
     u32 num = ch->ccr.get_field<CCR_DST_BURST_LEN>() + 1;
     u32 size = (u32)1 << ch->ccr.get_field<CCR_DST_BURST_SIZE>();
-    bool inc = ch->ccr & ccr_bits::CCR_DST_INC;
+    bool inc = ch->ccr & CCR_DST_INC;
     ch->stall = !dma->write_queue.push(
         pl330::queue_entry{ ch->dar, size, num, inc, 0, ch->chid });
     if (!ch->stall)
@@ -718,7 +735,7 @@ static const insn_descr* fetch_mn_insn(pl330* dma) {
 
 static void execute_insn(pl330& dma, pl330::channel& channel,
                          const insn_descr* insn) {
-    u8 buffer[pl330::INSN_MAXSIZE];
+    u8 buffer[PL330_INSN_MAXSIZE];
     dma.dma.read(channel.cpc, (void*)buffer, insn->size);
     insn->exec(&dma, &channel, buffer[0], &buffer[1], insn->size - 1);
 }
@@ -745,7 +762,7 @@ static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
         return 1;
     } else if (channel.is_state(CHS_EXECUTING)) {
         channel.watchdog_timer += 1;
-        if (channel.watchdog_timer > pl330::WD_TIMEOUT)
+        if (channel.watchdog_timer > PL330_WD_TIMEOUT)
             VCML_ERROR("pl330 channel %d watchdog timeout", channel.chid);
     }
     return 0;
@@ -762,7 +779,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // crop length otherwise in case of an unaligned address the first read
         // would be too long
         u32 len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        u8 buffer[pl330::INSN_MAXSIZE];
+        u8 buffer[PL330_INSN_MAXSIZE];
         if (failed(dma.dma.read(insn.data_addr, (void*)buffer, len))) {
             dma.log.error("Dma channel read failed");
             VCML_ERROR("PL33 DMA read failed");
@@ -787,7 +804,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // crop length otherwise in case of an unaligned address the first read
         // would be too long
         int len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        u8 buffer[pl330::INSN_MAXSIZE];
+        u8 buffer[PL330_INSN_MAXSIZE];
         if (insn.zero_flag)
             for (int i = 0; i < len; i++)
                 buffer[i] = 0;
@@ -811,63 +828,58 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
     return num_exec;
 }
 
-static void run_channel(pl330& dma, pl330::channel& channel) {
-    while (channel_execute_cycle(dma, channel) > 0) {
-    }
-}
-
-static void run_channels(pl330& dma) {
-    for (auto& channel : dma.channels)
+void pl330::run_channels() {
+    for (auto& channel : channels)
         if (!(channel.is_state(CHS_STOPPED)))
-            run_channel(dma, channel);
+            while (channel_execute_cycle(*this, channel) > 0) {
+            }
 }
 
-static void run_manager(pl330& dma) {
-    if (!dma.manager.is_state(MNS_EXECUTING) &&
-        !dma.manager.is_state(MNS_WAITING_FOR_EVENT)) {
+void pl330::run_manager() {
+    if (!manager.is_state(MNS_EXECUTING) &&
+        !manager.is_state(MNS_WAITING_FOR_EVENT)) {
         return;
     }
-    u8 buffer[pl330::INSN_MAXSIZE];
-    dma.manager.stall = false;
-    while (((!dma.manager.stall) &&
-            dma.manager.is_state(MNS_WAITING_FOR_EVENT)) ||
-           dma.manager.is_state(MNS_EXECUTING)) {
-        const insn_descr* insn = fetch_mn_insn(&dma);
+    u8 buffer[PL330_INSN_MAXSIZE];
+    manager.stall = false;
+    while (((!manager.stall) && manager.is_state(MNS_WAITING_FOR_EVENT)) ||
+           manager.is_state(MNS_EXECUTING)) {
+        const insn_descr* insn = fetch_mn_insn(this);
         if (!insn) {
-            pl330_handle_mn_fault(dma, FTRD_INSTR_FETCH_ERR);
+            pl330_handle_mn_fault(*this, FTRD_INSTR_FETCH_ERR);
             break;
         }
 
-        dma.dma.read(dma.manager.dpc, (void*)buffer, insn->size);
-        insn->exec(&dma, nullptr, buffer[0], &buffer[1], insn->size - 1);
-        if (!dma.manager.stall) {
-            dma.manager.dpc += insn->size;
-            dma.manager.watchdog_timer = 0;
-        } else if (dma.manager.is_state(CHS_EXECUTING)) {
-            dma.manager.watchdog_timer += 1;
-            if (dma.manager.watchdog_timer > pl330::WD_TIMEOUT)
+        dma.read(manager.dpc, (void*)buffer, insn->size);
+        insn->exec(this, nullptr, buffer[0], &buffer[1], insn->size - 1);
+        if (!manager.stall) {
+            manager.dpc += insn->size;
+            manager.watchdog_timer = 0;
+        } else if (manager.is_state(CHS_EXECUTING)) {
+            manager.watchdog_timer += 1;
+            if (manager.watchdog_timer > PL330_WD_TIMEOUT)
                 VCML_ERROR("pl330 manager watchdog timeout");
         }
     }
 }
 
-static void handle_debug_insn(pl330& dma) {
+void pl330::handle_debug_instruction() {
     u8 args[5];
     u8 opcode;
     u8 chan_id;
 
     // check dbg status idle
-    if (dma.dbgstatus & dbgstatus_bits::DBGSTATUS)
-        return;                             // dbg busy case
-    dma.dbgstatus.set_bit<DBGSTATUS>(true); // set dbg busy
+    if (dbgstatus & dbgstatus_bits::DBGSTATUS)
+        return;                         // dbg busy case
+    dbgstatus.set_bit<DBGSTATUS>(true); // set dbg busy
 
-    chan_id = (dma.dbginst0 >> 8) & 0x07;
-    opcode = (dma.dbginst0 >> 16) & 0xff;
-    args[0] = (dma.dbginst0 >> 24) & 0xff;
-    args[1] = (dma.dbginst1 >> 0) & 0xff;
-    args[2] = (dma.dbginst1 >> 8) & 0xff;
-    args[3] = (dma.dbginst1 >> 16) & 0xff;
-    args[4] = (dma.dbginst1 >> 24) & 0xff;
+    chan_id = get_field<DBGINST0_CHANNEL_NUMBER>(dbginst0);
+    opcode = get_field<DBGINST0_INSTRUCTION_BYTE0>(dbginst0);
+    args[0] = get_field<DBGINST0_INSTRUCTION_BYTE1>(dbginst0);
+    args[1] = get_field<DBGINST1_INSTRUCTION_BYTE2>(dbginst1);
+    args[2] = get_field<DBGINST1_INSTRUCTION_BYTE3>(dbginst1);
+    args[3] = get_field<DBGINST1_INSTRUCTION_BYTE4>(dbginst1);
+    args[4] = get_field<DBGINST1_INSTRUCTION_BYTE5>(dbginst1);
 
     //    check if insn exists
     insn_descr insn = { 0, 0, 0, nullptr };
@@ -875,32 +887,30 @@ static void handle_debug_insn(pl330& dma) {
         if ((opcode & insn_candidate.opmask) == insn_candidate.opcode)
             insn = insn_candidate;
     if (!insn.exec) {
-        dma.log.warn("Pl330 invalid debug instruction opcode");
+        log.warn("Pl330 invalid debug instruction opcode");
         return;
     }
 
     // check target
-    if (dma.dbginst0 & dbginst0_bits::DBGINST0_DEBUG_THREAD) {
+    if (dbginst0 & dbginst0_bits::DBGINST0_DEBUG_THREAD) {
         // target is channel
-        dma.channels[chan_id].stall = false;
-        insn.exec(&dma, &dma.channels[chan_id], opcode, args, insn.size);
+        channels[chan_id].stall = false;
+        insn.exec(this, &channels[chan_id], opcode, args, insn.size);
     } else {
-        insn.exec(&dma, nullptr, opcode, args, insn.size);
+        insn.exec(this, nullptr, opcode, args, insn.size);
     }
-    dma.dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
+    dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
 }
 
 void pl330::pl330_thread() {
     while (true) {
         wait(m_dma);
         if (m_execute_debug) {
-            handle_debug_insn(*this);
+            handle_debug_instruction();
             m_execute_debug = false;
         }
-        run_manager(*this);
-        run_channels(*this);
-        // todo re-trigger if any channels are in states where they might have
-        // just been waiting for other channels, or sth ?! test!
+        run_manager();
+        run_channels();
     }
 }
 
@@ -955,20 +965,12 @@ pl330::~pl330() {
 void pl330::reset() {
     peripheral::reset();
 
-    // set control registers //todo many of these should probably be properties
-    // TODO do resets properly add them to enums
+    // set control registers
     cr0.set_bit<CR0_PERIPH_REQ>(enable_periph);
-    cr0.set_bit<CR0_BOOT_EN>(0b1);
-    cr0.set_bit<CR0_MGR_NS_AT_RST>(0b0);
     cr0.set_field<CR0_NUM_CHNLS>(num_channels - 1);
-    cr0.set_field<CR0_NUM_PERIPH_REQ>(
-        32 - 1); // todo set via num connected periph irq
-    cr0.set_field<CR0_NUM_EVENTS>(32 - 1); // todo set via num irq?
     crd.set_field<CRD_DATA_BUFFER_DEP>(mfifo_lines - 1);
-    crd.set_field<CRD_DATA_WIDTH>(mfifo_width); // 0b011 = 64-bit
-    crd.set_field<CRD_RD_CAP>(8 - 1);
+    crd.set_field<CRD_DATA_WIDTH>(mfifo_width);
     crd.set_field<CRD_RD_Q_DEP>(queue_size - 1);
-    crd.set_field<CRD_WR_CAP>(8 - 1);
     crd.set_field<CRD_WR_Q_DEP>(queue_size - 1);
 
     // reset manager
@@ -1014,12 +1016,12 @@ pl330::pl330(const sc_module_name& nm):
     dbgcmd("dbgcmd", 0xd04),
     dbginst0("dbginst0", 0xd08),
     dbginst1("dbginst1", 0xd0c),
-    cr0("cr0", 0xe00),
+    cr0("cr0", 0xe00, CR0_RESET_VALUE),
     cr1("cr1", 0xe04),
     cr2("cr2", 0xe08),
     cr3("cr3", 0xe0c),
     cr4("cr4", 0xe10),
-    crd("crd", 0xe14),
+    crd("crd", 0xe14, CRD_RESET_VALUE),
     wd("wd", 0xe80),
     periph_id("periph_id", 0xfe0, 0x00000000),
     pcell_id("pcell_id", 0xff0, 0x00000000),
