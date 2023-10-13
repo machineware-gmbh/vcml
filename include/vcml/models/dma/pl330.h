@@ -125,50 +125,21 @@ public:
     class channel : public module
     {
     public:
-        enum state : u8 {
-            STOPPED = 0x0,
-            EXECUTING = 0x1,
-            CACHE_MISS = 0x2,
-            UPDATING_PC = 0x3,
-            WAITING_FOR_EVENT = 0x4,
-            AT_BARRIER = 0x5,
-            WAITING_FOR_PERIPHERAL = 0x7,
-            KILLING = 0x8,
-            COMPLETING = 0x9,
-            FAULTING_COMPLETING = 0xE,
-            FAULTING = 0xF,
-        };
+        reg<u32> ftr; //< channel fault type register
+        reg<u32> csr; //< channel status register
+        reg<u32> cpc; //< channel pc register
+        reg<u32> sar; //< source address register
+        reg<u32> dar; //< destination address register
+        reg<u32> ccr; //< channel control register
+        reg<u32> lc0; //< loop counter 0 register
+        reg<u32> lc1; //< loop counter 1 register
 
-        enum fault : u8 {
-            UNDEF_INSTR = 0x0,
-            OPERAND_INVALID = 0x1,
-            CH_EVNT_ERR = 0x5,
-            CH_PERIPH_ERR = 0x6,
-            CH_RDWR_ERR = 0x7,
-            MFIFO_ERR = 0xc,
-            ST_DATA_UNAVAILABLE = 0xd,
-            INSTR_FETCH_ERR = 0x10,
-            DATA_WRITE_ERR = 0x11,
-            DATA_READ_ERR = 0x12,
-            DBG_INSTR = 0x1e,
-            LOCKUP_ERR = 0x1f,
-        };
-
-        reg<u32> ftr; // channel fault type register
-        reg<u32> csr; // channel status register
-        reg<u32> cpc; // channel pc register
-        reg<u32> sar; // source address register
-        reg<u32> dar; // destination address register
-        reg<u32> ccr; // channel control register
-        reg<u32> lc0; // loop counter 0 register
-        reg<u32> lc1; // loop counter 1 register
-
-        u32 tag; // aka channel number
+        u32 chid;
         bool stall;
         u32 request_flag;
         u32 watchdog_timer;
 
-        bool is_state(u8 state) const { return (get_state() == state); }
+        bool is_state(u8 state) const { return get_state() == state; }
         u32 get_state() const { return csr & 0x7; }
         void set_state(u32 new_state) { csr = (csr & ~0x7) | new_state; }
 
@@ -180,24 +151,6 @@ public:
     class manager : public module
     {
     public:
-        enum state : u8 {
-            STOPPED = 0x0,
-            EXECUTING = 0x1,
-            CACHE_MISS = 0x2,
-            UPDATING_PC = 0x3,
-            WAITING_FOR_EVENT = 0x4,
-            FAULTING = 0xF,
-        };
-
-        enum fault : u8 {
-            UNDEF_INSTR = 0x0,
-            OPERAND_INVALID = 0x1,
-            DMAGO_ERR = 0x4,
-            EVNT_ERR = 0x5,
-            INSTR_FETCH_ERR = 0x10,
-            DBG_INSTR = 0x1e,
-        };
-
         reg<u32> dsr;  // DMA Manager Status Register
         reg<u32> dpc;  // DMA Program Counter Register
         reg<u32> fsrd; // Fault Status DMA Manager Register
@@ -217,8 +170,6 @@ public:
 
     property<bool> enable_periph;
     property<u32> num_channels;
-    property<u32> num_irq;
-    property<u32> num_periph;
     property<u32> queue_size;
     property<u32> mfifo_width;
     property<u32> mfifo_lines;
@@ -242,7 +193,7 @@ public:
     reg<u32> dbginst1;  // Debug Instructions-1 Register
 
     reg<u32> cr0; // Configuration Register 0
-    reg<u32> cr1; // Configuration Register 1 //TODO: probably not needed?!
+    reg<u32> cr1; // Configuration Register 1
     reg<u32> cr2; // Configuration Register 2
     reg<u32> cr3; // Configuration Register 3
     reg<u32> cr4; // Configuration Register 4 // security state op peripheral

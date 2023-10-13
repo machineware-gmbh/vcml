@@ -10,28 +10,28 @@
 
 #include "testing.h"
 
-static inline void emit_sev(u8*& buf, u32 ev_id) {
+static void emit_sev(u8*& buf, u32 ev_id) {
     buf[0] = 0b00110100;
     buf[1] = ev_id << 3;
     buf += 2;
 }
 
-static inline void emit_end(u8*& buf) {
+static void emit_end(u8*& buf) {
     buf[0] = 0b00000000;
     buf += 1;
 }
 
-static inline void emit_ld(u8*& buf) {
+static void emit_ld(u8*& buf) {
     buf[0] = 0b00000100;
     buf += 1;
 }
 
-static inline void emit_st(u8*& buf) {
+static void emit_st(u8*& buf) {
     buf[0] = 0b00001000;
     buf += 1;
 }
 
-static inline void emit_rw_loop(u8*& buf, u32 iterations) {
+static void emit_rw_loop(u8*& buf, u32 iterations) {
     buf[0] = 0b00100000;                  // DMALP
     buf[1] = static_cast<u8>(iterations); // DMALP arg
     buf += 2;
@@ -50,7 +50,7 @@ enum move_target {
     DAR = 2,
 };
 
-static inline void emit_mov(u8*& buf, move_target target, u32 val) {
+static void emit_mov(u8*& buf, move_target target, u32 val) {
     buf[0] = 0b10111100; // DMAMOV
     buf[1] = static_cast<u8>(target);
     buf[2] = static_cast<u8>(val >> 0);
@@ -60,11 +60,11 @@ static inline void emit_mov(u8*& buf, move_target target, u32 val) {
     buf += 6;
 }
 
-static inline void emit_configuration(u8*& buf, bool non_secure,
-                                      u32 src_burst_size, u32 src_burst_len,
-                                      u32 src_address, u32 src_increment,
-                                      u32 dst_burst_size, u32 dst_burst_len,
-                                      u32 dst_address, u32 dst_increment) {
+static void emit_configuration(u8*& buf, bool non_secure, u32 src_burst_size,
+                               u32 src_burst_len, u32 src_address,
+                               u32 src_increment, u32 dst_burst_size,
+                               u32 dst_burst_len, u32 dst_address,
+                               u32 dst_increment) {
     u32 ccr_val = 0;
     ccr_val |= ((non_secure & 0b1) << 9) | ((non_secure & 0b1) << 23) |
                ((src_burst_size & 0b111) << 1) |
@@ -137,9 +137,8 @@ public:
         const u32 dst_buffer_addr = 0x3000;
         u8* insn_buf_tail = channel_insn_buffer;
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++)
             (&data_char_ptr[src_buffer_addr])[i] = i;
-        }
 
         emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
                            1u, 1u, src_buffer_addr, 1u, 1u, 1u,
@@ -153,9 +152,9 @@ public:
 
         execute_dbg_insn(0, 0x1000);
 
-        while (!irq_in) {
+        while (!irq_in)
             wait(1.0, sc_core::SC_SEC);
-        }
+
         for (int i = 0; i < 16; i++) {
             EXPECT_EQ(data_char_ptr[src_buffer_addr + i],
                       data_char_ptr[dst_buffer_addr + i]);
