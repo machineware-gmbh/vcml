@@ -302,9 +302,6 @@ static void pl330_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
             dma->irq_abort = false;
     }
     ch->set_state(CHS_KILLING);
-    // TODO: according to spec a channel thread should wait for AXI
-    // transactions with its chid to complete here, but it isn't instead
-    // it just removes them in qemu what do we do?!
     dma->mfifo.remove_tagged(ch->chid);
     dma->read_queue.remove_tagged(ch->chid);
     dma->write_queue.remove_tagged(ch->chid);
@@ -408,7 +405,6 @@ static void pl330_insn_dmamov(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    // todo abort if [9] is 0 and channel is ns==1
     u32 im = (((u32)args[4]) << 24) | (((u32)args[3]) << 16) |
              (((u32)args[2]) << 8) | (((u32)args[1]));
 
@@ -417,6 +413,10 @@ static void pl330_insn_dmamov(pl330* dma, pl330::channel* ch, u8 opcode,
         ch->sar = im;
         break;
     case 0b001:
+        if (!(im & (0x9 << 10)) && (ch->csr & CSR_CNS)) {
+            pl330_handle_ch_fault(*dma, *ch, FTR_CH_RDWR_ERR);
+            break;
+        }
         ch->ccr = im;
         break;
     case 0b010:
@@ -649,8 +649,7 @@ static void pl330_insn_dmawfp(pl330* dma, pl330::channel* ch, u8 opcode,
         return;
     }
 
-    if (dma->periph_busy[periph_id]) { // TODO: how do we wait for a peripheral
-                                       // in vcml?!
+    if (dma->periph_busy[periph_id]) {
         ch->set_state(CHS_WAITING_FOR_PERIPHERAL);
         ch->stall = 1;
     } else if (ch->is_state(CHS_WAITING_FOR_PERIPHERAL)) {
