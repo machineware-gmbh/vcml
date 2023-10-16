@@ -174,21 +174,22 @@ enum request_type : u32 {
 
 static void pl330_handle_ch_fault(pl330& dma, pl330::channel& ch,
                                   ftr_bits fault) {
-    ch.ftr |= 0b1 << fault;
+    ch.ftr |= bit(fault);
+    ch.set_state(CHS_FAULTING);
     bool is_first_fault = !(get_field<FSRC_FAULT_STATUS>(dma.fsrc) &&
                             (dma.manager.fsrd & FSRD_FS_MGR));
-    dma.fsrc |= 0b1 << ch.chid;
-    ch.set_state(CHS_FAULTING);
+    dma.fsrc |= bit(ch.chid);
     ch.log.warn("Dma channel faulting with fault: %d", fault);
     if (is_first_fault)
         dma.irq_abort = true;
 }
 
 static void pl330_handle_mn_fault(pl330& dma, ftrd_bits fault) {
-    dma.manager.ftrd |= 0b1 << fault;
-    bool first_fault = !((dma.fsrc & 0x7) && (dma.manager.fsrd & 0x1));
-    dma.manager.fsrd |= 0b1;
+    dma.manager.ftrd |= bit(fault);
     dma.manager.set_state(MNS_FAULTING);
+    bool first_fault = !(get_field<FSRC_FAULT_STATUS>(dma.fsrc) &&
+                         (dma.manager.fsrd & FSRD_FS_MGR));
+    dma.manager.fsrd |= bit(0);
     dma.manager.log.warn("Dma manager faulting with fault: %d", fault);
     if (first_fault)
         dma.irq_abort = true;
@@ -252,7 +253,7 @@ static void pl330_insn_dmaflushp(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    if ((ch->csr & CSR_DMAWFP_B_NS) && !(dma->cr4 & (1 << periph_id))) {
+    if ((ch->csr & CSR_DMAWFP_B_NS) && !(dma->cr4 & bit(periph_id))) {
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
@@ -296,7 +297,7 @@ static void pl330_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
     if (ch->is_state(CHS_FAULTING) || ch->is_state(CHS_FAULTING_COMPLETING)) {
         // This is the only way for a channel to leave the faulting state
         ch->ftr &= ~FTR_MASK;
-        dma->fsrc &= ~(1 << ch->chid);
+        dma->fsrc &= ~bit(ch->chid);
         bool faulting = (dma->fsrc & 0x7) && (dma->manager.fsrd & 0x1);
         if (!faulting)
             dma->irq_abort = false;
@@ -316,8 +317,7 @@ static void pl330_mn_insn_dmakill(pl330* dma, pl330::channel* ch, u8 opcode,
 static void pl330_insn_dmald(pl330* dma, pl330::channel* ch, u8 opcode,
                              u8* args, int len) {
     u8 bs = opcode & 0b11;
-    u32 size, num;
-    bool inc;
+    u32 num;
 
     if (bs == 0b10) {
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
@@ -335,8 +335,8 @@ static void pl330_insn_dmald(pl330* dma, pl330::channel* ch, u8 opcode,
     else
         num = ch->ccr.get_field<CCR_SRC_BURST_LEN>() + 1;
 
-    size = (u32)1 << ch->ccr.get_field<CCR_SRC_BURST_SIZE>();
-    inc = ch->ccr & CCR_SRC_INC;
+    u32 size = bit(ch->ccr.get_field<CCR_SRC_BURST_SIZE>());
+    bool inc = ch->ccr & CCR_SRC_INC;
 
     ch->stall = !dma->read_queue.push(
         pl330::queue_entry{ ch->sar, size, num, inc, 0, ch->chid });
@@ -355,7 +355,7 @@ static void pl330_insn_dmaldp(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    if (ch->csr & CSR_CNS && !(dma->cr4 & (1 << periph_id))) {
+    if (ch->csr & CSR_CNS && !(dma->cr4 & bit(periph_id))) {
         pl330_handle_ch_fault(*dma, *ch, FTR_CH_PERIPH_ERR);
         return;
     }
@@ -457,15 +457,15 @@ static void pl330_insn_dmasev(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    if (ch->csr & CSR_CNS && !(dma->cr3 & (1 << ev_id))) {
+    if (ch->csr & CSR_CNS && !(dma->cr3 & bit(ev_id))) {
         pl330_handle_ch_fault(*dma, *ch, FTR_CH_EVNT_ERR);
         return;
     }
-    if (dma->inten & (1 << ev_id)) {
-        dma->intmis |= (1 << ev_id);
+    if (dma->inten & bit(ev_id)) {
+        dma->intmis |= bit(ev_id);
         dma->irq[ev_id] = true;
     }
-    dma->int_event_ris |= (1 << ev_id);
+    dma->int_event_ris |= bit(ev_id);
 }
 
 static void pl330_mn_insn_dmasev(pl330* dma, pl330::channel* ch, u8 opcode,
@@ -481,15 +481,15 @@ static void pl330_mn_insn_dmasev(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_mn_fault(*dma, FTRD_OPERAND_INVALID);
         return;
     }
-    if (dma->manager.dsr & DSR_DNS && !(dma->cr3 & (1 << ev_id))) {
+    if (dma->manager.dsr & DSR_DNS && !(dma->cr3 & bit(ev_id))) {
         pl330_handle_mn_fault(*dma, FTRD_EVNT_ERR);
         return;
     }
-    if (dma->inten & (1 << ev_id)) {
-        dma->intmis |= (1 << ev_id);
+    if (dma->inten & bit(ev_id)) {
+        dma->intmis |= bit(ev_id);
         dma->irq[ev_id] = true;
     }
-    dma->int_event_ris |= (1 << ev_id);
+    dma->int_event_ris |= bit(ev_id);
 }
 
 static void pl330_insn_dmast(pl330* dma, pl330::channel* ch, u8 opcode,
@@ -507,7 +507,7 @@ static void pl330_insn_dmast(pl330* dma, pl330::channel* ch, u8 opcode,
     }
 
     u32 num = ch->ccr.get_field<CCR_DST_BURST_LEN>() + 1;
-    u32 size = (u32)1 << ch->ccr.get_field<CCR_DST_BURST_SIZE>();
+    u32 size = bit(ch->ccr.get_field<CCR_DST_BURST_SIZE>());
     bool inc = ch->ccr & CCR_DST_INC;
     ch->stall = !dma->write_queue.push(
         pl330::queue_entry{ ch->dar, size, num, inc, 0, ch->chid });
@@ -526,7 +526,7 @@ static void pl330_insn_dmastp(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    if (ch->csr & CSR_CNS && !(dma->cr4 & (1 << periph_id))) {
+    if (ch->csr & CSR_CNS && !(dma->cr4 & bit(periph_id))) {
         pl330_handle_ch_fault(*dma, *ch, FTR_CH_PERIPH_ERR);
         return;
     }
@@ -536,7 +536,7 @@ static void pl330_insn_dmastp(pl330* dma, pl330::channel* ch, u8 opcode,
 static void pl330_insn_dmastz(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, int len) {
     u32 num = ch->ccr.get_field<CCR_DST_BURST_LEN>() + 1;
-    u32 size = (u32)1 << ((ch->ccr >> 15) & 0x7);
+    u32 size = bit((ch->ccr >> 15) & 0x7);
     bool inc = !!((ch->ccr >> 14) & 0b1);
     ch->stall = dma->write_queue.push(
         pl330::queue_entry{ ch->dar, size, num, inc, 1, ch->chid });
@@ -555,13 +555,13 @@ static void pl330_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    if (ch->csr & CSR_CNS && !(dma->cr3 & (1 << ev_id))) {
+    if (ch->csr & CSR_CNS && !(dma->cr3 & bit(ev_id))) {
         pl330_handle_ch_fault(*dma, *ch, FTR_CH_EVNT_ERR);
         return;
     }
     ch->csr.set_field<CSR_WAKEUP_NUMBER>(ev_id);
     ch->set_state(CHS_WAITING_FOR_EVENT);
-    if (~dma->inten & dma->int_event_ris & 1 << ev_id) {
+    if (~dma->inten & dma->int_event_ris & bit(ev_id)) {
         ch->set_state(CHS_EXECUTING);
         // If anyone else is currently waiting on the same event, let them
         // clear the ev_status, so they pick up event as well
@@ -572,7 +572,7 @@ static void pl330_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
                 return;
             }
         }
-        dma->int_event_ris &= ~(1 << ev_id);
+        dma->int_event_ris &= ~bit(ev_id);
     } else {
         ch->stall = 1;
     }
@@ -589,13 +589,13 @@ static void pl330_mn_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_mn_fault(*dma, FTRD_OPERAND_INVALID);
         return;
     }
-    if (dma->manager.dsr & DSR_DNS && !(dma->cr3 & (1 << ev_id))) {
+    if (dma->manager.dsr & DSR_DNS && !(dma->cr3 & bit(ev_id))) {
         pl330_handle_mn_fault(*dma, FTRD_EVNT_ERR);
         return;
     }
     dma->manager.dsr.set_field<DSR_WAKEUP_EVENT>(ev_id);
     dma->manager.set_state(MNS_WAITING_FOR_EVENT);
-    if (~dma->inten & dma->int_event_ris & (1 << ev_id)) {
+    if (~dma->inten & dma->int_event_ris & bit(ev_id)) {
         dma->manager.set_state(MNS_EXECUTING);
         // If anyone else is currently waiting on the same event, let them
         // clear the ev_status, so they pick up event as well
@@ -606,7 +606,7 @@ static void pl330_mn_insn_dmawfe(pl330* dma, pl330::channel* ch, u8 opcode,
                 return;
             }
         }
-        dma->int_event_ris &= ~(1 << ev_id);
+        dma->int_event_ris &= ~bit(ev_id);
     } else {
         ch->stall = 1;
     }
@@ -625,7 +625,7 @@ static void pl330_insn_dmawfp(pl330* dma, pl330::channel* ch, u8 opcode,
         pl330_handle_ch_fault(*dma, *ch, FTR_OPERAND_INVALID);
         return;
     }
-    if (ch->csr & CSR_CNS && !(dma->cr4 & (1 << periph_id))) {
+    if (ch->csr & CSR_CNS && !(dma->cr4 & bit(periph_id))) {
         pl330_handle_ch_fault(*dma, *ch, FTR_CH_PERIPH_ERR);
         return;
     }
@@ -828,10 +828,13 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
 }
 
 void pl330::run_channels() {
-    for (auto& channel : channels)
-        if (!(channel.is_state(CHS_STOPPED)))
+    for (auto& channel : channels) {
+        if (!(channel.is_state(CHS_STOPPED))) {
             while (channel_execute_cycle(*this, channel) > 0) {
+                // nothing to do
             }
+        }
+    }
 }
 
 void pl330::run_manager() {
@@ -930,6 +933,7 @@ pl330::channel::channel(const sc_module_name& nm, mwr::u32 chid):
         reg.allow_read_only();
         reg.sync_never();
     };
+
     reg_setter(csr);
     reg_setter(cpc);
     reg_setter(sar);
@@ -1047,7 +1051,7 @@ pl330::pl330(const sc_module_name& nm):
     intclr.on_write([&](u32 v, size_t i) -> void {
         u32 irq_clear_mask = v & inten;
         for (u32 j = 0; j < 32; j++)
-            if (irq_clear_mask & (1 << j))
+            if (irq_clear_mask & bit(j))
                 irq[j] = false;
         int_event_ris &= ~irq_clear_mask;
         intmis &= ~irq_clear_mask;
