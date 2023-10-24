@@ -221,6 +221,8 @@ size_t bus::bind_default(TARGET& target, u64 offset) {
     return port;
 }
 
+} // namespace generic
+
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
@@ -248,7 +250,6 @@ void tlm_bind_default(sc_object& bus, const sc_object& host,
 void tlm_bind_default(sc_object& bus, const sc_object& host,
                       const string& port, size_t idx, u64 offset);
 
-} // namespace generic
 } // namespace vcml
 
 #endif

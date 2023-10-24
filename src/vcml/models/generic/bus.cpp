@@ -248,6 +248,12 @@ bus::~bus() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::generic::bus, name, args) {
+    return new bus(name);
+}
+
+} // namespace generic
+
 using initiator_t = tlm::tlm_base_initiator_socket<>;
 using target_t = tlm::tlm_base_target_socket<>;
 using socket_t = variant<initiator_t*, target_t*>;
@@ -281,8 +287,8 @@ static socket_t get_socket(const sc_object& host, const string& port,
     VCML_ERROR("%s[%zu] is not a valid tlm socket", child->name(), idx);
 }
 
-static bus& get_bus(sc_object& obj) {
-    auto b = dynamic_cast<bus*>(&obj);
+static generic::bus& get_bus(sc_object& obj) {
+    auto b = dynamic_cast<generic::bus*>(&obj);
     VCML_ERROR_ON(!b, "%s is not a valid tlm bus", obj.name());
     return *b;
 }
@@ -386,9 +392,4 @@ void tlm_bind_default(sc_object& obj, const sc_object& host,
         bus.bind_default(*std::get<target_t*>(socket), offset);
 }
 
-VCML_EXPORT_MODEL(vcml::generic::bus, name, args) {
-    return new bus(name);
-}
-
-} // namespace generic
 } // namespace vcml
