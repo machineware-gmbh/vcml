@@ -670,6 +670,8 @@ public:
     virtual size_t count() const override { return m_val.size(); }
     virtual const char* type() const override { return m_type.c_str(); }
 
+    bool empty() const { return m_val.empty(); }
+
     constexpr bool is_inited() const { return m_inited; }
     constexpr bool is_default() const { return !m_inited; }
 
