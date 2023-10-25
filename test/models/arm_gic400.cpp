@@ -45,6 +45,7 @@ public:
             GICC_IIDR = 0xfc,  // CPU Interface Identification
             GICC_CTLR = 0x00,  // CPU Interface Control Register
             GICC_PMR = 0x04,   // Interrupt Priority Mask Register
+            GICC_BPR = 0x08,   // Binary Point Register
             GICC_IAR = 0x0c,   // Interrupt Acknowledge Register
             GICC_EOIR = 0x10,  // End of Interrupt Register
             GICC_RPR = 0x14,   // Running Priority Register
