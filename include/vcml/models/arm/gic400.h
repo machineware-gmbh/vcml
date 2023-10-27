@@ -43,12 +43,6 @@ public:
         VIRT_ABPR_MAX = 4,
     };
 
-    using GICC_CTLR_ENGRP0 = field<0, 1, u32>;
-    using GICC_CTLR_ENGRP1 = field<1, 1, u32>;
-    using GICC_CTLR_ACKCTL = field<2, 1, u32>;
-    using GICC_CTLR_FIQEN = field<3, 1, u32>;
-    using GICC_CTLR_CBPR = field<4, 1, u32>;
-
     enum irq_as : address_space {
         IRQ_AS_SGI,
         IRQ_AS_PPI,
@@ -256,8 +250,6 @@ public:
         cpuif(const cpuif&);
 
     public:
-        typedef field<0, 1> CTLR_ENABLE;
-
         reg<u32> ctlr;   // CPU Control register
         reg<u32> pmr;    // IRQ Priority Mask register
         reg<u32> bpr;    // Binary Point register
