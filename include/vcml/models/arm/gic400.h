@@ -67,7 +67,7 @@ public:
 
         IDLE_PRIO = 0xff,
 
-        GRP_DISABLED_IRQ = 1022,
+        ACKCTL_DISABLED_IRQ = 1022,
         SPURIOUS_IRQ = 1023,
     };
 

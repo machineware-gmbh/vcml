@@ -660,51 +660,50 @@ public:
         // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
         val = 0x3;
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)))
-                    << "failed to set GICC_CTLR for cpu0 HIGH";
+            << "failed to set GICC_CTLR for cpu0 HIGH";
         EXPECT_OK(cpuif_out.readw(GICC_CTLR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_CTLR from CPUIF";
+            << "failed to read GICC_CTLR from CPUIF";
         EXPECT_EQ(val, 0x3) << "GICC_CTLR of CPUIF should be 3";
 
         val = 0x3;
         EXPECT_OK(distif_out.writew(GICD_CTLR, val, sbi_cpuid(0)))
-                    << "failed to write GICD_CTLR";
+            << "failed to write GICD_CTLR";
         EXPECT_OK(distif_out.readw(GICD_CTLR, val, sbi_cpuid(0)))
-                    << "failed to read GICD_CTLR from DISTIF";
+            << "failed to read GICD_CTLR from DISTIF";
         EXPECT_EQ(val, 0x3) << "GICD_CTLR of DISTIF should be 3";
 
         // read and write ISENABLER_SPI, ITARGTES_SPI Register of DISTIF and
         // PMR Register of CPU0
         val = 0x0;
         EXPECT_OK(distif_out.readw(GICD_ISENABLER_SPI, val))
-                    << "failed to read GICD_ISENABLER_SPI for peripheral0";
+            << "failed to read GICD_ISENABLER_SPI for peripheral0";
         val = 0x1;
         EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI + 0x01, val))
-                    << "failed to write ITARGETS_SPI register of distributor";
+            << "failed to write ITARGETS_SPI register of distributor";
         EXPECT_OK(distif_out.readw(GICD_ITARGETS_SPI + 0x01, val))
-                    << "failed to read ITARGETS_SPI register of distributor";
+            << "failed to read ITARGETS_SPI register of distributor";
         EXPECT_EQ(val, 0x01) << "writing to ITARGETS_SPI not successful";
 
         val = 0xf;
         EXPECT_OK(cpuif_out.writew(GICC_PMR, val, sbi_cpuid(0)))
-                    << "failed to set Priority Mask GICC_PMR for cpu0";
+            << "failed to set Priority Mask GICC_PMR for cpu0";
         EXPECT_OK(cpuif_out.readw(GICC_PMR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_PMR for cpu0";
+            << "failed to read GICC_PMR for cpu0";
         EXPECT_EQ(val, 0xf) << "writing to GICC_PMR of cpu0 not successful";
 
         val = 0b00000010;
         EXPECT_OK(distif_out.writew(GICD_ICENABLER_SPI, -1));
         EXPECT_OK(distif_out.writew(GICD_ISENABLER_SPI, val));
         EXPECT_OK(distif_out.readw(GICD_ISENABLER_SPI, val))
-                    << "failed to read GICD_ISENABLER_SPI";
+            << "failed to read GICD_ISENABLER_SPI";
         EXPECT_EQ(val, 0b00000010)
-                    << "writing to GICD_ISENABLER_SPI not successful";
+            << "writing to GICD_ISENABLER_SPI not successful";
 
         val = 0b00000010;
         EXPECT_OK(distif_out.writew(GICD_IGROUPR_SPI, val, sbi_cpuid(0)));
         EXPECT_OK(distif_out.readw(GICD_IGROUPR_SPI, val, sbi_cpuid(0)))
-                    << "failed to read GICD_IGROUPR";
-        EXPECT_EQ(val, 0b00000010)
-                    << "writing to GICD_IGROUPR not successful";
+            << "failed to read GICD_IGROUPR";
+        EXPECT_EQ(val, 0b00000010) << "writing to GICD_IGROUPR not successful";
 
         wait(SC_ZERO_TIME);
 
@@ -714,29 +713,31 @@ public:
         wait(SC_ZERO_TIME);
         wait(SC_ZERO_TIME);
 
-        EXPECT_EQ(nirq_in[0], 1) << "IRQ should have been signalled to irq on cpu0";
+        EXPECT_EQ(nirq_in[0], 1)
+            << "IRQ should have been signalled to irq on cpu0";
         EXPECT_EQ(nirq_in[1], 0)
-                    << "IRQ should not have been signaled to irq on cpu1";
-        EXPECT_EQ(nfirq_in[0], 0) << "IRQ should not have been signaled to firq on cpu0";
+            << "IRQ should not have been signaled to irq on cpu1";
+        EXPECT_EQ(nfirq_in[0], 0)
+            << "IRQ should not have been signaled to firq on cpu0";
         EXPECT_EQ(nfirq_in[1], 0)
-                    << "IRQ should not have been signaled to firq on cpu1";
+            << "IRQ should not have been signaled to firq on cpu1";
 
         // cpu0 reads IAR of its CPU interface
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0xff) << "GICC_RPR should be 255 (idle priority)"
                              << " -> no handling of interrupt";
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_AIAR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_IAR of cpu0";
+            << "failed to read GICC_IAR of cpu0";
         EXPECT_EQ(val, 33) << "read wrong interrupt value from GICC_IAR";
         wait(SC_ZERO_TIME);
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0x0) << "GICC_RPR should be 1023"
                             << " -> handling of interrupt of priority 0";
 
@@ -744,20 +745,20 @@ public:
         // interface
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_AIAR, val, sbi_cpuid(1)))
-                    << "failed to read GICC_IAR of cpu0";
+            << "failed to read GICC_IAR of cpu0";
         EXPECT_EQ(val, 1023)
-                    << "expected to read spurious interrupt ID from GICC_IAR";
+            << "expected to read spurious interrupt ID from GICC_IAR";
         wait(SC_ZERO_TIME);
         EXPECT_EQ(nirq_in[0], 0) << "IRQ should be 0 after reading GICC_IAR";
 
         // cpu0 writes interrupt ID 32 = 0x20 to EOIR register
         val = 0x21;
         EXPECT_OK(cpuif_out.writew(GICC_AEOIR, val, sbi_cpuid(0)))
-                    << "cpu0 failed to write in GICC_EOIR";
+            << "cpu0 failed to write in GICC_EOIR";
         val = 0x3ff;
         EXPECT_CE(cpuif_out.writew(GICC_IIDR, val, sbi_cpuid(1)))
-                    << "writing spurious interrupt ID to GICC_EOIR should"
-                    << " not be allowed";
+            << "writing spurious interrupt ID to GICC_EOIR should"
+            << " not be allowed";
 
         // setting SPI connection of processor 1 LOW
         spi_out[1].write(false);
@@ -775,61 +776,60 @@ public:
         // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
         val = 0xb;
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)))
-                    << "failed to set GICC_CTLR for cpu0 HIGH";
+            << "failed to set GICC_CTLR for cpu0 HIGH";
         EXPECT_OK(cpuif_out.readw(GICC_CTLR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_CTLR from CPUIF";
+            << "failed to read GICC_CTLR from CPUIF";
         EXPECT_EQ(val, 0xb) << "GICC_CTLR of CPUIF should be 3";
 
         val = 0x3;
         EXPECT_OK(distif_out.writew(GICD_CTLR, val, sbi_cpuid(0)))
-                    << "failed to write GICD_CTLR";
+            << "failed to write GICD_CTLR";
         EXPECT_OK(distif_out.readw(GICD_CTLR, val, sbi_cpuid(0)))
-                    << "failed to read GICD_CTLR from DISTIF";
+            << "failed to read GICD_CTLR from DISTIF";
         EXPECT_EQ(val, 0x3) << "GICD_CTLR of DISTIF should be 3";
 
         // read and write ISENABLER_SPI, ITARGTES_SPI Register of DISTIF and
         // PMR Register of CPU0
         val = 0x3;
         EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI, val))
-                    << "failed to write ITARGETS_SPI register of distributor";
+            << "failed to write ITARGETS_SPI register of distributor";
         EXPECT_OK(distif_out.readw(GICD_ITARGETS_SPI, val))
-                    << "failed to read ITARGETS_SPI register of distributor";
+            << "failed to read ITARGETS_SPI register of distributor";
         EXPECT_EQ(val, 0x03) << "writing to ITARGETS_SPI not successful";
         val = 0x3;
         EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI + 0x1, val))
-                    << "failed to write ITARGETS_SPI register of distributor";
+            << "failed to write ITARGETS_SPI register of distributor";
         EXPECT_OK(distif_out.readw(GICD_ITARGETS_SPI + 0x1, val))
-                    << "failed to read ITARGETS_SPI register of distributor";
+            << "failed to read ITARGETS_SPI register of distributor";
         EXPECT_EQ(val, 0x03) << "writing to ITARGETS_SPI not successful";
 
         val = 0xf;
         EXPECT_OK(cpuif_out.writew(GICC_PMR, val, sbi_cpuid(0)))
-                    << "failed to set Priority Mask GICC_PMR for cpu0";
+            << "failed to set Priority Mask GICC_PMR for cpu0";
         EXPECT_OK(cpuif_out.readw(GICC_PMR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_PMR for cpu0";
+            << "failed to read GICC_PMR for cpu0";
         EXPECT_EQ(val, 0xf) << "writing to GICC_PMR of cpu0 not successful";
 
         val = 0b10000000011;
         EXPECT_OK(distif_out.writew(GICD_ICENABLER_SPI, -1));
         EXPECT_OK(distif_out.writew(GICD_ISENABLER_SPI, val));
         EXPECT_OK(distif_out.readw(GICD_ISENABLER_SPI, val))
-                    << "failed to read GICD_ISENABLER_SPI";
+            << "failed to read GICD_ISENABLER_SPI";
         EXPECT_EQ(val, 0b10000000011)
-                    << "writing to GICD_ISENABLER_SPI not successful";
+            << "writing to GICD_ISENABLER_SPI not successful";
 
         val = 0b00000001;
         EXPECT_OK(distif_out.writew(GICD_IGROUPR_SPI, val, sbi_cpuid(0)));
         EXPECT_OK(distif_out.readw(GICD_IGROUPR_SPI, val, sbi_cpuid(0)))
-                    << "failed to read GICD_IGROUPR";
-        EXPECT_EQ(val, 0b00000001)
-                    << "writing to GICD_IGROUPR not successful";
+            << "failed to read GICD_IGROUPR";
+        EXPECT_EQ(val, 0b00000001) << "writing to GICD_IGROUPR not successful";
 
         val = 0x00000102;
         EXPECT_OK(distif_out.writew(GICD_IPRIORITY_SPI, val, sbi_cpuid(0)));
         EXPECT_OK(distif_out.readw(GICD_IPRIORITY_SPI, val, sbi_cpuid(0)))
-                    << "failed to read GICD_IPRIORITY";
+            << "failed to read GICD_IPRIORITY";
         EXPECT_EQ(val, 0x00000102)
-                    << "writing to GICD_IPRIORITY not successful";
+            << "writing to GICD_IPRIORITY not successful";
 
         wait(SC_ZERO_TIME);
 
@@ -840,103 +840,110 @@ public:
         wait(SC_ZERO_TIME);
         wait(SC_ZERO_TIME);
 
-        EXPECT_EQ(nirq_in[0], 0) << "IRQ should not have been signaled to irq on cpu0";
+        EXPECT_EQ(nirq_in[0], 0)
+            << "IRQ should not have been signaled to irq on cpu0";
         EXPECT_EQ(nirq_in[1], 0)
-                    << "IRQ should not have been signaled to cpu1";
-        EXPECT_EQ(nfirq_in[0], 1) << "IRQ should have been signaled to fiq on cpu0";
+            << "IRQ should not have been signaled to cpu1";
+        EXPECT_EQ(nfirq_in[0], 1)
+            << "IRQ should have been signaled to fiq on cpu0";
         EXPECT_EQ(nfirq_in[1], 0)
-                    << "IRQ should not have been signaled to fiq on cpu1";
+            << "IRQ should not have been signaled to fiq on cpu1";
 
         // cpu0 reads IAR of its CPU interface
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0xff) << "GICC_RPR should be 255 (idle priority)"
                              << " -> no handling of interrupt";
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_IAR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_IAR of cpu0";
+            << "failed to read GICC_IAR of cpu0";
         EXPECT_EQ(val, 33) << "read wrong interrupt value from GICC_IAR";
         wait(SC_ZERO_TIME);
 
-        // Test that current interrupt is not preempted by interrupt in same group
+        // Test that current interrupt is not preempted by interrupt in same
+        // group
         spi_out[2].write(true);
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0x1) << "GICC_RPR should be 1023"
                             << " -> handling of interrupt of priority 1";
 
         // cpu0 writes interrupt ID 32 = 0x20 to EOIR register
         val = 0x21;
         EXPECT_OK(cpuif_out.writew(GICC_EOIR, val, sbi_cpuid(0)))
-                    << "cpu0 failed to write in GICC_EOIR";
+            << "cpu0 failed to write in GICC_EOIR";
         wait(SC_ZERO_TIME);
 
-        EXPECT_EQ(nirq_in[0], 0) << "IRQ should not have been signaled to irq on cpu0";
+        EXPECT_EQ(nirq_in[0], 0)
+            << "IRQ should not have been signaled to irq on cpu0";
         EXPECT_EQ(nirq_in[1], 0)
-                    << "IRQ should not have been signaled to cpu1";
-        EXPECT_EQ(nfirq_in[0], 1) << "IRQ should have been signaled to fiq on cpu0";
+            << "IRQ should not have been signaled to cpu1";
+        EXPECT_EQ(nfirq_in[0], 1)
+            << "IRQ should have been signaled to fiq on cpu0";
         EXPECT_EQ(nfirq_in[1], 0)
-                    << "IRQ should not have been signaled to fiq on cpu1";
+            << "IRQ should not have been signaled to fiq on cpu1";
 
         // cpu0 reads IAR of its CPU interface
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0xff) << "GICC_RPR should be 255 (idle priority)"
                              << " -> no handling of interrupt";
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_IAR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_IAR of cpu0";
+            << "failed to read GICC_IAR of cpu0";
         EXPECT_EQ(val, 42) << "read wrong interrupt value from GICC_IAR";
         wait(SC_ZERO_TIME);
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0x0) << "GICC_RPR should be 1023"
                             << " -> handling of interrupt of priority 1";
 
         // cpu0 writes interrupt ID 32 = 0x20 to EOIR register
         val = 0x2a;
         EXPECT_OK(cpuif_out.writew(GICC_EOIR, val, sbi_cpuid(0)))
-                    << "cpu0 failed to write in GICC_EOIR";
+            << "cpu0 failed to write in GICC_EOIR";
         wait(SC_ZERO_TIME);
 
-        EXPECT_EQ(nirq_in[0], 1) << "IRQ should have been signaled to irq on cpu0";
+        EXPECT_EQ(nirq_in[0], 1)
+            << "IRQ should have been signaled to irq on cpu0";
         EXPECT_EQ(nirq_in[1], 0)
-                    << "IRQ should not have been signaled to cpu1";
-        EXPECT_EQ(nfirq_in[0], 0) << "IRQ should not have been signaled to fiq on cpu0";
+            << "IRQ should not have been signaled to cpu1";
+        EXPECT_EQ(nfirq_in[0], 0)
+            << "IRQ should not have been signaled to fiq on cpu0";
         EXPECT_EQ(nfirq_in[1], 0)
-                    << "IRQ should not have been signaled to fiq on cpu1";
+            << "IRQ should not have been signaled to fiq on cpu1";
 
         // cpu0 reads IAR of its CPU interface
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0xff) << "GICC_RPR should be 255 (idle priority)"
                              << " -> no handling of interrupt";
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_AIAR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_IAR of cpu0";
+            << "failed to read GICC_IAR of cpu0";
         EXPECT_EQ(val, 32) << "read wrong interrupt value from GICC_IAR";
         wait(SC_ZERO_TIME);
 
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
-                    << "failed to read GICC_RPR";
+            << "failed to read GICC_RPR";
         EXPECT_EQ(val, 0x2) << "GICC_RPR should be 1023"
                             << " -> handling of interrupt of priority 1";
 
         // cpu0 writes interrupt ID 32 = 0x20 to EOIR register
         val = 0x20;
         EXPECT_OK(cpuif_out.writew(GICC_AEOIR, val, sbi_cpuid(0)))
-                    << "cpu0 failed to write in GICC_EOIR";
+            << "cpu0 failed to write in GICC_EOIR";
 
         // setting SPI connection of processor 1 LOW
         spi_out[0].write(false);

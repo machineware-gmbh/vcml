@@ -634,19 +634,22 @@ enum cpuif_ctlr_bits : u32 {
     GICC_CTLR_ACKCTL = bit(2),
     GICC_CTLR_FIQ_ENABLE = bit(3),
     GICC_CTLR_CBPR = bit(4),
-    GICC_CTLR_MASK = GICC_CTLR_ENABLE_GROUP0 | GICC_CTLR_ENABLE_GROUP1 | GICC_CTLR_ACKCTL |
-                     GICC_CTLR_FIQ_ENABLE | GICC_CTLR_CBPR,
+    GICC_CTLR_MASK = GICC_CTLR_ENABLE_GROUP0 | GICC_CTLR_ENABLE_GROUP1 |
+                     GICC_CTLR_ACKCTL | GICC_CTLR_FIQ_ENABLE | GICC_CTLR_CBPR,
 };
 
 void gic400::cpuif::write_ctlr(u32 val) {
     if ((val & GICC_CTLR_ENABLE_GROUP0) && !(ctlr & GICC_CTLR_ENABLE_GROUP0))
-        log_debug("(ctlr) enabling group 0 on cpu %zu", get_cpu(*this, "ctlr"));
+        log_debug("(ctlr) enabling group 0 on cpu %zu",
+                  get_cpu(*this, "ctlr"));
     if (!(val & GICC_CTLR_ENABLE_GROUP0) && (ctlr & GICC_CTLR_ENABLE_GROUP0))
         log_debug("(ctlr) disabling group 0 cpu %zu", get_cpu(*this, "ctlr"));
     if ((val & GICC_CTLR_ENABLE_GROUP1) && !(ctlr & GICC_CTLR_ENABLE_GROUP1))
-        log_debug("(ctlr) enabling group 1 on cpu %zu", get_cpu(*this, "ctlr"));
+        log_debug("(ctlr) enabling group 1 on cpu %zu",
+                  get_cpu(*this, "ctlr"));
     if (!(val & GICC_CTLR_ENABLE_GROUP1) && (ctlr & GICC_CTLR_ENABLE_GROUP1))
-        log_debug("(ctlr) disabling group 1 on cpu %zu", get_cpu(*this, "ctlr"));
+        log_debug("(ctlr) disabling group 1 on cpu %zu",
+                  get_cpu(*this, "ctlr"));
     ctlr = val & GICC_CTLR_MASK;
 }
 
@@ -659,26 +662,28 @@ u32 gic400::cpuif::read_iar() {
     const char* reg_nm = ALIAS ? "aiar" : "iar";
     size_t cpu = get_cpu(*this, reg_nm);
     u32& reg = ALIAS ? aiar.bank(cpu) : iar.bank(cpu);
-    u32 irq = ALIAS ? ahppir.bank(cpu) : hppir.bank(cpu);
+
+    auto [irq, prio] = m_parent->get_highest_pend_irq(cpu, false);
+
     cpu_mask_t cpu_mask = (m_parent->get_irq_model(irq) == gic400::N_1)
                               ? (gic400::ALL_CPU)
                               : bit(cpu);
     group_mode group = m_parent->get_irq_group(irq, cpu_mask);
 
-    log_debug("(%s) cpu %zu acknowledges irq %d", reg_nm, cpu, irq);
+    log_debug("(%s) cpu %zu acknowledges irq %zu", reg_nm, cpu, irq);
+
+    if ((group == GRP1 && (!(ctlr & GICC_CTLR_ENABLE_GROUP1) || !(m_parent->distif.ctlr & GICD_CTLR_ENABLE_GROUP1))) ||
+         (group == GRP0 && (!(ctlr & GICC_CTLR_ENABLE_GROUP0) || !(m_parent->distif.ctlr & GICC_CTLR_ENABLE_GROUP0))))
+        return SPURIOUS_IRQ;
+
+    if (!ALIAS && group == GRP1 && !(ctlr & GICC_CTLR_ACKCTL))
+        return ACKCTL_DISABLED_IRQ;
 
     // check if CPU is acknowledging a not pending interrupt
     if (irq == SPURIOUS_IRQ ||
         m_parent->get_irq_priority(cpu, irq) >= rpr.bank(cpu)) {
         return SPURIOUS_IRQ;
     }
-
-    if (group == GRP1 &&
-        !(ctlr & GICC_CTLR_ENABLE_GROUP1))
-        return GRP_DISABLED_IRQ;
-
-    if ((ALIAS && group == GRP0) || (!ALIAS && group == GRP1))
-        return SPURIOUS_IRQ;
 
     if (is_software_interrupt(irq)) {
         u32 pending = m_parent->distif.spendsgir.bank(cpu, irq);
@@ -716,16 +721,12 @@ void gic400::cpuif::write_eoir(u32 val) {
         return; // no active IRQ
 
     size_t irq = extract(val, 0, 10); // interrupt id stored in bits [9..0]
-    if (irq == SPURIOUS_IRQ || irq == GRP_DISABLED_IRQ)
+    if (irq == SPURIOUS_IRQ)
         return; // ignore spurious irqs
     if (irq >= m_parent->get_irq_num()) {
         log_warn("(%s) invalid irq %zu ignored", reg_nm, irq);
         return;
     }
-
-    group_mode group = m_parent->get_irq_group(irq, bit(cpu));
-    if ((ALIAS && group == GRP0) || (!ALIAS && group == GRP1))
-        return;
 
     if (irq == m_curr_irq[cpu]) {
         log_debug("(%s) cpu %zu eois irq %zu", reg_nm, cpu, irq);
@@ -1027,8 +1028,8 @@ template <bool ALIAS>
 u32 gic400::vcpuif::read_iar() {
     const char* reg_nm = ALIAS ? "aiar" : "iar";
     size_t cpu = get_cpu(*this, reg_nm);
-    u32 irq = ALIAS ? ahppir.bank(cpu) : hppir.bank(cpu);
-    u32& rbpr = ALIAS ? abpr.bank(cpu) : bpr.bank(cpu);
+
+    auto [irq, _] = m_parent->get_highest_pend_irq(cpu, true);
 
     // check if CPU is acknowledging a not pending interrupt
     if (irq == SPURIOUS_IRQ ||
@@ -1043,8 +1044,9 @@ u32 gic400::vcpuif::read_iar() {
 
     if ((group == GRP1 && !(GICC_CTLR_ENABLE_GROUP1 & ctlr)) ||
         (group == GRP0 && !(GICC_CTLR_ENABLE_GROUP0 & ctlr)))
-        return GRP_DISABLED_IRQ;
+        return ACKCTL_DISABLED_IRQ;
 
+    u32 rbpr = group == GRP1? abpr : bpr;
     u32 prio = m_vifctrl->get_irq_priority(cpu, irq) << 3;
     u32 mask = ~0ul << ((extract(rbpr, 0, 3)) + 1);
     rpr.bank(cpu) = prio & mask;
@@ -1056,7 +1058,7 @@ u32 gic400::vcpuif::read_iar() {
 
     m_vifctrl->set_lr_pending(lr, cpu, false);
 
-    log_debug("(%s) cpu %zu acknowledges v%s %d", reg_nm, cpu,
+    log_debug("(%s) cpu %zu acknowledges v%s %zu", reg_nm, cpu,
               ALIAS ? "fiq" : "irq", irq);
 
     m_parent->update(true);
@@ -1224,7 +1226,8 @@ pair<size_t, u32> gic400::get_highest_pend_irq(size_t cpu, bool virt) {
         u32 ctlr = distif.ctlr;
         // check SGIs
         for (size_t irq = 0; irq < NSGI; irq++) {
-            bool group_enabled = ctlr & bit(get_irq_group(irq, mask) == GRP0? 0 : 1);
+            bool group_enabled = ctlr &
+                                 bit(get_irq_group(irq, mask) == GRP0 ? 0 : 1);
             if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
                 !is_irq_active(irq, mask) && group_enabled) {
                 if (distif.ipriority_sgi.bank(cpu, irq) < best_prio) {
@@ -1236,7 +1239,8 @@ pair<size_t, u32> gic400::get_highest_pend_irq(size_t cpu, bool virt) {
 
         // check PPIs
         for (size_t irq = NSGI; irq < NPRIV; irq++) {
-            bool group_enabled = ctlr & bit(get_irq_group(irq, mask) == GRP0? 0 : 1);
+            bool group_enabled = ctlr &
+                                 bit(get_irq_group(irq, mask) == GRP0 ? 0 : 1);
             if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
                 !is_irq_active(irq, mask) && group_enabled) {
                 int idx = irq - NSGI;
@@ -1249,7 +1253,8 @@ pair<size_t, u32> gic400::get_highest_pend_irq(size_t cpu, bool virt) {
 
         // check SPIs
         for (size_t irq = NPRIV; irq < m_irq_num; irq++) {
-            bool group_enabled = ctlr & bit(get_irq_group(irq, mask) == GRP0? 0 : 1);
+            bool group_enabled = ctlr &
+                                 bit(get_irq_group(irq, mask) == GRP0 ? 0 : 1);
             int idx = irq - NPRIV;
             if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
                 (distif.itargets_spi[idx] & mask) &&
@@ -1339,8 +1344,9 @@ void gic400::update(bool virt) {
         size_t irq;
         auto [next_irq, next_grp0] = update_excp_state(cpu, irq, virt);
 
-        u32 group_mask = bit(next_grp0? 0 : 1);
-        if (!virt && !(distif.ctlr.bank(cpu) & group_mask && cpuif.ctlr.bank(cpu) & group_mask)) {
+        u32 group_mask = bit(next_grp0 ? 0 : 1);
+        if (!virt && !(distif.ctlr.bank(cpu) & group_mask &&
+                       cpuif.ctlr.bank(cpu) & group_mask)) {
             log_debug("disabling cpu%u irq", cpu);
             cpuif.hppir.bank(cpu) = SPURIOUS_IRQ;
             irq_out[cpu] = false;
@@ -1363,7 +1369,7 @@ void gic400::update(bool virt) {
             u32 ctlr = virt ? vcpuif.ctlr.bank(cpu) : cpuif.ctlr.bank(cpu);
             if (next_grp0 && GICC_CTLR_FIQ_ENABLE & ctlr) {
                 if (GICC_CTLR_ENABLE_GROUP0 & ctlr) {
-                        cpu_fiq = true;
+                    cpu_fiq = true;
                 }
             } else if ((next_grp0 && (GICC_CTLR_ENABLE_GROUP0 & ctlr)) ||
                        (!next_grp0 && (GICC_CTLR_ENABLE_GROUP1 & ctlr))) {
@@ -1372,13 +1378,13 @@ void gic400::update(bool virt) {
         }
 
         if (!virt) {
-            cpuif.hppir.bank(cpu) = next_grp0? hppir : SPURIOUS_IRQ;
-            cpuif.ahppir.bank(cpu) = next_grp0? SPURIOUS_IRQ : hppir;
+            cpuif.hppir.bank(cpu) = next_grp0 ? hppir : SPURIOUS_IRQ;
+            cpuif.ahppir.bank(cpu) = next_grp0 ? SPURIOUS_IRQ : hppir;
             fiq_out[cpu] = cpu_fiq;
             irq_out[cpu] = cpu_irq;
         } else {
-            vcpuif.hppir.bank(cpu) = next_grp0? hppir : SPURIOUS_IRQ;
-            vcpuif.ahppir.bank(cpu) = next_grp0? SPURIOUS_IRQ : hppir;
+            vcpuif.hppir.bank(cpu) = next_grp0 ? hppir : SPURIOUS_IRQ;
+            vcpuif.ahppir.bank(cpu) = next_grp0 ? SPURIOUS_IRQ : hppir;
             vfiq_out[cpu] = cpu_fiq;
             virq_out[cpu] = cpu_irq;
         }
