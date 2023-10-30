@@ -672,8 +672,12 @@ u32 gic400::cpuif::read_iar() {
 
     log_debug("(%s) cpu %zu acknowledges irq %zu", reg_nm, cpu, irq);
 
-    if ((group == GRP1 && (!(ctlr & GICC_CTLR_ENABLE_GROUP1) || !(m_parent->distif.ctlr & GICD_CTLR_ENABLE_GROUP1))) ||
-         (group == GRP0 && (!(ctlr & GICC_CTLR_ENABLE_GROUP0) || !(m_parent->distif.ctlr & GICC_CTLR_ENABLE_GROUP0))))
+    if ((group == GRP1 &&
+         (!(ctlr & GICC_CTLR_ENABLE_GROUP1) ||
+          !(m_parent->distif.ctlr & GICD_CTLR_ENABLE_GROUP1))) ||
+        (group == GRP0 &&
+         (!(ctlr & GICC_CTLR_ENABLE_GROUP0) ||
+          !(m_parent->distif.ctlr & GICC_CTLR_ENABLE_GROUP0))))
         return SPURIOUS_IRQ;
 
     if (!ALIAS && group == GRP1 && !(ctlr & GICC_CTLR_ACKCTL))
@@ -1046,7 +1050,7 @@ u32 gic400::vcpuif::read_iar() {
         (group == GRP0 && !(GICC_CTLR_ENABLE_GROUP0 & ctlr)))
         return ACKCTL_DISABLED_IRQ;
 
-    u32 rbpr = group == GRP1? abpr : bpr;
+    u32 rbpr = group == GRP1 ? abpr : bpr;
     u32 prio = m_vifctrl->get_irq_priority(cpu, irq) << 3;
     u32 mask = ~0ul << ((extract(rbpr, 0, 3)) + 1);
     rpr.bank(cpu) = prio & mask;
