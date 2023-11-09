@@ -94,7 +94,7 @@ TEST(memory, move) {
 }
 
 TEST(memory, sharing) {
-    const size_t size = 4 * KiB;
+    const size_t size = 16 * KiB;
     const string name = "/vcml-test-shared";
     tlm_memory a(name, size);
     tlm_memory b(name, size);
@@ -106,7 +106,7 @@ TEST(memory, sharing) {
 }
 
 TEST(memory, sharing_wrong_size) {
-    const size_t size = 4 * KiB;
+    const size_t size = 16 * KiB;
     const string name = "/vcml-test-shared-size";
     tlm_memory a(name, size);
     EXPECT_DEATH({ tlm_memory b(name, size * 2); }, "unexpected size");
