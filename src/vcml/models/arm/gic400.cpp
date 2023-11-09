@@ -1354,7 +1354,7 @@ void gic400::update(bool virt) {
             log_debug("disabling cpu%u irq", cpu);
             cpuif.hppir.bank(cpu) = SPURIOUS_IRQ;
             irq_out[cpu] = false;
-            vfiq_out[cpu] = false;
+            fiq_out[cpu] = false;
             continue;
         }
 
