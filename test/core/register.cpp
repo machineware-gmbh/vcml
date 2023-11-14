@@ -631,3 +631,65 @@ TEST(registers, masking) {
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
     EXPECT_EQ(mock.array_reg[3], 8);
 }
+
+class test_peripheral_sockets : public peripheral
+{
+public:
+    tlm_target_socket in_a;
+    tlm_target_socket in_b;
+
+    reg<u32> test_reg_a;
+    reg<u32> test_reg_b;
+
+    test_peripheral_sockets(
+        const sc_module_name& nm = sc_gen_unique_name("peripheral_sockets")):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10),
+        in_a("in_a", VCML_AS_TEST1),
+        in_b("in_b", VCML_AS_TEST2),
+        test_reg_a(in_a, "test_reg_a", 0x0, 0xffffffff),
+        test_reg_b(in_b, "test_reg_b", 0x0, 0xffffffff) {
+        test_reg_b.allow_read_write();
+        test_reg_b.allow_read_write();
+        clk.stub(100 * MHz);
+        rst.stub();
+        handle_clock_update(0, clk.read());
+    }
+
+    unsigned int test_transport(tlm::tlm_generic_payload& tx,
+                                address_space as) {
+        return transport(tx, SBI_NONE, as);
+    }
+};
+
+TEST(registers, socket_address_spaces) {
+    // reg_a and reg_b both live at 0x0, but in different address spaces
+    test_peripheral_sockets mock;
+
+    tlm::tlm_generic_payload tx;
+    unsigned char buffer[] = { 0x11, 0x22, 0x33, 0x44 };
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0, buffer, sizeof(buffer));
+
+    // writes to default address space should get lost in the void
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_DEFAULT), 0);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_ADDRESS_ERROR_RESPONSE);
+    mock.reset();
+    tx_reset(tx);
+
+    // writes to VCML_AS_TEST1 should only change reg_a
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST1), 4);
+    EXPECT_EQ(mock.test_reg_a, 0x44332211u);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
+    EXPECT_TRUE(tx.is_response_ok());
+    mock.reset();
+    tx_reset(tx);
+
+    // writes to VCML_AS_TEST2 should only change reg_b
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST2), 4);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
+    EXPECT_EQ(mock.test_reg_b, 0x44332211u);
+    EXPECT_TRUE(tx.is_response_ok());
+    mock.reset();
+    tx_reset(tx);
+}
