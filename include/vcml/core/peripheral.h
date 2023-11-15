@@ -29,7 +29,7 @@ class peripheral : public component
 {
 private:
     int m_current_cpu;
-    vector<reg_base*> m_registers;
+    unordered_map<address_space, vector<reg_base*>> m_registers;
 
     bool cmd_mmap(const vector<string>& args, ostream& os);
 
@@ -58,6 +58,7 @@ public:
     void set_current_cpu(int cpu) { m_current_cpu = cpu; }
 
     void natural_accesses_only(bool only = true);
+    void natural_accesses_only(address_space as, bool only = true);
 
     peripheral(const sc_module_name& nm, endianess e = host_endian(),
                unsigned int read_latency = 0, unsigned int write_latency = 0);
@@ -73,7 +74,7 @@ public:
     void add_register(reg_base* reg);
     void remove_register(reg_base* reg);
 
-    vector<reg_base*> get_registers() const { return m_registers; }
+    vector<reg_base*> get_registers(address_space as = VCML_AS_DEFAULT) const;
 
     void map_dmi(const tlm_dmi& dmi);
     void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
@@ -121,7 +122,13 @@ inline T peripheral::from_host_endian(T val) const {
 }
 
 inline void peripheral::natural_accesses_only(bool only) {
-    for (auto* reg : m_registers)
+    for (auto& [as, regs] : m_registers)
+        for (auto* reg : regs)
+            reg->natural_accesses_only(only);
+}
+
+inline void peripheral::natural_accesses_only(address_space as, bool only) {
+    for (auto* reg : get_registers(as))
         reg->natural_accesses_only(only);
 }
 

@@ -15,11 +15,18 @@ namespace vcml {
 
 bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
     os << "Memory map of " << name();
+
+    address_space as = VCML_AS_DEFAULT;
+    if (!args.empty()) {
+        as = from_string<address_space>(args[0]);
+        os << " (address space " << as << ")";
+    }
+
 #define HEX(x)                                                            \
     std::setfill('0') << std::setw((x) > ~0u ? 16 : 8) << std::hex << (x) \
                       << std::dec
 
-    auto regs = get_registers();
+    auto regs = get_registers(as);
     std::sort(regs.begin(), regs.end(), [](reg_base* a, reg_base* b) -> bool {
         return a->get_range().start < b->get_range().start;
     });
@@ -54,16 +61,17 @@ peripheral::~peripheral() {
 void peripheral::reset() {
     component::reset();
 
-    for (auto r : m_registers)
-        r->reset();
+    for (auto& [as, regs] : m_registers)
+        for (auto* r : regs)
+            r->reset();
 }
 
 void peripheral::add_register(reg_base* reg) {
-    if (stl_contains(m_registers, reg))
+    if (stl_contains(m_registers[reg->as], reg))
         VCML_ERROR("register %s already assigned", reg->name());
 
-    for (auto r : m_registers) {
-        if (r->get_range().overlaps(reg->get_range()) && reg->as == r->as)
+    for (auto r : m_registers[reg->as]) {
+        if (r->get_range().overlaps(reg->get_range()))
             VCML_ERROR(
                 "address space of register %s (%d: %s) already in "
                 "use by register %s",
@@ -71,16 +79,21 @@ void peripheral::add_register(reg_base* reg) {
                 r->name());
     }
 
-    mwr::stl_insert_sorted(m_registers, reg,
+    mwr::stl_insert_sorted(m_registers[reg->as], reg,
                            [](const reg_base* a, const reg_base* b) -> bool {
                                return a->get_address() < b->get_address();
                            });
 }
 
 void peripheral::remove_register(reg_base* reg) {
-    if (!stl_contains(m_registers, reg))
+    if (!stl_contains(m_registers[reg->as], reg))
         VCML_ERROR("unknown register '%s'", reg->name());
-    stl_remove(m_registers, reg);
+    stl_remove(m_registers[reg->as], reg);
+}
+
+vector<reg_base*> peripheral::get_registers(address_space as) const {
+    auto it = m_registers.find(as);
+    return it == m_registers.end() ? vector<reg_base*>() : it->second;
 }
 
 void peripheral::map_dmi(const tlm_dmi& dmi) {
@@ -179,8 +192,8 @@ unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
 
     set_current_cpu(info.cpuid);
 
-    for (auto reg : m_registers)
-        if (reg->get_range().overlaps(tx) && reg->as == as) {
+    for (auto reg : get_registers(as)) {
+        if (reg->get_range().overlaps(tx)) {
             bytes += reg->receive(tx, info);
 
             if (success(tx) && reg->is_natural_accesses_only())
@@ -189,6 +202,7 @@ unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
             if (failed(tx))
                 break;
         }
+    }
 
     set_current_cpu(SBI_NONE.cpuid);
     if (success(tx) || failed(tx)) // stop if at least one reg took the access

@@ -693,3 +693,13 @@ TEST(registers, socket_address_spaces) {
     mock.reset();
     tx_reset(tx);
 }
+
+TEST(registers, peripheral_cmd_mmap) {
+    mock_peripheral mock;
+    mock.execute("mmap", std::cout);
+    std::cout << std::endl;
+    mock.execute("mmap", { "0" }, std::cout);
+    std::cout << std::endl;
+    mock.execute("mmap", { "111" }, std::cout);
+    std::cout << std::endl;
+}
