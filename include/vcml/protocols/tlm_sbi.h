@@ -94,6 +94,10 @@ inline tlm_sbi sbi_asid(u64 id) {
     return tlm_sbi(false, false, false, false, false, false, false, 0, 0, id);
 }
 
+inline tlm_sbi sbi_security(bool sec) {
+    return tlm_sbi(false, false, false, false, false, false, sec, 0, 0, 0);
+}
+
 class sbiext : public tlm_extension<sbiext>, public tlm_sbi
 {
 public:
