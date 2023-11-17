@@ -304,8 +304,11 @@ public:
 };
 
 inline void tlm_target_socket::wait_free() {
-    if (!m_free_ev)
-        m_free_ev = new sc_event(strcat(basename(), "_free").c_str());
+    if (!m_free_ev) {
+        hierarchy_guard guard(this);
+        m_free_ev = new sc_event(mkstr("%s_free", basename()).c_str());
+    }
+
     sc_core::wait(*m_free_ev);
 }
 
