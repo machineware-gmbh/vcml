@@ -16,16 +16,16 @@ namespace debugging {
 
 bool cpureg::read(void* buf, size_t len) const {
     VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
-    if (len < size || !is_readable())
+    if (len < total_size() || !is_readable())
         return false;
-    return host->read_cpureg_dbg(*this, buf, size);
+    return host->read_cpureg_dbg(*this, buf, total_size());
 }
 
 bool cpureg::write(const void* buf, size_t len) const {
     VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
-    if (len < size || !is_writeable())
+    if (len < total_size() || !is_writeable())
         return false;
-    return host->write_cpureg_dbg(*this, buf, size);
+    return host->write_cpureg_dbg(*this, buf, total_size());
 }
 
 unordered_map<string, target*> target::s_targets;
