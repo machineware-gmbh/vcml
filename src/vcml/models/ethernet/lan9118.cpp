@@ -499,9 +499,12 @@ void lan9118_mac::write_mii_acc(u32 val) {
     tx_setup(tx, cmd, addr * size, &data, size);
     u32 res = m_parent.phy.receive(tx, sbi, VCML_AS_DEFAULT);
 
-    if (failed(tx) || res != size)
-        log_warn("PHY CSR access failed %s", to_string(tx).c_str());
-    else if (!wnr)
+    if (failed(tx) || res != size) {
+        log_debug("PHY CSR access failed %s", to_string(tx).c_str());
+        data = 0;
+    }
+
+    if (!wnr)
         mii_data = data;
 }
 
