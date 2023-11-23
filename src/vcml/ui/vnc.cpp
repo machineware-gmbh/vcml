@@ -239,40 +239,48 @@ void vnc::run() {
     if (fbm.b.size > 0)
         samples++;
 
-    m_screen = rfbGetScreen(nullptr, nullptr, fbm.xres, fbm.yres, fbm.r.size,
-                            samples, fbm.bpp);
+    rfbScreenInfo* screen = rfbGetScreen(nullptr, nullptr, fbm.xres, fbm.yres,
+                                         fbm.r.size, samples, fbm.bpp);
 
-    m_screen->frameBuffer = (char*)framebuffer();
-    m_screen->desktopName = name();
-    m_screen->port = m_screen->ipv6port = m_port;
-    m_screen->kbdAddEvent = &rfb_key_func;
-    m_screen->ptrAddEvent = &rfb_ptr_func;
+    screen->frameBuffer = (char*)framebuffer();
+    screen->desktopName = name();
+    screen->port = screen->ipv6port = m_port;
+    screen->kbdAddEvent = &rfb_key_func;
+    screen->ptrAddEvent = &rfb_ptr_func;
 
-    rfbInitServer(m_screen);
+    rfbInitServer(screen);
 
-    rfbNewFramebuffer(m_screen, m_screen->frameBuffer, fbm.xres, fbm.yres,
+    rfbNewFramebuffer(screen, screen->frameBuffer, fbm.xres, fbm.yres,
                       fbm.r.size, samples, fbm.bpp);
 
-    m_screen->serverFormat.redShift = fbm.r.offset;
-    m_screen->serverFormat.greenShift = fbm.g.offset;
-    m_screen->serverFormat.blueShift = fbm.b.offset;
+    screen->serverFormat.redShift = fbm.r.offset;
+    screen->serverFormat.greenShift = fbm.g.offset;
+    screen->serverFormat.blueShift = fbm.b.offset;
 
-    m_screen->serverFormat.redMax = (1 << fbm.r.size) - 1;
-    m_screen->serverFormat.greenMax = (1 << fbm.g.size) - 1;
-    m_screen->serverFormat.blueMax = (1 << fbm.b.size) - 1;
+    screen->serverFormat.redMax = (1 << fbm.r.size) - 1;
+    screen->serverFormat.greenMax = (1 << fbm.g.size) - 1;
+    screen->serverFormat.blueMax = (1 << fbm.b.size) - 1;
 
-    m_screen->serverFormat.bitsPerPixel = fbm.bpp * 8;
-    m_screen->serverFormat.bigEndian = fbm.endian == ENDIAN_BIG;
+    screen->serverFormat.bitsPerPixel = fbm.bpp * 8;
+    screen->serverFormat.bigEndian = fbm.endian == ENDIAN_BIG;
 
-    log_debug("starting vnc server on port %d", m_screen->port);
+    m_mutex.lock();
+    m_screen = screen;
+    m_mutex.unlock();
 
-    while (m_running && rfbIsActive(m_screen) && sim_running())
-        rfbProcessEvents(m_screen, 1000);
+    log_debug("starting vnc server on port %d", screen->port);
 
-    log_debug("terminating vnc server on port %d", m_screen->port);
+    while (m_running && rfbIsActive(screen) && sim_running())
+        rfbProcessEvents(screen, 1000);
 
-    rfbShutdownServer(m_screen, true);
-    rfbScreenCleanup(m_screen);
+    log_debug("terminating vnc server on port %d", screen->port);
+
+    m_mutex.lock();
+    m_screen = nullptr;
+    m_mutex.unlock();
+
+    rfbShutdownServer(screen, true);
+    rfbScreenCleanup(screen);
 }
 
 vnc::vnc(u32 no):
@@ -304,6 +312,10 @@ void vnc::init(const videomode& mode, u8* fb) {
 }
 
 void vnc::render(u32 x, u32 y, u32 w, u32 h) {
+    lock_guard<mutex> guard(m_mutex);
+    if (!m_screen)
+        return;
+
     if (x + w > xres())
         w = xres() - x;
     if (y + h > yres())
