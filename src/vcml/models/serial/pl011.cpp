@@ -17,6 +17,8 @@ void pl011::serial_receive(u8 data) {
     if (is_enabled() || is_rx_enabled()) {
         if (m_fifo.size() < m_fifo_size)
             m_fifo.push(data);
+        else
+            log_warn("FIFO buffer overflow, data dropped");
         update();
     }
 }
