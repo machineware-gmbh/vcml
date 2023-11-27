@@ -102,6 +102,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
     unsigned int width = tx.get_streaming_width();
     unsigned char* beptr = tx.get_byte_enable_ptr();
     unsigned int belen = tx.get_byte_enable_length();
+    u64 addr = tx.get_address();
 
     if ((width == 0) || (width > size) || (size % width)) {
         tx.set_response_status(TLM_BURST_ERROR_RESPONSE);
@@ -148,6 +149,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
 
     if (allow_dmi && tx.is_dmi_allowed()) {
         tlm_dmi dmi;
+        tx.set_address(addr);
         if ((*this)->get_direct_mem_ptr(tx, dmi))
             map_dmi(dmi);
     }
