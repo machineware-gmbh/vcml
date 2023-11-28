@@ -17,8 +17,11 @@ void pl011::serial_receive(u8 data) {
     if (is_enabled() || is_rx_enabled()) {
         if (m_fifo.size() < m_fifo_size)
             m_fifo.push(data);
-        else
+        else {
+            ris |= RIS_OE;
             log_warn("FIFO buffer overflow, data dropped");
+        }
+
         update();
     }
 }
@@ -74,6 +77,8 @@ void pl011::write_dr(u16 val) {
 void pl011::write_rsr(u8 val) {
     //  A write to this register clears the framing, parity, break,
     //  and overrun errors. The data value is not important.
+    ris &= ~(RIS_FE | RIS_PE | RIS_BE | RIS_OE);
+    update();
 }
 
 void pl011::write_ibrd(u16 val) {
