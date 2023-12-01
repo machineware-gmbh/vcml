@@ -23,6 +23,14 @@ class backend_tcp : public backend
 private:
     mwr::socket m_socket;
 
+    thread m_thread;
+    mutex m_mtx;
+    queue<u8> m_fifo;
+    atomic<bool> m_running;
+
+    void iothread();
+    void receive();
+
 public:
     u16 port() const { return m_socket.port(); }
 

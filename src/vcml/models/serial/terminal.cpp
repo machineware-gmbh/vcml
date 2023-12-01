@@ -118,16 +118,16 @@ bool terminal::cmd_history(const vector<string>& args, ostream& os) {
 
 void terminal::serial_transmit() {
     while (true) {
-        sc_time quantum = tlm_global_quantum::instance().get();
-        wait(max(serial_tx.cycle(), quantum));
-
-        u8 data = 0xff;
         for (backend* b : m_listeners) {
-            if (b->read(data)) {
+            u8 data = 0xff;
+            while (b->read(data)) {
                 serial_tx.send(data);
-                wait(serial_tx.cycle());
+                if (!untimed)
+                    wait(serial_tx.cycle());
             }
         }
+
+        wait(m_async_ev);
     }
 }
 
@@ -148,8 +148,10 @@ terminal::terminal(const sc_module_name& nm):
     m_next_id(),
     m_backends(),
     m_listeners(),
+    m_async_ev("async_ev"),
     backends("backends", ""),
     config("config", "9600N8"),
+    untimed("untimed", false),
     serial_tx("serial_tx"),
     serial_rx("serial_rx") {
     if (stl_contains(terminals(), string(name())))
@@ -210,6 +212,10 @@ void terminal::detach(backend* b) {
     if (!stl_contains(m_listeners, b))
         VCML_ERROR("attempt to detach unknown backend");
     stl_remove(m_listeners, b);
+}
+
+void terminal::notify(backend* b) {
+    on_next_update([&] { m_async_ev.notify(SC_ZERO_TIME); });
 }
 
 size_t terminal::create_backend(const string& type) {

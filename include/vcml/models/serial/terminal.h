@@ -42,6 +42,7 @@ private:
     size_t m_next_id;
     unordered_map<size_t, backend*> m_backends;
     vector<backend*> m_listeners;
+    sc_event m_async_ev;
 
     bool cmd_create_backend(const vector<string>& args, ostream& os);
     bool cmd_destroy_backend(const vector<string>& args, ostream& os);
@@ -57,6 +58,7 @@ private:
 public:
     property<string> backends;
     property<string> config;
+    property<bool> untimed;
 
     serial_initiator_socket serial_tx;
     serial_target_socket serial_rx;
@@ -67,6 +69,7 @@ public:
 
     void attach(backend* b);
     void detach(backend* b);
+    void notify(backend* b);
 
     size_t create_backend(const string& type);
     bool destroy_backend(size_t id);

@@ -33,6 +33,7 @@ void backend_term::terminate() {
 }
 
 void backend_term::iothread() {
+    mwr::set_thread_name(m_iothread, "term_iothread");
     while (m_backend_active && sim_running()) {
         if (mwr::fd_peek(m_fdin, 100)) {
             u8 ch;
@@ -52,8 +53,10 @@ void backend_term::iothread() {
                     ch = CTRL_A;
             }
 
-            lock_guard<mutex> lock(m_mtx);
+            m_mtx.lock();
             m_fifo.push(ch);
+            m_mtx.unlock();
+            m_term->notify(this);
         }
     }
 }
@@ -72,7 +75,6 @@ backend_term::backend_term(terminal* term):
     mwr::tty_push(m_fdin, true);
     mwr::tty_set(m_fdin, false, false);
     m_iothread = thread(&backend_term::iothread, this);
-    mwr::set_thread_name(m_iothread, "term_iothread");
 }
 
 backend_term::~backend_term() {

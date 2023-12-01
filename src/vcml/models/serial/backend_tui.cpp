@@ -49,6 +49,7 @@ void backend_tui::terminate() {
 }
 
 void backend_tui::iothread() {
+    mwr::set_thread_name(m_iothread, "tui_iothread");
     while (m_backend_active && sim_running()) {
         u64 now_host = mwr::timestamp_us();
         u64 now_sim = time_to_us(sc_time_stamp());
@@ -80,8 +81,10 @@ void backend_tui::iothread() {
                     ch = CTRL_A;
             }
 
-            lock_guard<mutex> lock(m_mtx);
+            m_mtx.lock();
             m_fifo.push(ch);
+            m_mtx.unlock();
+            m_term->notify(this);
         }
     }
 }
@@ -142,7 +145,6 @@ backend_tui::backend_tui(terminal* term):
 #endif
 
     m_iothread = thread(&backend_tui::iothread, this);
-    mwr::set_thread_name(m_iothread, "tui_iothread");
 }
 
 backend_tui::~backend_tui() {
