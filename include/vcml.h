@@ -83,6 +83,7 @@
 #include "vcml/models/serial/pl011.h"
 #include "vcml/models/serial/nrf51.h"
 #include "vcml/models/serial/cdns.h"
+#include "vcml/models/serial/sifive_uart.h"
 
 #include "vcml/models/timers/rtc1742.h"
 #include "vcml/models/timers/sp804.h"

@@ -39,6 +39,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [ARM PL330 DMA](models/dma_pl330.md)
   * [RISC-V CLINT](models/riscv_clint.md)
   * [RISC-V PLIC](models/riscv_plic.md)
+  * [RISC-V SIFIVE UART](models/sifive_uart.md)
   * [Simulation Loader](models/meta_loader.md)
   * [Simulation Device](models/meta_simdev.md)
   * [Simulation Throttle](models/meta_throttle.md)
