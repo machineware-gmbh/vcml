@@ -28,6 +28,8 @@ class backend_slirp;
 class slirp_network
 {
 private:
+    unsigned int m_id;
+
     SlirpConfig m_config;
     Slirp* m_slirp;
 

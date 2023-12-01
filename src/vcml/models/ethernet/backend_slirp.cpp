@@ -127,6 +127,8 @@ static const SlirpCb SLIRP_CBS = {
 };
 
 void slirp_network::slirp_thread() {
+    mwr::set_thread_name(m_thread, mkstr("slirp_%u", m_id));
+
     while (m_running) {
         unsigned int timeout = 10; // ms
         vector<pollfd> fds;
@@ -149,7 +151,13 @@ void slirp_network::slirp_thread() {
 }
 
 slirp_network::slirp_network(unsigned int id):
-    m_config(), m_slirp(), m_clients(), m_mtx(), m_running(true), m_thread() {
+    m_id(id),
+    m_config(),
+    m_slirp(),
+    m_clients(),
+    m_mtx(),
+    m_running(true),
+    m_thread() {
     m_config.version = 1;
 
     m_config.in_enabled = true;
@@ -187,7 +195,6 @@ slirp_network::slirp_network(unsigned int id):
         log_debug("created slirp ipv6 network %04x::", 0xfec0 + id);
 
     m_thread = thread(&slirp_network::slirp_thread, this);
-    mwr::set_thread_name(m_thread, mkstr("slirp:%u", id));
 }
 
 slirp_network::~slirp_network() {

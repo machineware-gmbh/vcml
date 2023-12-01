@@ -227,6 +227,8 @@ static void rfb_ptr_func(int mask, int x, int y, rfbClientPtr cl) {
 }
 
 void vnc::run() {
+    mwr::set_thread_name(m_thread, mkstr("vnc_%u", dispno()));
+
     const videomode& fbm = mode();
 
     u32 samples = 0;
@@ -308,7 +310,6 @@ void vnc::init(const videomode& mode, u8* fb) {
 
     m_running = true;
     m_thread = thread(&vnc::run, this);
-    mwr::set_thread_name(m_thread, name());
 }
 
 void vnc::render(u32 x, u32 y, u32 w, u32 h) {
