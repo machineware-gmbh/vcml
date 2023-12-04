@@ -19,5 +19,6 @@
 #include "vcml/protocols/tlm_stubs.h"
 #include "vcml/protocols/tlm_base.h"
 #include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/tlm_probe.h"
 
 #endif
