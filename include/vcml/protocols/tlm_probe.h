@@ -26,8 +26,8 @@
 namespace vcml {
 
 class tlm_probe : public module,
-                  private tlm::tlm_fw_transport_if<>,
-                  private tlm::tlm_bw_transport_if<>
+                  protected tlm::tlm_fw_transport_if<>,
+                  protected tlm::tlm_bw_transport_if<>
 {
 protected:
     virtual void b_transport(tlm_generic_payload& tx, sc_time& dt) override;
