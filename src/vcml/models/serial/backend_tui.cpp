@@ -49,7 +49,7 @@ void backend_tui::terminate() {
 }
 
 void backend_tui::iothread() {
-    mwr::set_thread_name(m_iothread, "tui_iothread");
+    mwr::set_thread_name("tui_iothread");
     while (m_backend_active && sim_running()) {
         u64 now_host = mwr::timestamp_us();
         u64 now_sim = time_to_us(sc_time_stamp());

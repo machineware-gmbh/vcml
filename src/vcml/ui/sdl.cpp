@@ -478,6 +478,8 @@ void sdl::draw_windows() {
 }
 
 void sdl::ui_run() {
+    mwr::set_thread_name("sdl_ui_thread");
+
     if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
         SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -518,10 +520,8 @@ void sdl::register_display(display* disp) {
     m_clients.push_back(client);
     m_attached++;
 
-    if (!m_uithread.joinable()) {
+    if (!m_uithread.joinable())
         m_uithread = thread(&sdl::ui_run, this);
-        mwr::set_thread_name(m_uithread, "sdl_ui_thread");
-    }
 }
 
 void sdl::unregister_display(display* disp) {

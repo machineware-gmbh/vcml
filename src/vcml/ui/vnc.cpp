@@ -227,7 +227,7 @@ static void rfb_ptr_func(int mask, int x, int y, rfbClientPtr cl) {
 }
 
 void vnc::run() {
-    mwr::set_thread_name(m_thread, mkstr("vnc_%u", dispno()));
+    mwr::set_thread_name(mkstr("vnc_%u", dispno()));
 
     const videomode& fbm = mode();
 

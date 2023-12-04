@@ -127,7 +127,7 @@ static const SlirpCb SLIRP_CBS = {
 };
 
 void slirp_network::slirp_thread() {
-    mwr::set_thread_name(m_thread, mkstr("slirp_%u", m_id));
+    mwr::set_thread_name(mkstr("slirp_%u", m_id));
 
     while (m_running) {
         unsigned int timeout = 10; // ms

@@ -33,7 +33,7 @@ void backend_term::terminate() {
 }
 
 void backend_term::iothread() {
-    mwr::set_thread_name(m_iothread, "term_iothread");
+    mwr::set_thread_name("term_iothread");
     while (m_backend_active && sim_running()) {
         if (mwr::fd_peek(m_fdin, 100)) {
             u8 ch;

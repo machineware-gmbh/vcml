@@ -192,7 +192,7 @@ void rspserver::run_async() {
 }
 
 void rspserver::run() {
-    mwr::set_thread_name(m_thread, m_name);
+    mwr::set_thread_name(m_name);
     while (m_running) {
         try {
             disconnect();

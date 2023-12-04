@@ -15,8 +15,7 @@ namespace vcml {
 namespace serial {
 
 void backend_tcp::iothread() {
-    string name = mkstr("serial_%hu", m_socket.port());
-    mwr::set_thread_name(m_thread, name);
+    mwr::set_thread_name(mkstr("serial_%hu", m_socket.port()));
 
     while (m_running) {
         try {
