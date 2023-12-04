@@ -404,18 +404,25 @@ static SOCKET* get_target_socket(sc_object* port) {
     return dynamic_cast<SOCKET*>(port);
 }
 
-static tlm_initiator_socket* get_initiator_socket(sc_object* array,
-                                                  size_t idx) {
+static tlm::tlm_base_initiator_socket<>* get_initiator_socket(sc_object* array,
+                                                              size_t idx) {
     auto* main = dynamic_cast<tlm_initiator_array*>(array);
     if (main)
         return &main->get(idx);
+    auto* base = dynamic_cast<tlm_base_initiator_array*>(array);
+    if (base)
+        return &base->get(idx);
     return nullptr;
 }
 
-static tlm_target_socket* get_target_socket(sc_object* array, size_t idx) {
+static tlm::tlm_base_target_socket<>* get_target_socket(sc_object* array,
+                                                        size_t idx) {
     auto* main = dynamic_cast<tlm_target_array*>(array);
     if (main)
         return &main->get(idx);
+    auto* base = dynamic_cast<tlm_base_target_array*>(array);
+    if (base)
+        return &base->get(idx);
     return nullptr;
 }
 
@@ -476,15 +483,31 @@ void tlm_stub(const sc_object& obj, const string& port, size_t idx) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
-    auto* ini = get_initiator_socket(child, idx);
-    if (ini) {
-        ini->stub();
+    auto* isock = get_initiator_socket(child, idx);
+    auto* ibase = dynamic_cast<tlm_base_initiator_socket*>(isock);
+    auto* ifull = dynamic_cast<tlm_initiator_socket*>(isock);
+
+    if (ibase) {
+        ibase->stub();
         return;
     }
 
-    auto* tgt = get_target_socket(child, idx);
-    if (tgt) {
-        tgt->stub();
+    if (ifull) {
+        ifull->stub();
+        return;
+    }
+
+    auto* tsock = get_target_socket(child, idx);
+    auto* tbase = dynamic_cast<tlm_base_target_socket*>(tsock);
+    auto* tfull = dynamic_cast<tlm_target_socket*>(tsock);
+
+    if (tbase) {
+        tbase->stub();
+        return;
+    }
+
+    if (tfull) {
+        tfull->stub();
         return;
     }
 

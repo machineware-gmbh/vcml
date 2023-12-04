@@ -23,6 +23,7 @@
 #include "vcml/protocols/tlm_adapters.h"
 #include "vcml/protocols/tlm_dmi_cache.h"
 #include "vcml/protocols/tlm_host.h"
+#include "vcml/protocols/tlm_base.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/tracing/tracer.h"
