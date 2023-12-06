@@ -59,6 +59,7 @@ core_test("memory")
 core_test("disk")
 core_test("model")
 core_test("system")
+core_test("peq")
 
 if(LUA_FOUND)
     core_test("lua")
