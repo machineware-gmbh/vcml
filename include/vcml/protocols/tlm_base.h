@@ -17,6 +17,7 @@
 #include "vcml/core/thctl.h"
 #include "vcml/core/module.h"
 
+#include "vcml/protocols/base.h"
 #include "vcml/protocols/tlm_sbi.h"
 #include "vcml/protocols/tlm_exmon.h"
 #include "vcml/protocols/tlm_stubs.h"
