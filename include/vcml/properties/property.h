@@ -253,8 +253,10 @@ inline const T& property<T, N>::get_default() const {
 template <typename T, size_t N>
 inline void property<T, N>::set_default(const T& defval) {
     m_defval = defval;
-    if (!m_inited)
-        set(defval);
+    if (!m_inited) {
+        for (size_t i = 0; i < N; i++)
+            m_value[i] = m_defval;
+    }
 }
 
 template <typename T, size_t N>
