@@ -10,8 +10,6 @@
 
 #include "testing.h"
 
-#include "vcml/core/peq.h"
-
 class peq_test : public test_base
 {
 public:
@@ -23,7 +21,6 @@ public:
         peq<int> queue("peq");
 
         EXPECT_STREQ(queue.name(), "test.run.peq");
-        EXPECT_STREQ(queue.event().name(), "test.run.peq_event");
         EXPECT_STREQ(queue.kind(), "vcml::peq");
 
         queue.notify(2, 2.0, SC_SEC);

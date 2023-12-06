@@ -24,36 +24,38 @@ private:
     std::multimap<sc_time, T> m_schedule;
 
 public:
-    // Constructor
-    peq(const char* nm):
-        sc_object(nm),
-        m_event(mkstr("%s_event", basename()).c_str()),
-        m_schedule() {}
+    peq(const char* nm);
     virtual ~peq() = default;
     VCML_KIND(peq);
 
-    void notify(T payload, double t, sc_time_unit tu);
-    void notify(T payload, const sc_time& delta);
-    void cancel(T obj);
+    void notify(const T& payload, double t, sc_time_unit tu);
+    void notify(const T& payload, const sc_time& delta);
+    void cancel(const T& obj);
     void wait(T& obj);
-
-    sc_event& event() { return m_event; }
 };
 
 template <typename T>
-inline void peq<T>::notify(T payload, double t, sc_time_unit tu) {
+inline peq<T>::peq(const char* nm):
+    sc_object(nm),
+    m_event(mkstr("%s_event", basename()).c_str()),
+    m_schedule() {
+    // nothing to do
+}
+
+template <typename T>
+inline void peq<T>::notify(const T& payload, double t, sc_time_unit tu) {
     notify(payload, sc_time(t, tu));
 }
 
 template <typename T>
-inline void peq<T>::notify(T payload, const sc_time& delta) {
+inline void peq<T>::notify(const T& payload, const sc_time& delta) {
     sc_time t = sc_time_stamp() + delta;
     m_schedule.emplace(t, payload);
     m_event.notify(m_schedule.begin()->first - sc_time_stamp());
 }
 
 template <typename T>
-inline void peq<T>::cancel(T payload) {
+inline void peq<T>::cancel(const T& payload) {
     if (m_schedule.empty())
         return;
 
