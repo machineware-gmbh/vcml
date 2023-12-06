@@ -115,6 +115,13 @@ using multi_initiator_socket = base_initiator_socket<FW, BW, WIDTH, 0>;
 template <typename FW, typename BW, unsigned int WIDTH = 1>
 using multi_target_socket = base_target_socket<FW, BW, WIDTH, 0>;
 
+template <typename T, typename = std::void_t<>>
+struct supports_tracing : std::false_type {};
+
+template <typename T>
+struct supports_tracing<T, std::void_t<decltype(std::declval<T>().trace_all)>>
+    : std::true_type {};
+
 template <typename SOCKET>
 class socket_array : public sc_object
 {
@@ -132,14 +139,20 @@ private:
     revmap_type m_ids;
 
 public:
+    property<bool> trace_all;
+    property<bool> trace_errors;
+
     socket_array(const char* nm):
         sc_object(nm),
         m_next(0),
         m_max(SIZE_MAX),
         m_space(VCML_AS_DEFAULT),
         m_sockets(),
-        m_ids() {
-        // nothing to do
+        m_ids(),
+        trace_all(this, "trace", false),
+        trace_errors(this, "trace_errors", false) {
+        trace_all.inherit_default();
+        trace_errors.inherit_default();
     }
 
     socket_array(const char* nm, size_t max): socket_array(nm) { m_max = max; }
@@ -175,6 +188,11 @@ public:
         hierarchy_guard guard(this);
         string nm = mkstr("%s[%zu]", basename(), idx);
         socket = new SOCKET(nm.c_str(), m_space);
+        if constexpr (supports_tracing<SOCKET>::value) {
+            socket->trace_all.set_default(trace_all);
+            socket->trace_errors.set_default(trace_errors);
+        }
+
         m_ids[socket] = idx;
         m_next = max(m_next, idx + 1);
         return *socket;
