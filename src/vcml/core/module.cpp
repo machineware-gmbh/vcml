@@ -47,11 +47,11 @@ bool module::cmd_version(const vector<string>& args, ostream& os) {
 module::module(const sc_module_name& nm):
     sc_module(nm),
     m_commands(),
-    trace("trace", false),
+    trace_all("trace", false),
     trace_errors("trace_errors", false),
     loglvl("loglvl", LOG_INFO),
     log(this) {
-    trace.inherit_default();
+    trace_all.inherit_default();
     trace_errors.inherit_default();
     loglvl.inherit_default();
     register_command("clist", 0, &module::cmd_clist,

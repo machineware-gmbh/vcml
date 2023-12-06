@@ -34,13 +34,13 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
     m_host(hierarchy_search<tlm_host>()),
     m_parent(hierarchy_search<module>()),
     m_adapter(nullptr),
-    trace(this, "trace", false),
+    trace_all(this, "trace", false),
     trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
     VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
 
-    trace.inherit_default();
+    trace_all.inherit_default();
     trace_errors.inherit_default();
     allow_dmi.inherit_default();
 
@@ -329,13 +329,13 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     m_adapter(nullptr),
     m_payload(nullptr),
     m_sideband(SBI_NONE),
-    trace(this, "trace", false),
+    trace_all(this, "trace", false),
     trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),
     as(a) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside module", nm);
 
-    trace.inherit_default();
+    trace_all.inherit_default();
     trace_errors.inherit_default();
     allow_dmi.inherit_default();
 

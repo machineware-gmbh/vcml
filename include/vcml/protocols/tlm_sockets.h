@@ -53,7 +53,7 @@ protected:
     virtual void invalidate_direct_mem_ptr(u64 start, u64 end);
 
 public:
-    property<bool> trace;
+    property<bool> trace_all;
     property<bool> trace_errors;
     property<bool> allow_dmi;
 
@@ -121,13 +121,13 @@ public:
 
 inline void tlm_initiator_socket::trace_fw(const tlm_generic_payload& tx,
                                            const sc_time& t) {
-    if (trace)
+    if (trace_all)
         tracer::record(TRACE_FW, *this, tx, t);
 }
 
 inline void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
                                            const sc_time& t) {
-    if (trace || (trace_errors && failed(tx)))
+    if (trace_all || (trace_errors && failed(tx)))
         tracer::record(TRACE_BW, *this, tx, t);
 }
 
@@ -262,7 +262,7 @@ protected:
     virtual bool get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi);
 
 public:
-    property<bool> trace;
+    property<bool> trace_all;
     property<bool> trace_errors;
     property<bool> allow_dmi;
 
@@ -316,13 +316,13 @@ inline void tlm_target_socket::wait_free() {
 
 inline void tlm_target_socket::trace_fw(const tlm_generic_payload& tx,
                                         const sc_time& t) {
-    if (trace)
+    if (trace_all)
         tracer::record(TRACE_FW, *this, tx, t);
 }
 
 inline void tlm_target_socket::trace_bw(const tlm_generic_payload& tx,
                                         const sc_time& t) {
-    if (trace || (trace_errors && failed(tx)))
+    if (trace_all || (trace_errors && failed(tx)))
         tracer::record(TRACE_BW, *this, tx, t);
 }
 

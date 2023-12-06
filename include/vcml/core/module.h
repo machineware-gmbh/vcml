@@ -32,7 +32,7 @@ private:
     bool cmd_version(const vector<string>& args, ostream& os);
 
 public:
-    property<bool> trace;
+    property<bool> trace_all;
     property<bool> trace_errors;
     property<log_level> loglvl;
 
@@ -131,7 +131,7 @@ inline command_base* module::get_command(const string& name) {
 template <typename PAYLOAD>
 void module::record(trace_direction dir, const sc_object& port,
                     const PAYLOAD& tx, const sc_time& t) const {
-    if (trace || (trace_errors && is_backward_trace(dir) && failed(tx)))
+    if (trace_all || (trace_errors && is_backward_trace(dir) && failed(tx)))
         tracer::record(dir, port, tx, t);
 }
 

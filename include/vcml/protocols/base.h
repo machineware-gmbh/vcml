@@ -34,16 +34,16 @@ private:
 public:
     const address_space as;
 
-    property<bool> trace;
+    property<bool> trace_all;
     property<bool> trace_errors;
 
     base_socket() = delete;
     base_socket(sc_object* port, address_space space):
         m_port(port),
         as(space),
-        trace(port, "trace", false),
+        trace_all(port, "trace", false),
         trace_errors(port, "trace_errors", false) {
-        trace.inherit_default();
+        trace_all.inherit_default();
         trace_errors.inherit_default();
     }
 
@@ -54,13 +54,13 @@ public:
 protected:
     template <typename PAYLOAD>
     void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
-        if (trace)
+        if (trace_all)
             tracer::record(TRACE_FW, *m_port, tx, t);
     }
 
     template <typename PAYLOAD>
     void trace_bw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
-        if (trace || (trace_errors && failed(tx)))
+        if (trace_all || (trace_errors && failed(tx)))
             tracer::record(TRACE_BW, *m_port, tx, t);
     }
 };
