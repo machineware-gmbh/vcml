@@ -738,6 +738,7 @@ void gic400::cpuif::write_eoir(u32 val) {
         log_debug("(%s) cpu %zu eois irq %zu", reg_nm, cpu, irq);
         set_current_irq(cpu, m_prev_irq[irq][cpu]);
         m_parent->set_irq_active(irq, false, bit(cpu));
+        m_parent->set_irq_signaled(irq, false, bit(cpu));
         m_parent->update();
         return;
     }
