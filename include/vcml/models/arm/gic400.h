@@ -31,6 +31,7 @@ public:
     using BPR_P = field<0, 3, u32>;
     using ABPR_P = field<0, 3, u32>;
     using PMR_PR = field<0, 8, u32>;
+
     enum reg_configs : u32 {
         BPR_MIN = 0,
         BPR_MAX = 3,
@@ -87,7 +88,7 @@ public:
     };
 
     enum cpu_mask : cpu_mask_t {
-        ALL_CPU = bit(NCPU) - 1,
+        ALL_CPU = bitmask(NCPU),
     };
 
     enum group_mode : cpu_mask_t { GRP0 = 0, GRP1 = 1 };

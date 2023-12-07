@@ -17,7 +17,7 @@ constexpr bool is_software_interrupt(size_t irq) {
     return irq < gic400::NSGI;
 }
 
-inline size_t get_cpu(const peripheral& p, const char* reg) {
+static size_t get_cpu(const peripheral& p, const char* reg) {
     int cpu = p.current_cpu();
     if (cpu < 0) {
         log_warn("(%s) invalid cpu %d, assuming 0", reg, cpu);
@@ -26,7 +26,7 @@ inline size_t get_cpu(const peripheral& p, const char* reg) {
     return static_cast<size_t>(cpu);
 }
 
-inline gic400::cpu_mask_t get_cpu_mask(const peripheral& p, const char* reg) {
+static gic400::cpu_mask_t get_cpu_mask(const peripheral& p, const char* reg) {
     return bit(get_cpu(p, reg));
 }
 
@@ -36,6 +36,7 @@ gic400::irq_state::irq_state():
     active(0),
     level(0),
     signaled(0),
+    group(0),
     model(N_N),
     trigger(EDGE) {
     // nothing to do
@@ -46,6 +47,7 @@ gic400::list_entry::list_entry():
     active(false),
     hw(0),
     prio(0),
+    group(),
     virtual_id(0),
     physical_id(0),
     cpu_id(0) {
@@ -1328,12 +1330,12 @@ pair<bool, bool> gic400::update_excp_state(size_t cpu, size_t& irq,
     else
         amsk = get_prio_mask(abpr, true, virt);
 
-    if (group == GRP0 && ctlr & GICC_CTLR_ENABLE_GROUP0) {
+    if (group == GRP0 && (ctlr & GICC_CTLR_ENABLE_GROUP0)) {
         if (!active && prio < (rpr & msk)) {
             next_irq = true;
             next_grp0 = true;
         }
-    } else if (group == GRP1 && ctlr & GICC_CTLR_ENABLE_GROUP1) {
+    } else if (group == GRP1 && (ctlr & GICC_CTLR_ENABLE_GROUP1)) {
         if (!active && prio < (rpr & amsk)) {
             next_irq = true;
             next_grp0 = false;
@@ -1349,8 +1351,8 @@ void gic400::update(bool virt) {
         auto [next_irq, next_grp0] = update_excp_state(cpu, irq, virt);
 
         u32 group_mask = bit(next_grp0 ? 0 : 1);
-        if (!virt && !(distif.ctlr.bank(cpu) & group_mask &&
-                       cpuif.ctlr.bank(cpu) & group_mask)) {
+        if (!virt && !((distif.ctlr.bank(cpu) & group_mask) &&
+                       (cpuif.ctlr.bank(cpu) & group_mask))) {
             log_debug("disabling cpu%u irq", cpu);
             cpuif.hppir.bank(cpu) = SPURIOUS_IRQ;
             irq_out[cpu] = false;
@@ -1371,7 +1373,7 @@ void gic400::update(bool virt) {
         size_t hppir = irq;
         if (next_irq) {
             u32 ctlr = virt ? vcpuif.ctlr.bank(cpu) : cpuif.ctlr.bank(cpu);
-            if (next_grp0 && GICC_CTLR_FIQ_ENABLE & ctlr) {
+            if (next_grp0 && (GICC_CTLR_FIQ_ENABLE & ctlr)) {
                 if (GICC_CTLR_ENABLE_GROUP0 & ctlr) {
                     cpu_fiq = true;
                 }
