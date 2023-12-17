@@ -26,6 +26,7 @@ public:
         queue.notify(2, 2.0, SC_SEC);
         queue.notify(1, 1.0, SC_SEC);
         queue.notify(3, 3.0, SC_SEC);
+        queue.notify(3, 3.0, SC_SEC);
 
         queue.wait(val);
         EXPECT_EQ(val, 1);

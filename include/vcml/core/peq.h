@@ -50,6 +50,11 @@ inline void peq<T>::notify(const T& payload, double t, sc_time_unit tu) {
 template <typename T>
 inline void peq<T>::notify(const T& payload, const sc_time& delta) {
     sc_time t = sc_time_stamp() + delta;
+    auto range = m_schedule.equal_range(t);
+    for (auto it = range.first; it != range.second; it++)
+        if (it->second == payload)
+            return;
+
     m_schedule.emplace(t, payload);
     m_event.notify(m_schedule.begin()->first - sc_time_stamp());
 }
