@@ -8,13 +8,13 @@ features, such as TLM sockets, Interrupt ports, I/O peripherals and registers.
 Based on these design primitives, TLM models for frequently deployed components
 are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
-[![Build Status](https://github.com/machineware-gmbh/vcml/workflows/cmake/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/cmake.yml)
-[![Sanitizer Status](https://github.com/machineware-gmbh/vcml/workflows/asan/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/asan.yml)
-[![Lint Status](https://github.com/machineware-gmbh/vcml/workflows/lint/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/lint.yml)
-[![Code Style](https://github.com/machineware-gmbh/vcml/workflows/style/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/style.yml)
-[![Nightly Status](https://github.com/machineware-gmbh/vcml/workflows/nightly/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/nightly.yml)
-[![Coverage Status](https://github.com/machineware-gmbh/vcml/workflows/coverage/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/coverage.yml)
-[![Windows Status](https://github.com/machineware-gmbh/vcml/workflows/windows/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/windows.yml)
+[![Build Status](https://github.com/machineware-gmbh/vcml/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/cmake.yml)
+[![Sanitizer Status](https://github.com/machineware-gmbh/vcml/actions/workflows/asan.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/asan.yml)
+[![Lint Status](https://github.com/machineware-gmbh/vcml/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/lint.yml)
+[![Code Style](https://github.com/machineware-gmbh/vcml/actions/workflows/style.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/style.yml)
+[![Nightly Status](https://github.com/machineware-gmbh/vcml/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/nightly.yml)
+[![Coverage Status](https://github.com/machineware-gmbh/vcml/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/coverage.yml)
+[![Windows Status](https://github.com/machineware-gmbh/vcml/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/windows.yml)
 
 ----
 ## Build & Installation
