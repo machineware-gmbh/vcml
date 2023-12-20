@@ -163,6 +163,15 @@ employ VCML to construct a complete VP, for example
 [`or1kmvp`](https://github.com/janweinstock/or1kmvp/).
 
 ----
+## Contributions
+Please note that we currently cannot accept Pull Requests on Github.
+Instructions on how to contribute to VCML, along with a curated collection of
+existing contributions in the form of individual models or complete Virtual
+Platforms can be accessed on our community projects website at:
+
+[https://www.machineware.de/vcml-community](https://www.machineware.de/vcml-community)
+
+----
 ## License
 
 This project is licensed under the Apache-2.0 license - see the
