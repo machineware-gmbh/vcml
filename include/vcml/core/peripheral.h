@@ -74,7 +74,8 @@ public:
     void add_register(reg_base* reg);
     void remove_register(reg_base* reg);
 
-    vector<reg_base*> get_registers(address_space as = VCML_AS_DEFAULT) const;
+    const vector<reg_base*>& get_registers() const;
+    const vector<reg_base*>& get_registers(address_space as) const;
 
     void map_dmi(const tlm_dmi& dmi);
     void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
@@ -130,6 +131,10 @@ inline void peripheral::natural_accesses_only(bool only) {
 inline void peripheral::natural_accesses_only(address_space as, bool only) {
     for (auto* reg : get_registers(as))
         reg->natural_accesses_only(only);
+}
+
+inline const vector<reg_base*>& peripheral::get_registers() const {
+    return get_registers(VCML_AS_DEFAULT);
 }
 
 } // namespace vcml

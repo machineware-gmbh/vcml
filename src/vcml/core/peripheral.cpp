@@ -91,9 +91,14 @@ void peripheral::remove_register(reg_base* reg) {
     stl_remove(m_registers[reg->as], reg);
 }
 
-vector<reg_base*> peripheral::get_registers(address_space as) const {
+const vector<reg_base*>& peripheral::get_registers(address_space as) const {
     auto it = m_registers.find(as);
-    return it == m_registers.end() ? vector<reg_base*>() : it->second;
+    if (it == m_registers.end()) {
+        static const vector<reg_base*> none;
+        return none;
+    }
+
+    return it->second;
 }
 
 void peripheral::map_dmi(const tlm_dmi& dmi) {
@@ -192,7 +197,7 @@ unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
 
     set_current_cpu(info.cpuid);
 
-    for (auto reg : get_registers(as)) {
+    for (auto* reg : m_registers[as]) {
         if (reg->get_range().overlaps(tx)) {
             bytes += reg->receive(tx, info);
 
