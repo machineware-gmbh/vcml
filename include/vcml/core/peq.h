@@ -23,6 +23,8 @@ private:
     sc_event m_event;
     std::multimap<sc_time, T> m_schedule;
 
+    void update();
+
 public:
     peq(const char* nm);
     virtual ~peq() = default;
@@ -33,6 +35,16 @@ public:
     void cancel(const T& obj);
     void wait(T& obj);
 };
+
+template <typename T>
+inline void peq<T>::update() {
+    if (m_schedule.empty()) {
+        m_event.cancel();
+    } else {
+        sc_time next = m_schedule.begin()->first;
+        m_event.notify(next - sc_time_stamp());
+    }
+}
 
 template <typename T>
 inline peq<T>::peq(const char* nm):
@@ -56,7 +68,7 @@ inline void peq<T>::notify(const T& payload, const sc_time& delta) {
             return;
 
     m_schedule.emplace(t, payload);
-    m_event.notify(m_schedule.begin()->first - sc_time_stamp());
+    update();
 }
 
 template <typename T>
@@ -64,20 +76,8 @@ inline void peq<T>::cancel(const T& payload) {
     if (m_schedule.empty())
         return;
 
-    sc_time curr = m_schedule.begin()->first;
     mwr::stl_remove(m_schedule, payload);
-
-    if (m_schedule.empty()) {
-        m_event.cancel();
-        return;
-    }
-
-    sc_time next = m_schedule.begin()->first;
-    if (next == curr)
-        return;
-
-    m_event.cancel();
-    m_event.notify(next - sc_time_stamp());
+    update();
 }
 
 template <typename T>
@@ -86,13 +86,12 @@ inline void peq<T>::wait(T& obj) {
     while (it == m_schedule.end()) {
         sc_core::wait(m_event);
         it = m_schedule.find(sc_time_stamp());
+        update();
     }
 
     obj = it->second;
     m_schedule.erase(it);
-
-    if (!m_schedule.empty())
-        m_event.notify(m_schedule.begin()->first - sc_time_stamp());
+    update();
 }
 
 } // namespace vcml
