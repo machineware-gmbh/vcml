@@ -53,13 +53,21 @@ void hierarchy_push(sc_module* mod) {
 sc_module* hierarchy_pop() {
     sc_simcontext* simc = sc_get_curr_simcontext();
     VCML_ERROR_ON(!simc, "no simulation context");
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
     return simc->hierarchy_pop();
+#else
+    return dynamic_cast<sc_module*>(simc->hierarchy_pop());
+#endif
 }
 
 sc_module* hierarchy_top() {
     sc_simcontext* simc = sc_get_curr_simcontext();
     VCML_ERROR_ON(!simc, "no simulation context");
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
     return simc->hierarchy_curr();
+#else
+    return dynamic_cast<sc_module*>(simc->active_object());
+#endif
 }
 
 bool is_parent(const sc_object* obj, const sc_object* child) {
@@ -172,7 +180,8 @@ string tlm_transaction_to_str(const tlm_generic_payload& tx) {
     return ss.str();
 }
 
-#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a && \
+    SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
 static inline bool test_kernel_has_phase_callbacks() {
     class callbacks_tester : public sc_object
     {
@@ -203,7 +212,9 @@ static inline bool test_kernel_has_phase_callbacks() {
 #endif
 
 bool kernel_has_phase_callbacks() {
-#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    return true;
+#elif SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
     return false;
 #else
     static bool has_callbacks = test_kernel_has_phase_callbacks();
@@ -211,8 +222,10 @@ bool kernel_has_phase_callbacks() {
 #endif
 }
 
-// we just need this class to have something that is called every cycle...
 class helper_module : public sc_core::sc_trace_file,
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+                      public sc_core::sc_stage_callback_if,
+#endif
                       public sc_core::sc_prim_channel
 {
 public:
@@ -359,6 +372,9 @@ public:
 
     helper_module(const char* nm):
         sc_core::sc_trace_file(),
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+        sc_core::sc_stage_callback_if(),
+#endif
         sc_core::sc_prim_channel(nm),
         sim_running(true),
         use_phase_callbacks(kernel_has_phase_callbacks()),
@@ -370,14 +386,22 @@ public:
         tsteps(),
         timeout_event("timeout_ev"),
         timers() {
-#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a && \
+    SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
         if (use_phase_callbacks) {
             register_simulation_phase_callback(sc_core::SC_END_OF_UPDATE |
                                                sc_core::SC_BEFORE_TIMESTEP);
         }
 #endif
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
         if (!use_phase_callbacks)
             simcontext()->add_trace_file(this);
+#endif
+
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+        sc_core::sc_register_stage_callback(
+            *this, sc_core::SC_POST_UPDATE | sc_core::SC_PRE_TIMESTEP);
+#endif
 
         sc_spawn_options opts;
         opts.spawn_method();
@@ -386,7 +410,8 @@ public:
         sc_spawn([&]() -> void { run_timer(); }, "$$$$vcml_timer$$$$", &opts);
     }
 
-#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a && \
+    SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
     virtual void simulation_phase_callback() override {
         switch (simcontext()->get_status()) {
         case sc_core::SC_END_OF_UPDATE:
@@ -400,12 +425,31 @@ public:
             break;
         }
     }
+#elif SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    virtual void stage_callback(const sc_core::sc_stage& stage) override {
+        switch (stage) {
+        case sc_core::SC_POST_UPDATE:
+            cycle(true);
+            break;
+        case sc_core::SC_PRE_TIMESTEP:
+            cycle(false);
+            break;
+
+        default:
+            break;
+        }
+    }
 #endif
 
     virtual ~helper_module() {
-#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_1a && \
+    SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
         if (!use_phase_callbacks)
             sc_get_curr_simcontext()->remove_trace_file(this);
+#endif
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+        sc_core::sc_unregister_stage_callback(
+            *this, sc_core::SC_POST_UPDATE | sc_core::SC_PRE_TIMESTEP);
 #endif
         while (!timers.empty()) {
             delete timers.top();
@@ -470,6 +514,12 @@ void on_start_of_simulation(function<void(void)> callback) {
     helper_module& helper = helper_module::instance();
     lock_guard<mutex> guard(helper.mtx);
     helper.start_of_sim.push_back(std::move(callback));
+}
+
+void on_end_of_simulation(function<void(void)> callback) {
+    helper_module& helper = helper_module::instance();
+    lock_guard<mutex> guard(helper.mtx);
+    helper.end_of_sim.push_back(std::move(callback));
 }
 
 void on_each_delta_cycle(function<void(void)> callback) {
@@ -746,7 +796,7 @@ string call_origin() {
             return parent ? parent->name() : proc->name();
         }
 
-        sc_module* module = simc->hierarchy_curr();
+        sc_module* module = hierarchy_top();
         if (module)
             return module->name();
     }

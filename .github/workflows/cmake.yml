@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3]
+        systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3, 2.3.4, 3.0.0_pub_rev_20231129]
         os: [ubuntu-20.04, ubuntu-22.04]
         include:
           - systemc: 2.3.3

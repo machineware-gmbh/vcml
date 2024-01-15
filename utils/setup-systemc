@@ -12,8 +12,6 @@
 
 root="$(cd $(dirname $(dirname ${BASH_SOURCE[0]} )) &>/dev/null && pwd)"
 
-url="https://www.accellera.org/images/downloads/standards/systemc"
-
 prefix=$PWD
 version=2.3.3
 debug=no
@@ -40,24 +38,28 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-case $version in
-    2.3.0a);;
-    2.3.1a);;
-    2.3.2);;
-    2.3.3);;
-    *) echo "Unknown SystemC version: $version"; exit 1;;
-esac
-
-mkdir -p $prefix
-
 prefix=$(realpath $prefix)
 home=$prefix/systemc/$version
 build=$home/BUILD
 src=systemc-$version
-flags="--enable-static --disable-shared"
+aconf_flags="--enable-static --disable-shared"
+cmake_flags="-DBUILD_SHARED_LIBS=OFF"
+
+mkdir -p $prefix
+
+case $version in
+    2.3.0a) url=https://www.accellera.org/images/downloads/standards/systemc/$src.tar.gz;;
+    2.3.1a) url=https://www.accellera.org/images/downloads/standards/systemc/$src.tar.gz;;
+    2.3.2) url=https://www.accellera.org/images/downloads/standards/systemc/$src.tar.gz;;
+    2.3.3) url=https://www.accellera.org/images/downloads/standards/systemc/$src.tar.gz;;
+    2.3.4) url=https://github.com/accellera-official/systemc/archive/refs/tags/2.3.4.tar.gz;;
+    3.0.0_pub_rev_20231129) url=https://github.com/accellera-official/systemc/archive/refs/tags/3.0.0_pub_rev_20231129.tar.gz;;
+    *) echo "Unknown SystemC version: $version"; exit 1;;
+esac
 
 echo ""
 echo "+----------------------------------------------------------------------"
+echo "| source:   " $url
 echo "| prefix:   " $prefix
 echo "| build:    " $build
 echo "| version:  " $version
@@ -67,15 +69,23 @@ echo "+----------------------------------------------------------------------"
 echo ""
 
 if [ $debug == "yes" ]; then
-    flags+=" --enable-debug"
+    aconf_flags+=" --enable-debug"
+    cmake_build="DEBUG"
 else
-    flags+=" --disable-debug"
+    aconf_flags+=" --disable-debug"
+    cmake_build="RELEASE"
 fi
 
 if [ $optimize == "yes" ]; then
-    flags+=" --enable-optimize"
+    aconf_flags+=" --enable-optimize"
+    cmake_build="RELEASE"
 else
-    flags+=" --disable-optimize"
+    aconf_flags+=" --disable-optimize"
+    cmake_build="DEBUG"
+fi
+
+if [ $optimize == "yes" ] && [ $debug == "yes" ]; then
+    cmake_build="RelWithDebInfo"
 fi
 
 if [ -n "$(find /usr/include -name 'valgrind.h' 2>/dev/null)" ]; then
@@ -85,10 +95,10 @@ fi
 mkdir -p $home && cd $home
 
 if [ ! -d $src ]; then
-    test -f $src.tar.gz || curl -O $url/$src.tar.gz
-    tar -xzf $src.tar.gz
+    test -f $(basename $url) || wget $url
+    tar -xzf $(basename $url)
 
-    for p in $(ls $root/patches/systemc-$version-*.patch); do
+    for p in $(ls $root/patches/systemc-$version-*.patch 2>/dev/null); do
         echo "applying $p"
         (cd $src && patch -p1 <$p)
     done
@@ -96,7 +106,11 @@ fi
 
 if [ ! -d $build ]; then
     mkdir -p $build && cd $build
-    ../$src/configure --prefix=$home $flags
+    if [ -f ../$src/CMakeLists.txt ]; then
+        cmake -DCMAKE_INSTALL_PREFIX=$home -DCMAKE_BUILD_TYPE=$cmake_build $cmake_flags ../$src
+    else
+        ../$src/configure --prefix=$home $aconf_flags
+    fi
 fi
 
 make -C $build -j $(nproc)

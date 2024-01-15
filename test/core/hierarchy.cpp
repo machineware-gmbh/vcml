@@ -20,7 +20,12 @@ public:
         class inner_object : public sc_object
         {
         public:
-            inner_object(const char* n): sc_object(n) {}
+            inner_object(const char* n): sc_object(n) {
+                sc_object* obj = get_parent_object();
+                sc_module* mod = dynamic_cast<sc_module*>(obj);
+                EXPECT_EQ(hierarchy_top(), mod);
+            }
+
             virtual ~inner_object() = default;
         };
 
@@ -33,9 +38,24 @@ public:
     } mod1, mod2;
 
     test_module(const sc_module_name& nm):
-        module(nm), mod1("mod1"), mod2("mod2") {}
+        module(nm), mod1("mod1"), mod2("mod2") {
+        sc_module* this_module = (sc_module*)this;
+        EXPECT_EQ(vcml::hierarchy_top(), this_module);
+        vcml::hierarchy_push(this_module);
+        EXPECT_EQ(vcml::hierarchy_pop(), this_module);
+    }
 
     virtual ~test_module() = default;
+
+    virtual void end_of_elaboration() {
+        sc_module* this_module = (sc_module*)this;
+        EXPECT_EQ(vcml::hierarchy_top(), this_module);
+    }
+
+    virtual void start_of_of_elaboration() {
+        sc_module* this_module = (sc_module*)this;
+        EXPECT_EQ(vcml::hierarchy_top(), this_module);
+    }
 };
 
 TEST(hierarchy, find_child) {
