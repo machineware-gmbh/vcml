@@ -408,12 +408,14 @@ static void pl330_insn_dmamov(pl330* dma, pl330::channel* ch, u8 opcode,
     u32 im = (((u32)args[4]) << 24) | (((u32)args[3]) << 16) |
              (((u32)args[2]) << 8) | (((u32)args[1]));
 
+    bool src_secure = !(im & (2 << 8 ));
+    bool dst_secure = !(im & (2 << 22));
     switch (rd) {
     case 0b000:
         ch->sar = im;
         break;
     case 0b001:
-        if (!(im & (0x9 << 10)) && (ch->csr & CSR_CNS)) {
+        if ((src_secure || dst_secure)  && (ch->csr & CSR_CNS)) {
             pl330_handle_ch_fault(*dma, *ch, FTR_CH_RDWR_ERR);
             break;
         }
