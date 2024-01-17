@@ -132,7 +132,7 @@ public:
         out.write(dma.inten.get_address(), &irq_enable_bit, 4);
     }
 
-    virtual void run_test() override {
+    void test_transfer() {
         dma.reset();
         auto* data_char_ptr = mem.data();
         u8* const channel_insn_buffer = &data_char_ptr[0x1000];
@@ -163,6 +163,32 @@ public:
                       data_char_ptr[dst_buffer_addr + i]);
             EXPECT_EQ(i, data_char_ptr[dst_buffer_addr + i]);
         }
+    }
+
+    void trigger_rdwrfault() {
+        auto* data_char_ptr = mem.data();
+        u8* const channel_insn_buffer = &data_char_ptr[0x1000];
+        u8* insn_buf_tail = channel_insn_buffer;
+
+        // set channel non-secure
+        dma.channels[0].csr |= bit(21);
+
+        // mark both src and dest as secure
+        u32 ccr_val = 0;
+        emit_mov(insn_buf_tail, CCR, ccr_val);
+
+        emit_end(insn_buf_tail);
+        execute_dbg_insn(0, 0x1000);
+        while (!irq_in)
+            wait(1.0, sc_core::SC_SEC);
+        // expect fault
+        EXPECT_EQ(dma.fsrc[0], 1);
+    }
+
+    virtual void run_test() override {
+        test_transfer();
+        dma.reset();
+        trigger_rdwrfault();
     }
 };
 
