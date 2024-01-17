@@ -14,6 +14,7 @@ namespace vcml::dma {
 
 enum pl330_configs : u32 {
     PL330_INSN_MAXSIZE = 6,
+    PL330_MAX_BURST_LEN = 16 * 16,
     PL330_WD_TIMEOUT = 1024,
 };
 
@@ -738,9 +739,10 @@ static const insn_descr* fetch_mn_insn(pl330* dma) {
 
 static void execute_insn(pl330& dma, pl330::channel& channel,
                          const insn_descr* insn) {
-    u8 buffer[PL330_INSN_MAXSIZE];
-    dma.dma.read(channel.cpc, (void*)buffer, insn->size);
-    insn->exec(&dma, &channel, buffer[0], &buffer[1], insn->size - 1);
+    u8 insn_buffer[PL330_INSN_MAXSIZE];
+    dma.dma.read(channel.cpc, (void*)insn_buffer, insn->size);
+    insn->exec(&dma, &channel, insn_buffer[0], &insn_buffer[1],
+               insn->size - 1);
 }
 
 static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
@@ -774,6 +776,7 @@ static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
 static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
     u32 num_exec = 0;
     num_exec += channel_execute_one_insn(dma, channel);
+    u8 trans_buffer[PL330_MAX_BURST_LEN];
 
     // one insn form read queue
     if (!dma.read_queue.empty() &&
@@ -782,8 +785,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // crop length otherwise in case of an unaligned address the first read
         // would be too long
         u32 len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        u8 buffer[PL330_INSN_MAXSIZE];
-        if (failed(dma.dma.read(insn.data_addr, (void*)buffer, len))) {
+        if (failed(dma.dma.read(insn.data_addr, (void*)trans_buffer, len))) {
             dma.log.error("Dma channel read failed");
             VCML_ERROR("PL33 DMA read failed");
         }
@@ -791,7 +793,7 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         if (dma.mfifo.num_free() >= len) {
             for (u32 i = 0; i < len; i++) {
                 dma.mfifo.push(
-                    pl330::mfifo_entry{ buffer[i], (u8)channel.chid });
+                    pl330::mfifo_entry{ trans_buffer[i], (u8)channel.chid });
             }
             if (insn.inc)
                 insn.data_addr += len;
@@ -807,17 +809,16 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
         // crop length otherwise in case of an unaligned address the first read
         // would be too long
         int len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        u8 buffer[PL330_INSN_MAXSIZE];
         if (insn.zero_flag)
             for (int i = 0; i < len; i++)
-                buffer[i] = 0;
+                trans_buffer[i] = 0;
         else
             for (int i = 0; i < len; i++) {
                 assert(!dma.mfifo.empty());
-                buffer[i] = dma.mfifo.pop().value().buf;
+                trans_buffer[i] = dma.mfifo.pop().value().buf;
             }
 
-        if (failed(dma.dma.write(insn.data_addr, (void*)buffer, len))) {
+        if (failed(dma.dma.write(insn.data_addr, (void*)trans_buffer, len))) {
             dma.log.error("Dma channel write failed");
             VCML_ERROR("PL33 DMA write failed");
         }
@@ -846,7 +847,7 @@ void pl330::run_manager() {
         !manager.is_state(MNS_WAITING_FOR_EVENT)) {
         return;
     }
-    u8 buffer[PL330_INSN_MAXSIZE];
+    u8 insn_buffer[PL330_INSN_MAXSIZE];
     manager.stall = false;
     while (((!manager.stall) && manager.is_state(MNS_WAITING_FOR_EVENT)) ||
            manager.is_state(MNS_EXECUTING)) {
@@ -856,8 +857,9 @@ void pl330::run_manager() {
             break;
         }
 
-        dma.read(manager.dpc, (void*)buffer, insn->size);
-        insn->exec(this, nullptr, buffer[0], &buffer[1], insn->size - 1);
+        dma.read(manager.dpc, (void*)insn_buffer, insn->size);
+        insn->exec(this, nullptr, insn_buffer[0], &insn_buffer[1],
+                   insn->size - 1);
         if (!manager.stall) {
             manager.dpc += insn->size;
             manager.watchdog_timer = 0;
