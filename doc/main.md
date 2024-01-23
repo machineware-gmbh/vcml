@@ -12,6 +12,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
 
 * Documentation files for VCML modeling primitives:
   * [Logging](logging.md)
+  * [Tracing](tracing.md)
   * [Components](components.md)
   * [Properties](properties.md)
   * [Backends](backends.md)
