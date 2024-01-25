@@ -1,6 +1,7 @@
 # VCML Tracing
 
-VCML offers TLM transaction tracing functionality.
+VCML offers transaction tracing functionality for TLM and various other protocols, 
+such as GPIO, CLK, PCI, I2C, SPI, SD, Serial, Ethernet, CAN and Virtio.
 Tracing can be enabled globally via `system.trace=1` or for individual components via e.g. `system.sdhci.sd_out.trace=1`
 
 Tracing is available for all known payload types: `tlm_generic_payload`, `gpio_payload`,
@@ -11,7 +12,7 @@ Tracing is available for all known payload types: `tlm_generic_payload`, `gpio_p
 VCML currently has two tracing output options:
 
 * `--trace-stdout`: Send tracing output to stdout.
-* `-t <file>` or `--trace <file>`: send tracing output to file or stderr if no `<file>` is specified.
+* `-t <file>` or `--trace <file>`: send tracing output to file.
 
 ### Tracing Message Format
 
@@ -26,8 +27,8 @@ the internal transaction buffer. `<RESPONSE>` holds the current state of the
 transaction, see the TLM reference manual for details. Following is an example
 of an actual TLM transaction trace:
 
-* reading four bytes from address 0x100: `[TLM 10.910098127] system.uart0.thr << RD 0x0000100 [00 FF 00 FF] (TLM_OK_RESPONSE)`
-* writing single byte to invalid address: `[TLM 10.910098127] system.cpu.hart0.data << WR 0xFFFFFFFF [EE] (TLM_ADDRESS_ERROR_RESPONSE)`
+* reading four bytes from address 0x100: `[TLM 10.910098127] system.uart0.thr << RD 0x0000100 [00 ff 00 ff] (TLM_OK_RESPONSE)`
+* writing single byte to invalid address: `[TLM 10.910098127] system.cpu.hart0.data << WR 0xffffffff [ee] (TLM_ADDRESS_ERROR_RESPONSE)`
 
 
 ----

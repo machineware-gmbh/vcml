@@ -1,5 +1,5 @@
 # VCML Logging
-VCML uses a centralized logging system provided by MWR that allows its individual components
+VCML uses a centralized logging system provided by libmwr that allows its individual components
 and models to report on everything that happens during the simulation. Log
 messages are split into four categories, listed below in priority order:
 
@@ -15,10 +15,11 @@ Log message output adheres the following format:
 
 `[<LEVEL> <TIME>] <SOURCE>: <MESSAGE>`
 
-In this format, `<LEVEL>` refers to the log level and is shortened to its first
-letter, i.e., `E`, `W`, `I`, or `D`. After the log level, the current
-SystemC time is printed with nanosecond resolution. The `<SOURCE>` of the log message is
-automatically determined, depending on the log function you called (see below).
+In this format, `<LEVEL>` refers to the log level and is shortened to its first letter, 
+i.e., `E`, `W`, `I`, or `D`. After the log level, 
+the current SystemC time is printed with nanosecond resolution. 
+The `<SOURCE>` of the log message is automatically determined, 
+depending on the log function you called (see below).
 A full log message could therefore look like this:
 
 `[D 1.000000200] system.uart0: component disabled`
@@ -43,7 +44,7 @@ namespace mwr {
 ----
 ## Logging Output
 In order to actually see log messages, you need a publisher backend that will receive the
-messages and display them in some form. MWR currently provides three backends:
+messages and display them in some form. Libmwr currently provides three backends:
 
 * `mwr::publishers::terminal`: write the log message to `stderr` using color if available.
 * `mwr::publishers::file`: write log messages to a file specified during construction.
@@ -58,7 +59,7 @@ my_logger.set_level(mwr::LOG_ERROR); // only receives error messages
 my_logger.set_level(mwr::LOG_ERROR, mwr::LOG_INFO); // receives error, warning and info messages
 ```
 
-Having multiple loggers for different purposes is possible and encouraged. You
+Having multiple publishers for different purposes is possible and encouraged. You
 could have for example a logger that exclusively receives messages from the
 `mwr::LOG_DEBUG` level and writes them to a files. Then you could have a second
 logger to print all other messages to console:
@@ -88,7 +89,7 @@ simulation:
 | `print_source`      | Print the source location of the log call | `false` |
 | `print_backtrace`   | Print backtraces for logged reports       | `true`  |
 
-It is also possible to create your own publisher if you need to process MWR log
+It is also possible to create your own publisher if you need to process libmwr log
 messages in a customizable way. To define a custom logger, derive from
 `mwr::publisher` and override `mwr::publisher::publish`:
 
@@ -112,7 +113,7 @@ one is provided for you that accepts the following logging related program argum
 
 ----
 ## Exceptions
-The logging system is typically also used for exception reporting. MWR
+The logging system is typically also used for exception reporting. Libmwr
 generally uses the class `mwr::report` for exceptions, so a basic approach to
 exception handling would be:
 
@@ -142,4 +143,4 @@ was thrown for debug purposes. This behaviour can be disabled by setting
 `mwr::publisher::print_backtrace = false`.
 
 ----
-Documentation April 2020
+Documentation January 2024
