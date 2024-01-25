@@ -516,7 +516,8 @@ void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
         t1->bind(*t2);
 }
 
-void gpio_bind(const sc_object& obj, const string& port, sc_signal<bool>& s) {
+void gpio_bind(const sc_object& obj, const string& port,
+               sc_signal_inout_if<bool>& sig) {
     auto* p = find_child(obj, port);
     VCML_ERROR_ON(!p, "%s.%s does not exist", obj.name(), port.c_str());
 
@@ -526,13 +527,13 @@ void gpio_bind(const sc_object& obj, const string& port, sc_signal<bool>& s) {
     VCML_ERROR_ON(!i && !t, "%s is not a valid gpio port", p->name());
 
     if (i)
-        i->bind(s);
+        i->bind(sig);
     else if (t)
-        t->bind(s);
+        t->bind(sig);
 }
 
 void gpio_bind(const sc_object& obj, const string& port, size_t idx,
-               sc_signal<bool>& s) {
+               sc_signal_inout_if<bool>& sig) {
     auto* p = find_child(obj, port);
     VCML_ERROR_ON(!p, "%s.%s does not exist", obj.name(), port.c_str());
 
@@ -542,9 +543,9 @@ void gpio_bind(const sc_object& obj, const string& port, size_t idx,
     VCML_ERROR_ON(!i && !t, "%s is not a valid gpio port", p->name());
 
     if (i)
-        i->bind(s);
+        i->bind(sig);
     else if (t)
-        t->bind(s);
+        t->bind(sig);
 }
 
 } // namespace vcml

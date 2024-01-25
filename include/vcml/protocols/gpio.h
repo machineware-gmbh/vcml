@@ -288,9 +288,10 @@ void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
 void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
                const sc_object& obj2, const string& port2, size_t idx2);
 
-void gpio_bind(const sc_object& obj, const string& port, sc_signal<bool>& s);
+void gpio_bind(const sc_object& obj, const string& port,
+               sc_signal_inout_if<bool>& sig);
 void gpio_bind(const sc_object& obj, const string& port, size_t idx,
-               sc_signal<bool>& s);
+               sc_signal_inout_if<bool>& sig);
 
 } // namespace vcml
 
