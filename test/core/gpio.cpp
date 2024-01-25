@@ -39,6 +39,10 @@ public:
     sc_signal<bool> signal;
     gpio_target_socket a_in;
 
+    gpio_initiator_array arr_out;
+    sc_signal<bool> signal2;
+    gpio_target_array arr_in;
+
     gpio_test_harness(const sc_module_name& nm):
         test_base(nm),
         out("out"),
@@ -48,7 +52,10 @@ public:
         h_in("h_in"),
         a_out("a_out"),
         signal("signal"),
-        a_in("a_in") {
+        a_in("a_in"),
+        arr_out("arr_out"),
+        signal2("signal2"),
+        arr_in("arr_in") {
         // check socket lookup
         EXPECT_EQ(&out, &gpio_initiator(*this, "out"));
         EXPECT_EQ(&out2, &gpio_initiator(*this, "out2"));
@@ -69,8 +76,10 @@ public:
         EXPECT_TRUE(in[2].is_stubbed());
 
         // check adapters
-        a_out.bind(signal);
-        a_in.bind(signal);
+        gpio_bind(*this, "a_out", signal);
+        gpio_bind(*this, "a_in", signal);
+        gpio_bind(*this, "arr_out", 14, signal2);
+        gpio_bind(*this, "arr_in", 102, signal2);
 
         // did the port get created?
         EXPECT_TRUE(find_object("gpio.out2"));
@@ -83,6 +92,8 @@ public:
         // did the adapters get created?
         EXPECT_TRUE(find_object("gpio.a_out_adapter"));
         EXPECT_TRUE(find_object("gpio.a_in_adapter"));
+        EXPECT_TRUE(find_object("gpio.arr_out[14]_adapter"));
+        EXPECT_TRUE(find_object("gpio.arr_in[102]_adapter"));
     }
 
     MOCK_METHOD(void, gpio_notify,
@@ -143,6 +154,13 @@ public:
         a_out.raise();
         wait(signal.default_event());
         EXPECT_TRUE(a_in);
+
+        // test array adapters
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio("arr_in[102]"), true, GPIO_NO_VECTOR));
+        arr_out[14].raise();
+        wait(signal2.default_event());
+        EXPECT_TRUE(arr_in[102]);
     }
 };
 

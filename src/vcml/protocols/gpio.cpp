@@ -516,4 +516,35 @@ void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
         t1->bind(*t2);
 }
 
+void gpio_bind(const sc_object& obj, const string& port, sc_signal<bool>& s) {
+    auto* p = find_child(obj, port);
+    VCML_ERROR_ON(!p, "%s.%s does not exist", obj.name(), port.c_str());
+
+    auto* i = get_initiator_socket(p);
+    auto* t = get_target_socket(p);
+
+    VCML_ERROR_ON(!i && !t, "%s is not a valid gpio port", p->name());
+
+    if (i)
+        i->bind(s);
+    else if (t)
+        t->bind(s);
+}
+
+void gpio_bind(const sc_object& obj, const string& port, size_t idx,
+               sc_signal<bool>& s) {
+    auto* p = find_child(obj, port);
+    VCML_ERROR_ON(!p, "%s.%s does not exist", obj.name(), port.c_str());
+
+    auto* i = get_initiator_socket(p, idx);
+    auto* t = get_target_socket(p, idx);
+
+    VCML_ERROR_ON(!i && !t, "%s is not a valid gpio port", p->name());
+
+    if (i)
+        i->bind(s);
+    else if (t)
+        t->bind(s);
+}
+
 } // namespace vcml
