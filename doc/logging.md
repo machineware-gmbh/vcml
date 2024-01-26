@@ -28,8 +28,7 @@ This tells us that there was a debug message at *1s + 200ns*, informing us that
 the component `system.uart0` has been disabled.
 
 Log messages can be generated using the global top level logging function-like macros from
-the `mwr` namespace. These macros use the file and line name as
-the log message source. They use a `printf` style for string formatting:
+the `mwr` namespace. They use a `printf` style for string formatting:
 
 ```
 namespace mwr {
