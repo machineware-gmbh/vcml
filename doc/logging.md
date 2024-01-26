@@ -1,7 +1,7 @@
 # VCML Logging
-VCML uses a centralized logging system provided by [libmwr](https://github.com/machineware-gmbh/mwr) that allows its individual components
-and models to report on everything that happens during the simulation. Log
-messages are split into four categories, listed below in priority order:
+VCML uses a centralized logging system provided by [libmwr](https://github.com/machineware-gmbh/mwr) 
+that allows its individual components and models to report on everything that happens during the simulation. 
+Log messages are split into four categories, listed below in priority order:
 
 * `mwr::LOG_ERROR`: highest priority, used for reporting on errors, e.g., when
 an exception is caught.
@@ -24,11 +24,11 @@ A full log message could therefore look like this:
 
 `[D 1.000000200] system.uart0: component disabled`
 
-This tells us that there was a debug message at *1s + 200ns*, informing us that
-the component `system.uart0` has been disabled.
+This tells us that there was a debug message at *1s + 200ns*, 
+informing us that the component `system.uart0` has been disabled.
 
-Log messages can be generated using the global top level logging function-like macros from
-the `mwr` namespace. They use a `printf` style for string formatting:
+Log messages can be generated using the global top level logging function-like macros from the `mwr` namespace. 
+They use a `printf` style for string formatting:
 
 ```
 namespace mwr {
@@ -42,8 +42,8 @@ namespace mwr {
 
 ----
 ## Logging Output
-In order to actually see log messages, you need a publisher backend that will receive the
-messages and display them in some form. [Libmwr](https://github.com/machineware-gmbh/mwr) currently provides three backends:
+In order to actually see log messages, you need a publisher backend that will receive the messages and display them in some form. 
+[Libmwr](https://github.com/machineware-gmbh/mwr) currently provides three backends:
 
 * `mwr::publishers::terminal`: write the log message to `stderr` using color if available.
 * `mwr::publishers::file`: write log messages to a file specified during construction.
@@ -58,10 +58,9 @@ my_logger.set_level(mwr::LOG_ERROR); // only receives error messages
 my_logger.set_level(mwr::LOG_ERROR, mwr::LOG_INFO); // receives error, warning and info messages
 ```
 
-Having multiple publishers for different purposes is possible and encouraged. You
-could have for example a logger that exclusively receives messages from the
-`mwr::LOG_DEBUG` level and writes them to a files. Then you could have a second
-logger to print all other messages to console:
+Having multiple publishers for different purposes is possible and encouraged. 
+You could have for example a logger that exclusively receives messages from the `mwr::LOG_DEBUG` level and writes them to a files. 
+Then you could have a second logger to print all other messages to console:
 
 ```
 #include <vcml.h>
@@ -77,9 +76,8 @@ int sc_main(int argc, char** argv) {
 }
 ```
 
-Log printing is customizable to a certain extent, by setting the following
-static print control variables of `mwr::publisher::print_xxx` before or during
-simulation:
+Log printing is customizable to a certain extent, 
+by setting the following static print control variables of `mwr::publisher::print_xxx` before or during simulation:
 
 | Print control       | Description                               | Default |
 |---------------------|-------------------------------------------|---------|
@@ -88,9 +86,8 @@ simulation:
 | `print_source`      | Print the source location of the log call | `false` |
 | `print_backtrace`   | Print backtraces for logged reports       | `true`  |
 
-It is also possible to create your own publisher if you need to process [libmwr](https://github.com/machineware-gmbh/mwr) log
-messages in a customizable way. To define a custom logger, derive from
-`mwr::publisher` and override `mwr::publisher::publish`:
+It is also possible to create your own publisher if you need to process [libmwr](https://github.com/machineware-gmbh/mwr) log messages in a customizable way. 
+To define a custom logger, derive from`mwr::publisher` and override `mwr::publisher::publish`:
 
 ```
 class my_publisher: public mwr::publisher {
@@ -101,8 +98,7 @@ public:
 };
 ```
 
-When you are not using a custom `main` function, a default
-one is provided for you that accepts the following logging related program arguments:
+When you are not using a custom `main` function, a default one is provided for you that accepts the following logging related program arguments:
 
 * `-l <file>` or `--log-file <file>`: creates a `mwr::publishers::file(<file>)`
 * `-l` or `--log`: without an extra filename, creates a `vcml::log_term`
@@ -112,9 +108,9 @@ one is provided for you that accepts the following logging related program argum
 
 ----
 ## Exceptions
-The logging system is typically also used for exception reporting. [Libmwr](https://github.com/machineware-gmbh/mwr)
-generally uses the class `mwr::report` for exceptions, so a basic approach to
-exception handling would be:
+The logging system is typically also used for exception reporting. 
+[Libmwr](https://github.com/machineware-gmbh/mwr) generally uses the class `mwr::report` for exceptions, 
+so a basic approach to exception handling would be:
 
 ```
 int sc_main(int argc, char** argv) {
@@ -133,13 +129,11 @@ int sc_main(int argc, char** argv) {
 }
 ```
 
-This is also the default implementation used when not defining a custom `main`
-function in your program.
+This is also the default implementation used when not defining a custom `main` function in your program.
 
-*Note*: when you are using `mwr::logger::error(const vcml::report&)` to log an
-exception, the logger will additionally print the call stack from when the exception
-was thrown for debug purposes. This behaviour can be disabled by setting
-`mwr::publisher::print_backtrace = false`.
+*Note*: when you are using `mwr::logger::error(const vcml::report&)` to log an exception, 
+the logger will additionally print the call stack from when the exception was thrown for debug purposes. 
+This behaviour can be disabled by setting `mwr::publisher::print_backtrace = false`.
 
 ----
 Documentation January 2024
