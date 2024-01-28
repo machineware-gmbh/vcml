@@ -49,7 +49,7 @@ In order to actually see log messages, you need a publisher backend that will re
 * `mwr::publishers::file`: write log messages to a file specified during construction.
 * `mwr::publishers::stream`: sends the log messages to any `std::ostream` instance.
 
-Each backend can furthermore also specify the log levels it is interested in.
+Each publisher can furthermore also specify the log levels it is interested in.
 This is done by calling the appropriate `set_level` methods as shown below:
 
 ```
