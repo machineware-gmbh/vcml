@@ -782,334 +782,384 @@ static int channel_execute_cycle(pl330& dma, pl330::channel& channel) {
     if (!dma.read_queue.empty() &&
         dma.read_queue.front().data_len <= dma.mfifo.num_free()) {
         auto& insn = dma.read_queue.front_mut();
-        // crop length otherwise in case of an unaligned address the first read
-        // would be too long
-        u32 len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        if (failed(dma.dma.read(insn.data_addr, (void*)trans_buffer, len))) {
-            dma.log.error("Dma channel read failed");
-            VCML_ERROR("PL33 DMA read failed");
-        }
 
-        if (dma.mfifo.num_free() >= len) {
-            for (u32 i = 0; i < len; i++) {
-                dma.mfifo.push(
-                    pl330::mfifo_entry{ trans_buffer[i], (u8)channel.chid });
+        if (insn.inc) {
+            u32 len = insn.data_len * insn.burst_len_counter;
+            // crop length in case of an unaligned address
+            len = len - (insn.data_addr & (insn.data_len - 1));
+            if (failed(
+                    dma.dma.read(insn.data_addr, (void*)trans_buffer, len))) {
+                dma.log.error("Dma channel read failed");
+                VCML_ERROR("PL33 DMA read failed");
             }
-            if (insn.inc)
-                insn.data_addr += len;
-            insn.burst_len_counter--;
-            if (!insn.burst_len_counter)
+
+            if (dma.mfifo.num_free() >= len) {
+                for (u32 i = 0; i < len; i++) {
+                    dma.mfifo.push(pl330::mfifo_entry{ trans_buffer[i],
+                                                       (u8)channel.chid });
+                }
                 dma.read_queue.pop();
-            num_exec++;
+                num_exec++;
+            }
+        } else {
+            while (insn.burst_len_counter) {
+                u32 len = insn.data_len;
+                // crop length in case of an unaligned address
+                len = len - (insn.data_addr & (insn.data_len - 1));
+
+                if (dma.mfifo.num_free() < len)
+                    break;
+
+                if (failed(dma.dma.read(insn.data_addr, (void*)trans_buffer,
+                                        len))) {
+                    dma.log.error("Dma channel read failed");
+                    VCML_ERROR("PL33 DMA read failed");
+                }
+
+                for (u32 i = 0; i < len; i++) {
+                    dma.mfifo.push(pl330::mfifo_entry{ trans_buffer[i],
+                                                       (u8)channel.chid });
+                }
+                insn.burst_len_counter--;
+                num_exec++;
+                if (!insn.burst_len_counter) {
+                    dma.read_queue.pop();
+                    break;
+                }
+            }
         }
     }
+
     // one insn from write queue
     if (!dma.write_queue.empty() && dma.mfifo.front().tag == channel.chid) {
         auto& insn = dma.write_queue.front_mut();
-        // crop length otherwise in case of an unaligned address the first read
-        // would be too long
-        int len = insn.data_len - (insn.data_addr & (insn.data_len - 1));
-        if (insn.zero_flag)
-            for (int i = 0; i < len; i++)
-                trans_buffer[i] = 0;
-        else
-            for (int i = 0; i < len; i++) {
-                assert(!dma.mfifo.empty());
-                trans_buffer[i] = dma.mfifo.pop().value().buf;
-            }
+        if (insn.inc) {
+            int len = insn.data_len * insn.burst_len_counter;
+            // crop length in case of an unaligned address
+            len = len - (insn.data_addr & (insn.data_len - 1));
+            if (insn.zero_flag)
+                for (int i = 0; i < len; i++)
+                    trans_buffer[i] = 0;
+            else
+                for (int i = 0; i < len; i++) {
+                    assert(!dma.mfifo.empty());
+                    trans_buffer[i] = dma.mfifo.pop().value().buf;
+                }
 
-        if (failed(dma.dma.write(insn.data_addr, (void*)trans_buffer, len))) {
-            dma.log.error("Dma channel write failed");
-            VCML_ERROR("PL33 DMA write failed");
-        }
-        if (insn.inc)
-            insn.data_addr += len;
-        insn.burst_len_counter--;
-        if (!insn.burst_len_counter)
+            if (failed(
+                    dma.dma.write(insn.data_addr, (void*)trans_buffer, len))) {
+                dma.log.error("Dma channel write failed");
+                VCML_ERROR("PL33 DMA write failed");
+            }
             dma.write_queue.pop();
-        num_exec++;
+            num_exec++;
+
+        } else {
+            while (insn.burst_len_counter--) {
+                int len = insn.data_len;
+                // crop length otherwise in case of an unaligned address
+                len = len - (insn.data_addr & (insn.data_len - 1));
+                if (insn.zero_flag)
+                    for (int i = 0; i < len; i++)
+                        trans_buffer[i] = 0;
+                else
+                    for (int i = 0; i < len; i++) {
+                        assert(!dma.mfifo.empty());
+                        trans_buffer[i] = dma.mfifo.pop().value().buf;
+                    }
+
+                if (failed(dma.dma.write(insn.data_addr, (void*)trans_buffer,
+                                         len))) {
+                    dma.log.error("Dma channel write failed");
+                    VCML_ERROR("PL33 DMA write failed");
+                }
+                num_exec++;
+            }
+            dma.write_queue.pop();
+        }
     }
     return num_exec;
 }
 
-void pl330::run_channels() {
-    for (auto& channel : channels) {
-        if (!(channel.is_state(CHS_STOPPED))) {
-            while (channel_execute_cycle(*this, channel) > 0) {
-                // nothing to do
+    void pl330::run_channels() {
+        for (auto& channel : channels) {
+            if (!(channel.is_state(CHS_STOPPED))) {
+                while (channel_execute_cycle(*this, channel) > 0) {
+                    // nothing to do
+                }
             }
         }
     }
-}
 
-void pl330::run_manager() {
-    if (!manager.is_state(MNS_EXECUTING) &&
-        !manager.is_state(MNS_WAITING_FOR_EVENT)) {
-        return;
+    void pl330::run_manager() {
+        if (!manager.is_state(MNS_EXECUTING) &&
+            !manager.is_state(MNS_WAITING_FOR_EVENT)) {
+            return;
+        }
+        u8 insn_buffer[PL330_INSN_MAXSIZE];
+        manager.stall = false;
+        while (((!manager.stall) && manager.is_state(MNS_WAITING_FOR_EVENT)) ||
+               manager.is_state(MNS_EXECUTING)) {
+            const insn_descr* insn = fetch_mn_insn(this);
+            if (!insn) {
+                pl330_handle_mn_fault(*this, FTRD_INSTR_FETCH_ERR);
+                break;
+            }
+
+            dma.read(manager.dpc, (void*)insn_buffer, insn->size);
+            insn->exec(this, nullptr, insn_buffer[0], &insn_buffer[1],
+                       insn->size - 1);
+            if (!manager.stall) {
+                manager.dpc += insn->size;
+                manager.watchdog_timer = 0;
+            } else if (manager.is_state(CHS_EXECUTING)) {
+                manager.watchdog_timer += 1;
+                if (manager.watchdog_timer > PL330_WD_TIMEOUT)
+                    VCML_ERROR("pl330 manager watchdog timeout");
+            }
+        }
     }
-    u8 insn_buffer[PL330_INSN_MAXSIZE];
-    manager.stall = false;
-    while (((!manager.stall) && manager.is_state(MNS_WAITING_FOR_EVENT)) ||
-           manager.is_state(MNS_EXECUTING)) {
-        const insn_descr* insn = fetch_mn_insn(this);
-        if (!insn) {
-            pl330_handle_mn_fault(*this, FTRD_INSTR_FETCH_ERR);
-            break;
+
+    void pl330::handle_debug_instruction() {
+        u8 args[5];
+        u8 opcode;
+        u8 chan_id;
+
+        // check dbg status idle
+        if (dbgstatus & dbgstatus_bits::DBGSTATUS)
+            return;                         // dbg busy case
+        dbgstatus.set_bit<DBGSTATUS>(true); // set dbg busy
+
+        chan_id = get_field<DBGINST0_CHANNEL_NUMBER>(dbginst0);
+        opcode = get_field<DBGINST0_INSTRUCTION_BYTE0>(dbginst0);
+        args[0] = get_field<DBGINST0_INSTRUCTION_BYTE1>(dbginst0);
+        args[1] = get_field<DBGINST1_INSTRUCTION_BYTE2>(dbginst1);
+        args[2] = get_field<DBGINST1_INSTRUCTION_BYTE3>(dbginst1);
+        args[3] = get_field<DBGINST1_INSTRUCTION_BYTE4>(dbginst1);
+        args[4] = get_field<DBGINST1_INSTRUCTION_BYTE5>(dbginst1);
+
+        //    check if insn exists
+        insn_descr insn = { 0, 0, 0, nullptr };
+        for (auto& insn_candidate : DEBUG_INSN_DESC)
+            if ((opcode & insn_candidate.opmask) == insn_candidate.opcode)
+                insn = insn_candidate;
+        if (!insn.exec) {
+            log.warn("Pl330 invalid debug instruction opcode");
+            return;
         }
 
-        dma.read(manager.dpc, (void*)insn_buffer, insn->size);
-        insn->exec(this, nullptr, insn_buffer[0], &insn_buffer[1],
-                   insn->size - 1);
-        if (!manager.stall) {
-            manager.dpc += insn->size;
-            manager.watchdog_timer = 0;
-        } else if (manager.is_state(CHS_EXECUTING)) {
-            manager.watchdog_timer += 1;
-            if (manager.watchdog_timer > PL330_WD_TIMEOUT)
-                VCML_ERROR("pl330 manager watchdog timeout");
+        // check target
+        if (dbginst0 & dbginst0_bits::DBGINST0_DEBUG_THREAD) {
+            // target is channel
+            channels[chan_id].stall = false;
+            insn.exec(this, &channels[chan_id], opcode, args, insn.size);
+        } else {
+            insn.exec(this, nullptr, opcode, args, insn.size);
+        }
+        dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
+    }
+
+    void pl330::pl330_thread() {
+        while (true) {
+            wait(m_dma);
+            if (m_execute_debug) {
+                handle_debug_instruction();
+                m_execute_debug = false;
+            }
+            run_manager();
+            run_channels();
         }
     }
-}
 
-void pl330::handle_debug_instruction() {
-    u8 args[5];
-    u8 opcode;
-    u8 chan_id;
+    pl330::channel::channel(const sc_module_name& nm, mwr::u32 chid):
+        module(nm),
+        ftr("ftr", 0x040 + chid * 0x04),
+        csr("csr", 0x100 + chid * 0x08),
+        cpc("cpc", 0x104 + chid * 0x08),
+        sar("sar", 0x400 + chid * 0x20),
+        dar("dar", 0x404 + chid * 0x20),
+        ccr("ccr", 0x408 + chid * 0x20),
+        lc0("lc0", 0x40c + chid * 0x20),
+        lc1("lc1", 0x410 + chid * 0x20),
+        chid(chid),
+        stall(false) {
+        auto reg_setter = [&](reg<mwr::u32>& reg) {
+            reg.tag = chid;
+            reg.allow_read_only();
+            reg.sync_never();
+        };
 
-    // check dbg status idle
-    if (dbgstatus & dbgstatus_bits::DBGSTATUS)
-        return;                         // dbg busy case
-    dbgstatus.set_bit<DBGSTATUS>(true); // set dbg busy
-
-    chan_id = get_field<DBGINST0_CHANNEL_NUMBER>(dbginst0);
-    opcode = get_field<DBGINST0_INSTRUCTION_BYTE0>(dbginst0);
-    args[0] = get_field<DBGINST0_INSTRUCTION_BYTE1>(dbginst0);
-    args[1] = get_field<DBGINST1_INSTRUCTION_BYTE2>(dbginst1);
-    args[2] = get_field<DBGINST1_INSTRUCTION_BYTE3>(dbginst1);
-    args[3] = get_field<DBGINST1_INSTRUCTION_BYTE4>(dbginst1);
-    args[4] = get_field<DBGINST1_INSTRUCTION_BYTE5>(dbginst1);
-
-    //    check if insn exists
-    insn_descr insn = { 0, 0, 0, nullptr };
-    for (auto& insn_candidate : DEBUG_INSN_DESC)
-        if ((opcode & insn_candidate.opmask) == insn_candidate.opcode)
-            insn = insn_candidate;
-    if (!insn.exec) {
-        log.warn("Pl330 invalid debug instruction opcode");
-        return;
+        reg_setter(csr);
+        reg_setter(cpc);
+        reg_setter(sar);
+        reg_setter(dar);
+        reg_setter(ccr);
+        reg_setter(lc0);
+        reg_setter(lc1);
+        if (chid > 7)
+            VCML_ERROR("Too many channels specified for pl330");
     }
 
-    // check target
-    if (dbginst0 & dbginst0_bits::DBGINST0_DEBUG_THREAD) {
-        // target is channel
-        channels[chan_id].stall = false;
-        insn.exec(this, &channels[chan_id], opcode, args, insn.size);
-    } else {
-        insn.exec(this, nullptr, opcode, args, insn.size);
+    pl330::manager::manager(const sc_module_name& nm):
+        module(nm),
+        dsr("dsr", 0x000),
+        dpc("dpc", 0x004),
+        fsrd("fsrd", 0x030),
+        ftrd("ftrd", 0x038) {
+        dsr.allow_read_only();
+        dsr.sync_never();
+        dpc.allow_read_only();
+        dpc.sync_never();
+        fsrd.allow_read_only();
+        fsrd.sync_never();
+        ftrd.allow_read_only();
+        ftrd.sync_never();
     }
-    dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
-}
 
-void pl330::pl330_thread() {
-    while (true) {
-        wait(m_dma);
-        if (m_execute_debug) {
-            handle_debug_instruction();
-            m_execute_debug = false;
+    pl330::~pl330() {
+        // for now do nothing
+    }
+
+    void pl330::reset() {
+        peripheral::reset();
+
+        // set control registers
+        cr0.set_bit<CR0_PERIPH_REQ>(enable_periph);
+        cr0.set_field<CR0_NUM_CHNLS>(num_channels - 1);
+        crd.set_field<CRD_DATA_BUFFER_DEP>(mfifo_lines - 1);
+        crd.set_field<CRD_DATA_WIDTH>(mfifo_width);
+        crd.set_field<CRD_RD_Q_DEP>(queue_size - 1);
+        crd.set_field<CRD_WR_Q_DEP>(queue_size - 1);
+
+        // reset manager
+        manager.dsr.set_bit<DSR_DNS>(!!(cr0 & CR0_MGR_NS_AT_RST));
+        // reset channels
+        for (auto& ch : channels) {
+            ch.set_state(CHS_STOPPED);
+            ch.watchdog_timer = 0;
+            ch.stall = false;
         }
-        run_manager();
-        run_channels();
-    }
-}
 
-pl330::channel::channel(const sc_module_name& nm, mwr::u32 chid):
-    module(nm),
-    ftr("ftr", 0x040 + chid * 0x04),
-    csr("csr", 0x100 + chid * 0x08),
-    cpc("cpc", 0x104 + chid * 0x08),
-    sar("sar", 0x400 + chid * 0x20),
-    dar("dar", 0x404 + chid * 0x20),
-    ccr("ccr", 0x408 + chid * 0x20),
-    lc0("lc0", 0x40c + chid * 0x20),
-    lc1("lc1", 0x410 + chid * 0x20),
-    chid(chid),
-    stall(false) {
-    auto reg_setter = [&](reg<mwr::u32>& reg) {
-        reg.tag = chid;
-        reg.allow_read_only();
-        reg.sync_never();
-    };
+        // reset queues
+        read_queue.reset();
+        write_queue.reset();
+        mfifo.reset();
+        // reset id registers
+        for (size_t i = 0; i < periph_id.count(); i++)
+            periph_id[i] = (AMBA_PID >> (i * 8)) & 0xff;
 
-    reg_setter(csr);
-    reg_setter(cpc);
-    reg_setter(sar);
-    reg_setter(dar);
-    reg_setter(ccr);
-    reg_setter(lc0);
-    reg_setter(lc1);
-    if (chid > 7)
-        VCML_ERROR("Too many channels specified for pl330");
-}
-
-pl330::manager::manager(const sc_module_name& nm):
-    module(nm),
-    dsr("dsr", 0x000),
-    dpc("dpc", 0x004),
-    fsrd("fsrd", 0x030),
-    ftrd("ftrd", 0x038) {
-    dsr.allow_read_only();
-    dsr.sync_never();
-    dpc.allow_read_only();
-    dpc.sync_never();
-    fsrd.allow_read_only();
-    fsrd.sync_never();
-    ftrd.allow_read_only();
-    ftrd.sync_never();
-}
-
-pl330::~pl330() {
-    // for now do nothing
-}
-
-void pl330::reset() {
-    peripheral::reset();
-
-    // set control registers
-    cr0.set_bit<CR0_PERIPH_REQ>(enable_periph);
-    cr0.set_field<CR0_NUM_CHNLS>(num_channels - 1);
-    crd.set_field<CRD_DATA_BUFFER_DEP>(mfifo_lines - 1);
-    crd.set_field<CRD_DATA_WIDTH>(mfifo_width);
-    crd.set_field<CRD_RD_Q_DEP>(queue_size - 1);
-    crd.set_field<CRD_WR_Q_DEP>(queue_size - 1);
-
-    // reset manager
-    manager.dsr.set_bit<DSR_DNS>(!!(cr0 & CR0_MGR_NS_AT_RST));
-    // reset channels
-    for (auto& ch : channels) {
-        ch.set_state(CHS_STOPPED);
-        ch.watchdog_timer = 0;
-        ch.stall = false;
+        for (size_t i = 0; i < pcell_id.count(); i++)
+            pcell_id[i] = (AMBA_CID >> (i * 8)) & 0xff;
     }
 
-    // reset queues
-    read_queue.reset();
-    write_queue.reset();
-    mfifo.reset();
-    // reset id registers
-    for (size_t i = 0; i < periph_id.count(); i++)
-        periph_id[i] = (AMBA_PID >> (i * 8)) & 0xff;
+    pl330::pl330(const sc_module_name& nm):
+        peripheral(nm),
+        enable_periph("enable_periph", false),
+        num_channels("num_channels", 8),
+        queue_size("queue_size", 16),
+        mfifo_width("mfifo_width", MFIFO_32BIT),
+        mfifo_lines("mfifo_lines", 256),
+        read_queue(queue_size),
+        write_queue(queue_size),
+        mfifo(mfifo_lines * 8 * (1 << (mfifo_width - 2))),
+        channels(
+            "channel", num_channels,
+            [](const char* nm, u32 chid) { return new channel(nm, chid); }),
+        manager("manager"),
+        fsrc("fsrc", 0x034),
+        inten("inten", 0x020),
+        int_event_ris("int_event_ris", 0x024),
+        intmis("intmis", 0x028),
+        intclr("intclr", 0x02c),
+        dbgstatus("dbgstatus", 0xd00),
+        dbgcmd("dbgcmd", 0xd04),
+        dbginst0("dbginst0", 0xd08),
+        dbginst1("dbginst1", 0xd0c),
+        cr0("cr0", 0xe00, CR0_RESET_VALUE),
+        cr1("cr1", 0xe04),
+        cr2("cr2", 0xe08),
+        cr3("cr3", 0xe0c),
+        cr4("cr4", 0xe10),
+        crd("crd", 0xe14, CRD_RESET_VALUE),
+        wd("wd", 0xe80),
+        periph_id("periph_id", 0xfe0, 0x00000000),
+        pcell_id("pcell_id", 0xff0, 0x00000000),
+        periph_irq("periph_irq", (size_t)32),
+        in("in"),
+        dma("dma"),
+        irq("irq", (size_t)32),
+        irq_abort("irq_abort"),
+        m_dma(),
+        m_execute_debug(false) {
+        fsrc.allow_read_only();
+        fsrc.sync_never();
+        inten.allow_read_write();
+        inten.sync_never();
 
-    for (size_t i = 0; i < pcell_id.count(); i++)
-        pcell_id[i] = (AMBA_CID >> (i * 8)) & 0xff;
-}
+        int_event_ris.allow_read_only();
+        int_event_ris.sync_always();
 
-pl330::pl330(const sc_module_name& nm):
-    peripheral(nm),
-    enable_periph("enable_periph", false),
-    num_channels("num_channels", 8),
-    queue_size("queue_size", 16),
-    mfifo_width("mfifo_width", MFIFO_32BIT),
-    mfifo_lines("mfifo_lines", 256),
-    read_queue(queue_size),
-    write_queue(queue_size),
-    mfifo(mfifo_lines * 8 * (1 << (mfifo_width - 2))),
-    channels("channel", num_channels,
-             [](const char* nm, u32 chid) { return new channel(nm, chid); }),
-    manager("manager"),
-    fsrc("fsrc", 0x034),
-    inten("inten", 0x020),
-    int_event_ris("int_event_ris", 0x024),
-    intmis("intmis", 0x028),
-    intclr("intclr", 0x02c),
-    dbgstatus("dbgstatus", 0xd00),
-    dbgcmd("dbgcmd", 0xd04),
-    dbginst0("dbginst0", 0xd08),
-    dbginst1("dbginst1", 0xd0c),
-    cr0("cr0", 0xe00, CR0_RESET_VALUE),
-    cr1("cr1", 0xe04),
-    cr2("cr2", 0xe08),
-    cr3("cr3", 0xe0c),
-    cr4("cr4", 0xe10),
-    crd("crd", 0xe14, CRD_RESET_VALUE),
-    wd("wd", 0xe80),
-    periph_id("periph_id", 0xfe0, 0x00000000),
-    pcell_id("pcell_id", 0xff0, 0x00000000),
-    periph_irq("periph_irq", (size_t)32),
-    in("in"),
-    dma("dma"),
-    irq("irq", (size_t)32),
-    irq_abort("irq_abort"),
-    m_dma(),
-    m_execute_debug(false) {
-    fsrc.allow_read_only();
-    fsrc.sync_never();
-    inten.allow_read_write();
-    inten.sync_never();
+        intmis.allow_read_only();
+        intmis.sync_never();
 
-    int_event_ris.allow_read_only();
-    int_event_ris.sync_always();
+        intclr.allow_write_only();
+        intclr.sync_on_write();
+        intclr.on_write([&](u32 v, size_t i) -> void {
+            u32 irq_clear_mask = v & inten;
+            for (u32 j = 0; j < 32; j++)
+                if (irq_clear_mask & bit(j))
+                    irq[j] = false;
+            int_event_ris &= ~irq_clear_mask;
+            intmis &= ~irq_clear_mask;
+            m_dma.notify(SC_ZERO_TIME);
+        });
 
-    intmis.allow_read_only();
-    intmis.sync_never();
+        dbgstatus.allow_read_only();
+        dbgstatus.sync_never();
 
-    intclr.allow_write_only();
-    intclr.sync_on_write();
-    intclr.on_write([&](u32 v, size_t i) -> void {
-        u32 irq_clear_mask = v & inten;
-        for (u32 j = 0; j < 32; j++)
-            if (irq_clear_mask & bit(j))
-                irq[j] = false;
-        int_event_ris &= ~irq_clear_mask;
-        intmis &= ~irq_clear_mask;
-        m_dma.notify(SC_ZERO_TIME);
-    });
+        dbgcmd.allow_write_only();
+        dbgcmd.sync_on_write();
+        dbgcmd.on_write([&](u32 v, size_t i) -> void {
+            if ((v & 0b11) == 0)
+                m_execute_debug = true;
+            dbgcmd = v;
+            m_dma.notify(SC_ZERO_TIME);
+        });
 
-    dbgstatus.allow_read_only();
-    dbgstatus.sync_never();
+        dbginst0.allow_write_only();
+        dbginst0.sync_never();
+        dbginst1.allow_write_only();
+        dbginst1.sync_never();
 
-    dbgcmd.allow_write_only();
-    dbgcmd.sync_on_write();
-    dbgcmd.on_write([&](u32 v, size_t i) -> void {
-        if ((v & 0b11) == 0)
-            m_execute_debug = true;
-        dbgcmd = v;
-        m_dma.notify(SC_ZERO_TIME);
-    });
+        cr0.allow_read_only();
+        cr0.sync_never();
+        cr1.allow_read_only();
+        cr1.sync_never();
+        cr2.allow_read_only();
+        cr2.sync_never();
+        cr3.allow_read_only();
+        cr3.sync_never();
+        cr4.allow_read_only();
+        cr4.sync_never();
+        crd.allow_read_only();
+        crd.sync_never();
 
-    dbginst0.allow_write_only();
-    dbginst0.sync_never();
-    dbginst1.allow_write_only();
-    dbginst1.sync_never();
+        wd.allow_read_write();
+        wd.sync_never();
 
-    cr0.allow_read_only();
-    cr0.sync_never();
-    cr1.allow_read_only();
-    cr1.sync_never();
-    cr2.allow_read_only();
-    cr2.sync_never();
-    cr3.allow_read_only();
-    cr3.sync_never();
-    cr4.allow_read_only();
-    cr4.sync_never();
-    crd.allow_read_only();
-    crd.sync_never();
+        periph_id.allow_read_only();
+        periph_id.sync_never();
+        pcell_id.allow_read_only();
+        pcell_id.sync_never();
 
-    wd.allow_read_write();
-    wd.sync_never();
+        for (size_t i = 0; i < periph_id.count(); i++)
+            periph_id[i] = (AMBA_PID >> (i * 8)) & 0xff;
 
-    periph_id.allow_read_only();
-    periph_id.sync_never();
-    pcell_id.allow_read_only();
-    pcell_id.sync_never();
+        for (size_t i = 0; i < pcell_id.count(); i++)
+            pcell_id[i] = (AMBA_CID >> (i * 8)) & 0xff;
 
-    for (size_t i = 0; i < periph_id.count(); i++)
-        periph_id[i] = (AMBA_PID >> (i * 8)) & 0xff;
-
-    for (size_t i = 0; i < pcell_id.count(); i++)
-        pcell_id[i] = (AMBA_CID >> (i * 8)) & 0xff;
-
-    SC_HAS_PROCESS(pl330);
-    SC_THREAD(pl330_thread);
-}
+        SC_HAS_PROCESS(pl330);
+        SC_THREAD(pl330_thread);
+    }
 
 } // namespace vcml::dma
