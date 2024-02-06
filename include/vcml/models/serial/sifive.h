@@ -28,13 +28,14 @@ class sifive : public peripheral, public serial_host
 private:
     queue<u8> m_tx_fifo;
     queue<u8> m_rx_fifo;
+    sc_event m_txev;
 
     // serial host
     virtual void serial_receive(u8 data) override;
 
     void update_tx();
     void update_rx();
-    void send_tx();
+    void tx_thread();
 
     void write_txdata(u32 val);
     u32 read_txdata();
@@ -45,11 +46,8 @@ private:
     void write_div(u32 val);
 
 public:
-    enum txdata_bits : u32 {
-
-    };
-    property<unsigned int> m_tx_fifo_size;
-    property<unsigned int> m_rx_fifo_size;
+    property<unsigned int> tx_fifo_size;
+    property<unsigned int> rx_fifo_size;
     reg<u32> txdata; // Transmit data register
     reg<u32> rxdata; // Receive data register
     reg<u32> txctrl; // Transmit control register

@@ -79,18 +79,17 @@ u8 sifive::get_rx_watermark() const {
 
 void sifive::serial_receive(u8 data) {
     if (is_rx_enabled()) {
-        if (m_rx_fifo.size() < m_rx_fifo_size)
+        if (m_rx_fifo.size() < rx_fifo_size)
             m_rx_fifo.push(data);
-        else {
+        else
             log_warn("FIFO buffer overflow, data dropped");
-        }
 
         update_rx();
     }
 }
 
 void sifive::update_tx() {
-    bool tx_full = m_tx_fifo.size() == m_tx_fifo_size;
+    bool tx_full = m_tx_fifo.size() == tx_fifo_size;
     txdata.set_bit<TXDATA_FULL>(tx_full);
 
     bool tx_under_watermark = m_tx_fifo.size() < get_tx_watermark();
@@ -111,22 +110,24 @@ void sifive::update_rx() {
     rx_irq = should_raise_rx_irq;
 }
 
-void sifive::send_tx() {
-    while (!m_tx_fifo.empty()) {
-        serial_tx.send(m_tx_fifo.front());
-        m_tx_fifo.pop();
-        update_tx();
+void sifive::tx_thread() {
+    while (true) {
+        wait(m_txev);
+        while (!m_tx_fifo.empty()) {
+            serial_tx.send(m_tx_fifo.front());
+            m_tx_fifo.pop();
+            update_tx();
+        }
     }
 }
 
 void sifive::write_txdata(u32 val) {
-    if (!is_tx_full()) {
+    if (!is_tx_full())
         m_tx_fifo.push(val & 0xff);
-    }
-    update_tx();
 
+    update_tx();
     if (is_tx_enabled())
-        send_tx();
+        m_txev.notify(SC_ZERO_TIME);
 }
 
 u32 sifive::read_txdata() {
@@ -134,12 +135,12 @@ u32 sifive::read_txdata() {
 }
 
 u32 sifive::read_rxdata() {
-    u32 val = RXDATA_EMPTY;
-    if (is_rx_enabled() && !is_rx_empty()) {
-        val = m_rx_fifo.front();
-        m_rx_fifo.pop();
-        update_rx();
-    }
+    if (is_rx_empty())
+        return RXDATA_EMPTY;
+
+    u32 val = m_rx_fifo.front();
+    m_rx_fifo.pop();
+    update_rx();
     return val;
 }
 
@@ -151,7 +152,7 @@ void sifive::write_txctrl(u32 val) {
         serial_tx.set_stop_bits(SERIAL_STOP_1);
 
     if (is_tx_enabled())
-        send_tx();
+        m_txev.notify(SC_ZERO_TIME);
     update_tx();
 }
 
@@ -176,8 +177,9 @@ sifive::sifive(const sc_module_name& nm):
     serial_host(),
     m_tx_fifo(),
     m_rx_fifo(),
-    m_tx_fifo_size("tx_fifo_size", 8),
-    m_rx_fifo_size("rx_fifo_size", 8),
+    m_txev("txev"),
+    tx_fifo_size("tx_fifo_size", 8),
+    rx_fifo_size("rx_fifo_size", 8),
     txdata("txdata", 0x00, 0x0),
     rxdata("rxdata", 0x04, 0x0),
     txctrl("txctrl", 0x08, 0x0),
@@ -227,6 +229,8 @@ sifive::sifive(const sc_module_name& nm):
 
     update_tx();
     update_rx();
+    SC_HAS_PROCESS(sifive);
+    SC_THREAD(tx_thread);
 }
 
 sifive::~sifive() {
