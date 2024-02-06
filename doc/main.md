@@ -38,6 +38,7 @@ can be used as *off-the-shelf* components to swiftly assemble an entire VP.
   * [ARM SP804 Dual Timer](models/arm_sp804.md)
   * [ARM GIC400](models/arm_gic400.md)
   * [ARM PL330 DMA](models/dma_pl330.md)
+  * [SiFive UART](models/sifive_uart.md)
   * [RISC-V CLINT](models/riscv_clint.md)
   * [RISC-V PLIC](models/riscv_plic.md)
   * [Simulation Loader](models/meta_loader.md)
