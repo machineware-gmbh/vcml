@@ -23,12 +23,10 @@
 namespace vcml {
 namespace serial {
 
-class sifive_uart : public peripheral, public serial_host
+class sifive : public peripheral, public serial_host
 {
 private:
-    property<unsigned int> m_tx_fifo_size;
     queue<u8> m_tx_fifo;
-    property<unsigned int> m_rx_fifo_size;
     queue<u8> m_rx_fifo;
 
     // serial host
@@ -46,14 +44,12 @@ private:
     void write_ie(u32 val);
     void write_div(u32 val);
 
-    // disabled
-    sifive_uart();
-    sifive_uart(const sifive_uart&);
-
 public:
     enum txdata_bits : u32 {
 
     };
+    property<unsigned int> m_tx_fifo_size;
+    property<unsigned int> m_rx_fifo_size;
     reg<u32> txdata; // Transmit data register
     reg<u32> rxdata; // Receive data register
     reg<u32> txctrl; // Transmit control register
@@ -77,9 +73,9 @@ public:
     u8 get_tx_watermark() const;
     u8 get_rx_watermark() const;
 
-    sifive_uart(const sc_module_name& name);
-    virtual ~sifive_uart();
-    VCML_KIND(serial::sifive_uart);
+    sifive(const sc_module_name& name);
+    virtual ~sifive();
+    VCML_KIND(serial::sifive);
 
     virtual void reset() override;
 };

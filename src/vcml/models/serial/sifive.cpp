@@ -8,7 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/serial/sifive_uart.h"
+#include "vcml/models/serial/sifive.h"
 
 namespace vcml {
 namespace serial {
@@ -49,35 +49,35 @@ enum ip_bits : u32 {
     IP_RXWM = bit(1),
 };
 
-bool sifive_uart::is_tx_full() const {
+bool sifive::is_tx_full() const {
     return txdata & TXDATA_FULL;
 }
 
-bool sifive_uart::is_rx_empty() const {
+bool sifive::is_rx_empty() const {
     return rxdata & RXDATA_EMPTY;
 }
 
-bool sifive_uart::is_tx_enabled() const {
+bool sifive::is_tx_enabled() const {
     return txctrl & TXCTRL_TXEN;
 }
 
-bool sifive_uart::is_rx_enabled() const {
+bool sifive::is_rx_enabled() const {
     return rxctrl & RXCTRL_RXEN;
 }
 
-u8 sifive_uart::num_stop_bits() const {
+u8 sifive::num_stop_bits() const {
     return !!(txctrl & TXCTRL_NSTOP) + 1;
 }
 
-u8 sifive_uart::get_tx_watermark() const {
+u8 sifive::get_tx_watermark() const {
     return get_field<TXCTRL_TXCNT>(txctrl);
 }
 
-u8 sifive_uart::get_rx_watermark() const {
+u8 sifive::get_rx_watermark() const {
     return get_field<RXCTRL_RXCNT>(rxctrl);
 }
 
-void sifive_uart::serial_receive(u8 data) {
+void sifive::serial_receive(u8 data) {
     if (is_rx_enabled()) {
         if (m_rx_fifo.size() < m_rx_fifo_size)
             m_rx_fifo.push(data);
@@ -89,7 +89,7 @@ void sifive_uart::serial_receive(u8 data) {
     }
 }
 
-void sifive_uart::update_tx() {
+void sifive::update_tx() {
     bool tx_full = m_tx_fifo.size() == m_tx_fifo_size;
     txdata.set_bit<TXDATA_FULL>(tx_full);
 
@@ -100,7 +100,7 @@ void sifive_uart::update_tx() {
     tx_irq = should_raise_tx_irq;
 }
 
-void sifive_uart::update_rx() {
+void sifive::update_rx() {
     bool rx_empty = m_rx_fifo.empty();
     rxdata.set_bit<RXDATA_EMPTY>(rx_empty);
 
@@ -111,7 +111,7 @@ void sifive_uart::update_rx() {
     rx_irq = should_raise_rx_irq;
 }
 
-void sifive_uart::send_tx() {
+void sifive::send_tx() {
     while (!m_tx_fifo.empty()) {
         serial_tx.send(m_tx_fifo.front());
         m_tx_fifo.pop();
@@ -119,7 +119,7 @@ void sifive_uart::send_tx() {
     }
 }
 
-void sifive_uart::write_txdata(u32 val) {
+void sifive::write_txdata(u32 val) {
     if (!is_tx_full()) {
         m_tx_fifo.push(val & 0xff);
     }
@@ -129,11 +129,11 @@ void sifive_uart::write_txdata(u32 val) {
         send_tx();
 }
 
-u32 sifive_uart::read_txdata() {
+u32 sifive::read_txdata() {
     return is_tx_full() ? TXDATA_FULL : 0;
 }
 
-u32 sifive_uart::read_rxdata() {
+u32 sifive::read_rxdata() {
     u32 val = RXDATA_EMPTY;
     if (is_rx_enabled() && !is_rx_empty()) {
         val = m_rx_fifo.front();
@@ -143,37 +143,41 @@ u32 sifive_uart::read_rxdata() {
     return val;
 }
 
-void sifive_uart::write_txctrl(u32 val) {
-    const u32 mask = (TXCTRL_TXEN | TXCTRL_NSTOP | TXCTRL_TXCNT());
-    txctrl = val & mask;
+void sifive::write_txctrl(u32 val) {
+    txctrl = val & (TXCTRL_TXEN | TXCTRL_NSTOP | TXCTRL_TXCNT());
+    if (val & TXCTRL_NSTOP)
+        serial_tx.set_stop_bits(SERIAL_STOP_2);
+    else
+        serial_tx.set_stop_bits(SERIAL_STOP_1);
+
     if (is_tx_enabled())
         send_tx();
     update_tx();
 }
 
-void sifive_uart::write_rxctrl(u32 val) {
+void sifive::write_rxctrl(u32 val) {
     rxctrl = val & (RXCTRL_RXEN | RXCTRL_NSTOP | RXCTRL_RXCNT());
-    update_tx();
+    update_rx();
 }
 
-void sifive_uart::write_ie(u32 val) {
-    ie = val & 0b11;
+void sifive::write_ie(u32 val) {
+    ie = val & (IE_TXWM | IE_RXWM);
     update_tx();
     update_rx();
 }
 
-void sifive_uart::write_div(u32 val) {
+void sifive::write_div(u32 val) {
     div = val & 0xffff;
     serial_tx.set_baud(clock_hz() / val);
 }
 
-sifive_uart::sifive_uart(const sc_module_name& nm):
+sifive::sifive(const sc_module_name& nm):
     peripheral(nm),
     serial_host(),
-    m_tx_fifo_size("tx_fifo_size", 8),
     m_tx_fifo(),
-    m_rx_fifo_size("rx_fifo_size", 8),
     m_rx_fifo(),
+    m_tx_fifo_size("tx_fifo_size", 8),
+    m_rx_fifo_size("rx_fifo_size", 8),
     txdata("txdata", 0x00, 0x0),
     rxdata("rxdata", 0x04, 0x0),
     txctrl("txctrl", 0x08, 0x0),
@@ -188,45 +192,48 @@ sifive_uart::sifive_uart(const sc_module_name& nm):
     serial_rx("serial_rx") {
     txdata.sync_always();
     txdata.allow_read_write();
-    txdata.on_write(&sifive_uart::write_txdata);
-    txdata.on_read(&sifive_uart::read_txdata);
+    txdata.on_write(&sifive::write_txdata);
+    txdata.on_read(&sifive::read_txdata);
 
     rxdata.sync_always();
     rxdata.allow_read_write();
-    rxdata.on_read(&sifive_uart::read_rxdata);
+    rxdata.on_read(&sifive::read_rxdata);
     rxdata.on_write(
         [&](u32 val) {}); // writes to rxdata are allowed but ignored
 
     txctrl.sync_never();
     txctrl.allow_read_write();
-    txctrl.on_write(&sifive_uart::write_txctrl);
+    txctrl.on_write(&sifive::write_txctrl);
 
     rxctrl.sync_never();
     rxctrl.allow_read_write();
-    rxctrl.on_write(&sifive_uart::write_rxctrl);
+    rxctrl.on_write(&sifive::write_rxctrl);
 
     ie.sync_always();
     ie.allow_read_write();
-    ie.on_write(&sifive_uart::write_ie);
+    ie.on_write(&sifive::write_ie);
 
     ip.sync_never();
     ip.allow_read_only();
 
     div.sync_never();
     div.allow_read_write();
-    div.on_write(&sifive_uart::write_div);
+    div.on_write(&sifive::write_div);
 
     serial_tx.set_baud(SERIAL_115200BD);
+    serial_tx.set_data_width(SERIAL_8_BITS);
+    serial_tx.set_parity(SERIAL_PARITY_NONE);
+    serial_tx.set_stop_bits(SERIAL_STOP_1);
 
     update_tx();
     update_rx();
 }
 
-sifive_uart::~sifive_uart() {
+sifive::~sifive() {
     // nothing to do
 }
 
-void sifive_uart::reset() {
+void sifive::reset() {
     peripheral::reset();
     if (!m_tx_fifo.empty())
         m_tx_fifo = {};
@@ -238,7 +245,7 @@ void sifive_uart::reset() {
 }
 
 VCML_EXPORT_MODEL(vcml::serial::sifive_uart, name, args) {
-    return new sifive_uart(name);
+    return new sifive(name);
 }
 
 } // namespace serial

@@ -10,7 +10,7 @@
 
 #include "testing.h"
 
-class sifive_uart_bench : public test_base, public serial_host
+class sifive_bench : public test_base, public serial_host
 {
 public:
     tlm_initiator_socket out;
@@ -23,9 +23,9 @@ public:
     serial_initiator_socket bench_tx;
     serial_target_socket bench_rx;
 
-    serial::sifive_uart uart;
+    serial::sifive uart;
 
-    sifive_uart_bench(const sc_module_name& nm):
+    sifive_bench(const sc_module_name& nm):
         test_base(nm),
         out("out"),
         reset_out("reset_out"),
@@ -130,7 +130,7 @@ public:
     }
 };
 
-TEST(sifive_uart, main) {
-    sifive_uart_bench bench("bench");
+TEST(sifive, main) {
+    sifive_bench bench("bench");
     sc_core::sc_start();
 }
