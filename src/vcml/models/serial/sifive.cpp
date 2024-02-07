@@ -49,6 +49,10 @@ enum ip_bits : u32 {
     IP_RXWM = bit(1),
 };
 
+static void ignore_write(u32 val) {
+    // ignore value
+}
+
 bool sifive::is_tx_full() const {
     return txdata & TXDATA_FULL;
 }
@@ -200,8 +204,7 @@ sifive::sifive(const sc_module_name& nm):
     rxdata.sync_always();
     rxdata.allow_read_write();
     rxdata.on_read(&sifive::read_rxdata);
-    rxdata.on_write(
-        [&](u32 val) {}); // writes to rxdata are allowed but ignored
+    rxdata.on_write(ignore_write);
 
     txctrl.sync_never();
     txctrl.allow_read_write();
