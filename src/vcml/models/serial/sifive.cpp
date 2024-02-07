@@ -17,27 +17,27 @@ enum txdata_bits : u32 {
     TXDATA_FULL = bit(31),
 };
 
-typedef field<0, 8, u32> TXDATA_DATA;
+using TXDATA_DATA = field<0, 8, u32>;
 
 enum rxdata_bits : u32 {
     RXDATA_EMPTY = bit(31),
 };
 
-typedef field<0, 8, u32> RXDATA_DATA;
+using RXDATA_DATA = field<0, 8, u32>;
 
 enum txctrl_bits : u32 {
     TXCTRL_TXEN = bit(0),
     TXCTRL_NSTOP = bit(1),
 };
 
-typedef field<16, 3, u32> TXCTRL_TXCNT;
+using TXCTRL_TXCNT = field<16, 3, u32>;
 
 enum rxctrl_bits : u32 {
     RXCTRL_RXEN = bit(0),
     RXCTRL_NSTOP = bit(1),
 };
 
-typedef field<16, 3, u32> RXCTRL_RXCNT;
+using RXCTRL_RXCNT = field<16, 3, u32>;
 
 enum ie_bits : u32 {
     IE_TXWM = bit(0),
@@ -65,37 +65,26 @@ bool sifive::is_rx_enabled() const {
     return rxctrl & RXCTRL_RXEN;
 }
 
-vcml::serial_stop sifive::num_stop_bits() const {
+serial_stop sifive::num_stop_bits() const {
     if (txctrl & TXCTRL_NSTOP)
         return SERIAL_STOP_2;
     else
         return SERIAL_STOP_1;
 }
 
-u8 sifive::get_tx_watermark() const {
+size_t sifive::tx_watermark() const {
     return get_field<TXCTRL_TXCNT>(txctrl);
 }
 
-u8 sifive::get_rx_watermark() const {
+size_t sifive::rx_watermark() const {
     return get_field<RXCTRL_RXCNT>(rxctrl);
-}
-
-void sifive::serial_receive(u8 data) {
-    if (is_rx_enabled()) {
-        if (m_rx_fifo.size() < rx_fifo_size)
-            m_rx_fifo.push(data);
-        else
-            log_warn("FIFO buffer overflow, data dropped");
-
-        update_rx();
-    }
 }
 
 void sifive::update_tx() {
     bool tx_full = m_tx_fifo.size() == tx_fifo_size;
     txdata.set_bit<TXDATA_FULL>(tx_full);
 
-    bool tx_under_watermark = m_tx_fifo.size() < get_tx_watermark();
+    bool tx_under_watermark = m_tx_fifo.size() < tx_watermark();
     ip.set_bit<IP_TXWM>(tx_under_watermark);
 
     bool should_raise_tx_irq = ip & IP_TXWM && ie & IE_TXWM;
@@ -106,7 +95,7 @@ void sifive::update_rx() {
     bool rx_empty = m_rx_fifo.empty();
     rxdata.set_bit<RXDATA_EMPTY>(rx_empty);
 
-    bool rx_over_watermark = m_rx_fifo.size() > get_rx_watermark();
+    bool rx_over_watermark = m_rx_fifo.size() > rx_watermark();
     ip.set_bit<IP_RXWM>(rx_over_watermark);
 
     bool should_raise_rx_irq = ip & IP_RXWM && ie & IE_RXWM;
@@ -124,15 +113,6 @@ void sifive::tx_thread() {
     }
 }
 
-void sifive::write_txdata(u32 val) {
-    if (!is_tx_full())
-        m_tx_fifo.push(val & 0xff);
-
-    update_tx();
-    if (is_tx_enabled())
-        m_txev.notify(SC_ZERO_TIME);
-}
-
 u32 sifive::read_txdata() {
     return is_tx_full() ? TXDATA_FULL : 0;
 }
@@ -145,6 +125,15 @@ u32 sifive::read_rxdata() {
     m_rx_fifo.pop();
     update_rx();
     return val;
+}
+
+void sifive::write_txdata(u32 val) {
+    if (!is_tx_full())
+        m_tx_fifo.push(val & 0xff);
+
+    update_tx();
+    if (is_tx_enabled())
+        m_txev.notify(SC_ZERO_TIME);
 }
 
 void sifive::write_txctrl(u32 val) {
@@ -170,6 +159,17 @@ void sifive::write_ie(u32 val) {
 void sifive::write_div(u32 val) {
     div = val & 0xffff;
     serial_tx.set_baud(clock_hz() / val);
+}
+
+void sifive::serial_receive(u8 data) {
+    if (is_rx_enabled()) {
+        if (m_rx_fifo.size() < rx_fifo_size)
+            m_rx_fifo.push(data);
+        else
+            log_warn("FIFO buffer overflow, data dropped");
+
+        update_rx();
+    }
 }
 
 sifive::sifive(const sc_module_name& nm):
@@ -229,6 +229,7 @@ sifive::sifive(const sc_module_name& nm):
 
     update_tx();
     update_rx();
+
     SC_HAS_PROCESS(sifive);
     SC_THREAD(tx_thread);
 }
@@ -239,13 +240,14 @@ sifive::~sifive() {
 
 void sifive::reset() {
     peripheral::reset();
-    if (!m_tx_fifo.empty())
-        m_tx_fifo = {};
-    if (!m_rx_fifo.empty())
-        m_rx_fifo = {};
+
+    m_tx_fifo = {};
+    m_rx_fifo = {};
+
     tx_irq = false;
     rx_irq = false;
-    div = clock_hz() / SERIAL_115200BD;
+
+    div = clock_hz() / serial_tx.baud();
 }
 
 VCML_EXPORT_MODEL(vcml::serial::sifive, name, args) {

@@ -30,31 +30,33 @@ private:
     queue<u8> m_rx_fifo;
     sc_event m_txev;
 
-    // serial host
-    virtual void serial_receive(u8 data) override;
-
     void update_tx();
     void update_rx();
     void tx_thread();
 
-    void write_txdata(u32 val);
     u32 read_txdata();
     u32 read_rxdata();
+
+    void write_txdata(u32 val);
     void write_txctrl(u32 val);
     void write_rxctrl(u32 val);
     void write_ie(u32 val);
     void write_div(u32 val);
 
+    // serial host
+    virtual void serial_receive(u8 data) override;
+
 public:
-    property<unsigned int> tx_fifo_size;
-    property<unsigned int> rx_fifo_size;
-    reg<u32> txdata; // Transmit data register
-    reg<u32> rxdata; // Receive data register
-    reg<u32> txctrl; // Transmit control register
-    reg<u32> rxctrl; // Receive control register
-    reg<u32> ie;     // UART interrupt enable
-    reg<u32> ip;     // UART interrupt pending
-    reg<u32> div;    // Baud rate divisor
+    property<size_t> tx_fifo_size;
+    property<size_t> rx_fifo_size;
+
+    reg<u32> txdata;
+    reg<u32> rxdata;
+    reg<u32> txctrl;
+    reg<u32> rxctrl;
+    reg<u32> ie;
+    reg<u32> ip;
+    reg<u32> div;
 
     tlm_target_socket in;
     gpio_initiator_socket tx_irq;
@@ -67,9 +69,11 @@ public:
     bool is_rx_empty() const;
     bool is_tx_enabled() const;
     bool is_rx_enabled() const;
-    vcml::serial_stop num_stop_bits() const;
-    u8 get_tx_watermark() const;
-    u8 get_rx_watermark() const;
+
+    serial_stop num_stop_bits() const;
+
+    size_t tx_watermark() const;
+    size_t rx_watermark() const;
 
     sifive(const sc_module_name& name);
     virtual ~sifive();
