@@ -67,7 +67,7 @@ public:
     bool is_rx_empty() const;
     bool is_tx_enabled() const;
     bool is_rx_enabled() const;
-    u8 num_stop_bits() const;
+    vcml::serial_stop num_stop_bits() const;
     u8 get_tx_watermark() const;
     u8 get_rx_watermark() const;
 

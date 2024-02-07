@@ -25,8 +25,11 @@ public:
 
     serial::sifive uart;
 
+    MOCK_METHOD(void, serial_receive, (u8), (override));
+
     sifive_bench(const sc_module_name& nm):
         test_base(nm),
+        serial_host(),
         out("out"),
         reset_out("reset_out"),
         tx_irq_in("tx_irq_in"),
@@ -89,7 +92,7 @@ public:
         EXPECT_OK(out.readw(RXDATA, val));
         EXPECT_EQ(val, prev_val);
 
-        // write to txdata
+        // read to txdata
         EXPECT_OK(out.readw(TXDATA, val));
         // set watermark and trigger an irq
         val = 0x1;
@@ -97,12 +100,14 @@ public:
         EXPECT_OK(out.readw(IE, val));
         EXPECT_EQ(val, 0x1);
 
-        val = (4 << 16);
+        val = 0x1 | (4 << 16);
         EXPECT_OK(out.writew(TXCTRL, val));
         val = 'x';
+        EXPECT_CALL(*this, serial_receive('x'));
         EXPECT_OK(out.writew(TXDATA, val));
         EXPECT_FALSE(rx_irq_in) << "wrong interrupt triggered";
         EXPECT_TRUE(tx_irq_in) << "interrupt did not trigger";
+        wait(1, SC_MS);
 
         val = 0b10;
         EXPECT_OK(out.writew(IE, val));
@@ -111,6 +116,9 @@ public:
         bench_tx.send('x');
         EXPECT_FALSE(tx_irq_in) << "wrong interrupt triggered";
         EXPECT_TRUE(rx_irq_in) << "interrupt did not trigger";
+        wait(1, SC_MS);
+        EXPECT_OK(out.readw(RXDATA, val));
+        EXPECT_EQ(val, 'x');
 
         // check reset works
 

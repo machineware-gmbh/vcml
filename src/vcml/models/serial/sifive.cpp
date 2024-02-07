@@ -65,8 +65,11 @@ bool sifive::is_rx_enabled() const {
     return rxctrl & RXCTRL_RXEN;
 }
 
-u8 sifive::num_stop_bits() const {
-    return !!(txctrl & TXCTRL_NSTOP) + 1;
+vcml::serial_stop sifive::num_stop_bits() const {
+    if (txctrl & TXCTRL_NSTOP)
+        return SERIAL_STOP_2;
+    else
+        return SERIAL_STOP_1;
 }
 
 u8 sifive::get_tx_watermark() const {
@@ -146,10 +149,7 @@ u32 sifive::read_rxdata() {
 
 void sifive::write_txctrl(u32 val) {
     txctrl = val & (TXCTRL_TXEN | TXCTRL_NSTOP | TXCTRL_TXCNT());
-    if (val & TXCTRL_NSTOP)
-        serial_tx.set_stop_bits(SERIAL_STOP_2);
-    else
-        serial_tx.set_stop_bits(SERIAL_STOP_1);
+    serial_tx.set_stop_bits(num_stop_bits());
 
     if (is_tx_enabled())
         m_txev.notify(SC_ZERO_TIME);
@@ -248,7 +248,7 @@ void sifive::reset() {
     div = clock_hz() / SERIAL_115200BD;
 }
 
-VCML_EXPORT_MODEL(vcml::serial::sifive_uart, name, args) {
+VCML_EXPORT_MODEL(vcml::serial::sifive, name, args) {
     return new sifive(name);
 }
 
