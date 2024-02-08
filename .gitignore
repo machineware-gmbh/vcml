@@ -20,3 +20,5 @@ setup.sh
 .vs/
 CMakeSettings.json
 
+# Language Server
+.clangd
