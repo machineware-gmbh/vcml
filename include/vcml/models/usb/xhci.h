@@ -26,7 +26,25 @@ class xhci : public peripheral
 {
 private:
 public:
+    reg<u32> hciversion;
+    reg<u32> hcsparams1;
+    reg<u32> hcsparams2;
+    reg<u32> hcsparams3;
+    reg<u32> hccparams1;
+    reg<u32> dboff;
+    reg<u32> rtsoff;
+    reg<u32> hccparams2;
+
+    reg<u32> usbcmd;
+    reg<u32> usbsts;
+    reg<u32> pagesize;
+    reg<u32> dnctrl;
+    reg<u64> crcr;
+    reg<u64> dcbaap;
+    reg<u32> config;
+
     tlm_target_socket in;
+    tlm_initiator_socket dma;
     gpio_initiator_socket irq;
 
     xhci(const sc_module_name& name);
