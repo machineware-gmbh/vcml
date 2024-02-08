@@ -50,6 +50,22 @@ enum move_target {
     DAR = 2,
 };
 
+enum source_burst_size {
+    SB8 = 0,
+    SB16,
+    SB32,
+    SB64,
+    SB128,
+};
+
+enum dest_burst_size {
+    DB8 = 0,
+    DB16,
+    DB32,
+    DB64,
+    DB128,
+};
+
 static void emit_mov(u8*& buf, move_target target, u32 val) {
     buf[0] = 0b10111100; // DMAMOV
     buf[1] = static_cast<u8>(target);
@@ -61,9 +77,8 @@ static void emit_mov(u8*& buf, move_target target, u32 val) {
 }
 
 static void emit_configuration(u8*& buf, bool non_secure, u32 src_burst_size,
-                               u32 src_burst_len, u32 src_address,
-                               u32 src_increment, u32 dst_burst_size,
-                               u32 dst_burst_len, u32 dst_address,
+                               u32 src_burst_len, u32 src_increment,
+                               u32 dst_burst_size, u32 dst_burst_len,
                                u32 dst_increment) {
     u32 ccr_val = 0;
     ccr_val |= ((non_secure & 0b1) << 9) | ((non_secure & 0b1) << 23) |
@@ -74,8 +89,6 @@ static void emit_configuration(u8*& buf, bool non_secure, u32 src_burst_size,
                ((dst_increment & 0b1) << 14);
 
     emit_mov(buf, CCR, ccr_val);
-    emit_mov(buf, SAR, src_address);
-    emit_mov(buf, DAR, dst_address);
 }
 
 class pl330_bench : public test_base
@@ -140,12 +153,15 @@ public:
         const u32 dst_buffer_addr = 0x3000;
         u8* insn_buf_tail = channel_insn_buffer;
 
-        for (int i = 0; i < 16; i++)
-            (&data_char_ptr[src_buffer_addr])[i] = i;
+        for (int i = 0; i < 16 * 2 * 2; i++) {
+            (&data_char_ptr[src_buffer_addr])[i] = i % 256;
+            (&data_char_ptr[dst_buffer_addr])[i] = 0;
+        }
 
         emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
-                           1u, 1u, src_buffer_addr, 1u, 1u, 1u,
-                           dst_buffer_addr, 1u);
+                           SB16, 1u, 1u, DB16, 1u, 1u);
+        emit_mov(insn_buf_tail, SAR, src_buffer_addr);
+        emit_mov(insn_buf_tail, DAR, dst_buffer_addr);
         emit_rw_loop(insn_buf_tail, 16);
 
         u32 ev_id = 0;
@@ -158,10 +174,91 @@ public:
         while (!irq_in)
             wait(1.0, sc_core::SC_SEC);
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16 * 2 * 2; i++) {
             EXPECT_EQ(data_char_ptr[src_buffer_addr + i],
                       data_char_ptr[dst_buffer_addr + i]);
-            EXPECT_EQ(i, data_char_ptr[dst_buffer_addr + i]);
+            EXPECT_EQ(i % 256, data_char_ptr[dst_buffer_addr + i]);
+        }
+    }
+
+    void test_unaligned_source_transfer() {
+        dma.reset();
+        auto* data_char_ptr = mem.data();
+        u8* const channel_insn_buffer = &data_char_ptr[0x1000];
+        const u32 src_buffer_addr = 0x2004;
+        const u32 dst_buffer_addr = 0x3000;
+        u8* insn_buf_tail = channel_insn_buffer;
+
+        for (int i = 0; i < 16 * 4 * 8; i++) {
+            (&data_char_ptr[src_buffer_addr])[i] = i % 256;
+            (&data_char_ptr[dst_buffer_addr])[i] = 0;
+        }
+
+        emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
+                           SB64, 3u, 1u, DB64, 3u, 1u);
+        emit_mov(insn_buf_tail, SAR, src_buffer_addr);
+        emit_mov(insn_buf_tail, DAR, dst_buffer_addr);
+        emit_ld(insn_buf_tail);
+        emit_rw_loop(insn_buf_tail, 15);
+        emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
+                           SB32, 0u, 1u, DB64, 3u, 1u);
+        emit_ld(insn_buf_tail);
+        emit_st(insn_buf_tail);
+
+        u32 ev_id = 0;
+        set_ev_to_irq(ev_id);
+        emit_sev(insn_buf_tail, ev_id);
+        emit_end(insn_buf_tail);
+
+        execute_dbg_insn(0, 0x1000);
+
+        while (!irq_in)
+            wait(1.0, sc_core::SC_SEC);
+
+        for (int i = 0; i < 16 * 4 * 8; i++) {
+            EXPECT_EQ(data_char_ptr[src_buffer_addr + i],
+                      data_char_ptr[dst_buffer_addr + i]);
+            EXPECT_EQ(i % 256, data_char_ptr[dst_buffer_addr + i]);
+        }
+    }
+
+    void test_unaligned_dest_transfer() {
+        dma.reset();
+        auto* data_char_ptr = mem.data();
+        u8* const channel_insn_buffer = &data_char_ptr[0x1000];
+        const u32 src_buffer_addr = 0x2000;
+        const u32 dst_buffer_addr = 0x3004;
+        u8* insn_buf_tail = channel_insn_buffer;
+
+        for (int i = 0; i < 16 * 4 * 8; i++) {
+            (&data_char_ptr[src_buffer_addr])[i] = i % 256;
+            (&data_char_ptr[dst_buffer_addr])[i] = 0;
+        }
+
+        emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
+                           SB64, 3u, 1u, DB64, 3u, 1u);
+        emit_mov(insn_buf_tail, SAR, src_buffer_addr);
+        emit_mov(insn_buf_tail, DAR, dst_buffer_addr);
+        emit_rw_loop(insn_buf_tail, 16);
+
+        emit_configuration(insn_buf_tail, !!(dma.channels[0].csr & (1 << 21)),
+                           SB64, 3u, 1u, DB32, 0u, 1u);
+        emit_st(insn_buf_tail);
+
+        u32 ev_id = 0;
+        set_ev_to_irq(ev_id);
+        emit_sev(insn_buf_tail, ev_id);
+        emit_end(insn_buf_tail);
+
+        execute_dbg_insn(0, 0x1000);
+
+        while (!irq_in)
+            wait(1.0, sc_core::SC_SEC);
+
+        for (int i = 0; i < 16 * 4 * 8; i++) {
+            EXPECT_EQ(data_char_ptr[src_buffer_addr + i],
+                      data_char_ptr[dst_buffer_addr + i]);
+            EXPECT_EQ(i % 256, data_char_ptr[dst_buffer_addr + i]);
         }
     }
 
@@ -187,6 +284,10 @@ public:
 
     virtual void run_test() override {
         test_transfer();
+        dma.reset();
+        test_unaligned_source_transfer();
+        dma.reset();
+        test_unaligned_dest_transfer();
         dma.reset();
         trigger_rdwrfault();
     }
