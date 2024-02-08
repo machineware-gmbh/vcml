@@ -11,7 +11,8 @@
 #ifndef VCML_DMA_PL330_H
 #define VCML_DMA_PL330_H
 
-#include <vcml.h>
+#include "vcml/core/types.h"
+#include "vcml/core/peripheral.h"
 
 namespace vcml {
 namespace dma {

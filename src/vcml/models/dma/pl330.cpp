@@ -723,12 +723,6 @@ static const insn_descr* find_insn(u8 opcode, const insn_descr (&insns)[N]) {
     return nullptr;
 }
 
-static void handle_watchdog_timeout(pl330::channel& channel) {
-    channel.watchdog_timer += 1;
-    if (channel.watchdog_timer > PL330_WD_TIMEOUT)
-        VCML_ERROR("pl330 channel %d watchdog timeout", channel.chid);
-}
-
 static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
     // Check if the channel is ready for instruction execution
     if (!channel.is_state(CHS_EXECUTING) &&
@@ -760,8 +754,11 @@ static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
         return 1;
     }
 
-    if (channel.is_state(CHS_EXECUTING))
-        handle_watchdog_timeout(channel);
+    if (channel.is_state(CHS_EXECUTING)) {
+        channel.watchdog_timer += 1;
+        if (channel.watchdog_timer > PL330_WD_TIMEOUT)
+            VCML_ERROR("pl330 channel %d watchdog timeout", channel.chid);
+    }
 
     return 0; // Instruction not executed
 }
