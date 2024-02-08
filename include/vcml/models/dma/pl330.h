@@ -210,7 +210,7 @@ public:
     virtual void reset() override;
 
 private:
-    void pl330_thread();
+    [[noreturn]] void pl330_thread();
     void run_manager();
     void run_channels();
     void handle_debug_instruction();

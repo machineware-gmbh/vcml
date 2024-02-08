@@ -723,6 +723,25 @@ static const insn_descr* find_insn(u8 opcode, const insn_descr (&insns)[N]) {
     return nullptr;
 }
 
+template <size_t N>
+static const insn_descr* fetch_and_exec(pl330& dma, pl330::channel* channel,
+                                        u32 pc,
+                                        const insn_descr (&insn_descrs)[N]) {
+    u8 insn_buf[PL330_INSN_MAXSIZE];
+    // Fetch the first byte of the instruction
+    dma.dma.read(pc, insn_buf, 1);
+    const insn_descr* insn = find_insn(insn_buf[0], insn_descrs);
+    if (!insn)
+        return nullptr;
+
+    // Fetch additional bytes if the instruction size is greater than 1
+    if (insn->size > 1)
+        dma.dma.read(pc + 1, insn_buf + 1, insn->size - 1);
+
+    insn->exec(&dma, channel, insn_buf[0], &insn_buf[1], insn->size - 1);
+    return insn;
+}
+
 static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
     // Check if the channel is ready for instruction execution
     if (!channel.is_state(CHS_EXECUTING) &&
@@ -733,20 +752,11 @@ static int channel_execute_one_insn(pl330& dma, pl330::channel& channel) {
     }
     channel.stall = false;
 
-    // Fetch the first byte of the instruction
-    u8 insn_buf[PL330_INSN_MAXSIZE];
-    dma.dma.read(channel.cpc, insn_buf, 1);
-    const insn_descr* insn = find_insn(insn_buf[0], CH_INSN_DESCR);
+    auto insn = fetch_and_exec(dma, &channel, channel.cpc, CH_INSN_DESCR);
     if (!insn) {
         pl330_handle_ch_fault(dma, channel, FTR_INSTR_FETCH_ERR);
         return 0;
     }
-
-    // Fetch additional bytes if the instruction size is greater than 1
-    if (insn->size > 1)
-        dma.dma.read(channel.cpc + 1, insn_buf + 1, insn->size - 1);
-
-    insn->exec(&dma, &channel, insn_buf[0], &insn_buf[1], insn->size - 1);
 
     if (!channel.stall && !channel.is_state(CHS_STOPPED)) {
         channel.cpc += insn->size;
@@ -776,7 +786,7 @@ static u32 process_read_queue(pl330& dma, pl330::channel& channel) {
             if (failed(dma.dma.read(insn.data_addr, trans_buf, len)))
                 dma.log.error("Dma channel read failed");
         } else {
-            // TODO test and refactor stream I/O reads
+            // stream I/O reads
             tlm_generic_payload tx;
             tx_setup(tx, TLM_READ_COMMAND, insn.data_addr, trans_buf, len);
             tx.set_streaming_width(insn.data_len);
@@ -814,7 +824,7 @@ static u32 process_write_queue(pl330& dma, pl330::channel& channel) {
             if (failed(dma.dma.write(insn.data_addr, trans_buf, len)))
                 dma.log.error("Dma channel write failed");
         } else {
-            // TODO test and refactor stream I/O writes
+            // stream I/O writes
             tlm_generic_payload tx;
             tx_setup(tx, TLM_WRITE_COMMAND, insn.data_addr, trans_buf, len);
             tx.set_streaming_width(insn.data_len);
@@ -846,23 +856,14 @@ void pl330::run_manager() {
         !manager.is_state(MNS_WAITING_FOR_EVENT))
         return;
 
-    u8 insn_buf[PL330_INSN_MAXSIZE];
     manager.stall = false;
     while (((!manager.stall) && manager.is_state(MNS_WAITING_FOR_EVENT)) ||
            manager.is_state(MNS_EXECUTING)) {
-        dma.read(manager.dpc, insn_buf, 1);
-
-        // Fetch the first byte of the instruction
-        const insn_descr* insn = find_insn(insn_buf[0], MN_INSN_DESCR);
+        auto insn = fetch_and_exec(*this, nullptr, manager.dpc, MN_INSN_DESCR);
         if (!insn) {
             pl330_handle_mn_fault(*this, FTRD_INSTR_FETCH_ERR);
             break;
         }
-        // Fetch additional bytes if the instruction size is greater than 1
-        if (insn->size > 1)
-            dma.read(manager.dpc + 1, insn_buf + 1, insn->size - 1);
-
-        insn->exec(this, nullptr, insn_buf[0], &insn_buf[1], insn->size - 1);
 
         if (!manager.stall) {
             manager.dpc += insn->size;
@@ -906,7 +907,7 @@ void pl330::handle_debug_instruction() {
     dbgstatus.set_bit<DBGSTATUS>(false); // set dbg idle
 }
 
-void pl330::pl330_thread() {
+[[noreturn]] void pl330::pl330_thread() {
     while (true) {
         wait(m_dma);
         if (m_execute_debug) {
