@@ -12,25 +12,34 @@
 #define VCML_DMA_PL330_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/range.h"
+#include "vcml/core/systemc.h"
 #include "vcml/core/peripheral.h"
+#include "vcml/core/model.h"
+
+#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/gpio.h"
 
 namespace vcml {
 namespace dma {
 
 class pl330 : public peripheral
 {
+private:
     template <typename T>
     class tagged_queue
     {
     public:
-        tagged_queue(int max_total_items):
+        tagged_queue(size_t max_total_items):
             m_queues(),
             m_tags(),
             m_max_sum(max_total_items),
-            m_current_sum(0) {}
+            m_current_sum(0) {
+            // nothing to do
+        }
 
         bool push(const T& item) {
-            if (m_current_sum + 1 <= m_max_sum) {
+            if (m_current_sum < m_max_sum) {
                 m_queues[item.tag].push_back(item);
                 m_tags.push_back(item.tag);
                 m_current_sum += 1;
@@ -42,24 +51,26 @@ class pl330 : public peripheral
         std::optional<T> pop() {
             if (m_tags.empty())
                 return std::nullopt;
+
             int front_tag = m_tags.front();
             T front_item = m_queues[front_tag].front();
             m_queues[front_tag].pop_front();
             m_tags.pop_front();
-            m_current_sum -= 1;
+            m_current_sum--;
             return std::make_optional(front_item);
         }
 
         const T& front() const { return m_queues.at(m_tags.front()).front(); }
-        T& front_mut() { return m_queues.at(m_tags.front()).front(); }
+        T& front() { return m_queues.at(m_tags.front()).front(); }
 
         std::optional<T> pop(int tag) {
             if (m_queues[tag].empty())
                 return std::nullopt;
+
             T item = m_queues[tag].front();
             m_queues[tag].pop_front();
             m_tags.erase(std::find(m_tags.begin(), m_tags.end(), tag));
-            m_current_sum -= 1;
+            m_current_sum--;
             return std::make_optional(item);
         }
 
@@ -79,20 +90,18 @@ class pl330 : public peripheral
         void reset() { clear(); }
 
         bool empty() const { return m_tags.empty(); }
-
         bool empty(int tag) const { return m_queues.at(tag).empty(); }
 
         size_t size() const { return m_tags.size(); }
-
         size_t num_free() const { return m_max_sum - m_current_sum; }
-
         size_t size_tag(int tag) const { return m_queues[tag].size(); }
 
     private:
         std::unordered_map<int, std::deque<T>> m_queues;
         std::deque<int> m_tags;
-        int m_max_sum;
-        int m_current_sum;
+
+        size_t m_max_sum;
+        size_t m_current_sum;
     };
 
 public:
@@ -118,14 +127,14 @@ public:
     class channel : public module
     {
     public:
-        reg<u32> ftr; //< channel fault type register
-        reg<u32> csr; //< channel status register
-        reg<u32> cpc; //< channel pc register
-        reg<u32> sar; //< source address register
-        reg<u32> dar; //< destination address register
-        reg<u32> ccr; //< channel control register
-        reg<u32> lc0; //< loop counter 0 register
-        reg<u32> lc1; //< loop counter 1 register
+        reg<u32> ftr; // channel fault type register
+        reg<u32> csr; // channel status register
+        reg<u32> cpc; // channel pc register
+        reg<u32> sar; // source address register
+        reg<u32> dar; // destination address register
+        reg<u32> ccr; // channel control register
+        reg<u32> lc0; // loop counter 0 register
+        reg<u32> lc1; // loop counter 1 register
 
         u32 chid;
         bool stall;
@@ -167,7 +176,8 @@ public:
     property<u32> mfifo_width;
     property<u32> mfifo_lines;
 
-    tagged_queue<queue_entry> read_queue, write_queue;
+    tagged_queue<queue_entry> read_queue;
+    tagged_queue<queue_entry> write_queue;
     tagged_queue<mfifo_entry> mfifo;
 
     sc_vector<channel> channels;
@@ -196,7 +206,7 @@ public:
     reg<u32, 4> periph_id; // Peripheral Identification Registers
     reg<u32, 4> pcell_id;  // Component Identification Registers
 
-    u8 periph_busy[6];
+    bool periph_busy[32];
     gpio_target_array periph_irq;
 
     tlm_target_socket in;
