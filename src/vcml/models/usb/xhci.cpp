@@ -108,12 +108,87 @@ enum pagesize_bits : u32 {
     PAGESIZE_16K = bit(2),
 };
 
+enum dcbaap_bits : u64 {
+    DCBAAP_MASK = bitmask(58, 6),
+};
+
 using CONFIG_MAXSLOTSEN = field<0, 8, u32>;
 
 enum config_bits : u32 {
     CONFIG_U3E = bit(8),
     CONFIG_CIE = bit(9),
     CONFIG_MASK = CONFIG_MAXSLOTSEN() | CONFIG_U3E | CONFIG_CIE,
+};
+
+using PORTSC_PLS = field<5, 4, u32>;
+using PORTSC_SPEED = field<10, 4, u32>;
+using PORTSC_PIC = field<14, 2, u32>;
+
+enum portsc_bits : u32 {
+    PORTSC_CCS = bit(0),
+    PORTSC_PED = bit(1),
+    PORTSC_OCA = bit(3),
+    PORTSC_PR = bit(4),
+    PORTSC_PP = bit(9),
+    PORTSC_LWS = bit(16),
+    PORTSC_CSC = bit(17),
+    PORTSC_PEC = bit(18),
+    PORTSC_WRC = bit(19),
+    PORTSC_OCC = bit(20),
+    PORTSC_PRC = bit(21),
+    PORTSC_PLC = bit(22),
+    PORTSC_CEC = bit(23),
+    PORTSC_CAS = bit(24),
+    PORTSC_WCE = bit(25),
+    PORTSC_WDE = bit(26),
+    PORTSC_WOE = bit(27),
+    PORTSC_DR = bit(30),
+    PORTSC_WPR = bit(31),
+
+    PORTSC_SPEED_FULL = 1,
+    PORTSC_SPEED_LOW = 2,
+    PORTSC_SPEED_HIGH = 3,
+    PORTSC_SPEED_SUPORT = 4,
+
+    PORTSC_ROMASK = PORTSC_CCS | PORTSC_OCA | PORTSC_SPEED() | PORTSC_CAS |
+                    PORTSC_DR,
+    PORTSC_RWMASK = PORTSC_PR | PORTSC_PLS() | PORTSC_PP | PORTSC_PIC() |
+                    PORTSC_LWS | PORTSC_WCE | PORTSC_WDE | PORTSC_WOE |
+                    PORTSC_WPR,
+    PORTSC_W1CMASK = PORTSC_PED | PORTSC_CSC | PORTSC_PEC | PORTSC_WRC |
+                     PORTSC_OCC | PORTSC_PRC | PORTSC_PLC | PORTSC_CEC,
+};
+
+enum portsc_pls : u32 {
+    PLS_U0 = 0,
+    PLS_U1 = 1,
+    PLS_U2 = 2,
+    PLS_U3 = 3,
+    PLS_DISABLED = 4,
+    PLS_RX_DETECT = 5,
+    PLS_INACTIVE = 6,
+    PLS_POLLING = 7,
+    PLS_RECOVERY = 8,
+    PLS_HOT_RESET = 9,
+    PLS_COMPILANCE = 10,
+    PLS_TEST_MODE = 11,
+    PLS_RESUME = 15,
+};
+
+using PORTPMSC_U1TO = field<0, 8, u32>;
+using PORTPMSC_U2TO = field<8, 8, u32>;
+
+enum portpmsc_bits : u32 {
+    PORTPMSC_FLA = bit(16),
+    PORTPMSC_MASK = PORTPMSC_U1TO() | PORTPMSC_U2TO() | PORTPMSC_FLA,
+};
+
+using PORTLI_LEC = field<0, 16, u32>;
+using PORTLI_RLC = field<16, 4, u32>;
+using PORTLI_TLC = field<20, 4, u32>;
+
+enum portli_bits : u32 {
+    PORTLI_MASK = PORTLI_LEC() | PORTLI_RLC() | PORTLI_TLC(),
 };
 
 enum mfindex_bits : u32 {
@@ -144,10 +219,6 @@ enum erdp_bits : u64 {
     ERDP_EHB = bit(3),
 };
 
-static u32 read_zero() {
-    return 0;
-}
-
 xhci::port_regs::port_regs(size_t idx):
     portsc(mkstr("portsc%zu", idx), XHCI_OP_OFF + 0x400 + 0x10 * idx),
     portpmsc(mkstr("portpmsc%zu", idx), XHCI_OP_OFF + 0x404 + 0x10 * idx),
@@ -156,6 +227,7 @@ xhci::port_regs::port_regs(size_t idx):
     portsc.tag = idx;
     portsc.sync_always();
     portsc.allow_read_write();
+    portsc.on_write(&xhci::write_portsc);
 
     portpmsc.tag = idx;
     portpmsc.sync_always();
@@ -175,11 +247,11 @@ static xhci::port_regs* create_port_regs(const char* name, size_t idx) {
 }
 
 xhci::runtime_regs::runtime_regs(size_t idx):
-    iman(mkstr("iman%zu", idx), XHCI_RT_OFF + 0x20 * (idx + 1) + 0x0),
-    imod(mkstr("imod%zu", idx), XHCI_RT_OFF + 0x20 * (idx + 1) + 0x4),
-    erstsz(mkstr("erstsz%zu", idx), XHCI_RT_OFF + 0x20 * (idx + 1) + 0x8),
-    erstba(mkstr("erstba%zu", idx), XHCI_RT_OFF + 0x20 * (idx + 1) + 0x10),
-    erdp(mkstr("erdp%zu", idx), XHCI_RT_OFF + 0x20 * (idx + 1) + 0x18) {
+    iman(mkstr("iman%zu", idx), XHCI_RT_OFF + 0x20 + 0x20 * idx),
+    imod(mkstr("imod%zu", idx), XHCI_RT_OFF + 0x24 + 0x20 * idx),
+    erstsz(mkstr("erstsz%zu", idx), XHCI_RT_OFF + 0x28 + 0x20 * idx),
+    erstba(mkstr("erstba%zu", idx), XHCI_RT_OFF + 0x30 + 0x20 * idx),
+    erdp(mkstr("erdp%zu", idx), XHCI_RT_OFF + 0x38 + 0x20 * idx) {
     iman.tag = idx;
     iman.sync_always();
     iman.allow_read_write();
@@ -215,6 +287,21 @@ u32 xhci::read_hcsparams1() {
     return val;
 }
 
+u32 xhci::read_extcaps(size_t idx) {
+    switch (idx) {
+    case 0:
+        return 0x03000002; // supported protocol usb 3.0
+    case 1:
+        return fourcc("usb ");
+    case 2:
+        return num_ports << 8 | 1;
+    case 3:
+        return 0;
+    default:
+        VCML_ERROR("invalid array register index: %zu", idx);
+    }
+}
+
 void xhci::write_usbcmd(u32 val) {
     if (!(usbcmd & USBCMD_RS) && (val & USBCMD_RS))
         start();
@@ -247,19 +334,45 @@ void xhci::write_config(u32 val) {
     config = val & CONFIG_MASK;
 }
 
-u32 xhci::read_extcaps(size_t idx) {
-    switch (idx) {
-    case 0:
-        return 0x03000002; // supported protocol usb 3.0
-    case 1:
-        return fourcc("usb ");
-    case 2:
-        return num_ports << 8 | 1;
-    case 3:
-        return 0;
-    default:
-        VCML_ERROR("invalid array register index: %zu", idx);
+void xhci::write_portsc(u32 val, size_t idx) {
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CCS, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PED, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_OCA, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PR, port[idx].portsc, val);
+    VCML_LOG_REG_FIELD_CHANGE(PORTSC_PLS, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PP, port[idx].portsc, val);
+    VCML_LOG_REG_FIELD_CHANGE(PORTSC_SPEED, port[idx].portsc, val);
+    VCML_LOG_REG_FIELD_CHANGE(PORTSC_PIC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_LWS, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CSC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PEC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WRC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_OCC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PRC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PLC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CEC, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CAS, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WCE, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WDE, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WOE, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_DR, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WPR, port[idx].portsc, val);
+
+    if (val & PORTSC_WPR) {
+        log_info("port%zu warm port reset", idx);
+        return;
     }
+
+    if (val & PORTSC_PR) {
+        log_info("port%zu port reset", idx);
+        return;
+    }
+
+    u32 portsc = port[idx].portsc;
+    portsc &= ~(val & PORTSC_W1CMASK);
+    portsc &= ~PORTSC_RWMASK;
+    portsc |= (val & PORTSC_RWMASK);
+    port[idx].portsc = portsc;
 }
 
 u32 xhci::read_mfindex() {
@@ -293,7 +406,7 @@ void xhci::update() {
 xhci::xhci(const sc_module_name& nm):
     peripheral(nm),
     num_slots("num_slots", 64),
-    num_ports("num_ports", 1),
+    num_ports("num_ports", 4),
     num_intrs("num_intrs", 1),
     hciversion("hciversion", 0x00, HCIVERSION_RESET),
     hcsparams1("hciparams1", 0x04, 0x0),
@@ -381,7 +494,7 @@ xhci::xhci(const sc_module_name& nm):
 
     doorbell.sync_on_write();
     doorbell.allow_read_write();
-    doorbell.on_read(read_zero);
+    doorbell.read_zero();
     doorbell.on_write(&xhci::write_doorbell);
 }
 
@@ -391,6 +504,9 @@ xhci::~xhci() {
 
 void xhci::reset() {
     peripheral::reset();
+
+    // for testing
+    port[2].portsc |= PORTSC_CCS;
 }
 
 VCML_EXPORT_MODEL(vcml::usb::xhci, name, args) {

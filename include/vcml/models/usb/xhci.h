@@ -54,12 +54,13 @@ private:
     sc_time m_mfstart;
 
     u32 read_hcsparams1();
+    u32 read_extcaps(size_t idx);
 
     void write_usbcmd(u32 val);
     void write_usbsts(u32 val);
     void write_config(u32 val);
 
-    u32 read_extcaps(size_t idx);
+    void write_portsc(u32 val, size_t idx);
 
     u32 read_mfindex();
 
