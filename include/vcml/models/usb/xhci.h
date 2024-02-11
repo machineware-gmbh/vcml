@@ -29,6 +29,17 @@ public:
     static constexpr size_t MAX_PORTS = 16;
     static constexpr size_t MAX_INTRS = 15;
 
+    struct trb {
+        u64 parameter;
+        u32 status;
+        u32 control;
+    };
+
+    struct ring {
+        u64 dequeue;
+        bool ccs;
+    };
+
     struct port_regs {
         reg<u32> portsc;
         reg<u32> portpmsc;
@@ -53,11 +64,18 @@ public:
 private:
     sc_time m_mfstart;
 
+    sc_event m_cmdev;
+    ring m_cmdring;
+    bool m_cmdstop;
+    bool m_cmdabort;
+
     u32 read_hcsparams1();
     u32 read_extcaps(size_t idx);
 
     void write_usbcmd(u32 val);
     void write_usbsts(u32 val);
+    void write_crcrlo(u32 val);
+    void write_crcrhi(u32 val);
     void write_config(u32 val);
 
     void write_portsc(u32 val, size_t idx);
@@ -70,6 +88,11 @@ private:
     void start();
     void stop();
     void update();
+
+    bool fetch_command(trb& cmd, u64& addr);
+    void process_commands();
+
+    void command_thread();
 
 public:
     property<size_t> num_slots;
@@ -90,7 +113,8 @@ public:
     reg<u32> usbsts;
     reg<u32> pagesize;
     reg<u32> dnctrl;
-    reg<u64> crcr;
+    reg<u32> crcrlo;
+    reg<u32> crcrhi;
     reg<u64> dcbaap;
     reg<u32> config;
     sc_vector<port_regs> port;

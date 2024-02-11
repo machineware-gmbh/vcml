@@ -13,6 +13,246 @@
 namespace vcml {
 namespace usb {
 
+using TRB_TYPE = field<10, 6, u32>;
+
+enum trb_bits : u32 {
+    TRB_C = bit(0),
+    TRB_SIZE = 16,
+};
+
+enum trb_completion_code : u32 {
+    TRB_CC_INVALID = 0,
+    TRB_CC_SUCCESS = 1,
+    TRB_CC_DATA_BUFFER_ERROR = 2,
+    TRB_CC_BABBLE_DETECTED_ERROR = 3,
+    TRB_CC_USB_TRANSACTION_ERROR = 4,
+    TRB_CC_TRB_ERROR = 5,
+    TRB_CC_STALL_ERROR = 6,
+    TRB_CC_RESOURCE_ERROR = 7,
+    TRB_CC_BANDWIDTH_ERROR = 8,
+    TRB_CC_NO_SLOTS_AVAILABLE_ERROR = 9,
+    TRB_CC_INVALID_STREAM_TYPE_ERROR = 10,
+    TRB_CC_SLOT_NOT_ENABLED_ERROR = 11,
+    TRB_CC_ENDPOINT_NOT_ENABLED_ERROR = 12,
+    TRB_CC_SHORT_PACKET = 13,
+    TRB_CC_RING_UNDERRUN = 14,
+    TRB_CC_RING_OVERRUN = 15,
+    TRB_CC_VF_EVENT_RING_FULL_ERROR = 16,
+    TRB_CC_PARAMETER_ERROR = 17,
+    TRB_CC_BANDWIDTH_OVERRUN_ERROR = 18,
+    TRB_CC_CONTEXT_STATE_ERROR = 19,
+    TRB_CC_NO_PING_RESPONSE_ERROR = 20,
+    TRB_CC_EVENT_RING_FULL_ERROR = 21,
+    TRB_CC_INCOMPATIBLE_DEVICE_ERROR = 22,
+    TRB_CC_MISSED_SERVICE_ERROR = 23,
+    TRB_CC_COMMAND_RING_STOPPED = 24,
+    TRB_CC_COMMAND_ABORTED = 25,
+    TRB_CC_STOPPED = 26,
+    TRB_CC_STOPPED_LENGTH_INVALID = 27,
+    TRB_CC_STOPPED_SHORT_PACKET = 28,
+    TRB_CC_MAX_EXIT_LATENCY_TOO_LARGE_ERROR = 29,
+    TRB_CC_ISOCH_BUFFER_OVERRUN = 30,
+    TRB_CC_EVENT_LOST_ERROR = 32,
+    TRB_CC_UNDEFINED_ERROR = 33,
+    TRB_CC_INVALID_STREAM_ID_ERROR = 34,
+    TRB_CC_SECONDARY_BANDWIDTH_ERROR = 35,
+    TRB_CC_SPLIT_TRANSACTION_ERROR = 36,
+};
+
+constexpr const char* trb_cc_str(u32 cc) {
+    switch (cc) {
+    case TRB_CC_INVALID:
+        return "INVALID";
+    case TRB_CC_SUCCESS:
+        return "SUCCESS";
+    case TRB_CC_DATA_BUFFER_ERROR:
+        return "DATA_BUFFER_ERROR";
+    case TRB_CC_BABBLE_DETECTED_ERROR:
+        return "BABBLE_DETECTED_ERROR";
+    case TRB_CC_USB_TRANSACTION_ERROR:
+        return "USB_TRANSACTION_ERROR";
+    case TRB_CC_TRB_ERROR:
+        return "TRB_ERROR";
+    case TRB_CC_STALL_ERROR:
+        return "STALL_ERROR";
+    case TRB_CC_RESOURCE_ERROR:
+        return "RESOURCE_ERROR";
+    case TRB_CC_BANDWIDTH_ERROR:
+        return "BANDWIDTH_ERROR";
+    case TRB_CC_NO_SLOTS_AVAILABLE_ERROR:
+        return "NO_SLOTS_AVAILABLE_ERROR";
+    case TRB_CC_INVALID_STREAM_TYPE_ERROR:
+        return "INVALID_STREAM_TYPE_ERROR";
+    case TRB_CC_SLOT_NOT_ENABLED_ERROR:
+        return "SLOT_NOT_ENABLED_ERROR";
+    case TRB_CC_ENDPOINT_NOT_ENABLED_ERROR:
+        return "ENDPOINT_NOT_ENABLED_ERROR";
+    case TRB_CC_SHORT_PACKET:
+        return "SHORT_PACKET";
+    case TRB_CC_RING_UNDERRUN:
+        return "RING_UNDERRUN";
+    case TRB_CC_RING_OVERRUN:
+        return "RING_OVERRUN";
+    case TRB_CC_VF_EVENT_RING_FULL_ERROR:
+        return "VF_EVENT_RING_FULL_ERROR";
+    case TRB_CC_PARAMETER_ERROR:
+        return "PARAMETER_ERROR";
+    case TRB_CC_BANDWIDTH_OVERRUN_ERROR:
+        return "BANDWIDTH_OVERRUN_ERROR";
+    case TRB_CC_CONTEXT_STATE_ERROR:
+        return "CONTEXT_STATE_ERROR";
+    case TRB_CC_NO_PING_RESPONSE_ERROR:
+        return "NO_PING_RESPONSE_ERROR";
+    case TRB_CC_EVENT_RING_FULL_ERROR:
+        return "EVENT_RING_FULL_ERROR";
+    case TRB_CC_INCOMPATIBLE_DEVICE_ERROR:
+        return "INCOMPATIBLE_DEVICE_ERROR";
+    case TRB_CC_MISSED_SERVICE_ERROR:
+        return "MISSED_SERVICE_ERROR";
+    case TRB_CC_COMMAND_RING_STOPPED:
+        return "COMMAND_RING_STOPPED";
+    case TRB_CC_COMMAND_ABORTED:
+        return "COMMAND_ABORTED";
+    case TRB_CC_STOPPED:
+        return "STOPPED";
+    case TRB_CC_STOPPED_LENGTH_INVALID:
+        return "STOPPED_LENGTH_INVALID";
+    case TRB_CC_STOPPED_SHORT_PACKET:
+        return "STOPPED_SHORT_PACKET";
+    case TRB_CC_MAX_EXIT_LATENCY_TOO_LARGE_ERROR:
+        return "MAX_EXIT_LATENCY_TOO_LARGE_ERROR";
+    case TRB_CC_ISOCH_BUFFER_OVERRUN:
+        return "ISOCH_BUFFER_OVERRUN";
+    case TRB_CC_EVENT_LOST_ERROR:
+        return "EVENT_LOST_ERROR";
+    case TRB_CC_UNDEFINED_ERROR:
+        return "UNDEFINED_ERROR";
+    case TRB_CC_INVALID_STREAM_ID_ERROR:
+        return "INVALID_STREAM_ID_ERROR";
+    case TRB_CC_SECONDARY_BANDWIDTH_ERROR:
+        return "SECONDARY_BANDWIDTH_ERROR";
+    case TRB_CC_SPLIT_TRANSACTION_ERROR:
+        return "SPLIT_TRANSACTION_ERROR";
+    default:
+        return "unknown";
+    }
+}
+
+enum trb_types : u32 {
+    TRB_RESERVED = 0,
+    TRB_LINK = 6,
+
+    TRB_TR_NORMAL = 1,
+    TRB_TR_SETUP = 2,
+    TRB_TR_DATA = 3,
+    TRB_TR_STATUS = 4,
+    TRB_TR_ISOCH = 5,
+    TRB_TR_EVDATA = 7,
+    TRB_TR_NOOP = 8,
+
+    TRB_CR_ENABLE_SLOT = 9,
+    TRB_CR_DISABLE_SLOT = 10,
+    TRB_CR_ADDRESS_DEVICE = 11,
+    TRB_CR_CONFIGURE_ENDPOINT = 12,
+    TRB_CR_EVALUATE_CONTEXT = 13,
+    TRB_CR_RESET_ENDPOINT = 14,
+    TRB_CR_STOP_ENDPOINT = 15,
+    TRB_CR_SET_TR_DEQUEUE_POINTER = 16,
+    TRB_CR_RESET_DEVICE = 17,
+    TRB_CR_FORCE_EVENT = 18,
+    TRB_CR_NEGOTIATE_BANDWIDTH = 19,
+    TRB_CR_SET_LATENCY_TOLERANCE = 20,
+    TRB_CR_GET_PORT_BANDWIDTH = 21,
+    TRB_CR_FORCE_HEADER = 22,
+    TRB_CR_NOOP = 23,
+    TRB_CR_GET_EXT_PROPERTY = 24,
+    TRB_CR_SET_EXT_PROPERTY = 25,
+
+    TRB_EV_TRANSFER_EVENT = 32,
+    TRB_EV_COMMAND_COMPLETE = 33,
+    TRB_EV_PORT_STATUS_CHANGE = 34,
+    TRB_EV_BANDWIDTH_REQUEST = 35,
+    TRB_EV_DOORBELL = 36,
+    TRB_EV_HOST_CONTROLLER = 37,
+    TRB_EV_DEVICE_NOTIFICATION = 38,
+    TRB_EV_MFINDEX_WRAP = 39,
+};
+
+constexpr const char* trb_type_str(u32 type) {
+    switch (type) {
+    case TRB_RESERVED:
+        return "RESERVED";
+    case TRB_LINK:
+        return "LINK";
+    case TRB_TR_NORMAL:
+        return "NORMAL";
+    case TRB_TR_SETUP:
+        return "SETUP";
+    case TRB_TR_DATA:
+        return "DATA";
+    case TRB_TR_STATUS:
+        return "STATUS";
+    case TRB_TR_ISOCH:
+        return "ISOCH";
+    case TRB_TR_EVDATA:
+        return "EVDATA";
+    case TRB_TR_NOOP:
+        return "NOOP";
+    case TRB_CR_ENABLE_SLOT:
+        return "ENABLE_SLOT";
+    case TRB_CR_DISABLE_SLOT:
+        return "DISABLE_SLOT";
+    case TRB_CR_ADDRESS_DEVICE:
+        return "ADDRESS_DEVICE";
+    case TRB_CR_CONFIGURE_ENDPOINT:
+        return "CONFIGURE_ENDPOINT";
+    case TRB_CR_EVALUATE_CONTEXT:
+        return "EVALUATE_CONTEXT";
+    case TRB_CR_RESET_ENDPOINT:
+        return "RESET_ENDPOINT";
+    case TRB_CR_STOP_ENDPOINT:
+        return "STOP_ENDPOINT";
+    case TRB_CR_SET_TR_DEQUEUE_POINTER:
+        return "SET_TR_DEQUEUE_POINTER";
+    case TRB_CR_RESET_DEVICE:
+        return "RESET_DEVICE";
+    case TRB_CR_FORCE_EVENT:
+        return "FORCE_EVENT";
+    case TRB_CR_NEGOTIATE_BANDWIDTH:
+        return "NEGOTIATE_BANDWIDTH";
+    case TRB_CR_SET_LATENCY_TOLERANCE:
+        return "SET_LATENCY_TOLERANCE";
+    case TRB_CR_GET_PORT_BANDWIDTH:
+        return "GET_PORT_BANDWIDTH";
+    case TRB_CR_FORCE_HEADER:
+        return "FORCE_HEADER";
+    case TRB_CR_NOOP:
+        return "NOOP";
+    case TRB_CR_GET_EXT_PROPERTY:
+        return "GET_EXT_PROPERTY";
+    case TRB_CR_SET_EXT_PROPERTY:
+        return "SET_EXT_PROPERTY";
+    case TRB_EV_TRANSFER_EVENT:
+        return "TRANSFER_EVENT";
+    case TRB_EV_COMMAND_COMPLETE:
+        return "COMMAND_COMPLETE";
+    case TRB_EV_PORT_STATUS_CHANGE:
+        return "PORT_STATUS_CHANGE";
+    case TRB_EV_BANDWIDTH_REQUEST:
+        return "BANDWIDTH_REQUEST";
+    case TRB_EV_DOORBELL:
+        return "DOORBELL";
+    case TRB_EV_HOST_CONTROLLER:
+        return "HOST_CONTROLLER";
+    case TRB_EV_DEVICE_NOTIFICATION:
+        return "DEVICE_NOTIFICATION";
+    case TRB_EV_MFINDEX_WRAP:
+        return "MFINDEX_WRAP";
+    default:
+        return "unknown";
+    }
+}
+
 enum xhci_params : u32 {
     XHCI_OP_OFF = 0x80,
     XHCI_OP_LEN = 0x400 + 0x10 * xhci::MAX_PORTS,
@@ -102,11 +342,31 @@ enum usbsts_bits : u32 {
                   USBSTS_HCE,
 };
 
+constexpr bool xhci_halted(u32 usbsts) {
+    return usbsts & USBSTS_HCH;
+}
+
+constexpr bool xhci_running(u32 usbsts) {
+    return !xhci_halted(usbsts);
+}
+
 enum pagesize_bits : u32 {
     PAGESIZE_4K = bit(0),
     PAGESIZE_8K = bit(1),
     PAGESIZE_16K = bit(2),
 };
+
+enum crcr_bits : u32 {
+    CRCR_RCS = bit(0),
+    CRCR_CS = bit(1),
+    CRCR_CA = bit(2),
+    CRCR_CRR = bit(3),
+    CRCR_CRPMASK = bitmask(26, 6),
+};
+
+constexpr bool cmdring_running(u64 crcr) {
+    return crcr & CRCR_CRR;
+}
 
 enum dcbaap_bits : u64 {
     DCBAAP_MASK = bitmask(58, 6),
@@ -328,6 +588,23 @@ void xhci::write_usbsts(u32 val) {
     update();
 }
 
+void xhci::write_crcrlo(u32 val) {
+    if (cmdring_running(crcrlo)) {
+        m_cmdstop |= val & CRCR_CS;
+        m_cmdabort |= val & CRCR_CA;
+    } else {
+        m_cmdring.dequeue = val & CRCR_CRPMASK;
+        m_cmdring.ccs = val & CRCR_RCS;
+    }
+}
+
+void xhci::write_crcrhi(u32 val) {
+    if (!cmdring_running(crcrlo)) {
+        m_cmdring.dequeue &= bitmask(32);
+        m_cmdring.dequeue |= (u64)val << 32;
+    }
+}
+
 void xhci::write_config(u32 val) {
     u32 max_slots = get_field<CONFIG_MAXSLOTSEN>(val);
     log_info("driver wants %u device slots", max_slots);
@@ -387,6 +664,9 @@ void xhci::write_iman(u32 val, size_t idx) {
 
 void xhci::write_doorbell(u32 val, size_t idx) {
     log_info("doorbell %zu 0x%08x", idx, val);
+
+    if (idx == 0)
+        m_cmdev.notify(SC_ZERO_TIME);
 }
 
 void xhci::start() {
@@ -403,8 +683,61 @@ void xhci::update() {
     // todo
 }
 
+bool xhci::fetch_command(trb& cmd, u64& addr) {
+    trb temp;
+    u64 dequeue = m_cmdring.dequeue;
+
+    if (failed(dma.readw(dequeue, temp))) {
+        log_warn("failed to fetch trb from 0x%llx", dequeue);
+        return false;
+    }
+
+    bool ccs = temp.control & TRB_C;
+    if (ccs != m_cmdring.ccs)
+        return false;
+
+    m_cmdring.dequeue += TRB_SIZE;
+
+    cmd = temp;
+    addr = dequeue;
+
+    return true;
+}
+
+void xhci::process_commands() {
+    trb cmd;
+    u64 addr;
+
+    while (fetch_command(cmd, addr)) {
+        u32 type = get_field<TRB_TYPE>(cmd.control);
+        log_info("got command %s (%u)", trb_type_str(type), type);
+
+        if (m_cmdstop || m_cmdabort) {
+            log_info("%sing upon request", m_cmdabort ? "abort" : "stopp");
+            m_cmdstop = false;
+            m_cmdabort = false;
+            break;
+        }
+    }
+}
+
+void xhci::command_thread() {
+    while (true) {
+        wait(m_cmdev);
+
+        if (!xhci_halted(usbsts)) {
+            crcrlo |= CRCR_CRR;
+            process_commands();
+            crcrhi &= ~CRCR_CRR;
+        }
+    }
+}
+
 xhci::xhci(const sc_module_name& nm):
     peripheral(nm),
+    m_mfstart(),
+    m_cmdev("cmdev"),
+    m_cmdring(),
     num_slots("num_slots", 64),
     num_ports("num_ports", 4),
     num_intrs("num_intrs", 1),
@@ -421,7 +754,8 @@ xhci::xhci(const sc_module_name& nm):
     usbsts("usbsts", XHCI_OP_OFF + 0x04, USBSTS_RESET),
     pagesize("pagesize", XHCI_OP_OFF + 0x08, PAGESIZE_4K),
     dnctrl("dnctrl", XHCI_OP_OFF + 0x14),
-    crcr("crcr", XHCI_OP_OFF + 0x18),
+    crcrlo("crcrlo", XHCI_OP_OFF + 0x18),
+    crcrhi("crcrhi", XHCI_OP_OFF + 0x1c),
     dcbaap("dcbaap", XHCI_OP_OFF + 0x30),
     config("config", XHCI_OP_OFF + 0x38),
     port("port", num_ports, create_port_regs),
@@ -474,8 +808,13 @@ xhci::xhci(const sc_module_name& nm):
     dnctrl.sync_always();
     dnctrl.allow_read_write();
 
-    crcr.sync_always();
-    crcr.allow_read_write();
+    crcrlo.sync_always();
+    crcrlo.allow_read_write();
+    crcrlo.on_write(&xhci::write_crcrlo);
+
+    crcrhi.sync_always();
+    crcrhi.allow_read_write();
+    crcrhi.on_write(&xhci::write_crcrhi);
 
     dcbaap.sync_always();
     dcbaap.allow_read_write();
@@ -496,6 +835,9 @@ xhci::xhci(const sc_module_name& nm):
     doorbell.allow_read_write();
     doorbell.read_zero();
     doorbell.on_write(&xhci::write_doorbell);
+
+    SC_HAS_PROCESS(xhci);
+    SC_THREAD(command_thread);
 }
 
 xhci::~xhci() {
