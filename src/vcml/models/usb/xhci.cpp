@@ -14,9 +14,11 @@ namespace vcml {
 namespace usb {
 
 using TRB_TYPE = field<10, 6, u32>;
+using TRB_CC = field<24, 8, u32>;
 
 enum trb_bits : u32 {
     TRB_C = bit(0),
+    TRB_TC = bit(1),
     TRB_SIZE = 16,
 };
 
@@ -253,6 +255,22 @@ constexpr const char* trb_type_str(u32 type) {
     }
 }
 
+constexpr u32 get_trb_type(const xhci::trb& trb) {
+    return get_field<TRB_TYPE>(trb.control);
+}
+
+static xhci::trb event_trb(u32 type, u32 code, u64 addr) {
+    xhci::trb event{};
+    set_field<TRB_TYPE>(event.control, type);
+    set_field<TRB_CC>(event.status, code);
+    event.parameter = addr;
+    return event;
+}
+
+static xhci::trb cc_event_trb(trb_completion_code code, u64 addr) {
+    return event_trb(TRB_EV_COMMAND_COMPLETE, code, addr);
+}
+
 enum xhci_params : u32 {
     XHCI_OP_OFF = 0x80,
     XHCI_OP_LEN = 0x400 + 0x10 * xhci::MAX_PORTS,
@@ -362,6 +380,7 @@ enum crcr_bits : u32 {
     CRCR_CA = bit(2),
     CRCR_CRR = bit(3),
     CRCR_CRPMASK = bitmask(26, 6),
+    CRCR_MASK = CRCR_CS | CRCR_CA,
 };
 
 constexpr bool cmdring_running(u64 crcr) {
@@ -473,10 +492,10 @@ enum erstba_bits : u64 {
 };
 
 using ERDP_DESI = field<0, 3, u64>;
-using ERDP_ADDR = field<4, 60, u64>;
 
 enum erdp_bits : u64 {
     ERDP_EHB = bit(3),
+    ERDP_MASK = bitmask(60, 4),
 };
 
 xhci::port_regs::port_regs(size_t idx):
@@ -511,7 +530,9 @@ xhci::runtime_regs::runtime_regs(size_t idx):
     imod(mkstr("imod%zu", idx), XHCI_RT_OFF + 0x24 + 0x20 * idx),
     erstsz(mkstr("erstsz%zu", idx), XHCI_RT_OFF + 0x28 + 0x20 * idx),
     erstba(mkstr("erstba%zu", idx), XHCI_RT_OFF + 0x30 + 0x20 * idx),
-    erdp(mkstr("erdp%zu", idx), XHCI_RT_OFF + 0x38 + 0x20 * idx) {
+    erdp(mkstr("erdp%zu", idx), XHCI_RT_OFF + 0x38 + 0x20 * idx),
+    eridx(0),
+    erpcs(true) {
     iman.tag = idx;
     iman.sync_always();
     iman.allow_read_write();
@@ -529,10 +550,12 @@ xhci::runtime_regs::runtime_regs(size_t idx):
     erstba.tag = idx;
     erstba.sync_always();
     erstba.allow_read_write();
+    erstba.on_write_mask(ERSTBA_MASK);
 
     erdp.tag = idx;
     erdp.sync_always();
     erdp.allow_read_write();
+    erdp.on_write(&xhci::write_erdp);
 }
 
 static xhci::runtime_regs* create_runtime_regs(const char* name, size_t idx) {
@@ -589,13 +612,12 @@ void xhci::write_usbsts(u32 val) {
 }
 
 void xhci::write_crcrlo(u32 val) {
-    if (cmdring_running(crcrlo)) {
-        m_cmdstop |= val & CRCR_CS;
-        m_cmdabort |= val & CRCR_CA;
-    } else {
+    if (!cmdring_running(crcrlo)) {
         m_cmdring.dequeue = val & CRCR_CRPMASK;
         m_cmdring.ccs = val & CRCR_RCS;
     }
+
+    crcrlo = (crcrlo & ~CRCR_MASK) | (val & CRCR_MASK);
 }
 
 void xhci::write_crcrhi(u32 val) {
@@ -607,7 +629,7 @@ void xhci::write_crcrhi(u32 val) {
 
 void xhci::write_config(u32 val) {
     u32 max_slots = get_field<CONFIG_MAXSLOTSEN>(val);
-    log_info("driver wants %u device slots", max_slots);
+    log_debug("driver wants %u device slots", max_slots);
     config = val & CONFIG_MASK;
 }
 
@@ -636,11 +658,13 @@ void xhci::write_portsc(u32 val, size_t idx) {
     VCML_LOG_REG_BIT_CHANGE(PORTSC_WPR, port[idx].portsc, val);
 
     if (val & PORTSC_WPR) {
+        // TODO: implement warm port reset
         log_info("port%zu warm port reset", idx);
         return;
     }
 
     if (val & PORTSC_PR) {
+        // TODO: implement port reset
         log_info("port%zu port reset", idx);
         return;
     }
@@ -658,24 +682,36 @@ u32 xhci::read_mfindex() {
 }
 
 void xhci::write_iman(u32 val, size_t idx) {
-    runtime[idx].iman = val & IMAN_MASK;
-    update();
+    if (val & IMAN_IP)
+        runtime[idx].iman &= ~IMAN_IP;
+
+    runtime[idx].iman &= ~IMAN_IE;
+    runtime[idx].iman |= val & IMAN_IE;
+    update_irq(idx);
+}
+
+void xhci::write_erdp(u64 val, size_t idx) {
+    if (val & ERDP_EHB)
+        runtime[idx].erdp &= ~ERDP_EHB;
+
+    runtime[idx].erdp = val & ERDP_MASK;
 }
 
 void xhci::write_doorbell(u32 val, size_t idx) {
-    log_info("doorbell %zu 0x%08x", idx, val);
+    log_debug("doorbell %zu 0x%08x", idx, val);
 
     if (idx == 0)
         m_cmdev.notify(SC_ZERO_TIME);
 }
 
 void xhci::start() {
-    log_info("started");
+    log_debug("host controller started");
     usbsts &= ~USBSTS_HCH;
+    m_mfstart = sc_time_stamp();
 }
 
 void xhci::stop() {
-    log_info("stopped");
+    log_debug("host controller stopped");
     usbsts |= USBSTS_HCH;
 }
 
@@ -683,25 +719,107 @@ void xhci::update() {
     // todo
 }
 
-bool xhci::fetch_command(trb& cmd, u64& addr) {
-    trb temp;
-    u64 dequeue = m_cmdring.dequeue;
+void xhci::update_irq(size_t idx) {
+    irq = (usbcmd & USBCMD_INTE) &&
+          ((runtime[idx].iman & IMAN_MASK) == IMAN_MASK);
+}
 
-    if (failed(dma.readw(dequeue, temp))) {
-        log_warn("failed to fetch trb from 0x%llx", dequeue);
-        return false;
+void xhci::put_event(trb& event, size_t intr) {
+    if (intr >= num_intrs) {
+        log_error("invalid interruptor: %zu", intr);
+        return;
     }
 
-    bool ccs = temp.control & TRB_C;
-    if (ccs != m_cmdring.ccs)
-        return false;
+    trb erst;
+    u64 erstba = runtime[intr].erstba & ERSTBA_MASK;
+    if (failed(dma.readw(erstba, erst))) {
+        log_warn("failed to read event ring segment table");
+        return;
+    }
 
-    m_cmdring.dequeue += TRB_SIZE;
+    u64 erba = erst.parameter & ERSTBA_MASK;
+    u64 ersz = erst.status & ERSTSZ_MASK;
+    u64 erdp = runtime[intr].erdp & ERDP_MASK;
 
-    cmd = temp;
-    addr = dequeue;
+    if (erdp < erba || erdp >= erba + ersz * TRB_SIZE) {
+        log_warn("ERDP out of bounds: 0x%llx (ER: 0x%llx..0x%llx)", erdp, erba,
+                 erba + ersz * TRB_SIZE - 1);
+        return;
+    }
 
-    return true;
+    size_t dpidx = (erdp - erba) / TRB_SIZE;
+    size_t remsz = ersz - (runtime[intr].eridx - dpidx + ersz) % ersz;
+
+    if (remsz == 0) {
+        log_warn("event ring %zu full, event dropped", intr);
+        return;
+    }
+
+    if (remsz == 1) {
+        event = event_trb(TRB_EV_HOST_CONTROLLER, TRB_CC_EVENT_RING_FULL_ERROR,
+                          event.parameter);
+    }
+
+    if (runtime[intr].erpcs)
+        event.control |= TRB_C;
+
+    u64 addr = erba + runtime[intr].eridx * TRB_SIZE;
+    if (failed(dma.writew(addr, event))) {
+        log_error("failed to write to event ring at 0x%llx", addr);
+        return;
+    }
+
+    runtime[intr].eridx++;
+    if (runtime[intr].eridx >= ersz) {
+        runtime[intr].eridx = 0;
+        runtime[intr].erpcs = !runtime[intr].erpcs;
+    }
+
+    runtime[intr].erdp |= ERDP_EHB;
+    runtime[intr].iman |= IMAN_IP;
+    usbsts |= USBSTS_EINT;
+
+    update_irq(intr);
+}
+
+bool xhci::fetch_command(trb& cmd, u64& addr) {
+    while (true) {
+        trb temp;
+        u64 dequeue = m_cmdring.dequeue;
+        if (failed(dma.readw(dequeue, temp))) {
+            log_warn("failed to fetch trb from 0x%llx", dequeue);
+            return false;
+        }
+
+        bool ccs = temp.control & TRB_C;
+        if (ccs != m_cmdring.ccs)
+            return false;
+
+        if (get_trb_type(temp) == TRB_LINK) {
+            m_cmdring.dequeue = temp.parameter;
+            if (temp.control & TRB_TC)
+                m_cmdring.ccs = !m_cmdring.ccs;
+            continue;
+        }
+
+        m_cmdring.dequeue += TRB_SIZE;
+
+        cmd = temp;
+        addr = dequeue;
+        return true;
+    }
+}
+
+void xhci::execute_command(trb& cmd, u64 addr) {
+    u32 type = get_field<TRB_TYPE>(cmd.control);
+    log_debug("got command %s (%u) at 0x%llx", trb_type_str(type), type, addr);
+    switch (type) {
+    case TRB_CR_ENABLE_SLOT: {
+        auto event = cc_event_trb(TRB_CC_SUCCESS, addr);
+        put_event(event, 0);
+        break;
+    }
+    }
 }
 
 void xhci::process_commands() {
@@ -709,15 +827,17 @@ void xhci::process_commands() {
     u64 addr;
 
     while (fetch_command(cmd, addr)) {
-        u32 type = get_field<TRB_TYPE>(cmd.control);
-        log_info("got command %s (%u)", trb_type_str(type), type);
+        execute_command(cmd, addr);
 
-        if (m_cmdstop || m_cmdabort) {
-            log_info("%sing upon request", m_cmdabort ? "abort" : "stopp");
-            m_cmdstop = false;
-            m_cmdabort = false;
+        if (crcrlo & (CRCR_CA | CRCR_CS)) {
+            log_debug("stopping command ring on request");
+            trb stop = cc_event_trb(TRB_CC_COMMAND_RING_STOPPED, addr);
+            put_event(stop, 0);
             break;
         }
+
+        if (xhci_halted(usbsts))
+            break;
     }
 }
 
@@ -810,10 +930,12 @@ xhci::xhci(const sc_module_name& nm):
 
     crcrlo.sync_always();
     crcrlo.allow_read_write();
+    crcrlo.on_read([&]() -> u32 { return crcrlo & CRCR_CRR; });
     crcrlo.on_write(&xhci::write_crcrlo);
 
     crcrhi.sync_always();
     crcrhi.allow_read_write();
+    crcrhi.read_zero();
     crcrhi.on_write(&xhci::write_crcrhi);
 
     dcbaap.sync_always();

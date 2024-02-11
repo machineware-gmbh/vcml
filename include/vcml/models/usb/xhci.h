@@ -57,6 +57,9 @@ public:
         reg<u64> erstba;
         reg<u64> erdp;
 
+        size_t eridx;
+        bool erpcs;
+
         runtime_regs(size_t i);
         ~runtime_regs() = default;
     };
@@ -66,8 +69,6 @@ private:
 
     sc_event m_cmdev;
     ring m_cmdring;
-    bool m_cmdstop;
-    bool m_cmdabort;
 
     u32 read_hcsparams1();
     u32 read_extcaps(size_t idx);
@@ -83,13 +84,17 @@ private:
     u32 read_mfindex();
 
     void write_iman(u32 val, size_t idx);
+    void write_erdp(u64 val, size_t idx);
     void write_doorbell(u32 val, size_t idx);
 
     void start();
     void stop();
     void update();
+    void update_irq(size_t idx);
 
+    void put_event(trb& event, size_t intr);
     bool fetch_command(trb& cmd, u64& addr);
+    void execute_command(trb& cmd, u64 addr);
     void process_commands();
 
     void command_thread();
