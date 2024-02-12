@@ -14,13 +14,39 @@ namespace vcml {
 namespace usb {
 
 using TRB_TYPE = field<10, 6, u32>;
-using TRB_CC = field<24, 8, u32>;
+using TRB_SLOT_TYPE = field<16, 5, u32>;
+using TRB_SLOT = field<24, 8, u32>;
+using TRB_SLOT_ID = field<24, 8, u32>;
+using TRB_CCODE = field<24, 8, u32>;
+using TRB_PORT_ID = field<24, 8, u64>;
 
 enum trb_bits : u32 {
     TRB_C = bit(0),
     TRB_TC = bit(1),
     TRB_SIZE = 16,
 };
+
+static_assert(sizeof(xhci::trb) == TRB_SIZE);
+
+constexpr u32 get_trb_type(const xhci::trb& trb) {
+    return get_field<TRB_TYPE>(trb.control);
+}
+
+constexpr u32 get_trb_slot_type(const xhci::trb& trb) {
+    return get_field<TRB_SLOT_TYPE>(trb.control);
+}
+
+constexpr u32 get_trb_slot_id(const xhci::trb& trb) {
+    return get_field<TRB_SLOT_ID>(trb.control);
+}
+
+constexpr u32 get_trb_ccode(const xhci::trb& trb) {
+    return get_field<TRB_CCODE>(trb.status);
+}
+
+constexpr void set_trb_ccode(xhci::trb& trb, u32 ccode) {
+    set_field<TRB_CCODE>(trb.status, ccode);
+}
 
 enum trb_completion_code : u32 {
     TRB_CC_INVALID = 0,
@@ -253,22 +279,6 @@ constexpr const char* trb_type_str(u32 type) {
     default:
         return "unknown";
     }
-}
-
-constexpr u32 get_trb_type(const xhci::trb& trb) {
-    return get_field<TRB_TYPE>(trb.control);
-}
-
-static xhci::trb event_trb(u32 type, u32 code, u64 addr) {
-    xhci::trb event{};
-    set_field<TRB_TYPE>(event.control, type);
-    set_field<TRB_CC>(event.status, code);
-    event.parameter = addr;
-    return event;
-}
-
-static xhci::trb cc_event_trb(trb_completion_code code, u64 addr) {
-    return event_trb(TRB_EV_COMMAND_COMPLETE, code, addr);
 }
 
 enum xhci_params : u32 {
@@ -571,14 +581,25 @@ u32 xhci::read_hcsparams1() {
 }
 
 u32 xhci::read_extcaps(size_t idx) {
+    u32 usb3_ports = num_ports / 2;
+    u32 usb2_ports = num_ports / 2;
+
     switch (idx) {
     case 0:
-        return 0x03000002; // supported protocol usb 3.0
+        return 0x02000402; // supported protocol usb 2.0
     case 1:
         return fourcc("usb ");
     case 2:
-        return num_ports << 8 | 1;
+        return usb2_ports << 8 | 1;
     case 3:
+        return 0;
+    case 4:
+        return 0x03000002; // supported protocol usb 3.0
+    case 5:
+        return fourcc("usb ");
+    case 6:
+        return usb3_ports << 8 | (usb2_ports + 1);
+    case 7:
         return 0;
     default:
         VCML_ERROR("invalid array register index: %zu", idx);
@@ -608,7 +629,7 @@ void xhci::write_usbcmd(u32 val) {
 
 void xhci::write_usbsts(u32 val) {
     usbsts &= ~(val & USBSTS_RW1C);
-    update();
+    update_irq(0);
 }
 
 void xhci::write_crcrlo(u32 val) {
@@ -634,46 +655,44 @@ void xhci::write_config(u32 val) {
 }
 
 void xhci::write_portsc(u32 val, size_t idx) {
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_CCS, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PED, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_OCA, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PR, port[idx].portsc, val);
-    VCML_LOG_REG_FIELD_CHANGE(PORTSC_PLS, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PP, port[idx].portsc, val);
-    VCML_LOG_REG_FIELD_CHANGE(PORTSC_SPEED, port[idx].portsc, val);
-    VCML_LOG_REG_FIELD_CHANGE(PORTSC_PIC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_LWS, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_CSC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PEC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WRC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_OCC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PRC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PLC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_CEC, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_CAS, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WCE, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WDE, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WOE, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_DR, port[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WPR, port[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CCS, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PED, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_OCA, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PR, ports[idx].portsc, val);
+    VCML_LOG_REG_FIELD_CHANGE(PORTSC_PLS, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PP, ports[idx].portsc, val);
+    VCML_LOG_REG_FIELD_CHANGE(PORTSC_SPEED, ports[idx].portsc, val);
+    VCML_LOG_REG_FIELD_CHANGE(PORTSC_PIC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_LWS, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CSC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PEC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WRC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_OCC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PRC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_PLC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CEC, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_CAS, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WCE, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WDE, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WOE, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_DR, ports[idx].portsc, val);
+    VCML_LOG_REG_BIT_CHANGE(PORTSC_WPR, ports[idx].portsc, val);
 
     if (val & PORTSC_WPR) {
-        // TODO: implement warm port reset
-        log_info("port%zu warm port reset", idx);
+        port_reset(idx, true);
         return;
     }
 
     if (val & PORTSC_PR) {
-        // TODO: implement port reset
-        log_info("port%zu port reset", idx);
+        port_reset(idx, false);
         return;
     }
 
-    u32 portsc = port[idx].portsc;
+    u32 portsc = ports[idx].portsc;
     portsc &= ~(val & PORTSC_W1CMASK);
     portsc &= ~PORTSC_RWMASK;
     portsc |= (val & PORTSC_RWMASK);
-    port[idx].portsc = portsc;
+    ports[idx].portsc = portsc;
 }
 
 u32 xhci::read_mfindex() {
@@ -724,7 +743,12 @@ void xhci::update_irq(size_t idx) {
           ((runtime[idx].iman & IMAN_MASK) == IMAN_MASK);
 }
 
-void xhci::put_event(trb& event, size_t intr) {
+void xhci::send_event(size_t intr, trb& event) {
+    if (xhci_halted(usbsts)) {
+        log_error("cannot send event, xhci is stopped");
+        return;
+    }
+
     if (intr >= num_intrs) {
         log_error("invalid interruptor: %zu", intr);
         return;
@@ -755,10 +779,8 @@ void xhci::put_event(trb& event, size_t intr) {
         return;
     }
 
-    if (remsz == 1) {
-        event = event_trb(TRB_EV_HOST_CONTROLLER, TRB_CC_EVENT_RING_FULL_ERROR,
-                          event.parameter);
-    }
+    if (remsz == 1)
+        set_trb_ccode(event, TRB_CC_EVENT_RING_FULL_ERROR);
 
     if (runtime[intr].erpcs)
         event.control |= TRB_C;
@@ -780,6 +802,23 @@ void xhci::put_event(trb& event, size_t intr) {
     usbsts |= USBSTS_EINT;
 
     update_irq(intr);
+}
+
+void xhci::send_cc_event(size_t intr, u32 ccode, u32 slot, u64 addr) {
+    xhci::trb event{};
+    set_field<TRB_TYPE>(event.control, TRB_EV_COMMAND_COMPLETE);
+    set_field<TRB_SLOT_ID>(event.control, slot);
+    set_field<TRB_CCODE>(event.status, ccode);
+    event.parameter = addr;
+    send_event(intr, event);
+}
+
+void xhci::send_port_event(size_t intr, u32 ccode, u64 portid) {
+    xhci::trb event{};
+    set_field<TRB_TYPE>(event.control, TRB_EV_PORT_STATUS_CHANGE);
+    set_field<TRB_CCODE>(event.status, ccode);
+    set_field<TRB_PORT_ID>(event.parameter, portid);
+    send_event(intr, event);
 }
 
 bool xhci::fetch_command(trb& cmd, u64& addr) {
@@ -812,13 +851,19 @@ bool xhci::fetch_command(trb& cmd, u64& addr) {
 
 void xhci::execute_command(trb& cmd, u64 addr) {
     u32 type = get_field<TRB_TYPE>(cmd.control);
-    log_debug("got command %s (%u) at 0x%llx", trb_type_str(type), type, addr);
+    log_debug("command %s (%u) at 0x%llx", trb_type_str(type), type, addr);
     switch (type) {
-    case TRB_CR_ENABLE_SLOT: {
-        auto event = cc_event_trb(TRB_CC_SUCCESS, addr);
-        put_event(event, 0);
+    case TRB_CR_NOOP:
+        do_noop(cmd, addr);
         break;
-    }
+    case TRB_CR_ENABLE_SLOT:
+        do_enable_slot(cmd, addr);
+        break;
+    case TRB_CR_DISABLE_SLOT:
+        do_disable_slot(cmd, addr);
+        break;
+    default:
+        log_warn("unsupported command %s (%u)", trb_type_str(type), type);
     }
 }
 
@@ -831,8 +876,7 @@ void xhci::process_commands() {
 
         if (crcrlo & (CRCR_CA | CRCR_CS)) {
             log_debug("stopping command ring on request");
-            trb stop = cc_event_trb(TRB_CC_COMMAND_RING_STOPPED, addr);
-            put_event(stop, 0);
+            send_cc_event(0, TRB_CC_COMMAND_RING_STOPPED, 0, addr);
             break;
         }
 
@@ -853,11 +897,89 @@ void xhci::command_thread() {
     }
 }
 
+void xhci::do_noop(trb& cmd, u64 addr) {
+    send_cc_event(0, TRB_CC_SUCCESS, 0, addr);
+}
+
+void xhci::do_enable_slot(trb& cmd, u64 addr) {
+    size_t i = 0;
+    for (i = 0; i < num_slots; i++) {
+        if (!m_slots[i].enabled)
+            break;
+    }
+
+    if (i >= num_slots) {
+        send_cc_event(0, TRB_CC_NO_SLOTS_AVAILABLE_ERROR, 0, addr);
+        return;
+    }
+
+    size_t slotid = i + 1;
+
+    m_slots[slotid - 1].enabled = true;
+    m_slots[slotid - 1].addressed = false;
+    m_slots[slotid - 1].context = 0;
+    m_slots[slotid - 1].irq = -1;
+    m_slots[slotid - 1].port = -1;
+
+    send_cc_event(0, TRB_CC_SUCCESS, slotid, addr);
+}
+
+void xhci::do_disable_slot(trb& cmd, u64 addr) {
+    size_t slotid = get_trb_slot_id(cmd);
+    if (slotid > num_slots) {
+        send_cc_event(0, TRB_CC_TRB_ERROR, slotid, addr);
+        return;
+    }
+
+    if (!m_slots[slotid - 1].enabled) {
+        log_warn("slot %zu is not enabled", slotid);
+        send_cc_event(0, TRB_CC_SLOT_NOT_ENABLED_ERROR, slotid, addr);
+        return;
+    }
+
+    m_slots[slotid - 1].enabled = false;
+    m_slots[slotid - 1].addressed = false;
+    m_slots[slotid - 1].context = 0;
+    m_slots[slotid - 1].irq = -1;
+    m_slots[slotid - 1].port = -1;
+
+    send_cc_event(0, TRB_CC_SUCCESS, slotid, addr);
+}
+
+void xhci::port_notify(size_t port, u32 mask) {
+    auto& portsc = ports[port].portsc;
+    if ((portsc & mask) == mask)
+        return;
+
+    portsc |= mask;
+    if (xhci_running(usbsts))
+        send_port_event(0, TRB_CC_SUCCESS, port);
+}
+
+void xhci::port_reset(size_t port, bool warm) {
+    auto& portsc = ports[port].portsc;
+
+    log_debug("usb port %zu %sreset", port, warm ? "warm-" : "");
+
+    // TODO: send reset request to port
+
+    // TODO: get USB speed from device connected to port
+    usb_speed speed = USB_SPEED_SUPER;
+    if (speed == USB_SPEED_SUPER && warm)
+        portsc |= PORTSC_WRC;
+
+    portsc.set_field<PORTSC_PLS>(PLS_U0);
+    portsc |= PORTSC_PED;
+    portsc &= PORTSC_PR;
+    port_notify(port, PORTSC_CSC);
+}
+
 xhci::xhci(const sc_module_name& nm):
     peripheral(nm),
     m_mfstart(),
     m_cmdev("cmdev"),
     m_cmdring(),
+    m_slots(),
     num_slots("num_slots", 64),
     num_ports("num_ports", 4),
     num_intrs("num_intrs", 1),
@@ -878,7 +1000,7 @@ xhci::xhci(const sc_module_name& nm):
     crcrhi("crcrhi", XHCI_OP_OFF + 0x1c),
     dcbaap("dcbaap", XHCI_OP_OFF + 0x30),
     config("config", XHCI_OP_OFF + 0x38),
-    port("port", num_ports, create_port_regs),
+    ports("ports", num_ports, create_port_regs),
     mfindex("mfindex", XHCI_RT_OFF),
     runtime("run_regs", num_intrs, create_runtime_regs),
     doorbell("doorbell", XHCI_DB_OFF),
@@ -970,7 +1092,7 @@ void xhci::reset() {
     peripheral::reset();
 
     // for testing
-    port[2].portsc |= PORTSC_CCS;
+    ports[2].portsc |= PORTSC_CCS;
 }
 
 VCML_EXPORT_MODEL(vcml::usb::xhci, name, args) {

@@ -66,6 +66,7 @@
 #include "vcml/protocols/pci_ids.h"
 #include "vcml/protocols/eth.h"
 #include "vcml/protocols/can.h"
+#include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 

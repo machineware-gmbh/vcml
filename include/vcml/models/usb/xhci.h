@@ -16,6 +16,7 @@
 #include "vcml/core/peripheral.h"
 #include "vcml/core/model.h"
 
+#include "vcml/protocols/usb.h"
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 
@@ -38,6 +39,14 @@ public:
     struct ring {
         u64 dequeue;
         bool ccs;
+    };
+
+    struct slot {
+        u64 context;
+        size_t irq;
+        size_t port;
+        bool enabled;
+        bool addressed;
     };
 
     struct port_regs {
@@ -70,6 +79,8 @@ private:
     sc_event m_cmdev;
     ring m_cmdring;
 
+    slot m_slots[MAX_SLOTS];
+
     u32 read_hcsparams1();
     u32 read_extcaps(size_t idx);
 
@@ -92,12 +103,21 @@ private:
     void update();
     void update_irq(size_t idx);
 
-    void put_event(trb& event, size_t intr);
+    void send_event(size_t intr, trb& event);
+    void send_cc_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
+    void send_port_event(size_t intr, u32 ccode, u64 portid);
+
     bool fetch_command(trb& cmd, u64& addr);
     void execute_command(trb& cmd, u64 addr);
     void process_commands();
-
     void command_thread();
+
+    void do_noop(trb& cmd, u64 addr);
+    void do_enable_slot(trb& cmd, u64 addr);
+    void do_disable_slot(trb& cmd, u64 addr);
+
+    void port_notify(size_t port, u32 mask);
+    void port_reset(size_t port, bool warm);
 
 public:
     property<size_t> num_slots;
@@ -112,7 +132,7 @@ public:
     reg<u32> dboff;
     reg<u32> rtsoff;
     reg<u32> hccparams2;
-    reg<u32, 4> extcaps;
+    reg<u32, 8> extcaps;
 
     reg<u32> usbcmd;
     reg<u32> usbsts;
@@ -122,7 +142,7 @@ public:
     reg<u32> crcrhi;
     reg<u64> dcbaap;
     reg<u32> config;
-    sc_vector<port_regs> port;
+    sc_vector<port_regs> ports;
 
     reg<u32> mfindex;
     sc_vector<runtime_regs> runtime;
