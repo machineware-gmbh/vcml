@@ -115,9 +115,11 @@ private:
     void do_noop(trb& cmd, u64 addr);
     void do_enable_slot(trb& cmd, u64 addr);
     void do_disable_slot(trb& cmd, u64 addr);
+    void do_address_device(trb& cmd, u64 addr);
 
     void port_notify(size_t port, u32 mask);
     void port_reset(size_t port, bool warm);
+    void port_update(size_t port, bool attach);
 
 public:
     property<size_t> num_slots;

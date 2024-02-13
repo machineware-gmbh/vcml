@@ -23,6 +23,7 @@ using TRB_PORT_ID = field<24, 8, u64>;
 enum trb_bits : u32 {
     TRB_C = bit(0),
     TRB_TC = bit(1),
+    TRB_BSR = bit(9),
     TRB_SIZE = 16,
 };
 
@@ -434,10 +435,15 @@ enum portsc_bits : u32 {
     PORTSC_DR = bit(30),
     PORTSC_WPR = bit(31),
 
-    PORTSC_SPEED_FULL = 1,
-    PORTSC_SPEED_LOW = 2,
-    PORTSC_SPEED_HIGH = 3,
-    PORTSC_SPEED_SUPORT = 4,
+    PORTSC_SPEED_FULL = PORTSC_SPEED::set(1),
+    PORTSC_SPEED_LOW = PORTSC_SPEED::set(2),
+    PORTSC_SPEED_HIGH = PORTSC_SPEED::set(3),
+    PORTSC_SPEED_SUPER = PORTSC_SPEED::set(4),
+
+    PORTSC_PIC_OFF = PORTSC_PIC::set(0),
+    PORTSC_PIC_AMBER = PORTSC_PIC::set(1),
+    PORTSC_PIC_GREEN = PORTSC_PIC::set(2),
+    PORTSC_PIC_UNDEF = PORTSC_PIC::set(3),
 
     PORTSC_ROMASK = PORTSC_CCS | PORTSC_OCA | PORTSC_SPEED() | PORTSC_CAS |
                     PORTSC_DR,
@@ -656,27 +662,15 @@ void xhci::write_config(u32 val) {
 
 void xhci::write_portsc(u32 val, size_t idx) {
     VCML_LOG_REG_BIT_CHANGE(PORTSC_CCS, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PED, ports[idx].portsc, val);
     VCML_LOG_REG_BIT_CHANGE(PORTSC_OCA, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PR, ports[idx].portsc, val);
     VCML_LOG_REG_FIELD_CHANGE(PORTSC_PLS, ports[idx].portsc, val);
     VCML_LOG_REG_BIT_CHANGE(PORTSC_PP, ports[idx].portsc, val);
     VCML_LOG_REG_FIELD_CHANGE(PORTSC_SPEED, ports[idx].portsc, val);
     VCML_LOG_REG_FIELD_CHANGE(PORTSC_PIC, ports[idx].portsc, val);
     VCML_LOG_REG_BIT_CHANGE(PORTSC_LWS, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_CSC, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PEC, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WRC, ports[idx].portsc, val);
     VCML_LOG_REG_BIT_CHANGE(PORTSC_OCC, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PRC, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_PLC, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_CEC, ports[idx].portsc, val);
     VCML_LOG_REG_BIT_CHANGE(PORTSC_CAS, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WCE, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WDE, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WOE, ports[idx].portsc, val);
     VCML_LOG_REG_BIT_CHANGE(PORTSC_DR, ports[idx].portsc, val);
-    VCML_LOG_REG_BIT_CHANGE(PORTSC_WPR, ports[idx].portsc, val);
 
     if (val & PORTSC_WPR) {
         port_reset(idx, true);
@@ -688,11 +682,22 @@ void xhci::write_portsc(u32 val, size_t idx) {
         return;
     }
 
-    u32 portsc = ports[idx].portsc;
-    portsc &= ~(val & PORTSC_W1CMASK);
-    portsc &= ~PORTSC_RWMASK;
+    if (val & PORTSC_CSC)
+        log_debug("clear port %zu connection status event", idx);
+    if (val & PORTSC_PEC)
+        log_debug("clear port %zu enable/disable event", idx);
+    if (val & PORTSC_WRC)
+        log_debug("clear port %zu warm reset complete event", idx);
+    if (val & PORTSC_PRC)
+        log_debug("clear port %zu reset complete event", idx);
+    if (val & PORTSC_PLC)
+        log_debug("clear port %zu port link change event", idx);
+    if (val & PORTSC_CEC)
+        log_debug("clear port %zu config error change event", idx);
+
+    auto& portsc = ports[idx].portsc;
+    portsc &= ~((val & PORTSC_W1CMASK) | PORTSC_RWMASK);
     portsc |= (val & PORTSC_RWMASK);
-    ports[idx].portsc = portsc;
 }
 
 u32 xhci::read_mfindex() {
@@ -862,8 +867,12 @@ void xhci::execute_command(trb& cmd, u64 addr) {
     case TRB_CR_DISABLE_SLOT:
         do_disable_slot(cmd, addr);
         break;
+    case TRB_CR_ADDRESS_DEVICE:
+        do_address_device(cmd, addr);
+        break;
     default:
         log_warn("unsupported command %s (%u)", trb_type_str(type), type);
+        sc_stop();
     }
 }
 
@@ -944,6 +953,95 @@ void xhci::do_disable_slot(trb& cmd, u64 addr) {
     m_slots[slotid - 1].port = -1;
 
     send_cc_event(0, TRB_CC_SUCCESS, slotid, addr);
+
+    log_error("slot disabled, simulation over");
+    sc_stop();
+}
+
+void xhci::do_address_device(trb& cmd, u64 addr) {
+    size_t slotid = get_trb_slot_id(cmd);
+    if (slotid > num_slots) {
+        send_cc_event(0, TRB_CC_TRB_ERROR, slotid, addr);
+        return;
+    }
+
+    if (!m_slots[slotid - 1].enabled) {
+        log_warn("slot %zu is not enabled", slotid);
+        send_cc_event(0, TRB_CC_SLOT_NOT_ENABLED_ERROR, slotid, addr);
+        return;
+    }
+
+    u64 ptroctx = 0;
+    u64 ptrictx = cmd.parameter;
+
+    if (failed(dma.readw(dcbaap + slotid * 8, ptroctx))) {
+        log_warn("failed to read slot %zu output context address", slotid);
+        send_cc_event(0, TRB_CC_TRB_ERROR, slotid, addr);
+        return;
+    }
+
+    log_debug("input context at 0x%llx", ptrictx);
+    log_debug("output context at 0x%llx", ptroctx);
+
+    u32 d = 0, a = 0;
+    if (failed(dma.readw(ptrictx + 0x0, d)) || d != 0 ||
+        failed(dma.readw(ptrictx + 0x4, a)) || a != 3) {
+        log_warn("failed to read slot %zu input context", slotid);
+        send_cc_event(0, TRB_CC_TRB_ERROR, slotid, addr);
+        return;
+    }
+
+    log_debug("input context: %08x %08x", d, a);
+
+    u32 slotctx[4];
+    u32 ep0ctx[5];
+    if (failed(dma.read(ptrictx + 32, slotctx, sizeof(slotctx))) ||
+        failed(dma.read(ptrictx + 64, ep0ctx, sizeof(ep0ctx)))) {
+        log_warn("failed to read slot %zu input data", slotid);
+        send_cc_event(0, TRB_CC_TRB_ERROR, slotid, addr);
+        return;
+    }
+
+    log_debug("input slot context: %08x %08x %08x %08x", slotctx[0],
+              slotctx[1], slotctx[2], slotctx[3]);
+    log_debug("input ep0 slot context: %08x %08x %08x %08x %08x", ep0ctx[0],
+              ep0ctx[1], ep0ctx[2], ep0ctx[3], ep0ctx[4]);
+
+    u32 portno = (slotctx[1] >> 16) & 0xff;
+
+    log_debug("root hub port number: %u", portno);
+
+    string path = to_string(portno);
+
+    for (size_t i = 0; i < 5; i++) {
+        u32 n = (slotctx[0] >> (4 * 4)) & 0x0f;
+        if (n == 0)
+            break;
+        path = mkstr("%d.%s", n, path.c_str());
+    }
+
+    log_debug("port path: %s", path.c_str());
+
+    if (cmd.control & TRB_BSR) {
+        log_debug("default slot requested");
+    } else {
+        log_debug("-- send ctrl packet USB_REQ_SET_ADDRESS --");
+    }
+
+    log_debug("enabling endpoint slotid:%zu epid:1 ctx:0x%llx", slotid,
+              ptroctx + 32);
+
+    if (failed(dma.write(ptroctx, slotctx, sizeof(slotctx)))) {
+        log_warn("failed to write slotctx");
+        return;
+    }
+
+    if (failed(dma.write(ptroctx + 32, ep0ctx, sizeof(ep0ctx)))) {
+        log_warn("failed to write ep0ctx");
+        return;
+    }
+
+    send_cc_event(0, TRB_CC_SUCCESS, slotid, addr);
 }
 
 void xhci::port_notify(size_t port, u32 mask) {
@@ -953,24 +1051,70 @@ void xhci::port_notify(size_t port, u32 mask) {
 
     portsc |= mask;
     if (xhci_running(usbsts))
-        send_port_event(0, TRB_CC_SUCCESS, port);
+        send_port_event(0, TRB_CC_SUCCESS, port + 1);
+}
+
+constexpr bool usb_port_has_device(size_t port) { // for testing
+    return port == 2;
+}
+
+constexpr usb_speed usb_port_speed(size_t port) { // for testing
+    if (port < 2)
+        return USB_SPEED_FULL;
+    else
+        return USB_SPEED_SUPER;
 }
 
 void xhci::port_reset(size_t port, bool warm) {
+    if (!usb_port_has_device(port))
+        return;
+
     auto& portsc = ports[port].portsc;
 
     log_debug("usb port %zu %sreset", port, warm ? "warm-" : "");
 
-    // TODO: send reset request to port
+    // TODO: send reset request device connected to port
+    // usb_out[port]->reset_device();
 
     // TODO: get USB speed from device connected to port
-    usb_speed speed = USB_SPEED_SUPER;
+    usb_speed speed = usb_port_speed(port);
     if (speed == USB_SPEED_SUPER && warm)
         portsc |= PORTSC_WRC;
 
     portsc.set_field<PORTSC_PLS>(PLS_U0);
     portsc |= PORTSC_PED;
-    portsc &= PORTSC_PR;
+    portsc &= ~PORTSC_PR;
+    port_notify(port, PORTSC_PRC);
+}
+
+void xhci::port_update(size_t port, bool attach) {
+    auto& portsc = ports[port].portsc;
+
+    portsc = PORTSC_PP;
+    portsc.set_field<PORTSC_PLS>(PLS_RX_DETECT);
+
+    if (attach && usb_port_has_device(port)) {
+        portsc |= PORTSC_CCS;
+        switch (usb_port_speed(port)) {
+        case USB_SPEED_LOW:
+            portsc |= PORTSC_SPEED_LOW;
+            portsc.set_field<PORTSC_PLS>(PLS_POLLING);
+            break;
+        case USB_SPEED_FULL:
+            portsc |= PORTSC_SPEED_FULL;
+            portsc.set_field<PORTSC_PLS>(PLS_POLLING);
+            break;
+        case USB_SPEED_HIGH:
+            portsc |= PORTSC_SPEED_HIGH;
+            portsc.set_field<PORTSC_PLS>(PLS_POLLING);
+            break;
+        case USB_SPEED_SUPER:
+            portsc |= PORTSC_SPEED_SUPER | PORTSC_PED;
+            portsc.set_field<PORTSC_PLS>(PLS_U0);
+            break;
+        }
+    }
+
     port_notify(port, PORTSC_CSC);
 }
 
@@ -1091,8 +1235,8 @@ xhci::~xhci() {
 void xhci::reset() {
     peripheral::reset();
 
-    // for testing
-    ports[2].portsc |= PORTSC_CCS;
+    for (size_t i = 0; i < num_ports; i++)
+        port_update(i, true);
 }
 
 VCML_EXPORT_MODEL(vcml::usb::xhci, name, args) {
