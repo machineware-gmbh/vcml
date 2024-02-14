@@ -41,12 +41,29 @@ public:
         bool ccs;
     };
 
+    struct trigger {
+        size_t slotid;
+        size_t epid;
+        size_t streamid;
+    };
+
+    struct endpoint {
+        u32 type;
+        u32 state;
+        u64 context;
+        ring tr;
+
+        size_t max_psize;
+        size_t max_pstreams;
+    };
+
     struct slot {
         u64 context;
         size_t irq;
         size_t port;
         bool enabled;
         bool addressed;
+        endpoint endpoints[31];
     };
 
     struct port_regs {
@@ -79,6 +96,9 @@ private:
     sc_event m_cmdev;
     ring m_cmdring;
 
+    sc_event m_trev;
+    queue<trigger> m_trq;
+
     slot m_slots[MAX_SLOTS];
 
     u32 read_hcsparams1();
@@ -105,12 +125,16 @@ private:
 
     void send_event(size_t intr, trb& event);
     void send_cc_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
+    void send_tr_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
     void send_port_event(size_t intr, u32 ccode, u64 portid);
+
+    bool fetch_transfer(const trigger& ev);
 
     bool fetch_command(trb& cmd, u64& addr);
     void execute_command(trb& cmd, u64 addr);
-    void process_commands();
+
     void command_thread();
+    void transfer_thread();
 
     void do_noop(trb& cmd, u64 addr);
     void do_enable_slot(trb& cmd, u64 addr);
