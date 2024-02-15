@@ -8,10 +8,32 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PROTOCOLS_USB_H
-#define VCML_PROTOCOLS_USB_H
+#ifndef VCML_USB_DEVICE_H
+#define VCML_USB_DEVICE_H
 
-#include "vcml/protocols/usb_types.h"
-#include "vcml/protocols/usb_sockets.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/core/model.h"
+
+#include "vcml/protocols/usb.h"
+
+namespace vcml {
+namespace usb {
+
+class device : public module, public usb_host
+{
+public:
+    device(const sc_module_name& nm);
+    virtual ~device();
+    VCML_KIND(usb::device);
+
+protected:
+    virtual void usb_reset(int ep) override;
+    virtual void usb_transport(usb_packet& p) override;
+};
+
+} // namespace usb
+} // namespace vcml
 
 #endif

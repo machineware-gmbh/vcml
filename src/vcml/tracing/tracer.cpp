@@ -36,6 +36,8 @@ const char* protocol_name(protocol_kind kind) {
         return "ETHERNET";
     case PROTO_CAN:
         return "CAN";
+    case PROTO_USB:
+        return "USB";
     default:
         return "unknown protocol";
     }

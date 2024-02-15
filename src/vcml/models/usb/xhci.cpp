@@ -1340,6 +1340,8 @@ void xhci::port_update(size_t port, bool attach) {
             portsc |= PORTSC_SPEED_SUPER | PORTSC_PED;
             portsc.set_field<PORTSC_PLS>(PLS_U0);
             break;
+        default:
+            VCML_ERROR("invalid usb speed setting");
         }
     }
 

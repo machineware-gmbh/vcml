@@ -39,6 +39,7 @@ public:
     virtual void trace(const activity<serial_payload>&) override {}
     virtual void trace(const activity<eth_frame>&) override {}
     virtual void trace(const activity<can_frame>&) override {}
+    virtual void trace(const activity<usb_packet>&) override {}
 };
 
 class test_harness : public test_base

@@ -8,10 +8,29 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_PROTOCOLS_USB_H
-#define VCML_PROTOCOLS_USB_H
+#include "vcml/models/usb/device.h"
 
-#include "vcml/protocols/usb_types.h"
-#include "vcml/protocols/usb_sockets.h"
+namespace vcml {
+namespace usb {
 
-#endif
+device::device(const sc_module_name& nm): module(nm), usb_host() {
+    // nothing to do
+}
+
+device::~device() {
+    // nothing to do
+}
+
+void device::usb_reset(int ep) {
+    if (ep < 0)
+        log_info("reset usb device");
+    else
+        log_info("reset usb endpoint %d", ep);
+}
+
+void device::usb_transport(usb_packet& p) {
+    log_info("%s", to_string(p).c_str());
+}
+
+} // namespace usb
+} // namespace vcml

@@ -117,6 +117,7 @@
 #include "vcml/models/sd/card.h"
 #include "vcml/models/sd/sdhci.h"
 
+#include "vcml/models/usb/device.h"
 #include "vcml/models/usb/xhci.h"
 
 #include "vcml/models/pci/device.h"
