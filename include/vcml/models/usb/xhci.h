@@ -23,7 +23,7 @@
 namespace vcml {
 namespace usb {
 
-class xhci : public peripheral
+class xhci : public peripheral, public usb_host_if
 {
 public:
     static constexpr size_t MAX_SLOTS = 64;
@@ -130,17 +130,18 @@ private:
 
     bool fetch_transfer(const trigger& ev);
 
+    u32 cmd_noop(trb& cmd);
+    u32 cmd_enable_slot(trb& cmd, u32& slotid);
+    u32 cmd_disable_slot(trb& cmd, u32& slotid);
+    u32 cmd_address_device(trb& cmd, u32& slotid);
+
     bool fetch_command(trb& cmd, u64& addr);
     void execute_command(trb& cmd, u64 addr);
 
     void command_thread();
     void transfer_thread();
 
-    void do_noop(trb& cmd, u64 addr);
-    void do_enable_slot(trb& cmd, u64 addr);
-    void do_disable_slot(trb& cmd, u64 addr);
-    void do_address_device(trb& cmd, u64 addr);
-
+    bool port_connected(size_t port);
     void port_notify(size_t port, u32 mask);
     void port_reset(size_t port, bool warm);
     void port_update(size_t port, bool attach);
@@ -178,12 +179,17 @@ public:
     tlm_target_socket in;
     tlm_initiator_socket dma;
     gpio_initiator_socket irq;
+    usb_initiator_array usb_out;
 
     xhci(const sc_module_name& name);
     virtual ~xhci();
     VCML_KIND(usb::xhci);
 
     virtual void reset() override;
+
+protected:
+    virtual void usb_attach(usb_initiator_socket& socket) override;
+    virtual void usb_detach(usb_initiator_socket& socket) override;
 };
 
 } // namespace usb

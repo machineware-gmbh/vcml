@@ -21,7 +21,7 @@
 namespace vcml {
 namespace usb {
 
-class device : public module, public usb_host
+class device : public module, public usb_dev_if
 {
 public:
     device(const sc_module_name& nm);
@@ -29,7 +29,8 @@ public:
     VCML_KIND(usb::device);
 
 protected:
-    virtual void usb_reset(int ep) override;
+    virtual void usb_reset_device() override;
+    virtual void usb_reset_endpoint(int ep) override;
     virtual void usb_transport(usb_packet& p) override;
 };
 

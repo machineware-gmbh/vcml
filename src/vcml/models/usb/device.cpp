@@ -13,7 +13,7 @@
 namespace vcml {
 namespace usb {
 
-device::device(const sc_module_name& nm): module(nm), usb_host() {
+device::device(const sc_module_name& nm): module(nm), usb_dev_if() {
     // nothing to do
 }
 
@@ -21,11 +21,12 @@ device::~device() {
     // nothing to do
 }
 
-void device::usb_reset(int ep) {
-    if (ep < 0)
-        log_info("reset usb device");
-    else
-        log_info("reset usb endpoint %d", ep);
+void device::usb_reset_device() {
+    log_info("usb reset device");
+}
+
+void device::usb_reset_endpoint(int ep) {
+    log_info("usb reset endpoint %d", ep);
 }
 
 void device::usb_transport(usb_packet& p) {

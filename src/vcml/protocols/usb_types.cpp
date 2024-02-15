@@ -77,6 +77,39 @@ ostream& operator<<(ostream& os, const usb_packet& p) {
     return os;
 }
 
+usb_packet usb_packet_setup(u32 addr, void* data, size_t len) {
+    usb_packet pkt;
+    pkt.addr = addr;
+    pkt.epno = 0;
+    pkt.data = (u8*)data;
+    pkt.length = len;
+    pkt.token = USB_TOKEN_SETUP;
+    pkt.result = USB_RESULT_INCOMPLETE;
+    return pkt;
+}
+
+usb_packet usb_packet_out(u32 addr, u32 epno, const void* data, size_t len) {
+    usb_packet pkt;
+    pkt.addr = addr;
+    pkt.epno = epno;
+    pkt.data = (u8*)data;
+    pkt.length = len;
+    pkt.token = USB_TOKEN_OUT;
+    pkt.result = USB_RESULT_INCOMPLETE;
+    return pkt;
+}
+
+usb_packet usb_packet_in(u32 addr, u32 epno, void* data, size_t len) {
+    usb_packet pkt;
+    pkt.addr = addr;
+    pkt.epno = epno;
+    pkt.data = (u8*)data;
+    pkt.length = len;
+    pkt.token = USB_TOKEN_IN;
+    pkt.result = USB_RESULT_INCOMPLETE;
+    return pkt;
+}
+
 const char* usb_descriptor_type_str(u8 dt) {
     switch (dt) {
     case USB_DT_DEVICE:

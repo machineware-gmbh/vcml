@@ -66,6 +66,10 @@ struct usb_packet {
 
 ostream& operator<<(ostream& os, const usb_packet& p);
 
+usb_packet usb_packet_setup(u32 addr, void* data, size_t len);
+usb_packet usb_packet_out(u32 addr, u32 epno, const void* data, size_t len);
+usb_packet usb_packet_in(u32 addr, u32 epno, void* data, size_t len);
+
 constexpr bool success(const usb_packet& p) {
     return success(p.result);
 }
