@@ -20,6 +20,8 @@ using TRB_SLOT = field<24, 8, u32>;
 using TRB_SLOT_ID = field<24, 8, u32>;
 using TRB_CCODE = field<24, 8, u32>;
 using TRB_PORT_ID = field<24, 8, u64>;
+using TRB_DATA_LENGTH = field<0, 16, u32>;
+using TRB_INTR = field<22, 10, u32>;
 
 enum trb_bits : u32 {
     TRB_C = bit(0),
@@ -46,6 +48,14 @@ constexpr u32 get_trb_slot_type(const xhci::trb& trb) {
 
 constexpr u32 get_trb_slot_id(const xhci::trb& trb) {
     return get_field<TRB_SLOT_ID>(trb.control);
+}
+
+constexpr u32 get_trb_data_length(const xhci::trb& trb) {
+    return get_field<TRB_DATA_LENGTH>(trb.status);
+}
+
+constexpr u32 get_trb_intr(const xhci::trb& trb) {
+    return get_field<TRB_INTR>(trb.status);
 }
 
 constexpr u32 get_trb_ccode(const xhci::trb& trb) {
@@ -355,6 +365,22 @@ constexpr u32 epctx_ccs(u32 epctx[4]) {
 
 constexpr u64 epctx_dequeue(u32 epctx[4]) {
     return ((u64)epctx[3] << 32) | (epctx[2] & bitmask(28, 4));
+}
+
+constexpr u32 usb_packet_ccode(const usb_packet& p) {
+    switch (p.result) {
+    case USB_RESULT_SUCCESS:
+        return TRB_CC_SUCCESS;
+    case USB_RESULT_STALL:
+        return TRB_CC_STALL_ERROR;
+    case USB_RESULT_NODEV:
+    case USB_RESULT_NACK:
+    case USB_RESULT_BABBLE:
+    case USB_RESULT_IOERROR:
+    case USB_RESULT_INCOMPLETE:
+    default:
+        return TRB_CC_USB_TRANSACTION_ERROR;
+    }
 }
 
 enum xhci_params : u32 {
@@ -914,8 +940,6 @@ void xhci::send_port_event(size_t intr, u32 ccode, u64 portid) {
 }
 
 bool xhci::fetch_transfer(const trigger& ev) {
-    log_info(" --- fetch_transfer(%zu, %zu, %zu) ---", ev.slotid, ev.epid,
-             ev.streamid);
     auto* slot = m_slots + ev.slotid - 1;
     auto* ep = slot->endpoints + ev.epid - 1;
 
@@ -950,84 +974,59 @@ bool xhci::fetch_transfer(const trigger& ev) {
 
         ep->tr.dequeue += TRB_SIZE;
 
-        log_info("got tr-trb %s at 0x%llx %sIOC %sIDT %sCH",
-                 trb_type_str(get_trb_type(temp)), ep->tr.dequeue,
-                 temp.control & TRB_IOC ? "+" : "-",
-                 temp.control & TRB_IDT ? "+" : "-",
-                 temp.control & TRB_CH ? "+" : "-");
+        // TRB_DIR0 -> OUT (host2dev)
+        // TRB_DIR1 -> IN (dev2host)
 
-        if (get_trb_type(temp) == TRB_TR_SETUP) {
-            u32 bm_request_type = temp.parameter & 0xff;
-            u32 b_request = (temp.parameter >> 8) & 0xff;
-            u32 w_value = (temp.parameter >> 16) & 0xffff;
-            u32 w_index = (temp.parameter >> 32) & 0xffff;
-            u32 w_length = (temp.parameter >> 48) & 0xffff;
+        u32 type = get_trb_type(temp);
+        u32 code = TRB_CC_SUCCESS;
 
-            log_info(
-                "SETUP_TRB bm_request_type:%u b_request:%u w_value:%04x "
-                "w_index:%u w_length:%u",
-                bm_request_type, b_request, w_value, w_index, w_length);
-            continue;
+        switch (type) {
+        case TRB_TR_SETUP: {
+            auto packet = usb_packet_setup(ev.slotid, &temp.parameter, 8);
+            usb_out[slot->port - 1].send(packet);
+            code = usb_packet_ccode(packet);
         }
 
-        if (get_trb_type(temp) == TRB_TR_DATA) {
-            u32 length = temp.status & 0xffff;
-            u32 size = (temp.status >> 17) & 0x1f;
-            u32 itgt = temp.status >> 22;
-            log_info("DATA_TRB 0x%llx (%u bytes, tdsize:%u irq%u) %s",
-                     temp.parameter, length, size, itgt,
-                     temp.control & TRB_DIR ? "IN" : "OUT");
+        case TRB_TR_DATA: {
+            u8 buf[1024];
+            u64 addr = temp.parameter;
+            u32 size = get_trb_data_length(temp);
             if (temp.control & TRB_DIR) {
-                struct usb_descriptor {
-                    u8 b_length;
-                    u8 b_descriptor_type;
-                    union {
-                        struct {
-                            u16 bcd_usb;
-                            u8 b_device_class;
-                            u8 b_device_sub_class;
-                            u8 b_device_protocol;
-                            u8 b_max_packet_size0;
-                            u16 id_vendor;
-                            u16 id_product;
-                            u16 bcd_device;
-                            u8 i_manufacturer;
-                            u8 i_product;
-                            u8 i_serial_number;
-                            u8 b_num_configurations;
-                        } device;
-
-                        struct {
-                            u16 w_total_length;
-                            u8 b_num_device_caps;
-                        } bos;
-                    };
-                };
-
-                usb_descriptor mydesc{};
-                mydesc.b_length = 0x12;
-                mydesc.b_descriptor_type = 0x01;
-                mydesc.device.b_max_packet_size0 = 9;
-                mydesc.device.bcd_usb = 0x300;
-
-                if (length == 5) {
-                    mydesc.b_length = 5;
-                    mydesc.b_descriptor_type = 0x0f;
-                    mydesc.bos.w_total_length = 5;
-                    mydesc.bos.b_num_device_caps = 0;
-                }
-
-                dma.write(temp.parameter, &mydesc,
-                          min<size_t>(length, sizeof(mydesc)));
+                auto packet = usb_packet_in(ev.slotid, ev.epid, buf, size);
+                usb_out[slot->port - 1].send(packet);
+                code = usb_packet_ccode(packet);
+                dma.write(addr, buf, size);
+            } else {
+                dma.read(addr, buf, size);
+                auto packet = usb_packet_out(ev.slotid, ev.epid, buf, size);
+                usb_out[slot->port - 1].send(packet);
+                code = usb_packet_ccode(packet);
             }
-            continue;
+
+            break;
         }
 
-        if (get_trb_type(temp) == TRB_TR_STATUS) {
-            log_info("STATUS_TRB");
-            send_tr_event(0, TRB_CC_SUCCESS, 1, dequeue);
-            return true;
+        case TRB_TR_STATUS: {
+            if (temp.control & TRB_DIR) {
+                auto packet = usb_packet_in(ev.slotid, ev.epid, nullptr, 0);
+                usb_out[slot->port - 1].send(packet);
+                code = usb_packet_ccode(packet);
+            } else {
+                auto packet = usb_packet_out(ev.slotid, ev.epid, nullptr, 0);
+                usb_out[slot->port - 1].send(packet);
+                code = usb_packet_ccode(packet);
+            }
+
+            break;
         }
+
+        default:
+            log_warn("unexpected trb: %s", trb_type_str(type));
+            break;
+        }
+
+        if (temp.control & TRB_IOC)
+            send_tr_event(get_trb_intr(temp), code, ev.slotid, dequeue);
 
         return true;
     }
@@ -1121,7 +1120,7 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
 
         u8 payload[8]{};
         payload[0] = USB_REQ_OUT | USB_REQ_DEVICE;
-        payload[1] = USB_REQ_SET_ADDRESS;
+        payload[1] = USB_REQ_SET_ADDRESS >> 8;
         payload[2] = (u8)slotid;
 
         usb_packet setup = usb_packet_setup(0, payload, sizeof(payload));

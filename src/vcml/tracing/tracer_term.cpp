@@ -41,7 +41,7 @@ array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_VIRTIO]   = */ mwr::termcolors::BRIGHT_CYAN,
     /* [PROTO_ETHERNET] = */ mwr::termcolors::BRIGHT_BLUE,
     /* [PROTO_CAN]      = */ mwr::termcolors::RED,
-    /* [PROTO_USB]      = */ mwr::termcolors::BLUE,
+    /* [PROTO_USB]      = */ mwr::termcolors::CYAN,
 };
 
 template <typename PAYLOAD>

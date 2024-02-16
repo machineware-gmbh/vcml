@@ -151,7 +151,7 @@ struct protocol<can_frame> {
 
 template <>
 struct protocol<usb_packet> {
-    static constexpr protocol_kind KIND = PROTO_CAN;
+    static constexpr protocol_kind KIND = PROTO_USB;
     static constexpr bool TRACE_FW = true;
     static constexpr bool TRACE_BW = true;
 };

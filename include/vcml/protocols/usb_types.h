@@ -78,28 +78,28 @@ constexpr bool failed(const usb_packet& p) {
     return failed(p.result);
 }
 
-enum usb_request : u32 {
-    USB_REQ_GET_STATUS = 0x00,
-    USB_REQ_CLEAR_FEATURE = 0x01,
-    USB_REQ_SET_FEATURE = 0x03,
-    USB_REQ_SET_ADDRESS = 0x05,
-    USB_REQ_GET_DESCRIPTOR = 0x06,
-    USB_REQ_SET_DESCRIPTOR = 0x07,
-    USB_REQ_GET_CONFIGURATION = 0x08,
-    USB_REQ_SET_CONFIGURATION = 0x09,
-    USB_REQ_GET_INTERFACE = 0x0a,
-    USB_REQ_SET_INTERFACE = 0x0b,
-    USB_REQ_SYNCH_FRAME = 0x0c,
-    USB_REQ_SET_SEL = 0x30,
-    USB_REQ_SET_ISOCH_DELAY = 0x31,
+enum usb_request : u16 {
+    USB_REQ_DEVICE = 0x00,
+    USB_REQ_INTERFACE = 0x01,
+    USB_REQ_ENDPOINT = 0x02,
+    USB_REQ_OTHER = 0x03,
 
-    USB_REQ_DEVICE = 0x00 << 8,
-    USB_REQ_INTERFACE = 0x01 << 8,
-    USB_REQ_ENDPOINT = 0x02 << 8,
-    USB_REQ_OTHER = 0x03 << 8,
+    USB_REQ_OUT = 0x00,
+    USB_REQ_IN = 0x80,
 
-    USB_REQ_OUT = 0x0 << 12,
-    USB_REQ_IN = 0x8 << 12,
+    USB_REQ_GET_STATUS = 0x00 << 8,
+    USB_REQ_CLEAR_FEATURE = 0x01 << 8,
+    USB_REQ_SET_FEATURE = 0x03 << 8,
+    USB_REQ_SET_ADDRESS = 0x05 << 8,
+    USB_REQ_GET_DESCRIPTOR = 0x06 << 8,
+    USB_REQ_SET_DESCRIPTOR = 0x07 << 8,
+    USB_REQ_GET_CONFIGURATION = 0x08 << 8,
+    USB_REQ_SET_CONFIGURATION = 0x09 << 8,
+    USB_REQ_GET_INTERFACE = 0x0a << 8,
+    USB_REQ_SET_INTERFACE = 0x0b << 8,
+    USB_REQ_SYNCH_FRAME = 0x0c << 8,
+    USB_REQ_SET_SEL = 0x30 << 8,
+    USB_REQ_SET_ISOCH_DELAY = 0x31 << 8,
 };
 
 enum usb_descriptor_type : u8 {
