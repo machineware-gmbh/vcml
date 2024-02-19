@@ -41,12 +41,6 @@ public:
         bool ccs;
     };
 
-    struct trigger {
-        size_t slotid;
-        size_t epid;
-        size_t streamid;
-    };
-
     struct endpoint {
         u32 type;
         u32 state;
@@ -55,6 +49,8 @@ public:
 
         size_t max_psize;
         size_t max_pstreams;
+
+        bool kicked;
     };
 
     struct slot {
@@ -63,7 +59,7 @@ public:
         size_t port;
         bool enabled;
         bool addressed;
-        endpoint endpoints[31];
+        endpoint endpoints[32];
     };
 
     struct port_regs {
@@ -93,11 +89,9 @@ public:
 private:
     sc_time m_mfstart;
 
+    sc_event m_trev;
     sc_event m_cmdev;
     ring m_cmdring;
-
-    sc_event m_trev;
-    queue<trigger> m_trq;
 
     slot m_slots[MAX_SLOTS];
 
@@ -120,7 +114,7 @@ private:
 
     void start();
     void stop();
-    void update();
+
     void update_irq(size_t idx);
 
     void send_event(size_t intr, trb& event);
@@ -128,7 +122,8 @@ private:
     void send_tr_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
     void send_port_event(size_t intr, u32 ccode, u64 portid);
 
-    bool fetch_transfer(const trigger& ev);
+    bool get_transfer(u32& slotid, u32& epid);
+    void run_transfer(u32 slotid, u32 epid);
 
     u32 cmd_noop(trb& cmd);
     u32 cmd_enable_slot(trb& cmd, u32& slotid);

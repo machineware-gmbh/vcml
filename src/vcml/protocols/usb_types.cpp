@@ -110,7 +110,7 @@ usb_packet usb_packet_in(u32 addr, u32 epno, void* data, size_t len) {
     return pkt;
 }
 
-const char* usb_descriptor_type_str(u8 dt) {
+const char* usb_desc_str(u8 dt) {
     switch (dt) {
     case USB_DT_DEVICE:
         return "USB_DT_DEVICE";

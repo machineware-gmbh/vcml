@@ -46,6 +46,7 @@ private:
         u16 val;
         u16 idx;
         u16 len;
+        size_t pos;
         usb_result res;
         control_state state;
         u8 buf[1024];
@@ -62,6 +63,14 @@ public:
     VCML_KIND(usb::device);
 
 protected:
+    virtual usb_result get_configuration(u8& config);
+    virtual usb_result set_configuration(u8 config);
+
+    virtual usb_result get_desc(usb_device_desc& desc) = 0;
+    virtual usb_result get_desc(usb_config_desc& desc, size_t idx) = 0;
+    virtual usb_result get_desc(usb_string_desc& str, size_t idx) = 0;
+    virtual usb_result get_desc(usb_bos_desc& desc) = 0;
+
     virtual usb_result handle_control(u16 req, u16 val, u16 idx, u8* data,
                                       size_t length);
     virtual usb_result handle_ep0(usb_packet& p);

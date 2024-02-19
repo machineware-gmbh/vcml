@@ -119,11 +119,11 @@ enum usb_descriptor_type : u8 {
     USB_DT_ENDPOINT_COMPANION = 0x30,
 };
 
-const char* usb_descriptor_type_str(u8 dt);
+const char* usb_desc_str(u8 dt);
 
 #pragma pack(push, 1)
 
-struct usb_device_descriptor {
+struct usb_device_desc {
     u8 length;
     u8 descriptor_type;
 
@@ -141,7 +141,7 @@ struct usb_device_descriptor {
     u8 num_configurations;
 };
 
-struct usb_config_descriptor {
+struct usb_config_desc {
     u8 length;
     u8 descriptor_type;
     u16 total_length;
@@ -152,13 +152,13 @@ struct usb_config_descriptor {
     u8 max_power;
 };
 
-struct usb_string_descriptor {
+struct usb_string_desc {
     u8 length;
     u8 descriptor_type;
     u16 wstring[];
 };
 
-struct usb_interface_descriptor {
+struct usb_interface_desc {
     u8 length;
     u8 descriptor_type;
     u8 interface_number;
@@ -170,7 +170,7 @@ struct usb_interface_descriptor {
     u8 interface;
 };
 
-struct usb_endpoint_descriptor {
+struct usb_endpoint_desc {
     u8 length;
     u8 descriptor_type;
     u8 endpoint_address;
@@ -181,7 +181,7 @@ struct usb_endpoint_descriptor {
     u8 sync_address;
 };
 
-struct usb_bos_descriptor {
+struct usb_bos_desc {
     u8 length;
     u8 descriptor_type;
     u16 total_length;
