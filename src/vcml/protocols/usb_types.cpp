@@ -145,4 +145,18 @@ const char* usb_desc_str(u8 dt) {
     }
 }
 
+const char* usb_endpoint_str(u8 type) {
+    switch (type & 3) {
+    case USB_EP_ISOC:
+        return "USB_EP_ISOC";
+    case USB_EP_BULK:
+        return "USB_EP_BULK";
+    case USB_EP_IRQ:
+        return "USB_EP_IRQ";
+    case USB_EP_CTRL:
+    default:
+        return "USB_EP_CTRL";
+    }
+}
+
 } // namespace vcml

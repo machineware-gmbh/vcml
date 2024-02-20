@@ -121,6 +121,44 @@ enum usb_descriptor_type : u8 {
 
 const char* usb_desc_str(u8 dt);
 
+enum usb_cfg_attrs : u8 {
+    USB_CFG_BATTERY = bit(4),
+    USB_CFG_WAKEUP = bit(5),
+    USB_CFG_SELF_POWERED = bit(6),
+    USB_CFG_ONE = bit(7),
+};
+
+enum usb_device_class : u8 {
+    USB_CLASS_RESERVED = 0x00,
+    USB_CLASS_AUDIO = 0x01,
+    USB_CLASS_COMM = 0x02,
+    USB_CLASS_HID = 0x03,
+    USB_CLASS_PHYSICAL = 0x05,
+    USB_CLASS_STILL_IMAGE = 0x06,
+    USB_CLASS_PRINTER = 0x07,
+    USB_CLASS_MASS_STORAGE = 0x08,
+    USB_CLASS_HUB = 0x09,
+    USB_CLASS_CDC_DATA = 0x0a,
+    USB_CLASS_SMART_CARD = 0x0b,
+    USB_CLASS_CONTENT_SECURITY = 0x0d,
+    USB_CLASS_VIDEO = 0x0e,
+    USB_CLASS_PERSONAL_HEALTHCARE = 0x0f,
+    USB_CLASS_AUDIO_VIDEO_DEVICES = 0x10,
+    USB_CLASS_BILLBOARD = 0x11,
+    USB_CLASS_TYPE_C_BRIDGE = 0x12,
+    USB_CLASS_APP_SPECIFIC = 0xfe,
+    USB_CLASS_VENDOR_SPECIFIC = 0xff,
+};
+
+enum usb_endpoint_bits : u8 {
+    USB_EP_CTRL = 0,
+    USB_EP_ISOC = 1,
+    USB_EP_BULK = 2,
+    USB_EP_IRQ = 3,
+};
+
+const char* usb_endpoint_str(u8 type);
+
 #pragma pack(push, 1)
 
 struct usb_device_desc {
@@ -135,9 +173,9 @@ struct usb_device_desc {
     u16 vendor_id;
     u16 product_id;
     u16 bcd_device;
-    u8 manufacturer;
-    u8 product;
-    u8 serial_number;
+    u8 manufacturer_strid;
+    u8 product_strid;
+    u8 serial_number_strid;
     u8 num_configurations;
 };
 
@@ -147,7 +185,7 @@ struct usb_config_desc {
     u16 total_length;
     u8 num_interfaces;
     u8 configuration_value;
-    u8 configuration;
+    u8 configuration_strid;
     u8 attributes;
     u8 max_power;
 };
@@ -167,7 +205,7 @@ struct usb_interface_desc {
     u8 interface_class;
     u8 interface_subclass;
     u8 interface_protocol;
-    u8 interface;
+    u8 interface_strid;
 };
 
 struct usb_endpoint_desc {

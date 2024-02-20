@@ -13,9 +13,57 @@
 namespace vcml {
 namespace usb {
 
+usb_result device::load_config_descriptors(u8* data, size_t index) {
+    auto* config = (usb_config_desc*)data;
+    memset(config, 0, sizeof(*config));
+    config->length = sizeof(usb_config_desc);
+    config->descriptor_type = USB_DT_CONFIG;
+    auto res = get_desc(*config, index);
+    if (failed(res))
+        return res;
+
+    config->total_length = config->length;
+    data += config->length;
+
+    for (size_t i = 0; i < config->num_interfaces; i++) {
+        auto* iface = (usb_interface_desc*)data;
+        memset(iface, 0, sizeof(*iface));
+        iface->length = sizeof(usb_interface_desc);
+        iface->descriptor_type = USB_DT_INTERFACE;
+        iface->interface_number = i;
+        res = get_desc(*iface, i, index);
+        if (failed(res))
+            return res;
+
+        config->total_length += config->length;
+        data += config->length;
+
+        for (size_t e = 0; e < iface->num_endpoints; e++) {
+            auto* ep = (usb_endpoint_desc*)data;
+            memset(ep, 0, sizeof(*ep));
+            ep->length = sizeof(usb_endpoint_desc);
+            ep->descriptor_type = USB_DT_ENDPOINT;
+            res = get_desc(*ep, e, i, index);
+
+            if (failed(res))
+                return res;
+
+            config->total_length += ep->length;
+            data += ep->length;
+        }
+    }
+
+    return USB_RESULT_SUCCESS;
+}
+
 device::device(const sc_module_name& nm):
-    module(nm), usb_dev_if(), m_address(0), m_stalled(false), m_ep0() {
-    // nothing to do
+    module(nm),
+    usb_dev_if(),
+    m_address(0),
+    m_stalled(false),
+    m_state(STATE_DEFAULT),
+    m_ep0() {
+    memset(&m_ep0, 0, sizeof(m_ep0));
 }
 
 device::~device() {
@@ -54,10 +102,11 @@ usb_result device::handle_control(u16 req, u16 val, u16 idx, u8* data,
             data[1] = USB_DT_DEVICE;
             return get_desc(*(usb_device_desc*)data);
 
-        case USB_DT_CONFIG:
+        case USB_DT_CONFIG: {
             data[0] = sizeof(usb_config_desc);
             data[1] = USB_DT_CONFIG;
-            return get_desc(*(usb_config_desc*)data, index);
+            return load_config_descriptors(data, index);
+        }
 
         case USB_DT_STRING:
             data[0] = sizeof(usb_string_desc);

@@ -124,7 +124,7 @@ public:
     VCML_KIND(usb_initiator_socket);
 
     constexpr usb_speed connection_speed() const { return m_speed; }
-    constexpr bool is_connected() const { return m_speed != USB_SPEED_NONE; }
+    constexpr bool is_attached() const { return m_speed != USB_SPEED_NONE; }
 
     void send(usb_packet& p);
     void reset_device();
@@ -156,7 +156,9 @@ public:
     virtual ~usb_target_socket() = default;
     VCML_KIND(usb_target_socket);
 
-    bool is_attached() const { return m_speed != USB_SPEED_NONE; }
+    constexpr usb_speed connection_speed() const { return m_speed; }
+    constexpr bool is_attached() const { return m_speed != USB_SPEED_NONE; }
+
     void attach(usb_speed speed);
     void detach();
 };

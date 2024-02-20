@@ -46,20 +46,22 @@ public:
         u32 state;
         u64 context;
         ring tr;
-
         size_t max_psize;
         size_t max_pstreams;
-
         bool kicked;
+
+        void reset();
     };
 
-    struct slot {
+    struct devslot {
         u64 context;
         size_t irq;
         size_t port;
         bool enabled;
         bool addressed;
         endpoint endpoints[32];
+
+        void reset();
     };
 
     struct port_regs {
@@ -93,7 +95,7 @@ private:
     sc_event m_cmdev;
     ring m_cmdring;
 
-    slot m_slots[MAX_SLOTS];
+    devslot m_slots[MAX_SLOTS];
 
     u32 read_hcsparams1();
     u32 read_extcaps(size_t idx);
@@ -129,6 +131,10 @@ private:
     u32 cmd_enable_slot(trb& cmd, u32& slotid);
     u32 cmd_disable_slot(trb& cmd, u32& slotid);
     u32 cmd_address_device(trb& cmd, u32& slotid);
+    u32 cmd_configure_endpoint(trb& cmd, u32& slotid);
+    u32 cmd_evaluate_context(trb& cmd, u32& slotid);
+    u32 cmd_reset_endpoint(trb& cmd, u32& slotid);
+    u32 cmd_stop_endpoint(trb& cmd, u32& slotid);
 
     bool fetch_command(trb& cmd, u64& addr);
     void execute_command(trb& cmd, u64 addr);
@@ -136,7 +142,8 @@ private:
     void command_thread();
     void transfer_thread();
 
-    bool port_connected(size_t port);
+    bool port_connected(size_t port, size_t& socket);
+
     void port_notify(size_t port, u32 mask);
     void port_reset(size_t port, bool warm);
     void port_update(size_t port, bool attach);

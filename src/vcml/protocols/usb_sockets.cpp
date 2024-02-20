@@ -75,7 +75,7 @@ void usb_initiator_socket::usb_connection_update(usb_speed speed) {
     if (m_speed == speed)
         return;
 
-    if (is_connected() && (speed != USB_SPEED_NONE))
+    if (is_attached() && (speed != USB_SPEED_NONE))
         VCML_ERROR("usb socket %s already connected", name());
 
     if (speed == USB_SPEED_NONE) {

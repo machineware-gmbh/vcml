@@ -52,6 +52,8 @@ private:
         u8 buf[1024];
     } m_ep0;
 
+    usb_result load_config_descriptors(u8* data, size_t idx);
+
 public:
     bool is_addressed() const { return m_state >= STATE_ADDRESSED; }
     bool is_configured() const { return m_state >= STATE_CONFIGURED; }
@@ -68,6 +70,10 @@ protected:
 
     virtual usb_result get_desc(usb_device_desc& desc) = 0;
     virtual usb_result get_desc(usb_config_desc& desc, size_t idx) = 0;
+    virtual usb_result get_desc(usb_interface_desc& desc, size_t idx,
+                                size_t cfg) = 0;
+    virtual usb_result get_desc(usb_endpoint_desc& desc, size_t idx,
+                                size_t ifx, size_t cfg) = 0;
     virtual usb_result get_desc(usb_string_desc& str, size_t idx) = 0;
     virtual usb_result get_desc(usb_bos_desc& desc) = 0;
 

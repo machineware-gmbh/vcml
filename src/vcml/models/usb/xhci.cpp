@@ -32,6 +32,7 @@ enum trb_bits : u32 {
     TRB_IOC = bit(5),
     TRB_IDT = bit(6),
     TRB_BSR = bit(9),
+    TRB_DC = bit(9),
     TRB_DIR = bit(16),
     TRB_SIZE = 16,
 };
@@ -48,6 +49,10 @@ constexpr u32 get_trb_slot_type(const xhci::trb& trb) {
 
 constexpr u32 get_trb_slot_id(const xhci::trb& trb) {
     return get_field<TRB_SLOT_ID>(trb.control);
+}
+
+constexpr u32 get_trb_ep_id(const xhci::trb& trb) {
+    return get_field<TRB_EP_ID>(trb.control);
 }
 
 constexpr u32 get_trb_data_length(const xhci::trb& trb) {
@@ -299,42 +304,43 @@ constexpr const char* trb_type_str(u32 type) {
     }
 }
 
-using SLOTCTX_PORTNO = field<16, 8, u32>;
-using SLOTCTX_DEVADDR = field<0, 8, u32>;
-using SLOTCTX_STATE = field<27, 4, u32>;
+struct input_context {
+    u32 dcf;
+    u32 acf;
+};
 
-enum slotctx_state : u32 {
+enum slot_state : u32 {
     SLOT_ENABLED = 0,
     SLOT_DEFAULT = 1,
     SLOT_ADDRESSED = 2,
     SLOT_CONFIGURED = 3,
 };
 
-constexpr u32 slotctx_portno(u32 slotctx[4]) {
-    return get_field<SLOTCTX_PORTNO>(slotctx[1]);
-}
+struct slot_context {
+    u32 dwords[4];
 
-constexpr void slotctx_set_devaddr(u32 slotctx[4], u32 addr) {
-    set_field<SLOTCTX_DEVADDR>(slotctx[3], addr);
-}
+    using DW0_ENTRIES = field<27, 4, u32>;
+    using DW1_PORTNO = field<16, 8, u32>;
+    using DW3_DEVADDR = field<0, 8, u32>;
+    using DW3_STATE = field<27, 4, u32>;
 
-constexpr void slotctx_set_state(u32 slotctx[5], u32 newstate) {
-    set_field<SLOTCTX_STATE>(slotctx[3], newstate);
-}
+    constexpr u32 portno() const { return get_field<DW1_PORTNO>(dwords[1]); }
+    constexpr u32 entries() const { return get_field<DW0_ENTRIES>(dwords[0]); }
 
-using EPCTX_STATE = field<0, 3, u32>;
-using EPCTX_MAXPSTREAMS = field<10, 5, u32>;
-using EPCTX_TYPE = field<3, 3, u32>;
-using EPCTX_MAXBURSTSIZE = field<8, 8, u32>;
-using EPCTX_MAXPSIZE = field<16, 16, u32>;
+    constexpr void set_entries(u32 entries) {
+        set_field<DW0_ENTRIES>(dwords[0], entries);
+    }
 
-enum epctx_bits : u32 {
-    EPCTX_CCS = bit(0),
-    EPCTX_HID = bit(7),
-    EPCTX_LSA = bit(15),
+    constexpr void set_devaddr(u32 addr) {
+        set_field<DW3_DEVADDR>(dwords[3], addr);
+    }
+
+    constexpr void set_state(slot_state newstate) {
+        set_field<DW3_STATE>(dwords[3], newstate);
+    }
 };
 
-enum epctx_state : u32 {
+enum ep_state : u32 {
     EP_DISABLED = 0,
     EP_RUNNING = 1,
     EP_HALTED = 2,
@@ -342,30 +348,42 @@ enum epctx_state : u32 {
     EP_ERROR = 4,
 };
 
-constexpr void epctx_set_state(u32 epctx[4], u32 newstate) {
-    set_field<EPCTX_STATE>(epctx[0], newstate);
-}
+struct ep_context {
+    u32 dwords[5];
 
-constexpr u32 epctx_max_pstreams(u32 epctx[4]) {
-    return get_field<EPCTX_MAXPSTREAMS>(epctx[0]);
-}
+    using EPCTX_STATE = field<0, 3, u32>;
+    using EPCTX_MAXPSTREAMS = field<10, 5, u32>;
+    using EPCTX_TYPE = field<3, 3, u32>;
+    using EPCTX_MAXBURSTSIZE = field<8, 8, u32>;
+    using EPCTX_MAXPSIZE = field<16, 16, u32>;
 
-constexpr u32 epctx_max_psize(u32 epctx[4]) {
-    return get_field<EPCTX_MAXPSIZE>(epctx[1]) *
-           (1 + get_field<EPCTX_MAXBURSTSIZE>(epctx[1]));
-}
+    enum epctx_bits : u32 {
+        EPCTX_DCS = bit(0),
+        EPCTX_HID = bit(7),
+        EPCTX_LSA = bit(15),
+    };
 
-constexpr u32 epctx_type(u32 epctx[4]) {
-    return get_field<EPCTX_TYPE>(epctx[1]);
-}
+    constexpr void set_state(ep_state newstate) {
+        set_field<EPCTX_STATE>(dwords[0], newstate);
+    }
 
-constexpr u32 epctx_ccs(u32 epctx[4]) {
-    return epctx[2] & EPCTX_CCS;
-}
+    constexpr u32 max_pstreams() const {
+        return get_field<EPCTX_MAXPSTREAMS>(dwords[0]);
+    }
 
-constexpr u64 epctx_dequeue(u32 epctx[4]) {
-    return ((u64)epctx[3] << 32) | (epctx[2] & bitmask(28, 4));
-}
+    constexpr u32 max_psize() const {
+        return get_field<EPCTX_MAXPSIZE>(dwords[1]) *
+               (1 + get_field<EPCTX_MAXBURSTSIZE>(dwords[1]));
+    }
+
+    constexpr u32 type() const { return get_field<EPCTX_TYPE>(dwords[1]); }
+
+    constexpr bool dcs() const { return dwords[2] & EPCTX_DCS; }
+
+    constexpr u64 dequeue_ptr() const {
+        return ((u64)dwords[3] << 32) | (dwords[2] & bitmask(28, 4));
+    }
+};
 
 constexpr u32 usb_packet_ccode(const usb_packet& p) {
     switch (p.result) {
@@ -615,6 +633,25 @@ enum erdp_bits : u64 {
     ERDP_MASK = bitmask(60, 4),
 };
 
+void xhci::endpoint::reset() {
+    context = 0;
+    max_psize = 0;
+    max_pstreams = 0;
+    kicked = false;
+    state = EP_DISABLED;
+}
+
+void xhci::devslot::reset() {
+    enabled = false;
+    addressed = false;
+    context = 0;
+    irq = -1;
+    port = -1;
+
+    for (auto& ep : endpoints)
+        ep.reset();
+}
+
 xhci::port_regs::port_regs(size_t idx):
     portsc(mkstr("portsc%zu", idx), XHCI_OP_OFF + 0x400 + 0x10 * idx),
     portpmsc(mkstr("portpmsc%zu", idx), XHCI_OP_OFF + 0x404 + 0x10 * idx),
@@ -683,21 +720,18 @@ u32 xhci::read_hcsparams1() {
     u32 val = 0;
     set_field<HCSPARAMS1_MAX_SLOTS>(val, num_slots);
     set_field<HCSPARAMS1_MAX_INTRS>(val, num_intrs);
-    set_field<HCSPARAMS1_MAX_PORTS>(val, num_ports);
+    set_field<HCSPARAMS1_MAX_PORTS>(val, num_ports * 2);
     return val;
 }
 
 u32 xhci::read_extcaps(size_t idx) {
-    u32 usb3_ports = num_ports / 2;
-    u32 usb2_ports = num_ports / 2;
-
     switch (idx) {
     case 0:
         return 0x02000402; // supported protocol usb 2.0
     case 1:
         return fourcc("usb ");
     case 2:
-        return usb2_ports << 8 | 1;
+        return num_ports << 8 | 1;
     case 3:
         return 0;
     case 4:
@@ -705,7 +739,7 @@ u32 xhci::read_extcaps(size_t idx) {
     case 5:
         return fourcc("usb ");
     case 6:
-        return usb3_ports << 8 | (usb2_ports + 1);
+        return num_ports << 8 | (num_ports + 1);
     case 7:
         return 0;
     default:
@@ -1089,11 +1123,7 @@ u32 xhci::cmd_disable_slot(trb& cmd, u32& slotid) {
     if (!slot->enabled)
         return TRB_CC_SLOT_NOT_ENABLED_ERROR;
 
-    slot->enabled = false;
-    slot->addressed = false;
-    slot->context = 0;
-    slot->irq = -1;
-    slot->port = -1;
+    slot->reset();
 
     return TRB_CC_SUCCESS;
 }
@@ -1108,52 +1138,53 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
     if (!slot->enabled)
         return TRB_CC_SLOT_NOT_ENABLED_ERROR;
 
-    u64 ptroctx = 0;
-    u64 ptrictx = cmd.parameter;
+    input_context ictx;
+    slot_context sctx;
+    ep_context ectx;
 
-    if (failed(dma.readw(dcbaap + slotid * 8, ptroctx))) {
+    u64 octx_addr = 0;
+    u64 ictx_addr = cmd.parameter;
+
+    if (failed(dma.readw(dcbaap + slotid * 8, octx_addr))) {
         log_error("failed to read slot %u output context address", slotid);
         return TRB_CC_TRB_ERROR;
     }
 
-    log_debug("input context at 0x%llx", ptrictx);
-    log_debug("output context at 0x%llx", ptroctx);
+    log_debug("input context at 0x%llx", ictx_addr);
+    log_debug("output context at 0x%llx", octx_addr);
 
-    u32 d = 0, a = 0;
-    if (failed(dma.readw(ptrictx + 0x0, d)) || d != 0 ||
-        failed(dma.readw(ptrictx + 0x4, a)) || a != 3) {
-        log_error("failed to read slot %u input context", slotid);
+    if (failed(dma.readw(ictx_addr, ictx))) {
+        log_error("failed to read input context at 0x%llx", ictx_addr);
         return TRB_CC_TRB_ERROR;
     }
 
-    log_debug("input context: %08x %08x", d, a);
+    if (ictx.dcf != 0 || ictx.acf != 3) {
+        log_error("invalid input context: %08x %08x", ictx.dcf, ictx.acf);
+        return TRB_CC_TRB_ERROR;
+    }
 
-    u32 slotctx[4];
-    u32 ep0ctx[5];
-    if (failed(dma.read(ptrictx + 32, slotctx, sizeof(slotctx))) ||
-        failed(dma.read(ptrictx + 64, ep0ctx, sizeof(ep0ctx)))) {
+    if (failed(dma.readw(ictx_addr + 32, sctx)) ||
+        failed(dma.readw(ictx_addr + 64, ectx))) {
         log_error("failed to read slot %u input data", slotid);
         return TRB_CC_TRB_ERROR;
     }
 
-    log_debug("input slot context: %08x %08x %08x %08x", slotctx[0],
-              slotctx[1], slotctx[2], slotctx[3]);
-    log_debug("input ep0 slot context: %08x %08x %08x %08x %08x", ep0ctx[0],
-              ep0ctx[1], ep0ctx[2], ep0ctx[3], ep0ctx[4]);
+    log_debug("slot context: %08x %08x %08x %08x", sctx.dwords[0],
+              sctx.dwords[1], sctx.dwords[2], sctx.dwords[3]);
+    log_debug("ep0 context: %08x %08x %08x %08x %08x", ectx.dwords[0],
+              ectx.dwords[1], ectx.dwords[2], ectx.dwords[3], ectx.dwords[4]);
 
-    u32 portno = slotctx_portno(slotctx);
-    if (!portno || !usb_out.exists(portno - 1)) {
-        log_error("invalid usb port for slot%u : %d", slotid, portno);
+    size_t socket;
+    if (!sctx.portno() || !port_connected(sctx.portno() - 1, socket)) {
+        log_error("invalid usb port for slot%u : %d", slotid, sctx.portno());
         return TRB_CC_TRB_ERROR;
     }
 
-    slot->port = portno - 1;
-
     if (cmd.control & TRB_BSR) {
-        slotctx_set_state(slotctx, SLOT_DEFAULT);
+        sctx.set_state(SLOT_DEFAULT);
     } else {
-        slotctx_set_devaddr(slotctx, slotid);
-        slotctx_set_state(slotctx, SLOT_ADDRESSED);
+        sctx.set_devaddr(slotid);
+        sctx.set_state(SLOT_ADDRESSED);
 
         u8 payload[8]{};
         payload[0] = USB_REQ_OUT | USB_REQ_DEVICE;
@@ -1161,37 +1192,180 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
         payload[2] = (u8)slotid;
 
         usb_packet setup = usb_packet_setup(0, payload, sizeof(payload));
-        usb_out[slot->port].send(setup);
+        usb_out[socket].send(setup);
         if (failed(setup))
             return TRB_CC_USB_TRANSACTION_ERROR;
 
         usb_packet status = usb_packet_in(0, 0, nullptr, 0);
-        usb_out[slot->port].send(status);
+        usb_out[socket].send(status);
         if (failed(status))
             return TRB_CC_USB_TRANSACTION_ERROR;
     }
 
+    if (failed(dma.writew(octx_addr, sctx)))
+        return TRB_CC_TRB_ERROR;
+
+    ectx.set_state(EP_RUNNING);
+    if (failed(dma.writew(octx_addr + 32, ectx)))
+        return TRB_CC_TRB_ERROR;
+
     slot->addressed = true;
-
-    if (failed(dma.write(ptroctx, slotctx, sizeof(slotctx))))
-        return TRB_CC_TRB_ERROR;
-
-    epctx_set_state(ep0ctx, EP_RUNNING);
-    if (failed(dma.write(ptroctx + 32, ep0ctx, sizeof(ep0ctx))))
-        return TRB_CC_TRB_ERROR;
+    slot->port = socket;
+    slot->context = octx_addr;
 
     auto ep0 = slot->endpoints;
-    ep0->context = ptrictx + 64;
+    ep0->context = ictx_addr + 64;
     ep0->state = EP_RUNNING;
-    ep0->type = epctx_type(ep0ctx);
-    ep0->tr.dequeue = epctx_dequeue(ep0ctx);
-    ep0->tr.ccs = epctx_ccs(ep0ctx);
-    ep0->max_pstreams = epctx_max_pstreams(ep0ctx);
-    ep0->max_psize = epctx_max_psize(ep0ctx);
+    ep0->type = ectx.type();
+    ep0->tr.dequeue = ectx.dequeue_ptr();
+    ep0->tr.ccs = ectx.dcs();
+    ep0->max_pstreams = ectx.max_pstreams();
+    ep0->max_psize = ectx.max_psize();
 
     log_debug("ep0 type:%u dequeue:0x%llx max-psize:%zu max-pstreams:%zu",
               ep0->type, ep0->tr.dequeue, ep0->max_psize, ep0->max_pstreams);
 
+    return TRB_CC_SUCCESS;
+}
+
+u32 xhci::cmd_configure_endpoint(trb& cmd, u32& slotid) {
+    slotid = get_trb_slot_id(cmd);
+    auto slot = m_slots + slotid;
+
+    if (slotid > num_slots)
+        return TRB_CC_TRB_ERROR;
+
+    if (!slot->enabled)
+        return TRB_CC_SLOT_NOT_ENABLED_ERROR;
+
+    if (!slot->addressed)
+        return TRB_CC_CONTEXT_STATE_ERROR;
+
+    u64 octx_addr = slot->context;
+    u64 ictx_addr = cmd.parameter;
+
+    log_debug("configure endpoint command (slot: %u)", slotid);
+    log_debug(" octx: 0x%llx", octx_addr);
+
+    input_context ictx;
+    if (failed(dma.readw(ictx_addr, ictx))) {
+        log_error("failed to read input context at 0x%llx", ictx_addr);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    log_debug(" ictx: 0x%llx [%08x %08x]", ictx_addr, ictx.dcf, ictx.acf);
+
+    if (ictx.dcf & 3) {
+        log_error("invalid input context [%08x %08x]", ictx.dcf, ictx.acf);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    for (size_t ep = 2; ep < 32; ep++) {
+        if ((cmd.control & TRB_DC) || (ictx.dcf & bit(ep))) {
+            log_info("request to deconfigure ep%zu", ep);
+        }
+    }
+
+    for (size_t i = 2; i < 32; i++) {
+        if (ictx.acf & bit(i)) {
+            ep_context ectx;
+            u64 ectx_addr = ictx_addr + 32 + 32 * i;
+            if (failed(dma.readw(ectx_addr, ectx))) {
+                log_error("failed to read epcontext at 0x%llx", ectx_addr);
+                return TRB_CC_TRB_ERROR;
+            }
+
+            ectx.set_state(EP_RUNNING);
+
+            if (failed(dma.writew(octx_addr + 32 * i, ectx))) {
+                log_error("failed to write endpoint context");
+                return TRB_CC_TRB_ERROR;
+            }
+
+            auto* ep = slot->endpoints + i;
+            ep->state = EP_RUNNING;
+            ep->type = ectx.type();
+            ep->context = octx_addr + i * 32;
+            ep->tr.dequeue = ectx.dequeue_ptr();
+            ep->tr.ccs = ectx.dcs();
+            ep->max_pstreams = ectx.max_pstreams();
+            ep->max_psize = ectx.max_psize();
+
+            log_debug("slot%u ep%zu enabled", slotid, i);
+            log_debug("  type:     %s", usb_endpoint_str(ep->type));
+            log_debug("  dequeue:  0x%llx", ep->tr.dequeue);
+            log_debug("  psize:    %zu", ep->max_psize);
+            log_debug("  pstreams: %zu", ep->max_pstreams);
+        }
+    }
+
+    slot_context input_slot_ctx;
+    if (failed(dma.readw(ictx_addr + 32, input_slot_ctx))) {
+        log_error("failed to read input slot context at 0x%llx",
+                  ictx_addr + 32);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    slot_context output_slot_ctx;
+    if (failed(dma.readw(octx_addr, output_slot_ctx))) {
+        log_error("failed to read output slot context at 0x%llx", octx_addr);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    output_slot_ctx.set_state(SLOT_CONFIGURED);
+    output_slot_ctx.set_entries(input_slot_ctx.entries());
+
+    if (failed(dma.writew(octx_addr, output_slot_ctx))) {
+        log_error("failed to write slot context at 0x%llx", octx_addr);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    return TRB_CC_SUCCESS;
+}
+
+u32 xhci::cmd_evaluate_context(trb& cmd, u32& slotid) {
+    log_error("%s not implemented", __func__);
+    sc_stop();
+    return TRB_CC_TRB_ERROR;
+}
+
+u32 xhci::cmd_reset_endpoint(trb& cmd, u32& slotid) {
+    slotid = get_trb_slot_id(cmd);
+    auto slot = m_slots + slotid;
+
+    if (slotid > num_slots)
+        return TRB_CC_TRB_ERROR;
+
+    if (!slot->enabled)
+        return TRB_CC_SLOT_NOT_ENABLED_ERROR;
+
+    u32 epid = get_trb_ep_id(cmd);
+    if (epid < 1 || epid > 31)
+        return TRB_CC_TRB_ERROR;
+
+    slot->endpoints[epid].reset();
+    return TRB_CC_SUCCESS;
+}
+
+u32 xhci::cmd_stop_endpoint(trb& cmd, u32& slotid) {
+    slotid = get_trb_slot_id(cmd);
+    auto slot = m_slots + slotid;
+
+    if (slotid > num_slots)
+        return TRB_CC_TRB_ERROR;
+
+    if (!slot->enabled)
+        return TRB_CC_SLOT_NOT_ENABLED_ERROR;
+
+    u32 epid = get_trb_ep_id(cmd);
+    if (epid < 1 || epid > 31)
+        return TRB_CC_TRB_ERROR;
+
+    auto ep = slot->endpoints + epid;
+    if (ep->state == EP_DISABLED)
+        return TRB_CC_ENDPOINT_NOT_ENABLED_ERROR;
+
+    slot->endpoints[epid].reset();
     return TRB_CC_SUCCESS;
 }
 
@@ -1240,6 +1414,18 @@ void xhci::execute_command(trb& cmd, u64 addr) {
     case TRB_CR_ADDRESS_DEVICE:
         code = cmd_address_device(cmd, slot);
         break;
+    case TRB_CR_CONFIGURE_ENDPOINT:
+        code = cmd_configure_endpoint(cmd, slot);
+        break;
+    case TRB_CR_EVALUATE_CONTEXT:
+        code = cmd_evaluate_context(cmd, slot);
+        break;
+    case TRB_CR_RESET_ENDPOINT:
+        code = cmd_reset_endpoint(cmd, slot);
+        break;
+    case TRB_CR_STOP_ENDPOINT:
+        code = cmd_stop_endpoint(cmd, slot);
+        break;
     default:
         log_warn("unsupported command %s (%u)", trb_type_str(type), type);
         sc_stop();
@@ -1280,10 +1466,29 @@ void xhci::transfer_thread() {
     }
 }
 
-bool xhci::port_connected(size_t port) {
-    if (!usb_out.exists(port))
+bool xhci::port_connected(size_t port, size_t& socket) {
+    if (port > 2 * num_ports)
         return false;
-    return usb_out[port].is_connected();
+
+    size_t offset = 0;
+    usb_speed min = USB_SPEED_LOW;
+    usb_speed max = USB_SPEED_HIGH;
+
+    if (port >= num_ports) {
+        offset = num_ports;
+        min = USB_SPEED_SUPER;
+        max = USB_SPEED_SUPER;
+    }
+
+    if (!usb_out.exists(port - offset))
+        return false;
+    if (usb_out[port - offset].connection_speed() < min)
+        return false;
+    if (usb_out[port - offset].connection_speed() > max)
+        return false;
+
+    socket = port - offset;
+    return true;
 }
 
 void xhci::port_notify(size_t port, u32 mask) {
@@ -1297,13 +1502,14 @@ void xhci::port_notify(size_t port, u32 mask) {
 }
 
 void xhci::port_reset(size_t port, bool warm) {
-    if (!port_connected(port))
+    size_t socket;
+    if (!port_connected(port, socket))
         return;
 
     log_debug("usb port %zu %sreset", port, warm ? "warm-" : "");
 
-    usb_out[port].reset_device();
-    usb_speed speed = usb_out[port].connection_speed();
+    usb_out[socket].reset_device();
+    usb_speed speed = usb_out[socket].connection_speed();
     auto& portsc = ports[port].portsc;
 
     if (speed == USB_SPEED_SUPER && warm)
@@ -1321,9 +1527,10 @@ void xhci::port_update(size_t port, bool attach) {
     portsc = PORTSC_PP;
     portsc.set_field<PORTSC_PLS>(PLS_RX_DETECT);
 
-    if (attach && port_connected(port)) {
+    size_t socket;
+    if (attach && port_connected(port, socket)) {
         portsc |= PORTSC_CCS;
-        switch (usb_out[port].connection_speed()) {
+        switch (usb_out[socket].connection_speed()) {
         case USB_SPEED_LOW:
             portsc |= PORTSC_SPEED_LOW;
             portsc.set_field<PORTSC_PLS>(PLS_POLLING);
@@ -1376,7 +1583,7 @@ xhci::xhci(const sc_module_name& nm):
     crcrhi("crcrhi", XHCI_OP_OFF + 0x1c),
     dcbaap("dcbaap", XHCI_OP_OFF + 0x30),
     config("config", XHCI_OP_OFF + 0x38),
-    ports("ports", num_ports, create_port_regs),
+    ports("ports", 2 * num_ports, create_port_regs),
     mfindex("mfindex", XHCI_RT_OFF),
     runtime("run_regs", num_intrs, create_runtime_regs),
     doorbell("doorbell", XHCI_DB_OFF),
@@ -1473,20 +1680,24 @@ void xhci::reset() {
     peripheral::reset();
 
     for (auto& slot : m_slots)
-        slot.enabled = false;
+        slot.reset();
 
-    for (size_t i = 0; i < num_ports; i++)
+    for (size_t i = 0; i < 2 * num_ports; i++)
         port_update(i, true);
 }
 
 void xhci::usb_attach(usb_initiator_socket& socket) {
     size_t port = usb_out.index_of(socket);
+    if (socket.connection_speed() >= USB_SPEED_SUPER)
+        port += num_ports;
     log_debug("port%zu connected", port);
     port_update(port, true);
 }
 
 void xhci::usb_detach(usb_initiator_socket& socket) {
     size_t port = usb_out.index_of(socket);
+    if (socket.connection_speed() >= USB_SPEED_SUPER)
+        port += num_ports;
     log_debug("port%zu disconnected", port);
     port_update(port, false);
 }
