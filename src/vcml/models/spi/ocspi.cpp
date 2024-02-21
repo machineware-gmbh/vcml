@@ -84,7 +84,10 @@ void ocspi::write_control(u32 val) {
 void ocspi::write_bauddiv(u32 val) {
     if (val != bauddiv) {
         unsigned int divider = val + 1;
-        log_debug("changed transmission speed to %lu Hz", clock / divider);
+        if (divider != 0)
+            log_debug("changed transmission speed to %lu Hz", clock / divider);
+        else
+            log_debug("disabling baud divider");
     }
 
     bauddiv = val;
