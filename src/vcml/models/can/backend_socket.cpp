@@ -94,9 +94,7 @@ backend_socket::~backend_socket() {
 
 void backend_socket::send_to_host(const can_frame& frame) {
     if (m_socket > -1) {
-        can_frame copy(frame);
-        copy.dlc = dlc2len(copy.dlc);
-        mwr::fd_write(m_socket, &copy, sizeof(copy));
+        mwr::fd_write(m_socket, &frame, frame.is_fdf() ? 72 : 16);
     }
 }
 
