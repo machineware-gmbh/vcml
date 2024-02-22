@@ -231,7 +231,7 @@ usb_result device::handle_control(u16 req, u16 val, u16 idx, u8* data,
     }
 
     case USB_REQ_OUT | USB_REQ_DEVICE | USB_REQ_SET_CONFIGURATION: {
-        log_debug("set_configuration(%hu)", val & 0xff);
+        log_debug("set_configuration(%u)", (int)val & 0xff);
         return set_configuration(val & 0xff);
     }
 
