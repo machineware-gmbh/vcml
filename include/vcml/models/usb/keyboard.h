@@ -29,10 +29,21 @@ namespace usb {
 class keyboard : public device
 {
 private:
+    u8 m_leds;
     ui::keyboard m_keyboard;
     ui::console m_console;
 
 public:
+    enum led_type {
+        LED_NUM_LOCK = bit(0),
+        LED_CAPS_LOCK = bit(1),
+        LED_SCROLL_LOCK = bit(2),
+        LED_COMPOSE = bit(3),
+        LED_KANA = bit(4),
+    };
+
+    constexpr bool get_led(led_type type) const { return m_leds & type; }
+
     property<bool> usb3;
 
     property<u16> vendorid;
@@ -52,14 +63,15 @@ protected:
     virtual void start_of_simulation() override;
     virtual void end_of_simulation() override;
 
-    virtual usb_result get_desc(usb_device_desc& desc) override;
-    virtual usb_result get_desc(usb_config_desc& desc, size_t idx) override;
-    virtual usb_result get_desc(usb_interface_desc& desc, size_t idx,
-                                size_t cfg) override;
-    virtual usb_result get_desc(usb_endpoint_desc& desc, size_t idx,
-                                size_t ifx, size_t cfg) override;
-    virtual usb_result get_desc(usb_string_desc& desc, size_t idx) override;
-    virtual usb_result get_desc(usb_bos_desc& desc) override;
+    virtual usb_result get_report(u8* data, size_t size);
+    virtual usb_result set_report(u8* data, size_t size);
+
+    virtual usb_result get_data(u32 ep, u8* data, size_t len) override;
+
+    usb_result get_interface_descriptor(u8 type, u8 idx, u8* data, size_t sz);
+
+    virtual usb_result handle_control(u16 req, u16 val, u16 idx, u8* data,
+                                      size_t length) override;
 };
 
 } // namespace usb

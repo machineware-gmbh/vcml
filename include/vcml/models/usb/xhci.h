@@ -121,7 +121,7 @@ private:
 
     void send_event(size_t intr, trb& event);
     void send_cc_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
-    void send_tr_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
+    void send_tr_event(size_t intr, u32 ccode, u32 slotid, u32 ep, u64 addr);
     void send_port_event(size_t intr, u32 ccode, u64 portid);
 
     bool get_transfer(u32& slotid, u32& epid);
@@ -135,6 +135,7 @@ private:
     u32 cmd_evaluate_context(trb& cmd, u32& slotid);
     u32 cmd_reset_endpoint(trb& cmd, u32& slotid);
     u32 cmd_stop_endpoint(trb& cmd, u32& slotid);
+    u32 cmd_set_tr_dequeue_pointer(trb& cmd, u32& slotid);
 
     bool fetch_command(trb& cmd, u64& addr);
     void execute_command(trb& cmd, u64 addr);

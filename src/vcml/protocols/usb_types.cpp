@@ -134,6 +134,12 @@ const char* usb_desc_str(u8 dt) {
         return "USB_DT_BOS";
     case USB_DT_DEVICE_CAPABILITY:
         return "USB_DT_DEVICE_CAPABILITY";
+    case USB_DT_HID:
+        return "USB_DT_HID";
+    case USB_DT_REPORT:
+        return "USB_DT_REPORT";
+    case USB_DT_PHYSICAL:
+        return "USB_DT_PHYSICAL";
     case USB_DT_CS_INTERFACE:
         return "USB_DT_CS_INTERFACE";
     case USB_DT_CS_ENDPOINT:
