@@ -47,14 +47,18 @@ void write_data(u8*& ptr, size_t& size, const endpoint_desc& desc) {
     write_data<u8>(ptr, size, desc.interval);
     write_data<u8>(ptr, size, desc.refresh);
     write_data<u8>(ptr, size, desc.sync_address);
+
+    for (auto ch : desc.extra)
+        write_data<u8>(ptr, size, ch);
 }
 
 static size_t total_length(const config_desc& desc) {
     size_t length = sizeof(usb_config_desc);
     for (auto& ifx : desc.interfaces) {
         length += sizeof(usb_interface_desc);
-        length += sizeof(usb_endpoint_desc) * ifx.endpoints.size();
         length += ifx.extra.size();
+        for (auto& ep : ifx.endpoints)
+            length += sizeof(usb_endpoint_desc) + ep.extra.size();
     }
 
     return length;
@@ -379,12 +383,12 @@ usb_result device::handle_data(usb_packet& p) {
 }
 
 void device::usb_reset_device() {
-    log_info("usb reset device");
+    log_debug("usb reset device");
     usb_reset_endpoint(0);
 }
 
 void device::usb_reset_endpoint(int ep) {
-    log_info("usb reset endpoint %d", ep);
+    log_debug("usb reset endpoint %d", ep);
     switch (ep) {
     case 0:
         m_ep0.req = 0;

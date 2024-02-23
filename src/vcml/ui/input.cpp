@@ -59,11 +59,15 @@ bool input::pop_event(input_event& ev) {
 
 keyboard::keyboard(const char* name, const string& layout):
     input(name),
+    m_ctrl_l(false),
+    m_ctrl_r(false),
     m_shift_l(false),
     m_shift_r(false),
     m_capsl(false),
     m_alt_l(false),
     m_alt_r(false),
+    m_meta_l(false),
+    m_meta_r(false),
     m_prev_sym(~0u),
     m_layout(layout) {
     if (stl_contains(s_keyboards, string(name)))
@@ -138,6 +142,14 @@ void keyboard::notify_key(u32 sym, bool down) {
         m_alt_l = down;
     if (info->code == KEY_RIGHTALT)
         m_alt_r = down;
+    if (info->code == KEY_LEFTCTRL)
+        m_ctrl_l = down;
+    if (info->code == KEY_RIGHTCTRL)
+        m_ctrl_r = down;
+    if (info->code == KEY_LEFTMETA)
+        m_meta_l = down;
+    if (info->code == KEY_RIGHTMETA)
+        m_meta_r = down;
 
     m_prev_sym = down ? sym : -1;
 }

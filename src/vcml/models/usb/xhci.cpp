@@ -321,14 +321,25 @@ struct slot_context {
 
     using DW0_ENTRIES = field<27, 4, u32>;
     using DW1_PORTNO = field<16, 8, u32>;
+    using DW2_INTR = field<24, 8, u32>;
     using DW3_DEVADDR = field<0, 8, u32>;
     using DW3_STATE = field<27, 4, u32>;
 
-    constexpr u32 portno() const { return get_field<DW1_PORTNO>(dwords[1]); }
     constexpr u32 entries() const { return get_field<DW0_ENTRIES>(dwords[0]); }
+    constexpr u32 portno() const { return get_field<DW1_PORTNO>(dwords[1]); }
+    constexpr u32 intr() const { return get_field<DW2_INTR>(dwords[2]); }
+    constexpr u32 devaddr() const { return get_field<DW3_DEVADDR>(dwords[3]); }
 
     constexpr void set_entries(u32 entries) {
         set_field<DW0_ENTRIES>(dwords[0], entries);
+    }
+
+    constexpr void set_portno(u32 portno) {
+        set_field<DW1_PORTNO>(dwords[1], portno);
+    }
+
+    constexpr void set_intr(u32 interrupter) {
+        set_field<DW2_INTR>(dwords[2], interrupter);
     }
 
     constexpr void set_devaddr(u32 addr) {
@@ -363,7 +374,9 @@ struct ep_context {
         EPCTX_LSA = bit(15),
     };
 
-    constexpr void set_state(ep_state newstate) {
+    constexpr u32 get_state() { return get_field<EPCTX_STATE>(dwords[0]); }
+
+    constexpr void set_state(u32 newstate) {
         set_field<EPCTX_STATE>(dwords[0], newstate);
     }
 
@@ -645,7 +658,7 @@ void xhci::devslot::reset() {
     enabled = false;
     addressed = false;
     context = 0;
-    irq = -1;
+    intr = -1;
     port = -1;
 
     for (auto& ep : endpoints)
@@ -863,27 +876,14 @@ void xhci::write_doorbell(u32 val, size_t idx) {
     u32 slotid = idx;
     u32 epid = (val & 0xff) - 1;
 
-    log_debug("doorbell slot%u.%u", slotid, epid);
+    log_debug("doorbell slot%u.ep%u", slotid, epid);
 
     if (epid >= 32) {
-        log_warn("invalid endpoint: %u", epid);
+        log_error("invalid endpoint: %u", epid);
         return;
     }
 
-    auto* slot = m_slots + slotid;
-    if (!slot->enabled) {
-        log_warn("slot%u not enabled", slotid);
-        return;
-    }
-
-    auto* ep = slot->endpoints + epid;
-    if (ep->state != EP_RUNNING) {
-        log_warn("slot%u.ep%u is not running", slotid, epid);
-        return;
-    }
-
-    ep->kicked = true;
-    m_trev.notify(SC_ZERO_TIME);
+    kick_endpoint(slotid, epid);
 }
 
 void xhci::start() {
@@ -1016,16 +1016,17 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
         return;
     }
 
-    if (ep->state != EP_RUNNING) {
-        log_warn("slot%u.ep%u is not running", slotid, epid);
-        return;
-    }
+    if (ep->state == EP_STOPPED)
+        update_endpoint(slotid, epid, EP_RUNNING);
 
-    while (true) {
+    while (ep->state == EP_RUNNING) {
         trb request;
         u64 dequeue = ep->tr.dequeue;
         if (failed(dma.readw(dequeue, request))) {
-            log_warn("failed to fetch trb from 0x%llx", dequeue);
+            log_warn("failed to read transfer data at 0x%llx", dequeue);
+            update_endpoint(slotid, epid, EP_ERROR);
+            send_tr_event(slot->intr, TRB_CC_DATA_BUFFER_ERROR, slotid, epid,
+                          dequeue);
             return;
         }
 
@@ -1109,9 +1110,91 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
             break;
         }
 
-        if (request.control & TRB_IOC)
+        if (code == TRB_CC_STALL_ERROR || code == TRB_CC_USB_TRANSACTION_ERROR)
+            update_endpoint(slotid, epid, EP_HALTED);
+
+        if (request.control & TRB_IOC || code != TRB_CC_SUCCESS)
             send_tr_event(get_trb_intr(request), code, slotid, epid, dequeue);
     }
+}
+
+u32 xhci::enable_endpoint(u32 slotid, u32 epid, u64 context, u64 input) {
+    auto ep = m_slots[slotid].endpoints + epid;
+    if (ep->state == EP_RUNNING)
+        return TRB_CC_SUCCESS;
+
+    ep_context epctx;
+    if (failed(dma.readw(input, epctx))) {
+        log_error("failed to read ep%u%u input context", slotid, epid);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    epctx.set_state(EP_RUNNING);
+
+    ep->context = context;
+    ep->type = epctx.type();
+    ep->state = epctx.get_state();
+    ep->tr.dequeue = epctx.dequeue_ptr();
+    ep->tr.ccs = epctx.dcs();
+    ep->max_pstreams = epctx.max_pstreams();
+    ep->max_psize = epctx.max_psize();
+
+    if (failed(dma.writew(ep->context, epctx)))
+        return TRB_CC_TRB_ERROR;
+
+    log_debug("slot%u.ep%u enabled", slotid, epid);
+    log_debug("  type: %s (%u)", usb_endpoint_str(ep->type), ep->type);
+    log_debug("  context: 0x%llx", ep->context);
+    log_debug("  dequeue: 0x%llx", ep->tr.dequeue);
+    log_debug("  map-psize:    %zu", ep->max_psize);
+    log_debug("  max-pstreams: %zu", ep->max_pstreams);
+
+    return TRB_CC_SUCCESS;
+}
+
+u32 xhci::update_endpoint(u32 slotid, u32 epid, u32 newstate) {
+    auto ep = m_slots[slotid].endpoints + epid;
+    if (ep->state == newstate)
+        return TRB_CC_SUCCESS;
+
+    log_debug("slot%u.ep%u state %u -> %u", slotid, epid, ep->state, newstate);
+
+    ep->state = newstate;
+
+    if (newstate == EP_RUNNING)
+        kick_endpoint(slotid, epid);
+    else
+        ep->kicked = false;
+
+    ep_context epctx;
+    if (failed(dma.readw(ep->context, epctx))) {
+        log_error("failed to read slot%u.ep%u context", slotid, epid);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    epctx.set_state(newstate);
+
+    if (failed(dma.writew(ep->context, epctx)))
+        return TRB_CC_TRB_ERROR;
+
+    return TRB_CC_SUCCESS;
+}
+
+void xhci::kick_endpoint(u32 slotid, u32 epid) {
+    auto* slot = m_slots + slotid;
+    if (!slot->enabled) {
+        log_error("slot%u not enabled", slotid);
+        return;
+    }
+
+    auto* ep = slot->endpoints + epid;
+    if (ep->state != EP_RUNNING) {
+        log_error("slot%u.ep%u is not running", slotid, epid);
+        return;
+    }
+
+    ep->kicked = true;
+    m_trev.notify(SC_ZERO_TIME);
 }
 
 u32 xhci::cmd_noop(trb& cmd) {
@@ -1124,7 +1207,7 @@ u32 xhci::cmd_enable_slot(trb& cmd, u32& slotid) {
             m_slots[i].enabled = true;
             m_slots[i].addressed = false;
             m_slots[i].context = 0;
-            m_slots[i].irq = -1;
+            m_slots[i].intr = -1;
             m_slots[i].port = -1;
             slotid = i;
             return TRB_CC_SUCCESS;
@@ -1136,7 +1219,7 @@ u32 xhci::cmd_enable_slot(trb& cmd, u32& slotid) {
 
 u32 xhci::cmd_disable_slot(trb& cmd, u32& slotid) {
     slotid = get_trb_slot_id(cmd);
-    if (slotid >= num_slots)
+    if (slotid == 0 || slotid >= num_slots)
         return TRB_CC_TRB_ERROR;
 
     auto* slot = m_slots + slotid;
@@ -1152,7 +1235,7 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
     slotid = get_trb_slot_id(cmd);
     auto slot = m_slots + slotid;
 
-    if (slotid > num_slots)
+    if (slotid == 0 || slotid >= num_slots)
         return TRB_CC_TRB_ERROR;
 
     if (!slot->enabled)
@@ -1160,7 +1243,6 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
 
     input_context ictx;
     slot_context sctx;
-    ep_context ectx;
 
     u64 octx_addr = 0;
     u64 ictx_addr = cmd.parameter;
@@ -1183,16 +1265,14 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
         return TRB_CC_TRB_ERROR;
     }
 
-    if (failed(dma.readw(ictx_addr + 32, sctx)) ||
-        failed(dma.readw(ictx_addr + 64, ectx))) {
+    if (failed(dma.readw(ictx_addr + 32, sctx))) {
         log_error("failed to read slot %u input data", slotid);
         return TRB_CC_TRB_ERROR;
     }
 
-    log_debug("slot context: %08x %08x %08x %08x", sctx.dwords[0],
-              sctx.dwords[1], sctx.dwords[2], sctx.dwords[3]);
-    log_debug("ep0 context: %08x %08x %08x %08x %08x", ectx.dwords[0],
-              ectx.dwords[1], ectx.dwords[2], ectx.dwords[3], ectx.dwords[4]);
+    log_debug("slot%u context at 0x%llx [%08x %08x %08x %08x]", slotid,
+              octx_addr, sctx.dwords[0], sctx.dwords[1], sctx.dwords[2],
+              sctx.dwords[3]);
 
     size_t socket;
     if (!sctx.portno() || !port_connected(sctx.portno() - 1, socket)) {
@@ -1225,34 +1305,24 @@ u32 xhci::cmd_address_device(trb& cmd, u32& slotid) {
     if (failed(dma.writew(octx_addr, sctx)))
         return TRB_CC_TRB_ERROR;
 
-    ectx.set_state(EP_RUNNING);
-    if (failed(dma.writew(octx_addr + 32, ectx)))
-        return TRB_CC_TRB_ERROR;
-
     slot->addressed = true;
     slot->port = socket;
+    slot->intr = sctx.intr();
     slot->context = octx_addr;
 
-    auto ep0 = slot->endpoints;
-    ep0->context = ictx_addr + 64;
-    ep0->state = EP_RUNNING;
-    ep0->type = ectx.type();
-    ep0->tr.dequeue = ectx.dequeue_ptr();
-    ep0->tr.ccs = ectx.dcs();
-    ep0->max_pstreams = ectx.max_pstreams();
-    ep0->max_psize = ectx.max_psize();
+    log_debug("slot%u addressed", slotid);
+    log_debug("  context: 0x%llx", slot->context);
+    log_debug("  port: %u", slot->port);
+    log_debug("  intr: %u", slot->intr);
 
-    log_debug("ep0 type:%u dequeue:0x%llx max-psize:%zu max-pstreams:%zu",
-              ep0->type, ep0->tr.dequeue, ep0->max_psize, ep0->max_pstreams);
-
-    return TRB_CC_SUCCESS;
+    return enable_endpoint(slotid, 0, slot->context + 32, ictx_addr + 64);
 }
 
 u32 xhci::cmd_configure_endpoint(trb& cmd, u32& slotid) {
     slotid = get_trb_slot_id(cmd);
     auto slot = m_slots + slotid;
 
-    if (slotid > num_slots)
+    if (slotid == 0 || slotid >= num_slots)
         return TRB_CC_TRB_ERROR;
 
     if (!slot->enabled)
@@ -1275,47 +1345,33 @@ u32 xhci::cmd_configure_endpoint(trb& cmd, u32& slotid) {
 
     log_debug(" ictx: 0x%llx [%08x %08x]", ictx_addr, ictx.dcf, ictx.acf);
 
-    if (ictx.dcf & 3) {
+    if (ictx.dcf & 3) { // deconfiguration of slot or ep0 forbidden
         log_error("invalid input context [%08x %08x]", ictx.dcf, ictx.acf);
         return TRB_CC_TRB_ERROR;
     }
 
-    for (size_t ep = 1; ep < 32; ep++) {
-        if ((cmd.control & TRB_DC) || (ictx.dcf & bit(ep + 1))) {
-            log_info("request to deconfigure ep%zu", ep);
-        }
-    }
-
-    for (size_t i = 1; i < 32; i++) {
-        if (ictx.acf & bit(i + 1)) {
-            ep_context ectx;
-            u64 ectx_addr = ictx_addr + 64 + 32 * i;
-            if (failed(dma.readw(ectx_addr, ectx))) {
-                log_error("failed to read epcontext at 0x%llx", ectx_addr);
-                return TRB_CC_TRB_ERROR;
-            }
-
-            ectx.set_state(EP_RUNNING);
-
-            if (failed(dma.writew(octx_addr + 32 + 32 * i, ectx))) {
-                log_error("failed to write endpoint context");
-                return TRB_CC_TRB_ERROR;
-            }
-
-            auto* ep = slot->endpoints + i;
-            ep->state = EP_RUNNING;
-            ep->type = ectx.type();
-            ep->context = octx_addr + 32 + i * 32;
-            ep->tr.dequeue = ectx.dequeue_ptr();
-            ep->tr.ccs = ectx.dcs();
-            ep->max_pstreams = ectx.max_pstreams();
-            ep->max_psize = ectx.max_psize();
-
-            log_debug("slot%u ep%zu enabled", slotid, i);
-            log_debug("  type:     %s", usb_endpoint_str(ep->type));
-            log_debug("  dequeue:  0x%llx", ep->tr.dequeue);
-            log_debug("  psize:    %zu", ep->max_psize);
-            log_debug("  pstreams: %zu", ep->max_pstreams);
+    for (u32 i = 1; i < 32; i++) {
+        bool a = ictx.acf & bit(i + 1);
+        bool d = ictx.dcf & bit(i + 1) || (cmd.control & TRB_DC);
+        auto ep = slot->endpoints + i;
+        if (a && !d) {
+            if (ep->state != EP_DISABLED)
+                return TRB_CC_CONTEXT_STATE_ERROR;
+            u64 epctx_addr = slot->context + 32 + 32 * i;
+            u64 input_addr = ictx_addr + 32 + 32 + 32 * i;
+            auto res = enable_endpoint(slotid, i, epctx_addr, input_addr);
+            if (failed(res))
+                return res;
+        } else if (!a && d) {
+            auto res = update_endpoint(slotid, i, EP_DISABLED);
+            if (failed(res))
+                return res;
+        } else if (a && d) {
+            if (ep->state != EP_STOPPED)
+                return TRB_CC_CONTEXT_STATE_ERROR;
+            auto res = update_endpoint(slotid, i, EP_RUNNING);
+            if (failed(res))
+                return res;
         }
     }
 
@@ -1344,8 +1400,80 @@ u32 xhci::cmd_configure_endpoint(trb& cmd, u32& slotid) {
 }
 
 u32 xhci::cmd_evaluate_context(trb& cmd, u32& slotid) {
-    log_error("%s not implemented", __func__);
-    sc_stop();
+    slotid = get_trb_slot_id(cmd);
+    auto slot = m_slots + slotid;
+
+    if (slotid == 0 || slotid >= num_slots)
+        return TRB_CC_TRB_ERROR;
+
+    if (!slot->enabled)
+        return TRB_CC_SLOT_NOT_ENABLED_ERROR;
+
+    if (!slot->addressed)
+        return TRB_CC_CONTEXT_STATE_ERROR;
+
+    input_context ictx;
+    u64 ictx_addr = cmd.parameter;
+    if (failed(dma.readw(ictx_addr, ictx))) {
+        log_error("failed to read input context at 0x%llx", ictx_addr);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    if (ictx.acf & bit(0)) {
+        slot_context slotctx;
+        if (failed(dma.readw(ictx_addr + 32, slotctx))) {
+            log_error("failed to read slot context at 0x%llx", ictx_addr + 32);
+            return TRB_CC_TRB_ERROR;
+        }
+
+        slot->intr = slotctx.intr();
+        slot->port = slotctx.portno() - 1;
+
+        if (failed(dma.writew(slot->context, slotctx))) {
+            log_error("failed to write slot context at 0x%llx", slot->context);
+            return TRB_CC_TRB_ERROR;
+        }
+
+        log_debug("slot%u updated", slotid);
+        log_debug("  context: 0x%llx", slot->context);
+        log_debug("  port: %u", slot->port);
+        log_debug("  intr: %u", slot->intr);
+    }
+
+    for (u32 i = 1; i < 32; i++) {
+        if (ictx.acf & bit(i + 1)) {
+            u64 epctx_addr = slot->context + 32 + 32 * i;
+            u64 input_addr = ictx_addr + 32 + 32 + 32 * i;
+
+            ep_context epctx;
+            if (failed(dma.readw(input_addr, epctx))) {
+                log_error("failed to read slot%u.ep%u input context at 0x%llx",
+                          slotid, i, input_addr);
+                return TRB_CC_TRB_ERROR;
+            }
+
+            auto ep = slot->endpoints + i;
+            ep->state = epctx.get_state();
+            ep->tr.dequeue = epctx.dequeue_ptr();
+            ep->tr.ccs = epctx.dcs();
+            ep->max_pstreams = epctx.max_pstreams();
+            ep->max_psize = epctx.max_psize();
+
+            if (failed(dma.writew(epctx_addr, epctx))) {
+                log_error("failed to write slot%u.ep%u context at 0x%llx",
+                          slotid, i, epctx_addr);
+                return TRB_CC_TRB_ERROR;
+            }
+
+            log_debug("slot%u.ep%u updated", slotid, i);
+            log_debug("  type: %s (%u)", usb_endpoint_str(ep->type), ep->type);
+            log_debug("  context: 0x%llx", ep->context);
+            log_debug("  dequeue: 0x%llx", ep->tr.dequeue);
+            log_debug("  map-psize:    %zu", ep->max_psize);
+            log_debug("  max-pstreams: %zu", ep->max_pstreams);
+        }
+    }
+
     return TRB_CC_TRB_ERROR;
 }
 
@@ -1353,7 +1481,7 @@ u32 xhci::cmd_reset_endpoint(trb& cmd, u32& slotid) {
     slotid = get_trb_slot_id(cmd);
     auto slot = m_slots + slotid;
 
-    if (slotid > num_slots)
+    if (slotid == 0 || slotid >= num_slots)
         return TRB_CC_TRB_ERROR;
 
     if (!slot->enabled)
@@ -1363,56 +1491,93 @@ u32 xhci::cmd_reset_endpoint(trb& cmd, u32& slotid) {
     if (epid < 1 || epid > 31)
         return TRB_CC_TRB_ERROR;
 
-    slot->endpoints[epid].reset();
-    return TRB_CC_SUCCESS;
+    auto ep = slot->endpoints + slotid;
+    if (ep->state != EP_HALTED)
+        return TRB_CC_CONTEXT_STATE_ERROR;
+
+    return update_endpoint(slotid, epid, EP_STOPPED);
 }
 
 u32 xhci::cmd_stop_endpoint(trb& cmd, u32& slotid) {
     slotid = get_trb_slot_id(cmd);
     auto slot = m_slots + slotid;
 
-    if (slotid > num_slots)
+    if (slotid == 0 || slotid >= num_slots)
         return TRB_CC_TRB_ERROR;
 
     if (!slot->enabled)
         return TRB_CC_SLOT_NOT_ENABLED_ERROR;
 
     u32 epid = get_trb_ep_id(cmd);
-    if (epid < 1 || epid > 31)
+    if (epid == 0 || epid > 31)
         return TRB_CC_TRB_ERROR;
 
     auto ep = slot->endpoints + epid;
-    if (ep->state == EP_DISABLED)
-        return TRB_CC_ENDPOINT_NOT_ENABLED_ERROR;
+    if (ep->state != EP_RUNNING)
+        return TRB_CC_CONTEXT_STATE_ERROR;
 
-    log_debug("stopping endpoint %u.%u", slotid, epid);
-
-    slot->endpoints[epid].reset();
-    return TRB_CC_SUCCESS;
+    return update_endpoint(slotid, epid, EP_STOPPED);
 }
 
 u32 xhci::cmd_set_tr_dequeue_pointer(trb& cmd, u32& slotid) {
     slotid = get_trb_slot_id(cmd);
     auto slot = m_slots + slotid;
 
-    if (slotid > num_slots)
+    if (slotid == 0 || slotid >= num_slots)
         return TRB_CC_TRB_ERROR;
 
     if (!slot->enabled)
         return TRB_CC_SLOT_NOT_ENABLED_ERROR;
 
     u32 epid = get_trb_ep_id(cmd);
-    if (epid < 1 || epid > 31)
+    if (epid == 0 || epid > 31)
         return TRB_CC_TRB_ERROR;
 
     auto ep = slot->endpoints + epid;
-    if (ep->state != EP_ERROR && ep->state != EP_STOPPED)
+    if (ep->state == EP_DISABLED || ep->state == EP_HALTED)
         return TRB_CC_CONTEXT_STATE_ERROR;
+
+    if (ep->state == EP_ERROR)
+        update_endpoint(slotid, epid, EP_STOPPED);
 
     ep->tr.dequeue = cmd.parameter & bitmask(60, 4);
     ep->tr.ccs = cmd.parameter & bit(0);
 
     log_debug("slot%u.ep%u dequeue: 0x%llx", slotid, epid, ep->tr.dequeue);
+    return TRB_CC_SUCCESS;
+}
+
+u32 xhci::cmd_reset_device(trb& cmd, u32& slotid) {
+    slotid = get_trb_slot_id(cmd);
+    auto slot = m_slots + slotid;
+
+    if (slotid == 0 || slotid >= num_slots)
+        return TRB_CC_TRB_ERROR;
+
+    if (!slot->enabled)
+        return TRB_CC_SLOT_NOT_ENABLED_ERROR;
+
+    if (slot->addressed)
+        usb_out[slot->port]->usb_reset(-1);
+
+    for (u32 epid = 0; epid < 32; epid++) {
+        if (slot->endpoints[epid].state != EP_DISABLED)
+            update_endpoint(slotid, epid, EP_DISABLED);
+    }
+
+    slot_context slotctx;
+    if (failed(dma.readw(slot->context, slotctx))) {
+        log_error("failed to read slot context at 0x%llx", slot->context);
+        return TRB_CC_TRB_ERROR;
+    }
+
+    slotctx.set_state(SLOT_DEFAULT);
+
+    if (failed(dma.writew(slot->context, slotctx))) {
+        log_error("failed to write slot context at 0x%llx", slot->context);
+        return TRB_CC_TRB_ERROR;
+    }
+
     return TRB_CC_SUCCESS;
 }
 
@@ -1475,6 +1640,9 @@ void xhci::execute_command(trb& cmd, u64 addr) {
         break;
     case TRB_CR_SET_TR_DEQUEUE_POINTER:
         code = cmd_set_tr_dequeue_pointer(cmd, slot);
+        break;
+    case TRB_CR_RESET_DEVICE:
+        code = cmd_reset_device(cmd, slot);
         break;
     default:
         log_warn("unsupported command %s (%u)", trb_type_str(type), type);

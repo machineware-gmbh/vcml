@@ -55,8 +55,8 @@ public:
 
     struct devslot {
         u64 context;
-        size_t irq;
-        size_t port;
+        u32 intr;
+        u32 port;
         bool enabled;
         bool addressed;
         endpoint endpoints[32];
@@ -127,6 +127,10 @@ private:
     bool get_transfer(u32& slotid, u32& epid);
     void run_transfer(u32 slotid, u32 epid);
 
+    u32 enable_endpoint(u32 slot, u32 epid, u64 context, u64 input);
+    u32 update_endpoint(u32 slot, u32 epid, u32 state);
+    void kick_endpoint(u32 slot, u32 epid);
+
     u32 cmd_noop(trb& cmd);
     u32 cmd_enable_slot(trb& cmd, u32& slotid);
     u32 cmd_disable_slot(trb& cmd, u32& slotid);
@@ -136,6 +140,7 @@ private:
     u32 cmd_reset_endpoint(trb& cmd, u32& slotid);
     u32 cmd_stop_endpoint(trb& cmd, u32& slotid);
     u32 cmd_set_tr_dequeue_pointer(trb& cmd, u32& slotid);
+    u32 cmd_reset_device(trb& cmd, u32& slotid);
 
     bool fetch_command(trb& cmd, u64& addr);
     void execute_command(trb& cmd, u64 addr);

@@ -28,6 +28,7 @@ struct endpoint_desc {
     u8 interval;
     u8 refresh;
     u8 sync_address;
+    vector<u8> extra;
 };
 
 struct interface_desc {

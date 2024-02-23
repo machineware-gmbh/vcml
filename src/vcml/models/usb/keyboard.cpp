@@ -59,6 +59,15 @@ static const device_desc KEYBOARD_DESC{
     } },
 };
 
+static const u8 USB3_ENDPOINT_COMPANION_DT[] = {
+    0x06, // length
+    USB_DT_ENDPOINT_COMPANION,
+    0x00, // max burst
+    0x00, // attributes
+    0x08, // bytes per interval (lo)
+    0x00  // bytes per interval (hi)
+};
+
 // USB-HID: Appendix B (Boot Interface Descriptors)
 // - input reports (i.e. reports from device to host)
 //   - 1x8 bits for modifier keys
@@ -104,6 +113,41 @@ static const u8 KEYBOARD_REPORT_DESCRIPTOR[] = {
     0xc0,       // end collection
 };
 
+static const u8 USB_HID_KEYCODE_TABLE[256] = {
+    0x00, 0x29, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, // [0..7]
+    0x24, 0x25, 0x26, 0x27, 0x2d, 0x2e, 0x2a, 0x2b, // [8..15]
+    0x14, 0x1a, 0x08, 0x15, 0x17, 0x1c, 0x18, 0x0c, // [16..23]
+    0x12, 0x13, 0x2f, 0x30, 0x28, 0xe0, 0x04, 0x16, // [24..31]
+    0x07, 0x09, 0x0a, 0x0b, 0x0d, 0x0e, 0x0f, 0x33, // [32..39]
+    0x34, 0x35, 0xe1, 0x31, 0x1d, 0x1b, 0x06, 0x19, // [40..47]
+    0x05, 0x11, 0x10, 0x36, 0x37, 0x38, 0xe5, 0x55, // [48..55]
+    0xe2, 0x2c, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, // [56..63]
+    0x3f, 0x40, 0x41, 0x42, 0x43, 0x53, 0x47, 0x5f, // [64..71]
+    0x60, 0x61, 0x56, 0x5c, 0x5d, 0x5e, 0x57, 0x59, // [72..79]
+    0x5a, 0x5b, 0x62, 0x63, 0xff, 0x94, 0x64, 0x44, // [80..87]
+    0x45, 0x87, 0x92, 0x93, 0x8a, 0x88, 0x8b, 0x8c, // [88..95]
+    0x58, 0xe4, 0x54, 0x46, 0xe6, 0x00, 0x4a, 0x52, // [96..103]
+    0x4b, 0x50, 0x4f, 0x4d, 0x51, 0x4e, 0x49, 0x4c, // [104..111]
+    0x00, 0x7f, 0x81, 0x80, 0x66, 0x67, 0x00, 0x48, // [112..119]
+    0x00, 0x85, 0x90, 0x91, 0x89, 0xe3, 0xe7, 0x65, // [120..127]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [128..135]
+    0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0xff, // [136..143]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [144..151]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [152..159]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [160..167]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [168..175]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [176..183]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [184..191]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [192..199]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [200..207]
+    0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, // [208..215]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [216..223]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [224..231]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [232..239]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [240..247]
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // [248..255]
+};
+
 enum usb_hid_request : u16 {
     USB_REQ_GET_REPORT = 0x01,
     USB_REQ_GET_IDLE = 0x02,
@@ -112,6 +156,64 @@ enum usb_hid_request : u16 {
     USB_REQ_SET_IDLE = 0x0a,
     USB_REQ_SET_PROTOCOL = 0x0b,
 };
+
+void keyboard::poll_modifier_keys(u8& data) {
+    data = 0;
+    if (m_keyboard.ctrl_l())
+        data |= bit(0);
+    if (m_keyboard.shift_l())
+        data |= bit(1);
+    if (m_keyboard.alt_l())
+        data |= bit(2);
+    if (m_keyboard.meta_l())
+        data |= bit(3);
+    if (m_keyboard.ctrl_r())
+        data |= bit(4);
+    if (m_keyboard.shift_r())
+        data |= bit(5);
+    if (m_keyboard.alt_r())
+        data |= bit(6);
+    if (m_keyboard.meta_r())
+        data |= bit(7);
+}
+
+void keyboard::poll_standard_keys(u8* data, size_t length) {
+    ui::input_event ev;
+    vector<u8> release;
+
+    while (m_keyboard.has_events()) {
+        m_keyboard.pop_event(ev);
+        if (!ev.is_key()) {
+            log_warn("invalid input event on keyboard");
+            continue;
+        }
+
+        u8 hid = USB_HID_KEYCODE_TABLE[ev.key.code & 0xff];
+
+        if (ev.key.state == ui::VCML_KEY_UP)
+            stl_add_unique(release, hid);
+        else
+            stl_add_unique(m_keys, hid);
+    }
+
+    if (m_keys.size() <= length) {
+        memcpy(data, m_keys.data(), m_keys.size());
+        memset(data + m_keys.size(), 0, length - m_keys.size());
+    } else {
+        memcpy(data, m_keys.data(), length - 1);
+        data[length - 1] = 1; // rollover
+    }
+
+    for (auto hid : release)
+        stl_remove(m_keys, hid);
+}
+
+void keyboard::poll_keys(u8* data, size_t length) {
+    VCML_ERROR_ON(length < 8, "insufficient buffer size to poll keys");
+    poll_modifier_keys(data[0]);
+    data[1] = 0; // reserved
+    poll_standard_keys(data + 2, length - 2);
+}
 
 keyboard::keyboard(const sc_module_name& nm):
     device(nm, KEYBOARD_DESC),
@@ -124,14 +226,20 @@ keyboard::keyboard(const sc_module_name& nm):
     manufacturer("manufacturer", "MachineWare GmbH"),
     product("product", "VCML Keyboard"),
     serialno("serialno", VCML_GIT_REV_SHORT),
+    keymap("keymap", "us"),
     usb_in("usb_in") {
     if (usb3) {
         m_desc.bcd_usb = 0x300;
         m_desc.max_packet_size0 = 9;
+        auto& extra = m_desc.configs[0].interfaces[0].endpoints[0].extra;
+        for (auto ch : USB3_ENDPOINT_COMPANION_DT)
+            extra.push_back(ch);
     } else {
         m_desc.bcd_usb = 0x200;
         m_desc.max_packet_size0 = 8;
     }
+
+    m_keyboard.set_layout(keymap);
 }
 
 keyboard::~keyboard() {
@@ -139,6 +247,9 @@ keyboard::~keyboard() {
 }
 
 void keyboard::start_of_simulation() {
+    if (m_console.has_display())
+        m_console.notify(m_keyboard);
+
     if (usb3)
         usb_in.attach(USB_SPEED_SUPER);
     else
@@ -156,20 +267,7 @@ usb_result keyboard::get_report(u8* data, size_t length) {
         return USB_RESULT_STALL;
     }
 
-    data[0] = 0; // TODO: modifier state
-    data[1] = 0; // TODO: reserved
-    data[2] = 0; // TODO: keycode 1
-    data[3] = 0; // TODO: keycode 2
-    data[4] = 0; // TODO: keycode 3
-    data[5] = 0; // TODO: keycode 4
-    data[6] = 0; // TODO: keycode 5
-    data[7] = 0; // TODO: keycode 6
-
-    log_debug(
-        "get_report(%02hhx %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx)",
-        data[0], data[1], data[2], data[3], data[4], data[5], data[6],
-        data[7]);
-
+    poll_keys(data, length);
     return USB_RESULT_SUCCESS;
 }
 
@@ -197,7 +295,17 @@ usb_result keyboard::set_report(u8* data, size_t length) {
 }
 
 usb_result keyboard::get_data(u32 ep, u8* data, size_t len) {
-    log_info("ep%u get_data (%zu bytes)", ep, len);
+    if (ep != 2) {
+        log_error("invalid endpoint contacted: %u", ep);
+        return USB_RESULT_NACK;
+    }
+
+    if (len != 8) {
+        log_error("invalid data packet length: %zu, expected 8", len);
+        return USB_RESULT_STALL;
+    }
+
+    poll_keys(data, len);
     return USB_RESULT_SUCCESS;
 }
 

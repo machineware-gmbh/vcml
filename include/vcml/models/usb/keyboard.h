@@ -30,8 +30,14 @@ class keyboard : public device
 {
 private:
     u8 m_leds;
+    vector<u8> m_keys;
+
     ui::keyboard m_keyboard;
     ui::console m_console;
+
+    void poll_modifier_keys(u8& data);
+    void poll_standard_keys(u8* data, size_t len);
+    void poll_keys(u8* data, size_t len);
 
 public:
     enum led_type {
@@ -52,6 +58,7 @@ public:
     property<string> manufacturer;
     property<string> product;
     property<string> serialno;
+    property<string> keymap;
 
     usb_target_socket usb_in;
 
