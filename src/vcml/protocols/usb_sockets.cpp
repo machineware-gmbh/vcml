@@ -112,15 +112,20 @@ void usb_initiator_socket::reset_endpoint(int ep) {
 }
 
 void usb_target_socket::usb_reset(int ep) {
-    if (ep < 0)
-        m_dev->usb_reset_device();
-    else
-        m_dev->usb_reset_endpoint(ep);
+    if (is_attached()) {
+        if (ep < 0)
+            m_dev->usb_reset_device();
+        else
+            m_dev->usb_reset_endpoint(ep);
+    }
 }
 
 void usb_target_socket::usb_transport(usb_packet& p) {
     trace_fw(p);
-    m_dev->usb_transport(*this, p);
+    if (is_attached())
+        m_dev->usb_transport(*this, p);
+    else
+        p.result = USB_RESULT_NACK;
     trace_bw(p);
 }
 
