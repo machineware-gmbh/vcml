@@ -362,39 +362,42 @@ enum ep_state : u32 {
 struct ep_context {
     u32 dwords[5];
 
-    using EPCTX_STATE = field<0, 3, u32>;
-    using EPCTX_MAXPSTREAMS = field<10, 5, u32>;
-    using EPCTX_TYPE = field<3, 3, u32>;
-    using EPCTX_MAXBURSTSIZE = field<8, 8, u32>;
-    using EPCTX_MAXPSIZE = field<16, 16, u32>;
+    using DW0_STATE = field<0, 3, u32>;
+    using DW0_MAX_PSTREAMS = field<10, 5, u32>;
+    using DW0_INTERVAL = field<16, 8, u32>;
+    using DW1_TYPE = field<3, 3, u32>;
+    using DW1_MAX_BURST_SIZE = field<8, 8, u32>;
+    using DW1_MAX_PACKET_SIZE = field<16, 16, u32>;
 
     enum epctx_bits : u32 {
-        EPCTX_DCS = bit(0),
-        EPCTX_HID = bit(7),
-        EPCTX_LSA = bit(15),
+        DW0_LSA = bit(15),
+        DW1_HID = bit(7),
+        DW2_DCS = bit(0),
     };
 
-    constexpr u32 get_state() { return get_field<EPCTX_STATE>(dwords[0]); }
-
-    constexpr void set_state(u32 newstate) {
-        set_field<EPCTX_STATE>(dwords[0], newstate);
-    }
+    constexpr u32 state() { return get_field<DW0_STATE>(dwords[0]); }
+    constexpr u32 type() const { return get_field<DW1_TYPE>(dwords[1]); }
+    constexpr bool dcs() const { return dwords[2] & DW2_DCS; }
 
     constexpr u32 max_pstreams() const {
-        return get_field<EPCTX_MAXPSTREAMS>(dwords[0]);
+        return get_field<DW0_MAX_PSTREAMS>(dwords[0]);
+    }
+
+    constexpr u32 interval() const {
+        return 1 << get_field<DW0_INTERVAL>(dwords[0]);
     }
 
     constexpr u32 max_psize() const {
-        return get_field<EPCTX_MAXPSIZE>(dwords[1]) *
-               (1 + get_field<EPCTX_MAXBURSTSIZE>(dwords[1]));
+        return get_field<DW1_MAX_PACKET_SIZE>(dwords[1]) *
+               (1 + get_field<DW1_MAX_BURST_SIZE>(dwords[1]));
     }
-
-    constexpr u32 type() const { return get_field<EPCTX_TYPE>(dwords[1]); }
-
-    constexpr bool dcs() const { return dwords[2] & EPCTX_DCS; }
 
     constexpr u64 dequeue_ptr() const {
         return ((u64)dwords[3] << 32) | (dwords[2] & bitmask(28, 4));
+    }
+
+    constexpr void set_state(u32 newstate) {
+        set_field<DW0_STATE>(dwords[0], newstate);
     }
 };
 
@@ -650,6 +653,8 @@ void xhci::endpoint::reset() {
     context = 0;
     max_psize = 0;
     max_pstreams = 0;
+    interval = 0;
+    mfindex = 0;
     kicked = false;
     state = EP_DISABLED;
 }
@@ -727,6 +732,11 @@ xhci::runtime_regs::runtime_regs(size_t idx):
 
 static xhci::runtime_regs* create_runtime_regs(const char* name, size_t idx) {
     return new xhci::runtime_regs(idx);
+}
+
+u64 xhci::get_mfindex() const {
+    u64 ns = time_to_ns(sc_time_stamp() - m_mfstart);
+    return ns / 125000;
 }
 
 u32 xhci::read_hcsparams1() {
@@ -847,8 +857,7 @@ void xhci::write_portsc(u32 val, size_t idx) {
 }
 
 u32 xhci::read_mfindex() {
-    u64 ns = time_to_us(sc_time_stamp() - m_mfstart);
-    return (ns / 125000) & MFINDEX_MASK;
+    return get_mfindex() & MFINDEX_MASK;
 }
 
 void xhci::write_iman(u32 val, size_t idx) {
@@ -990,14 +999,34 @@ void xhci::send_port_event(size_t intr, u32 ccode, u64 portid) {
     send_event(intr, event);
 }
 
+void xhci::schedule_transfers() {
+    u32 mfindex = get_mfindex();
+    for (size_t i = 1; i < num_slots; i++) {
+        auto slot = m_slots + i;
+        if (slot->enabled) {
+            for (size_t j = 0; j < 32; j++) {
+                auto ep = slot->endpoints + j;
+                if (ep->state == EP_RUNNING && ep->kicked &&
+                    ep->mfindex > mfindex) {
+                    m_trev.notify(125 * (ep->mfindex - mfindex), SC_US);
+                }
+            }
+        }
+    }
+}
+
 bool xhci::get_transfer(u32& slotid, u32& epid) {
-    for (size_t slot = 1; slot < num_slots; slot++) {
-        if (m_slots[slot].enabled) {
-            for (size_t ep = 0; ep < 32; ep++) {
-                if (m_slots[slot].endpoints[ep].kicked) {
-                    m_slots[slot].endpoints[ep].kicked = false;
-                    slotid = slot;
-                    epid = ep;
+    u32 mfindex = get_mfindex();
+    for (size_t i = 1; i < num_slots; i++) {
+        auto slot = m_slots + i;
+        if (slot->enabled) {
+            for (size_t j = 0; j < 32; j++) {
+                auto ep = slot->endpoints + j;
+                if (ep->state == EP_RUNNING && ep->kicked &&
+                    ep->mfindex <= mfindex) {
+                    ep->kicked = false;
+                    slotid = i;
+                    epid = j;
                     return true;
                 }
             }
@@ -1113,6 +1142,9 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
         if (code == TRB_CC_STALL_ERROR || code == TRB_CC_USB_TRANSACTION_ERROR)
             update_endpoint(slotid, epid, EP_HALTED);
 
+        if (ep->state == EP_RUNNING)
+            ep->mfindex = get_mfindex() + ep->interval;
+
         if (request.control & TRB_IOC || code != TRB_CC_SUCCESS)
             send_tr_event(get_trb_intr(request), code, slotid, epid, dequeue);
     }
@@ -1133,11 +1165,13 @@ u32 xhci::enable_endpoint(u32 slotid, u32 epid, u64 context, u64 input) {
 
     ep->context = context;
     ep->type = epctx.type();
-    ep->state = epctx.get_state();
+    ep->state = epctx.state();
     ep->tr.dequeue = epctx.dequeue_ptr();
     ep->tr.ccs = epctx.dcs();
-    ep->max_pstreams = epctx.max_pstreams();
+    ep->max_pstreams = 0; // streams not supported
     ep->max_psize = epctx.max_psize();
+    ep->interval = epctx.interval();
+    ep->mfindex = get_mfindex();
 
     if (failed(dma.writew(ep->context, epctx)))
         return TRB_CC_TRB_ERROR;
@@ -1146,8 +1180,9 @@ u32 xhci::enable_endpoint(u32 slotid, u32 epid, u64 context, u64 input) {
     log_debug("  type: %s (%u)", usb_endpoint_str(ep->type), ep->type);
     log_debug("  context: 0x%llx", ep->context);
     log_debug("  dequeue: 0x%llx", ep->tr.dequeue);
-    log_debug("  map-psize:    %zu", ep->max_psize);
-    log_debug("  max-pstreams: %zu", ep->max_pstreams);
+    log_debug("  interval: %uus", ep->interval * 125);
+    log_debug("  map-psize:    %u", ep->max_psize);
+    log_debug("  max-pstreams: %u", ep->max_pstreams);
 
     return TRB_CC_SUCCESS;
 }
@@ -1194,7 +1229,12 @@ void xhci::kick_endpoint(u32 slotid, u32 epid) {
     }
 
     ep->kicked = true;
-    m_trev.notify(SC_ZERO_TIME);
+
+    u32 mfindex = get_mfindex();
+    if (ep->mfindex > mfindex)
+        m_trev.notify(125 * (ep->mfindex - mfindex), SC_US);
+    else
+        m_trev.notify(SC_ZERO_TIME);
 }
 
 u32 xhci::cmd_noop(trb& cmd) {
@@ -1453,11 +1493,12 @@ u32 xhci::cmd_evaluate_context(trb& cmd, u32& slotid) {
             }
 
             auto ep = slot->endpoints + i;
-            ep->state = epctx.get_state();
+            ep->state = epctx.state();
             ep->tr.dequeue = epctx.dequeue_ptr();
             ep->tr.ccs = epctx.dcs();
-            ep->max_pstreams = epctx.max_pstreams();
+            ep->max_pstreams = 0; // streams not supported
             ep->max_psize = epctx.max_psize();
+            ep->interval = epctx.interval();
 
             if (failed(dma.writew(epctx_addr, epctx))) {
                 log_error("failed to write slot%u.ep%u context at 0x%llx",
@@ -1469,8 +1510,9 @@ u32 xhci::cmd_evaluate_context(trb& cmd, u32& slotid) {
             log_debug("  type: %s (%u)", usb_endpoint_str(ep->type), ep->type);
             log_debug("  context: 0x%llx", ep->context);
             log_debug("  dequeue: 0x%llx", ep->tr.dequeue);
-            log_debug("  map-psize:    %zu", ep->max_psize);
-            log_debug("  max-pstreams: %zu", ep->max_pstreams);
+            log_debug("  interval: %uus", ep->interval * 125);
+            log_debug("  map-psize:    %u", ep->max_psize);
+            log_debug("  max-pstreams: %u", ep->max_pstreams);
         }
     }
 
@@ -1681,6 +1723,8 @@ void xhci::transfer_thread() {
         u32 slotid, epid;
         while (!xhci_halted(usbsts) && get_transfer(slotid, epid))
             run_transfer(slotid, epid);
+
+        schedule_transfers();
     }
 }
 

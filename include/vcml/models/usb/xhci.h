@@ -45,10 +45,12 @@ public:
         u32 type;
         u32 state;
         u64 context;
-        ring tr;
-        size_t max_psize;
-        size_t max_pstreams;
+        u32 max_psize;
+        u32 max_pstreams;
+        u32 interval;
+        u64 mfindex;
         bool kicked;
+        ring tr;
 
         void reset();
     };
@@ -97,6 +99,8 @@ private:
 
     devslot m_slots[MAX_SLOTS];
 
+    u64 get_mfindex() const;
+
     u32 read_hcsparams1();
     u32 read_extcaps(size_t idx);
 
@@ -124,6 +128,7 @@ private:
     void send_tr_event(size_t intr, u32 ccode, u32 slotid, u32 ep, u64 addr);
     void send_port_event(size_t intr, u32 ccode, u64 portid);
 
+    void schedule_transfers();
     bool get_transfer(u32& slotid, u32& epid);
     void run_transfer(u32 slotid, u32 epid);
 

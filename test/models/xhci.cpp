@@ -89,11 +89,21 @@ public:
         EXPECT_EQ((portsc[3] >> 10) & 0xf, 4); // disconnected
     }
 
+    void test_microframes() {
+        u32 start, end;
+        ASSERT_OK(out.readw(0x1600, start));
+        wait(125, SC_US);
+        ASSERT_OK(out.readw(0x1600, end));
+        EXPECT_EQ(end - start, 1);
+    }
+
     virtual void run_test() override {
         wait(SC_ZERO_TIME);
         test_capabilities();
         wait(SC_ZERO_TIME);
         test_ports();
+        wait(SC_ZERO_TIME);
+        test_microframes();
     }
 };
 
