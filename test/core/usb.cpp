@@ -27,16 +27,16 @@ TEST(usb, packet) {
     p.result = USB_RESULT_SUCCESS;
     p.data = (u8*)&data;
     p.length = sizeof(data);
-    EXPECT_EQ(to_string(p),
-              "USB_TOKEN_IN @ 1.2 [78 cd 34 12] (USB_RESULT_SUCCESS)");
+    auto str = to_string(p);
+    EXPECT_EQ(str, "USB_TOKEN_IN @ 1.2 [78 cd 34 12] (USB_RESULT_SUCCESS)");
 
     p.token = USB_TOKEN_OUT;
     p.addr = 7;
     p.epno = 5;
     p.length = 0;
     p.result = USB_RESULT_NACK;
-    EXPECT_EQ(to_string(p),
-              "USB_TOKEN_OUT @ 7.5 [<no data>] (USB_RESULT_NACK)");
+    str = to_string(p);
+    EXPECT_EQ(str, "USB_TOKEN_OUT @ 7.5 [<no data>] (USB_RESULT_NACK)");
 }
 
 MATCHER_P(usb_match_socket, name, "Matches an USB socket by name") {
@@ -113,7 +113,9 @@ public:
         EXPECT_CALL(*this, usb_transport(_, _)).Times(0);
         EXPECT_CALL(*this, usb_reset_device()).Times(0);
         EXPECT_CALL(*this, usb_reset_endpoint(_)).Times(0);
-        usb_out->usb_transport(p);
+        usb_out.send(p);
+        usb_out.reset_device();
+        usb_out.reset_endpoint(10);
         EXPECT_EQ(p.result, USB_RESULT_NACK);
 
         // attach and re-send
