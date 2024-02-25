@@ -128,6 +128,8 @@ private:
     void send_tr_event(size_t intr, u32 ccode, u32 slotid, u32 ep, u64 addr);
     void send_port_event(size_t intr, u32 ccode, u64 portid);
 
+    u32 handle_transmit(u32 slotid, u32 epid, trb& cmd);
+
     void schedule_transfers();
     bool get_transfer(u32& slotid, u32& epid);
     void run_transfer(u32 slotid, u32 epid);

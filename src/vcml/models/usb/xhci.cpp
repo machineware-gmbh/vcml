@@ -999,6 +999,47 @@ void xhci::send_port_event(size_t intr, u32 ccode, u64 portid) {
     send_event(intr, event);
 }
 
+u32 xhci::handle_transmit(u32 slotid, u32 epid, trb& cmd) {
+    auto slot = m_slots + slotid;
+    auto ep = slot->endpoints + epid;
+    VCML_ERROR_ON(ep->state != EP_RUNNING, "ep%u not running", epid);
+
+    bool dirin = (epid & 1) == 0;
+    if (epid == 0)
+        dirin = cmd.control & TRB_DIR;
+
+    u64 addr = cmd.parameter;
+    u32 size = get_trb_data_length(cmd);
+    for (u32 off = 0; off < size; off += ep->max_psize) {
+        vector<u8> buf(min(size - off, ep->max_psize));
+
+        if (dirin) {
+            auto packet = usb_packet_in(slotid, epid, buf.data(), buf.size());
+            usb_out[slot->port].send(packet);
+            if (failed(packet))
+                return usb_packet_ccode(packet);
+            if (failed(dma.write(addr + off, buf.data(), buf.size())))
+                return TRB_CC_DATA_BUFFER_ERROR;
+        } else {
+            if (cmd.control & TRB_IDT) {
+                if (size > sizeof(cmd.parameter))
+                    return TRB_CC_TRB_ERROR;
+                memcpy(buf.data(), (u8*)&cmd.parameter + off, buf.size());
+            } else {
+                if (failed(dma.read(addr + off, buf.data(), buf.size())))
+                    return TRB_CC_DATA_BUFFER_ERROR;
+            }
+
+            auto packet = usb_packet_out(slotid, epid, buf.data(), buf.size());
+            usb_out[slot->port].send(packet);
+            if (failed(packet))
+                return usb_packet_ccode(packet);
+        }
+    }
+
+    return TRB_CC_SUCCESS;
+}
+
 void xhci::schedule_transfers() {
     u32 mfindex = get_mfindex();
     for (size_t i = 1; i < num_slots; i++) {
@@ -1083,21 +1124,7 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
         }
 
         case TRB_TR_DATA: {
-            u64 addr = request.parameter;
-            u32 size = get_trb_data_length(request);
-            vector<u8> buf(size);
-            if (request.control & TRB_DIR) {
-                auto packet = usb_packet_in(slotid, 0, buf.data(), size);
-                usb_out[slot->port].send(packet);
-                code = usb_packet_ccode(packet);
-                dma.write(addr, buf.data(), size);
-            } else {
-                dma.read(addr, buf.data(), size);
-                auto packet = usb_packet_out(slotid, 0, buf.data(), size);
-                usb_out[slot->port].send(packet);
-                code = usb_packet_ccode(packet);
-            }
-
+            code = handle_transmit(slotid, 0, request);
             break;
         }
 
@@ -1115,22 +1142,9 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
             break;
         }
 
+        case TRB_TR_ISOCH:
         case TRB_TR_NORMAL: {
-            u64 addr = request.parameter;
-            u32 size = get_trb_data_length(request);
-            vector<u8> buf(size);
-            if (epid & 1) {
-                dma.read(addr, buf.data(), size);
-                auto packet = usb_packet_out(slotid, epid, buf.data(), size);
-                usb_out[slot->port].send(packet);
-                code = usb_packet_ccode(packet);
-            } else {
-                auto packet = usb_packet_in(slotid, epid, buf.data(), size);
-                usb_out[slot->port].send(packet);
-                code = usb_packet_ccode(packet);
-                dma.write(addr, buf.data(), size);
-            }
-
+            code = handle_transmit(slotid, epid, request);
             break;
         }
 
