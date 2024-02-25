@@ -27,6 +27,7 @@ struct vq_message;
 struct serial_payload;
 struct eth_frame;
 struct can_frame;
+struct usb_packet;
 
 enum trace_direction : int {
     TRACE_FW = 2,
@@ -55,6 +56,7 @@ enum protocol_kind {
     PROTO_VIRTIO,
     PROTO_ETHERNET,
     PROTO_CAN,
+    PROTO_USB,
     NUM_PROTOCOLS,
 };
 
@@ -147,6 +149,13 @@ struct protocol<can_frame> {
     static constexpr bool TRACE_BW = false;
 };
 
+template <>
+struct protocol<usb_packet> {
+    static constexpr protocol_kind KIND = PROTO_USB;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
 class tracer
 {
 private:
@@ -197,6 +206,7 @@ public:
     virtual void trace(const activity<serial_payload>&) = 0;
     virtual void trace(const activity<eth_frame>&) = 0;
     virtual void trace(const activity<can_frame>&) = 0;
+    virtual void trace(const activity<usb_packet>&) = 0;
 
     tracer();
     virtual ~tracer();

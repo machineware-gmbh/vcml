@@ -17,6 +17,7 @@
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/eth.h"
 #include "vcml/protocols/can.h"
+#include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
@@ -40,6 +41,7 @@ array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_VIRTIO]   = */ mwr::termcolors::BRIGHT_CYAN,
     /* [PROTO_ETHERNET] = */ mwr::termcolors::BRIGHT_BLUE,
     /* [PROTO_CAN]      = */ mwr::termcolors::RED,
+    /* [PROTO_USB]      = */ mwr::termcolors::CYAN,
 };
 
 template <typename PAYLOAD>
@@ -135,6 +137,10 @@ void tracer_term::trace(const activity<eth_frame>& msg) {
 }
 
 void tracer_term::trace(const activity<can_frame>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<usb_packet>& msg) {
     do_trace(msg);
 }
 

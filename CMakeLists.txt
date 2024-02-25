@@ -107,6 +107,8 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/pci.cpp
     ${src}/vcml/protocols/eth.cpp
     ${src}/vcml/protocols/can.cpp
+    ${src}/vcml/protocols/usb_types.cpp
+    ${src}/vcml/protocols/usb_sockets.cpp
     ${src}/vcml/protocols/serial.cpp
     ${src}/vcml/protocols/virtio.cpp
     ${src}/vcml/models/generic/clock.cpp
@@ -156,6 +158,9 @@ add_library(vcml STATIC
     ${src}/vcml/models/spi/ocspi.cpp
     ${src}/vcml/models/sd/card.cpp
     ${src}/vcml/models/sd/sdhci.cpp
+    ${src}/vcml/models/usb/device.cpp
+    ${src}/vcml/models/usb/keyboard.cpp
+    ${src}/vcml/models/usb/xhci.cpp
     ${src}/vcml/models/pci/device.cpp
     ${src}/vcml/models/pci/host.cpp
     ${src}/vcml/models/virtio/mmio.cpp

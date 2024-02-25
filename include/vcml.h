@@ -66,6 +66,7 @@
 #include "vcml/protocols/pci_ids.h"
 #include "vcml/protocols/eth.h"
 #include "vcml/protocols/can.h"
+#include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/virtio.h"
 
@@ -115,6 +116,10 @@
 
 #include "vcml/models/sd/card.h"
 #include "vcml/models/sd/sdhci.h"
+
+#include "vcml/models/usb/xhci.h"
+#include "vcml/models/usb/device.h"
+#include "vcml/models/usb/keyboard.h"
 
 #include "vcml/models/pci/device.h"
 #include "vcml/models/pci/host.h"

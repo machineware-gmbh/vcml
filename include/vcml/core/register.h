@@ -140,6 +140,9 @@ public:
     void on_write_mask(DATA mask);
     void on_write_mask(const array<DATA, N>& mask);
 
+    void read_zero();
+    void ignore_write();
+
     bool is_banked() const { return m_banked; }
     void set_banked(bool set = true) { m_banked = set; }
 
@@ -317,6 +320,16 @@ void reg<DATA, N>::on_write_mask(const array<DATA, N>& mask) {
     on_write([this, mask](DATA val, size_t i) -> void {
         current_bank(i) = (current_bank(i) & ~mask[i]) | (val & mask[i]);
     });
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::read_zero() {
+    on_read([]() -> DATA { return 0; });
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::ignore_write() {
+    on_read([](DATA val) -> void { return; });
 }
 
 template <typename DATA, size_t N>

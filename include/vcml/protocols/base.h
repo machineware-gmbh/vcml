@@ -184,7 +184,9 @@ public:
         if (socket)
             return *socket;
 
-        VCML_ERROR_ON(idx >= m_max, "socket out of bounds: %zu", idx);
+        if (idx >= m_max)
+            VCML_ERROR("socket index out of bounds: %s[%zu]", name(), idx);
+
         hierarchy_guard guard(this);
         string nm = mkstr("%s[%zu]", basename(), idx);
         socket = new SOCKET(nm.c_str(), m_space);
@@ -200,7 +202,7 @@ public:
 
     SOCKET& operator[](size_t idx) { return get(idx); }
     const SOCKET& operator[](size_t idx) const {
-        VCML_ERROR_ON(!exists(idx), "socket %zu not found", idx);
+        VCML_ERROR_ON(!exists(idx), "socket %s[%zu] not found", name(), idx);
         return *m_sockets.at(idx);
     }
 

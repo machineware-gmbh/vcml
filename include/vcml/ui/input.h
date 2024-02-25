@@ -83,17 +83,25 @@ public:
 class keyboard : public input
 {
 private:
+    bool m_ctrl_l;
+    bool m_ctrl_r;
     bool m_shift_l;
     bool m_shift_r;
     bool m_capsl;
     bool m_alt_l;
     bool m_alt_r;
+    bool m_meta_l;
+    bool m_meta_r;
     u32 m_prev_sym;
     string m_layout;
 
     static unordered_map<string, keyboard*> s_keyboards;
 
 public:
+    bool ctrl_l() const { return m_ctrl_l; }
+    bool ctrl_r() const { return m_ctrl_r; }
+    bool ctrl() const { return m_ctrl_l || m_ctrl_r; }
+
     bool shift_l() const { return m_shift_l; }
     bool shift_r() const { return m_shift_r; }
     bool shift() const { return m_shift_l || m_shift_r; }
@@ -101,6 +109,10 @@ public:
     bool alt_l() const { return m_alt_l; }
     bool alt_r() const { return m_alt_r; }
     bool alt() const { return m_alt_l || m_alt_r; }
+
+    bool meta_l() const { return m_meta_l; }
+    bool meta_r() const { return m_meta_r; }
+    bool meta() const { return m_meta_l || m_meta_r; }
 
     bool capslock() const { return m_capsl; }
 
