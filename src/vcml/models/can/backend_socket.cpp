@@ -10,6 +10,7 @@
 
 #include "vcml/models/can/backend_socket.h"
 
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
@@ -64,7 +65,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 
     mwr::aio_notify(m_socket, [=](int fd) -> void {
         can_frame frame;
-        if (mwr::fd_read(fd, &frame, sizeof(frame)) != sizeof(frame)) {
+        if (read(fd, &frame, sizeof(frame)) < 0) {
             log_error("error reading %s: %s", m_name.c_str(), strerror(errno));
             mwr::aio_cancel(fd);
             return;
@@ -73,10 +74,6 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
         // Linux VCAN has already translated DLC to length in bytes, undo that
         // before we forward the frame to the devices.
         frame.dlc = len2dlc(frame.dlc);
-
-        // CANFD_FDF allows dual-use of the can_frame for FD and non-FD frames
-        if (mtu >= CANFD_MTU)
-            frame.flags |= CANFD_FDF;
 
         send_to_guest(frame);
     });
