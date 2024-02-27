@@ -75,7 +75,7 @@ struct pci_payload {
     pci_address_space space;
 
     u64 addr;
-    u32 data;
+    u64 data;
     u32 size;
 
     bool debug;

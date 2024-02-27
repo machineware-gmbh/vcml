@@ -37,6 +37,7 @@ static pci_irq pci_irq_swizzle(pci_irq irq, u32 devno) {
 
 const host::pci_mapping host::MAP_NONE = {
     /* devno = */ ~0u,
+    /* limit = */ 0u,
     /* barno = */ -1,
     /* space = */ PCI_AS_CFG,
     /* addr  = */ { 0, ~0ull },
@@ -84,8 +85,8 @@ unsigned int host::transport(tlm_generic_payload& tx, const tlm_sbi& sideband,
 
     u64 size = tx.get_data_length();
 
-    // max 32bit, only naturally aligned accesses
-    if (size > 4 || tx.get_address() % size) {
+    // max 64bit, only naturally aligned accesses
+    if (size > 8 || tx.get_address() % size) {
         tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
         return 0;
     }
@@ -145,6 +146,11 @@ void host::pci_transport(pci_payload& tx, bool io) {
         return;
     }
 
+    if (tx.size > mapping.limit) {
+        tx.response = PCI_RESP_COMMAND_ERROR;
+        return;
+    }
+
     if (!pci_out.exists(mapping.devno))
         VCML_ERROR("invalid PCI mapping to nonexistent device");
 
@@ -185,8 +191,9 @@ void host::pci_bar_map(const pci_initiator_socket& s, const pci_bar& bar) {
     pci_address_space space = pci_target_space(bar.barno);
 
     u32 devno = pci_devno(s);
+    u32 limit = bar.is_64bit ? 8 : 4;
     range addr(bar.addr, bar.addr + bar.size - 1);
-    pci_mapping mapping{ devno, bar.barno, space, addr };
+    pci_mapping mapping{ devno, limit, bar.barno, space, addr };
 
     if (bar.is_io)
         m_map_io.push_back(mapping);

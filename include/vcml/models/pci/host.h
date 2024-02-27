@@ -29,6 +29,7 @@ class host : public component, public pci_initiator
 private:
     struct pci_mapping {
         u32 devno;
+        u32 limit;
         int barno;
         address_space space;
         range addr;
