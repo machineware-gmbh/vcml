@@ -11,7 +11,10 @@
 #include "vcml/models/can/bridge.h"
 #include "vcml/models/can/backend.h"
 #include "vcml/models/can/backend_file.h"
+
+#ifdef HAVE_SOCKETCAN
 #include "vcml/models/can/backend_socket.h"
+#endif
 
 namespace vcml {
 namespace can {
@@ -34,7 +37,9 @@ backend* backend::create(bridge* br, const string& type) {
     typedef function<backend*(bridge*, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create },
+#ifdef HAVE_SOCKETCAN
         { "socket", backend_socket::create },
+#endif
     };
 
     auto it = backends.find(kind);
