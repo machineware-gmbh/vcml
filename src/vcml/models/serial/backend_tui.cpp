@@ -65,10 +65,8 @@ void backend_tui::iothread() {
 
         if (mwr::fd_peek(m_fdin, 500)) {
             u8 ch;
-            if (!mwr::fd_read(m_fdin, &ch, sizeof(ch))) {
-                log_warn("eof while reading stdin");
-                return; // EOF
-            }
+            if (mwr::fd_read(m_fdin, &ch, sizeof(ch)) == 0)
+                continue; // EOF?
 
             if (ch == CTRL_A) { // ctrl-a
                 mwr::fd_read(m_fdin, &ch, sizeof(ch));
