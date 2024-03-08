@@ -69,9 +69,12 @@ backend_term::backend_term(terminal* term):
     m_mtx(),
     m_fifo() {
     capture_stdin();
-    VCML_REPORT_ON(!mwr::is_tty(m_fdin), "not a terminal");
-    mwr::tty_push(m_fdin, true);
-    mwr::tty_set(m_fdin, false, false);
+
+    if (mwr::is_tty(m_fdin)) {
+        mwr::tty_push(m_fdin, true);
+        mwr::tty_set(m_fdin, false, false);
+    }
+
     m_iothread = thread(&backend_term::iothread, this);
 }
 
@@ -80,7 +83,9 @@ backend_term::~backend_term() {
     if (m_iothread.joinable())
         m_iothread.join();
 
-    mwr::tty_pop(m_fdin);
+    if (mwr::is_tty(m_fdin))
+        mwr::tty_pop(m_fdin);
+
     release_stdin();
 }
 

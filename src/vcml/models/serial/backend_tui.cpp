@@ -132,10 +132,12 @@ backend_tui::backend_tui(terminal* term):
     m_time_host(mwr::timestamp_us()),
     m_rtf(),
     m_linebuf() {
-    VCML_REPORT_ON(!mwr::is_tty(m_fdin), "not a terminal");
     capture_stdin();
-    mwr::tty_push(m_fdin, true);
-    mwr::tty_set(m_fdin, false, false);
+
+    if (mwr::is_tty(m_fdin)) {
+        mwr::tty_push(m_fdin, true);
+        mwr::tty_set(m_fdin, false, false);
+    }
 
 #ifdef MWR_LINUX
     update_window_size(0);
@@ -150,7 +152,9 @@ backend_tui::~backend_tui() {
     if (m_iothread.joinable())
         m_iothread.join();
 
-    mwr::tty_pop(m_fdin);
+    if (mwr::is_tty(m_fdin))
+        mwr::tty_pop(m_fdin);
+
     release_stdin();
 }
 
