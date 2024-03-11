@@ -66,19 +66,18 @@ vector<image_info> images_from_string(const vector<string>& vec) {
         if (cur.empty())
             continue;
 
-        vector<string> vec = split(cur, '@');
-        if (vec.empty())
-            continue;
-
-        string file = trim(vec[0]);
+        size_t separator = cur.find('@');
+        string file = trim(cur.substr(0, separator));
         image_type type = IMAGE_BIN;
         u64 offset = 0;
 
         if (mwr::file_exists(file))
             type = detect_image_type(file);
 
-        if (vec.size() > 1)
-            offset = strtoull(trim(vec[1]).c_str(), NULL, 0);
+        if (separator != string::npos) {
+            string extra = cur.substr(separator + 1);
+            offset = strtoull(extra.c_str(), NULL, 0);
+        }
 
         images.push_back({ file, type, offset });
     }
