@@ -225,8 +225,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 
     stringstream ss;
     ss << gdb_term.str() << " -n " << name() << " -p " << gdb_port.str();
-    vector<string> symfiles = split(symbols);
-    for (const auto& symfile : symfiles)
+    for (const auto& symfile : symbols)
         ss << " -s " << symfile;
 
     log_debug("gdbterm command line:");
@@ -375,21 +374,18 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     SC_HAS_PROCESS(processor);
     SC_THREAD(processor_thread);
 
-    if (!symbols.get().empty()) {
-        vector<string> symfiles = split(symbols);
-        for (auto symfile : symfiles) {
-            symfile = trim(symfile);
-            if (symfile.empty())
-                continue;
+    for (const string& s : symbols) {
+        string symfile = trim(s);
+        if (symfile.empty())
+            continue;
 
-            if (!mwr::file_exists(symfile)) {
-                log_warn("cannot open file '%s'", symfile.c_str());
-                continue;
-            }
-
-            u64 n = load_symbols_from_elf(symfile);
-            log_debug("loaded %llu symbols from '%s'", n, symfile.c_str());
+        if (!mwr::file_exists(symfile)) {
+            log_warn("cannot open file '%s'", symfile.c_str());
+            continue;
         }
+
+        u64 n = load_symbols_from_elf(symfile);
+        log_debug("loaded %llu symbols from '%s'", n, symfile.c_str());
     }
 
     register_command("dump", 0, &processor::cmd_dump,

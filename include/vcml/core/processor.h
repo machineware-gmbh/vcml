@@ -67,7 +67,7 @@ private:
 
 public:
     property<string> cpuarch;
-    property<string> symbols;
+    property<vector<string>> symbols;
 
     property<bool> gdb_wait;
     property<bool> gdb_echo;
