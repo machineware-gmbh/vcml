@@ -29,7 +29,7 @@ broker_arg::broker_arg(int argc, const char* const* argv): broker("cmdline") {
             string val = arg.substr(separator + 1);
 
             try {
-                define(key, val);
+                define(key, mwr::escape(val, ""));
             } catch (std::exception& ex) {
                 log_error("arg %d: %s", i - 1, ex.what());
             }

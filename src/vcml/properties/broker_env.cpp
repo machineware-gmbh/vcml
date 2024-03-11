@@ -34,7 +34,7 @@ bool broker_env::lookup(const string& name, string& val) {
     if (!env)
         return false;
 
-    val = env.value();
+    val = mwr::escape(env.value(), "");
     return true;
 }
 

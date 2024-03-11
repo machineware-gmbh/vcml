@@ -171,8 +171,8 @@ void broker_file::resolve(const string& key, const string& val,
 
 broker_file::broker_file(const string& file):
     broker(file), m_errors(0), m_filename(file) {
-    define("dir", mwr::dirname(file), 1);
-    define("cfg", mwr::filename_noext(file), 1);
+    define("dir", mwr::escape(mwr::dirname(file), ""), 1);
+    define("cfg", mwr::escape(mwr::filename_noext(file), ""), 1);
 
     parse_file(file);
 

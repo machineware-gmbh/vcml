@@ -171,10 +171,10 @@ broker_lua::broker_lua(const string& file): broker("lua") {
         { "vcml_version_string", VCML_VERSION_STRING },
         { "systemc_version_string", SC_VERSION },
         { "username", mwr::username() },
-        { "config", mwr::filename_noext(file) },
-        { "cfgdir", mwr::dirname(file) },
-        { "simdir", mwr::progname() },
-        { "curdir", mwr::curr_dir() },
+        { "config", mwr::escape(mwr::filename_noext(file), "") },
+        { "cfgdir", mwr::escape(mwr::dirname(file), "") },
+        { "simdir", mwr::escape(mwr::progname(), "") },
+        { "curdir", mwr::escape(mwr::curr_dir(), "") },
     };
 
     const vector<pair<string, int (*)(lua_State*)>> funcs = {
