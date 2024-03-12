@@ -34,29 +34,28 @@ void backend_term::terminate() {
 
 void backend_term::iothread() {
     mwr::set_thread_name("term_iothread");
-    while (true) {
-        u8 ch;
-        if (mwr::fd_read(m_fdin, &ch, sizeof(ch)) == 0)
-            continue; // EOF?
+    while (m_backend_active && sim_running()) {
+        if (mwr::fd_peek(m_fdin, 100)) {
+            u8 ch;
+            if (mwr::fd_read(m_fdin, &ch, sizeof(ch)) == 0)
+                continue; // EOF?
 
-        if (ch == CTRL_A) {
-            mwr::fd_read(m_fdin, &ch, sizeof(ch));
-            if (ch == 'x' || ch == 'X' || ch == CTRL_X) {
-                terminate();
-                continue;
+            if (ch == CTRL_A) { // ctrl-a
+                mwr::fd_read(m_fdin, &ch, sizeof(ch));
+                if (ch == 'x' || ch == 'X' || ch == CTRL_X) {
+                    terminate();
+                    continue;
+                }
+
+                if (ch == 'a')
+                    ch = CTRL_A;
             }
 
-            if (ch == 'a')
-                ch = CTRL_A;
+            m_mtx.lock();
+            m_fifo.push(ch);
+            m_mtx.unlock();
+            m_term->notify(this);
         }
-
-        if (!sim_running())
-            return;
-
-        m_mtx.lock();
-        m_fifo.push(ch);
-        m_mtx.unlock();
-        m_term->notify(this);
     }
 }
 
@@ -82,7 +81,7 @@ backend_term::backend_term(terminal* term):
 backend_term::~backend_term() {
     m_backend_active = false;
     if (m_iothread.joinable())
-        m_iothread.detach();
+        m_iothread.join();
 
     if (mwr::is_tty(m_fdin))
         mwr::tty_pop(m_fdin);
