@@ -425,6 +425,11 @@ void processor::reset() {
     flush_cpuregs();
 }
 
+void processor::before_end_of_elaboration() {
+    component::before_end_of_elaboration();
+    flush_cpuregs();
+}
+
 void processor::session_suspend() {
     component::session_suspend();
     fetch_cpuregs();
