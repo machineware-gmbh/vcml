@@ -516,7 +516,7 @@ virtio_base_initiator_socket::~virtio_base_initiator_socket() {
 
 void virtio_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new virtio_target_stub(basename());
     bind(m_stub->virtio_in);
 }
@@ -532,7 +532,7 @@ virtio_base_target_socket::~virtio_base_target_socket() {
 
 void virtio_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new virtio_initiator_stub(basename());
     m_stub->virtio_out.bind(*this);
 }

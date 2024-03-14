@@ -46,6 +46,7 @@ bool module::cmd_version(const vector<string>& args, ostream& os) {
 // clang-format off
 module::module(const sc_module_name& nm):
     sc_module(nm),
+    hierarchy_element(),
     m_commands(),
     trace_all("trace", false),
     trace_errors("trace_errors", false),

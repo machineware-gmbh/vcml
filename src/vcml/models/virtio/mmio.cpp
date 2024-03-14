@@ -45,7 +45,7 @@ void mmio::enable_virtqueue(u32 vqid) {
         return out.lookup_dmi_ptr(addr, len, acs);
     };
 
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
 
     virtqueue* q;
     if (has_feature(VIRTIO_F_RING_PACKED))

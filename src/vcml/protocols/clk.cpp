@@ -44,7 +44,7 @@ void clk_base_initiator_socket::bind(clk_base_target_socket& socket) {
 
 void clk_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new clk_target_stub(basename());
     bind(m_stub->clk_in);
 }
@@ -66,7 +66,7 @@ void clk_base_target_socket::bind(clk_base_initiator_socket& other) {
 
 void clk_base_target_socket::stub(hz_t hz) {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new clk_initiator_stub(basename(), hz);
     m_stub->clk_out.bind(*this);
 }

@@ -324,13 +324,13 @@ void device::pci_declare_bar(int barno, u64 size, u32 type) {
 }
 
 void device::pci_declare_pm_cap(u16 pm_caps) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_pm, "pci_cap_pm already declared");
     m_pm = new cap_pm("pci_cap_pm", pm_caps);
 }
 
 void device::pci_declare_msi_cap(u16 msi_ctrl) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_msi, "pci_cap_msi already declared");
     m_msi = new cap_msi("pci_cap_msi", msi_ctrl);
     SC_HAS_PROCESS(device);
@@ -338,7 +338,7 @@ void device::pci_declare_msi_cap(u16 msi_ctrl) {
 }
 
 void device::pci_declare_msix_cap(u32 bar, size_t nvec, u32 offset) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_msix, "pci_cap_msix already declared");
     m_msix = new cap_msix("pci_cap_msix", bar, nvec, offset);
     SC_HAS_PROCESS(device);

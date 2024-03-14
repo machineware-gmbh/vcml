@@ -32,7 +32,8 @@
 namespace vcml {
 
 class tlm_initiator_socket
-    : public simple_initiator_socket<tlm_initiator_socket>
+    : public simple_initiator_socket<tlm_initiator_socket>,
+      public hierarchy_element
 {
 private:
     tlm_generic_payload m_tx;
@@ -198,7 +199,7 @@ inline void tlm_initiator_socket::bind(
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     string nm = strcat(basename(), "_adapter");
 
-    hierarchy_guard guard(m_parent);
+    auto guard = get_hierarchy_scope();
     adapter_type* adapter = new adapter_type(nm.c_str());
     base_type::bind(adapter->in);
     adapter->out.bind(socket);
@@ -218,7 +219,7 @@ inline void tlm_initiator_socket::bind(
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     string nm = strcat(basename(), "_adapter");
 
-    hierarchy_guard guard(m_parent);
+    auto guard = get_hierarchy_scope();
     adapter_type* adapter = new adapter_type(nm.c_str());
     base_type::bind(adapter->in);
     adapter->out.bind(socket);
@@ -231,7 +232,8 @@ inline void tlm_initiator_socket::bind<32>(
     base_type::bind(other);
 }
 
-class tlm_target_socket : public simple_target_socket<tlm_target_socket>
+class tlm_target_socket : public simple_target_socket<tlm_target_socket>,
+                          public hierarchy_element
 {
 private:
     int m_curr;
@@ -307,7 +309,7 @@ public:
 
 inline void tlm_target_socket::wait_free() {
     if (!m_free_ev) {
-        hierarchy_guard guard(this);
+        auto guard = get_hierarchy_scope();
         m_free_ev = new sc_event(mkstr("%s_free", basename()).c_str());
     }
 
@@ -347,7 +349,7 @@ inline void tlm_target_socket::bind(
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     const string nm = strcat(basename(), "_adapter");
 
-    hierarchy_guard guard(m_parent);
+    auto guard = get_hierarchy_scope();
     adapter_type* adapter = new adapter_type(nm.c_str());
     socket.bind(adapter->in);
     adapter->out.bind(*this);
@@ -367,7 +369,7 @@ inline void tlm_target_socket::bind(
     VCML_ERROR_ON(m_adapter, "socket %s already bound", name());
     const string nm = strcat(basename(), "_adapter");
 
-    hierarchy_guard guard(m_parent);
+    auto guard = get_hierarchy_scope();
     adapter_type* adapter = new adapter_type(nm.c_str());
     socket.bind(adapter->in);
     adapter->out.bind(*this);
@@ -387,7 +389,7 @@ inline tlm::tlm_target_socket<WIDTH>& tlm_target_socket::adapt() {
     VCML_ERROR_ON(m_adapter && !adapter, "socket %s already bound", name());
     if (adapter == nullptr) {
         const string nm = strcat(basename(), "_adapter");
-        hierarchy_guard guard(m_parent);
+        auto guard = get_hierarchy_scope();
         adapter = new adapter_type(nm.c_str());
         adapter->out.bind(*this);
         m_adapter = adapter;

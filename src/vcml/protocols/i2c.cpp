@@ -63,7 +63,7 @@ i2c_base_initiator_socket::~i2c_base_initiator_socket() {
 
 void i2c_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new i2c_target_stub(basename());
     bind(m_stub->i2c_in);
 }
@@ -80,7 +80,7 @@ i2c_base_target_socket::~i2c_base_target_socket() {
 
 void i2c_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new i2c_initiator_stub(basename());
     m_stub->i2c_out.bind(*this);
 }

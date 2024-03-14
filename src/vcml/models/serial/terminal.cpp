@@ -219,7 +219,7 @@ void terminal::notify(backend* b) {
 }
 
 size_t terminal::create_backend(const string& type) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_backends[m_next_id] = backend::create(this, type);
     return m_next_id++;
 }

@@ -41,8 +41,6 @@ public:
         module(nm), mod1("mod1"), mod2("mod2") {
         sc_module* this_module = (sc_module*)this;
         EXPECT_EQ(vcml::hierarchy_top(), this_module);
-        vcml::hierarchy_push(this_module);
-        EXPECT_EQ(vcml::hierarchy_pop(), this_module);
     }
 
     virtual ~test_module() = default;

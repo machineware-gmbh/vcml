@@ -21,7 +21,7 @@
 
 namespace vcml {
 
-class module : public sc_module
+class module : public sc_module, public hierarchy_element
 {
 private:
     std::map<string, command_base*> m_commands;
@@ -44,9 +44,6 @@ public:
     virtual ~module();
     VCML_KIND(module);
     virtual const char* version() const;
-
-    void hierarchy_push();
-    void hierarchy_pop();
 
     sc_object* find_child(const string& name) const;
 
@@ -83,15 +80,6 @@ public:
 
     bool is_local_process(sc_process_b* proc = current_process()) const;
 };
-
-inline void module::hierarchy_push() {
-    vcml::hierarchy_push(this);
-}
-
-inline void module::hierarchy_pop() {
-    sc_module* top = vcml::hierarchy_pop();
-    VCML_ERROR_ON(top != this, "broken hierarchy");
-}
 
 inline sc_object* module::find_child(const string& name) const {
     return vcml::find_child(*this, name);

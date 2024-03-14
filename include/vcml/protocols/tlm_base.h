@@ -25,7 +25,8 @@
 
 namespace vcml {
 
-class tlm_base_initiator_socket : public tlm::tlm_initiator_socket<>
+class tlm_base_initiator_socket : public tlm::tlm_initiator_socket<>,
+                                  public hierarchy_element
 {
 private:
     tlm_target_stub* m_stub;
@@ -33,34 +34,35 @@ private:
 public:
     tlm_base_initiator_socket(const char* nm,
                               address_space as = VCML_AS_DEFAULT):
-        tlm::tlm_initiator_socket<>(nm), m_stub() {}
+        tlm::tlm_initiator_socket<>(nm), hierarchy_element(), m_stub() {}
     virtual ~tlm_base_initiator_socket() { delete m_stub; }
     VCML_KIND(tlm_base_initiator_socket);
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(tlm_response_status r = TLM_ADDRESS_ERROR_RESPONSE) {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-        hierarchy_guard guard(get_parent_object());
+        auto guard = get_hierarchy_scope();
         m_stub = new tlm_target_stub(strcat(basename(), "_stub").c_str(), r);
         tlm::tlm_initiator_socket<>::bind(m_stub->in);
     }
 };
 
-class tlm_base_target_socket : public tlm::tlm_target_socket<>
+class tlm_base_target_socket : public tlm::tlm_target_socket<>,
+                               public hierarchy_element
 {
 private:
     tlm_initiator_stub* m_stub;
 
 public:
     tlm_base_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT):
-        tlm::tlm_target_socket<>(nm), m_stub() {}
+        tlm::tlm_target_socket<>(nm), hierarchy_element(), m_stub() {}
     virtual ~tlm_base_target_socket() { delete m_stub; }
     VCML_KIND(tlm_base_target_socket);
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub() {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
-        hierarchy_guard guard(get_parent_object());
+        auto guard = get_hierarchy_scope();
         m_stub = new tlm_initiator_stub(strcat(basename(), "_stub").c_str());
         m_stub->out.bind(*this);
     }

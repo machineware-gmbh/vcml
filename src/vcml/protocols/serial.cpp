@@ -116,7 +116,7 @@ serial_base_initiator_socket::~serial_base_initiator_socket() {
 
 void serial_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new serial_target_stub(basename());
     bind(m_stub->serial_rx);
 }
@@ -133,7 +133,7 @@ serial_base_target_socket::~serial_base_target_socket() {
 
 void serial_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new serial_initiator_stub(basename());
     m_stub->serial_tx.bind(*this);
 }

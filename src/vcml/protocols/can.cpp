@@ -102,7 +102,7 @@ can_base_initiator_socket::~can_base_initiator_socket() {
 
 void can_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new can_target_stub(basename());
     bind(m_stub->can_rx);
 }
@@ -119,7 +119,7 @@ can_base_target_socket::~can_base_target_socket() {
 
 void can_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new can_initiator_stub(basename());
     m_stub->can_tx.bind(*this);
 }

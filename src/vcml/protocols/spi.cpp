@@ -29,7 +29,7 @@ spi_base_initiator_socket::~spi_base_initiator_socket() {
 
 void spi_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new spi_target_stub(basename());
     bind(m_stub->spi_in);
 }
@@ -45,7 +45,7 @@ spi_base_target_socket::~spi_base_target_socket() {
 
 void spi_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new spi_initiator_stub(basename());
     m_stub->spi_out.bind(*this);
 }

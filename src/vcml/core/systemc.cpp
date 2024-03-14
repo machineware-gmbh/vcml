@@ -44,22 +44,6 @@ sc_attr_base* find_attribute(const string& name) {
 
 const sc_time SC_MAX_TIME = time_from_value(~0ull);
 
-void hierarchy_push(sc_module* mod) {
-    sc_simcontext* simc = sc_get_curr_simcontext();
-    VCML_ERROR_ON(!simc, "no simulation context");
-    simc->hierarchy_push(mod);
-}
-
-sc_module* hierarchy_pop() {
-    sc_simcontext* simc = sc_get_curr_simcontext();
-    VCML_ERROR_ON(!simc, "no simulation context");
-#if SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
-    return simc->hierarchy_pop();
-#else
-    return dynamic_cast<sc_module*>(simc->hierarchy_pop());
-#endif
-}
-
 sc_module* hierarchy_top() {
     sc_simcontext* simc = sc_get_curr_simcontext();
     VCML_ERROR_ON(!simc, "no simulation context");

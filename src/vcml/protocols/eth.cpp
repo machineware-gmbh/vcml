@@ -349,7 +349,7 @@ eth_base_initiator_socket::~eth_base_initiator_socket() {
 
 void eth_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new eth_target_stub(basename());
     bind(m_stub->eth_rx);
 }
@@ -366,7 +366,7 @@ eth_base_target_socket::~eth_base_target_socket() {
 
 void eth_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new eth_initiator_stub(basename());
     m_stub->eth_tx.bind(*this);
 }

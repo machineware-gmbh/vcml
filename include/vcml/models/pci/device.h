@@ -265,7 +265,7 @@ private:
 
 template <typename T>
 reg<T>* capability::new_cap_reg(const string& regnm, T val, vcml_access rw) {
-    hierarchy_guard guard(dev);
+    auto guard = dev->get_hierarchy_scope();
     string nm = mkstr("%s_%s", name.c_str(), regnm.c_str());
     reg<T>* r = new reg<T>(PCI_AS_CFG, nm, dev->curr_cap_off, val);
     if (is_write_allowed(rw))

@@ -278,7 +278,7 @@ sd_base_initiator_socket::~sd_base_initiator_socket() {
 
 void sd_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new sd_target_stub(basename());
     bind(m_stub->sd_in);
 }
@@ -294,7 +294,7 @@ sd_base_target_socket::~sd_base_target_socket() {
 
 void sd_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new sd_initiator_stub(basename());
     m_stub->sd_out.bind(*this);
 }

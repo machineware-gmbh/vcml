@@ -149,6 +149,7 @@ void bridge::detach(backend* b) {
 }
 
 size_t bridge::create_backend(const string& type) {
+    auto guard = get_hierarchy_scope();
     m_dynamic_backends[m_next_id] = backend::create(this, type);
     return m_next_id++;
 }

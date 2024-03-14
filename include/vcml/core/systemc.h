@@ -146,8 +146,6 @@ using sc_core::sc_module;
 
 using sc_core::sc_vector;
 
-void hierarchy_push(sc_module* mod);
-sc_module* hierarchy_pop();
 sc_module* hierarchy_top();
 
 template <typename MODULE = sc_core::sc_object>
@@ -169,24 +167,41 @@ bool is_child(const sc_object* obj, const sc_object* parent);
 
 sc_object* find_child(const sc_object& parent, const string& name);
 
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+using hierarchy_guard = sc_core::sc_hierarchy_scope;
+#else
 class hierarchy_guard
 {
 private:
     sc_module* m_owner;
 
 public:
-    hierarchy_guard(sc_module* owner):
-        m_owner(owner ? owner : hierarchy_top()) {
-        hierarchy_push(m_owner);
-    }
-
     hierarchy_guard(sc_object* obj):
-        hierarchy_guard(hierarchy_search<sc_module>(obj)) {}
+        m_owner(hierarchy_search<sc_module>(obj)) {
+        m_owner->simcontext()->hierarchy_push(m_owner);
+    }
 
     ~hierarchy_guard() {
-        sc_module* top = hierarchy_pop();
+        auto top = m_owner->simcontext()->hierarchy_pop();
         VCML_ERROR_ON(top != m_owner, "SystemC hierarchy corrupted");
     }
+};
+#endif
+
+class hierarchy_element
+{
+public:
+    hierarchy_element() = default;
+    virtual ~hierarchy_element() = default;
+
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
+protected:
+    virtual hierarchy_guard get_hierarchy_scope() {
+        sc_object* obj = dynamic_cast<sc_object*>(this);
+        VCML_ERROR_ON(!obj, "unable to create a hierarchy scope");
+        return hierarchy_guard(obj);
+    }
+#endif
 };
 
 using sc_core::sc_spawn;

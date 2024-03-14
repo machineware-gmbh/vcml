@@ -26,7 +26,7 @@
 
 namespace vcml {
 
-class base_socket
+class base_socket : public hierarchy_element
 {
 private:
     sc_object* m_port;
@@ -39,6 +39,7 @@ public:
 
     base_socket() = delete;
     base_socket(sc_object* port, address_space space):
+        hierarchy_element(),
         m_port(port),
         as(space),
         trace_all(port, "trace", false),
@@ -123,7 +124,7 @@ struct supports_tracing<T, std::void_t<decltype(std::declval<T>().trace_all)>>
     : std::true_type {};
 
 template <typename SOCKET>
-class socket_array : public sc_object
+class socket_array : public sc_object, public hierarchy_element
 {
 public:
     typedef unordered_map<size_t, SOCKET*> map_type;
@@ -144,6 +145,7 @@ public:
 
     socket_array(const char* nm):
         sc_object(nm),
+        hierarchy_element(),
         m_next(0),
         m_max(SIZE_MAX),
         m_space(VCML_AS_DEFAULT),
@@ -187,7 +189,7 @@ public:
         if (idx >= m_max)
             VCML_ERROR("socket index out of bounds: %s[%zu]", name(), idx);
 
-        hierarchy_guard guard(this);
+        auto guard = get_hierarchy_scope();
         string nm = mkstr("%s[%zu]", basename(), idx);
         socket = new SOCKET(nm.c_str(), m_space);
         if constexpr (supports_tracing<SOCKET>::value) {

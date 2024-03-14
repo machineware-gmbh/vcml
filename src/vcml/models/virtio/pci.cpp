@@ -66,7 +66,7 @@ void pci::enable_virtqueue(u32 vqid) {
         return (u8*)pci_in->pci_dma_ptr(rw, addr, len);
     };
 
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
 
     virtqueue* q;
     if (has_feature(VIRTIO_F_RING_PACKED))
@@ -554,7 +554,7 @@ void pci::reset() {
 }
 
 void pci::virtio_declare_common_cap(u8 bar, u32 offset, u32 length) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_cap_common, "common capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_common = new cap_virtio("pci_cap_virtio_common",
@@ -563,7 +563,7 @@ void pci::virtio_declare_common_cap(u8 bar, u32 offset, u32 length) {
 }
 
 void pci::virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_cap_notify, "notify capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_notify = new cap_virtio("pci_cap_virtio_notify",
@@ -571,7 +571,7 @@ void pci::virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult) {
 }
 
 void pci::virtio_declare_isr_cap(u8 bar, u32 offset, u32 length) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_cap_isr, "isr capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_isr = new cap_virtio("pci_cap_virtio_isr", VIRTIO_PCI_CAP_ISR, bar,
@@ -579,7 +579,7 @@ void pci::virtio_declare_isr_cap(u8 bar, u32 offset, u32 length) {
 }
 
 void pci::virtio_declare_device_cap(u8 bar, u32 offset, u32 length) {
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     VCML_ERROR_ON(m_cap_device, "device capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_device = new cap_virtio("pci_cap_virtio_device",

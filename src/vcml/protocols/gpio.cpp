@@ -40,7 +40,7 @@ void gpio_base_initiator_socket::bind(gpio_base_target_socket& socket) {
 
 void gpio_base_initiator_socket::bind(sc_signal_inout_if<bool>& signal) {
     VCML_ERROR_ON(m_adapter, "socket '%s' already bound", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     string name = mkstr("%s_adapter", basename());
     m_adapter = new gpio_target_adapter(name.c_str());
     m_adapter->out.bind(signal);
@@ -49,7 +49,7 @@ void gpio_base_initiator_socket::bind(sc_signal_inout_if<bool>& signal) {
 
 void gpio_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new gpio_target_stub(basename());
     bind(m_stub->gpio_in);
 }
@@ -73,7 +73,7 @@ void gpio_base_target_socket::bind(gpio_base_initiator_socket& other) {
 
 void gpio_base_target_socket::bind(sc_signal_inout_if<bool>& signal) {
     VCML_ERROR_ON(m_adapter, "socket '%s' already bound", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     string name = mkstr("%s_adapter", basename());
     m_adapter = new gpio_initiator_adapter(name.c_str());
     m_adapter->in.bind(signal);
@@ -82,7 +82,7 @@ void gpio_base_target_socket::bind(sc_signal_inout_if<bool>& signal) {
 
 void gpio_base_target_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
-    hierarchy_guard guard(this);
+    auto guard = get_hierarchy_scope();
     m_stub = new gpio_initiator_stub(basename());
     m_stub->gpio_out.bind(*this);
 }
@@ -130,7 +130,7 @@ gpio_initiator_socket::~gpio_initiator_socket() {
 
 const sc_event& gpio_initiator_socket::default_event() {
     if (m_event == nullptr) {
-        hierarchy_guard guard(this);
+        auto guard = get_hierarchy_scope();
         m_event = new sc_event(mkstr("%s_ev", basename()).c_str());
     }
 
@@ -219,7 +219,7 @@ gpio_target_socket::~gpio_target_socket() {
 
 const sc_event& gpio_target_socket::default_event() {
     if (m_event == nullptr) {
-        hierarchy_guard guard(this);
+        auto guard = get_hierarchy_scope();
         m_event = new sc_event(mkstr("%s_ev", basename()).c_str());
     }
 
