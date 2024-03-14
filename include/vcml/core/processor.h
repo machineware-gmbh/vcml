@@ -99,6 +99,8 @@ public:
 
     virtual void reset() override;
 
+    virtual void before_end_of_elaboration() override;
+
     bool get_irq_stats(size_t irq, irq_stats& stats) const;
 
     template <typename T>
