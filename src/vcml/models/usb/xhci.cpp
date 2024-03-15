@@ -20,7 +20,7 @@ using TRB_SLOT = field<24, 8, u32>;
 using TRB_SLOT_ID = field<24, 8, u32>;
 using TRB_CCODE = field<24, 8, u32>;
 using TRB_PORT_ID = field<24, 8, u64>;
-using TRB_DATA_LENGTH = field<0, 16, u32>;
+using TRB_DATA_LENGTH = field<0, 17, u32>;
 using TRB_INTR = field<22, 10, u32>;
 
 enum trb_bits : u32 {
