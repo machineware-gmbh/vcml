@@ -15,48 +15,59 @@ namespace vcml {
 namespace usb {
 
 static const device_desc KEYBOARD_DESC{
-    0,                  // bcd_usb
+    0x200,              // bcd_usb
     0,                  // device class
     0,                  // device subclass
     0,                  // device protocol
-    0,                  // max packet size
+    8,                  // max packet size
     0xaaaa,             // vendor id
     0x1234,             // device id
     0x0,                // bcd_device
     "MachineWare GmbH", // vendor string
     "VCML Keyboard",    // product string
     VCML_GIT_REV_SHORT, // serial number string
-    { {
-        // configurations
-        42,                           // configuration0 value
-        USB_CFG_ONE | USB_CFG_WAKEUP, // config0 attributes
-        40,                           // config0 power (80mA)
-        { {
-            0,             // interface0 alternate setting
-            USB_CLASS_HID, // interface0 class
-            1,             // interface0 subclass (boot)
-            1,             // interface0 protocol (keyboard)
-            { {
-                0x81,       // endpoint address
-                USB_EP_IRQ, // endpoint attributes
-                8,          // endpoint max packet size
-                10,         // endpoint intervall (125us units)
-                0,          // endpoint refresh
-                0,          // endpoint sync address
-            } },
-            { {
-                0x09,
-                USB_DT_HID,
-                0x11,
-                0x01,
-                0x00,
-                0x01,
-                USB_DT_REPORT,
-                0x3f,
-                0x00,
-            } },
-        } },
-    } },
+    {
+        {
+            // configurations
+            42,                           // configuration0 value
+            USB_CFG_ONE | USB_CFG_WAKEUP, // config0 attributes
+            40,                           // config0 power (80mA)
+            {
+                // interfaces
+                {
+                    0,             // interface0 alternate setting
+                    USB_CLASS_HID, // interface0 class
+                    1,             // interface0 subclass (boot)
+                    1,             // interface0 protocol (keyboard)
+                    {
+                        // endpoints
+                        {
+                            usb_ep_in(1), // endpoint1 address
+                            USB_EP_IRQ,   // endpoint1 attributes
+                            8,            // endpoint1 max packet size
+                            10,           // endpoint1 intervall (125us units)
+                            0,            // endpoint1 refresh
+                            0,            // endpoint1 sync address
+                        },
+                    },
+                    {
+                        // extra descriptors
+                        {
+                            0x09,
+                            USB_DT_HID,
+                            0x11,
+                            0x01,
+                            0x00,
+                            0x01,
+                            USB_DT_REPORT,
+                            0x3f,
+                            0x00,
+                        },
+                    },
+                },
+            },
+        },
+    },
 };
 
 static const u8 USB3_ENDPOINT_COMPANION_DT[] = {
@@ -228,18 +239,20 @@ keyboard::keyboard(const sc_module_name& nm):
     serialno("serialno", VCML_GIT_REV_SHORT),
     keymap("keymap", "us"),
     usb_in("usb_in") {
+    m_keyboard.set_layout(keymap);
+    m_desc.vendor_id = vendorid;
+    m_desc.product_id = productid;
+    m_desc.manufacturer = manufacturer;
+    m_desc.product = product;
+    m_desc.serial_number = serialno;
+
     if (usb3) {
         m_desc.bcd_usb = 0x300;
         m_desc.max_packet_size0 = 9;
         auto& extra = m_desc.configs[0].interfaces[0].endpoints[0].extra;
         for (auto ch : USB3_ENDPOINT_COMPANION_DT)
             extra.push_back(ch);
-    } else {
-        m_desc.bcd_usb = 0x200;
-        m_desc.max_packet_size0 = 8;
     }
-
-    m_keyboard.set_layout(keymap);
 }
 
 keyboard::~keyboard() {

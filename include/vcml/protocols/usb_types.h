@@ -165,6 +165,14 @@ enum usb_endpoint_bits : u8 {
 
 const char* usb_endpoint_str(u8 type);
 
+constexpr u8 usb_ep_in(u8 addr) {
+    return 0x80 | addr;
+}
+
+constexpr u8 usb_ep_out(u8 addr) {
+    return addr;
+}
+
 #pragma pack(push, 1)
 
 struct usb_device_desc {
