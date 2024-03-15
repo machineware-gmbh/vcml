@@ -252,7 +252,6 @@ usb_result device::handle_control(u16 req, u16 val, u16 idx, u8* data,
     default:
         log_error("unknown request 0x%04hx val:0x%04hx idx:0x%04hx %zu bytes",
                   req, val, idx, length);
-        sc_stop();
         return USB_RESULT_STALL;
     }
 }
