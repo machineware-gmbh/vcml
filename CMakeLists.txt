@@ -159,6 +159,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/sd/card.cpp
     ${src}/vcml/models/sd/sdhci.cpp
     ${src}/vcml/models/usb/device.cpp
+    ${src}/vcml/models/usb/drive.cpp
     ${src}/vcml/models/usb/keyboard.cpp
     ${src}/vcml/models/usb/xhci.cpp
     ${src}/vcml/models/pci/device.cpp
