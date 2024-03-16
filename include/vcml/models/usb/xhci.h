@@ -36,6 +36,11 @@ public:
         u32 control;
     };
 
+    struct trbev {
+        trb event;
+        size_t intr;
+    };
+
     struct ring {
         u64 dequeue;
         bool ccs;
@@ -95,6 +100,10 @@ private:
 
     sc_event m_trev;
     sc_event m_cmdev;
+    sc_event m_devev;
+
+    queue<trbev> m_events;
+
     ring m_cmdring;
 
     devslot m_slots[MAX_SLOTS];
@@ -122,6 +131,8 @@ private:
     void stop();
 
     void update_irq(size_t idx);
+
+    void handle_event(size_t intr, trb& event);
 
     void send_event(size_t intr, trb& event);
     void send_cc_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
@@ -154,6 +165,7 @@ private:
 
     void command_thread();
     void transfer_thread();
+    void event_thread();
 
     bool port_connected(size_t port, size_t& socket);
 

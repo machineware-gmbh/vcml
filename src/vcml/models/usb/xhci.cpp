@@ -911,7 +911,7 @@ void xhci::update_irq(size_t idx) {
           ((runtime[idx].iman & IMAN_MASK) == IMAN_MASK);
 }
 
-void xhci::send_event(size_t intr, trb& event) {
+void xhci::handle_event(size_t intr, trb& event) {
     if (xhci_halted(usbsts)) {
         log_error("cannot send event, xhci is stopped");
         return;
@@ -970,6 +970,11 @@ void xhci::send_event(size_t intr, trb& event) {
     usbsts |= USBSTS_EINT;
 
     update_irq(intr);
+}
+
+void xhci::send_event(size_t intr, trb& event) {
+    m_events.push({ event, intr });
+    m_devev.notify(SC_ZERO_TIME);
 }
 
 void xhci::send_cc_event(size_t intr, u32 ccode, u32 slot, u64 addr) {
@@ -1742,6 +1747,17 @@ void xhci::transfer_thread() {
     }
 }
 
+void xhci::event_thread() {
+    while (true) {
+        wait(m_devev);
+
+        while (xhci_running(usbsts) && m_events.size() > 0) {
+            handle_event(m_events.front().intr, m_events.front().event);
+            m_events.pop();
+        }
+    }
+}
+
 bool xhci::port_connected(size_t port, size_t& socket) {
     if (port > 2 * num_ports)
         return false;
@@ -1837,6 +1853,8 @@ xhci::xhci(const sc_module_name& nm):
     m_mfstart(),
     m_trev("trev"),
     m_cmdev("cmdev"),
+    m_devev("devev"),
+    m_events(),
     m_cmdring(),
     m_slots(),
     num_slots("num_slots", 64),
@@ -1946,6 +1964,7 @@ xhci::xhci(const sc_module_name& nm):
     SC_HAS_PROCESS(xhci);
     SC_THREAD(command_thread);
     SC_THREAD(transfer_thread);
+    SC_THREAD(event_thread);
 }
 
 xhci::~xhci() {
