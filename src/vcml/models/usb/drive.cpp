@@ -68,6 +68,15 @@ static const device_desc DRIVE_DESC{
     },
 };
 
+static const u8 USB3_ENDPOINT_COMPANION_DT[] = {
+    0x06, // length
+    USB_DT_ENDPOINT_COMPANION,
+    0x0f, // max burst
+    0x00, // attributes
+    0x08, // bytes per interval (lo)
+    0x00  // bytes per interval (hi)
+};
+
 enum usb_bulk_request : u16 {
     USB_REQ_GET_MAX_LUN = 0xfe,
     USB_REQ_RESET_DRIVE = 0xff,
@@ -284,14 +293,20 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro):
     m_desc.manufacturer = manufacturer;
     m_desc.product = product;
     m_desc.serial_number = serialno;
+
+    if (usb3) {
+        m_desc.bcd_usb = 0x300;
+        m_desc.max_packet_size0 = 9;
+        for (auto& epdesc : m_desc.configs[0].interfaces[0].endpoints) {
+            epdesc.max_packet_size = 1024;
+            for (auto ch : USB3_ENDPOINT_COMPANION_DT)
+                epdesc.extra.push_back(ch);
+        }
+    }
 }
 
 drive::~drive() {
     // nothing to do
-}
-
-void drive::start_of_simulation() {
-    usb_in.attach(USB_SPEED_HIGH);
 }
 
 usb_result drive::get_data(u32 ep, u8* data, size_t len) {

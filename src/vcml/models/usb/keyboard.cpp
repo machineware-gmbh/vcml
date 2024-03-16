@@ -260,18 +260,14 @@ keyboard::~keyboard() {
 }
 
 void keyboard::start_of_simulation() {
+    device::start_of_simulation();
     if (m_console.has_display())
         m_console.notify(m_keyboard);
-
-    if (usb3)
-        usb_in.attach(USB_SPEED_SUPER);
-    else
-        usb_in.attach(USB_SPEED_HIGH);
 }
 
 void keyboard::end_of_simulation() {
     m_console.shutdown();
-    module::end_of_simulation();
+    device::end_of_simulation();
 }
 
 usb_result keyboard::get_report(u8* data, size_t length) {

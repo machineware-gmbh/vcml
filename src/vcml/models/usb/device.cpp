@@ -121,6 +121,61 @@ void write_data(u8*& ptr, size_t& size, const string& desc) {
         write_data<u16>(ptr, size, ch);
 }
 
+bool device::cmd_usb_attach(const vector<string>& args, ostream& os) {
+    usb_speed speed = usb_speed_max(m_desc);
+    if (speed == USB_SPEED_NONE) {
+        os << "cannot get usb speed from device descriptor" << std::endl;
+        return false;
+    }
+
+    vector<usb_target_socket*> sockets;
+    if (args.empty()) {
+        sockets = all_usb_sockets();
+    } else {
+        for (const string& pname : args) {
+            auto uts = find_usb_socket(pname);
+            if (uts == nullptr) {
+                os << "usb socket not found: " << pname;
+                return false;
+            }
+
+            sockets.push_back(uts);
+        }
+    }
+
+    for (auto uts : sockets) {
+        os << "attaching " << uts->name() << " (" << usb_speed_str(speed)
+           << ")" << std::endl;
+        uts->attach(speed);
+    }
+
+    return true;
+}
+
+bool device::cmd_usb_detach(const vector<string>& args, ostream& os) {
+    vector<usb_target_socket*> sockets;
+    if (args.empty()) {
+        sockets = all_usb_sockets();
+    } else {
+        for (const string& pname : args) {
+            auto uts = find_usb_socket(pname);
+            if (uts == nullptr) {
+                os << "usb socket not found: " << pname;
+                return false;
+            }
+
+            sockets.push_back(uts);
+        }
+    }
+
+    for (auto uts : sockets) {
+        os << "detaching " << uts->name() << std::endl;
+        uts->detach();
+    }
+
+    return true;
+}
+
 device::device(const sc_module_name& nm, const device_desc& desc):
     module(nm),
     usb_dev_if(),
@@ -128,10 +183,16 @@ device::device(const sc_module_name& nm, const device_desc& desc):
     m_stalled(false),
     m_state(STATE_DEFAULT),
     m_ep0(),
+    start_attached("start_attached", true),
     m_desc(desc),
     m_cur_config(0),
     m_cur_iface(0) {
     memset(&m_ep0, 0, sizeof(m_ep0));
+
+    register_command("usb_attach", 0, &device::cmd_usb_attach,
+                     "usb_attach [port] attach the given port to the host");
+    register_command("usb_detach", 0, &device::cmd_usb_detach,
+                     "usb_detach [port] detach the given port from the host");
 }
 
 device::~device() {
@@ -351,6 +412,48 @@ usb_result device::handle_ep0(usb_packet& p) {
     }
 }
 
+void device::start_of_simulation() {
+    module::start_of_simulation();
+
+    usb_speed speed = usb_speed_max(m_desc);
+    if (start_attached && speed > USB_SPEED_NONE) {
+        for (auto* uts : all_usb_sockets())
+            uts->attach(speed);
+    }
+}
+
+static void collect_sockets(sc_module* obj, vector<usb_target_socket*>& s) {
+    for (sc_object* obj : obj->get_child_objects()) {
+        if (usb_target_socket* uts = dynamic_cast<usb_target_socket*>(obj))
+            stl_add_unique(s, uts);
+
+        if (usb_target_array* arr = dynamic_cast<usb_target_array*>(obj)) {
+            for (auto [idx, uts] : *arr)
+                stl_add_unique(s, uts);
+        }
+
+        if (sc_module* mod = dynamic_cast<sc_module*>(obj))
+            collect_sockets(mod, s);
+    }
+}
+
+vector<usb_target_socket*> device::all_usb_sockets() {
+    vector<usb_target_socket*> all;
+    collect_sockets(this, all);
+    return all;
+}
+
+usb_target_socket* device::find_usb_socket(const string& name) {
+    sc_object* obj = find_child(name);
+    return dynamic_cast<usb_target_socket*>(obj);
+}
+
+usb_target_socket* device::find_usb_socket(const string& name, size_t idx) {
+    sc_object* obj = find_child(name);
+    usb_target_array* arr = dynamic_cast<usb_target_array*>(obj);
+    return arr && arr->exists(idx) ? &arr->get(idx) : nullptr;
+}
+
 usb_result device::get_data(u32 ep, u8* data, size_t len) {
     if (len == 0)
         return USB_RESULT_SUCCESS;
@@ -392,6 +495,8 @@ void device::usb_reset_endpoint(int ep) {
     case 0:
         m_ep0.req = 0;
         m_ep0.state = STATE_SETUP;
+        m_state = STATE_DEFAULT;
+        break;
     }
 }
 

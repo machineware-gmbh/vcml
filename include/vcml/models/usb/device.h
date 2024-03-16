@@ -62,6 +62,21 @@ struct device_desc {
     vector<config_desc> configs;
 };
 
+constexpr usb_speed usb_speed_max(const device_desc& desc) {
+    switch (desc.bcd_usb) {
+    case 0x100:
+        return USB_SPEED_LOW;
+    case 0x110:
+        return USB_SPEED_FULL;
+    case 0x200:
+        return USB_SPEED_HIGH;
+    case 0x300:
+        return USB_SPEED_SUPER;
+    default:
+        return USB_SPEED_NONE;
+    }
+}
+
 class device : public module, public usb_dev_if
 {
 private:
@@ -94,7 +109,12 @@ private:
         u8 buf[1024];
     } m_ep0;
 
+    bool cmd_usb_attach(const vector<string>& args, ostream& os);
+    bool cmd_usb_detach(const vector<string>& args, ostream& os);
+
 public:
+    property<bool> start_attached;
+
     bool is_addressed() const { return m_state >= STATE_ADDRESSED; }
     bool is_configured() const { return m_state >= STATE_CONFIGURED; }
 
@@ -108,6 +128,12 @@ protected:
     device_desc m_desc;
     size_t m_cur_config;
     size_t m_cur_iface;
+
+    virtual void start_of_simulation() override;
+
+    vector<usb_target_socket*> all_usb_sockets();
+    usb_target_socket* find_usb_socket(const string& name);
+    usb_target_socket* find_usb_socket(const string& name, size_t idx);
 
     virtual usb_result get_data(u32 ep, u8* data, size_t len);
     virtual usb_result set_data(u32 ep, const u8* data, size_t len);

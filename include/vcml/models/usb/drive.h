@@ -73,8 +73,6 @@ public:
     VCML_KIND(usb::drive);
 
 protected:
-    virtual void start_of_simulation() override;
-
     virtual usb_result get_data(u32 ep, u8* data, size_t len) override;
     virtual usb_result set_data(u32 ep, const u8* data, size_t len) override;
 
