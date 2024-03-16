@@ -148,6 +148,9 @@ using sc_core::sc_vector;
 
 sc_module* hierarchy_top();
 
+void hierarchy_dump(ostream& os);
+void hierarchy_dump(ostream& os, sc_object* obj);
+
 template <typename MODULE = sc_core::sc_object>
 inline MODULE* hierarchy_search(sc_object* start = nullptr) {
     if (start == nullptr)

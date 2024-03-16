@@ -54,6 +54,22 @@ sc_module* hierarchy_top() {
 #endif
 }
 
+void hierarchy_dump(ostream& os) {
+    for (sc_object* obj : sc_core::sc_get_top_level_objects())
+        hierarchy_dump(os, obj);
+}
+
+void hierarchy_dump(ostream& os, sc_object* obj) {
+    if (obj == nullptr)
+        return;
+
+    os << obj->name() << std::endl;
+
+    if (sc_module* mod = dynamic_cast<sc_module*>(obj))
+        for (sc_object* child : mod->get_child_objects())
+            hierarchy_dump(os, child);
+}
+
 bool is_parent(const sc_object* obj, const sc_object* child) {
     if (obj == child)
         return false;
