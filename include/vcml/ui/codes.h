@@ -1,14 +1,12 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2023 MachineWare GmbH                                            *
+ * Copyright (C) 2023 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
  *                                                                            *
- * This is unpublished proprietary work and may not be used or disclosed to   *
- * third parties, copied or duplicated in any form, in whole or in part,      *
- * without prior written permission of the authors.                           *
+ * This is work is licensed under the terms described in the LICENSE file     *
+ * found in the root directory of this source tree.                           *
  *                                                                            *
  ******************************************************************************/
-
 #ifndef VCML_UI_CODES_H
 #define VCML_UI_CODES_H
 
