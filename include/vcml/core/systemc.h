@@ -375,6 +375,7 @@ private:
 void sc_async(function<void(void)> job);
 void sc_progress(const sc_time& delta);
 void sc_sync(function<void(void)> job);
+void sc_join_async();
 
 bool sc_is_async();
 

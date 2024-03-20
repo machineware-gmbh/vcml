@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "testing.h"
+#include "vcml/core/systemc.h"
 
 class async_test : public test_base
 {
@@ -44,6 +45,7 @@ public:
         sc_time dura(10, SC_SEC);
         auto fn = [&]() -> void { work(dura); };
         sc_async(fn);
+        sc_join_async();
 
         EXPECT_TRUE(success);
         EXPECT_EQ(sc_time_stamp(), 2 * dura);

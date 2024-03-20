@@ -601,13 +601,7 @@ struct async_worker {
         VCML_ERROR_ON(!process, "invalid parent process");
     }
 
-    ~async_worker() {
-        if (worker.joinable()) {
-            alive = false;
-            notify.notify_all();
-            worker.join();
-        }
-    }
+    ~async_worker() { kill(); }
 
     void work() {
         g_async = this;
@@ -633,6 +627,14 @@ struct async_worker {
 
         mtx.unlock();
         g_async = nullptr;
+    }
+
+    void kill() {
+        if (worker.joinable()) {
+            alive = false;
+            notify.notify_all();
+            worker.join();
+        }
     }
 
     void run_async(function<void(void)>& job) {
@@ -667,7 +669,7 @@ struct async_worker {
     void run_sync(function<void(void)> job) {
         g_async->request = &job;
         while (g_async->request) {
-            if (!sim_running())
+            if (!g_async->alive || !sim_running())
                 throw sim_terminated_exception();
             mwr::cpu_yield();
         }
@@ -675,12 +677,16 @@ struct async_worker {
 
     sc_time timestamp() { return sc_thread_pos + time_from_value(progress); }
 
+    typedef unordered_map<sc_process_b*, shared_ptr<async_worker>> map_t;
+    static map_t& all_workers() {
+        static map_t workers;
+        return workers;
+    }
+
     static async_worker& lookup(sc_process_b* thread) {
         VCML_ERROR_ON(!thread, "invalid thread");
 
-        typedef unordered_map<sc_process_b*, shared_ptr<async_worker>> map;
-        static map workers;
-
+        auto& workers = all_workers();
         auto it = workers.find(thread);
         if (it != workers.end())
             return *it->second;
@@ -711,6 +717,10 @@ void sc_sync(function<void(void)> job) {
     } else {
         VCML_ERROR("not on systemc or async thread");
     }
+}
+
+void sc_join_async() {
+    async_worker::all_workers().clear();
 }
 
 bool sc_is_async() {
