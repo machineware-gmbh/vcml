@@ -616,7 +616,9 @@ struct async_worker {
                 break;
 
             try {
+                mtx.unlock();
                 task();
+                mtx.lock();
             } catch (sim_terminated_exception& ex) {
                 (void)ex;
                 alive = false;
@@ -631,7 +633,9 @@ struct async_worker {
 
     void kill() {
         if (worker.joinable()) {
+            mtx.lock();
             alive = false;
+            mtx.unlock();
             notify.notify_all();
             worker.join();
         }
