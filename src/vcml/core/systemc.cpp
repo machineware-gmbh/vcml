@@ -621,6 +621,7 @@ struct async_worker {
                 mtx.lock();
             } catch (sim_terminated_exception& ex) {
                 (void)ex;
+                mtx.lock();
                 alive = false;
             }
 
