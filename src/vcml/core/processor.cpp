@@ -425,11 +425,6 @@ void processor::reset() {
     flush_cpuregs();
 }
 
-void processor::before_end_of_elaboration() {
-    component::before_end_of_elaboration();
-    flush_cpuregs();
-}
-
 void processor::session_suspend() {
     component::session_suspend();
     fetch_cpuregs();
@@ -518,6 +513,11 @@ void processor::update_local_time(sc_time& local_time, sc_process_b* proc) {
     }
 }
 
+void processor::before_end_of_elaboration() {
+    component::before_end_of_elaboration();
+    flush_cpuregs();
+}
+
 void processor::end_of_elaboration() {
     component::end_of_elaboration();
 
@@ -542,6 +542,13 @@ void processor::end_of_elaboration() {
         log_info("%s for GDB connection on port %hu",
                  gdb_wait ? "waiting" : "listening", m_gdb->port());
     }
+}
+
+void processor::end_of_simulation() {
+    if (async)
+        sc_join_async();
+
+    component::end_of_simulation();
 }
 
 void processor::fetch_cpuregs() {

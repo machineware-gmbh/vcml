@@ -99,8 +99,6 @@ public:
 
     virtual void reset() override;
 
-    virtual void before_end_of_elaboration() override;
-
     bool get_irq_stats(size_t irq, irq_stats& stats) const;
 
     template <typename T>
@@ -124,7 +122,10 @@ protected:
 
     virtual void simulate(size_t cycles) = 0;
     virtual void update_local_time(sc_time& time, sc_process_b* proc) override;
+
+    virtual void before_end_of_elaboration() override;
     virtual void end_of_elaboration() override;
+    virtual void end_of_simulation() override;
 
     virtual void fetch_cpuregs();
     virtual void flush_cpuregs();
