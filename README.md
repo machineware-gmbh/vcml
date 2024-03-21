@@ -42,25 +42,26 @@ This is how to build and install them:
     `SYSTEMC_HOME` and `TARGET_ARCH` variables. Versions starting from `2.3.0`
     are supported.
 
-2. Install `libelf` and `cmake`:
-    ```
-    sudo apt-get install cmake libelf-dev         # Ubuntu
-    sudo yum install cmake3 elfutils-libelf-devel # Centos
-    ```
+2. Download and install `cmake`:
+   - <https://github.com/Kitware/CMake/releases>
 
-3. Install `libsdl2` (optional, needed if you want local graphic output):
-    ```
-    sudo apt-get install libsdl2-dev # Ubuntu
-    sudo yum install SDL2-devel      # Centos
-    ```
+3. Install optional dependencies:
+   - `Lua` for scripting support
+   - `SDL2` for graphic output
+   - `libvnc` for remote graphic output
+   - `libslirp` for userspace ethernet emulation
 
-4. Install `libvncserver` (optional, needed if you want remote graphic output):
     ```
-    sudo apt-get install libvncserver-dev # Ubuntu
-    sudo yum install libvncserver-devel   # Centos
+    # Ubuntu
+    sudo apt-get install liblua5.4-dev libsdl2-dev libvncserver-dev libslirp-dev
+    # Fedora
+    sudo dnf install lua-devel SDL2-devel libvncserver-devel libslirp-devel
     ```
+   Optional dependencies are automatically enabled if found by `cmake` on the
+   host build system. To disable their use, pass `-DUSE_<LUA|SDL2|VNC|SLIRP>=FALSE`
+   to `cmake` during configuration (see step 6).
 
-5. Clone VCML repository and initialize submodules:
+4. Clone VCML repository and initialize submodules:
     ```
     git clone https://github.com/machineware-gmbh/vcml.git --recursive
     ```
@@ -71,14 +72,14 @@ This is how to build and install them:
     git submodule update
     ```
 
-6. Chose directories for building and deployment:
+5. Chose directories for building and deployment:
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
     <build-dir>   location to store object files, e.g. /home/jan/vcml/BUILD
     <install-dir> output directory for binaries,  e.g. /opt/vcml
     ```
 
-7. Configure and build the project using `cmake`. During configuration you must
+6. Configure and build the project using `cmake`. During configuration you must
    state whether or not to build the utility programs and unit tests:
      * `-DVCML_BUILD_UTILS=[ON|OFF]`: build utility programs (default: `ON`)
      * `-DVCML_BUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
@@ -97,7 +98,7 @@ This is how to build and install them:
    If building with `-DVCML_BUILD_TESTS=ON` you can run all unit tests using
    `make test` within `<build-dir>`.
 
-8. After installation, the following new files should be present:
+7. After installation, the following new files should be present:
     ```
     <install-dir>/lib/libvcml.a   # library
     <install-dir>/include/vcml.h  # library header
@@ -105,7 +106,7 @@ This is how to build and install them:
     <install-dir>/bin/            # utility programs
     ```
 
-9. Update your environment so that other projects can reference your build:
+8. Update your environment so that other projects can reference your build:
     ```
     export VCML_HOME=<install-dir>
     ```
