@@ -11,6 +11,7 @@
 #include "vcml/models/serial/terminal.h"
 
 #include "vcml/models/serial/backend.h"
+#include "vcml/models/serial/backend_null.h"
 #include "vcml/models/serial/backend_file.h"
 #include "vcml/models/serial/backend_tcp.h"
 #include "vcml/models/serial/backend_fd.h"
@@ -47,9 +48,10 @@ backend* backend::create(terminal* term, const string& type) {
     string kind = type.substr(0, type.find(':'));
     typedef function<backend*(terminal*, const string&)> construct;
     static const unordered_map<string, construct> backends = {
-        { "file", backend_file::create }, { "tcp", backend_tcp::create },
-        { "stderr", backend_fd::create }, { "stdout", backend_fd::create },
-        { "term", backend_term::create }, { "tui", backend_tui::create },
+        { "null", backend_null::create }, { "file", backend_file::create },
+        { "tcp", backend_tcp::create },   { "stderr", backend_fd::create },
+        { "stdout", backend_fd::create }, { "term", backend_term::create },
+        { "tui", backend_tui::create },
     };
 
     auto it = backends.find(kind);

@@ -119,6 +119,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/gpio.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/serial/backend_null.cpp
     ${src}/vcml/models/serial/backend_fd.cpp
     ${src}/vcml/models/serial/backend_file.cpp
     ${src}/vcml/models/serial/backend_tcp.cpp
