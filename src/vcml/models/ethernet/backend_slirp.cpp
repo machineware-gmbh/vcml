@@ -20,6 +20,7 @@
 #include <ws2tcpip.h>
 #else
 #include <poll.h>
+typedef ssize_t slirp_ssize_t;
 #endif
 
 namespace vcml {
