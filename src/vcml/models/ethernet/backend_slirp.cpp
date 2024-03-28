@@ -8,9 +8,19 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifdef _WIN32
+#define NTDDI_VERSION NTDDI_VISTA
+#define _WIN32_WINNT  _WIN32_WINNT_VISTA
+#endif
+
 #include "vcml/models/ethernet/backend_slirp.h"
 
+#ifdef MWR_MSVC
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <poll.h>
+#endif
 
 namespace vcml {
 namespace ethernet {
@@ -47,12 +57,15 @@ static int slirp_add_poll_fd(int fd, int events, void* opaque) {
         request.events |= POLLIN;
     if (events & SLIRP_POLL_OUT)
         request.events |= POLLOUT;
+
+#ifndef MWR_MSVC
     if (events & SLIRP_POLL_PRI)
         request.events |= POLLPRI;
     if (events & SLIRP_POLL_ERR)
         request.events |= POLLERR;
     if (events & SLIRP_POLL_HUP)
         request.events |= POLLHUP;
+#endif
 
     vector<pollfd>* requests = (vector<pollfd>*)opaque;
     requests->push_back(request);
@@ -75,10 +88,10 @@ static int slirp_get_events(int idx, void* opaque) {
     return events;
 }
 
-static ssize_t slirp_send(const void* buf, size_t len, void* opaque) {
+static slirp_ssize_t slirp_send(const void* buf, size_t len, void* opaque) {
     slirp_network* network = (slirp_network*)opaque;
     network->send_packet((const u8*)buf, len);
-    return (ssize_t)len;
+    return (slirp_ssize_t)len;
 }
 
 static void slirp_error(const char* msg, void* opaque) {
@@ -142,7 +155,12 @@ void slirp_network::slirp_thread() {
             continue;
         }
 
+#ifdef MWR_MSVC
+        int ret = WSAPoll(fds.data(), fds.size(), timeout);
+#else
         int ret = poll(fds.data(), fds.size(), timeout);
+#endif
+
         if (ret != 0) {
             lock_guard<mutex> guard(m_mtx);
             slirp_pollfds_poll(m_slirp, ret < 0, &slirp_get_events, &fds);
