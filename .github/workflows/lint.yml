@@ -41,7 +41,7 @@ jobs:
 
     - name: Cache SystemC
       id: cache-systemc
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{github.workspace}}/systemc
         key: cache-systemc-${{matrix.systemc}}-${{runner.arch}}-${{runner.name}}-clang-tidy

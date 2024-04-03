@@ -333,8 +333,10 @@ usb_result device::handle_ep0(usb_packet& p) {
         m_ep0.len = p.data[6] | (u16)p.data[7] << 8;
         m_ep0.pos = 0;
 
-        if (m_ep0.len > sizeof(m_ep0.buf))
+        if ((size_t)m_ep0.len > sizeof(m_ep0.buf)) {
+            log_warn("control request too big: %hu bytes", m_ep0.len);
             return USB_RESULT_BABBLE;
+        }
 
         usb_result res = USB_RESULT_SUCCESS;
         if (m_ep0.req & USB_REQ_IN) {

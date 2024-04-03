@@ -310,7 +310,7 @@ drive::~drive() {
 }
 
 usb_result drive::get_data(u32 ep, u8* data, size_t len) {
-    if (ep != 2) {
+    if (ep != 1) {
         log_warn("invalid input endpoint: %u", ep);
         return USB_RESULT_STALL;
     }
@@ -348,7 +348,7 @@ usb_result drive::get_data(u32 ep, u8* data, size_t len) {
 }
 
 usb_result drive::set_data(u32 ep, const u8* data, size_t len) {
-    if (ep != 3) {
+    if (ep != 2) {
         log_warn("invalid output endpoint: %u", ep);
         return USB_RESULT_STALL;
     }

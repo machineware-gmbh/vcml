@@ -20,6 +20,7 @@ public:
     usb::keyboard keyboard2;
     usb::keyboard keyboard3;
     usb::drive drive2;
+    usb::hostdev hostdev;
 
     tlm_initiator_socket out;
     gpio_target_socket irq;
@@ -32,11 +33,13 @@ public:
         keyboard2("keyboard2"),
         keyboard3("keyboard3"),
         drive2("drive2"),
+        hostdev("hostdev"),
         out("out"),
         irq("irq") {
         xhci.usb_out[0].bind(keyboard2.usb_in);
         xhci.usb_out[1].bind(keyboard3.usb_in);
         xhci.usb_out[2].bind(drive2.usb_in);
+        xhci.usb_out[3].bind(hostdev.usb_in);
 
         bus.bind(mem.in, 0, 0xfff);
         bus.bind(xhci.in, 0x1000, 0x1fff);
@@ -58,6 +61,7 @@ public:
         EXPECT_STREQ(keyboard2.kind(), "vcml::usb::keyboard");
         EXPECT_STREQ(keyboard3.kind(), "vcml::usb::keyboard");
         EXPECT_STREQ(drive2.kind(), "vcml::usb::drive");
+        EXPECT_STREQ(hostdev.kind(), "vcml::usb::hostdev");
     }
 
     void test_capabilities() {

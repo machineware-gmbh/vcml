@@ -106,7 +106,7 @@ private:
         usb_result res;
         control_state state;
         u8* ptr;
-        u8 buf[1024];
+        u8 buf[1u << 16];
     } m_ep0;
 
     bool cmd_usb_attach(const vector<string>& args, ostream& os);

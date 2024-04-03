@@ -304,7 +304,7 @@ usb_result keyboard::set_report(u8* data, size_t length) {
 }
 
 usb_result keyboard::get_data(u32 ep, u8* data, size_t len) {
-    if (ep != 2) {
+    if (ep != 1) {
         log_error("invalid endpoint contacted: %u", ep);
         return USB_RESULT_NACK;
     }

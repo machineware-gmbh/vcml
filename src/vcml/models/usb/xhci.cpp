@@ -1015,11 +1015,12 @@ u32 xhci::handle_transmit(u32 slotid, u32 epid, trb& cmd) {
 
     u64 addr = cmd.parameter;
     u32 size = get_trb_data_length(cmd);
+    u32 epno = (epid + 1) / 2;
     for (u32 off = 0; off < size; off += ep->max_psize) {
         vector<u8> buf(min(size - off, ep->max_psize));
 
         if (dirin) {
-            auto packet = usb_packet_in(slotid, epid, buf.data(), buf.size());
+            auto packet = usb_packet_in(slotid, epno, buf.data(), buf.size());
             usb_out[slot->port].send(packet);
             if (failed(packet))
                 return usb_packet_ccode(packet);
@@ -1035,7 +1036,7 @@ u32 xhci::handle_transmit(u32 slotid, u32 epid, trb& cmd) {
                     return TRB_CC_DATA_BUFFER_ERROR;
             }
 
-            auto packet = usb_packet_out(slotid, epid, buf.data(), buf.size());
+            auto packet = usb_packet_out(slotid, epno, buf.data(), buf.size());
             usb_out[slot->port].send(packet);
             if (failed(packet))
                 return usb_packet_ccode(packet);
