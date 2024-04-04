@@ -184,7 +184,10 @@ inline void property<T, N>::str(const string& s) {
 template <>
 inline void property<string, 1>::str(const string& s) {
     m_inited = true;
-    m_value[0] = s;
+    if (s.length() > 1 && s.front() == '"' && s.back() == '"')
+        m_value[0] = s.substr(1, s.length() - 2);
+    else
+        m_value[0] = s;
 }
 
 template <typename T, size_t N>
