@@ -312,6 +312,11 @@ typedef enum vcml_alignment {
 
 VCML_TYPEINFO(alignment);
 
+inline vcml_alignment host_page_alignment() {
+    static const size_t pgsz = mwr::get_page_size();
+    return pgsz ? (vcml_alignment)ctz(pgsz) : VCML_ALIGN_NONE;
+}
+
 istream& operator>>(istream& is, alignment& a);
 ostream& operator<<(ostream& os, alignment a);
 

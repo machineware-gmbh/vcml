@@ -87,9 +87,9 @@ tlm_memory::~tlm_memory() {
 void tlm_memory::init(const string& shared, size_t size, alignment al) {
     VCML_ERROR_ON(m_size, "memory already initialized");
 
-    // mmap automatically aligns up to 4k, for larger alignments we
-    // reserve extra space to include an aligned start address plus size
-    u64 extra = (al > VCML_ALIGN_4K) ? (1ull << al) - 1 : 0;
+    // mmap automatically aligns up to host page size, for larger alignments
+    // we reserve extra space to include an aligned start address plus size
+    u64 extra = (al > host_page_alignment()) ? (1ull << al) - 1 : 0;
     m_size = size + extra;
 
     int fd = -1;
