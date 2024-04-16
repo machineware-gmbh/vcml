@@ -128,8 +128,8 @@ cap_msix::cap_msix(const string& nm, u32 bar_idx, size_t nvec, u32 off):
 
     msix_control = new_cap_reg_rw<u16>("msix_control", control);
     msix_control->on_write(&device::write_msix_ctrl);
-    msix_bir_off = new_cap_reg_ro<u32>("msix_bir_off", tbl_off);
-    msix_pba_off = new_cap_reg_ro<u32>("msix_pba_off", pba_off);
+    msix_bir_off = new_cap_reg_rw<u32>("msix_bir_off", tbl_off);
+    msix_pba_off = new_cap_reg_rw<u32>("msix_pba_off", pba_off);
 }
 
 cap_msix::~cap_msix() {

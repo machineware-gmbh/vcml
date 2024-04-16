@@ -87,11 +87,11 @@ struct cap_msi : capability {
 };
 
 struct cap_msix : capability {
-    const range tbl;
-    const range bpa;
-    const u32 bar;
-    const address_space bar_as;
-    const size_t num_vectors;
+    range tbl;
+    range bpa;
+    u32 bar;
+    address_space bar_as;
+    size_t num_vectors;
 
     struct msix_entry {
         u64 addr;
@@ -229,8 +229,15 @@ protected:
     virtual void pci_transport(const pci_target_socket& socket,
                                pci_payload& tx) override;
 
-private:
+    void write_bars(u32 val, size_t barno);
+
+    void write_command(u16 val);
+
     pci_bar m_bars[PCI_NUM_BARS];
+    void update_bars();
+    void update_irqs();
+
+private:
     pci_irq m_irq;
     cap_pm* m_pm;
     cap_msi* m_msi;
@@ -244,21 +251,15 @@ private:
     void msix_send(unsigned int vector);
     void msix_process();
 
-    void write_bars(u32 val, size_t barno);
-
-    void write_command(u16 val);
-    void write_status(u16 val);
-
     void write_pm_ctrl(u32 val);
+
+    void write_status(u16 val);
 
     void write_msi_ctrl(u16 val);
     void write_msi_addr(u32 val);
     void write_msi_mask(u32 val);
 
     void write_msix_ctrl(u16 val);
-
-    void update_bars();
-    void update_irqs();
 
     using pci_target::pci_interrupt;
 };
