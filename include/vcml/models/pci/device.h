@@ -30,7 +30,7 @@ struct capability {
     device* dev;
 
     reg<u8>* cap_id;
-    reg<u8>* cap_next;
+    reg<u8>* nxt_ptr;
 
     capability(const string& nm, pci_cap_id cap_id);
     virtual ~capability();
@@ -87,11 +87,13 @@ struct cap_msi : capability {
 };
 
 struct cap_msix : capability {
-    const range tbl;
-    const range bpa;
-    const u32 bar;
-    const address_space bar_as;
-    const size_t num_vectors;
+    range tbl;
+    range pba;
+
+    address_space tbl_as;
+    address_space pba_as;
+
+    size_t num_vectors;
 
     struct msix_entry {
         u64 addr;
@@ -124,9 +126,48 @@ struct cap_msix : capability {
     cap_msix(const string& nm, u32 bar, size_t nvec, u32 offset = 0);
     virtual ~cap_msix();
     void reset();
+    void update();
 
-    tlm_response_status read_table(const range& addr, void* data);
-    tlm_response_status write_table(const range& addr, const void* data);
+    tlm_response_status read_tbl(const range& addr, void* data);
+    tlm_response_status write_tbl(const range& addr, const void* data);
+
+    tlm_response_status read_pba(const range& addr, void* data);
+    tlm_response_status write_pba(const range& addr, const void* data);
+};
+
+struct cap_pcie : capability {
+    reg<u16>* flags;
+
+    reg<u32>* dev_cap;
+    reg<u16>* dev_ctl;
+    reg<u16>* dev_sts;
+
+    reg<u32>* link_cap;
+    reg<u16>* link_ctl;
+    reg<u16>* link_sts;
+
+    reg<u32>* slot_cap;
+    reg<u16>* slot_ctl;
+    reg<u16>* slot_sts;
+
+    reg<u16>* root_cap;
+    reg<u16>* root_ctl;
+    reg<u32>* root_sts;
+
+    reg<u32>* dev_cap2;
+    reg<u16>* dev_ctl2;
+    reg<u16>* dev_sts2;
+
+    reg<u32>* link_cap2;
+    reg<u16>* link_ctl2;
+    reg<u16>* link_sts2;
+
+    reg<u32>* slot_cap2;
+    reg<u16>* slot_ctl2;
+    reg<u16>* slot_sts2;
+
+    cap_pcie(const string& nm);
+    virtual ~cap_pcie() = default;
 };
 
 class device : public peripheral, public pci_target
@@ -138,30 +179,30 @@ class device : public peripheral, public pci_target
 
 public:
     enum pci_command_bits : u16 {
-        PCI_COMMAND_IO = 1 << 0,
-        PCI_COMMAND_MMIO = 1 << 1,
-        PCI_COMMAND_BUS_MASTER = 1 << 2,
-        PCI_COMMAND_SPECIAL = 1 << 3,
-        PCI_COMMAND_INVALIDATE = 1 << 4,
-        PCI_COMMAND_PALETTE = 1 << 5,
-        PCI_COMMAND_PARITY = 1 << 6,
-        PCI_COMMAND_WAIT = 1 << 7,
-        PCI_COMMAND_SERR = 1 << 8,
-        PCI_COMMAND_FAST_B2B = 1 << 9,
-        PCI_COMMAND_NO_IRQ = 1 << 10,
+        PCI_COMMAND_IO = bit(0),
+        PCI_COMMAND_MMIO = bit(1),
+        PCI_COMMAND_BUS_MASTER = bit(2),
+        PCI_COMMAND_SPECIAL = bit(3),
+        PCI_COMMAND_INVALIDATE = bit(4),
+        PCI_COMMAND_PALETTE = bit(5),
+        PCI_COMMAND_PARITY = bit(6),
+        PCI_COMMAND_WAIT = bit(7),
+        PCI_COMMAND_SERR = bit(8),
+        PCI_COMMAND_FAST_B2B = bit(9),
+        PCI_COMMAND_NO_IRQ = bit(10),
     };
 
     enum pci_status_bits : u16 {
-        PCI_STATUS_IRQ = 1 << 3,
-        PCI_STATUS_CAPABILITY_LIST = 1 << 4,
-        PCI_STATUS_66MHZ_CAPABLE = 1 << 5,
-        PCI_STATUS_FAST_B2B = 1 << 7,
-        PCI_STATUS_MASTER_PARITY_ERROR = 1 << 8,
-        PCI_STATUS_TX_TARGET_ABORT = 1 << 11,
-        PCI_STATUS_RX_TARGET_ABORT = 1 << 12,
-        PCI_STATUS_RX_MASTER_ABORT = 1 << 13,
-        PCI_STATUS_TX_SYSTEM_ERROR = 1 << 14,
-        PCI_STATUS_PARITY_ERROR = 1 << 15,
+        PCI_STATUS_IRQ = bit(3),
+        PCI_STATUS_CAPABILITY_LIST = bit(4),
+        PCI_STATUS_66MHZ_CAPABLE = bit(5),
+        PCI_STATUS_FAST_B2B = bit(7),
+        PCI_STATUS_MASTER_PARITY_ERROR = bit(8),
+        PCI_STATUS_TX_TARGET_ABORT = bit(11),
+        PCI_STATUS_RX_TARGET_ABORT = bit(12),
+        PCI_STATUS_RX_MASTER_ABORT = bit(13),
+        PCI_STATUS_TX_SYSTEM_ERROR = bit(14),
+        PCI_STATUS_PARITY_ERROR = bit(15),
     };
 
     constexpr u16 pci_status_init(bool pcie) {
@@ -226,17 +267,23 @@ public:
     void pci_legacy_interrupt(bool state);
 
 protected:
-    virtual void pci_transport(const pci_target_socket& socket,
-                               pci_payload& tx) override;
-
-private:
     pci_bar m_bars[PCI_NUM_BARS];
     pci_irq m_irq;
     cap_pm* m_pm;
     cap_msi* m_msi;
     cap_msix* m_msix;
+    cap_pcie* m_pcie;
     sc_event m_msi_notify;
     sc_event m_msix_notify;
+    vector<reg_base*> m_temp_rw_regs;
+
+    bool is_bypassing_cfgro() const { return !m_temp_rw_regs.empty(); }
+    void pci_bypass_cfgro(bool enable);
+
+    using pci_target::pci_interrupt;
+
+    virtual void pci_transport(const pci_target_socket& socket,
+                               pci_payload& tx) override;
 
     void msi_send(unsigned int vector);
     void msi_process();
@@ -259,8 +306,6 @@ private:
 
     void update_bars();
     void update_irqs();
-
-    using pci_target::pci_interrupt;
 };
 
 template <typename T>

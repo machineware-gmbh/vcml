@@ -18,15 +18,14 @@ capability::capability(const string& nm, pci_cap_id id):
     registers(),
     dev(hierarchy_search<device>()),
     cap_id(),
-    cap_next() {
+    nxt_ptr() {
     VCML_ERROR_ON(!dev, "PCI capability declared outside pci device");
 
     u8 prev_ptr = dev->curr_cap_ptr;
-
     dev->curr_cap_ptr = dev->curr_cap_off;
 
     cap_id = new_cap_reg_ro<u8>("cap_id", id);
-    cap_next = new_cap_reg_ro<u8>("cap_next", prev_ptr);
+    nxt_ptr = new_cap_reg_ro<u8>("nxt_ptr", prev_ptr);
 }
 
 capability::~capability() {
@@ -94,22 +93,22 @@ void cap_msix::set_pending(unsigned int vector, bool set) {
         msix_pba[vector / 32] &= ~mask;
 }
 
-cap_msix::cap_msix(const string& nm, u32 bar_idx, size_t nvec, u32 off):
+cap_msix::cap_msix(const string& nm, u32 bar, size_t nvec, u32 off):
     capability(nm, PCI_CAPABILITY_MSIX),
-    tbl(off, off + nvec * sizeof(msix_entry) - 1),
-    bar(bar_idx),
-    bar_as(PCI_AS_BAR0 + bar),
+    tbl(),
+    pba(),
+    tbl_as(PCI_AS_BAR0 + bar),
+    pba_as(PCI_AS_BAR0 + bar),
     num_vectors(nvec),
     msix_table(),
     msix_pba(),
     msix_control(),
     msix_bir_off() {
-    VCML_ERROR_ON(bar < 0 || bar > PCI_NUM_BARS, "invalid BAR specified");
-    VCML_ERROR_ON(!dev->m_bars[bar].size, "BAR%u not declared", bar);
+    VCML_ERROR_ON(bar < 0 || bar >= PCI_NUM_BARS, "invalid BAR specified");
     VCML_ERROR_ON(off & 7, "offset must be 8 byte aligned");
 
     size_t tblsz = nvec * sizeof(msix_entry);
-    size_t pbasz = (nvec + 31) / 32;
+    size_t pbasz = ((nvec + 31) / 32) * sizeof(u32);
     size_t total = off + tblsz + pbasz;
 
     if (dev->m_bars[bar].size < total)
@@ -123,13 +122,21 @@ cap_msix::cap_msix(const string& nm, u32 bar_idx, size_t nvec, u32 off):
     if (control != (nvec - 1))
         VCML_ERROR("too many MSIX vectors: %zu", nvec);
 
-    msix_table = new msix_entry[nvec];
-    msix_pba = new u32[(nvec + 31) / 32];
-
     msix_control = new_cap_reg_rw<u16>("msix_control", control);
     msix_control->on_write(&device::write_msix_ctrl);
     msix_bir_off = new_cap_reg_ro<u32>("msix_bir_off", tbl_off);
+    msix_bir_off->on_write([&](u32 val) -> void {
+        *msix_bir_off = val;
+        update();
+    });
+
     msix_pba_off = new_cap_reg_ro<u32>("msix_pba_off", pba_off);
+    msix_pba_off->on_write([&](u32 val) -> void {
+        *msix_pba_off = val;
+        update();
+    });
+
+    update();
 }
 
 cap_msix::~cap_msix() {
@@ -149,7 +156,37 @@ void cap_msix::reset() {
     memset(msix_pba, 0, sizeof(u32) * ((num_vectors + 31) / 32));
 }
 
-tlm_response_status cap_msix::read_table(const range& addr, void* data) {
+void cap_msix::update() {
+    u32 num_vec = *msix_control & PCI_MSIX_TABLE_SIZE_MASK;
+    u32 tbl_bar = *msix_bir_off & PCI_MSIX_BIR_MASK;
+    u32 pba_bar = *msix_pba_off & PCI_MSIX_BIR_MASK;
+
+    tbl_as = PCI_AS_BAR0 + tbl_bar;
+    pba_as = PCI_AS_BAR0 + pba_bar;
+
+    tbl.start = *msix_bir_off & ~PCI_MSIX_BIR_MASK;
+    pba.start = *msix_pba_off & ~PCI_MSIX_BIR_MASK;
+
+    tbl.end = tbl.start + num_vec * sizeof(msix_entry) - 1;
+    pba.end = pba.start + ((num_vec + 31) / 32) * sizeof(u32);
+
+    if (tbl.end >= dev->m_bars[tbl_bar].size)
+        VCML_ERROR("MSIX table does not fit into BAR%u", tbl_bar);
+    if (pba.end >= dev->m_bars[pba_bar].size)
+        VCML_ERROR("MSIX PBA does not fit into BAR%u", pba_bar);
+
+    if (num_vec != num_vectors) {
+        delete[] msix_table;
+        delete[] msix_pba;
+        num_vectors = num_vec;
+        msix_table = new msix_entry[num_vec];
+        msix_pba = new u32[(num_vec + 31) / 32];
+    }
+
+    reset();
+}
+
+tlm_response_status cap_msix::read_tbl(const range& addr, void* data) {
     if (addr.length() != 4 || addr.start % 4)
         return TLM_BURST_ERROR_RESPONSE;
 
@@ -162,13 +199,12 @@ tlm_response_status cap_msix::read_table(const range& addr, void* data) {
     return TLM_OK_RESPONSE;
 }
 
-tlm_response_status cap_msix::write_table(const range& addr,
-                                          const void* data) {
+tlm_response_status cap_msix::write_tbl(const range& addr, const void* data) {
     if (addr.length() != 4 || addr.start % 4)
         return TLM_BURST_ERROR_RESPONSE;
 
-    unsigned int vector = addr.start / sizeof(msix_entry);
-    unsigned int offset = addr.start % sizeof(msix_entry);
+    unsigned int vector = (addr.start - tbl.start) / sizeof(msix_entry);
+    unsigned int offset = (addr.start - tbl.start) % sizeof(msix_entry);
     VCML_ERROR_ON(vector > num_vectors, "read out of bounds");
 
     msix_entry* entry = msix_table + vector;
@@ -177,6 +213,68 @@ tlm_response_status cap_msix::write_table(const range& addr,
     entry->ctrl &= PCI_MSIX_MASKED;
     dev->m_msix_notify.notify(SC_ZERO_TIME);
     return TLM_OK_RESPONSE;
+}
+
+tlm_response_status cap_msix::read_pba(const range& addr, void* data) {
+    if (addr.length() != 4 || addr.start % 4)
+        return TLM_BURST_ERROR_RESPONSE;
+
+    memcpy(data, (u8*)msix_pba + (addr.start - pba.start), addr.length());
+    return TLM_OK_RESPONSE;
+}
+
+tlm_response_status cap_msix::write_pba(const range& addr, const void* data) {
+    if (addr.length() != 4 || addr.start % 4)
+        return TLM_BURST_ERROR_RESPONSE;
+
+    // ignore writes to pba
+    return TLM_OK_RESPONSE;
+}
+
+enum cap_cpie_init_defaults : u32 {
+    PCIE_FLAGS_INIT = PCI_EXP_V3 | PCI_EXP_TYPE_ENDPOINT,
+    PCIE_DEVCAP_INIT = PCI_EXP_DEVCAP_MAX_PAYLOAD_512 |
+                       PCI_EXP_DEVCAP_L0S_128NS | PCI_EXP_DEVCAP_L1_UNLIMITED |
+                       PCI_EXP_DEVCAP_RBE,
+    PCIE_DEVCAP2_INIT = PCI_EXP_DEVCAP2_CTR_B | PCI_EXP_DEVCAP2_CTDS |
+                        PCI_EXP_DEVCAP2_LTR | PCI_EXP_DEVCAP2_EXT_FMT,
+    PCIE_DEVCTL_INIT = PCI_EXP_DEVCTL_RELAX | PCI_EXP_DEVCTL_MAX_PAYLOAD_128 |
+                       PCI_EXP_DEVCTL_NO_SNOOP | PCI_EXP_DEVCTL_MAX_READ_512,
+    PCIE_LINKCAP_INIT = PCI_EXP_LINKCAP_MLS_16G | PCI_EXP_LINKCAP_MLW_X4 |
+                        PCI_EXP_LINKCAP_ASPM_L1 | PCI_EXP_LINKCAP_ASPM_OC,
+    PCIE_LINKCAP2_INIT = PCI_EXP_LINKCAP2_SLS_2_5G | PCI_EXP_LINKCAP2_SLS_5G |
+                         PCI_EXP_LINKCAP2_SLS_8G | PCI_EXP_LINKCAP2_SLS_16G,
+    PCIE_LINKSTS_INIT = PCI_EXP_LINKSTS_CLS_16G | PCI_EXP_LINKSTS_NLW_X4,
+    PCIE_LINKSTS2_INIT = PCI_EXP_LINKSTS2_EQC | PCI_EXP_LINKSTS2_EP1S |
+                         PCI_EXP_LINKSTS2_EP2S | PCI_EXP_LINKSTS2_EP3S,
+};
+
+cap_pcie::cap_pcie(const string& nm):
+    capability(nm, PCI_CAPABILITY_PCIE),
+    flags(new_cap_reg_ro<u16>("flags", PCIE_FLAGS_INIT)),
+    dev_cap(new_cap_reg_ro<u32>("dev_cap", PCIE_DEVCAP_INIT)),
+    dev_ctl(new_cap_reg_rw<u16>("dev_ctl", PCIE_DEVCTL_INIT)),
+    dev_sts(new_cap_reg_rw<u16>("dev_sts", 0)),
+    link_cap(new_cap_reg_ro<u32>("link_cap", PCIE_LINKCAP_INIT)),
+    link_ctl(new_cap_reg_rw<u16>("link_ctl", 0)),
+    link_sts(new_cap_reg_rw<u16>("link_sts", PCIE_LINKSTS_INIT)),
+    slot_cap(new_cap_reg_ro<u32>("slot_cap", 0)),
+    slot_ctl(new_cap_reg_rw<u16>("slot_ctl", 0)),
+    slot_sts(new_cap_reg_rw<u16>("slot_sts", 0)),
+    root_cap(new_cap_reg_ro<u16>("root_cap", 0)),
+    root_ctl(new_cap_reg_rw<u16>("root_ctl", 0)),
+    root_sts(new_cap_reg_rw<u32>("root_sts", 0)),
+    dev_cap2(new_cap_reg_ro<u32>("dev_cap2", PCIE_DEVCAP2_INIT)),
+    dev_ctl2(new_cap_reg_rw<u16>("dev_ctl2", 0)),
+    dev_sts2(new_cap_reg_rw<u16>("dev_sts2", 0)),
+    link_cap2(new_cap_reg_ro<u32>("link_cap2", PCIE_LINKCAP2_INIT)),
+    link_ctl2(new_cap_reg_rw<u16>("link_ctl2", 0)),
+    link_sts2(new_cap_reg_rw<u16>("link_sts2", PCIE_LINKSTS2_INIT)),
+    slot_cap2(new_cap_reg_ro<u32>("slot_cap2", 0)),
+    slot_ctl2(new_cap_reg_rw<u16>("slot_ctl2", 0)),
+    slot_sts2(new_cap_reg_rw<u16>("slot_sts2", 0)) {
+    dev_sts->on_write(
+        [&](u16 val) -> void { *dev_sts &= ~(val & PCI_EXP_DEVSTS_RW1C); });
 }
 
 device::device(const sc_module_name& nm, const pci_config& cfg):
@@ -208,6 +306,7 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
     m_pm(nullptr),
     m_msi(nullptr),
     m_msix(nullptr),
+    m_pcie(nullptr),
     m_msi_notify("msi_notify"),
     m_msix_notify("msix_notify") {
     pci_vendor_id.allow_read_only();
@@ -266,9 +365,14 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
         m_bars[i].barno = i;
         m_bars[i].size = 0;
     }
+
+    if (pcie)
+        m_pcie = new cap_pcie("pci_cap_pcie");
 }
 
 device::~device() {
+    if (m_pcie)
+        delete m_pcie;
     if (m_pm)
         delete m_pm;
     if (m_msi)
@@ -293,15 +397,19 @@ void device::reset() {
 
 tlm_response_status device::read(const range& addr, void* data,
                                  const tlm_sbi& info, address_space as) {
-    if (m_msix && m_msix->bar_as == as && addr.overlaps(m_msix->tbl))
-        return m_msix->read_table(addr, data);
+    if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
+        return m_msix->read_tbl(addr, data);
+    if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
+        return m_msix->write_pba(addr, data);
     return peripheral::read(addr, data, info, as);
 }
 
 tlm_response_status device::write(const range& addr, const void* data,
                                   const tlm_sbi& info, address_space as) {
-    if (m_msix && m_msix->bar_as == as && addr.overlaps(m_msix->tbl))
-        return m_msix->write_table(addr, data);
+    if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
+        return m_msix->write_tbl(addr, data);
+    if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
+        return m_msix->write_pba(addr, data);
     return peripheral::write(addr, data, info, as);
 }
 
@@ -383,6 +491,24 @@ void device::pci_legacy_interrupt(bool state) {
         pci_status &= ~PCI_STATUS_IRQ;
 
     update_irqs();
+}
+
+void device::pci_bypass_cfgro(bool enable) {
+    if (enable) {
+        if (is_bypassing_cfgro())
+            return; // already enabled
+
+        for (auto* reg : get_registers(PCI_AS_CFG)) {
+            if (reg->is_read_only()) {
+                reg->allow_read_write();
+                m_temp_rw_regs.push_back(reg);
+            }
+        }
+    } else {
+        for (auto* reg : m_temp_rw_regs)
+            reg->allow_read_only();
+        m_temp_rw_regs.clear();
+    }
 }
 
 void device::pci_transport(const pci_target_socket& sck, pci_payload& pci) {
@@ -483,6 +609,8 @@ void device::write_msi_ctrl(u16 val) {
     }
 
     u16 mask = PCI_MSI_ENABLE | PCI_MSI_QSIZE;
+    if (is_bypassing_cfgro())
+        mask = 0xffff;
 
     *m_msi->msi_control = (*m_msi->msi_control & ~mask) | (val & mask);
 }
@@ -497,7 +625,10 @@ void device::write_msi_mask(u32 val) {
 }
 
 void device::write_msix_ctrl(u16 val) {
-    const u64 mask = PCI_MSIX_ENABLE | PCI_MSIX_ALL_MASKED;
+    u64 mask = PCI_MSIX_ENABLE | PCI_MSIX_ALL_MASKED;
+    if (is_bypassing_cfgro())
+        mask = 0xffffffffffffffff;
+
     *m_msix->msix_control = (*m_msix->msix_control & ~mask) | (val & mask);
     m_msix_notify.notify(SC_ZERO_TIME);
 }

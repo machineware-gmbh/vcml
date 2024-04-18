@@ -110,9 +110,9 @@ inline bool failed(const pci_payload& tx) {
 
 enum pci_bar_status : u32 {
     PCI_BAR_MMIO = 0,
-    PCI_BAR_IO = 1 << 0,
-    PCI_BAR_64 = 1 << 2,
-    PCI_BAR_PREFETCH = 1 << 3,
+    PCI_BAR_IO = bit(0),
+    PCI_BAR_64 = bit(2),
+    PCI_BAR_PREFETCH = bit(3),
     PCI_BAR_UNMAPPED = ~0u,
     PCI_NUM_BARS = 6,
 };
@@ -164,55 +164,257 @@ enum pci_cap_id : u8 {
     PCI_CAPABILITY_MSIX = 0x11,
 };
 
-enum pci_pm_caps : u16 {
+enum pcicap_pm_caps : u16 {
     PCI_PM_CAP_VER_1_1 = 2 << 0,
     PCI_PM_CAP_VER_1_2 = 3 << 0,
-    PCI_PM_CAP_PME_CLOCK = 1 << 3,
-    PCI_PM_CAP_DSI = 1 << 5,
-    PCI_PM_CAP_AUX_POWER = 7 << 6,
-    PCI_PM_CAP_CAP_D1 = 1 << 9,
-    PCI_PM_CAP_CAP_D2 = 1 << 10,
-    PCI_PM_CAP_DME_D0 = 1 << 11,
-    PCI_PM_CAP_DME_D1 = 1 << 12,
-    PCI_PM_CAP_DME_D2 = 1 << 13,
-    PCI_PM_CAP_DME_D3H = 1 << 14,
-    PCI_PM_CAP_DME_D3C = 1 << 15,
+    PCI_PM_CAP_PME_CLOCK = bit(3),
+    PCI_PM_CAP_DSI = bit(5),
+    PCI_PM_CAP_AUX_POWER = bitmask(3, 6),
+    PCI_PM_CAP_CAP_D1 = bit(9),
+    PCI_PM_CAP_CAP_D2 = bit(10),
+    PCI_PM_CAP_DME_D0 = bit(11),
+    PCI_PM_CAP_DME_D1 = bit(12),
+    PCI_PM_CAP_DME_D2 = bit(13),
+    PCI_PM_CAP_DME_D3H = bit(14),
+    PCI_PM_CAP_DME_D3C = bit(15),
 };
 
-enum pci_pm_control : u32 {
+enum pcicap_pm_control : u32 {
     PCI_PM_CTRL_PSTATE_D0 = 0,
     PCI_PM_CTRL_PSTATE_D1 = 1,
     PCI_PM_CTRL_PSTATE_D2 = 2,
     PCI_PM_CTRL_PSTATE_D3H = 3,
-    PCI_PM_CTRL_PME_ENABLE = 1 << 8,
-    PCI_PM_CTRL_DATA_SEL = 15 << 9,
-    PCI_PM_CTRL_DATA_SCALE = 3 << 13,
-    PCI_PM_CTRL_PME = 1 << 15,
+    PCI_PM_CTRL_PME_ENABLE = bit(8),
+    PCI_PM_CTRL_DATA_SEL = bitmask(4, 9),
+    PCI_PM_CTRL_DATA_SCALE = bitmask(2, 13),
+    PCI_PM_CTRL_PME = bit(15),
 };
 
-enum pci_msi_control : u16 {
-    PCI_MSI_ENABLE = 1 << 0,
-    PCI_MSI_QMASK = 7 << 1,
+enum pcicap_msi_control : u16 {
+    PCI_MSI_ENABLE = bit(0),
+    PCI_MSI_QMASK = bitmask(3, 1),
     PCI_MSI_QMASK1 = 0 << 1,
     PCI_MSI_QMASK2 = 1 << 1,
     PCI_MSI_QMASK4 = 2 << 1,
     PCI_MSI_QMASK8 = 3 << 1,
     PCI_MSI_QMASK16 = 4 << 1,
     PCI_MSI_QMASK32 = 5 << 1,
-    PCI_MSI_QSIZE = 7 << 4,
-    PCI_MSI_64BIT = 1 << 7,
-    PCI_MSI_VECTOR = 1 << 8,
+    PCI_MSI_QSIZE = bitmask(3, 4),
+    PCI_MSI_64BIT = bit(7),
+    PCI_MSI_VECTOR = bit(8),
 };
 
-enum pci_msix_control : u16 {
-    PCI_MSIX_ENABLE = 1 << 15,
-    PCI_MSIX_ALL_MASKED = 1 << 14,
+enum pcicap_msix_control : u16 {
+    PCI_MSIX_ENABLE = bit(15),
+    PCI_MSIX_ALL_MASKED = bit(14),
     PCI_MSIX_TABLE_SIZE_MASK = bitmask(11),
 };
 
-enum pci_msix_table : u32 {
-    PCI_MSIX_MASKED = 1 << 0,
+enum pcicap_msix_table : u32 {
+    PCI_MSIX_MASKED = bit(0),
     PCI_MSIX_BIR_MASK = bitmask(3),
+};
+
+enum pcicap_exp_flags : u16 {
+    PCI_EXP_V2 = 1,
+    PCI_EXP_V3 = 2,
+    PCI_EXP_V4 = 3,
+    PCI_EXP_V5 = 4,
+    PCI_EXP_V6 = 5,
+    PCI_EXP_TYPE_ENDPOINT = 0x0 << 4,
+    PCI_EXP_TYPE_LEG_END = 0x1 << 4,
+    PCI_EXP_TYPE_ROOT_PORT = 0x4 << 4,
+    PCI_EXP_TYPE_UPSTREAM = 0x5 << 4,
+    PCI_EXP_TYPE_DOWNSTREAM = 0x6 << 4,
+    PCI_EXP_TYPE_PCI_BRIDGE = 0x7 << 4,
+    PCI_EXP_TYPE_PCIE_BRIDGE = 0x8 << 4,
+    PCI_EXP_TYPE_RC_END = 0x9 << 4,
+    PCI_EXP_TYPE_RC_EC = 0xa << 4,
+    PCI_EXP_EXT_SLOT = bit(8),
+};
+
+enum pcicap_exp_devcap : u32 {
+    PCI_EXP_DEVCAP_MAX_PAYLOAD_128 = 0,
+    PCI_EXP_DEVCAP_MAX_PAYLOAD_256 = 1,
+    PCI_EXP_DEVCAP_MAX_PAYLOAD_512 = 2,
+    PCI_EXP_DEVCAP_MAX_PAYLOAD_1024 = 3,
+    PCI_EXP_DEVCAP_MAX_PAYLOAD_2048 = 4,
+    PCI_EXP_DEVCAP_MAX_PAYLOAD_4096 = 5,
+    PCI_EXP_DEVCAP_PHANTOM_BITS = 3 << 3,
+    PCI_EXP_DEVCAP_EXT_TAG = bit(5),
+    PCI_EXP_DEVCAP_L0S_64NS = 0 << 6,
+    PCI_EXP_DEVCAP_L0S_128NS = 1 << 6,
+    PCI_EXP_DEVCAP_L0S_256NS = 2 << 6,
+    PCI_EXP_DEVCAP_L0S_512NS = 3 << 6,
+    PCI_EXP_DEVCAP_L0S_1US = 4 << 6,
+    PCI_EXP_DEVCAP_L0S_2US = 5 << 6,
+    PCI_EXP_DEVCAP_L0S_4US = 6 << 6,
+    PCI_EXP_DEVCAP_L0S_UNLIMITED = 7 << 6,
+    PCI_EXP_DEVCAP_L1_1US = 0 << 9,
+    PCI_EXP_DEVCAP_L1_2US = 1 << 9,
+    PCI_EXP_DEVCAP_L1_4US = 2 << 9,
+    PCI_EXP_DEVCAP_L1_8US = 3 << 9,
+    PCI_EXP_DEVCAP_L1_16US = 4 << 9,
+    PCI_EXP_DEVCAP_L1_32US = 5 << 9,
+    PCI_EXP_DEVCAP_L1_64US = 6 << 9,
+    PCI_EXP_DEVCAP_L1_UNLIMITED = 7 << 9,
+    PCI_EXP_DEVCAP_RBE = bit(15),
+};
+
+enum pcicap_exp_devcap2 : u32 {
+    PCI_EXP_DEVCAP2_CTR_A = bit(0),
+    PCI_EXP_DEVCAP2_CTR_B = bit(1),
+    PCI_EXP_DEVCAP2_CTR_C = bit(2),
+    PCI_EXP_DEVCAP2_CTR_D = bit(3),
+    PCI_EXP_DEVCAP2_CTDS = bit(4),
+    PCI_EXP_DEVCAP2_ARI = bit(5),
+    PCI_EXP_DEVCAP2_ATOMIC_ROUTE = bit(6),
+    PCI_EXP_DEVCAP2_ATOMIC_OP32 = bit(7),
+    PCI_EXP_DEVCAP2_ATOMIC_OP64 = bit(8),
+    PCI_EXP_DEVCAP2_ATOMIC_CAS128 = bit(9),
+    PCI_EXP_DEVCAP2_LTR = bit(11),
+    PCI_EXP_DEVCAP2_TPH = 1 << 12,
+    PCI_EXP_DEVCAP2_ETPH = 3 << 12,
+    PCI_EXP_DEVCAP2_EXT_FMT = bit(20),
+    PCI_EXP_DEVCAP2_TLP_PREFIX = bit(21),
+};
+
+enum pcicap_exp_devctl : u16 {
+    PCI_EXP_DEVCTL_CERE = bit(0),
+    PCI_EXP_DEVCTL_NFERE = bit(1),
+    PCI_EXP_DEVCTL_FERE = bit(2),
+    PCI_EXP_DEVCTL_URRE = bit(3),
+    PCI_EXP_DEVCTL_RELAX = bit(4),
+    PCI_EXP_DEVCTL_MAX_PAYLOAD_128 = 0 << 5,
+    PCI_EXP_DEVCTL_MAX_PAYLOAD_256 = 1 << 5,
+    PCI_EXP_DEVCTL_MAX_PAYLOAD_512 = 2 << 5,
+    PCI_EXP_DEVCTL_MAX_PAYLOAD_1024 = 3 << 5,
+    PCI_EXP_DEVCTL_MAX_PAYLOAD_2048 = 4 << 5,
+    PCI_EXP_DEVCTL_MAX_PAYLOAD_4096 = 5 << 5,
+    PCI_EXP_DEVCTL_EXT_TAG = bit(8),
+    PCI_EXP_DEVCTL_PHANTOM = bit(9),
+    PCI_EXP_DEVCTL_AUX_PME = bit(10),
+    PCI_EXP_DEVCTL_NO_SNOOP = bit(11),
+    PCI_EXP_DEVCTL_MAX_READ_128 = 0 << 12,
+    PCI_EXP_DEVCTL_MAX_READ_256 = 1 << 12,
+    PCI_EXP_DEVCTL_MAX_READ_512 = 2 << 12,
+    PCI_EXP_DEVCTL_MAX_READ_1024 = 3 << 12,
+    PCI_EXP_DEVCTL_MAX_READ_2048 = 4 << 12,
+    PCI_EXP_DEVCTL_MAX_READ_4096 = 5 << 12,
+};
+
+enum pcicap_exp_devctl2 : u16 {
+    PCI_EXP_DEVCTL2_CTD = bit(4),
+    PCI_EXP_DEVCTL2_ARI = bit(5),
+    PCI_EXP_DEVCTL2_ATOMIC_RE = bit(6),
+    PCI_EXP_DEVCTL2_ATOMIC_EB = bit(7),
+    PCI_EXP_DEVCTL2_IDO_RE = bit(8),
+    PCI_EXP_DEVCTL2_IDO_CE = bit(9),
+    PCI_EXP_DEVCTL2_LTR = bit(10),
+    PCI_EXP_DEVCTL2_E2E_PFXBLK = bit(15),
+};
+
+enum pcicap_exp_devsts : u16 {
+    PCI_EXP_DEVSTS_CED = bit(0),
+    PCI_EXP_DEVSTS_NFED = bit(1),
+    PCI_EXP_DEVSTS_FED = bit(2),
+    PCI_EXP_DEVSTS_URD = bit(3),
+    PCI_EXP_DEVSTS_RW1C = PCI_EXP_DEVSTS_CED | PCI_EXP_DEVSTS_NFED |
+                          PCI_EXP_DEVSTS_FED | PCI_EXP_DEVSTS_URD,
+    PCI_EXP_DEVSTS_AUX_POWER = bit(4),
+    PCI_EXP_DEVSTS_TX_PENDING = bit(5),
+};
+
+enum pcicap_exp_linkcap : u32 {
+    PCI_EXP_LINKCAP_MLS_2_5G = 1 << 0,
+    PCI_EXP_LINKCAP_MLS_5G = 2 << 0,
+    PCI_EXP_LINKCAP_MLS_8G = 3 << 0,
+    PCI_EXP_LINKCAP_MLS_16G = 4 << 0,
+    PCI_EXP_LINKCAP_MLS_32G = 5 << 0,
+    PCI_EXP_LINKCAP_MLS_64G = 6 << 0,
+    PCI_EXP_LINKCAP_MLW_X1 = 1 << 4,
+    PCI_EXP_LINKCAP_MLW_X2 = 2 << 4,
+    PCI_EXP_LINKCAP_MLW_X4 = 4 << 4,
+    PCI_EXP_LINKCAP_MLW_X8 = 8 << 4,
+    PCI_EXP_LINKCAP_MLW_X16 = 16 << 4,
+    PCI_EXP_LINKCAP_MLW_X32 = 32 << 4,
+    PCI_EXP_LINKCAP_ASPM_NONE = 0 << 10,
+    PCI_EXP_LINKCAP_ASPM_L0S = 1 << 10,
+    PCI_EXP_LINKCAP_ASPM_L1 = 2 << 10,
+    PCI_EXP_LINKCAP_ASPM_L0S_L1 = 3 << 10,
+    PCI_EXP_LINKCAP_CLKPM = bit(18),
+    PCI_EXP_LINKCAP_SDERC = bit(19),
+    PCI_EXP_LINKCAP_DLLLARC = bit(20),
+    PCI_EXP_LINKCAP_LBNC = bit(21),
+    PCI_EXP_LINKCAP_ASPM_OC = bit(22),
+    PCI_EXP_LINKCAP_PN_SHIFT = 24,
+};
+
+enum pcicap_exp_linkcap2 : u32 {
+    PCI_EXP_LINKCAP2_SLS_2_5G = 1 << 1,
+    PCI_EXP_LINKCAP2_SLS_5G = 2 << 1,
+    PCI_EXP_LINKCAP2_SLS_8G = 3 << 1,
+    PCI_EXP_LINKCAP2_SLS_16G = 4 << 1,
+    PCI_EXP_LINKCAP2_SLS_32G = 5 << 1,
+    PCI_EXP_LINKCAP2_SLS_64G = 6 << 1,
+    PCI_EXP_LINKCAP2_CROSSLINK = bit(8),
+};
+
+enum pcicap_exp_linkctl : u16 {
+    PCI_EXP_LINKCTL_ASPM_L0S = 1 << 0,
+    PCI_EXP_LINKCTL_ASPM_L1 = 2 << 0,
+    PCI_EXP_LINKCTL_RCB = bit(3),
+    PCI_EXP_LINKCTL_LD = bit(4),
+    PCI_EXP_LINKCTL_RL = bit(5),
+    PCI_EXP_LINKCTL_CCC = bit(6),
+    PCI_EXP_LINKCTL_ES = bit(7),
+    PCI_EXP_LINKCTL_CLKREQ_EN = bit(8),
+    PCI_EXP_LINKCTL_HAWD = bit(9),
+    PCI_EXP_LINKCTL_LBMIE = bit(10),
+    PCI_EXP_LINKCTL_LABIE = bit(11),
+};
+
+enum pcicap_exp_linkctl2 : u16 {
+    PCI_EXP_LINKCTL2_TLS_2_5G = 1 << 0,
+    PCI_EXP_LINKCTL2_TLS_5G = 2 << 0,
+    PCI_EXP_LINKCTL2_TLS_8G = 3 << 0,
+    PCI_EXP_LINKCTL2_TLS_16G = 4 << 0,
+    PCI_EXP_LINKCTL2_TLS_32G = 5 << 0,
+    PCI_EXP_LINKCTL2_TLS_64G = 6 << 0,
+    PCI_EXP_LINKCTL2_ENTER_COMP = bit(4),
+    PCI_EXP_LINKCTL2_HASD = bit(5),
+    PCI_EXP_LINKCTL2_SD = bit(6),
+    PCI_EXP_LINKCTL2_ENTER_MODCOMP = bit(10),
+    PCI_EXP_LINKCTL2_COMP_SOS = bit(11),
+};
+
+enum pcicap_exp_linksts : u16 {
+    PCI_EXP_LINKSTS_CLS_2_5G = 1 << 0,
+    PCI_EXP_LINKSTS_CLS_5G = 2 << 0,
+    PCI_EXP_LINKSTS_CLS_8G = 3 << 0,
+    PCI_EXP_LINKSTS_CLS_16G = 4 << 0,
+    PCI_EXP_LINKSTS_CLS_32G = 5 << 0,
+    PCI_EXP_LINKSTS_CLS_64G = 6 << 0,
+    PCI_EXP_LINKSTS_NLW_X1 = 1 << 4,
+    PCI_EXP_LINKSTS_NLW_X2 = 2 << 4,
+    PCI_EXP_LINKSTS_NLW_X4 = 4 << 4,
+    PCI_EXP_LINKSTS_NLW_X8 = 8 << 4,
+    PCI_EXP_LINKSTS_NLW_X16 = 16 << 4,
+    PCI_EXP_LINKSTS_NLW_X32 = 32 << 4,
+    PCI_EXP_LINKSTS_LT = bit(11),
+    PCI_EXP_LINKSTS_SLC = bit(12),
+    PCI_EXP_LINKSTS_DLLLA = bit(13),
+    PCI_EXP_LINKSTS_LBMS = bit(14),
+    PCI_EXP_LINKSTS_LABS = bit(15),
+};
+
+enum pcicap_exp_linksts2 : u16 {
+    PCI_EXP_LINKSTS2_CDL = bit(0),
+    PCI_EXP_LINKSTS2_EQC = bit(1),
+    PCI_EXP_LINKSTS2_EP1S = bit(2),
+    PCI_EXP_LINKSTS2_EP2S = bit(3),
+    PCI_EXP_LINKSTS2_EP3S = bit(4),
+    PCI_EXP_LINKSTS2_LER = bit(5),
 };
 
 class pci_initiator_socket;

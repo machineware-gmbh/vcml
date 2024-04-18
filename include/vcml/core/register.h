@@ -329,7 +329,7 @@ void reg<DATA, N>::read_zero() {
 
 template <typename DATA, size_t N>
 void reg<DATA, N>::ignore_write() {
-    on_read([](DATA val) -> void { return; });
+    on_write([](DATA val) -> void { (void)val; });
 }
 
 template <typename DATA, size_t N>
