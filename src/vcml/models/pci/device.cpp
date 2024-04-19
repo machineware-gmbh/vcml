@@ -99,7 +99,7 @@ cap_msix::cap_msix(const string& nm, u32 bar, size_t nvec, u32 off):
     pba(),
     tbl_as(PCI_AS_BAR0 + bar),
     pba_as(PCI_AS_BAR0 + bar),
-    num_vectors(nvec),
+    num_vectors(),
     msix_table(),
     msix_pba(),
     msix_control(),
@@ -157,7 +157,7 @@ void cap_msix::reset() {
 }
 
 void cap_msix::update() {
-    u32 num_vec = *msix_control & PCI_MSIX_TABLE_SIZE_MASK;
+    u32 num_vec = (*msix_control & PCI_MSIX_TABLE_SIZE_MASK) + 1;
     u32 tbl_bar = *msix_bir_off & PCI_MSIX_BIR_MASK;
     u32 pba_bar = *msix_pba_off & PCI_MSIX_BIR_MASK;
 
