@@ -98,8 +98,8 @@ public:
 
     unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
-    virtual void do_read(const range& addr, void* ptr) = 0;
-    virtual void do_write(const range& addr, const void* ptr) = 0;
+    virtual void do_read(const range& addr, void* ptr, bool debug) = 0;
+    virtual void do_write(const range& addr, const void* ptr, bool debug) = 0;
 };
 
 inline bool reg_base::is_read_only() const {
@@ -168,8 +168,8 @@ public:
 
     virtual void reset() override;
 
-    virtual void do_read(const range& addr, void* ptr) override;
-    virtual void do_write(const range& addr, const void* ptr) override;
+    virtual void do_read(const range& addr, void* ptr, bool dbg) override;
+    virtual void do_write(const range& addr, const void*, bool dbg) override;
 
     operator DATA() const;
     operator DATA&();
@@ -258,6 +258,8 @@ template <typename HOST>
 void reg<DATA, N>::on_read(DATA (HOST::*rd)(void), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
     VCML_ERROR_ON(!host, "read callback has no host");
     readfn fn = std::bind(rd, host);
     on_read(fn);
@@ -268,6 +270,8 @@ template <typename HOST>
 void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
     VCML_ERROR_ON(!host, "tagged read callback has no host");
     readfn_tagged fn = std::bind(rd, host, std::placeholders::_1);
     on_read(fn);
@@ -292,6 +296,8 @@ template <typename HOST>
 void reg<DATA, N>::on_write(void (HOST::*wr)(DATA), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
     VCML_ERROR_ON(!host, "write callback has no host");
     writefn fn = std::bind(wr, host, std::placeholders::_1);
     on_write(fn);
@@ -302,6 +308,8 @@ template <typename HOST>
 void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
     VCML_ERROR_ON(!host, "tagged write callback has no host");
     writefn_tagged fn = std::bind(wr, host, std::placeholders::_1,
                                   std::placeholders::_2);
@@ -416,7 +424,7 @@ void reg<DATA, N>::reset() {
 }
 
 template <typename DATA, size_t N>
-void reg<DATA, N>::do_read(const range& txaddr, void* ptr) {
+void reg<DATA, N>::do_read(const range& txaddr, void* ptr, bool debug) {
     range addr(txaddr);
     unsigned char* dest = (unsigned char*)ptr;
 
@@ -434,7 +442,7 @@ void reg<DATA, N>::do_read(const range& txaddr, void* ptr) {
         else
             val = current_bank(idx);
 
-        if (is_writeback())
+        if (!debug && is_writeback())
             current_bank(idx) = val;
 
         unsigned char* ptr = (unsigned char*)&val + off;
@@ -446,7 +454,8 @@ void reg<DATA, N>::do_read(const range& txaddr, void* ptr) {
 }
 
 template <typename DATA, size_t N>
-void reg<DATA, N>::do_write(const range& txaddr, const void* data) {
+void reg<DATA, N>::do_write(const range& txaddr, const void* data,
+                            bool debug) {
     range addr(txaddr);
     const unsigned char* src = (const unsigned char*)data;
 

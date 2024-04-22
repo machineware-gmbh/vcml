@@ -72,9 +72,9 @@ void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
         memswap(ptr, tx.get_data_length());
 
     if (tx.is_read())
-        do_read(tx, ptr);
+        do_read(tx, ptr, info.is_debug);
     if (tx.is_write())
-        do_write(tx, ptr);
+        do_write(tx, ptr, info.is_debug);
 
     if (m_host->endian != host_endian()) // i.e. swap back
         memswap(ptr, tx.get_data_length());
