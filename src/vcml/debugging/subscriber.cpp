@@ -17,6 +17,11 @@ void subscriber::notify_step_complete(target& tgt) {
     // to be overloaded
 }
 
+void subscriber::notify_basic_block(target& tgt, u64 pc, size_t blksz,
+                                    size_t icount) {
+    // to be overloaded
+}
+
 void subscriber::notify_breakpoint_hit(const breakpoint& bp) {
     // to be overloaded
 }

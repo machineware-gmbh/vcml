@@ -31,6 +31,9 @@ public:
 
     virtual void notify_step_complete(target& tgt);
 
+    virtual void notify_basic_block(target& tgt, u64 pc, size_t blksz,
+                                    size_t icount);
+
     virtual void notify_breakpoint_hit(const breakpoint& bp);
 
     virtual void notify_watchpoint_read(const watchpoint& wp,

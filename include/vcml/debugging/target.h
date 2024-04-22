@@ -85,6 +85,7 @@ private:
     symtab m_symbols;
 
     vector<subscriber*> m_steppers;
+    vector<subscriber*> m_bbtracer;
 
     vector<breakpoint*> m_breakpoints;
     vector<watchpoint*> m_watchpoints;
@@ -97,6 +98,9 @@ protected:
     virtual void define_cpureg(size_t regno, const string& name, size_t size,
                                size_t n, int prot = VCML_ACCESS_READ_WRITE);
 
+    virtual bool start_basic_block_trace();
+    virtual bool stop_basic_block_trace();
+
     virtual bool insert_breakpoint(u64 addr);
     virtual bool remove_breakpoint(u64 addr);
 
@@ -106,6 +110,9 @@ protected:
     void notify_breakpoint_hit(u64 addr);
     void notify_watchpoint_read(const range& addr);
     void notify_watchpoint_write(const range& addr, u64 newval);
+
+    void notify_singlestep();
+    void notify_basic_block(u64 pc, size_t blksz, size_t icount);
 
 public:
     bool is_suspendable() const { return m_suspendable; }
@@ -176,7 +183,10 @@ public:
     bool is_stepping() const;
     void request_singlestep(subscriber* subscr);
     void cancel_singlestep(subscriber* subscr);
-    void notify_singlestep();
+
+    bool is_tracing_basic_blocks() const;
+    bool trace_basic_blocks(subscriber* subscr);
+    bool untrace_basic_blocks(subscriber* subscr);
 
     static vector<target*> all();
     static target* find(const string& name);
@@ -228,9 +238,14 @@ inline void target::request_singlestep(subscriber* subscr) {
     stl_add_unique(m_steppers, subscr);
 }
 
-inline void target::cancel_singlestep(subscriber* subcr) {
+inline void target::cancel_singlestep(subscriber* subscr) {
     lock_guard<mutex> guard(m_mtx);
-    stl_remove(m_steppers, subcr);
+    stl_remove(m_steppers, subscr);
+}
+
+inline bool target::is_tracing_basic_blocks() const {
+    lock_guard<mutex> guard(m_mtx);
+    return !m_bbtracer.empty();
 }
 
 } // namespace debugging

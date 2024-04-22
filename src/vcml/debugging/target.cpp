@@ -62,6 +62,7 @@ target::target():
     m_cpuregs(),
     m_symbols(),
     m_steppers(),
+    m_bbtracer(),
     m_breakpoints(),
     m_watchpoints() {
     module* host = hierarchy_search<module>();
@@ -289,6 +290,14 @@ bool target::disassemble(const range& addr, vector<disassembly>& s) {
     return ptr > mem.data();
 }
 
+bool target::start_basic_block_trace() {
+    return false; // to be overloaded
+}
+
+bool target::stop_basic_block_trace() {
+    return false; // to be overloaded
+}
+
 bool target::insert_breakpoint(u64 addr) {
     return false; // to be overloaded
 }
@@ -462,6 +471,36 @@ void target::notify_singlestep() {
 
     for (auto s : prev_steppers)
         s->notify_step_complete(*this);
+}
+
+void target::notify_basic_block(u64 pc, size_t blksz, size_t icount) {
+    m_mtx.lock();
+    vector<subscriber*> local(m_bbtracer);
+    m_mtx.unlock();
+
+    for (auto s : local)
+        s->notify_basic_block(*this, pc, blksz, icount);
+}
+
+bool target::trace_basic_blocks(subscriber* subscr) {
+    lock_guard<mutex> guard(m_mtx);
+    if (m_bbtracer.empty() && !start_basic_block_trace())
+        return false;
+
+    stl_add_unique(m_bbtracer, subscr);
+    return true;
+}
+
+bool target::untrace_basic_blocks(subscriber* subscr) {
+    lock_guard<mutex> guard(m_mtx);
+    if (!mwr::stl_contains(m_bbtracer, subscr))
+        return false;
+
+    stl_remove(m_bbtracer, subscr);
+    if (m_bbtracer.empty() && !stop_basic_block_trace())
+        return false;
+
+    return true;
 }
 
 vector<target*> target::all() {
