@@ -267,7 +267,7 @@ else()
 endif()
 
 if(SOCKETCAN_FOUND)
-    message(STATUS "Bulding with SOCKETCAN support")
+    message(STATUS "Building with SOCKETCAN support")
     target_compile_definitions(vcml PRIVATE HAVE_SOCKETCAN)
     target_sources(vcml PRIVATE ${src}/vcml/models/can/backend_socket.cpp)
 else()
