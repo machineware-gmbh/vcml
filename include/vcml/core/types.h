@@ -35,6 +35,7 @@
 #include <thread>
 #include <condition_variable>
 #include <initializer_list>
+#include <typeindex>
 
 #include <stdint.h>
 #include <limits.h>

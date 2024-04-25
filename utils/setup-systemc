@@ -53,7 +53,7 @@ case $version in
     2.3.2) url=https://www.accellera.org/images/downloads/standards/systemc/$src.tar.gz;;
     2.3.3) url=https://www.accellera.org/images/downloads/standards/systemc/$src.tar.gz;;
     2.3.4) url=https://github.com/accellera-official/systemc/archive/refs/tags/2.3.4.tar.gz;;
-    3.0.0_pub_rev_20231129) url=https://github.com/accellera-official/systemc/archive/refs/tags/3.0.0_pub_rev_20231129.tar.gz;;
+    3.0.0) url=https://github.com/accellera-official/systemc/archive/refs/tags/3.0.0.tar.gz;;
     *) echo "Unknown SystemC version: $version"; exit 1;;
 esac
 

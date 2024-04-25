@@ -31,20 +31,13 @@
 #define SYSTEMC_VERSION_2_3_2  20171012 // NOLINT
 #define SYSTEMC_VERSION_2_3_3  20181013 // NOLINT
 #define SYSTEMC_VERSION_2_3_4  20221128 // NOLINT
-#define SYSTEMC_VERSION_3_0_0  20231124 // NOLINT
+#define SYSTEMC_VERSION_3_0_0  20240329 // NOLINT
 
 #if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_1a
 inline sc_core::sc_time operator%(const sc_core::sc_time& t1,
                                   const sc_core::sc_time& t2) {
     sc_core::sc_time tmp(t1.value() % t2.value(), false);
     return tmp;
-}
-#endif
-
-#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_2
-#include <typeindex>
-namespace sc_core {
-typedef std::type_index sc_type_index;
 }
 #endif
 
@@ -209,7 +202,13 @@ protected:
 
 using sc_core::sc_spawn;
 using sc_core::sc_spawn_options;
+
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_2_3_2 && \
+    SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
 using sc_core::sc_type_index;
+#else
+using sc_type_index = std::type_index;
+#endif
 
 using tlm::tlm_global_quantum;
 using tlm::tlm_generic_payload;
