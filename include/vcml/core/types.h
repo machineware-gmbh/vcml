@@ -34,6 +34,7 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+#include <initializer_list>
 
 #include <stdint.h>
 #include <limits.h>
@@ -132,6 +133,7 @@ using std::unordered_set;
 using std::unordered_map;
 using std::pair;
 using std::bitset;
+using std::initializer_list;
 
 using std::istream;
 using std::ostream;

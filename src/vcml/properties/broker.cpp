@@ -32,14 +32,17 @@ string broker::expand(const string& s) {
 
 static vector<broker*> g_brokers;
 
-broker::broker(const string& nm): m_name(nm), m_values() {
+broker::broker(const string& nm, bool insert_front): m_name(nm), m_values() {
     define("app", mwr::progname(), 1);
     define("bin", mwr::dirname(mwr::progname()), 1);
     define("pwd", mwr::curr_dir(), 1);
     define("tmp", mwr::temp_dir(), 1);
     define("usr", mwr::username(), 1);
     define("pid", mwr::getpid(), 1);
-    g_brokers.push_back(this);
+    if (insert_front)
+        g_brokers.insert(g_brokers.begin(), this);
+    else
+        g_brokers.push_back(this);
 }
 
 broker::~broker() {

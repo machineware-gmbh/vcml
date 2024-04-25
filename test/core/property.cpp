@@ -24,10 +24,13 @@ public:
     vcml::property<vcml::i32> prop_i32;
     vcml::property<std::string> not_inited;
     vcml::property<vcml::u32, 4> prop_array;
+    vcml::property<vcml::u32, 4> prop_array2;
     vcml::property<std::string, 4> prop_array_string;
     vcml::property<vcml::range> prop_range;
     vcml::property<void> prop_void;
     vcml::property<std::vector<vcml::i32>> prop_vector;
+    vcml::property<std::vector<vcml::i32>> prop_vector2;
+    vcml::property<std::vector<vcml::i32>> prop_vector3;
 
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
@@ -39,10 +42,13 @@ public:
         prop_i32("prop_i32", -1),
         not_inited("prop_not_inited", "not_inited"),
         prop_array("prop_array", 7),
+        prop_array2("prop_array2", 9),
         prop_array_string("prop_array_string", "not_inited"),
         prop_range("prop_range", { 1, 2 }),
         prop_void("prop_void", 4, 2),
-        prop_vector("prop_vector", { 1, 2, 3 }) {
+        prop_vector("prop_vector", { 1, 2, 3 }),
+        prop_vector2("prop_vector2", { 1, 2, 3 }),
+        prop_vector3("prop_vector3", { 1, 2, 3 }) {
         // nothing to do
     }
 
@@ -50,7 +56,7 @@ public:
 };
 
 TEST(property, init) {
-    vcml::broker broker("test");
+    vcml::broker broker("test", true);
     broker.define("test.prop_str", "hello world");
     broker.define("test.prop_u64", "0x123456789abcdef0");
     broker.define("test.prop_u32", "12345678");
@@ -58,10 +64,13 @@ TEST(property, init) {
     broker.define("test.prop_u8", "123");
     broker.define("test.prop_i32", "-2");
     broker.define("test.prop_array", "1 2 3 4");
+    broker.define("test.prop_array2", { 1, 2, 3, 4 });
     broker.define("test.prop_array_string", "abc def x\\ y zzz");
     broker.define("test.prop_range", "0x10..0x1f");
     broker.define("test.prop_void", "0xaabbccdd 0x11223344");
-    broker.define("test.prop_vector", "-1, -2, -3, -4");
+    broker.define("test.prop_vector", { -1, -2, -3, -4 });
+    broker.define("test.prop_vector2", { "1", "${test.prop_vector}", "2" });
+    broker.define("test.prop_vector3", std::vector<int>{ 9, 8, 7 });
 
     test_component test("test");
     EXPECT_TRUE(test.prop_str.is_inited());
@@ -108,6 +117,15 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array[3], 4);
     EXPECT_EQ(test.prop_array.get_default(), 7);
     EXPECT_EQ(std::string(test.prop_array.str()), "1 2 3 4");
+
+    EXPECT_TRUE(test.prop_array2.is_inited());
+    EXPECT_EQ(test.prop_array2.count(), 4);
+    EXPECT_EQ(test.prop_array2[0], 1);
+    EXPECT_EQ(test.prop_array2[1], 2);
+    EXPECT_EQ(test.prop_array2[2], 3);
+    EXPECT_EQ(test.prop_array2[3], 4);
+    EXPECT_EQ(test.prop_array2.get_default(), 9);
+    EXPECT_EQ(std::string(test.prop_array2.str()), "1 2 3 4");
 
     EXPECT_TRUE(test.prop_array_string.is_inited());
     EXPECT_EQ(test.prop_array_string.count(), 4);
@@ -157,6 +175,23 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_vector[1], -2);
     EXPECT_EQ(test.prop_vector[2], -3);
     EXPECT_EQ(test.prop_vector[3], -4);
+
+    EXPECT_TRUE(test.prop_vector2.is_inited());
+    EXPECT_EQ(test.prop_vector2.count(), 6);
+    EXPECT_EQ(test.prop_vector2[0], 1);
+    EXPECT_EQ(test.prop_vector2[1], -1);
+    EXPECT_EQ(test.prop_vector2[2], -2);
+    EXPECT_EQ(test.prop_vector2[3], -3);
+    EXPECT_EQ(test.prop_vector2[4], -4);
+    EXPECT_EQ(test.prop_vector2[5], 2);
+    EXPECT_STREQ(test.prop_vector2.str(), "1 -1 -2 -3 -4 2");
+
+    EXPECT_TRUE(test.prop_vector3.is_inited());
+    EXPECT_EQ(test.prop_vector3.count(), 3);
+    EXPECT_EQ(test.prop_vector3[0], 9);
+    EXPECT_EQ(test.prop_vector3[1], 8);
+    EXPECT_EQ(test.prop_vector3[2], 7);
+    EXPECT_STREQ(test.prop_vector3.str(), "9 8 7");
 
     std::stringstream ss;
 
