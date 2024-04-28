@@ -703,3 +703,53 @@ TEST(registers, peripheral_cmd_mmap) {
     mock.execute("mmap", { "111" }, std::cout);
     std::cout << std::endl;
 }
+
+class mock_peripheral_minmax : public peripheral
+{
+public:
+    reg<u32> test_reg;
+
+    mock_peripheral_minmax(const sc_module_name& nm):
+        peripheral(nm), test_reg("test_reg", 0x0) {
+        test_reg.allow_read_write();
+        clk.stub(100 * MHz);
+        rst.stub();
+        set_access_size(2, 4);
+        aligned_accesses_only();
+    }
+};
+
+TEST(registers, minmaxsize) {
+    mock_peripheral_minmax mock("minmax");
+
+    EXPECT_EQ(mock.test_reg.get_min_access_size(), 2);
+    EXPECT_EQ(mock.test_reg.get_max_access_size(), 4);
+    EXPECT_TRUE(mock.test_reg.is_aligned_accesses_only());
+    EXPECT_FALSE(mock.test_reg.is_natural_accesses_only());
+
+    u32 data;
+    tlm_generic_payload tx;
+
+    data = 0x12345678;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.test_reg, data);
+
+    mock.test_reg = 0xffffffff;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x1, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 0);
+    EXPECT_TRUE(failed(tx));
+    EXPECT_EQ(mock.test_reg, 0xffffffffu);
+
+    data = 0;
+    mock.test_reg = 0xaabbccdd;
+    tx_setup(tx, TLM_READ_COMMAND, 0x2, &data, 2);
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 2);
+    EXPECT_EQ(mock.test_reg, 0xaabbccdd);
+    EXPECT_EQ(data, 0xaabb);
+
+    u64 data64 = -1;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0, &data64, sizeof(data64));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 0);
+    EXPECT_EQ(mock.test_reg, 0xaabbccdd);
+}

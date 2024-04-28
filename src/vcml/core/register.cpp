@@ -13,6 +13,13 @@
 
 namespace vcml {
 
+void reg_base::set_access_size(u64 min, u64 max) {
+    VCML_ERROR_ON(min > max, "invalid access size specification");
+    VCML_ERROR_ON(max > m_cell_size, "maximum access size exceeded");
+    m_minsize = min;
+    m_maxsize = max;
+}
+
 int reg_base::current_cpu() const {
     return m_host->current_cpu();
 }
@@ -27,9 +34,11 @@ reg_base::reg_base(address_space space, const string& regname, u64 addr,
     m_rsync(false),
     m_wsync(false),
     m_wback(true),
-    m_natural(false),
-    m_secure(0),
+    m_aligned(false),
+    m_secure(false),
     m_privilege(0),
+    m_minsize(0),
+    m_maxsize(-1),
     m_host(hierarchy_search<peripheral>()),
     as(space),
     tag() {
@@ -44,40 +53,46 @@ reg_base::~reg_base() {
         m_host->remove_register(this);
 }
 
+tlm_response_status reg_base::check_access(const tlm_generic_payload& tx,
+                                           const tlm_sbi& info) const {
+    if (info.is_debug)
+        return TLM_OK_RESPONSE;
+
+    if (tx.is_read() && !is_readable())
+        return TLM_COMMAND_ERROR_RESPONSE;
+
+    if (tx.is_write() && !is_writeable())
+        return TLM_COMMAND_ERROR_RESPONSE;
+
+    if (tx.get_data_length() < m_minsize || tx.get_data_length() > m_maxsize)
+        return TLM_COMMAND_ERROR_RESPONSE;
+
+    if (m_aligned && (m_minsize > 0) && (tx.get_address() % m_minsize))
+        return TLM_COMMAND_ERROR_RESPONSE;
+
+    if (m_privilege > info.privilege)
+        return TLM_COMMAND_ERROR_RESPONSE;
+
+    if (m_secure && !info.is_secure)
+        return TLM_COMMAND_ERROR_RESPONSE;
+
+    return TLM_OK_RESPONSE;
+}
+
 void reg_base::do_receive(tlm_generic_payload& tx, const tlm_sbi& info) {
-    if (tx.is_read() && !is_readable() && !info.is_debug) {
-        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-        return;
+    if (tx.get_data_length() > 0) {
+        unsigned char* ptr = tx.get_data_ptr();
+        if (m_host->endian != host_endian()) // i.e. if big endian
+            memswap(ptr, tx.get_data_length());
+
+        if (tx.is_read())
+            do_read(tx, ptr, info.is_debug);
+        if (tx.is_write())
+            do_write(tx, ptr, info.is_debug);
+
+        if (m_host->endian != host_endian()) // i.e. swap back
+            memswap(ptr, tx.get_data_length());
     }
-
-    if (tx.is_write() && !is_writeable() && !info.is_debug) {
-        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-        return;
-    }
-
-    if (!info.is_debug) {
-        if (m_privilege > info.privilege) {
-            tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-            return;
-        }
-
-        if (m_secure && !info.is_secure) {
-            tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-            return;
-        }
-    }
-
-    unsigned char* ptr = tx.get_data_ptr();
-    if (m_host->endian != host_endian()) // i.e. if big endian
-        memswap(ptr, tx.get_data_length());
-
-    if (tx.is_read())
-        do_read(tx, ptr, info.is_debug);
-    if (tx.is_write())
-        do_write(tx, ptr, info.is_debug);
-
-    if (m_host->endian != host_endian()) // i.e. swap back
-        memswap(ptr, tx.get_data_length());
 
     tx.set_response_status(TLM_OK_RESPONSE);
 }
@@ -90,12 +105,8 @@ unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
 
     VCML_ERROR_ON(strw != size, "invalid transaction streaming setup");
     VCML_ERROR_ON(!m_range.overlaps(tx), "invalid register access");
-    VCML_ERROR_ON(m_cell_size == 0, "cell size cannot be zero");
 
-    if (m_natural && (size != m_cell_size || addr % m_cell_size)) {
-        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
-        return 0;
-    }
+    tlm_response_status rs = check_access(tx, info);
 
     range span = m_range.intersect(tx);
 
@@ -112,7 +123,12 @@ unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     }
 
     m_host->trace_fw(*this, tx, m_host->local_time());
-    do_receive(tx, info);
+
+    if (failed(rs))
+        tx.set_response_status(rs);
+    else
+        do_receive(tx, info);
+
     m_host->trace_bw(*this, tx, m_host->local_time());
 
     tx.set_address(addr);

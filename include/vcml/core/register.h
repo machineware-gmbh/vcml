@@ -33,11 +33,15 @@ private:
     bool m_rsync;
     bool m_wsync;
     bool m_wback;
-    bool m_natural;
+    bool m_aligned;
     bool m_secure;
     u64 m_privilege;
+    u64 m_minsize;
+    u64 m_maxsize;
     peripheral* m_host;
 
+    tlm_response_status check_access(const tlm_generic_payload& tx,
+                                     const tlm_sbi& info) const;
     void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
 public:
@@ -67,6 +71,9 @@ public:
     void allow_write_only() { m_access = VCML_ACCESS_WRITE; }
     void allow_read_write() { m_access = VCML_ACCESS_READ_WRITE; }
 
+    bool is_aligned_accesses_only() const { return m_aligned; }
+    void aligned_accesses_only(bool only = true) { m_aligned = only; }
+
     void sync_on_read(bool sync = true) { m_rsync = sync; }
     void sync_on_write(bool sync = true) { m_wsync = sync; }
 
@@ -77,14 +84,18 @@ public:
     void writeback(bool wb = true) { m_wback = wb; }
     void no_writeback() { m_wback = false; }
 
-    bool is_natural_accesses_only() const { return m_natural; }
-    void natural_accesses_only(bool only = true) { m_natural = only; }
+    bool is_natural_accesses_only() const;
+    void natural_accesses_only(bool only = true);
 
     bool is_secure() const { return m_secure; }
     void set_secure(bool set = true) { m_secure = set; }
 
     u64 get_privilege() const { return m_privilege; }
     void set_privilege(u64 lvl) { m_privilege = lvl; }
+
+    u64 get_min_access_size() const { return m_minsize; }
+    u64 get_max_access_size() const { return m_maxsize; }
+    void set_access_size(u64 min, u64 max);
 
     peripheral* get_host() const { return m_host; }
     int current_cpu() const;
@@ -108,6 +119,16 @@ inline bool reg_base::is_read_only() const {
 
 inline bool reg_base::is_write_only() const {
     return m_access == VCML_ACCESS_WRITE;
+}
+
+inline bool reg_base::is_natural_accesses_only() const {
+    return m_aligned && m_minsize == m_cell_size && m_maxsize == m_cell_size;
+}
+
+inline void reg_base::natural_accesses_only(bool only) {
+    m_aligned = only;
+    m_minsize = only ? m_cell_size : 0;
+    m_maxsize = only ? m_cell_size : -1;
 }
 
 template <typename DATA, size_t N = 1>

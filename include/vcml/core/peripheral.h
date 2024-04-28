@@ -57,8 +57,14 @@ public:
     int current_cpu() const { return m_current_cpu; }
     void set_current_cpu(int cpu) { m_current_cpu = cpu; }
 
+    void aligned_accesses_only(bool only = true);
+    void aligned_accesses_only(address_space as, bool only = true);
+
     void natural_accesses_only(bool only = true);
     void natural_accesses_only(address_space as, bool only = true);
+
+    void set_access_size(u64 min, u64 max);
+    void set_access_size(address_space as, u64 min, u64 max);
 
     peripheral(const sc_module_name& nm, endianess e = host_endian(),
                unsigned int read_latency = 0, unsigned int write_latency = 0);
@@ -122,6 +128,17 @@ inline T peripheral::from_host_endian(T val) const {
     return is_host_endian() ? val : bswap(val);
 }
 
+inline void peripheral::aligned_accesses_only(bool only) {
+    for (auto& [as, regs] : m_registers)
+        for (auto* reg : regs)
+            reg->aligned_accesses_only(only);
+}
+
+inline void peripheral::aligned_accesses_only(address_space as, bool only) {
+    for (auto* reg : get_registers(as))
+        reg->aligned_accesses_only(only);
+}
+
 inline void peripheral::natural_accesses_only(bool only) {
     for (auto& [as, regs] : m_registers)
         for (auto* reg : regs)
@@ -131,6 +148,17 @@ inline void peripheral::natural_accesses_only(bool only) {
 inline void peripheral::natural_accesses_only(address_space as, bool only) {
     for (auto* reg : get_registers(as))
         reg->natural_accesses_only(only);
+}
+
+inline void peripheral::set_access_size(u64 min, u64 max) {
+    for (auto& [as, regs] : m_registers)
+        for (auto* reg : regs)
+            reg->set_access_size(min, max);
+}
+
+inline void peripheral::set_access_size(address_space as, u64 min, u64 max) {
+    for (auto* reg : get_registers(as))
+        reg->set_access_size(min, max);
 }
 
 inline const vector<reg_base*>& peripheral::get_registers() const {
