@@ -467,6 +467,7 @@ pci::pci(const sc_module_name& nm):
 
     queue_enable.sync_never();
     queue_enable.allow_read_write();
+    queue_enable.on_read(&pci::read_queue_enable);
     queue_enable.on_write(&pci::write_queue_enable);
 
     queue_notify_off.sync_never();
