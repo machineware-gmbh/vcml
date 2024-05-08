@@ -8,7 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/serial/uart_base.h"
+#include "vcml/models/serial/uart.h"
 
 namespace vcml {
 namespace serial {
@@ -18,27 +18,27 @@ static serial_bits uart8250_data_bits(u8 lcr) {
 }
 
 static serial_stop uart8250_stop_bits(u8 lcr) {
-    if (lcr & uart_base::LCR_SPB)
+    if (lcr & uart::LCR_SPB)
         return (lcr & 3) ? SERIAL_STOP_2 : SERIAL_STOP_1_5;
     return SERIAL_STOP_1;
 }
 
 static serial_parity uart8250_parity(u8 lcr) {
-    if (!(lcr & uart_base::LCR_PEN))
+    if (!(lcr & uart::LCR_PEN))
         return SERIAL_PARITY_NONE;
 
-    if (!(lcr & uart_base::LCR_SPB)) {
-        if (lcr & uart_base::LCR_EPS)
+    if (!(lcr & uart::LCR_SPB)) {
+        if (lcr & uart::LCR_EPS)
             return SERIAL_PARITY_EVEN;
         return SERIAL_PARITY_ODD;
     }
 
-    if (lcr & uart_base::LCR_EPS)
+    if (lcr & uart::LCR_EPS)
         return SERIAL_PARITY_MARK;
     return SERIAL_PARITY_SPACE;
 }
 
-void uart_base::calibrate() {
+void uart::calibrate() {
     if (m_divisor == 0) {
         log_warn("zero baud divisor specified, reverting to default");
         m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
@@ -52,7 +52,7 @@ void uart_base::calibrate() {
     serial_tx.set_parity(uart8250_parity(lcr));
 }
 
-void uart_base::update() {
+void uart::update() {
     // update status
     lsr.set_bit<LSR_TEMT>(m_tx_fifo.empty());
     lsr.set_bit<LSR_THRE>(m_tx_fifo.size() < m_tx_size);
@@ -64,7 +64,7 @@ void uart_base::update() {
     irq = iir & ier;
 }
 
-u8 uart_base::read_rbr() {
+u8 uart::read_rbr() {
     if (lcr & LCR_DLAB)
         return m_divisor & 0xff;
 
@@ -77,13 +77,13 @@ u8 uart_base::read_rbr() {
     return val;
 }
 
-u8 uart_base::read_ier() {
+u8 uart::read_ier() {
     if (lcr & LCR_DLAB)
         return m_divisor >> 8;
     return ier;
 }
 
-u8 uart_base::read_iir() {
+u8 uart::read_iir() {
     if (iir & IRQ_RLS)
         return IIR_RLS;
 
@@ -102,14 +102,14 @@ u8 uart_base::read_iir() {
     return IIR_NOIP;
 }
 
-u8 uart_base::read_lsr() {
+u8 uart::read_lsr() {
     u8 val = lsr;
     lsr &= ~(LSR_OE | LSR_PE);
     update();
     return val;
 }
 
-void uart_base::write_thr(u8 val) {
+void uart::write_thr(u8 val) {
     if (lcr & LCR_DLAB) {
         m_divisor = deposit(m_divisor, 0, 8, val);
         calibrate();
@@ -127,7 +127,7 @@ void uart_base::write_thr(u8 val) {
     update();
 }
 
-void uart_base::write_ier(u8 val) {
+void uart::write_ier(u8 val) {
     if (lcr & LCR_DLAB) {
         m_divisor = deposit(m_divisor, 8, 8, val);
         calibrate();
@@ -144,7 +144,7 @@ void uart_base::write_ier(u8 val) {
     update();
 }
 
-void uart_base::write_lcr(u8 val) {
+void uart::write_lcr(u8 val) {
     size_t oldbits = SERIAL_5_BITS + (lcr & 0x3);
     size_t newbits = SERIAL_5_BITS + (val & 0x3);
     if (newbits != oldbits)
@@ -162,7 +162,7 @@ void uart_base::write_lcr(u8 val) {
     calibrate();
 }
 
-void uart_base::write_fcr(u8 val) {
+void uart::write_fcr(u8 val) {
     log_debug("FIFOs %sabled", val & FCR_FE ? "en" : "dis");
 
     if (val & FCR_CRF) {
@@ -198,8 +198,8 @@ void uart_base::write_fcr(u8 val) {
     }
 }
 
-void uart_base::serial_receive(const serial_target_socket& socket,
-                               serial_payload& tx) {
+void uart::serial_receive(const serial_target_socket& socket,
+                          serial_payload& tx) {
     if (m_rx_fifo.size() < m_rx_size) {
         m_rx_fifo.push(tx.data & tx.mask);
         if (!serial_test_parity(tx)) {
@@ -214,7 +214,7 @@ void uart_base::serial_receive(const serial_target_socket& socket,
     update();
 }
 
-uart_base::uart_base(const sc_module_name& nm, size_t rx_size, size_t tx_size):
+uart::uart(const sc_module_name& nm, size_t rx_size, size_t tx_size):
     peripheral(nm),
     serial_host(),
     m_rx_size(rx_size),
@@ -236,27 +236,27 @@ uart_base::uart_base(const sc_module_name& nm, size_t rx_size, size_t tx_size):
     in("in") {
     thr.sync_always();
     thr.allow_read_write();
-    thr.on_read(&uart_base::read_rbr);
-    thr.on_write(&uart_base::write_thr);
+    thr.on_read(&uart::read_rbr);
+    thr.on_write(&uart::write_thr);
 
     thr.sync_always();
     ier.allow_read_write();
-    ier.on_read(&uart_base::read_ier);
-    ier.on_write(&uart_base::write_ier);
+    ier.on_read(&uart::read_ier);
+    ier.on_write(&uart::write_ier);
 
     iir.sync_always();
     iir.no_writeback();
     iir.allow_read_write();
-    iir.on_read(&uart_base::read_iir);
-    iir.on_write(&uart_base::write_fcr);
+    iir.on_read(&uart::read_iir);
+    iir.on_write(&uart::write_fcr);
 
     lcr.sync_always();
     lcr.allow_read_write();
-    lcr.on_write(&uart_base::write_lcr);
+    lcr.on_write(&uart::write_lcr);
 
     lsr.sync_always();
     lsr.allow_read_only();
-    lsr.on_read(&uart_base::read_lsr);
+    lsr.on_read(&uart::read_lsr);
 
     mcr.allow_read_write();
     msr.allow_read_write();
@@ -268,11 +268,11 @@ uart_base::uart_base(const sc_module_name& nm, size_t rx_size, size_t tx_size):
     serial_tx.set_parity(uart8250_parity(lcr));
 }
 
-uart_base::~uart_base() {
+uart::~uart() {
     // nothing to do
 }
 
-void uart_base::reset() {
+void uart::reset() {
     peripheral::reset();
     m_divisor = clock_hz() / (16 * DEFAULT_BAUD);
     calibrate();

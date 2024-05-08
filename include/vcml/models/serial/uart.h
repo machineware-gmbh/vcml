@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SERIAL_UART_BASE_H
-#define VCML_SERIAL_UART_BASE_H
+#ifndef VCML_SERIAL_UART_H
+#define VCML_SERIAL_UART_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -24,7 +24,7 @@
 namespace vcml {
 namespace serial {
 
-class uart_base : public peripheral, public serial_host
+class uart : public peripheral, public serial_host
 {
 private:
     const size_t m_rx_size;
@@ -120,26 +120,37 @@ public:
     gpio_initiator_socket irq;
     tlm_target_socket in;
 
-    uart_base(const sc_module_name& name, size_t rx_fifo_sz,
-              size_t tx_fifo_sz);
-    virtual ~uart_base();
-    VCML_KIND(serial::uart_base);
+    uart(const sc_module_name& name, size_t rx_fifo_sz, size_t tx_fifo_sz);
+    virtual ~uart();
+    VCML_KIND(serial::uart);
     virtual void reset() override;
 
-    uart_base() = delete;
-    uart_base(const uart_base&) = delete;
+    uart() = delete;
+    uart(const uart&) = delete;
 };
 
-class uart8250 : public uart_base
+class uart8250 : public uart
 {
 public:
-    uart8250(const sc_module_name& name): uart_base(name, 1, 1){};
+    static constexpr size_t RX_FIFO_SIZE = 1;
+    static constexpr size_t TX_FIFO_SIZE = 1;
+
+    uart8250(const sc_module_name& name):
+        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE){};
+    virtual ~uart8250() = default;
+    VCML_KIND(serial::uart8250);
 };
 
-class uart16550 : public uart_base
+class uart16550 : public uart
 {
 public:
-    uart16550(const sc_module_name& name): uart_base(name, 16, 16){};
+    static constexpr size_t RX_FIFO_SIZE = 16;
+    static constexpr size_t TX_FIFO_SIZE = 16;
+
+    uart16550(const sc_module_name& name):
+        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE){};
+    virtual ~uart16550() = default;
+    VCML_KIND(serial::uart16550);
 };
 
 } // namespace serial
