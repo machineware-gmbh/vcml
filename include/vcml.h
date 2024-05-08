@@ -81,7 +81,7 @@
 
 #include "vcml/models/serial/backend.h"
 #include "vcml/models/serial/terminal.h"
-#include "vcml/models/serial/uart8250.h"
+#include "vcml/models/serial/uart_base.h"
 #include "vcml/models/serial/pl011.h"
 #include "vcml/models/serial/nrf51.h"
 #include "vcml/models/serial/cdns.h"
