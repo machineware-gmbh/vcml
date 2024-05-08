@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_SERIAL_UART8250_H
-#define VCML_SERIAL_UART8250_H
+#ifndef VCML_SERIAL_UART_BASE_H
+#define VCML_SERIAL_UART_BASE_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -24,7 +24,7 @@
 namespace vcml {
 namespace serial {
 
-class uart8250 : public peripheral, public serial_host
+class uart_base : public peripheral, public serial_host
 {
 private:
     const size_t m_rx_size;
@@ -120,16 +120,27 @@ public:
     gpio_initiator_socket irq;
     tlm_target_socket in;
 
-    uart8250(const sc_module_name& name);
-    virtual ~uart8250();
-    VCML_KIND(serial::uart8250);
+    uart_base(const sc_module_name& name, size_t rx_fifo_sz,
+              size_t tx_fifo_sz);
+    virtual ~uart_base();
+    VCML_KIND(serial::uart_base);
     virtual void reset() override;
 
-    uart8250() = delete;
-    uart8250(const uart8250&) = delete;
+    uart_base() = delete;
+    uart_base(const uart_base&) = delete;
 };
 
-using uart16550 = uart8250;
+class uart8250 : public uart_base
+{
+public:
+    uart8250(const sc_module_name& name): uart_base(name, 1, 1){};
+};
+
+class uart16550 : public uart_base
+{
+public:
+    uart16550(const sc_module_name& name): uart_base(name, 16, 16){};
+};
 
 } // namespace serial
 } // namespace vcml
