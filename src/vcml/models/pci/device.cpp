@@ -515,7 +515,7 @@ void device::pci_transport(const pci_target_socket& sck, pci_payload& pci) {
     tlm_generic_payload tx;
     tlm_command cmd = pci_translate_command(pci.command);
     tx_setup(tx, cmd, pci.addr, &pci.data, pci.size);
-    peripheral::receive(tx, pci.debug ? SBI_DEBUG : SBI_NONE, pci.space);
+    receive(tx, pci.debug ? SBI_DEBUG : SBI_NONE, pci.space);
     pci.response = pci_translate_response(tx.get_response_status());
 }
 

@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_PCI_DEVICE_H
-#define VCML_GENERIC_PCI_DEVICE_H
+#ifndef VCML_PCI_DEVICE_H
+#define VCML_PCI_DEVICE_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/range.h"
