@@ -45,7 +45,7 @@ static const device_desc KEYBOARD_DESC{
                             usb_ep_in(1), // endpoint1 address
                             USB_EP_IRQ,   // endpoint1 attributes
                             8,            // endpoint1 max packet size
-                            10,           // endpoint1 intervall (125us units)
+                            8,            // endpoint1 intervall (125us units)
                             0,            // endpoint1 refresh
                             0,            // endpoint1 sync address
                         },
@@ -190,19 +190,10 @@ void keyboard::poll_modifier_keys(u8& data) {
 
 void keyboard::poll_standard_keys(u8* data, size_t length) {
     ui::input_event ev;
-    vector<u8> release;
-
-    while (m_keyboard.has_events()) {
-        m_keyboard.pop_event(ev);
-        if (!ev.is_key()) {
-            log_warn("invalid input event on keyboard");
-            continue;
-        }
-
+    if (m_keyboard.pop_event(ev) && ev.is_key()) {
         u8 hid = USB_HID_KEYCODE_TABLE[ev.key.code & 0xff];
-
         if (ev.key.state == ui::VCML_KEY_UP)
-            stl_add_unique(release, hid);
+            stl_remove(m_keys, hid);
         else
             stl_add_unique(m_keys, hid);
     }
@@ -214,9 +205,6 @@ void keyboard::poll_standard_keys(u8* data, size_t length) {
         memcpy(data, m_keys.data(), length - 1);
         data[length - 1] = 1; // rollover
     }
-
-    for (auto hid : release)
-        stl_remove(m_keys, hid);
 }
 
 void keyboard::poll_keys(u8* data, size_t length) {
