@@ -167,8 +167,10 @@ add_library(vcml STATIC
     ${src}/vcml/models/usb/drive.cpp
     ${src}/vcml/models/usb/keyboard.cpp
     ${src}/vcml/models/usb/xhci.cpp
+    ${src}/vcml/models/usb/xhcipci.cpp
     ${src}/vcml/models/pci/device.cpp
     ${src}/vcml/models/pci/host.cpp
+    ${src}/vcml/models/pci/endpoint.cpp
     ${src}/vcml/models/virtio/mmio.cpp
     ${src}/vcml/models/virtio/pci.cpp
     ${src}/vcml/models/virtio/rng.cpp
