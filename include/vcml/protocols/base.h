@@ -123,6 +123,12 @@ template <typename T>
 struct supports_tracing<T, std::void_t<decltype(std::declval<T>().trace_all)>>
     : std::true_type {};
 
+template <typename T>
+struct is_initiator_socket : std::is_base_of<sc_core::sc_port_base, T> {};
+
+template <typename T>
+struct is_target_socket : std::is_base_of<sc_core::sc_export_base, T> {};
+
 template <typename SOCKET>
 class socket_array : public sc_object, public hierarchy_element
 {
@@ -131,6 +137,7 @@ public:
     typedef unordered_map<const SOCKET*, size_t> revmap_type;
     typedef typename map_type::iterator iterator;
     typedef typename map_type::const_iterator const_iterator;
+    typedef std::function<SOCKET&(size_t idx)> peer_fn;
 
 private:
     size_t m_next;
@@ -138,6 +145,10 @@ private:
     address_space m_space;
     map_type m_sockets;
     revmap_type m_ids;
+    peer_fn m_peer;
+
+    template <typename T>
+    friend class socket_array;
 
 public:
     property<bool> trace_all;
@@ -151,6 +162,7 @@ public:
         m_space(VCML_AS_DEFAULT),
         m_sockets(),
         m_ids(),
+        m_peer(),
         trace_all(this, "trace", false),
         trace_errors(this, "trace_errors", false) {
         trace_all.inherit_default();
@@ -199,6 +211,14 @@ public:
 
         m_ids[socket] = idx;
         m_next = max(m_next, idx + 1);
+
+        if (m_peer) {
+            if (is_initiator_socket<SOCKET>::value)
+                m_peer(idx).bind(*socket);
+            if (is_target_socket<SOCKET>::value)
+                socket->bind(m_peer(idx));
+        }
+
         return *socket;
     }
 
@@ -229,6 +249,24 @@ public:
         for (const auto& socket : m_sockets)
             keys.insert(socket.first);
         return keys;
+    }
+
+    template <typename T>
+    void bind(socket_array<T>& other) {
+        if constexpr (is_initiator_socket<SOCKET>::value &&
+                      is_initiator_socket<T>::value) {
+            // initiator binds to base-initiator
+            other.m_peer = [&](size_t idx) -> T& { return (T&)get(idx); };
+        } else if constexpr (is_target_socket<SOCKET>::value &&
+                             is_target_socket<T>::value) {
+            // base-target binds to target
+            m_peer = [&](size_t idx) -> SOCKET& {
+                return (SOCKET&)other.get(idx);
+            };
+        } else {
+            // only hierarchical bindings are supported
+            static_assert(false, "cannot bind socket array");
+        }
     }
 };
 
