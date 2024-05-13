@@ -253,19 +253,22 @@ public:
 
     template <typename T>
     void bind(socket_array<T>& other) {
-        if constexpr (is_initiator_socket<SOCKET>::value &&
-                      is_initiator_socket<T>::value) {
+        static_assert(
+            is_initiator_socket<SOCKET>::value ==
+                    is_initiator_socket<T>::value &&
+                is_target_socket<SOCKET>::value == is_target_socket<T>::value,
+            "cannot bind socket arrays");
+
+        if constexpr (is_initiator_socket<SOCKET>::value) {
             // initiator binds to base-initiator
             other.m_peer = [&](size_t idx) -> T& { return (T&)get(idx); };
-        } else if constexpr (is_target_socket<SOCKET>::value &&
-                             is_target_socket<T>::value) {
+        } 
+
+        if constexpr (is_target_socket<SOCKET>::value) {
             // base-target binds to target
             m_peer = [&](size_t idx) -> SOCKET& {
                 return (SOCKET&)other.get(idx);
             };
-        } else {
-            // only hierarchical bindings are supported
-            static_assert(false, "cannot bind socket array");
         }
     }
 };
