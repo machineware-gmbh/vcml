@@ -262,7 +262,7 @@ public:
         if constexpr (is_initiator_socket<SOCKET>::value) {
             // initiator binds to base-initiator
             other.m_peer = [&](size_t idx) -> T& { return (T&)get(idx); };
-        } 
+        }
 
         if constexpr (is_target_socket<SOCKET>::value) {
             // base-target binds to target
