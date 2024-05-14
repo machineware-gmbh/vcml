@@ -78,7 +78,7 @@ void endpoint::end_of_elaboration() {
 
     for (size_t idx = 0; idx < PCI_NUM_BARS; idx++) {
         if (m_bars[idx].size == 0 && bar_out.exists(idx))
-            log_error("BAR%zu connecteed but not declared", idx);
+            log_error("BAR%zu connected but not declared", idx);
         if (m_bars[idx].size > 0 && !bar_out.exists(idx))
             log_error("BAR%zu declared but not connected", idx);
     }
