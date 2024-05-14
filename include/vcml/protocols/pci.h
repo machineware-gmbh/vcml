@@ -130,6 +130,7 @@ struct pci_bar {
         };
     };
     u64 size;
+    u8* host;
 
     u64 mask() const { return ~(size - 1); }
     bool is_mapped() const { return (addr_lo ^ -1) & mask(); }

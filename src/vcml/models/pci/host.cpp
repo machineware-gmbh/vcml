@@ -195,20 +195,43 @@ void host::pci_bar_map(const pci_initiator_socket& s, const pci_bar& bar) {
     range addr(bar.addr, bar.addr + bar.size - 1);
     pci_mapping mapping{ devno, limit, bar.barno, space, addr };
 
-    if (bar.is_io)
+    if (bar.is_io) {
         m_map_io.push_back(mapping);
-    else
-        m_map_mmio.push_back(mapping);
+        return;
+    }
+
+    m_map_mmio.push_back(mapping);
+
+    if (bar.host) {
+        tlm_dmi dmi;
+        dmi.allow_read_write();
+        dmi.set_dmi_ptr(bar.host);
+        dmi.set_start_address(bar.addr);
+        dmi.set_end_address(bar.addr + bar.size - 1);
+
+        for (auto& [idx, socket] : mmio_in)
+            socket->map_dmi(dmi);
+    }
 }
 
 void host::pci_bar_unmap(const pci_initiator_socket& socket, int barno) {
     u32 devno = pci_devno(socket);
-    auto match = [devno, barno](const pci_mapping& entry) -> bool {
-        return entry.devno == devno && entry.barno == barno;
-    };
 
-    stl_remove_if(m_map_mmio, match);
-    stl_remove_if(m_map_io, match);
+    for (auto it = m_map_io.begin(); it != m_map_io.end();) {
+        if (it->devno == devno && it->barno == barno)
+            it = m_map_io.erase(it);
+        else
+            it++;
+    }
+
+    for (auto it = m_map_mmio.begin(); it != m_map_mmio.end();) {
+        if (it->devno == devno && it->barno == barno) {
+            unmap_dmi(it->addr.start, it->addr.end);
+            it = m_map_mmio.erase(it);
+        } else {
+            it++;
+        }
+    }
 }
 
 void* host::pci_dma_ptr(const pci_initiator_socket& socket, vcml_access rw,

@@ -395,25 +395,7 @@ void device::reset() {
         m_msix->reset();
 }
 
-tlm_response_status device::read(const range& addr, void* data,
-                                 const tlm_sbi& info, address_space as) {
-    if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
-        return m_msix->read_tbl(addr, data);
-    if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
-        return m_msix->write_pba(addr, data);
-    return peripheral::read(addr, data, info, as);
-}
-
-tlm_response_status device::write(const range& addr, const void* data,
-                                  const tlm_sbi& info, address_space as) {
-    if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
-        return m_msix->write_tbl(addr, data);
-    if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
-        return m_msix->write_pba(addr, data);
-    return peripheral::write(addr, data, info, as);
-}
-
-void device::pci_declare_bar(int barno, u64 size, u32 type) {
+void device::pci_declare_bar(int barno, u64 size, u32 type, void* ptr) {
     bool is_io = type & PCI_BAR_IO;
     bool is_64 = type & PCI_BAR_64;
     bool is_prefetch = type & PCI_BAR_PREFETCH;
@@ -429,6 +411,7 @@ void device::pci_declare_bar(int barno, u64 size, u32 type) {
     m_bars[barno].is_prefetch = is_prefetch;
     m_bars[barno].addr_lo = PCI_BAR_UNMAPPED & ~(size - 1);
     m_bars[barno].addr_hi = is_64 ? PCI_BAR_UNMAPPED : 0u;
+    m_bars[barno].host = (u8*)ptr;
 }
 
 void device::pci_declare_pm_cap(u16 pm_caps) {
@@ -517,6 +500,58 @@ void device::pci_transport(const pci_target_socket& sck, pci_payload& pci) {
     tx_setup(tx, cmd, pci.addr, &pci.data, pci.size);
     receive(tx, pci.debug ? SBI_DEBUG : SBI_NONE, pci.space);
     pci.response = pci_translate_response(tx.get_response_status());
+}
+
+bool device::read_mem_bar(const range& addr, void* data, const tlm_sbi& sbi,
+                          address_space as) {
+    if (as < PCI_AS_BAR0 || as > PCI_AS_BAR5)
+        return false;
+
+    pci_bar* bar = m_bars + as - PCI_AS_BAR0;
+    if (bar->host == nullptr)
+        return false;
+    if (addr.end >= bar->size)
+        return false;
+
+    memcpy(data, bar->host + addr.start, addr.length());
+    return true;
+}
+
+bool device::write_mem_bar(const range& addr, const void* data,
+                           const tlm_sbi& sbi, address_space as) {
+    if (as < PCI_AS_BAR0 || as > PCI_AS_BAR5)
+        return false;
+
+    pci_bar* bar = m_bars + as - PCI_AS_BAR0;
+    if (bar->host == nullptr)
+        return false;
+    if (addr.end >= bar->size)
+        return false;
+
+    memcpy(bar->host + addr.start, data, addr.length());
+    return true;
+}
+
+tlm_response_status device::read(const range& addr, void* data,
+                                 const tlm_sbi& info, address_space as) {
+    if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
+        return m_msix->read_tbl(addr, data);
+    if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
+        return m_msix->write_pba(addr, data);
+    if (read_mem_bar(addr, data, info, as))
+        return TLM_OK_RESPONSE;
+    return peripheral::read(addr, data, info, as);
+}
+
+tlm_response_status device::write(const range& addr, const void* data,
+                                  const tlm_sbi& info, address_space as) {
+    if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
+        return m_msix->write_tbl(addr, data);
+    if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
+        return m_msix->write_pba(addr, data);
+    if (write_mem_bar(addr, data, info, as))
+        return TLM_OK_RESPONSE;
+    return peripheral::write(addr, data, info, as);
 }
 
 void device::msi_send(unsigned int vector) {

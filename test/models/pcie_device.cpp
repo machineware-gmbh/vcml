@@ -36,6 +36,8 @@ enum : u64 {
     PCI_BAR1_OFFSET = 0x14,
     PCI_BAR2_OFFSET = 0x18,
     PCI_BAR3_OFFSET = 0x1c,
+    PCI_BAR4_OFFSET = 0x20,
+    PCI_BAR5_OFFSET = 0x28,
     PCI_CAP_OFFSET = 0x34,
 
     PCI_MSI_CTRL_OFF = 0x2,
@@ -72,6 +74,8 @@ enum : u64 {
 class pcie_test_device : public pci::device
 {
 public:
+    u8 bar4[MMAP_PCI_MMIO_SIZE];
+
     pci_target_socket pci_in;
     reg<u32> test_reg;
     reg<u32> test_reg_io;
@@ -85,6 +89,7 @@ public:
 
     pcie_test_device(const sc_module_name& nm):
         device(nm, TEST_CONFIG),
+        bar4(),
         pci_in("PCI_IN"),
         test_reg(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
         test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
@@ -96,6 +101,8 @@ public:
         pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
         pci_declare_bar(3, MMAP_PCI_MSIX_TABLE_SIZE, PCI_BAR_MMIO);
+        pci_declare_bar(4, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64,
+                        bar4);
         pci_declare_pm_cap(PCI_PM_CAP_VER_1_2);
         pci_declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_QMASK32);
         pci_declare_msix_cap(3, TEST_MSIX_NVEC);
@@ -368,6 +375,42 @@ public:
             << "PCI BAR0 area remained active";
         EXPECT_AE(io.readw(MMAP_PCI_IO_ADDR, dummy))
             << "PCI BAR2 area remained active";
+
+        //
+        // test mapping bar4
+        //
+        bar = 0xffffffff;
+        pcie_write_cfg(0, PCI_BAR4_OFFSET, bar);
+        pcie_read_cfg(0, PCI_BAR4_OFFSET, bar);
+
+        // should be 4k size | PCI_BAR_MMIO | PCI_BAR_64
+        EXPECT_EQ(bar, 0xfffff004) << "invalid BAR4 initialization value";
+
+        // setup bar0
+        u64 bar4 = MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO;
+        pcie_write_cfg(0, PCI_BAR5_OFFSET, (u32)(bar4 >> 32));
+        pcie_write_cfg(0, PCI_BAR4_OFFSET, (u32)(bar4));
+
+        val = 0x87654321;
+        EXPECT_OK(mmio.writew(MMAP_PCI_MMIO_ADDR, val))
+            << "BAR4 setup failed: cannot write BAR4 range";
+        EXPECT_EQ(pcie_device.bar4[0], 0x21);
+        EXPECT_EQ(pcie_device.bar4[1], 0x43);
+        EXPECT_EQ(pcie_device.bar4[2], 0x65);
+        EXPECT_EQ(pcie_device.bar4[3], 0x87);
+
+        u8* dmi = mmio.lookup_dmi_ptr(MMAP_PCI_MMIO_ADDR, MMAP_PCI_MMIO_SIZE,
+                                      VCML_ACCESS_READ_WRITE);
+        EXPECT_EQ(dmi, pcie_device.bar4);
+
+        //
+        // test unmapping bar 4
+        //
+        pcie_write_cfg(0, PCI_BAR5_OFFSET, 0xffffffff);
+        pcie_write_cfg(0, PCI_BAR4_OFFSET, 0xffffffff);
+        dmi = mmio.lookup_dmi_ptr(MMAP_PCI_MMIO_ADDR, MMAP_PCI_MMIO_SIZE,
+                                  VCML_ACCESS_READ_WRITE);
+        EXPECT_EQ(dmi, nullptr);
     }
 };
 

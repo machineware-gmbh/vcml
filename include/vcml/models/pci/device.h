@@ -240,15 +240,7 @@ public:
     VCML_KIND(pci::device);
     virtual void reset() override;
 
-    virtual tlm_response_status read(const range& addr, void* data,
-                                     const tlm_sbi& info,
-                                     address_space as) override;
-
-    virtual tlm_response_status write(const range& addr, const void* data,
-                                      const tlm_sbi& info,
-                                      address_space as) override;
-
-    void pci_declare_bar(int barno, u64 size, u32 type);
+    void pci_declare_bar(int barno, u64 size, u32 type, void* ptr = nullptr);
 
     void pci_declare_pm_cap(u16 pm_caps);
     void pci_declare_msi_cap(u16 msi_ctrl);
@@ -284,6 +276,19 @@ protected:
 
     virtual void pci_transport(const pci_target_socket& socket,
                                pci_payload& tx) override;
+
+    virtual bool read_mem_bar(const range& addr, void* data,
+                              const tlm_sbi& sbi, address_space as);
+    virtual bool write_mem_bar(const range& addr, const void* data,
+                               const tlm_sbi& sbi, address_space as);
+
+    virtual tlm_response_status read(const range& addr, void* data,
+                                     const tlm_sbi& info,
+                                     address_space as) override;
+
+    virtual tlm_response_status write(const range& addr, const void* data,
+                                      const tlm_sbi& info,
+                                      address_space as) override;
 
     void msi_send(unsigned int vector);
     void msi_process();
