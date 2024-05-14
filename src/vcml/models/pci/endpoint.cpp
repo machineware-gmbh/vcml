@@ -70,7 +70,7 @@ void endpoint::gpio_notify(const gpio_target_socket& socket, bool state,
                            gpio_vector vector) {
     if (vector == GPIO_NO_VECTOR)
         vector = irq_in.index_of(socket);
-    pci_interrupt(true, vector);
+    pci_interrupt(state, vector);
 }
 
 void endpoint::end_of_elaboration() {
