@@ -70,10 +70,15 @@ backend_term::backend_term(terminal* term):
     m_fifo() {
     capture_stdin();
 
-    if (mwr::is_tty(m_fdin)) {
+    if (mwr::is_tty(m_fdin))
         mwr::tty_push(m_fdin, true);
+    if (mwr::is_tty(m_fdout))
+        mwr::tty_push(m_fdout, true);
+
+    if (mwr::is_tty(m_fdin))
         mwr::tty_set(m_fdin, false, false);
-    }
+    if (mwr::is_tty(m_fdout))
+        mwr::tty_set(m_fdout, false, false);
 
     m_iothread = thread(&backend_term::iothread, this);
 }
@@ -85,6 +90,9 @@ backend_term::~backend_term() {
 
     if (mwr::is_tty(m_fdin))
         mwr::tty_pop(m_fdin);
+
+    if (mwr::is_tty(m_fdout))
+        mwr::tty_pop(m_fdout);
 
     release_stdin();
 }
