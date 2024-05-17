@@ -136,7 +136,7 @@ backend_tui::backend_tui(terminal* term):
 
     if (mwr::is_tty(m_fdin)) {
         mwr::tty_push(m_fdin, true);
-        mwr::tty_set(m_fdin, false, false);
+        mwr::tty_setup_vt100(m_fdin);
     }
 
 #ifdef MWR_LINUX
