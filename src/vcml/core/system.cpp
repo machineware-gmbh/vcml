@@ -16,14 +16,37 @@ static mwr::option<bool> list_properties("--list-properties",
                                          "Prints a list of all properties");
 
 static void list_object_properties(sc_object* obj) {
+    bool colors = mwr::is_tty(STDOUT_FDNO);
+    ostream& os = std::cout;
+
     for (auto attr : obj->attr_cltn()) {
         property_base* prop = dynamic_cast<property_base*>(attr);
         reg_base* reg = dynamic_cast<reg_base*>(attr);
         if (prop != nullptr) {
-            if (reg != nullptr)
-                printf("%s: reg<%s>\n", prop->fullname(), prop->type());
-            else
-                printf("%s: property<%s>\n", prop->fullname(), prop->type());
+            if (colors)
+                os << mwr::termcolors::BOLD;
+            os << (reg ? "reg<" : "property<");
+            if (colors)
+                os << mwr::termcolors::YELLOW;
+            os << prop->type();
+            if (colors)
+                os << mwr::termcolors::WHITE << mwr::termcolors::BOLD;
+            os << ">\t";
+            if (colors)
+                os << mwr::termcolors::CLEAR;
+            os << prop->fullname();
+            if (colors)
+                os << mwr::termcolors::BLUE;
+            os << "=";
+            if (colors)
+                os << mwr::termcolors::CLEAR;
+            os << "\"";
+            if (colors)
+                os << mwr::termcolors::CYAN;
+            os << prop->str();
+            if (colors)
+                os << mwr::termcolors::CLEAR;
+            os << "\"" << std::endl;
         }
     }
 
