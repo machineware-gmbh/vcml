@@ -28,8 +28,8 @@ namespace spi {
 class ocspi : public peripheral
 {
 private:
-    bool m_txe_irq;
-    bool m_txr_irq;
+    bool m_txe_en;
+    bool m_txr_en;
 
     void write_txdata(u8 val);
     void write_status(u8 val);

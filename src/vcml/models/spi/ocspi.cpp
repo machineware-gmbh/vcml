@@ -25,48 +25,49 @@ void ocspi::write_txdata(u8 val) {
     rxdata = spi.miso;
 
     status |= STATUS_TXR;
-    if (m_txr_irq && !irq) {
+    if (m_txr_en && !irq) {
         log_debug("setting TXR interrupt");
         irq = true;
     }
 
     status |= STATUS_TXE;
-    if (m_txe_irq && !irq) {
+    if (m_txe_en && !irq) {
         log_debug("setting TXE interrupt");
         irq = true;
     }
 }
 
 void ocspi::write_status(u8 val) {
-    if (m_txe_irq && !(val & STATUS_TXE))
+    if (m_txe_en && !(val & STATUS_TXE))
         log_debug("disabling TXE interrupt");
-    if (!m_txe_irq && (val & STATUS_TXE))
+    if (!m_txe_en && (val & STATUS_TXE))
         log_debug("enabling TXE interrupt");
 
-    if (m_txr_irq && !(val & STATUS_TXR))
+    if (m_txr_en && !(val & STATUS_TXR))
         log_debug("disabling TXR interrupt");
-    if (!m_txr_irq && (val & STATUS_TXR))
+    if (!m_txr_en && (val & STATUS_TXR))
         log_debug("enabling TXR interrupt");
 
-    m_txe_irq = val & STATUS_TXE;
-    m_txr_irq = val & STATUS_TXR;
+    m_txe_en = val & STATUS_TXE;
+    m_txr_en = val & STATUS_TXR;
 
-    if (irq.read() && !m_txe_irq && !m_txr_irq) {
+    bool txe_irq = m_txe_en && (status & STATUS_TXE);
+    bool txr_irq = m_txr_en && (status & STATUS_TXR);
+
+    if (irq.read() && !txe_irq && !txr_irq) {
         log_debug("clearing interrupt");
         irq = false;
     }
 
-    if (!irq.read() && m_txe_irq && (status & STATUS_TXE)) {
+    if (!irq.read() && txe_irq) {
         log_debug("setting TXE interrupt");
         irq = true;
     }
 
-    if (!irq.read() && m_txr_irq && (status & STATUS_TXR)) {
+    if (!irq.read() && txr_irq) {
         log_debug("setting TXR interrupt");
         irq = true;
     }
-
-    status = val;
 }
 
 void ocspi::write_control(u32 val) {
@@ -95,12 +96,12 @@ void ocspi::write_bauddiv(u32 val) {
 
 ocspi::ocspi(const sc_module_name& nm):
     peripheral(nm),
-    m_txe_irq(false),
-    m_txr_irq(false),
+    m_txe_en(false),
+    m_txr_en(false),
     rxdata("rxdata", 0x0, 0),
     txdata("txdata", 0x4, 0),
     status("status", 0x8, STATUS_TXR | STATUS_TXE),
-    control("control", 0xC, 0),
+    control("control", 0xc, 0),
     bauddiv("bauddiv", 0x10, 0),
     irq("irq"),
     in("in"),
