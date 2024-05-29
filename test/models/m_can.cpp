@@ -166,10 +166,6 @@ public:
 
     mock_can(const sc_module_name& nm):
         peripheral(nm), can_in("can_in"), can_out("can_out") {}
-
-    MOCK_METHOD(void, can_receive,
-                (const can_target_socket& socket, can_frame& frame),
-                (override));
 };
 
 class m_can_bench : public test_base
@@ -317,13 +313,12 @@ public:
             << "cannot write tx buf element data";
 
         // check sent frame & irqs
-        can_frame chk = {};
-        EXPECT_CALL(can, can_receive(_, A<can_frame&>()))
-            .WillOnce(DoAll(SaveArg<1>(&chk)));
         EXPECT_OK(out.writew(REG_TXBAR, 1u)) << "cannot simluate new tx frame";
 
         wait(1, SC_NS);
 
+        can_frame chk = {};
+        ASSERT_TRUE(can.can_rx_pop(chk));
         EXPECT_THAT(test, CanFrameEq(chk)) << "tx can frames to not match";
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
@@ -351,13 +346,12 @@ public:
             << "cannot write data";
 
         // check sent frame & irqs
-        can_frame chk = {};
-        EXPECT_CALL(can, can_receive(_, A<can_frame&>()))
-            .WillOnce(DoAll(SaveArg<1>(&chk)));
         EXPECT_OK(out.writew(REG_TXBAR, 1u)) << "cannot simluate new tx frame";
 
         wait(1, SC_NS);
 
+        can_frame chk = {};
+        ASSERT_TRUE(can.can_rx_pop(chk));
         EXPECT_THAT(test, CanFrameFDEq(chk)) << "tx can frames to not match";
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
