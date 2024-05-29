@@ -12,6 +12,10 @@
 
 #include <libusb.h>
 
+#if LIBUSB_API_VERSION < 0x0100010008
+#define libusb_strerror(err) libusb_strerror((libusb_error)(err)) // NOLINT
+#endif
+
 namespace vcml {
 namespace usb {
 
@@ -123,7 +127,7 @@ usb_result hostdev::set_config(int config) {
     VCML_ERROR_ON(r < 0, "libusb_set_config: %s", libusb_strerror(r));
 
     for (size_t i = 0; i < MWR_ARRAY_SIZE(m_ifs); i++) {
-        if ((r = libusb_claim_interface(m_handle, i)) == 0) {
+        if (libusb_claim_interface(m_handle, i) == LIBUSB_SUCCESS) {
             log_debug("claimed interface %zu", i);
             m_ifs[i].claimed = true;
         }
