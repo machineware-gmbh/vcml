@@ -23,7 +23,7 @@ test_base::test_base(const sc_module_name& nm):
 }
 
 test_base::~test_base() {
-    finalize_test();
+    finalize();
 }
 
 void test_base::run() {
@@ -32,7 +32,7 @@ void test_base::run() {
     sc_stop();
 }
 
-void test_base::finalize_test() {
+void test_base::finalize() {
     ASSERT_EQ(sc_core::sc_get_status(), sc_core::SC_STOPPED)
         << "simulation incomplete";
 }

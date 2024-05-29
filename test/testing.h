@@ -65,6 +65,7 @@ private:
     generic::clock m_clock;
 
     void run();
+    void finalize();
 
 public:
     test_base() = delete;
@@ -72,7 +73,6 @@ public:
     virtual ~test_base();
 
     virtual void run_test() = 0;
-    virtual void finalize_test();
 };
 
 extern vector<string> args;
