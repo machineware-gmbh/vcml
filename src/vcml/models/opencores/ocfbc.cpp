@@ -10,8 +10,8 @@
 
 #include "vcml/models/opencores/ocfbc.h"
 
-#define OCFBC_VBL(val) (1 << (((val)&CTLR_VBL8) >> 7))
-#define OCFBC_BPP(val) ((((val)&CTLR_BPP32) >> 9) + 1)
+#define OCFBC_VBL(val) (1 << (((val) & CTLR_VBL8) >> 7))
+#define OCFBC_BPP(val) ((((val) & CTLR_BPP32) >> 9) + 1)
 
 namespace vcml {
 namespace opencores {

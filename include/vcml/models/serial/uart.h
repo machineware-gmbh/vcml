@@ -136,7 +136,7 @@ public:
     static constexpr size_t TX_FIFO_SIZE = 1;
 
     uart8250(const sc_module_name& name):
-        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE){};
+        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
     virtual ~uart8250() = default;
     VCML_KIND(serial::uart8250);
 };
@@ -148,7 +148,7 @@ public:
     static constexpr size_t TX_FIFO_SIZE = 16;
 
     uart16550(const sc_module_name& name):
-        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE){};
+        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
     virtual ~uart16550() = default;
     VCML_KIND(serial::uart16550);
 };
