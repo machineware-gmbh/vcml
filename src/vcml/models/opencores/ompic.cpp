@@ -10,7 +10,7 @@
 
 #include "vcml/models/opencores/ompic.h"
 
-#define OMPIC_DATA(x) ((x)&0xffff)
+#define OMPIC_DATA(x) ((x) & 0xffff)
 #define OMPIC_DEST(x) (((x) >> 16) & 0x3fff)
 
 namespace vcml {

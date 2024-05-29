@@ -121,6 +121,7 @@ TEST(range, limits) {
     vcml::range c(~0ull - 15, ~0ull);
     EXPECT_EQ(c.length(), 16);
 
-    ASSERT_DEATH({ vcml::range d(5, 3); },
-                 "invalid range: 0000000000000005..0000000000000003");
+    ASSERT_DEATH(
+        { vcml::range d(5, 3); },
+        "invalid range: 0000000000000005..0000000000000003");
 }

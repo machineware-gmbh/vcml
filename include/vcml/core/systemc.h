@@ -325,8 +325,10 @@ using tlm_utils::simple_initiator_socket_tagged;
 using tlm_utils::simple_target_socket;
 using tlm_utils::simple_target_socket_tagged;
 
-#define VCML_KIND(name) \
-    virtual const char* kind() const override { return "vcml::" #name; }
+#define VCML_KIND(name)                         \
+    virtual const char* kind() const override { \
+        return "vcml::" #name;                  \
+    }
 
 bool kernel_has_phase_callbacks();
 

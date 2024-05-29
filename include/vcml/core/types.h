@@ -95,10 +95,12 @@ inline const char* type_name() {
     return typeinfo<T>::name();
 }
 
-#define VCML_TYPEINFO(T)                         \
-    template <>                                  \
-    struct typeinfo<T> {                         \
-        static const char* name() { return #T; } \
+#define VCML_TYPEINFO(T)            \
+    template <>                     \
+    struct typeinfo<T> {            \
+        static const char* name() { \
+            return #T;              \
+        }                           \
     }
 
 VCML_TYPEINFO(u8);
