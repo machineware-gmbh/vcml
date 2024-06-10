@@ -96,7 +96,10 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
             m_hit_wp_addr = wp_addr;
             m_hit_wp_type = wp_type;
         }
+
+        m_mtx.unlock();
         suspend(true);
+        m_mtx.lock();
         break;
 
     case GDB_RUNNING:
