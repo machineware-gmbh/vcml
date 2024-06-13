@@ -48,6 +48,11 @@ istream& operator>>(istream& is, alignment& a) {
 
     char* endp;
     u64 val = strtoull(s.c_str(), &endp, 0);
+    if (val == 0) {
+        a = VCML_ALIGN_NONE;
+        return is;
+    }
+
     a = (alignment)ctz(val);
 
     switch (*endp) {

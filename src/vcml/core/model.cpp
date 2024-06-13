@@ -35,7 +35,7 @@ module* model::create(const string& type, const sc_module_name& name) {
     }
 
     std::cout << "known models:" << std::endl;
-    for (auto [name, proc] : modeldb())
+    for (auto& [name, proc] : modeldb())
         std::cout << "  " << name << std::endl;
     VCML_ERROR("model not found: %s", kind.c_str());
 }
@@ -50,7 +50,7 @@ bool model::define(const string& kind, create_fn create) {
 }
 
 void model::list_models(ostream& os) {
-    for (auto [name, func] : modeldb())
+    for (auto& [name, func] : modeldb())
         os << name << std::endl;
 }
 

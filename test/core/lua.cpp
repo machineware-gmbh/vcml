@@ -26,7 +26,7 @@ TEST(core, lua) {
         { "outer.in", "4096" },
     };
 
-    for (auto [prop, val] : properties) {
+    for (auto& [prop, val] : properties) {
         ASSERT_TRUE(lua.lookup(prop, s)) << "property undefined: " << prop;
         EXPECT_EQ(s, val) << "property " << prop << " has wrong value";
         std::cout << prop << " = " << val << std::endl;

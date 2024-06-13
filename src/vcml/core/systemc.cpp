@@ -295,8 +295,8 @@ public:
     vector<function<void(void)>> tsteps;
 
     struct timer_compare {
-        inline bool operator()(const async_timer::event* a,
-                               const async_timer::event* b) const {
+        bool operator()(const async_timer::event* a,
+                        const async_timer::event* b) const {
             return a->timeout > b->timeout;
         }
     };

@@ -189,24 +189,24 @@ broker_lua::broker_lua(const string& file): broker("lua") {
         { "__index", do_lookup },
     };
 
-    for (auto [field, value] : integers) {
+    for (auto& [field, value] : integers) {
         lua_pushinteger(lua, value);
         lua_setfield(lua, -2, field.c_str());
     }
 
-    for (auto [field, value] : strings) {
+    for (auto& [field, value] : strings) {
         lua_pushstring(lua, value.c_str());
         lua_setfield(lua, -2, field.c_str());
     }
 
-    for (auto [field, value] : funcs) {
+    for (auto& [field, value] : funcs) {
         lua_pushlightuserdata(lua, this);
         lua_pushcclosure(lua, value, 1);
         lua_setfield(lua, -2, field.c_str());
     }
 
     lua_newtable(lua);
-    for (auto [field, value] : methods) {
+    for (auto& [field, value] : methods) {
         lua_pushlightuserdata(lua, this);
         lua_pushcclosure(lua, value, 1);
         lua_setfield(lua, -2, field.c_str());
