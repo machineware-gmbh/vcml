@@ -48,6 +48,7 @@ setup* setup::s_instance = nullptr;
 setup::setup(int argc, char** argv):
     m_log_debug("--log-debug", "Activate verbose debug logging"),
     m_log_stdout("--log-stdout", "Send log output to stdout"),
+    m_log_inscight("--log-inscight", "Send log output to InSCight database"),
     m_log_files("--log-file", "-l", "Send log output to file"),
     m_trace_stdout("--trace-stdout", "Send tracing output to stdout"),
     m_trace_files("--trace", "-t", "Send tracing output to file"),
@@ -85,6 +86,12 @@ setup::setup(int argc, char** argv):
     if (m_log_stdout.value() || !m_log_files.has_value()) {
         mwr::publisher* pub = new mwr::publishers::terminal(true);
         pub->set_level(min, max);
+        m_publishers.push_back(pub);
+    }
+
+    if (m_log_inscight.value()) {
+        mwr::publisher* pub = new vcml::publishers::inscight();
+        pub->set_level(LOG_ERROR, LOG_DEBUG);
         m_publishers.push_back(pub);
     }
 

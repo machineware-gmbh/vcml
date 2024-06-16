@@ -14,6 +14,9 @@
 #include "vcml/core/types.h"
 #include "vcml/core/thctl.h"
 
+#include "vcml/logging/logger.h"
+#include "vcml/logging/inscight.h"
+
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"
 #include "vcml/tracing/tracer_term.h"
@@ -32,6 +35,7 @@ class setup
 private:
     mwr::option<bool> m_log_debug;
     mwr::option<bool> m_log_stdout;
+    mwr::option<bool> m_log_inscight;
     mwr::option<string> m_log_files;
 
     mwr::option<bool> m_trace_stdout;
