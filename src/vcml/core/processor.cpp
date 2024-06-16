@@ -671,4 +671,18 @@ const char* processor::arch() {
     return cpuarch.get().c_str();
 }
 
+void processor::wait_for_interrupt(sc_event& ev) {
+#ifdef HAVE_INSCIGHT
+    INSCIGHT_CPU_IDLE_ENTER(*this);
+#endif
+
+    set_suspendable(true);
+    wait(ev);
+    set_suspendable(false);
+
+#ifdef HAVE_INSCIGHT
+    INSCIGHT_CPU_IDLE_LEAVE(*this);
+#endif
+}
+
 } // namespace vcml

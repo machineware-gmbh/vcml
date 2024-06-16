@@ -147,6 +147,8 @@ protected:
     virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;
 
     virtual const char* arch() override;
+
+    virtual void wait_for_interrupt(sc_event& ev);
 };
 
 template <typename T>
