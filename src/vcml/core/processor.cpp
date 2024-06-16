@@ -241,7 +241,27 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     return true;
 }
 
+void processor::sample_callstack() {
+#ifdef HAVE_INSCIGHT
+    if (!trace_callstack)
+        return;
+
+    u64 time = time_to_ps(local_time_stamp());
+    vector<debugging::stackframe> frames;
+    stacktrace(frames);
+
+    for (size_t i = 0; i < frames.size(); i++) {
+        u64 addr = frames[i].program_counter;
+        string sym = frames[i].sym ? frames[i].sym->name() : "unknown";
+        INSCIGHT_CPU_CALL_STACK(*this, time, i, addr, sym.c_str());
+    }
+#endif
+}
+
 u64 processor::simulate_cycles(size_t cycles) {
+    if (trace_callstack)
+        sample_callstack();
+
     u64 count = cycle_count();
     double start = mwr::timestamp();
     set_suspendable(false);
@@ -367,6 +387,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     gdb_term("gdb_term", "gdbterm"),
     async("async", false),
     async_rate("async_rate", 5),
+    trace_callstack("trace_callstack", false),
     irq("irq"),
     insn("insn"),
     data("data") {
@@ -675,6 +696,9 @@ void processor::wait_for_interrupt(sc_event& ev) {
 #ifdef HAVE_INSCIGHT
     INSCIGHT_CPU_IDLE_ENTER(*this);
 #endif
+
+    if (trace_callstack)
+        sample_callstack();
 
     set_suspendable(true);
     wait(ev);

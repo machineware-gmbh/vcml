@@ -72,6 +72,10 @@ using sc_core::SC_US;
 using sc_core::SC_NS;
 using sc_core::SC_PS;
 
+inline u64 time_to_ps(const sc_time& t) {
+    return t.value() / sc_time(1.0, SC_PS).value();
+}
+
 inline u64 time_to_ns(const sc_time& t) {
     return t.value() / sc_time(1.0, SC_NS).value();
 }

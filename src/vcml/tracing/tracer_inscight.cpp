@@ -133,7 +133,7 @@ template <typename PAYLOAD>
 void tracer_inscight::do_trace(const activity<PAYLOAD>& msg) {
     auto json = serialize(msg.payload);
     auto kind = inscight_protocol(msg.kind);
-    auto time = time_to_ns(msg.t);
+    auto time = time_to_ps(msg.t);
     if (is_backward_trace(msg.dir))
         INSCIGHT_TRANSACTION_TRACE_BW(msg.port, time, kind, json.c_str());
     else

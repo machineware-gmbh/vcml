@@ -60,6 +60,8 @@ private:
     virtual bool write_cpureg_dbg(const debugging::cpureg& reg, const void*,
                                   size_t len) override;
 
+    void sample_callstack();
+
     u64 simulate_cycles(size_t cycles);
     void processor_thread();
     bool processor_thread_sync();
@@ -76,6 +78,8 @@ public:
 
     property<bool> async;
     property<unsigned int> async_rate;
+
+    property<bool> trace_callstack;
 
     gpio_target_array irq;
 
