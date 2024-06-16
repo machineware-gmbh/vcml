@@ -33,6 +33,7 @@
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"
 #include "vcml/tracing/tracer_term.h"
+#include "vcml/tracing/tracer_inscight.h"
 
 #include "vcml/properties/property_base.h"
 #include "vcml/properties/property.h"

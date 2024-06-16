@@ -20,6 +20,7 @@
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"
 #include "vcml/tracing/tracer_term.h"
+#include "vcml/tracing/tracer_inscight.h"
 
 #include "vcml/properties/property.h"
 #include "vcml/properties/broker.h"
@@ -39,6 +40,7 @@ private:
     mwr::option<string> m_log_files;
 
     mwr::option<bool> m_trace_stdout;
+    mwr::option<bool> m_trace_inscight;
     mwr::option<string> m_trace_files;
 
     mwr::option<string> m_config_files;

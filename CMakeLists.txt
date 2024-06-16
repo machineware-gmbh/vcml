@@ -78,6 +78,7 @@ add_library(vcml STATIC
     ${src}/vcml/tracing/tracer.cpp
     ${src}/vcml/tracing/tracer_file.cpp
     ${src}/vcml/tracing/tracer_term.cpp
+    ${src}/vcml/tracing/tracer_inscight.cpp
     ${src}/vcml/properties/property_base.cpp
     ${src}/vcml/properties/broker.cpp
     ${src}/vcml/properties/broker_arg.cpp

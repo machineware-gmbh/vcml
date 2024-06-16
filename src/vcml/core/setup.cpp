@@ -51,6 +51,7 @@ setup::setup(int argc, char** argv):
     m_log_inscight("--log-inscight", "Send log output to InSCight database"),
     m_log_files("--log-file", "-l", "Send log output to file"),
     m_trace_stdout("--trace-stdout", "Send tracing output to stdout"),
+    m_trace_inscight("--trace-inscight", "Send tracing output to InSCight"),
     m_trace_files("--trace", "-t", "Send tracing output to file"),
     m_config_files("--file", "-f", "Load configuration from file"),
     m_config_options("--config", "-c", "Specify individual property values"),
@@ -102,6 +103,11 @@ setup::setup(int argc, char** argv):
 
     if (m_trace_stdout) {
         tracer* t = new tracer_term(true);
+        m_tracers.push_back(t);
+    }
+
+    if (m_trace_inscight) {
+        tracer* t = new tracer_inscight();
         m_tracers.push_back(t);
     }
 
