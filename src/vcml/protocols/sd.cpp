@@ -313,9 +313,9 @@ void sd_initiator_socket::transport(sd_command& cmd) {
 }
 
 void sd_initiator_socket::transport(sd_data& data) {
-    // trace_fw(data);
+    trace_fw(data);
     (*this)->sd_transport(data);
-    // trace_bw(data);
+    trace_bw(data);
 }
 
 sd_status_tx sd_initiator_socket::read_data(u8& data) {
