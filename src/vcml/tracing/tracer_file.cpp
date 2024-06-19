@@ -27,7 +27,7 @@ namespace vcml {
 
 template <typename PAYLOAD>
 void tracer_file::do_trace(const activity<PAYLOAD>& msg) {
-    vector<string> lines = split(to_string(msg.payload), '\n');
+    vector<string> lines = split(escape(to_string(msg.payload)), '\n');
     for (const string& line : lines) {
         m_stream << "[" << protocol_name(msg.kind);
         print_timing(m_stream, msg);

@@ -59,7 +59,7 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
     if (msg.dir == TRACE_FW)
         trace_curr_indent += trace_indent_incr;
 
-    vector<string> lines = split(to_string(msg.payload), '\n');
+    vector<string> lines = split(escape(to_string(msg.payload)), '\n');
     for (const string& line : lines) {
         ss << "[" << protocol_name(msg.kind);
         print_timing(ss, msg.t, msg.cycle);
