@@ -242,7 +242,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 }
 
 void processor::sample_callstack() {
-#ifdef HAVE_INSCIGHT
+#ifdef INSCIGHT_CPU_CALL_STACK
     if (!trace_callstack)
         return;
 
@@ -693,7 +693,7 @@ const char* processor::arch() {
 }
 
 void processor::wait_for_interrupt(sc_event& ev) {
-#ifdef HAVE_INSCIGHT
+#ifdef INSCIGHT_CPU_IDLE_ENTER
     INSCIGHT_CPU_IDLE_ENTER(*this);
 #endif
 
@@ -704,7 +704,7 @@ void processor::wait_for_interrupt(sc_event& ev) {
     wait(ev);
     set_suspendable(false);
 
-#ifdef HAVE_INSCIGHT
+#ifdef INSCIGHT_CPU_IDLE_LEAVE
     INSCIGHT_CPU_IDLE_LEAVE(*this);
 #endif
 }

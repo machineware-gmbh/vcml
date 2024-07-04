@@ -25,7 +25,8 @@
 
 namespace vcml {
 
-#ifdef HAVE_INSCIGHT
+#if defined(INSCIGHT_TRANSACTION_TRACE_FW) && \
+    defined(INSCIGHT_TRANSACTION_TRACE_BW)
 
 static inscight::protocol_kind inscight_protocol(protocol_kind kind) {
     switch (kind) {
@@ -445,7 +446,8 @@ void tracer_inscight::trace(const activity<usb_packet>& msg) {
 }
 
 tracer_inscight::tracer_inscight(): tracer() {
-#ifndef HAVE_INSCIGHT
+#if !defined(INSCIGHT_TRANSACTION_TRACE_FW) || \
+    !defined(INSCIGHT_TRANSACTION_TRACE_BW)
     log_warn("InSCight tracing not available");
 #endif
 }
