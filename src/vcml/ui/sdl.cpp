@@ -500,9 +500,12 @@ void sdl::ui_run() {
 }
 
 sdl::~sdl() {
-    VCML_ERROR_ON(m_attached > 0, "displays still attached");
-    if (m_uithread.joinable())
-        m_uithread.join();
+    if (m_uithread.joinable()) {
+        if (m_attached > 0)
+            m_uithread.detach();
+        else
+            m_uithread.join();
+    }
 }
 
 void sdl::register_display(display* disp) {
