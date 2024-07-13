@@ -9,7 +9,7 @@ example via the command line: `-c system.session=4444`)
 * modify your `sc_main` so that it uses `vcml:debugging::vspserver` instead of
 `sc_start`:
 ```cxx
-int sc_main(int argc,  const char** argv) {
+int sc_main(int argc, char** argv) {
     my_module top("top");
     vcml::debugging::vspserver session(4444);
     session.start(); // instead of sc_start()!
