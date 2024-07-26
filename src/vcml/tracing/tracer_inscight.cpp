@@ -25,7 +25,7 @@
 
 namespace vcml {
 
-#if defined(INSCIGHT_TRANSACTION_TRACE_FW) && \
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_TRANSACTION_TRACE_FW) && \
     defined(INSCIGHT_TRANSACTION_TRACE_BW)
 
 static inscight::protocol_kind inscight_protocol(protocol_kind kind) {
@@ -378,10 +378,13 @@ void tracer_inscight::do_trace(const activity<PAYLOAD>& msg) {
     auto json = serialize(msg.payload);
     auto kind = inscight_protocol(msg.kind);
     auto time = time_to_ps(msg.t);
-    if (is_backward_trace(msg.dir))
+    if (is_backward_trace(msg.dir)) {
+        // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
         INSCIGHT_TRANSACTION_TRACE_BW(msg.port, time, kind, json.c_str());
-    else
+    } else {
+        // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
         INSCIGHT_TRANSACTION_TRACE_FW(msg.port, time, kind, json.c_str());
+    }
 }
 
 #else
@@ -446,7 +449,7 @@ void tracer_inscight::trace(const activity<usb_packet>& msg) {
 }
 
 tracer_inscight::tracer_inscight(): tracer() {
-#if !defined(INSCIGHT_TRANSACTION_TRACE_FW) || \
+#if !defined(HAVE_INSCIGHT) || !defined(INSCIGHT_TRANSACTION_TRACE_FW) || \
     !defined(INSCIGHT_TRANSACTION_TRACE_BW)
     log_warn("InSCight tracing not available");
 #endif

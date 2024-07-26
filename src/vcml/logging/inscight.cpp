@@ -14,7 +14,7 @@ namespace vcml {
 namespace publishers {
 
 inscight::inscight(): publisher(LOG_ERROR, LOG_DEBUG) {
-#ifndef INSCIGHT_LOG_MESSAGE
+#if !defined(HAVE_INSCIGHT) || !defined(INSCIGHT_LOG_MESSAGE)
     mwr::log_warn("InSCight logging not available");
 #endif
 }
@@ -24,9 +24,11 @@ inscight::~inscight() {
 }
 
 void inscight::publish(const mwr::logmsg& msg) {
-#ifdef INSCIGHT_LOG_MESSAGE
-    for (const string& line : msg.lines)
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_LOG_MESSAGE)
+    for (const string& line : msg.lines) {
+        // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
         INSCIGHT_LOG_MESSAGE(msg.level, msg.sender.c_str(), line.c_str());
+    }
 #endif
 }
 

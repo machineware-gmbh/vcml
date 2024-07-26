@@ -242,7 +242,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 }
 
 void processor::sample_callstack() {
-#ifdef INSCIGHT_CPU_CALL_STACK
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_CALL_STACK)
     if (!trace_callstack)
         return;
 
@@ -253,6 +253,7 @@ void processor::sample_callstack() {
     for (size_t i = 0; i < frames.size(); i++) {
         u64 addr = frames[i].program_counter;
         string sym = frames[i].sym ? frames[i].sym->name() : "unknown";
+        // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
         INSCIGHT_CPU_CALL_STACK(*this, time, i, addr, sym.c_str());
     }
 #endif
@@ -693,7 +694,8 @@ const char* processor::arch() {
 }
 
 void processor::wait_for_interrupt(sc_event& ev) {
-#ifdef INSCIGHT_CPU_IDLE_ENTER
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_IDLE_ENTER)
+    // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
     INSCIGHT_CPU_IDLE_ENTER(*this);
 #endif
 
@@ -704,7 +706,8 @@ void processor::wait_for_interrupt(sc_event& ev) {
     wait(ev);
     set_suspendable(false);
 
-#ifdef INSCIGHT_CPU_IDLE_LEAVE
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_IDLE_LEAVE)
+    // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
     INSCIGHT_CPU_IDLE_LEAVE(*this);
 #endif
 }
