@@ -695,7 +695,6 @@ const char* processor::arch() {
 
 void processor::wait_for_interrupt(sc_event& ev) {
 #if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_IDLE_ENTER)
-    // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
     INSCIGHT_CPU_IDLE_ENTER(*this);
 #endif
 
@@ -707,7 +706,6 @@ void processor::wait_for_interrupt(sc_event& ev) {
     set_suspendable(false);
 
 #if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_IDLE_LEAVE)
-    // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
     INSCIGHT_CPU_IDLE_LEAVE(*this);
 #endif
 }
