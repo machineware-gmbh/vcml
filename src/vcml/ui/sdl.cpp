@@ -482,8 +482,10 @@ void sdl::ui_run() {
 
     if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
         SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-        if (SDL_Init(SDL_INIT_VIDEO) < 0)
-            VCML_ERROR("cannot initialize SDL: %s", SDL_GetError());
+        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+            log_error("cannot initialize SDL: %s", SDL_GetError());
+            return;
+        }
     }
 
     while (m_attached && sim_running()) {
