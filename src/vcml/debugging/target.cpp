@@ -53,9 +53,19 @@ void target::define_cpureg(size_t regno, const string& name, size_t size,
     newreg.host = this;
 }
 
-target::target():
+static string find_name() {
+    module* host = hierarchy_search<module>();
+    VCML_ERROR_ON(!host, "debug target declared outside module");
+    return host->name();
+}
+
+target::target(): target(find_name()) {
+    // nothing to do
+}
+
+target::target(const string& name):
     m_mtx(),
-    m_name(),
+    m_name(name),
     m_suspendable(true),
     m_running(true),
     m_endian(ENDIAN_UNKNOWN),
@@ -65,10 +75,6 @@ target::target():
     m_bbtracer(),
     m_breakpoints(),
     m_watchpoints() {
-    module* host = hierarchy_search<module>();
-    VCML_ERROR_ON(!host, "debug target declared outside module");
-    m_name = host->name();
-
     if (stl_contains(s_targets, m_name))
         VCML_ERROR("debug target '%s' already exists", m_name.c_str());
     s_targets[m_name] = this;
@@ -288,6 +294,10 @@ bool target::disassemble(const range& addr, vector<disassembly>& s) {
     }
 
     return ptr > mem.data();
+}
+
+void target::update_single_stepping(bool on) {
+    // to be overloaded
 }
 
 bool target::start_basic_block_trace() {

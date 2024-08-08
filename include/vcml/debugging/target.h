@@ -98,6 +98,8 @@ protected:
     virtual void define_cpureg(size_t regno, const string& name, size_t size,
                                size_t n, int prot = VCML_ACCESS_READ_WRITE);
 
+    virtual void update_single_stepping(bool on);
+
     virtual bool start_basic_block_trace();
     virtual bool stop_basic_block_trace();
 
@@ -134,6 +136,7 @@ public:
     const char* target_name() const { return m_name.c_str(); }
 
     target();
+    target(const string& name);
     virtual ~target();
 
     vector<cpureg> cpuregs() const;
@@ -235,12 +238,16 @@ inline bool target::is_stepping() const {
 
 inline void target::request_singlestep(subscriber* subscr) {
     lock_guard<mutex> guard(m_mtx);
+    if (m_steppers.empty())
+        update_single_stepping(true);
     stl_add_unique(m_steppers, subscr);
 }
 
 inline void target::cancel_singlestep(subscriber* subscr) {
     lock_guard<mutex> guard(m_mtx);
     stl_remove(m_steppers, subscr);
+    if (m_steppers.empty())
+        update_single_stepping(false);
 }
 
 inline bool target::is_tracing_basic_blocks() const {
