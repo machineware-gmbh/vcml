@@ -119,7 +119,7 @@ string rspserver::recv_packet() {
             refsum |= from_hex_ascii(m_sock.recv_char()) << 4;
             refsum |= from_hex_ascii(m_sock.recv_char()) << 0;
 
-            if (refsum != checksum) {
+            if (refsum > 0 && refsum != checksum) {
                 log_warn("checksum mismatch %02x != %02x", refsum, checksum);
                 m_sock.send_char('-');
                 checksum = 0;

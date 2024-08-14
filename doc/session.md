@@ -175,5 +175,17 @@ Removes a breakpoint globally identified via its `<id>`.
 * Command: `$rmbp,<id>#**`
 * Response: `$OK#**`
 
+#### Read Virtual Memory
+Performs a debug read access using the provided virtual address and returns
+the requested number of bytes.
+* Command: `$vread,<target-name>,<virtual-address>,<number-of-bytes>#**`
+* Response: `OK,<byte0>,<byte1>,<byte2>,...#**`
+
+#### Write Virtual Memory
+Performs a debug write access using the provided virtual address and stores
+the given bytes to memory.
+* Command: `$vwrite,<target-name>,<virtual-address>,<byte0>,<byte1>,..#**`
+* Response: `OK,<n> bytes written#**`
+
 ----
-Documentation updated Juli 2022
+Documentation updated August 2024

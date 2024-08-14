@@ -44,6 +44,8 @@ private:
     string handle_seta(const string& command);
     string handle_mkbp(const string& command);
     string handle_rmbp(const string& command);
+    string handle_vread(const string& command);
+    string handle_vwrite(const string& command);
 
     bool is_running() const { return !is_suspending(); }
 

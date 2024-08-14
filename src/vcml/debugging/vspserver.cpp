@@ -387,6 +387,52 @@ string vspserver::handle_rmbp(const string& cmd) {
     return "OK";
 }
 
+string vspserver::handle_vread(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 4)
+        return mkstr("E, insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 addr = from_string<u64>(args[2]);
+    u64 size = from_string<u64>(args[3]);
+    if (size > 4096)
+        return mkstr("E,too much data requested %llu / 4096", size);
+
+    vector<u8> data(size);
+    tgt->read_vmem_dbg(addr, data.data(), data.size());
+
+    stringstream ss;
+    ss << "OK";
+    for (u8 ch : data)
+        ss << mkstr(",0x%02hhx", ch);
+    return ss.str();
+}
+
+string vspserver::handle_vwrite(const string& cmd) {
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 3)
+        return mkstr("E, insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 addr = from_string<u64>(args[2]);
+
+    vector<u8> data;
+    for (size_t i = 3; i < args.size(); i++)
+        data.push_back(from_string<u8>(args[i]));
+
+    size_t n = tgt->write_vmem_dbg(addr, data.data(), data.size());
+    return mkstr("OK,%zu bytes written", n);
+}
+
 void vspserver::resume_simulation(const sc_time& duration) {
     if (is_suspending()) {
         m_stop_reason.clear();
@@ -454,6 +500,8 @@ vspserver::vspserver(u16 server_port):
     register_handler("seta", &vspserver::handle_seta);
     register_handler("mkbp", &vspserver::handle_mkbp);
     register_handler("rmbp", &vspserver::handle_rmbp);
+    register_handler("vread", &vspserver::handle_vread);
+    register_handler("vwrite", &vspserver::handle_vwrite);
 
     // Create announce file
     ofstream of(m_announce.c_str());
