@@ -30,5 +30,5 @@ target_include_directories(testing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(testing vcml gtest gmock)
 target_compile_options(testing PUBLIC ${MWR_COMPILER_WARN_FLAGS})
 
-add_subdirectory(core)
+add_subdirectory(unit)
 add_subdirectory(models)

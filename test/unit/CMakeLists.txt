@@ -1,0 +1,69 @@
+ ##############################################################################
+ #                                                                            #
+ # Copyright (C) 2022 MachineWare GmbH                                        #
+ # All Rights Reserved                                                        #
+ #                                                                            #
+ # This is work is licensed under the terms described in the LICENSE file     #
+ # found in the root directory of this source tree.                           #
+ #                                                                            #
+ ##############################################################################
+
+macro(unit_test test)
+    add_executable(${test} ${test}.cpp)
+    target_link_libraries(${test} testing)
+    target_compile_options(${test} PRIVATE ${MWR_COMPILER_WARN_FLAGS})
+    target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
+    add_test(NAME unit/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
+    set_tests_properties(unit/${test} PROPERTIES ENVIRONMENT "${VCML_ENVVAR}")
+    set_tests_properties(unit/${test} PROPERTIES TIMEOUT 4)
+endmacro()
+
+unit_test("hello")
+unit_test("sysc")
+unit_test("logging")
+unit_test("version")
+unit_test("dmi")
+unit_test("range")
+unit_test("exmon")
+unit_test("property")
+unit_test("broker")
+unit_test("hierarchy")
+unit_test("module")
+unit_test("component")
+unit_test("peripheral")
+unit_test("register")
+unit_test("processor")
+unit_test("tlm")
+unit_test("probe")
+unit_test("gpio")
+unit_test("clk")
+unit_test("spi")
+unit_test("sd")
+unit_test("i2c")
+unit_test("pci")
+unit_test("eth")
+unit_test("can")
+unit_test("usb")
+unit_test("serial")
+unit_test("adapter")
+unit_test("virtio")
+unit_test("display")
+unit_test("symtab")
+unit_test("thctl")
+unit_test("suspender")
+unit_test("async")
+unit_test("stubs")
+unit_test("tracing")
+unit_test("async_timer")
+unit_test("memory")
+unit_test("disk")
+unit_test("model")
+unit_test("system")
+unit_test("peq")
+unit_test("simphases")
+
+if(LUA_FOUND)
+    unit_test("lua")
+endif()
+
