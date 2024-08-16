@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright (C) 2022 MachineWare GmbH                                        *
+ * Copyright (C) 2024 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
  *                                                                            *
  * This is work is licensed under the terms described in the LICENSE file     *
@@ -10,28 +10,23 @@
 
 #include "testing.h"
 
-using oci2c = vcml::i2c::oci2c;
-
-// oci2c registers are always 8bit wide, but we can test with 8/16/32bit data
-// register accesses by specifying a register shift (e.g. u32 -> shift 2)
-template <typename DATA, const u8 REG_SHIFT>
-class oci2c_bench : public test_base, public i2c_host
+class sifive_i2c_bench : public test_base, public i2c_host
 {
 public:
-    constexpr DATA i2c_addr_w(u8 addr) { return (DATA)addr << 1; }
-    constexpr DATA i2c_addr_r(u8 addr) { return (DATA)addr << 1 | 1; }
+    constexpr u8 i2c_addr_w(u8 addr) { return addr << 1; }
+    constexpr u8 i2c_addr_r(u8 addr) { return addr << 1 | 1; }
 
     enum address : u32 {
-        PRERLO = 0u,
-        PRERHI = 1u,
-        CTR = 2u,
-        RXR = 3u,
-        TXR = 3u,
-        SR = 4u,
-        CR = 4u,
+        PRERLO = 0x00,
+        PRERHI = 0x04,
+        CTR = 0x08,
+        RXR = 0x0c,
+        TXR = 0x0c,
+        SR = 0x10,
+        CR = 0x10,
     };
 
-    oci2c model;
+    i2c::sifive model;
 
     tlm_initiator_socket out;
     gpio_target_socket irq;
@@ -43,10 +38,10 @@ public:
     MOCK_METHOD(i2c_response, i2c_read, (const i2c_target_socket&, u8& data));
     MOCK_METHOD(i2c_response, i2c_write, (const i2c_target_socket&, u8 data));
 
-    oci2c_bench(const sc_module_name& nm):
+    sifive_i2c_bench(const sc_module_name& nm):
         test_base(nm),
         i2c_host(),
-        model("oci2c", REG_SHIFT),
+        model("sifive"),
         out("out"),
         irq("irq"),
         i2c("i2c") {
@@ -58,12 +53,12 @@ public:
         model.i2c.bind(i2c);
     }
 
-    tlm_response_status reg_read(u32 addr, DATA& val) {
-        return out.readw(addr * sizeof(DATA), val);
+    tlm_response_status reg_read(u32 addr, u8& val) {
+        return out.readw(addr * sizeof(u8), val);
     }
 
-    tlm_response_status reg_write(u32 addr, DATA val) {
-        return out.writew(addr * sizeof(DATA), val);
+    tlm_response_status reg_write(u32 addr, u8 val) {
+        return out.writew(addr * sizeof(u8), val);
     }
 
     void test_setup() {
@@ -79,109 +74,110 @@ public:
         EXPECT_OK(reg_write(PRERHI, prescaler >> 8));
         EXPECT_OK(reg_write(PRERLO, prescaler));
         EXPECT_EQ(model.bus_hz(), 0);
-        EXPECT_OK(reg_write(CTR, oci2c::CTR_EN));
+        EXPECT_OK(reg_write(CTR, i2c::sifive::CTR_EN));
         EXPECT_EQ(model.bus_hz(), tgthz);
     }
 
     void test_write() {
-        DATA data = 0;
+        u8 data = 0;
 
         // setup write operation
         ASSERT_OK(reg_write(TXR, i2c_addr_w(42)));
         EXPECT_CALL(*this, i2c_start(_, TLM_WRITE_COMMAND))
             .Times(1)
             .WillOnce(Return(I2C_ACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_STA | oci2c::CMD_WR));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STA | i2c::sifive::CMD_WR));
         ASSERT_OK(reg_read(SR, data));
-        ASSERT_TRUE(data & oci2c::SR_IF) << "interrupt flag not set";
+        ASSERT_TRUE(data & i2c::sifive::SR_IF) << "interrupt flag not set";
         EXPECT_FALSE(irq) << "interrupt received despite masked";
-        ASSERT_OK(reg_write(CR, oci2c::CMD_IACK));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
-        ASSERT_FALSE(data & oci2c::SR_IF) << "interrupt flag not cleared";
+        ASSERT_FALSE(data & i2c::sifive::SR_IF)
+            << "interrupt flag not cleared";
 
         // perform write operation (with interrupts)
-        EXPECT_OK(reg_write(CTR, oci2c::CTR_EN | oci2c::CTR_IEN));
+        EXPECT_OK(reg_write(CTR, i2c::sifive::CTR_EN | i2c::sifive::CTR_IEN));
         EXPECT_OK(reg_write(TXR, 21));
         EXPECT_CALL(*this, i2c_write(_, 21))
             .Times(1)
             .WillOnce(Return(I2C_ACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_WR));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_WR));
         ASSERT_OK(reg_read(SR, data));
-        ASSERT_EQ(data, oci2c::SR_IF) << "unexpected status reported";
+        ASSERT_EQ(data, i2c::sifive::SR_IF) << "unexpected status reported";
         EXPECT_TRUE(irq) << "no interrupt received";
-        ASSERT_OK(reg_write(CR, oci2c::CMD_IACK));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, 0) << "unexpected status received";
         EXPECT_FALSE(irq) << "interrupt not cleared";
 
         // finish write
         EXPECT_CALL(*this, i2c_stop(_)).Times(1).WillOnce(Return(I2C_ACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_STO | oci2c::CMD_IACK));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STO | i2c::sifive::CMD_IACK));
         EXPECT_TRUE(irq) << "interrupt after stop not received";
         ASSERT_OK(reg_read(SR, data));
-        EXPECT_EQ(data, oci2c::SR_IF) << "unexpected status reported";
-        ASSERT_OK(reg_write(CR, oci2c::CMD_IACK));
+        EXPECT_EQ(data, i2c::sifive::SR_IF) << "unexpected status reported";
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, 0) << "unexpected status received";
         EXPECT_FALSE(irq) << "interrupt not cleared";
     }
 
     void test_read() {
-        DATA data = 0;
+        u8 data = 0;
 
         // disable interrupts
-        EXPECT_OK(reg_write(CTR, oci2c::CTR_EN));
+        EXPECT_OK(reg_write(CTR, i2c::sifive::CTR_EN));
 
         // setup transfer
         ASSERT_OK(reg_write(TXR, i2c_addr_r(42)));
         EXPECT_CALL(*this, i2c_start(_, TLM_READ_COMMAND))
             .Times(1)
             .WillOnce(Return(I2C_ACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_STA | oci2c::CMD_WR));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STA | i2c::sifive::CMD_WR));
         ASSERT_OK(reg_read(SR, data));
-        ASSERT_EQ(data, oci2c::SR_IF) << "interrupt flag not set";
+        ASSERT_EQ(data, i2c::sifive::SR_IF) << "interrupt flag not set";
 
         // trigger transfer
         EXPECT_CALL(*this, i2c_read(_, _))
             .Times(1)
             .WillOnce(DoAll(SetArgReferee<1>(10), Return(I2C_ACK)));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_RD));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_RD));
         EXPECT_OK(reg_read(SR, data));
-        EXPECT_EQ(data, oci2c::SR_IF) << "unexpected status reported";
+        EXPECT_EQ(data, i2c::sifive::SR_IF) << "unexpected status reported";
         ASSERT_OK(reg_read(RXR, data));
         EXPECT_EQ(data, 10) << "invalid data received";
 
         // finish transfer
         EXPECT_CALL(*this, i2c_stop(_)).Times(1).WillOnce(Return(I2C_ACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_STO | oci2c::CMD_IACK));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STO | i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
-        EXPECT_EQ(data, oci2c::SR_IF) << "unexpected status reported";
-        ASSERT_OK(reg_write(CR, oci2c::CMD_IACK));
+        EXPECT_EQ(data, i2c::sifive::SR_IF) << "unexpected status reported";
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, 0) << "unexpected status received";
     }
 
     void test_error() {
-        DATA data = 0;
+        u8 data = 0;
 
         // disable interrupts
-        EXPECT_OK(reg_write(CTR, oci2c::CTR_EN));
+        EXPECT_OK(reg_write(CTR, i2c::sifive::CTR_EN));
 
         // setup transfer
         ASSERT_OK(reg_write(TXR, i2c_addr_r(42)));
         EXPECT_CALL(*this, i2c_start(_, TLM_READ_COMMAND))
             .Times(1)
             .WillOnce(Return(I2C_NACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_STA | oci2c::CMD_WR));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STA | i2c::sifive::CMD_WR));
         ASSERT_OK(reg_read(SR, data));
-        ASSERT_EQ(data, oci2c::SR_NACK | oci2c::SR_IF);
+        ASSERT_EQ(data, i2c::sifive::SR_NACK | i2c::sifive::SR_IF);
 
         // finish transfer
         EXPECT_CALL(*this, i2c_stop(_)).Times(1).WillOnce(Return(I2C_NACK));
-        ASSERT_OK(reg_write(CR, oci2c::CMD_STO | oci2c::CMD_IACK));
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STO | i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
-        EXPECT_EQ(data, oci2c::SR_NACK | oci2c::SR_IF);
-        ASSERT_OK(reg_write(CR, oci2c::CMD_IACK));
+        EXPECT_EQ(data, i2c::sifive::SR_NACK | i2c::sifive::SR_IF);
+        ASSERT_OK(reg_write(CR, i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, 0) << "unexpected status received";
     }
@@ -194,7 +190,7 @@ public:
     }
 };
 
-TEST(oci2c, simulate) {
-    oci2c_bench<u32, 2> test("bench");
+TEST(i2c_sigive, simulate) {
+    sifive_i2c_bench test("test");
     sc_core::sc_start();
 }

@@ -110,6 +110,7 @@
 
 #include "vcml/models/i2c/lm75.h"
 #include "vcml/models/i2c/oci2c.h"
+#include "vcml/models/i2c/sifive.h"
 
 #include "vcml/models/spi/bus.h"
 #include "vcml/models/spi/spi2sd.h"
