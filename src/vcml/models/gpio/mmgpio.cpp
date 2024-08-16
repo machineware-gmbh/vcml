@@ -8,12 +8,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/gpio.h"
+#include "vcml/models/gpio/mmgpio.h"
 
 namespace vcml {
-namespace generic {
+namespace gpio {
 
-bool gpio::cmd_status(const vector<string>& args, ostream& os) {
+bool mmgpio::cmd_status(const vector<string>& args, ostream& os) {
     os << basename() << " status" << std::endl
        << "  DATA: 0x" << std::hex << std::setw(8) << std::setfill('0')
        << read_data() << std::dec << std::setfill(' ') << std::endl;
@@ -35,7 +35,7 @@ bool gpio::cmd_status(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool gpio::cmd_set(const vector<string>& args, ostream& os) {
+bool mmgpio::cmd_set(const vector<string>& args, ostream& os) {
     unsigned long long idx = strtoull(args[0].c_str(), NULL, 0);
     if (idx > 31) {
         os << "index out of bounds: " << idx;
@@ -52,7 +52,7 @@ bool gpio::cmd_set(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool gpio::cmd_clear(const vector<string>& args, ostream& os) {
+bool mmgpio::cmd_clear(const vector<string>& args, ostream& os) {
     unsigned long long idx = strtoull(args[0].c_str(), NULL, 0);
     if (idx > 31) {
         os << "index out of bounds: " << idx;
@@ -69,7 +69,7 @@ bool gpio::cmd_clear(const vector<string>& args, ostream& os) {
     return true;
 }
 
-u32 gpio::read_data() {
+u32 mmgpio::read_data() {
     u32 result = 0;
     for (auto gpio : gpio_out) {
         VCML_ERROR_ON(gpio.first > 31, "invalid GPIO%zu", gpio.first);
@@ -81,7 +81,7 @@ u32 gpio::read_data() {
     return result;
 }
 
-void gpio::write_data(u32 val) {
+void mmgpio::write_data(u32 val) {
     for (auto port : gpio_out) {
         VCML_ERROR_ON(port.first > 31, "invalid GPIO%zu", port.first);
 
@@ -100,29 +100,29 @@ void gpio::write_data(u32 val) {
     data = val;
 }
 
-gpio::gpio(const sc_module_name& nm):
+mmgpio::mmgpio(const sc_module_name& nm):
     peripheral(nm), data("data", 0x0, 0), gpio_out("gpio_out"), in("in") {
     data.allow_read_write();
-    data.on_read(&gpio::read_data);
-    data.on_write(&gpio::write_data);
+    data.on_read(&mmgpio::read_data);
+    data.on_write(&mmgpio::write_data);
 
-    register_command("status", 0, &gpio::cmd_status,
+    register_command("status", 0, &mmgpio::cmd_status,
                      "reports the status of all GPIO lines");
-    register_command("set", 1, &gpio::cmd_set, "sets the given GPIO line");
-    register_command("clear", 1, &gpio::cmd_clear,
+    register_command("set", 1, &mmgpio::cmd_set, "sets the given GPIO line");
+    register_command("clear", 1, &mmgpio::cmd_clear,
                      "clears the given GPIO line");
 }
 
-gpio::~gpio() {
+mmgpio::~mmgpio() {
     // nothing to do
 }
 
-void gpio::reset() {
+void mmgpio::reset() {
     peripheral::reset();
     write_data(0);
 }
 
-void gpio::end_of_elaboration() {
+void mmgpio::end_of_elaboration() {
     peripheral::end_of_elaboration();
 
     bool valid_binding = true;
@@ -136,9 +136,9 @@ void gpio::end_of_elaboration() {
     VCML_ERROR_ON(!valid_binding, "invalid port binding");
 }
 
-VCML_EXPORT_MODEL(vcml::generic::gpio, name, args) {
-    return new gpio(name);
+VCML_EXPORT_MODEL(vcml::gpio::mmgpio, name, args) {
+    return new mmgpio(name);
 }
 
-} // namespace generic
+} // namespace gpio
 } // namespace vcml

@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_GENERIC_GPIO
-#define VCML_GENERIC_GPIO
+#ifndef VCML_GPIO_MMGPIO_H
+#define VCML_GPIO_MMGPIO_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
@@ -20,9 +20,9 @@
 #include "vcml/protocols/gpio.h"
 
 namespace vcml {
-namespace generic {
+namespace gpio {
 
-class gpio : public peripheral
+class mmgpio : public peripheral
 {
 private:
     bool cmd_status(const vector<string>& args, ostream& os);
@@ -32,25 +32,22 @@ private:
     u32 read_data();
     void write_data(u32 val);
 
-    // disabled
-    gpio();
-    gpio(const gpio&);
-
 public:
     reg<u32> data;
 
     gpio_initiator_array gpio_out;
     tlm_target_socket in;
 
-    gpio(const sc_module_name& name);
-    virtual ~gpio();
-    VCML_KIND(gpio);
+    mmgpio() = delete;
+    mmgpio(const sc_module_name& name);
+    virtual ~mmgpio();
+    VCML_KIND(gpio::mmgpio);
     virtual void reset() override;
 
     virtual void end_of_elaboration() override;
 };
 
-} // namespace generic
+} // namespace gpio
 } // namespace vcml
 
 #endif

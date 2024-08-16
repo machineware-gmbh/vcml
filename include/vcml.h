@@ -76,10 +76,11 @@
 #include "vcml/models/generic/reset.h"
 #include "vcml/models/generic/bus.h"
 #include "vcml/models/generic/memory.h"
-#include "vcml/models/generic/gate.h"
-#include "vcml/models/generic/gpio.h"
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
+
+#include "vcml/models/gpio/gate.h"
+#include "vcml/models/gpio/mmgpio.h"
 
 #include "vcml/models/serial/backend.h"
 #include "vcml/models/serial/terminal.h"

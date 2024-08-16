@@ -8,10 +8,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/generic/gate.h"
+#include "vcml/models/gpio/gate.h"
 
 namespace vcml {
-namespace generic {
+namespace gpio {
 
 static bool calc_and(const gpio_target_array& in) {
     for (const auto& port : in)
@@ -127,5 +127,5 @@ VCML_EXPORT_MODEL(vcml::generic::xor_gate, name, args) {
     return new gate(name, gate::LOGIC_XOR);
 }
 
-} // namespace generic
+} // namespace gpio
 } // namespace vcml

@@ -121,10 +121,10 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/reset.cpp
     ${src}/vcml/models/generic/bus.cpp
     ${src}/vcml/models/generic/memory.cpp
-    ${src}/vcml/models/generic/gate.cpp
-    ${src}/vcml/models/generic/gpio.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/gpio/gate.cpp
+    ${src}/vcml/models/gpio/mmgpio.cpp
     ${src}/vcml/models/serial/backend_null.cpp
     ${src}/vcml/models/serial/backend_fd.cpp
     ${src}/vcml/models/serial/backend_file.cpp

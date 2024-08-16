@@ -25,5 +25,7 @@ VCML_MODEL_DEPRECATED(vcml::opencores, ocspi, vcml::spi, ocspi)
 VCML_MODEL_DEPRECATED(vcml::opencores, oci2c, vcml::i2c, oci2c)
 VCML_MODEL_DEPRECATED(vcml::arm, pl011uart, vcml::serial, pl011)
 VCML_MODEL_DEPRECATED(vcml::arm, sp804timer, vcml::timers, sp804)
+VCML_MODEL_DEPRECATED(vcml::generic, gpio, vcml::gpio, mmgpio)
+VCML_MODEL_DEPRECATED(vcml::generic, gate, vcml::gpio, gate)
 
 #endif

@@ -19,7 +19,7 @@ TEST(gpio, to_string) {
     std::cout << tx << std::endl;
 }
 
-MATCHER_P(gpio, name, "Matches a gpio socket by name") {
+MATCHER_P(gpio_s, name, "Matches a gpio socket by name") {
     return strcmp(arg.basename(), name) == 0;
 }
 
@@ -112,52 +112,56 @@ public:
         // to be invoked twice.
 
         // test callbacks
-        EXPECT_CALL(*this, gpio_notify(gpio("in[0]"), true, GPIO_NO_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[1]"), true, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[0]"), true, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[1]"), true, GPIO_NO_VECTOR));
         out = true;
         out = true; // should not trigger a second time
         EXPECT_TRUE(in[0]);
         EXPECT_TRUE(in[1]);
 
-        EXPECT_CALL(*this, gpio_notify(gpio("in[0]"), false, GPIO_NO_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[1]"), false, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("in[0]"), false, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("in[1]"), false, GPIO_NO_VECTOR));
         out = false;
         out = false; // should not trigger a second time
         EXPECT_FALSE(in[0]);
         EXPECT_FALSE(in[1]);
 
         // test vectors
-        EXPECT_CALL(*this, gpio_notify(gpio("in[0]"), true, TEST_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[1]"), true, TEST_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[0]"), true, TEST_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[1]"), true, TEST_VECTOR));
         out.raise(TEST_VECTOR);
         EXPECT_TRUE(in[0][TEST_VECTOR]);
         EXPECT_TRUE(in[1][TEST_VECTOR]);
 
-        EXPECT_CALL(*this, gpio_notify(gpio("in[0]"), false, TEST_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[1]"), false, TEST_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[0]"), false, TEST_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[1]"), false, TEST_VECTOR));
         out.lower(TEST_VECTOR);
         EXPECT_FALSE(in[0].read(TEST_VECTOR));
         EXPECT_FALSE(in[1].read(TEST_VECTOR));
 
         // test default events
-        EXPECT_CALL(*this, gpio_notify(gpio("in[0]"), true, GPIO_NO_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[1]"), true, GPIO_NO_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[0]"), false, GPIO_NO_VECTOR));
-        EXPECT_CALL(*this, gpio_notify(gpio("in[1]"), false, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[0]"), true, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("in[1]"), true, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("in[0]"), false, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("in[1]"), false, GPIO_NO_VECTOR));
         out.pulse();
         wait(in[0].default_event());
         EXPECT_FALSE(in[0]);
         EXPECT_FALSE(in[1]);
 
         // test adapters
-        EXPECT_CALL(*this, gpio_notify(gpio("a_in"), true, GPIO_NO_VECTOR));
+        EXPECT_CALL(*this, gpio_notify(gpio_s("a_in"), true, GPIO_NO_VECTOR));
         a_out.raise();
         wait(signal.default_event());
         EXPECT_TRUE(a_in);
 
         // test array adapters
         EXPECT_CALL(*this,
-                    gpio_notify(gpio("arr_in[102]"), true, GPIO_NO_VECTOR));
+                    gpio_notify(gpio_s("arr_in[102]"), true, GPIO_NO_VECTOR));
         arr_out[14].raise();
         wait(signal2.default_event());
         EXPECT_TRUE(arr_in[102]);

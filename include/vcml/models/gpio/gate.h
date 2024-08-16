@@ -19,7 +19,7 @@
 #include "vcml/protocols/gpio.h"
 
 namespace vcml {
-namespace generic {
+namespace gpio {
 
 class gate : public module, public gpio_host
 {
@@ -47,7 +47,7 @@ protected:
                                 gpio_payload& tx) override;
 };
 
-} // namespace generic
+} // namespace gpio
 } // namespace vcml
 
 #endif
