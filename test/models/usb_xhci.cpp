@@ -120,7 +120,7 @@ public:
     }
 };
 
-TEST(xhci, simulate) {
+TEST(usb, xhci) {
     broker brkr("brkr");
     brkr.define("system.xhci.num_ports", 5);
     brkr.define("system.keyboard2.usb3", false);

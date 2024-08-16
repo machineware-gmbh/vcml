@@ -170,7 +170,7 @@ public:
     }
 };
 
-TEST(lan9118, simulate) {
+TEST(eth, lan9118) {
     lan9118_bench test("bench");
     sc_core::sc_start();
 }

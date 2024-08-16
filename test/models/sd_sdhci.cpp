@@ -505,7 +505,7 @@ public:
     }
 };
 
-TEST(sdhci, sdhci) {
+TEST(sd, sdhci) {
     sdhci_harness test("TEST");
     sc_core::sc_start();
 }

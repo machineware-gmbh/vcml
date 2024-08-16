@@ -484,7 +484,7 @@ public:
     }
 };
 
-TEST(m_can, simulate) {
+TEST(can, m_can) {
     m_can_bench test("m_can_bench");
     sc_core::sc_start();
 }
