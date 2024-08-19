@@ -166,6 +166,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/spi/max31855.cpp
     ${src}/vcml/models/spi/flash.cpp
     ${src}/vcml/models/spi/ocspi.cpp
+    ${src}/vcml/models/spi/sifive.cpp
     ${src}/vcml/models/sd/card.cpp
     ${src}/vcml/models/sd/sdhci.cpp
     ${src}/vcml/models/usb/device.cpp

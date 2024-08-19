@@ -16,6 +16,7 @@
 #include "vcml/core/thctl.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
+#include "vcml/core/fifo.h"
 #include "vcml/core/peq.h"
 #include "vcml/core/command.h"
 #include "vcml/core/module.h"
@@ -119,6 +120,7 @@
 #include "vcml/models/spi/max31855.h"
 #include "vcml/models/spi/flash.h"
 #include "vcml/models/spi/ocspi.h"
+#include "vcml/models/spi/sifive.h"
 
 #include "vcml/models/sd/card.h"
 #include "vcml/models/sd/sdhci.h"
