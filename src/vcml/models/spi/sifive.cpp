@@ -192,7 +192,7 @@ void sifive::update_cs(bool set) {
     for (size_t i = 0; i < numcs; i++) {
         if (cs.exists(i)) {
             u32 mask = bit(i);
-            cs[i] = !!(csmode & mask) ^ (i == csid && set);
+            cs[i] = !!(csdef & mask) ^ (i == csid && set);
         }
     }
 }

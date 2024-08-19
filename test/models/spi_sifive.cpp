@@ -99,12 +99,22 @@ public:
         EXPECT_FALSE(irq);
         EXPECT_OK(out.writew<u32>(ADDR_IE, 0));
 
+        // test chip-select
+        ASSERT_OK(out.writew<u32>(ADDR_CSMODE, 2));
+        ASSERT_OK(out.writew<u32>(ADDR_CSDEF, 0));
+        ASSERT_OK(out.writew<u32>(ADDR_CSID, 2));
+
         // test transmission
         ASSERT_OK(out.writew<u32>(ADDR_TXDATA, 0x4321));
         ASSERT_OK(out.writew<u32>(ADDR_TXDATA, 0x8765));
         ASSERT_EQ(mosi.num_used(), 2);
         EXPECT_EQ(mosi.pop(), 0x21);
         EXPECT_EQ(mosi.pop(), 0x65);
+
+        // check and clear chip-select
+        ASSERT_TRUE(cs);
+        ASSERT_OK(out.writew<u32>(ADDR_CSMODE, 0));
+        EXPECT_FALSE(cs);
 
         // test nothing was received
         ASSERT_OK(out.readw<u32>(ADDR_RXDATA, data));
