@@ -62,6 +62,26 @@ static string xml_escape(const string& s) {
     return escape(ss.str(), ",");
 }
 
+static string json_escape(const string& s) {
+    stringstream ss;
+    for (char c : s) {
+        switch (c) {
+        case '\'':
+        case '\"':
+        case '\\':
+            ss << "\\" << c;
+            break;
+        case '\n':
+            ss << "\\n";
+            break;
+        default:
+            ss << c;
+        }
+    }
+
+    return escape(ss.str(), ",");
+}
+
 static string attr_type(const sc_attr_base* attr) {
     const property_base* prop = dynamic_cast<const property_base*>(attr);
     return prop != nullptr ? prop->type() : "unknown";
@@ -92,7 +112,7 @@ static const char* obj_version(sc_object* obj) {
     return starts_with(kind, "vcml::") ? VCML_VERSION_STRING : SC_VERSION;
 }
 
-static void list_object(ostream& os, sc_object* obj) {
+static void list_object_xml(ostream& os, sc_object* obj) {
     // hide object names starting with $$$
     if (starts_with(obj->basename(), "$$$"))
         return;
@@ -125,9 +145,152 @@ static void list_object(ostream& os, sc_object* obj) {
 
     // list object children
     for (sc_object* child : obj->get_child_objects())
-        list_object(os, child); // recursive call
+        list_object_xml(os, child); // recursive call
 
     os << "</object>";
+}
+
+static void list_xml(ostream& os) {
+    os << "<?xml version=\"1.0\" ?><hierarchy>";
+
+    for (auto obj : sc_core::sc_get_top_level_objects())
+        list_object_xml(os, obj);
+
+    for (auto tgt : debugging::target::all())
+        os << "<target>" << xml_escape(tgt->target_name()) << "</target>";
+
+    for (auto loader : debugging::loader::all())
+        os << "<loader>" << xml_escape(loader->loader_name()) << "</loader>";
+
+    for (auto kbd : ui::keyboard::all())
+        os << "<keyboard>" << xml_escape(kbd->input_name()) << "</keyboard>";
+
+    for (auto ptr : ui::pointer::all())
+        os << "<pointer>" << xml_escape(ptr->input_name()) << "</pointer>";
+
+    for (auto terminal : serial::terminal::all())
+        os << "<terminal>" << xml_escape(terminal->name()) << "</terminal>";
+
+    for (auto bridge : ethernet::bridge::all())
+        os << "<bridge>" << xml_escape(bridge->name()) << "</bridge>";
+
+    os << "</hierarchy>";
+}
+
+static bool list_object_json(ostream& os, sc_object* obj) {
+    // hide object names starting with $$$
+    if (starts_with(obj->basename(), "$$$"))
+        return false;
+
+    os << "{"
+       << "\"name\":\"" << json_escape(obj->basename()) << "\","
+       << "\"kind\":\"" << json_escape(obj->kind()) << "\","
+       << "\"version\":\"" << json_escape(obj_version(obj)) << "\",";
+
+    // list object attributes
+    os << "\"attributes\":[";
+    int nattr = 0;
+    for (const sc_attr_base* attr : obj->attr_cltn()) {
+        os << "{\"name\":\"" << json_escape(attr_name(attr)) << "\","
+           << "\"type\":\"" << json_escape(attr_type(attr)) << "\","
+           << "\"count\":" << attr_count(attr) << "}";
+        if (nattr++ < obj->attr_cltn().size() - 1)
+            os << ",";
+    }
+    os << "],";
+
+    // list object commands
+    if (module* mod = dynamic_cast<module*>(obj)) {
+        os << "\"commands\":[";
+        for (size_t i = 0; i < mod->get_commands().size(); i++) {
+            const command_base* cmd = mod->get_commands()[i];
+            os << "{\"name\":\"" << json_escape(cmd->name()) << "\","
+               << "\"argc\":" << cmd->argc() << ","
+               << "\"desc\":\"" << json_escape(cmd->desc()) << "\"}";
+            if (i < mod->get_commands().size() - 1)
+                os << ",";
+        }
+        os << "],";
+    }
+    os << "\"objects\":[";
+
+    // list object children
+    for (size_t i = 0; i < obj->get_child_objects().size(); i++) {
+        if (list_object_json(os, obj->get_child_objects()[i]) &&
+            i < obj->get_child_objects().size() - 1) {
+            os << ",";
+        }
+    }
+
+    os << "]}";
+    return true;
+}
+
+static void list_json(ostream& os) {
+    os << "{\"objects\":[";
+    for (size_t i = 0; i < sc_core::sc_get_top_level_objects().size(); i++) {
+        if (list_object_json(os, sc_core::sc_get_top_level_objects()[i]) &&
+            i < sc_core::sc_get_top_level_objects().size() - 1) {
+            os << ",";
+        }
+    }
+    os << "],";
+
+    os << "\"targets\":[";
+    for (size_t i = 0; i < debugging::target::all().size(); i++) {
+        string target = debugging::target::all()[i]->target_name();
+        os << "\"" << json_escape(target) << "\"";
+        if (i < debugging::target::all().size() - 1)
+            os << ",";
+    }
+    os << "],";
+
+    os << "\"loaders\":[";
+    for (size_t i = 0; i < debugging::loader::all().size(); i++) {
+        string loader = debugging::loader::all()[i]->loader_name();
+        os << "\"" << json_escape(loader) << "\"";
+        if (i < debugging::loader::all().size() - 1)
+            os << ",";
+    }
+    os << "],";
+
+    os << "\"keyboards\":[";
+    for (size_t i = 0; i < ui::keyboard::all().size(); i++) {
+        string keyboard = ui::keyboard::all()[i]->input_name();
+        os << "\"" << json_escape(keyboard) << "\"";
+        if (i < ui::keyboard::all().size() - 1)
+            os << ",";
+    }
+    os << "],";
+
+    os << "\"pointers\":[";
+    for (size_t i = 0; i < ui::pointer::all().size(); i++) {
+        string pointer = ui::pointer::all()[i]->input_name();
+        os << "\"" << json_escape(pointer) << "\"";
+        if (i < ui::pointer::all().size() - 1)
+            os << ",";
+    }
+    os << "],";
+
+    os << "\"terminals\":[";
+    for (size_t i = 0; i < serial::terminal::all().size(); i++) {
+        string terminal = serial::terminal::all()[i]->name();
+        os << "\"" << json_escape(terminal) << "\"";
+        if (i < serial::terminal::all().size() - 1)
+            os << ",";
+    }
+    os << "],";
+
+    os << "\"bridges\":[";
+    for (size_t i = 0; i < ethernet::bridge::all().size(); i++) {
+        string bridge = ethernet::bridge::all()[i]->name();
+        os << "\"" << json_escape(bridge) << "\"";
+        if (i < ethernet::bridge::all().size() - 1)
+            os << ",";
+    }
+    os << "]";
+
+    os << "}";
 }
 
 vspserver* vspserver::instance() {
@@ -204,35 +367,20 @@ string vspserver::handle_list(const string& cmd) {
     if (args.size() > 1)
         format = to_lower(args[1]);
 
-    if (format != "xml")
-        return mkstr("E,unknown hierarchy format '%s'", format.c_str());
-
     stringstream ss;
-    ss << "OK,<?xml version=\"1.0\" ?><hierarchy>";
+    ss << "OK,";
 
-    for (auto obj : sc_core::sc_get_top_level_objects())
-        list_object(ss, obj);
+    if (format == "xml") {
+        list_xml(ss);
+        return ss.str();
+    }
 
-    for (auto tgt : debugging::target::all())
-        ss << "<target>" << xml_escape(tgt->target_name()) << "</target>";
+    if (format == "json") {
+        list_json(ss);
+        return ss.str();
+    }
 
-    for (auto loader : debugging::loader::all())
-        ss << "<loader>" << xml_escape(loader->loader_name()) << "</loader>";
-
-    for (auto kbd : ui::keyboard::all())
-        ss << "<keyboard>" << xml_escape(kbd->input_name()) << "</keyboard>";
-
-    for (auto ptr : ui::pointer::all())
-        ss << "<pointer>" << xml_escape(ptr->input_name()) << "</pointer>";
-
-    for (auto terminal : serial::terminal::all())
-        ss << "<terminal>" << xml_escape(terminal->name()) << "</terminal>";
-
-    for (auto bridge : ethernet::bridge::all())
-        ss << "<bridge>" << xml_escape(bridge->name()) << "</bridge>";
-
-    ss << "</hierarchy>";
-    return ss.str();
+    return mkstr("E,unknown hierarchy format '%s'", format.c_str());
 }
 
 string vspserver::handle_exec(const string& cmd) {
