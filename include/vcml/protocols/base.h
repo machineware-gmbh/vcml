@@ -198,6 +198,9 @@ public:
         if (socket)
             return *socket;
 
+        if (sc_core::sc_is_running())
+            VCML_ERROR("no socket at index %zu", idx);
+
         if (idx >= m_max)
             VCML_ERROR("socket index out of bounds: %s[%zu]", name(), idx);
 

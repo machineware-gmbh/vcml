@@ -68,6 +68,8 @@ public:
     }
 
     virtual void run_test() override {
+        EXPECT_DEATH(tlm_out[123], "no socket at index 123");
+
         EXPECT_CALL(*this, receive("tlm_tfull", 0x1234));
         EXPECT_OK(tlm_ifull.writew(0x1234, 0));
 
