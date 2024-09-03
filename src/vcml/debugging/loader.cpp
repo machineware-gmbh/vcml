@@ -22,6 +22,8 @@ const char* image_type_to_str(image_type type) {
         return "bin";
     case IMAGE_SREC:
         return "srec";
+    case IMAGE_INTEL_HEX:
+        return "intel hex";
     case IMAGE_UIMAGE:
         return "uimage";
     default:
@@ -35,6 +37,8 @@ image_type detect_image_type(const string& filename) {
         return IMAGE_ELF;
     if (ends_with(filename, ".srec"))
         return IMAGE_SREC;
+    if (ends_with(filename, ".hex") || ends_with(filename, ".ihex"))
+        return IMAGE_INTEL_HEX;
     if (ends_with(filename, ".bin"))
         return IMAGE_BIN;
 
@@ -129,6 +133,17 @@ bool loader::cmd_load_srec(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool loader::cmd_load_intel_hex(const vector<string>& args, ostream& os) {
+    const string& image = args[0];
+    u64 offset = 0ull;
+
+    if (args.size() > 1)
+        offset = strtoull(args[1].c_str(), NULL, 0);
+
+    load_image(image, offset, IMAGE_INTEL_HEX);
+    return true;
+}
+
 bool loader::cmd_load_uimage(const vector<string>& args, ostream& os) {
     const string& image = args[0];
     u64 offset = 0ull;
@@ -203,6 +218,20 @@ void loader::load_srec(const string& filename, u64 offset) {
     }
 }
 
+void loader::load_intel_hex(const string& filename, u64 offset) {
+    mwr::intel_hex reader(filename);
+
+    m_log.debug("loading intel_hex file '%s' (%zu records) to offset 0x%llx",
+                filename.c_str(), reader.records().size(), offset);
+
+    for (auto rec : reader.records()) {
+        if (u8* image = allocate_image(rec.data.size(), rec.addr + offset))
+            memcpy(image, rec.data.data(), rec.data.size());
+        else
+            copy_image(rec.data.data(), rec.data.size(), rec.addr + offset);
+    }
+}
+
 void loader::load_uimage(const string& filename, u64 offset) {
     mwr::uimage reader(filename);
 
@@ -253,6 +282,10 @@ loader::loader(module& mod, bool reg_cmds): m_owner(mod), m_log(mod.log) {
     m_owner.register_command("load_srec", 1, this, &loader::cmd_load_srec,
                              "load_srec <image> [offset] to load the SREC "
                              "file <image> to memory with an optional offset");
+    m_owner.register_command(
+        "load_intel_hex", 1, this, &loader::cmd_load_intel_hex,
+        "load_intel_hex <image> [offset] to load the Intel HEX "
+        "file <image> to memory with an optional offset");
     m_owner.register_command("load_uimage", 1, this, &loader::cmd_load_uimage,
                              "load_uimage <image> [offset] to load the uImage "
                              "file <image> to memory with an optional offset");
@@ -283,6 +316,9 @@ void loader::load_image(const image_info& image) {
         break;
     case IMAGE_SREC:
         load_srec(image.filename, image.offset);
+        break;
+    case IMAGE_INTEL_HEX:
+        load_intel_hex(image.filename, image.offset);
         break;
     case IMAGE_UIMAGE:
         load_uimage(image.filename, image.offset);
