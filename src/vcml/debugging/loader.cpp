@@ -23,7 +23,7 @@ const char* image_type_to_str(image_type type) {
     case IMAGE_SREC:
         return "srec";
     case IMAGE_IHEX:
-        return "intel hex";
+        return "ihex";
     case IMAGE_UIMAGE:
         return "uimage";
     default:
