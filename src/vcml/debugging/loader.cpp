@@ -282,10 +282,10 @@ loader::loader(module& mod, bool reg_cmds): m_owner(mod), m_log(mod.log) {
     m_owner.register_command("load_srec", 1, this, &loader::cmd_load_srec,
                              "load_srec <image> [offset] to load the SREC "
                              "file <image> to memory with an optional offset");
-    m_owner.register_command(
-        "load_ihex", 1, this, &loader::cmd_load_ihex,
-        "load_ihex <image> [offset] to load the Intel HEX "
-        "file <image> to memory with an optional offset");
+    m_owner.register_command("load_ihex", 1, this, &loader::cmd_load_ihex,
+                             "load_ihex <image> [offset] to load the "
+                             "Intel HEX file <image> to memory with an "
+                             "optional offset");
     m_owner.register_command("load_uimage", 1, this, &loader::cmd_load_uimage,
                              "load_uimage <image> [offset] to load the uImage "
                              "file <image> to memory with an optional offset");
