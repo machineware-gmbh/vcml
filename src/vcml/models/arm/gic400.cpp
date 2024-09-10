@@ -561,8 +561,9 @@ gic400::distif::distif(const sc_module_name& nm):
     itargets_spi.sync_always();
     itargets_spi.allow_read_write();
 
-    icfgr_sgi.allow_read_only();
+    icfgr_sgi.allow_read_write();
     icfgr_sgi.sync_on_read();
+    icfgr_sgi.ignore_write();
 
     icfgr_ppi.sync_on_write();
     icfgr_ppi.allow_read_write();
