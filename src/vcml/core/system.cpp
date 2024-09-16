@@ -77,8 +77,13 @@ system::system(const sc_module_name& nm):
     if (backtrace)
         mwr::report_segfaults();
 
-    if (duration > SC_ZERO_TIME)
+    if (duration > SC_ZERO_TIME) {
         SC_THREAD(timeout);
+        if (quantum > duration) {
+            log_warn("simulation quantum longer than duration, truncated");
+            quantum = duration;
+        }
+    }
 
     if (config.get().empty())
         log_warn("no configuration specified, use -f <config>");
