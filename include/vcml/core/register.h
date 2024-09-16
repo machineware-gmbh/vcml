@@ -164,6 +164,8 @@ public:
     void read_zero();
     void ignore_write();
 
+    void allow_read_ignore_write();
+
     bool is_banked() const { return m_banked; }
     void set_banked(bool set = true) { m_banked = set; }
 
@@ -358,7 +360,16 @@ void reg<DATA, N>::read_zero() {
 
 template <typename DATA, size_t N>
 void reg<DATA, N>::ignore_write() {
-    on_write([](DATA val) -> void { (void)val; });
+    on_write([&](DATA val) -> void {
+        (void)val;
+        log_debug("write to read-only register %s", name());
+    });
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::allow_read_ignore_write() {
+    allow_read_write();
+    ignore_write();
 }
 
 template <typename DATA, size_t N>
