@@ -535,13 +535,108 @@ string vspserver::handle_rmbp(const string& cmd) {
     return "OK";
 }
 
+string vspserver::handle_lreg(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    const auto regs = tgt->cpuregs();
+
+    stringstream ss;
+    ss << "OK";
+    for (const auto& reg : regs)
+        ss << "," << reg.name;
+    return ss.str();
+}
+
+string vspserver::handle_getr(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 3)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    const cpureg* reg = tgt->find_cpureg(args[2]);
+    if (reg == nullptr)
+        return mkstr("E,no such register: %s", args[2].c_str());
+
+    vector<u8> data(reg->total_size());
+    if (!reg->read(data.data(), data.size()))
+        return mkstr("E,error reading %s", args[2].c_str());
+
+    stringstream ss;
+    ss << "OK";
+    for (u8 ch : data)
+        ss << mkstr(",0x%02hhx", ch);
+    return ss.str();
+}
+
+string vspserver::handle_setr(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 4)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    const cpureg* reg = tgt->find_cpureg(args[2]);
+    if (reg == nullptr)
+        return mkstr("E,no such register: %s", args[2].c_str());
+
+    vector<u8> data;
+    for (size_t i = 3; i < args.size(); i++)
+        data.push_back(from_string<u8>(args[i]));
+
+    if (!reg->write(data.data(), data.size()))
+        return mkstr("E,error writing %s", args[2].c_str());
+
+    return mkstr("OK,%zu bytes written", data.size());
+}
+
+string vspserver::handle_vapa(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 3)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 phys = ~0ull;
+    u64 virt = from_string<u64>(args[2]);
+
+    if (!tgt->virt_to_phys(virt, phys))
+        return "E,translation error";
+
+    return mkstr("OK,0x%llx", phys);
+}
+
 string vspserver::handle_vread(const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
     vector<string> args = split(cmd, ',');
     if (args.size() < 4)
-        return mkstr("E, insufficient arguments %zu", args.size());
+        return mkstr("E,insufficient arguments %zu", args.size());
 
     target* tgt = target::find(args[1]);
     if (tgt == nullptr)
@@ -565,7 +660,7 @@ string vspserver::handle_vread(const string& cmd) {
 string vspserver::handle_vwrite(const string& cmd) {
     vector<string> args = split(cmd, ',');
     if (args.size() < 3)
-        return mkstr("E, insufficient arguments %zu", args.size());
+        return mkstr("E,insufficient arguments %zu", args.size());
 
     target* tgt = target::find(args[1]);
     if (tgt == nullptr)
@@ -648,6 +743,10 @@ vspserver::vspserver(u16 server_port):
     register_handler("seta", &vspserver::handle_seta);
     register_handler("mkbp", &vspserver::handle_mkbp);
     register_handler("rmbp", &vspserver::handle_rmbp);
+    register_handler("lreg", &vspserver::handle_lreg);
+    register_handler("getr", &vspserver::handle_getr);
+    register_handler("setr", &vspserver::handle_setr);
+    register_handler("vapa", &vspserver::handle_vapa);
     register_handler("vread", &vspserver::handle_vread);
     register_handler("vwrite", &vspserver::handle_vwrite);
 

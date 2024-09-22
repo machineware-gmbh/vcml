@@ -175,6 +175,28 @@ Removes a breakpoint globally identified via its `<id>`.
 * Command: `$rmbp,<id>#**`
 * Response: `$OK#**`
 
+#### List CPU Registers
+Returns a list of names of CPU registers of a given target.
+* Command: `$lreg,<target-name>#**`
+* Response: `OK,reg_a,reg_b,reg_c#**`
+
+#### Read CPU Register
+Returns the content of a CPU register.
+* Command: `$getr,<target-name>,<reg-name>#**`
+* Response: `OK,<byte0>,<byte1>,<byte2>,...#**`
+
+#### Write CPU Register
+Attempts to set the contents of the given CPU register to the given bytes.
+It is implementation defined if partial writes are supported.
+* Command: `setr,<target-name>,<reg-name>,<byte0>,<byte1>,...#**`
+* Response: `OK,<n> bytes written#**`
+
+#### Translate Virtual to Physical Address
+Attempts to translate the given virtual address to a physical address using
+the currently active translation regime.
+* Command: `vapa,<target-name>,<virtual-address>#**`
+* Response: `OK,<physical-address>#**`
+
 #### Read Virtual Memory
 Performs a debug read access using the provided virtual address and returns
 the requested number of bytes.

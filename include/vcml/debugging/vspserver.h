@@ -44,6 +44,10 @@ private:
     string handle_seta(const string& command);
     string handle_mkbp(const string& command);
     string handle_rmbp(const string& command);
+    string handle_lreg(const string& command);
+    string handle_getr(const string& command);
+    string handle_setr(const string& command);
+    string handle_vapa(const string& command);
     string handle_vread(const string& command);
     string handle_vwrite(const string& command);
 
