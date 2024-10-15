@@ -272,7 +272,7 @@ bool net::handle_tx(vq_message& msg) {
 
     if (frame.size() < eth_frame::FRAME_MIN_SIZE)
         frame.resize(eth_frame::FRAME_MIN_SIZE);
-    if (frame.size() > m_config.mtu)
+    if (frame.size() - eth_frame::FRAME_HEADER_SIZE > m_config.mtu)
         log_warn("packet exceeds MTU: %zu bytes", frame.size());
 
     eth_tx.send(frame);
