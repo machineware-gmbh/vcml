@@ -67,8 +67,8 @@ enum iommu_ttyp {
     IOMMU_TTYP_PCIE_MSG_REQ = 9,
 };
 
-constexpr iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
-                                  const tlm_sbi& info, bool ux) {
+static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
+                               const tlm_sbi& info, bool ux) {
     if (tx.is_read()) {
         if (info.is_insn)
             return ux ? IOMMU_TTYP_UXRX : IOMMU_TTYP_TXRX;
