@@ -50,27 +50,64 @@ private:
         u64 gscid : 16;
         u64 r : 1;
         u64 w : 1;
-        u64 dmi : 1;
-        u64 unused : 1;
+        u64 unused : 2;
     };
 
-    static_assert(sizeof(iotlb) == 2 * sizeof(u64), "iotlb_entry size");
+    struct command {
+        u64 dword0;
+        u64 dword1;
+    };
+
+    struct fault {
+        u64 cause : 12;
+        u64 pid : 20;
+        u64 pv : 1;
+        u64 priv : 1;
+        u64 ttyp : 6;
+        u64 did : 24;
+        u64 reserved;
+        u64 iotval;
+        u64 iotval2;
+    };
+
+    struct pgreq {
+        u64 reserved0 : 12;
+        u64 pid : 20;
+        u64 pv : 1;
+        u64 priv : 1;
+        u64 exec : 1;
+        u64 reserved1 : 5;
+        u64 did : 24;
+        u64 payload;
+    };
+
+    static_assert(sizeof(iotlb) == 2 * sizeof(u64), "iotlb size");
+    static_assert(sizeof(fault) == 4 * sizeof(u64), "fault size");
+    static_assert(sizeof(pgreq) == 2 * sizeof(u64), "pgreq size");
 
     unordered_map<u64, context> m_contexts;
     unordered_map<u64, iotlb> m_iotlb;
 
+    sc_event m_workev;
+
+    u64 m_iotval2;
+
+    u64 m_dmi_lo;
+    u64 m_dmi_hi;
+
     int fetch_context(u32 devid, u32 procid, bool dbg, bool dmi, context& ctx);
     int fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi, iotlb& entry);
 
-    bool translate(u32 devid, u32 procid, u64 virt, bool dbg, bool dmi,
+    bool translate(const tlm_generic_payload& tx, const tlm_sbi& sbi, bool dmi,
                    iotlb& entry);
+
+    void report_fault(const fault& req);
 
     void load_capabilities();
 
     void write_fctl(u32 val);
     void write_ddtp(u64 val);
 
-    sc_event m_workev;
     void worker();
 
 public:
@@ -141,6 +178,9 @@ protected:
     virtual bool get_direct_mem_ptr(tlm_target_socket& origin,
                                     tlm_generic_payload& tx,
                                     tlm_dmi& dmi) override;
+    virtual void invalidate_direct_mem_ptr(tlm_initiator_socket& origin,
+                                           u64 start, u64 end) override;
+    virtual void invalidate_direct_mem_ptr(u64 start, u64 end);
 };
 
 } // namespace riscv

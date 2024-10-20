@@ -55,6 +55,29 @@ enum iommu_faults {
     IOMMU_FAULT_PT_CORRUPTED = 274,
 };
 
+enum iommu_ttyp {
+    IOMMU_TTYP_NONE = 0,
+    IOMMU_TTYP_UXRX = 1,
+    IOMMU_TTYP_UXRD = 2,
+    IOMMU_TTYP_UXWR = 3,
+    IOMMU_TTYP_TXRX = 5,
+    IOMMU_TTYP_TXRD = 6,
+    IOMMU_TTYP_TXWR = 7,
+    IOMMU_TTYP_PCIE_ATS_REQ = 8,
+    IOMMU_TTYP_PCIE_MSG_REQ = 9,
+};
+
+constexpr iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
+                                  const tlm_sbi& info, bool ux) {
+    if (tx.is_read()) {
+        if (info.is_insn)
+            return ux ? IOMMU_TTYP_UXRX : IOMMU_TTYP_TXRX;
+        return ux ? IOMMU_TTYP_UXRD : IOMMU_TTYP_TXRD;
+    }
+
+    return ux ? IOMMU_TTYP_UXWR : IOMMU_TTYP_TXWR;
+}
+
 using CAPS_VERSION = field<0, 8, u64>;
 using CAPS_IGS = field<28, 2, u64>;
 using CAPS_PAS = field<32, 6, u64>;
@@ -147,29 +170,58 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
 
 int iommu::fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi,
                        iotlb& entry) {
+    if (!dbg)
+        m_iotval2 = 0;
+
     return 0;
 }
 
-bool iommu::translate(u32 devid, u32 procid, u64 virt, bool dbg, bool dmi,
-                      iotlb& entry) {
-    int fault;
+bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
+                      bool dmi, iotlb& entry) {
+    u32 devid = info.cpuid;
+    u32 pasid = info.asid;
+    u64 virt = tx.get_address() & ~PAGE_MASK;
     context ctx;
 
-    fault = fetch_context(devid, procid, dbg, dmi, ctx);
-    if (fault) {
-        if (!dbg && !dmi)
-            /* push fault */;
+    if (int err = fetch_context(devid, pasid, info.is_debug, dmi, ctx)) {
+        if (!info.is_debug && !dmi) {
+            fault req{};
+            req.cause = err;
+            req.ttyp = ttyp_from_tx(tx, info, true);
+            req.did = devid;
+            req.pid = pasid;
+            req.pv = !!pasid;
+            req.priv = info.privilege > 0;
+            req.iotval = virt;
+            req.iotval2 = 0;
+            report_fault(req);
+        }
+
         return false;
     }
 
-    fault = fetch_iotlb(ctx, virt, dbg, dmi, entry);
-    if (fault) {
-        if (!dbg && !dmi)
-            /* push fault */;
+    if (int err = fetch_iotlb(ctx, virt, info.is_debug, dmi, entry)) {
+        if (!info.is_debug && !dmi) {
+            fault req{};
+            req.cause = err;
+            req.ttyp = ttyp_from_tx(tx, info, false);
+            req.did = devid;
+            req.pid = pasid;
+            req.pv = !!pasid;
+            req.priv = info.privilege > 0;
+            req.iotval = virt;
+            req.iotval2 = m_iotval2;
+            report_fault(req);
+        }
+
         return false;
     }
 
     return true;
+}
+
+void iommu::report_fault(const fault& req) {
+    // TODO
 }
 
 void iommu::load_capabilities() {
@@ -239,7 +291,12 @@ void iommu::worker() {
 
 iommu::iommu(const sc_module_name& nm):
     peripheral(nm),
+    m_contexts(),
+    m_iotlb(),
     m_workev("workev"),
+    m_iotval2(0),
+    m_dmi_lo(~0ull),
+    m_dmi_hi(0ull),
     sv32("sv32", true),
     sv39("sv39", true),
     sv48("sv48", true),
@@ -316,6 +373,7 @@ void iommu::reset() {
     load_capabilities();
     m_contexts.clear();
     m_iotlb.clear();
+    invalidate_direct_mem_ptr(0ull, ~0ull);
 }
 
 unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,
@@ -324,11 +382,9 @@ unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,
         return peripheral::receive(tx, info, as);
 
     iotlb entry{};
-    u32 device_id = info.cpuid;
-    u32 process_id = info.asid;
     u64 virt = tx.get_address();
 
-    if (!translate(device_id, process_id, virt, info.is_debug, false, entry)) {
+    if (!translate(tx, info, false, entry)) {
         tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
         return 0;
     }
@@ -349,57 +405,82 @@ unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     return n;
 }
 
+static bool no_dmi(tlm_dmi& dmi) {
+    // see SystemC LRM 11.3.5 (n)
+    dmi.allow_read_write();
+    dmi.set_start_address(0);
+    dmi.set_end_address(-1ull);
+    return false;
+}
+
 bool iommu::get_direct_mem_ptr(tlm_target_socket& origin,
                                tlm_generic_payload& tx, tlm_dmi& dmi) {
     if (origin.as == IOMMU_AS_DEFAULT)
         return peripheral::get_direct_mem_ptr(origin, tx, dmi);
 
     iotlb entry{};
-    u32 device_id = tx_cpuid(tx);
-    u32 process_id = tx_asid(tx);
-    u64 virt = tx.get_address() & ~PAGE_MASK;
+    u64 virt = tx.get_address();
+    u64 page = virt & ~PAGE_MASK;
 
-    if (!translate(device_id, process_id, virt, false, true, entry)) {
-        dmi.allow_read_write();
-        return false;
-    }
+    const tlm_sbi& info = tx_get_sbi(tx);
+    if (!translate(tx, info, true, entry))
+        return no_dmi(dmi);
 
     u64 phys = entry.ppn << PAGE_BITS;
+    range addr(phys, phys + PAGE_SIZE - 1);
     tx.set_address(phys);
-    bool ok = out->get_direct_mem_ptr(tx, dmi);
-    tx.set_address(virt);
 
-    if (!ok) {
-        dmi.allow_read_write();
-        return false;
+    if (!out.dmi_cache().lookup(addr, VCML_ACCESS_NONE, dmi)) {
+        if (!out->get_direct_mem_ptr(tx, dmi))
+            return no_dmi(dmi);
+
+        out.dmi_cache().insert(dmi);
     }
+
+    tx.set_address(virt);
 
     int dmirw = dmi.get_granted_access();
     u64 dmilo = dmi.get_start_address();
     u64 dmihi = dmi.get_end_address();
     u8* dmiptr = dmi.get_dmi_ptr();
 
-    if (dmihi < phys || dmilo >= phys + PAGE_SIZE) {
-        dmi.allow_read_write();
-        return false;
-    }
+    if (dmihi < phys || dmilo >= phys + PAGE_SIZE)
+        return no_dmi(dmi);
 
     if (!entry.r)
         dmirw &= ~tlm_dmi::DMI_ACCESS_READ;
     if (!entry.w)
         dmirw &= ~tlm_dmi::DMI_ACCESS_WRITE;
-    if (dmirw == tlm_dmi::DMI_ACCESS_NONE) {
-        dmi.allow_read_write();
-        return false;
-    }
+    if (dmirw == tlm_dmi::DMI_ACCESS_NONE)
+        return no_dmi(dmi);
+
+    m_dmi_lo = min(m_dmi_lo, phys);
+    m_dmi_hi = max(m_dmi_hi, phys + PAGE_SIZE - 1);
 
     dmi.set_granted_access((tlm_dmi::dmi_access_e)dmirw);
-    dmi.set_start_address(phys);
-    dmi.set_end_address(phys + PAGE_SIZE);
+    dmi.set_start_address(page);
+    dmi.set_end_address(page + PAGE_SIZE - 1);
     dmi.set_dmi_ptr(dmiptr + phys - dmilo);
     dmi.set_read_latency(dmi.get_read_latency() + read_cycles());
     dmi.set_write_latency(dmi.get_write_latency() + read_cycles());
     return true;
+}
+
+void iommu::invalidate_direct_mem_ptr(tlm_initiator_socket&, u64 s, u64 e) {
+    invalidate_direct_mem_ptr(s, e);
+}
+
+void iommu::invalidate_direct_mem_ptr(u64 start, u64 end) {
+    if (m_dmi_hi < m_dmi_lo)
+        return;
+
+    if (start > m_dmi_hi || end < m_dmi_lo)
+        return;
+
+    m_dmi_lo = ~0ull;
+    m_dmi_hi = 0;
+
+    dma->invalidate_direct_mem_ptr(0ull, ~0ull);
 }
 
 VCML_EXPORT_MODEL(vcml::riscv::iommu, name, args) {
