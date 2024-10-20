@@ -163,6 +163,7 @@
 #include "vcml/models/riscv/plic.h"
 #include "vcml/models/riscv/aclint.h"
 #include "vcml/models/riscv/aplic.h"
+#include "vcml/models/riscv/iommu.h"
 #include "vcml/models/riscv/simdev.h"
 
 #include "vcml/models/deprecated.h"
