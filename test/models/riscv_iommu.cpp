@@ -17,8 +17,8 @@ const u64 IOMMU_ADDR = 0x40000000;
 const u64 IOMMU_SIZE = 1 * KiB;
 
 const u64 IOMMU_CAPS = IOMMU_ADDR + 0;
-const u64 IOMMU_FCTL = IOMMU_ADDR + 8;
-const u64 IOMMU_DDTP = IOMMU_ADDR + 16;
+// const u64 IOMMU_FCTL = IOMMU_ADDR + 8;
+// const u64 IOMMU_DDTP = IOMMU_ADDR + 16;
 
 class iommu_test : public test_base
 {

@@ -323,7 +323,7 @@ unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     if (as == IOMMU_AS_DEFAULT)
         return peripheral::receive(tx, info, as);
 
-    iotlb entry;
+    iotlb entry{};
     u32 device_id = info.cpuid;
     u32 process_id = info.asid;
     u64 virt = tx.get_address();
@@ -354,7 +354,7 @@ bool iommu::get_direct_mem_ptr(tlm_target_socket& origin,
     if (origin.as == IOMMU_AS_DEFAULT)
         return peripheral::get_direct_mem_ptr(origin, tx, dmi);
 
-    iotlb entry;
+    iotlb entry{};
     u32 device_id = tx_cpuid(tx);
     u32 process_id = tx_asid(tx);
     u64 virt = tx.get_address() & ~PAGE_MASK;
