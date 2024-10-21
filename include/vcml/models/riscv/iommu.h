@@ -50,12 +50,14 @@ private:
         u64 gscid : 16;
         u64 r : 1;
         u64 w : 1;
-        u64 unused : 2;
+        u64 pbmt : 2;
     };
 
     struct command {
-        u64 dword0;
-        u64 dword1;
+        u64 opcode : 7;
+        u64 func3 : 3;
+        u64 operands0 : 54;
+        u64 operands1;
     };
 
     struct fault {
@@ -84,10 +86,12 @@ private:
     static_assert(sizeof(iotlb) == 2 * sizeof(u64), "iotlb size");
     static_assert(sizeof(fault) == 4 * sizeof(u64), "fault size");
     static_assert(sizeof(pgreq) == 2 * sizeof(u64), "pgreq size");
+    static_assert(sizeof(command) == 2 * sizeof(u64), "command size");
 
     unordered_map<u64, context> m_contexts;
     unordered_map<u64, iotlb> m_iotlb;
 
+    u32 m_work;
     sc_event m_workev;
 
     u64 m_iotval2;
@@ -102,11 +106,24 @@ private:
                    iotlb& entry);
 
     void report_fault(const fault& req);
+    void report_irq(u32 irqid);
 
     void load_capabilities();
 
     void write_fctl(u32 val);
     void write_ddtp(u64 val);
+    void write_cqt(u32 val);
+    void write_cqcsr(u32 val);
+    void write_tr_req_iova(u64 val);
+    void write_tr_req_ctl(u64 val);
+
+    void handle_iotinval(const command& cmd);
+    void handle_iofence(const command& cmd);
+    void handle_iodir(const command& cmd);
+    void handle_ats(const command& cmd);
+
+    void handle_command();
+    void handle_tr_req();
 
     void worker();
 

@@ -78,6 +78,18 @@ static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
     return ux ? IOMMU_TTYP_UXWR : IOMMU_TTYP_TXWR;
 }
 
+enum iommu_work : u32 {
+    IOMMU_WORK_COMMAND = bit(0),
+    IOMMU_WORK_TR_REQ = bit(1),
+};
+
+enum iommu_opcode : u64 {
+    IOMMU_OPCODE_IOTINVAL = 1,
+    IOMMU_OPCODE_IOFENCE = 2,
+    IOMMU_OPCODE_IOTDIR = 3,
+    IOMMU_OPCODE_ATS = 4,
+};
+
 using CAPS_VERSION = field<0, 8, u64>;
 using CAPS_IGS = field<28, 2, u64>;
 using CAPS_PAS = field<32, 6, u64>;
@@ -128,6 +140,49 @@ enum ddtp_bits : u64 {
     DDTP_MODE_2LVL = 3,
     DDTP_MODE_3LVL = 4,
     DDTP_BUSY = bit(4),
+};
+
+using CQB_LOG2SZ = field<0, 5, u64>;
+using CQB_PPN = field<10, 44, u64>;
+
+enum cqcsr_bits : u32 {
+    CQCSR_CQEN = bit(0),
+    CQCSR_CIE = bit(1),
+    CQCSR_CQMF = bit(8),
+    CQCSR_CMDTO = bit(9),
+    CQCSR_CMDILL = bit(10),
+    CQCSR_FENCE_W_IP = bit(11),
+    CQCSR_CQON = bit(16),
+    CQCSR_BUSY = bit(17),
+};
+
+enum ipsr_bits : u32 {
+    IPSR_CIP = bit(0),
+    IPSR_FIP = bit(1),
+    IPSR_PMIP = bit(2),
+    IPSR_PIP = bit(3),
+};
+
+using TR_REQ_CTL_PID = field<12, 20, u64>;
+using TR_REQ_CTL_DID = field<40, 24, u64>;
+
+enum tr_req_ctl_bits : u64 {
+    TR_REQ_CTL_BUSY = bit(0),
+    TR_REQ_CTL_PRIV = bit(1),
+    TR_REQ_CTL_EXE = bit(2),
+    TR_REQ_CTL_NW = bit(3),
+    TR_REQ_CTL_PV = bit(32),
+    TR_REQ_CTL_MASK = TR_REQ_CTL_BUSY | TR_REQ_CTL_PRIV | TR_REQ_CTL_EXE |
+                      TR_REQ_CTL_NW | TR_REQ_CTL_PID::MASK | TR_REQ_CTL_PV |
+                      TR_REQ_CTL_DID::MASK,
+};
+
+using TR_RESPONSE_PBMT = field<7, 2, u64>;
+using TR_RESPONSE_PPN = field<10, PPN_BITS, u64>;
+
+enum tr_response_bits : u64 {
+    TR_RESPONSE_FAULT = bit(1),
+    TR_RESPONSE_S = bit(9),
 };
 
 constexpr u64 mkctxid(u32 devid, u32 procid) {
@@ -224,6 +279,10 @@ void iommu::report_fault(const fault& req) {
     // TODO
 }
 
+void iommu::report_irq(u32 irq) {
+    ipsr |= irq;
+}
+
 void iommu::load_capabilities() {
     caps.set_field<CAPS_VERSION>(0x10); // version 1.0
     caps.set_field<CAPS_PAS>(PPN_BITS);
@@ -274,18 +333,169 @@ void iommu::write_ddtp(u64 val) {
     if (((ddtp ^ val) & mask) == 0)
         return; // no change
 
-    ddtp |= DDTP_BUSY;
+    if (ddtp & DDTP_BUSY)
+        return;
 
     m_contexts.clear();
     m_iotlb.clear();
 
     ddtp = (ddtp & ~mask) | (val & mask);
-    ddtp &= ~DDTP_BUSY;
+}
+
+void iommu::write_cqt(u32 val) {
+    u32 mask = (2u << cqb.get_field<CQB_LOG2SZ>()) - 1;
+    cqt = val & mask;
+
+    m_work |= IOMMU_WORK_COMMAND;
+    m_workev.notify(SC_ZERO_TIME);
+}
+
+void iommu::write_cqcsr(u32 val) {
+    u32 rwmask = CQCSR_CQEN | CQCSR_CIE;
+    u32 wcmask = CQCSR_CQMF | CQCSR_CMDTO | CQCSR_CMDILL | CQCSR_FENCE_W_IP;
+
+    if (cqcsr & CQCSR_BUSY)
+        return;
+
+    cqcsr = ((cqcsr & ~rwmask) | (val & rwmask)) & ~(val & wcmask);
+
+    m_work |= IOMMU_WORK_COMMAND;
+    m_workev.notify(SC_ZERO_TIME);
+}
+
+void iommu::write_tr_req_iova(u64 val) {
+    if (tr_req_ctl & TR_REQ_CTL_BUSY)
+        return;
+
+    tr_req_iova = val & ~PAGE_MASK;
+}
+
+void iommu::write_tr_req_ctl(u64 val) {
+    if (tr_req_ctl & TR_REQ_CTL_BUSY)
+        return;
+
+    tr_req_ctl = (tr_req_ctl & ~TR_REQ_CTL_MASK) | (val & TR_REQ_CTL_MASK);
+
+    if (val & TR_REQ_CTL_BUSY) {
+        m_work |= IOMMU_WORK_TR_REQ;
+        m_workev.notify(SC_ZERO_TIME);
+    }
+}
+
+void iommu::handle_iotinval(const command& cmd) {
+    // TODO
+}
+
+void iommu::handle_iofence(const command& cmd) {
+    // TODO
+}
+
+void iommu::handle_iodir(const command& cmd) {
+    // TODO
+}
+
+void iommu::handle_ats(const command& cmd) {
+    // TODO
+}
+
+void iommu::handle_command() {
+    if (cqcsr & CQCSR_CQEN)
+        cqcsr |= CQCSR_CQON;
+
+    u32 mask = (2u << cqb.get_field<CQB_LOG2SZ>()) - 1;
+    u64 base = cqb.get_field<CQB_PPN>() << PAGE_BITS;
+
+    while ((cqh != cqt) && (cqcsr & CQCSR_CQEN)) {
+        command cmd{};
+        cqcsr |= CQCSR_BUSY;
+        auto res = out.readw(base + cqh * sizeof(command), cmd);
+        cqcsr &= ~CQCSR_BUSY;
+
+        if (failed(res)) {
+            cqcsr |= CQCSR_CQMF;
+            if (cqcsr & CQCSR_CIE)
+                report_irq(IPSR_CIP);
+            break;
+        }
+
+        switch (cmd.opcode) {
+        case IOMMU_OPCODE_IOTINVAL:
+            handle_iotinval(cmd);
+            break;
+        case IOMMU_OPCODE_IOFENCE:
+            handle_iofence(cmd);
+            break;
+        case IOMMU_OPCODE_IOTDIR:
+            handle_iodir(cmd);
+            break;
+        case IOMMU_OPCODE_ATS:
+            handle_ats(cmd);
+            break;
+        default:
+            cqcsr |= CQCSR_CMDILL;
+            if (cqcsr & CQCSR_CIE)
+                report_irq(IPSR_CIP);
+            break;
+        }
+
+        cqh = (cqh + 1) & mask;
+    }
+
+    if (!(cqcsr & CQCSR_CQEN))
+        cqcsr &= ~CQCSR_CQON;
+}
+
+void iommu::handle_tr_req() {
+    tlm_generic_payload tx;
+    tx.set_address(tr_req_iova);
+    if (tr_req_ctl & TR_REQ_CTL_NW)
+        tx.set_read();
+    else
+        tx.set_write();
+
+    tlm_sbi info = SBI_NONE;
+    info.privilege = !!(tr_req_ctl & TR_REQ_CTL_PRIV);
+    info.is_insn = !!(tr_req_ctl & TR_REQ_CTL_EXE);
+    info.cpuid = tr_req_ctl.get_field<TR_REQ_CTL_DID>();
+    if (tr_req_ctl & TR_REQ_CTL_PV)
+        info.asid = tr_req_ctl.get_field<TR_REQ_CTL_PID>();
+
+    iotlb entry{};
+    if (translate(tx, info, false, entry)) {
+        tr_response = 0;
+        tr_response.set_field<TR_RESPONSE_PPN>(entry.ppn);
+        if (svpbmt)
+            tr_response.set_field<TR_RESPONSE_PBMT>(entry.pbmt);
+    } else {
+        tr_response = TR_RESPONSE_FAULT;
+    }
+
+    tr_req_ctl &= TR_REQ_CTL_BUSY;
 }
 
 void iommu::worker() {
     while (true) {
         wait(m_workev);
+
+        u32 work = m_work;
+        u32 mask = 1;
+        m_work = 0;
+
+        while (work) {
+            switch (work & mask) {
+            case IOMMU_WORK_COMMAND:
+                handle_command();
+                break;
+            case IOMMU_WORK_TR_REQ:
+                handle_tr_req();
+                break;
+            default:
+                break;
+            }
+
+            work = work & ~mask;
+            mask = mask << 1;
+        }
     }
 }
 
@@ -357,6 +567,31 @@ iommu::iommu(const sc_module_name& nm):
     ddtp.allow_read_write();
     ddtp.sync_always();
     ddtp.on_write(&iommu::write_ddtp);
+
+    cqb.allow_read_write();
+    cqb.sync_always();
+
+    cqh.allow_read_only();
+    cqh.sync_always();
+
+    cqt.allow_read_write();
+    cqt.sync_always();
+    cqt.on_write(&iommu::write_cqt);
+
+    cqcsr.allow_read_write();
+    cqcsr.sync_always();
+    cqcsr.on_write(&iommu::write_cqcsr);
+
+    tr_req_iova.allow_read_write();
+    tr_req_iova.sync_never();
+    tr_req_iova.on_write(&iommu::write_tr_req_iova);
+
+    tr_req_ctl.allow_read_write();
+    tr_req_ctl.sync_always();
+    tr_req_ctl.on_write(&iommu::write_tr_req_ctl);
+
+    tr_response.allow_read_only();
+    tr_response.sync_never();
 
     load_capabilities();
 
