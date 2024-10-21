@@ -22,6 +22,72 @@ enum address_bits : u64 {
     PPN_MASK = bitmask(PPN_BITS, PAGE_BITS),
 };
 
+enum tc_bits : u64 {
+    TC_V = bit(0),
+    TC_EN_ATS = bit(1),
+    TC_EN_PRI = bit(2),
+    TC_T2GPA = bit(3),
+    TC_DTF = bit(4),
+    TC_PDTV = bit(5),
+    TC_PRPR = bit(6),
+    TC_GADE = bit(7),
+    TC_SADE = bit(8),
+    TC_DPE = bit(9),
+    TC_SBE = bit(10),
+    TC_SXL = bit(11),
+};
+
+using TA_PSCID = field<12, 20, u64>;
+
+enum ta_bits : u64 {
+    TA_V = bit(0),
+    TA_ENS = bit(1),
+    TA_SUM = bit(2),
+};
+
+using IOHGATP_PPN = field<0, PPN_BITS, u64>;
+using IOHGATP_GSCID = field<44, 16, u64>;
+using IOHGATP_MODE = field<60, 4, u64>;
+
+enum iohgatp_modes : u64 {
+    IOHGATP_BARE = 0,
+    IOHGATP_SV32X4 = 8,
+    IOHGATP_SV39X4 = 8,
+    IOHGATP_SV48X4 = 9,
+    IOHGATP_SV57X4 = 10,
+};
+
+using IOSATP_PPN = field<0, PPN_BITS, u64>;
+using IOSATP_MODE = field<60, 4, u64>;
+
+enum iosatp_modes : u64 {
+    IOSATP_BARE = 0,
+    IOSATP_SV32 = 8,
+    IOSATP_SV39 = 8,
+    IOSATP_SV48 = 9,
+    IOSATP_SV57 = 10,
+};
+
+using PDTP_PPN = field<0, PPN_BITS, u64>;
+using PDTP_MODE = field<60, 4, u64>;
+
+enum pdtp_modes : u64 {
+    PDTP_BARE = 0,
+    PDTP_PD8 = 1,
+    PDTP_PD17 = 2,
+    PDTP_PD20 = 3,
+};
+
+using MSI_PPN = field<0, PPN_BITS, u64>;
+using MSI_MODE = field<60, 4, u64>;
+
+enum msi_modes : u64 {
+    MSI_OFF = 0,
+    MSI_FLAT = 1,
+    MSI_MASK = bitmask(52),
+    MSI_PATTERN = bitmask(52),
+};
+
 enum iommu_faults {
     IOMMU_FAULT_INST_FAULT = 1,
     IOMMU_FAULT_RD_ADDR_MISALIGNED = 4,
@@ -88,6 +154,18 @@ enum iommu_opcode : u64 {
     IOMMU_OPCODE_IOFENCE = 2,
     IOMMU_OPCODE_IOTDIR = 3,
     IOMMU_OPCODE_ATS = 4,
+};
+
+enum iommu_event : u32 {
+    IOMMU_EVENT_NONE = 0,
+    IOMMU_EVENT_UX_REQ = 1,
+    IOMMU_EVENT_TX_REQ = 2,
+    IOMMU_EVENT_ATS_REQ = 3,
+    IOMMU_EVENT_TLB_MISS = 4,
+    IOMMU_EVENT_DD_WALK = 5,
+    IOMMU_EVENT_PD_WALK = 6,
+    IOMMU_EVENT_S1_WALK = 7,
+    IOMMU_EVENT_S2_WALK = 8,
 };
 
 using CAPS_VERSION = field<0, 8, u64>;
@@ -163,6 +241,24 @@ enum ipsr_bits : u32 {
     IPSR_PIP = bit(3),
 };
 
+enum counter_bits : u64 {
+    COUNTER_INH = bit(0),
+    COUNTER_OVF = bit(0),
+    COUNTER_OV = bit(63),
+};
+
+using IOHPMEVT_EVENTID = field<0, 15, u64>;
+using IOHPMEVT_PID_PSCID = field<16, 20, u64>;
+using IOHPMEVT_DID_GSCID = field<36, 24, u64>;
+
+enum iohpmctr_bits : u64 {
+    IOHPMEVT_DMASK = bit(15),
+    IOHPMEVT_PV_PSCV = bit(60),
+    IOHPMEVT_DV_GSCV = bit(61),
+    IOHPMEVT_IDT = bit(62),
+    IOHPMEVT_OF = bit(63),
+};
+
 using TR_REQ_CTL_PID = field<12, 20, u64>;
 using TR_REQ_CTL_DID = field<40, 24, u64>;
 
@@ -192,7 +288,7 @@ constexpr u64 mkctxid(u32 devid, u32 procid) {
 int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
                          context& ctx) {
     u64 ctxid = mkctxid(devid, procid);
-    if (mwr::stl_contains(m_contexts, ctxid)) {
+    if (stl_contains(m_contexts, ctxid)) {
         ctx = m_contexts[ctxid];
         return 0;
     }
@@ -215,10 +311,14 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     case DDTP_MODE_1LVL:
     case DDTP_MODE_2LVL:
     case DDTP_MODE_3LVL:
+        ctx = {};
         break; // TODO
     default:
         return IOMMU_FAULT_DDT_MISCONFIGURED;
     }
+
+    if (!dbg)
+        increment_counter(ctx, IOMMU_EVENT_DD_WALK);
 
     return 0;
 }
@@ -227,6 +327,22 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi,
                        iotlb& entry) {
     if (!dbg)
         m_iotval2 = 0;
+
+    u64 vpn = virt >> PAGE_BITS;
+
+    u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
+    u64 pscid = get_field<TA_PSCID>(ctx.ta);
+
+    if (stl_contains(m_iotlb, vpn)) {
+        iotlb& cache = m_iotlb[vpn];
+        if (cache.gscid == gscid && cache.pscid == pscid) {
+            entry = cache;
+            return 0;
+        }
+    }
+
+    if (!dbg && !dmi)
+        increment_counter(ctx, IOMMU_EVENT_TLB_MISS);
 
     return 0;
 }
@@ -255,6 +371,9 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         return false;
     }
 
+    if (!info.is_debug && !dmi)
+        increment_counter(ctx, IOMMU_EVENT_UX_REQ);
+
     if (int err = fetch_iotlb(ctx, virt, info.is_debug, dmi, entry)) {
         if (!info.is_debug && !dmi) {
             fault req{};
@@ -281,6 +400,59 @@ void iommu::report_fault(const fault& req) {
 
 void iommu::report_irq(u32 irq) {
     ipsr |= irq;
+}
+
+void iommu::restart_counter(u64 val) {
+    m_counter_val = val;
+    m_counter_start = sc_time_stamp();
+    m_counter_ovev.cancel();
+    m_counter_ovev.notify(clock_cycles(mwr::U64_MAX - val));
+}
+
+void iommu::increment_counter(context& ctx, u32 event) {
+    for (int i = 1; i < 32; i++) {
+        u32 cntmask = bit(i);
+        if (iocntinh & cntmask)
+            continue;
+
+        u64 hpmevt = iohpmevt[i - 1];
+        if (event != get_field<IOHPMEVT_EVENTID>(hpmevt))
+            continue;
+
+        u32 did_gscid = get_field<IOHPMEVT_DID_GSCID>(hpmevt);
+        u32 pid_pscid = get_field<IOHPMEVT_PID_PSCID>(hpmevt);
+
+        u32 did = ctx.device_id;
+        u32 pid = ctx.process_id;
+
+        if (hpmevt & IOHPMEVT_IDT) {
+            did = get_field<IOHGATP_GSCID>(ctx.gatp);
+            pid = get_field<TA_PSCID>(ctx.ta);
+        }
+
+        if (hpmevt & IOHPMEVT_DV_GSCV) {
+            u32 mask = ~0u;
+            if (hpmevt & IOHPMEVT_DMASK)
+                mask = ~(mask ^ (mask + 1));
+
+            if ((did & mask) != (did_gscid & mask))
+                continue;
+        }
+
+        if (hpmevt & IOHPMEVT_PV_PSCV) {
+            if (pid != pid_pscid)
+                continue;
+        }
+
+        iohpmctr[i - 1]++;
+
+        if (iohpmctr[i - 1] == 0) { // overflow
+            if (!(iohpmevt[i - 1] & cntmask))
+                report_irq(IPSR_PMIP);
+            iohpmevt[i - 1] |= IOHPMEVT_OF;
+            iocntovf |= cntmask;
+        }
+    }
 }
 
 void iommu::load_capabilities() {
@@ -318,6 +490,18 @@ void iommu::load_capabilities() {
     caps.set_bit<CAPS_PD8>(pd8);
     caps.set_bit<CAPS_PD17>(pd17);
     caps.set_bit<CAPS_PD20>(pd20);
+}
+
+u64 iommu::read_iohpmcycles() {
+    u64 ovf = m_counter_val & COUNTER_OV;
+    u64 val = m_counter_val & ~COUNTER_OV;
+
+    if (!(iocntinh & COUNTER_INH)) {
+        sc_time delta = sc_time_stamp() - m_counter_start;
+        val += delta.to_seconds() * clock_hz();
+    }
+
+    return val | ovf;
 }
 
 void iommu::write_fctl(u32 val) {
@@ -361,6 +545,40 @@ void iommu::write_cqcsr(u32 val) {
 
     m_work |= IOMMU_WORK_COMMAND;
     m_workev.notify(SC_ZERO_TIME);
+}
+
+void iommu::write_iocntinh(u32 val) {
+    // re-starting counter
+    if ((iocntinh & COUNTER_INH) && !(val & COUNTER_INH))
+        restart_counter(m_counter_val);
+
+    // pausing counter
+    if (!(iocntinh & COUNTER_INH) && (val & COUNTER_INH)) {
+        m_counter_val = read_iohpmcycles();
+        m_counter_ovev.cancel();
+    }
+
+    iocntinh = val;
+}
+
+void iommu::write_iohpmcycles(u64 val) {
+    if (iocntinh & COUNTER_INH)
+        m_counter_val = val;
+    else
+        restart_counter(val);
+
+    if (!(val & COUNTER_OV))
+        iocntovf &= ~COUNTER_OVF;
+}
+
+void iommu::write_iohpmevt(u64 val, size_t idx) {
+    if (get_field<IOHPMEVT_EVENTID>(val) > IOMMU_EVENT_S2_WALK)
+        set_field<IOHPMEVT_EVENTID>(val, IOMMU_EVENT_NONE);
+
+    iohpmevt[idx] = val;
+
+    if (!(val & IOHPMEVT_OF))
+        iocntovf &= ~bit(idx + 1);
 }
 
 void iommu::write_tr_req_iova(u64 val) {
@@ -499,6 +717,14 @@ void iommu::worker() {
     }
 }
 
+void iommu::overflow() {
+    if (!(m_counter_val & COUNTER_OV))
+        report_irq(IPSR_PMIP);
+
+    m_counter_val |= COUNTER_OV;
+    iocntovf |= COUNTER_OVF;
+}
+
 iommu::iommu(const sc_module_name& nm):
     peripheral(nm),
     m_contexts(),
@@ -507,6 +733,9 @@ iommu::iommu(const sc_module_name& nm):
     m_iotval2(0),
     m_dmi_lo(~0ull),
     m_dmi_hi(0ull),
+    m_counter_val(0ull),
+    m_counter_start(),
+    m_counter_ovev("counter_ovev"),
     sv32("sv32", true),
     sv39("sv39", true),
     sv48("sv48", true),
@@ -582,6 +811,25 @@ iommu::iommu(const sc_module_name& nm):
     cqcsr.sync_always();
     cqcsr.on_write(&iommu::write_cqcsr);
 
+    iocntovf.allow_read_only();
+    iocntovf.sync_always();
+
+    iocntinh.allow_read_write();
+    iocntinh.sync_always();
+    iocntinh.on_write(&iommu::write_iocntinh);
+
+    iohpmcycles.allow_read_write();
+    iohpmcycles.sync_always();
+    iohpmcycles.on_read(&iommu::read_iohpmcycles);
+    iohpmcycles.on_write(&iommu::write_iohpmcycles);
+
+    iohpmctr.allow_read_write();
+    iohpmctr.sync_always();
+
+    iohpmevt.allow_read_write();
+    iohpmevt.sync_always();
+    iohpmevt.on_write(&iommu::write_iohpmevt);
+
     tr_req_iova.allow_read_write();
     tr_req_iova.sync_never();
     tr_req_iova.on_write(&iommu::write_tr_req_iova);
@@ -597,6 +845,9 @@ iommu::iommu(const sc_module_name& nm):
 
     SC_HAS_PROCESS(iommu);
     SC_THREAD(worker);
+    SC_METHOD(overflow);
+    sensitive << m_counter_ovev;
+    dont_initialize();
 }
 
 iommu::~iommu() {
@@ -609,6 +860,7 @@ void iommu::reset() {
     m_contexts.clear();
     m_iotlb.clear();
     invalidate_direct_mem_ptr(0ull, ~0ull);
+    restart_counter(0);
 }
 
 unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,

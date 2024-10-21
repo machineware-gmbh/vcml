@@ -99,6 +99,10 @@ private:
     u64 m_dmi_lo;
     u64 m_dmi_hi;
 
+    u64 m_counter_val;
+    sc_time m_counter_start;
+    sc_event m_counter_ovev;
+
     int fetch_context(u32 devid, u32 procid, bool dbg, bool dmi, context& ctx);
     int fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi, iotlb& entry);
 
@@ -108,12 +112,20 @@ private:
     void report_fault(const fault& req);
     void report_irq(u32 irqid);
 
+    void restart_counter(u64 val);
+    void increment_counter(context& ctx, u32 event);
+
     void load_capabilities();
+
+    u64 read_iohpmcycles();
 
     void write_fctl(u32 val);
     void write_ddtp(u64 val);
     void write_cqt(u32 val);
     void write_cqcsr(u32 val);
+    void write_iocntinh(u32 val);
+    void write_iohpmcycles(u64 val);
+    void write_iohpmevt(u64 val, size_t idx);
     void write_tr_req_iova(u64 val);
     void write_tr_req_ctl(u64 val);
 
@@ -126,6 +138,7 @@ private:
     void handle_tr_req();
 
     void worker();
+    void overflow();
 
 public:
     property<bool> sv32;
