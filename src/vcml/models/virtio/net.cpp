@@ -281,12 +281,12 @@ bool net::handle_tx(vq_message& msg) {
 
 void net::rx_thread() {
     while (true) {
-        vq_message msg;
-        while (!virtio_in->get(VIRTQUEUE_RX, msg))
-            wait(m_rxev);
-
         eth_frame frame;
         while (!eth_rx_pop(frame))
+            wait(m_rxev);
+
+        vq_message msg;
+        while (!virtio_in->get(VIRTQUEUE_RX, msg))
             wait(m_rxev);
 
         if (!handle_rx(msg, frame) || !virtio_in->put(VIRTQUEUE_RX, msg))
