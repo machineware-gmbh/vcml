@@ -22,6 +22,26 @@ enum address_bits : u64 {
     PPN_MASK = bitmask(PPN_BITS, PAGE_BITS),
 };
 
+using PTE_PPN = field<10, PPN_BITS, u64>;
+using PTE_PBMT = field<61, 2, u64>;
+
+enum pte_bits : u32 {
+    PTE_V = bit(0),
+    PTE_R = bit(1),
+    PTE_W = bit(2),
+    PTE_X = bit(3),
+    PTE_U = bit(4),
+    PTE_G = bit(5),
+    PTE_A = bit(6),
+    PTE_D = bit(7),
+    PTE_RWX = PTE_R | PTE_W | PTE_X,
+};
+
+enum iotval2_bits : u64 {
+    IOTVAL2_INDIRECT = bit(0),
+    IOTVAL2_WRITE = bit(1),
+};
+
 using DDTE_PPN = field<10, PPN_BITS, u64>;
 
 enum ddte_bits : u64 {
@@ -102,18 +122,28 @@ enum msi_modes : u64 {
     MSI_PATTERN = bitmask(52),
 };
 
+enum tablewalk_errors {
+    TWALK_FAULT_NONE = 0,
+    TWALK_FAULT_G_STAGE,
+    TWALK_FAULT_PTE_FETCH,
+    TWALK_FAULT_PTE_INVALID,
+    TWALK_FAULT_PTE_CORRUPTED,
+    TWALK_FAULT_PPN_MISALIGNED,
+    TWALK_FAULT_AD_UPDATE,
+};
+
 enum iommu_faults {
-    IOMMU_FAULT_INST_FAULT = 1,
-    IOMMU_FAULT_RD_ADDR_MISALIGNED = 4,
-    IOMMU_FAULT_RD_FAULT = 5,
-    IOMMU_FAULT_WR_ADDR_MISALIGNED = 6,
-    IOMMU_FAULT_WR_FAULT = 7,
-    IOMMU_FAULT_INST_FAULT_S = 12,
-    IOMMU_FAULT_RD_FAULT_S = 13,
-    IOMMU_FAULT_WR_FAULT_S = 15,
-    IOMMU_FAULT_INST_FAULT_VS = 20,
-    IOMMU_FAULT_RD_FAULT_VS = 21,
-    IOMMU_FAULT_WR_FAULT_VS = 23,
+    IOMMU_ACCESS_FAULT_X = 1,
+    IOMMU_MISALIGNED_FAULT_R = 4,
+    IOMMU_ACCESS_FAULT_R = 5,
+    IOMMU_MISALIGNED_FAULT_W = 6,
+    IOMMU_ACCESS_FAULT_W = 7,
+    IOMMU_PAGE_FAULT_X = 12,
+    IOMMU_PAGE_FAULT_R = 13,
+    IOMMU_PAGE_FAULT_W = 15,
+    IOMMU_GUEST_PAGE_FAULT_X = 20,
+    IOMMU_GUEST_PAGE_FAULT_R = 21,
+    IOMMU_GUEST_PAGE_FAULT_W = 23,
     IOMMU_FAULT_DMA_DISABLED = 256,
     IOMMU_FAULT_DDT_LOAD_FAULT = 257,
     IOMMU_FAULT_DDT_INVALID = 258,
@@ -134,6 +164,22 @@ enum iommu_faults {
     IOMMU_FAULT_MSI_WR_FAULT = 273,
     IOMMU_FAULT_PT_CORRUPTED = 274,
 };
+
+constexpr int iommu_access_fault(bool wnr) {
+    return wnr ? IOMMU_ACCESS_FAULT_W : IOMMU_ACCESS_FAULT_R;
+}
+
+constexpr int iommu_misaligned_fault(bool wnr) {
+    return wnr ? IOMMU_MISALIGNED_FAULT_W : IOMMU_MISALIGNED_FAULT_R;
+}
+
+constexpr int iommu_page_fault(bool wnr) {
+    return wnr ? IOMMU_PAGE_FAULT_W : IOMMU_PAGE_FAULT_R;
+}
+
+constexpr int iommu_guest_page_fault(bool wnr) {
+    return wnr ? IOMMU_GUEST_PAGE_FAULT_W : IOMMU_GUEST_PAGE_FAULT_R;
+}
 
 enum iommu_ttyp {
     IOMMU_TTYP_NONE = 0,
@@ -299,6 +345,35 @@ constexpr u64 mkctxid(u32 devid, u32 procid) {
     return (u64)procid << 32 | devid;
 }
 
+bool iommu::dma_read(u64 addr, void* data, size_t size, bool debug) {
+    tlm_sbi info = debug ? SBI_DEBUG : SBI_NONE;
+    ddtp |= DDTP_BUSY;
+    auto res = out.read(addr, data, size, info);
+    ddtp &= ~DDTP_BUSY;
+    return failed(res);
+}
+
+bool iommu::dma_readx(u64 addr, void* data, size_t size, bool debug) {
+    tlm_sbi info = debug ? SBI_DEBUG : SBI_EXCL;
+    ddtp |= DDTP_BUSY;
+    auto res = out.read(addr, data, size, info);
+    ddtp &= ~DDTP_BUSY;
+    return failed(res);
+}
+
+bool iommu::dma_writex(u64 addr, void* data, size_t size, bool debug,
+                       bool& atomic) {
+    if (debug)
+        return true;
+
+    unsigned int nbytes = 0;
+    ddtp |= DDTP_BUSY;
+    auto res = out.read(addr, data, size, SBI_EXCL, &nbytes);
+    ddtp &= ~DDTP_BUSY;
+    atomic = nbytes == size;
+    return failed(res);
+}
+
 bool iommu::check_context(const context& ctx) const {
     if (!(caps & CAPS_ATS) && (ctx.tc & (TC_EN_ATS | TC_EN_PRI | TC_PRPR)))
         return false;
@@ -459,20 +534,12 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
         ddidx[2] = extract(devid, 16, 8);
     }
 
-    tlm_response_status res;
-    tlm_sbi info = dbg ? SBI_DEBUG : SBI_NONE;
-
     for (; depth > 0; depth--) {
         if (!dbg)
             increment_counter(ctx, IOMMU_EVENT_DD_WALK);
 
         u64 ddte = 0;
-
-        ddtp |= DDTP_BUSY;
-        res = out.readw(addr + ddidx[depth] * sizeof(ddte), ddte, info);
-        ddtp &= ~DDTP_BUSY;
-
-        if (failed(res))
+        if (!dma_read(addr + ddidx[depth] * sizeof(ddte), ddte, dbg))
             return IOMMU_FAULT_DDT_LOAD_FAULT;
 
         if (!(ddte & DDTE_V) || (ddte & ~DDTE_MASK))
@@ -487,12 +554,7 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     u64 rawctx[8];
     memset(rawctx, 0, sizeof(rawctx));
     size_t ctxsz = msi_flat ? 8 : 4;
-
-    ddtp |= DDTP_BUSY;
-    res = out.read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, info);
-    ddtp &= ~DDTP_BUSY;
-
-    if (failed(res))
+    if (!dma_read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, dbg))
         return IOMMU_FAULT_DDT_LOAD_FAULT;
 
     ctx.tc = rawctx[0];
@@ -544,14 +606,10 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
             u64 pdte = 0;
             u64 phys = 0;
             u64 virt = addr + pdidx[depth] * sizeof(pdte);
-            if (int fault = translate_g(ctx, virt, phys, info))
+            if (int fault = translate_g(ctx, virt, false, false, dbg, phys))
                 return fault;
 
-            ddtp |= DDTP_BUSY;
-            res = out.readw(phys, pdte, info);
-            ddtp &= ~DDTP_BUSY;
-
-            if (failed(res))
+            if (!dma_read(phys, pdte, dbg))
                 return IOMMU_FAULT_PDT_LOAD_FAULT;
 
             if (!(pdte & PDTE_V) || (pdte & ~PDTE_MASK))
@@ -568,14 +626,10 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
 
         u64 phys = 0;
         u64 virt = addr + pdidx[0] * ctxsz;
-        if (int fault = translate_g(ctx, virt, phys, info))
+        if (int fault = translate_g(ctx, virt, false, false, dbg, phys))
             return fault;
 
-        ddtp |= DDTP_BUSY;
-        res = out.read(phys, rawctx, ctxsz, info);
-        ddtp &= ~DDTP_BUSY;
-
-        if (failed(res))
+        if (!dma_read(phys, rawctx, ctxsz, dbg))
             return IOMMU_FAULT_PDT_LOAD_FAULT;
 
         ctx.ta = rawctx[0];
@@ -586,11 +640,8 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     return 0;
 }
 
-int iommu::fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi,
+int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
                        iotlb& entry) {
-    if (!dbg)
-        m_iotval2 = 0;
-
     u64 vpn = virt >> PAGE_BITS;
 
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
@@ -598,27 +649,233 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi,
 
     if (stl_contains(m_iotlb, vpn)) {
         iotlb& cache = m_iotlb[vpn];
-        if (cache.gscid == gscid && cache.pscid == pscid) {
+        if (cache.gscid == gscid && cache.pscid == pscid &&
+            (cache.w || !wnr)) {
             entry = cache;
             return 0;
         }
     }
 
-    if (!dbg && !dmi)
+    if (dmi)
+        return -1;
+
+    if (!dbg) {
+        m_iotval2 = 0;
         increment_counter(ctx, IOMMU_EVENT_TLB_MISS);
+    }
+
+    iotlb iotlb_s;
+    int fault = tablewalk(ctx, virt, wnr, false, false, dbg, iotlb_s);
+    if (fault == TWALK_FAULT_G_STAGE)
+        return IOMMU_PAGE_FAULT_R;
+    if (fault != TWALK_FAULT_NONE)
+        return iommu_guest_page_fault(wnr);
+
+    iotlb iotlb_g;
+    u64 guest_phys = iotlb_s.ppn << PAGE_BITS;
+    if (tablewalk(ctx, guest_phys, wnr, true, false, dbg, iotlb_g))
+        return iommu_page_fault(wnr);
+
+    entry.vpn = iotlb_s.vpn;
+    entry.ppn = iotlb_g.ppn;
+    entry.r = iotlb_s.r && iotlb_g.r;
+    entry.w = iotlb_s.w && iotlb_g.w;
+    entry.pbmt = iotlb_s.pbmt | iotlb_g.pbmt;
+
+    if (!dbg)
+        m_iotlb[vpn] = entry;
 
     return 0;
 }
 
-int iommu::translate_g(context& ctx, u64 virt, u64& phys, const tlm_sbi& sbi) {
-    switch (get_field<IOHGATP_MODE>(ctx.gatp)) {
-    case IOHGATP_BARE:
+iommu::vmcfg iommu::get_vm_config(const context& ctx, bool g) {
+    vmcfg cfg;
+
+    if (g) {
+        cfg.root = get_field<IOHGATP_PPN>(ctx.gatp) << PAGE_BITS;
+        cfg.adue = ctx.tc & TC_GADE;
+        if (ctx.tc & TC_SXL) {
+            cfg.ptesize = 4;
+            cfg.pbmt = false;
+            switch (get_field<IOHGATP_MODE>(ctx.gatp)) {
+            case IOHGATP_SV32X4:
+                cfg.levels = 2;
+                cfg.vpnbits = 10;
+                break;
+            case IOHGATP_BARE:
+            default:
+                cfg.levels = 0;
+                cfg.vpnbits = 0;
+                break;
+            }
+        } else {
+            cfg.ptesize = 8;
+            cfg.pbmt = svpbmt;
+            switch (get_field<IOHGATP_MODE>(ctx.gatp)) {
+            case IOHGATP_SV39X4:
+                cfg.levels = 3;
+                cfg.vpnbits = 9;
+                break;
+            case IOHGATP_SV48X4:
+                cfg.levels = 4;
+                cfg.vpnbits = 9;
+                break;
+            case IOHGATP_SV57X4:
+                cfg.levels = 5;
+                cfg.vpnbits = 9;
+                break;
+            case IOHGATP_BARE:
+            default:
+                cfg.levels = 0;
+                cfg.vpnbits = 0;
+                break;
+            }
+        }
+    } else {
+        cfg.root = get_field<IOSATP_PPN>(ctx.satp) << PAGE_BITS;
+        cfg.adue = ctx.tc & TC_SADE;
+        if (ctx.tc & TC_SXL) {
+            cfg.ptesize = 4;
+            cfg.pbmt = false;
+            switch (get_field<IOSATP_MODE>(ctx.satp)) {
+            case IOSATP_SV32:
+                cfg.levels = 2;
+                cfg.vpnbits = 10;
+                break;
+            case IOSATP_BARE:
+            default:
+                cfg.levels = 0;
+                cfg.vpnbits = 0;
+                break;
+            }
+        } else {
+            cfg.ptesize = 8;
+            cfg.pbmt = svpbmt;
+            switch (get_field<IOSATP_MODE>(ctx.satp)) {
+            case IOSATP_SV39:
+                cfg.levels = 3;
+                cfg.vpnbits = 9;
+                break;
+            case IOSATP_SV48:
+                cfg.levels = 4;
+                cfg.vpnbits = 9;
+                break;
+            case IOSATP_SV57:
+                cfg.levels = 5;
+                cfg.vpnbits = 9;
+                break;
+            case IOSATP_BARE:
+            default:
+                cfg.levels = 0;
+                cfg.vpnbits = 0;
+                break;
+            }
+        }
+    }
+
+    return cfg;
+}
+
+int iommu::tablewalk(context& ctx, u64 virt, bool g, bool wnr, bool ind,
+                     bool dbg, iotlb& entry) {
+    auto vm = get_vm_config(ctx, g);
+
+    if (vm.levels == 0) {
+        entry.vpn = virt >> PAGE_BITS;
+        entry.ppn = virt >> PAGE_BITS;
+        entry.r = true;
+        entry.w = true;
+        entry.pbmt = 0;
+        return 0;
+    }
+
+    if (g) {
+        m_iotval2 = virt & ~PAGE_MASK;
+        if (ind)
+            m_iotval2 |= IOTVAL2_INDIRECT | (wnr ? IOTVAL2_WRITE : 0);
+    }
+
+retry:
+    u64 pgbase = vm.root;
+
+    for (size_t i = 0; i < vm.levels; i++) {
+        u64 pgshift = (vm.levels - i - 1) * vm.vpnbits;
+        u64 vpnmask = bitmask(vm.vpnbits);
+        u64 ppnmask = bitmask(pgshift);
+
+        u64 pte = 0;
+        u64 idx = (virt >> (pgshift + PAGE_BITS)) & vpnmask;
+        u64 pteaddr = pgbase + idx * vm.ptesize;
+
+        if (!g && translate_g(ctx, pteaddr, vm.adue, true, dbg, pteaddr))
+            return TWALK_FAULT_G_STAGE;
+
+        if (!dma_readx(pteaddr, &pte, vm.ptesize, dbg))
+            return TWALK_FAULT_PTE_FETCH;
+
+        if (!(pte & PTE_V))
+            return TWALK_FAULT_PTE_INVALID;
+
+        u64 ppn = get_field<PTE_PPN>(pte);
+        u64 rwx = pte & PTE_RWX;
+        if (rwx == PTE_W || rwx == (PTE_W | PTE_X))
+            return TWALK_FAULT_PTE_CORRUPTED;
+
+        if (rwx == 0) {
+            pgbase = ppn << PAGE_BITS;
+            continue;
+        }
+
+        if (ppn & ppnmask)
+            return TWALK_FAULT_PPN_MISALIGNED;
+
+        if (!dbg) {
+            u64 newpte = pte | PTE_A | (wnr ? PTE_D : 0);
+            if (newpte != pte) {
+                if (!vm.adue)
+                    return TWALK_FAULT_AD_UPDATE;
+
+                bool atomic = false;
+                if (!dma_writex(pteaddr, &newpte, vm.ptesize, false, atomic))
+                    return TWALK_FAULT_G_STAGE;
+                if (!atomic)
+                    goto retry;
+            }
+        }
+
+        entry.vpn = virt >> PAGE_BITS;
+        entry.ppn = get_field<PTE_PPN>(pte);
+        entry.r = pte & PTE_R;
+        entry.w = pte & PTE_W;
+        entry.pbmt = 0;
+
+        if (svpbmt)
+            entry.pbmt = get_field<PTE_PBMT>(pte);
+
+        return 0;
+    }
+
+    return TWALK_FAULT_PTE_CORRUPTED;
+}
+
+int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
+                       u64& phys) {
+    if (get_field<IOHGATP_MODE>(ctx.gatp) == IOHGATP_BARE) {
         phys = virt;
         return 0;
-    default:
-        m_iotval2 = virt;
-        return IOMMU_FAULT_DMA_DISABLED; // TODO
     }
+
+    iotlb entry;
+    if (tablewalk(ctx, virt & ~PAGE_MASK, true, wnr, ind, dbg, entry))
+        return iommu_page_fault(wnr);
+
+    if (wnr && !entry.w)
+        return IOMMU_PAGE_FAULT_W;
+    if (!wnr && !entry.r)
+        return IOMMU_PAGE_FAULT_R;
+
+    phys = (entry.ppn << PAGE_BITS) | (virt & PAGE_MASK);
+    return 0;
 }
 
 bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
@@ -627,8 +884,10 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
     u32 pasid = info.asid;
     u64 virt = tx.get_address() & ~PAGE_MASK;
     context ctx;
+    int err;
 
-    if (int err = fetch_context(devid, pasid, info.is_debug, dmi, ctx)) {
+    err = fetch_context(devid, pasid, info.is_debug, dmi, ctx);
+    if (err) {
         if (!info.is_debug && !dmi) {
             fault req{};
             req.cause = err;
@@ -648,7 +907,8 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
     if (!info.is_debug && !dmi)
         increment_counter(ctx, IOMMU_EVENT_UX_REQ);
 
-    if (int err = fetch_iotlb(ctx, virt, info.is_debug, dmi, entry)) {
+    err = fetch_iotlb(ctx, virt, tx.is_write(), info.is_debug, dmi, entry);
+    if (err) {
         if (!info.is_debug && !dmi) {
             fault req{};
             req.cause = err;
@@ -899,11 +1159,7 @@ void iommu::handle_command() {
 
     while ((cqh != cqt) && (cqcsr & CQCSR_CQEN)) {
         command cmd{};
-        cqcsr |= CQCSR_BUSY;
-        auto res = out.readw(base + cqh * sizeof(command), cmd);
-        cqcsr &= ~CQCSR_BUSY;
-
-        if (failed(res)) {
+        if (!dma_read(base + cqh * sizeof(command), cmd, false)) {
             cqcsr |= CQCSR_CQMF;
             if (cqcsr & CQCSR_CIE)
                 report_irq(IPSR_CIP);

@@ -83,6 +83,15 @@ private:
         u64 payload;
     };
 
+    struct vmcfg {
+        u64 root;
+        size_t levels;
+        size_t vpnbits;
+        size_t ptesize;
+        bool adue;
+        bool pbmt;
+    };
+
     static_assert(sizeof(iotlb) == 2 * sizeof(u64), "iotlb size");
     static_assert(sizeof(fault) == 4 * sizeof(u64), "fault size");
     static_assert(sizeof(pgreq) == 2 * sizeof(u64), "pgreq size");
@@ -103,12 +112,27 @@ private:
     sc_time m_counter_start;
     sc_event m_counter_ovev;
 
+    template <typename T>
+    bool dma_read(u64 addr, T& data, bool debug) {
+        return dma_read(addr, &data, sizeof(T), debug);
+    }
+
+    bool dma_read(u64 addr, void* data, size_t sz, bool dbg);
+    bool dma_readx(u64 addr, void* data, size_t sz, bool dbg);
+    bool dma_writex(u64 addr, void* data, size_t sz, bool dbg, bool& atomic);
+
     bool check_context(const context& ctx) const;
 
     int fetch_context(u32 devid, u32 procid, bool dbg, bool dmi, context& ctx);
-    int fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi, iotlb& entry);
+    int fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
+                    iotlb& entry);
 
-    int translate_g(context& ctx, u64 virt, u64& phys, const tlm_sbi& sbi);
+    vmcfg get_vm_config(const context& ctx, bool g);
+
+    int tablewalk(context& ctx, u64 va, bool g, bool wnr, bool ind, bool dbg,
+                  iotlb& entry);
+    int translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
+                    u64& phys);
 
     bool translate(const tlm_generic_payload& tx, const tlm_sbi& sbi, bool dmi,
                    iotlb& entry);
