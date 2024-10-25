@@ -103,8 +103,12 @@ private:
     sc_time m_counter_start;
     sc_event m_counter_ovev;
 
+    bool check_context(const context& ctx) const;
+
     int fetch_context(u32 devid, u32 procid, bool dbg, bool dmi, context& ctx);
     int fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi, iotlb& entry);
+
+    int translate_g(context& ctx, u64 virt, u64& phys, const tlm_sbi& sbi);
 
     bool translate(const tlm_generic_payload& tx, const tlm_sbi& sbi, bool dmi,
                    iotlb& entry);

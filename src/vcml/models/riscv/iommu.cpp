@@ -22,6 +22,20 @@ enum address_bits : u64 {
     PPN_MASK = bitmask(PPN_BITS, PAGE_BITS),
 };
 
+using DDTE_PPN = field<10, PPN_BITS, u64>;
+
+enum ddte_bits : u64 {
+    DDTE_V = bit(0),
+    DDTE_MASK = DDTE_V | DDTE_PPN::MASK,
+};
+
+using PDTE_PPN = field<10, PPN_BITS, u64>;
+
+enum pdte_bits : u64 {
+    PDTE_V = bit(0),
+    PDTE_MASK = DDTE_V | DDTE_PPN::MASK,
+};
+
 enum tc_bits : u64 {
     TC_V = bit(0),
     TC_EN_ATS = bit(1),
@@ -285,6 +299,114 @@ constexpr u64 mkctxid(u32 devid, u32 procid) {
     return (u64)procid << 32 | devid;
 }
 
+bool iommu::check_context(const context& ctx) const {
+    if (!(caps & CAPS_ATS) && (ctx.tc & (TC_EN_ATS | TC_EN_PRI | TC_PRPR)))
+        return false;
+    if (!(ctx.tc & TC_EN_ATS) && (ctx.tc & (TC_T2GPA | TC_EN_PRI)))
+        return false;
+    if (!(ctx.tc & TC_EN_PRI) && (ctx.tc & TC_PRPR))
+        return false;
+    if (!(caps & CAPS_T2GPA) && (ctx.tc & TC_T2GPA))
+        return false;
+    if ((ctx.tc & TC_T2GPA) &&
+        (get_field<IOHGATP_MODE>(ctx.gatp) == IOHGATP_BARE))
+        return false;
+    if (ctx.tc & TC_PDTV) {
+        switch (get_field<PDTP_MODE>(ctx.satp)) {
+        case PDTP_PD8:
+            if (!(caps & CAPS_PD8))
+                return false;
+        case PDTP_PD17:
+            if (!(caps & CAPS_PD17))
+                return false;
+        case PDTP_PD20:
+            if (!(caps & CAPS_PD20))
+                return false;
+        default:
+            break;
+        }
+    } else {
+        if (ctx.tc & TC_DPE)
+            return false;
+        if (ctx.tc & TC_SXL) { // 32bit S-mode
+            switch (get_field<IOSATP_MODE>(ctx.satp)) {
+            case IOSATP_BARE:
+                break;
+            case IOSATP_SV32:
+                if (!(caps & CAPS_SV32))
+                    return false;
+                break;
+            default:
+                return false;
+            }
+        } else { // 64bit S-mode
+            switch (get_field<IOSATP_MODE>(ctx.satp)) {
+            case IOSATP_BARE:
+                break;
+            case IOSATP_SV39:
+                if (!(caps & CAPS_SV39))
+                    return false;
+                break;
+            case IOSATP_SV48:
+                if (!(caps & CAPS_SV48))
+                    return false;
+                break;
+            case IOSATP_SV57:
+                if (!(caps & CAPS_SV57))
+                    return false;
+                break;
+            default:
+                return false;
+            }
+        }
+    }
+
+    if (fctl & FCTL_GXL) { // 32bit G-mode
+        switch (get_field<IOHGATP_MODE>(ctx.gatp)) {
+        case IOHGATP_BARE:
+            break;
+        case IOHGATP_SV32X4:
+            if (!(caps & CAPS_SV32X4))
+                return false;
+            break;
+        default:
+            return false;
+        }
+    } else { // 64bit S-mode
+        switch (get_field<IOHGATP_MODE>(ctx.gatp)) {
+        case IOHGATP_BARE:
+            break;
+        case IOHGATP_SV39X4:
+            if (!(caps & CAPS_SV39X4))
+                return false;
+            break;
+        case IOHGATP_SV48X4:
+            if (!(caps & CAPS_SV48X4))
+                return false;
+            break;
+        case IOHGATP_SV57X4:
+            if (!(caps & CAPS_SV57X4))
+                return false;
+            break;
+        default:
+            return false;
+        }
+    }
+
+    if (get_field<IOHGATP_MODE>(ctx.gatp) != IOHGATP_BARE &&
+        get_field<IOHGATP_PPN>(ctx.gatp) & 0xf) // gatp must be 16kB aligned
+        return false;
+
+    if (!(caps & CAPS_AMO_HWAD) && (ctx.tc & (TC_SADE | TC_GADE)))
+        return false;
+    if (!(caps & CAPS_END) && (!!(fctl & FCTL_BE) != !!(ctx.tc & TC_SBE)))
+        return false;
+    if ((fctl & FCTL_GXL) && !(ctx.tc & TC_SXL))
+        return false;
+
+    return true;
+}
+
 int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
                          context& ctx) {
     u64 ctxid = mkctxid(devid, procid);
@@ -296,30 +418,171 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     if (dmi)
         return -1;
 
-    switch (ddtp.get_field<DDTP_IOMMU_MODE>()) {
+    ctx = {};
+    ctx.device_id = devid;
+    ctx.process_id = procid;
+
+    size_t depth = 0;
+    size_t ddidx[3] = { 0, 0, 0 };
+
+    u64 mode = ddtp.get_field<DDTP_IOMMU_MODE>();
+    u64 addr = ddtp.get_field<DDTP_IOMMU_PPN>() << PAGE_BITS;
+
+    switch (mode) {
     case DDTP_MODE_OFF:
         return IOMMU_FAULT_DMA_DISABLED;
     case DDTP_MODE_BARE:
-        ctx.device_id = devid;
-        ctx.process_id = procid;
-        ctx.gatp = 0; // TODO: set mode bare
-        ctx.satp = 0; // TODO: set mode bare
-        ctx.ta = 0;
-        ctx.tc = 0; // TODO: set valid bit!
-        ctx.msiptp = 0;
+        set_field<IOSATP_MODE>(ctx.satp, IOSATP_BARE);
+        set_field<IOHGATP_MODE>(ctx.gatp, IOHGATP_BARE);
+        ctx.ta |= TA_V;
         return 0;
     case DDTP_MODE_1LVL:
+        depth = 0;
+        break;
     case DDTP_MODE_2LVL:
+        depth = 1;
+        break;
     case DDTP_MODE_3LVL:
-        ctx = {};
-        break; // TODO
+        depth = 2;
+        break;
     default:
         return IOMMU_FAULT_DDT_MISCONFIGURED;
+    }
+
+    if (msi_flat) {
+        ddidx[0] = extract(devid, 0, 6);
+        ddidx[1] = extract(devid, 6, 9);
+        ddidx[2] = extract(devid, 15, 9);
+    } else {
+        ddidx[0] = extract(devid, 0, 7);
+        ddidx[1] = extract(devid, 7, 9);
+        ddidx[2] = extract(devid, 16, 8);
+    }
+
+    tlm_response_status res;
+    tlm_sbi info = dbg ? SBI_DEBUG : SBI_NONE;
+
+    for (; depth > 0; depth--) {
+        if (!dbg)
+            increment_counter(ctx, IOMMU_EVENT_DD_WALK);
+
+        u64 ddte = 0;
+
+        ddtp |= DDTP_BUSY;
+        res = out.readw(addr + ddidx[depth] * sizeof(ddte), ddte, info);
+        ddtp &= ~DDTP_BUSY;
+
+        if (failed(res))
+            return IOMMU_FAULT_DDT_LOAD_FAULT;
+
+        if (!(ddte & DDTE_V) || (ddte & ~DDTE_MASK))
+            return IOMMU_FAULT_DDT_INVALID;
+
+        addr = get_field<DDTE_PPN>(ddte) << PAGE_BITS;
     }
 
     if (!dbg)
         increment_counter(ctx, IOMMU_EVENT_DD_WALK);
 
+    u64 rawctx[8];
+    memset(rawctx, 0, sizeof(rawctx));
+    size_t ctxsz = msi_flat ? 8 : 4;
+
+    ddtp |= DDTP_BUSY;
+    res = out.read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, info);
+    ddtp &= ~DDTP_BUSY;
+
+    if (failed(res))
+        return IOMMU_FAULT_DDT_LOAD_FAULT;
+
+    ctx.tc = rawctx[0];
+    ctx.gatp = rawctx[1];
+    ctx.ta = rawctx[2];
+    ctx.satp = rawctx[3];
+
+    if (msi_flat) {
+        ctx.msiptp = rawctx[4];
+        ctx.msi_addr_mask = rawctx[5];
+        ctx.msi_addr_mask = rawctx[6];
+    }
+
+    if (!(ctx.tc & TC_V))
+        return IOMMU_FAULT_DDT_INVALID;
+
+    if (!check_context(ctx))
+        return IOMMU_FAULT_DDT_MISCONFIGURED;
+
+    if (ctx.tc & TC_PDTV) {
+        mode = get_field<IOHGATP_MODE>(ctx.satp);
+        addr = get_field<IOHGATP_PPN>(ctx.satp) << PAGE_BITS;
+
+        switch (mode) {
+        case PDTP_BARE:
+            return 0;
+        case PDTP_PD8:
+            depth = 0;
+            break;
+        case PDTP_PD17:
+            depth = 1;
+            break;
+        case PDTP_PD20:
+            depth = 2;
+            break;
+        default:
+            return IOMMU_FAULT_PDT_MISCONFIGURED;
+        }
+
+        size_t pdidx[3];
+        pdidx[0] = extract(procid, 0, 8);
+        pdidx[1] = extract(procid, 8, 9);
+        pdidx[2] = extract(procid, 17, 2);
+
+        for (; depth > 0; depth--) {
+            if (!dbg)
+                increment_counter(ctx, IOMMU_EVENT_PD_WALK);
+
+            u64 pdte = 0;
+            u64 phys = 0;
+            u64 virt = addr + pdidx[depth] * sizeof(pdte);
+            if (int fault = translate_g(ctx, virt, phys, info))
+                return fault;
+
+            ddtp |= DDTP_BUSY;
+            res = out.readw(phys, pdte, info);
+            ddtp &= ~DDTP_BUSY;
+
+            if (failed(res))
+                return IOMMU_FAULT_PDT_LOAD_FAULT;
+
+            if (!(pdte & PDTE_V) || (pdte & ~PDTE_MASK))
+                return IOMMU_FAULT_PDT_INVALID;
+
+            addr = get_field<DDTE_PPN>(pdte) << PAGE_BITS;
+        }
+
+        if (!dbg)
+            increment_counter(ctx, IOMMU_EVENT_PD_WALK);
+
+        ctxsz = 2 * sizeof(u64);
+        memset(rawctx, 0, sizeof(rawctx));
+
+        u64 phys = 0;
+        u64 virt = addr + pdidx[0] * ctxsz;
+        if (int fault = translate_g(ctx, virt, phys, info))
+            return fault;
+
+        ddtp |= DDTP_BUSY;
+        res = out.read(phys, rawctx, ctxsz, info);
+        ddtp &= ~DDTP_BUSY;
+
+        if (failed(res))
+            return IOMMU_FAULT_PDT_LOAD_FAULT;
+
+        ctx.ta = rawctx[0];
+        ctx.satp = rawctx[1];
+    }
+
+    m_contexts[ctxid] = ctx;
     return 0;
 }
 
@@ -347,6 +610,17 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool dbg, bool dmi,
     return 0;
 }
 
+int iommu::translate_g(context& ctx, u64 virt, u64& phys, const tlm_sbi& sbi) {
+    switch (get_field<IOHGATP_MODE>(ctx.gatp)) {
+    case IOHGATP_BARE:
+        phys = virt;
+        return 0;
+    default:
+        m_iotval2 = virt;
+        return IOMMU_FAULT_DMA_DISABLED; // TODO
+    }
+}
+
 bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
                       bool dmi, iotlb& entry) {
     u32 devid = info.cpuid;
@@ -364,7 +638,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
             req.pv = !!pasid;
             req.priv = info.privilege > 0;
             req.iotval = virt;
-            req.iotval2 = 0;
+            req.iotval2 = m_iotval2;
             report_fault(req);
         }
 
