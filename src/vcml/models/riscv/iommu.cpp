@@ -224,8 +224,9 @@ enum iommu_event : u32 {
     IOMMU_EVENT_TLB_MISS = 4,
     IOMMU_EVENT_DD_WALK = 5,
     IOMMU_EVENT_PD_WALK = 6,
-    IOMMU_EVENT_S1_WALK = 7,
-    IOMMU_EVENT_S2_WALK = 8,
+    IOMMU_EVENT_VS_WALK = 7,
+    IOMMU_EVENT_GS_WALK = 8,
+    IOMMU_EVENT_MAX,
 };
 
 using CAPS_VERSION = field<0, 8, u64>;
@@ -345,33 +346,62 @@ constexpr u64 mkctxid(u32 devid, u32 procid) {
     return (u64)procid << 32 | devid;
 }
 
-bool iommu::dma_read(u64 addr, void* data, size_t size, bool debug) {
-    tlm_sbi info = debug ? SBI_DEBUG : SBI_NONE;
+bool iommu::dma_read(u64 addr, void* data, size_t size, bool excl, bool dbg) {
+    if (excl) {
+        auto rw = dbg ? VCML_ACCESS_READ : VCML_ACCESS_READ_WRITE;
+        u8* dmi_ptr = out.lookup_dmi_ptr(addr, size, rw);
+        if (dmi_ptr) {
+            memcpy(data, dmi_ptr, size);
+            if (dbg)
+                return true;
+
+            m_dma_addr = addr;
+            m_dma_xptr = dmi_ptr;
+            m_dma_xval = 0;
+            memcpy(&m_dma_xval, dmi_ptr, size);
+            return true;
+        }
+    }
+
+    tlm_sbi info;
+    if (dbg)
+        info = SBI_DEBUG;
+    else if (excl)
+        info = SBI_EXCL;
+    else
+        info = SBI_NONE;
+
     ddtp |= DDTP_BUSY;
     auto res = out.read(addr, data, size, info);
     ddtp &= ~DDTP_BUSY;
-    return failed(res);
+    return success(res);
 }
 
-bool iommu::dma_readx(u64 addr, void* data, size_t size, bool debug) {
-    tlm_sbi info = debug ? SBI_DEBUG : SBI_EXCL;
-    ddtp |= DDTP_BUSY;
-    auto res = out.read(addr, data, size, info);
-    ddtp &= ~DDTP_BUSY;
-    return failed(res);
-}
-
-bool iommu::dma_writex(u64 addr, void* data, size_t size, bool debug,
-                       bool& atomic) {
+bool iommu::dma_write(u64 addr, void* data, size_t size, bool* excl,
+                      bool debug) {
     if (debug)
         return true;
 
+    if (excl && m_dma_xptr && addr == m_dma_addr &&
+        mwr::atomic_cas(m_dma_xptr, &m_dma_xval, &data, size)) {
+        m_dma_addr = ~0ull;
+        m_dma_xptr = nullptr;
+        m_dma_xval = 0;
+        *excl = true;
+        return true;
+    }
+
     unsigned int nbytes = 0;
+    tlm_sbi info = excl ? SBI_EXCL : SBI_NONE;
+
     ddtp |= DDTP_BUSY;
-    auto res = out.read(addr, data, size, SBI_EXCL, &nbytes);
+    auto res = out.read(addr, data, size, info, &nbytes);
     ddtp &= ~DDTP_BUSY;
-    atomic = nbytes == size;
-    return failed(res);
+
+    if (excl)
+        *excl = nbytes == size;
+
+    return success(res);
 }
 
 bool iommu::check_context(const context& ctx) const {
@@ -539,7 +569,7 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
             increment_counter(ctx, IOMMU_EVENT_DD_WALK);
 
         u64 ddte = 0;
-        if (!dma_read(addr + ddidx[depth] * sizeof(ddte), ddte, dbg))
+        if (!dma_readw(addr + ddidx[depth] * sizeof(ddte), ddte, false, dbg))
             return IOMMU_FAULT_DDT_LOAD_FAULT;
 
         if (!(ddte & DDTE_V) || (ddte & ~DDTE_MASK))
@@ -554,7 +584,7 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     u64 rawctx[8];
     memset(rawctx, 0, sizeof(rawctx));
     size_t ctxsz = msi_flat ? 8 : 4;
-    if (!dma_read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, dbg))
+    if (!dma_read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, false, dbg))
         return IOMMU_FAULT_DDT_LOAD_FAULT;
 
     ctx.tc = rawctx[0];
@@ -609,7 +639,7 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
             if (int fault = translate_g(ctx, virt, false, false, dbg, phys))
                 return fault;
 
-            if (!dma_read(phys, pdte, dbg))
+            if (!dma_readw(phys, pdte, false, dbg))
                 return IOMMU_FAULT_PDT_LOAD_FAULT;
 
             if (!(pdte & PDTE_V) || (pdte & ~PDTE_MASK))
@@ -629,7 +659,7 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
         if (int fault = translate_g(ctx, virt, false, false, dbg, phys))
             return fault;
 
-        if (!dma_read(phys, rawctx, ctxsz, dbg))
+        if (!dma_read(phys, rawctx, ctxsz, false, dbg))
             return IOMMU_FAULT_PDT_LOAD_FAULT;
 
         ctx.ta = rawctx[0];
@@ -799,6 +829,8 @@ retry:
     u64 pgbase = vm.root;
 
     for (size_t i = 0; i < vm.levels; i++) {
+        increment_counter(ctx, g ? IOMMU_EVENT_GS_WALK : IOMMU_EVENT_VS_WALK);
+
         u64 pgshift = (vm.levels - i - 1) * vm.vpnbits;
         u64 vpnmask = bitmask(vm.vpnbits);
         u64 ppnmask = bitmask(pgshift);
@@ -810,7 +842,7 @@ retry:
         if (!g && translate_g(ctx, pteaddr, vm.adue, true, dbg, pteaddr))
             return TWALK_FAULT_G_STAGE;
 
-        if (!dma_readx(pteaddr, &pte, vm.ptesize, dbg))
+        if (!dma_read(pteaddr, &pte, vm.ptesize, vm.adue, dbg))
             return TWALK_FAULT_PTE_FETCH;
 
         if (!(pte & PTE_V))
@@ -836,7 +868,7 @@ retry:
                     return TWALK_FAULT_AD_UPDATE;
 
                 bool atomic = false;
-                if (!dma_writex(pteaddr, &newpte, vm.ptesize, false, atomic))
+                if (!dma_write(pteaddr, &newpte, vm.ptesize, &atomic, false))
                     return TWALK_FAULT_G_STAGE;
                 if (!atomic)
                     goto retry;
@@ -1106,7 +1138,7 @@ void iommu::write_iohpmcycles(u64 val) {
 }
 
 void iommu::write_iohpmevt(u64 val, size_t idx) {
-    if (get_field<IOHPMEVT_EVENTID>(val) > IOMMU_EVENT_S2_WALK)
+    if (get_field<IOHPMEVT_EVENTID>(val) >= IOMMU_EVENT_MAX)
         set_field<IOHPMEVT_EVENTID>(val, IOMMU_EVENT_NONE);
 
     iohpmevt[idx] = val;
@@ -1159,7 +1191,7 @@ void iommu::handle_command() {
 
     while ((cqh != cqt) && (cqcsr & CQCSR_CQEN)) {
         command cmd{};
-        if (!dma_read(base + cqh * sizeof(command), cmd, false)) {
+        if (!dma_readw(base + cqh * sizeof(command), cmd, false, false)) {
             cqcsr |= CQCSR_CQMF;
             if (cqcsr & CQCSR_CIE)
                 report_irq(IPSR_CIP);
@@ -1263,6 +1295,9 @@ iommu::iommu(const sc_module_name& nm):
     m_iotval2(0),
     m_dmi_lo(~0ull),
     m_dmi_hi(0ull),
+    m_dma_addr(~0ull),
+    m_dma_xval(),
+    m_dma_xptr(),
     m_counter_val(0ull),
     m_counter_start(),
     m_counter_ovev("counter_ovev"),
@@ -1488,6 +1523,12 @@ void iommu::invalidate_direct_mem_ptr(tlm_initiator_socket&, u64 s, u64 e) {
 }
 
 void iommu::invalidate_direct_mem_ptr(u64 start, u64 end) {
+    if (start <= m_dma_addr && end >= m_dma_addr) {
+        m_dma_addr = ~0ull;
+        m_dma_xptr = nullptr;
+        m_dma_xval = 0;
+    }
+
     if (m_dmi_hi < m_dmi_lo)
         return;
 

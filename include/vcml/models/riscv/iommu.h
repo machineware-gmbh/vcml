@@ -108,18 +108,21 @@ private:
     u64 m_dmi_lo;
     u64 m_dmi_hi;
 
+    u64 m_dma_addr;
+    u64 m_dma_xval;
+    u8* m_dma_xptr;
+
     u64 m_counter_val;
     sc_time m_counter_start;
     sc_event m_counter_ovev;
 
     template <typename T>
-    bool dma_read(u64 addr, T& data, bool debug) {
-        return dma_read(addr, &data, sizeof(T), debug);
+    bool dma_readw(u64 addr, T& data, bool excl, bool debug) {
+        return dma_read(addr, &data, sizeof(T), excl, debug);
     }
 
-    bool dma_read(u64 addr, void* data, size_t sz, bool dbg);
-    bool dma_readx(u64 addr, void* data, size_t sz, bool dbg);
-    bool dma_writex(u64 addr, void* data, size_t sz, bool dbg, bool& atomic);
+    bool dma_read(u64 addr, void* data, size_t sz, bool excl, bool dbg);
+    bool dma_write(u64 addr, void* data, size_t sz, bool* excl, bool dbg);
 
     bool check_context(const context& ctx) const;
 
