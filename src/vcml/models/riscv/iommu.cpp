@@ -269,8 +269,8 @@ enum fctl_bits : u32 {
     FCTL_GXL = bit(2),
 };
 
-using DDTP_IOMMU_MODE = field<0, 4, u64>;
-using DDTP_IOMMU_PPN = field<PAGE_BITS, PPN_BITS, u64>;
+using DDTP_MODE = field<0, 4, u64>;
+using DDTP_PPN = field<PAGE_BITS, PPN_BITS, u64>;
 
 enum ddtp_bits : u64 {
     DDTP_MODE_OFF = 0,
@@ -383,7 +383,7 @@ bool iommu::dma_write(u64 addr, void* data, size_t size, bool* excl,
         return true;
 
     if (excl && m_dma_xptr && addr == m_dma_addr &&
-        mwr::atomic_cas(m_dma_xptr, &m_dma_xval, &data, size)) {
+        mwr::atomic_cas(m_dma_xptr, &m_dma_xval, data, size)) {
         m_dma_addr = ~0ull;
         m_dma_xptr = nullptr;
         m_dma_xval = 0;
@@ -530,8 +530,8 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     size_t depth = 0;
     size_t ddidx[3] = { 0, 0, 0 };
 
-    u64 mode = ddtp.get_field<DDTP_IOMMU_MODE>();
-    u64 addr = ddtp.get_field<DDTP_IOMMU_PPN>() << PAGE_BITS;
+    u64 mode = ddtp.get_field<DDTP_MODE>();
+    u64 addr = ddtp.get_field<DDTP_PPN>() << PAGE_BITS;
 
     switch (mode) {
     case DDTP_MODE_OFF:
@@ -583,7 +583,7 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
 
     u64 rawctx[8];
     memset(rawctx, 0, sizeof(rawctx));
-    size_t ctxsz = msi_flat ? 8 : 4;
+    size_t ctxsz = (msi_flat ? 8 : 4) * sizeof(u64);
     if (!dma_read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, false, dbg))
         return IOMMU_FAULT_DDT_LOAD_FAULT;
 
@@ -695,7 +695,7 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
     }
 
     iotlb iotlb_s;
-    int fault = tablewalk(ctx, virt, wnr, false, false, dbg, iotlb_s);
+    int fault = tablewalk(ctx, virt, false, wnr, false, dbg, iotlb_s);
     if (fault == TWALK_FAULT_G_STAGE)
         return IOMMU_PAGE_FAULT_R;
     if (fault != TWALK_FAULT_NONE)
@@ -703,13 +703,15 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
 
     iotlb iotlb_g;
     u64 guest_phys = iotlb_s.ppn << PAGE_BITS;
-    if (tablewalk(ctx, guest_phys, wnr, true, false, dbg, iotlb_g))
+    if (tablewalk(ctx, guest_phys, true, wnr, false, dbg, iotlb_g))
         return iommu_page_fault(wnr);
 
     entry.vpn = iotlb_s.vpn;
     entry.ppn = iotlb_g.ppn;
     entry.r = iotlb_s.r && iotlb_g.r;
     entry.w = iotlb_s.w && iotlb_g.w;
+    entry.gscid = gscid;
+    entry.pscid = pscid;
     entry.pbmt = iotlb_s.pbmt | iotlb_g.pbmt;
 
     if (!dbg)
@@ -877,8 +879,8 @@ retry:
 
         entry.vpn = virt >> PAGE_BITS;
         entry.ppn = get_field<PTE_PPN>(pte);
-        entry.r = pte & PTE_R;
-        entry.w = pte & PTE_W;
+        entry.r = !!(pte & PTE_R);
+        entry.w = !!(pte & PTE_W);
         entry.pbmt = 0;
 
         if (svpbmt)
@@ -936,9 +938,6 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         return false;
     }
 
-    if (!info.is_debug && !dmi)
-        increment_counter(ctx, IOMMU_EVENT_UX_REQ);
-
     err = fetch_iotlb(ctx, virt, tx.is_write(), info.is_debug, dmi, entry);
     if (err) {
         if (!info.is_debug && !dmi) {
@@ -955,6 +954,13 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         }
 
         return false;
+    }
+
+    if (!info.is_debug && !dmi) {
+        if (ddtp.get_field<DDTP_MODE>() == DDTP_MODE_BARE)
+            increment_counter(ctx, IOMMU_EVENT_UX_REQ);
+        else
+            increment_counter(ctx, IOMMU_EVENT_TX_REQ);
     }
 
     return true;
@@ -1078,7 +1084,7 @@ void iommu::write_fctl(u32 val) {
 }
 
 void iommu::write_ddtp(u64 val) {
-    u64 mask = DDTP_IOMMU_MODE::MASK | DDTP_IOMMU_PPN::MASK;
+    u64 mask = DDTP_MODE::MASK | DDTP_PPN::MASK;
 
     if (((ddtp ^ val) & mask) == 0)
         return; // no change
