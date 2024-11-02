@@ -416,6 +416,21 @@ enum tr_response_bits : u64 {
     TR_RESPONSE_S = bit(9),
 };
 
+enum msi_type : u32 {
+    MSI_CQ = 0,
+    MSI_FQ = 1,
+    MSI_PM = 2,
+    MSI_PQ = 3,
+};
+
+using MSI_VECTOR_DATA = field<0, 32, u64>;
+using MSI_VECTOR_CTRL = field<32, 32, u64>;
+
+enum msi_vector_bits {
+    MSI_VECTOR_CTRL_M = bit(0),
+    MSI_VECTOR_ADDR = bitmask(54, 2),
+};
+
 constexpr u64 mkctxid(u32 devid, u32 procid) {
     return (u64)procid << 32 | devid;
 }
@@ -1040,14 +1055,6 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
     return true;
 }
 
-void iommu::report_fault(const fault& req) {
-    // TODO
-}
-
-void iommu::send_msi(u32 irq) {
-    // TODO
-}
-
 void iommu::restart_counter(u64 val) {
     m_counter_val = val;
     m_counter_start = sc_time_stamp();
@@ -1524,13 +1531,40 @@ void iommu::update_ipsr() {
     pirq = wsi && (ipsr & IPSR_PIP);
 
     if (!wsi && !(oldipsr & IPSR_CIP) && (ipsr & IPSR_CIP))
-        send_msi(IPSR_CIP);
+        send_msi(MSI_CQ);
     if (!wsi && !(oldipsr & IPSR_FIP) && (ipsr & IPSR_FIP))
-        send_msi(IPSR_FIP);
+        send_msi(MSI_FQ);
     if (!wsi && !(oldipsr & IPSR_PMIP) && (ipsr & IPSR_PMIP))
-        send_msi(IPSR_PMIP);
+        send_msi(MSI_PM);
     if (!wsi && !(oldipsr & IPSR_PIP) && (ipsr & IPSR_PIP))
-        send_msi(IPSR_PIP);
+        send_msi(MSI_PQ);
+}
+
+void iommu::report_fault(const fault& req) {
+    // TODO
+}
+
+void iommu::send_msi(u32 irq) {
+    u64 vector = extract(icvec.get(), irq * 4, 4);
+    u64 addr = msi_cfg_tbl[vector] & MSI_VECTOR_ADDR;
+    u32 ctrl = get_field<MSI_VECTOR_CTRL>(msi_cfg_tbl[vector + 1]);
+    u32 data = get_field<MSI_VECTOR_DATA>(msi_cfg_tbl[vector + 1]);
+
+    if (ctrl & MSI_VECTOR_CTRL_M)
+        return;
+
+    if (failed(out.writew(addr, data))) {
+        fault req{};
+        req.cause = IOMMU_FAULT_MSI_WR_FAULT;
+        req.ttyp = IOMMU_TTYP_NONE;
+        req.did = 0;
+        req.pid = 0;
+        req.pv = 0;
+        req.priv = 0;
+        req.iotval = addr;
+        req.iotval2 = 0;
+        report_fault(req);
+    }
 }
 
 iommu::iommu(const sc_module_name& nm):
@@ -1652,6 +1686,12 @@ iommu::iommu(const sc_module_name& nm):
 
     tr_response.allow_read_only();
     tr_response.sync_never();
+
+    icvec.allow_read_write();
+    icvec.sync_always();
+
+    msi_cfg_tbl.allow_read_write();
+    msi_cfg_tbl.sync_always();
 
     load_capabilities();
 

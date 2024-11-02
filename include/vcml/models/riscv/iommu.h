@@ -141,9 +141,6 @@ private:
     bool translate(const tlm_generic_payload& tx, const tlm_sbi& sbi, bool dmi,
                    iotlb& entry);
 
-    void report_fault(const fault& req);
-    void send_msi(u32 ipsr);
-
     void restart_counter(u64 val);
     void increment_counter(context& ctx, u32 event);
 
@@ -174,6 +171,9 @@ private:
     void overflow();
 
     void update_ipsr();
+
+    void report_fault(const fault& req);
+    void send_msi(u32 ipsr);
 
 public:
     property<bool> sv32;
