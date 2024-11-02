@@ -19,6 +19,10 @@ const u64 IOMMU_SIZE = 1 * KiB;
 const u64 IOMMU_CAPS = IOMMU_ADDR + 0;
 const u64 IOMMU_FCTL = IOMMU_ADDR + 8;
 const u64 IOMMU_DDTP = IOMMU_ADDR + 16;
+const u64 IOMMU_CQB = IOMMU_ADDR + 24;
+const u64 IOMMU_CQH = IOMMU_ADDR + 32;
+const u64 IOMMU_CQT = IOMMU_ADDR + 36;
+const u64 IOMMU_CQCSR = IOMMU_ADDR + 72;
 const u64 IOMMU_CNTINH = IOMMU_ADDR + 92;
 const u64 IOMMU_HPMCYCLES = IOMMU_ADDR + 96;
 
@@ -34,7 +38,8 @@ const u64 DDTP0_OFFSET = 16 * KiB;
 const u64 DDTP0_ADDR = MEM_ADDR + DDTP0_OFFSET;
 const u64 DDTP1_OFFSET = 32 * KiB;
 const u64 DDTP1_ADDR = MEM_ADDR + DDTP1_OFFSET;
-
+const u64 CMDQ_OFFSET = 40 * KiB;
+const u64 CMDQ_ADDR = MEM_ADDR + CMDQ_OFFSET;
 const u64 PGTP_OFFSET = 64 * KiB;
 const u64 PGTP_ADDR = MEM_ADDR + PGTP_OFFSET;
 
@@ -224,6 +229,45 @@ public:
         EXPECT_TRUE(enable_counters(false));
     }
 
+    void test_command_queue() {
+        ASSERT_OK(out.writew(IOMMU_FCTL, 2u)); // enable WSI
+
+        u64* cq = (u64*)(mem.data() + CMDQ_OFFSET);
+        cq[0] = 0x0000000000000001; // iotinval.vma
+        cq[2] = 0x0000700300003481; // iotinval.gvma
+        cq[3] = 0x00abcdef00000000; // iotinval.addr
+        cq[4] = 0x0000000000000003; // iodir.inval_ddt
+        cq[6] = 0x000005020000b083; // iodir.inval_pdt
+        cq[8] = 0xcafebabe00000c02; // iofence.c wsi
+        cq[9] = (MEM_ADDR + 8) >> 2;
+
+        u64 cqb = CMDQ_ADDR >> 2 | 2; // 8 entries
+        ASSERT_OK(out.writew(IOMMU_CQB, cqb));
+        ASSERT_OK(out.writew(IOMMU_CQCSR, 1u));
+        wait(1, SC_MS);
+
+        u32 cqcsr;
+        ASSERT_OK(out.readw(IOMMU_CQCSR, cqcsr));
+        EXPECT_EQ(cqcsr, 0x10001u);
+
+        ASSERT_OK(out.writew(IOMMU_CQT, 5u));
+        wait(1, SC_MS);
+
+        u32 cqt;
+        ASSERT_OK(out.readw(IOMMU_CQH, cqt));
+        EXPECT_EQ(cqt, 5);
+
+        ASSERT_OK(out.readw(IOMMU_CQCSR, cqcsr));
+        EXPECT_EQ(cqcsr, 0x10801u);
+        ASSERT_OK(out.writew(IOMMU_CQCSR, 0x800u));
+        ASSERT_OK(out.readw(IOMMU_CQCSR, cqcsr));
+        EXPECT_EQ(cqcsr, 0u);
+
+        u32 data;
+        ASSERT_OK(out.readw(MEM_ADDR + 8, data));
+        EXPECT_EQ(data, 0xcafebabe);
+    }
+
     virtual void run_test() override {
         test_capabilities();
         wait(SC_ZERO_TIME);
@@ -238,6 +282,8 @@ public:
         test_iommu_lvl1_dev1_bare();
         wait(SC_ZERO_TIME);
         test_iommu_lvl2_dev2_sv39();
+        wait(SC_ZERO_TIME);
+        test_command_queue();
         wait(SC_ZERO_TIME);
     }
 };

@@ -216,6 +216,59 @@ enum iommu_opcode : u64 {
     IOMMU_OPCODE_ATS = 4,
 };
 
+using IOTINVAL_PSCID = field<2, 20, u64>;
+using IOTINVAL_GSCID = field<34, 16, u64>;
+
+enum iotinval_bits : u64 {
+    IOTINVAL_AV = bit(0),
+    IOTINVAL_PSCV = bit(22),
+    IOTINVAL_GV = bit(23),
+};
+
+enum iotinval_func3 : u64 {
+    IOTINVAL_VMA = 0,
+    IOTINVAL_GVMA = 1,
+};
+
+using IOFENCE_DATA = field<22, 32, u64>;
+
+enum iotfence_bits : u64 {
+    IOFENCE_AV = bit(0),
+    IOFENCE_WSI = bit(1),
+    IOFENCE_PR = bit(2),
+    IOFENCE_PW = bit(3),
+};
+
+enum iofence_func3 : u64 {
+    IOFENCE_C = 0,
+};
+
+using IODIR_PID = field<2, 20, u64>;
+using IODIR_DID = field<30, 16, u64>;
+
+enum iodir_bits : u64 {
+    IODIR_DV = bit(23),
+};
+
+enum iodir_func3 : u64 {
+    IODIR_DDT = 0,
+    IODIR_PDT = 1,
+};
+
+using ATS_PID = field<2, 20, u64>;
+using ATS_RID = field<30, 16, u64>;
+using ATS_DSEG = field<46, 8, u64>;
+
+enum ats_bits : u64 {
+    ATS_PV = bit(22),
+    ATS_DSV = bit(23),
+};
+
+enum ats_func3 : u64 {
+    ATS_INVAL = 0,
+    ATS_PRGR = 1,
+};
+
 enum iommu_event : u32 {
     IOMMU_EVENT_NONE = 0,
     IOMMU_EVENT_UX_REQ = 1,
@@ -293,6 +346,27 @@ enum cqcsr_bits : u32 {
     CQCSR_FENCE_W_IP = bit(11),
     CQCSR_CQON = bit(16),
     CQCSR_BUSY = bit(17),
+    CQCSR_PENDING = CQCSR_CQMF | CQCSR_CMDTO | CQCSR_CMDILL | CQCSR_FENCE_W_IP,
+};
+
+enum fqcsr_bits : u32 {
+    FQCSR_FQEN = bit(0),
+    FQCSR_FIE = bit(1),
+    FQCSR_FQMF = bit(8),
+    FQCSR_FQOF = bit(9),
+    FQCSR_FQON = bit(16),
+    FQCSR_BUSY = bit(17),
+    FQCSR_PENDING = FQCSR_FQMF | FQCSR_FQOF,
+};
+
+enum pqcsr_bits : u32 {
+    PQCSR_PQEN = bit(0),
+    PQCSR_PIE = bit(1),
+    PQCSR_PQMF = bit(8),
+    PQCSR_PQOF = bit(9),
+    PQCSR_PQON = bit(16),
+    PQCSR_BUSY = bit(17),
+    PQCSR_PENDING = PQCSR_PQMF | PQCSR_PQOF,
 };
 
 enum ipsr_bits : u32 {
@@ -677,8 +751,8 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
     u64 pscid = get_field<TA_PSCID>(ctx.ta);
 
-    if (stl_contains(m_iotlb, vpn)) {
-        iotlb& cache = m_iotlb[vpn];
+    if (stl_contains(m_iotlb_s, vpn)) {
+        iotlb& cache = m_iotlb_s[vpn];
         if (cache.gscid == gscid && cache.pscid == pscid &&
             (cache.w || !wnr)) {
             entry = cache;
@@ -715,7 +789,7 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
     entry.pbmt = iotlb_s.pbmt | iotlb_g.pbmt;
 
     if (!dbg)
-        m_iotlb[vpn] = entry;
+        m_iotlb_s[vpn] = entry;
 
     return 0;
 }
@@ -970,8 +1044,8 @@ void iommu::report_fault(const fault& req) {
     // TODO
 }
 
-void iommu::report_irq(u32 irq) {
-    ipsr |= irq;
+void iommu::send_msi(u32 irq) {
+    // TODO
 }
 
 void iommu::restart_counter(u64 val) {
@@ -1019,10 +1093,9 @@ void iommu::increment_counter(context& ctx, u32 event) {
         iohpmctr[i - 1]++;
 
         if (iohpmctr[i - 1] == 0) { // overflow
-            if (!(iohpmevt[i - 1] & cntmask))
-                report_irq(IPSR_PMIP);
             iohpmevt[i - 1] |= IOHPMEVT_OF;
             iocntovf |= cntmask;
+            update_ipsr();
         }
     }
 }
@@ -1093,7 +1166,7 @@ void iommu::write_ddtp(u64 val) {
         return;
 
     m_contexts.clear();
-    m_iotlb.clear();
+    m_iotlb_s.clear();
 
     ddtp = (ddtp & ~mask) | (val & mask);
 }
@@ -1117,6 +1190,12 @@ void iommu::write_cqcsr(u32 val) {
 
     m_work |= IOMMU_WORK_COMMAND;
     m_workev.notify(SC_ZERO_TIME);
+}
+
+void iommu::write_ipsr(u32 val) {
+    u32 rw1c = val & (IPSR_CIP | IPSR_FIP | IPSR_PMIP | IPSR_PIP);
+    ipsr = ipsr & ~rw1c;
+    update_ipsr();
 }
 
 void iommu::write_iocntinh(u32 val) {
@@ -1172,16 +1251,142 @@ void iommu::write_tr_req_ctl(u64 val) {
     }
 }
 
+template <typename MAP>
+inline void invalidate_all(MAP& map) {
+    map.clear();
+}
+
+template <typename MAP, typename KEY>
+inline void invalidate_key(MAP& map, const KEY& key) {
+    map.erase(key);
+}
+
+template <typename MAP, typename PRED>
+inline void invalidate_some(MAP& map, PRED&& pred) {
+    for (auto it = map.begin(); it != map.end();) {
+        if (pred(it->second))
+            it = map.erase(it);
+        else
+            it++;
+    }
+}
+
 void iommu::handle_iotinval(const command& cmd) {
-    // TODO
+    bool inval_s = false;
+    bool inval_g = false;
+
+    switch (cmd.func3) {
+    case IOTINVAL_GVMA:
+        inval_g = true;
+        // fallthrough
+    case IOTINVAL_VMA:
+        inval_s = true;
+        break;
+    default:
+        cqcsr |= CQCSR_CMDILL;
+        return;
+    }
+
+    bool av = cmd.operands0 & IOTINVAL_AV;
+    bool gv = cmd.operands0 & IOTINVAL_GV;
+    bool pscv = cmd.operands0 & IOTINVAL_PSCV;
+
+    u64 vpn = cmd.operands1 >> 10;
+    u64 pscid = get_field<IOTINVAL_PSCID>(cmd.operands0);
+    u64 gscid = get_field<IOTINVAL_GSCID>(cmd.operands0);
+
+    if (!gv && !pscv) {
+        if (av) {
+            if (inval_s)
+                invalidate_key(m_iotlb_s, vpn);
+            if (inval_g)
+                invalidate_key(m_iotlb_g, vpn);
+        } else {
+            if (inval_s)
+                invalidate_all(m_iotlb_s);
+            if (inval_g)
+                invalidate_all(m_iotlb_g);
+        }
+    } else {
+        auto filter = [=](const iotlb& entry) -> bool {
+            if (av && entry.vpn != vpn)
+                return false;
+            if (pscv && entry.pscid != pscid)
+                return false;
+            if (gv && entry.gscid != gscid)
+                return false;
+            return true;
+        };
+
+        if (inval_s)
+            invalidate_some(m_iotlb_s, filter);
+        if (inval_g)
+            invalidate_some(m_iotlb_g, filter);
+    }
 }
 
 void iommu::handle_iofence(const command& cmd) {
-    // TODO
+    if (cmd.func3 != IOFENCE_C) {
+        cqcsr |= CQCSR_CMDILL;
+        return;
+    }
+
+    if (cmd.operands0 & IOFENCE_AV) {
+        u32 data = get_field<IOFENCE_DATA>(cmd.operands0);
+        u64 addr = cmd.operands1 << 2;
+        if (failed(out.writew(addr, data)))
+            cqcsr |= CQCSR_CQMF;
+    }
+
+    if ((cmd.operands0 & IOFENCE_WSI) && (fctl & FCTL_WSI)) {
+        cqcsr |= CQCSR_FENCE_W_IP;
+        update_ipsr();
+    }
 }
 
 void iommu::handle_iodir(const command& cmd) {
-    // TODO
+    bool dv = cmd.operands0 & IODIR_DV;
+    u64 pid = get_field<IODIR_PID>(cmd.operands0);
+    u64 did = get_field<IODIR_DID>(cmd.operands0);
+
+    if (cmd.operands1 > 0) {
+        cqcsr |= CQCSR_CMDILL;
+        return;
+    }
+
+    switch (cmd.func3) {
+    case IODIR_PDT: {
+        if (!dv) {
+            cqcsr |= CQCSR_CMDILL;
+            break;
+        }
+
+        invalidate_some(m_contexts, [did, pid](const context& ctx) {
+            u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
+            u64 pscid = get_field<TA_PSCID>(ctx.ta);
+            return gscid == did && pscid == pid;
+        });
+
+        break;
+    }
+
+    case IODIR_DDT: {
+        if (!dv) {
+            invalidate_all(m_contexts);
+        } else {
+            invalidate_some(m_contexts, [did](const context& ctx) {
+                u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
+                return gscid == did;
+            });
+        }
+
+        break;
+    }
+
+    default:
+        cqcsr |= CQCSR_CMDILL;
+        break;
+    }
 }
 
 void iommu::handle_ats(const command& cmd) {
@@ -1192,6 +1397,9 @@ void iommu::handle_command() {
     if (cqcsr & CQCSR_CQEN)
         cqcsr |= CQCSR_CQON;
 
+    if (cqcsr & CQCSR_CMDILL)
+        return;
+
     u32 mask = (2u << cqb.get_field<CQB_LOG2SZ>()) - 1;
     u64 base = cqb.get_field<CQB_PPN>() << PAGE_BITS;
 
@@ -1199,8 +1407,7 @@ void iommu::handle_command() {
         command cmd{};
         if (!dma_readw(base + cqh * sizeof(command), cmd, false, false)) {
             cqcsr |= CQCSR_CQMF;
-            if (cqcsr & CQCSR_CIE)
-                report_irq(IPSR_CIP);
+            update_ipsr();
             break;
         }
 
@@ -1219,10 +1426,13 @@ void iommu::handle_command() {
             break;
         default:
             cqcsr |= CQCSR_CMDILL;
-            if (cqcsr & CQCSR_CIE)
-                report_irq(IPSR_CIP);
             break;
         }
+
+        update_ipsr();
+
+        if (cqcsr & CQCSR_CMDILL)
+            break;
 
         cqh = (cqh + 1) & mask;
     }
@@ -1286,17 +1496,48 @@ void iommu::worker() {
 }
 
 void iommu::overflow() {
-    if (!(m_counter_val & COUNTER_OV))
-        report_irq(IPSR_PMIP);
-
     m_counter_val |= COUNTER_OV;
     iocntovf |= COUNTER_OVF;
+    update_ipsr();
+}
+
+void iommu::update_ipsr() {
+    u32 oldipsr = ipsr;
+
+    if ((cqcsr & CQCSR_CIE) && (cqcsr & CQCSR_PENDING))
+        ipsr.set_bit<IPSR_CIP>(true);
+    if ((fqcsr & FQCSR_FIE) && (fqcsr & FQCSR_PENDING))
+        ipsr.set_bit<IPSR_FIP>(true);
+    if ((pqcsr & PQCSR_PIE) && (pqcsr & PQCSR_PENDING))
+        ipsr.set_bit<IPSR_PIP>(true);
+
+    for (size_t i = 0; i < iohpmevt.count(); i++) {
+        if (iohpmevt[i] & IOHPMEVT_OF)
+            ipsr.set_bit<IPSR_PMIP>(true);
+    }
+
+    bool wsi = fctl & FCTL_WSI;
+
+    cirq = wsi && (ipsr & IPSR_CIP);
+    firq = wsi && (ipsr & IPSR_FIP);
+    pmirq = wsi && (ipsr & IPSR_PMIP);
+    pirq = wsi && (ipsr & IPSR_PIP);
+
+    if (!wsi && !(oldipsr & IPSR_CIP) && (ipsr & IPSR_CIP))
+        send_msi(IPSR_CIP);
+    if (!wsi && !(oldipsr & IPSR_FIP) && (ipsr & IPSR_FIP))
+        send_msi(IPSR_FIP);
+    if (!wsi && !(oldipsr & IPSR_PMIP) && (ipsr & IPSR_PMIP))
+        send_msi(IPSR_PMIP);
+    if (!wsi && !(oldipsr & IPSR_PIP) && (ipsr & IPSR_PIP))
+        send_msi(IPSR_PIP);
 }
 
 iommu::iommu(const sc_module_name& nm):
     peripheral(nm),
     m_contexts(),
-    m_iotlb(),
+    m_iotlb_s(),
+    m_iotlb_g(),
     m_workev("workev"),
     m_iotval2(0),
     m_dmi_lo(~0ull),
@@ -1429,7 +1670,7 @@ void iommu::reset() {
     peripheral::reset();
     load_capabilities();
     m_contexts.clear();
-    m_iotlb.clear();
+    m_iotlb_s.clear();
     invalidate_direct_mem_ptr(0ull, ~0ull);
     restart_counter(0);
 }

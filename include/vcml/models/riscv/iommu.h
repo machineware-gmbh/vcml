@@ -98,7 +98,8 @@ private:
     static_assert(sizeof(command) == 2 * sizeof(u64), "command size");
 
     unordered_map<u64, context> m_contexts;
-    unordered_map<u64, iotlb> m_iotlb;
+    unordered_map<u64, iotlb> m_iotlb_s;
+    unordered_map<u64, iotlb> m_iotlb_g;
 
     u32 m_work;
     sc_event m_workev;
@@ -141,7 +142,7 @@ private:
                    iotlb& entry);
 
     void report_fault(const fault& req);
-    void report_irq(u32 irqid);
+    void send_msi(u32 ipsr);
 
     void restart_counter(u64 val);
     void increment_counter(context& ctx, u32 event);
@@ -154,6 +155,7 @@ private:
     void write_ddtp(u64 val);
     void write_cqt(u32 val);
     void write_cqcsr(u32 val);
+    void write_ipsr(u32 val);
     void write_iocntinh(u32 val);
     void write_iohpmcycles(u64 val);
     void write_iohpmevt(u64 val, size_t idx);
@@ -170,6 +172,8 @@ private:
 
     void worker();
     void overflow();
+
+    void update_ipsr();
 
 public:
     property<bool> sv32;
