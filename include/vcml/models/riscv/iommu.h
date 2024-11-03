@@ -88,6 +88,7 @@ private:
         size_t levels;
         size_t vpnbits;
         size_t ptesize;
+        bool sum;
         bool adue;
         bool pbmt;
     };
@@ -103,6 +104,7 @@ private:
 
     u32 m_work;
     sc_event m_workev;
+    queue<fault> m_faults;
 
     u64 m_iotval2;
 
@@ -127,14 +129,15 @@ private:
 
     bool check_context(const context& ctx) const;
 
-    int fetch_context(u32 devid, u32 procid, bool dbg, bool dmi, context& ctx);
-    int fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
-                    iotlb& entry);
+    int fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
+                      context& ctx);
+    int fetch_iotlb(context& ctx, u64 virt, bool wnr, bool super, bool dbg,
+                    bool dmi, iotlb& entry);
 
     vmcfg get_vm_config(const context& ctx, bool g);
 
-    int tablewalk(context& ctx, u64 va, bool g, bool wnr, bool ind, bool dbg,
-                  iotlb& entry);
+    int tablewalk(context& ctx, u64 va, bool g, bool super, bool wnr, bool ind,
+                  bool dbg, iotlb& entry);
     int translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
                     u64& phys);
 
@@ -165,6 +168,7 @@ private:
     void handle_ats(const command& cmd);
 
     void handle_command();
+    void handle_fault();
     void handle_tr_req();
 
     void worker();

@@ -127,6 +127,8 @@ enum tablewalk_errors {
     TWALK_FAULT_G_STAGE,
     TWALK_FAULT_PTE_FETCH,
     TWALK_FAULT_PTE_INVALID,
+    TWALK_FAULT_PTE_PROT_U,
+    TWALK_FAULT_PTE_PROT_S,
     TWALK_FAULT_PTE_CORRUPTED,
     TWALK_FAULT_PPN_MISALIGNED,
     TWALK_FAULT_AD_UPDATE,
@@ -206,7 +208,8 @@ static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
 
 enum iommu_work : u32 {
     IOMMU_WORK_COMMAND = bit(0),
-    IOMMU_WORK_TR_REQ = bit(1),
+    IOMMU_WORK_FAULT = bit(1),
+    IOMMU_WORK_TR_REQ = bit(2),
 };
 
 enum iommu_opcode : u64 {
@@ -426,7 +429,7 @@ enum msi_type : u32 {
 using MSI_VECTOR_DATA = field<0, 32, u64>;
 using MSI_VECTOR_CTRL = field<32, 32, u64>;
 
-enum msi_vector_bits {
+enum msi_vector_bits : u64 {
     MSI_VECTOR_CTRL_M = bit(0),
     MSI_VECTOR_ADDR = bitmask(54, 2),
 };
@@ -601,7 +604,7 @@ bool iommu::check_context(const context& ctx) const {
     return true;
 }
 
-int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
+int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
                          context& ctx) {
     u64 ctxid = mkctxid(devid, procid);
     if (stl_contains(m_contexts, ctxid)) {
@@ -622,27 +625,6 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     u64 mode = ddtp.get_field<DDTP_MODE>();
     u64 addr = ddtp.get_field<DDTP_PPN>() << PAGE_BITS;
 
-    switch (mode) {
-    case DDTP_MODE_OFF:
-        return IOMMU_FAULT_DMA_DISABLED;
-    case DDTP_MODE_BARE:
-        set_field<IOSATP_MODE>(ctx.satp, IOSATP_BARE);
-        set_field<IOHGATP_MODE>(ctx.gatp, IOHGATP_BARE);
-        ctx.ta |= TA_V;
-        return 0;
-    case DDTP_MODE_1LVL:
-        depth = 0;
-        break;
-    case DDTP_MODE_2LVL:
-        depth = 1;
-        break;
-    case DDTP_MODE_3LVL:
-        depth = 2;
-        break;
-    default:
-        return IOMMU_FAULT_DDT_MISCONFIGURED;
-    }
-
     if (msi_flat) {
         ddidx[0] = extract(devid, 0, 6);
         ddidx[1] = extract(devid, 6, 9);
@@ -651,6 +633,31 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
         ddidx[0] = extract(devid, 0, 7);
         ddidx[1] = extract(devid, 7, 9);
         ddidx[2] = extract(devid, 16, 8);
+    }
+
+    switch (mode) {
+    case DDTP_MODE_OFF:
+        return IOMMU_FAULT_DMA_DISABLED;
+    case DDTP_MODE_BARE:
+        set_field<IOSATP_MODE>(ctx.satp, IOSATP_BARE);
+        set_field<IOHGATP_MODE>(ctx.gatp, IOHGATP_BARE);
+        ctx.tc = TC_V | TC_EN_ATS;
+        return 0;
+    case DDTP_MODE_1LVL:
+        if (ddidx[2] || ddidx[1])
+            return IOMMU_FAULT_TTYPE_BLOCKED;
+        depth = 0;
+        break;
+    case DDTP_MODE_2LVL:
+        if (ddidx[2])
+            return IOMMU_FAULT_TTYPE_BLOCKED;
+        depth = 1;
+        break;
+    case DDTP_MODE_3LVL:
+        depth = 2;
+        break;
+    default:
+        return IOMMU_FAULT_DDT_MISCONFIGURED;
     }
 
     for (; depth > 0; depth--) {
@@ -693,17 +700,29 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
     if (!check_context(ctx))
         return IOMMU_FAULT_DDT_MISCONFIGURED;
 
+    if (!(ctx.tc & TC_PDTV) && procid > 0)
+        return IOMMU_FAULT_TTYPE_BLOCKED;
+
     if (ctx.tc & TC_PDTV) {
         mode = get_field<IOHGATP_MODE>(ctx.satp);
         addr = get_field<IOHGATP_PPN>(ctx.satp) << PAGE_BITS;
+
+        size_t pdidx[3];
+        pdidx[0] = extract(procid, 0, 8);
+        pdidx[1] = extract(procid, 8, 9);
+        pdidx[2] = extract(procid, 17, 2);
 
         switch (mode) {
         case PDTP_BARE:
             return 0;
         case PDTP_PD8:
+            if (pdidx[2] || pdidx[1])
+                return IOMMU_FAULT_TTYPE_BLOCKED;
             depth = 0;
             break;
         case PDTP_PD17:
+            if (pdidx[2])
+                return IOMMU_FAULT_TTYPE_BLOCKED;
             depth = 1;
             break;
         case PDTP_PD20:
@@ -712,11 +731,6 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
         default:
             return IOMMU_FAULT_PDT_MISCONFIGURED;
         }
-
-        size_t pdidx[3];
-        pdidx[0] = extract(procid, 0, 8);
-        pdidx[1] = extract(procid, 8, 9);
-        pdidx[2] = extract(procid, 17, 2);
 
         for (; depth > 0; depth--) {
             if (!dbg)
@@ -753,14 +767,17 @@ int iommu::fetch_context(u32 devid, u32 procid, bool dbg, bool dmi,
 
         ctx.ta = rawctx[0];
         ctx.satp = rawctx[1];
+
+        if (super && !(ctx.ta & TA_ENS))
+            return IOMMU_FAULT_TTYPE_BLOCKED;
     }
 
     m_contexts[ctxid] = ctx;
     return 0;
 }
 
-int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
-                       iotlb& entry) {
+int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool super, bool dbg,
+                       bool dmi, iotlb& entry) {
     u64 vpn = virt >> PAGE_BITS;
 
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
@@ -784,16 +801,28 @@ int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool dbg, bool dmi,
     }
 
     iotlb iotlb_s;
-    int fault = tablewalk(ctx, virt, false, wnr, false, dbg, iotlb_s);
+    int fault = tablewalk(ctx, virt, false, super, wnr, false, dbg, iotlb_s);
     if (fault == TWALK_FAULT_G_STAGE)
         return IOMMU_PAGE_FAULT_R;
     if (fault != TWALK_FAULT_NONE)
         return iommu_guest_page_fault(wnr);
 
+    if (stl_contains(m_iotlb_g, iotlb_s.ppn)) {
+        iotlb& cache = m_iotlb_g[iotlb_s.ppn];
+        if (cache.gscid == gscid && cache.pscid == pscid &&
+            (cache.w || !wnr)) {
+            entry = cache;
+            return 0;
+        }
+    }
+
     iotlb iotlb_g;
     u64 guest_phys = iotlb_s.ppn << PAGE_BITS;
-    if (tablewalk(ctx, guest_phys, true, wnr, false, dbg, iotlb_g))
+    if (tablewalk(ctx, guest_phys, true, false, wnr, false, dbg, iotlb_g))
         return iommu_page_fault(wnr);
+
+    if (!dbg)
+        m_iotlb_g[iotlb_g.vpn] = iotlb_g;
 
     entry.vpn = iotlb_s.vpn;
     entry.ppn = iotlb_g.ppn;
@@ -815,6 +844,7 @@ iommu::vmcfg iommu::get_vm_config(const context& ctx, bool g) {
     if (g) {
         cfg.root = get_field<IOHGATP_PPN>(ctx.gatp) << PAGE_BITS;
         cfg.adue = ctx.tc & TC_GADE;
+        cfg.sum = false;
         if (ctx.tc & TC_SXL) {
             cfg.ptesize = 4;
             cfg.pbmt = false;
@@ -855,6 +885,7 @@ iommu::vmcfg iommu::get_vm_config(const context& ctx, bool g) {
     } else {
         cfg.root = get_field<IOSATP_PPN>(ctx.satp) << PAGE_BITS;
         cfg.adue = ctx.tc & TC_SADE;
+        cfg.sum = (ctx.tc & TC_PDTV) && (ctx.ta & TA_SUM);
         if (ctx.tc & TC_SXL) {
             cfg.ptesize = 4;
             cfg.pbmt = false;
@@ -897,8 +928,8 @@ iommu::vmcfg iommu::get_vm_config(const context& ctx, bool g) {
     return cfg;
 }
 
-int iommu::tablewalk(context& ctx, u64 virt, bool g, bool wnr, bool ind,
-                     bool dbg, iotlb& entry) {
+int iommu::tablewalk(context& ctx, u64 virt, bool g, bool super, bool wnr,
+                     bool ind, bool dbg, iotlb& entry) {
     auto vm = get_vm_config(ctx, g);
 
     if (vm.levels == 0) {
@@ -941,13 +972,18 @@ retry:
 
         u64 ppn = get_field<PTE_PPN>(pte);
         u64 rwx = pte & PTE_RWX;
-        if (rwx == PTE_W || rwx == (PTE_W | PTE_X))
-            return TWALK_FAULT_PTE_CORRUPTED;
-
         if (rwx == 0) {
             pgbase = ppn << PAGE_BITS;
             continue;
         }
+
+        if (rwx == PTE_W || rwx == (PTE_W | PTE_X))
+            return TWALK_FAULT_PTE_CORRUPTED;
+
+        if ((g || !super) && !(pte & PTE_U) && !dbg)
+            return TWALK_FAULT_PTE_PROT_U;
+        if ((super && !g) && (pte & PTE_U) && !vm.sum && !dbg)
+            return TWALK_FAULT_PTE_PROT_S;
 
         if (ppn & ppnmask)
             return TWALK_FAULT_PPN_MISALIGNED;
@@ -989,7 +1025,7 @@ int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
     }
 
     iotlb entry;
-    if (tablewalk(ctx, virt & ~PAGE_MASK, true, wnr, ind, dbg, entry))
+    if (tablewalk(ctx, virt & ~PAGE_MASK, true, false, wnr, ind, dbg, entry))
         return iommu_page_fault(wnr);
 
     if (wnr && !entry.w)
@@ -1003,15 +1039,17 @@ int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
 
 bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
                       bool dmi, iotlb& entry) {
+    bool dbg = info.is_debug;
+    bool super = info.privilege > 0;
     u32 devid = info.cpuid;
     u32 pasid = info.asid;
     u64 virt = tx.get_address() & ~PAGE_MASK;
     context ctx;
     int err;
 
-    err = fetch_context(devid, pasid, info.is_debug, dmi, ctx);
+    err = fetch_context(devid, pasid, super, dbg, dmi, ctx);
     if (err) {
-        if (!info.is_debug && !dmi) {
+        if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
             req.cause = err;
             req.ttyp = ttyp_from_tx(tx, info, true);
@@ -1027,9 +1065,9 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         return false;
     }
 
-    err = fetch_iotlb(ctx, virt, tx.is_write(), info.is_debug, dmi, entry);
+    err = fetch_iotlb(ctx, virt, tx.is_write(), super, dbg, dmi, entry);
     if (err) {
-        if (!info.is_debug && !dmi) {
+        if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
             req.cause = err;
             req.ttyp = ttyp_from_tx(tx, info, false);
@@ -1045,7 +1083,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         return false;
     }
 
-    if (!info.is_debug && !dmi) {
+    if (!dbg && !dmi) {
         if (ddtp.get_field<DDTP_MODE>() == DDTP_MODE_BARE)
             increment_counter(ctx, IOMMU_EVENT_UX_REQ);
         else
@@ -1448,6 +1486,9 @@ void iommu::handle_command() {
         cqcsr &= ~CQCSR_CQON;
 }
 
+void iommu::handle_fault() {
+}
+
 void iommu::handle_tr_req() {
     tlm_generic_payload tx;
     tx.set_address(tr_req_iova);
@@ -1488,6 +1529,9 @@ void iommu::worker() {
             switch (work & mask) {
             case IOMMU_WORK_COMMAND:
                 handle_command();
+                break;
+            case IOMMU_WORK_FAULT:
+                handle_fault();
                 break;
             case IOMMU_WORK_TR_REQ:
                 handle_tr_req();
@@ -1541,7 +1585,9 @@ void iommu::update_ipsr() {
 }
 
 void iommu::report_fault(const fault& req) {
-    // TODO
+    m_faults.push(req);
+    m_work |= IOMMU_WORK_FAULT;
+    m_workev.notify(SC_ZERO_TIME);
 }
 
 void iommu::send_msi(u32 irq) {

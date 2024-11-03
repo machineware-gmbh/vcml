@@ -171,7 +171,7 @@ public:
 
     void test_iommu_lvl2_dev2_sv39() {
         u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
-        pgtp[0] = (MEM_ADDR >> 2) | 0x0f; // 0x0 -> MEM_ADDR | RWX | V
+        pgtp[0] = (MEM_ADDR >> 2) | 0x1f; // 0x0 -> MEM_ADDR | U | RWX | V
 
         u64* ddtp0 = (u64*)(mem.data() + DDTP0_OFFSET);
         ddtp0[0] = DDTP1_ADDR >> 2 | 1;
@@ -200,7 +200,7 @@ public:
         EXPECT_EQ(data, 0x12121212);
 
         // check for DA update
-        EXPECT_EQ(pgtp[0], (MEM_ADDR >> 2) | 0xcf);
+        EXPECT_EQ(pgtp[0], (MEM_ADDR >> 2) | 0xdf);
 
         u64 ux_reqs = 0;
         u64 tx_reqs = 0;
