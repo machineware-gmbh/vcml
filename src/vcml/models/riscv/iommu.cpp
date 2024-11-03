@@ -1618,7 +1618,7 @@ void iommu::handle_command() {
 
         if (cqcsr & CQCSR_CMDILL) {
             log_debug("command queue illegal opcode: 0x%02x:0x%01x",
-                      cmd.opcode, cmd.func3);
+                      (int)cmd.opcode, (int)cmd.func3);
             break;
         }
 
@@ -1774,10 +1774,10 @@ void iommu::report_fault(const fault& req) {
     log_debug("--- iommu fault ---");
     log_debug("  cause:      %s", iommu_fault_str(req.cause));
     log_debug("  ttyp:       %s", iommu_ttyp_str(req.ttyp));
-    log_debug("  device_id:  %u", req.did);
+    log_debug("  device_id:  %u", (int)req.did);
 
     if (req.pv) {
-        log_debug("  process_id: %u", req.pid);
+        log_debug("  process_id: %u", (int)req.pid);
         log_debug("  privilege:  %s", req.priv ? "S" : "U");
     }
 
