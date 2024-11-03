@@ -120,8 +120,13 @@ private:
     sc_event m_counter_ovev;
 
     template <typename T>
-    bool dma_readw(u64 addr, T& data, bool excl, bool debug) {
-        return dma_read(addr, &data, sizeof(T), excl, debug);
+    bool dma_readw(u64 addr, T& data, bool excl, bool dbg) {
+        return dma_read(addr, &data, sizeof(T), excl, dbg);
+    }
+
+    template <typename T>
+    bool dma_writew(u64 addr, T& data, bool dbg) {
+        return dma_write(addr, &data, sizeof(T), nullptr, dbg);
     }
 
     bool dma_read(u64 addr, void* data, size_t sz, bool excl, bool dbg);
@@ -154,7 +159,9 @@ private:
     void write_fctl(u32 val);
     void write_ddtp(u64 val);
     void write_cqt(u32 val);
+    void write_fqh(u32 val);
     void write_cqcsr(u32 val);
+    void write_fqcsr(u32 val);
     void write_ipsr(u32 val);
     void write_iocntinh(u32 val);
     void write_iohpmcycles(u64 val);

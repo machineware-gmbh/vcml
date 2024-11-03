@@ -161,11 +161,78 @@ enum iommu_faults {
     IOMMU_FAULT_DDT_CORRUPTED = 268,
     IOMMU_FAULT_PDT_CORRUPTED = 269,
     IOMMU_FAULT_MSI_PT_CORRUPTED = 270,
-    IOMMU_FAULT_MRIF_CORRUIPTED = 271,
+    IOMMU_FAULT_MRIF_CORRUPTED = 271,
     IOMMU_FAULT_INTERNAL_DP_ERROR = 272,
     IOMMU_FAULT_MSI_WR_FAULT = 273,
     IOMMU_FAULT_PT_CORRUPTED = 274,
 };
+
+constexpr const char* iommu_fault_str(u32 fault) {
+    switch (fault) {
+    case IOMMU_ACCESS_FAULT_X:
+        return "IOMMU_ACCESS_FAULT_X";
+    case IOMMU_MISALIGNED_FAULT_R:
+        return "IOMMU_MISALIGNED_FAULT_R";
+    case IOMMU_ACCESS_FAULT_R:
+        return "IOMMU_ACCESS_FAULT_R";
+    case IOMMU_MISALIGNED_FAULT_W:
+        return "IOMMU_MISALIGNED_FAULT_W";
+    case IOMMU_ACCESS_FAULT_W:
+        return "IOMMU_ACCESS_FAULT_W";
+    case IOMMU_PAGE_FAULT_X:
+        return "IOMMU_FAULT_X";
+    case IOMMU_PAGE_FAULT_R:
+        return "IOMMU_FAULT_R";
+    case IOMMU_PAGE_FAULT_W:
+        return "IOMMU_FAULT_W";
+    case IOMMU_GUEST_PAGE_FAULT_X:
+        return "IOMMU_GUEST_PAGE_FAULT_X";
+    case IOMMU_GUEST_PAGE_FAULT_R:
+        return "IOMMU_GUEST_PAGE_FAULT_R";
+    case IOMMU_GUEST_PAGE_FAULT_W:
+        return "IOMMU_GUEST_PAGE_FAULT_W";
+    case IOMMU_FAULT_DMA_DISABLED:
+        return "IOMMU_FAULT_DMA_DISABLED";
+    case IOMMU_FAULT_DDT_LOAD_FAULT:
+        return "IOMMU_FAULT_DDT_LOAD_FAULT";
+    case IOMMU_FAULT_DDT_INVALID:
+        return "IOMMU_FAULT_DDT_INVALID";
+    case IOMMU_FAULT_DDT_MISCONFIGURED:
+        return "IOMMU_FAULT_DDT_MISCONFIGURED";
+    case IOMMU_FAULT_TTYPE_BLOCKED:
+        return "IOMMU_FAULT_TTYPE_BLOCKED";
+    case IOMMU_FAULT_MSI_LOAD_FAULT:
+        return "IOMMU_FAULT_MSI_LOAD_FAULT";
+    case IOMMU_FAULT_MSI_INVALID:
+        return "IOMMU_FAULT_MSI_INVALID";
+    case IOMMU_FAULT_MSI_MISCONFIGURED:
+        return "IOMMU_FAULT_MSI_MISCONFIGURED";
+    case IOMMU_FAULT_MRIF_FAULT:
+        return "IOMMU_FAULT_MRIF_FAULT";
+    case IOMMU_FAULT_PDT_LOAD_FAULT:
+        return "IOMMU_FAULT_PDT_LOAD_FAULT";
+    case IOMMU_FAULT_PDT_INVALID:
+        return "IOMMU_FAULT_PDT_INVALID";
+    case IOMMU_FAULT_PDT_MISCONFIGURED:
+        return "IOMMU_FAULT_PDT_MISCONFIGURED";
+    case IOMMU_FAULT_DDT_CORRUPTED:
+        return "IOMMU_FAULT_DDT_CORRUPTED";
+    case IOMMU_FAULT_PDT_CORRUPTED:
+        return "IOMMU_FAULT_PDT_CORRUPTED";
+    case IOMMU_FAULT_MSI_PT_CORRUPTED:
+        return "IOMMU_FAULT_MSI_PT_CORRUPTED";
+    case IOMMU_FAULT_MRIF_CORRUPTED:
+        return "IOMMU_FAULT_MRIF_CORRUPTED";
+    case IOMMU_FAULT_INTERNAL_DP_ERROR:
+        return "IOMMU_FAULT_INTERNAL_DP_ERROR";
+    case IOMMU_FAULT_MSI_WR_FAULT:
+        return "IOMMU_FAULT_MSI_WR_FAULT";
+    case IOMMU_FAULT_PT_CORRUPTED:
+        return "IOMMU_FAULT_PT_CORRUPTED";
+    default:
+        return "IOMMU_FAULT_UNKNOWN";
+    }
+}
 
 constexpr int iommu_access_fault(bool wnr) {
     return wnr ? IOMMU_ACCESS_FAULT_W : IOMMU_ACCESS_FAULT_R;
@@ -194,6 +261,31 @@ enum iommu_ttyp {
     IOMMU_TTYP_PCIE_ATS_REQ = 8,
     IOMMU_TTYP_PCIE_MSG_REQ = 9,
 };
+
+constexpr const char* iommu_ttyp_str(u32 ttyp) {
+    switch (ttyp) {
+    case IOMMU_TTYP_NONE:
+        return "IOMMU_TTYP_NONE";
+    case IOMMU_TTYP_UXRX:
+        return "IOMMU_TTYP_UXRX";
+    case IOMMU_TTYP_UXRD:
+        return "IOMMU_TTYP_UXRD";
+    case IOMMU_TTYP_UXWR:
+        return "IOMMU_TTYP_UXWR";
+    case IOMMU_TTYP_TXRX:
+        return "IOMMU_TTYP_TXRX";
+    case IOMMU_TTYP_TXRD:
+        return "IOMMU_TTYP_TXRD";
+    case IOMMU_TTYP_TXWR:
+        return "IOMMU_TTYP_TXWR";
+    case IOMMU_TTYP_PCIE_ATS_REQ:
+        return "IOMMU_TTYP_PCIE_ATS_REQ";
+    case IOMMU_TTYP_PCIE_MSG_REQ:
+        return "IOMMU_TTYP_PCIE_MSG_REQ";
+    default:
+        return "IOMMU_TTYP_UNKNOWN";
+    }
+}
 
 static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
                                const tlm_sbi& info, bool ux) {
@@ -339,6 +431,9 @@ enum ddtp_bits : u64 {
 
 using CQB_LOG2SZ = field<0, 5, u64>;
 using CQB_PPN = field<10, 44, u64>;
+
+using FQB_LOG2SZ = field<0, 5, u64>;
+using FQB_PPN = field<10, 44, u64>;
 
 enum cqcsr_bits : u32 {
     CQCSR_CQEN = bit(0),
@@ -1056,7 +1151,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
             req.did = devid;
             req.pid = pasid;
             req.pv = !!pasid;
-            req.priv = info.privilege > 0;
+            req.priv = super;
             req.iotval = virt;
             req.iotval2 = m_iotval2;
             report_fault(req);
@@ -1074,7 +1169,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
             req.did = devid;
             req.pid = pasid;
             req.pv = !!pasid;
-            req.priv = info.privilege > 0;
+            req.priv = super;
             req.iotval = virt;
             req.iotval2 = m_iotval2;
             report_fault(req);
@@ -1217,11 +1312,24 @@ void iommu::write_ddtp(u64 val) {
 }
 
 void iommu::write_cqt(u32 val) {
+    if (cqcsr & CQCSR_BUSY)
+        return;
+
     u32 mask = (2u << cqb.get_field<CQB_LOG2SZ>()) - 1;
     cqt = val & mask;
 
-    m_work |= IOMMU_WORK_COMMAND;
-    m_workev.notify(SC_ZERO_TIME);
+    if (cqcsr & CQCSR_CQEN) {
+        m_work |= IOMMU_WORK_COMMAND;
+        m_workev.notify(SC_ZERO_TIME);
+    }
+}
+
+void iommu::write_fqh(u32 val) {
+    if (fqcsr & FQCSR_BUSY)
+        return;
+
+    u32 mask = (2u << fqb.get_field<FQB_LOG2SZ>()) - 1;
+    fqh = val & mask;
 }
 
 void iommu::write_cqcsr(u32 val) {
@@ -1231,10 +1339,39 @@ void iommu::write_cqcsr(u32 val) {
     if (cqcsr & CQCSR_BUSY)
         return;
 
-    cqcsr = ((cqcsr & ~rwmask) | (val & rwmask)) & ~(val & wcmask);
+    if ((cqcsr ^ val) & CQCSR_CQEN) {
+        m_work |= IOMMU_WORK_COMMAND;
+        m_workev.notify(SC_ZERO_TIME);
 
-    m_work |= IOMMU_WORK_COMMAND;
-    m_workev.notify(SC_ZERO_TIME);
+        if (val & CQCSR_CQEN) {
+            cqh = 0;
+            cqcsr &= ~wcmask;
+            cqcsr |= CQCSR_BUSY;
+        }
+    }
+
+    cqcsr = ((cqcsr & ~rwmask) | (val & rwmask)) & ~(val & wcmask);
+}
+
+void iommu::write_fqcsr(u32 val) {
+    u32 rwmask = FQCSR_FQEN | FQCSR_FIE;
+    u32 wcmask = FQCSR_FQMF | FQCSR_FQOF;
+
+    if (fqcsr & FQCSR_BUSY)
+        return;
+
+    if ((fqcsr ^ val) & FQCSR_FQEN) {
+        m_work |= IOMMU_WORK_FAULT;
+        m_workev.notify(SC_ZERO_TIME);
+
+        if (val & FQCSR_FQEN) {
+            fqt = 0;
+            fqcsr &= ~wcmask;
+            fqcsr |= FQCSR_BUSY;
+        }
+    }
+
+    fqcsr = ((fqcsr & ~rwmask) | (val & rwmask)) & ~(val & wcmask);
 }
 
 void iommu::write_ipsr(u32 val) {
@@ -1448,9 +1585,12 @@ void iommu::handle_command() {
     u32 mask = (2u << cqb.get_field<CQB_LOG2SZ>()) - 1;
     u64 base = cqb.get_field<CQB_PPN>() << PAGE_BITS;
 
+    cqcsr |= CQCSR_BUSY;
+
     while ((cqh != cqt) && (cqcsr & CQCSR_CQEN)) {
         command cmd{};
         if (!dma_readw(base + cqh * sizeof(command), cmd, false, false)) {
+            log_debug("command queue memory error");
             cqcsr |= CQCSR_CQMF;
             update_ipsr();
             break;
@@ -1476,17 +1616,59 @@ void iommu::handle_command() {
 
         update_ipsr();
 
-        if (cqcsr & CQCSR_CMDILL)
+        if (cqcsr & CQCSR_CMDILL) {
+            log_debug("command queue illegal opcode: 0x%02x:0x%01x",
+                      cmd.opcode, cmd.func3);
             break;
+        }
 
         cqh = (cqh + 1) & mask;
     }
+
+    cqcsr &= ~CQCSR_BUSY;
 
     if (!(cqcsr & CQCSR_CQEN))
         cqcsr &= ~CQCSR_CQON;
 }
 
 void iommu::handle_fault() {
+    if (fqcsr & FQCSR_FQEN)
+        fqcsr |= FQCSR_FQON;
+
+    u32 mask = (2u << fqb.get_field<FQB_LOG2SZ>()) - 1;
+    u64 base = fqb.get_field<FQB_PPN>() << PAGE_BITS;
+
+    fqcsr |= FQCSR_BUSY;
+
+    while (!m_faults.empty() && (cqcsr & CQCSR_CQEN)) {
+        fault req = m_faults.front();
+        m_faults.pop();
+
+        if (fqt == ((fqh - 1) & mask)) {
+            log_debug("fault queue overflow");
+            fqcsr |= FQCSR_FQOF;
+            update_ipsr();
+            break;
+        }
+
+        if (!dma_writew(base + fqt * sizeof(fault), req, false)) {
+            log_debug("fault queue memory error");
+            fqcsr |= FQCSR_FQMF;
+            update_ipsr();
+            break;
+        }
+
+        fqt = (fqt + 1) & mask;
+    }
+
+    // drop all remaining faults
+    while (!m_faults.empty())
+        m_faults.pop();
+
+    fqcsr &= ~FQCSR_BUSY;
+
+    if (!(fqcsr & FQCSR_FQEN))
+        fqcsr &= ~FQCSR_FQON;
 }
 
 void iommu::handle_tr_req() {
@@ -1588,6 +1770,20 @@ void iommu::report_fault(const fault& req) {
     m_faults.push(req);
     m_work |= IOMMU_WORK_FAULT;
     m_workev.notify(SC_ZERO_TIME);
+
+    log_debug("--- iommu fault ---");
+    log_debug("  cause:      %s", iommu_fault_str(req.cause));
+    log_debug("  ttyp:       %s", iommu_ttyp_str(req.ttyp));
+    log_debug("  device_id:  %u", req.did);
+
+    if (req.pv) {
+        log_debug("  process_id: %u", req.pid);
+        log_debug("  privilege:  %s", req.priv ? "S" : "U");
+    }
+
+    log_debug("  iotval:     0x%llx", req.iotval);
+    log_debug("  iotval2:    0x%llx", req.iotval2);
+    log_debug("--- [fault end] ---");
 }
 
 void iommu::send_msi(u32 irq) {
@@ -1702,6 +1898,20 @@ iommu::iommu(const sc_module_name& nm):
     cqcsr.allow_read_write();
     cqcsr.sync_always();
     cqcsr.on_write(&iommu::write_cqcsr);
+
+    fqb.allow_read_write();
+    fqb.sync_always();
+
+    fqh.allow_read_write();
+    fqh.sync_always();
+    fqh.on_write(&iommu::write_fqh);
+
+    fqt.allow_read_only();
+    fqt.sync_always();
+
+    fqcsr.allow_read_write();
+    fqcsr.sync_always();
+    fqcsr.on_write(&iommu::write_fqcsr);
 
     iocntovf.allow_read_only();
     iocntovf.sync_always();

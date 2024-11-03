@@ -260,6 +260,7 @@ public:
         ASSERT_OK(out.readw(IOMMU_CQCSR, cqcsr));
         EXPECT_EQ(cqcsr, 0x10801u);
         ASSERT_OK(out.writew(IOMMU_CQCSR, 0x800u));
+        wait(1, SC_MS);
         ASSERT_OK(out.readw(IOMMU_CQCSR, cqcsr));
         EXPECT_EQ(cqcsr, 0u);
 
