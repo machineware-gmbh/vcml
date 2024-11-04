@@ -218,8 +218,8 @@ public:
         ASSERT_OK(out.readw(iommu_iohpmctr(7), table_walks_s));
         ASSERT_OK(out.readw(iommu_iohpmctr(8), table_walks_g));
 
-        EXPECT_EQ(ux_reqs, 0);
-        EXPECT_EQ(tx_reqs, 2);
+        EXPECT_EQ(ux_reqs, 2);
+        EXPECT_EQ(tx_reqs, 0);
         EXPECT_EQ(tlb_misses, 1);
         EXPECT_EQ(ddt_walks, 2);
         EXPECT_EQ(pdt_walks, 0);

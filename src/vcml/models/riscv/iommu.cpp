@@ -377,6 +377,10 @@ enum iommu_event : u32 {
     IOMMU_EVENT_MAX,
 };
 
+constexpr u32 iommu_event_req(bool tx) {
+    return tx ? IOMMU_EVENT_TX_REQ : IOMMU_EVENT_UX_REQ;
+}
+
 using CAPS_VERSION = field<0, 8, u64>;
 using CAPS_IGS = field<28, 2, u64>;
 using CAPS_PAS = field<32, 6, u64>;
@@ -1135,6 +1139,7 @@ int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
 bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
                       bool dmi, iotlb& entry) {
     bool dbg = info.is_debug;
+    bool txreq = info.is_translated;
     bool super = info.privilege > 0;
     u32 devid = info.cpuid;
     u32 pasid = info.asid;
@@ -1160,6 +1165,9 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         return false;
     }
 
+    if (!dbg && !dmi)
+        increment_counter(ctx, iommu_event_req(txreq));
+
     err = fetch_iotlb(ctx, virt, tx.is_write(), super, dbg, dmi, entry);
     if (err) {
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
@@ -1176,13 +1184,6 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
         }
 
         return false;
-    }
-
-    if (!dbg && !dmi) {
-        if (ddtp.get_field<DDTP_MODE>() == DDTP_MODE_BARE)
-            increment_counter(ctx, IOMMU_EVENT_UX_REQ);
-        else
-            increment_counter(ctx, IOMMU_EVENT_TX_REQ);
     }
 
     return true;
