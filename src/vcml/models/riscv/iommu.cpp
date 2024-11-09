@@ -537,6 +537,16 @@ enum msi_vector_bits : u64 {
     MSI_VECTOR_ADDR = bitmask(54, 2),
 };
 
+constexpr u64 mkctxid(u32 devid, u32 pasid) {
+    return (u64)pasid << 32 | devid;
+}
+
+constexpr u32 sbi_get_pasid(const tlm_sbi& info) {
+    if (info.asid == SBI_ASID_GLOBAL)
+        return PASID_NONE;
+    return (u32)info.asid;
+}
+
 bool iommu::dma_read(u64 addr, void* data, size_t size, bool excl, bool dbg) {
     if (excl) {
         auto rw = dbg ? VCML_ACCESS_READ : VCML_ACCESS_READ_WRITE;
@@ -703,12 +713,14 @@ bool iommu::check_context(const context& ctx) const {
     return true;
 }
 
-constexpr u64 mkctxid(u32 devid, u32 pasid) {
-    return (u64)pasid << 32 | devid;
-}
+int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
+    bool dbg = info.is_debug;
+    bool txr = info.is_translated;
+    bool super = info.privilege > 0;
 
-int iommu::fetch_context(u32 devid, u32 pasid, bool txr, bool super, bool dbg,
-                         bool dmi, context& ctx) {
+    u32 devid = info.cpuid;
+    u32 pasid = sbi_get_pasid(info);
+
     ctx = {};
     ctx.device_id = devid;
     ctx.process_id = pasid;
@@ -885,8 +897,14 @@ int iommu::fetch_context(u32 devid, u32 pasid, bool txr, bool super, bool dbg,
     return 0;
 }
 
-int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool txr, bool super,
-                       bool dbg, bool dmi, iotlb& entry) {
+int iommu::fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
+                       const tlm_sbi& info, bool dmi, iotlb& entry) {
+    bool dbg = info.is_debug;
+    bool txr = info.is_translated;
+    bool super = info.privilege > 0;
+    bool wnr = tx.is_write();
+
+    u64 virt = tx.get_address() & ~PAGE_MASK;
     u64 vpn = virt >> PAGE_BITS;
 
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
@@ -1164,24 +1182,19 @@ int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
     return 0;
 }
 
-constexpr u32 sbi_get_pasid(const tlm_sbi& info) {
-    if (info.asid == SBI_ASID_GLOBAL)
-        return PASID_NONE;
-    return (u32)info.asid;
-}
-
 bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
                       bool dmi, iotlb& entry) {
     bool dbg = info.is_debug;
     bool txreq = info.is_translated;
     bool super = info.privilege > 0;
+
     u32 devid = info.cpuid;
     u32 pasid = sbi_get_pasid(info);
-    u64 virt = tx.get_address() & ~PAGE_MASK;
+
     context ctx;
     int err;
 
-    err = fetch_context(devid, pasid, txreq, super, dbg, dmi, ctx);
+    err = fetch_context(info, dmi, ctx);
     if (err) {
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
@@ -1191,7 +1204,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
             req.pid = req.pv ? pasid : 0;
             req.did = devid;
             req.priv = super;
-            req.iotval = virt;
+            req.iotval = tx.get_address();
             req.iotval2 = m_iotval2;
             report_fault(req);
         }
@@ -1202,7 +1215,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
     if (!dbg && !dmi)
         increment_counter(ctx, iommu_event_req(txreq));
 
-    err = fetch_iotlb(ctx, virt, tx.is_write(), txreq, super, dbg, dmi, entry);
+    err = fetch_iotlb(ctx, tx, info, dmi, entry);
     if (err) {
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
@@ -1212,7 +1225,7 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
             req.pid = req.pv ? pasid : 0;
             req.did = devid;
             req.priv = super;
-            req.iotval = virt;
+            req.iotval = tx.get_address();
             req.iotval2 = m_iotval2;
             report_fault(req);
         }

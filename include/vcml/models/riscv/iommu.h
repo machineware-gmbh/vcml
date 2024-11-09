@@ -134,10 +134,9 @@ private:
 
     bool check_context(const context& ctx) const;
 
-    int fetch_context(u32 devid, u32 procid, bool txr, bool super, bool dbg,
-                      bool dmi, context& ctx);
-    int fetch_iotlb(context& ctx, u64 virt, bool wnr, bool txr, bool super,
-                    bool dbg, bool dmi, iotlb& entry);
+    int fetch_context(const tlm_sbi& info, bool dmi, context& ctx);
+    int fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
+                    const tlm_sbi& info, bool dmi, iotlb& entry);
 
     vmcfg get_vm_config(const context& ctx, bool g);
 
