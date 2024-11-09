@@ -158,7 +158,7 @@ enum iommu_faults {
     IOMMU_FAULT_MSI_LOAD_FAULT = 261,
     IOMMU_FAULT_MSI_INVALID = 262,
     IOMMU_FAULT_MSI_MISCONFIGURED = 263,
-    IOMMU_FAULT_MRIF_FAULT = 264,
+    IOMMU_FAULT_MRIF_ACCESS = 264,
     IOMMU_FAULT_PDT_LOAD_FAULT = 265,
     IOMMU_FAULT_PDT_INVALID = 266,
     IOMMU_FAULT_PDT_MISCONFIGURED = 267,
@@ -211,8 +211,8 @@ constexpr const char* iommu_fault_str(u32 fault) {
         return "IOMMU_FAULT_MSI_INVALID";
     case IOMMU_FAULT_MSI_MISCONFIGURED:
         return "IOMMU_FAULT_MSI_MISCONFIGURED";
-    case IOMMU_FAULT_MRIF_FAULT:
-        return "IOMMU_FAULT_MRIF_FAULT";
+    case IOMMU_FAULT_MRIF_ACCESS:
+        return "IOMMU_FAULT_MRIF_ACCESS";
     case IOMMU_FAULT_PDT_LOAD_FAULT:
         return "IOMMU_FAULT_PDT_LOAD_FAULT";
     case IOMMU_FAULT_PDT_INVALID:
@@ -537,6 +537,25 @@ enum msi_vector_bits : u64 {
     MSI_VECTOR_ADDR = bitmask(54, 2),
 };
 
+enum msipte_bits : u64 {
+    MSIPTE_V = bit(0),
+    MSIPTE_C = bit(63),
+};
+
+using MSIPTE_M = field<1, 2, u64>;
+using MSIPTE_PPN = field<10, 44, u64>;
+using MSIPTE_MRIF = field<7, 47, u64>;
+using MSIPTE_NPPN = field<10, 44, u64>;
+
+enum msipte_mode : u64 {
+    MSIPTE_MODE_MRIF = 1,
+    MSIPTE_MODE_FLAT = 3,
+};
+
+constexpr u64 msipte_nid(u64 dword1) {
+    return extract(dword1, 60, 1) << 10 | (dword1 & bitmask(10));
+}
+
 constexpr u64 mkctxid(u32 devid, u32 pasid) {
     return (u64)pasid << 32 | devid;
 }
@@ -547,20 +566,34 @@ constexpr u32 sbi_get_pasid(const tlm_sbi& info) {
     return (u32)info.asid;
 }
 
-bool iommu::dma_read(u64 addr, void* data, size_t size, bool excl, bool dbg) {
+constexpr u64 msi_extract(u64 val, u64 mask) {
+    u64 result = 0;
+
+    for (int i = 64; i > 0; i--) {
+        if (mask & bit(i - 1)) {
+            result <<= 1;
+            result |= !!(val & bit(i - 1));
+        }
+    }
+
+    return result;
+}
+
+tlm_response_status iommu::dma_read(u64 addr, void* data, size_t size,
+                                    bool excl, bool dbg) {
     if (excl) {
         auto rw = dbg ? VCML_ACCESS_READ : VCML_ACCESS_READ_WRITE;
         u8* dmi_ptr = out.lookup_dmi_ptr(addr, size, rw);
         if (dmi_ptr) {
             memcpy(data, dmi_ptr, size);
             if (dbg)
-                return true;
+                return TLM_OK_RESPONSE;
 
             m_dma_addr = addr;
             m_dma_xptr = dmi_ptr;
             m_dma_xval = 0;
             memcpy(&m_dma_xval, dmi_ptr, size);
-            return true;
+            return TLM_OK_RESPONSE;
         }
     }
 
@@ -575,13 +608,13 @@ bool iommu::dma_read(u64 addr, void* data, size_t size, bool excl, bool dbg) {
     ddtp |= DDTP_BUSY;
     auto res = out.read(addr, data, size, info);
     ddtp &= ~DDTP_BUSY;
-    return success(res);
+    return res;
 }
 
-bool iommu::dma_write(u64 addr, void* data, size_t size, bool* excl,
-                      bool debug) {
+tlm_response_status iommu::dma_write(u64 addr, void* data, size_t size,
+                                     bool* excl, bool debug) {
     if (debug)
-        return true;
+        return TLM_OK_RESPONSE;
 
     if (excl && m_dma_xptr && addr == m_dma_addr &&
         mwr::atomic_cas(m_dma_xptr, &m_dma_xval, data, size)) {
@@ -589,7 +622,7 @@ bool iommu::dma_write(u64 addr, void* data, size_t size, bool* excl,
         m_dma_xptr = nullptr;
         m_dma_xval = 0;
         *excl = true;
-        return true;
+        return TLM_OK_RESPONSE;
     }
 
     unsigned int nbytes = 0;
@@ -602,7 +635,7 @@ bool iommu::dma_write(u64 addr, void* data, size_t size, bool* excl,
     if (excl)
         *excl = nbytes == size;
 
-    return success(res);
+    return res;
 }
 
 bool iommu::check_context(const context& ctx) const {
@@ -713,6 +746,26 @@ bool iommu::check_context(const context& ctx) const {
     return true;
 }
 
+bool iommu::check_msi(const context& ctx, u64 addr) const {
+    if (!msi_flat)
+        return false;
+
+    switch (get_field<MSI_MODE>(ctx.msiptp)) {
+    case MSIPTE_MODE_FLAT:
+        if (!msi_flat)
+            return false;
+        break;
+    case MSIPTE_MODE_MRIF:
+        if (!msi_mrif)
+            return false;
+        break;
+    default:
+        return false;
+    }
+
+    return !(((addr >> 12) ^ ctx.msi_addr_pattern) & ~ctx.msi_addr_mask);
+}
+
 int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     bool dbg = info.is_debug;
     bool txr = info.is_translated;
@@ -783,7 +836,8 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
             increment_counter(ctx, IOMMU_EVENT_DD_WALK);
 
         u64 ddte = 0;
-        if (!dma_readw(addr + ddidx[depth] * sizeof(ddte), ddte, false, dbg))
+        u64 ddte_addr = addr + ddidx[depth] * sizeof(ddte);
+        if (failed(dma_readw(ddte_addr, ddte, false, dbg)))
             return IOMMU_FAULT_DDT_LOAD_FAULT;
 
         if (!(ddte & DDTE_V) || (ddte & ~DDTE_MASK))
@@ -798,7 +852,8 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     u64 rawctx[8];
     memset(rawctx, 0, sizeof(rawctx));
     size_t ctxsz = (msi_flat ? 8 : 4) * sizeof(u64);
-    if (!dma_read(addr + ddidx[0] * ctxsz, rawctx, ctxsz, false, dbg))
+    u64 ctxaddr = addr + ddidx[0] * ctxsz;
+    if (failed(dma_read(ctxaddr, rawctx, ctxsz, false, dbg)))
         return IOMMU_FAULT_DDT_LOAD_FAULT;
 
     ctx.tc = rawctx[0];
@@ -863,7 +918,7 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
             if (int fault = translate_g(ctx, virt, false, false, dbg, phys))
                 return fault;
 
-            if (!dma_readw(phys, pdte, false, dbg))
+            if (failed(dma_readw(phys, pdte, false, dbg)))
                 return IOMMU_FAULT_PDT_LOAD_FAULT;
 
             if (!(pdte & PDTE_V) || (pdte & ~PDTE_MASK))
@@ -883,7 +938,7 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
         if (int fault = translate_g(ctx, virt, false, false, dbg, phys))
             return fault;
 
-        if (!dma_read(phys, rawctx, ctxsz, false, dbg))
+        if (failed(dma_read(phys, rawctx, ctxsz, false, dbg)))
             return IOMMU_FAULT_PDT_LOAD_FAULT;
 
         ctx.ta = rawctx[0];
@@ -897,7 +952,7 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     return 0;
 }
 
-int iommu::fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
+int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
                        const tlm_sbi& info, bool dmi, iotlb& entry) {
     bool dbg = info.is_debug;
     bool txr = info.is_translated;
@@ -915,6 +970,8 @@ int iommu::fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
             return IOMMU_FAULT_TTYPE_BLOCKED;
 
         u64 phys = virt;
+        if (check_msi(ctx, phys) && tx.get_data_length() > 0)
+            return translate_msi(ctx, tx, info, phys, entry);
         if (ctx.tc & TC_T2GPA && translate_g(ctx, virt, wnr, false, dbg, phys))
             return iommu_page_fault(wnr);
 
@@ -952,6 +1009,10 @@ int iommu::fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
     if (fault != TWALK_FAULT_NONE)
         return iommu_guest_page_fault(wnr);
 
+    u64 guest_phys = iotlb_s.ppn << PAGE_BITS;
+    if (check_msi(ctx, guest_phys) && tx.get_data_length())
+        return translate_msi(ctx, tx, info, guest_phys, entry);
+
     if (stl_contains(m_iotlb_g, iotlb_s.ppn)) {
         iotlb& cache = m_iotlb_g[iotlb_s.ppn];
         if (cache.gscid == gscid && cache.pscid == pscid &&
@@ -962,7 +1023,6 @@ int iommu::fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
     }
 
     iotlb iotlb_g;
-    u64 guest_phys = iotlb_s.ppn << PAGE_BITS;
     if (tablewalk(ctx, guest_phys, true, false, wnr, false, dbg, iotlb_g))
         return iommu_page_fault(wnr);
 
@@ -1109,7 +1169,7 @@ retry:
         if (!g && translate_g(ctx, pteaddr, vm.adue, true, dbg, pteaddr))
             return TWALK_FAULT_G_STAGE;
 
-        if (!dma_read(pteaddr, &pte, vm.ptesize, vm.adue, dbg))
+        if (failed(dma_read(pteaddr, &pte, vm.ptesize, vm.adue, dbg)))
             return TWALK_FAULT_PTE_FETCH;
 
         if (!(pte & PTE_V))
@@ -1140,8 +1200,11 @@ retry:
                     return TWALK_FAULT_AD_UPDATE;
 
                 bool atomic = false;
-                if (!dma_write(pteaddr, &newpte, vm.ptesize, &atomic, false))
+                if (failed(dma_write(pteaddr, &newpte, vm.ptesize, &atomic,
+                                     false))) {
                     return TWALK_FAULT_G_STAGE;
+                }
+
                 if (!atomic)
                     goto retry;
             }
@@ -1182,8 +1245,108 @@ int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
     return 0;
 }
 
-bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
-                      bool dmi, iotlb& entry) {
+int iommu::translate_msi(context& ctx, tlm_generic_payload& tx,
+                         const tlm_sbi& info, u64 gpa, iotlb& entry) {
+    if (!check_msi(ctx, gpa))
+        return IOMMU_FAULT_MSI_MISCONFIGURED;
+
+    u64 msipte[2];
+    u64 irqid = msi_extract(gpa >> 12, ctx.msi_addr_mask);
+    u64 base = get_field<MSI_PPN>(ctx.msiptp) << PAGE_BITS;
+
+    u64 addr = base + irqid * sizeof(msipte);
+    if (failed(dma_read(addr, msipte, sizeof(msipte), false, info.is_debug)))
+        return IOMMU_FAULT_MSI_LOAD_FAULT;
+
+    if (!(msipte[0] & MSIPTE_V))
+        return IOMMU_FAULT_MSI_INVALID;
+
+    if (msipte[0] & MSIPTE_C)
+        return IOMMU_FAULT_MSI_MISCONFIGURED;
+
+    switch (get_field<MSIPTE_M>(msipte[0])) {
+    case MSIPTE_MODE_FLAT: {
+        entry.vpn = tx.get_address() >> PAGE_BITS;
+        entry.ppn = get_field<MSIPTE_PPN>(msipte[0]);
+        entry.gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
+        entry.pscid = get_field<TA_PSCID>(ctx.ta);
+        entry.pbmt = 0;
+        entry.r = true;
+        entry.w = true;
+        return 0;
+    }
+
+    case MSIPTE_MODE_MRIF:
+        return transmit_mrif(ctx, tx, info, msipte);
+
+    default:
+        return IOMMU_FAULT_MSI_MISCONFIGURED;
+    }
+}
+
+int iommu::transmit_mrif(context& ctx, tlm_generic_payload& tx,
+                         const tlm_sbi& info, u64 msipte[2]) {
+    if (!tx.is_write() || tx.get_address() & 3 || tx.get_data_length() != 4) {
+        tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
+        return IOMMU_FAULT_MRIF_ACCESS;
+    }
+
+    u32 msi = *(u32*)tx.get_data_ptr() & bitmask(11);
+    u64 base = get_field<MSIPTE_MRIF>(msipte[0]) << 9;
+    u64 naddr = get_field<MSIPTE_NPPN>(msipte[1]) << 12;
+    u32 nid = msipte_nid(msipte[1]);
+
+    u64 msi_idx = msi / 64;
+    u64 msi_off = msi % 64;
+
+    u64 mask = bit(msi_off);
+    u64 addr = base + msi_idx * 16;
+
+    bool excl;
+    tlm_response_status rs;
+
+    do {
+        excl = amo_mrif;
+        u64 pending = 0;
+        if (failed(rs = dma_readw(addr, pending, excl, false))) {
+            tx.set_response_status(rs);
+            log_debug("failed to read mrif pending at 0x%llx", addr);
+            return IOMMU_FAULT_MRIF_ACCESS;
+        }
+
+        pending |= mask;
+
+        if (failed(rs = dma_writex(addr, pending, excl, false))) {
+            tx.set_response_status(rs);
+            log_debug("failed to write mrif pending at 0x%llx", addr);
+            return IOMMU_FAULT_MRIF_ACCESS;
+        }
+    } while (amo_mrif && !excl);
+
+    u64 enabled = 0;
+    addr = addr + 8;
+
+    if (failed(rs = dma_readw(addr, enabled, false, false))) {
+        tx.set_response_status(rs);
+        log_debug("failed to read mrif enabled at 0x%llx", addr);
+        return IOMMU_FAULT_MRIF_ACCESS;
+    }
+
+    if (enabled & mask) {
+        if (failed(rs = dma_writew(naddr, nid, false))) {
+            tx.set_response_status(rs);
+            log_debug("failed to write mrif notify at 0x%llx", naddr);
+            return IOMMU_FAULT_MRIF_ACCESS;
+        }
+    }
+
+    // mark transaction completed: no forwarding
+    tx.set_response_status(TLM_OK_RESPONSE);
+    return 0;
+}
+
+bool iommu::translate(tlm_generic_payload& tx, const tlm_sbi& info, bool dmi,
+                      iotlb& entry) {
     bool dbg = info.is_debug;
     bool txreq = info.is_translated;
     bool super = info.privilege > 0;
@@ -1637,7 +1800,8 @@ void iommu::handle_command() {
 
     while ((cqh != cqt) && (cqcsr & CQCSR_CQEN)) {
         command cmd{};
-        if (!dma_readw(base + cqh * sizeof(command), cmd, false, false)) {
+        u64 addr = base + cqh * sizeof(command);
+        if (failed(dma_readw(addr, cmd, false, false))) {
             log_debug("command queue memory error");
             cqcsr |= CQCSR_CQMF;
             update_ipsr();
@@ -1699,7 +1863,8 @@ void iommu::handle_fault() {
             break;
         }
 
-        if (!dma_writew(base + fqt * sizeof(fault), req, false)) {
+        u64 addr = base + fqt * sizeof(fault);
+        if (failed(dma_writew(addr, req, false))) {
             log_debug("fault queue memory error");
             fqcsr |= FQCSR_FQMF;
             update_ipsr();
@@ -1722,6 +1887,7 @@ void iommu::handle_fault() {
 void iommu::handle_tr_req() {
     tlm_generic_payload tx;
     tx.set_address(tr_req_iova);
+    tx.set_data_length(0);
     if (tr_req_ctl & TR_REQ_CTL_NW)
         tx.set_read();
     else
@@ -1863,6 +2029,7 @@ iommu::iommu(const sc_module_name& nm):
     m_iotlb_s(),
     m_iotlb_g(),
     m_workev("workev"),
+    m_faults(),
     m_iotval2(0),
     m_dmi_lo(~0ull),
     m_dmi_hi(0ull),
@@ -1881,9 +2048,9 @@ iommu::iommu(const sc_module_name& nm):
     sv39x4("sv39x4", true),
     sv48x4("sv48x4", true),
     sv57x4("sv57x4", true),
-    amo_mrif("amo_mrif", true),
     msi_flat("msi_flat", true),
-    msi_mrif("msi_mrif", true),
+    msi_mrif("msi_mrif", msi_flat),
+    amo_mrif("amo_mrif", msi_mrif),
     amo_hwad("amo_hwad", true),
     t2gpa("t2gpa", true),
     pd8("pd8", true),
@@ -2031,6 +2198,9 @@ unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,
         tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
         return 0;
     }
+
+    if (tx.get_response_status() != TLM_INCOMPLETE_RESPONSE)
+        return success(tx) ? tx.get_data_length() : 0;
 
     if (tx.is_read() && !entry.r && !info.is_debug) {
         tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);

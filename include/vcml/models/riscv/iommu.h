@@ -120,23 +120,32 @@ private:
     sc_event m_counter_ovev;
 
     template <typename T>
-    bool dma_readw(u64 addr, T& data, bool excl, bool dbg) {
+    tlm_response_status dma_readw(u64 addr, T& data, bool excl, bool dbg) {
         return dma_read(addr, &data, sizeof(T), excl, dbg);
     }
 
     template <typename T>
-    bool dma_writew(u64 addr, T& data, bool dbg) {
+    tlm_response_status dma_writew(u64 addr, T& data, bool dbg) {
         return dma_write(addr, &data, sizeof(T), nullptr, dbg);
     }
 
-    bool dma_read(u64 addr, void* data, size_t sz, bool excl, bool dbg);
-    bool dma_write(u64 addr, void* data, size_t sz, bool* excl, bool dbg);
+    template <typename T>
+    tlm_response_status dma_writex(u64 addr, T& data, bool& excl, bool dbg) {
+        excl = true;
+        return dma_write(addr, &data, sizeof(T), &excl, dbg);
+    }
+
+    tlm_response_status dma_read(u64 addr, void* data, size_t sz, bool excl,
+                                 bool dbg);
+    tlm_response_status dma_write(u64 addr, void* data, size_t sz, bool* excl,
+                                  bool dbg);
 
     bool check_context(const context& ctx) const;
+    bool check_msi(const context& ctx, u64 addr) const;
 
     int fetch_context(const tlm_sbi& info, bool dmi, context& ctx);
-    int fetch_iotlb(context& ctx, const tlm_generic_payload& tx,
-                    const tlm_sbi& info, bool dmi, iotlb& entry);
+    int fetch_iotlb(context& ctx, tlm_generic_payload& tx, const tlm_sbi& info,
+                    bool dmi, iotlb& entry);
 
     vmcfg get_vm_config(const context& ctx, bool g);
 
@@ -144,8 +153,12 @@ private:
                   bool dbg, iotlb& entry);
     int translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
                     u64& phys);
+    int translate_msi(context& ctx, tlm_generic_payload& tx,
+                      const tlm_sbi& info, u64 gpa, iotlb& entry);
+    int transmit_mrif(context& ctx, tlm_generic_payload& tx,
+                      const tlm_sbi& info, u64 msipte[2]);
 
-    bool translate(const tlm_generic_payload& tx, const tlm_sbi& sbi, bool dmi,
+    bool translate(tlm_generic_payload& tx, const tlm_sbi& sbi, bool dmi,
                    iotlb& entry);
 
     void restart_counter(u64 val);
@@ -195,9 +208,9 @@ public:
     property<bool> sv39x4;
     property<bool> sv48x4;
     property<bool> sv57x4;
-    property<bool> amo_mrif;
     property<bool> msi_flat;
     property<bool> msi_mrif;
+    property<bool> amo_mrif;
     property<bool> amo_hwad;
     property<bool> t2gpa;
     property<bool> pd8;
