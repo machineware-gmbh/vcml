@@ -13,6 +13,10 @@
 namespace vcml {
 namespace riscv {
 
+enum proc_ids : u32 {
+    PASID_NONE = ~0u,
+};
+
 enum address_bits : u64 {
     PHYS_BITS = 56,
     PAGE_BITS = 12,
@@ -288,14 +292,14 @@ constexpr const char* iommu_ttyp_str(u32 ttyp) {
 }
 
 static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
-                               const tlm_sbi& info, bool ux) {
+                               const tlm_sbi& info, bool txr) {
     if (tx.is_read()) {
         if (info.is_insn)
-            return ux ? IOMMU_TTYP_UXRX : IOMMU_TTYP_TXRX;
-        return ux ? IOMMU_TTYP_UXRD : IOMMU_TTYP_TXRD;
+            return txr ? IOMMU_TTYP_TXRX : IOMMU_TTYP_UXRX;
+        return txr ? IOMMU_TTYP_TXRD : IOMMU_TTYP_UXRD;
     }
 
-    return ux ? IOMMU_TTYP_UXWR : IOMMU_TTYP_TXWR;
+    return txr ? IOMMU_TTYP_TXWR : IOMMU_TTYP_UXWR;
 }
 
 enum iommu_work : u32 {
@@ -533,10 +537,6 @@ enum msi_vector_bits : u64 {
     MSI_VECTOR_ADDR = bitmask(54, 2),
 };
 
-constexpr u64 mkctxid(u32 devid, u32 procid) {
-    return (u64)procid << 32 | devid;
-}
-
 bool iommu::dma_read(u64 addr, void* data, size_t size, bool excl, bool dbg) {
     if (excl) {
         auto rw = dbg ? VCML_ACCESS_READ : VCML_ACCESS_READ_WRITE;
@@ -703,9 +703,23 @@ bool iommu::check_context(const context& ctx) const {
     return true;
 }
 
-int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
-                         context& ctx) {
-    u64 ctxid = mkctxid(devid, procid);
+constexpr u64 mkctxid(u32 devid, u32 pasid) {
+    return (u64)pasid << 32 | devid;
+}
+
+int iommu::fetch_context(u32 devid, u32 pasid, bool txr, bool super, bool dbg,
+                         bool dmi, context& ctx) {
+    ctx = {};
+    ctx.device_id = devid;
+    ctx.process_id = pasid;
+
+    u64 mode = ddtp.get_field<DDTP_MODE>();
+    if (mode == DDTP_MODE_OFF)
+        return IOMMU_FAULT_DMA_DISABLED;
+    if (mode == DDTP_MODE_BARE && txr)
+        return IOMMU_FAULT_TTYPE_BLOCKED;
+
+    u64 ctxid = mkctxid(devid, pasid);
     if (stl_contains(m_contexts, ctxid)) {
         ctx = m_contexts[ctxid];
         return 0;
@@ -714,15 +728,8 @@ int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
     if (dmi)
         return -1;
 
-    ctx = {};
-    ctx.device_id = devid;
-    ctx.process_id = procid;
-
     size_t depth = 0;
     size_t ddidx[3] = { 0, 0, 0 };
-
-    u64 mode = ddtp.get_field<DDTP_MODE>();
-    u64 addr = ddtp.get_field<DDTP_PPN>() << PAGE_BITS;
 
     if (msi_flat) {
         ddidx[0] = extract(devid, 0, 6);
@@ -735,8 +742,6 @@ int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
     }
 
     switch (mode) {
-    case DDTP_MODE_OFF:
-        return IOMMU_FAULT_DMA_DISABLED;
     case DDTP_MODE_BARE:
         set_field<IOSATP_MODE>(ctx.satp, IOSATP_BARE);
         set_field<IOHGATP_MODE>(ctx.gatp, IOHGATP_BARE);
@@ -758,6 +763,8 @@ int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
     default:
         return IOMMU_FAULT_DDT_MISCONFIGURED;
     }
+
+    u64 addr = ddtp.get_field<DDTP_PPN>() << PAGE_BITS;
 
     for (; depth > 0; depth--) {
         if (!dbg)
@@ -799,7 +806,10 @@ int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
     if (!check_context(ctx))
         return IOMMU_FAULT_DDT_MISCONFIGURED;
 
-    if (!(ctx.tc & TC_PDTV) && procid > 0)
+    if ((ctx.tc & TC_DPE) && (pasid == PASID_NONE))
+        pasid = 0;
+
+    if (!(ctx.tc & TC_PDTV) && (pasid != PASID_NONE))
         return IOMMU_FAULT_TTYPE_BLOCKED;
 
     if (ctx.tc & TC_PDTV) {
@@ -807,9 +817,9 @@ int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
         addr = get_field<IOHGATP_PPN>(ctx.satp) << PAGE_BITS;
 
         size_t pdidx[3];
-        pdidx[0] = extract(procid, 0, 8);
-        pdidx[1] = extract(procid, 8, 9);
-        pdidx[2] = extract(procid, 17, 2);
+        pdidx[0] = extract(pasid, 0, 8);
+        pdidx[1] = extract(pasid, 8, 9);
+        pdidx[2] = extract(pasid, 17, 2);
 
         switch (mode) {
         case PDTP_BARE:
@@ -875,12 +885,30 @@ int iommu::fetch_context(u32 devid, u32 procid, bool super, bool dbg, bool dmi,
     return 0;
 }
 
-int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool super, bool dbg,
-                       bool dmi, iotlb& entry) {
+int iommu::fetch_iotlb(context& ctx, u64 virt, bool wnr, bool txr, bool super,
+                       bool dbg, bool dmi, iotlb& entry) {
     u64 vpn = virt >> PAGE_BITS;
 
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
     u64 pscid = get_field<TA_PSCID>(ctx.ta);
+
+    if (txr) {
+        if (!(ctx.tc & TC_EN_ATS) || dmi)
+            return IOMMU_FAULT_TTYPE_BLOCKED;
+
+        u64 phys = virt;
+        if (ctx.tc & TC_T2GPA && translate_g(ctx, virt, wnr, false, dbg, phys))
+            return iommu_page_fault(wnr);
+
+        entry.vpn = vpn;
+        entry.ppn = phys >> PAGE_BITS;
+        entry.gscid = gscid;
+        entry.pscid = pscid;
+        entry.r = !wnr;
+        entry.w = wnr;
+        entry.pbmt = 0;
+        return 0;
+    }
 
     if (stl_contains(m_iotlb_s, vpn)) {
         iotlb& cache = m_iotlb_s[vpn];
@@ -1136,26 +1164,32 @@ int iommu::translate_g(context& ctx, u64 virt, bool wnr, bool ind, bool dbg,
     return 0;
 }
 
+constexpr u32 sbi_get_pasid(const tlm_sbi& info) {
+    if (info.asid == SBI_ASID_GLOBAL)
+        return PASID_NONE;
+    return (u32)info.asid;
+}
+
 bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
                       bool dmi, iotlb& entry) {
     bool dbg = info.is_debug;
     bool txreq = info.is_translated;
     bool super = info.privilege > 0;
     u32 devid = info.cpuid;
-    u32 pasid = info.asid;
+    u32 pasid = sbi_get_pasid(info);
     u64 virt = tx.get_address() & ~PAGE_MASK;
     context ctx;
     int err;
 
-    err = fetch_context(devid, pasid, super, dbg, dmi, ctx);
+    err = fetch_context(devid, pasid, txreq, super, dbg, dmi, ctx);
     if (err) {
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
             req.cause = err;
-            req.ttyp = ttyp_from_tx(tx, info, true);
+            req.ttyp = ttyp_from_tx(tx, info, txreq);
+            req.pv = pasid != PASID_NONE;
+            req.pid = req.pv ? pasid : 0;
             req.did = devid;
-            req.pid = pasid;
-            req.pv = !!pasid;
             req.priv = super;
             req.iotval = virt;
             req.iotval2 = m_iotval2;
@@ -1168,15 +1202,15 @@ bool iommu::translate(const tlm_generic_payload& tx, const tlm_sbi& info,
     if (!dbg && !dmi)
         increment_counter(ctx, iommu_event_req(txreq));
 
-    err = fetch_iotlb(ctx, virt, tx.is_write(), super, dbg, dmi, entry);
+    err = fetch_iotlb(ctx, virt, tx.is_write(), txreq, super, dbg, dmi, entry);
     if (err) {
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
             req.cause = err;
-            req.ttyp = ttyp_from_tx(tx, info, false);
+            req.ttyp = ttyp_from_tx(tx, info, txreq);
+            req.pv = pasid != PASID_NONE;
+            req.pid = req.pv ? pasid : 0;
             req.did = devid;
-            req.pid = pasid;
-            req.pv = !!pasid;
             req.priv = super;
             req.iotval = virt;
             req.iotval2 = m_iotval2;

@@ -16,10 +16,10 @@
 
 namespace vcml {
 
-enum sbi_defaults : i64 {
+enum sbi_defaults : u64 {
     SBI_CPUID_DEFAULT = 0,
     SBI_PRIVILEGE_NONE = 0,
-    SBI_ASID_GLOBAL = 0,
+    SBI_ASID_GLOBAL = ~0ull,
 };
 
 //
@@ -75,7 +75,7 @@ enum sbi_defaults : i64 {
 //   default privilege level of 0 means "no privilege" (e.g. EL0 in ARM and
 //   U-Mode in RISCV)
 //
-// tlm_sbi.asid (bool, target-read-only, default 0)
+// tlm_sbi.asid (bool, target-read-only, default -1)
 //   set by the initiator to indicate the application space ID of the address
 //   in the associated TLM generic payload, e.g. for SR-IOV:
 //   - for processors, the ASID may refer to the currently active process
