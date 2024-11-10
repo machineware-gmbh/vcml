@@ -64,19 +64,6 @@ const u64 MSIP_ADDR = MEM_ADDR + MSIP_OFFSET;
 class iommu_test : public test_base
 {
 public:
-    property<bool> capabilities;
-    property<bool> feature_control;
-    property<bool> iohpmcycles;
-    property<bool> iommu_off;
-    property<bool> iommu_bare;
-    property<bool> iommu_lvl1_dev1_bare;
-    property<bool> iommu_lvl2_dev2_sv39;
-    property<bool> command_queue;
-    property<bool> fault_queue;
-    property<bool> msi_flat;
-    property<bool> msi_mrif;
-    bool test_all;
-
     generic::memory mem;
     generic::bus bus;
 
@@ -92,18 +79,6 @@ public:
 
     iommu_test(const sc_module_name& nm):
         test_base(nm),
-        capabilities("capabilities", false),
-        feature_control("feature_control", false),
-        iohpmcycles("iohpmcycles", false),
-        iommu_off("iommu_off", false),
-        iommu_bare("iommu_bare", false),
-        iommu_lvl1_dev1_bare("iommu_lvl1_dev1_bare", false),
-        iommu_lvl2_dev2_sv39("iommu_lvl2_dev2_sv39", false),
-        command_queue("command_queue", false),
-        fault_queue("fault_queue", false),
-        msi_flat("msi_flat", false),
-        msi_mrif("msi_mrif", false),
-        test_all(false),
         mem("mem", 1 * MiB),
         bus("bus"),
         iommu("iommu"),
@@ -135,11 +110,17 @@ public:
 
         dma.allow_dmi = false;
 
-        // test all if nothing else is set
-        test_all = !capabilities && !feature_control && !iohpmcycles &&
-                   !iommu_off && !iommu_bare && !iommu_lvl1_dev1_bare &&
-                   !iommu_lvl2_dev2_sv39 && !command_queue && !fault_queue &&
-                   !msi_flat && !msi_mrif;
+        add_test("capabilities", &iommu_test::test_capabilities);
+        add_test("feature_control", &iommu_test::test_feature_control);
+        add_test("iohpmcycles", &iommu_test::test_iohpmcycles);
+        add_test("iommu_off", &iommu_test::test_iommu_off);
+        add_test("iommu_bare", &iommu_test::test_iommu_bare);
+        add_test("iommu_lvl1_bare", &iommu_test::test_iommu_lvl1_bare);
+        add_test("iommu_lvl2_sv39", &iommu_test::test_iommu_lvl2_sv39);
+        add_test("command_queue", &iommu_test::test_iommu_command_queue);
+        add_test("fault_queue", &iommu_test::test_iommu_fault_queue);
+        add_test("msi_flat", &iommu_test::test_iommu_msi_flat);
+        add_test("msi_mrif", &iommu_test::test_iommu_msi_mrif);
 
         EXPECT_STREQ(iommu.kind(), "vcml::riscv::iommu");
     }
@@ -199,7 +180,7 @@ public:
         EXPECT_EQ(data, 0xffffffff);
     }
 
-    void test_iommu_lvl1_dev1_bare() {
+    void test_iommu_lvl1_bare() {
         u64* ddtp = (u64*)(mem.data() + DDTP0_OFFSET);
         ddtp[8] = 0x0000000000000011;  // dev[1].tc = V | DTF
         ddtp[9] = 0x0000000000000000;  // dev[1].gatp = bare
@@ -218,7 +199,7 @@ public:
         EXPECT_EQ(data, 0xabababab);
     }
 
-    void test_iommu_lvl2_dev2_sv39() {
+    void test_iommu_lvl2_sv39() {
         u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
         pgtp[0] = (MEM_ADDR >> 2) | 0x1f; // 0x0 -> MEM_ADDR | U | RWX | V
 
@@ -462,74 +443,6 @@ public:
         ASSERT_OK(out.readw(MEM_ADDR + 0x0000, mrif));
         EXPECT_EQ(data, bit(6) | 3);
         EXPECT_EQ(mrif, 1114);
-    }
-
-    virtual void run_test() override {
-        if (test_all || capabilities) {
-            log_info("capabilities");
-            test_capabilities();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || feature_control) {
-            log_info("feature control");
-            test_feature_control();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || iohpmcycles) {
-            log_info("iohpmcycles");
-            test_iohpmcycles();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || iommu_off) {
-            log_info("iommu off");
-            test_iommu_off();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || iommu_bare) {
-            log_info("iommu bare");
-            test_iommu_bare();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || iommu_lvl1_dev1_bare) {
-            log_info("iommu lvl1 dev1 bare");
-            test_iommu_lvl1_dev1_bare();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || iommu_lvl2_dev2_sv39) {
-            log_info("iommu lvl2 dev2 sv39");
-            test_iommu_lvl2_dev2_sv39();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || command_queue) {
-            log_info("command queue");
-            test_iommu_command_queue();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || fault_queue) {
-            log_info("fault queue");
-            test_iommu_fault_queue();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || msi_flat) {
-            log_info("msi flat");
-            test_iommu_msi_flat();
-            wait(SC_ZERO_TIME);
-        }
-
-        if (test_all || msi_mrif) {
-            log_info("msi mrif");
-            test_iommu_msi_mrif();
-            wait(SC_ZERO_TIME);
-        }
     }
 };
 
