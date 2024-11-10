@@ -22,9 +22,15 @@ const u64 IOMMU_DDTP = IOMMU_ADDR + 16;
 const u64 IOMMU_CQB = IOMMU_ADDR + 24;
 const u64 IOMMU_CQH = IOMMU_ADDR + 32;
 const u64 IOMMU_CQT = IOMMU_ADDR + 36;
+const u64 IOMMU_FQB = IOMMU_ADDR + 40;
+const u64 IOMMU_FQH = IOMMU_ADDR + 48;
+const u64 IOMMU_FQT = IOMMU_ADDR + 52;
 const u64 IOMMU_CQCSR = IOMMU_ADDR + 72;
+const u64 IOMMU_FQCSR = IOMMU_ADDR + 76;
+const u64 IOMMU_IPSR = IOMMU_ADDR + 84;
 const u64 IOMMU_CNTINH = IOMMU_ADDR + 92;
 const u64 IOMMU_HPMCYCLES = IOMMU_ADDR + 96;
+const u64 IOMMU_ICVEC = IOMMU_ADDR + 760;
 
 constexpr u64 iommu_iohpmctr(int i) {
     return IOMMU_ADDR + 104 + i * 8;
@@ -34,18 +40,43 @@ constexpr u64 iommu_iohpmevt(int i) {
     return IOMMU_ADDR + 352 + i * 8;
 }
 
+constexpr u64 iommu_msi_cfg_tbl_addr(int i) {
+    return IOMMU_ADDR + 768 + i * 16;
+}
+
+constexpr u64 iommu_msi_cfg_tbl_ctrl(int i) {
+    return IOMMU_ADDR + 768 + i * 16 + 8;
+}
+
 const u64 DDTP0_OFFSET = 16 * KiB;
 const u64 DDTP0_ADDR = MEM_ADDR + DDTP0_OFFSET;
 const u64 DDTP1_OFFSET = 32 * KiB;
 const u64 DDTP1_ADDR = MEM_ADDR + DDTP1_OFFSET;
 const u64 CMDQ_OFFSET = 40 * KiB;
 const u64 CMDQ_ADDR = MEM_ADDR + CMDQ_OFFSET;
+const u64 FLTQ_OFFSET = 44 * KiB;
+const u64 FLTQ_ADDR = MEM_ADDR + FLTQ_OFFSET;
 const u64 PGTP_OFFSET = 64 * KiB;
 const u64 PGTP_ADDR = MEM_ADDR + PGTP_OFFSET;
+const u64 MSIP_OFFSET = 80 * KiB;
+const u64 MSIP_ADDR = MEM_ADDR + MSIP_OFFSET;
 
 class iommu_test : public test_base
 {
 public:
+    property<bool> capabilities;
+    property<bool> feature_control;
+    property<bool> iohpmcycles;
+    property<bool> iommu_off;
+    property<bool> iommu_bare;
+    property<bool> iommu_lvl1_dev1_bare;
+    property<bool> iommu_lvl2_dev2_sv39;
+    property<bool> command_queue;
+    property<bool> fault_queue;
+    property<bool> msi_flat;
+    property<bool> msi_mrif;
+    bool test_all;
+
     generic::memory mem;
     generic::bus bus;
 
@@ -61,6 +92,18 @@ public:
 
     iommu_test(const sc_module_name& nm):
         test_base(nm),
+        capabilities("capabilities", false),
+        feature_control("feature_control", false),
+        iohpmcycles("iohpmcycles", false),
+        iommu_off("iommu_off", false),
+        iommu_bare("iommu_bare", false),
+        iommu_lvl1_dev1_bare("iommu_lvl1_dev1_bare", false),
+        iommu_lvl2_dev2_sv39("iommu_lvl2_dev2_sv39", false),
+        command_queue("command_queue", false),
+        fault_queue("fault_queue", false),
+        msi_flat("msi_flat", false),
+        msi_mrif("msi_mrif", false),
+        test_all(false),
         mem("mem", 1 * MiB),
         bus("bus"),
         iommu("iommu"),
@@ -91,6 +134,12 @@ public:
         rst.bind(iommu.rst);
 
         dma.allow_dmi = false;
+
+        // test all if nothing else is set
+        test_all = !capabilities && !feature_control && !iohpmcycles &&
+                   !iommu_off && !iommu_bare && !iommu_lvl1_dev1_bare &&
+                   !iommu_lvl2_dev2_sv39 && !command_queue && !fault_queue &&
+                   !msi_flat && !msi_mrif;
 
         EXPECT_STREQ(iommu.kind(), "vcml::riscv::iommu");
     }
@@ -138,15 +187,15 @@ public:
     }
 
     void test_iommu_off() {
-        out.writew(IOMMU_DDTP, 0u);
+        ASSERT_OK(out.writew(IOMMU_DDTP, 0u));
         ASSERT_AE(dma.writew(MEM_ADDR, 0xffffffff));
     }
 
     void test_iommu_bare() {
-        out.writew(IOMMU_DDTP, 1u);
-        ASSERT_OK(dma.writew(MEM_ADDR, 0xffffffff));
         u32 data;
-        out.readw(MEM_ADDR, data);
+        ASSERT_OK(out.writew(IOMMU_DDTP, 1u));
+        ASSERT_OK(dma.writew(MEM_ADDR, 0xffffffff));
+        ASSERT_OK(out.readw(MEM_ADDR, data));
         EXPECT_EQ(data, 0xffffffff);
     }
 
@@ -157,15 +206,15 @@ public:
         ddtp[10] = 0x0000000000003000; // dev[1].ta.pscid = 3
         ddtp[11] = 0x0000000000000000; // dev[1].satp = bare
         ddtp[12] = 0x0000000000000000; // dev[1].msiptp
-        ddtp[13] = 0x0000000000000000; // dev1].msi_addr_mask
+        ddtp[13] = 0x0000000000000000; // dev[1].msi_addr_mask
         ddtp[14] = 0x0000000000000000; // dev[1].msi_addr_patter
         ddtp[15] = 0x0000000000000000; // dev[1].reserverd
         ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 2));
 
+        u32 data;
         tlm_sbi info = sbi_cpuid(1);
         ASSERT_OK(dma.writew(MEM_ADDR, 0xabababab, info));
-        u32 data;
-        out.readw(MEM_ADDR, data);
+        ASSERT_OK(out.readw(MEM_ADDR, data));
         EXPECT_EQ(data, 0xabababab);
     }
 
@@ -183,7 +232,7 @@ public:
         ddtp1[18] = 0x0000000000003000; // dev[1].ta.pscid = 3
         ddtp1[19] = 0x0000000000000000; // dev[1].satp = bare
         ddtp1[20] = 0x0000000000000000; // dev[1].msiptp
-        ddtp1[21] = 0x0000000000000000; // dev1].msi_addr_mask
+        ddtp1[21] = 0x0000000000000000; // dev[1].msi_addr_mask
         ddtp1[22] = 0x0000000000000000; // dev[1].msi_addr_patter
         ddtp1[23] = 0x0000000000000000; // dev[1].reserverd
         ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
@@ -193,10 +242,10 @@ public:
         tlm_sbi info = sbi_cpuid(2);
         ASSERT_OK(dma.writew(0, 0xefefefef, info));
         u32 data;
-        out.readw(MEM_ADDR, data);
+        ASSERT_OK(out.readw(MEM_ADDR, data));
         EXPECT_EQ(data, 0xefefefef);
         ASSERT_OK(dma.writew(4, 0x12121212, info));
-        out.readw(MEM_ADDR + 4, data);
+        ASSERT_OK(out.readw(MEM_ADDR + 4, data));
         EXPECT_EQ(data, 0x12121212);
 
         // check for DA update
@@ -229,7 +278,7 @@ public:
         EXPECT_TRUE(enable_counters(false));
     }
 
-    void test_command_queue() {
+    void test_iommu_command_queue() {
         ASSERT_OK(out.writew(IOMMU_FCTL, 2u)); // enable WSI
 
         u64* cq = (u64*)(mem.data() + CMDQ_OFFSET);
@@ -269,23 +318,218 @@ public:
         EXPECT_EQ(data, 0xcafebabe);
     }
 
+    void test_iommu_fault_queue() {
+        u32 msi, fqh, fqt, data;
+        ASSERT_OK(out.writew(IOMMU_FCTL, 0u));       // enable MSI
+        ASSERT_OK(out.writew(IOMMU_ICVEC, 6u << 4)); // fiv = 7
+        ASSERT_OK(out.writew(iommu_msi_cfg_tbl_addr(7), MEM_ADDR + 20));
+        ASSERT_OK(out.writew(iommu_msi_cfg_tbl_ctrl(7), 99ull));
+
+        // setup g-stage page tables
+        u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
+        pgtp[2] = (MEM_ADDR >> 2) | 0x1e; // 0x0 -> MEM_ADDR | U | RWX | !V
+
+        // setup device directory table
+        u64* ddtp0 = (u64*)(mem.data() + DDTP0_OFFSET);
+        ddtp0[0] = DDTP1_ADDR >> 2 | 1;
+        u64* ddtp1 = (u64*)(mem.data() + DDTP1_OFFSET);
+        u64 gatp = PGTP_ADDR >> 12 | 9ull << 60;
+        ddtp1[16] = 0x0000000000000001; // dev[1].tc = V | DTF | GADE
+        ddtp1[17] = gatp;               // dev[1].gatp = sv48
+        ddtp1[18] = 0x0000000000003000; // dev[1].ta.pscid = 3
+        ddtp1[19] = 0x0000000000000000; // dev[1].satp = bare
+        ddtp1[20] = 0x0000000000000000; // dev[1].msiptp
+        ddtp1[21] = 0x0000000000000000; // dev[1].msi_addr_mask
+        ddtp1[22] = 0x0000000000000000; // dev[1].msi_addr_patter
+        ddtp1[23] = 0x0000000000000000; // dev[1].reserverd
+        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+
+        // setup fault queue
+        u64 fqb = FLTQ_ADDR >> 2 | 1; // 4 entries
+        ASSERT_OK(out.writew(IOMMU_FQB, fqb));
+        ASSERT_OK(out.writew(IOMMU_FQCSR, 3u)); // fqen | fqie
+        wait(1, SC_MS);
+
+        // trigger enough errors to cause a fault queue overflow
+        tlm_sbi info = sbi_cpuid(2);
+        ASSERT_AE(dma.writew(0x1000000001c, 0xefefefef, info));
+        ASSERT_AE(dma.writew(0x10000000020, 0xefefefef, info));
+        ASSERT_AE(dma.readw(0x10000000024, data, info));
+        ASSERT_AE(dma.readw(0x10000000028, data, info));
+        wait(1, SC_MS);
+
+        // check fault msi
+        ASSERT_OK(out.readw(MEM_ADDR + 20, msi));
+        EXPECT_EQ(msi, 99);
+
+        // check fault queue
+        ASSERT_OK(out.readw(IOMMU_FQH, fqh));
+        ASSERT_OK(out.readw(IOMMU_FQT, fqt));
+        EXPECT_EQ(fqh, 0u);
+        EXPECT_EQ(fqt, 3u);
+
+        // read faults
+        for (u32 i = fqh; i < fqt; i++) {
+            u64 fault, res0, iotval, iotval2;
+            ASSERT_OK(out.readw(FLTQ_ADDR + i * 32 + 0, fault));
+            ASSERT_OK(out.readw(FLTQ_ADDR + i * 32 + 8, res0));
+            ASSERT_OK(out.readw(FLTQ_ADDR + i * 32 + 16, iotval));
+            ASSERT_OK(out.readw(FLTQ_ADDR + i * 32 + 24, iotval2));
+
+            EXPECT_EQ(fault, i > 1 ? 0x2080000000d : 0x20c0000000f);
+            EXPECT_EQ(res0, 0);
+            EXPECT_EQ(iotval, 0x1000000001c + 4 * i);
+            EXPECT_EQ(iotval2, 0x1000000001c + 4 * i);
+        }
+
+        // disable queue
+        ASSERT_OK(out.writew(IOMMU_FQCSR, 0x200)); // clear ov and disable
+        wait(1, SC_MS);
+        ASSERT_OK(out.readw(IOMMU_FQCSR, data));
+        EXPECT_EQ(data, 0);
+
+        // reset interrupts
+        ASSERT_OK(out.writew(IOMMU_IPSR, ~0u));
+    }
+
+    void test_iommu_msi_flat() {
+        u64* msip = (u64*)(mem.data() + MSIP_OFFSET);
+        msip[0] = (MEM_ADDR + 0x1000) >> 2 | 7; // PPN | M_FLAT | V
+        msip[1] = 0x0000000000000000;           // reserved/unused
+        msip[2] = (MEM_ADDR + 0x2000) >> 2 | 7; // PPN | M_FLAT | V
+        msip[3] = 0x0000000000000000;           // reserved/unused
+
+        u64 msiptp = (3ull << 60) | MSIP_ADDR >> 12; // flat | ppn
+        u64* ddtp = (u64*)(mem.data() + DDTP0_OFFSET);
+        ddtp[8] = 0x0000000000000011;  // dev[1].tc = V | DTF
+        ddtp[9] = 0x0000000000000000;  // dev[1].gatp = bare
+        ddtp[10] = 0x0000000000003000; // dev[1].ta.pscid = 3
+        ddtp[11] = 0x0000000000000000; // dev[1].satp = bare
+        ddtp[12] = msiptp;             // dev[1] msiptp = flat
+        ddtp[13] = 0xfffff0000000000f; // dev[1].msi_addr_mask
+        ddtp[14] = 0x00000aabbbbcccc0; // dev[1].msi_addr_patter
+        ddtp[15] = 0x0000000000000000; // dev[1].reserverd
+        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 2));
+
+        u32 data;
+        tlm_sbi info = sbi_cpuid(1);
+
+        ASSERT_OK(dma.writew(0xaaaabbbbcccc010c, 60u, info));
+        ASSERT_OK(out.readw(MEM_ADDR + 0x110c, data));
+        EXPECT_EQ(data, 60u);
+
+        ASSERT_OK(dma.writew(0xaaaabbbbcccc110c, 27u, info));
+        ASSERT_OK(out.readw(MEM_ADDR + 0x210c, data));
+        EXPECT_EQ(data, 27u);
+    }
+
+    void test_iommu_msi_mrif() {
+        *(u64*)(mem.data() + 0x0000) = 0x0000000000000000; // notification area
+        *(u64*)(mem.data() + 0x1000) = 0x0000000000000000; // msi1 pending bits
+        *(u64*)(mem.data() + 0x1008) = 0xffffffffffffffff; // msi1 enabled bits
+        *(u64*)(mem.data() + 0x2010) = 0x0000000000000003; // msi2 pending bits
+        *(u64*)(mem.data() + 0x2018) = 0xffffffffffffffff; // msi2 enabled bits
+
+        u64* msip = (u64*)(mem.data() + MSIP_OFFSET);
+        msip[0] = (MEM_ADDR + 0x1000) >> 2 | 3; // PPN | M_MRIF | V
+        msip[1] = MEM_ADDR >> 2 | bit(60) | 5;  // NPPN, NID = 1029
+        msip[2] = (MEM_ADDR + 0x2000) >> 2 | 3; // PPN | M_MRIF | V
+        msip[3] = MEM_ADDR >> 2 | bit(60) | 90; // NPPN, NID = 1114
+
+        u64 msiptp = (3ull << 60) | MSIP_ADDR >> 12; // flat | ppn
+        u64* ddtp = (u64*)(mem.data() + DDTP0_OFFSET);
+        ddtp[8] = 0x0000000000000011;  // dev[1].tc = V | DTF
+        ddtp[9] = 0x0000000000000000;  // dev[1].gatp = bare
+        ddtp[10] = 0x0000000000003000; // dev[1].ta.pscid = 3
+        ddtp[11] = 0x0000000000000000; // dev[1].satp = bare
+        ddtp[12] = msiptp;             // dev[1] msiptp = flat
+        ddtp[13] = 0xfffff0000000000f; // dev[1].msi_addr_mask
+        ddtp[14] = 0x00000aabbbbcccc0; // dev[1].msi_addr_patter
+        ddtp[15] = 0x0000000000000000; // dev[1].reserverd
+        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 2));
+
+        u32 data, mrif;
+        tlm_sbi info = sbi_cpuid(1);
+
+        ASSERT_OK(dma.writew(0xaaaabbbbcccc0000, 4u, info));
+        ASSERT_OK(out.readw(MEM_ADDR + 0x1000, data));
+        ASSERT_OK(out.readw(MEM_ADDR + 0x0000, mrif));
+        EXPECT_EQ(data, bit(4));
+        EXPECT_EQ(mrif, 1029);
+
+        ASSERT_OK(dma.writew(0xaaaabbbbcccc1000, 70u, info));
+        ASSERT_OK(out.readw(MEM_ADDR + 0x2010, data));
+        ASSERT_OK(out.readw(MEM_ADDR + 0x0000, mrif));
+        EXPECT_EQ(data, bit(6) | 3);
+        EXPECT_EQ(mrif, 1114);
+    }
+
     virtual void run_test() override {
-        test_capabilities();
-        wait(SC_ZERO_TIME);
-        test_feature_control();
-        wait(SC_ZERO_TIME);
-        test_iohpmcycles();
-        wait(SC_ZERO_TIME);
-        test_iommu_off();
-        wait(SC_ZERO_TIME);
-        test_iommu_bare();
-        wait(SC_ZERO_TIME);
-        test_iommu_lvl1_dev1_bare();
-        wait(SC_ZERO_TIME);
-        test_iommu_lvl2_dev2_sv39();
-        wait(SC_ZERO_TIME);
-        test_command_queue();
-        wait(SC_ZERO_TIME);
+        if (test_all || capabilities) {
+            log_info("capabilities");
+            test_capabilities();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || feature_control) {
+            log_info("feature control");
+            test_feature_control();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || iohpmcycles) {
+            log_info("iohpmcycles");
+            test_iohpmcycles();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || iommu_off) {
+            log_info("iommu off");
+            test_iommu_off();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || iommu_bare) {
+            log_info("iommu bare");
+            test_iommu_bare();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || iommu_lvl1_dev1_bare) {
+            log_info("iommu lvl1 dev1 bare");
+            test_iommu_lvl1_dev1_bare();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || iommu_lvl2_dev2_sv39) {
+            log_info("iommu lvl2 dev2 sv39");
+            test_iommu_lvl2_dev2_sv39();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || command_queue) {
+            log_info("command queue");
+            test_iommu_command_queue();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || fault_queue) {
+            log_info("fault queue");
+            test_iommu_fault_queue();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || msi_flat) {
+            log_info("msi flat");
+            test_iommu_msi_flat();
+            wait(SC_ZERO_TIME);
+        }
+
+        if (test_all || msi_mrif) {
+            log_info("msi mrif");
+            test_iommu_msi_mrif();
+            wait(SC_ZERO_TIME);
+        }
     }
 };
 

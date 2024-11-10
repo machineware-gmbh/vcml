@@ -629,7 +629,7 @@ tlm_response_status iommu::dma_write(u64 addr, void* data, size_t size,
     tlm_sbi info = excl ? SBI_EXCL : SBI_NONE;
 
     ddtp |= DDTP_BUSY;
-    auto res = out.read(addr, data, size, info, &nbytes);
+    auto res = out.write(addr, data, size, info, &nbytes);
     ddtp &= ~DDTP_BUSY;
 
     if (excl)
@@ -864,7 +864,7 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     if (msi_flat) {
         ctx.msiptp = rawctx[4];
         ctx.msi_addr_mask = rawctx[5];
-        ctx.msi_addr_mask = rawctx[6];
+        ctx.msi_addr_pattern = rawctx[6];
     }
 
     if (!(ctx.tc & TC_V))
@@ -959,7 +959,7 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     bool super = info.privilege > 0;
     bool wnr = tx.is_write();
 
-    u64 virt = tx.get_address() & ~PAGE_MASK;
+    u64 virt = tx.get_address();
     u64 vpn = virt >> PAGE_BITS;
 
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
@@ -1009,7 +1009,7 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     if (fault != TWALK_FAULT_NONE)
         return iommu_guest_page_fault(wnr);
 
-    u64 guest_phys = iotlb_s.ppn << PAGE_BITS;
+    u64 guest_phys = (iotlb_s.ppn << PAGE_BITS) | (virt & PAGE_MASK);
     if (check_msi(ctx, guest_phys) && tx.get_data_length())
         return translate_msi(ctx, tx, info, guest_phys, entry);
 
@@ -1147,7 +1147,7 @@ int iommu::tablewalk(context& ctx, u64 virt, bool g, bool super, bool wnr,
     }
 
     if (g) {
-        m_iotval2 = virt & ~PAGE_MASK;
+        m_iotval2 = virt & ~3ull;
         if (ind)
             m_iotval2 |= IOTVAL2_INDIRECT | (wnr ? IOTVAL2_WRITE : 0);
     }
@@ -1852,7 +1852,7 @@ void iommu::handle_fault() {
 
     fqcsr |= FQCSR_BUSY;
 
-    while (!m_faults.empty() && (cqcsr & CQCSR_CQEN)) {
+    while (!m_faults.empty() && (fqcsr & FQCSR_FQEN)) {
         fault req = m_faults.front();
         m_faults.pop();
 
@@ -2001,10 +2001,10 @@ void iommu::report_fault(const fault& req) {
 }
 
 void iommu::send_msi(u32 irq) {
-    u64 vector = extract(icvec.get(), irq * 4, 4);
-    u64 addr = msi_cfg_tbl[vector] & MSI_VECTOR_ADDR;
-    u32 ctrl = get_field<MSI_VECTOR_CTRL>(msi_cfg_tbl[vector + 1]);
-    u32 data = get_field<MSI_VECTOR_DATA>(msi_cfg_tbl[vector + 1]);
+    u64 vector = extract(icvec.get(), irq * 4, 4) + 1;
+    u64 addr = msi_cfg_tbl[2 * vector] & MSI_VECTOR_ADDR;
+    u32 ctrl = get_field<MSI_VECTOR_CTRL>(msi_cfg_tbl[2 * vector + 1]);
+    u32 data = get_field<MSI_VECTOR_DATA>(msi_cfg_tbl[2 * vector + 1]);
 
     if (ctrl & MSI_VECTOR_CTRL_M)
         return;
@@ -2127,6 +2127,10 @@ iommu::iommu(const sc_module_name& nm):
     fqcsr.allow_read_write();
     fqcsr.sync_always();
     fqcsr.on_write(&iommu::write_fqcsr);
+
+    ipsr.allow_read_write();
+    ipsr.sync_always();
+    ipsr.on_write(&iommu::write_ipsr);
 
     iocntovf.allow_read_only();
     iocntovf.sync_always();
