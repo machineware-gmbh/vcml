@@ -260,6 +260,10 @@ public:
 
     virtual void reset() override;
 
+    void flush_contexts() { m_contexts.clear(); }
+    void flush_tlb_s() { m_iotlb_s.clear(); }
+    void flush_tlb_g() { m_iotlb_g.clear(); }
+
 protected:
     virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
                                  address_space as) override;

@@ -30,6 +30,9 @@ const u64 IOMMU_FQCSR = IOMMU_ADDR + 76;
 const u64 IOMMU_IPSR = IOMMU_ADDR + 84;
 const u64 IOMMU_CNTINH = IOMMU_ADDR + 92;
 const u64 IOMMU_HPMCYCLES = IOMMU_ADDR + 96;
+const u64 IOMMU_TR_REQ_IOVA = IOMMU_ADDR + 600;
+const u64 IOMMU_TR_REQ_CTL = IOMMU_ADDR + 608;
+const u64 IOMMU_TR_RESPONSE = IOMMU_ADDR + 616;
 const u64 IOMMU_ICVEC = IOMMU_ADDR + 760;
 
 constexpr u64 iommu_iohpmctr(int i) {
@@ -121,6 +124,8 @@ public:
         add_test("fault_queue", &iommu_test::test_iommu_fault_queue);
         add_test("msi_flat", &iommu_test::test_iommu_msi_flat);
         add_test("msi_mrif", &iommu_test::test_iommu_msi_mrif);
+        add_test("tr_debug", &iommu_test::test_iommu_tr_debug);
+        add_test("iommu_dmi", &iommu_test::test_iommu_dmi);
 
         EXPECT_STREQ(iommu.kind(), "vcml::riscv::iommu");
     }
@@ -201,6 +206,7 @@ public:
 
     void test_iommu_lvl2_sv39() {
         u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
+        memset(pgtp, 0, 4096);
         pgtp[0] = (MEM_ADDR >> 2) | 0x1f; // 0x0 -> MEM_ADDR | U | RWX | V
 
         u64* ddtp0 = (u64*)(mem.data() + DDTP0_OFFSET);
@@ -308,6 +314,7 @@ public:
 
         // setup g-stage page tables
         u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
+        memset(pgtp, 0, 4096);
         pgtp[2] = (MEM_ADDR >> 2) | 0x1e; // 0x0 -> MEM_ADDR | U | RWX | !V
 
         // setup device directory table
@@ -315,14 +322,14 @@ public:
         ddtp0[0] = DDTP1_ADDR >> 2 | 1;
         u64* ddtp1 = (u64*)(mem.data() + DDTP1_OFFSET);
         u64 gatp = PGTP_ADDR >> 12 | 9ull << 60;
-        ddtp1[16] = 0x0000000000000001; // dev[1].tc = V | DTF | GADE
-        ddtp1[17] = gatp;               // dev[1].gatp = sv48
-        ddtp1[18] = 0x0000000000003000; // dev[1].ta.pscid = 3
-        ddtp1[19] = 0x0000000000000000; // dev[1].satp = bare
-        ddtp1[20] = 0x0000000000000000; // dev[1].msiptp
-        ddtp1[21] = 0x0000000000000000; // dev[1].msi_addr_mask
-        ddtp1[22] = 0x0000000000000000; // dev[1].msi_addr_patter
-        ddtp1[23] = 0x0000000000000000; // dev[1].reserverd
+        ddtp1[16] = 0x0000000000000001; // dev[2].tc = V | DTF | GADE
+        ddtp1[17] = gatp;               // dev[2].gatp = sv48
+        ddtp1[18] = 0x0000000000003000; // dev[2].ta.pscid = 3
+        ddtp1[19] = 0x0000000000000000; // dev[2].satp = bare
+        ddtp1[20] = 0x0000000000000000; // dev[2].msiptp
+        ddtp1[21] = 0x0000000000000000; // dev[2].msi_addr_mask
+        ddtp1[22] = 0x0000000000000000; // dev[2].msi_addr_patter
+        ddtp1[23] = 0x0000000000000000; // dev[2].reserverd
         ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
 
         // setup fault queue
@@ -443,6 +450,109 @@ public:
         ASSERT_OK(out.readw(MEM_ADDR + 0x0000, mrif));
         EXPECT_EQ(data, bit(6) | 3);
         EXPECT_EQ(mrif, 1114);
+    }
+
+    void test_iommu_tr_debug() {
+        u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
+        memset(pgtp, 0, 4096);
+        pgtp[3] = (MEM_ADDR >> 2) | 0xd7; // 0xc..0 -> MEM | DA | U | RW | V
+
+        // setup device directory table
+        u64* ddtp0 = (u64*)(mem.data() + DDTP0_OFFSET);
+        ddtp0[0] = DDTP1_ADDR >> 2 | 1;
+        u64* ddtp1 = (u64*)(mem.data() + DDTP1_OFFSET);
+        u64 gatp = PGTP_ADDR >> 12 | 8ull << 60;
+        ddtp1[24] = 0x0000000000000001; // dev[3].tc = V | DTF | GADE
+        ddtp1[25] = gatp;               // dev[3].gatp = sv48
+        ddtp1[26] = 0x0000000000003000; // dev[3].ta.pscid = 3
+        ddtp1[27] = 0x0000000000000000; // dev[3].satp = bare
+        ddtp1[28] = 0x0000000000000000; // dev[3].msiptp
+        ddtp1[29] = 0x0000000000000000; // dev[3].msi_addr_mask
+        ddtp1[30] = 0x0000000000000000; // dev[3].msi_addr_patter
+        ddtp1[31] = 0x0000000000000000; // dev[3].reserverd
+
+        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+
+        // begin test
+        u64 iova = 0xc0000008;
+        u64 ctrl = 3ull << 40 | 0x9;
+        ASSERT_OK(out.writew(IOMMU_TR_REQ_IOVA, iova));
+        ASSERT_OK(out.writew(IOMMU_TR_REQ_CTL, ctrl));
+
+        while (ctrl & 1) {
+            ASSERT_OK(out.readw(IOMMU_TR_REQ_CTL, ctrl));
+            wait(1, SC_MS);
+        }
+
+        u64 resp;
+        ASSERT_OK(out.readw(IOMMU_TR_RESPONSE, resp));
+        EXPECT_EQ(resp, MEM_ADDR >> 2);
+
+        // test an unmapped address
+        iova = 0x0;
+        ctrl = 3ull << 40 | 0x1;
+        ASSERT_OK(out.writew(IOMMU_TR_REQ_IOVA, iova));
+        ASSERT_OK(out.writew(IOMMU_TR_REQ_CTL, ctrl));
+
+        while (ctrl & 1) {
+            ASSERT_OK(out.readw(IOMMU_TR_REQ_CTL, ctrl));
+            wait(1, SC_MS);
+        }
+
+        ASSERT_OK(out.readw(IOMMU_TR_RESPONSE, resp));
+        EXPECT_EQ(resp, 1);
+    }
+
+    void test_iommu_dmi() {
+        u64* pgtp = (u64*)(mem.data() + PGTP_OFFSET);
+        memset(pgtp, 0, 4096);
+        pgtp[7] = (MEM_ADDR >> 2) | 0xd7; // 0xc..0 -> MEM | DA | U | RW | V
+
+        // setup device directory table
+        u64* ddtp0 = (u64*)(mem.data() + DDTP0_OFFSET);
+        ddtp0[0] = DDTP1_ADDR >> 2 | 1;
+        u64* ddtp1 = (u64*)(mem.data() + DDTP1_OFFSET);
+        u64 gatp = PGTP_ADDR >> 12 | 8ull << 60;
+        ddtp1[32] = 0x0000000000000001; // dev[4].tc = V | DTF | GADE
+        ddtp1[33] = gatp;               // dev[4].gatp = sv48
+        ddtp1[34] = 0x0000000000003000; // dev[4].ta.pscid = 3
+        ddtp1[35] = 0x0000000000000000; // dev[4].satp = bare
+        ddtp1[36] = 0x0000000000000000; // dev[4].msiptp
+        ddtp1[37] = 0x0000000000000000; // dev[4].msi_addr_mask
+        ddtp1[38] = 0x0000000000000000; // dev[4].msi_addr_patter
+        ddtp1[39] = 0x0000000000000000; // dev[4].reserverd
+
+        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+
+        iommu.flush_contexts();
+        iommu.flush_tlb_g();
+        iommu.flush_tlb_s();
+
+        dma.allow_dmi = true;
+        sbiext* ext = new sbiext();
+        ext->cpuid = 4;
+        ext->asid = SBI_ASID_GLOBAL;
+
+        // no dmi without caches
+        u64 addr = 0x1c0000000;
+        tlm_dmi dmi;
+        tlm_generic_payload tx;
+        tx.set_extension(ext);
+        tx.set_address(addr);
+        EXPECT_FALSE(dma->get_direct_mem_ptr(tx, dmi));
+
+        // warm up cache
+        ASSERT_OK(dma.writew(addr, 1234u, *ext));
+
+        EXPECT_TRUE(dma->get_direct_mem_ptr(tx, dmi));
+        EXPECT_TRUE(dmi.is_read_write_allowed());
+        EXPECT_EQ(dmi.get_start_address(), addr);
+
+        // check if dmi was cached
+        EXPECT_TRUE(dma.dmi_cache().lookup(addr, 1, TLM_READ_COMMAND, dmi));
+        mem.in->invalidate_direct_mem_ptr(0, ~0ull);
+        EXPECT_FALSE(dma.dmi_cache().lookup(addr, 1, TLM_READ_COMMAND, dmi));
+        dma.allow_dmi = false;
     }
 };
 

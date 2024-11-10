@@ -518,7 +518,7 @@ using TR_RESPONSE_PBMT = field<7, 2, u64>;
 using TR_RESPONSE_PPN = field<10, PPN_BITS, u64>;
 
 enum tr_response_bits : u64 {
-    TR_RESPONSE_FAULT = bit(1),
+    TR_RESPONSE_FAULT = bit(0),
     TR_RESPONSE_S = bit(9),
 };
 
@@ -1910,7 +1910,7 @@ void iommu::handle_tr_req() {
         tr_response = TR_RESPONSE_FAULT;
     }
 
-    tr_req_ctl &= TR_REQ_CTL_BUSY;
+    tr_req_ctl &= ~TR_REQ_CTL_BUSY;
 }
 
 void iommu::worker() {
