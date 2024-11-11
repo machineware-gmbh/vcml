@@ -80,7 +80,11 @@ private:
         u64 exec : 1;
         u64 reserved1 : 5;
         u64 did : 24;
-        u64 payload;
+        u64 r : 1;
+        u64 w : 1;
+        u64 l : 1;
+        u64 prgidx : 9;
+        u64 pgaddr : 52;
     };
 
     struct vmcfg {
@@ -104,7 +108,9 @@ private:
 
     u32 m_work;
     sc_event m_workev;
+
     queue<fault> m_faults;
+    queue<pgreq> m_pgreqs;
 
     u64 m_iotval2;
 
@@ -172,8 +178,10 @@ private:
     void write_ddtp(u64 val);
     void write_cqt(u32 val);
     void write_fqh(u32 val);
+    void write_pqh(u32 val);
     void write_cqcsr(u32 val);
     void write_fqcsr(u32 val);
+    void write_pqcsr(u32 val);
     void write_ipsr(u32 val);
     void write_iocntinh(u32 val);
     void write_iohpmcycles(u64 val);
@@ -188,7 +196,8 @@ private:
 
     void handle_command();
     void handle_fault();
-    void handle_tr_req();
+    void handle_pgreq();
+    void handle_trreq();
 
     void worker();
     void overflow();
@@ -197,6 +206,7 @@ private:
     void update_ipsr(u32 setmask, u32 clrmask);
 
     void report_fault(const fault& req);
+    void report_pgreq(const pgreq& req);
     void send_msi(u32 ipsr);
 
 public:

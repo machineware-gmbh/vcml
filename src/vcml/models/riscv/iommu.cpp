@@ -292,7 +292,10 @@ constexpr const char* iommu_ttyp_str(u32 ttyp) {
 }
 
 static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
-                               const tlm_sbi& info, bool txr) {
+                               const tlm_sbi& info, bool txr, bool ats) {
+    if (ats)
+        return IOMMU_TTYP_PCIE_ATS_REQ;
+
     if (tx.is_read()) {
         if (info.is_insn)
             return txr ? IOMMU_TTYP_TXRX : IOMMU_TTYP_UXRX;
@@ -305,7 +308,8 @@ static iommu_ttyp ttyp_from_tx(const tlm_generic_payload& tx,
 enum iommu_work : u32 {
     IOMMU_WORK_COMMAND = bit(0),
     IOMMU_WORK_FAULT = bit(1),
-    IOMMU_WORK_TR_REQ = bit(2),
+    IOMMU_WORK_PGREQ = bit(2),
+    IOMMU_WORK_TRREQ = bit(3),
 };
 
 enum iommu_opcode : u64 {
@@ -442,6 +446,9 @@ using CQB_PPN = field<10, 44, u64>;
 
 using FQB_LOG2SZ = field<0, 5, u64>;
 using FQB_PPN = field<10, 44, u64>;
+
+using PQB_LOG2SZ = field<0, 5, u64>;
+using PQB_PPN = field<10, 44, u64>;
 
 enum cqcsr_bits : u32 {
     CQCSR_CQEN = bit(0),
@@ -768,7 +775,7 @@ bool iommu::check_msi(const context& ctx, u64 addr) const {
 
 int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     bool dbg = info.is_debug;
-    bool txr = info.atype == SBI_ATYPE_TX;
+    bool ats = info.atype != SBI_ATYPE_UX;
     bool super = info.privilege > 0;
 
     u32 devid = info.cpuid;
@@ -781,7 +788,7 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     u64 mode = ddtp.get_field<DDTP_MODE>();
     if (mode == DDTP_MODE_OFF)
         return IOMMU_FAULT_DMA_DISABLED;
-    if (mode == DDTP_MODE_BARE && txr)
+    if (mode == DDTP_MODE_BARE && ats)
         return IOMMU_FAULT_TTYPE_BLOCKED;
 
     u64 ctxid = mkctxid(devid, pasid);
@@ -955,9 +962,10 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
 int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
                        const tlm_sbi& info, bool dmi, iotlb& entry) {
     bool dbg = info.is_debug;
-    bool txr = info.atype == SBI_ATYPE_TX;
-    bool super = info.privilege > 0;
     bool wnr = tx.is_write();
+    bool pgreq = info.atype == SBI_ATYPE_RQ;
+    bool txreq = info.atype == SBI_ATYPE_TX;
+    bool super = info.privilege > 0;
 
     u64 virt = tx.get_address();
     u64 vpn = virt >> PAGE_BITS;
@@ -965,7 +973,14 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
     u64 pscid = get_field<TA_PSCID>(ctx.ta);
 
-    if (txr) {
+    if (pgreq) {
+        if (!(ctx.tc & TC_EN_ATS))
+            return IOMMU_FAULT_TTYPE_BLOCKED;
+        if (!(ctx.tc & TC_EN_PRI))
+            return IOMMU_FAULT_TTYPE_BLOCKED;
+    }
+
+    if (txreq) {
         if (!(ctx.tc & TC_EN_ATS) || dmi)
             return IOMMU_FAULT_TTYPE_BLOCKED;
 
@@ -985,7 +1000,7 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
         return 0;
     }
 
-    if (stl_contains(m_iotlb_s, vpn)) {
+    if (!pgreq && stl_contains(m_iotlb_s, vpn)) {
         iotlb& cache = m_iotlb_s[vpn];
         if (cache.gscid == gscid && cache.pscid == pscid &&
             (cache.w || !wnr)) {
@@ -1009,9 +1024,14 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     if (fault != TWALK_FAULT_NONE)
         return iommu_guest_page_fault(wnr);
 
-    u64 guest_phys = (iotlb_s.ppn << PAGE_BITS) | (virt & PAGE_MASK);
-    if (check_msi(ctx, guest_phys) && tx.get_data_length())
-        return translate_msi(ctx, tx, info, guest_phys, entry);
+    if (pgreq && (ctx.tc & TC_T2GPA)) {
+        entry = iotlb_s;
+        return 0;
+    }
+
+    u64 gpa = (iotlb_s.ppn << PAGE_BITS) | (virt & PAGE_MASK);
+    if (!pgreq && check_msi(ctx, gpa))
+        return translate_msi(ctx, tx, info, gpa, entry);
 
     if (stl_contains(m_iotlb_g, iotlb_s.ppn)) {
         iotlb& cache = m_iotlb_g[iotlb_s.ppn];
@@ -1023,7 +1043,7 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     }
 
     iotlb iotlb_g;
-    if (tablewalk(ctx, guest_phys, true, false, wnr, false, dbg, iotlb_g))
+    if (tablewalk(ctx, gpa, true, false, wnr, false, dbg, iotlb_g))
         return iommu_page_fault(wnr);
 
     if (!dbg)
@@ -1348,7 +1368,8 @@ int iommu::transmit_mrif(context& ctx, tlm_generic_payload& tx,
 bool iommu::translate(tlm_generic_payload& tx, const tlm_sbi& info, bool dmi,
                       iotlb& entry) {
     bool dbg = info.is_debug;
-    bool txreq = info.atype == SBI_ATYPE_TX;
+    bool txr = info.atype == SBI_ATYPE_TX; // pretranslated address
+    bool ats = info.atype == SBI_ATYPE_RQ; // address translation request
     bool super = info.privilege > 0;
 
     u32 devid = info.cpuid;
@@ -1362,11 +1383,11 @@ bool iommu::translate(tlm_generic_payload& tx, const tlm_sbi& info, bool dmi,
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
             req.cause = err;
-            req.ttyp = ttyp_from_tx(tx, info, txreq);
+            req.ttyp = ttyp_from_tx(tx, info, txr, ats);
             req.pv = pasid != PASID_NONE;
             req.pid = req.pv ? pasid : 0;
             req.did = devid;
-            req.priv = super;
+            req.priv = super && req.pv;
             req.iotval = tx.get_address();
             req.iotval2 = m_iotval2;
             report_fault(req);
@@ -1376,18 +1397,38 @@ bool iommu::translate(tlm_generic_payload& tx, const tlm_sbi& info, bool dmi,
     }
 
     if (!dbg && !dmi)
-        increment_counter(ctx, iommu_event_req(txreq));
+        increment_counter(ctx, iommu_event_req(txr));
 
     err = fetch_iotlb(ctx, tx, info, dmi, entry);
+    if (ats) {
+        if (err) {
+            pgreq req{};
+            req.pv = pasid != PASID_NONE;
+            req.pid = req.pv ? pasid : 0;
+            req.did = devid;
+            req.priv = super && req.pv;
+            req.exec = info.is_insn;
+            req.r = tx.is_read();
+            req.w = tx.is_write();
+            req.pgaddr = tx.get_address() & PAGE_MASK;
+            tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
+            report_pgreq(req);
+            return 0;
+        }
+
+        tx.set_response_status(TLM_OK_RESPONSE);
+        return true;
+    }
+
     if (err) {
         if (!dbg && !dmi && !(ctx.tc & TC_DTF)) {
             fault req{};
             req.cause = err;
-            req.ttyp = ttyp_from_tx(tx, info, txreq);
+            req.ttyp = ttyp_from_tx(tx, info, txr, ats);
             req.pv = pasid != PASID_NONE;
             req.pid = req.pv ? pasid : 0;
             req.did = devid;
-            req.priv = super;
+            req.priv = super && req.pv;
             req.iotval = tx.get_address();
             req.iotval2 = m_iotval2;
             report_fault(req);
@@ -1543,6 +1584,14 @@ void iommu::write_fqh(u32 val) {
     fqh = val & mask;
 }
 
+void iommu::write_pqh(u32 val) {
+    if (pqcsr & PQCSR_BUSY)
+        return;
+
+    u32 mask = (2u << fqb.get_field<PQB_LOG2SZ>()) - 1;
+    pqh = val & mask;
+}
+
 void iommu::write_cqcsr(u32 val) {
     u32 rwmask = CQCSR_CQEN | CQCSR_CIE;
     u32 wcmask = CQCSR_CQMF | CQCSR_CMDTO | CQCSR_CMDILL | CQCSR_FENCE_W_IP;
@@ -1583,6 +1632,27 @@ void iommu::write_fqcsr(u32 val) {
     }
 
     fqcsr = ((fqcsr & ~rwmask) | (val & rwmask)) & ~(val & wcmask);
+}
+
+void iommu::write_pqcsr(u32 val) {
+    u32 rwmask = PQCSR_PQEN | PQCSR_PIE;
+    u32 wcmask = PQCSR_PQMF | PQCSR_PQOF;
+
+    if (pqcsr & PQCSR_BUSY)
+        return;
+
+    if ((pqcsr ^ val) & PQCSR_PQEN) {
+        m_work |= IOMMU_WORK_PGREQ;
+        m_workev.notify(SC_ZERO_TIME);
+
+        if (val & PQCSR_PQEN) {
+            pqt = 0;
+            pqcsr &= ~wcmask;
+            pqcsr |= PQCSR_BUSY;
+        }
+    }
+
+    pqcsr = ((pqcsr & ~rwmask) | (val & rwmask)) & ~(val & wcmask);
 }
 
 void iommu::write_ipsr(u32 val) {
@@ -1638,7 +1708,7 @@ void iommu::write_tr_req_ctl(u64 val) {
     tr_req_ctl = (tr_req_ctl & ~TR_REQ_CTL_MASK) | (val & TR_REQ_CTL_MASK);
 
     if (val & TR_REQ_CTL_BUSY) {
-        m_work |= IOMMU_WORK_TR_REQ;
+        m_work |= IOMMU_WORK_TRREQ;
         m_workev.notify(SC_ZERO_TIME);
     }
 }
@@ -1887,7 +1957,55 @@ void iommu::handle_fault() {
         fqcsr &= ~FQCSR_FQON;
 }
 
-void iommu::handle_tr_req() {
+void iommu::handle_pgreq() {
+    if (pqcsr & PQCSR_PQEN)
+        pqcsr |= PQCSR_PQON;
+
+    u32 mask = (2u << pqb.get_field<PQB_LOG2SZ>()) - 1;
+    u64 base = pqb.get_field<PQB_PPN>() << PAGE_BITS;
+
+    pqcsr |= PQCSR_BUSY;
+
+    size_t nwritten = 0;
+    while (!m_pgreqs.empty() && (pqcsr & PQCSR_PQEN)) {
+        pgreq req = m_pgreqs.front();
+        m_pgreqs.pop();
+
+        if (pqt == ((pqh - 1) & mask)) {
+            log_debug("page request queue overflow");
+            pqcsr |= PQCSR_PQOF;
+            if (pqcsr & PQCSR_PIE)
+                update_ipsr(IPSR_PIP, 0);
+            break;
+        }
+
+        u64 addr = base + pqt * sizeof(pgreq);
+        if (failed(dma_writew(addr, req, false))) {
+            log_debug("page queue memory error");
+            pqcsr |= PQCSR_PQMF;
+            if (pqcsr & PQCSR_PIE)
+                update_ipsr(IPSR_PIP, 0);
+            break;
+        }
+
+        pqt = (pqt + 1) & mask;
+        nwritten++;
+    }
+
+    if (nwritten > 0 && pqcsr & PQCSR_PIE)
+        update_ipsr(IPSR_PIP, 0);
+
+    // drop all remaining requests
+    while (!m_pgreqs.empty())
+        m_pgreqs.pop();
+
+    pqcsr &= ~PQCSR_BUSY;
+
+    if (!(pqcsr & PQCSR_PQEN))
+        pqcsr &= ~PQCSR_PQON;
+}
+
+void iommu::handle_trreq() {
     tlm_generic_payload tx;
     tx.set_address(tr_req_iova);
     tx.set_data_length(0);
@@ -1932,8 +2050,11 @@ void iommu::worker() {
             case IOMMU_WORK_FAULT:
                 handle_fault();
                 break;
-            case IOMMU_WORK_TR_REQ:
-                handle_tr_req();
+            case IOMMU_WORK_PGREQ:
+                handle_pgreq();
+                break;
+            case IOMMU_WORK_TRREQ:
+                handle_trreq();
                 break;
             default:
                 break;
@@ -2004,6 +2125,26 @@ void iommu::report_fault(const fault& req) {
     log_debug("--- [fault end] ---");
 }
 
+void iommu::report_pgreq(const pgreq& req) {
+    m_pgreqs.push(req);
+    m_work |= IOMMU_WORK_PGREQ;
+    m_workev.notify(SC_ZERO_TIME);
+
+    log_debug("--- iommu page request ---");
+    log_debug("  device_id:  %u", (int)req.did);
+
+    if (req.pv) {
+        log_debug("  process_id: %u", (int)req.pid);
+        log_debug("  privilege:  %s", req.priv ? "S" : "U");
+    }
+
+    log_debug("  page:       0x%llx", req.pgaddr);
+    log_debug("  prgi:       %u", req.prgidx);
+    log_debug("  prot:       %s%s%s", req.r ? "r" : "", req.w ? "w" : "",
+              req.exec ? "x" : "");
+    log_debug("--- [page request end] ---");
+}
+
 void iommu::send_msi(u32 irq) {
     u64 vector = extract(icvec.get(), irq * 4, 4) + 1;
     u64 addr = msi_cfg_tbl[2 * vector] & MSI_VECTOR_ADDR;
@@ -2034,6 +2175,7 @@ iommu::iommu(const sc_module_name& nm):
     m_iotlb_g(),
     m_workev("workev"),
     m_faults(),
+    m_pgreqs(),
     m_iotval2(0),
     m_dmi_lo(~0ull),
     m_dmi_hi(0ull),
@@ -2114,10 +2256,6 @@ iommu::iommu(const sc_module_name& nm):
     cqt.sync_always();
     cqt.on_write(&iommu::write_cqt);
 
-    cqcsr.allow_read_write();
-    cqcsr.sync_always();
-    cqcsr.on_write(&iommu::write_cqcsr);
-
     fqb.allow_read_write();
     fqb.sync_always();
 
@@ -2128,9 +2266,27 @@ iommu::iommu(const sc_module_name& nm):
     fqt.allow_read_only();
     fqt.sync_always();
 
+    pqb.allow_read_write();
+    pqb.sync_always();
+
+    pqh.allow_read_write();
+    pqh.sync_always();
+    pqh.on_write(&iommu::write_pqh);
+
+    pqt.allow_read_only();
+    pqt.sync_always();
+
+    cqcsr.allow_read_write();
+    cqcsr.sync_always();
+    cqcsr.on_write(&iommu::write_cqcsr);
+
     fqcsr.allow_read_write();
     fqcsr.sync_always();
     fqcsr.on_write(&iommu::write_fqcsr);
+
+    pqcsr.allow_read_write();
+    pqcsr.sync_always();
+    pqcsr.on_write(&iommu::write_pqcsr);
 
     ipsr.allow_read_write();
     ipsr.sync_always();
