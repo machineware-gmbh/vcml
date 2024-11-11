@@ -2180,7 +2180,7 @@ void iommu::report_pgreq(const pgreq& req) {
     }
 
     log_debug("  page:       0x%llx", req.pgaddr);
-    log_debug("  prgi:       %u", req.prgidx);
+    log_debug("  prgi:       %u", (int)req.prgidx);
     log_debug("  prot:       %s%s%s", req.r ? "r" : "", req.w ? "w" : "",
               req.exec ? "x" : "");
     log_debug("--- [page request end] ---");
