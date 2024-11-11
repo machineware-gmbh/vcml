@@ -193,7 +193,8 @@ private:
     void worker();
     void overflow();
 
-    void update_ipsr();
+    void update_cqcsr(u32 setmask);
+    void update_ipsr(u32 setmask, u32 clrmask);
 
     void report_fault(const fault& req);
     void send_msi(u32 ipsr);

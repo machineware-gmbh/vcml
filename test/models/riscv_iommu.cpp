@@ -338,15 +338,24 @@ public:
         ASSERT_OK(out.writew(IOMMU_FQCSR, 3u)); // fqen | fqie
         wait(1, SC_MS);
 
-        // trigger enough errors to cause a fault queue overflow
         tlm_sbi info = sbi_cpuid(2);
         ASSERT_AE(dma.writew(0x1000000001c, 0xefefefef, info));
+
+        // check fault msi
+        ASSERT_OK(out.readw(MEM_ADDR + 20, msi));
+        EXPECT_EQ(msi, 99);
+
+        // clear fault queue irq
+        ASSERT_OK(out.writew(IOMMU_IPSR, 2u));
+        ASSERT_OK(out.writew(MEM_ADDR + 20, 0u));
+
+        // trigger enough errors to cause a fault queue overflow
         ASSERT_AE(dma.writew(0x10000000020, 0xefefefef, info));
         ASSERT_AE(dma.readw(0x10000000024, data, info));
         ASSERT_AE(dma.readw(0x10000000028, data, info));
         wait(1, SC_MS);
 
-        // check fault msi
+        // check fault msi again
         ASSERT_OK(out.readw(MEM_ADDR + 20, msi));
         EXPECT_EQ(msi, 99);
 

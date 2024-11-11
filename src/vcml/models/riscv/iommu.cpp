@@ -1446,7 +1446,7 @@ void iommu::increment_counter(context& ctx, u32 event) {
         if (iohpmctr[i - 1] == 0) { // overflow
             iohpmevt[i - 1] |= IOHPMEVT_OF;
             iocntovf |= cntmask;
-            update_ipsr();
+            update_ipsr(IPSR_PIP, 0);
         }
     }
 }
@@ -1587,8 +1587,7 @@ void iommu::write_fqcsr(u32 val) {
 
 void iommu::write_ipsr(u32 val) {
     u32 rw1c = val & (IPSR_CIP | IPSR_FIP | IPSR_PMIP | IPSR_PIP);
-    ipsr = ipsr & ~rw1c;
-    update_ipsr();
+    update_ipsr(0, rw1c);
 }
 
 void iommu::write_iocntinh(u32 val) {
@@ -1676,7 +1675,7 @@ void iommu::handle_iotinval(const command& cmd) {
         inval_s = true;
         break;
     default:
-        cqcsr |= CQCSR_CMDILL;
+        update_cqcsr(CQCSR_CMDILL);
         return;
     }
 
@@ -1720,21 +1719,21 @@ void iommu::handle_iotinval(const command& cmd) {
 
 void iommu::handle_iofence(const command& cmd) {
     if (cmd.func3 != IOFENCE_C) {
-        cqcsr |= CQCSR_CMDILL;
+        update_cqcsr(CQCSR_CMDILL);
         return;
     }
 
     if (cmd.operands0 & IOFENCE_AV) {
         u32 data = get_field<IOFENCE_DATA>(cmd.operands0);
         u64 addr = cmd.operands1 << 2;
-        if (failed(out.writew(addr, data)))
-            cqcsr |= CQCSR_CQMF;
+        if (failed(out.writew(addr, data))) {
+            update_cqcsr(CQCSR_CQMF);
+            return;
+        }
     }
 
-    if ((cmd.operands0 & IOFENCE_WSI) && (fctl & FCTL_WSI)) {
-        cqcsr |= CQCSR_FENCE_W_IP;
-        update_ipsr();
-    }
+    if ((cmd.operands0 & IOFENCE_WSI) && (fctl & FCTL_WSI))
+        update_cqcsr(CQCSR_FENCE_W_IP);
 }
 
 void iommu::handle_iodir(const command& cmd) {
@@ -1743,14 +1742,14 @@ void iommu::handle_iodir(const command& cmd) {
     u64 did = get_field<IODIR_DID>(cmd.operands0);
 
     if (cmd.operands1 > 0) {
-        cqcsr |= CQCSR_CMDILL;
+        update_cqcsr(CQCSR_CMDILL);
         return;
     }
 
     switch (cmd.func3) {
     case IODIR_PDT: {
         if (!dv) {
-            cqcsr |= CQCSR_CMDILL;
+            update_cqcsr(CQCSR_CMDILL);
             break;
         }
 
@@ -1777,7 +1776,7 @@ void iommu::handle_iodir(const command& cmd) {
     }
 
     default:
-        cqcsr |= CQCSR_CMDILL;
+        update_cqcsr(CQCSR_CMDILL);
         break;
     }
 }
@@ -1803,8 +1802,7 @@ void iommu::handle_command() {
         u64 addr = base + cqh * sizeof(command);
         if (failed(dma_readw(addr, cmd, false, false))) {
             log_debug("command queue memory error");
-            cqcsr |= CQCSR_CQMF;
-            update_ipsr();
+            update_cqcsr(CQCSR_CQMF);
             break;
         }
 
@@ -1822,11 +1820,9 @@ void iommu::handle_command() {
             handle_ats(cmd);
             break;
         default:
-            cqcsr |= CQCSR_CMDILL;
+            update_cqcsr(CQCSR_CMDILL);
             break;
         }
-
-        update_ipsr();
 
         if (cqcsr & CQCSR_CMDILL) {
             log_debug("command queue illegal opcode: 0x%02x:0x%01x",
@@ -1852,6 +1848,7 @@ void iommu::handle_fault() {
 
     fqcsr |= FQCSR_BUSY;
 
+    size_t nwritten = 0;
     while (!m_faults.empty() && (fqcsr & FQCSR_FQEN)) {
         fault req = m_faults.front();
         m_faults.pop();
@@ -1859,7 +1856,8 @@ void iommu::handle_fault() {
         if (fqt == ((fqh - 1) & mask)) {
             log_debug("fault queue overflow");
             fqcsr |= FQCSR_FQOF;
-            update_ipsr();
+            if (fqcsr & FQCSR_FIE)
+                update_ipsr(IPSR_FIP, 0);
             break;
         }
 
@@ -1867,12 +1865,17 @@ void iommu::handle_fault() {
         if (failed(dma_writew(addr, req, false))) {
             log_debug("fault queue memory error");
             fqcsr |= FQCSR_FQMF;
-            update_ipsr();
+            if (fqcsr & FQCSR_FIE)
+                update_ipsr(IPSR_FIP, 0);
             break;
         }
 
         fqt = (fqt + 1) & mask;
+        nwritten++;
     }
+
+    if (nwritten > 0 && fqcsr & FQCSR_FIE)
+        update_ipsr(IPSR_FIP, 0);
 
     // drop all remaining faults
     while (!m_faults.empty())
@@ -1945,23 +1948,24 @@ void iommu::worker() {
 void iommu::overflow() {
     m_counter_val |= COUNTER_OV;
     iocntovf |= COUNTER_OVF;
-    update_ipsr();
+    update_ipsr(IPSR_PIP, 0);
 }
 
-void iommu::update_ipsr() {
+void iommu::update_cqcsr(u32 setmask) {
+    setmask &= CQCSR_PENDING;
+    if (setmask == 0)
+        return;
+
+    cqcsr |= setmask;
+    if (cqcsr & CQCSR_CIE)
+        update_ipsr(IPSR_CIP, 0);
+}
+
+void iommu::update_ipsr(u32 setmask, u32 clrmask) {
     u32 oldipsr = ipsr;
 
-    if ((cqcsr & CQCSR_CIE) && (cqcsr & CQCSR_PENDING))
-        ipsr.set_bit<IPSR_CIP>(true);
-    if ((fqcsr & FQCSR_FIE) && (fqcsr & FQCSR_PENDING))
-        ipsr.set_bit<IPSR_FIP>(true);
-    if ((pqcsr & PQCSR_PIE) && (pqcsr & PQCSR_PENDING))
-        ipsr.set_bit<IPSR_PIP>(true);
-
-    for (size_t i = 0; i < iohpmevt.count(); i++) {
-        if (iohpmevt[i] & IOHPMEVT_OF)
-            ipsr.set_bit<IPSR_PMIP>(true);
-    }
+    ipsr &= ~clrmask;
+    ipsr |= setmask;
 
     bool wsi = fctl & FCTL_WSI;
 
