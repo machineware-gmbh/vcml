@@ -67,12 +67,41 @@ private:
     void run();
     void finalize();
 
+    struct test_info {
+        string name;
+        property<bool>* enabled;
+        function<void(void)> run;
+
+        test_info(const string& nm, function<void(void)>&& fn):
+            name(nm), enabled(), run(std::move(fn)) {
+            enabled = new property<bool>(nm.c_str(), false);
+        }
+
+        test_info(test_info&& other) noexcept:
+            name(std::move(other.name)),
+            enabled(other.enabled),
+            run(std::move(other.run)) {
+            other.enabled = nullptr;
+        }
+
+        ~test_info() { delete enabled; }
+    };
+
+    vector<test_info> m_tests;
+
 public:
     test_base() = delete;
     test_base(const sc_module_name& nm);
     virtual ~test_base();
 
-    virtual void run_test() = 0;
+    virtual void run_test();
+
+    template <typename T>
+    void add_test(const string& name, void (T::*func)(void)) {
+        T* host = dynamic_cast<T*>(this);
+        ASSERT_NE(host, nullptr);
+        m_tests.emplace_back(name, [=]() { (host->*func)(); });
+    }
 };
 
 extern vector<string> args;

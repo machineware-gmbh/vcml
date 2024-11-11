@@ -37,6 +37,25 @@ void test_base::finalize() {
         << "simulation incomplete";
 }
 
+void test_base::run_test() {
+    ASSERT_FALSE(m_tests.empty()) << "no tests defined";
+    bool run_all = true;
+    for (const auto& t : m_tests)
+        run_all &= !t.enabled->get();
+
+    for (const auto& t : m_tests) {
+        if (!t.enabled->get() && !run_all) {
+            log_warn("%s skipped", t.name.c_str());
+            continue;
+        }
+
+        log_info("%s started", t.name.c_str());
+        t.run();
+        log_info("%s complete", t.name.c_str());
+        wait(SC_ZERO_TIME);
+    }
+}
+
 static void systemc_report_handler(const sc_report& r, const sc_actions& a) {
     // To disable a report manually during testing, use:
     //     sc_report_handler::set_actions(SC_ID_<name>, SC_DO_NOTHING);

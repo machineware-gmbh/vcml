@@ -20,6 +20,7 @@ tlm_sbi::tlm_sbi():
     is_excl(false),
     is_lock(false),
     is_secure(false),
+    atype(SBI_ATYPE_UX),
     cpuid(0),
     privilege(0),
     asid(0) {
@@ -27,7 +28,7 @@ tlm_sbi::tlm_sbi():
 }
 
 tlm_sbi::tlm_sbi(bool debug, bool nodmi, bool sync, bool insn, bool excl,
-                 bool lock, bool secure, u64 cpu, u64 lvl, u64 id):
+                 bool lock, bool secure, u64 addrt, u64 cpu, u64 lvl, u64 id):
     is_debug(debug),
     is_nodmi(nodmi),
     is_sync(sync),
@@ -35,6 +36,7 @@ tlm_sbi::tlm_sbi(bool debug, bool nodmi, bool sync, bool insn, bool excl,
     is_excl(excl),
     is_lock(lock),
     is_secure(secure),
+    atype(addrt),
     cpuid(cpu),
     privilege(lvl),
     asid(id) {
@@ -49,6 +51,7 @@ void tlm_sbi::copy(const tlm_sbi& other) {
     is_excl = other.is_excl;
     is_lock = other.is_lock;
     is_secure = other.is_secure;
+    atype = other.atype;
     cpuid = other.cpuid;
     privilege = other.privilege;
     asid = other.asid;
@@ -67,6 +70,7 @@ tlm_sbi& tlm_sbi::operator&=(const tlm_sbi& other) {
     is_excl &= other.is_excl;
     is_lock &= other.is_lock;
     is_secure &= other.is_secure;
+    atype &= other.atype;
     cpuid &= other.cpuid;
     privilege &= other.privilege;
     asid &= other.asid;
@@ -81,6 +85,7 @@ tlm_sbi& tlm_sbi::operator|=(const tlm_sbi& other) {
     is_excl |= other.is_excl;
     is_lock |= other.is_lock;
     is_secure |= other.is_secure;
+    atype |= other.atype;
     cpuid |= other.cpuid;
     privilege |= other.privilege;
     asid |= other.asid;
@@ -95,20 +100,23 @@ tlm_sbi& tlm_sbi::operator^=(const tlm_sbi& other) {
     is_excl ^= other.is_excl;
     is_lock ^= other.is_lock;
     is_secure ^= other.is_secure;
+    atype ^= other.atype;
     cpuid ^= other.cpuid;
     privilege ^= other.privilege;
     asid ^= other.asid;
     return *this;
 }
 
-const tlm_sbi SBI_NONE = { false, false, false, false, false, false, false };
-const tlm_sbi SBI_DEBUG = { true, false, false, false, false, false, false };
-const tlm_sbi SBI_NODMI = { false, true, false, false, false, false, false };
-const tlm_sbi SBI_SYNC = { false, false, true, false, false, false, false };
-const tlm_sbi SBI_INSN = { false, false, false, true, false, false, false };
-const tlm_sbi SBI_EXCL = { false, false, false, false, true, false, false };
-const tlm_sbi SBI_LOCK = { false, false, false, false, false, true, false };
-const tlm_sbi SBI_SECURE = { false, false, false, false, false, false, true };
+const tlm_sbi SBI_NONE = { 0, 0, 0, 0, 0, 0, 0 };
+const tlm_sbi SBI_DEBUG = { 1, 0, 0, 0, 0, 0, 0 };
+const tlm_sbi SBI_NODMI = { 0, 1, 0, 0, 0, 0, 0 };
+const tlm_sbi SBI_SYNC = { 0, 0, 1, 0, 0, 0, 0 };
+const tlm_sbi SBI_INSN = { 0, 0, 0, 1, 0, 0, 0 };
+const tlm_sbi SBI_EXCL = { 0, 0, 0, 0, 1, 0, 0 };
+const tlm_sbi SBI_LOCK = { 0, 0, 0, 0, 0, 1, 0 };
+const tlm_sbi SBI_SECURE = { 0, 0, 0, 0, 0, 0, 1 };
+const tlm_sbi SBI_TRANSLATED = { 0, 0, 0, 0, 0, 0, 0, SBI_ATYPE_TX };
+const tlm_sbi SBI_TR_REQ = { 0, 0, 0, 0, 0, 0, 0, SBI_ATYPE_RQ };
 
 tlm_extension_base* sbiext::clone() const {
     return new sbiext(*this);
