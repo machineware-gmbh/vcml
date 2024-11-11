@@ -581,7 +581,7 @@ constexpr u64 msi_extract(u64 val, u64 mask) {
 
 tlm_response_status iommu::dma_read(u64 addr, void* data, size_t size,
                                     bool excl, bool dbg) {
-    if (excl) {
+    if (excl && size <= 8) {
         auto rw = dbg ? VCML_ACCESS_READ : VCML_ACCESS_READ_WRITE;
         u8* dmi_ptr = out.lookup_dmi_ptr(addr, size, rw);
         if (dmi_ptr) {
@@ -616,7 +616,7 @@ tlm_response_status iommu::dma_write(u64 addr, void* data, size_t size,
     if (debug)
         return TLM_OK_RESPONSE;
 
-    if (excl && m_dma_xptr && addr == m_dma_addr &&
+    if (excl && size <= 8 && m_dma_xptr && addr == m_dma_addr &&
         mwr::atomic_cas(m_dma_xptr, &m_dma_xval, data, size)) {
         m_dma_addr = ~0ull;
         m_dma_xptr = nullptr;
@@ -768,7 +768,7 @@ bool iommu::check_msi(const context& ctx, u64 addr) const {
 
 int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
     bool dbg = info.is_debug;
-    bool txr = info.is_translated;
+    bool txr = info.atype == SBI_ATYPE_TX;
     bool super = info.privilege > 0;
 
     u32 devid = info.cpuid;
@@ -955,7 +955,7 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
 int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
                        const tlm_sbi& info, bool dmi, iotlb& entry) {
     bool dbg = info.is_debug;
-    bool txr = info.is_translated;
+    bool txr = info.atype == SBI_ATYPE_TX;
     bool super = info.privilege > 0;
     bool wnr = tx.is_write();
 
@@ -1348,7 +1348,7 @@ int iommu::transmit_mrif(context& ctx, tlm_generic_payload& tx,
 bool iommu::translate(tlm_generic_payload& tx, const tlm_sbi& info, bool dmi,
                       iotlb& entry) {
     bool dbg = info.is_debug;
-    bool txreq = info.is_translated;
+    bool txreq = info.atype == SBI_ATYPE_TX;
     bool super = info.privilege > 0;
 
     u32 devid = info.cpuid;

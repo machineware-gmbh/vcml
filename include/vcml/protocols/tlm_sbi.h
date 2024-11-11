@@ -20,6 +20,9 @@ enum sbi_defaults : u64 {
     SBI_CPUID_DEFAULT = 0,
     SBI_PRIVILEGE_NONE = 0,
     SBI_ASID_GLOBAL = ~0ull,
+    SBI_ATYPE_UX = 0,
+    SBI_ATYPE_RQ = 1,
+    SBI_ATYPE_TX = 2,
 };
 
 //
@@ -62,34 +65,36 @@ enum sbi_defaults : u64 {
 //   set by the initiator to indicate that this request originates from a
 //   secure context
 //
-// tlm_sbi.is_translated (bool, target-read-only, default off)
-//   set by the initiator to indicate that the address in the associated TLM
-//   generic payload is a physical address; IOMMUs should not attempt to
-//   perform a virtual-to-physical address translation on it.
+// tlm_sbi.atype (enum, target-read-only, default 0:SBI_ATYPE_UX)
+//   set by the initiator to indicate the type of the address in the associated
+//   TLM generic payload for use with IOMMUs; possible values are:
+//   - SBI_ATYPE_UX: regular untranslated address
+//   - SBI_ATYPE_RQ: request to return a translated address
+//   - SBI_ATYPE_TX: pretranslated address, do not translate
 //
-// tlm_sbi.cpuid (bool, target-read-only, default 0)
+// tlm_sbi.cpuid (integer, target-read-only, default 0)
 //   set by the initiator to its own unique identfication number.
 //
-// tlm_sbi.privilege (bool, target-read-only, default 0)
+// tlm_sbi.privilege (integer, target-read-only, default 0)
 //   set by the initiator to indicate the privilege level it is operating at; a
 //   default privilege level of 0 means "no privilege" (e.g. EL0 in ARM and
 //   U-Mode in RISCV)
 //
-// tlm_sbi.asid (bool, target-read-only, default -1)
+// tlm_sbi.asid (integer, target-read-only, default -1)
 //   set by the initiator to indicate the application space ID of the address
 //   in the associated TLM generic payload, e.g. for SR-IOV:
 //   - for processors, the ASID may refer to the currently active process
 //   - for devices the ASID may refer to the currently active virtual function
 
 struct tlm_sbi {
-    bool is_debug;
-    bool is_nodmi;
-    bool is_sync;
-    bool is_insn;
-    bool is_excl;
-    bool is_lock;
-    bool is_secure;
-    bool is_translated;
+    u64 is_debug : 1;
+    u64 is_nodmi : 1;
+    u64 is_sync : 1;
+    u64 is_insn : 1;
+    u64 is_excl : 1;
+    u64 is_lock : 1;
+    u64 is_secure : 1;
+    u64 atype : 2;
 
     u64 cpuid;
     u64 privilege;
@@ -100,7 +105,7 @@ struct tlm_sbi {
 
     tlm_sbi();
     tlm_sbi(bool debug, bool nodmi, bool sync, bool insn, bool excl, bool lock,
-            bool secure, bool translated, u64 cpu = 0,
+            bool secure, u64 atype = SBI_ATYPE_UX, u64 cpu = 0,
             u64 privilege = SBI_PRIVILEGE_NONE, u64 asid = SBI_ASID_GLOBAL);
 
     void copy(const tlm_sbi& other);
@@ -132,9 +137,9 @@ inline bool tlm_sbi::operator==(const tlm_sbi& other) const {
     return is_debug == other.is_debug && is_nodmi == other.is_nodmi &&
            is_sync == other.is_sync && is_insn == other.is_insn &&
            is_excl == other.is_excl && is_lock == other.is_lock &&
-           is_secure == other.is_secure &&
-           is_translated == other.is_translated && cpuid == other.cpuid &&
-           privilege == other.privilege && asid == other.asid;
+           is_secure == other.is_secure && atype == other.atype &&
+           cpuid == other.cpuid && privilege == other.privilege &&
+           asid == other.asid;
 }
 
 inline bool tlm_sbi::operator!=(const tlm_sbi& other) const {
@@ -150,6 +155,7 @@ extern const tlm_sbi SBI_EXCL;
 extern const tlm_sbi SBI_LOCK;
 extern const tlm_sbi SBI_SECURE;
 extern const tlm_sbi SBI_TRANSLATED;
+extern const tlm_sbi SBI_TR_REQ;
 
 inline tlm_sbi sbi_cpuid(u64 cpu) {
     return tlm_sbi(0, 0, 0, 0, 0, 0, 0, 0, cpu, 0, 0);
@@ -209,7 +215,11 @@ inline bool tx_is_secure(const tlm_generic_payload& tx) {
 }
 
 inline bool tx_is_translated(const tlm_generic_payload& tx) {
-    return tx_get_sbi(tx).is_translated;
+    return tx_get_sbi(tx).atype == SBI_ATYPE_TX;
+}
+
+inline bool tx_is_tr_req(const tlm_generic_payload& tx) {
+    return tx_get_sbi(tx).atype == SBI_ATYPE_RQ;
 }
 
 inline u64 tx_cpuid(const tlm_generic_payload& tx) {
