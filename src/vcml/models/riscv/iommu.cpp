@@ -1852,7 +1852,48 @@ void iommu::handle_iodir(const command& cmd) {
 }
 
 void iommu::handle_ats(const command& cmd) {
-    // TODO
+    bool pv = cmd.operands0 & ATS_PV;
+    bool dsv = cmd.operands0 & ATS_DSV;
+    u32 rid = get_field<ATS_RID>(cmd.operands0);
+    u32 pid = pv ? get_field<ATS_PID>(cmd.operands0) : 0;
+    u32 dseg = dsv ? get_field<ATS_DSEG>(cmd.operands0) : 0;
+
+    switch (cmd.func3) {
+    case ATS_INVAL: {
+        u64 page = cmd.operands1 & ~PAGE_MASK;
+        bool g = cmd.operands1 & bit(0);
+        bool s = cmd.operands1 & bit(11);
+        log_debug("received ATS invalidation request");
+        log_debug("  devid: %u", rid);
+        if (pv)
+            log_debug("  pasid: %u", pid);
+        log_debug("  page:  0x%llx", page);
+        log_debug("  flags: %s%s", s ? "s" : "", g ? "g" : "");
+        dma.dmi_cache().invalidate(page, page + PAGE_MASK);
+        dma->invalidate_direct_mem_ptr(page, page + PAGE_MASK);
+        break;
+    }
+
+    case ATS_PRGR: {
+        u32 prgi = extract(cmd.operands1, 32, 8);
+        u32 code = extract(cmd.operands1, 44, 4);
+        u32 dest = extract(cmd.operands1, 48, 16);
+        log_debug("received ATS page request group response:");
+        log_debug("  devid: %u", rid);
+        if (pv)
+            log_debug("  pasid: %u", pid);
+        log_debug("  group: %u", prgi);
+        log_debug("  dest:  0x%x", dest);
+        if (dsv)
+            log_debug("  seg:   0x%x", dseg);
+        log_debug("  code:  0x%x", code);
+        break;
+    }
+
+    default:
+        update_cqcsr(CQCSR_CMDILL);
+        break;
+    }
 }
 
 void iommu::handle_command() {
@@ -2463,6 +2504,7 @@ void iommu::invalidate_direct_mem_ptr(u64 start, u64 end) {
     m_dmi_lo = ~0ull;
     m_dmi_hi = 0;
 
+    dma.dmi_cache().invalidate(0ull, ~0ull);
     dma->invalidate_direct_mem_ptr(0ull, ~0ull);
 }
 
