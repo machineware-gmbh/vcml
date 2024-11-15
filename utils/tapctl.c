@@ -21,7 +21,7 @@
 
 #define DEFAULT_DEVICE  "tap0"
 #define DEFAULT_IPADDR  "10.0.0.1"
-#define DEFAULT_NETMASK "255.0.0.0"
+#define DEFAULT_NETMASK "255.255.255.0"
 
 int  tap_uid     (void);
 int  tap_gid     (void);
