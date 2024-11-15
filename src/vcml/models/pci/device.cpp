@@ -86,6 +86,12 @@ void cap_msix::set_masked(unsigned int vector, bool set) {
 }
 
 void cap_msix::set_pending(unsigned int vector, bool set) {
+    if (vector >= num_vectors) {
+        auto& log = dev->log;
+        log_warn("MSI vector out of bounds: %u/%zu", vector, num_vectors);
+        return;
+    }
+
     const u32 mask = 1u << (vector % 32);
     if (set)
         msix_pba[vector / 32] |= mask;
