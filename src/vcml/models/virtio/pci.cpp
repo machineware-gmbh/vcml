@@ -134,7 +134,10 @@ bool pci::put(u32 vqid, vq_message& msg) {
 
     virtqueue* q = it->second;
     bool result = q->put(msg);
-    if (result && q->notify) {
+    bool irqen = true;
+    if (msix_enabled() || msi_enabled())
+        irqen = q->vector != VIRTIO_NO_VECTOR;
+    if (irqen && result && q->notify) {
         irq_status |= VIRTIO_IRQSTATUS_VQUEUE;
         pci_interrupt(true, q->vector);
     }
@@ -191,9 +194,9 @@ void pci::write_device_feature_sel(u32 val) {
 }
 
 void pci::write_driver_feature(u32 val) {
-    if (irq_status & VIRTIO_STATUS_FEATURES_OK) {
+    if (device_status & VIRTIO_STATUS_FEATURES_OK) {
         log_warn("attempt to change features after negotiation");
-        irq_status = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
+        device_status = VIRTIO_STATUS_DEVICE_NEEDS_RESET;
         return;
     }
 
@@ -385,7 +388,18 @@ void pci::write_queue_notify(u32 val) {
 u32 pci::read_irq_status() {
     u32 val = irq_status;
     irq_status = 0;
-    pci_interrupt(false, VIRTIO_NO_VECTOR);
+
+    if (val & VIRTIO_IRQSTATUS_CONFIG)
+        pci_interrupt(false, msix_config);
+    if (val & VIRTIO_IRQSTATUS_VQUEUE) {
+        for (auto it : m_queues) {
+            if (!(msix_enabled() || msi_enabled()) ||
+                it.second->vector != VIRTIO_NO_VECTOR) {
+                pci_interrupt(false, it.second->vector);
+            }
+        }
+    }
+
     return val;
 }
 
