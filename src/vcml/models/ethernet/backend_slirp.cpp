@@ -224,8 +224,14 @@ slirp_network::~slirp_network() {
     for (auto client : m_clients)
         client->disconnect();
 
-    if (m_slirp)
+    if (m_slirp) {
+        for (auto& fwd : m_forwardings) {
+            slirp_remove_hostxfwd(m_slirp, (sockaddr*)&fwd.host,
+                                  sizeof(fwd.host), fwd.flags);
+        }
+
         slirp_cleanup(m_slirp);
+    }
 }
 
 void slirp_network::send_packet(const u8* ptr, size_t len) {
@@ -247,6 +253,50 @@ void slirp_network::unregister_client(backend_slirp* client) {
     m_clients.erase(client);
 }
 
+void slirp_network::host_port_forwarding(const string& desc) {
+    vector<string> args = split(desc, ':');
+    if (args.size() != 4)
+        VCML_ERROR("invalid port forwarding: '%s'", desc.c_str());
+
+    string protocol = args[0];
+    string guest_addr = args[1];
+    u16 guest_port = from_string<u16>(args[2]);
+    u16 host_port = from_string<u16>(args[3]);
+
+    int flags = -1;
+    if (protocol == "forward")
+        flags = 0;
+    else if (protocol == "forward-ipv6")
+        flags = SLIRP_HOSTFWD_V6ONLY;
+    else if (protocol == "forward-udp")
+        flags = SLIRP_HOSTFWD_UDP;
+    else
+        VCML_ERROR("invalid slirp protocol: %s", protocol.c_str());
+
+    sockaddr_in guest{};
+    guest.sin_family = AF_INET;
+    guest.sin_port = htons(guest_port);
+    if (guest_addr.empty() || guest_addr == "*")
+        guest.sin_addr.s_addr = INADDR_ANY;
+    else
+        guest.sin_addr = ipaddr(guest_addr);
+
+    sockaddr_in host{};
+    host.sin_family = AF_INET;
+    host.sin_port = htons(host_port);
+    host.sin_addr.s_addr = INADDR_ANY;
+
+    int err = slirp_add_hostxfwd(m_slirp, (sockaddr*)&host, sizeof(host),
+                                 (sockaddr*)&guest, sizeof(guest), flags);
+    if (err) {
+        log_warn("failed to setup slirp host port forwarding: %s (%d)",
+                 strerror(errno), errno);
+        return;
+    }
+
+    m_forwardings.push_back({ host, flags });
+}
+
 backend_slirp::backend_slirp(bridge* br, const shared_ptr<slirp_network>& n):
     backend(br), m_network(n) {
     VCML_ERROR_ON(!m_network, "no network");
@@ -263,6 +313,15 @@ void backend_slirp::send_to_host(const eth_frame& frame) {
         m_network->recv_packet(frame.data(), frame.size());
 }
 
+void backend_slirp::handle_option(const string& option) {
+    if (starts_with(option, "forward")) {
+        m_network->host_port_forwarding(option);
+        return;
+    }
+
+    log_warn("unknown slirp option: %s", option.c_str());
+}
+
 backend* backend_slirp::create(bridge* br, const string& type) {
     unsigned int netid = 0;
     if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
@@ -272,7 +331,14 @@ backend* backend_slirp::create(bridge* br, const string& type) {
     auto& network = networks[netid];
     if (network == nullptr)
         network = std::make_shared<slirp_network>(netid);
-    return new backend_slirp(br, network);
+
+    backend_slirp* slirp = new backend_slirp(br, network);
+
+    auto options = split(type, ',');
+    for (size_t i = 1; i < options.size(); i++)
+        slirp->handle_option(options[i]);
+
+    return slirp;
 }
 
 } // namespace ethernet

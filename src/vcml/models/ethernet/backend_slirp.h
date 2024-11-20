@@ -41,6 +41,13 @@ private:
 
     void slirp_thread();
 
+    struct port_forwarding {
+        sockaddr_in host;
+        int flags;
+    };
+
+    vector<port_forwarding> m_forwardings;
+
 public:
     slirp_network(unsigned int id);
     virtual ~slirp_network();
@@ -50,6 +57,8 @@ public:
 
     void register_client(backend_slirp* client);
     void unregister_client(backend_slirp* client);
+
+    void host_port_forwarding(const string& desc);
 };
 
 class backend_slirp : public backend
@@ -64,6 +73,8 @@ public:
     void disconnect() { m_network = nullptr; }
 
     virtual void send_to_host(const eth_frame& frame) override;
+
+    void handle_option(const string& option);
 
     static backend* create(bridge* br, const string& type);
 };
