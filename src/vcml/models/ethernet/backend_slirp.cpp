@@ -226,8 +226,13 @@ slirp_network::~slirp_network() {
 
     if (m_slirp) {
         for (auto& fwd : m_forwardings) {
+#if SLIRP_CHECK_VERSION(4, 5, 0)
             slirp_remove_hostxfwd(m_slirp, (sockaddr*)&fwd.host,
                                   sizeof(fwd.host), fwd.flags);
+#else
+            slirp_remove_hostfwd(m_slirp, fwd.flags, fwd.host.sin_addr,
+                                 ntohs(fwd.host.sin_port));
+#endif
         }
 
         slirp_cleanup(m_slirp);
@@ -264,12 +269,20 @@ void slirp_network::host_port_forwarding(const string& desc) {
     u16 host_port = from_string<u16>(args[3]);
 
     int flags = -1;
-    if (protocol == "forward")
+    if (protocol == "forward" || protocol == "forward-ipv4")
         flags = 0;
     else if (protocol == "forward-ipv6")
+#ifdef SLIRP_HOSTFWD_V6ONLY
         flags = SLIRP_HOSTFWD_V6ONLY;
+#else
+        flags = 0;
+#endif
     else if (protocol == "forward-udp")
+#ifdef SLIRP_HOSTFWD_UDP
         flags = SLIRP_HOSTFWD_UDP;
+#else
+        flags = 1;
+#endif
     else
         VCML_ERROR("invalid slirp protocol: %s", protocol.c_str());
 
@@ -286,8 +299,13 @@ void slirp_network::host_port_forwarding(const string& desc) {
     host.sin_port = htons(host_port);
     host.sin_addr.s_addr = INADDR_ANY;
 
+#if SLIRP_CHECK_VERSION(4, 5, 0)
     int err = slirp_add_hostxfwd(m_slirp, (sockaddr*)&host, sizeof(host),
                                  (sockaddr*)&guest, sizeof(guest), flags);
+#else
+    int err = slirp_add_hostfwd(m_slirp, flags, host.sin_addr, host_port,
+                                guest.sin_addr, guest_port);
+#endif
     if (err) {
         log_warn("failed to setup slirp host port forwarding: %s (%d)",
                  strerror(errno), errno);
