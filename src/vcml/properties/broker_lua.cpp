@@ -16,6 +16,53 @@
 
 namespace vcml {
 
+static optional<string> lua_getstring(lua_State* lua, int idx,
+                                      bool escape = false) {
+    if (luaL_callmeta(lua, idx, "__tostring")) {
+        if (lua_isstring(lua, -1)) {
+            string result = lua_tostring(lua, -1);
+            lua_pop(lua, 1);
+            return result;
+        }
+    }
+
+    switch (lua_type(lua, idx)) {
+    case LUA_TNUMBER:
+        if (lua_isinteger(lua, idx))
+            return mwr::to_string(lua_tointeger(lua, idx));
+        return mwr::to_string(lua_tonumber(lua, idx));
+
+    case LUA_TSTRING:
+        if (escape)
+            return mwr::escape(lua_tostring(lua, idx), " ");
+        return lua_tostring(lua, idx);
+
+    case LUA_TBOOLEAN:
+        return lua_toboolean(lua, idx) ? "true" : "false";
+
+    case LUA_TNIL:
+        return "";
+
+    case LUA_TTABLE: {
+        string result;
+        lua_pushnil(lua);
+        while (lua_next(lua, -2)) {
+            if (auto elem = lua_getstring(lua, -1, true)) {
+                if (!result.empty())
+                    result += " ";
+                result += *elem;
+            }
+            lua_pop(lua, 1);
+        }
+
+        return result;
+    }
+
+    default:
+        return std::nullopt;
+    }
+}
+
 static logger& lua_logger() {
     static logger log("lua");
     return log;
@@ -27,7 +74,7 @@ static broker_lua* lua_broker(lua_State* lua) {
 
 static int do_debug(lua_State* lua) {
     if (!lua_isstring(lua, -1)) {
-        lua_pushstring(lua, "error: vcml.debug expects a string argument");
+        lua_pushstring(lua, "error: vp.debug expects a string argument");
         lua_error(lua);
         return 0;
     }
@@ -38,7 +85,7 @@ static int do_debug(lua_State* lua) {
 
 static int do_info(lua_State* lua) {
     if (!lua_isstring(lua, -1)) {
-        lua_pushstring(lua, "error: vcml.info expects a string argument");
+        lua_pushstring(lua, "error: vp.info expects a string argument");
         lua_error(lua);
         return 0;
     }
@@ -49,7 +96,7 @@ static int do_info(lua_State* lua) {
 
 static int do_warn(lua_State* lua) {
     if (!lua_isstring(lua, -1)) {
-        lua_pushstring(lua, "error: vcml.warn expects a string argument");
+        lua_pushstring(lua, "error: vp.warn expects a string argument");
         lua_error(lua);
         return 0;
     }
@@ -60,7 +107,7 @@ static int do_warn(lua_State* lua) {
 
 static int do_error(lua_State* lua) {
     if (!lua_isstring(lua, -1)) {
-        lua_pushstring(lua, "error: vcml.error expects a string argument");
+        lua_pushstring(lua, "error: vp.error expects a string argument");
         lua_error(lua);
         return 0;
     }
@@ -70,19 +117,27 @@ static int do_error(lua_State* lua) {
 }
 
 static int do_define(lua_State* lua) {
-    if (!lua_isstring(lua, -1) || !lua_isstring(lua, -2)) {
-        lua_pushstring(lua, "error: vcml.define expects two string arguments");
+    auto prop_name = lua_getstring(lua, -2);
+    if (!prop_name) {
+        lua_pushstring(lua, "error: property name is not a string");
         lua_error(lua);
         return 0;
     }
 
-    lua_broker(lua)->define(lua_tostring(lua, -2), lua_tostring(lua, -1));
+    auto prop_val = lua_getstring(lua, -1);
+    if (!prop_val) {
+        lua_pushstring(lua, "error: property value is not a string");
+        lua_error(lua);
+        return 0;
+    }
+
+    lua_broker(lua)->define(*prop_name, *prop_val);
     return 0;
 }
 
 static int do_lookup(lua_State* lua) {
     if (!lua_isstring(lua, -1)) {
-        lua_pushstring(lua, "error: vcml.lookup expects a string argument");
+        lua_pushstring(lua, "error: vp.lookup expects a string argument");
         lua_error(lua);
         return 0;
     }
@@ -136,10 +191,10 @@ static void define_globals(lua_State* lua, broker* b, const string& parent) {
     while (lua_next(lua, -2) != 0) {
         string name = global_name(lua, parent);
         if (!symbol_filtered(name)) {
-            if (lua_isstring(lua, -1))
-                b->define(name, lua_tostring(lua, -1));
-            else if (lua_istable(lua, -1))
+            if (lua_istable(lua, -1))
                 define_globals(lua, b, name + ".");
+            else if (auto value = lua_getstring(lua, -1))
+                b->define(name, *value);
         }
 
         lua_pop(lua, 1);
@@ -172,9 +227,9 @@ broker_lua::broker_lua(const string& file): broker("lua") {
         { "systemc_version_string", SC_VERSION },
         { "username", mwr::username() },
         { "config", mwr::escape(mwr::filename_noext(file), "") },
-        { "cfgdir", mwr::escape(mwr::dirname(file), "") },
-        { "simdir", mwr::escape(mwr::progname(), "") },
-        { "curdir", mwr::escape(mwr::curr_dir(), "") },
+        { "cfgdir", mwr::escape(mwr::dirname(file) + "/", "") },
+        { "simdir", mwr::escape(mwr::progname() + "/", "") },
+        { "curdir", mwr::escape(mwr::curr_dir() + "/", "") },
     };
 
     const vector<pair<string, int (*)(lua_State*)>> funcs = {

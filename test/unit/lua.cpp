@@ -21,8 +21,11 @@ TEST(core, lua) {
         { "data", VCML_VERSION_STRING },
         { "outer.inner.strprop", "hello" },
         { "outer.inner.floatprop", "6.4" },
+        { "outer.inner.boolprop", "true" },
         { "outer.intprop", "55" },
         { "index.property", "456" },
+        { "array.property", "1 2 3 white\\ space 4 5" },
+        { "object.property", "42" },
         { "outer.in", "4096" },
     };
 

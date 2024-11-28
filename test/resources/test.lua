@@ -26,6 +26,21 @@ print(vp.lookup("nothing"))
 vp["index.property"] = 456
 print(vp["index.property"])
 
+-- test that array properties work
+vp["array.property"] = { "1", "2", 3, "white space", { 4, "5" } }
+print(vp["array.property"])
+
+-- objects can also be used as properties
+local metatable = {
+    __tostring = function(self)
+        return tostring(self.value)
+    end
+}
+
+local object = { value = 42 }
+setmetatable(object, metatable)
+vp.define("object.property", object);
+
 -- test logging methods
 vp.debug("this is a debug message from lua")
 vp.info("this is a info message from lua")
@@ -38,6 +53,7 @@ outer = {
     inner = {
         strprop = "hello",
         floatprop = 6.4,
+        boolprop = true,
     },
 
     __in = 0x1000,
