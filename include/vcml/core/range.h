@@ -88,7 +88,8 @@ inline range::range(u64 s, u64 e): start(s), end(e) {
 }
 
 inline range::range(const tlm_generic_payload& tx):
-    start(tx.get_address()), end(tx.get_address() + tx_size(tx) - 1) {
+    start(tx.get_address()),
+    end(tx.get_address() + max<u64>(tx_size(tx), 1) - 1) {
 }
 
 inline range::range(const tlm_dmi& dmi):
