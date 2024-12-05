@@ -110,17 +110,17 @@ unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
 
     range span = m_range.intersect(tx);
 
-    tx.set_address(span.start - m_range.start);
-    tx.set_data_ptr(data + span.start - addr);
-    tx.set_streaming_width(span.length());
-    tx.set_data_length(span.length());
-
     if (!info.is_debug) {
         if (tx.is_read() && m_rsync)
             m_host->sync();
         if (tx.is_write() && m_wsync)
             m_host->sync();
     }
+
+    tx.set_address(span.start - m_range.start);
+    tx.set_data_ptr(data + span.start - addr);
+    tx.set_streaming_width(span.length());
+    tx.set_data_length(span.length());
 
     m_host->trace_fw(*this, tx, m_host->local_time());
 
