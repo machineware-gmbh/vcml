@@ -36,7 +36,7 @@ class tlm_initiator_socket
       public hierarchy_element
 {
 private:
-    tlm_generic_payload m_tx;
+    unordered_map<sc_process_b*, tlm_generic_payload> m_txdb;
     tlm_generic_payload m_txd;
     tlm_sbi m_sbi;
     tlm_dmi_cache* m_dmi_cache;
@@ -49,6 +49,8 @@ private:
     void trace_bw(const tlm_generic_payload& tx, const sc_time& t);
 
     void invalidate_direct_mem_ptr_int(sc_dt::uint64 start, sc_dt::uint64 end);
+
+    tlm_generic_payload& allocate_payload(sc_process_b* p = current_process());
 
 protected:
     virtual void invalidate_direct_mem_ptr(u64 start, u64 end);

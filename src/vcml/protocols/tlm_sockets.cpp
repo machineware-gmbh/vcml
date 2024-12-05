@@ -23,11 +23,17 @@ void tlm_initiator_socket::invalidate_direct_mem_ptr(u64 start, u64 end) {
     m_host->invalidate_direct_mem_ptr(*this, start, end);
 }
 
+tlm_generic_payload& tlm_initiator_socket::allocate_payload(
+    sc_process_b* proc) {
+    if (!stl_contains(m_txdb, proc))
+        m_txdb[proc].set_extension(new sbiext());
+    return m_txdb[proc];
+}
 tlm_initiator_socket::tlm_initiator_socket(const char* nm,
                                            address_space space):
     simple_initiator_socket<tlm_initiator_socket>(nm),
     hierarchy_element(),
-    m_tx(),
+    m_txdb(),
     m_txd(),
     m_sbi(SBI_NONE),
     m_dmi_cache(),
@@ -50,7 +56,6 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
     register_invalidate_direct_mem_ptr(
         this, &tlm_initiator_socket::invalidate_direct_mem_ptr_int);
 
-    m_tx.set_extension(new sbiext());
     m_txd.set_extension(new sbiext());
 }
 
@@ -215,7 +220,7 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
     }
 
     // if DMI was not successful, send a regular transaction
-    auto& tx = info.is_debug ? m_txd : m_tx;
+    auto& tx = info.is_debug ? m_txd : allocate_payload();
     tx_setup(tx, cmd, addr, data, size);
     size = send(tx, info);
 
