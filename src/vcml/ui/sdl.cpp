@@ -255,8 +255,7 @@ void sdl_client::notify_key(u32 keysym, bool down) {
     if (keysym == SDLK_g && (SDL_GetModState() & (KMOD_CTRL | KMOD_ALT))) {
         if (down) {
             grabbing = !grabbing;
-            SDL_SetWindowGrab(window, grabbing ? SDL_TRUE : SDL_FALSE);
-            SDL_ShowCursor(grabbing ? 0 : 1);
+            SDL_SetRelativeMouseMode(grabbing ? SDL_TRUE : SDL_FALSE);
         }
 
         return;
@@ -273,9 +272,25 @@ void sdl_client::notify_btn(SDL_MouseButtonEvent& event) {
         disp->notify_btn(button, event.state == SDL_PRESSED);
 }
 
+static bool g_sdl_needs_grabbing_fix = []() {
+    auto env = mwr::getenv("VCML_SDL_NEEDS_GRABBING_FIX");
+    return env && (*env)[0] == '1';
+}();
+
 void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
+    i32 xrel = event.xrel;
+    i32 yrel = event.yrel;
+
+    // workaround for xinput sometimes not reporting correct rel values
+    if (grabbing && g_sdl_needs_grabbing_fix) {
+        xrel = event.xrel - x;
+        yrel = event.yrel - y;
+        x = event.xrel;
+        y = event.yrel;
+    }
+
     if (disp != nullptr)
-        disp->notify_rel(event.xrel, event.yrel, 0);
+        disp->notify_rel(xrel, yrel, 0);
 }
 
 void sdl_client::notify_wheel(SDL_MouseWheelEvent& event) {
