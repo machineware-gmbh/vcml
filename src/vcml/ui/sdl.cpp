@@ -255,7 +255,8 @@ void sdl_client::notify_key(u32 keysym, bool down) {
     if (keysym == SDLK_g && (SDL_GetModState() & (KMOD_CTRL | KMOD_ALT))) {
         if (down) {
             grabbing = !grabbing;
-            SDL_SetRelativeMouseMode(grabbing ? SDL_TRUE : SDL_FALSE);
+            SDL_SetWindowGrab(window, grabbing ? SDL_TRUE : SDL_FALSE);
+            SDL_ShowCursor(grabbing ? 0 : 1);
         }
 
         return;
@@ -371,8 +372,9 @@ void sdl_client::draw_window() {
         size_t seconds = times % 60;
 
         const char* name = disp->name();
-        string cap = mkstr("%s fps:%.1f rtf:%.2f %02zu:%02zu:%02zu.%03zu",
-                           name, fps, rtf, hours, minutes, seconds, millis);
+        string cap = mkstr("%s fps:%.1f rtf:%.2f %02zu:%02zu:%02zu.%03zu%s",
+                           name, fps, rtf, hours, minutes, seconds, millis,
+                           grabbing ? " [grabbed]" : "");
         SDL_SetWindowTitle(window, cap.c_str());
 
         time_frame = mwr::timestamp_us();
