@@ -162,11 +162,11 @@ static void list_xml(ostream& os) {
     for (auto loader : debugging::loader::all())
         os << "<loader>" << xml_escape(loader->loader_name()) << "</loader>";
 
-    for (auto kbd : ui::keyboard::all())
+    for (auto kbd : ui::input::all<ui::keyboard>())
         os << "<keyboard>" << xml_escape(kbd->input_name()) << "</keyboard>";
 
-    for (auto ptr : ui::pointer::all())
-        os << "<pointer>" << xml_escape(ptr->input_name()) << "</pointer>";
+    for (auto ptr : ui::input::all<ui::mouse>())
+        os << "<mouse>" << xml_escape(ptr->input_name()) << "</mouse>";
 
     for (auto terminal : serial::terminal::all())
         os << "<terminal>" << xml_escape(terminal->name()) << "</terminal>";
@@ -255,19 +255,21 @@ static void list_json(ostream& os) {
     os << "],";
 
     os << "\"keyboards\":[";
-    for (size_t i = 0; i < ui::keyboard::all().size(); i++) {
-        string keyboard = ui::keyboard::all()[i]->input_name();
+    auto keyboards = ui::input::all<ui::keyboard>();
+    for (size_t i = 0; i < keyboards.size(); i++) {
+        string keyboard = keyboards[i]->input_name();
         os << "\"" << json_escape(keyboard) << "\"";
-        if (i < ui::keyboard::all().size() - 1)
+        if (i < keyboard.size() - 1)
             os << ",";
     }
     os << "],";
 
-    os << "\"pointers\":[";
-    for (size_t i = 0; i < ui::pointer::all().size(); i++) {
-        string pointer = ui::pointer::all()[i]->input_name();
+    os << "\"mice\":[";
+    auto mice = ui::input::all<ui::mouse>();
+    for (size_t i = 0; i < mice.size(); i++) {
+        string pointer = mice[i]->input_name();
         os << "\"" << json_escape(pointer) << "\"";
-        if (i < ui::pointer::all().size() - 1)
+        if (i < mice.size() - 1)
             os << ",";
     }
     os << "],";

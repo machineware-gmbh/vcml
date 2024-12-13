@@ -168,59 +168,25 @@ void input::config_update() {
 }
 
 void input::update() {
-    size_t n = m_events.size();
     ui::input_event event = {};
+
     while (m_keyboard.pop_event(event))
-        push_key(event.key.code, event.key.state);
+        m_events.push(event);
 
-    while (m_pointer.pop_event(event)) {
-        if (mouse) {
-            if (event.is_rel()) {
-                if (event.rel.x)
-                    push_rel(ui::REL_X, event.rel.x);
-                if (event.rel.y)
-                    push_rel(ui::REL_Y, event.rel.y);
-                if (event.rel.w)
-                    push_rel(ui::REL_WHEEL, event.rel.w);
-            }
+    while (m_mouse.pop_event(event))
+        m_events.push(event);
 
-            if (event.is_key() && (event.key.code == ui::BTN_LEFT ||
-                                   event.key.code == ui::BTN_MIDDLE ||
-                                   event.key.code == ui::BTN_RIGHT)) {
-                push_key(event.key.code, event.key.state);
-            }
-        }
-
-        if (touchpad) {
-            if (event.is_key() && event.key.code == ui::BTN_LEFT) {
-                push_key(ui::BTN_TOOL_FINGER, event.key.state);
-                push_key(event.key.code, event.key.state);
-            }
-
-            if (event.is_rel()) {
-                size_t xres = m_console.xres();
-                size_t yres = m_console.yres();
-                VCML_ERROR_ON(!xres, "console width cannot be zero");
-                VCML_ERROR_ON(!yres, "console height cannot be zero");
-
-                size_t x = (m_pointer.x() * xmax) / xres;
-                size_t y = (m_pointer.x() * ymax) / yres;
-                VCML_ERROR_ON(x != (u32)x, "pointer out of range");
-                VCML_ERROR_ON(y != (u32)y, "pointer out of range");
-
-                push_key(ui::BTN_TOUCH, 1);
-                push_abs(ui::ABS_X, x);
-                push_abs(ui::ABS_Y, y);
-            }
-        }
+    while (m_touchpad.pop_event(event)) {
+        if (event.is_abs() && event.code == ui::ABS_X)
+            event.state = (event.state * xmax) / 0xffff;
+        if (event.is_abs() && event.code == ui::ABS_Y)
+            event.state = (event.state * ymax) / 0xffff;
+        m_events.push(event);
     }
-
-    if (m_events.size() > n)
-        push_sync();
 
     while (!m_events.empty() && !m_messages.empty()) {
         vq_message msg(m_messages.front());
-        input_event event(m_events.front());
+        ui::input_event event(m_events.front());
 
         msg.copy_out(event);
 
@@ -228,7 +194,7 @@ void input::update() {
             log_debug("event sync");
         } else {
             log_debug("event type %hu, code %hu, value %u", event.type,
-                      event.code, event.value);
+                      event.code, event.state);
         }
 
         if (virtio_in->put(VIRTQUEUE_EVENT, msg)) {
@@ -289,8 +255,9 @@ input::input(const sc_module_name& nm):
     module(nm),
     virtio_device(),
     m_config(),
-    m_keyboard(name()),
-    m_pointer(name()),
+    m_keyboard(mkstr("%s_keyboard", name())),
+    m_touchpad(mkstr("%s_touchpad", name())),
+    m_mouse(mkstr("%s_mouse", name())),
     m_console(),
     touchpad("touchpad", false),
     keyboard("keyboard", true),
@@ -300,12 +267,16 @@ input::input(const sc_module_name& nm):
     xmax("xmax", 0x7fff),
     ymax("ymax", 0x7fff),
     virtio_in("virtio_in") {
-    m_keyboard.set_layout(keymap);
-
-    if (keyboard)
+    if (keyboard) {
+        m_keyboard.set_layout(keymap);
         m_console.notify(m_keyboard);
-    if (touchpad || mouse)
-        m_console.notify(m_pointer);
+    }
+
+    if (touchpad)
+        m_console.notify(m_touchpad);
+
+    if (mouse)
+        m_console.notify(m_mouse);
 
     if (keyboard || touchpad || mouse) {
         SC_HAS_PROCESS(input);

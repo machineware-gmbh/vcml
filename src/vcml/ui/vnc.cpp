@@ -360,16 +360,14 @@ void vnc::ptr_event(u32 mask, u32 x, u32 y) {
         notify_btn(BUTTON_MIDDLE, mask & VNC_BTN_MIDDLE);
     if (change & VNC_BTN_RIGHT)
         notify_btn(BUTTON_RIGHT, mask & VNC_BTN_RIGHT);
+    if (change & VNC_BTN_WHEEL_UP)
+        notify_btn(BUTTON_WHEEL_UP, mask & VNC_BTN_WHEEL_UP);
+    if (change & VNC_BTN_WHEEL_DOWN)
+        notify_btn(BUTTON_WHEEL_UP, mask & VNC_BTN_WHEEL_DOWN);
     m_buttons = mask;
 
-    i32 wheel = 0;
-    if (mask & VNC_BTN_WHEEL_UP)
-        wheel++;
-    if (mask & VNC_BTN_WHEEL_DOWN)
-        wheel--;
-
-    if (m_ptr_x != x || m_ptr_y != y || wheel) {
-        display::notify_rel(x - m_ptr_x, y - m_ptr_y, wheel);
+    if (m_ptr_x != x || m_ptr_y != y) {
+        display::notify_pos(x, y, m_screen->width, m_screen->height);
         m_ptr_x = x;
         m_ptr_y = y;
     }

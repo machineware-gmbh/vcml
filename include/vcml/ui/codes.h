@@ -7,13 +7,16 @@
  * found in the root directory of this source tree.                           *
  *                                                                            *
  ******************************************************************************/
+
 #ifndef VCML_UI_CODES_H
 #define VCML_UI_CODES_H
+
+#include "vcml/core/types.h"
 
 namespace vcml {
 namespace ui {
 
-enum event_codes : unsigned int {
+enum event_types : u16 {
     EV_SYN = 0,
     EV_KEY = 1,
     EV_REL = 2,
@@ -21,11 +24,11 @@ enum event_codes : unsigned int {
     EV_MSC = 4,
 };
 
-enum syn_codes : unsigned int {
+enum syn_codes : u16 {
     SYN_REPORT = 0,
 };
 
-enum key_codes : unsigned int {
+enum key_codes : u16 {
     KEY_RESERVED = 0,
     KEY_ESC = 1,
     KEY_1 = 2,
@@ -158,20 +161,20 @@ enum key_codes : unsigned int {
     KEY_MAX,
 };
 
-enum rel_codes : unsigned int {
+enum rel_codes : u16 {
     REL_X = 0,
     REL_Y = 1,
     REL_Z = 2,
     REL_WHEEL = 8,
 };
 
-enum abs_codes : unsigned int {
+enum abs_codes : u16 {
     ABS_X = 0,
     ABS_Y = 1,
     ABS_Z = 2,
 };
 
-enum button_codes : unsigned int {
+enum button_codes : u16 {
     BTN_LEFT = 0x110,
     BTN_RIGHT = 0x111,
     BTN_MIDDLE = 0x112,

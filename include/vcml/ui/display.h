@@ -33,8 +33,7 @@ private:
     u8* m_fb;
     u8* m_nullfb;
 
-    vector<keyboard*> m_keyboards;
-    vector<pointer*> m_pointers;
+    vector<input*> m_inputs;
 
 protected:
     static unordered_map<string, function<display*(u32)>> types;
@@ -70,13 +69,10 @@ public:
 
     virtual void notify_key(u32 keysym, bool down);
     virtual void notify_btn(u32 button, bool down);
-    virtual void notify_rel(i32 x, i32 y, i32 w);
+    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h);
 
-    virtual void add_keyboard(keyboard* kb);
-    virtual void add_pointer(pointer* ptr);
-
-    virtual void remove_keyboard(keyboard* kb);
-    virtual void remove_pointer(pointer* ptr);
+    void attach(input* device);
+    void detach(input* device);
 
     static shared_ptr<display> lookup(const string& name);
     static void register_display_type(const string& type,

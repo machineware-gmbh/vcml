@@ -13,48 +13,21 @@
 
 #include "vcml/core/types.h"
 #include "vcml/logging/logger.h"
+#include "vcml/ui/codes.h"
 #include "vcml/ui/keymap.h"
 
 namespace vcml {
 namespace ui {
 
-enum key_state : u32 {
-    VCML_KEY_UP = 0u,
-    VCML_KEY_DOWN = 1u,
-    VCML_KEY_HELD = 2u,
-};
-
-enum mouse_button : u32 {
-    BUTTON_NONE = 0u,
-    BUTTON_LEFT = 1u,
-    BUTTON_MIDDLE = 2u,
-    BUTTON_RIGHT = 3u,
-};
-
-enum event_type : u32 {
-    EVTYPE_KEY = 1u,
-    EVTYPE_REL = 2u,
-};
-
 struct input_event {
-    event_type type;
+    u16 type;
+    u16 code;
+    i32 state;
 
-    union {
-        struct {
-            u32 code;
-            u32 state;
-            u32 reserved;
-        } key;
-
-        struct {
-            i32 x;
-            i32 y;
-            i32 w;
-        } rel;
-    };
-
-    bool is_key() const { return type == EVTYPE_KEY; }
-    bool is_rel() const { return type == EVTYPE_REL; }
+    constexpr bool is_syn() const { return type == EV_SYN; }
+    constexpr bool is_key() const { return type == EV_KEY; }
+    constexpr bool is_abs() const { return type == EV_ABS; }
+    constexpr bool is_rel() const { return type == EV_REL; }
 };
 
 class input
@@ -65,20 +38,54 @@ private:
     mutable mutex m_mutex;
     queue<input_event> m_events;
 
+    static unordered_map<string, input*>& all_inputs();
+
 protected:
     void push_event(const input_event& ev);
-    void push_key(u32 key, u32 state);
-    void push_rel(i32 x, i32 y, i32 w);
+    void push_key(u16 key, u32 state);
+    void push_rel(u16 axis, i32 delta);
+    void push_abs(u16 axis, u32 state);
+    void push_syn();
 
 public:
     const char* input_name() const { return m_name.c_str(); }
 
-    input(const char* name);
+    input(const string& name);
     virtual ~input();
 
     bool has_events() const;
     bool pop_event(input_event& ev);
+
+    virtual void notify_key(u32 symbol, bool down) = 0;
+    virtual void notify_btn(u32 button, bool down) = 0;
+    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) = 0;
+
+    template <typename T = input>
+    static vector<T*> all();
+
+    template <typename T = input>
+    static T* find(const string& name);
 };
+
+template <typename T>
+vector<T*> input::all() {
+    vector<T*> res;
+    for (auto [name, obj] : all_inputs()) {
+        T* ptr = dynamic_cast<T*>(obj);
+        if (ptr)
+            res.push_back(ptr);
+    }
+
+    return res;
+}
+
+template <typename T>
+T* input::find(const string& name) {
+    auto it = all_inputs().find(name);
+    if (it == all_inputs().end())
+        return nullptr;
+    return dynamic_cast<T*>(it->second);
+}
 
 class keyboard : public input
 {
@@ -94,8 +101,6 @@ private:
     bool m_meta_r;
     u32 m_prev_sym;
     string m_layout;
-
-    static unordered_map<string, keyboard*> s_keyboards;
 
 public:
     bool ctrl_l() const { return m_ctrl_l; }
@@ -119,45 +124,65 @@ public:
     const char* layout() const { return m_layout.c_str(); }
     void set_layout(const string& layout) { m_layout = layout; }
 
-    keyboard(const char* name, const string& layout = "");
-    virtual ~keyboard();
+    keyboard(const string& name, const string& layout = "");
+    virtual ~keyboard() = default;
 
-    void notify_key(u32 symbol, bool down);
-
-    static vector<keyboard*> all();
-    static keyboard* find(const char* name);
+    virtual void notify_key(u32 symbol, bool down) override;
+    virtual void notify_btn(u32 button, bool down) override;
+    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) override;
 };
 
-class pointer : public input
+enum mouse_buttons : u32 {
+    BUTTON_NONE = 0,
+    BUTTON_LEFT = bit(0),
+    BUTTON_RIGHT = bit(1),
+    BUTTON_MIDDLE = bit(2),
+    BUTTON_WHEEL_UP = bit(3),
+    BUTTON_WHEEL_DOWN = bit(4),
+};
+
+class mouse : public input
 {
 private:
-    mutable mutex m_mutex;
-    queue<input_event> m_events;
-
     u32 m_buttons;
-    u32 m_abs_x;
-    u32 m_abs_y;
-    u32 m_abs_w;
-
-    static unordered_map<string, pointer*> s_pointers;
+    u32 m_xabs;
+    u32 m_yabs;
 
 public:
-    u32 x() const { return m_abs_x; }
-    u32 y() const { return m_abs_y; }
-    u32 w() const { return m_abs_w; }
+    u32 x() const { return m_xabs; }
+    u32 y() const { return m_yabs; }
 
     bool left() const { return m_buttons & BUTTON_LEFT; }
     bool middle() const { return m_buttons & BUTTON_MIDDLE; }
     bool right() const { return m_buttons & BUTTON_RIGHT; }
 
-    pointer(const char* name);
-    virtual ~pointer();
+    mouse(const string& name);
+    virtual ~mouse() = default;
 
-    void notify_btn(u32 btn, bool down);
-    void notify_rel(i32 x, i32 y, i32 w);
+    virtual void notify_key(u32 symbol, bool down) override;
+    virtual void notify_btn(u32 button, bool down) override;
+    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) override;
+};
 
-    static vector<pointer*> all();
-    static pointer* find(const char* name);
+class touchpad : public input
+{
+private:
+    bool m_touch;
+    u32 m_xabs;
+    u32 m_yabs;
+
+public:
+    u32 x() const { return m_xabs; }
+    u32 y() const { return m_yabs; }
+
+    bool is_touching() const { return m_touch; }
+
+    touchpad(const string& name);
+    virtual ~touchpad() = default;
+
+    virtual void notify_key(u32 symbol, bool down) override;
+    virtual void notify_btn(u32 button, bool down) override;
+    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) override;
 };
 
 } // namespace ui

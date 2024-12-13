@@ -278,24 +278,31 @@ static bool g_sdl_needs_grabbing_fix = []() {
 }();
 
 void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
-    i32 xrel = event.xrel;
-    i32 yrel = event.yrel;
+    u32 x = event.x;
+    u32 y = event.y;
 
-    // workaround for xinput sometimes not reporting correct rel values
+    // workaround for xinput sometimes not reporting correct values
     if (grabbing && g_sdl_needs_grabbing_fix) {
-        xrel = event.xrel - x;
-        yrel = event.yrel - y;
         x = event.xrel;
         y = event.yrel;
     }
 
     if (disp != nullptr)
-        disp->notify_rel(xrel, yrel, 0);
+        disp->notify_pos(x, y, disp->xres(), disp->yres());
 }
 
 void sdl_client::notify_wheel(SDL_MouseWheelEvent& event) {
-    if (disp != nullptr)
-        disp->notify_rel(0, 0, event.y);
+    if (disp != nullptr) {
+        if (event.y > 0) {
+            disp->notify_btn(BUTTON_WHEEL_UP, true);
+            disp->notify_btn(BUTTON_WHEEL_UP, false);
+        }
+
+        if (event.y < 0) {
+            disp->notify_btn(BUTTON_WHEEL_DOWN, true);
+            disp->notify_btn(BUTTON_WHEEL_DOWN, false);
+        }
+    }
 }
 
 void sdl_client::init_window() {

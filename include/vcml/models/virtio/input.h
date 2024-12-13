@@ -35,12 +35,6 @@ private:
         VIRTQUEUE_STATUS = 1,
     };
 
-    struct input_event {
-        u16 type;
-        u16 code;
-        u32 value;
-    };
-
     enum config_select : u8 {
         VIRTIO_INPUT_CFG_UNSET = 0x00,
         VIRTIO_INPUT_CFG_ID_NAME = 0x01,
@@ -82,23 +76,12 @@ private:
     input_config m_config;
 
     ui::keyboard m_keyboard;
-    ui::pointer m_pointer;
+    ui::touchpad m_touchpad;
+    ui::mouse m_mouse;
     ui::console m_console;
 
-    queue<input_event> m_events;
+    queue<ui::input_event> m_events;
     queue<vq_message> m_messages;
-
-    void push_key(u16 key, u32 down) {
-        m_events.push({ ui::EV_KEY, key, down });
-    }
-
-    void push_rel(u16 axis, u32 val) {
-        m_events.push({ ui::EV_REL, axis, val });
-    }
-
-    void push_abs(u16 axis, u32 val) {
-        m_events.push({ ui::EV_ABS, axis, val });
-    }
 
     void push_sync() { m_events.push({ ui::EV_SYN, ui::SYN_REPORT, 0 }); }
 

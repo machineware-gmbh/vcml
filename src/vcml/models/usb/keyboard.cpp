@@ -191,8 +191,8 @@ void keyboard::poll_modifier_keys(u8& data) {
 void keyboard::poll_standard_keys(u8* data, size_t length) {
     ui::input_event ev;
     if (m_keyboard.pop_event(ev) && ev.is_key()) {
-        u8 hid = USB_HID_KEYCODE_TABLE[ev.key.code & 0xff];
-        if (ev.key.state == ui::VCML_KEY_UP)
+        u8 hid = USB_HID_KEYCODE_TABLE[ev.code & 0xff];
+        if (ev.state == 0)
             stl_remove(m_keys, hid);
         else
             stl_add_unique(m_keys, hid);

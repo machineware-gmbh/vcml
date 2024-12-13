@@ -18,28 +18,50 @@ void input::push_event(const input_event& ev) {
     m_events.push(ev);
 }
 
-void input::push_key(u32 key, u32 state) {
+void input::push_key(u16 key, u32 state) {
     input_event ev = {};
-    ev.type = EVTYPE_KEY;
-    ev.key.code = key;
-    ev.key.state = state;
+    ev.type = EV_KEY;
+    ev.code = key;
+    ev.state = state;
     push_event(ev);
 }
 
-void input::push_rel(i32 x, i32 y, i32 w) {
+void input::push_rel(u16 axis, i32 delta) {
     input_event ev = {};
-    ev.type = EVTYPE_REL;
-    ev.rel.x = x;
-    ev.rel.y = y;
-    ev.rel.w = w;
+    ev.type = EV_REL;
+    ev.code = axis;
+    ev.state = delta;
     push_event(ev);
 }
 
-input::input(const char* name): m_name(name), m_mutex(), m_events() {
+void input::push_abs(u16 axis, u32 abs) {
+    input_event ev = {};
+    ev.type = EV_ABS;
+    ev.code = axis;
+    ev.state = abs;
+    push_event(ev);
+}
+
+void input::push_syn() {
+    input_event ev = {};
+    ev.type = EV_SYN;
+    ev.code = SYN_REPORT;
+    ev.state = 0;
+    push_event(ev);
+}
+
+unordered_map<string, input*>& input::all_inputs() {
+    static unordered_map<string, input*> inputs;
+    return inputs;
+}
+
+input::input(const string& name): m_name(name), m_mutex(), m_events() {
+    VCML_ERROR_ON(find(name), "input '%s' already exists", name.c_str());
+    all_inputs()[name] = this;
 }
 
 input::~input() {
-    // nothing to do
+    all_inputs().erase(input_name());
 }
 
 bool input::has_events() const {
@@ -57,7 +79,7 @@ bool input::pop_event(input_event& ev) {
     return true;
 }
 
-keyboard::keyboard(const char* name, const string& layout):
+keyboard::keyboard(const string& name, const string& layout):
     input(name),
     m_ctrl_l(false),
     m_ctrl_r(false),
@@ -70,33 +92,16 @@ keyboard::keyboard(const char* name, const string& layout):
     m_meta_r(false),
     m_prev_sym(~0u),
     m_layout(layout) {
-    if (stl_contains(s_keyboards, string(name)))
-        VCML_ERROR("keyboard input device '%s' already exists", name);
-    s_keyboards[name] = this;
 }
-
-keyboard::~keyboard() {
-    s_keyboards.erase(input_name());
-}
-
-#define KEY_LEFTSHIFT  42
-#define KEY_RIGHTSHIFT 54
-#define KEY_LEFTALT    56
-#define KEY_RIGHTALT   100
-#define KEY_CAPSLOCK   58
-
-#define BTN_TOUCH  0x14a
-#define BTN_LEFT   0x110
-#define BTN_RIGHT  0x111
-#define BTN_MIDDLE 0x112
 
 void keyboard::notify_key(u32 sym, bool down) {
-    u32 state = down ? VCML_KEY_DOWN : VCML_KEY_UP;
+    u32 state = down ? 1 : 0;
     if (down && sym == m_prev_sym)
-        state = VCML_KEY_HELD;
+        state++;
 
     if (m_layout.empty()) {
         push_key(sym, state);
+        push_syn();
         return;
     }
 
@@ -152,94 +157,107 @@ void keyboard::notify_key(u32 sym, bool down) {
         m_meta_r = down;
 
     m_prev_sym = down ? sym : -1;
+
+    push_syn();
 }
 
-unordered_map<string, keyboard*> keyboard::s_keyboards;
-
-vector<keyboard*> keyboard::all() {
-    vector<keyboard*> res;
-    res.reserve(s_keyboards.size());
-    for (const auto& it : s_keyboards)
-        res.push_back(it.second);
-    return res;
+void keyboard::notify_btn(u32 btn, bool state) {
+    // ignore mouse button events
 }
 
-keyboard* keyboard::find(const char* name) {
-    auto it = s_keyboards.find(name);
-    return it != s_keyboards.end() ? it->second : nullptr;
+void keyboard::notify_pos(u32 x, u32 y, u32 w, u32 h) {
+    // ignore mouse move events
 }
 
-pointer::pointer(const char* name):
-    input(name), m_buttons(), m_abs_x(), m_abs_y(), m_abs_w() {
-    if (stl_contains(s_pointers, string(name)))
-        VCML_ERROR("pointer input device '%s' already exists", name);
-    s_pointers[name] = this;
+mouse::mouse(const string& name):
+    input(name), m_buttons(), m_xabs(), m_yabs() {
 }
 
-pointer::~pointer() {
-    s_pointers.erase(input_name());
+void mouse::notify_key(u32 sym, bool down) {
+    // ignore keyboard events
 }
 
-void pointer::notify_btn(u32 button, bool down) {
-    if (button == BUTTON_NONE)
-        return;
-
+void mouse::notify_btn(u32 button, bool down) {
     u32 buttons = m_buttons;
     if (down)
-        buttons |= (1u << (button - 1));
+        buttons |= button;
     else
-        buttons &= ~(1u << (button - 1));
+        buttons &= ~button;
 
     if (buttons == m_buttons)
         return;
 
-    if (buttons && !m_buttons)
-        push_key(BTN_TOUCH, VCML_KEY_DOWN);
-
-    u32 val = down ? VCML_KEY_DOWN : VCML_KEY_UP;
-
     switch (button) {
     case BUTTON_LEFT:
-        push_key(BTN_LEFT, val);
+        push_key(BTN_LEFT, down);
         break;
     case BUTTON_RIGHT:
-        push_key(BTN_RIGHT, val);
+        push_key(BTN_RIGHT, down);
         break;
     case BUTTON_MIDDLE:
-        push_key(BTN_MIDDLE, val);
+        push_key(BTN_MIDDLE, down);
+        break;
+    case BUTTON_WHEEL_UP:
+        push_rel(REL_WHEEL, down ? 1 : 0);
+        break;
+    case BUTTON_WHEEL_DOWN:
+        push_rel(REL_WHEEL, down ? -1 : 0);
         break;
     default:
         break;
     }
 
-    if (!buttons && m_buttons)
-        push_key(BTN_TOUCH, VCML_KEY_UP);
+    push_syn();
 
     m_buttons = buttons;
 }
 
-void pointer::notify_rel(i32 x, i32 y, i32 w) {
-    if (x || y || w)
-        push_rel(x, y, w);
+void mouse::notify_pos(u32 xabs, u32 yabs, u32 width, u32 height) {
+    i32 dx = xabs - m_xabs;
+    i32 dy = yabs - m_yabs;
 
-    m_abs_x += x;
-    m_abs_y += y;
-    m_abs_w += w;
+    m_xabs = xabs;
+    m_yabs = yabs;
+
+    if (dx)
+        push_rel(REL_X, dx);
+    if (dy)
+        push_rel(REL_Y, dy);
+    if (dx || dy)
+        push_syn();
 }
 
-unordered_map<string, pointer*> pointer::s_pointers;
-
-vector<pointer*> pointer::all() {
-    vector<pointer*> res;
-    res.reserve(s_pointers.size());
-    for (const auto& it : s_pointers)
-        res.push_back(it.second);
-    return res;
+touchpad::touchpad(const string& name):
+    input(name), m_touch(), m_xabs(), m_yabs() {
 }
 
-pointer* pointer::find(const char* name) {
-    auto it = s_pointers.find(name);
-    return it != s_pointers.end() ? it->second : nullptr;
+void touchpad::notify_key(u32 sym, bool down) {
+    // ignore keyboard events
+}
+
+void touchpad::notify_btn(u32 button, bool down) {
+    if (m_touch == down)
+        return;
+
+    push_key(BTN_TOUCH, down);
+    push_syn();
+
+    m_touch = down;
+}
+
+void touchpad::notify_pos(u32 xabs, u32 yabs, u32 width, u32 height) {
+    xabs = (xabs * 0xffffull) / (width - 1);
+    yabs = (yabs * 0xffffull) / (height - 1);
+
+    if (xabs != m_xabs)
+        push_abs(ABS_X, xabs);
+    if (yabs != m_yabs)
+        push_abs(ABS_Y, yabs);
+    if (xabs != m_xabs || yabs != m_yabs)
+        push_syn();
+
+    m_xabs = xabs;
+    m_yabs = yabs;
 }
 
 } // namespace ui

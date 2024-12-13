@@ -36,8 +36,6 @@ struct sdl_client {
     u64 time_sim;
     u64 frames;
     bool grabbing;
-    u32 x;
-    u32 y;
 
     void notify_key(u32 keysym, bool down);
     void notify_btn(SDL_MouseButtonEvent& event);

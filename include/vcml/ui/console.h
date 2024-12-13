@@ -28,8 +28,7 @@ namespace ui {
 class console
 {
 private:
-    unordered_set<keyboard*> m_keyboards;
-    unordered_set<pointer*> m_pointers;
+    unordered_set<input*> m_inputs;
     unordered_set<shared_ptr<display>> m_displays;
 
 public:
@@ -43,8 +42,7 @@ public:
     console();
     virtual ~console();
 
-    void notify(keyboard& kbd);
-    void notify(pointer& ptr);
+    void notify(input& device);
 
     void setup(const videomode& mode, u8* fbptr);
     void render(u32 x, u32 y, u32 w, u32 h);

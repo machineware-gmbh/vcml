@@ -13,8 +13,7 @@
 namespace vcml {
 namespace ui {
 
-console::console():
-    m_keyboards(), m_pointers(), m_displays(), displays("displays") {
+console::console(): m_inputs(), m_displays(), displays("displays") {
     for (const string& type : displays) {
         try {
             auto disp = display::lookup(type);
@@ -30,16 +29,10 @@ console::~console() {
     shutdown();
 }
 
-void console::notify(keyboard& kbd) {
-    m_keyboards.insert(&kbd);
+void console::notify(input& device) {
+    m_inputs.insert(&device);
     for (auto& disp : m_displays)
-        disp->add_keyboard(&kbd);
-}
-
-void console::notify(pointer& ptr) {
-    m_pointers.insert(&ptr);
-    for (auto& disp : m_displays)
-        disp->add_pointer(&ptr);
+        disp->attach(&device);
 }
 
 void console::setup(const videomode& mode, u8* fbptr) {
@@ -59,16 +52,12 @@ void console::render() {
 
 void console::shutdown() {
     for (auto& disp : m_displays) {
-        for (auto kbd : m_keyboards)
-            disp->remove_keyboard(kbd);
-        for (auto ptr : m_pointers)
-            disp->remove_pointer(ptr);
-
+        for (auto device : m_inputs)
+            disp->detach(device);
         disp->shutdown();
     }
 
-    m_keyboards.clear();
-    m_pointers.clear();
+    m_inputs.clear();
     m_displays.clear();
 }
 

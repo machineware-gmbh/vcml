@@ -64,38 +64,28 @@ void display::shutdown() {
 }
 
 void display::notify_key(u32 keysym, bool down) {
-    for (keyboard* kb : m_keyboards)
-        kb->notify_key(keysym, down);
+    for (auto input : m_inputs)
+        input->notify_key(keysym, down);
 }
 
 void display::notify_btn(u32 button, bool down) {
-    for (pointer* ptr : m_pointers)
-        ptr->notify_btn(button, down);
+    for (auto input : m_inputs)
+        input->notify_btn(button, down);
 }
 
-void display::notify_rel(i32 x, i32 y, i32 w) {
-    for (pointer* ptr : m_pointers)
-        ptr->notify_rel(x, y, w);
+void display::notify_pos(u32 x, u32 y, u32 w, u32 h) {
+    for (auto input : m_inputs)
+        input->notify_pos(x, y, w, h);
 }
 
-void display::add_keyboard(keyboard* kb) {
-    m_keyboards.push_back(kb);
+void display::attach(input* device) {
+    m_inputs.push_back(device);
     if (!has_framebuffer())
         init(videomode::a8r8g8b8(320, 200), nullptr);
 }
 
-void display::add_pointer(pointer* ptr) {
-    m_pointers.push_back(ptr);
-    if (!has_framebuffer())
-        init(videomode::a8r8g8b8(320, 200), nullptr);
-}
-
-void display::remove_keyboard(keyboard* kb) {
-    stl_remove(m_keyboards, kb);
-}
-
-void display::remove_pointer(pointer* ptr) {
-    stl_remove(m_pointers, ptr);
+void display::detach(input* device) {
+    stl_remove(m_inputs, device);
 }
 
 static bool parse_display(const string& name, string& id, u32& nr) {
