@@ -165,25 +165,40 @@ enum rel_codes : u16 {
     REL_X = 0,
     REL_Y = 1,
     REL_Z = 2,
+    REL_HWHEEL = 6,
     REL_WHEEL = 8,
 };
 
 enum abs_codes : u16 {
-    ABS_X = 0,
-    ABS_Y = 1,
-    ABS_Z = 2,
+    ABS_X = 0x00,
+    ABS_Y = 0x01,
+    ABS_Z = 0x02,
+    ABS_MT_SLOT = 0x2f,
+    ABS_MT_TOUCH_MAJOR = 0x30,
+    ABS_MT_TOUCH_MINOR = 0x31,
+    ABS_MT_WIDTH_MAJOR = 0x32,
+    ABS_MT_WIDTH_MINOR = 0x33,
+    ABS_MT_ORIENTATION = 0x34,
+    ABS_MT_POSITION_X = 0x35,
+    ABS_MT_POSITION_Y = 0x36,
+    ABS_MT_TOOL_TYPE = 0x37,
+    ABS_MT_BLOB_ID = 0x38,
+    ABS_MT_TRACKING_ID = 0x39,
+    ABS_MT_PRESSURE = 0x3a,
+    ABS_MT_DISTANCE = 0x3b,
+    ABS_MT_TOOL_X = 0x3c,
+    ABS_MT_TOOL_Y = 0x3d,
 };
 
 enum button_codes : u16 {
     BTN_LEFT = 0x110,
     BTN_RIGHT = 0x111,
     BTN_MIDDLE = 0x112,
+    BTN_SIDE = 0x113,
+    BTN_EXTRA = 0x114,
     BTN_TOOL_FINGER = 0x145,
     BTN_TOOL_MOUSE = 0x146,
     BTN_TOUCH = 0x14a,
-    BTN_WHEEL = 0x150,
-    BTN_GEAR_DOWN = 0x150,
-    BTN_GEAR_UP = 0x151,
 };
 
 } // namespace ui

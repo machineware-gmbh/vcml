@@ -191,6 +191,10 @@ static u32 sdl_button_to_vcml_button(u32 button) {
         return BUTTON_MIDDLE;
     case SDL_BUTTON_RIGHT:
         return BUTTON_RIGHT;
+    case SDL_BUTTON_X1:
+        return BUTTON_SIDE;
+    case SDL_BUTTON_X2:
+        return BUTTON_EXTRA;
     default:
         return 0;
     }
@@ -278,8 +282,8 @@ static bool g_sdl_needs_grabbing_fix = []() {
 }();
 
 void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
-    u32 x = event.x;
-    u32 y = event.y;
+    i32 x = event.x;
+    i32 y = event.y;
 
     // workaround for xinput sometimes not reporting correct values
     if (grabbing && g_sdl_needs_grabbing_fix) {
@@ -287,21 +291,37 @@ void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
         y = event.yrel;
     }
 
+    x = max(x, 0);
+    x = min(x, (int)disp->xres() - 1);
+    y = max(y, 0);
+    y = min(y, (int)disp->yres() - 1);
+
     if (disp != nullptr)
-        disp->notify_pos(x, y, disp->xres(), disp->yres());
+        disp->notify_pos(x, y);
 }
 
 void sdl_client::notify_wheel(SDL_MouseWheelEvent& event) {
-    if (disp != nullptr) {
-        if (event.y > 0) {
-            disp->notify_btn(BUTTON_WHEEL_UP, true);
-            disp->notify_btn(BUTTON_WHEEL_UP, false);
-        }
+    if (disp == nullptr)
+        return;
 
-        if (event.y < 0) {
-            disp->notify_btn(BUTTON_WHEEL_DOWN, true);
-            disp->notify_btn(BUTTON_WHEEL_DOWN, false);
-        }
+    if (event.y > 0) {
+        disp->notify_btn(BUTTON_WHEEL_UP, true);
+        disp->notify_btn(BUTTON_WHEEL_UP, false);
+    }
+
+    if (event.y < 0) {
+        disp->notify_btn(BUTTON_WHEEL_DOWN, true);
+        disp->notify_btn(BUTTON_WHEEL_DOWN, false);
+    }
+
+    if (event.x > 0) {
+        disp->notify_btn(BUTTON_WHEEL_RIGHT, true);
+        disp->notify_btn(BUTTON_WHEEL_RIGHT, false);
+    }
+
+    if (event.x < 0) {
+        disp->notify_btn(BUTTON_WHEEL_LEFT, true);
+        disp->notify_btn(BUTTON_WHEEL_LEFT, false);
     }
 }
 

@@ -47,8 +47,15 @@ protected:
     void push_abs(u16 axis, u32 state);
     void push_syn();
 
+    virtual void handle_key(u32 symbol, bool down) = 0;
+    virtual void handle_btn(u32 button, bool down) = 0;
+    virtual void handle_pos(u32 x, u32 y) = 0;
+
 public:
     const char* input_name() const { return m_name.c_str(); }
+
+    size_t xmax() const { return 10000; }
+    size_t ymax() const { return 10000; }
 
     input(const string& name);
     virtual ~input();
@@ -56,9 +63,9 @@ public:
     bool has_events() const;
     bool pop_event(input_event& ev);
 
-    virtual void notify_key(u32 symbol, bool down) = 0;
-    virtual void notify_btn(u32 button, bool down) = 0;
-    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) = 0;
+    void notify_key(u32 symbol, bool down);
+    void notify_btn(u32 button, bool down);
+    void notify_pos(u32 x, u32 y);
 
     template <typename T = input>
     static vector<T*> all();
@@ -102,6 +109,11 @@ private:
     u32 m_prev_sym;
     string m_layout;
 
+protected:
+    virtual void handle_key(u32 symbol, bool down) override;
+    virtual void handle_btn(u32 button, bool down) override;
+    virtual void handle_pos(u32 x, u32 y) override;
+
 public:
     bool ctrl_l() const { return m_ctrl_l; }
     bool ctrl_r() const { return m_ctrl_r; }
@@ -126,10 +138,6 @@ public:
 
     keyboard(const string& name, const string& layout = "");
     virtual ~keyboard() = default;
-
-    virtual void notify_key(u32 symbol, bool down) override;
-    virtual void notify_btn(u32 button, bool down) override;
-    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) override;
 };
 
 enum mouse_buttons : u32 {
@@ -137,8 +145,12 @@ enum mouse_buttons : u32 {
     BUTTON_LEFT = bit(0),
     BUTTON_RIGHT = bit(1),
     BUTTON_MIDDLE = bit(2),
-    BUTTON_WHEEL_UP = bit(3),
-    BUTTON_WHEEL_DOWN = bit(4),
+    BUTTON_SIDE = bit(3),
+    BUTTON_EXTRA = bit(4),
+    BUTTON_WHEEL_UP = bit(5),
+    BUTTON_WHEEL_DOWN = bit(6),
+    BUTTON_WHEEL_LEFT = bit(7),
+    BUTTON_WHEEL_RIGHT = bit(8),
 };
 
 class mouse : public input
@@ -148,6 +160,11 @@ private:
     u32 m_xabs;
     u32 m_yabs;
 
+protected:
+    virtual void handle_key(u32 symbol, bool down) override;
+    virtual void handle_btn(u32 button, bool down) override;
+    virtual void handle_pos(u32 x, u32 y) override;
+
 public:
     u32 x() const { return m_xabs; }
     u32 y() const { return m_yabs; }
@@ -155,34 +172,57 @@ public:
     bool left() const { return m_buttons & BUTTON_LEFT; }
     bool middle() const { return m_buttons & BUTTON_MIDDLE; }
     bool right() const { return m_buttons & BUTTON_RIGHT; }
+    bool side() const { return m_buttons & BUTTON_SIDE; }
+    bool extra() const { return m_buttons & BUTTON_EXTRA; }
 
     mouse(const string& name);
     virtual ~mouse() = default;
-
-    virtual void notify_key(u32 symbol, bool down) override;
-    virtual void notify_btn(u32 button, bool down) override;
-    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) override;
 };
 
 class touchpad : public input
 {
 private:
-    bool m_touch;
+    u32 m_buttons;
     u32 m_xabs;
     u32 m_yabs;
+
+protected:
+    virtual void handle_key(u32 symbol, bool down) override;
+    virtual void handle_btn(u32 button, bool down) override;
+    virtual void handle_pos(u32 x, u32 y) override;
 
 public:
     u32 x() const { return m_xabs; }
     u32 y() const { return m_yabs; }
 
-    bool is_touching() const { return m_touch; }
+    bool is_touching() const { return m_buttons; }
 
     touchpad(const string& name);
     virtual ~touchpad() = default;
+};
 
-    virtual void notify_key(u32 symbol, bool down) override;
-    virtual void notify_btn(u32 button, bool down) override;
-    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h) override;
+class multitouch : public input
+{
+private:
+    u32 m_buttons;
+    u32 m_xabs;
+    u32 m_yabs;
+    u16 m_slot;
+    u16 m_track;
+
+protected:
+    virtual void handle_key(u32 symbol, bool down) override;
+    virtual void handle_btn(u32 button, bool down) override;
+    virtual void handle_pos(u32 x, u32 y) override;
+
+public:
+    u32 x() const { return m_xabs; }
+    u32 y() const { return m_yabs; }
+
+    bool is_touching() const { return m_buttons; }
+
+    multitouch(const string& name);
+    virtual ~multitouch() = default;
 };
 
 } // namespace ui

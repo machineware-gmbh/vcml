@@ -64,7 +64,6 @@ void input::config_update_evbits() {
         }
 
         if (touchpad) {
-            events.set(ui::BTN_LEFT);
             events.set(ui::BTN_TOUCH);
             events.set(ui::BTN_TOOL_FINGER);
         }
@@ -73,6 +72,8 @@ void input::config_update_evbits() {
             events.set(ui::BTN_LEFT);
             events.set(ui::BTN_RIGHT);
             events.set(ui::BTN_MIDDLE);
+            events.set(ui::BTN_SIDE);
+            events.set(ui::BTN_EXTRA);
         }
 
         break;
@@ -83,6 +84,13 @@ void input::config_update_evbits() {
             events.set(ui::ABS_Y);
         }
 
+        if (multitouch) {
+            events.set(ui::ABS_MT_TRACKING_ID);
+            events.set(ui::ABS_MT_POSITION_X);
+            events.set(ui::ABS_MT_POSITION_Y);
+            events.set(ui::ABS_MT_SLOT);
+        }
+
         break;
 
     case ui::EV_REL:
@@ -90,6 +98,7 @@ void input::config_update_evbits() {
             events.set(ui::REL_X);
             events.set(ui::REL_Y);
             events.set(ui::REL_WHEEL);
+            events.set(ui::REL_HWHEEL);
         }
 
         break;
@@ -113,14 +122,22 @@ void input::config_update_evbits() {
 void input::config_update_absinfo() {
     switch (m_config.subsel) {
     case ui::ABS_X:
+    case ui::ABS_MT_POSITION_X:
         m_config.u.abs.min = 0;
         m_config.u.abs.max = xmax;
         m_config.size = sizeof(m_config.u.abs);
         break;
 
     case ui::ABS_Y:
+    case ui::ABS_MT_POSITION_Y:
         m_config.u.abs.min = 0;
         m_config.u.abs.max = ymax;
+        m_config.size = sizeof(m_config.u.abs);
+        break;
+
+    case ui::ABS_MT_SLOT:
+        m_config.u.abs.min = 0;
+        m_config.u.abs.max = 1;
         m_config.size = sizeof(m_config.u.abs);
         break;
 
@@ -168,21 +185,33 @@ void input::config_update() {
 }
 
 void input::update() {
+    size_t n = m_events.size();
     ui::input_event event = {};
 
-    while (m_keyboard.pop_event(event))
+    while (m_keyboard.pop_event(event) && !event.is_syn())
         m_events.push(event);
 
-    while (m_mouse.pop_event(event))
+    while (m_mouse.pop_event(event) && !event.is_syn())
         m_events.push(event);
 
-    while (m_touchpad.pop_event(event)) {
+    while (m_touchpad.pop_event(event) && !event.is_syn()) {
         if (event.is_abs() && event.code == ui::ABS_X)
-            event.state = (event.state * xmax) / 0xffff;
+            event.state = (event.state * xmax) / m_touchpad.xmax();
         if (event.is_abs() && event.code == ui::ABS_Y)
-            event.state = (event.state * ymax) / 0xffff;
+            event.state = (event.state * ymax) / m_touchpad.ymax();
         m_events.push(event);
     }
+
+    while (m_multitouch.pop_event(event) && !event.is_syn()) {
+        if (event.is_abs() && event.code == ui::ABS_MT_POSITION_X)
+            event.state = (event.state * xmax) / m_multitouch.xmax();
+        if (event.is_abs() && event.code == ui::ABS_MT_POSITION_Y)
+            event.state = (event.state * ymax) / m_multitouch.ymax();
+        m_events.push(event);
+    }
+
+    if (m_events.size() > n)
+        m_events.push({ ui::EV_SYN, ui::SYN_REPORT, 0 });
 
     while (!m_events.empty() && !m_messages.empty()) {
         vq_message msg(m_messages.front());
@@ -258,10 +287,12 @@ input::input(const sc_module_name& nm):
     m_keyboard(mkstr("%s_keyboard", name())),
     m_touchpad(mkstr("%s_touchpad", name())),
     m_mouse(mkstr("%s_mouse", name())),
+    m_multitouch(mkstr("%s_multitouch", name())),
     m_console(),
     touchpad("touchpad", false),
     keyboard("keyboard", true),
     mouse("mouse", true),
+    multitouch("multitouch", false),
     pollrate("pollrate", 1000),
     keymap("keymap", "us"),
     xmax("xmax", 0x7fff),
@@ -277,6 +308,9 @@ input::input(const sc_module_name& nm):
 
     if (mouse)
         m_console.notify(m_mouse);
+
+    if (multitouch)
+        m_console.notify(m_multitouch);
 
     if (keyboard || touchpad || mouse) {
         SC_HAS_PROCESS(input);

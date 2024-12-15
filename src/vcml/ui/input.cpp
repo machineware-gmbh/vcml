@@ -14,7 +14,6 @@ namespace vcml {
 namespace ui {
 
 void input::push_event(const input_event& ev) {
-    lock_guard<mutex> lock(m_mutex);
     m_events.push(ev);
 }
 
@@ -79,22 +78,22 @@ bool input::pop_event(input_event& ev) {
     return true;
 }
 
-keyboard::keyboard(const string& name, const string& layout):
-    input(name),
-    m_ctrl_l(false),
-    m_ctrl_r(false),
-    m_shift_l(false),
-    m_shift_r(false),
-    m_capsl(false),
-    m_alt_l(false),
-    m_alt_r(false),
-    m_meta_l(false),
-    m_meta_r(false),
-    m_prev_sym(~0u),
-    m_layout(layout) {
+void input::notify_key(u32 symbol, bool down) {
+    lock_guard<mutex> lock(m_mutex);
+    handle_key(symbol, down);
 }
 
-void keyboard::notify_key(u32 sym, bool down) {
+void input::notify_btn(u32 button, bool down) {
+    lock_guard<mutex> lock(m_mutex);
+    handle_btn(button, down);
+}
+
+void input::notify_pos(u32 x, u32 y) {
+    lock_guard<mutex> lock(m_mutex);
+    handle_pos(x, y);
+}
+
+void keyboard::handle_key(u32 sym, bool down) {
     u32 state = down ? 1 : 0;
     if (down && sym == m_prev_sym)
         state++;
@@ -161,23 +160,34 @@ void keyboard::notify_key(u32 sym, bool down) {
     push_syn();
 }
 
-void keyboard::notify_btn(u32 btn, bool state) {
+void keyboard::handle_btn(u32 btn, bool state) {
     // ignore mouse button events
 }
 
-void keyboard::notify_pos(u32 x, u32 y, u32 w, u32 h) {
+void keyboard::handle_pos(u32 x, u32 y) {
     // ignore mouse move events
 }
 
-mouse::mouse(const string& name):
-    input(name), m_buttons(), m_xabs(), m_yabs() {
+keyboard::keyboard(const string& name, const string& layout):
+    input(name),
+    m_ctrl_l(false),
+    m_ctrl_r(false),
+    m_shift_l(false),
+    m_shift_r(false),
+    m_capsl(false),
+    m_alt_l(false),
+    m_alt_r(false),
+    m_meta_l(false),
+    m_meta_r(false),
+    m_prev_sym(~0u),
+    m_layout(layout) {
 }
 
-void mouse::notify_key(u32 sym, bool down) {
+void mouse::handle_key(u32 sym, bool down) {
     // ignore keyboard events
 }
 
-void mouse::notify_btn(u32 button, bool down) {
+void mouse::handle_btn(u32 button, bool down) {
     u32 buttons = m_buttons;
     if (down)
         buttons |= button;
@@ -197,11 +207,22 @@ void mouse::notify_btn(u32 button, bool down) {
     case BUTTON_MIDDLE:
         push_key(BTN_MIDDLE, down);
         break;
+    case BUTTON_SIDE:
+        push_key(BTN_SIDE, down);
+        break;
+    case BUTTON_EXTRA:
+        push_key(BTN_EXTRA, down);
     case BUTTON_WHEEL_UP:
         push_rel(REL_WHEEL, down ? 1 : 0);
         break;
     case BUTTON_WHEEL_DOWN:
         push_rel(REL_WHEEL, down ? -1 : 0);
+        break;
+    case BUTTON_WHEEL_RIGHT:
+        push_rel(REL_HWHEEL, down ? 1 : 0);
+        break;
+    case BUTTON_WHEEL_LEFT:
+        push_rel(REL_HWHEEL, down ? -1 : 0);
         break;
     default:
         break;
@@ -212,7 +233,7 @@ void mouse::notify_btn(u32 button, bool down) {
     m_buttons = buttons;
 }
 
-void mouse::notify_pos(u32 xabs, u32 yabs, u32 width, u32 height) {
+void mouse::handle_pos(u32 xabs, u32 yabs) {
     i32 dx = xabs - m_xabs;
     i32 dy = yabs - m_yabs;
 
@@ -227,37 +248,103 @@ void mouse::notify_pos(u32 xabs, u32 yabs, u32 width, u32 height) {
         push_syn();
 }
 
-touchpad::touchpad(const string& name):
-    input(name), m_touch(), m_xabs(), m_yabs() {
+mouse::mouse(const string& name):
+    input(name), m_buttons(), m_xabs(), m_yabs() {
 }
 
-void touchpad::notify_key(u32 sym, bool down) {
+void touchpad::handle_key(u32 sym, bool down) {
     // ignore keyboard events
 }
 
-void touchpad::notify_btn(u32 button, bool down) {
-    if (m_touch == down)
+void touchpad::handle_btn(u32 button, bool down) {
+    u32 buttons = m_buttons;
+    if (down)
+        buttons |= button;
+    else
+        buttons &= ~button;
+
+    if (m_buttons == buttons)
         return;
 
-    push_key(BTN_TOUCH, down);
-    push_syn();
+    if (buttons && !m_buttons) {
+        push_key(BTN_TOUCH, true);
+        push_abs(ABS_X, m_xabs);
+        push_abs(ABS_Y, m_yabs);
+        push_syn();
+    }
 
-    m_touch = down;
+    if (!buttons && m_buttons) {
+        push_key(BTN_TOUCH, false);
+        push_syn();
+    }
+
+    m_buttons = buttons;
 }
 
-void touchpad::notify_pos(u32 xabs, u32 yabs, u32 width, u32 height) {
-    xabs = (xabs * 0xffffull) / (width - 1);
-    yabs = (yabs * 0xffffull) / (height - 1);
-
-    if (xabs != m_xabs)
-        push_abs(ABS_X, xabs);
-    if (yabs != m_yabs)
-        push_abs(ABS_Y, yabs);
-    if (xabs != m_xabs || yabs != m_yabs)
-        push_syn();
+void touchpad::handle_pos(u32 xabs, u32 yabs) {
+    if (is_touching()) {
+        if (xabs != m_xabs)
+            push_abs(ABS_X, xabs);
+        if (yabs != m_yabs)
+            push_abs(ABS_Y, yabs);
+        if (xabs != m_xabs || yabs != m_yabs)
+            push_syn();
+    }
 
     m_xabs = xabs;
     m_yabs = yabs;
+}
+
+touchpad::touchpad(const string& name):
+    input(name), m_buttons(), m_xabs(), m_yabs() {
+}
+
+void multitouch::handle_key(u32 sym, bool down) {
+    // ignore keyboard events
+}
+
+void multitouch::handle_btn(u32 button, bool down) {
+    u32 buttons = m_buttons;
+    if (down)
+        buttons |= button;
+    else
+        buttons &= ~button;
+
+    if (m_buttons == buttons)
+        return;
+
+    if (buttons && !m_buttons) {
+        push_abs(ABS_MT_SLOT, m_slot);
+        push_abs(ABS_MT_TRACKING_ID, m_track++);
+        push_abs(ABS_MT_POSITION_X, m_xabs);
+        push_abs(ABS_MT_POSITION_Y, m_yabs);
+        push_syn();
+    }
+
+    if (!buttons && m_buttons) {
+        push_abs(ABS_MT_TRACKING_ID, -1);
+        push_syn();
+    }
+
+    m_buttons = buttons;
+}
+
+void multitouch::handle_pos(u32 xabs, u32 yabs) {
+    if (is_touching()) {
+        if (xabs != m_xabs)
+            push_abs(ABS_MT_POSITION_X, xabs);
+        if (yabs != m_yabs)
+            push_abs(ABS_MT_POSITION_Y, yabs);
+        if (xabs != m_xabs || yabs != m_yabs)
+            push_syn();
+    }
+
+    m_xabs = xabs;
+    m_yabs = yabs;
+}
+
+multitouch::multitouch(const string& name):
+    input(name), m_buttons(), m_xabs(), m_yabs(), m_slot(0), m_track(0) {
 }
 
 } // namespace ui

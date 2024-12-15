@@ -73,9 +73,15 @@ void display::notify_btn(u32 button, bool down) {
         input->notify_btn(button, down);
 }
 
-void display::notify_pos(u32 x, u32 y, u32 w, u32 h) {
-    for (auto input : m_inputs)
-        input->notify_pos(x, y, w, h);
+void display::notify_pos(u32 x, u32 y) {
+    for (auto input : m_inputs) {
+        x = min(x, xres() - 1);
+        y = min(y, yres() - 1);
+
+        // normalise absolute positions to [0..10000]
+        input->notify_pos((u64)(x * input->xmax()) / (xres() - 1),
+                          (u64)(y * input->ymax()) / (yres() - 1));
+    }
 }
 
 void display::attach(input* device) {

@@ -69,7 +69,7 @@ public:
 
     virtual void notify_key(u32 keysym, bool down);
     virtual void notify_btn(u32 button, bool down);
-    virtual void notify_pos(u32 x, u32 y, u32 w, u32 h);
+    virtual void notify_pos(u32 x, u32 y);
 
     void attach(input* device);
     void detach(input* device);

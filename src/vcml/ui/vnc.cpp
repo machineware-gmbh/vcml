@@ -350,6 +350,8 @@ enum vnc_buttons : u32 {
     VNC_BTN_RIGHT = 1 << 2,
     VNC_BTN_WHEEL_UP = 1 << 3,
     VNC_BTN_WHEEL_DOWN = 1 << 4,
+    VNC_BTN_WHEEL_LEFT = 1 << 5,
+    VNC_BTN_WHEEL_RIGHT = 1 << 6,
 };
 
 void vnc::ptr_event(u32 mask, u32 x, u32 y) {
@@ -363,11 +365,16 @@ void vnc::ptr_event(u32 mask, u32 x, u32 y) {
     if (change & VNC_BTN_WHEEL_UP)
         notify_btn(BUTTON_WHEEL_UP, mask & VNC_BTN_WHEEL_UP);
     if (change & VNC_BTN_WHEEL_DOWN)
-        notify_btn(BUTTON_WHEEL_UP, mask & VNC_BTN_WHEEL_DOWN);
+        notify_btn(BUTTON_WHEEL_DOWN, mask & VNC_BTN_WHEEL_DOWN);
+    if (change & VNC_BTN_WHEEL_LEFT)
+        notify_btn(BUTTON_WHEEL_LEFT, mask & VNC_BTN_WHEEL_LEFT);
+    if (change & VNC_BTN_WHEEL_RIGHT)
+        notify_btn(BUTTON_WHEEL_RIGHT, mask & VNC_BTN_WHEEL_RIGHT);
+
     m_buttons = mask;
 
     if (m_ptr_x != x || m_ptr_y != y) {
-        display::notify_pos(x, y, m_screen->width, m_screen->height);
+        notify_pos(x, y);
         m_ptr_x = x;
         m_ptr_y = y;
     }

@@ -78,6 +78,7 @@ private:
     ui::keyboard m_keyboard;
     ui::touchpad m_touchpad;
     ui::mouse m_mouse;
+    ui::multitouch m_multitouch;
     ui::console m_console;
 
     queue<ui::input_event> m_events;
@@ -109,6 +110,7 @@ public:
     const property<bool> touchpad;
     const property<bool> keyboard;
     const property<bool> mouse;
+    const property<bool> multitouch;
 
     const property<u64> pollrate;
 
