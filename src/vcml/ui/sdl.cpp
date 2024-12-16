@@ -291,13 +291,13 @@ void sdl_client::notify_pos(SDL_MouseMotionEvent& event) {
         y = event.yrel;
     }
 
-    x = max(x, 0);
-    x = min(x, (int)disp->xres() - 1);
-    y = max(y, 0);
-    y = min(y, (int)disp->yres() - 1);
-
-    if (disp != nullptr)
+    if (disp != nullptr) {
+        x = max(x, 0);
+        x = min(x, (int)disp->xres() - 1);
+        y = max(y, 0);
+        y = min(y, (int)disp->yres() - 1);
         disp->notify_pos(x, y);
+    }
 }
 
 void sdl_client::notify_wheel(SDL_MouseWheelEvent& event) {
