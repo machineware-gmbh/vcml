@@ -696,7 +696,7 @@ bool lan9118::rx_enqueue(const vector<u8>& pkt) {
     u32 val = 0;
     for (u8 src : pkt) {
         val = (val >> 8) | (src << 24);
-        if (++offset == 4) {
+        if (++offset >= 4) {
             m_rx_data_fifo.push_back(val);
             val = offset = 0;
         }
