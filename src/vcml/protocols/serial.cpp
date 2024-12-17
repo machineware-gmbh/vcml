@@ -57,6 +57,17 @@ ostream& operator<<(ostream& os, const serial_payload& tx) {
     return os;
 }
 
+bool serial_get_parity_bit(const serial_payload& tx) {
+    return (tx.data >> (tx.width & 0xf)) & 1;
+}
+
+void serial_set_parity_bit(serial_payload& tx, bool set) {
+    if (set)
+        tx.data |= 1u << (tx.width & 0xf);
+    else
+        tx.data &= ~1u << (tx.width & 0xf);
+}
+
 bool serial_calc_parity(u8 data, serial_parity mode) {
     switch (mode) {
     case SERIAL_PARITY_ODD:
@@ -74,7 +85,7 @@ bool serial_calc_parity(u8 data, serial_parity mode) {
 }
 
 bool serial_test_parity(const serial_payload& tx) {
-    bool parity = (tx.data >> tx.width) & 1;
+    bool parity = serial_get_parity_bit(tx);
     switch (tx.parity) {
     case SERIAL_PARITY_NONE:
         return true;
@@ -182,8 +193,8 @@ void serial_initiator_socket::send(u8 data) {
     tx.parity = m_parity;
     tx.stop = m_stop;
 
-    if (serial_calc_parity(data, m_parity))
-        tx.data |= 1u << m_width;
+    bool parity = serial_calc_parity(data, m_parity);
+    serial_set_parity_bit(tx, parity);
 
     transport(tx);
 }

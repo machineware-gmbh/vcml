@@ -76,6 +76,9 @@ ostream& operator<<(ostream& os, serial_parity par);
 ostream& operator<<(ostream& os, serial_stop stop);
 ostream& operator<<(ostream& os, const serial_payload& tx);
 
+bool serial_get_parity_bit(const serial_payload& tx);
+void serial_set_parity_bit(serial_payload& tx, bool parity);
+
 bool serial_calc_parity(u8 data, serial_parity mode);
 bool serial_test_parity(const serial_payload& tx);
 
