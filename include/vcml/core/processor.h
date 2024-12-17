@@ -78,6 +78,7 @@ public:
 
     property<bool> async;
     property<unsigned int> async_rate;
+    property<int> async_affinity;
 
     property<bool> trace_callstack;
 

@@ -573,6 +573,7 @@ struct async_worker {
 
     atomic<bool> alive;
     atomic<bool> working;
+    atomic<int> affinity;
     function<void(void)> task;
 
     atomic<u64> progress;
@@ -591,6 +592,7 @@ struct async_worker {
         process(worker_proc),
         alive(true),
         working(false),
+        affinity(-1),
         task(),
         progress(0),
         request(nullptr),
@@ -605,6 +607,8 @@ struct async_worker {
 
     void work() {
         g_async = this;
+        int curr_affinity = -1;
+        mwr::set_thread_affinity(curr_affinity);
         mwr::set_thread_name(mkstr("vcml_async:%zu", id));
 
         mtx.lock();
@@ -614,6 +618,11 @@ struct async_worker {
 
             if (!alive)
                 break;
+
+            if (curr_affinity != affinity) {
+                curr_affinity = affinity;
+                mwr::set_thread_affinity(curr_affinity);
+            }
 
             try {
                 mtx.unlock();
@@ -642,9 +651,10 @@ struct async_worker {
         }
     }
 
-    void run_async(function<void(void)>& job) {
+    void run_async(function<void(void)>& job, int job_affinity) {
         mtx.lock();
         task = job;
+        affinity = job_affinity;
         working = true;
         mtx.unlock();
         notify.notify_one();
@@ -702,11 +712,11 @@ struct async_worker {
     }
 };
 
-void sc_async(function<void(void)> job) {
+void sc_async(function<void(void)> job, int affinity) {
     auto thread = current_thread();
     VCML_ERROR_ON(!thread, "sc_async must be called from SC_THREAD");
     async_worker& worker = async_worker::lookup(thread);
-    worker.run_async(job);
+    worker.run_async(job, affinity);
 }
 
 void sc_progress(const sc_time& delta) {

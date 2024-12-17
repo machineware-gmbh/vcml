@@ -283,7 +283,8 @@ void processor::processor_thread() {
         wait_clock_reset();
 
         if (async && !is_stepping()) {
-            vcml::sc_async([&]() { running = processor_thread_async(); });
+            vcml::sc_async([&]() { running = processor_thread_async(); },
+                           async_affinity);
         } else {
             running = processor_thread_sync();
         }
@@ -388,6 +389,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     gdb_term("gdb_term", "gdbterm"),
     async("async", false),
     async_rate("async_rate", 5),
+    async_affinity("async_affinity", -1),
     trace_callstack("trace_callstack", false),
     irq("irq"),
     insn("insn"),
