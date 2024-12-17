@@ -63,9 +63,9 @@ bool serial_get_parity_bit(const serial_payload& tx) {
 
 void serial_set_parity_bit(serial_payload& tx, bool set) {
     if (set)
-        tx.data |= 1u << (tx.width & 0xf);
+        tx.data |= (1u << (tx.width & 0xf));
     else
-        tx.data &= ~1u << (tx.width & 0xf);
+        tx.data &= ~(1u << (tx.width & 0xf));
 }
 
 bool serial_calc_parity(u8 data, serial_parity mode) {
