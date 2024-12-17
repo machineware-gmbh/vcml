@@ -77,7 +77,7 @@ public:
 template <typename T>
 vector<T*> input::all() {
     vector<T*> res;
-    for (auto [name, obj] : all_inputs()) {
+    for (const auto& [name, obj] : all_inputs()) {
         T* ptr = dynamic_cast<T*>(obj);
         if (ptr)
             res.push_back(ptr);
@@ -204,10 +204,9 @@ public:
 class multitouch : public input
 {
 private:
-    u32 m_buttons;
+    u32 m_fingers;
     u32 m_xabs;
     u32 m_yabs;
-    u16 m_slot;
     u16 m_track;
 
 protected:
@@ -219,7 +218,7 @@ public:
     u32 x() const { return m_xabs; }
     u32 y() const { return m_yabs; }
 
-    bool is_touching() const { return m_buttons; }
+    bool is_touching() const { return m_fingers; }
 
     multitouch(const string& name);
     virtual ~multitouch() = default;

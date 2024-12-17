@@ -304,39 +304,55 @@ void multitouch::handle_key(u32 sym, bool down) {
 }
 
 void multitouch::handle_btn(u32 button, bool down) {
-    u32 buttons = m_buttons;
-    if (down)
-        buttons |= button;
-    else
-        buttons &= ~button;
-
-    if (m_buttons == buttons)
+    // BUTTON_LEFT   - finger 1
+    // BUTTON_RIGHT  - finger 2
+    // BUTTON_MIDDLE - finger 3
+    // BUTTON_SIDE   - finger 4
+    // BUTTON_EXTRA  - finger 5
+    if (button <= BUTTON_NONE || button > BUTTON_EXTRA)
         return;
 
-    if (buttons && !m_buttons) {
-        push_abs(ABS_MT_SLOT, m_slot);
-        push_abs(ABS_MT_TRACKING_ID, m_track++);
-        push_abs(ABS_MT_POSITION_X, m_xabs);
-        push_abs(ABS_MT_POSITION_Y, m_yabs);
-        push_syn();
+    u32 fingers = m_fingers;
+
+    if (down)
+        fingers |= button;
+    else
+        fingers &= ~button;
+
+    if (m_fingers == fingers)
+        return;
+
+    for (u32 slot = 0, mask = 1; slot < 32; slot++, mask <<= 1) {
+        if ((fingers & mask) && !(m_fingers & mask)) {
+            push_abs(ABS_MT_SLOT, slot);
+            push_abs(ABS_MT_TRACKING_ID, m_track++);
+            push_abs(ABS_MT_POSITION_X, m_xabs);
+            push_abs(ABS_MT_POSITION_Y, m_yabs);
+            push_syn();
+        }
+
+        if (!(fingers & mask) && (m_fingers & mask)) {
+            push_abs(ABS_MT_SLOT, slot);
+            push_abs(ABS_MT_TRACKING_ID, -1);
+            push_syn();
+        }
     }
 
-    if (!buttons && m_buttons) {
-        push_abs(ABS_MT_TRACKING_ID, -1);
-        push_syn();
-    }
-
-    m_buttons = buttons;
+    m_fingers = fingers;
 }
 
 void multitouch::handle_pos(u32 xabs, u32 yabs) {
-    if (is_touching()) {
-        if (xabs != m_xabs)
-            push_abs(ABS_MT_POSITION_X, xabs);
-        if (yabs != m_yabs)
-            push_abs(ABS_MT_POSITION_Y, yabs);
-        if (xabs != m_xabs || yabs != m_yabs)
-            push_syn();
+    for (u32 slot = 0, mask = 1; slot < 32; slot++, mask <<= 1) {
+        if (m_fingers & mask) {
+            if (xabs != m_xabs || yabs != m_yabs)
+                push_abs(ABS_MT_SLOT, slot);
+            if (xabs != m_xabs)
+                push_abs(ABS_MT_POSITION_X, xabs);
+            if (yabs != m_yabs)
+                push_abs(ABS_MT_POSITION_Y, yabs);
+            if (xabs != m_xabs || yabs != m_yabs)
+                push_syn();
+        }
     }
 
     m_xabs = xabs;
@@ -344,7 +360,7 @@ void multitouch::handle_pos(u32 xabs, u32 yabs) {
 }
 
 multitouch::multitouch(const string& name):
-    input(name), m_buttons(), m_xabs(), m_yabs(), m_slot(0), m_track(0) {
+    input(name), m_fingers(), m_xabs(), m_yabs(), m_track(0) {
 }
 
 } // namespace ui

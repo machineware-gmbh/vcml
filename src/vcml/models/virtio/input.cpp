@@ -137,7 +137,7 @@ void input::config_update_absinfo() {
 
     case ui::ABS_MT_SLOT:
         m_config.u.abs.min = 0;
-        m_config.u.abs.max = 1;
+        m_config.u.abs.max = 4;
         m_config.size = sizeof(m_config.u.abs);
         break;
 
