@@ -30,7 +30,6 @@ public:
 
     using BPR_P = field<0, 3, u32>;
     using ABPR_P = field<0, 3, u32>;
-    using PMR_PR = field<0, 8, u32>;
 
     enum reg_configs : u32 {
         BPR_MIN = 0,
@@ -70,9 +69,13 @@ public:
 
         ACKCTL_DISABLED_IRQ = 1022,
         SPURIOUS_IRQ = 1023,
+
+        P_MASK = 0xff,
     };
 
     enum amba_ids : u32 {
+        AMBA_PID_LO = 0x002bb490,
+        AMBA_PID_HI = 0x00000004,
         AMBA_PCID = 0xb105f00d,
         AMBA_IFID = 0x0202143b,
     };
@@ -129,6 +132,7 @@ public:
         u32 spi_pending_mask(size_t cpu);
         u16 ppi_enabled_mask(size_t cpu);
 
+        u32 read_ctlr();
         void write_ctlr(u32 value);
 
         u32 read_typer();
@@ -213,7 +217,9 @@ public:
         reg<u8, 16> cpendsgir; // SGI Clear Pending register
         reg<u8, 16> spendsgir; // SGI Set Pending register
 
-        reg<u32, 4> cidr; // Component ID register
+        reg<u32, 4> pidr_hi; // Peripheral ID register (4-7)
+        reg<u32, 4> pidr_lo; // Peripheral ID register (0-3)
+        reg<u32, 4> cidr;    // Component ID register
 
         tlm_target_socket in;
 
@@ -237,12 +243,17 @@ public:
 
         void set_current_irq(size_t cpu, size_t irq);
 
+        u32 read_ctlr();
         void write_ctlr(u32 val);
+        u32 read_pmr();
+        void write_pmr(u32 val);
+        u32 read_bpr();
         void write_bpr(u32 val);
         template <bool ALIAS>
         u32 read_iar();
         template <bool ALIAS>
         void write_eoir(u32 val);
+        u32 read_rpr();
         void write_abpr(u32 val);
         u32 read_aiar();
 
@@ -368,6 +379,8 @@ public:
         virtual void reset() override;
     };
 
+    property<bool> secure;
+
     distif distif;
     cpuif cpuif;
     vifctrl vifctrl;
@@ -420,6 +433,7 @@ public:
     VCML_KIND(arm::gic400);
 
     u8 get_irq_priority(size_t cpu, size_t irq);
+    u8 get_irq_group_priority(size_t cpu, size_t irq);
 
     void update(bool virt = false);
 
