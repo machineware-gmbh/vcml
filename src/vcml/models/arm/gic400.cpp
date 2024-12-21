@@ -1487,22 +1487,18 @@ void gic400::update(bool virt) {
 
 u8 gic400::get_irq_group_priority(size_t cpu, size_t irq) {
     u32 bpr;
-    uint32_t mask;
-
     if (!(cpuif.ctlr & GICC_CTLR_CBPR) &&
         (get_irq_group(irq, cpu) & (1 << cpu)))
         bpr = cpuif.abpr - 1;
     else
         bpr = cpuif.bpr;
 
-    /* BPR
-     *  0: group priority bits are [7:1];
-     *  1: group [7:2], and so on down to
-     *  i: group [7:(BPR+1)]
-     *  7:  no group priority bits at all.
-     */
-    mask = ~0U << (BPR_P::set(bpr) + 1);
-
+    // BPR
+    //  0: group priority bits are [7:1];
+    //  1: group [7:2], and so on down to
+    //  i: group [7:(BPR+1)]
+    //  7:  no group priority bits at all.
+    u32 mask = ~0u << (BPR_P::set(bpr) + 1);
     return get_irq_priority(cpu, irq) & mask;
 }
 
