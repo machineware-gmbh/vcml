@@ -10,17 +10,17 @@
 
 #include "testing.h"
 
-MATCHER_P(TxEvFIFOElemEq, n, "Equality matcher for TX event FIFO elements") {
+MATCHER_P(fifo_match, n, "Equality matcher for TX event FIFO elements") {
     return (arg[0] == n[0]) && ((arg[1] | bit(22)) == n[1]);
 }
 
-MATCHER_P(CanFrameEq, n, "Equality matcher for CAN frames") {
+MATCHER_P(can_frame_match, n, "Equality matcher for CAN frames") {
     return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
            std::equal(std::begin(arg.data), std::end(arg.data),
                       std::begin(n.data));
 }
 
-MATCHER_P(CanFrameFDEq, n, "Equality matcher for CAN FD frames") {
+MATCHER_P(canfd_frame_match, n, "Equality matcher for CAN FD frames") {
     return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
            (arg.flags == n.flags) &&
            std::equal(std::begin(arg.data), std::end(arg.data),
@@ -275,7 +275,7 @@ public:
         u64 addr = addr_msgram.start + TX_EVFIFO_START_ADDR +
                    get_field<TXEFS_EFGI>(txefs) * TX_EFIFO_ELEM_SZ;
         EXPECT_OK(out.readw(addr, evfifo)) << "cannot read from tx evfifo";
-        EXPECT_THAT(test, TxEvFIFOElemEq(evfifo))
+        EXPECT_THAT(test, fifo_match(evfifo))
             << "tx evfifo data is not matching";
 
         // acknowledge read & check new fifo fill level
@@ -319,7 +319,8 @@ public:
 
         can_frame chk = {};
         ASSERT_TRUE(can.can_rx_pop(chk));
-        EXPECT_THAT(test, CanFrameEq(chk)) << "tx can frames to not match";
+        EXPECT_THAT(test, can_frame_match(chk))
+            << "tx can frames to not match";
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
         EXPECT_FALSE(irq0.read()) << "irq did not get cleared";
@@ -352,7 +353,8 @@ public:
 
         can_frame chk = {};
         ASSERT_TRUE(can.can_rx_pop(chk));
-        EXPECT_THAT(test, CanFrameFDEq(chk)) << "tx can frames to not match";
+        EXPECT_THAT(test, canfd_frame_match(chk))
+            << "tx can frames to not match";
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
         EXPECT_FALSE(irq0.read()) << "irq did not get cleared";

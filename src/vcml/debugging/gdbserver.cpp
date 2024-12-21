@@ -311,9 +311,9 @@ string gdbserver::handle_xfer(const string& cmd) {
     if (args.size() != 5)
         return ERR_COMMAND;
 
-    string object = args[1];
-    string read = args[2];
-    string annex = args[3];
+    const string& object = args[1];
+    const string& read = args[2];
+    const string& annex = args[3];
 
     if (read != "read")
         return ERR_COMMAND;

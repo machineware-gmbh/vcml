@@ -441,7 +441,7 @@ string vspserver::handle_geta(const string& cmd) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    string name = args[1];
+    const string& name = args[1];
     sc_attr_base* attr = find_attribute(name);
     if (attr == nullptr)
         return mkstr("E,attribute '%s' not found", name.c_str());

@@ -263,8 +263,8 @@ void slirp_network::host_port_forwarding(const string& desc) {
     if (args.size() != 4)
         VCML_ERROR("invalid port forwarding: '%s'", desc.c_str());
 
-    string protocol = args[0];
-    string guest_addr = args[1];
+    const string& protocol = args[0];
+    const string& guest_addr = args[1];
     u16 guest_port = from_string<u16>(args[2]);
     u16 host_port = from_string<u16>(args[3]);
 
