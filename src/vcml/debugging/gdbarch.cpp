@@ -29,6 +29,11 @@ bool gdbfeature::collect_regs(const target& t, vector<const cpureg*>& regs,
         }
     }
 
+    std::sort(regs.begin(), regs.end(),
+              [](const cpureg* a, const cpureg* b) -> bool {
+                  return a->regno < b->regno;
+              });
+
     return missing.empty();
 }
 
