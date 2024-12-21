@@ -90,20 +90,40 @@ enum distif_ctlr_bits : u32 {
     GICD_CTLR_MASK = GICD_CTLR_ENABLE_GROUP0 | GICD_CTLR_ENABLE_GROUP1,
 };
 
+u32 gic400::distif::read_ctlr() {
+    if (m_parent->secure && !in_secure_transaction())
+        return (ctlr & GICD_CTLR_ENABLE_GROUP1) >> 1;
+
+    return ctlr;
+}
+
 void gic400::distif::write_ctlr(u32 val) {
+    if (m_parent->secure && !in_secure_transaction()) {
+        val = (val << 1) & GICD_CTLR_ENABLE_GROUP1;
+        val |= ctlr & ~GICD_CTLR_ENABLE_GROUP1;
+    }
     VCML_LOG_REG_BIT_CHANGE(GICD_CTLR_ENABLE_GROUP0, ctlr, val);
     VCML_LOG_REG_BIT_CHANGE(GICD_CTLR_ENABLE_GROUP1, ctlr, val);
     ctlr = val & GICD_CTLR_MASK;
     m_parent->update();
 }
 
+using GICD_TYPER_IT_LINES_NUMBER = field<0, 5, u32>;
+using GICD_TYPER_CPU_NUMBER = field<0, 5, u32>;
+using GICD_TYPER_CPU_SECURITY_EXTN = field<10, 1, u32>;
+
 u32 gic400::distif::read_typer() {
     u32 itlines = ((m_parent->get_irq_num() + 31) / 32 - 1) & 0x1f;
     u32 cpu_num = (m_parent->get_cpu_num() - 1) & 0x3;
-    return (cpu_num << 5) | itlines;
+    return GICD_TYPER_CPU_SECURITY_EXTN::set(m_parent->secure ? 1 : 0) |
+           GICD_TYPER_CPU_NUMBER::set(cpu_num) |
+           GICD_TYPER_IT_LINES_NUMBER::set(itlines);
 }
 
 u32 gic400::distif::read_igroupr(size_t idx) {
+    if (m_parent->secure && !in_secure_transaction())
+        return 0;
+
     cpu_mask_t mask = get_cpu_mask(*this, "igroupr");
 
     u32 val = 0;
@@ -115,6 +135,9 @@ u32 gic400::distif::read_igroupr(size_t idx) {
 }
 
 void gic400::distif::write_igroupr(u32 val, size_t idx) {
+    if (m_parent->secure && !in_secure_transaction())
+        return;
+
     cpu_mask_t mask = get_cpu_mask(*this, "igroupr");
 
     for (size_t i = 0; i < 32; i++) {
@@ -459,6 +482,8 @@ gic400::distif::distif(const sc_module_name& nm):
     sgir("sgir", 0xf00),
     cpendsgir("cpendsgir", 0xf10),
     spendsgir("spendsgir", 0xf20),
+    pidr_hi("pidr_lo", 0xfd0),
+    pidr_lo("pidr_hi", 0xfe0),
     cidr("cidr", 0xff0),
     in("in") {
     VCML_ERROR_ON(!m_parent, "gic400 parent module not found");
@@ -588,6 +613,12 @@ gic400::distif::distif(const sc_module_name& nm):
     cpendsgir.allow_read_write();
     cpendsgir.on_write(&distif::write_cpendsgir);
 
+    pidr_hi.allow_read_only();
+    pidr_hi.sync_never();
+
+    pidr_lo.allow_read_only();
+    pidr_lo.sync_never();
+
     cidr.allow_read_only();
     cidr.sync_never();
 }
@@ -599,6 +630,10 @@ gic400::distif::~distif() {
 void gic400::distif::reset() {
     peripheral::reset();
 
+    for (size_t i = 0; i < pidr_hi.count(); i++)
+        pidr_hi[i] = extract(AMBA_PID_HI, i * 8, 8);
+    for (size_t i = 0; i < pidr_lo.count(); i++)
+        pidr_lo[i] = extract(AMBA_PID_LO, i * 8, 8);
     for (size_t i = 0; i < cidr.count(); i++)
         cidr[i] = extract(AMBA_PCID, i * 8, 8);
 }
@@ -637,11 +672,27 @@ enum cpuif_ctlr_bits : u32 {
     GICC_CTLR_ACKCTL = bit(2),
     GICC_CTLR_FIQ_ENABLE = bit(3),
     GICC_CTLR_CBPR = bit(4),
+    GICC_CTLR_EOI_MODE_S = bit(9),
+    GICC_CTLR_EOI_MODE_NS = bit(10),
     GICC_CTLR_MASK = GICC_CTLR_ENABLE_GROUP0 | GICC_CTLR_ENABLE_GROUP1 |
-                     GICC_CTLR_ACKCTL | GICC_CTLR_FIQ_ENABLE | GICC_CTLR_CBPR,
+                     GICC_CTLR_ACKCTL | GICC_CTLR_FIQ_ENABLE | GICC_CTLR_CBPR |
+                     GICC_CTLR_EOI_MODE_S | GICC_CTLR_EOI_MODE_NS,
 };
 
+u32 gic400::cpuif::read_ctlr() {
+    if (m_parent->secure && !in_secure_transaction())
+        return (ctlr & (GICC_CTLR_ENABLE_GROUP1 | GICC_CTLR_EOI_MODE_NS)) >> 1;
+
+    return ctlr;
+}
+
 void gic400::cpuif::write_ctlr(u32 val) {
+    if (m_parent->secure && !in_secure_transaction()) {
+        u32 mask = GICC_CTLR_ENABLE_GROUP1 | GICC_CTLR_EOI_MODE_NS;
+        val = (val << 1) & mask;
+        val |= ctlr & ~mask;
+    }
+
     if ((val & GICC_CTLR_ENABLE_GROUP0) && !(ctlr & GICC_CTLR_ENABLE_GROUP0))
         log_debug("(ctlr) enabling group 0 on cpu %zu",
                   get_cpu(*this, "ctlr"));
@@ -656,7 +707,47 @@ void gic400::cpuif::write_ctlr(u32 val) {
     ctlr = val & GICC_CTLR_MASK;
 }
 
+u32 gic400::cpuif::read_pmr() {
+    if (m_parent->secure && !in_secure_transaction()) {
+        if (pmr & 0x80)
+            return (pmr << 1) & 0xff;
+        return 0;
+    }
+    return pmr;
+}
+
+void gic400::cpuif::write_pmr(u32 val) {
+    if (m_parent->secure && !in_secure_transaction()) {
+        if (pmr & 0x80)
+            val = 0x80 | (val >> 1);
+        else
+            return;
+    }
+
+    pmr = val & P_MASK;
+}
+
+u32 gic400::cpuif::read_bpr() {
+    if (m_parent->secure && !in_secure_transaction() &&
+        (ctlr & GICC_CTLR_CBPR)) {
+        if (ctlr & GICC_CTLR_CBPR)
+            return std::min(bpr.get(), 7u);
+        return abpr;
+    }
+
+    return bpr;
+}
+
 void gic400::cpuif::write_bpr(u32 val) {
+    if (m_parent->secure && !in_secure_transaction() &&
+        (ctlr & GICC_CTLR_CBPR)) {
+        if (ctlr & GICC_CTLR_CBPR)
+            return;
+
+        write_abpr(val);
+        return;
+    }
+
     bpr = std::clamp<u32>(BPR_P::set(val), BPR_MIN, BPR_MAX);
 }
 
@@ -680,10 +771,12 @@ u32 gic400::cpuif::read_iar() {
           !(m_parent->distif.ctlr & GICD_CTLR_ENABLE_GROUP1))) ||
         (group == GRP0 &&
          (!(ctlr & GICC_CTLR_ENABLE_GROUP0) ||
-          !(m_parent->distif.ctlr & GICC_CTLR_ENABLE_GROUP0))))
+          !(m_parent->distif.ctlr & GICC_CTLR_ENABLE_GROUP0) ||
+          (m_parent->secure && !in_secure_transaction()))))
         return SPURIOUS_IRQ;
 
-    if (!ALIAS && group == GRP1 && !(ctlr & GICC_CTLR_ACKCTL))
+    if (!ALIAS && group == GRP1 && !(ctlr & GICC_CTLR_ACKCTL) &&
+        m_parent->secure && in_secure_transaction())
         return ACKCTL_DISABLED_IRQ;
 
     // check if CPU is acknowledging a not pending interrupt
@@ -756,6 +849,16 @@ void gic400::cpuif::write_eoir(u32 val) {
     }
 }
 
+u32 gic400::cpuif::read_rpr() {
+    if (m_parent->secure && !in_secure_transaction()) {
+        if (rpr < 0x80ul)
+            return 0;
+        return (rpr & P_MASK) << 1;
+    }
+
+    return rpr;
+}
+
 void gic400::cpuif::write_abpr(u32 val) {
     abpr = std::clamp<u32>(ABPR_P::set(val), ABPR_MIN, ABPR_MAX);
 }
@@ -784,16 +887,19 @@ gic400::cpuif::cpuif(const sc_module_name& nm):
     ctlr.set_banked();
     ctlr.sync_always();
     ctlr.allow_read_write();
+    ctlr.on_read(&cpuif::read_ctlr);
     ctlr.on_write(&cpuif::write_ctlr);
 
     pmr.set_banked();
     pmr.sync_always();
     pmr.allow_read_write();
-    pmr.on_write_mask(PMR_PR());
+    pmr.on_read(&cpuif::read_pmr);
+    pmr.on_write(&cpuif::write_pmr);
 
     bpr.set_banked();
     bpr.sync_always();
     bpr.allow_read_write();
+    bpr.on_read(&cpuif::read_bpr);
     bpr.on_write(&cpuif::write_bpr);
 
     iar.set_banked();
@@ -809,6 +915,7 @@ gic400::cpuif::cpuif(const sc_module_name& nm):
     rpr.set_banked();
     rpr.sync_never();
     rpr.allow_read_only();
+    rpr.on_read(&cpuif::read_rpr);
 
     hppir.set_banked();
     hppir.sync_never();
@@ -817,6 +924,7 @@ gic400::cpuif::cpuif(const sc_module_name& nm):
     abpr.set_banked();
     abpr.sync_always();
     abpr.allow_read_write();
+    abpr.set_secure(m_parent->secure);
     abpr.on_write(&cpuif::write_abpr);
 
     apr.sync_always();
@@ -825,15 +933,18 @@ gic400::cpuif::cpuif(const sc_module_name& nm):
     aiar.set_banked();
     aiar.allow_read_only();
     aiar.sync_on_read();
+    aiar.set_secure(m_parent->secure);
     aiar.on_read(&cpuif::read_iar<true>);
 
     aeoir.set_banked();
     aeoir.allow_write_only();
     aeoir.sync_on_write();
+    aeoir.set_secure(m_parent->secure);
     aeoir.on_write(&cpuif::write_eoir<true>);
 
     ahppir.set_banked();
     ahppir.sync_never();
+    ahppir.set_secure(m_parent->secure);
     ahppir.allow_read_only();
 
     iidr.sync_never();
@@ -1168,17 +1279,21 @@ gic400::vcpuif::vcpuif(const sc_module_name& nm, class vifctrl* ctrl):
 
     abpr.set_banked();
     abpr.allow_read_write();
+    abpr.set_secure(m_parent->secure);
     abpr.on_write(&vcpuif::write_abpr);
 
     aiar.set_banked();
     aiar.allow_read_only();
+    aiar.set_secure(m_parent->secure);
     aiar.on_read(&vcpuif::read_iar<true>);
 
     aeoir.set_banked();
     aeoir.allow_write_only();
+    aeoir.set_secure(m_parent->secure);
     aeoir.on_write(&vcpuif::write_eoir<true>);
 
     ahppir.set_banked();
+    ahppir.set_secure(m_parent->secure);
     ahppir.allow_read_write();
 
     apr.set_banked();
@@ -1198,6 +1313,7 @@ void gic400::vcpuif::reset() {
 
 gic400::gic400(const sc_module_name& nm):
     peripheral(nm),
+    secure("secure", false),
     distif("distif"),
     cpuif("cpuif"),
     vifctrl("vifctrl"),
@@ -1231,49 +1347,19 @@ pair<size_t, u32> gic400::get_highest_pend_irq(size_t cpu, bool virt) {
     size_t best_prio = IDLE_PRIO;
 
     if (!virt) {
-        u32 ctlr = distif.ctlr;
-        // check SGIs
-        for (size_t irq = 0; irq < NSGI; irq++) {
-            bool group_enabled = ctlr &
-                                 bit(get_irq_group(irq, mask) == GRP0 ? 0 : 1);
+        for (size_t irq = 0; irq < m_irq_num; irq++) {
             if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
-                !is_irq_active(irq, mask) && group_enabled) {
-                if (distif.ipriority_sgi.bank(cpu, irq) < best_prio) {
-                    best_prio = distif.ipriority_sgi.bank(cpu, irq);
+                !is_irq_active(irq, mask)) {
+                if (irq >= NPRIV && !(distif.itargets_spi[irq - NPRIV] & mask))
+                    continue;
+
+                size_t prio = get_irq_priority(cpu, irq);
+                if (prio < best_prio) {
+                    best_prio = prio;
                     best_irq = irq;
                 }
             }
         }
-
-        // check PPIs
-        for (size_t irq = NSGI; irq < NPRIV; irq++) {
-            bool group_enabled = ctlr &
-                                 bit(get_irq_group(irq, mask) == GRP0 ? 0 : 1);
-            if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
-                !is_irq_active(irq, mask) && group_enabled) {
-                int idx = irq - NSGI;
-                if (distif.ipriority_ppi.bank(cpu, idx) < best_prio) {
-                    best_prio = distif.ipriority_ppi.bank(cpu, idx);
-                    best_irq = irq;
-                }
-            }
-        }
-
-        // check SPIs
-        for (size_t irq = NPRIV; irq < m_irq_num; irq++) {
-            bool group_enabled = ctlr &
-                                 bit(get_irq_group(irq, mask) == GRP0 ? 0 : 1);
-            int idx = irq - NPRIV;
-            if (is_irq_enabled(irq, mask) && test_pending(irq, mask) &&
-                (distif.itargets_spi[idx] & mask) &&
-                !is_irq_active(irq, mask) && group_enabled) {
-                if (distif.ipriority_spi[idx] < best_prio) {
-                    best_prio = distif.ipriority_spi[idx];
-                    best_irq = irq;
-                }
-            }
-        }
-
     } else {
         for (size_t lr_idx = 0; lr_idx < NLR; lr_idx++) {
             if (vifctrl.is_lr_pending(lr_idx, cpu)) {
@@ -1397,6 +1483,27 @@ void gic400::update(bool virt) {
             virq_out[cpu] = cpu_irq;
         }
     }
+}
+
+u8 gic400::get_irq_group_priority(size_t cpu, size_t irq) {
+    u32 bpr;
+    uint32_t mask;
+
+    if (!(cpuif.ctlr & GICC_CTLR_CBPR) &&
+        (get_irq_group(irq, cpu) & (1 << cpu)))
+        bpr = cpuif.abpr - 1;
+    else
+        bpr = cpuif.bpr;
+
+    /* BPR
+     *  0: group priority bits are [7:1];
+     *  1: group [7:2], and so on down to
+     *  i: group [7:(BPR+1)]
+     *  7:  no group priority bits at all.
+     */
+    mask = ~0U << (BPR_P::set(bpr) + 1);
+
+    return get_irq_priority(cpu, irq) & mask;
 }
 
 u8 gic400::get_irq_priority(size_t cpu, size_t irq) {
