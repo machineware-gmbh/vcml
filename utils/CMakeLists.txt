@@ -9,7 +9,5 @@
  ##############################################################################
 
 if(TAP_FOUND)
-    add_executable(vcml-tapctl tapctl.c)
-    install(TARGETS vcml-tapctl DESTINATION bin)
     install(PROGRAMS tapnet DESTINATION bin RENAME vcml-tapnet)
 endif()
