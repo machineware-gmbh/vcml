@@ -20,36 +20,14 @@ void fbdev::update() {
     }
 }
 
-template <typename T>
-void write_to_ostream(ostream& os, const T* val) {
-    os.write(reinterpret_cast<const char*>(val), sizeof(T));
-}
-
 struct bmp_header {
-    array<char, 2> header; // 0x42 0x4D for BMP (BM)
-    u32 size;              // total size (bytes)
+    char header[2]; // 0x42 0x4D for BMP (BM)
+    u32 size;       // total size (bytes)
     u16 reserved_0;
     u16 reserved_1;
     u32 offset; // offset of the pixel array
-
-    u32 header_size() { return 14; }
-
-    bmp_header():
-        header({ 'B', 'M' }),
-        size(0),
-        reserved_0(0),
-        reserved_1(0),
-        offset(0) {}
-
-    void write(ostream& out) {
-        write_to_ostream(out, &header[0]);
-        write_to_ostream(out, &header[1]);
-        write_to_ostream(out, &size);
-        write_to_ostream(out, &reserved_0);
-        write_to_ostream(out, &reserved_1);
-        write_to_ostream(out, &offset);
-    }
 };
+
 struct dib_header {
     u32 size;           // size of this header (bytes) -> 40
     i32 width;          // in pixels
@@ -57,44 +35,42 @@ struct dib_header {
     u16 color_planes;   // number of color planes -> 1
     u16 bits_per_pixel; // typically 1, 4, 5, 16, 24, 32
     u32 method;         // compression method
-    u32 image_size; // size of the raw bitmap data; a dummy 0 can be given for
-                    // BI_RGB bitmaps
+    u32 image_size; // size of the raw bitmap data; dummy 0 for BI_RGB bitmaps
     i32 xres;       // (pixel per metre, signed integer)
     i32 yres;       // (pixel per metre, signed integer)
-    u32 col_num; // number of colors in the color palette, or 0 to default to
-                 // 2^n
-    u32 imp_col_num; // the number of important colors used, or 0 when every
-                     // color is important; generally ignored
-
-    u32 header_size() { return 40; }
-
-    dib_header():
-        size(header_size()),
-        width(0),
-        height(0),
-        color_planes(1),
-        bits_per_pixel(24),
-        method(0),
-        image_size(0),
-        xres(0),
-        yres(0),
-        col_num(0),
-        imp_col_num(0) {}
-
-    void write(ostream& out) {
-        write_to_ostream(out, &size);
-        write_to_ostream(out, &width);
-        write_to_ostream(out, &height);
-        write_to_ostream(out, &color_planes);
-        write_to_ostream(out, &bits_per_pixel);
-        write_to_ostream(out, &method);
-        write_to_ostream(out, &image_size);
-        write_to_ostream(out, &xres);
-        write_to_ostream(out, &yres);
-        write_to_ostream(out, &col_num);
-        write_to_ostream(out, &imp_col_num);
-    }
+    u32 col_num;    // nr. of colors in the color palette; 0 default to 2^n
+    u32 imp_col; // nr. of important colors used; 0: every color is important
 };
+
+template <typename T>
+void write_binary(ostream& os, const T* val) {
+    os.write(reinterpret_cast<const char*>(val), sizeof(T));
+}
+
+template <>
+void write_binary<bmp_header>(ostream& os, const bmp_header* h) {
+    write_binary(os, &h->header[0]);
+    write_binary(os, &h->header[1]);
+    write_binary(os, &h->size);
+    write_binary(os, &h->reserved_0);
+    write_binary(os, &h->reserved_1);
+    write_binary(os, &h->offset);
+}
+
+template <>
+void write_binary<dib_header>(ostream& os, const dib_header* h) {
+    write_binary(os, &h->size);
+    write_binary(os, &h->width);
+    write_binary(os, &h->height);
+    write_binary(os, &h->color_planes);
+    write_binary(os, &h->bits_per_pixel);
+    write_binary(os, &h->method);
+    write_binary(os, &h->image_size);
+    write_binary(os, &h->xres);
+    write_binary(os, &h->yres);
+    write_binary(os, &h->col_num);
+    write_binary(os, &h->imp_col);
+}
 
 bool host_is_little_endian() {
     u64 tst = 1;
@@ -126,17 +102,28 @@ bool fbdev::cmd_screenshot(const vector<string>& args, ostream& os) {
     struct bmp_header header;
     struct dib_header dib_header;
 
-    header.offset = header.header_size() + dib_header.header_size();
-    header.size = header.offset + padded_size;
-
+    dib_header.size = 40;
     dib_header.width = m_mode.xres;
     dib_header.height = m_mode.yres;
+    dib_header.color_planes = 1;
     dib_header.bits_per_pixel = bits_per_pixel;
+    dib_header.method = 0;
     dib_header.image_size = padded_size;
+    dib_header.xres = 0;
+    dib_header.yres = 0;
+    dib_header.col_num = 0;
+    dib_header.imp_col = 0;
 
-    std::ofstream out(args.at(0), std::ios::binary);
-    header.write(out);
-    dib_header.write(out);
+    header.header[0] = 'B';
+    header.header[1] = 'M';
+    header.reserved_0 = 0;
+    header.reserved_1 = 0;
+    header.offset = 14 + dib_header.size;
+    header.size = header.offset + padded_size;
+
+    ofstream out(args.at(0), std::ios::binary);
+    write_binary(out, &header);
+    write_binary(out, &dib_header);
 
     u32 a_max = ((1 << m_mode.a.size) - 1);
     u32 r_max = ((1 << m_mode.r.size) - 1);
@@ -148,7 +135,7 @@ bool fbdev::cmd_screenshot(const vector<string>& args, ostream& os) {
     u32 b_mask = b_max << m_mode.b.offset;
 
     for (u32 y = yres; y-- > 0;) {
-        for (u32 x = 0; x < xres; ++x) {
+        for (u32 x = 0; x < xres; x++) {
             u32 pixel = 0;
             u8* base = m_vptr + (y * m_mode.stride + x * m_mode.bpp);
 
@@ -167,7 +154,13 @@ bool fbdev::cmd_screenshot(const vector<string>& args, ostream& os) {
             u8 g_scale = ((g * 255.0f) * a_scale) / g_max;
             u8 b_scale = ((b * 255.0f) * a_scale) / b_max;
 
-            out << b_scale << g_scale << r_scale;
+            write_binary(out, &b_scale);
+            write_binary(out, &g_scale);
+            write_binary(out, &r_scale);
+        }
+        for (u32 x = 0; x < extra_bits / 8; x++) {
+            u8 zero = 0x00;
+            write_binary(out, &zero);
         }
     }
     out.close();
