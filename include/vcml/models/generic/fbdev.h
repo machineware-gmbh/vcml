@@ -31,6 +31,8 @@ private:
 
     void update();
 
+    bool cmd_screenshot(const vector<string>& args, ostream& os);
+
 public:
     u8* vptr() const { return m_vptr; }
     size_t size() const { return m_mode.size; }

@@ -33,6 +33,7 @@ The model supports the following commands during simulation:
 | `cinfo <cmd>` | Shows information about command `cmd` |
 | `reset`       | Resets the component                  |
 | `abort`       | Aborts the simulation                 |
+| `screenshot`  | Stores a screenshot of the fb         |
 
 In order to execute commands, an active VSP session is required. Tools such
 as [`viper`](https://www.machineware.de) can be used as a graphical frontend
@@ -102,6 +103,9 @@ reserved-memory {
 };
 ```
 
+Hint: If you want to use more than one framebuffer, the other framebuffers
+need to be defined outside the `chosen` node in the device tree to be
+recognized by Linux.
 
 ----
-Documentation updated June 2020
+Documentation updated January 2025
