@@ -51,15 +51,19 @@ u8* loader::allocate_image(const elf_segment& seg, u64 off) {
 }
 
 void loader::copy_image(const u8* img, u64 size, u64 off) {
-    if (failed(data.write(off, img, size, SBI_DEBUG)))
-        VCML_REPORT("bus error writing [%llx..%llx]", off, off + size - 1);
+    auto res = data.write(off, img, size, SBI_DEBUG);
+    if (failed(res)) {
+        VCML_REPORT("bus error writing [%llx..%llx] (%s)", off, off + size - 1,
+                    tlm_response_to_str(res));
+    }
 }
 
 void loader::copy_image(const u8* img, const elf_segment& seg, u64 off) {
     auto& port = seg.x ? insn : data;
-    if (failed(port.write(seg.phys + off, img, seg.size, SBI_DEBUG))) {
-        VCML_REPORT("bus error writing [%llx..%llx]", seg.phys + off,
-                    seg.phys + off + seg.size - 1);
+    auto res = port.write(seg.phys + off, img, seg.size, SBI_DEBUG);
+    if (failed(res)) {
+        VCML_REPORT("bus error writing [%llx..%llx] (%s)", seg.phys + off,
+                    seg.phys + off + seg.size - 1, tlm_response_to_str(res));
     }
 }
 

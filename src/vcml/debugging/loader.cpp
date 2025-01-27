@@ -338,8 +338,8 @@ void loader::load_images(const vector<image_info>& images) {
         try {
             load_image(image);
         } catch (std::exception& ex) {
-            m_log.warn("failed to load image '%s': %s", image.filename.c_str(),
-                       ex.what());
+            m_log.warn("%s\nfailed to load image '%s'", ex.what(),
+                       image.filename.c_str());
         } catch (...) {
             m_log.warn("unkown error while loading image '%s'",
                        image.filename.c_str());
