@@ -151,12 +151,16 @@ inline std::istream& operator>>(std::istream& is, vcml::range& r) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const vcml::range& r) {
-    int n = (r.start > std::numeric_limits<vcml::u32>::max() ||
-             r.end > std::numeric_limits<vcml::u32>::max())
-                ? 16
-                : 8;
-    os << "0x" << std::hex << std::setw(n) << std::setfill('0') << r.start
-       << "..0x" << std::hex << std::setw(n) << std::setfill('0') << r.end;
+    int w = os.width(0);
+    char f = os.fill(' ');
+
+    if (w == 0)
+        w = r.end > mwr::U32_MAX ? 16 : 8;
+    if (f == ' ')
+        f = '0';
+
+    os << "0x" << std::hex << std::setw(w) << std::setfill(f) << r.start
+       << "..0x" << std::hex << std::setw(w) << std::setfill(f) << r.end;
     return os;
 }
 
