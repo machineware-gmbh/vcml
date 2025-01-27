@@ -54,9 +54,13 @@ private:
     const mapping& lookup(tlm_target_socket& src, const range& addr) const;
     void handle_bus_error(tlm_generic_payload& tx) const;
 
+    void do_mmap(ostream& os);
+
     bool cmd_mmap(const vector<string>& args, ostream& os);
 
 protected:
+    virtual void end_of_elaboration() override;
+
     virtual void b_transport(tlm_target_socket& origin,
                              tlm_generic_payload& tx, sc_time& dt) override;
 

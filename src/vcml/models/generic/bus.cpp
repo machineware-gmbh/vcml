@@ -51,29 +51,6 @@ const char* bus::source_peer_name(size_t port) const {
     return it->second->name();
 }
 
-bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
-    stream_guard guard(os);
-    os << "Memory map of " << name();
-
-    size_t w = 0, i = 0;
-    for (const auto it : m_target_peers)
-        w = max(w, strlen(it.second->name()));
-
-    for (const auto& m : m_mappings) {
-        os << "\n" << i++ << ": " << m.addr << " -> ";
-        os << mwr::pad(target_peer_name(m.target), w);
-        os << " " << m.addr + m.offset - m.addr.start;
-
-        if (m.source != SOURCE_ANY)
-            os << " (via " << source_peer_name(m.source) << " only)";
-    }
-
-    if (m_default.target != TARGET_NONE)
-        os << "\ndefault route -> " << target_peer_name(m_default.target);
-
-    return true;
-}
-
 const bus::mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
     size_t port = in.index_of(s);
 
@@ -103,37 +80,43 @@ void bus::handle_bus_error(tlm_generic_payload& tx) const {
     }
 }
 
-void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
-    for (const auto& m : m_mappings) {
-        if (!m.addr.overlaps(addr))
-            continue;
-        if (m.source != source)
-            continue;
+void bus::do_mmap(ostream& os) {
+    stream_guard guard(os);
 
-        stringstream ss;
-        ss << "Cannot map " << target << ":" << addr << " to '"
-           << target_peer_name(target) << "', because it overlaps with "
-           << m.target << ":" << m.addr << " mapped to '"
-           << target_peer_name(m.target) << "'";
-        VCML_ERROR("%s", ss.str().c_str());
+    size_t w = 0, i = 0, y = 8;
+    for (const auto it : m_target_peers)
+        w = max(w, strlen(it.second->name()));
+    for (const auto& m : m_mappings) {
+        if (m.addr.end > ~0u)
+            y = 16;
     }
 
-    mapping m;
-    m.target = target;
-    m.source = source;
-    m.addr = addr;
-    m.offset = offset;
-    m_mappings.insert(m);
+    for (const auto& m : m_mappings) {
+        os << "\n" << i++ << ": " << std::setw(y) << m.addr << " -> ";
+        os << mwr::pad(target_peer_name(m.target), w);
+        os << " " << std::setw(y) << m.addr + m.offset - m.addr.start;
+
+        if (m.source != SOURCE_ANY)
+            os << " (via " << source_peer_name(m.source) << " only)";
+    }
+
+    if (m_default.target != TARGET_NONE)
+        os << "\ndefault route -> " << target_peer_name(m_default.target);
 }
 
-void bus::map_default(size_t target, u64 offset) {
-    if (m_default.target != TARGET_NONE) {
-        VCML_ERROR("default route already mapped to '%s'",
-                   target_peer_name(m_default.target));
-    }
+bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
+    stream_guard guard(os);
+    os << "Memory map of " << name();
+    do_mmap(os);
+    return true;
+}
 
-    m_default.target = target;
-    m_default.offset = offset;
+void bus::end_of_elaboration() {
+    if (loglvl == LOG_DEBUG) {
+        stringstream ss;
+        do_mmap(ss);
+        log_debug("%s", ss.str().c_str());
+    }
 }
 
 void bus::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
@@ -228,6 +211,39 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
                 (*it.second)->invalidate_direct_mem_ptr(s, e);
         }
     }
+}
+
+void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
+    for (const auto& m : m_mappings) {
+        if (!m.addr.overlaps(addr))
+            continue;
+        if (m.source != source)
+            continue;
+
+        stringstream ss;
+        ss << "Cannot map " << target << ":" << addr << " to '"
+           << target_peer_name(target) << "', because it overlaps with "
+           << m.target << ":" << m.addr << " mapped to '"
+           << target_peer_name(m.target) << "'";
+        VCML_ERROR("%s", ss.str().c_str());
+    }
+
+    mapping m;
+    m.target = target;
+    m.source = source;
+    m.addr = addr;
+    m.offset = offset;
+    m_mappings.insert(m);
+}
+
+void bus::map_default(size_t target, u64 offset) {
+    if (m_default.target != TARGET_NONE) {
+        VCML_ERROR("default route already mapped to '%s'",
+                   target_peer_name(m_default.target));
+    }
+
+    m_default.target = target;
+    m_default.offset = offset;
 }
 
 bus::bus(const sc_module_name& nm):
