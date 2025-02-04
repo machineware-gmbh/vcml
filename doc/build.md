@@ -143,8 +143,10 @@ build you want to use:
 # Dependencies
 
 VCML requires a SystemC build. Currently, versions >= 2.3.0 are supported.
+
 Besides, it also uses [LibMWR](https://github.com/machineware-gmbh/mwr), which will be
-automatically downloaded and installed during build.
+automatically downloaded and installed during build. If the environment variable `MWR_HOME`
+is set to a local path, VCML will use the local copy instead.
 
 ## Optional dependencies
 
