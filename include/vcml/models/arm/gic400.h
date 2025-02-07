@@ -53,13 +53,12 @@ public:
         NCPU = 8,  // max supported CPUs
         NVCPU = 8, // max supported virtual CPUs
 
-        NIRQ = 1020,
-        NRES = 4,
         NSGI = 16,
         NPPI = 16,
         NSPI = 988,
-        NREGS = NIRQ + NRES,
-        NPRIV = NSGI + NPPI,
+        NRES = 4,
+        NPRV = NSGI + NPPI,               // per cpu irqs
+        NIRQ = NSGI + NPPI + NSPI + NRES, // max 1024 irqs
 
         NLR = 64,
         LR_PENDING_MASK = 0x10000000,
@@ -67,6 +66,7 @@ public:
 
         IDLE_PRIO = 0xff,
 
+        RESERVED_IRQ = 1020,
         ACKCTL_DISABLED_IRQ = 1022,
         SPURIOUS_IRQ = 1023,
 
@@ -238,11 +238,6 @@ public:
     private:
         gic400* m_parent;
 
-        u32 m_curr_irq[NCPU];
-        u32 m_prev_irq[NREGS][NCPU];
-
-        void set_current_irq(size_t cpu, size_t irq);
-
         u32 read_ctlr();
         void write_ctlr(u32 val);
         u32 read_pmr();
@@ -256,25 +251,30 @@ public:
         u32 read_rpr();
         void write_abpr(u32 val);
         u32 read_aiar();
+        void write_dir(u32 val);
+
+        u32 get_active_prio(size_t cpu);
+        void update_rpr_and_apr(size_t cpu, size_t irq, bool drop);
 
         // disabled
         cpuif();
         cpuif(const cpuif&);
 
     public:
-        reg<u32> ctlr;   // CPU Control register
-        reg<u32> pmr;    // IRQ Priority Mask register
-        reg<u32> bpr;    // Binary Point register
-        reg<u32> iar;    // Interrupt Acknowledge register
-        reg<u32> eoir;   // End Of Interrupt register
-        reg<u32> rpr;    // Running Priority register
-        reg<u32> hppir;  // Highest Pending IRQ register
-        reg<u32> abpr;   // Alias Binary Point register
-        reg<u32> aiar;   // Alias Interrupt Acknowledge register
-        reg<u32> aeoir;  // Alias End Of Interrupt register
-        reg<u32> ahppir; // Alias Highest Pending IRQ register
-        reg<u32, 4> apr; // Active Priorities registers
-        reg<u32> iidr;   // Interface Identification register
+        reg<u32> ctlr;     // CPU Control register
+        reg<u32> pmr;      // IRQ Priority Mask register
+        reg<u32> bpr;      // Binary Point register
+        reg<u32> iar;      // Interrupt Acknowledge register
+        reg<u32> eoir;     // End Of Interrupt register
+        reg<u32> rpr;      // Running Priority register
+        reg<u32> hppir;    // Highest Pending IRQ register
+        reg<u32> abpr;     // Alias Binary Point register
+        reg<u32> aiar;     // Alias Interrupt Acknowledge register
+        reg<u32> aeoir;    // Alias End Of Interrupt register
+        reg<u32> ahppir;   // Alias Highest Pending IRQ register
+        reg<u32, 4> apr;   // Active Priorities registers
+        reg<u32, 4> nsapr; // NonSecure Active Priorities registers
+        reg<u32> iidr;     // Interface Identification register
 
         reg<u32, 4> cidr; // Component ID register
         reg<u32> dir;     // Deactivate interrupt register
@@ -417,6 +417,8 @@ public:
     handling_model get_irq_model(size_t irq);
     void set_irq_model(size_t irq, handling_model m);
 
+    cpu_mask_t get_cpu_mask(size_t cpu, size_t irq);
+
     trigger_mode get_irq_trigger(size_t irq);
     void set_irq_trigger(size_t irq, trigger_mode t);
 
@@ -447,35 +449,41 @@ private:
     size_t m_irq_num;
     cpu_mask_t m_cpu_num;
 
-    irq_state m_irq_state[NIRQ + NRES];
+    irq_state m_irq_state[NIRQ];
 
     pair<size_t, u32> get_highest_pend_irq(size_t cpu, bool virt);
+    pair<size_t, u32> get_next_active_irq(size_t cpu, size_t irq, bool virt);
     u8 get_prio_mask(u32 n, bool alias, bool virt);
     pair<bool, bool> update_excp_state(size_t cpu, size_t& irq, bool virt);
 };
 
-inline gpio_target_socket& gic400::ppi(size_t cpu, size_t irq) {
-    return ppi_in[cpu * NPPI + irq];
+inline gpio_target_socket& gic400::ppi(size_t cpu, size_t ppi) {
+    VCML_ERROR_ON(ppi >= NPPI, "invalid ppi: %zu", ppi);
+    return ppi_in[cpu * NPPI + ppi];
 }
 
 inline void gic400::enable_irq(size_t irq, cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (m_irq_state[irq].enabled == 0 && mask)
         log_debug("enabled irq %zu", irq);
     m_irq_state[irq].enabled |= mask;
 }
 
 inline void gic400::disable_irq(size_t irq, cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (m_irq_state[irq].enabled && mask == 0)
         log_debug("disabled irq %zu", irq);
     m_irq_state[irq].enabled &= ~mask;
 }
 
 inline bool gic400::is_irq_enabled(size_t irq, cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return (m_irq_state[irq].enabled & mask) != 0;
 }
 
 inline void gic400::set_irq_pending(size_t irq, bool pending,
                                     cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (pending)
         m_irq_state[irq].pending |= mask;
     else
@@ -487,6 +495,7 @@ inline bool gic400::is_irq_pending(size_t irq, cpu_mask_t mask) {
 }
 
 inline void gic400::set_irq_active(size_t irq, bool active, cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (active)
         m_irq_state[irq].active |= mask;
     else
@@ -494,10 +503,12 @@ inline void gic400::set_irq_active(size_t irq, bool active, cpu_mask_t mask) {
 }
 
 inline bool gic400::is_irq_active(size_t irq, cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return (m_irq_state[irq].active & mask) != 0;
 }
 
 inline void gic400::set_irq_level(size_t irq, bool level, cpu_mask_t mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (level)
         m_irq_state[irq].level |= mask;
     else
@@ -509,22 +520,33 @@ inline bool gic400::get_irq_level(size_t irq, cpu_mask_t mask) {
 }
 
 inline gic400::handling_model gic400::get_irq_model(size_t irq) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return m_irq_state[irq].model;
 }
 
 inline void gic400::set_irq_model(size_t irq, handling_model m) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     m_irq_state[irq].model = m;
 }
 
+inline gic400::cpu_mask_t gic400::get_cpu_mask(size_t cpu, size_t irq) {
+    VCML_ERROR_ON(cpu >= NCPU, "invalid cpu: %zu", cpu);
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
+    return get_irq_model(irq) == N_1 ? ALL_CPU : bit(cpu);
+}
+
 inline gic400::trigger_mode gic400::get_irq_trigger(size_t irq) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return m_irq_state[irq].trigger;
 }
 
 inline gic400::group_mode gic400::get_irq_group(size_t irq, cpu_mask_t m) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return (m_irq_state[irq].group & m) ? GRP1 : GRP0;
 }
 
 inline void gic400::set_irq_group(size_t irq, group_mode g, cpu_mask_t m) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (g == GRP0)
         m_irq_state[irq].group &= ~m;
     else
@@ -532,10 +554,12 @@ inline void gic400::set_irq_group(size_t irq, group_mode g, cpu_mask_t m) {
 }
 
 inline void gic400::set_irq_trigger(size_t irq, trigger_mode t) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     m_irq_state[irq].trigger = t;
 }
 
 inline void gic400::set_irq_signaled(size_t irq, bool signaled, u8 mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     if (signaled)
         m_irq_state[irq].signaled |= mask;
     else
@@ -543,10 +567,12 @@ inline void gic400::set_irq_signaled(size_t irq, bool signaled, u8 mask) {
 }
 
 inline bool gic400::irq_signaled(size_t irq, u8 mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return (m_irq_state[irq].signaled & mask) != 0;
 }
 
 inline bool gic400::test_pending(size_t irq, u8 mask) {
+    VCML_ERROR_ON(irq >= NIRQ, "invalid irq: %zu", irq);
     return (is_irq_pending(irq, mask) ||
             (get_irq_trigger(irq) == LEVEL && get_irq_level(irq, mask) &&
              !irq_signaled(irq, mask)));
