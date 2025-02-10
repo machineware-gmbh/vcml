@@ -221,3 +221,6 @@ additional libraries.
 
     With SDL2, VCML can create a window that displays graphical output of
     a Virtual Platform.
+
+----
+Documentation February 2025
