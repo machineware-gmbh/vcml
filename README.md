@@ -18,9 +18,10 @@ are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
 ----
 ## Documentation
-Building instructions can be found [here](doc/build.md).
-Some basic documentation about this library and its models can be found
-[here](doc/main.md).
+A build guide for VCML can be found [here](doc/build.md).
+
+Some basic documentation about this library and its models are provided
+in the [doc](doc/main.md) directory.
 
 ----
 ## Related Projects

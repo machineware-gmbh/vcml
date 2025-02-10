@@ -1,20 +1,21 @@
 # Build & Installation
-This guide will help you download, build, and install VCML and its dependencies, and 
-set up your environment so that other projects can locate and use your VCML build.
+This guide will assist in downloading, building, and installing VCML and its dependencies,
+as well as setting up the environment so that other projects can locate and use VCML.
 
 ## Outline
 - [Environment Preparations](#environment-preparations)
 - [Dependencies](#dependencies)
-- [Easy build](#easy-build)
-- [Expert build](#expert-build)
+- [Easy Build](#easy-build)
+- [Expert Build](#expert-build)
     - [Maintaining Multiple Builds](#maintaining-multiple-builds)
-- [Windows build](#windows-build)
+- [Windows Build](#windows-build)
 
 ## Environment Preparations
 1. Download and install CMake:
 
-   VCML uses [CMake](https://cmake.org/) as its building system. Please install it from the repository of your
-   distribution or download ready-to-use executables from CMake's [download page](https://cmake.org/download/).
+    [CMake](https://cmake.org/) is used as the build system for VCML. It can be
+    installed from the repository of your distribution or ready-to-use executables
+    can be downloaded from the CMake [download page](https://cmake.org/download/).
 
 2. Clone the VCML repository and initialize its submodules:
 
@@ -48,7 +49,7 @@ additional libraries:
 
 ## Easy Build
 VCML provides helper scripts that automatically setup, build and install VCML and its dependencies
-using GCC or Clang. It is possible to build debug  and release versions of VMCL.
+using GCC or Clang. It is possible to build debug and release versions of VMCL.
 ```sh
 <source-dir>/utils/setup-gcc [DEBUG|RELEASE|...] # for GCC builds
 <source-dir>/utils/setup-clang [DEBUG|RELEASE|...] # for Clang builds
@@ -57,56 +58,56 @@ After running the helper script, the installed library can be found in `<source-
 the environment variable `VCML_HOME` to that path will allow other projects to use this build.
 
 ## Expert Build
-If you want to configure VCML, such as what features to enable or where to install the library, you must build VCML
-manually using cmake. This section will walk you through each of these options.
+If an advanced configuration of VCML is desired, such as modifying the installation path
+or disabling certain features, VCML must be built manually using `cmake`. This section will
+give guidance on how this can be done.
 
 1. *Optional*: Download and build SystemC:
 
     *Note:*
-    If you choose to skip this step, VCML will automatically download
-    SystemC from [`github.com/machineware-gmbh/systemc`](https://github.com/machineware-gmbh/systemc) during configuration
-    and set up the build environment accordingly.
+    If this step is skipped, VCML will automatically download SystemC from
+    [`github.com/machineware-gmbh/systemc`](https://github.com/machineware-gmbh/systemc)
+    during configuration and set up the build environment accordingly.
 
     VCML provides a helper script that downloads and builds SystemC from [Accellera](https://accellera.org/).
-    Choose a build directory and version of SystemC and run the following script
+    After selecting a build directory and version of SystemC, the following script can be run
     from the root directory of VCML:
     ```sh
     ./utils/setup-systemc --prefix /opt/sysc --version 2.3.3 --optimize
     ```
     Here, the script will build SystemC 2.3.3 and install it into `/opt/sysc`.
-    You can also build a debug version of SystemC, by appending `--debug` to the command.
+    It is also possible to build a debug version of SystemC by appending `--debug` to the command.
 
     After running the script, the `SYSTEMC_HOME` environment variable must be set, so that
     the build system of VCML can find SystemC. The helper script will print the correct value
     at the end of the execution.
-    This allows you to run the following command:
     ```sh
     export SYSTEMC_HOME=<PATH_TO_SYSTEMC> # e.g. /opt/sysc/2.3.3
     ```
 
     *Note:*
-    You can provide your own SystemC installation by specifying your own
+    It is also possible to provide a custom SystemC installation by specifying the
     `SYSTEMC_HOME` and `TARGET_ARCH` variables. Versions starting from `2.3.0`
     are supported.
 
 2. *Optional*: Download LibMWR:
 
     *Note:*
-    If you choose to skip this step, VCML will automatically download
+    If this step is skipped, VCML will automatically download
     LibMWR from [`github.com/machineware-gmbh/mwr`](https://github.com/machineware-gmbh/mwr)
     during configuration and set up the build environment accordingly.
 
-    Download [LibMWR](https://github.com/machineware-gmbh/mwr) and extract it. Then set
-    the environment variable `MWR_HOME` so that the build system of VCML can find the
+    After downloading and extracting [LibMWR](https://github.com/machineware-gmbh/mwr), the
+    environment variable `MWR_HOME` must be set so that the build system of VCML can find the
     library. The environment variable must point to the top level source path of LibMWR,
     where the `CMakeLists.txt` is located.
 
     *Note:*
-    You can provide your own LibMWR implementation by specifying your own
+    It is also possible to provide a custom LibMWR implementation by specifying the
     `MWR_HOME` variable.
 
 
-3. Choose directories for building and deployment of VCML:
+3. Choosing directories for building and deployment of VCML:
 
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
@@ -122,9 +123,9 @@ manually using cmake. This section will walk you through each of these options.
      * `-DVCML_BUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
 
    Optional dependencies are automatically enabled if found by `cmake` on the
-   host build system. To disable their use, pass `-DUSE_<DEPENDENCY_NAME>=FALSE`
-   to `cmake` during configuration. Check out the [following section](#dependencies)
-   for more information about the dependencies of VCML.
+   host build system. To disable their use, `-DUSE_<DEPENDENCY_NAME>=FALSE` can be passed
+   to `cmake` during configuration. More information about the dependencies of VCML
+   can be found in the [corresponding section](#dependencies).
 
    Release and debug build configurations are controlled via the regular
    CMake parameters:
@@ -132,7 +133,7 @@ manually using cmake. This section will walk you through each of these options.
    cmake -B <build-dir> -DCMAKE_INSTALL_PREFIX=<install-dir> -DCMAKE_BUILD_TYPE=RELEASE <source-dir>
    cmake --build <build-dir>
    ```
-   If building with `-DVCML_BUILD_TESTS=ON`, you can run all unit tests with
+   If `-DVCML_BUILD_TESTS=ON` is set, all unit tests can be executed with
    `ctest --test-dir <build-dir>`.
 
    After building, VCML can then be installed into `<install-dir>` with the
@@ -141,7 +142,8 @@ manually using cmake. This section will walk you through each of these options.
    ```sh
    cmake --install <build-dir>
    ```
-   Depending on the path, you may need elevated rights to write to the installation directory (e.g. with `sudo`).
+    Depending on the path, writing to the installation directory may require
+    elevated rights (e.g. with `sudo`).
 
 After installation, the following new files should be present:
 ```
@@ -151,7 +153,7 @@ After installation, the following new files should be present:
 <install-dir>/include/vcml/   # header files
 <install-dir>/bin/            # utility programs/scripts
 ```
-Update your environment so that other projects can reference your build:
+The environment should be updated so that other projects can reference the build:
 ```sh
 export VCML_HOME=<install-dir>
 ```
