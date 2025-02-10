@@ -183,44 +183,15 @@ is set to a local path, VCML will use the local copy instead.
 VCML also offers extra optional features that require the separate installation of
 additional libraries.
 
-  - Host SocketCAN support:
-
-    If the host Linux kernel is built with SocketCAN support, VCML can use SocketCAN
-    devices as a backend for exchanging CAN frames between the host and the virtual
-    environment. SocketCAN devices are **not** supported on Windows!
-
-  - Host TAP support:
-
-    If the host Linux kernel is built with TAP support, TAP devices can be used as
-    an Ethernet backend. This is significantly faster than SLiRP, but requires
-    elevated privileges on the host for creating the TAP devices. TAP devices are
-    **not** supported on Windows!
-
-  - libslirp:
-
-    SLiRP can be used for forwarding Ethernet frames to/from the virtualized
-    environment without the need for elevated rights on the host.
-
-  - libusb:
-
-    VCML can expose host USB devices to the virtual environment with the help of
-    libusb.
-
-  - libvnc:
-
-    VCML uses libvnc for providing a VNC server that gives access to graphical
-    output. A separate VNC client is needed, for example [Remmina](https://remmina.org/)
-    or [TightVNC](https://www.tightvnc.com/).
-
-  - Lua:
-
-    VCML-based VPs can be configured using Lua scripts. See [here](lua.md) under
-    section `Configuration via LUA Scripting` for further information.
-
-  - SDL2:
-
-    With SDL2, VCML can create a window that displays graphical output of
-    a Virtual Platform.
+| Dependency             | Description  |
+|------------------------|--------------|
+| Host SocketCAN support | If the host Linux kernel is built with SocketCAN support, VCML can use SocketCAN devices as a backend for exchanging CAN frames between the host and the virtual environment. SocketCAN devices are **not** supported on Windows! |
+| Host TAP support       | If the host Linux kernel is built with TAP support, TAP devices can be used as an Ethernet backend. This is significantly faster than SLiRP, but requires elevated privileges on the host for creating the TAP devices. TAP devices are **not** supported on Windows! |
+| libslirp               | SLiRP can be used for forwarding Ethernet frames to/from the virtualized environment without the need for elevated rights on the host. |
+| libusb                 | VCML can expose host USB devices to the virtual environment with the help of libusb. |
+| libvnc                 | VCML uses libvnc for providing a VNC server that gives access to graphical output. A separate VNC client is needed, for example [Remmina](https://remmina.org/) or [TightVNC](https://www.tightvnc.com/). |
+| Lua                    | VCML-based VPs can be configured using Lua scripts. See [here](lua.md) under section `Configuration via LUA Scripting` for further information. |
+| SDL2                   | With SDL2, VCML can create a window that displays graphical output of a Virtual Platform. |
 
 ----
 Documentation February 2025
