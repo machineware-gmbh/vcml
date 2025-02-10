@@ -1,11 +1,22 @@
 # Build & Installation
+This guide will help you download, build, and install VCML and its dependencies, and 
+set up your environment so that other projects can locate and use your VCML build.
 
+## Outline
+- [Environment Preparations](#environment-preparations)
+- [Dependencies](#dependencies)
+- [Easy build](#easy-build)
+- [Expert build](#expert-build)
+    - [Maintaining Multiple Builds](#maintaining-multiple-builds)
+- [Windows build](#windows-build)
+
+## Environment Preparations
 1. Download and install CMake:
 
    VCML uses [CMake](https://cmake.org/) as its building system. Please install it from the repository of your
    distribution or download ready-to-use executables from CMake's [download page](https://cmake.org/download/).
 
-2. Clone VCML repository and initialize submodules:
+2. Clone the VCML repository and initialize its submodules:
 
     ```sh
     git clone https://github.com/machineware-gmbh/vcml.git --recursive
@@ -16,7 +27,40 @@
     git submodule update --init
     ```
 
-3. *Optional*: Download and build SystemC.
+## Dependencies
+VCML requires a SystemC build. Currently, versions >= 2.3.0 are supported. Besides, 
+it also uses [LibMWR](https://github.com/machineware-gmbh/mwr). Depending on how
+VCML is built, these dependencies will either be downloaded and built by the build
+system automatically, or require manual installation, which will be described in the
+associated section.
+
+VCML also offers extra optional features that require the separate installation of
+additional libraries:
+| Feature/Library        | Description  |
+|------------------------|--------------|
+| Host SocketCAN support | If the host Linux kernel is built with SocketCAN support, VCML can use SocketCAN devices as a backend for exchanging CAN frames between the host and the virtual environment. SocketCAN devices are **not** supported on Windows! |
+| Host TAP support       | If the host Linux kernel is built with TAP support, TAP devices can be used as an Ethernet backend. This is significantly faster than SLiRP, but requires elevated privileges on the host for creating the TAP devices. TAP devices are **not** supported on Windows! |
+| libslirp               | SLiRP can be used for forwarding Ethernet frames to/from the virtualized environment without the need for elevated rights on the host. |
+| libusb                 | VCML can expose host USB devices to the virtual environment with the help of libusb. |
+| libvnc                 | VCML uses libvnc for providing a VNC server that gives access to graphical output. A separate VNC client is needed, for example [Remmina](https://remmina.org/) or [TightVNC](https://www.tightvnc.com/). |
+| Lua                    | VCML-based VPs can be configured using Lua scripts. See [here](lua.md) under section `Configuration via LUA Scripting` for further information. |
+| SDL2                   | With SDL2, VCML can create a window that displays graphical output of a Virtual Platform. |
+
+## Easy Build
+VCML provides helper scripts that automatically setup, build and install VCML and its dependencies
+using GCC or Clang. It is possible to build debug  and release versions of VMCL.
+```sh
+<source-dir>/utils/setup-gcc [DEBUG|RELEASE|...] # for GCC builds
+<source-dir>/utils/setup-clang [DEBUG|RELEASE|...] # for Clang builds
+```
+After running the helper script, the installed library can be found in `<source-dir>/BUILD/<build-type>`. Setting
+the environment variable `VCML_HOME` to that path will allow other projects to use this build.
+
+## Expert Build
+If you want to configure VCML, such as what features to enable or where to install the library, you must build VCML
+manually using cmake. This section will walk you through each of these options.
+
+1. *Optional*: Download and build SystemC:
 
     *Note:*
     If you choose to skip this step, VCML will automatically download
@@ -45,7 +89,7 @@
     `SYSTEMC_HOME` and `TARGET_ARCH` variables. Versions starting from `2.3.0`
     are supported.
 
-4. *Optional*: Download LibMWR:
+2. *Optional*: Download LibMWR:
 
     *Note:*
     If you choose to skip this step, VCML will automatically download
@@ -62,7 +106,7 @@
     `MWR_HOME` variable.
 
 
-4. Choose directories for building and deployment of VCML:
+3. Choose directories for building and deployment of VCML:
 
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
@@ -70,7 +114,7 @@
     <install-dir> output directory for binaries,  e.g. /opt/vcml
     ```
 
-5. Configure and build the project using `cmake`.
+4. Configure and build the project using `cmake`:
 
    During configuration, you must state whether to build the utility programs and
    unit tests:
@@ -99,15 +143,6 @@
    ```
    Depending on the path, you may need elevated rights to write to the installation directory (e.g. with `sudo`).
 
-   Alternately, VCML also provides helper scripts that automatically setup, build and install VCML
-   using GCC or Clang.
-   ```sh
-   <source-dir>/utils/setup-gcc [DEBUG|RELEASE|...] # for GCC builds
-   <source-dir>/utils/setup-clang [DEBUG|RELEASE|...] # for Clang builds
-   ```
-   After running the helper script, the installed library can be found in `<source-dir>/BUILD/<build-type>`.
-
-
 After installation, the following new files should be present:
 ```
 <install-dir>/lib/libvcml.a   # library (on release builds)
@@ -121,31 +156,7 @@ Update your environment so that other projects can reference your build:
 export VCML_HOME=<install-dir>
 ```
 
-## Windows Build & Installation
-
-Windows builds are currently supported using
-[Microsoft Visual Studio](https://visualstudio.microsoft.com/).
-There are two ways to build `vcml` on Windows:
-
-1. Using Visual Studio IDE:
-   - Launch Visual Studio
-   - In the Open Dialog click on `Clone a Repository`
-   - Enter `https://github.com/machineware-gmbh/vcml` and click `Clone`
-   - Once Visual Studio has cloned the project, double-click on the `vcml` folder
-   - Run `Build All` from the build menu.
-
-   CMake parameters such as `SYSTEMC_HOME` can be configured by selecting `CMake Settings
-   for vcml` from the project menu. There, in the section `CMake variables and cache`, the
-   desired parameters can be added or changed.
-
-2. Using the command line:
-   - Install [Git for Windows](https://git-scm.com/download/win)
-   - Launch `git-bash` (installed by Git for Windows)
-   - Run `git clone --recursive https://github.com:machineware-gmbh/vcml`
-   - Run `cmake -B BUILD -G "Visual Studio 17" -DCMAKE_BUILD_TYPE=[DEBUG|RELEASE]`
-   - Run `cmake --build BUILD`
-
-## Maintaining Multiple Builds
+### Maintaining Multiple Builds
 
 Debug builds (i.e. `-DCMAKE_BUILD_TYPE=DEBUG`) are intended for developers
 that use `vcml` to construct a new VP and want to track down bugs.
@@ -170,28 +181,30 @@ build you want to use:
 * `export VCML_HOME=(...)/vcml/BUILD/DEBUG` for the debug build or
 * `export VCML_HOME=(...)/vcml/BUILD/RELEASE` for the release build
 
-# Dependencies
 
-VCML requires a SystemC build. Currently, versions >= 2.3.0 are supported.
+## Windows Build
 
-Besides, it also uses [LibMWR](https://github.com/machineware-gmbh/mwr), which will be
-automatically downloaded and installed during build. If the environment variable `MWR_HOME`
-is set to a local path, VCML will use the local copy instead.
+Windows builds are currently supported using
+[Microsoft Visual Studio](https://visualstudio.microsoft.com/).
+There are two ways to build `vcml` on Windows:
 
-## Optional dependencies
+1. Using Visual Studio IDE:
+   - Launch Visual Studio
+   - In the Open Dialog click on `Clone a Repository`
+   - Enter `https://github.com/machineware-gmbh/vcml` and click `Clone`
+   - Once Visual Studio has cloned the project, double-click on the `vcml` folder
+   - Run `Build All` from the build menu.
 
-VCML also offers extra optional features that require the separate installation of
-additional libraries.
+   CMake parameters such as `SYSTEMC_HOME` can be configured by selecting `CMake Settings
+   for vcml` from the project menu. There, in the section `CMake variables and cache`, the
+   desired parameters can be added or changed.
 
-| Dependency             | Description  |
-|------------------------|--------------|
-| Host SocketCAN support | If the host Linux kernel is built with SocketCAN support, VCML can use SocketCAN devices as a backend for exchanging CAN frames between the host and the virtual environment. SocketCAN devices are **not** supported on Windows! |
-| Host TAP support       | If the host Linux kernel is built with TAP support, TAP devices can be used as an Ethernet backend. This is significantly faster than SLiRP, but requires elevated privileges on the host for creating the TAP devices. TAP devices are **not** supported on Windows! |
-| libslirp               | SLiRP can be used for forwarding Ethernet frames to/from the virtualized environment without the need for elevated rights on the host. |
-| libusb                 | VCML can expose host USB devices to the virtual environment with the help of libusb. |
-| libvnc                 | VCML uses libvnc for providing a VNC server that gives access to graphical output. A separate VNC client is needed, for example [Remmina](https://remmina.org/) or [TightVNC](https://www.tightvnc.com/). |
-| Lua                    | VCML-based VPs can be configured using Lua scripts. See [here](lua.md) under section `Configuration via LUA Scripting` for further information. |
-| SDL2                   | With SDL2, VCML can create a window that displays graphical output of a Virtual Platform. |
+2. Using the command line:
+   - Install [Git for Windows](https://git-scm.com/download/win)
+   - Launch `git-bash` (installed by Git for Windows)
+   - Run `git clone --recursive https://github.com:machineware-gmbh/vcml`
+   - Run `cmake -B BUILD -G "Visual Studio 17" -DCMAKE_BUILD_TYPE=[DEBUG|RELEASE]`
+   - Run `cmake --build BUILD`
 
 ----
 Documentation February 2025
