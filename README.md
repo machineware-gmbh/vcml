@@ -1,13 +1,12 @@
 # Virtual Components Modeling Library (vcml)
 
-The Virtual Components Modeling Library offers a comprehensive collection of
-SystemC/TLM modeling primitives and widely used component models. Its core
-mission is to assist and accelerate the development of system-level simulators
-for embedded systems, commonly known as Virtual Platforms.
-
-Based on VCML's key modeling primitives, such as TLM sockets, interrupt ports,
-I/O peripherals, and registers, a diverse range of TLM models, including memories,
-memory-mapped buses, and UARTs, are provided.
+The Virtual Components Modeling Library contains a set of SystemC/TLM modeling
+primitives and component models that can be used to swiftly assemble system
+level simulators for embedded systems, i.e. Virtual Platforms. Its main design
+goal is to accelerate VP construction by providing a set of commonly used
+features, such as TLM sockets, Interrupt ports, I/O peripherals and registers.
+Based on these design primitives, TLM models for frequently deployed components
+are also provided, such as memories, memory-mapped buses, UARTs, etc.
 
 [![Build Status](https://github.com/machineware-gmbh/vcml/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/cmake.yml)
 [![Sanitizer Status](https://github.com/machineware-gmbh/vcml/actions/workflows/asan.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/asan.yml)
