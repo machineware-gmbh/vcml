@@ -98,7 +98,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
         }
 
         m_mtx.unlock();
-        suspend(true);
+        suspend();
         m_mtx.lock();
         break;
 
