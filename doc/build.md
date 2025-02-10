@@ -23,9 +23,9 @@
     SystemC from [`github.com/machineware-gmbh/systemc`](https://github.com/machineware-gmbh/systemc) during configuration
     and set up the build environment accordingly.
 
-    VCML provides a helper script that downloads and builds SystemC. Choose a
-    build directory and version of SystemC and run the following script from the root
-    directory of VCML:
+    VCML provides a helper script that downloads and builds SystemC from [Accellera](https://accellera.org/).
+    Choose a build directory and version of SystemC and run the following script
+    from the root directory of VCML:
     ```sh
     ./utils/setup-systemc --prefix /opt/sysc --version 2.3.3 --optimize
     ```
@@ -33,7 +33,7 @@
     You can also build a debug version of SystemC, by appending `--debug` to the command.
 
     After running the script, the `SYSTEMC_HOME` environment variable must be set, so that
-    VCML's build system can find SystemC. The helper script will print the correct value
+    the build system of VCML can find SystemC. The helper script will print the correct value
     at the end of the execution.
     This allows you to run the following command:
     ```sh
@@ -45,8 +45,24 @@
     `SYSTEMC_HOME` and `TARGET_ARCH` variables. Versions starting from `2.3.0`
     are supported.
 
+4. *Optional*: Download LibMWR:
 
-4. Chose directories for building and deployment of VCML:
+    *Note:*
+    If you choose to skip this step, VCML will automatically download
+    LibMWR from [`github.com/machineware-gmbh/mwr`](https://github.com/machineware-gmbh/mwr)
+    during configuration and set up the build environment accordingly.
+
+    Download [LibMWR](https://github.com/machineware-gmbh/mwr) and extract it. Then set
+    the environment variable `MWR_HOME` so that the build system of VCML can find the
+    library. The environment variable must point to the top level source path of LibMWR,
+    where the `CMakeLists.txt` is located.
+
+    *Note:*
+    You can provide your own LibMWR implementation by specifying your own
+    `MWR_HOME` variable.
+
+
+4. Choose directories for building and deployment of VCML:
 
     ```
     <source-dir>  location of your repo copy,     e.g. /home/jan/vcml
@@ -64,7 +80,7 @@
    Optional dependencies are automatically enabled if found by `cmake` on the
    host build system. To disable their use, pass `-DUSE_<DEPENDENCY_NAME>=FALSE`
    to `cmake` during configuration. Check out the [following section](#dependencies)
-   for more information about VCML's dependencies.
+   for more information about the dependencies of VCML.
 
    Release and debug build configurations are controlled via the regular
    CMake parameters:
@@ -72,10 +88,10 @@
    cmake -B <build-dir> -DCMAKE_INSTALL_PREFIX=<install-dir> -DCMAKE_BUILD_TYPE=RELEASE <source-dir>
    cmake --build <build-dir>
    ```
-   If building with `-DVCML_BUILD_TESTS=ON`, you can run all unit tests using
-   `ctest` within `<build-dir>`.
+   If building with `-DVCML_BUILD_TESTS=ON`, you can run all unit tests with
+   `ctest --test-dir <build-dir>`.
 
-6. After building, VCML can then be installed into `<install-dir>` with the
+   After building, VCML can then be installed into `<install-dir>` with the
    following command:
 
    ```sh
@@ -83,9 +99,19 @@
    ```
    Depending on the path, you may need elevated rights to write to the installation directory (e.g. with `sudo`).
 
+   Alternately, VCML also provides helper scripts that automatically setup, build and install VCML
+   using GCC or Clang.
+   ```sh
+   <source-dir>/utils/setup-gcc [DEBUG|RELEASE|...] # for GCC builds
+   <source-dir>/utils/setup-clang [DEBUG|RELEASE|...] # for Clang builds
+   ```
+   After running the helper script, the installed library can be found in `<source-dir>/BUILD/<build-type>`.
+
+
 After installation, the following new files should be present:
 ```
-<install-dir>/lib/libvcml.a   # library
+<install-dir>/lib/libvcml.a   # library (on release builds)
+<install-dir>/lib/libvcmld.a  # library (on debug builds)
 <install-dir>/include/vcml.h  # library header
 <install-dir>/include/vcml/   # header files
 <install-dir>/bin/            # utility programs/scripts
@@ -107,6 +133,10 @@ There are two ways to build `vcml` on Windows:
    - Enter `https://github.com/machineware-gmbh/vcml` and click `Clone`
    - Once Visual Studio has cloned the project, double-click on the `vcml` folder
    - Run `Build All` from the build menu.
+
+   CMake parameters such as `SYSTEMC_HOME` can be configured by selecting `CMake Settings
+   for vcml` from the project menu. There, in the section `CMake variables and cache`, the
+   desired parameters can be added or changed.
 
 2. Using the command line:
    - Install [Git for Windows](https://git-scm.com/download/win)
@@ -152,18 +182,19 @@ is set to a local path, VCML will use the local copy instead.
 
 VCML also offers extra optional features that require the separate installation of
 additional libraries.
-    
+
   - Host SocketCAN support:
 
     If the host Linux kernel is built with SocketCAN support, VCML can use SocketCAN
     devices as a backend for exchanging CAN frames between the host and the virtual
-    environment.
-    
+    environment. SocketCAN devices are **not** supported on Windows!
+
   - Host TAP support:
 
     If the host Linux kernel is built with TAP support, TAP devices can be used as
     an Ethernet backend. This is significantly faster than SLiRP, but requires
-    elevated privileges on the host for creating the TAP devices.
+    elevated privileges on the host for creating the TAP devices. TAP devices are
+    **not** supported on Windows!
 
   - libslirp:
 
@@ -174,17 +205,18 @@ additional libraries.
 
     VCML can expose host USB devices to the virtual environment with the help of
     libusb.
-    
+
   - libvnc:
 
     VCML uses libvnc for providing a VNC server that gives access to graphical
-    output. A separate VNC client is needed.
+    output. A separate VNC client is needed, for example [Remmina](https://remmina.org/)
+    or [TightVNC](https://www.tightvnc.com/).
 
   - Lua:
 
     VCML-based VPs can be configured using Lua scripts. See [here](lua.md) under
     section `Configuration via LUA Scripting` for further information.
-    
+
   - SDL2:
 
     With SDL2, VCML can create a window that displays graphical output of
