@@ -21,9 +21,6 @@ namespace debugging {
 class suspender
 {
 private:
-    mutable mutex m_mtx;
-    condition_variable_any m_cv;
-
     string m_name;
     sc_object* m_owner;
 
@@ -36,7 +33,6 @@ public:
     virtual ~suspender();
 
     virtual bool check_suspension_point();
-    virtual void handle_suspension();
 
     bool is_suspending() const;
 

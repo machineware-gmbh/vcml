@@ -22,6 +22,8 @@ struct suspend_manager {
     atomic<bool> is_suspended;
 
     mutable mutex suspender_lock;
+    std::condition_variable_any cv;
+
     vector<suspender*> waiting_suspenders;
     vector<suspender*> active_suspenders;
 
@@ -49,12 +51,24 @@ suspend_manager& g_manager = suspend_manager::instance();
 void suspend_manager::request_pause(suspender* s) {
     if (is_quitting)
         return;
+
     if (!sim_running())
         VCML_ERROR("cannot suspend, simulation not running");
-    lock_guard<mutex> guard(suspender_lock);
-    if (waiting_suspenders.empty())
-        on_next_update([&]() { handle_requests(); });
-    stl_add_unique(waiting_suspenders, s);
+
+    {
+        std::unique_lock<mutex> lock(suspender_lock);
+        if (waiting_suspenders.empty())
+            on_next_update([&]() { handle_requests(); });
+        stl_add_unique(waiting_suspenders, s);
+
+        if (thctl_is_sysc_thread())
+            return;
+
+        while (!stl_contains(active_suspenders, s))
+            cv.wait(lock);
+    }
+
+    thctl_block();
 }
 
 void suspend_manager::request_resume(suspender* s) {
@@ -140,8 +154,7 @@ void suspend_manager::handle_requests() {
         notify_suspend();
         suspender_lock.lock();
 
-        for (suspender* s : active_suspenders)
-            s->handle_suspension();
+        cv.notify_all();
 
         while (!active_suspenders.empty()) {
             suspender_lock.unlock();
@@ -175,7 +188,7 @@ suspend_manager& suspend_manager::instance() {
 }
 
 suspender::suspender(const string& name):
-    m_mtx(), m_cv(), m_name(name), m_owner(hierarchy_top()) {
+    m_name(name), m_owner(hierarchy_top()) {
     if (m_owner != nullptr)
         m_name = mkstr("%s%c", m_owner->name(), SC_HIERARCHY_CHAR) + name;
 }
@@ -189,30 +202,15 @@ bool suspender::check_suspension_point() {
     return true;
 }
 
-void suspender::handle_suspension() {
-    lock_guard<mutex> l(m_mtx);
-    m_cv.notify_one();
-}
-
 bool suspender::is_suspending() const {
-    lock_guard<mutex> l(m_mtx);
     return suspend_manager::instance().is_suspending(this);
 }
 
 void suspender::suspend() {
-    suspend_manager& manager = suspend_manager::instance();
-
-    std::unique_lock<mutex> l(m_mtx);
-    manager.request_pause(this);
-
-    if (!thctl_is_sysc_thread()) {
-        m_cv.wait(l);
-        thctl_block();
-    }
+    suspend_manager::instance().request_pause(this);
 }
 
 void suspender::resume() {
-    lock_guard<mutex> l(m_mtx);
     suspend_manager::instance().request_resume(this);
 }
 
