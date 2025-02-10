@@ -23,13 +23,23 @@ Some basic documentation about this library and its models can be found
 [here](doc/main.md).
 
 ----
-## Contributions
-Please note that we currently cannot accept Pull Requests on Github.
-Instructions on how to contribute to VCML, along with a curated collection of
-existing contributions in the form of individual models or complete Virtual
-Platforms can be accessed on our community projects website at:
+## Related Projects
+| Project                                                        | About                               |
+|----------------------------------------------------------------|-------------------------------------|
+| [vcml-cci](https://github.com/machineware-gmbh/vcml-cci)       | SystemC CCI integration for VCML    |
+| [vcml-silkit](https://github.com/machineware-gmbh/vcml-silkit) | Vector SIL Kit integration for VCML |
+
+### Community
+A curated collection of existing contributions in the form of individual models or complete Virtual
+Platforms can be found on our community projects website at:
 
 [https://www.machineware.de/vcml-community](https://www.machineware.de/vcml-community)
+
+----
+## Contributions
+Please note that we currently cannot accept Pull Requests on GitHub.
+Contributions to VCML can be submitted as patch files via [email](https://www.machineware.de)
+instead.
 
 ----
 ## License
