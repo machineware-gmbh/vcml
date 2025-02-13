@@ -12,6 +12,8 @@
 #include "vcml/core/systemc.h"
 #include "vcml/core/thctl.h"
 
+#include "vcml/debugging/suspender.h"
+
 namespace vcml {
 
 #define SYSC_VERSION_MAJOR SC_VERSION_MAJOR
@@ -660,6 +662,7 @@ struct async_worker {
         notify.notify_one();
 
         while (working) {
+            debugging::suspender::handle_requests();
             u64 p = progress.exchange(0);
             sc_thread_pos = sc_time_stamp() + time_from_value(p);
             sc_core::wait(time_from_value(p));

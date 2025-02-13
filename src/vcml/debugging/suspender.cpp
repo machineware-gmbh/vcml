@@ -168,9 +168,6 @@ void suspend_manager::handle_requests() {
         is_suspended = false;
     }
 
-    if (!waiting_suspenders.empty())
-        on_next_update([&]() { handle_requests(); });
-
     suspender_lock.unlock();
 }
 
