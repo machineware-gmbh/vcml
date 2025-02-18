@@ -190,7 +190,15 @@ Windows builds are currently supported using
 [Microsoft Visual Studio](https://visualstudio.microsoft.com/).
 There are two ways to build `vcml` on Windows:
 
-1. Using Visual Studio IDE:
+1. Using a helper script:
+   - Install [Git for Windows](https://git-scm.com/download/win)
+   - Launch PowerShell
+   - Run `git clone --recursive https://github.com:machineware-gmbh/vcml`
+   - Run `.\utils\setup-msvc.ps1 [DEBUG|RELEASE]`
+
+   After executing the script, the library can be found in `BUILD\[DEBUG|RELEASE]\`.
+
+2. Using Visual Studio IDE:
    - Launch Visual Studio
    - In the Open Dialog click on `Clone a Repository`
    - Enter `https://github.com/machineware-gmbh/vcml` and click `Clone`
@@ -201,7 +209,7 @@ There are two ways to build `vcml` on Windows:
    for vcml` from the project menu. There, in the section `CMake variables and cache`, the
    desired parameters can be added or changed.
 
-2. Using the command line:
+3. Using the command line:
    - Install [Git for Windows](https://git-scm.com/download/win)
    - Launch `git-bash` (installed by Git for Windows)
    - Run `git clone --recursive https://github.com:machineware-gmbh/vcml`
