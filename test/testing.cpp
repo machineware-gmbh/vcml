@@ -11,11 +11,7 @@
 #include "testing.h"
 
 test_base::test_base(const sc_module_name& nm):
-    component(nm),
-    m_tracer(),
-    m_publisher(),
-    m_reset("reset"),
-    m_clock("clock", 100 * MHz) {
+    component(nm), m_reset("reset"), m_clock("clock", 100 * MHz) {
     m_reset.rst.bind(rst);
     m_clock.clk.bind(clk);
     SC_HAS_PROCESS(test_base);
@@ -102,6 +98,8 @@ string get_resource_path(const string& name) {
 extern "C" int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::mwr::report_segfaults();
+    ::mwr::publishers::terminal publisher;
+    ::vcml::tracer_term tracer;
     ::vcml::broker_arg broker(argc, argv);
     ::sc_core::sc_report_handler::set_handler(systemc_report_handler);
     for (int i = 0; i < argc; i++)

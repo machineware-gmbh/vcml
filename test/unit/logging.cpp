@@ -156,3 +156,9 @@ TEST(logging, reporting) {
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_ERROR))).Times(1);
     vcml::log.error(rep);
 }
+
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    ::mwr::report_segfaults();
+    return RUN_ALL_TESTS();
+}
