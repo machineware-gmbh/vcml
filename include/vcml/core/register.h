@@ -364,7 +364,7 @@ template <typename DATA, size_t N>
 void reg<DATA, N>::ignore_write() {
     on_write([&](DATA val) -> void {
         (void)val;
-        log_debug("write to read-only register %s", basename());
+        log_debug("write to read-only register %s", sc_object::basename());
     });
 }
 
