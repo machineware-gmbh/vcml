@@ -21,8 +21,8 @@ broker_arg::broker_arg(int argc, const char* const* argv): broker("cmdline") {
             string arg(argv[i++]);
             size_t separator = arg.find('=');
 
-            // if (separator == arg.npos)
-            //    log_warning("missing '=' in property '%s'", arg.c_str());
+            if (separator == string::npos)
+                log_warn("missing '=' in property '%s'", arg.c_str());
 
             // this will cause val=key if separator was missing
             string key = arg.substr(0, separator);
