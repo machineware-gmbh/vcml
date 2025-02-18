@@ -49,6 +49,8 @@ public:
 
     size_t tag;
 
+    logger& log;
+
     u64 get_address() const { return m_range.start; }
     u64 get_cell_size() const { return m_cell_size; }
     u64 get_cell_count() const { return m_cell_count; }
@@ -362,7 +364,7 @@ template <typename DATA, size_t N>
 void reg<DATA, N>::ignore_write() {
     on_write([&](DATA val) -> void {
         (void)val;
-        log_debug("write to read-only register %s", name());
+        log_debug("write to read-only register %s", basename());
     });
 }
 

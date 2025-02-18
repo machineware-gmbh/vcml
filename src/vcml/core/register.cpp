@@ -41,7 +41,8 @@ reg_base::reg_base(address_space space, const string& regname, u64 addr,
     m_maxsize(-1),
     m_host(hierarchy_search<peripheral>()),
     as(space),
-    tag() {
+    tag(),
+    log(m_host ? m_host->log : vcml::log) {
     VCML_ERROR_ON(m_cell_size == 0, "register cell size cannot be 0");
     VCML_ERROR_ON(m_cell_count == 0, "register cell count cannot be 0");
     VCML_ERROR_ON(!m_host, "register '%s' outside peripheral", name());
