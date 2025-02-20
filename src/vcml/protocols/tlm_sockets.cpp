@@ -29,6 +29,7 @@ tlm_generic_payload& tlm_initiator_socket::allocate_payload(
         m_txdb[proc].set_extension(new sbiext());
     return m_txdb[proc];
 }
+
 tlm_initiator_socket::tlm_initiator_socket(const char* nm,
                                            address_space space):
     simple_initiator_socket<tlm_initiator_socket>(nm),
@@ -43,7 +44,9 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
     m_adapter(nullptr),
     trace_all(this, "trace", false),
     trace_errors(this, "trace_errors", false),
-    allow_dmi(this, "allow_dmi", true) {
+    allow_dmi(this, "allow_dmi", true),
+    secure(this, "secure", false),
+    iid(this, "iid", 0) {
     VCML_ERROR_ON(!m_host, "socket '%s' declared outside tlm_host", nm);
     VCML_ERROR_ON(!m_parent, "socket '%s' declared outside module", nm);
 
@@ -55,6 +58,11 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
 
     register_invalidate_direct_mem_ptr(
         this, &tlm_initiator_socket::invalidate_direct_mem_ptr_int);
+
+    if (secure)
+        m_sbi |= SBI_SECURE;
+    if (!iid.is_default())
+        m_sbi |= sbi_cpuid(iid);
 
     m_txd.set_extension(new sbiext());
 }
@@ -79,6 +87,7 @@ u8* tlm_initiator_socket::lookup_dmi_ptr(const range& mem, vcml_access rw) {
     tlm_generic_payload tx;
     tlm_command cmd = tlm_command_from_access(rw);
     tx_setup(tx, cmd, mem.start, nullptr, mem.length());
+    tx_set_sbi(tx, m_sbi);
     if (!(*this)->get_direct_mem_ptr(tx, dmi))
         return nullptr;
 

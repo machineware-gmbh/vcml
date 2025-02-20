@@ -158,11 +158,11 @@ extern const tlm_sbi SBI_TRANSLATED;
 extern const tlm_sbi SBI_TR_REQ;
 
 inline tlm_sbi sbi_cpuid(u64 cpu) {
-    return tlm_sbi(0, 0, 0, 0, 0, 0, 0, 0, cpu, 0, 0);
+    return tlm_sbi(0, 0, 0, 0, 0, 0, 0, 0, cpu);
 }
 
 inline tlm_sbi sbi_privilege(u64 lvl) {
-    return tlm_sbi(0, 0, 0, 0, 0, 0, 0, 0, 0, lvl, 0);
+    return tlm_sbi(0, 0, 0, 0, 0, 0, 0, 0, 0, lvl);
 }
 
 inline tlm_sbi sbi_asid(u64 id) {

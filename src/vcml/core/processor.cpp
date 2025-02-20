@@ -397,6 +397,9 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     SC_HAS_PROCESS(processor);
     SC_THREAD(processor_thread);
 
+    insn.set_insn(true);
+    data.set_insn(false);
+
     for (const string& s : symbols) {
         string symfile = trim(s);
         if (symfile.empty())

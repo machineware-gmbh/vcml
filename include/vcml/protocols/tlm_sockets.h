@@ -59,10 +59,13 @@ public:
     property<bool> trace_all;
     property<bool> trace_errors;
     property<bool> allow_dmi;
+    property<bool> secure;
+    property<u64> iid;
 
     int get_cpuid() const { return m_sbi.cpuid; }
     int get_privilege() const { return m_sbi.privilege; }
 
+    void set_insn(bool ind);
     void set_cpuid(u64 cpuid);
     void set_privilege(u64 level);
 
@@ -132,6 +135,10 @@ inline void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
                                            const sc_time& t) {
     if (trace_all || (trace_errors && failed(tx)))
         tracer::record(TRACE_BW, *this, tx, t);
+}
+
+inline void tlm_initiator_socket::set_insn(bool ind) {
+    m_sbi.is_insn = ind;
 }
 
 inline void tlm_initiator_socket::set_cpuid(u64 cpuid) {
