@@ -91,6 +91,7 @@
 #include "vcml/models/serial/nrf51.h"
 #include "vcml/models/serial/cdns.h"
 #include "vcml/models/serial/sifive.h"
+#include "vcml/models/serial/uartlite.h"
 
 #include "vcml/models/timers/rtc1742.h"
 #include "vcml/models/timers/sp804.h"
