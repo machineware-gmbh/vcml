@@ -45,6 +45,7 @@ void test_base::run_test() {
             continue;
         }
 
+        m_reset.rst.pulse();
         log_info("%s started", t.name.c_str());
         t.run();
         log_info("%s complete", t.name.c_str());
