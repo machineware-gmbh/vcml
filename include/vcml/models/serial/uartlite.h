@@ -46,6 +46,7 @@ public:
     property<int> databits;
     property<bool> use_parity;
     property<bool> odd_parity;
+    property<bool> untimed;
 
     reg<u32> rx_fifo;
     reg<u32> tx_fifo;

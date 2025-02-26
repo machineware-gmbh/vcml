@@ -39,7 +39,8 @@ void uartlite::tx_thread() {
 
         while (!m_tx_fifo.empty()) {
             serial_tx.send(m_tx_fifo.front());
-            wait(serial_tx.cycle());
+            if (!untimed)
+                wait(serial_tx.cycle());
             m_tx_fifo.pop();
         }
 
@@ -75,7 +76,7 @@ void uartlite::write_tx_fifo(u32 val) {
     }
 
     m_tx_fifo.push(val);
-    m_txev.notify(clock_cycle());
+    m_txev.notify(untimed ? SC_ZERO_TIME : clock_cycle());
 }
 
 static void flush_fifo(queue<u8>& fifo) {
@@ -113,6 +114,7 @@ uartlite::uartlite(const sc_module_name& nm):
     databits("databits", 8),
     use_parity("use_parity", false),
     odd_parity("odd_parity", false),
+    untimed("untimed", false),
     rx_fifo("rx_fifo", 0x0),
     tx_fifo("tx_fifo", 0x4),
     status("status", 0x8),
