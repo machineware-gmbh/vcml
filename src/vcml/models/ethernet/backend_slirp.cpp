@@ -169,14 +169,15 @@ void slirp_network::slirp_thread() {
     }
 }
 
-slirp_network::slirp_network(unsigned int id):
+slirp_network::slirp_network(unsigned int id, logger& l):
     m_id(id),
     m_config(),
     m_slirp(),
     m_clients(),
     m_mtx(),
     m_running(true),
-    m_thread() {
+    m_thread(),
+    log(l) {
     m_config.version = 1;
 
     m_config.in_enabled = true;
@@ -348,7 +349,7 @@ backend* backend_slirp::create(bridge* br, const string& type) {
     static unordered_map<unsigned int, shared_ptr<slirp_network>> networks;
     auto& network = networks[netid];
     if (network == nullptr)
-        network = std::make_shared<slirp_network>(netid);
+        network = std::make_shared<slirp_network>(netid, br->log);
 
     backend_slirp* slirp = new backend_slirp(br, network);
 

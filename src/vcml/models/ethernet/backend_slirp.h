@@ -49,7 +49,9 @@ private:
     vector<port_forwarding> m_forwardings;
 
 public:
-    slirp_network(unsigned int id);
+    logger& log;
+
+    slirp_network(unsigned int id, logger& log);
     virtual ~slirp_network();
 
     void send_packet(const u8* ptr, size_t len);
