@@ -62,6 +62,30 @@ tlm_sbi& tlm_sbi::operator=(const tlm_sbi& other) {
     return *this;
 }
 
+static void sbi_copy_integer_props(tlm_sbi& dest, const tlm_sbi& src) {
+    if (dest.cpuid == SBI_CPUID_DEFAULT)
+        dest.cpuid = src.cpuid;
+    else if (src.cpuid != SBI_CPUID_DEFAULT && src.cpuid != dest.cpuid)
+        VCML_ERROR("multiple initializations given for sbi.cpuid");
+
+    if (dest.privilege == SBI_PRIVILEGE_NONE)
+        dest.privilege = src.privilege;
+    else if (src.privilege != SBI_PRIVILEGE_NONE &&
+             src.privilege != dest.privilege) {
+        VCML_ERROR("multiple initializations given for sbi.privilege");
+    }
+
+    if (dest.asid == SBI_ASID_GLOBAL)
+        dest.asid = src.asid;
+    else if (src.asid != SBI_ASID_GLOBAL && src.asid != dest.asid)
+        VCML_ERROR("multiple initializations given for sbi.asid");
+
+    if (dest.atype == SBI_ATYPE_UX)
+        dest.atype = src.atype;
+    else if (dest.atype != SBI_ATYPE_UX && dest.atype != src.atype)
+        VCML_ERROR("multiple initializations given for sbi.atype");
+}
+
 tlm_sbi& tlm_sbi::operator&=(const tlm_sbi& other) {
     is_debug &= other.is_debug;
     is_nodmi &= other.is_nodmi;
@@ -70,10 +94,7 @@ tlm_sbi& tlm_sbi::operator&=(const tlm_sbi& other) {
     is_excl &= other.is_excl;
     is_lock &= other.is_lock;
     is_secure &= other.is_secure;
-    atype &= other.atype;
-    cpuid &= other.cpuid;
-    privilege &= other.privilege;
-    asid &= other.asid;
+    sbi_copy_integer_props(*this, other);
     return *this;
 }
 
@@ -85,10 +106,7 @@ tlm_sbi& tlm_sbi::operator|=(const tlm_sbi& other) {
     is_excl |= other.is_excl;
     is_lock |= other.is_lock;
     is_secure |= other.is_secure;
-    atype |= other.atype;
-    cpuid |= other.cpuid;
-    privilege |= other.privilege;
-    asid |= other.asid;
+    sbi_copy_integer_props(*this, other);
     return *this;
 }
 
@@ -100,10 +118,7 @@ tlm_sbi& tlm_sbi::operator^=(const tlm_sbi& other) {
     is_excl ^= other.is_excl;
     is_lock ^= other.is_lock;
     is_secure ^= other.is_secure;
-    atype ^= other.atype;
-    cpuid ^= other.cpuid;
-    privilege ^= other.privilege;
-    asid ^= other.asid;
+    sbi_copy_integer_props(*this, other);
     return *this;
 }
 
