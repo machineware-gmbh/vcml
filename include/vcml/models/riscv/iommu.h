@@ -227,6 +227,7 @@ public:
     property<bool> pd8;
     property<bool> pd17;
     property<bool> pd20;
+    property<bool> passthrough;
 
     reg<u64> caps;
     reg<u32> fctl;

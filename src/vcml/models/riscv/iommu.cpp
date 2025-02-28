@@ -2243,6 +2243,7 @@ iommu::iommu(const sc_module_name& nm):
     pd8("pd8", true),
     pd17("pd17", true),
     pd20("pd20", true),
+    passthrough("passthrough", false),
     caps("caps", 0x0, 0),
     fctl("fctl", 0x8, 0),
     ddtp("ddtp", 0x10, 0),
@@ -2396,6 +2397,9 @@ unsigned int iommu::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     if (as == IOMMU_AS_DEFAULT)
         return peripheral::receive(tx, info, as);
 
+    if (passthrough)
+        return out.send(tx, info);
+
     iotlb entry{};
     u64 virt = tx.get_address();
 
@@ -2435,6 +2439,9 @@ bool iommu::get_direct_mem_ptr(tlm_target_socket& origin,
                                tlm_generic_payload& tx, tlm_dmi& dmi) {
     if (origin.as == IOMMU_AS_DEFAULT)
         return peripheral::get_direct_mem_ptr(origin, tx, dmi);
+
+    if (passthrough)
+        return out->get_direct_mem_ptr(tx, dmi);
 
     iotlb entry{};
     u64 virt = tx.get_address();
@@ -2489,6 +2496,11 @@ void iommu::invalidate_direct_mem_ptr(tlm_initiator_socket&, u64 s, u64 e) {
 }
 
 void iommu::invalidate_direct_mem_ptr(u64 start, u64 end) {
+    if (passthrough) {
+        dma->invalidate_direct_mem_ptr(start, end);
+        return;
+    }
+
     if (start <= m_dma_addr && end >= m_dma_addr) {
         m_dma_addr = ~0ull;
         m_dma_xptr = nullptr;
