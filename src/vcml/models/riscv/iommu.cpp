@@ -774,7 +774,7 @@ bool iommu::check_msi(const context& ctx, u64 addr) const {
 }
 
 int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
-    bool dbg = info.is_debug;
+    bool dbg = info.is_debug || dmi;
     bool ats = info.atype != SBI_ATYPE_UX;
     bool super = info.privilege > 0;
 
@@ -796,9 +796,6 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
         ctx = m_contexts[ctxid];
         return 0;
     }
-
-    if (dmi)
-        return -1;
 
     size_t depth = 0;
     size_t ddidx[3] = { 0, 0, 0 };
@@ -961,8 +958,8 @@ int iommu::fetch_context(const tlm_sbi& info, bool dmi, context& ctx) {
 
 int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
                        const tlm_sbi& info, bool dmi, iotlb& entry) {
-    bool dbg = info.is_debug;
     bool wnr = tx.is_write();
+    bool dbg = info.is_debug || dmi;
     bool pgreq = info.atype == SBI_ATYPE_RQ;
     bool txreq = info.atype == SBI_ATYPE_TX;
     bool super = info.privilege > 0;
@@ -973,15 +970,15 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     u64 gscid = get_field<IOHGATP_GSCID>(ctx.gatp);
     u64 pscid = get_field<TA_PSCID>(ctx.ta);
 
-    if (pgreq) {
+    if (pgreq && !dbg) {
         if (!(ctx.tc & TC_EN_ATS))
             return IOMMU_FAULT_TTYPE_BLOCKED;
         if (!(ctx.tc & TC_EN_PRI))
             return IOMMU_FAULT_TTYPE_BLOCKED;
     }
 
-    if (txreq) {
-        if (!(ctx.tc & TC_EN_ATS) || dmi)
+    if (txreq && !dbg) {
+        if (!(ctx.tc & TC_EN_ATS))
             return IOMMU_FAULT_TTYPE_BLOCKED;
 
         u64 phys = virt;
@@ -1009,9 +1006,6 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
         }
     }
 
-    if (dmi)
-        return -1;
-
     if (!dbg) {
         m_iotval2 = 0;
         increment_counter(ctx, IOMMU_EVENT_TLB_MISS);
@@ -1030,7 +1024,7 @@ int iommu::fetch_iotlb(context& ctx, tlm_generic_payload& tx,
     }
 
     u64 gpa = (iotlb_s.ppn << PAGE_BITS) | (virt & PAGE_MASK);
-    if (!pgreq && check_msi(ctx, gpa))
+    if (!pgreq && !dbg && check_msi(ctx, gpa))
         return translate_msi(ctx, tx, info, gpa, entry);
 
     if (stl_contains(m_iotlb_g, iotlb_s.ppn)) {

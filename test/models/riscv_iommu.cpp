@@ -538,29 +538,26 @@ public:
         iommu.flush_tlb_s();
 
         dma.allow_dmi = true;
-        sbiext* ext = new sbiext();
-        ext->cpuid = 4;
-        ext->asid = SBI_ASID_GLOBAL;
 
-        // no dmi without caches
+        // test dmi
         u64 addr = 0x1c0000000;
+
         tlm_dmi dmi;
+        tlm_sbi sbi = sbi_cpuid(4) | sbi_asid(SBI_ASID_GLOBAL);
         tlm_generic_payload tx;
-        tx.set_extension(ext);
+        tx_set_sbi(tx, sbi);
         tx.set_address(addr);
-        EXPECT_FALSE(dma->get_direct_mem_ptr(tx, dmi));
-
-        // warm up cache
-        ASSERT_OK(dma.writew(addr, 1234u, *ext));
-
         EXPECT_TRUE(dma->get_direct_mem_ptr(tx, dmi));
         EXPECT_TRUE(dmi.is_read_write_allowed());
         EXPECT_EQ(dmi.get_start_address(), addr);
+        EXPECT_EQ(tx.get_address(), addr);
 
-        // check if dmi was cached
-        EXPECT_TRUE(dma.dmi_cache().lookup(addr, 1, TLM_READ_COMMAND, dmi));
+        // test dmi cache invalidation
+        EXPECT_OK(dma.writew(addr, 1234u, sbi));
+        EXPECT_TRUE(dma.dmi_cache().lookup(addr, 1, TLM_WRITE_COMMAND, dmi));
         mem.in->invalidate_direct_mem_ptr(0, ~0ull);
         EXPECT_FALSE(dma.dmi_cache().lookup(addr, 1, TLM_READ_COMMAND, dmi));
+
         dma.allow_dmi = false;
     }
 };
