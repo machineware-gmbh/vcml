@@ -158,7 +158,14 @@ void suspend_manager::handle_requests() {
 
         while (!active_suspenders.empty()) {
             suspender_lock.unlock();
+#ifdef INSCIGHT_KTHREAD_SUSPENDED
+            INSCIGHT_KTHREAD_SUSPENDED();
+#endif
             thctl_suspend();
+
+#ifdef INSCIGHT_KTHREAD_RESUMED
+            INSCIGHT_KTHREAD_RESUMED();
+#endif
             suspender_lock.lock();
         }
 

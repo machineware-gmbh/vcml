@@ -14,12 +14,18 @@ namespace vcml {
 namespace meta {
 
 static u64 do_usleep(u64 delta) {
+#ifdef INSCIGHT_KTHREAD_THROTTLED
+    INSCIGHT_KTHREAD_THROTTLED();
+#endif
     u64 start = mwr::timestamp_us();
     mwr::usleep(delta);
     u64 end = mwr::timestamp_us();
     if (start >= end)
         return 0;
     u64 d = end - start;
+#ifdef INSCIGHT_KTHREAD_UNTHROTTLED
+    INSCIGHT_KTHREAD_UNTHROTTLED();
+#endif
     return d > delta ? d - delta : 0;
 }
 
