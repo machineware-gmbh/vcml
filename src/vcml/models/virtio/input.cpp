@@ -19,7 +19,7 @@ void input::config_update_name() {
         return;
 
     m_config.size = snprintf(m_config.u.string, sizeof(m_config.u.string),
-                             "vcml-virtio-input");
+                             "%s", devname.c_str());
 }
 
 void input::config_update_serial() {
@@ -294,6 +294,7 @@ input::input(const sc_module_name& nm):
     mouse("mouse", true),
     multitouch("multitouch", false),
     pollrate("pollrate", 1000),
+    devname("devname", "vcml-virtio-input"),
     keymap("keymap", "us"),
     xmax("xmax", 0x7fff),
     ymax("ymax", 0x7fff),

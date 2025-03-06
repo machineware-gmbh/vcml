@@ -114,6 +114,7 @@ public:
 
     const property<u64> pollrate;
 
+    const property<string> devname;
     const property<string> keymap;
 
     const property<size_t> xmax;
