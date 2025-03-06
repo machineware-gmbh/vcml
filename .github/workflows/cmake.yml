@@ -20,10 +20,20 @@ jobs:
       fail-fast: false
       matrix:
         systemc: [2.3.0a, 2.3.1a, 2.3.2, 2.3.3, 2.3.4, 3.0.0]
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
         include:
-          - systemc: 2.3.3
-            os: self-hosted-ubuntu-22.04-arm64
+          - os: ubuntu-22.04-arm
+            systemc: 2.3.3
+          - os: ubuntu-22.04-arm
+            systemc: 2.3.4
+          - os: ubuntu-22.04-arm
+            systemc: 3.0.0
+          - os: ubuntu-24.04-arm
+            systemc: 2.3.3
+          - os: ubuntu-24.04-arm
+            systemc: 2.3.4
+          - os: ubuntu-24.04-arm
+            systemc: 3.0.0
 
     name: SystemC ${{matrix.systemc}} - ${{matrix.os}}
 
