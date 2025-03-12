@@ -325,15 +325,22 @@ void sdl_client::notify_wheel(SDL_MouseWheelEvent& event) {
     }
 }
 
+static SDL_Point gen_window_pos(int w, int h, int cascade) {
+    SDL_DisplayMode dm;
+    SDL_GetCurrentDisplayMode(0, &dm);
+    SDL_Point pt;
+    pt.x = ((dm.w - w) / 2 + 32 * cascade) % dm.w;
+    pt.y = ((dm.h - h) / 2 + 32 * cascade) % dm.h;
+    return pt;
+}
+
 void sdl_client::init_window() {
     const char* name = disp->name();
-
     const int w = (int)disp->xres();
     const int h = (int)disp->yres();
-    const int x = SDL_WINDOWPOS_CENTERED;
-    const int y = SDL_WINDOWPOS_CENTERED;
+    SDL_Point pos = gen_window_pos(w, h, disp->dispno() % 10);
 
-    window = SDL_CreateWindow(name, x, y, w, h, 0);
+    window = SDL_CreateWindow(name, pos.x, pos.y, w, h, 0);
     if (window == nullptr)
         VCML_ERROR("cannot create SDL window: %s", SDL_GetError());
 
