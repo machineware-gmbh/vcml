@@ -20,7 +20,7 @@ if(CMAKE_BUILD_TYPE MATCHES "ASAN")
 elseif(CMAKE_BUILD_TYPE MATCHES "TSAN")
     string(APPEND VCML_ENVVAR "TSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/sanitizer/tsan.suppress detect_deadlocks=1 second_deadlock_stack=1 history_size=7;")
 elseif(CMAKE_BUILD_TYPE MATCHES "UBSAN")
-    string(APPEND VCML_ENVVAR "UBSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/sanitizer/ubsan.suppress:print_stacktrace=1;")
+    string(APPEND VCML_ENVVAR "UBSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/sanitizer/ubsan.suppress:print_stacktrace=1:halt_on_error=1;")
 endif()
 
 set(VCML_TEST_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources)
