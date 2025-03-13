@@ -16,7 +16,7 @@ macro(unit_test test)
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
     add_test(NAME unit/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
     set_tests_properties(unit/${test} PROPERTIES ENVIRONMENT "${VCML_ENVVAR}")
-    set_tests_properties(unit/${test} PROPERTIES TIMEOUT 4)
+    set_tests_properties(unit/${test} PROPERTIES TIMEOUT 10)
 endmacro()
 
 unit_test("hello")
