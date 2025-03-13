@@ -71,8 +71,10 @@ TEST(tlm_exmon, dmi) {
     mon.add_lock(0, { 100, 199 });
     mon.add_lock(1, { 300, 399 });
 
+    mwr::u8 memory[4096]{};
+
     tlm::tlm_dmi dmi;
-    dmi.set_dmi_ptr(NULL);
+    dmi.set_dmi_ptr(memory);
     dmi.set_start_address(0);
     dmi.set_end_address((sc_dt::uint64)-1);
 
@@ -84,7 +86,7 @@ TEST(tlm_exmon, dmi) {
     tx.set_address(399);
     EXPECT_FALSE(mon.override_dmi(tx, dmi));
 
-    dmi.set_dmi_ptr(NULL);
+    dmi.set_dmi_ptr(memory);
     dmi.set_start_address(0);
     dmi.set_end_address((sc_dt::uint64)-1);
 
@@ -92,9 +94,9 @@ TEST(tlm_exmon, dmi) {
     EXPECT_TRUE(mon.override_dmi(tx, dmi));
     EXPECT_EQ(dmi.get_start_address(), 0);
     EXPECT_EQ(dmi.get_end_address(), 99);
-    EXPECT_EQ(dmi.get_dmi_ptr(), (unsigned char*)0);
+    EXPECT_EQ(dmi.get_dmi_ptr(), memory);
 
-    dmi.set_dmi_ptr(NULL);
+    dmi.set_dmi_ptr(memory);
     dmi.set_start_address(0);
     dmi.set_end_address((sc_dt::uint64)-1);
 
@@ -102,9 +104,9 @@ TEST(tlm_exmon, dmi) {
     EXPECT_TRUE(mon.override_dmi(tx, dmi));
     EXPECT_EQ(dmi.get_start_address(), 200);
     EXPECT_EQ(dmi.get_end_address(), 299);
-    EXPECT_EQ(dmi.get_dmi_ptr(), (unsigned char*)200);
+    EXPECT_EQ(dmi.get_dmi_ptr(), memory + 200);
 
-    dmi.set_dmi_ptr(NULL);
+    dmi.set_dmi_ptr(memory);
     dmi.set_start_address(0);
     dmi.set_end_address((sc_dt::uint64)-1);
 
@@ -112,5 +114,5 @@ TEST(tlm_exmon, dmi) {
     EXPECT_TRUE(mon.override_dmi(tx, dmi));
     EXPECT_EQ(dmi.get_start_address(), 400);
     EXPECT_EQ(dmi.get_end_address(), -1);
-    EXPECT_EQ(dmi.get_dmi_ptr(), (unsigned char*)400);
+    EXPECT_EQ(dmi.get_dmi_ptr(), memory + 400);
 }
