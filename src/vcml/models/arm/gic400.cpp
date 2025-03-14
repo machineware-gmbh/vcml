@@ -1256,11 +1256,13 @@ void gic400::vcpuif::write_eoir(u32 val) {
         rpr.bank(cpu) = IDLE_PRIO;
 
     // deactivate interrupt
+    bool phys_update = false;
     m_vifctrl->set_lr_active(lr, cpu, false);
     if (m_vifctrl->is_lr_hw(lr, cpu)) {
         u16 physid = m_vifctrl->get_lr_physid(lr, cpu);
         if (!(physid < NSGI || physid > NIRQ)) {
             m_parent->set_irq_active(physid, false, bit(cpu));
+            phys_update = true;
         } else {
             log_error("unexpected physical id %d for cpu %zu in LR %d", physid,
                       cpu, lr);
@@ -1268,6 +1270,10 @@ void gic400::vcpuif::write_eoir(u32 val) {
     }
 
     m_parent->update(true);
+
+    if (phys_update)
+        m_parent->update(false);
+
     reg = val;
 }
 
