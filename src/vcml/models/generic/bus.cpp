@@ -83,16 +83,27 @@ void bus::handle_bus_error(tlm_generic_payload& tx) const {
 void bus::do_mmap(ostream& os) {
     stream_guard guard(os);
 
-    size_t w = 0, i = 0, y = 8;
+    size_t l = 0;
+    size_t z = m_mappings.size();
+    do {
+        l++;
+    } while (z /= 10);
+
+    size_t w = 0;
     for (const auto it : m_target_peers)
         w = max(w, strlen(it.second->name()));
+
+    size_t y = 8;
     for (const auto& m : m_mappings) {
         if (m.addr.end > ~0u)
             y = 16;
     }
 
+    size_t i = 0;
     for (const auto& m : m_mappings) {
-        os << "\n" << i++ << ": " << std::setw(y) << m.addr << " -> ";
+        os << "\n[";
+        os << std::dec << std::setw(l) << std::setfill(' ') << i++ << "] ";
+        os << std::hex << std::setw(y) << m.addr << " -> ";
         os << mwr::pad(target_peer_name(m.target), w);
         os << " " << std::setw(y) << m.addr + m.offset - m.addr.start;
 
