@@ -56,5 +56,5 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{matrix.sanitizer}} --verbose
+      run: ctest -C ${{matrix.sanitizer}} --output-on-failure
 
