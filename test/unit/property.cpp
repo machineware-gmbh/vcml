@@ -25,6 +25,7 @@ public:
     vcml::property<std::string> not_inited;
     vcml::property<vcml::u32, 4> prop_array;
     vcml::property<vcml::u32, 4> prop_array2;
+    vcml::property<vcml::u32, 4> prop_array3;
     vcml::property<std::string, 4> prop_array_string;
     vcml::property<vcml::range> prop_range;
     vcml::property<void> prop_void;
@@ -43,6 +44,7 @@ public:
         not_inited("prop_not_inited", "not_inited"),
         prop_array("prop_array", 7),
         prop_array2("prop_array2", 9),
+        prop_array3("prop_array3", { 1, 3, 5, 7 }),
         prop_array_string("prop_array_string", "not_inited"),
         prop_range("prop_range", { 1, 2 }),
         prop_void("prop_void", 4, 2),
@@ -126,6 +128,23 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array2[3], 4);
     EXPECT_EQ(test.prop_array2.get_default(), 9);
     EXPECT_EQ(std::string(test.prop_array2.str()), "1 2 3 4");
+
+    EXPECT_FALSE(test.prop_array3.is_inited());
+    EXPECT_TRUE(test.prop_array3.is_default());
+    EXPECT_EQ(test.prop_array3[0], 1);
+    EXPECT_EQ(test.prop_array3[1], 3);
+    EXPECT_EQ(test.prop_array3[2], 5);
+    EXPECT_EQ(test.prop_array3[3], 7);
+    test.prop_array3.set_default({ 2, 4, 6, 8 });
+    EXPECT_EQ(test.prop_array3.get_default(0), 2);
+    EXPECT_EQ(test.prop_array3.get_default(1), 4);
+    EXPECT_EQ(test.prop_array3.get_default(2), 6);
+    EXPECT_EQ(test.prop_array3.get_default(3), 8);
+    EXPECT_DEATH(test.prop_array3.get_default(4), "index 4 out of bounds");
+    EXPECT_DEATH(test.prop_array3.set_default({ 0, 0 }),
+                 "too few initializers");
+    EXPECT_DEATH(test.prop_array3.set_default({ 0, 0, 0, 0, 0 }),
+                 "too many initializers");
 
     EXPECT_TRUE(test.prop_array_string.is_inited());
     EXPECT_EQ(test.prop_array_string.count(), 4);

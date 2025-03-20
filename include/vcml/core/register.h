@@ -183,9 +183,14 @@ public:
     const char* name() const { return sc_core::sc_object::name(); }
 
     reg(const string& name, u64 addr, DATA init = DATA());
+    reg(const string& name, u64 addr, std::initializer_list<DATA> init);
     reg(address_space as, const string& name, u64 addr, DATA init = DATA());
+    reg(address_space as, const string& name, u64 addr,
+        std::initializer_list<DATA> init);
     reg(const tlm_target_socket& socket, const string& name, u64 addr,
         DATA data = DATA());
+    reg(const tlm_target_socket& socket, const string& name, u64 addr,
+        std::initializer_list<DATA> data);
     virtual ~reg();
     reg() = delete;
 
@@ -420,6 +425,12 @@ reg<DATA, N>::reg(const string& nm, u64 addr, DATA def):
 }
 
 template <typename DATA, size_t N>
+reg<DATA, N>::reg(const string& nm, u64 addr,
+                  std::initializer_list<DATA> init):
+    reg(VCML_AS_DEFAULT, nm, addr, init) {
+}
+
+template <typename DATA, size_t N>
 reg<DATA, N>::reg(address_space a, const string& nm, u64 addr, DATA d):
     reg_base(a, nm, addr, sizeof(DATA), N),
     property<DATA, N>(nm.c_str(), d),
@@ -435,9 +446,31 @@ reg<DATA, N>::reg(address_space a, const string& nm, u64 addr, DATA d):
 }
 
 template <typename DATA, size_t N>
+reg<DATA, N>::reg(address_space a, const string& nm, u64 addr,
+                  std::initializer_list<DATA> init):
+    reg_base(a, nm, addr, sizeof(DATA), N),
+    property<DATA, N>(nm.c_str(), init),
+    m_banked(false),
+    m_init(),
+    m_banks(),
+    m_read(),
+    m_write(),
+    m_read_tagged(),
+    m_write_tagged() {
+    for (size_t i = 0; i < N; i++)
+        m_init[i] = property<DATA, N>::get(i);
+}
+
+template <typename DATA, size_t N>
 reg<DATA, N>::reg(const tlm_target_socket& socket, const string& name,
                   u64 addr, DATA data):
     reg<DATA, N>(socket.as, name, addr, data) {
+}
+
+template <typename DATA, size_t N>
+reg<DATA, N>::reg(const tlm_target_socket& socket, const string& name,
+                  u64 addr, std::initializer_list<DATA> data):
+    reg_base(socket.as, name, addr, data) {
 }
 
 template <typename DATA, size_t N>

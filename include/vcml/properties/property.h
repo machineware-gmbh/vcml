@@ -24,14 +24,16 @@ class property : public property_base
 {
 private:
     T m_value[N];
-    T m_defval;
+    T m_defval[N];
     bool m_inited;
 
     mutable string m_str;
 
 public:
     property(const char* nm, const T& def = T());
+    property(const char* nm, std::initializer_list<T> def);
     property(sc_object* parent, const char* nm, const T& def = T());
+    property(sc_object* parent, const char* nm, std::initializer_list<T> def);
     virtual ~property();
     VCML_KIND(property);
 
@@ -61,7 +63,9 @@ public:
     void set(const T& val, size_t idx);
 
     const T& get_default() const;
+    const T& get_default(size_t idx) const;
     void set_default(const T& defval);
+    void set_default(std::initializer_list<T> def);
 
     void inherit_default();
 
@@ -115,7 +119,15 @@ public:
 
 template <typename T, size_t N>
 property<T, N>::property(const char* nm, const T& def):
-    property_base(nm), m_value(), m_defval(def), m_inited(false), m_str() {
+    property_base(nm), m_value(), m_defval(), m_inited(false), m_str() {
+    set_default(def);
+    property<T, N>::reset();
+}
+
+template <typename T, size_t N>
+property<T, N>::property(const char* nm, std::initializer_list<T> def):
+    property_base(nm), m_value(), m_defval(), m_inited(false), m_str() {
+    set_default(def);
     property<T, N>::reset();
 }
 
@@ -123,9 +135,22 @@ template <typename T, size_t N>
 property<T, N>::property(sc_object* parent, const char* nm, const T& def):
     property_base(parent, nm),
     m_value(),
-    m_defval(def),
+    m_defval(),
     m_inited(false),
     m_str() {
+    set_default(def);
+    property<T, N>::reset();
+}
+
+template <typename T, size_t N>
+property<T, N>::property(sc_object* parent, const char* nm,
+                         std::initializer_list<T> def):
+    property_base(parent, nm),
+    m_value(),
+    m_defval(),
+    m_inited(false),
+    m_str() {
+    set_default(def);
     property<T, N>::reset();
 }
 
@@ -137,7 +162,7 @@ property<T, N>::~property() {
 template <typename T, size_t N>
 inline void property<T, N>::reset() {
     for (size_t i = 0; i < N; i++)
-        m_value[i] = m_defval;
+        m_value[i] = m_defval[i];
 
     string init;
     if (broker::init(fullname(), init))
@@ -250,15 +275,35 @@ inline void property<T, N>::set(const T& val, size_t idx) {
 
 template <typename T, size_t N>
 inline const T& property<T, N>::get_default() const {
-    return m_defval;
+    return m_defval[0];
+}
+
+template <typename T, size_t N>
+inline const T& property<T, N>::get_default(size_t idx) const {
+    VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
+    return m_defval[idx];
 }
 
 template <typename T, size_t N>
 inline void property<T, N>::set_default(const T& defval) {
-    m_defval = defval;
+    for (size_t i = 0; i < N; i++)
+        m_defval[i] = defval;
     if (!m_inited) {
         for (size_t i = 0; i < N; i++)
-            m_value[i] = m_defval;
+            m_value[i] = defval;
+    }
+}
+
+template <typename T, size_t N>
+inline void property<T, N>::set_default(std::initializer_list<T> def) {
+    VCML_ERROR_ON(def.size() < N, "too few initializers for %s", fullname());
+    VCML_ERROR_ON(def.size() > N, "too many initializers for %s", fullname());
+    auto it = def.begin();
+    for (size_t i = 0; i < N; i++)
+        m_defval[i] = *it++;
+    if (!m_inited) {
+        for (size_t i = 0; i < N; i++)
+            m_value[i] = m_defval[i];
     }
 }
 

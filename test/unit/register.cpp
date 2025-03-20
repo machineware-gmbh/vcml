@@ -595,7 +595,7 @@ public:
     mock_peripheral_mask(const sc_module_name& nm):
         peripheral(nm),
         test_reg("test_reg", 0x0),
-        array_reg("array_reg", 0x10) {
+        array_reg("array_reg", 0x10, { 1, 2, 4, 8 }) {
         test_reg.allow_read_write();
         array_reg.allow_read_write();
         test_reg.on_write_mask(0x10101010);
@@ -615,6 +615,23 @@ TEST(registers, masking) {
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
     EXPECT_EQ(mock.test_reg, 0x10101010u);
 
+    tx_setup(tx, TLM_READ_COMMAND, 0x10, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(data, 1u);
+
+    tx_setup(tx, TLM_READ_COMMAND, 0x14, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(data, 2u);
+
+    tx_setup(tx, TLM_READ_COMMAND, 0x18, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(data, 4u);
+
+    tx_setup(tx, TLM_READ_COMMAND, 0x1c, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(data, 8u);
+
+    data = ~0u;
     tx_setup(tx, TLM_WRITE_COMMAND, 0x10, &data, sizeof(data));
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
     EXPECT_EQ(mock.array_reg[0], 1);

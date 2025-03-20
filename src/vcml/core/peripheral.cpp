@@ -14,6 +14,7 @@
 namespace vcml {
 
 bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
+    stream_guard guard(os);
     os << "Memory map of " << name();
 
     address_space as = VCML_AS_DEFAULT;
@@ -22,23 +23,36 @@ bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
         os << " (address space " << as << ")";
     }
 
-#define HEX(x)                                                            \
-    std::setfill('0') << std::setw((x) > ~0u ? 16 : 8) << std::hex << (x) \
-                      << std::dec
-
     auto regs = get_registers(as);
     std::sort(regs.begin(), regs.end(), [](reg_base* a, reg_base* b) -> bool {
         return a->get_range().start < b->get_range().start;
     });
 
-    int i = 0;
-    for (auto reg : regs) {
-        os << std::endl
-           << i++ << ": " << HEX(reg->get_range().start) << ".."
-           << HEX(reg->get_range().end) << " -> " << reg->basename();
+    if (regs.empty()) {
+        os << "\n<no registers>";
+        return true;
     }
 
-#undef HEX
+    size_t l = 0;
+    size_t z = regs.size();
+    do {
+        l++;
+    } while (z /= 10);
+
+    size_t y = 8;
+    for (const auto& r : regs) {
+        if (r->get_range().end > ~0u)
+            y = 16;
+    }
+
+    size_t i = 0;
+    for (const auto& r : regs) {
+        os << "\n[";
+        os << std::dec << std::setw(l) << std::setfill(' ') << i++ << "] ";
+        os << std::hex << std::setw(y) << r->get_range() << " -> ";
+        os << r->basename();
+    }
+
     return true;
 }
 
