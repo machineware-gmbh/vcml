@@ -62,13 +62,16 @@ public:
 
     property<string> image;
     property<bool> readonly;
+    property<bool> writeignore;
 
     block::disk disk;
 
     usb_target_socket usb_in;
 
-    drive(const sc_module_name& nm): drive(nm, "ramdisk:512MiB", false) {}
-    drive(const sc_module_name& nm, const string& image, bool readonly);
+    drive(const sc_module_name& nm):
+        drive(nm, "ramdisk:512MiB", false, false) {}
+    drive(const sc_module_name& nm, const string& image, bool readonly,
+          bool writeignore);
     virtual ~drive();
     VCML_KIND(usb::drive);
 

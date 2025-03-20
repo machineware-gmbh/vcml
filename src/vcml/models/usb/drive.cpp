@@ -269,7 +269,7 @@ u8 drive::handle_command(u8* cmdbuf) {
     }
 }
 
-drive::drive(const sc_module_name& nm, const string& img, bool ro):
+drive::drive(const sc_module_name& nm, const string& img, bool ro, bool wi):
     device(nm, DRIVE_DESC),
     m_mode(MODE_CBW),
     m_output(),
@@ -286,7 +286,8 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro):
     serialno("serialno", VCML_GIT_REV_SHORT),
     image("image", img),
     readonly("readonly", ro),
-    disk("disk", image, readonly),
+    writeignore("writeignore", wi),
+    disk("disk", image, readonly, writeignore),
     usb_in("usb_in") {
     m_desc.vendor_id = vendorid;
     m_desc.product_id = productid;
@@ -441,7 +442,7 @@ VCML_EXPORT_MODEL(vcml::usb::drive, name, args) {
     if (args.empty())
         return new drive(name);
     else
-        return new drive(name, args[0], false);
+        return new drive(name, args[0], false, false);
 }
 
 } // namespace usb

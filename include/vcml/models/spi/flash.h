@@ -84,6 +84,7 @@ public:
     property<string> device;
     property<string> image;
     property<bool> readonly;
+    property<bool> writeignore;
 
     block::disk disk;
 

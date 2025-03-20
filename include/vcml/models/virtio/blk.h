@@ -82,7 +82,9 @@ private:
 
 public:
     property<string> image;
+
     property<bool> readonly;
+    property<bool> writeignore;
 
     property<u32> max_size;
     property<u32> max_discard_sectors;

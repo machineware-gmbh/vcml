@@ -49,14 +49,16 @@ public:
 
     property<string> image;
     property<string> serial;
+
     property<bool> readonly;
+    property<bool> writeignore;
 
     bool has_backing() const { return m_backend != nullptr; }
 
     disk(const sc_module_name& name, const string& img = "",
-         bool readonly = false);
+         bool readonly = false, bool writeignore = false);
     virtual ~disk();
-    VCML_KIND(block::drive);
+    VCML_KIND(block::disk);
 
     size_t capacity();
     size_t pos();

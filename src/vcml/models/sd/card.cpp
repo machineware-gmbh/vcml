@@ -879,7 +879,7 @@ sd_status_rx card::do_data_write(u8 val) {
     return SDRX_OK_BLK_DONE;
 }
 
-card::card(const sc_module_name& nm, const string& img, bool ro):
+card::card(const sc_module_name& nm, const string& img, bool ro, bool wi):
     component(nm),
     sd_host(),
     m_spi(false),
@@ -903,7 +903,8 @@ card::card(const sc_module_name& nm, const string& img, bool ro):
     m_state(IDLE),
     image("image", img),
     readonly("readonly", ro),
-    disk("disk", image, readonly),
+    writeignore("writeignore", wi),
+    disk("disk", image, readonly, writeignore),
     sd_in("sd_in") {
     if (disk.capacity() % 1024)
         log_warn("image size should be multiples of 1kB");

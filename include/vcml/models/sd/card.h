@@ -166,13 +166,14 @@ public:
 
     property<string> image;
     property<bool> readonly;
+    property<bool> writeignore;
 
     block::disk disk;
 
     sd_target_socket sd_in;
 
     card(const sc_module_name& name, const string& image = "",
-         bool readonly = false);
+         bool readonly = false, bool writeignore = false);
     virtual ~card();
     virtual void reset() override;
     VCML_KIND(sd::card);

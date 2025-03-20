@@ -192,8 +192,20 @@ bool blk::process_discard(virtio_blk_req& req, vq_message& msg) {
         return false;
     }
 
+    if (!disk.seek(dwz.sector * SECTOR_SIZE)) {
+        log_warn("seek request failed for sector %llu", dwz.sector);
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
     size_t length = dwz.num_sectors * SECTOR_SIZE;
     log_debug("discard sector %llu, %zu bytes", dwz.sector, length);
+    if (!disk.discard(length)) {
+        log_warn("discard request failed for sector %llu", dwz.sector);
+        put_status(msg, VIRTIO_BLK_S_IOERR);
+        return true;
+    }
+
     put_status(msg, VIRTIO_BLK_S_OK);
     return true;
 }
@@ -289,10 +301,11 @@ blk::blk(const sc_module_name& nm):
     m_config(),
     image("image", ""),
     readonly("readonly", false),
+    writeignore("writeignore", false),
     max_size("max_size", 4096),
     max_discard_sectors("max_discard_sectors", 4096),
     max_write_zeroes_sectors("max_write_zeroes_sectors", 4096),
-    disk("disk", image, readonly),
+    disk("disk", image, readonly, writeignore),
     virtio_in("virtio_in") {
     m_config.capacity = disk.capacity() / SECTOR_SIZE;
     m_config.blk_size = 512;

@@ -206,7 +206,8 @@ flash::flash(const sc_module_name& nm, const string& dev):
     device("device", dev),
     image("image", ""),
     readonly("readonly", false),
-    disk("disk", image, readonly),
+    writeignore("writeignore", false),
+    disk("disk", image, readonly, writeignore),
     spi_in("spi_in"),
     cs_in("cs_in") {
     m_info = lookup_device(device);

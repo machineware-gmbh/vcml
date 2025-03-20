@@ -55,6 +55,7 @@ void backend_ram::read(u8* buffer, size_t size) {
 }
 
 void backend_ram::write(const u8* buffer, size_t size) {
+    VCML_REPORT_ON(m_readonly, "writing to read-only file");
     if (m_pos + size > m_cap)
         VCML_REPORT("attempt to write beyond end of buffer");
 
@@ -73,6 +74,7 @@ void backend_ram::write(const u8* buffer, size_t size) {
 }
 
 void backend_ram::wzero(size_t size, bool may_unmap) {
+    VCML_REPORT_ON(m_readonly, "writing to read-only file");
     if (m_pos + size > m_cap)
         VCML_REPORT("attempt to write beyond end of buffer");
 

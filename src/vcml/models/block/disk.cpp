@@ -53,16 +53,16 @@ static string default_serial() {
     return mkstr("vcml-disk-%zu", n++);
 }
 
-disk::disk(const sc_module_name& nm, const string& img, bool ro):
+disk::disk(const sc_module_name& nm, const string& img, bool ro, bool wi):
     module(nm),
     m_backend(nullptr),
     stats(),
     image("image", img),
     serial("serial", default_serial()),
-    readonly("readonly", ro) {
+    readonly("readonly", ro),
+    writeignore("writeignore", wi) {
     try {
         m_backend = backend::create(image, readonly);
-        readonly = !m_backend || m_backend->readonly();
     } catch (std::exception& ex) {
         log_warn("%s", ex.what());
     }
@@ -126,9 +126,11 @@ bool disk::write(const u8* buffer, size_t size) {
     stats.num_write_req++;
     stats.num_req++;
 
-    if (m_backend) {
+    if (m_backend && !m_backend->readonly()) {
         try {
-            if (!m_backend->readonly()) {
+            if (writeignore) {
+                m_backend->seek(m_backend->pos() + size);
+            } else {
                 m_backend->write(buffer, size);
                 stats.num_bytes_written += size;
             }
@@ -147,9 +149,11 @@ bool disk::wzero(size_t size, bool may_unmap) {
     stats.num_write_req++;
     stats.num_req++;
 
-    if (m_backend) {
+    if (m_backend && !m_backend->readonly()) {
         try {
-            if (!m_backend->readonly()) {
+            if (writeignore) {
+                m_backend->seek(m_backend->pos() + size);
+            } else {
                 m_backend->wzero(size, may_unmap);
                 stats.num_bytes_written += size;
             }
@@ -188,7 +192,8 @@ bool disk::flush() {
 
     if (m_backend) {
         try {
-            m_backend->flush();
+            if (!writeignore)
+                m_backend->flush();
             return true;
         } catch (std::exception& ex) {
             log.warn(ex);

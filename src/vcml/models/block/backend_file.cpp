@@ -53,6 +53,7 @@ void backend_file::read(u8* buffer, size_t size) {
 }
 
 void backend_file::write(const u8* buffer, size_t size) {
+    VCML_REPORT_ON(m_readonly, "writing to read-only file");
     VCML_REPORT_ON(size > remaining(), "writing beyond end of file");
     m_stream.write((char*)buffer, size);
     VCML_REPORT_ON(!m_stream, "error writing: %s", strerror(errno));
