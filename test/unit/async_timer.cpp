@@ -41,10 +41,10 @@ public:
 
         std::thread async([&]() -> void {
             EXPECT_TRUE(running);
-            EXPECT_FALSE(thctl_is_sysc_thread());
+            EXPECT_FALSE(is_sysc_thread());
             async_timer t3(10, SC_US, [&](async_timer& t) -> void {
                 EXPECT_GE(sc_time_stamp(), t.timeout());
-                EXPECT_TRUE(thctl_is_sysc_thread());
+                EXPECT_TRUE(is_sysc_thread());
                 running = false;
                 promise.set_value();
             });

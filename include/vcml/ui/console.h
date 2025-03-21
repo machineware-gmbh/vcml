@@ -12,7 +12,6 @@
 #define VCML_UI_CONSOLE_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/thctl.h"
 
 #include "vcml/ui/video.h"
 #include "vcml/ui/keymap.h"

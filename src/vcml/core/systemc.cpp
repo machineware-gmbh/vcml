@@ -10,7 +10,6 @@
 
 #include "vcml/core/version.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/thctl.h"
 
 #include "vcml/debugging/suspender.h"
 
@@ -728,7 +727,7 @@ void sc_progress(const sc_time& delta) {
 }
 
 void sc_sync(function<void(void)> job) {
-    if (thctl_is_sysc_thread()) {
+    if (is_sysc_thread()) {
         job();
     } else if (g_async != nullptr) {
         g_async->run_sync(std::move(job));
@@ -756,7 +755,7 @@ sc_time async_time_offset() {
 }
 
 bool is_thread(sc_process_b* proc) {
-    if (!thctl_is_sysc_thread())
+    if (!is_sysc_thread())
         return false;
     if (proc == nullptr)
         proc = current_process();
@@ -766,7 +765,7 @@ bool is_thread(sc_process_b* proc) {
 }
 
 bool is_method(sc_process_b* proc) {
-    if (!thctl_is_sysc_thread())
+    if (!is_sysc_thread())
         return false;
     if (proc == nullptr)
         proc = current_process();
@@ -778,7 +777,7 @@ bool is_method(sc_process_b* proc) {
 sc_process_b* current_process() {
     if (g_async)
         return g_async->process;
-    if (!thctl_is_sysc_thread())
+    if (!is_sysc_thread())
         return nullptr;
     return sc_core::sc_get_current_process_b();
 }
@@ -811,7 +810,7 @@ bool sim_running() {
 }
 
 string call_origin() {
-    if (!thctl_is_sysc_thread()) {
+    if (!is_sysc_thread()) {
         string name = mwr::get_thread_name();
         return mkstr("thread '%s'", name.c_str());
     }
@@ -830,6 +829,16 @@ string call_origin() {
     }
 
     return "";
+}
+
+thread::id sysc_thread = std::this_thread::get_id();
+
+bool is_sysc_thread() {
+    return std::this_thread::get_id() == sysc_thread;
+}
+
+void set_sysc_thread(thread::id id) {
+    sysc_thread = id;
 }
 
 } // namespace vcml

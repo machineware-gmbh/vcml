@@ -13,7 +13,6 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/thctl.h"
 #include "vcml/core/peripheral.h"
 #include "vcml/core/model.h"
 

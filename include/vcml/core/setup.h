@@ -12,7 +12,6 @@
 #define VCML_SETUP_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/thctl.h"
 
 #include "vcml/logging/logger.h"
 #include "vcml/logging/inscight.h"

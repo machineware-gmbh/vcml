@@ -167,7 +167,7 @@ unsigned int tlm_host::transport_dbg(tlm_target_socket& socket,
     unsigned int n = do_transport(socket, tx, socket.current_sideband());
     sc_time t2(sc_time_stamp());
 
-    if (thctl_is_sysc_thread() && t1 != t2)
+    if (is_sysc_thread() && t1 != t2)
         VCML_ERROR("time advance during debug call");
 
     return n;

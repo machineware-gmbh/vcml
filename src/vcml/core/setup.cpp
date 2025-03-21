@@ -165,11 +165,6 @@ int main(int argc, char** argv) {
         log.error(ex);
     }
 
-    // at this point sc_is_running is false and no new critical sections
-    // should be entered, but we need to give those who are still waiting
-    // to execute a final chance to run
-    thctl_flush();
-
     return res;
 }
 
