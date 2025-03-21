@@ -181,12 +181,9 @@ string gdbserver::handle_step(const string& cmd) {
 
     update_status(GDB_STOPPED);
 
-    if (sim_running()) {
-        thctl_block();
-        if (!simulation_suspended()) {
-            log_warn("simulation is not suspended");
-            return ERR_INTERNAL;
-        }
+    if (sim_running() && !simulation_suspended()) {
+        log_warn("simulation is not suspended");
+        return ERR_INTERNAL;
     }
 
     return create_stop_reply();
@@ -219,12 +216,9 @@ string gdbserver::handle_continue(const string& cmd) {
 
     update_status(GDB_STOPPED);
 
-    if (sim_running()) {
-        thctl_block();
-        if (!simulation_suspended()) {
-            log_warn("simulation is not suspended");
-            return ERR_INTERNAL;
-        }
+    if (sim_running() && !simulation_suspended()) {
+        log_warn("simulation is not suspended");
+        return ERR_INTERNAL;
     }
 
     return create_stop_reply();
@@ -955,12 +949,9 @@ string gdbserver::handle_vcont(const string& cmd) {
 
     update_status(GDB_STOPPED);
 
-    if (sim_running()) {
-        thctl_block();
-        if (!simulation_suspended()) {
-            log_warn("simulation is not suspended");
-            return ERR_INTERNAL;
-        }
+    if (sim_running() && !simulation_suspended()) {
+        log_warn("simulation is not suspended");
+        return ERR_INTERNAL;
     }
 
     return create_stop_reply();
@@ -1032,11 +1023,8 @@ void gdbserver::handle_connect(const char* peer) {
     log_debug("gdb connected to %s", peer);
     update_status(GDB_STOPPED);
 
-    if (sim_running()) {
-        thctl_block();
-        if (!simulation_suspended())
-            log_warn("simulation is not suspended");
-    }
+    if (sim_running() && !simulation_suspended())
+        log_warn("simulation is not suspended");
 }
 
 void gdbserver::handle_disconnect() {

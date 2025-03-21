@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "vcml/core/systemc.h"
-#include "vcml/core/thctl.h"
 #include "vcml/core/module.h"
 
 #include "vcml/debugging/suspender.h"
@@ -22,7 +21,8 @@ struct suspend_manager {
     atomic<bool> is_suspended;
 
     mutable mutex suspender_lock;
-    std::condition_variable_any cv;
+    std::condition_variable_any cv_pause;
+    std::condition_variable_any cv_resume;
 
     vector<suspender*> waiting_suspenders;
     vector<suspender*> active_suspenders;
@@ -61,14 +61,12 @@ void suspend_manager::request_pause(suspender* s) {
             on_next_update([&]() { handle_requests(); });
         stl_add_unique(waiting_suspenders, s);
 
-        if (thctl_is_sysc_thread())
+        if (is_sysc_thread())
             return;
 
         while (!stl_contains(active_suspenders, s))
-            cv.wait(lock);
+            cv_pause.wait(lock);
     }
-
-    thctl_block();
 }
 
 void suspend_manager::request_resume(suspender* s) {
@@ -79,7 +77,7 @@ void suspend_manager::request_resume(suspender* s) {
 
     stl_remove(active_suspenders, s);
     if (active_suspenders.empty())
-        thctl_notify();
+        cv_resume.notify_all();
 }
 
 bool suspend_manager::is_suspending(const suspender* s) const {
@@ -102,7 +100,7 @@ void suspend_manager::quit() {
     is_quitting = true;
     waiting_suspenders.clear();
     active_suspenders.clear();
-    thctl_notify();
+    cv_resume.notify_all();
 }
 
 void suspend_manager::notify_suspend(sc_object* obj) {
@@ -154,20 +152,19 @@ void suspend_manager::handle_requests() {
         notify_suspend();
         suspender_lock.lock();
 
-        cv.notify_all();
+        cv_pause.notify_all();
 
-        while (!active_suspenders.empty()) {
-            suspender_lock.unlock();
 #ifdef INSCIGHT_KTHREAD_SUSPENDED
-            INSCIGHT_KTHREAD_SUSPENDED();
+        INSCIGHT_KTHREAD_SUSPENDED();
 #endif
-            thctl_suspend();
+
+        cv_resume.wait(suspender_lock, [&]() {
+            return active_suspenders.empty() || is_quitting;
+        });
 
 #ifdef INSCIGHT_KTHREAD_RESUMED
-            INSCIGHT_KTHREAD_RESUMED();
+        INSCIGHT_KTHREAD_RESUMED();
 #endif
-            suspender_lock.lock();
-        }
 
         suspender_lock.unlock();
         notify_resume();

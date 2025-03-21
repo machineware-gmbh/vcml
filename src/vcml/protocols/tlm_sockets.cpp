@@ -137,7 +137,7 @@ unsigned int tlm_initiator_socket::send(tlm_generic_payload& tx,
         bytes = (*this)->transport_dbg(tx);
         sc_time t2(sc_time_stamp());
 
-        if (thctl_is_sysc_thread() && t1 != t2)
+        if (is_sysc_thread() && t1 != t2)
             VCML_ERROR("time advanced during debug call");
     } else {
         if (!is_thread())

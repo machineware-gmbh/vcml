@@ -12,7 +12,6 @@
 #define VCML_UI_DISPLAY_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/thctl.h"
 
 #include "vcml/logging/logger.h"
 

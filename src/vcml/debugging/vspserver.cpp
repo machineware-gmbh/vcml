@@ -8,7 +8,6 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/core/thctl.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/version.h"
 #include "vcml/core/component.h"

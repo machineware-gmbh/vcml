@@ -22,7 +22,7 @@ public:
         sc_time t = SC_ZERO_TIME;
         sc_time step = duration / 10;
 
-        EXPECT_FALSE(thctl_is_sysc_thread());
+        EXPECT_FALSE(is_sysc_thread());
 
         while (t < duration) {
             mwr::usleep(1000);
@@ -31,7 +31,7 @@ public:
         }
 
         sc_sync([&]() -> void {
-            EXPECT_TRUE(thctl_is_sysc_thread());
+            EXPECT_TRUE(is_sysc_thread());
             wait(duration);
             success = true;
         });
@@ -39,7 +39,7 @@ public:
 
     virtual void run_test() override {
         EXPECT_FALSE(success);
-        EXPECT_TRUE(thctl_is_sysc_thread());
+        EXPECT_TRUE(is_sysc_thread());
         EXPECT_EQ(sc_time_stamp(), SC_ZERO_TIME);
 
         sc_time dura(10, SC_SEC);
