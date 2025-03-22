@@ -37,6 +37,7 @@ public:
 
     void suspend();
     void resume();
+    void yield();
 
     static suspender* current();
     static void quit();

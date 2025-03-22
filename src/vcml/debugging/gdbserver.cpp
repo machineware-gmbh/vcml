@@ -81,8 +81,11 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
     if (!sim_running())
         status = GDB_KILLED;
 
-    if (m_status == status)
+    if (m_status == status) {
+        if (m_status == GDB_STOPPED && !is_sysc_thread())
+            yield(); // wait until actually stopped
         return;
+    }
 
     gdb_status prev_status = m_status;
 
@@ -154,7 +157,7 @@ string gdbserver::handle_unknown(const string& cmd) {
 
 string gdbserver::handle_step(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -182,7 +185,7 @@ string gdbserver::handle_step(const string& cmd) {
     update_status(GDB_STOPPED);
 
     if (sim_running() && !simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -191,7 +194,7 @@ string gdbserver::handle_step(const string& cmd) {
 
 string gdbserver::handle_continue(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -217,7 +220,7 @@ string gdbserver::handle_continue(const string& cmd) {
     update_status(GDB_STOPPED);
 
     if (sim_running() && !simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -237,7 +240,7 @@ string gdbserver::handle_kill(const string& cmd) {
 
 string gdbserver::handle_query(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -377,7 +380,7 @@ string gdbserver::handle_extra_threadinfo(const string& cmd) {
 
 string gdbserver::handle_reg_read(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -419,7 +422,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
 
 string gdbserver::handle_reg_write(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -468,7 +471,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
 
 string gdbserver::handle_reg_read_all(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -502,7 +505,7 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
 
 string gdbserver::handle_reg_write_all(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -539,7 +542,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
 
 string gdbserver::handle_mem_read(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -578,7 +581,7 @@ string gdbserver::handle_mem_read(const string& cmd) {
 
 string gdbserver::handle_mem_write(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -624,7 +627,7 @@ string gdbserver::handle_mem_write(const string& cmd) {
 
 string gdbserver::handle_mem_write_bin(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -669,7 +672,7 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
 
 string gdbserver::handle_breakpoint_set(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -720,7 +723,7 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
 
 string gdbserver::handle_breakpoint_delete(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -771,7 +774,7 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
 
 string gdbserver::handle_exception(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -836,7 +839,7 @@ string gdbserver::handle_thread_alive(const string& cmd) {
 
 string gdbserver::handle_vcont(const string& cmd) {
     if (!simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -950,7 +953,7 @@ string gdbserver::handle_vcont(const string& cmd) {
     update_status(GDB_STOPPED);
 
     if (sim_running() && !simulation_suspended()) {
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
         return ERR_INTERNAL;
     }
 
@@ -1024,7 +1027,7 @@ void gdbserver::handle_connect(const char* peer) {
     update_status(GDB_STOPPED);
 
     if (sim_running() && !simulation_suspended())
-        log_warn("simulation is not suspended");
+        log_warn("%s: simulation is not suspended", __func__);
 }
 
 void gdbserver::handle_disconnect() {

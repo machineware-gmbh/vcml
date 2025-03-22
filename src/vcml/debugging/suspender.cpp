@@ -29,6 +29,7 @@ struct suspend_manager {
 
     void request_pause(suspender* s);
     void request_resume(suspender* s);
+    void request_yield(suspender* s);
 
     bool is_suspending(const suspender* s) const;
 
@@ -55,18 +56,14 @@ void suspend_manager::request_pause(suspender* s) {
     if (!sim_running())
         VCML_ERROR("cannot suspend, simulation not running");
 
-    {
-        std::unique_lock<mutex> lock(suspender_lock);
-        if (waiting_suspenders.empty())
-            on_next_update([&]() { handle_requests(); });
-        stl_add_unique(waiting_suspenders, s);
+    suspender_lock.lock();
+    if (waiting_suspenders.empty())
+        on_next_update([&]() { handle_requests(); });
+    stl_add_unique(waiting_suspenders, s);
+    suspender_lock.unlock();
 
-        if (is_sysc_thread())
-            return;
-
-        while (!stl_contains(active_suspenders, s))
-            cv_pause.wait(lock);
-    }
+    if (!is_sysc_thread())
+        request_yield(s);
 }
 
 void suspend_manager::request_resume(suspender* s) {
@@ -78,6 +75,21 @@ void suspend_manager::request_resume(suspender* s) {
     stl_remove(active_suspenders, s);
     if (active_suspenders.empty())
         cv_resume.notify_all();
+}
+
+void suspend_manager::request_yield(suspender* s) {
+    if (is_sysc_thread())
+        VCML_ERROR("cannot call yield on systemc thread");
+
+    suspender_lock.lock();
+    if (!stl_contains(waiting_suspenders, s) &&
+        !stl_contains(active_suspenders, s)) {
+        VCML_ERROR("cannot call yield without suspend");
+    }
+
+    cv_pause.wait(suspender_lock,
+                  [&] { return stl_contains(active_suspenders, s); });
+    suspender_lock.unlock();
 }
 
 bool suspend_manager::is_suspending(const suspender* s) const {
@@ -213,6 +225,10 @@ void suspender::suspend() {
 
 void suspender::resume() {
     suspend_manager::instance().request_resume(this);
+}
+
+void suspender::yield() {
+    suspend_manager::instance().request_yield(this);
 }
 
 suspender* suspender::current() {
