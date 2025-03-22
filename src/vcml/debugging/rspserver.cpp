@@ -187,12 +187,21 @@ void rspserver::disconnect() {
 }
 
 void rspserver::run_async() {
-    m_running = true;
-    m_thread = thread(&rspserver::run, this);
+    m_mutex.lock();
+    m_thread = thread([&]() {
+        mwr::set_thread_name(m_name);
+        run();
+    });
+    m_cv.wait(m_mutex, [&]() -> bool { return m_running; });
+    m_mutex.unlock();
 }
 
 void rspserver::run() {
-    mwr::set_thread_name(m_name);
+    m_mutex.lock();
+    m_running = true;
+    m_cv.notify_all();
+    m_mutex.unlock();
+
     while (m_running) {
         try {
             disconnect();

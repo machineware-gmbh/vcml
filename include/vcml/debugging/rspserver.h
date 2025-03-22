@@ -33,6 +33,7 @@ private:
 
     mutex m_mutex;
     thread m_thread;
+    condition_variable_any m_cv;
 
     std::map<string, handler> m_handlers;
 
