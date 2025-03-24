@@ -547,8 +547,11 @@ public:
     void stub();
 };
 
-using pci_base_initiator_array = socket_array<pci_base_initiator_socket>;
-using pci_base_target_array = socket_array<pci_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using pci_base_initiator_array = socket_array<pci_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using pci_base_target_array = socket_array<pci_base_target_socket, N>;
 
 class pci_initiator_socket : public pci_base_initiator_socket
 {
@@ -620,8 +623,11 @@ constexpr size_t pci_devno(size_t dev, size_t fn = 0) {
     return (dev & 31u) << 3 | (fn & 7u);
 }
 
-using pci_initiator_array = socket_array<pci_initiator_socket>;
-using pci_target_array = socket_array<pci_target_socket>;
+template <size_t N = SIZE_MAX>
+using pci_initiator_array = socket_array<pci_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using pci_target_array = socket_array<pci_target_socket, N>;
 
 class pci_initiator_stub : private pci_bw_transport_if
 {

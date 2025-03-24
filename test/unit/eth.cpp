@@ -64,8 +64,8 @@ public:
     eth_base_target_socket eth_rx_h;
     eth_target_socket eth_rx;
 
-    eth_initiator_array eth_array_tx;
-    eth_target_array eth_array_rx;
+    eth_initiator_array<> eth_array_tx;
+    eth_target_array<> eth_array_rx;
 
     ethernet_bench(const sc_module_name& nm):
         test_base(nm),

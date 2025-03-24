@@ -109,8 +109,11 @@ public:
     void stub();
 };
 
-using gpio_base_initiator_array = socket_array<gpio_base_initiator_socket>;
-using gpio_base_target_array = socket_array<gpio_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using gpio_base_initiator_array = socket_array<gpio_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using gpio_base_target_array = socket_array<gpio_base_target_socket, N>;
 
 class gpio_initiator_socket : public gpio_base_initiator_socket
 {
@@ -211,8 +214,11 @@ protected:
     virtual void gpio_transport(gpio_payload& gpio);
 };
 
-using gpio_initiator_array = socket_array<gpio_initiator_socket>;
-using gpio_target_array = socket_array<gpio_target_socket>;
+template <size_t N = SIZE_MAX>
+using gpio_initiator_array = socket_array<gpio_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using gpio_target_array = socket_array<gpio_target_socket, N>;
 
 class gpio_initiator_stub : private gpio_bw_transport_if
 {

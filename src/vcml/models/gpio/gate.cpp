@@ -13,35 +13,35 @@
 namespace vcml {
 namespace gpio {
 
-static bool calc_and(const gpio_target_array& in) {
+static bool calc_and(const gpio_target_array<>& in) {
     for (const auto& port : in)
         if (!port.second->read())
             return false;
     return true;
 }
 
-static bool calc_nand(const gpio_target_array& in) {
+static bool calc_nand(const gpio_target_array<>& in) {
     for (const auto& port : in)
         if (!port.second->read())
             return true;
     return false;
 }
 
-static bool calc_or(const gpio_target_array& in) {
+static bool calc_or(const gpio_target_array<>& in) {
     for (const auto& port : in)
         if (port.second->read())
             return true;
     return false;
 }
 
-static bool calc_nor(const gpio_target_array& in) {
+static bool calc_nor(const gpio_target_array<>& in) {
     for (const auto& port : in)
         if (port.second->read())
             return false;
     return true;
 }
 
-static bool calc_xor(const gpio_target_array& in) {
+static bool calc_xor(const gpio_target_array<>& in) {
     bool result = false;
     for (const auto& port : in)
         result ^= port.second->read();

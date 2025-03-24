@@ -62,8 +62,8 @@ public:
     i2c_base_target_socket i2c_in_h;
     i2c_target_socket i2c_in;
 
-    i2c_initiator_array i2c_array_out;
-    i2c_target_array i2c_array_in;
+    i2c_initiator_array<> i2c_array_out;
+    i2c_target_array<> i2c_array_in;
 
     i2c_bench(const sc_module_name& nm):
         test_base(nm),

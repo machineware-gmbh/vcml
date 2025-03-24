@@ -29,9 +29,9 @@ class endpoint : public device
 public:
     pci_target_socket pci_in;
 
-    gpio_target_array irq_in;
+    gpio_target_array<> irq_in;
     tlm_target_socket dma_in;
-    tlm_initiator_array bar_out;
+    tlm_initiator_array<> bar_out;
 
     endpoint(const sc_module_name& name, const pci_config& config);
     virtual ~endpoint();

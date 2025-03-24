@@ -1093,10 +1093,10 @@ pl330::pl330(const sc_module_name& nm):
     periph_id("periph_id", 0xfe0, 0x00000000),
     pcell_id("pcell_id", 0xff0, 0x00000000),
     periph_busy(),
-    periph_irq("periph_irq", (size_t)32),
+    periph_irq("periph_irq"),
     in("in"),
     dma("dma"),
-    irq("irq", (size_t)32),
+    irq("irq"),
     irq_abort("irq_abort"),
     m_dma(),
     m_execute_debug(false) {

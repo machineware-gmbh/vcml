@@ -18,10 +18,10 @@ public:
     tlm_base_target_socket tlm_tbase;
     tlm_target_socket tlm_tfull;
 
-    tlm_initiator_array tlm_out;
-    tlm_base_initiator_array tlm_out_h;
-    tlm_base_target_array tlm_in_h;
-    tlm_target_array tlm_in;
+    tlm_initiator_array<128> tlm_out;
+    tlm_base_initiator_array<128> tlm_out_h;
+    tlm_base_target_array<128> tlm_in_h;
+    tlm_target_array<128> tlm_in;
 
     tlm_harness(const sc_module_name& nm):
         test_base(nm),
@@ -53,6 +53,11 @@ public:
         EXPECT_TRUE(find_object("tlm.tlm_out_h[44]_stub"));
         EXPECT_TRUE(find_object("tlm.tlm_in_h[55]_stub"));
         EXPECT_TRUE(find_object("tlm.tlm_in[66]_stub"));
+
+        EXPECT_EQ(tlm_out.limit(), 128);
+        EXPECT_EQ(tlm_out_h.limit(), 128);
+        EXPECT_EQ(tlm_in_h.limit(), 128);
+        EXPECT_EQ(tlm_in.limit(), 128);
     }
 
     virtual ~tlm_harness() = default;

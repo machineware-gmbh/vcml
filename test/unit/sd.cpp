@@ -23,8 +23,8 @@ public:
     sd_base_initiator_socket sd_out_h;
     sd_base_target_socket sd_in_h;
 
-    sd_initiator_array sd_out_arr;
-    sd_target_array sd_in_arr;
+    sd_initiator_array<> sd_out_arr;
+    sd_target_array<> sd_in_arr;
 
     sd_harness(const sc_module_name& nm):
         test_base(nm),

@@ -73,9 +73,9 @@ public:
 
     tlm_target_socket in;
 
-    gpio_target_array irq_in;
-    gpio_initiator_array irq_out;
-    gpio_initiator_array fiq_out;
+    gpio_target_array<NIRQ> irq_in;
+    gpio_initiator_array<> irq_out;
+    gpio_initiator_array<> fiq_out;
 
     pl190vic(const sc_module_name& nm);
     virtual ~pl190vic();

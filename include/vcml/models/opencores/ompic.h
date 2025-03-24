@@ -46,7 +46,7 @@ public:
     reg<u32>** control;
     reg<u32>** status;
 
-    gpio_initiator_array irq;
+    gpio_initiator_array<> irq;
     tlm_target_socket in;
 
     ompic(const sc_module_name& name, unsigned int num_cores);

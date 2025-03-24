@@ -58,7 +58,7 @@ public:
     reg<u32> setspi; // Set SPI register
     reg<u32> iidr;   // Interface Identification register
 
-    gpio_initiator_array out;
+    gpio_initiator_array<> out;
 
     tlm_target_socket in;
 

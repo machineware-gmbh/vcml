@@ -75,7 +75,7 @@ public:
     reg<u32> ip;
 
     clk_initiator_socket sclk;
-    gpio_initiator_array cs;
+    gpio_initiator_array<> cs;
     gpio_initiator_socket irq;
     spi_initiator_socket spi_out;
     tlm_target_socket in;

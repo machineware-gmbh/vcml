@@ -47,11 +47,11 @@ private:
     }
 
 public:
-    pci_initiator_array pci_out;
-    pci_target_array pci_in;
+    pci_initiator_array<256> pci_out;
+    pci_target_array<256> pci_in;
 
-    pci_base_initiator_array pci_out_h;
-    pci_base_target_array pci_in_h;
+    pci_base_initiator_array<> pci_out_h;
+    pci_base_target_array<> pci_in_h;
 
     pci_initiator_socket pci_out_nocon;
     pci_target_socket pci_in_nocon;
@@ -71,6 +71,9 @@ public:
             pci_bind(*this, "pci_in_h", i, *this, "pci_in", i);
             pci_bind(*this, "pci_out_h", i, *this, "pci_in_h", i);
         }
+
+        EXPECT_EQ(pci_out.limit(), 256);
+        EXPECT_EQ(pci_in.limit(), 256);
 
         pci_stub(*this, "pci_out_nocon");
         pci_stub(*this, "pci_in_nocon");

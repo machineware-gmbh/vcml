@@ -82,7 +82,7 @@ public:
 
     property<bool> trace_callstack;
 
-    gpio_target_array irq;
+    gpio_target_array<> irq;
 
     tlm_initiator_socket insn;
     tlm_initiator_socket data;

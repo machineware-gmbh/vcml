@@ -35,7 +35,7 @@ private:
 public:
     reg<u32> data;
 
-    gpio_initiator_array gpio_out;
+    gpio_initiator_array<> gpio_out;
     tlm_target_socket in;
 
     mmgpio() = delete;

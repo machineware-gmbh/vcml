@@ -73,9 +73,9 @@ public:
     reg<u32> low_ip;
     reg<u32> out_xor;
 
-    gpio_initiator_array irq;
-    gpio_initiator_array gpio_out;
-    gpio_target_array gpio_in;
+    gpio_initiator_array<32> irq;
+    gpio_initiator_array<32> gpio_out;
+    gpio_target_array<32> gpio_in;
     tlm_target_socket in;
 
     sifive(const sc_module_name& name, size_t ngpios = 16);

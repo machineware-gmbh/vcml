@@ -103,8 +103,11 @@ public:
     void stub(hz_t hz = 100 * MHz);
 };
 
-using clk_base_initiator_array = socket_array<clk_base_initiator_socket>;
-using clk_base_target_array = socket_array<clk_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using clk_base_initiator_array = socket_array<clk_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using clk_base_target_array = socket_array<clk_base_target_socket, N>;
 
 class clk_initiator_socket : public clk_base_initiator_socket
 {
@@ -181,8 +184,11 @@ protected:
     virtual void clk_transport(const clk_payload& tx);
 };
 
-using clk_initiator_array = socket_array<clk_initiator_socket>;
-using clk_target_array = socket_array<clk_target_socket>;
+template <size_t N = SIZE_MAX>
+using clk_initiator_array = socket_array<clk_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using clk_target_array = socket_array<clk_target_socket, N>;
 
 class clk_initiator_stub : private clk_bw_transport_if
 {

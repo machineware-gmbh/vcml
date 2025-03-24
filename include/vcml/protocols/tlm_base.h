@@ -67,8 +67,11 @@ public:
     }
 };
 
-using tlm_base_initiator_array = socket_array<tlm_base_initiator_socket>;
-using tlm_base_target_array = socket_array<tlm_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using tlm_base_initiator_array = socket_array<tlm_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using tlm_base_target_array = socket_array<tlm_base_target_socket, N>;
 
 } // namespace vcml
 

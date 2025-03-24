@@ -25,8 +25,8 @@ public:
     spi_base_initiator_socket spi_out_h;
     spi_base_target_socket spi_in_h;
 
-    spi_initiator_array spi_out_arr;
-    spi_target_array spi_in_arr;
+    spi_initiator_array<> spi_out_arr;
+    spi_target_array<> spi_in_arr;
 
     size_t count1;
     size_t count2;

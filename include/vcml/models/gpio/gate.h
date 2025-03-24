@@ -33,7 +33,7 @@ public:
         LOGIC_XOR,
     };
 
-    gpio_target_array in;
+    gpio_target_array<> in;
     gpio_initiator_socket out;
 
     gate(const sc_module_name& name, logic_type type);

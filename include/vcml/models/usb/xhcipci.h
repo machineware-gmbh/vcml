@@ -30,7 +30,7 @@ private:
 
 public:
     pci_base_target_socket pci_in;
-    usb_base_initiator_array usb_out;
+    usb_base_initiator_array<> usb_out;
 
     xhcipci(const sc_module_name& name);
     virtual ~xhcipci();

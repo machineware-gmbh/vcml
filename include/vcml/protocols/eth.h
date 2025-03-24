@@ -257,8 +257,11 @@ public:
     void stub();
 };
 
-using eth_base_initiator_array = socket_array<eth_base_initiator_socket>;
-using eth_base_target_array = socket_array<eth_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using eth_base_initiator_array = socket_array<eth_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using eth_base_target_array = socket_array<eth_base_target_socket, N>;
 
 class eth_initiator_socket : public eth_base_initiator_socket
 {
@@ -331,8 +334,11 @@ public:
     virtual ~eth_target_stub() = default;
 };
 
-using eth_initiator_array = socket_array<eth_initiator_socket>;
-using eth_target_array = socket_array<eth_target_socket>;
+template <size_t N = SIZE_MAX>
+using eth_initiator_array = socket_array<eth_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using eth_target_array = socket_array<eth_target_socket, N>;
 
 eth_base_initiator_socket& eth_initiator(const sc_object& parent,
                                          const string& port);

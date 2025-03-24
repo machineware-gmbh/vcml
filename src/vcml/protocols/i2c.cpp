@@ -228,23 +228,15 @@ static i2c_base_target_socket* get_target_socket(sc_object* port) {
 
 static i2c_base_initiator_socket* get_initiator_socket(sc_object* array,
                                                        size_t idx) {
-    auto* base = dynamic_cast<i2c_base_initiator_array*>(array);
-    if (base)
-        return &base->get(idx);
-    auto* main = dynamic_cast<i2c_initiator_array*>(array);
-    if (main)
-        return &main->get(idx);
+    if (auto* aif = dynamic_cast<socket_array_if*>(array))
+        return aif->fetch_as<i2c_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
 static i2c_base_target_socket* get_target_socket(sc_object* array,
                                                  size_t idx) {
-    auto* base = dynamic_cast<i2c_base_target_array*>(array);
-    if (base)
-        return &base->get(idx);
-    auto* main = dynamic_cast<i2c_target_array*>(array);
-    if (main)
-        return &main->get(idx);
+    if (auto* aif = dynamic_cast<socket_array_if*>(array))
+        return aif->fetch_as<i2c_base_target_socket>(idx, true);
     return nullptr;
 }
 
@@ -295,9 +287,11 @@ void i2c_set_address(const sc_object& obj, const string& port, u8 addr) {
 void i2c_set_address(const sc_object& o, const string& port, size_t i, u8 a) {
     sc_object* child = find_child(o, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", o.name(), port.c_str());
-    auto* tgt = dynamic_cast<i2c_target_array*>(child);
-    VCML_ERROR_ON(!tgt, "%s is not a valid i2c socket array", child->name());
-    tgt->get(i).set_address(a);
+    auto* aif = dynamic_cast<socket_array_if*>(child);
+    VCML_ERROR_ON(!aif, "%s is not a valid i2c socket array", child->name());
+    auto* tgt = dynamic_cast<i2c_target_socket*>(aif->fetch(i, false));
+    VCML_ERROR_ON(!aif, "%s[%zu] is not a valid i2c socket", child->name(), i);
+    tgt->set_address(a);
 }
 
 void i2c_stub(const sc_object& obj, const string& port) {

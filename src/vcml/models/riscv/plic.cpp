@@ -181,8 +181,8 @@ plic::plic(const sc_module_name& nm):
     m_contexts(),
     priority("priority", 0x0, 0),
     pending("pending", 0x1000, 0),
-    irqs("irqs", NIRQ),
-    irqt("irqt", NCTX),
+    irqs("irqs"),
+    irqt("irqt"),
     in("in") {
     priority.allow_read_write();
     priority.on_write(&plic::write_priority);

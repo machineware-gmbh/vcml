@@ -207,11 +207,11 @@ public:
     reg<u32, 4> pcell_id;  // Component Identification Registers
 
     bool periph_busy[32];
-    gpio_target_array periph_irq;
+    gpio_target_array<32> periph_irq;
 
     tlm_target_socket in;
     tlm_initiator_socket dma;
-    gpio_initiator_array irq;
+    gpio_initiator_array<32> irq;
     gpio_initiator_socket irq_abort;
 
     pl330(const sc_module_name& nm);

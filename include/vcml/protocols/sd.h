@@ -211,8 +211,11 @@ public:
     void stub();
 };
 
-using sd_base_initiator_array = socket_array<sd_base_initiator_socket>;
-using sd_base_target_array = socket_array<sd_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using sd_base_initiator_array = socket_array<sd_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using sd_base_target_array = socket_array<sd_base_target_socket, N>;
 
 class sd_initiator_socket : public sd_base_initiator_socket
 {
@@ -264,8 +267,11 @@ public:
     VCML_KIND(sd_target_socket);
 };
 
-using sd_initiator_array = socket_array<sd_initiator_socket>;
-using sd_target_array = socket_array<sd_target_socket>;
+template <size_t N = SIZE_MAX>
+using sd_initiator_array = socket_array<sd_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using sd_target_array = socket_array<sd_target_socket, N>;
 
 class sd_initiator_stub : private sd_bw_transport_if
 {

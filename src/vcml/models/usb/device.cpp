@@ -429,7 +429,7 @@ static void collect_sockets(sc_module* obj, vector<usb_target_socket*>& s) {
         if (usb_target_socket* uts = dynamic_cast<usb_target_socket*>(obj))
             stl_add_unique(s, uts);
 
-        if (usb_target_array* arr = dynamic_cast<usb_target_array*>(obj)) {
+        if (auto* arr = dynamic_cast<usb_target_array<>*>(obj)) {
             for (auto [idx, uts] : *arr)
                 stl_add_unique(s, uts);
         }
@@ -452,7 +452,7 @@ usb_target_socket* device::find_usb_socket(const string& name) {
 
 usb_target_socket* device::find_usb_socket(const string& name, size_t idx) {
     sc_object* obj = find_child(name);
-    usb_target_array* arr = dynamic_cast<usb_target_array*>(obj);
+    auto* arr = dynamic_cast<usb_target_array<>*>(obj);
     return arr && arr->exists(idx) ? &arr->get(idx) : nullptr;
 }
 

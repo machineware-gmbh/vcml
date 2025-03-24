@@ -94,9 +94,9 @@ aclint::aclint(const sc_module_name& nm):
     mtime(ACLINT_AS_MTIMER, "mtime", time_base),
     msip(ACLINT_AS_MSWI, "msip", 0x0000, 0),
     ssip(ACLINT_AS_SSWI, "ssip", 0x0000, 0),
-    irq_mtimer("irq_mtimer", NHARTS),
-    irq_mswi("irq_mswi", NHARTS),
-    irq_sswi("irq_sswi", NHARTS),
+    irq_mtimer("irq_mtimer"),
+    irq_mswi("irq_mswi"),
+    irq_sswi("irq_sswi"),
     mtimer("mtimer", ACLINT_AS_MTIMER),
     mswi("mswi", ACLINT_AS_MSWI),
     sswi("sswi", ACLINT_AS_SSWI) {

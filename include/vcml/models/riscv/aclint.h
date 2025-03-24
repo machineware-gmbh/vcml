@@ -64,9 +64,9 @@ public:
     reg<u32, NHARTS> msip;
     reg<u32, NHARTS> ssip;
 
-    gpio_initiator_array irq_mtimer;
-    gpio_initiator_array irq_mswi;
-    gpio_initiator_array irq_sswi;
+    gpio_initiator_array<NHARTS> irq_mtimer;
+    gpio_initiator_array<NHARTS> irq_mswi;
+    gpio_initiator_array<NHARTS> irq_sswi;
 
     tlm_target_socket mtimer;
     tlm_target_socket mswi;

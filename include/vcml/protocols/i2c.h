@@ -131,8 +131,11 @@ public:
     void stub();
 };
 
-using i2c_base_initiator_array = socket_array<i2c_base_initiator_socket>;
-using i2c_base_target_array = socket_array<i2c_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using i2c_base_initiator_array = socket_array<i2c_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using i2c_base_target_array = socket_array<i2c_base_target_socket, N>;
 
 class i2c_initiator_socket : public i2c_base_initiator_socket
 {
@@ -206,8 +209,11 @@ public:
     virtual ~i2c_target_stub() = default;
 };
 
-using i2c_initiator_array = socket_array<i2c_initiator_socket>;
-using i2c_target_array = socket_array<i2c_target_socket>;
+template <size_t N = SIZE_MAX>
+using i2c_initiator_array = socket_array<i2c_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using i2c_target_array = socket_array<i2c_target_socket, N>;
 
 i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
                                          const string& port);

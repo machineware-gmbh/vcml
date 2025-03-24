@@ -97,8 +97,11 @@ public:
     void stub();
 };
 
-using usb_base_initiator_array = socket_array<usb_base_initiator_socket>;
-using usb_base_target_array = socket_array<usb_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using usb_base_initiator_array = socket_array<usb_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using usb_base_target_array = socket_array<usb_base_target_socket, N>;
 
 class usb_initiator_socket : public usb_base_initiator_socket
 {
@@ -186,8 +189,11 @@ public:
     virtual ~usb_target_stub() = default;
 };
 
-using usb_initiator_array = socket_array<usb_initiator_socket>;
-using usb_target_array = socket_array<usb_target_socket>;
+template <size_t N = SIZE_MAX>
+using usb_initiator_array = socket_array<usb_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using usb_target_array = socket_array<usb_target_socket, N>;
 
 usb_base_initiator_socket& usb_initiator(const sc_object& parent,
                                          const string& port);

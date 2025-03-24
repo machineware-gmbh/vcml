@@ -141,8 +141,8 @@ public:
 
     hartidc* idcs[NHART];
 
-    gpio_initiator_array irq_out;
-    gpio_target_array irq_in;
+    gpio_initiator_array<> irq_out;
+    gpio_target_array<> irq_in;
 
     tlm_initiator_socket msi;
     tlm_target_socket in;

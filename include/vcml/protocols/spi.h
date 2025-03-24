@@ -87,8 +87,11 @@ public:
     void stub();
 };
 
-using spi_base_initiator_array = socket_array<spi_base_initiator_socket>;
-using spi_base_target_array = socket_array<spi_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using spi_base_initiator_array = socket_array<spi_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using spi_base_target_array = socket_array<spi_base_target_socket, N>;
 
 class spi_initiator_socket : public spi_base_initiator_socket
 {
@@ -131,8 +134,11 @@ public:
     VCML_KIND(spi_target_socket);
 };
 
-using spi_initiator_array = socket_array<spi_initiator_socket>;
-using spi_target_array = socket_array<spi_target_socket>;
+template <size_t N = SIZE_MAX>
+using spi_initiator_array = socket_array<spi_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using spi_target_array = socket_array<spi_target_socket, N>;
 
 class spi_initiator_stub : private spi_bw_transport_if
 {

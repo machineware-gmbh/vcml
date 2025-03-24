@@ -206,7 +206,7 @@ public:
     tlm_target_socket in;
     tlm_initiator_socket dma;
     gpio_initiator_socket irq;
-    usb_initiator_array usb_out;
+    usb_initiator_array<MAX_PORTS> usb_out;
 
     xhci(const sc_module_name& name);
     virtual ~xhci();

@@ -438,8 +438,11 @@ inline range tlm_target_socket::current_transaction_address() const {
     return m_payload ? range(*m_payload) : range();
 }
 
-using tlm_initiator_array = socket_array<tlm_initiator_socket>;
-using tlm_target_array = socket_array<tlm_target_socket>;
+template <size_t N = SIZE_MAX>
+using tlm_initiator_array = socket_array<tlm_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using tlm_target_array = socket_array<tlm_target_socket, N>;
 
 tlm::tlm_base_initiator_socket<>& tlm_initiator(const sc_object& parent,
                                                 const string& port);

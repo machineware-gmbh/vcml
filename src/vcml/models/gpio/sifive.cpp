@@ -177,9 +177,9 @@ sifive::sifive(const sc_module_name& nm, size_t n):
     low_ie("low_ie", 0x30),
     low_ip("low_ip", 0x34),
     out_xor("out_xor", 0x40),
-    irq("irq", ngpios),
-    gpio_out("gpio_out", ngpios),
-    gpio_in("gpio_in", ngpios),
+    irq("irq"),
+    gpio_out("gpio_out"),
+    gpio_in("gpio_in"),
     in("in") {
     VCML_ERROR_ON(ngpios > 32u, "ngpios exceeds limit of 32");
     register_command("status", 0, &sifive::cmd_status,

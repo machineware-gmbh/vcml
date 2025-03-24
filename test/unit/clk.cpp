@@ -52,8 +52,8 @@ public:
     clk_base_target_socket clk_in_h;
     clk_target_socket clk_in;
 
-    clk_initiator_array clk_array_out;
-    clk_target_array clk_array_in;
+    clk_initiator_array<> clk_array_out;
+    clk_target_array<> clk_array_in;
 
     clk_bench(const sc_module_name& nm):
         test_base(nm),

@@ -129,8 +129,27 @@ struct is_initiator_socket : std::is_base_of<sc_core::sc_port_base, T> {};
 template <typename T>
 struct is_target_socket : std::is_base_of<sc_core::sc_export_base, T> {};
 
-template <typename SOCKET>
-class socket_array : public sc_object, public hierarchy_element
+class socket_array_if
+{
+public:
+    virtual ~socket_array_if() = default;
+
+    virtual size_t limit() const = 0;
+    virtual size_t count() const = 0;
+    virtual size_t index_of(const sc_object& socket) const = 0;
+    virtual bool exists(size_t idx) const = 0;
+    virtual sc_object* fetch(size_t idx, bool create) = 0;
+
+    template <typename T>
+    T* fetch_as(size_t idx, bool create) {
+        return dynamic_cast<T*>(fetch(idx, create));
+    }
+};
+
+template <typename SOCKET, size_t N>
+class socket_array : public sc_object,
+                     public hierarchy_element,
+                     public socket_array_if
 {
 public:
     typedef unordered_map<size_t, SOCKET*> map_type;
@@ -139,46 +158,29 @@ public:
     typedef typename map_type::const_iterator const_iterator;
     typedef std::function<SOCKET&(size_t idx)> peer_fn;
 
-private:
-    size_t m_next;
-    size_t m_max;
-    address_space m_space;
-    map_type m_sockets;
-    revmap_type m_ids;
-    peer_fn m_peer;
-
-    template <typename T>
-    friend class socket_array;
-
-public:
     property<bool> trace_all;
     property<bool> trace_errors;
 
     socket_array(const char* nm):
         sc_object(nm),
         hierarchy_element(),
+        socket_array_if(),
+        trace_all(this, "trace", false),
+        trace_errors(this, "trace_errors", false),
         m_next(0),
-        m_max(SIZE_MAX),
         m_space(VCML_AS_DEFAULT),
         m_sockets(),
         m_ids(),
-        m_peer(),
-        trace_all(this, "trace", false),
-        trace_errors(this, "trace_errors", false) {
+        m_peer() {
         trace_all.inherit_default();
         trace_errors.inherit_default();
     }
 
-    socket_array(const char* nm, size_t max): socket_array(nm) { m_max = max; }
     socket_array(const char* nm, address_space as): socket_array(nm) {
         m_space = as;
     }
 
-    socket_array(const char* nm, size_t max, address_space as):
-        socket_array(nm) {
-        m_space = as;
-        m_max = max;
-    }
+    socket_array(const char* nm, size_t as): socket_array(nm) {}
 
     virtual ~socket_array() {
         for (auto socket : m_sockets)
@@ -201,7 +203,7 @@ public:
         if (sc_core::sc_is_running())
             VCML_ERROR("no socket at index %zu", idx);
 
-        if (idx >= m_max)
+        if (idx >= N)
             VCML_ERROR("socket index out of bounds: %s[%zu]", name(), idx);
 
         auto guard = get_hierarchy_scope();
@@ -231,8 +233,11 @@ public:
         return *m_sockets.at(idx);
     }
 
-    size_t count() const { return m_sockets.size(); }
-    bool exists(size_t idx) const { return stl_contains(m_sockets, idx); }
+    virtual size_t count() const override { return m_sockets.size(); }
+    virtual bool exists(size_t idx) const override {
+        return stl_contains(m_sockets, idx);
+    }
+
     size_t next_index() const { return m_next; }
     SOCKET& next() { return operator[](next_index()); }
 
@@ -241,10 +246,7 @@ public:
     }
 
     size_t index_of(const SOCKET& socket) const {
-        auto it = m_ids.find(&socket);
-        if (it == m_ids.end())
-            VCML_ERROR("socket %s not part of %s", socket.name(), name());
-        return it->second;
+        return index_of(static_cast<const sc_object&>(socket));
     }
 
     set<size_t> all_keys() const {
@@ -254,8 +256,8 @@ public:
         return keys;
     }
 
-    template <typename T>
-    void bind(socket_array<T>& other) {
+    template <typename T, size_t M>
+    void bind(socket_array<T, M>& other) {
         static_assert(
             is_initiator_socket<SOCKET>::value ==
                     is_initiator_socket<T>::value &&
@@ -274,10 +276,37 @@ public:
             };
         }
     }
+
+    virtual size_t limit() const override { return N; }
+
+protected:
+    virtual size_t index_of(const sc_object& obj) const override {
+        const SOCKET* socket = dynamic_cast<const SOCKET*>(&obj);
+        if (!socket)
+            return SIZE_MAX;
+        auto it = m_ids.find(socket);
+        return it != m_ids.end() ? it->second : SIZE_MAX;
+    }
+
+    virtual sc_object* fetch(size_t idx, bool create) override {
+        if (!create && !exists(idx))
+            return nullptr;
+        return static_cast<sc_object*>(&get(idx));
+    }
+
+private:
+    template <typename T, size_t M>
+    friend class socket_array;
+
+    size_t m_next;
+    address_space m_space;
+    map_type m_sockets;
+    revmap_type m_ids;
+    peer_fn m_peer;
 };
 
-template <typename SOCKET>
-bool operator==(const SOCKET& socket, const socket_array<SOCKET>& arr) {
+template <typename SOCKET, size_t N>
+bool operator==(const SOCKET& socket, const socket_array<SOCKET, N>& arr) {
     return arr.contains(socket);
 }
 

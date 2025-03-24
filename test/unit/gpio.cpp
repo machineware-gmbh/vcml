@@ -28,7 +28,7 @@ class gpio_test_harness : public test_base
 public:
     gpio_initiator_socket out;
     gpio_initiator_socket out2;
-    gpio_target_array in;
+    gpio_target_array<256> in;
 
     // for testing hierarchical binding
     gpio_base_initiator_socket h_out;
@@ -39,9 +39,9 @@ public:
     sc_signal<bool> signal;
     gpio_target_socket a_in;
 
-    gpio_initiator_array arr_out;
+    gpio_initiator_array<256> arr_out;
     sc_signal<bool> signal2;
-    gpio_target_array arr_in;
+    gpio_target_array<256> arr_in;
 
     gpio_test_harness(const sc_module_name& nm):
         test_base(nm),
@@ -56,6 +56,11 @@ public:
         arr_out("arr_out"),
         signal2("signal2"),
         arr_in("arr_in") {
+        // check array dimensions
+        EXPECT_EQ(in.limit(), 256);
+        EXPECT_EQ(arr_out.limit(), 256);
+        EXPECT_EQ(arr_in.limit(), 256);
+
         // check socket lookup
         EXPECT_EQ(&out, &gpio_initiator(*this, "out"));
         EXPECT_EQ(&out2, &gpio_initiator(*this, "out2"));

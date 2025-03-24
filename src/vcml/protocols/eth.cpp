@@ -470,23 +470,15 @@ static eth_base_target_socket* get_target_socket(sc_object* port) {
 
 static eth_base_initiator_socket* get_initiator_socket(sc_object* array,
                                                        size_t idx) {
-    auto* base = dynamic_cast<eth_base_initiator_array*>(array);
-    if (base)
-        return &base->get(idx);
-    auto* main = dynamic_cast<eth_initiator_array*>(array);
-    if (main)
-        return &main->get(idx);
+    if (auto* aif = dynamic_cast<socket_array_if*>(array))
+        return aif->fetch_as<eth_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
 static eth_base_target_socket* get_target_socket(sc_object* array,
                                                  size_t idx) {
-    auto* base = dynamic_cast<eth_base_target_array*>(array);
-    if (base)
-        return &base->get(idx);
-    auto* main = dynamic_cast<eth_target_array*>(array);
-    if (main)
-        return &main->get(idx);
+    if (auto* aif = dynamic_cast<socket_array_if*>(array))
+        return aif->fetch_as<eth_base_target_socket>(idx, true);
     return nullptr;
 }
 

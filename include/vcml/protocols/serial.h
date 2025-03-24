@@ -153,8 +153,11 @@ public:
     void stub();
 };
 
-using serial_base_initiator_array = socket_array<serial_base_initiator_socket>;
-using serial_base_target_array = socket_array<serial_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using serial_base_initiator_array = socket_array<serial_base_initiator_socket,
+                                                 N>;
+template <size_t N = SIZE_MAX>
+using serial_base_target_array = socket_array<serial_base_target_socket, N>;
 
 class serial_initiator_socket : public serial_base_initiator_socket
 {
@@ -238,8 +241,11 @@ public:
     virtual ~serial_target_stub() = default;
 };
 
-using serial_initiator_array = socket_array<serial_initiator_socket>;
-using serial_target_array = socket_array<serial_target_socket>;
+template <size_t N = SIZE_MAX>
+using serial_initiator_array = socket_array<serial_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using serial_target_array = socket_array<serial_target_socket, N>;
 
 serial_base_initiator_socket& serial_initiator(const sc_object& parent,
                                                const string& port);

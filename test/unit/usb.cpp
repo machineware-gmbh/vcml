@@ -55,8 +55,8 @@ public:
     usb_base_target_socket usb_in_h;
     usb_target_socket usb_in;
 
-    usb_initiator_array usb_array_out;
-    usb_target_array usb_array_in;
+    usb_initiator_array<> usb_array_out;
+    usb_target_array<> usb_array_in;
 
     usb_bench(const sc_module_name& nm):
         test_base(nm),

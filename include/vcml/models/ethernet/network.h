@@ -33,8 +33,8 @@ protected:
     void eth_receive(const eth_target_socket&, const eth_frame&) override;
 
 public:
-    eth_initiator_array eth_tx;
-    eth_target_array eth_rx;
+    eth_initiator_array<> eth_tx;
+    eth_target_array<> eth_rx;
 
     network(const sc_module_name& nm);
     virtual ~network() = default;

@@ -74,8 +74,8 @@ clint::clint(const sc_module_name& nm):
     msip("msip", 0x0000, 0),
     mtimecmp("mtimecmp", 0x4000, 0),
     mtime("mtime", 0xbff8, 0),
-    irq_sw("irq_sw", NHARTS),
-    irq_timer("irq_timer", NHARTS),
+    irq_sw("irq_sw"),
+    irq_timer("irq_timer"),
     in("in") {
     msip.sync_always();
     msip.allow_read_write();

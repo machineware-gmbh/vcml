@@ -41,8 +41,8 @@ public:
     can_base_target_socket can_rx_h;
     can_target_socket can_rx;
 
-    can_initiator_array can_array_tx;
-    can_target_array can_array_rx;
+    can_initiator_array<16> can_array_tx;
+    can_target_array<16> can_array_rx;
 
     can_bench(const sc_module_name& nm):
         test_base(nm),
@@ -60,6 +60,9 @@ public:
         can_bind(*this, "can_array_tx", 4, *this, "can_array_rx", 4);
         can_stub(*this, "can_array_tx", 5);
         can_stub(*this, "can_array_rx", 6);
+
+        EXPECT_EQ(can_array_tx.limit(), 16);
+        EXPECT_EQ(can_array_rx.limit(), 16);
 
         // did the ports get created?
         EXPECT_TRUE(find_object("can.can_array_tx[4]"));

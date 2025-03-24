@@ -49,10 +49,10 @@ public:
 
     tlm_initiator_socket dma_out;
     tlm_target_socket cfg_in;
-    tlm_target_array mmio_in;
-    tlm_target_array io_in;
+    tlm_target_array<> mmio_in;
+    tlm_target_array<> io_in;
 
-    pci_initiator_array pci_out;
+    pci_initiator_array<> pci_out;
 
     gpio_initiator_socket irq_a;
     gpio_initiator_socket irq_b;

@@ -271,7 +271,7 @@ sifive::sifive(const sc_module_name& nm):
     ie("ie", 0x70, 0),
     ip("ip", 0x74, 0),
     sclk("sclk"),
-    cs("cs", numcs),
+    cs("cs"),
     irq("irq"),
     spi_out("spi_out"),
     in("in") {

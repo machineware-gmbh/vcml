@@ -63,8 +63,8 @@ public:
     serial_base_target_socket serial_rx_h;
     serial_target_socket serial_rx;
 
-    serial_initiator_array serial_array_tx;
-    serial_target_array serial_array_rx;
+    serial_initiator_array<> serial_array_tx;
+    serial_target_array<> serial_array_rx;
 
     serial_bench(const sc_module_name& nm):
         test_base(nm),

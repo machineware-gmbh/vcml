@@ -24,7 +24,7 @@ public:
                 (override));
     tlm_initiator_socket out;
 
-    gpio_target_array in;
+    gpio_target_array<> in;
 
     gicv2m_stim(const sc_module_name& nm):
         test_base(nm), out("out"), in("in") {}

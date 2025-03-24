@@ -134,8 +134,11 @@ public:
     void stub();
 };
 
-using can_base_initiator_array = socket_array<can_base_initiator_socket>;
-using can_base_target_array = socket_array<can_base_target_socket>;
+template <size_t N = SIZE_MAX>
+using can_base_initiator_array = socket_array<can_base_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using can_base_target_array = socket_array<can_base_target_socket, N>;
 
 class can_initiator_socket : public can_base_initiator_socket
 {
@@ -199,8 +202,11 @@ public:
     virtual ~can_target_stub() = default;
 };
 
-using can_initiator_array = socket_array<can_initiator_socket>;
-using can_target_array = socket_array<can_target_socket>;
+template <size_t N = SIZE_MAX>
+using can_initiator_array = socket_array<can_initiator_socket, N>;
+
+template <size_t N = SIZE_MAX>
+using can_target_array = socket_array<can_target_socket, N>;
 
 can_base_initiator_socket& can_initiator(const sc_object& parent,
                                          const string& port);
