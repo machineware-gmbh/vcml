@@ -5,6 +5,9 @@ on:
     branches:
       - 'main'
       - 'dev**'
+  pull_request:
+    branches:
+      - 'main'
 
 env:
   TARGET_ARCH: linux64
