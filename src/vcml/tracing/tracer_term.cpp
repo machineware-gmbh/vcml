@@ -19,6 +19,7 @@
 #include "vcml/protocols/can.h"
 #include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
+#include "vcml/protocols/signal.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/tracing/tracer_term.h"
@@ -38,6 +39,7 @@ array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_SPI]      = */ mwr::termcolors::BRIGHT_YELLOW,
     /* [PROTO_SD]       = */ mwr::termcolors::BRIGHT_MAGENTA,
     /* [PROTO_SERIAL]   = */ mwr::termcolors::BRIGHT_RED,
+    /* [PROTO_SIGNAL]   = */ mwr::termcolors::RED,
     /* [PROTO_VIRTIO]   = */ mwr::termcolors::BRIGHT_CYAN,
     /* [PROTO_ETHERNET] = */ mwr::termcolors::BRIGHT_BLUE,
     /* [PROTO_CAN]      = */ mwr::termcolors::RED,
@@ -129,6 +131,10 @@ void tracer_term::trace(const activity<vq_message>& msg) {
 }
 
 void tracer_term::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<signal_payload_base>& msg) {
     do_trace(msg);
 }
 

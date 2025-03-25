@@ -115,6 +115,7 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/usb_types.cpp
     ${src}/vcml/protocols/usb_sockets.cpp
     ${src}/vcml/protocols/serial.cpp
+    ${src}/vcml/protocols/signal.cpp
     ${src}/vcml/protocols/virtio.cpp
     ${src}/vcml/models/generic/clock.cpp
     ${src}/vcml/models/generic/reset.cpp

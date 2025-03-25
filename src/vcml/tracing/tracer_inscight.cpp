@@ -19,6 +19,7 @@
 #include "vcml/protocols/can.h"
 #include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
+#include "vcml/protocols/signal.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/tracing/tracer_inscight.h"
@@ -298,6 +299,15 @@ string serialize(const serial_payload& tx) {
 }
 
 template <>
+string serialize(const signal_payload_base& tx) {
+    ostringstream os;
+    os << "{";
+    os << "\"data\":" << tx.to_string();
+    os << "}";
+    return os.str();
+}
+
+template <>
 string serialize(const eth_frame& tx) {
     ostringstream os;
     os << "{";
@@ -433,6 +443,10 @@ void tracer_inscight::trace(const activity<vq_message>& msg) {
 }
 
 void tracer_inscight::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_inscight::trace(const activity<signal_payload_base>& msg) {
     do_trace(msg);
 }
 

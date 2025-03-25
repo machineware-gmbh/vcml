@@ -37,6 +37,7 @@ public:
     virtual void trace(const activity<sd_data>&) override {}
     virtual void trace(const activity<vq_message>&) override {}
     virtual void trace(const activity<serial_payload>&) override {}
+    virtual void trace(const activity<signal_payload_base>&) override {}
     virtual void trace(const activity<eth_frame>&) override {}
     virtual void trace(const activity<can_frame>&) override {}
     virtual void trace(const activity<usb_packet>&) override {}

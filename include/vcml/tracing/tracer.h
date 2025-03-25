@@ -25,6 +25,7 @@ struct sd_command;
 struct sd_data;
 struct vq_message;
 struct serial_payload;
+struct signal_payload_base;
 struct eth_frame;
 struct can_frame;
 struct usb_packet;
@@ -53,6 +54,7 @@ enum protocol_kind {
     PROTO_SPI,
     PROTO_SD,
     PROTO_SERIAL,
+    PROTO_SIGNAL,
     PROTO_VIRTIO,
     PROTO_ETHERNET,
     PROTO_CAN,
@@ -124,6 +126,13 @@ struct protocol<sd_data> {
 template <>
 struct protocol<serial_payload> {
     static constexpr protocol_kind KIND = PROTO_SERIAL;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = false;
+};
+
+template <>
+struct protocol<signal_payload_base> {
+    static constexpr protocol_kind KIND = PROTO_SIGNAL;
     static constexpr bool TRACE_FW = true;
     static constexpr bool TRACE_BW = false;
 };
@@ -204,6 +213,7 @@ public:
     virtual void trace(const activity<sd_data>&) = 0;
     virtual void trace(const activity<vq_message>&) = 0;
     virtual void trace(const activity<serial_payload>&) = 0;
+    virtual void trace(const activity<signal_payload_base>&) = 0;
     virtual void trace(const activity<eth_frame>&) = 0;
     virtual void trace(const activity<can_frame>&) = 0;
     virtual void trace(const activity<usb_packet>&) = 0;

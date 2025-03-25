@@ -70,6 +70,7 @@
 #include "vcml/protocols/can.h"
 #include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
+#include "vcml/protocols/signal.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/models/generic/clock.h"

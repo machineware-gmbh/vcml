@@ -19,6 +19,7 @@
 #include "vcml/protocols/can.h"
 #include "vcml/protocols/usb.h"
 #include "vcml/protocols/serial.h"
+#include "vcml/protocols/signal.h"
 #include "vcml/protocols/virtio.h"
 
 #include "vcml/tracing/tracer_file.h"
@@ -80,6 +81,10 @@ void tracer_file::trace(const activity<vq_message>& msg) {
 }
 
 void tracer_file::trace(const activity<serial_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_file::trace(const activity<signal_payload_base>& msg) {
     do_trace(msg);
 }
 

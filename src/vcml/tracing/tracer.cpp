@@ -30,6 +30,8 @@ const char* protocol_name(protocol_kind kind) {
         return "SD";
     case PROTO_SERIAL:
         return "SERIAL";
+    case PROTO_SIGNAL:
+        return "SIGNAL";
     case PROTO_VIRTIO:
         return "VIRTIO";
     case PROTO_ETHERNET:
