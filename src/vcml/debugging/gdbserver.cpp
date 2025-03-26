@@ -74,7 +74,8 @@ void gdbserver::cancel_singlestep() {
 
 void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
                               const range* wp_addr, vcml_access wp_type) {
-    lock_guard<mutex> guard(m_mtx);
+    m_mtx.lock();
+
     if (!is_connected())
         status = m_default;
 
@@ -82,8 +83,12 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
         status = GDB_KILLED;
 
     if (m_status == status) {
-        if (m_status == GDB_STOPPED && !is_sysc_thread())
+        if (m_status == GDB_STOPPED && !is_sysc_thread()) {
+            m_mtx.unlock();
             yield(); // wait until actually stopped
+            return;
+        }
+        m_mtx.unlock();
         return;
     }
 
@@ -102,8 +107,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
 
         m_mtx.unlock();
         suspend();
-        m_mtx.lock();
-        break;
+        return;
 
     case GDB_RUNNING:
     case GDB_STEPPING:
@@ -120,6 +124,8 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
     default:
         VCML_ERROR("illegal gdb status: %u", status);
     }
+
+    m_mtx.unlock();
 }
 
 void gdbserver::notify_step_complete(target& tgt) {
