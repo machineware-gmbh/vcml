@@ -12,8 +12,6 @@ cmake_minimum_required(VERSION 3.11)
 project(vcml VERSION 2025.03.20 LANGUAGES C CXX)
 
 option(VCML_USE_SDL2 "Use SDL2 for rendering" ON)
-option(VCML_USE_VNC "Use VNC for rendering" ON)
-option(VCML_USE_RFB "Use RFB for rendering" OFF)
 option(VCML_USE_SLIRP "Use SLIRP for networking" ON)
 option(VCML_USE_TAP "Use TAP for networking" ON)
 option(VCML_USE_LUA "Use LUA for scripting" ON)
@@ -29,12 +27,6 @@ find_github_repo(mwr "machineware-gmbh/mwr")
 find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
 
-if(VCML_USE_VNC)
-    find_package(LibVNC)
-endif()
-if(VCML_USE_RFB)
-    find_package(LibRFB)
-endif()
 if(VCML_USE_SLIRP)
     find_package(LibSLIRP)
 endif()
@@ -97,6 +89,7 @@ add_library(vcml STATIC
     ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
     ${src}/vcml/ui/console.cpp
+    ${src}/vcml/ui/vnc.cpp
     ${src}/vcml/protocols/tlm_sbi.cpp
     ${src}/vcml/protocols/tlm_exmon.cpp
     ${src}/vcml/protocols/tlm_dmi_cache.cpp
@@ -236,26 +229,6 @@ if(SDL2_FOUND)
     target_link_libraries(vcml PUBLIC ${SDL2_LIBRARIES})
 else()
     message(STATUS "Building without SDL2 support")
-endif()
-
-if(LIBVNC_FOUND)
-    message(STATUS "Building with VNC support")
-    target_compile_definitions(vcml PRIVATE HAVE_LIBVNC)
-    target_include_directories(vcml SYSTEM PRIVATE ${LIBVNC_INCLUDE_DIRS})
-    target_sources(vcml PRIVATE ${src}/vcml/ui/vnc.cpp)
-    target_link_libraries(vcml PUBLIC ${LIBVNC_LIBRARIES})
-else()
-    message(STATUS "Building without VNC support")
-endif()
-
-if(LIBRFB_FOUND)
-    message(STATUS "Building with RFB support")
-    target_compile_definitions(vcml PRIVATE HAVE_LIBRFB)
-    target_include_directories(vcml SYSTEM PRIVATE ${LIBRFB_INCLUDE_DIRS})
-    target_sources(vcml PRIVATE ${src}/vcml/ui/rfb.cpp)
-    target_link_libraries(vcml PUBLIC ${LIBRFB_LIBRARIES})
-else()
-    message(STATUS "Building without RFB support")
 endif()
 
 if(LIBSLIRP_FOUND)

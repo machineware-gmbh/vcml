@@ -45,6 +45,8 @@ protected:
     display(const string& type, u32 nr);
 
 public:
+    mwr::logger log;
+
     u32 xres() const { return m_mode.xres; }
     u32 yres() const { return m_mode.yres; }
 

@@ -9,17 +9,10 @@
  ******************************************************************************/
 
 #include "vcml/ui/display.h"
-
-#ifdef HAVE_LIBVNC
 #include "vcml/ui/vnc.h"
-#endif
 
 #ifdef HAVE_SDL2
 #include "vcml/ui/sdl.h"
-#endif
-
-#ifdef HAVE_LIBRFB
-#include "vcml/ui/rfb.h"
 #endif
 
 namespace vcml {
@@ -31,7 +24,8 @@ display::display(const string& type, u32 nr):
     m_dispno(nr),
     m_mode(),
     m_fb(nullptr),
-    m_nullfb(nullptr) {
+    m_nullfb(nullptr),
+    log(m_name) {
 }
 
 display::~display() {
@@ -110,14 +104,9 @@ display* display::create(u32 nr) {
 
 unordered_map<string, function<display*(u32)>> display::types = {
     { "null", display::create },
-#ifdef HAVE_LIBVNC
     { "vnc", vnc::create },
-#endif
 #ifdef HAVE_SDL2
     { "sdl", sdl::create },
-#endif
-#ifdef HAVE_LIBRFB
-    { "rfb", rfb::create },
 #endif
 };
 
