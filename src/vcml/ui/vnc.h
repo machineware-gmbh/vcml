@@ -81,8 +81,13 @@ private:
     u16 m_ptr_x;
     u16 m_ptr_y;
     i32 m_encoding;
-    vnc_pixelformat m_format;
+    vnc_pixelformat m_native;
+    vnc_pixelformat m_client;
+    int m_rshift;
+    int m_gshift;
+    int m_bshift;
 
+    vector<u8> m_buffer;
     mwr::socket m_socket;
 
     atomic<bool> m_running;
@@ -90,33 +95,20 @@ private:
     thread m_thread;
 
     template <typename T>
-    T vnc_swap(const T& val) {
-        return host_endian() == ENDIAN_BIG ? val : bswap(val);
-    }
+    T recv();
+    void recv_padding(size_t n);
+
+    void flush();
 
     template <typename T>
-    void send(const T& val) {
-        m_socket.send(vnc_swap(val));
-    }
-
-    template <typename T>
-    T recv() {
-        T val;
-        m_socket.recv(val);
-        return vnc_swap(val);
-    }
-
-    void send_padding(size_t n) {
-        while (n--)
-            send<u8>(0);
-    }
-
-    void recv_padding(size_t n) {
-        while (n--)
-            recv<u8>();
-    }
+    void send(const T& data);
+    void send(const u8* buf, size_t sz);
+    void send_padding(size_t n);
+    void send_pixel(u32 pixel);
+    void send_pixels(u32 x, u32 y, u32 w, u32 h);
 
     void send_framebuffer_raw();
+    void send_hextile(vector<u8>& d, u32 x, u32 y, u32 w, u32 h, u32 col);
     void send_framebuffer_hextile(u32 x, u32 y, u32 w, u32 h,
                                   optional<u32>& bg, optional<u32>& fg);
     void send_framebuffer_hextile();
@@ -142,6 +134,18 @@ public:
 
     static display* create(u32 nr);
 };
+
+template <typename T>
+inline T vnc::recv() {
+    T val;
+    m_socket.recv(val);
+    return host_endian() == ENDIAN_BIG ? val : bswap(val);
+}
+
+inline void vnc::recv_padding(size_t n) {
+    while (n--)
+        recv<u8>();
+}
 
 } // namespace ui
 } // namespace vcml

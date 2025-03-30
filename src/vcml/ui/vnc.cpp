@@ -218,13 +218,39 @@ static bool operator!=(const vnc_pixelformat& a, const vnc_pixelformat& b) {
     return !operator==(a, b);
 }
 
-void vnc::send_framebuffer_raw() {
-    u8* fb = framebuffer();
-    size_t sz = framebuffer_size();
-    m_socket.send(fb, sz);
+static u32 vnc_read_pixel(u32 x, u32 y, const u8* fb, const videomode& vm) {
+    return mwr::read_once<u32>(fb + y * vm.stride + x * vm.bpp);
 }
 
-static void push_hextile(vector<u8>& data, u32 x, u32 y, u32 w, u32 h) {
+static u32 vnc_shift(u32 pixel, int shift) {
+    if (shift > 0)
+        return pixel >> shift;
+    if (shift < 0)
+        return pixel << shift;
+    return pixel;
+}
+
+static u32 vnc_convert_pixel(u32 pixel, const vnc_pixelformat& src,
+                             const vnc_pixelformat& dst) {
+    if (src == dst)
+        return pixel;
+
+    if (src.endian)
+        pixel = bswap(pixel);
+
+    u32 r = (pixel >> src.roff) & src.rmax;
+    u32 g = (pixel >> src.goff) & src.gmax;
+    u32 b = (pixel >> src.boff) & src.bmax;
+
+    r = vnc_shift(r, popcnt(src.rmax) - popcnt(dst.rmax));
+    g = vnc_shift(g, popcnt(src.gmax) - popcnt(dst.gmax));
+    b = vnc_shift(b, popcnt(src.bmax) - popcnt(dst.bmax));
+
+    pixel = r << dst.roff | g << dst.goff | b << dst.boff;
+    return dst.endian ? bswap(pixel) : pixel;
+}
+
+static void vnc_encode_hextile(vector<u8>& data, u32 x, u32 y, u32 w, u32 h) {
     assert(x < 16);
     assert(y < 16);
     assert(w > 0 && w <= 16);
@@ -233,12 +259,150 @@ static void push_hextile(vector<u8>& data, u32 x, u32 y, u32 w, u32 h) {
     data.push_back(((w - 1) & 0xf) << 4 | ((h - 1) & 0xf));
 }
 
-static void push_hextile(vector<u8>& d, u32 x, u32 y, u32 w, u32 h, u32 col) {
-    d.push_back(col);
-    d.push_back(col >> 8);
-    d.push_back(col >> 16);
-    d.push_back(col >> 24);
-    push_hextile(d, x, y, w, h);
+static void vnc_encode_hextile(vector<u8>& d, u32 x, u32 y, u32 w, u32 h,
+                               u32 col, const vnc_pixelformat& s,
+                               const vnc_pixelformat& c) {
+    u32 pixel = vnc_convert_pixel(col, s, c);
+    if (c.endian) {
+        if (c.bpp > 24)
+            d.push_back(pixel >> 24);
+        if (c.bpp > 16)
+            d.push_back(pixel >> 16);
+        if (c.bpp > 8)
+            d.push_back(pixel >> 8);
+        d.push_back(pixel);
+    } else {
+        d.push_back(pixel);
+        if (c.bpp > 8)
+            d.push_back(pixel >> 8);
+        if (c.bpp > 16)
+            d.push_back(pixel >> 16);
+        if (c.bpp > 24)
+            d.push_back(pixel >> 24);
+    }
+
+    vnc_encode_hextile(d, x, y, w, h);
+}
+
+void vnc::flush() {
+    if (!m_buffer.empty()) {
+        m_socket.send(m_buffer.data(), m_buffer.size());
+        m_buffer.clear();
+    }
+}
+
+template <>
+vnc_pixelformat vnc::recv() {
+    vnc_pixelformat format;
+    format.bpp = recv<u8>();
+    format.depth = recv<u8>();
+    format.endian = recv<u8>();
+    format.truecolor = recv<u8>();
+    format.rmax = recv<u16>();
+    format.gmax = recv<u16>();
+    format.bmax = recv<u16>();
+    format.roff = recv<u8>();
+    format.goff = recv<u8>();
+    format.boff = recv<u8>();
+    return format;
+}
+
+template <>
+void vnc::send<u8>(const u8& data) {
+    m_buffer.push_back(data);
+    if (m_buffer.size() == m_buffer.capacity())
+        flush();
+}
+
+template <>
+void vnc::send(const u16& data) {
+    send<u8>(data >> 8);
+    send<u8>(data);
+}
+
+template <>
+void vnc::send(const u32& data) {
+    send<u8>(data >> 24);
+    send<u8>(data >> 16);
+    send<u8>(data >> 8);
+    send<u8>(data);
+}
+
+template <>
+void vnc::send(const string& s) {
+    send((u8*)s.data(), s.size());
+}
+
+template <>
+void vnc::send(const vector<u8>& vec) {
+    send(vec.data(), vec.size());
+}
+
+template <>
+void vnc::send(const vnc_pixelformat& format) {
+    send(format.bpp);
+    send(format.depth);
+    send(format.endian);
+    send(format.truecolor);
+    send(format.rmax);
+    send(format.gmax);
+    send(format.bmax);
+    send(format.roff);
+    send(format.goff);
+    send(format.boff);
+}
+
+void vnc::send(const u8* buf, size_t sz) {
+    if (sz < m_buffer.capacity() - m_buffer.size()) {
+        m_buffer.insert(m_buffer.end(), buf, buf + sz);
+        if (m_buffer.capacity() == m_buffer.size())
+            flush();
+    } else {
+        flush();
+        m_socket.send(buf, sz);
+    }
+}
+
+void vnc::send_padding(size_t n) {
+    while (n--)
+        send<u8>(0);
+}
+
+void vnc::send_pixel(u32 pixel) {
+    u32 px = vnc_convert_pixel(pixel, m_native, m_client);
+    send<u8>(px);
+    if (m_client.bpp > 8)
+        send<u8>(px >> 8);
+    if (m_client.bpp > 16)
+        send<u8>(px >> 16);
+    if (m_client.bpp > 24)
+        send<u8>(px >> 24);
+}
+
+void vnc::send_pixels(u32 x, u32 y, u32 w, u32 h) {
+    const auto& vm = mode();
+    bool conv = m_client != m_native;
+    size_t size = w * h * m_client.bpp / 8;
+    u8* fb = framebuffer() + (y * vm.stride) + (x * vm.bpp);
+
+    if (x == 0 && y == 0 && w == vm.xres && h == vm.yres && !conv) {
+        send(fb, size);
+        return;
+    }
+
+    for (u32 j = 0; j < h; j++, fb += vm.stride) {
+        if (!conv) {
+            send(fb, w * vm.bpp);
+        } else {
+            u32* pixel = (u32*)fb;
+            for (u32 i = 0; i < w; i++)
+                send_pixel(pixel[i]);
+        }
+    }
+}
+
+void vnc::send_framebuffer_raw() {
+    send_pixels(0, 0, xres(), yres());
 }
 
 #ifdef MWR_GCC
@@ -262,23 +426,23 @@ void vnc::send_framebuffer_hextile(u32 x, u32 y, u32 w, u32 h,
     u32 back = 0, front = 0;
 
     for (u32 j = 0; j < h; j++) {
-        u32* pixel = (u32*)(fb + j * vm.stride);
         for (u32 i = 0; i < w; i++) {
+            u32 pixel = vnc_read_pixel(i, j, fb, vm);
             switch (ncolors) {
             case 0:
-                back = pixel[i];
+                back = pixel;
                 ncolors++;
                 break;
             case 1:
-                if (pixel[i] != back) {
-                    front = pixel[i];
+                if (pixel != back) {
+                    front = pixel;
                     ncolors++;
                 }
                 break;
             case 2:
-                if (pixel[i] == back)
+                if (pixel == back)
                     nback++;
-                else if (pixel[i] == front)
+                else if (pixel == front)
                     nfront++;
                 else
                     ncolors++;
@@ -314,19 +478,19 @@ void vnc::send_framebuffer_hextile(u32 x, u32 y, u32 w, u32 h,
         flags |= HEXTILE_ANY_SUBRECTS;
         for (u32 j = 0; j < h; j++) {
             u32 left = w;
-            u32* px = (u32*)(fb + j * vm.stride);
-            for (u32 i = 0; i < w; i++, px++) {
-                if (*px == fg)
+            for (u32 i = 0; i < w; i++) {
+                u32 px = vnc_read_pixel(i, j, fb, vm);
+                if (px == fg)
                     left = min(left, i);
                 else if (left < w) {
-                    push_hextile(tiles, left, j, i - left, 1);
+                    vnc_encode_hextile(tiles, left, j, i - left, 1);
                     left = w;
                     ntiles++;
                 }
             }
 
             if (left < w) {
-                push_hextile(tiles, left, j, w - left, 1);
+                vnc_encode_hextile(tiles, left, j, w - left, 1);
                 ntiles++;
             }
         }
@@ -340,26 +504,26 @@ void vnc::send_framebuffer_hextile(u32 x, u32 y, u32 w, u32 h,
         for (u32 j = 0; j < h; j++) {
             u32 left = w;
             optional<u32> color;
-            u32* px = (u32*)(fb + j * vm.stride);
-            for (u32 i = 0; i < w; i++, px++) {
-                if (!color && *px != bg) {
-                    color = *px;
+            for (u32 i = 0; i < w; i++) {
+                u32 px = vnc_read_pixel(i, j, fb, vm);
+                if (!color && px != bg) {
+                    color = px;
                     left = i;
-                }
-
-                if (color && *px != *color) {
-                    push_hextile(tiles, left, j, i - left, 1, *color);
+                } else if (color && px != color) {
+                    vnc_encode_hextile(tiles, left, j, i - left, 1, *color,
+                                       m_native, m_client);
                     ntiles++;
                     color = std::nullopt;
-                    if (*px != bg) {
-                        color = *px;
+                    if (px != bg) {
+                        color = px;
                         left = i;
                     }
                 }
             }
 
             if (color) {
-                push_hextile(tiles, left, j, w - left, 1, *color);
+                vnc_encode_hextile(tiles, left, j, w - left, 1, *color,
+                                   m_native, m_client);
                 color = std::nullopt;
                 ntiles++;
             }
@@ -374,20 +538,16 @@ void vnc::send_framebuffer_hextile(u32 x, u32 y, u32 w, u32 h,
         fg = std::nullopt;
     }
 
-    m_socket.send(flags);
-    if (flags & HEXTILE_RAW) {
-        for (u32 j = 0; j < h; j++) {
-            m_socket.send(fb, w * vm.bpp);
-            fb += vm.stride;
-        }
-    }
+    send<u8>(flags);
+    if (flags & HEXTILE_RAW)
+        send_pixels(x, y, w, h);
     if (flags & HEXTILE_BACKGROUND)
-        m_socket.send(*bg);
+        send_pixel(*bg);
     if (flags & HEXTILE_FOREGROUND)
-        m_socket.send(*fg);
+        send_pixel(*fg);
     if (flags & HEXTILE_ANY_SUBRECTS) {
-        m_socket.send((u8)ntiles);
-        m_socket.send(tiles.data(), tiles.size());
+        send<u8>(ntiles);
+        send(tiles);
     }
 }
 
@@ -404,39 +564,11 @@ void vnc::send_framebuffer_hextile() {
     }
 }
 
-template <>
-void vnc::send(const vnc_pixelformat& format) {
-    send<u8>(format.bpp);
-    send<u8>(format.depth);
-    send<u8>(format.endian);
-    send<u8>(format.truecolor);
-    send<u16>(format.rmax);
-    send<u16>(format.gmax);
-    send<u16>(format.bmax);
-    send<u8>(format.roff);
-    send<u8>(format.goff);
-    send<u8>(format.boff);
-}
-
-template <>
-vnc_pixelformat vnc::recv() {
-    vnc_pixelformat format;
-    format.bpp = recv<u8>();
-    format.depth = recv<u8>();
-    format.endian = recv<u8>();
-    format.truecolor = recv<u8>();
-    format.rmax = recv<u16>();
-    format.gmax = recv<u16>();
-    format.bmax = recv<u16>();
-    format.roff = recv<u8>();
-    format.goff = recv<u8>();
-    format.boff = recv<u8>();
-    return format;
-}
-
 void vnc::handshake() {
-    if (m_socket.is_connected())
+    if (m_socket.is_connected()) {
         m_socket.disconnect();
+        m_buffer.clear();
+    }
 
     m_socket.listen(m_port);
     log_debug("listening on port %hu", m_port);
@@ -444,7 +576,6 @@ void vnc::handshake() {
         return;
 
     m_socket.unlisten();
-
     log_debug("connected to \"%s\"", m_socket.peer());
 
     // protocol handshake
@@ -457,25 +588,29 @@ void vnc::handshake() {
         auto err = mkstr("unsupported RFB protocol version: %s", proto);
         send<u8>(0);
         send<u32>(err.length());
-        m_socket.send(err);
+        send(err);
+        flush();
         VCML_REPORT("%s", err.c_str());
     }
 
     // security handshake
     send<u8>(1);
     send<u8>(1);
+    flush();
     u8 security = recv<u8>();
     log_debug("client requests security mode %hhu", security);
     if (security != 1) {
         auto err = mkstr("unsupported RFB security: %hhu", security);
         send<u32>(1);
         send<u32>(err.length());
-        m_socket.send(err);
+        send(err);
+        flush();
         VCML_REPORT("%s", err.c_str());
     }
 
     log_debug("reporting connection success");
     send<u32>(0);
+    flush();
 
     // client init
     u8 shared = recv<u8>();
@@ -484,13 +619,15 @@ void vnc::handshake() {
     // server init
     log_debug("sending server init");
     const videomode& vm = mode();
-    m_format = pixelformat_from_mode(vm);
+    m_native = pixelformat_from_mode(vm);
+    m_client = m_native;
     send<u16>(vm.xres);
     send<u16>(vm.yres);
-    send(m_format);
+    send(m_native);
     send_padding(3);
     send<u32>(strlen(name()));
-    m_socket.send(name());
+    send<string>(name());
+    flush();
 
     log_debug("connection complete");
 }
@@ -521,10 +658,17 @@ void vnc::handle_set_encodings(const vector<i32>& encodings) {
 }
 
 void vnc::handle_set_pixel_format(const vnc_pixelformat& fmt) {
-    if (fmt != m_format) {
-        log_error("vnc client selected unsupported pixelformat");
-        VCML_REPORT("unsupported client pixelformat");
-    }
+    VCML_REPORT_ON(!fmt.truecolor, "palette formats not supported");
+
+    m_client = fmt;
+    m_rshift = popcnt(m_native.rmax) - popcnt(m_client.rmax);
+    log_debug("client pixel format");
+    log_debug("  bpp: %u", fmt.bpp);
+    log_debug("  depth: %u", fmt.depth);
+    log_debug("  endian: %u", fmt.endian);
+    log_debug("  red: %u, %u", fmt.rmax, fmt.roff);
+    log_debug("  green: %u, %u", fmt.gmax, fmt.goff);
+    log_debug("  blue: %u, %u", fmt.bmax, fmt.boff);
 }
 
 void vnc::handle_framebuffer_request(u8 inc, u16 x, u16 y, u16 w, u16 h) {
@@ -551,6 +695,8 @@ void vnc::handle_framebuffer_request(u8 inc, u16 x, u16 y, u16 w, u16 h) {
     default:
         VCML_REPORT("unsupported VNC encoding: 0x%08x", m_encoding);
     }
+
+    flush();
 }
 
 void vnc::handle_key_event(u32 key, u8 down) {
@@ -673,6 +819,9 @@ vnc::vnc(u32 no):
     m_ptr_x(),
     m_ptr_y(),
     m_encoding(VNC_ENC_RAW),
+    m_native(),
+    m_client(),
+    m_buffer(),
     m_socket(),
     m_running(),
     m_mutex(),
@@ -685,6 +834,8 @@ vnc::vnc(u32 no):
     }();
 
     log.set_level(debug_vnc ? LOG_DEBUG : LOG_INFO);
+
+    m_buffer.reserve(4096);
 }
 
 vnc::~vnc() {
