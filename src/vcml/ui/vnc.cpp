@@ -565,11 +565,10 @@ void vnc::send_framebuffer_hextile() {
 }
 
 void vnc::handshake() {
-    if (m_socket.is_connected()) {
+    if (m_socket.is_connected())
         m_socket.disconnect();
-        m_buffer.clear();
-    }
 
+    m_buffer.clear();
     m_socket.listen(m_port);
     log_debug("listening on port %hu", m_port);
     if (!m_socket.accept())
@@ -700,12 +699,15 @@ void vnc::handle_framebuffer_request(u8 inc, u16 x, u16 y, u16 w, u16 h) {
 }
 
 void vnc::handle_key_event(u32 key, u8 down) {
+    log_debug("handle_key_event key:0x%x down:%hhu", key, down);
     u32 sym = vnc_keysym_to_vcml_keysym(key);
     if (sym != KEYSYM_NONE)
         notify_key(sym, down);
 }
 
 void vnc::handle_ptr_event(u8 buttons, u16 x, u16 y) {
+    log_debug("handle_ptr_event buttons:0x%02hhx x:%hu y:%hu", buttons, x, y);
+
     u8 change = buttons ^ m_buttons;
     if (change & VNC_BTN_LEFT)
         notify_btn(BUTTON_LEFT, buttons & VNC_BTN_LEFT);

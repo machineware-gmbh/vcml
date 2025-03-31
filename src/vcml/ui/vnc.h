@@ -40,13 +40,13 @@ enum vnc_responses : u8 {
 };
 
 enum vnc_buttons : u32 {
-    VNC_BTN_LEFT = 1 << 0,
-    VNC_BTN_MIDDLE = 1 << 1,
-    VNC_BTN_RIGHT = 1 << 2,
-    VNC_BTN_WHEEL_UP = 1 << 3,
-    VNC_BTN_WHEEL_DOWN = 1 << 4,
-    VNC_BTN_WHEEL_LEFT = 1 << 5,
-    VNC_BTN_WHEEL_RIGHT = 1 << 6,
+    VNC_BTN_LEFT = bit(0),
+    VNC_BTN_MIDDLE = bit(1),
+    VNC_BTN_RIGHT = bit(2),
+    VNC_BTN_WHEEL_UP = bit(3),
+    VNC_BTN_WHEEL_DOWN = bit(4),
+    VNC_BTN_WHEEL_LEFT = bit(5),
+    VNC_BTN_WHEEL_RIGHT = bit(6),
 };
 
 enum vnc_encodings : i32 {
