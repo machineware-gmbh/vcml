@@ -30,7 +30,7 @@ void backend_tcp::receive() {
     if (!m_socket.accept())
         return;
 
-    while (m_socket.is_connected()) {
+    while (m_socket.is_connected() && sim_running()) {
         u8 data;
         m_socket.recv(data);
         m_mtx.lock();
@@ -61,8 +61,13 @@ backend_tcp::~backend_tcp() {
     if (m_socket.is_connected())
         m_socket.disconnect();
 
-    if (m_thread.joinable())
+    if (m_thread.joinable()) {
+#ifdef MWR_MACOS
+        m_thread.detach();
+#else
         m_thread.join();
+#endif
+    }
 }
 
 bool backend_tcp::read(u8& val) {

@@ -440,7 +440,7 @@ sdl_client* sdl::find_by_window_id(u32 id) {
 }
 
 void sdl::check_clients() {
-    lock_guard<mutex> lock(m_client_mtx);
+    lock_guard<mutex> lock(m_mtx);
     for (auto& client : m_clients) {
         if (client.disp && !client.window)
             client.init_window();
@@ -456,7 +456,7 @@ void sdl::check_clients() {
 void sdl::poll_events() {
     SDL_Event event = {};
     while (SDL_WaitEventTimeout(&event, 1) && sim_running()) {
-        lock_guard<mutex> lock(m_client_mtx);
+        lock_guard<mutex> lock(m_mtx);
         switch (event.type) {
         case SDL_QUIT:
             break;
@@ -523,87 +523,77 @@ void sdl::poll_events() {
 }
 
 void sdl::draw_windows() {
-    lock_guard<mutex> lock(m_client_mtx);
+    lock_guard<mutex> lock(m_mtx);
     for (auto& client : m_clients)
         client.draw_window();
 }
 
-void sdl::ui_run() {
+void sdl::run() {
     mwr::set_thread_name("sdl_ui_thread");
 
-    if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
-        SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-            log_error("cannot initialize SDL: %s", SDL_GetError());
-            return;
-        }
+    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        log_error("cannot initialize SDL: %s", SDL_GetError());
+        return;
     }
 
-    while (m_attached && sim_running()) {
+    while (sim_running()) {
         check_clients();
         poll_events();
         draw_windows();
     }
 
-    while (m_attached)
-        SDL_Delay(1);
-
     check_clients();
+
     SDL_Quit();
 }
 
 sdl::~sdl() {
-    if (m_uithread.joinable()) {
-        if (m_attached > 0)
-            m_uithread.detach();
-        else
-            m_uithread.join();
-    }
+    if (m_uithread.joinable())
+        m_uithread.join();
 }
 
 void sdl::register_display(display* disp) {
-    lock_guard<mutex> attach_guard(m_attach_mtx);
     auto finder = [disp](const sdl_client& s) -> bool {
         return s.disp == disp;
     };
 
-    lock_guard<mutex> client_guard(m_client_mtx);
+    lock_guard<mutex> lock(m_mtx);
     if (stl_contains_if(m_clients, finder))
         VCML_ERROR("display %s already registered", disp->name());
 
     sdl_client client = {};
     client.disp = disp;
     m_clients.push_back(client);
-    m_attached++;
 
+#ifndef UI_ON_MAIN_THREAD
     if (!m_uithread.joinable())
-        m_uithread = thread(&sdl::ui_run, this);
+        m_uithread = thread(&sdl::run, this);
+#endif
 }
 
 void sdl::unregister_display(display* disp) {
-    lock_guard<mutex> attach_guard(m_attach_mtx);
+    lock_guard<mutex> lock(m_mtx);
 
-    if (m_attached > 0) {
-        lock_guard<mutex> client_guard(m_client_mtx);
-        auto finder = [disp](const sdl_client& s) -> bool {
-            return s.disp == disp;
-        };
+    auto finder = [disp](const sdl_client& s) -> bool {
+        return s.disp == disp;
+    };
 
-        auto it = std::find_if(m_clients.begin(), m_clients.end(), finder);
-        if (it == m_clients.end())
-            return;
+    auto it = std::find_if(m_clients.begin(), m_clients.end(), finder);
+    if (it == m_clients.end())
+        return;
 
-        it->disp = nullptr;
-        m_attached--;
-    }
+    it->disp = nullptr;
+}
 
-    if (m_uithread.joinable() && m_attached == 0)
-        m_uithread.join();
+sdl& sdl::instance() {
+    static sdl singleton;
+    return singleton;
 }
 
 display* sdl::create(u32 nr) {
-    static sdl instance;
-    return new sdl_display(nr, instance);
+    return new sdl_display(nr, instance());
 }
 
 sdl_display::sdl_display(u32 nr, sdl& owner):
@@ -633,4 +623,11 @@ void sdl_display::shutdown() {
 }
 
 } // namespace ui
+
+#ifdef UI_ON_MAIN_THREAD
+void sdl_main_thread() {
+    ui::sdl::instance().run();
+}
+#endif
+
 } // namespace vcml

@@ -50,10 +50,8 @@ struct sdl_client {
 class sdl
 {
 private:
-    mutex m_attach_mtx;
-    mutex m_client_mtx;
+    mutex m_mtx;
     thread m_uithread;
-    atomic<int> m_attached;
     vector<sdl_client> m_clients;
 
     sdl_client* find_by_window_id(u32 id);
@@ -62,17 +60,17 @@ private:
     void poll_events();
     void draw_windows();
 
-    void ui_run();
-
     sdl() = default;
     sdl(const sdl&) = delete;
 
 public:
     ~sdl();
 
+    void run();
     void register_display(display* disp);
     void unregister_display(display* disp);
 
+    static sdl& instance();
     static display* create(u32 nr);
 };
 

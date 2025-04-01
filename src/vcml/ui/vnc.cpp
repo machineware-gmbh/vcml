@@ -856,8 +856,14 @@ void vnc::shutdown() {
         m_socket.disconnect();
     if (m_socket.is_listening())
         m_socket.unlisten();
-    if (m_thread.joinable())
+
+    if (m_thread.joinable()) {
+#ifdef MWR_MACOS
+        m_thread.detach();
+#else
         m_thread.join();
+#endif
+    }
 
     display::shutdown();
 }

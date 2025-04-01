@@ -157,6 +157,26 @@ int main(int argc, char** argv) {
 
     int res = EXIT_FAILURE;
 
+#ifdef UI_ON_MAIN_THREAD
+
+    thread sysc([&]() {
+        try {
+            set_sysc_thread();
+            mwr::set_thread_name("systemc");
+            res = sc_core::sc_elab_and_sim(argc, argv);
+        } catch (vcml::report& rep) {
+            log.error(rep);
+        } catch (std::exception& ex) {
+            log.error(ex);
+        }
+    });
+
+    void sdl_main_thread();
+    sdl_main_thread();
+    sysc.join();
+
+#else // UI_ON_MAIN_THREAD
+
     try {
         res = sc_core::sc_elab_and_sim(argc, argv);
     } catch (vcml::report& rep) {
@@ -164,6 +184,8 @@ int main(int argc, char** argv) {
     } catch (std::exception& ex) {
         log.error(ex);
     }
+
+#endif
 
     return res;
 }

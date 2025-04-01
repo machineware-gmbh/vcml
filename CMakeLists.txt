@@ -221,6 +221,11 @@ target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 target_link_libraries(vcml PUBLIC mwr)
 target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
 
+if(APPLE AND SDL2_FOUND)
+    target_compile_definitions(vcml PRIVATE UI_ON_MAIN_THREAD)
+    message(STATUS "Running UI on main thread")
+endif()
+
 if(SDL2_FOUND)
     message(STATUS "Building with SDL2 support")
     target_compile_definitions(vcml PRIVATE HAVE_SDL2)
