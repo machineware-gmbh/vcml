@@ -120,7 +120,8 @@ public:
     gpio_initiator_socket irq;
     tlm_target_socket in;
 
-    uart(const sc_module_name& name, size_t rx_fifo_sz, size_t tx_fifo_sz);
+    uart(const sc_module_name& name, size_t reg_sz, size_t rx_fifo_sz,
+         size_t tx_fifo_sz);
     virtual ~uart();
     VCML_KIND(serial::uart);
     virtual void reset() override;
@@ -132,11 +133,12 @@ public:
 class uart8250 : public uart
 {
 public:
+    static constexpr size_t REG_SIZE = 1;
     static constexpr size_t RX_FIFO_SIZE = 1;
     static constexpr size_t TX_FIFO_SIZE = 1;
 
     uart8250(const sc_module_name& name):
-        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
+        uart(name, REG_SIZE, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
     virtual ~uart8250() = default;
     VCML_KIND(serial::uart8250);
 };
@@ -144,13 +146,27 @@ public:
 class uart16550 : public uart
 {
 public:
+    static constexpr size_t REG_SIZE = 1;
     static constexpr size_t RX_FIFO_SIZE = 16;
     static constexpr size_t TX_FIFO_SIZE = 16;
 
     uart16550(const sc_module_name& name):
-        uart(name, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
+        uart(name, REG_SIZE, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
     virtual ~uart16550() = default;
     VCML_KIND(serial::uart16550);
+};
+
+class uart16550x32 : public uart
+{
+public:
+    static constexpr size_t REG_SIZE = 4;
+    static constexpr size_t RX_FIFO_SIZE = 16;
+    static constexpr size_t TX_FIFO_SIZE = 16;
+
+    uart16550x32(const sc_module_name& name):
+        uart(name, REG_SIZE, RX_FIFO_SIZE, TX_FIFO_SIZE) {};
+    virtual ~uart16550x32() = default;
+    VCML_KIND(serial::uart16550x32);
 };
 
 } // namespace serial

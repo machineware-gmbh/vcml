@@ -214,7 +214,8 @@ void uart::serial_receive(const serial_target_socket& socket,
     update();
 }
 
-uart::uart(const sc_module_name& nm, size_t rx_size, size_t tx_size):
+uart::uart(const sc_module_name& nm, size_t reg_sz, size_t rx_size,
+           size_t tx_size):
     peripheral(nm),
     serial_host(),
     m_rx_size(rx_size),
@@ -222,14 +223,14 @@ uart::uart(const sc_module_name& nm, size_t rx_size, size_t tx_size):
     m_rx_fifo(),
     m_tx_fifo(),
     m_divisor(1),
-    thr("thr", 0x0, 0x00),
-    ier("ier", 0x1, 0x00),
-    iir("iir", 0x2, 0x00),
-    lcr("lcr", 0x3, LCR_WL8), // 8bits, no parity
-    mcr("mcr", 0x4, 0x00),
-    lsr("lsr", 0x5, LSR_THRE | LSR_TEMT),
-    msr("msr", 0x6, 0x00),
-    scr("scr", 0x7, 0x00),
+    thr("thr", 0x0 * reg_sz, 0x00),
+    ier("ier", 0x1 * reg_sz, 0x00),
+    iir("iir", 0x2 * reg_sz, 0x00),
+    lcr("lcr", 0x3 * reg_sz, LCR_WL8), // 8bits, no parity
+    mcr("mcr", 0x4 * reg_sz, 0x00),
+    lsr("lsr", 0x5 * reg_sz, LSR_THRE | LSR_TEMT),
+    msr("msr", 0x6 * reg_sz, 0x00),
+    scr("scr", 0x7 * reg_sz, 0x00),
     serial_tx("serial_tx"),
     serial_rx("serial_rx"),
     irq("irq"),
