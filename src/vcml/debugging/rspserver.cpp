@@ -234,13 +234,8 @@ void rspserver::shutdown() {
     if (m_sock.is_connected())
         m_sock.disconnect();
 
-    if (m_thread.joinable()) {
-#ifdef MWR_MACOS
-        m_thread.detach();
-#else
+    if (m_thread.joinable())
         m_thread.join();
-#endif
-    }
 }
 
 string rspserver::handle_command(const string& command) {

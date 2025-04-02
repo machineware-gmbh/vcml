@@ -61,13 +61,8 @@ backend_tcp::~backend_tcp() {
     if (m_socket.is_connected())
         m_socket.disconnect();
 
-    if (m_thread.joinable()) {
-#ifdef MWR_MACOS
-        m_thread.detach();
-#else
+    if (m_thread.joinable())
         m_thread.join();
-#endif
-    }
 }
 
 bool backend_tcp::read(u8& val) {
