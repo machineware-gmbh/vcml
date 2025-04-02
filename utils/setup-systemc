@@ -107,7 +107,7 @@ fi
 if [ ! -d $build ]; then
     mkdir -p $build && cd $build
     if [ -f ../$src/CMakeLists.txt ]; then
-        cmake -DCMAKE_INSTALL_PREFIX=$home -DCMAKE_BUILD_TYPE=$cmake_build $cmake_flags ../$src
+        cmake -DCMAKE_INSTALL_PREFIX=$home -DCMAKE_BUILD_TYPE=$cmake_build $cmake_flags -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ../$src
     else
         ../$src/configure --prefix=$home $aconf_flags
     fi
