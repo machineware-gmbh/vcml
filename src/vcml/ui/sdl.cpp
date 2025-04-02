@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/ui/sdl.h"
+#include "vcml/ui/icon.h"
 
 namespace vcml {
 namespace ui {
@@ -343,6 +344,13 @@ void sdl_client::init_window() {
     window = SDL_CreateWindow(name, pos.x, pos.y, w, h, 0);
     if (window == nullptr)
         VCML_ERROR("cannot create SDL window: %s", SDL_GetError());
+
+    if (SDL_Surface* icon = SDL_CreateRGBSurfaceFrom(
+            (void*)ICON_DATA, ICON_WIDTH, ICON_HEIGHT, 32, ICON_WIDTH * 4,
+            0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)) {
+        SDL_SetWindowIcon(window, icon);
+        SDL_FreeSurface(icon);
+    }
 
     window_id = SDL_GetWindowID(window);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
