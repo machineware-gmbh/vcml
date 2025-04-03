@@ -305,6 +305,20 @@ bool ocfbc::cmd_info(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool ocfbc::cmd_screenshot(const vector<string>& args, ostream& os) {
+    string path = mkstr("%s.bmp", name());
+    if (args.size() > 0)
+        path = args[0];
+
+    if (m_console.screenshot(path)) {
+        os << "screenshot stored in '" << path << "'";
+        return true;
+    }
+
+    os << "failed to store screenshot in '" << path << "'";
+    return false;
+}
+
 ocfbc::ocfbc(const sc_module_name& nm):
     peripheral(nm),
     m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
@@ -344,6 +358,8 @@ ocfbc::ocfbc(const sc_module_name& nm):
 
     register_command("info", 0, &ocfbc::cmd_info,
                      "shows information about the framebuffer");
+    register_command("screenshot", 0, &ocfbc::cmd_screenshot,
+                     "store a screenshot of the framebuffer");
 }
 
 ocfbc::~ocfbc() {
