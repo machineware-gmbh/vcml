@@ -135,9 +135,6 @@ tlm_response_status ocfbc::write(const range& addr, const void* ptr,
 }
 
 void ocfbc::create() {
-    if (!m_console.has_display())
-        return;
-
     u32 base = (stat & STAT_AVMP) ? vbarb : vbara;
     u32 size = m_xres * m_yres * m_bpp;
     u8* vram = nullptr;
@@ -173,7 +170,6 @@ void ocfbc::create() {
 
     case 2:
         mode = ui::videomode::r5g6b5(m_xres, m_yres);
-
         mode.endian = endian;
         break;
 

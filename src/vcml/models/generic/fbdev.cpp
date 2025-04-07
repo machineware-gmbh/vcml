@@ -100,9 +100,6 @@ void fbdev::end_of_elaboration() {
         return;
     }
 
-    if (!m_console.has_display())
-        return;
-
     log_debug("using DMI pointer %p", m_vptr);
     m_console.setup(m_mode, m_vptr);
 }
