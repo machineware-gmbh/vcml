@@ -9,9 +9,6 @@
  ******************************************************************************/
 
 #include "vcml/core/processor.h"
-#include <sysc/kernel/sc_simcontext.h>
-#include <chrono>
-#include <thread>
 
 #define HEX(x, w)                                                  \
     std::setfill('0') << std::setw(w) << std::hex << x << std::dec \
