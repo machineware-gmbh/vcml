@@ -799,8 +799,13 @@ void vnc::handle_command() {
 }
 
 void vnc::run() {
-    mwr::set_thread_name(mkstr("vnc_%u", dispno()));
-    m_socket.listen(m_port);
+    try {
+        mwr::set_thread_name(mkstr("vnc_%u", dispno()));
+        m_socket.listen(m_port);
+    } catch (std::exception& ex) {
+        log.warn(ex);
+        return;
+    }
 
     while (m_running && sim_running()) {
         try {
