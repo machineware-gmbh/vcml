@@ -47,6 +47,7 @@ private:
         bool connected;
         bool enabled;
         bool pending;
+        bool state;
     };
 
     irqinfo m_irqs[NIRQ];

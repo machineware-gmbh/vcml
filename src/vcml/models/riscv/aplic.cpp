@@ -87,6 +87,10 @@ void aplic::set_pending(irqinfo* irq, bool pending) {
     if (sm == SM_LEVEL_LO || sm == SM_LEVEL_HI) {
         if (!is_msi() || !pending)
             return;
+        if (sm == SM_LEVEL_HI && pending && !irq->state)
+            return;
+        if (sm == SM_LEVEL_LO && !pending && irq->state)
+            return;
     }
 
     if (irq->pending == pending)
@@ -384,6 +388,8 @@ void aplic::notify(size_t idx, bool level) {
     VCML_ERROR_ON(idx == 0 || idx >= NIRQ, "invalid irq: %zu", idx);
 
     irqinfo* irq = m_irqs + idx - 1;
+    irq->state = level;
+
     if (irq->sourcecfg & SOURCECFG_D) {
         u32 cidx = get_field<SOURCECFG_CI>(irq->sourcecfg);
         if (cidx < m_children.size())
@@ -690,6 +696,7 @@ void aplic::reset() {
         m_irqs[i].connected = root()->irq_in.exists(i + 1);
         m_irqs[i].enabled = false;
         m_irqs[i].pending = false;
+        m_irqs[i].state = false;
     }
 }
 
