@@ -18,6 +18,7 @@ enum domaincfg_bits : u32 {
     DOMAINCFG_DM = bit(2),
     DOMAINCFG_IE = bit(8),
     DOMAINCFG_MASK = DOMAINCFG_BE | DOMAINCFG_DM | DOMAINCFG_IE,
+    DOMAINCFG_RESET = 0x80000000,
 };
 
 enum source_mode : u32 {
@@ -543,7 +544,7 @@ aplic::aplic(const sc_module_name& nm, aplic* parent):
     m_children(),
     m_irqs(),
     mmode("mmode", parent == nullptr),
-    domaincfg("domaincfg", 0x0000, 0x80000000),
+    domaincfg("domaincfg", 0x0000, DOMAINCFG_RESET),
     sourcecfg("sourcecfg", 0x0004, 0),
     mmsiaddrcfg("mmsiaddrcfg", 0x1bc0, 0),
     mmsiaddrcfgh("mmsiaddrcfgh", 0x1bc4, 0),
@@ -698,6 +699,10 @@ void aplic::reset() {
         m_irqs[i].pending = false;
         m_irqs[i].state = false;
     }
+
+    domaincfg = DOMAINCFG_RESET;
+    if (irq_out.count() == 0)
+        domaincfg |= DOMAINCFG_DM;
 }
 
 void aplic::end_of_elaboration() {
