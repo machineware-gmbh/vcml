@@ -74,7 +74,7 @@ using TOPI_EIID = field<16, 10, u32>;
 using TOPI_PRIO = field<0, 8, u32>;
 
 bool aplic::is_msi() const {
-    return m_parent ? m_parent->is_msi() : !(domaincfg & DOMAINCFG_DM);
+    return m_parent ? m_parent->is_msi() : !!(domaincfg & DOMAINCFG_DM);
 }
 
 void aplic::set_pending(irqinfo* irq, bool pending) {
@@ -137,7 +137,7 @@ u32 aplic::read_in(size_t idx) {
     u32 val = 0;
     size_t base = idx * 32;
     for (size_t i = 0; i < 32; i++, base++) {
-        if (irq_in.exists(i) && irq_in[i].read())
+        if (base > 0 && m_irqs[base - 1].state)
             val |= bit(i);
     }
 

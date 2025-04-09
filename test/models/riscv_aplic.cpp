@@ -107,15 +107,15 @@ public:
         // setup controllers
         ASSERT_OK(out_m.writew(0x0000, 0xfffffffe));
         ASSERT_OK(out_m.readw(0x0000, data));
-        ASSERT_EQ(data, 0x80000100);
+        ASSERT_EQ(data, 0x80000104); // msi mode
 
         ASSERT_OK(out_s.writew(0x0000, 0xfffffffe));
         ASSERT_OK(out_s.readw(0x0000, data));
-        ASSERT_EQ(data, 0x80000100);
+        ASSERT_EQ(data, 0x80000104); // msi mode
 
-        ASSERT_OK(out_i.writew(0x0000, 0xfffffffe));
+        ASSERT_OK(out_i.writew(0x0000, 0xfffffffa));
         ASSERT_OK(out_i.readw(0x0000, data));
-        ASSERT_EQ(data, 0x80000104);
+        ASSERT_EQ(data, 0x80000100); // irq mode
 
         // setup interrupts, delegate irq2
         ASSERT_OK(out_m.writew(0x0004, 0x00000006));
