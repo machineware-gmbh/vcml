@@ -9,7 +9,7 @@
  ##############################################################################
 
 cmake_minimum_required(VERSION 3.11)
-project(vcml VERSION 2025.04.03 LANGUAGES C CXX)
+project(vcml VERSION 2025.04.13 LANGUAGES C CXX)
 
 option(VCML_USE_SDL2 "Use SDL2 for rendering" ON)
 option(VCML_USE_SLIRP "Use SLIRP for networking" ON)
