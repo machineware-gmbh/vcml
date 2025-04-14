@@ -481,12 +481,15 @@ void aplic::send_msi(u32 target, u32 guest, u32 eiid) {
     ppn |= (u64)hart << lhxs;
     ppn |= (u64)guest;
 
-    u64 addr = ppn << 12;
+    msi_t info;
+    info.addr = ppn << 12;
+    info.eiid = eiid;
+    info.hart = hart;
+    info.group = group;
+    info.guest = guest;
 
-    if (failed(msi.writew(addr, eiid))) {
-        log_warn("error sending msi %u to 0x%llx (group:%u hart:%u guest:%u)",
-                 eiid, addr, group, hart, guest);
-    }
+    m_msis.push(info);
+    m_msiev.notify(SC_ZERO_TIME);
 }
 
 void aplic::send_irq(u32 hart) {
@@ -500,6 +503,23 @@ void aplic::send_irq(u32 hart) {
     u32 iforce = idc->iforce;
 
     irq_out[hart] = enabled && idelivery && (iforce || itop);
+}
+
+void aplic::msi_thread() {
+    while (true) {
+        wait(m_msiev);
+
+        while (!m_msis.empty()) {
+            msi_t irq = m_msis.front();
+            m_msis.pop();
+
+            if (failed(msi.writew(irq.addr, irq.eiid))) {
+                log_warn(
+                    "error sending msi %u to 0x%llx (grp:%u hart:%u guest:%u)",
+                    irq.eiid, irq.addr, irq.group, irq.hart, irq.guest);
+            }
+        }
+    }
 }
 
 aplic::hartidc::hartidc(size_t hart):
@@ -543,6 +563,8 @@ aplic::aplic(const sc_module_name& nm, aplic* parent):
     m_parent(parent),
     m_children(),
     m_irqs(),
+    m_msis(),
+    m_msiev("msiev"),
     mmode("mmode", parent == nullptr),
     domaincfg("domaincfg", 0x0000, DOMAINCFG_RESET),
     sourcecfg("sourcecfg", 0x0004, 0),
@@ -680,6 +702,9 @@ aplic::aplic(const sc_module_name& nm, aplic* parent):
 
     if (m_parent)
         m_parent->m_children.push_back(this);
+
+    SC_HAS_PROCESS(aplic);
+    SC_THREAD(msi_thread);
 }
 
 aplic::~aplic() {

@@ -52,6 +52,17 @@ private:
 
     irqinfo m_irqs[NIRQ];
 
+    struct msi_t {
+        u64 addr;
+        u32 eiid;
+        u32 hart;
+        u32 group;
+        u32 guest;
+    };
+
+    queue<msi_t> m_msis;
+    sc_event m_msiev;
+
     void set_pending(irqinfo* irq, bool pending);
     void set_enabled(irqinfo* irq, bool enabled);
 
@@ -96,6 +107,8 @@ private:
 
     void send_msi(u32 hart, u32 guest, u32 eiid);
     void send_irq(u32 hart);
+
+    void msi_thread();
 
 public:
     struct hartidc {
