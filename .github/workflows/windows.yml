@@ -5,9 +5,6 @@ on:
     branches:
       - 'main'
       - 'dev**'
-  pull_request:
-    branches:
-      - 'main'
 
 jobs:
   windows:
@@ -27,12 +24,23 @@ jobs:
         submodules: 'recursive'
 
     - name: Configure
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON
+      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.cfg}}
+      run: cmake --build BUILD --config ${{matrix.cfg}} -- /bl
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{matrix.cfg}} --output-on-failure
+      run: ctest --test-dir BUILD -C ${{matrix.cfg}} --output-on-failure
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v4
+      with:
+        name: vcml-build-logs-${{matrix.os}}
+        path: |
+            BUILD/.ninja_log
+            BUILD/CMakeCache.txt
+            BUILD/msbuild.binlog
+            BUILD/Testing/Temporary/LastTest.log
+        include-hidden-files: true
+        retention-days: 7
 

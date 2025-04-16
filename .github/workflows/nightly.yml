@@ -65,12 +65,22 @@ jobs:
       run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
 
     - name: Configure
-      run: cmake -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
+      run: cmake -G Ninja -B BUILD -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)
+      run: cmake --build BUILD
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+      run: ctest --test-dir BUILD -C ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v4
+      with:
+        name: vcml-build-logs-${{matrix.systemc}}-${{matrix.os}}
+        path: |
+            BUILD/.ninja_log
+            BUILD/CMakeCache.txt
+            BUILD/Testing/Temporary/LastTest.log
+        include-hidden-files: true
+        retention-days: 7
 
