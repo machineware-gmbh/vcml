@@ -55,7 +55,7 @@ jobs:
       run: cmake --build BUILD
 
     - name: Test
-      run: ctest --test-dir BUILD -C ${{matrix.sanitizer}} --output-on-failure
+      run: ctest --test-dir BUILD --output-on-failure
 
     - name: Upload Logs
       uses: actions/upload-artifact@v4
