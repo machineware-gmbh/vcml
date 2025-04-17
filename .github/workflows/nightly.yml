@@ -75,6 +75,7 @@ jobs:
 
     - name: Upload Logs
       uses: actions/upload-artifact@v4
+      if: '!cancelled()'
       with:
         name: vcml-build-logs-${{matrix.systemc}}-${{matrix.os}}
         path: |
