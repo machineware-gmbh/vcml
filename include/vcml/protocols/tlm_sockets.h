@@ -120,6 +120,11 @@ public:
     template <unsigned int WIDTH>
     void bind(tlm::tlm_base_target_socket_b<WIDTH>& other);
 
+    bool is_bound() const {
+        auto* sock = const_cast<tlm_initiator_socket*>(this);
+        return sock->get_base_port().bind_count() > 0;
+    }
+
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
 };
@@ -301,6 +306,11 @@ public:
 
     template <unsigned int WIDTH>
     tlm::tlm_target_socket<WIDTH>& adapt();
+
+    bool is_bound() const {
+        auto* s = const_cast<tlm_target_socket*>(this);
+        return s->get_base_port().bind_count() > 0;
+    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();

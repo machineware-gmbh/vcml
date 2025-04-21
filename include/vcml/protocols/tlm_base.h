@@ -37,6 +37,11 @@ public:
     virtual ~tlm_base_initiator_socket() { delete m_stub; }
     VCML_KIND(tlm_base_initiator_socket);
 
+    bool is_bound() const {
+        auto* s = const_cast<tlm_base_initiator_socket*>(this);
+        return s->get_base_port().bind_count() > 0;
+    }
+
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(tlm_response_status r = TLM_ADDRESS_ERROR_RESPONSE) {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
@@ -57,6 +62,11 @@ public:
         tlm::tlm_target_socket<>(nm), hierarchy_element(), m_stub() {}
     virtual ~tlm_base_target_socket() { delete m_stub; }
     VCML_KIND(tlm_base_target_socket);
+
+    bool is_bound() const {
+        auto* s = const_cast<tlm_base_target_socket*>(this);
+        return s->get_base_port().bind_count() > 0;
+    }
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub() {

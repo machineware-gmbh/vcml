@@ -33,6 +33,12 @@ public:
         tlm_out_h("tlm_out_h"),
         tlm_in_h("tlm_in_h"),
         tlm_in("tlm_in") {
+        // test binding checker
+        EXPECT_FALSE(tlm_ifull.is_bound());
+        EXPECT_FALSE(tlm_ibase.is_bound());
+        EXPECT_FALSE(tlm_tbase.is_bound());
+        EXPECT_FALSE(tlm_tfull.is_bound());
+
         // test hierarchy binding
         tlm_bind(*this, "tlm_ifull", *this, "tlm_ibase");
         tlm_bind(*this, "tlm_tbase", *this, "tlm_tfull");
@@ -40,6 +46,12 @@ public:
         tlm_bind(*this, "tlm_out", 0, *this, "tlm_out_h", 1);
         tlm_bind(*this, "tlm_in_h", 2, *this, "tlm_in", 3);
         tlm_bind(*this, "tlm_out_h", 1, *this, "tlm_in_h", 2);
+
+        // test binding checker update
+        EXPECT_TRUE(tlm_ifull.is_bound());
+        EXPECT_TRUE(tlm_ibase.is_bound());
+        EXPECT_TRUE(tlm_tbase.is_bound());
+        EXPECT_TRUE(tlm_tfull.is_bound());
 
         // test stubbing
         tlm_bind(*this, "tlm_out", 44, *this, "tlm_out_h", 44);
