@@ -136,7 +136,7 @@ void module::trace_bw(const sc_object& port, const PAYLOAD& tx,
 }
 
 inline bool module::is_local_process(sc_process_b* proc) const {
-    return is_parent(this, proc);
+    return proc && is_parent(this, proc);
 }
 
 } // namespace vcml

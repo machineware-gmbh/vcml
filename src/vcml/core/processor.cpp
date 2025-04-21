@@ -528,7 +528,7 @@ void processor::interrupt(size_t irq, bool set) {
 }
 
 void processor::update_local_time(sc_time& local_time, sc_process_b* proc) {
-    if (is_local_process(proc)) {
+    if (proc && is_local_process(proc)) {
         u64 cycles = cycle_count();
         VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
         local_time += clock_cycles(cycles - m_cycle_count);

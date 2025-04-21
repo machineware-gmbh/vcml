@@ -91,7 +91,8 @@ sc_time& tlm_host::local_time(sc_process_b* proc) {
         m_processes[proc].time = SC_ZERO_TIME;
 
     sc_time& local = m_processes[proc].time;
-    update_local_time(local, proc);
+    if (proc)
+        update_local_time(local, proc);
     return local;
 }
 

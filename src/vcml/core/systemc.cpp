@@ -72,6 +72,8 @@ void hierarchy_dump(ostream& os, sc_object* obj) {
 }
 
 bool is_parent(const sc_object* obj, const sc_object* child) {
+    if (!obj || !child)
+        return false;
     if (obj == child)
         return false;
 
