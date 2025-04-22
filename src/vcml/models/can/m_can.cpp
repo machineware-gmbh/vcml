@@ -484,33 +484,35 @@ void m_can::write_rwd(u32 val) {
 }
 
 void m_can::write_cccr(u32 val) {
+    cccr.set_bit<CCCR_INIT>(val & CCCR_INIT);
+    cccr.set_bit<CCCR_CSR>(val & CCCR_CSR);
+    if (val & CCCR_INIT) {
+        m_tx_rx_enabled = false;
+        cccr.set_bit<CCCR_CCE>(val & CCCR_CCE);
+    } else {
+        m_tx_rx_enabled = true;
+        cccr.set_bit<CCCR_CCE>(false);
+    }
+
+    bool curr_cce = cccr & CCCR_CCE;
+    bool new_cce = val & CCCR_CCE;
+    if (new_cce && (new_cce != curr_cce)) {
+        hpms.reset();
+        rxf0s.reset();
+        rxf1s.reset();
+        txfqs.reset();
+        txbrp.reset();
+        txbto.reset();
+        txbcf.reset();
+        txefs.reset();
+        tocv.set_field<TOCV_TOC>(tocc.get_field<TOCC_TOP>());
+    }
+
     if (is_cfg_allowed()) {
         cccr = val & CCCR_MASK;
-        if (!(val & CCCR_TEST)) {
+        if (!(val & CCCR_TEST))
             test.reset();
-        }
     }
-
-    if (cccr & CCCR_INIT) {
-        cccr |= (val & CCCR_CCE);
-        if (val & CCCR_CCE) {
-            hpms.reset();
-            rxf0s.reset();
-            rxf1s.reset();
-            txfqs.reset();
-            txbrp.reset();
-            txbto.reset();
-            txbcf.reset();
-            txefs.reset();
-            tocv.set_field<TOCV_TOC>(tocc.get_field<TOCC_TOP>());
-        }
-        m_tx_rx_enabled = false;
-    } else {
-        cccr &= ~CCCR_CCE;
-        m_tx_rx_enabled = true;
-    }
-
-    cccr |= val & CCCR_INIT;
 }
 
 void m_can::write_nbtp(u32 val) {
