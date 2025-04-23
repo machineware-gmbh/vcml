@@ -231,7 +231,8 @@ public:
     void setup_m_can() {
         u32 data;
         // configure m_can
-        EXPECT_OK(out.writew(REG_CCCR, CCCR_CCE))
+        EXPECT_OK(out.readw(REG_CCCR, data)) << "cannot read cccr register";
+        EXPECT_OK(out.writew(REG_CCCR, data | CCCR_CCE))
             << "cannot enable m_can config mode";
 
         EXPECT_OK(out.writew(REG_ILE, ILE_EINT0))
