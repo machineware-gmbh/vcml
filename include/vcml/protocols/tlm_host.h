@@ -33,6 +33,7 @@ private:
         proc_data(): time(SC_ZERO_TIME), tx(nullptr), sbi(nullptr) {}
     };
 
+    mutable std::mutex m_proc_mtx;
     mutable std::unordered_map<sc_process_b*, proc_data> m_processes;
     vector<tlm_initiator_socket*> m_initiator_sockets;
     vector<tlm_target_socket*> m_target_sockets;

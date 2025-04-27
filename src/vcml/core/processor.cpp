@@ -374,6 +374,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     component(nm),
     target(),
     m_run_time(0),
+    m_cycle_mtx(),
     m_cycle_count(0),
     m_gdb(nullptr),
     m_irq_stats(),
@@ -439,7 +440,7 @@ processor::~processor() {
 void processor::reset() {
     component::reset();
 
-    m_cycle_count = 0;
+    m_cycle_count.clear();
     m_run_time = 0.0;
 
     for (auto reg : m_regprops)
@@ -529,10 +530,12 @@ void processor::interrupt(size_t irq, bool set) {
 
 void processor::update_local_time(sc_time& local_time, sc_process_b* proc) {
     if (proc && is_local_process(proc)) {
-        u64 cycles = cycle_count();
-        VCML_ERROR_ON(cycles < m_cycle_count, "cycle count goes down");
-        local_time += clock_cycles(cycles - m_cycle_count);
-        m_cycle_count = cycles;
+        lock_guard<mutex> guard(m_cycle_mtx);
+        u64 curr_cycles = cycle_count();
+        u64& prev_cycles = m_cycle_count[proc];
+        VCML_ERROR_ON(curr_cycles < prev_cycles, "cycle count goes down");
+        local_time += clock_cycles(curr_cycles - prev_cycles);
+        prev_cycles = curr_cycles;
     }
 }
 
