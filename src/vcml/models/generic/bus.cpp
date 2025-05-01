@@ -198,6 +198,16 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
                                     u64 end) {
     VCML_ERROR_ON(start > end, "invalid dmi invalidation request");
     size_t port = out.index_of(origin);
+    if (port == m_default.target) {
+        u64 s = start > m_default.offset ? start - m_default.offset : 0;
+        u64 e = end != ~0ull ? end - m_default.offset : end;
+
+        for (auto& [id, port] : in)
+            (*port)->invalidate_direct_mem_ptr(s, e);
+
+        return;
+    }
+
     for (const mapping& m : m_mappings) {
         if (m.target != port)
             continue;
@@ -217,9 +227,9 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
         s += m.addr.start;
         e += m.addr.start;
 
-        for (auto& it : in) {
-            if (m.source == SOURCE_ANY || it.first == m.source)
-                (*it.second)->invalidate_direct_mem_ptr(s, e);
+        for (auto& [id, port] : in) {
+            if (m.source == SOURCE_ANY || id == m.source)
+                (*port)->invalidate_direct_mem_ptr(s, e);
         }
     }
 }
