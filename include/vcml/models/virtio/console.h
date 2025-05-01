@@ -74,7 +74,7 @@ public:
     virtual ~console();
     VCML_KIND(virtio::console);
 
-    virtual void reset();
+    virtual void reset() override;
 };
 
 } // namespace virtio

@@ -35,6 +35,8 @@ enum virtio_cap_type : u8 {
     VIRTIO_PCI_CAP_ISR = 3,
     VIRTIO_PCI_CAP_DEVICE = 4,
     VIRTIO_PCI_CAP_PCI_CFG = 5,
+    VIRTIO_PCI_CAP_SHM_CFG = 8,
+    VIRTIO_PCI_CAP_VENDOR = 9,
 };
 
 class pci;
@@ -43,12 +45,15 @@ struct cap_virtio : capability {
     reg<u8>* cap_len;
     reg<u8>* cfg_type;
     reg<u8>* cap_bar;
+    reg<u8>* cap_subid;
     reg<u32>* offset;
     reg<u32>* length;
     reg<u32>* notify_mult;
+    reg<u32>* offset_hi;
+    reg<u32>* length_hi;
 
-    cap_virtio(const string& nm, u8 type, u8 bar, u32 offset, u32 length,
-               u32 mult);
+    cap_virtio(const string& nm, u8 type, u8 bar, u64 offset, u64 length,
+               u32 arg0 = 0);
     virtual ~cap_virtio() = default;
 };
 
@@ -60,23 +65,36 @@ private:
     u64 m_drv_features;
     u64 m_dev_features;
 
-    virtio_device_desc m_device;
+    virtio_device_desc m_device_desc;
 
     unordered_map<u32, virtqueue*> m_queues;
+
+    virtio_shared_memory* m_shm;
 
     cap_virtio* m_cap_common;
     cap_virtio* m_cap_notify;
     cap_virtio* m_cap_isr;
     cap_virtio* m_cap_device;
+    vector<cap_virtio*> m_cap_shm;
 
     void enable_virtqueue(u32 vqid);
     void disable_virtqueue(u32 vqid);
+    void reset_virtqueue(u32 vqid);
     void cleanup_virtqueues();
+
+    void reset_device();
 
     virtual bool get(u32 vqid, vq_message& msg) override;
     virtual bool put(u32 vqid, vq_message& msg) override;
 
     virtual bool notify() override;
+
+    virtual bool shm_map(u32 type, u64 id, u64 offset, void* ptr,
+                         u64 len) override;
+    virtual bool shm_unmap(u32 type, u64 id) override;
+
+    virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                                 address_space as) override;
 
     virtual tlm_response_status read(const range& addr, void* data,
                                      const tlm_sbi& info,
@@ -84,6 +102,8 @@ private:
     virtual tlm_response_status write(const range& addr, const void* data,
                                       const tlm_sbi& info,
                                       address_space as) override;
+
+    virtual void end_of_elaboration() override;
 
     void write_device_feature_sel(u32 val);
     void write_driver_feature(u32 val);
@@ -104,6 +124,7 @@ private:
     void write_queue_desc(u64 val);
     void write_queue_driver(u64 val);
     void write_queue_device(u64 val);
+    void write_queue_reset(u16 val);
 
     void write_queue_notify(u32 val);
     u32 read_irq_status();
@@ -115,6 +136,9 @@ public:
     property<unsigned int> msix_vectors;
     property<unsigned int> virtio_bar;
     property<unsigned int> msix_bar;
+    property<unsigned int> shm_bar;
+
+    property<size_t> shm_size;
 
     pci_address_space virtio_as() const {
         return (pci_address_space)(PCI_AS_BAR0 + virtio_bar);
@@ -122,6 +146,10 @@ public:
 
     pci_address_space msix_as() const {
         return (pci_address_space)(PCI_AS_BAR0 + msix_bar);
+    }
+
+    pci_address_space shm_as() const {
+        return (pci_address_space)(PCI_AS_BAR0 + shm_bar);
     }
 
     reg<u32> device_feature_sel;
@@ -140,6 +168,9 @@ public:
     reg<u64> queue_desc;
     reg<u64> queue_driver;
     reg<u64> queue_device;
+    reg<u16> queue_notif_config_data;
+    reg<u16> queue_reset;
+
     reg<u32> queue_notify;
     reg<u32> irq_status;
 
@@ -155,6 +186,7 @@ public:
     void virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult);
     void virtio_declare_isr_cap(u8 bar, u32 offset, u32 length);
     void virtio_declare_device_cap(u8 bar, u32 offset, u32 length);
+    void virtio_declare_shm_cap(u8 bar, u32 offset, u32 length, u32 shmid);
 
     bool has_feature(u64 feature) const;
     bool device_ready() const;

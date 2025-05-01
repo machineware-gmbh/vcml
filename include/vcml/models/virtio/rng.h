@@ -48,7 +48,7 @@ public:
     virtual ~rng();
     VCML_KIND(virtio::rng);
 
-    virtual void reset();
+    virtual void reset() override;
 };
 
 } // namespace virtio

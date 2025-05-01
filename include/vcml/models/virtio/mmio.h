@@ -30,13 +30,18 @@ private:
     u64 m_drv_features;
     u64 m_dev_features;
 
-    virtio_device_desc m_device;
+    virtio_device_desc m_device_desc;
 
     std::unordered_map<u32, virtqueue*> m_queues;
 
+    virtio_shared_memory* m_shm;
+
     void enable_virtqueue(u32 vqid);
     void disable_virtqueue(u32 vqid);
+    void reset_virtqueue(u32 vqid);
     void cleanup_virtqueues();
+
+    void reset_device();
 
     virtual void invalidate_dmi(u64 start, u64 end) override;
 
@@ -45,12 +50,20 @@ private:
 
     virtual bool notify() override;
 
+    virtual bool shm_map(u32 shmid, u64 id, u64 offset, void* ptr,
+                         u64 len) override;
+    virtual bool shm_unmap(u32 shmid, u64 id) override;
+
+    virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                                 address_space as) override;
+
     virtual tlm_response_status read(const range& addr, void* data,
                                      const tlm_sbi& info) override;
     virtual tlm_response_status write(const range& addr, const void* data,
                                       const tlm_sbi& info) override;
 
-    u8* lookup_dmi_ptr(u64 addr, vcml_access acs);
+    virtual void before_end_of_elaboration() override;
+    virtual void end_of_elaboration() override;
 
     u32 read_device_id();
     u32 read_vendor_id();
@@ -62,6 +75,8 @@ private:
     void write_queue_notify(u32 val);
     void write_interrrupt_ack(u32 val);
     void write_status(u32 val);
+    void write_shm_sel(u32 val);
+    void write_queue_reset(u32 val);
 
     // disabled
     mmio() = delete;
@@ -70,6 +85,9 @@ private:
 public:
     property<bool> use_packed_queues;
     property<bool> use_strong_barriers;
+
+    property<u64> shm_base;
+    property<u64> shm_size;
 
     reg<u32> magic;
     reg<u32> version;
@@ -93,9 +111,16 @@ public:
     reg<u32> queue_driver_hi;
     reg<u32> queue_device_lo;
     reg<u32> queue_device_hi;
+    reg<u32> shm_sel;
+    reg<u32> shm_len_lo;
+    reg<u32> shm_len_hi;
+    reg<u32> shm_base_lo;
+    reg<u32> shm_base_hi;
+    reg<u32> queue_reset;
     reg<u32> config_gen;
 
     tlm_target_socket in;
+    tlm_target_socket shm;
     tlm_initiator_socket out;
     gpio_initiator_socket irq;
     virtio_initiator_socket virtio_out;

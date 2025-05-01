@@ -13,8 +13,19 @@
 namespace vcml {
 namespace virtio {
 
-cap_virtio::cap_virtio(const string& nm, u8 type, u8 bar, u32 off, u32 len,
-                       u32 mult):
+constexpr u8 virtio_cap_size(u8 type) {
+    switch (type) {
+    case VIRTIO_PCI_CAP_NOTIFY:
+        return 20;
+    case VIRTIO_PCI_CAP_SHM_CFG:
+        return 24;
+    default:
+        return 16;
+    }
+}
+
+cap_virtio::cap_virtio(const string& nm, u8 type, u8 bar, u64 off, u64 len,
+                       u32 arg0):
     capability(nm, PCI_CAPABILITY_VENDOR),
     cap_len(),
     cfg_type(),
@@ -22,15 +33,20 @@ cap_virtio::cap_virtio(const string& nm, u8 type, u8 bar, u32 off, u32 len,
     offset(),
     length(),
     notify_mult() {
-    u8 size = type == VIRTIO_PCI_CAP_NOTIFY ? 20 : 16;
-    cap_len = new_cap_reg_ro<u8>("cap_len", size);
+    u8 subid = type == VIRTIO_PCI_CAP_SHM_CFG ? arg0 : 0xff;
+    cap_len = new_cap_reg_ro<u8>("cap_len", virtio_cap_size(type));
     cfg_type = new_cap_reg_ro<u8>("cfg_type", type);
     cap_bar = new_cap_reg_ro<u8>("cap_bar", bar);
-    dev->curr_cap_off += 3; // align
+    cap_subid = new_cap_reg_ro<u8>("cap_subid", subid);
+    dev->curr_cap_off += 2; // align
     offset = new_cap_reg_ro<u32>("offset", off);
     length = new_cap_reg_ro<u32>("length", len);
     if (type == VIRTIO_PCI_CAP_NOTIFY)
-        notify_mult = new_cap_reg_ro<u32>("notify_mult", mult);
+        notify_mult = new_cap_reg_ro<u32>("notify_mult", arg0);
+    if (type == VIRTIO_PCI_CAP_SHM_CFG) {
+        offset_hi = new_cap_reg_ro<u32>("offset_hi", off >> 32);
+        length_hi = new_cap_reg_ro<u32>("length_hi", len >> 32);
+    }
 }
 
 static const pci_config VIRTIO_PCIE_CONFIG = {
@@ -49,8 +65,8 @@ static const pci_config VIRTIO_PCIE_CONFIG = {
 void pci::enable_virtqueue(u32 vqid) {
     log_debug("enabling virtqueue %u", vqid);
 
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("invalid virtqueue: %u", vqid);
         return;
     }
@@ -83,7 +99,7 @@ void pci::enable_virtqueue(u32 vqid) {
 void pci::disable_virtqueue(u32 vqid) {
     log_debug("disabling virtqueue %u", vqid);
 
-    if (m_device.virtqueues.count(vqid) == 0u) {
+    if (m_device_desc.virtqueues.count(vqid) == 0u) {
         log_warn("invalid virtqueue: %u", vqid);
         return;
     }
@@ -98,10 +114,43 @@ void pci::disable_virtqueue(u32 vqid) {
     m_queues.erase(it);
 }
 
+void pci::reset_virtqueue(u32 vqid) {
+    log_debug("resetting virtqueue %u", vqid);
+
+    auto desc = m_device_desc.virtqueues.find(vqid);
+    if (desc == m_device_desc.virtqueues.end()) {
+        log_warn("invalid virtqueue: %u", vqid);
+        return;
+    }
+
+    auto queue = m_queues.find(vqid);
+    if (queue == m_queues.end()) {
+        log_warn("virtqueue %u already disabled", vqid);
+        return;
+    }
+
+    delete queue->second;
+    m_queues.erase(queue);
+
+    desc->second.size = 0;
+    desc->second.desc = 0;
+    desc->second.driver = 0;
+    desc->second.device = 0;
+    desc->second.vector = VIRTIO_NO_VECTOR;
+    desc->second.has_event_idx = false;
+}
+
 void pci::cleanup_virtqueues() {
     for (auto it : m_queues)
         delete it.second;
     m_queues.clear();
+}
+
+void pci::reset_device() {
+    cleanup_virtqueues();
+    m_drv_features = 0;
+    device_status = 0;
+    virtio_out->reset();
 }
 
 bool pci::get(u32 vqid, vq_message& msg) {
@@ -156,6 +205,28 @@ bool pci::notify() {
     return true;
 }
 
+bool pci::shm_map(u32 shmid, u64 id, u64 offset, void* ptr, u64 len) {
+    if (!m_shm)
+        return false;
+
+    return m_shm->map(shmid, id, offset, ptr, len);
+}
+
+bool pci::shm_unmap(u32 shmid, u64 id) {
+    if (!m_shm)
+        return false;
+
+    return m_shm->unmap(shmid, id);
+}
+
+unsigned int pci::receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                          address_space as) {
+    if (as == shm_as() && m_shm)
+        return m_shm->transport(virtio_out, tx);
+    else
+        return device::receive(tx, info, as);
+}
+
 tlm_response_status pci::read(const range& addr, void* data,
                               const tlm_sbi& info, address_space as) {
     if (as != virtio_as())
@@ -187,6 +258,51 @@ tlm_response_status pci::write(const range& addr, const void* data,
     return TLM_ADDRESS_ERROR_RESPONSE;
 }
 
+void pci::end_of_elaboration() {
+    cleanup_virtqueues();
+
+    m_drv_features = 0ull;
+    m_dev_features = 0ull;
+
+    m_device_desc.reset();
+
+    if (m_shm) {
+        m_shm->reset();
+        m_device_desc.shm_capacity = m_shm->capacity();
+    }
+
+    virtio_out->identify(m_device_desc);
+
+    if (m_shm && !m_device_desc.shmems.empty()) {
+        for (auto& [shmid, desc] : m_device_desc.shmems) {
+            if (m_shm->request(shmid, desc.capacity)) {
+                u64 base = m_shm->region_base(shmid);
+                u64 size = m_shm->region_size(shmid);
+                virtio_declare_shm_cap(shm_bar, base, size, shmid);
+            }
+        }
+    }
+
+    virtio_out->read_features(m_dev_features);
+
+    m_dev_features |= VIRTIO_F_VERSION_1;
+    m_dev_features |= VIRTIO_F_RING_EVENT_IDX;
+    m_dev_features |= VIRTIO_F_RING_INDIRECT_DESC;
+    m_dev_features |= VIRTIO_F_RING_RESET;
+
+    if (use_packed_queues)
+        m_dev_features |= VIRTIO_F_RING_PACKED;
+
+    if (use_strong_barriers)
+        m_dev_features |= VIRTIO_F_ORDER_PLATFORM;
+
+    pci_class = pci_class_code(m_device_desc.pci_class, 1);
+    pci_device_id = PCI_DEVICE_VIRTIO + m_device_desc.device_id;
+    pci_subvendor_id = m_device_desc.vendor_id;
+    pci_subdevice_id = m_device_desc.device_id;
+    num_queues = m_device_desc.virtqueues.size();
+}
+
 void pci::write_device_feature_sel(u32 val) {
     unsigned int shift = val ? 32 : 0;
     device_feature = (u32)(m_dev_features >> shift);
@@ -216,9 +332,7 @@ void pci::write_device_status(u8 val) {
 
     if (val == 0u) {
         log_debug("software triggered virtio device reset");
-        cleanup_virtqueues();
-        m_drv_features = 0;
-        device_status = 0;
+        reset_device();
         return;
     }
 
@@ -238,15 +352,15 @@ void pci::write_device_status(u8 val) {
 }
 
 u16 pci::read_queue_size() {
-    auto it = m_device.virtqueues.find(queue_sel);
-    if (it == m_device.virtqueues.end())
+    auto it = m_device_desc.virtqueues.find(queue_sel);
+    if (it == m_device_desc.virtqueues.end())
         return 0;
     return it->second.size;
 }
 
 u16 pci::read_queue_msix_vector() {
-    auto it = m_device.virtqueues.find(queue_sel);
-    if (it == m_device.virtqueues.end())
+    auto it = m_device_desc.virtqueues.find(queue_sel);
+    if (it == m_device_desc.virtqueues.end())
         return 0;
     return it->second.vector;
 }
@@ -261,30 +375,30 @@ u16 pci::read_queue_notify_off() {
 }
 
 u64 pci::read_queue_desc() {
-    auto it = m_device.virtqueues.find(queue_sel);
-    if (it == m_device.virtqueues.end())
+    auto it = m_device_desc.virtqueues.find(queue_sel);
+    if (it == m_device_desc.virtqueues.end())
         return 0;
     return it->second.desc;
 }
 
 u64 pci::read_queue_driver() {
-    auto it = m_device.virtqueues.find(queue_sel);
-    if (it == m_device.virtqueues.end())
+    auto it = m_device_desc.virtqueues.find(queue_sel);
+    if (it == m_device_desc.virtqueues.end())
         return 0;
     return it->second.driver;
 }
 
 u64 pci::read_queue_device() {
-    auto it = m_device.virtqueues.find(queue_sel);
-    if (it == m_device.virtqueues.end())
+    auto it = m_device_desc.virtqueues.find(queue_sel);
+    if (it == m_device_desc.virtqueues.end())
         return 0;
     return it->second.device;
 }
 
 void pci::write_queue_size(u16 val) {
     u32 vqid = queue_sel;
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("programming size of invalid virtqueue %u", vqid);
         return;
     }
@@ -301,8 +415,8 @@ void pci::write_queue_size(u16 val) {
 
 void pci::write_queue_msix_vector(u16 val) {
     u32 vqid = queue_sel;
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("programming MSIX vector of invalid virtqueue %u", vqid);
         return;
     }
@@ -325,8 +439,8 @@ void pci::write_queue_notify_off(u16 val) {
 
 void pci::write_queue_desc(u64 val) {
     u32 vqid = queue_sel;
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("programming descriptors of invalid virtqueue %u", vqid);
         return;
     }
@@ -337,8 +451,8 @@ void pci::write_queue_desc(u64 val) {
 
 void pci::write_queue_driver(u64 val) {
     u32 vqid = queue_sel;
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("programming driver mem of invalid virtqueue %u", vqid);
         return;
     }
@@ -349,8 +463,8 @@ void pci::write_queue_driver(u64 val) {
 
 void pci::write_queue_device(u64 val) {
     u32 vqid = queue_sel;
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("programming device mem of invalid virtqueue %u", vqid);
         return;
     }
@@ -359,6 +473,16 @@ void pci::write_queue_device(u64 val) {
     queue_device = qdesc.device = val;
 }
 
+void pci::write_queue_reset(u16 val) {
+    if (!has_feature(VIRTIO_F_RING_RESET))
+        log_warn("attempt to reset virtqueue without VIRTIO_F_RING_RESET");
+
+    if (val == 1) {
+        queue_reset = 1;
+        reset_virtqueue(queue_sel);
+        queue_reset = 0;
+    }
+}
 void pci::write_queue_notify(u32 val) {
     if (!device_ready()) {
         log_warn("notify: device not ready");
@@ -408,17 +532,21 @@ pci::pci(const sc_module_name& nm):
     virtio_controller(),
     m_drv_features(),
     m_dev_features(),
-    m_device(),
+    m_device_desc(),
     m_queues(),
+    m_shm(),
     m_cap_common(),
     m_cap_notify(),
     m_cap_isr(),
     m_cap_device(),
+    m_cap_shm(),
     use_packed_queues("use_packed_queues", false),
     use_strong_barriers("use_strong_barriers", false),
     msix_vectors("msix_vectors", 16),
-    virtio_bar("virtio_bar", 4),
+    virtio_bar("virtio_bar", 0),
     msix_bar("msix_bar", 2),
+    shm_bar("shm_bar", 4),
+    shm_size("shm_size", 0),
     device_feature_sel(virtio_as(), "device_feature_sel", 0x00),
     device_feature(virtio_as(), "device_feature", 0x04),
     driver_feature_sel(virtio_as(), "driver_feature_sel", 0x08),
@@ -435,6 +563,8 @@ pci::pci(const sc_module_name& nm):
     queue_desc(virtio_as(), "queue_desc", 0x20),
     queue_driver(virtio_as(), "queue_driver", 0x28),
     queue_device(virtio_as(), "queue_device", 0x30),
+    queue_notif_config_data(virtio_as(), "queue_notif_config_data", 0x38),
+    queue_reset(virtio_as(), "queue_reset", 0x3a),
     queue_notify(virtio_as(), "queue_notify", 0x1000),
     irq_status(virtio_as(), "irq_status", 0x2000),
     pci_in("pci_in"),
@@ -504,6 +634,13 @@ pci::pci(const sc_module_name& nm):
     queue_device.on_read(&pci::read_queue_device);
     queue_device.on_write(&pci::write_queue_device);
 
+    queue_notif_config_data.sync_never();
+    queue_notif_config_data.allow_read_write();
+
+    queue_reset.sync_always();
+    queue_reset.allow_read_write();
+    queue_reset.on_write(&pci::write_queue_reset);
+
     queue_notify.sync_always();
     queue_notify.allow_read_write();
     queue_notify.on_write(&pci::write_queue_notify);
@@ -523,6 +660,11 @@ pci::pci(const sc_module_name& nm):
         pci_declare_bar(msix_bar, 0x1000, PCI_BAR_MMIO);
         pci_declare_msix_cap(msix_bar, msix_vectors, 0);
     }
+
+    if (shm_size > 0) {
+        m_shm = new virtio_shared_memory(shm_size);
+        pci_declare_bar(shm_bar, shm_size, PCI_BAR_64 | PCI_BAR_PREFETCH);
+    }
 }
 
 pci::~pci() {
@@ -536,36 +678,21 @@ pci::~pci() {
         delete m_cap_isr;
     if (m_cap_device)
         delete m_cap_device;
+    for (auto* cap_shm : m_cap_shm)
+        delete cap_shm;
+    if (m_shm)
+        delete m_shm;
 }
 
 void pci::reset() {
     pci::device::reset();
+    reset_device();
 
-    cleanup_virtqueues();
-
-    m_drv_features = 0ull;
-    m_dev_features = 0ull;
-
-    m_device.reset();
-
-    virtio_out->identify(m_device);
-    virtio_out->read_features(m_dev_features);
-
-    m_dev_features |= VIRTIO_F_VERSION_1;
-    m_dev_features |= VIRTIO_F_RING_EVENT_IDX;
-    m_dev_features |= VIRTIO_F_RING_INDIRECT_DESC;
-
-    if (use_packed_queues)
-        m_dev_features |= VIRTIO_F_RING_PACKED;
-
-    if (use_strong_barriers)
-        m_dev_features |= VIRTIO_F_ORDER_PLATFORM;
-
-    pci_class = pci_class_code(m_device.pci_class, 1);
-    pci_device_id = PCI_DEVICE_VIRTIO + m_device.device_id;
-    pci_subvendor_id = m_device.vendor_id;
-    pci_subdevice_id = m_device.device_id;
-    num_queues = m_device.virtqueues.size();
+    pci_class = pci_class_code(m_device_desc.pci_class, 1);
+    pci_device_id = PCI_DEVICE_VIRTIO + m_device_desc.device_id;
+    pci_subvendor_id = m_device_desc.vendor_id;
+    pci_subdevice_id = m_device_desc.device_id;
+    num_queues = m_device_desc.virtqueues.size();
 }
 
 void pci::virtio_declare_common_cap(u8 bar, u32 offset, u32 length) {
@@ -573,8 +700,7 @@ void pci::virtio_declare_common_cap(u8 bar, u32 offset, u32 length) {
     VCML_ERROR_ON(m_cap_common, "common capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_common = new cap_virtio("pci_cap_virtio_common",
-                                  VIRTIO_PCI_CAP_COMMON, bar, offset, length,
-                                  0);
+                                  VIRTIO_PCI_CAP_COMMON, bar, offset, length);
 }
 
 void pci::virtio_declare_notify_cap(u8 bar, u32 off, u32 len, u32 mult) {
@@ -590,7 +716,7 @@ void pci::virtio_declare_isr_cap(u8 bar, u32 offset, u32 length) {
     VCML_ERROR_ON(m_cap_isr, "isr capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_isr = new cap_virtio("pci_cap_virtio_isr", VIRTIO_PCI_CAP_ISR, bar,
-                               offset, length, 0);
+                               offset, length);
 }
 
 void pci::virtio_declare_device_cap(u8 bar, u32 offset, u32 length) {
@@ -598,8 +724,15 @@ void pci::virtio_declare_device_cap(u8 bar, u32 offset, u32 length) {
     VCML_ERROR_ON(m_cap_device, "device capability already declared");
     VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
     m_cap_device = new cap_virtio("pci_cap_virtio_device",
-                                  VIRTIO_PCI_CAP_DEVICE, bar, offset, length,
-                                  0);
+                                  VIRTIO_PCI_CAP_DEVICE, bar, offset, length);
+}
+
+void pci::virtio_declare_shm_cap(u8 bar, u32 offset, u32 length, u32 shmid) {
+    auto guard = get_hierarchy_scope();
+    VCML_ERROR_ON(bar >= PCI_NUM_BARS, "invalid BAR specified: %hhu", bar);
+    auto* cap = new cap_virtio("pci_cap_virtio_shm", VIRTIO_PCI_CAP_SHM_CFG,
+                               bar, offset, length, shmid);
+    m_cap_shm.push_back(cap);
 }
 
 VCML_EXPORT_MODEL(vcml::virtio::pci, name, args) {

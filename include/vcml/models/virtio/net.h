@@ -105,7 +105,7 @@ public:
     virtual ~net();
     VCML_KIND(virtio::net);
 
-    virtual void reset();
+    virtual void reset() override;
 };
 
 } // namespace virtio

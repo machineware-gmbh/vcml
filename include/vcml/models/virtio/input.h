@@ -126,7 +126,7 @@ public:
     virtual ~input();
     VCML_KIND(virtio::input);
 
-    virtual void reset();
+    virtual void reset() override;
 
 protected:
     virtual void end_of_simulation() override;

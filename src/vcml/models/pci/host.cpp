@@ -86,7 +86,7 @@ unsigned int host::transport(tlm_generic_payload& tx, const tlm_sbi& sideband,
     u64 size = tx.get_data_length();
 
     // max 64bit, only naturally aligned accesses
-    if (size > 8 || tx.get_address() % size) {
+    if (size > 8 || tx.get_address() % min(size, 4ull)) {
         tx.set_response_status(TLM_COMMAND_ERROR_RESPONSE);
         return 0;
     }

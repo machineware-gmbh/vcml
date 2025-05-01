@@ -56,15 +56,18 @@ enum virtio_vendors : u32 {
 };
 
 enum virtio_features : u64 {
-    VIRTIO_F_RING_INDIRECT_DESC = 1ull << 28,
-    VIRTIO_F_RING_EVENT_IDX = 1ull << 29,
-    VIRTIO_F_VERSION_1 = 1ull << 32,
-    VIRTIO_F_ACCESS_PLATFORM = 1ull << 33,
-    VIRTIO_F_RING_PACKED = 1ull << 34,
-    VIRTIO_F_IN_ORDER = 1ull << 35,
-    VIRTIO_F_ORDER_PLATFORM = 1ull << 36,
-    VIRTIO_F_SR_IOV = 1ull << 37,
-    VIRTIO_F_NOTIFICATION_DATA = 1ull << 38,
+    VIRTIO_F_RING_INDIRECT_DESC = bit(28),
+    VIRTIO_F_RING_EVENT_IDX = bit(29),
+    VIRTIO_F_VERSION_1 = bit(32),
+    VIRTIO_F_ACCESS_PLATFORM = bit(33),
+    VIRTIO_F_RING_PACKED = bit(34),
+    VIRTIO_F_IN_ORDER = bit(35),
+    VIRTIO_F_ORDER_PLATFORM = bit(36),
+    VIRTIO_F_SR_IOV = bit(37),
+    VIRTIO_F_NOTIFICATION_DATA = bit(38),
+    VIRTIO_F_NOTIF_CONFIG_DATA = bit(39),
+    VIRTIO_F_RING_RESET = bit(40),
+    VIRTIO_F_ADMIN_VQ = bit(41),
 };
 
 enum virtio_vectors : u16 {
@@ -72,12 +75,12 @@ enum virtio_vectors : u16 {
 };
 
 enum virtio_device_status : u32 {
-    VIRTIO_STATUS_ACKNOWLEDGE = 1u << 0,
-    VIRTIO_STATUS_DRIVER = 1u << 1,
-    VIRTIO_STATUS_DRIVER_OK = 1u << 2,
-    VIRTIO_STATUS_FEATURES_OK = 1u << 3,
-    VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1u << 6,
-    VIRTIO_STATUS_FAILED = 1u << 7,
+    VIRTIO_STATUS_ACKNOWLEDGE = bit(0),
+    VIRTIO_STATUS_DRIVER = bit(1),
+    VIRTIO_STATUS_DRIVER_OK = bit(2),
+    VIRTIO_STATUS_FEATURES_OK = bit(3),
+    VIRTIO_STATUS_DEVICE_NEEDS_RESET = bit(6),
+    VIRTIO_STATUS_FAILED = bit(7),
 
     VIRTIO_STATUS_FEATURE_CHECK = VIRTIO_STATUS_DRIVER |
                                   VIRTIO_STATUS_FEATURES_OK,
@@ -97,8 +100,8 @@ constexpr bool virtio_device_ready(u32 sts) {
 }
 
 enum virtio_irq_status : u32 {
-    VIRTIO_IRQSTATUS_VQUEUE = 1u << 0,
-    VIRTIO_IRQSTATUS_CONFIG = 1u << 1,
+    VIRTIO_IRQSTATUS_VQUEUE = bit(0),
+    VIRTIO_IRQSTATUS_CONFIG = bit(1),
 
     VIRTIO_IRQSTATUS_MASK = bitmask(2, 0),
 };
@@ -128,15 +131,39 @@ struct virtio_queue_desc {
         has_event_idx(false) {}
 };
 
+struct virtio_shm_desc {
+    u32 shmid;
+    u64 capacity;
+
+    virtio_shm_desc(u32 id, u64 size): shmid(id), capacity(size) {}
+};
+
 struct virtio_device_desc {
     u32 device_id;
     u32 vendor_id;
     u32 pci_class;
+    u64 shm_capacity;
 
     std::map<u32, virtio_queue_desc> virtqueues;
+    std::map<u32, virtio_shm_desc> shmems;
 
     void request_virtqueue(u32 id, u32 max_size) {
         virtqueues.insert({ id, virtio_queue_desc(id, max_size) });
+    }
+
+    u64 remaining_shm_capacity() const {
+        u64 remaining = shm_capacity;
+        for (auto& [shmid, desc] : shmems)
+            remaining -= desc.capacity;
+        return remaining;
+    }
+
+    bool request_shm(u32 shmid, u64 capacity) {
+        if (capacity == 0 || capacity > remaining_shm_capacity())
+            return false;
+
+        shmems.insert({ shmid, virtio_shm_desc(shmid, capacity) });
+        return true;
     }
 
     void reset();
@@ -146,7 +173,9 @@ inline void virtio_device_desc::reset() {
     device_id = 0;
     vendor_id = 0;
     pci_class = PCI_CLASS_OTHERS;
+    shm_capacity = 0;
     virtqueues.clear();
+    shmems.clear();
 }
 
 typedef function<u8*(u64, u64, vcml_access)> virtio_dmifn;
@@ -303,9 +332,9 @@ private:
         u16 next;
 
         enum flags : u16 {
-            F_NEXT = 1u << 0,
-            F_WRITE = 1u << 1,
-            F_INDIRECT = 1u << 2,
+            F_NEXT = bit(0),
+            F_WRITE = bit(1),
+            F_INDIRECT = bit(2),
         };
 
         bool is_chained() const { return flags & F_NEXT; }
@@ -319,7 +348,7 @@ private:
         u16 ring[];
 
         enum flags : u16 {
-            F_NO_INTERRUPT = 1u << 0,
+            F_NO_INTERRUPT = bit(0),
         };
 
         bool no_irq() const { return flags & F_NO_INTERRUPT; }
@@ -335,7 +364,7 @@ private:
         } ring[];
 
         enum flags : u16 {
-            F_NO_NOTIFY = 1u << 0,
+            F_NO_NOTIFY = bit(0),
         };
 
         bool no_notify() const { return flags & F_NO_NOTIFY; }
@@ -394,11 +423,11 @@ private:
         u16 flags;
 
         enum flags : u16 {
-            F_NEXT = 1u << 0,
-            F_WRITE = 1u << 1,
-            F_INDIRECT = 1u << 2,
-            F_PACKED_AVAIL = 1u << 7,
-            F_PACKED_USED = 1u << 15,
+            F_NEXT = bit(0),
+            F_WRITE = bit(1),
+            F_INDIRECT = bit(2),
+            F_PACKED_AVAIL = bit(7),
+            F_PACKED_USED = bit(15),
         };
 
         bool is_chained() const { return flags & F_NEXT; }
@@ -485,12 +514,21 @@ public:
 
     virtual void identify(virtio_device_desc& desc) = 0;
     virtual bool notify(u32 vqid) = 0;
+    virtual void reset() = 0;
 
     virtual void read_features(u64& features) = 0;
     virtual bool write_features(u64 features) = 0;
 
     virtual bool read_config(const range& addr, void* data) = 0;
     virtual bool write_config(const range& addr, const void* data) = 0;
+
+    virtual bool read_shm(u32 shmid, const range& addr, void* data) {
+        return false;
+    }
+
+    virtual bool write_shm(u32 shmid, const range& addr, const void*) {
+        return false;
+    };
 };
 
 class virtio_controller
@@ -502,6 +540,10 @@ public:
     virtual bool get(u32 vqid, vq_message& msg) = 0;
 
     virtual bool notify() = 0;
+
+    virtual bool shm_map(u32 shmid, u64 id, u64 offset, void* ptr,
+                         u64 len) = 0;
+    virtual bool shm_unmap(u32 shmid, u64 id) = 0;
 };
 
 class virtio_fw_transport_if : public sc_core::sc_interface
@@ -514,12 +556,16 @@ public:
 
     virtual void identify(virtio_device_desc& desc) = 0;
     virtual bool notify(u32 vqid) = 0;
+    virtual void reset() = 0;
 
     virtual void read_features(u64& features) = 0;
     virtual bool write_features(u64 features) = 0;
 
     virtual bool read_config(const range& addr, void* data) = 0;
     virtual bool write_config(const range& addr, const void* data) = 0;
+
+    virtual bool read_shm(u32 shmid, const range& addr, void* data) = 0;
+    virtual bool write_shm(u32 shmid, const range& addr, const void* data) = 0;
 };
 
 class virtio_bw_transport_if : public sc_core::sc_interface
@@ -534,6 +580,9 @@ public:
     virtual bool get(u32 vqid, vq_message& msg) = 0;
 
     virtual bool notify() = 0;
+
+    virtual bool shm_map(u32 shmid, u64 id, u64 off, void* ptr, u64 len) = 0;
+    virtual bool shm_unmap(u32 shmid, u64 id) = 0;
 };
 
 typedef base_initiator_socket<virtio_fw_transport_if, virtio_bw_transport_if>
@@ -592,6 +641,15 @@ private:
         }
 
         virtual bool notify() override { return parent->notify(); }
+
+        virtual bool shm_map(u32 shmid, u64 id, u64 offset, void* ptr,
+                             u64 len) override {
+            return parent->shm_map(shmid, id, offset, ptr, len);
+        }
+
+        virtual bool shm_unmap(u32 shmid, u64 id) override {
+            return parent->shm_unmap(shmid, id);
+        }
     } m_transport;
 
 public:
@@ -618,6 +676,8 @@ private:
             return device->notify(virtqueue_id);
         }
 
+        virtual void reset() override { return device->reset(); }
+
         virtual void read_features(u64& features) override {
             device->read_features(features);
         }
@@ -633,6 +693,16 @@ private:
         virtual bool write_config(const range& addr, const void* p) override {
             return device->write_config(addr, p);
         }
+
+        virtual bool read_shm(u32 shmid, const range& addr,
+                              void* data) override {
+            return device->read_shm(shmid, addr, data);
+        }
+
+        virtual bool write_shm(u32 shmid, const range& addr,
+                               const void* data) override {
+            return device->write_shm(shmid, addr, data);
+        }
     } m_transport;
 
 public:
@@ -647,6 +717,9 @@ private:
     virtual bool put(u32 vqid, vq_message& msg) override;
     virtual bool get(u32 vqid, vq_message& msg) override;
     virtual bool notify() override;
+    virtual bool shm_map(u32 shmid, u64 id, u64 offset, void* ptr,
+                         u64 len) override;
+    virtual bool shm_unmap(u32 shmid, u64 id) override;
 
 public:
     virtio_base_initiator_socket virtio_out;
@@ -659,10 +732,14 @@ class virtio_target_stub : private virtio_fw_transport_if
 private:
     virtual void identify(virtio_device_desc& desc) override;
     virtual bool notify(u32 vqid) override;
+    virtual void reset() override;
     virtual void read_features(u64& features) override;
     virtual bool write_features(u64 features) override;
     virtual bool read_config(const range& addr, void* ptr) override;
     virtual bool write_config(const range& addr, const void* p) override;
+    virtual bool read_shm(u32 shmid, const range& addr, void* data) override;
+    virtual bool write_shm(u32 shmid, const range& addr,
+                           const void* data) override;
 
 public:
     virtio_base_target_socket virtio_in;
@@ -678,6 +755,68 @@ virtio_base_target_socket& virtio_target(const sc_object& parent,
 void virtio_stub(const sc_object& obj, const string& port);
 void virtio_bind(const sc_object& obj1, const string& port1,
                  const sc_object& obj2, const string& port2);
+
+struct virtio_shared_object {
+    u64 id;
+    range addr;
+    u8* data;
+};
+
+class virtio_shared_region
+{
+private:
+    u32 m_shmid;
+    range m_addr;
+    unordered_map<u64, virtio_shared_object> m_objects;
+
+public:
+    virtio_shared_region(u32 shmid, u64 base, u64 size);
+    ~virtio_shared_region() = default;
+
+    u32 shmid() const { return m_shmid; }
+    range addr() const { return m_addr; }
+    u64 base() const { return m_addr.start; }
+    u64 size() const { return m_addr.length(); }
+
+    bool map(u64 id, u64 offset, void* data, u64 size);
+    bool unmap(u64 id);
+
+    const virtio_shared_object* find(u64 id) const;
+
+    unsigned int transport(virtio_initiator_socket& socket,
+                           tlm_generic_payload& tx);
+};
+
+class virtio_shared_memory
+{
+private:
+    u64 m_capacity;
+    unordered_map<u32, virtio_shared_region> m_regions;
+
+public:
+    virtio_shared_memory(u64 capacity);
+    virtio_shared_memory(virtio_shared_memory&&) = default;
+    ~virtio_shared_memory() = default;
+
+    u64 capacity() const { return m_capacity; }
+
+    u64 next_base() const;
+
+    u64 region_base(u32 shmid) const;
+    u64 region_size(u32 shmid) const;
+
+    const virtio_shared_object* find(u32 shmid, u64 id) const;
+
+    bool request(u32 shmid, u64 capacity);
+
+    bool map(u32 shmid, u64 id, u64 offset, void* data, u64 size);
+    bool unmap(u32 shmid, u64 id);
+
+    void reset();
+
+    unsigned int transport(virtio_initiator_socket& socket,
+                           tlm_generic_payload& tx);
+};
 
 } // namespace vcml
 

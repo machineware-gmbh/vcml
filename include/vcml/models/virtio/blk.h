@@ -98,7 +98,7 @@ public:
     virtual ~blk();
     VCML_KIND(virtio::blk);
 
-    virtual void reset();
+    virtual void reset() override;
 };
 
 } // namespace virtio

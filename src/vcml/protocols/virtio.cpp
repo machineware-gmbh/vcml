@@ -125,7 +125,7 @@ ostream& operator<<(ostream& os, const vq_message& msg) {
 }
 
 virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi):
-    sc_object(mkstr("VQ%u", desc.id).c_str()),
+    sc_object(mkstr("vq%u", desc.id).c_str()),
     id(desc.id),
     limit(desc.limit),
     size(desc.size),
@@ -505,6 +505,145 @@ virtio_status packed_virtqueue::do_put(vq_message& msg) {
     }
 }
 
+virtio_shared_region::virtio_shared_region(u32 shmid, u64 base, u64 size):
+    m_shmid(shmid), m_addr(base, base + size - 1), m_objects() {
+}
+
+bool virtio_shared_region::map(u64 id, u64 offset, void* data, u64 size) {
+    if (m_objects.count(id) > 0)
+        return false; // id already used
+
+    u64 addr = base() + offset;
+    virtio_shared_object newobj;
+    newobj.id = id;
+    newobj.data = (u8*)data;
+    newobj.addr = range(addr, addr + size - 1);
+
+    for (auto& [id, obj] : m_objects) {
+        if (obj.addr.overlaps(newobj.addr))
+            return false;
+    }
+
+    m_objects[id] = newobj;
+    return true;
+}
+
+bool virtio_shared_region::unmap(u64 id) {
+    auto it = m_objects.find(id);
+    if (it == m_objects.end())
+        return false;
+    m_objects.erase(it);
+    return true;
+}
+
+const virtio_shared_object* virtio_shared_region::find(u64 id) const {
+    auto it = m_objects.find(id);
+    return it != m_objects.end() ? &it->second : nullptr;
+}
+
+unsigned int virtio_shared_region::transport(virtio_initiator_socket& socket,
+                                             tlm_generic_payload& tx) {
+    range addr(tx);
+    for (auto& [id, obj] : m_objects) {
+        if (obj.addr.includes(addr)) {
+            u64 off = addr.start - obj.addr.start;
+            u64 len = addr.length();
+            if (tx.is_read())
+                memcpy(tx.get_data_ptr(), obj.data + off, len);
+            if (tx.is_write())
+                memcpy(obj.data + off, tx.get_data_ptr(), len);
+            tx.set_response_status(TLM_OK_RESPONSE);
+            return len;
+        }
+    }
+
+    bool ok = false;
+    if (tx.is_read())
+        ok = socket->read_shm(m_shmid, tx, tx.get_data_ptr());
+    if (tx.is_write())
+        ok = socket->write_shm(m_shmid, tx, tx.get_data_ptr());
+    if (ok)
+        tx.set_response_status(TLM_OK_RESPONSE);
+    else
+        tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+    return ok ? tx.get_data_length() : 0;
+}
+
+virtio_shared_memory::virtio_shared_memory(u64 capacity):
+    m_capacity(capacity), m_regions() {
+}
+
+u64 virtio_shared_memory::next_base() const {
+    u64 hi = 0;
+    for (auto& [shmid, shm] : m_regions)
+        hi = max(hi, shm.addr().end + 1);
+
+    // round up to a multiple of page size
+    u64 page_size = mwr::get_page_size();
+    return (hi + page_size - 1) & ~(page_size - 1);
+}
+
+u64 virtio_shared_memory::region_base(u32 shmid) const {
+    auto it = m_regions.find(shmid);
+    return it != m_regions.end() ? it->second.base() : -1;
+}
+
+u64 virtio_shared_memory::region_size(u32 shmid) const {
+    auto it = m_regions.find(shmid);
+    return it != m_regions.end() ? it->second.size() : -1;
+}
+
+const virtio_shared_object* virtio_shared_memory::find(u32 shmid,
+                                                       u64 id) const {
+    auto it = m_regions.find(shmid);
+    return it != m_regions.end() ? it->second.find(id) : nullptr;
+}
+
+bool virtio_shared_memory::request(u32 shmid, u64 size) {
+    if (m_regions.count(shmid) > 0)
+        return false; // already requested
+
+    u64 base = next_base();
+    u64 remaining = m_capacity - base;
+
+    if (size > remaining)
+        return false;
+
+    m_regions.emplace(shmid, virtio_shared_region(shmid, base, size));
+    return true;
+}
+
+bool virtio_shared_memory::map(u32 shmid, u64 id, u64 offset, void* data,
+                               u64 size) {
+    auto it = m_regions.find(shmid);
+    if (it == m_regions.end())
+        return false;
+    return it->second.map(id, offset, data, size);
+}
+
+bool virtio_shared_memory::unmap(u32 shmid, u64 id) {
+    auto it = m_regions.find(shmid);
+    if (it == m_regions.end())
+        return false;
+    return it->second.unmap(id);
+}
+
+void virtio_shared_memory::reset() {
+    m_regions.clear();
+}
+
+unsigned int virtio_shared_memory::transport(virtio_initiator_socket& socket,
+                                             tlm_generic_payload& tx) {
+    range addr(tx);
+    for (auto& [shmid, shm] : m_regions) {
+        if (shm.addr().includes(addr))
+            return shm.transport(socket, tx);
+    }
+
+    tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+    return 0;
+}
+
 virtio_base_initiator_socket::virtio_base_initiator_socket(const char* nm):
     virtio_base_initiator_socket_b(nm, VCML_AS_DEFAULT), m_stub(nullptr) {
 }
@@ -565,6 +704,15 @@ bool virtio_initiator_stub::notify() {
     return false;
 }
 
+bool virtio_initiator_stub::shm_map(u32 shmid, u64 id, u64 offset, void* ptr,
+                                    u64 len) {
+    return false;
+}
+
+bool virtio_initiator_stub::shm_unmap(u32 shmid, u64 id) {
+    return false;
+}
+
 virtio_initiator_stub::virtio_initiator_stub(const char* nm):
     virtio_bw_transport_if(), virtio_out(mkstr("%s_stub", nm).c_str()) {
     virtio_out.bind(*this);
@@ -577,6 +725,10 @@ void virtio_target_stub::identify(virtio_device_desc& desc) {
 
 bool virtio_target_stub::notify(u32 vqid) {
     return false;
+}
+
+void virtio_target_stub::reset() {
+    // nothing to do
 }
 
 void virtio_target_stub::read_features(u64& features) {
@@ -592,6 +744,15 @@ bool virtio_target_stub::read_config(const range& addr, void* ptr) {
 }
 
 bool virtio_target_stub::write_config(const range& addr, const void* p) {
+    return false;
+}
+
+bool virtio_target_stub::read_shm(u32 shmid, const range& addr, void* data) {
+    return false;
+}
+
+bool virtio_target_stub::write_shm(u32 shmid, const range& addr,
+                                   const void* data) {
     return false;
 }
 

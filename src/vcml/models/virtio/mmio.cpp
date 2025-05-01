@@ -13,11 +13,16 @@
 namespace vcml {
 namespace virtio {
 
+enum virtio_mmio_address_space : address_space {
+    VIRTIO_MMIO_AS_BUS = VCML_AS_DEFAULT,
+    VIRTIO_MMIO_AS_SHM,
+};
+
 void mmio::enable_virtqueue(u32 vqid) {
     log_debug("enabling virtqueue %u", vqid);
 
-    auto it = m_device.virtqueues.find(vqid);
-    if (it == m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(vqid);
+    if (it == m_device_desc.virtqueues.end()) {
         log_warn("invalid virtqueue: %u", vqid);
         return;
     }
@@ -62,7 +67,7 @@ void mmio::enable_virtqueue(u32 vqid) {
 void mmio::disable_virtqueue(u32 vqid) {
     log_debug("disabling virtqueue %u", vqid);
 
-    if (m_device.virtqueues.count(vqid) == 0u) {
+    if (m_device_desc.virtqueues.count(vqid) == 0u) {
         log_warn("invalid virtqueue: %u", vqid);
         return;
     }
@@ -77,10 +82,43 @@ void mmio::disable_virtqueue(u32 vqid) {
     m_queues.erase(it);
 }
 
+void mmio::reset_virtqueue(u32 vqid) {
+    log_debug("resetting virtqueue %u", vqid);
+
+    auto desc = m_device_desc.virtqueues.find(vqid);
+    if (desc == m_device_desc.virtqueues.end()) {
+        log_warn("invalid virtqueue: %u", vqid);
+        return;
+    }
+
+    auto queue = m_queues.find(vqid);
+    if (queue == m_queues.end()) {
+        log_warn("virtqueue %u already disabled", vqid);
+        return;
+    }
+
+    delete queue->second;
+    m_queues.erase(queue);
+
+    desc->second.size = 0;
+    desc->second.desc = 0;
+    desc->second.driver = 0;
+    desc->second.device = 0;
+    desc->second.vector = VIRTIO_NO_VECTOR;
+    desc->second.has_event_idx = false;
+}
+
 void mmio::cleanup_virtqueues() {
     for (auto it : m_queues)
         delete it.second;
     m_queues.clear();
+}
+
+void mmio::reset_device() {
+    cleanup_virtqueues();
+    m_drv_features = 0;
+    status = 0;
+    virtio_out->reset();
 }
 
 void mmio::invalidate_dmi(u64 start, u64 end) {
@@ -137,6 +175,53 @@ bool mmio::notify() {
     return true;
 }
 
+bool mmio::shm_map(u32 shmid, u64 id, u64 offset, void* ptr, u64 len) {
+    if (!m_shm)
+        return false;
+    if (!m_shm->map(shmid, id, offset, ptr, len))
+        return false;
+
+    const virtio_shared_object* obj = m_shm->find(shmid, id);
+    if (obj && obj->data) {
+        tlm_dmi dmi;
+        dmi.allow_read_write();
+        dmi.set_start_address(obj->addr.start);
+        dmi.set_end_address(obj->addr.end);
+        dmi.set_dmi_ptr(obj->data);
+        shm.map_dmi(dmi);
+    }
+
+    return true;
+}
+
+bool mmio::shm_unmap(u32 shmid, u64 id) {
+    if (!m_shm)
+        return false;
+
+    const virtio_shared_object* obj = m_shm->find(shmid, id);
+    if (obj && obj->data)
+        shm.unmap_dmi(obj->addr);
+
+    return m_shm->unmap(shmid, id);
+}
+
+unsigned int mmio::receive(tlm_generic_payload& tx, const tlm_sbi& info,
+                           address_space as) {
+    switch (as) {
+    case VIRTIO_MMIO_AS_BUS:
+        return peripheral::receive(tx, info, as);
+    case VIRTIO_MMIO_AS_SHM:
+        if (m_shm)
+            return m_shm->transport(virtio_out, tx);
+        // no break
+    default:
+        break;
+    }
+
+    tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
+    return 0;
+}
+
 tlm_response_status mmio::read(const range& addr, void* data,
                                const tlm_sbi& info) {
     const range& regbase = config_gen.get_range();
@@ -169,12 +254,55 @@ tlm_response_status mmio::write(const range& addr, const void* data,
     return TLM_OK_RESPONSE;
 }
 
+void mmio::before_end_of_elaboration() {
+    peripheral::before_end_of_elaboration();
+
+    if (shm_size == 0 && !shm.is_bound())
+        shm.stub();
+}
+
+void mmio::end_of_elaboration() {
+    cleanup_virtqueues();
+
+    m_drv_features = 0ull;
+    m_dev_features = 0ull;
+
+    m_device_desc.reset();
+
+    if (m_shm) {
+        m_shm->reset();
+        m_device_desc.shm_capacity = m_shm->capacity();
+    }
+
+    virtio_out->identify(m_device_desc);
+
+    if (m_shm) {
+        for (auto& [shmid, desc] : m_device_desc.shmems) {
+            if (!m_shm->request(shmid, desc.capacity))
+                log_warn("failed to request shared memory %u", shmid);
+        }
+    }
+
+    virtio_out->read_features(m_dev_features);
+
+    m_dev_features |= VIRTIO_F_VERSION_1;
+    m_dev_features |= VIRTIO_F_RING_EVENT_IDX;
+    m_dev_features |= VIRTIO_F_RING_INDIRECT_DESC;
+    m_dev_features |= VIRTIO_F_RING_RESET;
+
+    if (use_packed_queues)
+        m_dev_features |= VIRTIO_F_RING_PACKED;
+
+    if (use_strong_barriers)
+        m_dev_features |= VIRTIO_F_ORDER_PLATFORM;
+}
+
 u32 mmio::read_device_id() {
-    return m_device.device_id;
+    return m_device_desc.device_id;
 }
 
 u32 mmio::read_vendor_id() {
-    return m_device.vendor_id;
+    return m_device_desc.vendor_id;
 }
 
 void mmio::write_device_features_sel(u32 val) {
@@ -208,8 +336,8 @@ void mmio::write_queue_sel(u32 val) {
     }
 
     queue_sel = val;
-    auto it = m_device.virtqueues.find(val);
-    if (it != m_device.virtqueues.end()) {
+    auto it = m_device_desc.virtqueues.find(val);
+    if (it != m_device_desc.virtqueues.end()) {
         const virtio_queue_desc& q = it->second;
         queue_num_max = q.limit;
         queue_num = q.size;
@@ -283,7 +411,7 @@ void mmio::write_status(u32 val) {
 
     if (val == 0u) {
         log_debug("software triggered device reset");
-        reset();
+        reset_device();
         return;
     }
 
@@ -302,14 +430,44 @@ void mmio::write_status(u32 val) {
     }
 }
 
+void mmio::write_shm_sel(u32 val) {
+    if (m_shm) {
+        shm_sel = val;
+        shm_len_lo = m_shm->region_size(val);
+        shm_len_hi = m_shm->region_size(val) >> 32;
+        shm_base_lo = (shm_base + m_shm->region_base(val));
+        shm_base_hi = (shm_base + m_shm->region_base(val)) >> 32;
+    } else {
+        shm_sel = -1;
+        shm_len_lo = -1;
+        shm_len_hi = -1;
+        shm_base_lo = -1;
+        shm_base_hi = -1;
+    }
+}
+
+void mmio::write_queue_reset(u32 val) {
+    if (!has_feature(VIRTIO_F_RING_RESET))
+        log_warn("attempt to reset virtqueue without VIRTIO_F_RING_RESET");
+
+    if (val == 1) {
+        queue_reset = 1;
+        reset_virtqueue(queue_sel);
+        queue_reset = 0;
+    }
+}
+
 mmio::mmio(const sc_module_name& nm):
     peripheral(nm),
     virtio_controller(),
     m_drv_features(),
     m_dev_features(),
     m_queues(),
+    m_shm(),
     use_packed_queues("use_packed_queues", false),
     use_strong_barriers("use_strong_barriers", false),
+    shm_base("shm_base", 0),
+    shm_size("shm_size", 0),
     magic("magic", 0x00, fourcc("virt")),
     version("version", 0x04, 2),
     device_id("device_id", 0x08, 0),
@@ -332,8 +490,15 @@ mmio::mmio(const sc_module_name& nm):
     queue_driver_hi("queue_driver_hi", 0x94, 0),
     queue_device_lo("queue_device_lo", 0xa0, 0),
     queue_device_hi("queue_device_hi", 0xa4, 0),
+    shm_sel("shm_sel", 0xac, -1),
+    shm_len_lo("shm_len_lo", 0xb0, -1),
+    shm_len_hi("shm_len_hi", 0xb4, -1),
+    shm_base_lo("shm_base_lo", 0xb8, -1),
+    shm_base_hi("shm_base_hi", 0xbc, -1),
+    queue_reset("queue_reset", 0xc0, 0),
     config_gen("config_gen", 0xfc, 0),
-    in("in"),
+    in("in", VIRTIO_MMIO_AS_BUS),
+    shm("shm", VIRTIO_MMIO_AS_SHM),
     out("out"),
     irq("irq"),
     virtio_out("virtio_out") {
@@ -412,33 +577,43 @@ mmio::mmio(const sc_module_name& nm):
     queue_device_hi.sync_never();
     queue_device_hi.allow_write_only();
 
+    shm_sel.sync_always();
+    shm_sel.allow_read_write();
+    shm_sel.on_write(&mmio::write_shm_sel);
+
+    shm_len_lo.sync_never();
+    shm_len_lo.allow_read_only();
+
+    shm_len_hi.sync_never();
+    shm_len_hi.allow_read_only();
+
+    shm_base_lo.sync_never();
+    shm_base_lo.allow_read_only();
+
+    shm_base_hi.sync_never();
+    shm_base_hi.allow_read_only();
+
+    queue_reset.sync_always();
+    queue_reset.allow_read_write();
+    queue_reset.on_write(&mmio::write_queue_reset);
+
     config_gen.sync_always();
     config_gen.allow_read_only();
+
+    if (shm_size > 0)
+        m_shm = new virtio_shared_memory(shm_size);
 }
 
 mmio::~mmio() {
     cleanup_virtqueues();
+
+    if (m_shm)
+        delete m_shm;
 }
 
 void mmio::reset() {
     peripheral::reset();
-
-    cleanup_virtqueues();
-
-    m_drv_features = 0ull;
-    m_dev_features = 0ull;
-
-    virtio_out->identify(m_device);
-    virtio_out->read_features(m_dev_features);
-    m_dev_features |= VIRTIO_F_VERSION_1;
-    m_dev_features |= VIRTIO_F_RING_EVENT_IDX;
-    m_dev_features |= VIRTIO_F_RING_INDIRECT_DESC;
-
-    if (use_packed_queues)
-        m_dev_features |= VIRTIO_F_RING_PACKED;
-
-    if (use_strong_barriers)
-        m_dev_features |= VIRTIO_F_ORDER_PLATFORM;
+    reset_device();
 }
 
 VCML_EXPORT_MODEL(vcml::virtio::mmio, name, args) {

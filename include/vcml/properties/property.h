@@ -449,7 +449,7 @@ template <typename T, size_t N>
 template <typename T2>
 inline bool property<T, N>::operator==(const T2& other) {
     for (size_t i = 0; i < N; i++)
-        if (m_value[i] != other)
+        if (m_value[i] != (T)other)
             return false;
     return true;
 }

@@ -48,14 +48,19 @@ public:
     MOCK_METHOD(bool, put, (u32, vq_message&));
     MOCK_METHOD(bool, get, (u32, vq_message&));
     MOCK_METHOD(bool, notify, ());
+    MOCK_METHOD(bool, shm_map, (u32, u64, u64, void*, u64));
+    MOCK_METHOD(bool, shm_unmap, (u32, u64));
 
     // virtio device interface
     MOCK_METHOD(void, identify, (virtio_device_desc&));
     MOCK_METHOD(bool, notify, (u32));
+    MOCK_METHOD(void, reset, ());
     MOCK_METHOD(void, read_features, (u64&));
     MOCK_METHOD(bool, write_features, (u64));
     MOCK_METHOD(bool, read_config, (const range&, void*));
     MOCK_METHOD(bool, write_config, (const range&, const void*));
+    MOCK_METHOD(bool, read_shm, (u32, const range&, void*));
+    MOCK_METHOD(bool, write_shm, (u32, const range&, const void*));
 
     virtio_initiator_socket virtio_out;
     virtio_target_socket virtio_in;
