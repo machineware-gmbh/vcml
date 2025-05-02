@@ -101,8 +101,8 @@ public:
         pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
         pci_declare_bar(3, MMAP_PCI_MSIX_TABLE_SIZE, PCI_BAR_MMIO);
-        pci_declare_bar(4, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64,
-                        bar4);
+        pci_declare_bar(4, MMAP_PCI_MMIO_SIZE,
+                        PCI_BAR_MMIO | PCI_BAR_PREFETCH | PCI_BAR_64, bar4);
         pci_declare_pm_cap(PCI_PM_CAP_VER_1_2);
         pci_declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_QMASK32);
         pci_declare_msix_cap(3, TEST_MSIX_NVEC);
@@ -383,11 +383,12 @@ public:
         pcie_write_cfg(0, PCI_BAR4_OFFSET, bar);
         pcie_read_cfg(0, PCI_BAR4_OFFSET, bar);
 
-        // should be 4k size | PCI_BAR_MMIO | PCI_BAR_64
-        EXPECT_EQ(bar, 0xfffff004) << "invalid BAR4 initialization value";
+        // should be 4k size | PCI_BAR_MMIO | PCI_BAR_64 | PCI_BAR_PREFETCH
+        EXPECT_EQ(bar, 0xfffff00c) << "invalid BAR4 initialization value";
 
         // setup bar0
-        u64 bar4 = MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO;
+        u64 bar4 = MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO |
+                   PCI_BAR_PREFETCH;
         pcie_write_cfg(0, PCI_BAR5_OFFSET, (u32)(bar4 >> 32));
         pcie_write_cfg(0, PCI_BAR4_OFFSET, (u32)(bar4));
 

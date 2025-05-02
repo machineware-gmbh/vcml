@@ -276,6 +276,8 @@ protected:
 
     virtual void pci_transport(const pci_target_socket& socket,
                                pci_payload& tx) override;
+    virtual bool pci_get_dmi_ptr(const pci_target_socket& socket,
+                                 const pci_payload& tx, tlm_dmi& dmi) override;
 
     virtual bool read_mem_bar(const range& addr, void* data,
                               const tlm_sbi& sbi, address_space as);

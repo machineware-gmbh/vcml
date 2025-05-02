@@ -216,7 +216,19 @@ bool pci::shm_unmap(u32 shmid, u64 id) {
     if (!m_shm)
         return false;
 
+    const virtio_shared_object* obj = m_shm->find(shmid, id);
+    if (obj && obj->data)
+        pci_in->pci_dmi_invalidate(shm_bar, obj->addr.start, obj->addr.end);
+
     return m_shm->unmap(shmid, id);
+}
+
+bool pci::pci_get_dmi_ptr(const pci_target_socket& socket,
+                          const pci_payload& tx, tlm_dmi& dmi) {
+    if (tx.space != shm_as() || !m_shm)
+        return false;
+
+    return m_shm->get_dmi_ptr(tx.addr, dmi);
 }
 
 unsigned int pci::receive(tlm_generic_payload& tx, const tlm_sbi& info,

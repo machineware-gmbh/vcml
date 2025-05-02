@@ -260,11 +260,13 @@ void pci_initiator_socket::transport(pci_payload& tx) {
 pci_target_socket::pci_target_socket(const char* nm, address_space space):
     pci_base_target_socket(nm, space),
     m_target(hierarchy_search<pci_target>()),
-    m_transport(this) {
+    m_transport(this),
+    allow_dmi(this, "allow_dmi", true) {
     VCML_ERROR_ON(!m_target, "%s outside pci_target", name());
     bind(m_transport);
     if (m_target)
         m_target->m_sockets.push_back(this);
+    allow_dmi.inherit_default();
 }
 
 pci_target_socket::~pci_target_socket() {
@@ -281,6 +283,10 @@ void pci_initiator_stub::pci_bar_unmap(int barno) {
 }
 
 void pci_initiator_stub::pci_interrupt(pci_irq irq, bool state) {
+    // nothing to do
+}
+
+void pci_initiator_stub::pci_dmi_invalidate(int bar, u64 start, u64 end) {
     // nothing to do
 }
 
@@ -303,6 +309,10 @@ pci_initiator_stub::pci_initiator_stub(const char* nm):
 
 void pci_target_stub::pci_transport(pci_payload& tx) {
     // nothing to do
+}
+
+bool pci_target_stub::pci_get_dmi_ptr(const pci_payload& tx, tlm_dmi& dmi) {
+    return false; // nothing to do
 }
 
 pci_target_stub::pci_target_stub(const char* nm):

@@ -34,6 +34,8 @@ private:
         address_space space;
         range addr;
 
+        mutable bool dmi;
+
         bool is_valid() const { return barno >= 0 && barno < 6; }
     };
 
@@ -42,7 +44,8 @@ private:
     vector<pci_mapping> m_map_mmio;
     vector<pci_mapping> m_map_io;
 
-    const pci_mapping& lookup(const pci_payload& pci, bool io) const;
+    const pci_mapping& lookup(const range& addr, bool io) const;
+    const pci_mapping& rev_lookup(u32 devno, int barno) const;
 
 public:
     property<bool> pcie;
@@ -87,6 +90,14 @@ protected:
                                u64 size, const void* data) override;
     virtual void pci_interrupt(const pci_initiator_socket& socket, pci_irq irq,
                                bool state) override;
+    virtual void pci_dmi_invalidate(const pci_initiator_socket& socket,
+                                    int bar, u64 start, u64 end) override;
+
+    virtual bool get_direct_mem_ptr(tlm_target_socket& socket,
+                                    tlm_generic_payload& tx,
+                                    tlm_dmi& dmi) override;
+
+    void invalidate_dmi_mapping(const pci_mapping& m, u64 start, u64 end);
 };
 
 } // namespace pci

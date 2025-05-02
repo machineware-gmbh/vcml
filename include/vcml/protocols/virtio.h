@@ -785,6 +785,7 @@ public:
 
     unsigned int transport(virtio_initiator_socket& socket,
                            tlm_generic_payload& tx);
+    bool get_dmi_ptr(u64 addr, tlm_dmi& dmi);
 };
 
 class virtio_shared_memory
@@ -816,6 +817,7 @@ public:
 
     unsigned int transport(virtio_initiator_socket& socket,
                            tlm_generic_payload& tx);
+    bool get_dmi_ptr(u64 addr, tlm_dmi& dmi);
 };
 
 } // namespace vcml

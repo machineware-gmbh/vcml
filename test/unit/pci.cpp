@@ -36,6 +36,9 @@ private:
                  const void* data));
     MOCK_METHOD(void, pci_interrupt,
                 (const pci_initiator_socket& socket, pci_irq irq, bool state));
+    MOCK_METHOD(void, pci_dmi_invalidate,
+                (const pci_initiator_socket& socket, int bar, u64 start,
+                 u64 end));
 
     // PCI target interface
     virtual void pci_transport(const pci_target_socket& socket,
@@ -45,6 +48,10 @@ private:
         pci.data = pci_in.index_of(socket);
         pci.response = PCI_RESP_SUCCESS;
     }
+
+    MOCK_METHOD(bool, pci_get_dmi_ptr,
+                (const pci_target_socket& socket, const pci_payload& tx,
+                 tlm_dmi& dmi));
 
 public:
     pci_initiator_array<256> pci_out;

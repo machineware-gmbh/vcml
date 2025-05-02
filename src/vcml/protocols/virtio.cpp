@@ -552,6 +552,7 @@ unsigned int virtio_shared_region::transport(virtio_initiator_socket& socket,
                 memcpy(tx.get_data_ptr(), obj.data + off, len);
             if (tx.is_write())
                 memcpy(obj.data + off, tx.get_data_ptr(), len);
+            tx.set_dmi_allowed(true);
             tx.set_response_status(TLM_OK_RESPONSE);
             return len;
         }
@@ -567,6 +568,20 @@ unsigned int virtio_shared_region::transport(virtio_initiator_socket& socket,
     else
         tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
     return ok ? tx.get_data_length() : 0;
+}
+
+bool virtio_shared_region::get_dmi_ptr(u64 addr, tlm_dmi& dmi) {
+    for (auto& [id, obj] : m_objects) {
+        if (obj.addr.includes(addr)) {
+            dmi.allow_read_write();
+            dmi.set_start_address(obj.addr.start);
+            dmi.set_end_address(obj.addr.end);
+            dmi.set_dmi_ptr(obj.data);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 virtio_shared_memory::virtio_shared_memory(u64 capacity):
@@ -642,6 +657,15 @@ unsigned int virtio_shared_memory::transport(virtio_initiator_socket& socket,
 
     tx.set_response_status(TLM_ADDRESS_ERROR_RESPONSE);
     return 0;
+}
+
+bool virtio_shared_memory::get_dmi_ptr(u64 addr, tlm_dmi& dmi) {
+    for (auto& [shmid, shm] : m_regions) {
+        if (shm.addr().includes(addr))
+            return shm.get_dmi_ptr(addr, dmi);
+    }
+
+    return false;
 }
 
 virtio_base_initiator_socket::virtio_base_initiator_socket(const char* nm):

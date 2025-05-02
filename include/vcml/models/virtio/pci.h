@@ -93,6 +93,9 @@ private:
                          u64 len) override;
     virtual bool shm_unmap(u32 type, u64 id) override;
 
+    virtual bool pci_get_dmi_ptr(const pci_target_socket& socket,
+                                 const pci_payload& tx, tlm_dmi& dmi) override;
+
     virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
                                  address_space as) override;
 

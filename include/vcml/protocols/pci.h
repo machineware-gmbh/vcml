@@ -79,6 +79,7 @@ struct pci_payload {
     u32 size;
 
     bool debug;
+    bool dmihint;
 
     bool is_read() const { return command == PCI_READ; }
     bool is_write() const { return command == PCI_WRITE; }
@@ -457,6 +458,9 @@ public:
     virtual void pci_interrupt(const pci_initiator_socket& socket, pci_irq irq,
                                bool state) = 0;
 
+    virtual void pci_dmi_invalidate(const pci_initiator_socket& socket,
+                                    int bar, u64 start, u64 end) = 0;
+
 private:
     pci_initiator_sockets m_sockets;
 };
@@ -479,6 +483,8 @@ public:
     pci_target(const pci_target&) = delete;
 
     virtual void pci_transport(const pci_target_socket&, pci_payload&) = 0;
+    virtual bool pci_get_dmi_ptr(const pci_target_socket&, const pci_payload&,
+                                 tlm_dmi&) = 0;
 
 protected:
     virtual void pci_bar_map(const pci_bar& bar);
@@ -498,6 +504,7 @@ public:
     typedef pci_payload protocol_types;
 
     virtual void pci_transport(pci_payload& tx) = 0;
+    virtual bool pci_get_dmi_ptr(const pci_payload& tx, tlm_dmi& dmi) = 0;
 };
 
 class pci_bw_transport_if : public sc_core::sc_interface
@@ -511,6 +518,7 @@ public:
     virtual bool pci_dma_read(u64 addr, u64 size, void* data) = 0;
     virtual bool pci_dma_write(u64 addr, u64 size, const void* data) = 0;
     virtual void pci_interrupt(pci_irq irq, bool state) = 0;
+    virtual void pci_dmi_invalidate(int bar, u64 start, u64 end) = 0;
 };
 
 typedef base_initiator_socket<pci_fw_transport_if, pci_bw_transport_if>
@@ -587,6 +595,10 @@ private:
         virtual void pci_interrupt(pci_irq irq, bool state) override {
             socket->m_initiator->pci_interrupt(*socket, irq, state);
         }
+
+        virtual void pci_dmi_invalidate(int bar, u64 start, u64 end) override {
+            socket->m_initiator->pci_dmi_invalidate(*socket, bar, start, end);
+        }
     } m_transport;
 
 public:
@@ -611,9 +623,18 @@ private:
             socket->m_target->pci_transport(*socket, tx);
             socket->trace_bw(tx);
         }
+
+        virtual bool pci_get_dmi_ptr(const pci_payload& tx,
+                                     tlm_dmi& dmi) override {
+            if (!socket->allow_dmi)
+                return false;
+            return socket->m_target->pci_get_dmi_ptr(*socket, tx, dmi);
+        }
     } m_transport;
 
 public:
+    property<bool> allow_dmi;
+
     pci_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT);
     virtual ~pci_target_socket();
     VCML_KIND(pci_target_socket);
@@ -638,6 +659,7 @@ private:
     virtual bool pci_dma_read(u64 addr, u64 size, void* data) override;
     virtual bool pci_dma_write(u64 addr, u64 size, const void* data) override;
     virtual void pci_interrupt(pci_irq irq, bool state) override;
+    virtual void pci_dmi_invalidate(int bar, u64 start, u64 end) override;
 
 public:
     pci_base_initiator_socket pci_out;
@@ -649,6 +671,7 @@ class pci_target_stub : private pci_fw_transport_if
 {
 private:
     virtual void pci_transport(pci_payload& tx) override;
+    virtual bool pci_get_dmi_ptr(const pci_payload& tx, tlm_dmi& dmi) override;
 
 public:
     pci_base_target_socket pci_in;

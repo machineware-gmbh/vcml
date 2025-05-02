@@ -504,8 +504,27 @@ void device::pci_transport(const pci_target_socket& sck, pci_payload& pci) {
     tlm_generic_payload tx;
     tlm_command cmd = pci_translate_command(pci.command);
     tx_setup(tx, cmd, pci.addr, &pci.data, pci.size);
+    if (pci.space >= PCI_AS_BAR0 && pci.space <= PCI_AS_BAR5)
+        tx.set_dmi_allowed(m_bars[pci.space - PCI_AS_BAR0].host);
     receive(tx, pci.debug ? SBI_DEBUG : SBI_NONE, pci.space);
     pci.response = pci_translate_response(tx.get_response_status());
+    pci.dmihint = tx.is_dmi_allowed();
+}
+
+bool device::pci_get_dmi_ptr(const pci_target_socket& socket,
+                             const pci_payload& tx, tlm_dmi& dmi) {
+    if (tx.space < PCI_AS_BAR0 || tx.space > PCI_AS_BAR5)
+        return false;
+
+    pci_bar* bar = m_bars + tx.space - PCI_AS_BAR0;
+    if (!bar->is_prefetch || !bar->host || !bar->size)
+        return false;
+
+    dmi.allow_read_write();
+    dmi.set_start_address(0);
+    dmi.set_end_address(bar->size - 1);
+    dmi.set_dmi_ptr(bar->host);
+    return true;
 }
 
 bool device::read_mem_bar(const range& addr, void* data, const tlm_sbi& sbi,
