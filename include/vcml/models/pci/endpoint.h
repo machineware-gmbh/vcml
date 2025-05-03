@@ -41,6 +41,10 @@ public:
 protected:
     virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info,
                                  address_space as) override;
+    virtual void invalidate_direct_mem_ptr(tlm_initiator_socket& socket,
+                                           u64 start, u64 end) override;
+    virtual bool pci_get_dmi_ptr(const pci_target_socket& s,
+                                 const pci_payload& tx, tlm_dmi& dmi) override;
     virtual void gpio_notify(const gpio_target_socket& s, bool state,
                              gpio_vector vector) override;
 

@@ -66,6 +66,26 @@ unsigned int endpoint::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     }
 }
 
+void endpoint::invalidate_direct_mem_ptr(tlm_initiator_socket& socket,
+                                         u64 start, u64 end) {
+    device::invalidate_direct_mem_ptr(socket, start, end);
+
+    if (bar_out.contains(socket)) {
+        size_t bar = bar_out.index_of(socket);
+        pci_in->pci_dmi_invalidate(bar, start, end);
+    }
+}
+
+bool endpoint::pci_get_dmi_ptr(const pci_target_socket& s,
+                               const pci_payload& pci, tlm_dmi& dmi) {
+    if (pci.space < PCI_AS_BAR0 || pci.space > PCI_AS_BAR5)
+        return false;
+
+    tlm_generic_payload tx;
+    tx_setup(tx, pci_translate_command(pci.command), pci.addr, nullptr, 0);
+    return bar_out[pci.space - PCI_AS_BAR0]->get_direct_mem_ptr(tx, dmi);
+}
+
 void endpoint::gpio_notify(const gpio_target_socket& socket, bool state,
                            gpio_vector vector) {
     if (vector == GPIO_NO_VECTOR)
