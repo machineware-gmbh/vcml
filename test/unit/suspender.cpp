@@ -27,6 +27,7 @@ public:
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
             suspend();
+            yield();
 
             EXPECT_TRUE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(),
@@ -52,6 +53,7 @@ public:
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
             suspend();
+            yield();
 
             EXPECT_TRUE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(),
