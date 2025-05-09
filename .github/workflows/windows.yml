@@ -30,13 +30,14 @@ jobs:
       run: cmake --build BUILD --config ${{matrix.cfg}} -- /bl
 
     - name: Test
-      run: ctest --test-dir BUILD -C ${{matrix.cfg}} --output-on-failure
+      working-directory: BUILD
+      run: ctest -C ${{matrix.cfg}} --output-on-failure
 
     - name: Upload Logs
       uses: actions/upload-artifact@v4
       if: '!cancelled()'
       with:
-        name: vcml-build-logs-${{matrix.os}}
+        name: ${{github.event.repository.name}}-logs-${{matrix.os}}
         path: |
             BUILD/.ninja_log
             BUILD/CMakeCache.txt
