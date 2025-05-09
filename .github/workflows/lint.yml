@@ -57,11 +57,10 @@ jobs:
       uses: actions/upload-artifact@v4
       if: '!cancelled()'
       with:
-        name: vcml-build-logs
+        name: ${{github.event.repository.name}}-logs-lint
         path: |
             BUILD/.ninja_log
             BUILD/CMakeCache.txt
-            BUILD/Testing/Temporary/LastTest.log
         include-hidden-files: true
         retention-days: 7
 
