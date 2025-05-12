@@ -51,17 +51,32 @@ jobs:
     - name: Build Project
       run: cmake --build BUILD
 
-    - name: Run Tests
-      run: ctest --test-dir BUILD -C ${{env.BUILD_TYPE}} --output-on-failure
+    - name: Test
+      working-directory: BUILD
+      run: ctest --output-on-failure
 
     - name: Generate Coverage Report
       run: |
-        mkdir -p vcml-coverage-report
-        gcovr --html-details -f 'include/*' -f 'src/*' --output vcml-coverage-report/vcml.html --exclude-lines-by-pattern '\s*(VCML|MWR)_ERROR.*'
+        mkdir -p ${{github.event.repository.name}}-coverage-report
+        gcovr --html-details -f 'include/*' -f 'src/*' \
+              --output ${{github.event.repository.name}}-coverage-report/${{github.event.repository.name}}.html \
+              --exclude-lines-by-pattern '\s*(VCML|MWR)_ERROR.*'
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
       with:
-        name: vcml-coverage-report
-        path: vcml-coverage-report/
+        name: ${{github.event.repository.name}}-coverage-report
+        path: ${{github.event.repository.name}}-coverage-report/
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v4
+      if: '!cancelled()'
+      with:
+        name: ${{github.event.repository.name}}-logs-coverage
+        path: |
+            BUILD/.ninja_log
+            BUILD/CMakeCache.txt
+            BUILD/Testing/Temporary/LastTest.log
+        include-hidden-files: true
+        retention-days: 7
 

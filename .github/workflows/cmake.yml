@@ -73,13 +73,14 @@ jobs:
       run: cmake --build BUILD
 
     - name: Test
-      run: ctest --test-dir BUILD -C ${{env.BUILD_TYPE}} --output-on-failure
+      working-directory: BUILD
+      run: ctest --output-on-failure
 
     - name: Upload Logs
       uses: actions/upload-artifact@v4
       if: '!cancelled()'
       with:
-        name: vcml-build-logs-${{matrix.systemc}}-${{matrix.os}}
+        name: ${{github.event.repository.name}}-logs-${{matrix.systemc}}-${{matrix.os}}
         path: |
             BUILD/.ninja_log
             BUILD/CMakeCache.txt
