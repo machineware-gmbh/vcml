@@ -8,7 +8,19 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
 #include "vcml/core/component.h"
+
+#include "vcml/logging/logger.h"
+
+#include "vcml/tracing/tracer.h"
+
+#include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/clk.h"
 
 namespace vcml {
 

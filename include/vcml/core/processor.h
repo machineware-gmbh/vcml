@@ -12,17 +12,15 @@
 #define VCML_PROCESSOR_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/range.h"
 #include "vcml/core/component.h"
 
-#include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
-#include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbserver.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {
 

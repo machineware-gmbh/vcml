@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/models/can/backend_file.h"
+#include "vcml/core/types.h"
 
 namespace vcml {
 namespace can {

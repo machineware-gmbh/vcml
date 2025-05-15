@@ -8,7 +8,13 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/range.h"
+
+#include "vcml/debugging/symtab.h"
+#include "vcml/debugging/target.h"
 #include "vcml/debugging/subscriber.h"
+#include "vcml/core/range.h"
 
 namespace vcml {
 namespace debugging {

@@ -12,6 +12,12 @@
 #include "vcml/models/serial/backend_tui.h"
 
 #include "vcml/debugging/suspender.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/debugging/suspender.h"
+
+#include "vcml/models/serial/backend.h"
+#include "vcml/models/serial/terminal.h"
 
 #include <csignal>
 

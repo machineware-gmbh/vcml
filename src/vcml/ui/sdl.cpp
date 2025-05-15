@@ -8,8 +8,15 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/ui/sdl.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/debugging/suspender.h"
+#include "vcml/logging/logger.h"
 #include "vcml/ui/icon.h"
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/sdl.h"
+#include "vcml/ui/video.h"
+#include "vcml/ui/display.h"
 
 namespace vcml {
 namespace ui {

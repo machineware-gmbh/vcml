@@ -15,16 +15,13 @@
 #include <queue>
 #include <deque>
 #include <list>
-#include <map>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <bitset>
-#include <iterator>
 #include <algorithm>
 #include <iostream>
-#include <iomanip>
 #include <fstream>
 #include <memory>
 #include <variant>
@@ -35,11 +32,9 @@
 #include <thread>
 #include <condition_variable>
 #include <initializer_list>
-#include <typeindex>
 
 #include <stdint.h>
 #include <limits.h>
-#include <time.h>
 
 #include <mwr.h>
 

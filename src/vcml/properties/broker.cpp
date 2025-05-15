@@ -10,6 +10,8 @@
 
 #include "vcml/properties/broker.h"
 #include "vcml/logging/logger.h"
+#include "vcml/core/types.h"
+#include "vcml/properties/broker.h"
 
 namespace vcml {
 

@@ -13,13 +13,11 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/range.h"
 #include "vcml/core/module.h"
 
 #include "vcml/logging/logger.h"
-#include "vcml/properties/property.h"
 
-#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/tlm_host.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
 

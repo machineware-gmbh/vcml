@@ -8,6 +8,16 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/module.h"
+#include "vcml/core/model.h"
+#include "vcml/logging/logger.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/pci_ids.h"
+#include "vcml/protocols/virtio.h"
 #include "vcml/models/virtio/rng.h"
 
 namespace vcml {

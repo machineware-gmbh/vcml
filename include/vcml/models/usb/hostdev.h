@@ -13,8 +13,6 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/module.h"
-#include "vcml/core/model.h"
 
 #include "vcml/protocols/usb.h"
 #include "vcml/models/usb/device.h"

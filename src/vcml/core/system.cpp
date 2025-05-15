@@ -8,7 +8,19 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/core/register.h"
+#include "vcml/core/peripheral.h"
 #include "vcml/core/system.h"
+
+#include "vcml/logging/logger.h"
+
+#include "vcml/properties/property_base.h"
+#include "vcml/properties/property.h"
+#include "vcml/properties/broker.h"
+#include "vcml/debugging/vspserver.h"
 
 namespace vcml {
 

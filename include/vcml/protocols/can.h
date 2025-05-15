@@ -12,7 +12,6 @@
 #define VCML_PROTOCOLS_CAN_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/protocols/base.h"

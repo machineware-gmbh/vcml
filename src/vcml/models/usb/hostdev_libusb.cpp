@@ -8,6 +8,13 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/model.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/usb_types.h"
+#include "vcml/protocols/usb_sockets.h"
+#include "vcml/models/usb/device.h"
 #include "vcml/models/usb/hostdev.h"
 
 #include <libusb.h>

@@ -17,9 +17,7 @@
 #include "vcml/core/register.h"
 #include "vcml/core/component.h"
 
-#include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
-#include "vcml/protocols/tlm.h"
 
 namespace vcml {
 

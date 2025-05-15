@@ -8,6 +8,15 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/component.h"
+#include "vcml/core/model.h"
+#include "vcml/properties/property.h"
+#include "vcml/ui/video.h"
+#include "vcml/ui/console.h"
+#include "vcml/protocols/tlm_sockets.h"
 #include "vcml/models/generic/fbdev.h"
 
 namespace vcml {

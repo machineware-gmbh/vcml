@@ -13,11 +13,8 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/module.h"
-#include "vcml/core/model.h"
 
 #include "vcml/ui/input.h"
-#include "vcml/ui/keymap.h"
 #include "vcml/ui/console.h"
 
 #include "vcml/protocols/usb.h"

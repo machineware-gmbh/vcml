@@ -8,6 +8,11 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/logging/logger.h"
+#include "vcml/protocols/tlm_base.h"
 #include "vcml/protocols/tlm_probe.h"
 
 namespace vcml {

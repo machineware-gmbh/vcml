@@ -12,10 +12,8 @@
 #define VCML_CAN_BACKEND_FILE_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/systemc.h"
-
-#include "vcml/logging/logger.h"
-
+#include "vcml/tracing/tracer.h"
+#include "vcml/protocols/can.h"
 #include "vcml/models/can/backend.h"
 #include "vcml/models/can/bridge.h"
 

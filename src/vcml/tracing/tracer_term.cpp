@@ -8,21 +8,22 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/protocols/tlm.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/tracing/tracer_term.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
-#include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
+#include "vcml/protocols/sd.h"
 #include "vcml/protocols/i2c.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/eth.h"
 #include "vcml/protocols/can.h"
-#include "vcml/protocols/usb.h"
+#include "vcml/protocols/usb_types.h"
 #include "vcml/protocols/serial.h"
 #include "vcml/protocols/signal.h"
 #include "vcml/protocols/virtio.h"
-
-#include "vcml/tracing/tracer_term.h"
 
 namespace vcml {
 

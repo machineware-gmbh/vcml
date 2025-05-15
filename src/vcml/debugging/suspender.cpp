@@ -8,9 +8,11 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
 
+#include "vcml/logging/logger.h"
 #include "vcml/debugging/suspender.h"
 
 namespace vcml {

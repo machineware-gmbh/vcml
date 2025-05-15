@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/models/can/backend_socket.h"
+#include "vcml/core/types.h"
 
 #include <unistd.h>
 #include <sys/ioctl.h>

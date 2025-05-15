@@ -8,9 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/core/version.h"
+#include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-
 #include "vcml/debugging/suspender.h"
 
 namespace vcml {

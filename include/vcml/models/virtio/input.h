@@ -15,10 +15,7 @@
 #include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
-#include "vcml/core/model.h"
 
-#include "vcml/ui/keymap.h"
-#include "vcml/ui/display.h"
 #include "vcml/ui/console.h"
 
 #include "vcml/properties/property.h"

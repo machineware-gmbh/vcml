@@ -8,8 +8,18 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/debugging/gdbserver.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
 #include "vcml/core/module.h" // for commands
+
+#include "vcml/logging/logger.h"
+#include "vcml/debugging/target.h"
+#include "vcml/debugging/subscriber.h"
+#include "vcml/debugging/suspender.h"
+#include "vcml/debugging/rspserver.h"
+#include "vcml/debugging/gdbarch.h"
+#include "vcml/debugging/gdbserver.h"
 
 namespace vcml {
 namespace debugging {

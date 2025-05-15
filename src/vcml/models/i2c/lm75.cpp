@@ -8,6 +8,16 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/core/model.h"
+
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/i2c.h"
+
 #include "vcml/models/i2c/lm75.h"
 
 namespace vcml {

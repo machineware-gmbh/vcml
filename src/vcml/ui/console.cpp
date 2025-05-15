@@ -8,6 +8,10 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/properties/property.h"
+#include "vcml/ui/video.h"
+#include "vcml/ui/display.h"
 #include "vcml/ui/console.h"
 
 namespace vcml {

@@ -12,8 +12,9 @@
 #define VCML_SERIAL_BACKEND_TERM_H
 
 #include "vcml/core/types.h"
-#include "vcml/logging/logger.h"
+
 #include "vcml/models/serial/backend.h"
+#include "vcml/models/serial/terminal.h"
 
 namespace vcml {
 namespace serial {

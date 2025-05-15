@@ -8,6 +8,15 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/register.h"
+#include "vcml/core/peripheral.h"
+#include "vcml/core/model.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/gpio.h"
+
 #include "vcml/models/arm/pl190vic.h"
 
 namespace vcml {

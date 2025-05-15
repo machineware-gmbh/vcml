@@ -14,11 +14,9 @@
 #include "vcml/core/types.h"
 
 #include "vcml/ui/video.h"
-#include "vcml/ui/keymap.h"
 #include "vcml/ui/input.h"
 #include "vcml/ui/display.h"
 
-#include "vcml/logging/logger.h"
 #include "vcml/properties/property.h"
 
 namespace vcml {

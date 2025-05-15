@@ -12,7 +12,9 @@
 #define VCML_ETHERNET_BACKEND_TAP_H
 
 #include "vcml/core/types.h"
-#include "vcml/logging/logger.h"
+
+#include "vcml/tracing/tracer.h"
+#include "vcml/protocols/eth.h"
 
 #include "vcml/models/ethernet/backend.h"
 #include "vcml/models/ethernet/bridge.h"

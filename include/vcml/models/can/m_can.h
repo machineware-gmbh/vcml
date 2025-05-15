@@ -13,11 +13,8 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/module.h"
-#include "vcml/core/model.h"
 #include "vcml/core/peripheral.h"
 
-#include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/can.h"
 

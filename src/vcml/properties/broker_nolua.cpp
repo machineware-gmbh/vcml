@@ -8,6 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/properties/broker.h"
 #include "vcml/properties/broker_lua.h"
 
 namespace vcml {

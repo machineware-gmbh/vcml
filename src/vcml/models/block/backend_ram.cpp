@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/models/block/backend_ram.h"
+#include "vcml/core/types.h"
 
 namespace vcml {
 namespace block {

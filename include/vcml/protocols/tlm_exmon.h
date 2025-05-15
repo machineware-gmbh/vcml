@@ -15,9 +15,6 @@
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
 
-#include "vcml/protocols/tlm_sbi.h"
-#include "vcml/protocols/tlm_dmi_cache.h"
-
 namespace vcml {
 
 struct exlock {

@@ -8,6 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
 #include "vcml/models/serial/terminal.h"
 
 #include "vcml/models/serial/backend.h"

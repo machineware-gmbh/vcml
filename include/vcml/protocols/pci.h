@@ -15,7 +15,6 @@
 #include "vcml/core/systemc.h"
 
 #include "vcml/protocols/base.h"
-#include "vcml/protocols/pci_ids.h"
 
 namespace vcml {
 

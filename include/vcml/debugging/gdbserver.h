@@ -12,7 +12,6 @@
 #define VCML_GDBSERVER_H
 
 #include "vcml/core/types.h"
-#include "vcml/logging/logger.h"
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/gdbarch.h"

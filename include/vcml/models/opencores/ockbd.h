@@ -14,14 +14,12 @@
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/peripheral.h"
-#include "vcml/core/model.h"
 
-#include "vcml/ui/keymap.h"
 #include "vcml/ui/console.h"
 
 #include "vcml/properties/property.h"
 
-#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/tlm_sockets.h"
 #include "vcml/protocols/gpio.h"
 
 namespace vcml {

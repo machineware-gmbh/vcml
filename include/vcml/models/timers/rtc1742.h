@@ -15,9 +15,8 @@
 #include "vcml/core/systemc.h"
 #include "vcml/core/range.h"
 #include "vcml/core/peripheral.h"
-#include "vcml/core/model.h"
 
-#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {
 namespace timers {

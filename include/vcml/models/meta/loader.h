@@ -14,10 +14,9 @@
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 #include "vcml/core/component.h"
-#include "vcml/core/model.h"
 
 #include "vcml/debugging/loader.h"
-#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {
 namespace meta {

@@ -8,6 +8,13 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/register.h"
+#include "vcml/core/peripheral.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/models/riscv/aplic.h"
 
 namespace vcml {

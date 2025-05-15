@@ -8,6 +8,17 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+
+#include "vcml/tracing/tracer.h"
+
+#include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/pci.h"
+
+#include "vcml/models/pci/device.h"
 #include "vcml/models/pci/endpoint.h"
 
 namespace vcml {

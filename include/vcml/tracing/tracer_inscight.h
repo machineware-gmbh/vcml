@@ -11,7 +11,6 @@
 #ifndef VCML_TRACER_INSCIGHT_H
 #define VCML_TRACER_INSCIGHT_H
 
-#include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/tracing/tracer.h"

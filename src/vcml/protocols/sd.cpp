@@ -9,6 +9,10 @@
  ******************************************************************************/
 
 #include "vcml/protocols/sd.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/protocols/sd.h"
 
 namespace vcml {
 

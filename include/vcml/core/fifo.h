@@ -12,7 +12,6 @@
 #define VCML_FIFO_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/systemc.h"
 
 namespace vcml {
 

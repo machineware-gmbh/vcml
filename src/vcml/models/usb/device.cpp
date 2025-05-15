@@ -8,6 +8,15 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+
+#include "vcml/logging/logger.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/usb_types.h"
+#include "vcml/protocols/usb_sockets.h"
 #include "vcml/models/usb/device.h"
 
 namespace vcml {

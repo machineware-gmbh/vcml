@@ -8,6 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
 #include "vcml/protocols/tlm_sbi.h"
 
 namespace vcml {

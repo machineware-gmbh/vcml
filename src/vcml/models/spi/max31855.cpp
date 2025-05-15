@@ -8,6 +8,16 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
+#include "vcml/core/model.h"
+
+#include "vcml/tracing/tracer.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/clk.h"
+#include "vcml/protocols/spi.h"
 #include "vcml/models/spi/max31855.h"
 
 namespace vcml {

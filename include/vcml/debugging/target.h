@@ -13,12 +13,9 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/range.h"
-#include "vcml/core/systemc.h"
 
-#include "vcml/logging/logger.h"
 #include "vcml/debugging/symtab.h"
 #include "vcml/debugging/subscriber.h"
-#include "vcml/debugging/suspender.h"
 
 namespace vcml {
 namespace debugging {

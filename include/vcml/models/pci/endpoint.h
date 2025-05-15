@@ -12,10 +12,9 @@
 #define VCML_PCI_ENDPOINT_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 
-#include "vcml/protocols/tlm.h"
+#include "vcml/protocols/tlm_sockets.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/gpio.h"
 

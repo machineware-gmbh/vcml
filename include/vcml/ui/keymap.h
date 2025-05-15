@@ -12,8 +12,6 @@
 #define VCML_UI_KEYMAP_H
 
 #include "vcml/core/types.h"
-#include "vcml/logging/logger.h"
-#include "vcml/ui/codes.h"
 
 namespace vcml {
 namespace ui {

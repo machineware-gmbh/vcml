@@ -8,7 +8,12 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/video.h"
 #include "vcml/ui/vnc.h"
+#include "vcml/ui/display.h"
 
 namespace vcml {
 namespace ui {

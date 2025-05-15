@@ -11,10 +11,8 @@
 #ifndef VCML_USB_XHCIPCI_H
 #define VCML_USB_XHCIPCI_H
 
-#include "vcml/core/types.h"
-#include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/peripheral.h"
+#include "vcml/core/module.h"
 
 #include "vcml/models/pci/endpoint.h"
 #include "vcml/models/usb/xhci.h"

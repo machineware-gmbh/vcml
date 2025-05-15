@@ -8,9 +8,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/properties/broker_lua.h"
-#include "vcml/logging/logger.h"
 #include "vcml/core/version.h"
+#include "vcml/core/types.h"
+#include "vcml/core/version.h"
+#include "vcml/logging/logger.h"
+#include "vcml/properties/broker.h"
+#include "vcml/properties/broker_lua.h"
 
 #include <lua.hpp>
 

@@ -9,6 +9,19 @@
  ******************************************************************************/
 
 #include "vcml/models/usb/xhcipci.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/logging/logger.h"
+#include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/clk.h"
+#include "vcml/protocols/pci.h"
+#include "vcml/protocols/pci_ids.h"
+#include "vcml/protocols/usb_sockets.h"
+#include "vcml/models/usb/xhci.h"
+#include "vcml/models/usb/xhcipci.h"
+#include "vcml/models/pci/endpoint.h"
 
 namespace vcml {
 namespace usb {

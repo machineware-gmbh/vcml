@@ -8,6 +8,17 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/module.h"
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_exmon.h"
+#include "vcml/protocols/tlm_dmi_cache.h"
+#include "vcml/protocols/tlm_stubs.h"
+#include "vcml/protocols/tlm_base.h"
 #include "vcml/protocols/tlm_sockets.h"
 
 namespace vcml {

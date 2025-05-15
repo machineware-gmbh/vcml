@@ -8,6 +8,10 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/properties/property.h"
 #include "vcml/protocols/pci.h"
 
 namespace vcml {

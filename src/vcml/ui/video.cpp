@@ -8,6 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
 #include "vcml/ui/video.h"
 
 namespace vcml {

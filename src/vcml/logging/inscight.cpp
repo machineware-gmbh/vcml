@@ -8,6 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
 #include "vcml/logging/inscight.h"
 
 namespace vcml {

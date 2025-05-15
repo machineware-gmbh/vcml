@@ -8,8 +8,21 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/virtio/input.h"
 #include "vcml/core/version.h"
+#include "vcml/core/types.h"
+#include "vcml/core/version.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/module.h"
+#include "vcml/core/model.h"
+#include "vcml/logging/logger.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/properties/property.h"
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/console.h"
+#include "vcml/protocols/pci_ids.h"
+#include "vcml/protocols/virtio.h"
+#include "vcml/models/virtio/input.h"
 
 namespace vcml {
 namespace virtio {

@@ -8,6 +8,14 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+
+#include "vcml/models/block/backend.h"
 #include "vcml/models/block/disk.h"
 
 namespace vcml {

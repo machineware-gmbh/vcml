@@ -8,18 +8,33 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/core/systemc.h"
-#include "vcml/core/version.h"
-#include "vcml/core/component.h"
-
-#include "vcml/debugging/vspserver.h"
-#include "vcml/debugging/target.h"
-#include "vcml/debugging/loader.h"
 
 #include "vcml/protocols/base.h"
 #include "vcml/ui/input.h"
 
+#include "vcml/core/types.h"
+#include "vcml/core/version.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/range.h"
+#include "vcml/core/command.h"
+#include "vcml/core/module.h"
+
+#include "vcml/logging/logger.h"
+
+#include "vcml/properties/property_base.h"
+
+#include "vcml/debugging/symtab.h"
+#include "vcml/debugging/target.h"
+#include "vcml/debugging/loader.h"
+#include "vcml/debugging/subscriber.h"
+#include "vcml/debugging/suspender.h"
+#include "vcml/debugging/rspserver.h"
+#include "vcml/debugging/vspserver.h"
+
+#include "vcml/models/serial/backend.h"
 #include "vcml/models/serial/terminal.h"
+
+#include "vcml/models/ethernet/backend.h"
 #include "vcml/models/ethernet/bridge.h"
 
 #include <filesystem>

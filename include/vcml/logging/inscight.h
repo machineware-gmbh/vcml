@@ -11,8 +11,7 @@
 #ifndef VCML_LOGGING_INSCIGHT_H
 #define VCML_LOGGING_INSCIGHT_H
 
-#include "vcml/core/types.h"
-#include "vcml/core/systemc.h"
+#include "mwr/logging/publisher.h"
 
 namespace vcml {
 namespace publishers {

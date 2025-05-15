@@ -12,12 +12,9 @@
 #define VCML_UI_SDL_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/systemc.h"
-
-#include "vcml/logging/logger.h"
-#include "vcml/debugging/suspender.h"
-
-#include "vcml/ui/keymap.h"
+#include "vcml/ui/video.h"
+#include "vcml/ui/display.h"
+#include "vcml/core/types.h"
 #include "vcml/ui/video.h"
 #include "vcml/ui/display.h"
 

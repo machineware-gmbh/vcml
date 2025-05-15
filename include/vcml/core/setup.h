@@ -12,21 +12,8 @@
 #define VCML_SETUP_H
 
 #include "vcml/core/types.h"
-
-#include "vcml/logging/logger.h"
-#include "vcml/logging/inscight.h"
-
 #include "vcml/tracing/tracer.h"
-#include "vcml/tracing/tracer_file.h"
-#include "vcml/tracing/tracer_term.h"
-#include "vcml/tracing/tracer_inscight.h"
-
-#include "vcml/properties/property.h"
 #include "vcml/properties/broker.h"
-#include "vcml/properties/broker_arg.h"
-#include "vcml/properties/broker_env.h"
-#include "vcml/properties/broker_file.h"
-#include "vcml/properties/broker_lua.h"
 
 namespace vcml {
 

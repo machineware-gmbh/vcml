@@ -8,6 +8,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/systemc.h"
+#include "vcml/core/model.h"
+#include "vcml/models/i2c/oci2c.h"
 #include "vcml/models/i2c/sifive.h"
 
 namespace vcml {

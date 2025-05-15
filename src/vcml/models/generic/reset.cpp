@@ -8,6 +8,13 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/core/model.h"
+
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/gpio.h"
 #include "vcml/models/generic/reset.h"
 
 namespace vcml {

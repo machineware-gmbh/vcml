@@ -11,6 +11,7 @@
 #ifndef VCML_BROKER_LUA_H
 #define VCML_BROKER_LUA_H
 
+#include "vcml/core/systemc.h"
 #include "vcml/properties/broker.h"
 
 namespace vcml {

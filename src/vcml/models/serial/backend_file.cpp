@@ -9,7 +9,9 @@
  ******************************************************************************/
 
 #include "vcml/models/serial/backend_file.h"
+#include "vcml/models/serial/backend.h"
 #include "vcml/models/serial/terminal.h"
+#include "vcml/core/types.h"
 
 namespace vcml {
 namespace serial {

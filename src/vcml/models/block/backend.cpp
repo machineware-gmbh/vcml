@@ -8,9 +8,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/block/backend.h"
-#include "vcml/models/block/backend_ram.h"
+#include "vcml/core/types.h"
 #include "vcml/models/block/backend_file.h"
+#include "vcml/models/block/backend_ram.h"
+#include "vcml/models/block/backend.h"
 
 namespace vcml {
 namespace block {

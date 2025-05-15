@@ -8,6 +8,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/tracing/tracer.h"
 #include "vcml/protocols/clk.h"
 
 namespace vcml {

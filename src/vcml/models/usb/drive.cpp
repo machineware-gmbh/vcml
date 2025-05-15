@@ -8,8 +8,17 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/models/usb/drive.h"
 #include "vcml/core/version.h"
+#include "vcml/core/types.h"
+#include "vcml/core/version.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/model.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/usb_types.h"
+#include "vcml/protocols/usb_sockets.h"
+#include "vcml/models/block/disk.h"
+#include "vcml/models/usb/device.h"
+#include "vcml/models/usb/drive.h"
 
 namespace vcml {
 namespace usb {

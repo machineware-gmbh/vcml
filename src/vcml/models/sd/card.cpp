@@ -8,6 +8,14 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
+#include "vcml/core/model.h"
+#include "vcml/tracing/tracer.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/sd.h"
+#include "vcml/models/block/disk.h"
 #include "vcml/models/sd/card.h"
 
 #define SDHC_BLKLEN 512

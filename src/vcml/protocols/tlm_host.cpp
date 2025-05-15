@@ -8,6 +8,11 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/properties/property.h"
+#include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_dmi_cache.h"
 #include "vcml/protocols/tlm_host.h"
 #include "vcml/protocols/tlm_sockets.h"
 

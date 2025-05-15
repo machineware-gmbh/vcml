@@ -16,7 +16,6 @@
 #include "vcml/core/systemc.h"
 #include "vcml/core/peripheral.h"
 
-#include "vcml/protocols/tlm.h"
 #include "vcml/protocols/pci.h"
 
 namespace vcml {

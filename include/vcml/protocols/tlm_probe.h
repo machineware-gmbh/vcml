@@ -13,13 +13,8 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
-#include "vcml/core/range.h"
 #include "vcml/core/module.h"
 
-#include "vcml/protocols/tlm_sbi.h"
-#include "vcml/protocols/tlm_exmon.h"
-#include "vcml/protocols/tlm_stubs.h"
-#include "vcml/protocols/tlm_adapters.h"
 #include "vcml/protocols/tlm_base.h"
 
 namespace vcml {

@@ -8,8 +8,10 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/ui/display.h"
+#include "vcml/core/types.h"
+#include "vcml/ui/video.h"
 #include "vcml/ui/vnc.h"
+#include "vcml/ui/display.h"
 
 #ifdef HAVE_SDL2
 #include "vcml/ui/sdl.h"

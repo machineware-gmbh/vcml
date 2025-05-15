@@ -8,6 +8,17 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/component.h"
+#include "vcml/core/model.h"
+#include "vcml/properties/property.h"
+#include "vcml/debugging/loader.h"
+
+#include "vcml/protocols/tlm_sbi.h"
+#include "vcml/protocols/tlm_sockets.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/clk.h"
 #include "vcml/models/meta/loader.h"
 
 namespace vcml {

@@ -8,6 +8,13 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/module.h"
+#include "vcml/core/model.h"
+
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
 #include "vcml/models/meta/throttle.h"
 
 namespace vcml {

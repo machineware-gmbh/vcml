@@ -10,6 +10,11 @@
 
 #include "vcml/models/serial/terminal.h"
 #include "vcml/models/serial/backend_tcp.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+
+#include "vcml/models/serial/backend.h"
+#include "vcml/models/serial/terminal.h"
 
 namespace vcml {
 namespace serial {

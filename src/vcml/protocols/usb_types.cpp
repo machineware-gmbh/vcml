@@ -8,6 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/tracing/tracer.h"
 #include "vcml/protocols/usb_types.h"
 
 namespace vcml {

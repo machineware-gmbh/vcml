@@ -8,6 +8,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/properties/broker.h"
 #include "vcml/properties/broker_env.h"
 
 namespace vcml {

@@ -11,6 +11,7 @@
 #ifndef VCML_BROKER_ENV_H
 #define VCML_BROKER_ENV_H
 
+#include "vcml/core/systemc.h"
 #include "vcml/properties/broker.h"
 
 namespace vcml {

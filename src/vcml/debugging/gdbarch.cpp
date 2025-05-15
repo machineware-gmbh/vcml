@@ -8,6 +8,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/debugging/target.h"
+#include "vcml/debugging/subscriber.h"
 #include "vcml/debugging/gdbarch.h"
 
 namespace vcml {

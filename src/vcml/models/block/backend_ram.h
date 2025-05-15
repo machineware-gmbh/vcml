@@ -12,7 +12,6 @@
 #define VCML_BLOCK_BACKEND_RAM_H
 
 #include "vcml/core/types.h"
-
 #include "vcml/models/block/backend.h"
 
 namespace vcml {

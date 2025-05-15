@@ -8,7 +8,10 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/types.h"
+#include "vcml/logging/logger.h"
 #include "vcml/ui/input.h"
+#include "vcml/ui/keymap.h"
 
 namespace vcml {
 namespace ui {

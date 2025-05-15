@@ -8,6 +8,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/core/systemc.h"
 #include "vcml/protocols/tlm_stubs.h"
 
 namespace vcml {

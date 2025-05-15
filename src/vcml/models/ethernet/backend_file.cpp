@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/models/ethernet/backend_file.h"
+#include "vcml/core/types.h"
 
 namespace vcml {
 namespace ethernet {

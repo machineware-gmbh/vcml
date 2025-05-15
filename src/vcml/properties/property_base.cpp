@@ -9,6 +9,9 @@
  ******************************************************************************/
 
 #include "vcml/properties/property_base.h"
+#include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
+#include "vcml/properties/property_base.h"
 
 namespace vcml {
 

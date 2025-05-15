@@ -8,9 +8,15 @@
  *                                                                            *
  ******************************************************************************/
 
+
+#include "vcml/core/types.h"
 #include "vcml/core/version.h"
+#include "vcml/core/systemc.h"
+#include "vcml/core/command.h"
 #include "vcml/core/module.h"
 
+#include "vcml/logging/logger.h"
+#include "vcml/properties/property.h"
 namespace vcml {
 
 bool module::cmd_clist(const vector<string>& args, ostream& os) {

@@ -11,7 +11,6 @@
 #ifndef VCML_PROTOCOLS_TLM_STUBS_H
 #define VCML_PROTOCOLS_TLM_STUBS_H
 
-#include "vcml/core/types.h"
 #include "vcml/core/systemc.h"
 
 namespace vcml {
