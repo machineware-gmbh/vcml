@@ -19,6 +19,12 @@ namespace serial {
 
 class terminal;
 
+enum keys : u8 {
+    CTRL_A = 0x1,
+    CTRL_C = 0x3,
+    CTRL_X = 0x18,
+};
+
 class backend
 {
 protected:

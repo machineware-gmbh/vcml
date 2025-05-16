@@ -202,6 +202,7 @@ else()
     target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_posix.cpp)
 endif()
 
+set_target_properties(vcml PROPERTIES UNITY_BUILD ON)
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
 set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")

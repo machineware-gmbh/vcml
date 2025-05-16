@@ -185,22 +185,22 @@ usb_target_stub::usb_target_stub(const char* nm):
     usb_in.bind(*this);
 }
 
-static usb_base_initiator_socket* get_initiator_socket(sc_object* port) {
+static usb_base_initiator_socket* usb_get_initiator_socket(sc_object* port) {
     return dynamic_cast<usb_base_initiator_socket*>(port);
 }
 
-static usb_base_target_socket* get_target_socket(sc_object* port) {
+static usb_base_target_socket* usb_get_target_socket(sc_object* port) {
     return dynamic_cast<usb_base_target_socket*>(port);
 }
 
-static usb_base_initiator_socket* get_initiator_socket(sc_object* array,
+static usb_base_initiator_socket* usb_get_initiator_socket(sc_object* array,
                                                        size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<usb_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
-static usb_base_target_socket* get_target_socket(sc_object* array,
+static usb_base_target_socket* usb_get_target_socket(sc_object* array,
                                                  size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<usb_base_target_socket>(idx, true);
@@ -211,7 +211,7 @@ usb_base_initiator_socket& usb_initiator(const sc_object& parent,
                                          const string& port) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_initiator_socket(child);
+    auto* sock = usb_get_initiator_socket(child);
     VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
     return *sock;
 }
@@ -220,7 +220,7 @@ usb_base_initiator_socket& usb_initiator(const sc_object& parent,
                                          const string& port, size_t idx) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_initiator_socket(child, idx);
+    auto* sock = usb_get_initiator_socket(child, idx);
     VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
     return *sock;
 }
@@ -229,7 +229,7 @@ usb_base_target_socket& usb_target(const sc_object& parent,
                                    const string& port) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_target_socket(child);
+    auto* sock = usb_get_target_socket(child);
     VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
     return *sock;
 }
@@ -238,7 +238,7 @@ usb_base_target_socket& usb_target(const sc_object& parent, const string& port,
                                    size_t idx) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_target_socket(child, idx);
+    auto* sock = usb_get_target_socket(child, idx);
     VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
     return *sock;
 }
@@ -247,8 +247,8 @@ void usb_stub(const sc_object& obj, const string& port) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
-    auto* ini = get_initiator_socket(child);
-    auto* tgt = get_target_socket(child);
+    auto* ini = usb_get_initiator_socket(child);
+    auto* tgt = usb_get_target_socket(child);
 
     if (!ini && !tgt)
         VCML_ERROR("%s is not a valid usb socket", child->name());
@@ -263,8 +263,8 @@ void usb_stub(const sc_object& obj, const string& port, size_t idx) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
-    auto* ini = get_initiator_socket(child, idx);
-    auto* tgt = get_target_socket(child, idx);
+    auto* ini = usb_get_initiator_socket(child, idx);
+    auto* tgt = usb_get_target_socket(child, idx);
 
     if (!ini && !tgt)
         VCML_ERROR("%s is not a valid usb socket", child->name());
@@ -283,10 +283,10 @@ void usb_bind(const sc_object& obj1, const string& port1,
     VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
     VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
 
-    auto* i1 = get_initiator_socket(p1);
-    auto* i2 = get_initiator_socket(p2);
-    auto* t1 = get_target_socket(p1);
-    auto* t2 = get_target_socket(p2);
+    auto* i1 = usb_get_initiator_socket(p1);
+    auto* i2 = usb_get_initiator_socket(p2);
+    auto* t1 = usb_get_target_socket(p1);
+    auto* t2 = usb_get_target_socket(p2);
 
     VCML_ERROR_ON(!i1 && !t1, "%s is not a valid usb port", p1->name());
     VCML_ERROR_ON(!i2 && !t2, "%s is not a valid usb port", p2->name());
@@ -309,10 +309,10 @@ void usb_bind(const sc_object& obj1, const string& port1,
     VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
     VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
 
-    auto* i1 = get_initiator_socket(p1);
-    auto* i2 = get_initiator_socket(p2, idx2);
-    auto* t1 = get_target_socket(p1);
-    auto* t2 = get_target_socket(p2, idx2);
+    auto* i1 = usb_get_initiator_socket(p1);
+    auto* i2 = usb_get_initiator_socket(p2, idx2);
+    auto* t1 = usb_get_target_socket(p1);
+    auto* t2 = usb_get_target_socket(p2, idx2);
 
     VCML_ERROR_ON(!i1 && !t1, "%s is not a valid usb port", p1->name());
     VCML_ERROR_ON(!i2 && !t2, "%s is not a valid usb port", p2->name());
@@ -335,10 +335,10 @@ void usb_bind(const sc_object& obj1, const string& port1, size_t idx1,
     VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
     VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
 
-    auto* i1 = get_initiator_socket(p1, idx1);
-    auto* i2 = get_initiator_socket(p2);
-    auto* t1 = get_target_socket(p1, idx1);
-    auto* t2 = get_target_socket(p2);
+    auto* i1 = usb_get_initiator_socket(p1, idx1);
+    auto* i2 = usb_get_initiator_socket(p2);
+    auto* t1 = usb_get_target_socket(p1, idx1);
+    auto* t2 = usb_get_target_socket(p2);
 
     VCML_ERROR_ON(!i1 && !t1, "%s is not a valid usb port", p1->name());
     VCML_ERROR_ON(!i2 && !t2, "%s is not a valid usb port", p2->name());
@@ -361,10 +361,10 @@ void usb_bind(const sc_object& obj1, const string& port1, size_t idx1,
     VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
     VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
 
-    auto* i1 = get_initiator_socket(p1, idx1);
-    auto* i2 = get_initiator_socket(p2, idx2);
-    auto* t1 = get_target_socket(p1, idx1);
-    auto* t2 = get_target_socket(p2, idx2);
+    auto* i1 = usb_get_initiator_socket(p1, idx1);
+    auto* i2 = usb_get_initiator_socket(p2, idx2);
+    auto* t1 = usb_get_target_socket(p1, idx1);
+    auto* t2 = usb_get_target_socket(p2, idx2);
 
     VCML_ERROR_ON(!i1 && !t1, "%s is not a valid usb port", p1->name());
     VCML_ERROR_ON(!i2 && !t2, "%s is not a valid usb port", p2->name());

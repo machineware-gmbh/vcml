@@ -792,11 +792,11 @@ virtio_target_stub::virtio_target_stub(const char* nm):
     virtio_in.bind(*this);
 }
 
-static virtio_base_initiator_socket* get_initiator_socket(sc_object* port) {
+static virtio_base_initiator_socket* virtio_get_initiator_socket(sc_object* port) {
     return dynamic_cast<virtio_base_initiator_socket*>(port);
 }
 
-static virtio_base_target_socket* get_target_socket(sc_object* port) {
+static virtio_base_target_socket* virtio_get_target_socket(sc_object* port) {
     return dynamic_cast<virtio_base_target_socket*>(port);
 }
 
@@ -804,7 +804,7 @@ virtio_base_initiator_socket& virtio_initiator(const sc_object& parent,
                                                const string& port) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_initiator_socket(child);
+    auto* sock = virtio_get_initiator_socket(child);
     VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
     return *sock;
 }
@@ -813,7 +813,7 @@ virtio_base_target_socket& virtio_target(const sc_object& parent,
                                          const string& port) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_target_socket(child);
+    auto* sock = virtio_get_target_socket(child);
     VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
     return *sock;
 }
@@ -822,8 +822,8 @@ void virtio_stub(const sc_object& obj, const string& port) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
-    auto* ini = get_initiator_socket(child);
-    auto* tgt = get_target_socket(child);
+    auto* ini = virtio_get_initiator_socket(child);
+    auto* tgt = virtio_get_target_socket(child);
 
     if (!ini && !tgt)
         VCML_ERROR("%s is not a valid virtio socket", child->name());
@@ -842,10 +842,10 @@ void virtio_bind(const sc_object& obj1, const string& port1,
     VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
     VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
 
-    auto* i1 = get_initiator_socket(p1);
-    auto* i2 = get_initiator_socket(p2);
-    auto* t1 = get_target_socket(p1);
-    auto* t2 = get_target_socket(p2);
+    auto* i1 = virtio_get_initiator_socket(p1);
+    auto* i2 = virtio_get_initiator_socket(p2);
+    auto* t1 = virtio_get_target_socket(p1);
+    auto* t2 = virtio_get_target_socket(p2);
 
     VCML_ERROR_ON(!i1 && !t1, "%s is not a valid virtio port", p1->name());
     VCML_ERROR_ON(!i2 && !t2, "%s is not a valid virtio port", p2->name());
