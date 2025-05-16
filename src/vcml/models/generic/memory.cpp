@@ -32,24 +32,25 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
     if ((end <= start) || (end >= size))
         return false;
 
-#define HEX(x, w) \
+#define MEM_HEX(x, w) \
     std::setfill('0') << std::setw(w) << std::hex << x << std::dec
-    os << "showing range 0x" << HEX(start, 8) << " .. 0x" << HEX(end, 8);
+    os << "showing range 0x" << MEM_HEX(start, 8) << " .. 0x"
+       << MEM_HEX(end, 8);
 
     u64 addr = start & ~0xf;
     while (addr < end) {
         if ((addr % 16) == 0)
-            os << "\n" << HEX(addr, 8) << ":";
+            os << "\n" << MEM_HEX(addr, 8) << ":";
         if ((addr % 4) == 0)
             os << " ";
         if (addr >= start)
-            os << HEX((unsigned int)m_memory[addr], 2) << " ";
+            os << MEM_HEX((unsigned int)m_memory[addr], 2) << " ";
         else
             os << "   ";
         addr++;
     }
 
-#undef HEX
+#undef MEM_HEX
     return true;
 }
 

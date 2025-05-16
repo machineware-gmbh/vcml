@@ -25,7 +25,7 @@
 #include "vcml/protocols/tlm_sockets.h"
 #include "vcml/protocols/gpio.h"
 
-#define HEX(x, w)                                                  \
+#define PROCESSOR_HEX(x, w)                                        \
     std::setfill('0') << std::setw(w) << std::hex << x << std::dec \
                       << std::setfill(' ')
 
@@ -33,10 +33,10 @@ namespace vcml {
 
 bool processor::cmd_dump(const vector<string>& args, ostream& os) {
     os << "Registers:" << std::endl
-       << "  PC 0x" << HEX(program_counter(), 16) << std::endl
-       << "  LR 0x" << HEX(link_register(), 16) << std::endl
-       << "  SP 0x" << HEX(stack_pointer(), 16) << std::endl
-       << "  ID 0x" << HEX(core_id(), 16) << std::endl;
+       << "  PC 0x" << PROCESSOR_HEX(program_counter(), 16) << std::endl
+       << "  LR 0x" << PROCESSOR_HEX(link_register(), 16) << std::endl
+       << "  SP 0x" << PROCESSOR_HEX(stack_pointer(), 16) << std::endl
+       << "  ID 0x" << PROCESSOR_HEX(core_id(), 16) << std::endl;
 
     os << "Interrupts:" << std::endl;
     for (auto it : irq) {
@@ -79,16 +79,17 @@ bool processor::cmd_read(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    os << "reading range 0x" << HEX(start, 16) << " .. 0x" << HEX(end, 16);
+    os << "reading range 0x" << PROCESSOR_HEX(start, 16) << " .. 0x"
+       << PROCESSOR_HEX(end, 16);
 
     u64 addr = start & ~0xf;
     while (addr < end) {
         if ((addr % 16) == 0)
-            os << "\n" << HEX(addr, 16) << ":";
+            os << "\n" << PROCESSOR_HEX(addr, 16) << ":";
         if ((addr % 4) == 0)
             os << " ";
         if (addr >= start)
-            os << HEX((unsigned int)data[addr - start], 2);
+            os << PROCESSOR_HEX((unsigned int)data[addr - start], 2);
         else
             os << "  ";
         addr++;
@@ -122,9 +123,11 @@ bool processor::cmd_lsym(const vector<string>& args, ostream& os) {
 
     os << "Listing symbols:";
     for (const auto& obj : syms.objects())
-        os << "\nO " << HEX(obj.virt_addr(), 16) << " " << obj.name();
+        os << "\nO " << PROCESSOR_HEX(obj.virt_addr(), 16) << " "
+           << obj.name();
     for (const auto& func : syms.functions())
-        os << "\nF " << HEX(func.virt_addr(), 16) << " " << func.name();
+        os << "\nF " << PROCESSOR_HEX(func.virt_addr(), 16) << " "
+           << func.name();
 
     return true;
 }
@@ -149,8 +152,8 @@ bool processor::cmd_disas(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    os << "Disassembly of " << HEX(vstart, vstart > ~0u ? 16 : 8) << ".."
-       << HEX(vend, vend > ~0u ? 16 : 8);
+    os << "Disassembly of " << PROCESSOR_HEX(vstart, vstart > ~0u ? 16 : 8)
+       << ".." << PROCESSOR_HEX(vend, vend > ~0u ? 16 : 8);
 
     u64 pgsz;
     bool virt = page_size(pgsz);
@@ -166,23 +169,24 @@ bool processor::cmd_disas(const vector<string>& args, ostream& os) {
         if (insn.sym != nullptr) {
             u64 offset = insn.addr - insn.sym->virt_addr();
             if (offset <= insn.sym->size()) {
-                os << "[" << insn.sym->name() << "+" << HEX(offset, 4) << "] ";
+                os << "[" << insn.sym->name() << "+"
+                   << PROCESSOR_HEX(offset, 4) << "] ";
             }
         }
 
-        os << HEX(insn.addr, insn.addr > ~0u ? 16 : 8);
+        os << PROCESSOR_HEX(insn.addr, insn.addr > ~0u ? 16 : 8);
 
         u64 phys = insn.addr;
         if (virt) {
             if (virt_to_phys(insn.addr, phys))
-                os << " " << HEX(phys, phys > ~0u ? 16 : 8);
+                os << " " << PROCESSOR_HEX(phys, phys > ~0u ? 16 : 8);
             else
                 os << "????????????????";
         }
 
         os << ": [";
         for (u64 i = 0; i < insn.size; i++) {
-            os << HEX((int)insn.insn[i], 2);
+            os << PROCESSOR_HEX((int)insn.insn[i], 2);
             if (i < insn.size - 1)
                 os << " ";
         }
@@ -202,10 +206,11 @@ bool processor::cmd_v2p(const vector<string>& args, ostream& os) {
     u64 virt = strtoull(args[0].c_str(), NULL, 0);
     bool ret = virt_to_phys(virt, phys);
     if (!ret) {
-        os << "cannot translate virtual address 0x" << HEX(virt, 16);
+        os << "cannot translate virtual address 0x" << PROCESSOR_HEX(virt, 16);
         return false;
     } else {
-        os << "0x" << HEX(virt, 16) << " -> 0x" << HEX(phys, 16);
+        os << "0x" << PROCESSOR_HEX(virt, 16) << " -> 0x"
+           << PROCESSOR_HEX(phys, 16);
         return true;
     }
 }
@@ -216,7 +221,7 @@ bool processor::cmd_stack(const vector<string>& args, ostream& os) {
     stacktrace(frames);
 
     for (const auto& frame : frames) {
-        os << "[" << HEX(frame.program_counter, 16) << "]";
+        os << "[" << PROCESSOR_HEX(frame.program_counter, 16) << "]";
         if (frame.sym != nullptr) {
             os << " " << frame.sym->name() << " +0x" << std::hex
                << frame.program_counter - frame.sym->virt_addr() << "/0x"

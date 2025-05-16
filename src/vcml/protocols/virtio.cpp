@@ -96,7 +96,7 @@ size_t vq_message::copy_in(void* ptr, size_t size, size_t offset) {
     return copied;
 }
 
-#define HEX(x)                                                                \
+#define VIRTIO_HEX(x)                                                         \
     "0x" << std::setfill('0') << std::setw(x > ~0u ? 16 : 8) << std::hex << x \
          << std::dec << std::setfill(' ')
 
@@ -119,13 +119,15 @@ ostream& operator<<(ostream& os, const vq_message& msg) {
     os << "] (" << virtio_status_str(msg.status) << ")";
 
     for (auto in : msg.in) {
-        os << "\n  IN [" << HEX(in.addr) << ".." << HEX(in.addr + in.size - 1)
-           << "] (" << in.size << " bytes)";
+        os << "\n  IN [" << VIRTIO_HEX(in.addr) << ".."
+           << VIRTIO_HEX(in.addr + in.size - 1) << "] (" << in.size
+           << " bytes)";
     }
 
     for (auto out : msg.out) {
-        os << "\n  OUT [" << HEX(out.addr) << ".."
-           << HEX(out.addr + out.size - 1) << "] (" << out.size << " bytes)";
+        os << "\n  OUT [" << VIRTIO_HEX(out.addr) << ".."
+           << VIRTIO_HEX(out.addr + out.size - 1) << "] (" << out.size
+           << " bytes)";
     }
 
     return os;
@@ -792,7 +794,8 @@ virtio_target_stub::virtio_target_stub(const char* nm):
     virtio_in.bind(*this);
 }
 
-static virtio_base_initiator_socket* virtio_get_initiator_socket(sc_object* port) {
+static virtio_base_initiator_socket* virtio_get_initiator_socket(
+    sc_object* port) {
     return dynamic_cast<virtio_base_initiator_socket*>(port);
 }
 
