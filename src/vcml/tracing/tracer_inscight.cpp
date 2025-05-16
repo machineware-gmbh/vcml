@@ -14,6 +14,7 @@
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
+#include "vcml/protocols/lin.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/eth.h"
 #include "vcml/protocols/can.h"
@@ -182,6 +183,24 @@ string serialize(const i2c_payload& tx) {
     os << "\"command\":\"" << i2c_command_str(tx.cmd) << "\",";
     os << "\"response\":\"" << i2c_response_str(tx.resp) << "\",";
     os << "\"data\":" << (int)tx.data;
+    os << "}";
+    return os.str();
+}
+
+template <>
+string serialize(const lin_payload& tx) {
+    ostringstream os;
+    os << "{";
+    os << "\"linid\":\"" << (int)tx.linid << "\",";
+    os << "\"data\":[";
+    if (tx.size() > 0) {
+        for (size_t i = 0; i < tx.size() - 1; i++)
+            os << (int)tx.data[i] << ",";
+        os << (int)tx.data[tx.size() - 1];
+    }
+    os << "],";
+
+    os << "\"status\":\"" << lin_status_str(tx.status) << "\",";
     os << "}";
     return os.str();
 }
@@ -423,6 +442,10 @@ void tracer_inscight::trace(const activity<pci_payload>& msg) {
 }
 
 void tracer_inscight::trace(const activity<i2c_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_inscight::trace(const activity<lin_payload>& msg) {
     do_trace(msg);
 }
 

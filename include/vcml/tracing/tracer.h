@@ -20,6 +20,7 @@ struct gpio_payload;
 struct clk_payload;
 struct pci_payload;
 struct i2c_payload;
+struct lin_payload;
 struct spi_payload;
 struct sd_command;
 struct sd_data;
@@ -51,6 +52,7 @@ enum protocol_kind {
     PROTO_CLK,
     PROTO_PCI,
     PROTO_I2C,
+    PROTO_LIN,
     PROTO_SPI,
     PROTO_SD,
     PROTO_SERIAL,
@@ -98,6 +100,13 @@ struct protocol<pci_payload> {
 template <>
 struct protocol<i2c_payload> {
     static constexpr protocol_kind KIND = PROTO_I2C;
+    static constexpr bool TRACE_FW = true;
+    static constexpr bool TRACE_BW = true;
+};
+
+template <>
+struct protocol<lin_payload> {
+    static constexpr protocol_kind KIND = PROTO_LIN;
     static constexpr bool TRACE_FW = true;
     static constexpr bool TRACE_BW = true;
 };
@@ -208,6 +217,7 @@ public:
     virtual void trace(const activity<clk_payload>&) = 0;
     virtual void trace(const activity<pci_payload>&) = 0;
     virtual void trace(const activity<i2c_payload>&) = 0;
+    virtual void trace(const activity<lin_payload>&) = 0;
     virtual void trace(const activity<spi_payload>&) = 0;
     virtual void trace(const activity<sd_command>&) = 0;
     virtual void trace(const activity<sd_data>&) = 0;

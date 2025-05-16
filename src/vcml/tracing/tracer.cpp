@@ -24,6 +24,8 @@ const char* protocol_name(protocol_kind kind) {
         return "PCI";
     case PROTO_I2C:
         return "I2C";
+    case PROTO_LIN:
+        return "LIN";
     case PROTO_SPI:
         return "SPI";
     case PROTO_SD:

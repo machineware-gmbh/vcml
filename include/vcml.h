@@ -64,6 +64,7 @@
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/i2c.h"
+#include "vcml/protocols/lin.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/pci_ids.h"
 #include "vcml/protocols/eth.h"
@@ -115,6 +116,9 @@
 #include "vcml/models/i2c/lm75.h"
 #include "vcml/models/i2c/oci2c.h"
 #include "vcml/models/i2c/sifive.h"
+
+#include "vcml/models/lin/network.h"
+#include "vcml/models/lin/gateway.h"
 
 #include "vcml/models/spi/bus.h"
 #include "vcml/models/spi/spi2sd.h"

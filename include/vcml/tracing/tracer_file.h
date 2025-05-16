@@ -35,6 +35,7 @@ public:
     virtual void trace(const activity<clk_payload>&) override;
     virtual void trace(const activity<pci_payload>&) override;
     virtual void trace(const activity<i2c_payload>&) override;
+    virtual void trace(const activity<lin_payload>&) override;
     virtual void trace(const activity<spi_payload>&) override;
     virtual void trace(const activity<sd_command>&) override;
     virtual void trace(const activity<sd_data>&) override;

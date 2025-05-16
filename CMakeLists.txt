@@ -102,6 +102,7 @@ add_library(vcml STATIC
     ${src}/vcml/protocols/spi.cpp
     ${src}/vcml/protocols/sd.cpp
     ${src}/vcml/protocols/i2c.cpp
+    ${src}/vcml/protocols/lin.cpp
     ${src}/vcml/protocols/pci.cpp
     ${src}/vcml/protocols/eth.cpp
     ${src}/vcml/protocols/can.cpp
@@ -155,6 +156,8 @@ add_library(vcml STATIC
     ${src}/vcml/models/i2c/lm75.cpp
     ${src}/vcml/models/i2c/oci2c.cpp
     ${src}/vcml/models/i2c/sifive.cpp
+    ${src}/vcml/models/lin/network.cpp
+    ${src}/vcml/models/lin/gateway.cpp
     ${src}/vcml/models/spi/bus.cpp
     ${src}/vcml/models/spi/spi2sd.cpp
     ${src}/vcml/models/spi/max31855.cpp

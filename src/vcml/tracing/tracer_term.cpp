@@ -14,6 +14,7 @@
 #include "vcml/protocols/sd.h"
 #include "vcml/protocols/spi.h"
 #include "vcml/protocols/i2c.h"
+#include "vcml/protocols/lin.h"
 #include "vcml/protocols/pci.h"
 #include "vcml/protocols/eth.h"
 #include "vcml/protocols/can.h"
@@ -36,6 +37,7 @@ array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
     /* [PROTO_CLK]      = */ mwr::termcolors::BLUE,
     /* [PROTO_PCI]      = */ mwr::termcolors::CYAN,
     /* [PROTO_I2C]      = */ mwr::termcolors::BRIGHT_GREEN,
+    /* [PROTO_LIN]      = */ mwr::termcolors::BRIGHT_GREEN,
     /* [PROTO_SPI]      = */ mwr::termcolors::BRIGHT_YELLOW,
     /* [PROTO_SD]       = */ mwr::termcolors::BRIGHT_MAGENTA,
     /* [PROTO_SERIAL]   = */ mwr::termcolors::BRIGHT_RED,
@@ -111,6 +113,10 @@ void tracer_term::trace(const activity<pci_payload>& msg) {
 }
 
 void tracer_term::trace(const activity<i2c_payload>& msg) {
+    do_trace(msg);
+}
+
+void tracer_term::trace(const activity<lin_payload>& msg) {
     do_trace(msg);
 }
 
