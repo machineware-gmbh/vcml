@@ -46,6 +46,12 @@ inline sc_core::sc_time operator%(const sc_core::sc_time& t1,
 #define SC_HAS_PROCESS(x)
 #endif
 
+// used for sc_type_index
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_2 || \
+    SYSTEMC_VERION >= SYSTEMC_VERSION_3_0_0
+#include <typeindex>
+#endif
+
 namespace vcml {
 
 using sc_core::sc_object;
