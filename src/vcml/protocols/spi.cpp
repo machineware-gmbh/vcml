@@ -107,14 +107,14 @@ static spi_base_target_socket* spi_get_target_socket(sc_object* port) {
 }
 
 static spi_base_initiator_socket* spi_get_initiator_socket(sc_object* array,
-                                                       size_t idx) {
+                                                           size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<spi_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
 static spi_base_target_socket* spi_get_target_socket(sc_object* array,
-                                                 size_t idx) {
+                                                     size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<spi_base_target_socket>(idx, true);
     return nullptr;

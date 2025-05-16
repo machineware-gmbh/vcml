@@ -13,7 +13,6 @@
 #include "vcml/core/module.h"
 #include "vcml/core/model.h"
 
-
 namespace vcml {
 
 model::model(const sc_module_name& name, const string& kind):

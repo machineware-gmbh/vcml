@@ -8,7 +8,6 @@
  *                                                                            *
  ******************************************************************************/
 
-
 #include "vcml/core/types.h"
 #include "vcml/core/version.h"
 #include "vcml/core/systemc.h"

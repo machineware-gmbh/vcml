@@ -239,7 +239,8 @@ serial_target_stub::serial_target_stub(const char* nm):
     serial_rx.bind(*this);
 }
 
-static serial_base_initiator_socket* serial_get_initiator_socket(sc_object* port) {
+static serial_base_initiator_socket* serial_get_initiator_socket(
+    sc_object* port) {
     return dynamic_cast<serial_base_initiator_socket*>(port);
 }
 
@@ -247,15 +248,15 @@ static serial_base_target_socket* serial_get_target_socket(sc_object* port) {
     return dynamic_cast<serial_base_target_socket*>(port);
 }
 
-static serial_base_initiator_socket* serial_get_initiator_socket(sc_object* array,
-                                                          size_t idx) {
+static serial_base_initiator_socket* serial_get_initiator_socket(
+    sc_object* array, size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<serial_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
 static serial_base_target_socket* serial_get_target_socket(sc_object* array,
-                                                    size_t idx) {
+                                                           size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<serial_base_target_socket>(idx, true);
     return nullptr;
@@ -318,7 +319,8 @@ void serial_stub(const sc_object& obj, const string& port, size_t idx) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
-    serial_base_initiator_socket* isock = serial_get_initiator_socket(child, idx);
+    serial_base_initiator_socket* isock = serial_get_initiator_socket(child,
+                                                                      idx);
     if (isock) {
         isock->stub();
         return;

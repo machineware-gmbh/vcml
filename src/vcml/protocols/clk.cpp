@@ -182,14 +182,14 @@ static clk_base_target_socket* clk_get_target_socket(sc_object* port) {
 }
 
 static clk_base_initiator_socket* clk_get_initiator_socket(sc_object* array,
-                                                       size_t idx) {
+                                                           size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<clk_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
 static clk_base_target_socket* clk_get_target_socket(sc_object* array,
-                                                 size_t idx) {
+                                                     size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<clk_base_target_socket>(idx, true);
     return nullptr;

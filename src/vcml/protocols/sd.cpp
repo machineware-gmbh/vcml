@@ -394,13 +394,14 @@ static sd_base_target_socket* sd_get_target_socket(sc_object* port) {
 }
 
 static sd_base_initiator_socket* sd_get_initiator_socket(sc_object* array,
-                                                      size_t idx) {
+                                                         size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<sd_base_initiator_socket>(idx, true);
     return nullptr;
 }
 
-static sd_base_target_socket* sd_get_target_socket(sc_object* array, size_t idx) {
+static sd_base_target_socket* sd_get_target_socket(sc_object* array,
+                                                   size_t idx) {
     if (auto* aif = dynamic_cast<socket_array_if*>(array))
         return aif->fetch_as<sd_base_target_socket>(idx, true);
     return nullptr;
