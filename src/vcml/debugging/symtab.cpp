@@ -146,6 +146,17 @@ u64 symtab::load_elf(const string& filename) {
             break;
 
         case mwr::elf::KIND_UNKNOWN:
+            for (const auto& seg : reader.segments()) {
+                if (symbol.virt >= seg.virt &&
+                    symbol.virt < seg.virt + seg.size) {
+                    auto kind = seg.x ? SYMKIND_FUNCTION : SYMKIND_OBJECT;
+                    insert({ symbol.name, kind, endian, symbol.size,
+                             symbol.virt, symbol.phys });
+                    break;
+                }
+            }
+            break;
+
         case mwr::elf::KIND_NONE:
         default:
             break;
