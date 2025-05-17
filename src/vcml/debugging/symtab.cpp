@@ -93,7 +93,9 @@ const symbol* symtab::find_function(u64 addr) const {
 
     // find first that is not greater than addr
     const symbol& sym = *--it;
-    return sym.memory().includes(addr) ? &sym : nullptr;
+    if (sym.size() > 0 && !sym.memory().includes(addr))
+        return nullptr;
+    return &sym;
 }
 
 const symbol* symtab::find_object(const string& name) const {
@@ -114,7 +116,9 @@ const symbol* symtab::find_object(u64 addr) const {
 
     // find first that is not greater than addr
     const symbol& sym = *--it;
-    return sym.memory().includes(addr) ? &sym : nullptr;
+    if (sym.size() > 0 && !sym.memory().includes(addr))
+        return nullptr;
+    return &sym;
 }
 
 void symtab::merge(const symtab& other) {
@@ -146,7 +150,8 @@ u64 symtab::load_elf(const string& filename) {
             break;
 
         case mwr::elf::KIND_UNKNOWN:
-            if (!starts_with(symbol.name, "$")) {
+            if (!starts_with(symbol.name, "$") &&
+                !starts_with(symbol.name, ".")) {
                 for (const auto& seg : reader.segments()) {
                     if (symbol.virt >= seg.virt &&
                         symbol.virt < seg.virt + seg.size) {

@@ -204,8 +204,9 @@ bool processor::cmd_stack(const vector<string>& args, ostream& os) {
         os << "[" << HEX(frame.program_counter, 16) << "]";
         if (frame.sym != nullptr) {
             os << " " << frame.sym->name() << " +0x" << std::hex
-               << frame.program_counter - frame.sym->virt_addr() << "/0x"
-               << std::hex << frame.sym->size();
+               << frame.program_counter - frame.sym->virt_addr();
+            if (frame.sym->size() > 0)
+                os << "/0x" << std::hex << frame.sym->size();
         }
 
         os << "\n";
