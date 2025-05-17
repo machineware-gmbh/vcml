@@ -57,9 +57,19 @@ void suspend_manager::request_pause(suspender* s) {
         VCML_ERROR("cannot suspend, simulation not running");
 
     suspender_lock.lock();
-    if (waiting_suspenders.empty())
-        on_next_update([&]() { handle_requests(); });
-    stl_add_unique(waiting_suspenders, s);
+
+    if (!active_suspenders.empty() && s->check_suspension_point()) {
+        // if the simulation is already suspended, and we like the current
+        // suspension point, we just join the active suspenders
+        stl_add_unique(active_suspenders, s);
+    } else {
+        // no active suspenders, queue ourselves into the waiting queue
+        // and schedule a handle_request if nobody was there to do it before
+        if (waiting_suspenders.empty())
+            on_next_update([&]() { handle_requests(); });
+        stl_add_unique(waiting_suspenders, s);
+    }
+
     suspender_lock.unlock();
 
     if (!is_sysc_thread())
@@ -82,13 +92,16 @@ void suspend_manager::request_yield(suspender* s) {
         VCML_ERROR("cannot call yield on systemc thread");
 
     suspender_lock.lock();
-    if (!stl_contains(waiting_suspenders, s) &&
-        !stl_contains(active_suspenders, s)) {
-        VCML_ERROR("cannot call yield without suspend");
+
+    // no point in yielding when we are already suspended
+    if (!stl_contains(active_suspenders, s)) {
+        // must have at least queued a suspend request before yielding
+        if (!stl_contains(waiting_suspenders, s))
+            VCML_ERROR("cannot call yield without suspend");
+        cv_pause.wait(suspender_lock,
+                      [&] { return stl_contains(active_suspenders, s); });
     }
 
-    cv_pause.wait(suspender_lock,
-                  [&] { return stl_contains(active_suspenders, s); });
     suspender_lock.unlock();
 }
 
