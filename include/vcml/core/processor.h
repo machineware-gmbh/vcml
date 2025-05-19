@@ -46,16 +46,10 @@ private:
     debugging::gdbserver* m_gdb;
 
     unordered_map<size_t, irq_stats> m_irq_stats;
-    unordered_map<u64, property<void>*> m_regprops;
 
     bool cmd_dump(const vector<string>& args, ostream& os);
     bool cmd_read(const vector<string>& args, ostream& os);
     bool cmd_gdb(const vector<string>& args, ostream& os);
-
-    virtual bool read_cpureg_dbg(const debugging::cpureg& reg, void* buf,
-                                 size_t len) override;
-    virtual bool write_cpureg_dbg(const debugging::cpureg& reg, const void*,
-                                  size_t len) override;
 
     void sample_callstack();
 
@@ -128,22 +122,6 @@ protected:
     virtual void before_end_of_elaboration() override;
     virtual void end_of_elaboration() override;
     virtual void end_of_simulation() override;
-
-    virtual void fetch_cpuregs();
-    virtual void flush_cpuregs();
-
-    virtual void define_cpureg(size_t regno, const string& name, size_t size,
-                               size_t count, int prot) override;
-
-    void define_cpureg_r(size_t regno, const string& name, size_t size,
-                         size_t count = 1);
-    void define_cpureg_w(size_t regno, const string& name, size_t size,
-                         size_t count = 1);
-    void define_cpureg_rw(size_t regno, const string& name, size_t size,
-                          size_t count = 1);
-
-    virtual bool read_reg_dbg(size_t regno, void* buf, size_t len);
-    virtual bool write_reg_dbg(size_t regno, const void* buf, size_t len);
 
     virtual u64 read_pmem_dbg(u64 addr, void* ptr, u64 sz) override;
     virtual u64 write_pmem_dbg(u64 addr, const void* ptr, u64 sz) override;

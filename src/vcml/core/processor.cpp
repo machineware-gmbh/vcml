@@ -246,7 +246,6 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     m_cycle_count(0),
     m_gdb(nullptr),
     m_irq_stats(),
-    m_regprops(),
     cpuarch("arch", cpuarch),
     symbols("symbols"),
     gdb_wait("gdb_wait", false),
@@ -291,8 +290,6 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
 processor::~processor() {
     if (m_gdb)
         delete m_gdb;
-    for (auto reg : m_regprops)
-        delete reg.second;
 }
 
 void processor::reset() {
@@ -301,9 +298,7 @@ void processor::reset() {
     m_cycle_count.clear();
     m_run_time = 0.0;
 
-    for (auto reg : m_regprops)
-        reg.second->reset();
-
+    reset_cpuregs();
     flush_cpuregs();
 }
 
@@ -433,95 +428,6 @@ void processor::end_of_simulation() {
         sc_join_async();
 
     component::end_of_simulation();
-}
-
-void processor::fetch_cpuregs() {
-    for (auto it : m_regprops) {
-        const debugging::cpureg* reg = find_cpureg(it.first);
-        VCML_ERROR_ON(!reg, "no cpureg %llu", it.first);
-
-        auto* prop = it.second;
-        VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
-
-        if (!reg->is_readable())
-            continue;
-
-        if (!reg->read(prop->raw_ptr(), prop->raw_len()))
-            log_warn("failed to fetch cpureg %s", reg->name.c_str());
-    }
-}
-
-void processor::flush_cpuregs() {
-    for (auto it : m_regprops) {
-        const debugging::cpureg* reg = find_cpureg(it.first);
-        VCML_ERROR_ON(!reg, "no cpureg %llu", it.first);
-
-        auto* prop = it.second;
-        VCML_ERROR_ON(!prop, "no propery for cpureg %llu", it.first);
-
-        if (!reg->is_writeable())
-            continue;
-
-        if (!reg->write(prop->raw_ptr(), prop->raw_len()))
-            log_warn("failed to flush cpureg %s", reg->name.c_str());
-    }
-}
-
-void processor::define_cpureg(size_t regno, const string& name, size_t size,
-                              size_t nelem, int prot) {
-    target::define_cpureg(regno, name, size, nelem, prot);
-
-    u64 defval = 0;
-    if (is_read_allowed(prot)) {
-        if (!read_reg_dbg(regno, &defval, min(size, sizeof(defval))))
-            VCML_ERROR("failed to initialize cpureg %s", name.c_str());
-    }
-
-    auto*& prop = m_regprops[regno];
-    VCML_ERROR_ON(prop, "property %s already exists", name.c_str());
-    prop = new property<void>(name.c_str(), size, nelem, defval);
-}
-
-void processor::define_cpureg_r(size_t regno, const string& name, size_t size,
-                                size_t count) {
-    define_cpureg(regno, name, size, count, VCML_ACCESS_READ);
-}
-
-void processor::define_cpureg_w(size_t regno, const string& name, size_t size,
-                                size_t count) {
-    define_cpureg(regno, name, size, count, VCML_ACCESS_WRITE);
-}
-
-void processor::define_cpureg_rw(size_t regno, const string& name, size_t size,
-                                 size_t count) {
-    define_cpureg(regno, name, size, count, VCML_ACCESS_READ_WRITE);
-}
-
-bool processor::read_reg_dbg(size_t regno, void* buf, size_t len) {
-    return false; // to be overloaded
-}
-
-bool processor::write_reg_dbg(size_t regno, const void* buf, size_t len) {
-    return false; // to be overloaded
-}
-
-bool processor::read_cpureg_dbg(const debugging::cpureg& reg, void* buf,
-                                size_t len) {
-    return read_reg_dbg(reg.regno, buf, len);
-}
-
-bool processor::write_cpureg_dbg(const debugging::cpureg& reg, const void* buf,
-                                 size_t len) {
-    if (!write_reg_dbg(reg.regno, buf, len))
-        return false;
-
-    auto it = m_regprops.find(reg.regno);
-    if (it != m_regprops.end()) {
-        auto* prop = it->second;
-        memcpy(prop->raw_ptr(), buf, min(prop->raw_len(), len));
-    }
-
-    return true;
 }
 
 u64 processor::read_pmem_dbg(u64 addr, void* buffer, u64 size) {

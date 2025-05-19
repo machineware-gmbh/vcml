@@ -14,6 +14,22 @@
 namespace vcml {
 namespace debugging {
 
+cpureg::cpureg(cpureg&& other) noexcept:
+    regno(other.regno),
+    name(std::move(other.name)),
+    size(other.size),
+    count(other.count),
+    prot(other.count),
+    host(other.host),
+    prop(other.prop) {
+    other.prop = nullptr;
+}
+
+cpureg::~cpureg() {
+    if (prop)
+        delete prop;
+}
+
 bool cpureg::read(void* buf, size_t len) const {
     VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
     if (len < total_size() || !is_readable())
@@ -25,33 +41,14 @@ bool cpureg::write(const void* buf, size_t len) const {
     VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
     if (len < total_size() || !is_writeable())
         return false;
-    return host->write_cpureg_dbg(*this, buf, total_size());
+    if (!host->write_cpureg_dbg(*this, buf, total_size()))
+        return false;
+    if (prop != nullptr)
+        memcpy(prop->raw_ptr(), buf, total_size());
+    return true;
 }
 
 unordered_map<string, target*> target::s_targets;
-
-void target::define_cpureg(size_t regno, const string& name, size_t size,
-                           int prot) {
-    define_cpureg(regno, name, size, 1, prot);
-}
-
-void target::define_cpureg(size_t regno, const string& name, size_t size,
-                           size_t count, int prot) {
-    const cpureg* other = find_cpureg(regno);
-    if (other != nullptr) {
-        if (other->name == name)
-            VCML_ERROR("cpureg %s already defined", name.c_str());
-        VCML_ERROR("regno %zu already used by %s", regno, other->name.c_str());
-    }
-
-    cpureg& newreg = m_cpuregs[regno];
-    newreg.regno = regno;
-    newreg.size = size;
-    newreg.count = count;
-    newreg.prot = prot;
-    newreg.name = name;
-    newreg.host = this;
-}
 
 bool target::cmd_cpustatus(const vector<string>& args, ostream& os) {
     os << "Registers:" << mkstr("\n  PC 0x%016llx", program_counter())
@@ -248,8 +245,139 @@ bool target::cmd_vwrite(const vector<string>& args, ostream& os) {
     return true;
 }
 
+void target::define_cpureg(size_t regno, const string& name, size_t size,
+                           size_t count, int prot) {
+    if (const cpureg* other = find_cpureg(regno)) {
+        if (other->name == name)
+            VCML_ERROR("cpureg %s already defined", name.c_str());
+        VCML_ERROR("regno %zu already used by %s", regno, other->name.c_str());
+    }
+
+    u64 def = 0;
+    if (is_read_allowed(prot)) {
+        if (!read_reg_dbg(regno, &def, min(size, sizeof(def))))
+            VCML_ERROR("failed to initialize cpureg %s", name.c_str());
+    }
+
+    cpureg& newreg = m_cpuregs[regno];
+    newreg.regno = regno;
+    newreg.size = size;
+    newreg.count = count;
+    newreg.prot = prot;
+    newreg.name = name;
+    newreg.host = this;
+    newreg.prop = new property<void>(&m_host, name.c_str(), size, count, def);
+}
+
+void target::define_cpureg_r(size_t regno, const string& name, size_t size,
+                             size_t count) {
+    define_cpureg(regno, name, size, count, VCML_ACCESS_READ);
+}
+
+void target::define_cpureg_w(size_t regno, const string& name, size_t size,
+                             size_t count) {
+    define_cpureg(regno, name, size, count, VCML_ACCESS_WRITE);
+}
+
+void target::define_cpureg_rw(size_t regno, const string& name, size_t size,
+                              size_t count) {
+    define_cpureg(regno, name, size, count, VCML_ACCESS_READ_WRITE);
+}
+
+void target::fetch_cpuregs() {
+    for (auto& [id, reg] : m_cpuregs) {
+        if (!reg.is_readable())
+            continue;
+
+        if (!reg.read(reg.prop->raw_ptr(), reg.prop->raw_len()))
+            log_warn("failed to fetch cpureg %s", reg.name.c_str());
+    }
+}
+
+void target::flush_cpuregs() {
+    for (auto& [id, reg] : m_cpuregs) {
+        if (!reg.is_writeable())
+            continue;
+
+        if (!reg.write(reg.prop->raw_ptr(), reg.prop->raw_len()))
+            log_warn("failed to flush cpureg %s", reg.name.c_str());
+    }
+}
+
+void target::reset_cpuregs() {
+    for (auto& [id, reg] : m_cpuregs)
+        reg.prop->reset();
+}
+
+void target::update_single_stepping(bool on) {
+    // to be overloaded
+}
+
+bool target::start_basic_block_trace() {
+    return false; // to be overloaded
+}
+
+bool target::stop_basic_block_trace() {
+    return false; // to be overloaded
+}
+
+bool target::insert_breakpoint(u64 addr) {
+    return false; // to be overloaded
+}
+
+bool target::remove_breakpoint(u64 addr) {
+    return false; // to be overloaded
+}
+
+bool target::insert_watchpoint(const range& addr, vcml_access a) {
+    return false; // to be overloaded
+}
+
+bool target::remove_watchpoint(const range& addr, vcml_access a) {
+    return false; // to be overloaded
+}
+
+void target::notify_breakpoint_hit(u64 pc) {
+    for (auto& bp : m_breakpoints)
+        if (bp->address() == pc)
+            bp->notify();
+}
+
+void target::notify_watchpoint_read(const range& addr) {
+    for (auto& wp : m_watchpoints)
+        if (wp->address().overlaps(addr))
+            wp->notify_read(addr);
+}
+
+void target::notify_watchpoint_write(const range& addr, u64 newval) {
+    for (auto& wp : m_watchpoints)
+        if (wp->address().overlaps(addr))
+            wp->notify_write(addr, newval);
+}
+
+void target::notify_singlestep() {
+    vector<subscriber*> prev_steppers;
+
+    m_mtx.lock();
+    prev_steppers.swap(m_steppers);
+    m_mtx.unlock();
+
+    for (auto s : prev_steppers)
+        s->notify_step_complete(*this);
+}
+
+void target::notify_basic_block(u64 pc, size_t blksz, size_t icount) {
+    m_mtx.lock();
+    vector<subscriber*> local(m_bbtracer);
+    m_mtx.unlock();
+
+    for (auto s : local)
+        s->notify_basic_block(*this, pc, blksz, icount);
+}
+
 target::target(module& host):
     m_mtx(),
+    m_host(host),
     m_name(host.name()),
     m_suspendable(true),
     m_running(true),
@@ -293,8 +421,8 @@ target::~target() {
 vector<cpureg> target::cpuregs() const {
     vector<cpureg> regs;
     regs.reserve(m_cpuregs.size());
-    for (auto& reg : m_cpuregs)
-        regs.push_back(reg.second);
+    for (auto& [id, reg] : m_cpuregs)
+        regs.emplace_back(reg.regno, reg.name, reg.size, reg.count, reg.prot);
     return regs;
 }
 
@@ -326,10 +454,18 @@ const cpureg* target::find_cpureg(const string& name) const {
 }
 
 bool target::read_cpureg_dbg(const cpureg& reg, void* buf, size_t len) {
-    return false; // to be overloaded
+    return read_reg_dbg(reg.regno, buf, len);
 }
 
 bool target::write_cpureg_dbg(const cpureg& reg, const void* buf, size_t len) {
+    return write_reg_dbg(reg.regno, buf, len);
+}
+
+bool target::read_reg_dbg(size_t regno, void* buf, size_t len) {
+    return false; // to be overloaded
+}
+
+bool target::write_reg_dbg(size_t regno, const void* buf, size_t len) {
     return false; // to be overloaded
 }
 
@@ -498,52 +634,6 @@ bool target::disassemble(const range& addr, vector<disassembly>& s) {
     return ptr > mem.data();
 }
 
-void target::update_single_stepping(bool on) {
-    // to be overloaded
-}
-
-bool target::start_basic_block_trace() {
-    return false; // to be overloaded
-}
-
-bool target::stop_basic_block_trace() {
-    return false; // to be overloaded
-}
-
-bool target::insert_breakpoint(u64 addr) {
-    return false; // to be overloaded
-}
-
-bool target::remove_breakpoint(u64 addr) {
-    return false; // to be overloaded
-}
-
-bool target::insert_watchpoint(const range& addr, vcml_access a) {
-    return false; // to be overloaded
-}
-
-bool target::remove_watchpoint(const range& addr, vcml_access a) {
-    return false; // to be overloaded
-}
-
-void target::notify_breakpoint_hit(u64 pc) {
-    for (auto& bp : m_breakpoints)
-        if (bp->address() == pc)
-            bp->notify();
-}
-
-void target::notify_watchpoint_read(const range& addr) {
-    for (auto& wp : m_watchpoints)
-        if (wp->address().overlaps(addr))
-            wp->notify_read(addr);
-}
-
-void target::notify_watchpoint_write(const range& addr, u64 newval) {
-    for (auto& wp : m_watchpoints)
-        if (wp->address().overlaps(addr))
-            wp->notify_write(addr, newval);
-}
-
 const breakpoint* target::lookup_breakpoint(u64 addr) {
     for (auto& bp : m_breakpoints)
         if (bp->address() == addr)
@@ -672,26 +762,6 @@ bool target::remove_watchpoint(const range& addr, vcml_access prot,
     }
 
     return true;
-}
-
-void target::notify_singlestep() {
-    vector<subscriber*> prev_steppers;
-
-    m_mtx.lock();
-    prev_steppers.swap(m_steppers);
-    m_mtx.unlock();
-
-    for (auto s : prev_steppers)
-        s->notify_step_complete(*this);
-}
-
-void target::notify_basic_block(u64 pc, size_t blksz, size_t icount) {
-    m_mtx.lock();
-    vector<subscriber*> local(m_bbtracer);
-    m_mtx.unlock();
-
-    for (auto s : local)
-        s->notify_basic_block(*this, pc, blksz, icount);
 }
 
 bool target::trace_basic_blocks(subscriber* subscr) {

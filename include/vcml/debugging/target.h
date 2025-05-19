@@ -33,13 +33,14 @@ struct cpureg {
     size_t count;
     int prot;
     target* host;
+    property<void>* prop;
 
-    cpureg(const cpureg&) = default;
-
-    cpureg(): regno(), name(), size(), count(), prot(), host() {}
-
+    cpureg(const cpureg&) = delete;
+    cpureg(cpureg&& other) noexcept;
+    cpureg(): regno(), name(), size(), count(), prot(), host(), prop() {}
     cpureg(u64 no, const string& nm, u64 sz, u64 cnt, int p):
-        regno(no), name(nm), size(sz), count(cnt), prot(p), host() {}
+        regno(no), name(nm), size(sz), count(cnt), prot(p), host(), prop() {}
+    ~cpureg();
 
     size_t width() const { return size * 8; }
     size_t total_size() const { return size * count; }
@@ -74,6 +75,7 @@ class target
 private:
     mutable mutex m_mtx;
 
+    module& m_host;
     string m_name;
 
     atomic<bool> m_suspendable;
@@ -106,9 +108,17 @@ private:
 
 protected:
     virtual void define_cpureg(size_t regno, const string& name, size_t size,
-                               int prot = VCML_ACCESS_READ_WRITE);
-    virtual void define_cpureg(size_t regno, const string& name, size_t size,
                                size_t n, int prot = VCML_ACCESS_READ_WRITE);
+    virtual void define_cpureg_r(size_t regno, const string& name, size_t size,
+                                 size_t count = 1);
+    virtual void define_cpureg_w(size_t regno, const string& name, size_t size,
+                                 size_t count = 1);
+    virtual void define_cpureg_rw(size_t regno, const string& name,
+                                  size_t size, size_t count = 1);
+
+    virtual void fetch_cpuregs();
+    virtual void flush_cpuregs();
+    virtual void reset_cpuregs();
 
     virtual void update_single_stepping(bool on);
 
@@ -157,6 +167,9 @@ public:
 
     virtual bool read_cpureg_dbg(const cpureg& reg, void* buf, size_t len);
     virtual bool write_cpureg_dbg(const cpureg& reg, const void*, size_t len);
+
+    virtual bool read_reg_dbg(size_t regno, void* buf, size_t len);
+    virtual bool write_reg_dbg(size_t regno, const void* buf, size_t len);
 
     virtual u64 read_pmem_dbg(u64 addr, void* buffer, u64 size);
     virtual u64 write_pmem_dbg(u64 addr, const void* buffer, u64 size);
