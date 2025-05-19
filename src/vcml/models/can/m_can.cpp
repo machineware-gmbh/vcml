@@ -388,11 +388,6 @@ constexpr size_t TX_BUF_ELEM_HDR_SZ = 8;
 constexpr size_t TX_EFIFO_ELEM_SZ = 8;
 constexpr size_t RX_BUF_ELEM_HDR_SZ = 8;
 
-enum can_as : address_space {
-    CAN_RX_AS = VCML_AS_DEFAULT + 1,
-    CAN_RX_LPBCK_AS = VCML_AS_DEFAULT + 2,
-};
-
 bool m_can::is_cfg_allowed() const {
     return (cccr & CCCR_CCE) && (cccr & CCCR_INIT);
 }
@@ -753,7 +748,7 @@ void m_can::txthread() {
                 log_error("failed to read message %zu data", idx);
 
             if (test & TEST_LBCK) {
-                m_can_lpbck_tx.send(tx);
+                do_receive(tx);
 
                 if (!(cccr & CCCR_MON))
                     can_tx.send(tx);
@@ -832,8 +827,6 @@ m_can::m_can(const sc_module_name& nm, const range& msg_ram):
     m_rx_fifo1_elem_data_sz(0),
     m_txev("txev"),
     m_rxev("rxev"),
-    m_can_lpbck_tx("can_lpbck_tx"),
-    m_can_lpbck_rx("can_lpbck_rx", CAN_RX_LPBCK_AS),
     crel("crel", 0x00, CREL_RESET),
     endn("endn", 0x04, ENDN_RESET),
     dbtp("dbtp", 0x0c, DBTP_RESET),
@@ -886,7 +879,7 @@ m_can::m_can(const sc_module_name& nm, const range& msg_ram):
     in("in"),
     dma("dma"),
     can_tx("can_tx"),
-    can_rx("can_rx", CAN_RX_AS) {
+    can_rx("can_rx") {
     crel.sync_never();
     crel.allow_read_only();
 
@@ -1053,8 +1046,6 @@ m_can::m_can(const sc_module_name& nm, const range& msg_ram):
     txefa.allow_read_write();
     txefa.on_write(&m_can::write_txefa);
 
-    m_can_lpbck_tx.bind(m_can_lpbck_rx);
-
     SC_HAS_PROCESS(m_can);
     SC_THREAD(txthread);
     SC_THREAD(rxthread);
@@ -1069,12 +1060,16 @@ void m_can::reset() {
 }
 
 void m_can::can_receive(const can_target_socket& socket, can_frame& rx) {
-    if ((test & TEST_LBCK) && socket.as == CAN_RX_AS) {
+    if (test & TEST_LBCK) {
         log_debug("dropped rx packet because loop back mode is enabled");
         return;
     }
 
-    can_host::can_receive(socket, rx);
+    do_receive(rx);
+}
+
+void m_can::do_receive(can_frame& rx) {
+    can_host::can_receive(rx);
     m_rxev.notify(SC_ZERO_TIME);
 }
 
