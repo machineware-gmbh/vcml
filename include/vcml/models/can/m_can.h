@@ -37,6 +37,9 @@ private:
     sc_event m_txev;
     sc_event m_rxev;
 
+    can_initiator_socket m_can_lpbck_tx;
+    can_target_socket m_can_lpbck_rx;
+
     bool is_cfg_allowed() const;
 
     size_t get_tx_buf_elems() const;
