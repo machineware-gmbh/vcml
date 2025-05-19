@@ -391,7 +391,7 @@ constexpr size_t RX_BUF_ELEM_HDR_SZ = 8;
 enum can_as : address_space {
     CAN_RX_AS = VCML_AS_DEFAULT + 1,
     CAN_RX_LPBCK_AS = VCML_AS_DEFAULT + 2,
-}
+};
 
 bool m_can::is_cfg_allowed() const {
     return (cccr & CCCR_CCE) && (cccr & CCCR_INIT);
