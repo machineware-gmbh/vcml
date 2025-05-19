@@ -747,7 +747,13 @@ void m_can::txthread() {
             if (failed(dma.read(addr, tx.data, tx.length())))
                 log_error("failed to read message %zu data", idx);
 
-            can_tx.send(tx);
+            if (test & TEST_LBCK) {
+                do_receive(tx);
+
+                if (!(cccr & CCCR_MON))
+                    can_tx.send(tx);
+            } else
+                can_tx.send(tx);
 
             txbar &= ~bit(idx);
             txbto |= bit(idx);
@@ -1054,7 +1060,16 @@ void m_can::reset() {
 }
 
 void m_can::can_receive(const can_target_socket& socket, can_frame& rx) {
-    can_host::can_receive(socket, rx);
+    if (test & TEST_LBCK) {
+        log_debug("dropped rx packet because loop back mode is enabled");
+        return;
+    }
+
+    do_receive(rx);
+}
+
+void m_can::do_receive(can_frame& rx) {
+    can_host::can_receive(rx);
     m_rxev.notify(SC_ZERO_TIME);
 }
 

@@ -86,6 +86,8 @@ private:
     void txthread();
     void rxthread();
 
+    void do_receive(can_frame& rx);
+
 public:
     reg<u32> crel;   // core release register
     reg<u32> endn;   // endian register
