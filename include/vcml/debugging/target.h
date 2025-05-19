@@ -33,14 +33,12 @@ struct cpureg {
     size_t count;
     int prot;
     target* host;
-    property<void>* prop;
+    shared_ptr<property<void>> prop;
 
-    cpureg(const cpureg&) = delete;
-    cpureg(cpureg&& other) noexcept;
+    cpureg(const cpureg&) = default;
     cpureg(): regno(), name(), size(), count(), prot(), host(), prop() {}
     cpureg(u64 no, const string& nm, u64 sz, u64 cnt, int p):
         regno(no), name(nm), size(sz), count(cnt), prot(p), host(), prop() {}
-    ~cpureg();
 
     size_t width() const { return size * 8; }
     size_t total_size() const { return size * count; }
@@ -83,7 +81,7 @@ private:
     atomic<bool> m_running;
 
     endianess m_endian;
-    unordered_map<size_t, cpureg> m_cpuregs;
+    std::map<size_t, cpureg> m_cpuregs;
     symtab m_symbols;
 
     vector<subscriber*> m_steppers;

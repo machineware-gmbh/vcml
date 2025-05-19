@@ -14,22 +14,6 @@
 namespace vcml {
 namespace debugging {
 
-cpureg::cpureg(cpureg&& other) noexcept:
-    regno(other.regno),
-    name(std::move(other.name)),
-    size(other.size),
-    count(other.count),
-    prot(other.count),
-    host(other.host),
-    prop(other.prop) {
-    other.prop = nullptr;
-}
-
-cpureg::~cpureg() {
-    if (prop)
-        delete prop;
-}
-
 bool cpureg::read(void* buf, size_t len) const {
     VCML_ERROR_ON(!host, "cpureg %s has no target", name.c_str());
     if (len < total_size() || !is_readable())
@@ -266,7 +250,8 @@ void target::define_cpureg(size_t regno, const string& name, size_t size,
     newreg.prot = prot;
     newreg.name = name;
     newreg.host = this;
-    newreg.prop = new property<void>(&m_host, name.c_str(), size, count, def);
+    newreg.prop = std::make_shared<property<void>>(&m_host, name.c_str(), size,
+                                                   count, def);
 }
 
 void target::define_cpureg_r(size_t regno, const string& name, size_t size,
@@ -422,7 +407,7 @@ vector<cpureg> target::cpuregs() const {
     vector<cpureg> regs;
     regs.reserve(m_cpuregs.size());
     for (auto& [id, reg] : m_cpuregs)
-        regs.emplace_back(reg.regno, reg.name, reg.size, reg.count, reg.prot);
+        regs.push_back(reg);
     return regs;
 }
 
