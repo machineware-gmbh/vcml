@@ -50,11 +50,6 @@ private:
 
     bool cmd_dump(const vector<string>& args, ostream& os);
     bool cmd_read(const vector<string>& args, ostream& os);
-    bool cmd_symbols(const vector<string>& args, ostream& os);
-    bool cmd_lsym(const vector<string>& args, ostream& os);
-    bool cmd_disas(const vector<string>& args, ostream& os);
-    bool cmd_v2p(const vector<string>& args, ostream& os);
-    bool cmd_stack(const vector<string>& args, ostream& os);
     bool cmd_gdb(const vector<string>& args, ostream& os);
 
     virtual bool read_cpureg_dbg(const debugging::cpureg& reg, void* buf,

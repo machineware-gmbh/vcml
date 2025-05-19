@@ -53,19 +53,204 @@ void target::define_cpureg(size_t regno, const string& name, size_t size,
     newreg.host = this;
 }
 
-static string find_name() {
-    module* host = hierarchy_search<module>();
-    VCML_ERROR_ON(!host, "debug target declared outside module");
-    return host->name();
+bool target::cmd_cpustatus(const vector<string>& args, ostream& os) {
+    os << "Registers:" << mkstr("\n  PC 0x%016llx", program_counter())
+       << mkstr("\n  LR 0x%016llx", link_register())
+       << mkstr("\n  SP 0x%016llx", stack_pointer())
+       << mkstr("\n  FP 0x%016llx", frame_pointer());
+
+    return true;
 }
 
-target::target(): target(find_name()) {
-    // nothing to do
+bool target::cmd_loadsyms(const vector<string>& args, ostream& os) {
+    if (!mwr::file_exists(args[0])) {
+        os << "File not found: " << args[0];
+        return false;
+    }
+
+    try {
+        u64 n = load_symbols_from_elf(args[0]);
+        os << "Found " << n << " symbols in file '" << args[0] << "'";
+        return true;
+    } catch (std::exception& e) {
+        os << e.what();
+        return false;
+    }
 }
 
-target::target(const string& name):
+bool target::cmd_lsym(const vector<string>& args, ostream& os) {
+    const debugging::symtab& syms = target::symbols();
+    if (syms.empty()) {
+        os << "No symbols loaded";
+        return true;
+    }
+
+    os << "Listing symbols:";
+    for (const auto& obj : syms.objects())
+        os << mkstr("\nO 0x%016llx %s", obj.virt_addr(), obj.name());
+    for (const auto& func : syms.functions())
+        os << mkstr("\nF 0x%016llx %s", func.virt_addr(), func.name());
+
+    return true;
+}
+
+bool target::cmd_disas(const vector<string>& args, ostream& os) {
+    u64 vstart = program_counter();
+    if (args.size() > 0)
+        vstart = strtoull(args[0].c_str(), NULL, 0);
+
+    u64 vend = vstart + 40; // disassemble 5/10 instructions by default
+    if (args.size() > 1)
+        vend = strtoull(args[1].c_str(), NULL, 0);
+
+    if (vstart > vend) {
+        os << "Invalid range specified";
+        return false;
+    }
+
+    vector<debugging::disassembly> disas;
+    if (!disassemble({ vstart, vend }, disas)) {
+        os << "Disassembler reported error";
+        return false;
+    }
+
+    os << "Disassembly of ";
+    os << mkstr(vstart > ~0u ? "0x%016llx.." : "0x%08llx..", vstart);
+    os << mkstr(vend > ~0u ? "0x%016llx" : "0x%08llx", vend);
+
+    u64 pgsz;
+    bool virt = page_size(pgsz);
+    if (virt)
+        os << " (virtual)";
+
+    u64 maxsz = 0;
+    for (const auto& insn : disas)
+        maxsz = max(maxsz, insn.size);
+
+    for (const auto& insn : disas) {
+        os << "\n" << (insn.addr == program_counter() ? " > " : "   ");
+        if (insn.sym != nullptr) {
+            u64 offset = insn.addr - insn.sym->virt_addr();
+            if (offset <= insn.sym->size())
+                os << mkstr("[%s+0x%04llx] ", insn.sym->name(), offset);
+        }
+
+        os << mkstr(insn.addr > ~0u ? "%016llx" : "%08llx", insn.addr);
+
+        u64 phys = insn.addr;
+        if (virt) {
+            if (virt_to_phys(insn.addr, phys))
+                os << mkstr(phys > ~0u ? " %016llx" : " %08llx", phys);
+            else
+                os << "????????????????";
+        }
+
+        os << ": [";
+        for (u64 i = 0; i < insn.size; i++) {
+            os << mkstr("%02hhx", insn.insn[i]);
+            if (i < insn.size - 1)
+                os << " ";
+        }
+        os << "]";
+
+        for (u64 i = insn.size; i < maxsz; i++)
+            os << "   ";
+
+        os << " " << escape(insn.code, ",");
+    }
+
+    return true;
+}
+
+bool target::cmd_v2p(const vector<string>& args, ostream& os) {
+    u64 phys = -1;
+    u64 virt = strtoull(args[0].c_str(), NULL, 0);
+    bool ret = virt_to_phys(virt, phys);
+    if (!ret) {
+        os << mkstr("cannot translate virtual address 0x%llx", virt);
+        return false;
+    } else {
+        os << mkstr("0x%llx -> 0x%llx", virt, phys);
+        return true;
+    }
+}
+
+bool target::cmd_stack(const vector<string>& args, ostream& os) {
+    stream_guard guard(os);
+    vector<debugging::stackframe> frames;
+    stacktrace(frames);
+
+    for (const auto& frame : frames) {
+        os << mkstr("[0x%016llx]", frame.program_counter);
+        if (frame.sym != nullptr) {
+            os << mkstr(" %s +0x%llx", frame.sym->name(),
+                        frame.program_counter - frame.sym->virt_addr());
+            if (frame.sym->size() > 0)
+                os << mkstr("/0x%llx", frame.sym->size());
+        }
+
+        os << "\n";
+    }
+
+    return true;
+}
+
+bool target::cmd_vread(const vector<string>& args, ostream& os) {
+    u64 addr = strtoull(args[0].c_str(), NULL, 0);
+    u64 size = 1;
+    if (args.size() > 1)
+        size = strtoull(args[1].c_str(), NULL, 0);
+
+    vector<u8> buffer(size);
+
+    if (!read_vmem_dbg(addr, buffer.data(), size)) {
+        os << mkstr("error reading virtual address 0x%llx", addr);
+        return false;
+    }
+
+    u64 offset = 0;
+    while (offset < buffer.size()) {
+        os << mkstr("\n0x%llx:", addr + offset);
+        for (int i = 0; i < 8; i++, offset++) {
+            if (offset < buffer.size())
+                os << mkstr(" %02hhx", buffer[offset]);
+        }
+    }
+
+    return true;
+}
+
+static void append_bytes(vector<u8>& buffer, const string& str) {
+    if (str.empty())
+        return;
+
+    buffer.reserve(str.length() / 2 + 1);
+    for (int i = str.length() - 1; i >= 0; i -= 2) {
+        u8 data = from_hex_ascii(str[i]);
+        if (i > 0)
+            data |= from_hex_ascii(str[i - 1]) << 4;
+        buffer.push_back(data);
+    }
+}
+
+bool target::cmd_vwrite(const vector<string>& args, ostream& os) {
+    u64 addr = strtoull(args[0].c_str(), NULL, 0);
+    vector<u8> buffer;
+    for (size_t i = 1; i < args.size(); i++)
+        append_bytes(buffer, args[i]);
+
+    if (!write_vmem_dbg(addr, buffer.data(), buffer.size())) {
+        os << mkstr("error writing virtual address 0x%llx", addr);
+        return false;
+    }
+
+    os << mkstr("successfully wrote %zu bytes to 0x%llx", buffer.size(), addr);
+    return true;
+}
+
+target::target(module& host):
     m_mtx(),
-    m_name(name),
+    m_name(host.name()),
     m_suspendable(true),
     m_running(true),
     m_endian(ENDIAN_UNKNOWN),
@@ -78,6 +263,23 @@ target::target(const string& name):
     if (stl_contains(s_targets, m_name))
         VCML_ERROR("debug target '%s' already exists", m_name.c_str());
     s_targets[m_name] = this;
+
+    host.register_command("cpustatus", 0, this, &target::cmd_cpustatus,
+                          "prints cpu status registers");
+    host.register_command("loadsyms", 1, this, &target::cmd_loadsyms,
+                          "load a symbol file for use in disassembly");
+    host.register_command("lsym", 0, this, &target::cmd_lsym,
+                          "show a list of all available symbols");
+    host.register_command("disas", 0, this, &target::cmd_disas,
+                          "disassemble instructions from memory");
+    host.register_command("v2p", 1, this, &target::cmd_v2p,
+                          "translate a virtual address to physical");
+    host.register_command("stack", 0, this, &target::cmd_stack,
+                          "generates a stack trace");
+    host.register_command("vread", 1, this, &target::cmd_vread,
+                          "read virtual memory: vread <addr> <count>");
+    host.register_command("vwrite", 2, this, &target::cmd_vwrite,
+                          "write virtual memory: vwrite <addr> <bytes>");
 }
 
 target::~target() {

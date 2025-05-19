@@ -13,6 +13,7 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/range.h"
+#include "vcml/core/module.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/logging/logger.h"
@@ -89,6 +90,18 @@ private:
     vector<breakpoint*> m_breakpoints;
     vector<watchpoint*> m_watchpoints;
 
+    target(const target&) = delete;
+    target(target&&) = delete;
+
+    bool cmd_cpustatus(const vector<string>& args, ostream& os);
+    bool cmd_loadsyms(const vector<string>& args, ostream& os);
+    bool cmd_lsym(const vector<string>& args, ostream& os);
+    bool cmd_disas(const vector<string>& args, ostream& os);
+    bool cmd_v2p(const vector<string>& args, ostream& os);
+    bool cmd_stack(const vector<string>& args, ostream& os);
+    bool cmd_vread(const vector<string>& args, ostream& os);
+    bool cmd_vwrite(const vector<string>& args, ostream& os);
+
     static unordered_map<string, target*> s_targets;
 
 protected:
@@ -134,8 +147,7 @@ public:
 
     const char* target_name() const { return m_name.c_str(); }
 
-    target();
-    target(const string& name);
+    target(module& host);
     virtual ~target();
 
     vector<cpureg> cpuregs() const;

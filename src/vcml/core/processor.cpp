@@ -82,139 +82,6 @@ bool processor::cmd_read(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool processor::cmd_symbols(const vector<string>& args, ostream& os) {
-    if (!mwr::file_exists(args[0])) {
-        os << "File not found: " << args[0];
-        return false;
-    }
-
-    try {
-        u64 n = load_symbols_from_elf(args[0]);
-        os << "Found " << n << " symbols in file '" << args[0] << "'";
-        return true;
-    } catch (std::exception& e) {
-        os << e.what();
-        return false;
-    }
-}
-
-bool processor::cmd_lsym(const vector<string>& args, ostream& os) {
-    const debugging::symtab& syms = target::symbols();
-    if (syms.empty()) {
-        os << "No symbols loaded";
-        return true;
-    }
-
-    os << "Listing symbols:";
-    for (const auto& obj : syms.objects())
-        os << "\nO " << HEX(obj.virt_addr(), 16) << " " << obj.name();
-    for (const auto& func : syms.functions())
-        os << "\nF " << HEX(func.virt_addr(), 16) << " " << func.name();
-
-    return true;
-}
-
-bool processor::cmd_disas(const vector<string>& args, ostream& os) {
-    u64 vstart = program_counter();
-    if (args.size() > 0)
-        vstart = strtoull(args[0].c_str(), NULL, 0);
-
-    u64 vend = vstart + 40; // disassemble 5/10 instructions by default
-    if (args.size() > 1)
-        vend = strtoull(args[1].c_str(), NULL, 0);
-
-    if (vstart > vend) {
-        os << "Invalid range specified";
-        return false;
-    }
-
-    vector<debugging::disassembly> disas;
-    if (!disassemble({ vstart, vend }, disas)) {
-        os << "Disassembler reported error";
-        return false;
-    }
-
-    os << "Disassembly of " << HEX(vstart, vstart > ~0u ? 16 : 8) << ".."
-       << HEX(vend, vend > ~0u ? 16 : 8);
-
-    u64 pgsz;
-    bool virt = page_size(pgsz);
-    if (virt)
-        os << " (virtual)";
-
-    u64 maxsz = 0;
-    for (const auto& insn : disas)
-        maxsz = max(maxsz, insn.size);
-
-    for (const auto& insn : disas) {
-        os << "\n" << (insn.addr == program_counter() ? " > " : "   ");
-        if (insn.sym != nullptr) {
-            u64 offset = insn.addr - insn.sym->virt_addr();
-            if (offset <= insn.sym->size()) {
-                os << "[" << insn.sym->name() << "+" << HEX(offset, 4) << "] ";
-            }
-        }
-
-        os << HEX(insn.addr, insn.addr > ~0u ? 16 : 8);
-
-        u64 phys = insn.addr;
-        if (virt) {
-            if (virt_to_phys(insn.addr, phys))
-                os << " " << HEX(phys, phys > ~0u ? 16 : 8);
-            else
-                os << "????????????????";
-        }
-
-        os << ": [";
-        for (u64 i = 0; i < insn.size; i++) {
-            os << HEX((int)insn.insn[i], 2);
-            if (i < insn.size - 1)
-                os << " ";
-        }
-        os << "]";
-
-        for (u64 i = insn.size; i < maxsz; i++)
-            os << "   ";
-
-        os << " " << escape(insn.code, ",");
-    }
-
-    return true;
-}
-
-bool processor::cmd_v2p(const vector<string>& args, ostream& os) {
-    u64 phys = -1;
-    u64 virt = strtoull(args[0].c_str(), NULL, 0);
-    bool ret = virt_to_phys(virt, phys);
-    if (!ret) {
-        os << "cannot translate virtual address 0x" << HEX(virt, 16);
-        return false;
-    } else {
-        os << "0x" << HEX(virt, 16) << " -> 0x" << HEX(phys, 16);
-        return true;
-    }
-}
-
-bool processor::cmd_stack(const vector<string>& args, ostream& os) {
-    stream_guard guard(os);
-    vector<debugging::stackframe> frames;
-    stacktrace(frames);
-
-    for (const auto& frame : frames) {
-        os << "[" << HEX(frame.program_counter, 16) << "]";
-        if (frame.sym != nullptr) {
-            os << " " << frame.sym->name() << " +0x" << std::hex
-               << frame.program_counter - frame.sym->virt_addr();
-            if (frame.sym->size() > 0)
-                os << "/0x" << std::hex << frame.sym->size();
-        }
-
-        os << "\n";
-    }
-
-    return true;
-}
-
 bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     if (!mwr::file_exists(gdb_term)) {
         os << "gdbterm not found at " << gdb_term.str() << std::endl;
@@ -373,7 +240,7 @@ bool processor::processor_thread_sync() {
 
 processor::processor(const sc_module_name& nm, const string& cpuarch):
     component(nm),
-    target(),
+    target(*(module*)this),
     m_run_time(0),
     m_cycle_mtx(),
     m_cycle_count(0),
@@ -417,16 +284,6 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
                      "dump internal state of the processor");
     register_command("read", 3, &processor::cmd_read,
                      "read memory from INSN or DATA ports");
-    register_command("symbols", 1, &processor::cmd_symbols,
-                     "load a symbol file for use in disassembly");
-    register_command("lsym", 0, &processor::cmd_lsym,
-                     "show a list of all available symbols");
-    register_command("disas", 0, &processor::cmd_disas,
-                     "disassemble instructions from memory");
-    register_command("v2p", 1, &processor::cmd_v2p,
-                     "translate a given virtual address to physical");
-    register_command("stack", 0, &processor::cmd_stack,
-                     "generates a stack trace for the current function");
     register_command("gdb", 0, &processor::cmd_gdb,
                      "opens a new gdb debug session");
 }
