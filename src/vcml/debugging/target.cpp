@@ -237,10 +237,13 @@ void target::define_cpureg(size_t regno, const string& name, size_t size,
         VCML_ERROR("regno %zu already used by %s", regno, other->name.c_str());
     }
 
-    u64 def = 0;
+    vector<u8> buffer;
+    u8* def = nullptr;
     if (is_read_allowed(prot)) {
-        if (!read_reg_dbg(regno, &def, min(size, sizeof(def))))
+        buffer.resize(size * count);
+        if (!read_reg_dbg(regno, buffer.data(), buffer.size()))
             VCML_ERROR("failed to initialize cpureg %s", name.c_str());
+        def = buffer.data();
     }
 
     cpureg& newreg = m_cpuregs[regno];

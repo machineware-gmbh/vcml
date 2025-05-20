@@ -495,7 +495,7 @@ class property<void, N> : public property_base
 {
 private:
     u8* m_data;
-    u64 m_default;
+    u8* m_default;
     size_t m_size;
     size_t m_count;
     bool m_inited;
@@ -503,9 +503,10 @@ private:
     mutable string m_str;
 
 public:
-    property(const char* nm, size_t size, size_t count = N, u64 defval = 0);
+    property(const char* nm, size_t size, size_t count = N,
+             u8* defvals = nullptr);
     property(sc_object* parent, const char* nm, size_t size, size_t count = N,
-             u64 defval = 0);
+             u8* defvals = nullptr);
     virtual ~property();
     VCML_KIND(property);
 
@@ -530,8 +531,8 @@ public:
     u64 get(size_t idx = 0) const;
     void set(u64 val, size_t idx = 0);
 
-    u64 get_default() const;
-    void set_default(u64 defval);
+    u8* get_default() const;
+    void set_default(u8* defvals);
 
     void inherit_default();
 
@@ -540,32 +541,38 @@ public:
 
 template <size_t N>
 inline property<void, N>::property(const char* nm, size_t size, size_t count,
-                                   u64 defval):
+                                   u8* defvals):
     property_base(nm),
     m_data(),
-    m_default(defval),
+    m_default(),
     m_size(size),
     m_count(count),
     m_inited(),
     m_str() {
+    if (defvals)
+        set_default(defvals);
     property<void, N>::reset();
 }
 
 template <size_t N>
 inline property<void, N>::property(sc_object* parent, const char* nm,
-                                   size_t size, size_t count, u64 defval):
+                                   size_t size, size_t count, u8* defvals):
     property_base(parent, nm),
     m_data(),
-    m_default(defval),
+    m_default(),
     m_size(size),
     m_count(count),
     m_inited(),
     m_str() {
+    if (defvals)
+        set_default(defvals);
     property<void, N>::reset();
 }
 
 template <size_t N>
 inline property<void, N>::~property() {
+    if (m_default)
+        delete[] m_default;
     if (m_data)
         delete[] m_data;
 }
@@ -657,17 +664,27 @@ inline void property<void, N>::set(u64 val, size_t idx) {
 }
 
 template <size_t N>
-inline u64 property<void, N>::get_default() const {
+inline u8* property<void, N>::get_default() const {
     return m_default;
 }
 
 template <size_t N>
-inline void property<void, N>::set_default(u64 defval) {
-    m_default = defval;
-    if (!m_inited) {
-        u8* ptr = m_data;
-        for (size_t i = 0; i < m_count; i++, ptr += m_size)
-            memcpy(ptr, &m_default, m_size);
+inline void property<void, N>::set_default(u8* defvals) {
+    if (defvals) {
+        if (!m_default)
+            m_default = new u8[m_count * m_size];
+        memcpy(m_default, defvals, m_count * m_size);
+    } else {
+        if (m_default)
+            delete[] m_default;
+        m_default = nullptr;
+    }
+
+    if (m_data && !m_inited) {
+        if (m_default)
+            memcpy(m_data, m_default, m_count * m_size);
+        else
+            memset(m_data, 0, m_count * m_size);
     }
 }
 
@@ -676,16 +693,19 @@ inline void property<void, N>::inherit_default() {
     if (m_inited)
         return;
 
-    const property<void, N>* prop = nullptr;
+    const property<void, N>* p = nullptr;
     const sc_object* obj = parent()->get_parent_object();
-    for (; obj && !prop; obj = obj->get_parent_object()) {
+    for (; obj && !p; obj = obj->get_parent_object()) {
         const auto* attr = obj->attr_cltn()[name()];
         if (attr != nullptr)
-            prop = dynamic_cast<const property<void, N>*>(attr);
+            p = dynamic_cast<const property<void, N>*>(attr);
     }
 
-    if (prop != nullptr)
-        set_default(prop->get());
+    if (p != nullptr) {
+        VCML_ERROR_ON(p->size != m_size, "parent property size mismatch");
+        VCML_ERROR_ON(p->count != m_count, "parent property count mismatch");
+        set_default(p->raw_ptr());
+    }
 }
 
 template <typename T>
