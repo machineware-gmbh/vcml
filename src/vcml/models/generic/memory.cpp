@@ -20,24 +20,19 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
     if ((end <= start) || (end >= size))
         return false;
 
-#define HEX(x, w) \
-    std::setfill('0') << std::setw(w) << std::hex << x << std::dec
-    os << "showing range 0x" << HEX(start, 8) << " .. 0x" << HEX(end, 8);
-
     u64 addr = start & ~0xf;
     while (addr < end) {
         if ((addr % 16) == 0)
-            os << "\n" << HEX(addr, 8) << ":";
+            os << "\n" << mkstr("%0*llx", 8, addr) << ":";
         if ((addr % 4) == 0)
             os << " ";
         if (addr >= start)
-            os << HEX((unsigned int)m_memory[addr], 2) << " ";
+            os << mkstr("%0*x", 2, (unsigned int)m_memory[addr]) << " ";
         else
             os << "   ";
         addr++;
     }
 
-#undef HEX
     return true;
 }
 

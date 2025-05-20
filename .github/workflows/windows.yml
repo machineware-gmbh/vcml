@@ -24,7 +24,7 @@ jobs:
         submodules: 'recursive'
 
     - name: Configure
-      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON
+      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON -DVCML_UNITY_BUILD=OFF
 
     - name: Build
       run: cmake --build BUILD --config ${{matrix.cfg}} -- /bl

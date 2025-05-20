@@ -68,7 +68,7 @@ static const device_desc DRIVE_DESC{
     },
 };
 
-static const u8 USB3_ENDPOINT_COMPANION_DT[] = {
+static const u8 USB3_ENDPOINT_COMPANION_DT_DRV[] = {
     0x06, // length
     USB_DT_ENDPOINT_COMPANION,
     0x0f, // max burst
@@ -300,7 +300,7 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro, bool wi):
         m_desc.max_packet_size0 = 9;
         for (auto& epdesc : m_desc.configs[0].interfaces[0].endpoints) {
             epdesc.max_packet_size = 1024;
-            for (auto ch : USB3_ENDPOINT_COMPANION_DT)
+            for (auto ch : USB3_ENDPOINT_COMPANION_DT_DRV)
                 epdesc.extra.push_back(ch);
         }
     }
