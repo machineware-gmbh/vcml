@@ -32,12 +32,6 @@ static void update_window_size(int sig) {
 namespace vcml {
 namespace serial {
 
-enum keys : u8 {
-    CTRL_A = 0x1,
-    CTRL_C = 0x3,
-    CTRL_X = 0x18,
-};
-
 void backend_tui::terminate() {
     if (m_exit_requested || !sim_running()) {
         log_info("forced exit");

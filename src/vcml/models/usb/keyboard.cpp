@@ -70,7 +70,7 @@ static const device_desc KEYBOARD_DESC{
     },
 };
 
-static const u8 USB3_ENDPOINT_COMPANION_DT[] = {
+static const u8 USB3_ENDPOINT_COMPANION_DT_KBD[] = {
     0x06, // length
     USB_DT_ENDPOINT_COMPANION,
     0x00, // max burst
@@ -238,7 +238,7 @@ keyboard::keyboard(const sc_module_name& nm):
         m_desc.bcd_usb = 0x300;
         m_desc.max_packet_size0 = 9;
         auto& extra = m_desc.configs[0].interfaces[0].endpoints[0].extra;
-        for (auto ch : USB3_ENDPOINT_COMPANION_DT)
+        for (auto ch : USB3_ENDPOINT_COMPANION_DT_KBD)
             extra.push_back(ch);
     }
 }

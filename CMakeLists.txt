@@ -8,7 +8,7 @@
  #                                                                            #
  ##############################################################################
 
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.16)
 project(vcml VERSION 2025.05.14 LANGUAGES C CXX)
 
 option(VCML_USE_SDL2 "Use SDL2 for rendering" ON)
@@ -20,6 +20,7 @@ option(VCML_USE_USB "Use LibUSB for host USB devices" ON)
 option(VCML_BUILD_TESTS "Build unit tests" OFF)
 option(VCML_BUILD_UTILS "Build utility programs" ON)
 option(VCML_COVERAGE "Enable generation of code coverage data" OFF)
+option(VCML_UNITY_BUILD "Enable unity build" OFF)
 set(VCML_LINTER "" CACHE STRING "Code linter to use")
 
 include(cmake/common.cmake)
@@ -203,6 +204,14 @@ if(MSVC)
     target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_win32.cpp)
 else()
     target_sources(vcml PRIVATE ${src}/vcml/protocols/tlm_memory_posix.cpp)
+endif()
+
+if(VCML_UNITY_BUILD)
+    message(STATUS "Enable VCML unity build")
+    set_target_properties(vcml PROPERTIES UNITY_BUILD ON)
+    set_source_files_properties(${src}/vcml/core/setup.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+else()
+    message(STATUS "Disable VCML unity build")
 endif()
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")

@@ -89,10 +89,6 @@ size_t vq_message::copy_in(void* ptr, size_t size, size_t offset) {
     return copied;
 }
 
-#define HEX(x)                                                                \
-    "0x" << std::setfill('0') << std::setw(x > ~0u ? 16 : 8) << std::hex << x \
-         << std::dec << std::setfill(' ')
-
 ostream& operator<<(ostream& os, const vq_message& msg) {
     stream_guard guard(os);
     os << "VIRTMSG@" << msg.index << " [";
@@ -112,13 +108,18 @@ ostream& operator<<(ostream& os, const vq_message& msg) {
     os << "] (" << virtio_status_str(msg.status) << ")";
 
     for (auto in : msg.in) {
-        os << "\n  IN [" << HEX(in.addr) << ".." << HEX(in.addr + in.size - 1)
-           << "] (" << in.size << " bytes)";
+        u64 end = in.addr + in.size - 1;
+        os << "\n  IN [" << mkstr("0x%0*llx", in.addr > ~0u ? 16 : 8, in.addr)
+           << ".." << mkstr("0x%0*llx", end > ~0u ? 16 : 8, end) << "] ("
+           << in.size << " bytes)";
     }
 
     for (auto out : msg.out) {
-        os << "\n  OUT [" << HEX(out.addr) << ".."
-           << HEX(out.addr + out.size - 1) << "] (" << out.size << " bytes)";
+        u64 end = out.addr + out.size - 1;
+        os << "\n  OUT ["
+           << mkstr("0x%0*llx", out.addr > ~0u ? 16 : 8, out.addr) << ".."
+           << mkstr("0x%0*llx", end > ~0u ? 16 : 8, end) << "] (" << out.size
+           << " bytes)";
     }
 
     return os;
@@ -785,11 +786,12 @@ virtio_target_stub::virtio_target_stub(const char* nm):
     virtio_in.bind(*this);
 }
 
-static virtio_base_initiator_socket* get_initiator_socket(sc_object* port) {
+static virtio_base_initiator_socket* virtio_get_initiator_socket(
+    sc_object* port) {
     return dynamic_cast<virtio_base_initiator_socket*>(port);
 }
 
-static virtio_base_target_socket* get_target_socket(sc_object* port) {
+static virtio_base_target_socket* virtio_get_target_socket(sc_object* port) {
     return dynamic_cast<virtio_base_target_socket*>(port);
 }
 
@@ -797,7 +799,7 @@ virtio_base_initiator_socket& virtio_initiator(const sc_object& parent,
                                                const string& port) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_initiator_socket(child);
+    auto* sock = virtio_get_initiator_socket(child);
     VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
     return *sock;
 }
@@ -806,7 +808,7 @@ virtio_base_target_socket& virtio_target(const sc_object& parent,
                                          const string& port) {
     sc_object* child = find_child(parent, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = get_target_socket(child);
+    auto* sock = virtio_get_target_socket(child);
     VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
     return *sock;
 }
@@ -815,8 +817,8 @@ void virtio_stub(const sc_object& obj, const string& port) {
     sc_object* child = find_child(obj, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
 
-    auto* ini = get_initiator_socket(child);
-    auto* tgt = get_target_socket(child);
+    auto* ini = virtio_get_initiator_socket(child);
+    auto* tgt = virtio_get_target_socket(child);
 
     if (!ini && !tgt)
         VCML_ERROR("%s is not a valid virtio socket", child->name());
@@ -835,10 +837,10 @@ void virtio_bind(const sc_object& obj1, const string& port1,
     VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
     VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
 
-    auto* i1 = get_initiator_socket(p1);
-    auto* i2 = get_initiator_socket(p2);
-    auto* t1 = get_target_socket(p1);
-    auto* t2 = get_target_socket(p2);
+    auto* i1 = virtio_get_initiator_socket(p1);
+    auto* i2 = virtio_get_initiator_socket(p2);
+    auto* t1 = virtio_get_target_socket(p1);
+    auto* t2 = virtio_get_target_socket(p2);
 
     VCML_ERROR_ON(!i1 && !t1, "%s is not a valid virtio port", p1->name());
     VCML_ERROR_ON(!i2 && !t2, "%s is not a valid virtio port", p2->name());

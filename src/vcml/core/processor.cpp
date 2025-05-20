@@ -10,18 +10,14 @@
 
 #include "vcml/core/processor.h"
 
-#define HEX(x, w)                                                  \
-    std::setfill('0') << std::setw(w) << std::hex << x << std::dec \
-                      << std::setfill(' ')
-
 namespace vcml {
 
 bool processor::cmd_dump(const vector<string>& args, ostream& os) {
     os << "Registers:" << std::endl
-       << "  PC 0x" << HEX(program_counter(), 16) << std::endl
-       << "  LR 0x" << HEX(link_register(), 16) << std::endl
-       << "  SP 0x" << HEX(stack_pointer(), 16) << std::endl
-       << "  ID 0x" << HEX(core_id(), 16) << std::endl;
+       << "  PC 0x" << mkstr("%0*llx", 16, program_counter()) << std::endl
+       << "  LR 0x" << mkstr("%0*llx", 16, link_register()) << std::endl
+       << "  SP 0x" << mkstr("%0*llx", 16, stack_pointer()) << std::endl
+       << "  ID 0x" << mkstr("%0*llx", 16, core_id()) << std::endl;
 
     os << "Interrupts:" << std::endl;
     for (auto it : irq) {
@@ -64,16 +60,17 @@ bool processor::cmd_read(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    os << "reading range 0x" << HEX(start, 16) << " .. 0x" << HEX(end, 16);
+    os << "reading range 0x" << mkstr("%0*llx\n", 16, start) << " .. 0x"
+       << mkstr("%0*llx", 16, end);
 
     u64 addr = start & ~0xf;
     while (addr < end) {
         if ((addr % 16) == 0)
-            os << "\n" << HEX(addr, 16) << ":";
+            os << "\n" << mkstr("%0*llx", 16, addr) << ":";
         if ((addr % 4) == 0)
             os << " ";
         if (addr >= start)
-            os << HEX((unsigned int)data[addr - start], 2);
+            os << mkstr("%0*x", 2, (unsigned int)data[addr - start]);
         else
             os << "  ";
         addr++;
