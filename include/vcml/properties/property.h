@@ -702,8 +702,8 @@ inline void property<void, N>::inherit_default() {
     }
 
     if (p != nullptr) {
-        VCML_ERROR_ON(p->size != m_size, "parent property size mismatch");
-        VCML_ERROR_ON(p->count != m_count, "parent property count mismatch");
+        VCML_ERROR_ON(p->size() != m_size, "parent property size mismatch");
+        VCML_ERROR_ON(p->count() != m_count, "parent property count mismatch");
         set_default(p->raw_ptr());
     }
 }
