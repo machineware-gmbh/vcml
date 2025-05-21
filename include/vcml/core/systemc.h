@@ -409,6 +409,14 @@ string call_origin();
 bool is_sysc_thread();
 void set_sysc_thread(thread::id id = std::this_thread::get_id());
 
+struct per_scthread_id {
+    typedef sc_process_b* id_t;
+    id_t operator()() const { return current_process(); }
+};
+
+template <typename T>
+using per_scthread = per_thread<T, per_scthread_id>;
+
 } // namespace vcml
 
 namespace sc_core {

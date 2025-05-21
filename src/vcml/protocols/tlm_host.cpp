@@ -80,7 +80,6 @@ vector<tlm_target_socket*> tlm_host::find_tlm_target_sockets(
 }
 
 tlm_host::tlm_host(bool allow_dmi, unsigned int bus_width):
-    m_proc_mtx(),
     m_processes(),
     m_initiator_sockets(),
     m_target_sockets(),
@@ -88,13 +87,7 @@ tlm_host::tlm_host(bool allow_dmi, unsigned int bus_width):
 }
 
 sc_time& tlm_host::local_time(sc_process_b* proc) {
-    m_proc_mtx.lock();
-
-    if (!stl_contains(m_processes, proc))
-        m_processes[proc].time = SC_ZERO_TIME;
-
     sc_time& local = m_processes[proc].time;
-    m_proc_mtx.unlock();
 
     if (proc)
         update_local_time(local, proc);

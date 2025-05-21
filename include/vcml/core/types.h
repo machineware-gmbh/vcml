@@ -231,6 +231,8 @@ using mwr::set_bit;
 
 using mwr::log_level;
 
+using mwr::per_thread;
+
 VCML_TYPEINFO(log_level);
 
 using mwr::LOG_DEBUG;

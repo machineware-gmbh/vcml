@@ -298,8 +298,8 @@ void tlm_target_socket::b_transport(tlm_generic_payload& tx, sc_time& dt) {
     if (m_free_ev)
         m_free_ev->notify();
 
-    m_payload = nullptr;
-    m_sideband = SBI_NONE;
+    m_payload.clear();
+    m_sideband.clear();
 
     trace_bw(tx, dt);
 }
@@ -310,8 +310,8 @@ unsigned int tlm_target_socket::transport_dbg(tlm_generic_payload& tx) {
 
     unsigned int n = m_host->transport_dbg(*this, tx);
 
-    m_payload = nullptr;
-    m_sideband = SBI_NONE;
+    m_payload.clear();
+    m_sideband.clear();
 
     return n;
 }
@@ -343,8 +343,8 @@ tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     m_host(hierarchy_search<tlm_host>()),
     m_parent(hierarchy_search<module>()),
     m_adapter(nullptr),
-    m_payload(nullptr),
-    m_sideband(SBI_NONE),
+    m_payload(),
+    m_sideband(),
     trace_all(this, "trace", false),
     trace_errors(this, "trace_errors", false),
     allow_dmi(this, "allow_dmi", true),

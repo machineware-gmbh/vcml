@@ -259,8 +259,8 @@ private:
     module* m_parent;
     module* m_adapter;
 
-    tlm_generic_payload* m_payload;
-    tlm_sbi m_sideband;
+    per_thread<tlm_generic_payload*> m_payload;
+    per_thread<tlm_sbi> m_sideband;
 
     void wait_free();
 
@@ -422,30 +422,30 @@ inline tlm::tlm_target_socket<32>& tlm_target_socket::adapt() {
 }
 
 inline bool tlm_target_socket::in_transaction() const {
-    return m_payload != nullptr;
+    return m_payload.has_value();
 }
 
 inline bool tlm_target_socket::in_debug_transaction() const {
-    return m_payload ? m_sideband.is_debug : false;
+    return m_payload ? m_sideband->is_debug : false;
 }
 
 inline const tlm_generic_payload& tlm_target_socket::current_transaction()
     const {
     VCML_ERROR_ON(!m_payload, "socket not currently servicing a transaction");
-    return *m_payload;
+    return **m_payload;
 }
 
 inline const tlm_sbi& tlm_target_socket::current_sideband() const {
     VCML_ERROR_ON(!m_payload, "socket not currently servicing a transaction");
-    return m_sideband;
+    return *m_sideband;
 }
 
 inline size_t tlm_target_socket::current_transaction_size() const {
-    return m_payload ? m_payload->get_data_length() : 0;
+    return m_payload ? (*m_payload)->get_data_length() : 0;
 }
 
 inline range tlm_target_socket::current_transaction_address() const {
-    return m_payload ? range(*m_payload) : range();
+    return m_payload ? range(**m_payload) : range();
 }
 
 template <size_t N = SIZE_MAX>
