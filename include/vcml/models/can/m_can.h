@@ -81,6 +81,7 @@ private:
     u32 read_psr();
 
     void raise_irq(u32 val);
+    void update_irq();
     void add_txevent(const u32 tx_buf_elem_hdr[2]);
 
     void txthread();
