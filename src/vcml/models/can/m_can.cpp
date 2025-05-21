@@ -663,18 +663,8 @@ void m_can::raise_irq(u32 val) {
 }
 
 void m_can::update_irq() {
-    bool int0 = (ile & ILE_EINT0) && (~ils & ir & ie);
-    bool int1 = (ile & ILE_EINT1) && (ils & ir & ie);
-
-    if (int0)
-        irq0.raise();
-    else
-        irq0.lower();
-
-    if (int1)
-        irq1.raise();
-    else
-        irq1.lower();
+    irq0 = (ile & ILE_EINT0) && (~ils & ir & ie);
+    irq1 = (ile & ILE_EINT1) && (ils & ir & ie);
 }
 
 void m_can::add_txevent(const u32 tx_buf_elem_hdr[2]) {
