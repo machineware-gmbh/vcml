@@ -551,8 +551,7 @@ void m_can::write_ir(u32 val) {
     if (val & IR_RF0L)
         rxf0s &= ~RXFS_RFL;
 
-    irq0.lower();
-    irq1.lower();
+    update_irq();
 }
 
 void m_can::write_gfc(u32 val) {
@@ -660,12 +659,12 @@ u32 m_can::read_psr() {
 void m_can::raise_irq(u32 val) {
     u32 enabled_irqs = val & ie;
     ir |= enabled_irqs;
+    update_irq();
+}
 
-    if ((ile & ILE_EINT0) && (~ils & enabled_irqs))
-        irq0.raise();
-
-    if ((ile & ILE_EINT1) && (ils & enabled_irqs))
-        irq1.raise();
+void m_can::update_irq() {
+    irq0 = (ile & ILE_EINT0) && (~ils & ir & ie);
+    irq1 = (ile & ILE_EINT1) && (ils & ir & ie);
 }
 
 void m_can::add_txevent(const u32 tx_buf_elem_hdr[2]) {
