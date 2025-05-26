@@ -40,6 +40,7 @@ public:
     void yield();
 
     static suspender* current();
+    static void current(vector<suspender*>& v);
     static void quit();
     static bool simulation_suspended();
     static void handle_requests();

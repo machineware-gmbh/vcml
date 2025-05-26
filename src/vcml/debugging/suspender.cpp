@@ -34,6 +34,7 @@ struct suspend_manager {
     bool is_suspending(const suspender* s) const;
 
     suspender* current() const;
+    void current(vector<suspender*>& v) const;
 
     void quit();
 
@@ -115,6 +116,11 @@ suspender* suspend_manager::current() const {
     if (active_suspenders.empty())
         return nullptr;
     return active_suspenders.front();
+}
+
+void suspend_manager::current(vector<suspender*>& v) const {
+    lock_guard<mutex> guard(suspender_lock);
+    v = active_suspenders;
 }
 
 void suspend_manager::quit() {
@@ -246,6 +252,10 @@ void suspender::yield() {
 
 suspender* suspender::current() {
     return suspend_manager::instance().current();
+}
+
+void suspender::current(vector<suspender*>& v) {
+    suspend_manager::instance().current(v);
 }
 
 void suspender::quit() {

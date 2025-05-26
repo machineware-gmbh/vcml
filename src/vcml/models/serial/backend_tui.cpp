@@ -81,6 +81,18 @@ void backend_tui::iothread() {
     }
 }
 
+static string collect_suspenders() {
+    string s;
+    vector<debugging::suspender*> vec;
+    debugging::suspender::current(vec);
+    if (vec.empty())
+        return "";
+    for (size_t i = 0; i < vec.size() - 1; i++)
+        s += mkstr("%s, ", vec[i]->name());
+    s += mkstr("%s", vec.back()->name());
+    return s;
+}
+
 void backend_tui::draw_statusbar() {
     if (!sc_core::sc_start_of_simulation_invoked())
         return;
@@ -95,6 +107,10 @@ void backend_tui::draw_statusbar() {
     string text = mkstr(
         " time %02zu:%02zu:%02zu.%03zu   delta %lld   rtf %.2f", hours,
         minutes, seconds, millis, sc_delta_count(), m_rtf);
+
+    if (debugging::suspender::simulation_suspended())
+        text += mkstr("   suspended (%s)", collect_suspenders().c_str());
+
     if (text.length() < max_cols)
         text.append(max_cols - text.length(), ' ');
     else
