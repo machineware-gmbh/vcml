@@ -48,7 +48,7 @@ jobs:
       run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
 
     - name: Configure
-      run: cmake -G Ninja -B BUILD -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_LINTER=clang-tidy
+      run: cmake -G Ninja -B BUILD -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON -DVCML_LINTER=clang-tidy
 
     - name: Build
       run: cmake --build BUILD
