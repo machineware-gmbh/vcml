@@ -163,6 +163,7 @@
 #include "vcml/models/arm/syscon.h"
 #include "vcml/models/arm/gic400.h"
 #include "vcml/models/arm/gicv2m.h"
+#include "vcml/models/arm/arch_timer.h"
 
 #include "vcml/models/riscv/clint.h"
 #include "vcml/models/riscv/plic.h"
