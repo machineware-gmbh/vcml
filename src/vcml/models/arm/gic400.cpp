@@ -1042,7 +1042,7 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
     } else {
         set_lr_cpuid(idx, cpu, 0);
         set_lr_hw(idx, cpu, true);
-        u16 physid = extract(val, 10, 9);
+        u16 physid = extract(val, 10, 10);
         set_lr_physid(idx, cpu, physid);
     }
 
@@ -1056,7 +1056,7 @@ void gic400::vifctrl::write_lr(u32 val, size_t idx) {
     }
 
     u32 prio = extract(val, 23, 5);
-    u16 irq = extract(val, 0, 9);
+    u16 irq = extract(val, 0, 10);
 
     set_lr_prio(idx, cpu, prio);
     set_lr_vid(idx, cpu, irq);
@@ -1086,8 +1086,8 @@ void gic400::vifctrl::write_vmcr(u32 val) {
     size_t cpu = get_cpu(*this, "vmcr");
 
     u8 pmask = extract(val, 27, 5);
-    u8 bpr = extract(val, 21, 0x02);
-    u32 ctlr = extract(val, 0, 9);
+    u8 bpr = extract(val, 21, 2);
+    u32 ctlr = extract(val, 0, 10);
 
     m_parent->vcpuif.pmr.bank(cpu) = pmask << 3;
     m_parent->vcpuif.bpr.bank(cpu) = bpr;
@@ -1099,7 +1099,7 @@ u32 gic400::vifctrl::read_vmcr() {
 
     u8 pmask = extract(m_parent->vcpuif.pmr.bank(cpu), 3, 5);
     u8 bpr = extract(m_parent->vcpuif.bpr.bank(cpu), 0, 2);
-    u32 ctlr = extract(m_parent->vcpuif.ctlr.bank(cpu), 0, 9);
+    u32 ctlr = extract(m_parent->vcpuif.ctlr.bank(cpu), 0, 10);
 
     return (pmask << 27 | bpr << 21 | ctlr);
 }
@@ -1231,7 +1231,7 @@ void gic400::vcpuif::write_eoir(u32 val) {
     size_t cpu = get_cpu(*this, reg_nm);
     u32& reg = ALIAS ? aeoir.bank(cpu) : eoir.bank(cpu);
 
-    u32 irq = extract(val, 0, 9);
+    u32 irq = extract(val, 0, 10);
 
     if (irq >= m_parent->get_irq_num()) {
         log_warn("(%s) invalid irq %d ignored", reg_nm, irq);
@@ -1412,7 +1412,7 @@ pair<size_t, u32> gic400::get_highest_pend_irq(size_t cpu, bool virt) {
                 u8 prio = extract(vifctrl.lr.bank(cpu, lr_idx), 23, 5);
                 if (prio < best_prio) {
                     best_prio = prio;
-                    best_irq = extract(vifctrl.lr.bank(cpu, lr_idx), 0, 9);
+                    best_irq = extract(vifctrl.lr.bank(cpu, lr_idx), 0, 10);
                 }
             }
         }
