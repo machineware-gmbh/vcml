@@ -218,6 +218,9 @@ void plic::end_of_elaboration() {
 
 void plic::gpio_notify(const gpio_target_socket& socket) {
     unsigned int irqno = irqs.index_of(socket);
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL)
+    INSCIGHT_IRQ_LEVEL(id(), irqno, socket.read());
+#endif
     log_debug("irq %u %s", irqno, socket.read() ? "set" : "cleared");
     update();
 }

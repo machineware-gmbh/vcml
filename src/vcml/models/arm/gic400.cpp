@@ -647,6 +647,10 @@ void gic400::distif::set_sgi_pending(u8 value, size_t sgi, size_t cpu,
         spendsgir.bank(cpu, sgi) &= ~value;
         cpendsgir.bank(cpu, sgi) &= ~value;
     }
+
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL)
+    INSCIGHT_IRQ_LEVEL(id(), sgi, set);
+#endif
 }
 
 void gic400::distif::end_of_elaboration() {
@@ -1632,6 +1636,14 @@ void gic400::handle_ppi(size_t cpu, size_t idx, bool state) {
     if (get_irq_trigger(irq) == EDGE && state)
         set_irq_pending(irq, true, mask);
 
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL) && \
+    defined(INSCIGHT_IRQ_EDGE)
+    if (get_irq_trigger(irq) == LEVEL)
+        INSCIGHT_IRQ_LEVEL(id(), irq, state);
+    else
+        INSCIGHT_IRQ_EDGE(id(), irq, state);
+#endif
+
     update();
 }
 
@@ -1643,6 +1655,14 @@ void gic400::handle_spi(size_t idx, bool state) {
     set_irq_signaled(irq, false, gic400::ALL_CPU);
     if (get_irq_trigger(irq) == EDGE && state)
         set_irq_pending(irq, true, target_cpu);
+
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL) && \
+    defined(INSCIGHT_IRQ_EDGE)
+    if (get_irq_trigger(irq) == LEVEL)
+        INSCIGHT_IRQ_LEVEL(id(), irq, state);
+    else
+        INSCIGHT_IRQ_EDGE(id(), irq, state);
+#endif
 
     update();
 }

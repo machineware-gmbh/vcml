@@ -390,6 +390,15 @@ void aplic::notify(size_t idx, bool level) {
 
     irqinfo* irq = m_irqs + idx - 1;
     irq->state = level;
+    u32 smode = get_field<SOURCECFG_SM>(irq->sourcecfg);
+
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL) && \
+    defined(INSCIGHT_IRQ_EDGE)
+    if (smode == SM_LEVEL_LO || smode == SM_LEVEL_HI)
+        INSCIGHT_IRQ_LEVEL(id(), idx, level);
+    if (smode == SM_EDGE_FALL || smode == SM_EDGE_RISE)
+        INSCIGHT_IRQ_EDGE(id(), idx, level);
+#endif
 
     if (irq->sourcecfg & SOURCECFG_D) {
         u32 cidx = get_field<SOURCECFG_CI>(irq->sourcecfg);
@@ -403,7 +412,7 @@ void aplic::notify(size_t idx, bool level) {
     if (irq->pending)
         return;
 
-    switch (get_field<SOURCECFG_SM>(irq->sourcecfg)) {
+    switch (smode) {
     case SM_EDGE_RISE:
     case SM_LEVEL_HI:
         if (level) {

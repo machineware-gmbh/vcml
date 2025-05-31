@@ -15,8 +15,12 @@ namespace arm {
 
 void gicv2m::write_setspi(u32 val) {
     val &= SETSPI_SPI::MASK;
-    if (val >= base_spi && val < base_spi + num_spi)
+    if (val >= base_spi && val < base_spi + num_spi) {
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_MSI)
+        INSCIGHT_IRQ_MSI(id(), val);
+#endif
         out[val].pulse();
+    }
 }
 
 u32 gicv2m::read_typer() {

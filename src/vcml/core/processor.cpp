@@ -354,6 +354,10 @@ void processor::gpio_notify(const gpio_target_socket& socket, bool state,
         return;
     }
 
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL)
+    INSCIGHT_IRQ_LEVEL(id(), irqno, state);
+#endif
+
     stats.irq_status = state;
 
     if (state) {
