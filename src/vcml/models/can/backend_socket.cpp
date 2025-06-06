@@ -90,8 +90,12 @@ backend_socket::~backend_socket() {
 }
 
 void backend_socket::send_to_host(const can_frame& frame) {
-    if (m_socket > -1)
-        mwr::fd_write(m_socket, &frame, frame.is_fdf() ? 72 : 16);
+    if (m_socket > -1) {
+        // Convert DLC back to length in bytes
+        can_frame tmp = frame;
+        tmp.dlc = dlc2len(frame.dlc);
+        mwr::fd_write(m_socket, &tmp, tmp.is_fdf() ? 72 : 16);
+    }
 }
 
 backend* backend_socket::create(bridge* br, const string& type) {
