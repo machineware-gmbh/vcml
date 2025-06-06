@@ -90,8 +90,23 @@ backend_socket::~backend_socket() {
 }
 
 void backend_socket::send_to_host(const can_frame& frame) {
-    if (m_socket > -1)
-        mwr::fd_write(m_socket, &frame, frame.is_fdf() ? 72 : 16);
+    if (m_socket < 0)
+        return;
+
+    if (frame.is_fdf()) {
+        ::canfd_frame canfdraw{};
+        canfdraw.can_id = frame.msgid;
+        canfdraw.len = min(frame.length(), sizeof(canfdraw.data));
+        canfdraw.flags = frame.flags;
+        memcpy(canfdraw.data, frame.data, canfdraw.len);
+        mwr::fd_write(m_socket, &canfdraw, sizeof(canfdraw));
+    } else {
+        ::can_frame canraw{};
+        canraw.can_id = frame.msgid;
+        canraw.len = min(frame.length(), sizeof(canraw.data));
+        memcpy(canraw.data, frame.data, canraw.len);
+        mwr::fd_write(m_socket, &canraw, sizeof(canraw));
+    }
 }
 
 backend* backend_socket::create(bridge* br, const string& type) {
