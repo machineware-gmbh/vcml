@@ -103,8 +103,8 @@ void backend_socket::send_to_host(const can_frame& frame) {
     } else {
         ::can_frame canraw{};
         canraw.can_id = frame.msgid;
-        canraw.len = min(frame.length(), sizeof(canraw.data));
-        memcpy(canraw.data, frame.data, canraw.len);
+        canraw.can_dlc = min(frame.length(), sizeof(canraw.data));
+        memcpy(canraw.data, frame.data, canraw.can_dlc);
         mwr::fd_write(m_socket, &canraw, sizeof(canraw));
     }
 }
