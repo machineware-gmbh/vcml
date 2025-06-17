@@ -26,6 +26,7 @@ class throttle : public module
 {
 private:
     bool m_throttling;
+    bool m_use_wait;
 
     u64 m_start;
     u64 m_extra;
@@ -33,6 +34,7 @@ private:
     void update();
 
 public:
+    property<string> method; // "sleep" or "wait"
     property<sc_time> update_interval;
     property<double> rtf;
 
