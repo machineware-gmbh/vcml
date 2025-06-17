@@ -394,7 +394,7 @@ void gic400::distif::write_icfgr_spi(u32 value, size_t idx) {
 }
 
 void gic400::distif::write_sgir(u32 value) {
-    size_t cpu = get_cpu(*this, "sctl");
+    size_t cpu = get_cpu(*this, "sgir");
 
     size_t src_cpu = bit(cpu);
     size_t sgi_num = extract(value, 0, 4);
