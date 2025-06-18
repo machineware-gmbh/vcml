@@ -204,28 +204,34 @@ void slirp_network::slirp_thread() {
     }
 }
 
+static bool try_create_socket(int domain, int type, int proto) {
+#ifdef MWR_MSVC
+    SOCKET sock = socket(domain, type, proto);
+    if (sock == INVALID_SOCKET)
+        return false;
+    closesocket(sock);
+    return true;
+#else
+    int sock = socket(domain, type, proto);
+    if (sock < 0)
+        return false;
+    close(sock);
+    return true;
+#endif
+}
+
 static void icmp_permissions_check_once(logger& log) {
     static bool once = false;
     if (once)
         return;
 
     once = true;
-    auto sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
 
-#ifdef MWR_MSVC
-    if (sock == INVALID_SOCKET) {
-#else
-    if (sock < 0) {
-#endif
+    if (!try_create_socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP) &&
+        !try_create_socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) {
         log.warn("cannot create ICMP sockets, pings will not work");
 #ifdef MWR_LINUX
         log.warn("try checking /proc/sys/net/ipv4/ping_group_range");
-#endif
-    } else {
-#ifdef MWR_MSVC
-        closesocket(sock);
-#else
-        close(sock);
 #endif
     }
 }
@@ -419,7 +425,7 @@ backend* backend_slirp::create(bridge* br, const string& type) {
     if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
         netid = 0;
 
-    static unordered_map<unsigned int, shared_ptr<slirp_network>> networks;
+    static unordered_map<unsigned int, shared_ptr<slirp_network> > networks;
     auto& network = networks[netid];
     if (network == nullptr)
         network = std::make_shared<slirp_network>(netid, br->log);
