@@ -181,8 +181,10 @@ bool processor::processor_thread_async() {
             if (is_stepping())
                 return true;
 
-            if (!is_running())
+            if (!is_running()) {
+                lt += cycles_left * clock_cycle();
                 return true;
+            }
 
             // do not execute a single cycle to avoid tb flushes
             if (cycles_left == 1)
@@ -194,8 +196,11 @@ bool processor::processor_thread_async() {
             lt = SC_ZERO_TIME;
         }
 
-        while (sim_running() && async_time_offset() >= quantum)
+        while (sim_running() &&
+               async_time_offset() + clock_cycle() >= quantum) {
             mwr::cpu_yield();
+            sc_progress(SC_ZERO_TIME);
+        }
     }
 }
 

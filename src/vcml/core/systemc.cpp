@@ -582,6 +582,9 @@ struct async_worker {
     atomic<u64> progress;
     atomic<function<void(void)>*> request;
 
+    atomic<bool> blocked;
+    atomic<bool> block_request;
+
     mutex mtx;
     condition_variable_any notify;
     thread worker;
@@ -599,6 +602,8 @@ struct async_worker {
         task(),
         progress(0),
         request(nullptr),
+        blocked(false),
+        block_request(false),
         mtx(),
         notify(),
         worker(&async_worker::work, this),
@@ -608,16 +613,43 @@ struct async_worker {
 
     ~async_worker() { kill(); }
 
+    void async_blocked() {
+        VCML_ERROR_ON(!g_async, "must be called from async thread");
+        blocked = true;
+    }
+
+    void async_unblocked() {
+        VCML_ERROR_ON(!g_async, "must be called from async thread");
+        std::unique_lock lk(mtx);
+
+        while (alive && block_request)
+            notify.wait(lk);
+
+        blocked = false;
+    }
+
+    void block_async() {
+        block_request = true;
+        while (!blocked)
+            mwr::cpu_yield();
+    }
+
+    void unblock_async() {
+        block_request = false;
+        notify.notify_all();
+    }
+
     void work() {
         g_async = this;
         int curr_affinity = -1;
         mwr::set_thread_affinity(curr_affinity);
         mwr::set_thread_name(mkstr("vcml_async:%zu", id));
+        async_blocked();
 
-        mtx.lock();
+        std::unique_lock lk(mtx);
         while (alive) {
             while (alive && !working)
-                notify.wait(mtx);
+                notify.wait(lk);
 
             if (!alive)
                 break;
@@ -627,39 +659,43 @@ struct async_worker {
                 mwr::set_thread_affinity(curr_affinity);
             }
 
+            lk.unlock();
+            async_unblocked();
+
             try {
-                mtx.unlock();
                 task();
-                mtx.lock();
             } catch (sim_terminated_exception& ex) {
                 (void)ex;
-                mtx.lock();
                 alive = false;
             }
+
+            lk.lock();
+            async_blocked();
 
             working = false;
         }
 
-        mtx.unlock();
         g_async = nullptr;
     }
 
     void kill() {
         if (worker.joinable()) {
-            mtx.lock();
-            alive = false;
-            mtx.unlock();
+            {
+                lock_guard lk(mtx);
+                alive = false;
+            }
             notify.notify_all();
             worker.join();
         }
     }
 
     void run_async(function<void(void)>& job, int job_affinity) {
-        mtx.lock();
-        task = job;
-        affinity = job_affinity;
-        working = true;
-        mtx.unlock();
+        {
+            lock_guard lk(mtx);
+            task = job;
+            affinity = job_affinity;
+            working = true;
+        }
         notify.notify_one();
 
         while (working) {
@@ -725,14 +761,18 @@ void sc_async(function<void(void)> job, int affinity) {
 
 void sc_progress(const sc_time& delta) {
     VCML_ERROR_ON(!g_async, "no async thread to progress");
+    g_async->async_blocked();
     g_async->progress += delta.value();
+    g_async->async_unblocked();
 }
 
 void sc_sync(function<void(void)> job) {
     if (is_sysc_thread()) {
         job();
     } else if (g_async != nullptr) {
+        g_async->async_blocked();
         g_async->run_sync(std::move(job));
+        g_async->async_unblocked();
     } else {
         VCML_ERROR("not on systemc or async thread");
     }
@@ -740,6 +780,16 @@ void sc_sync(function<void(void)> job) {
 
 void sc_join_async() {
     async_worker::all_workers().clear();
+}
+
+void sc_block_async() {
+    for (auto& worker : async_worker::all_workers())
+        worker.second->block_async();
+}
+
+void sc_unblock_async() {
+    for (auto& worker : async_worker::all_workers())
+        worker.second->unblock_async();
 }
 
 bool sc_is_async() {
