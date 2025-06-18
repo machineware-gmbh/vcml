@@ -20,6 +20,10 @@
 #include <ws2tcpip.h>
 #else
 #include <poll.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 typedef ssize_t slirp_ssize_t;
 #endif
 
@@ -48,7 +52,12 @@ static struct in6_addr ipaddr6(const string& format, int val) {
     return ipaddr6(mkstr(format.c_str(), val));
 }
 
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+static int slirp_add_poll_socket(slirp_os_socket fd, int events,
+                                 void* opaque) {
+#else
 static int slirp_add_poll_fd(int fd, int events, void* opaque) {
+#endif
     pollfd request;
     request.fd = fd;
     request.events = 0;
@@ -116,11 +125,19 @@ static void slirp_timer_mod(void* t, int64_t expire_time, void* opaque) {
     ((async_timer*)t)->reset(expire_time, SC_MS);
 }
 
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+static void slirp_register_poll_socket(slirp_os_socket fd, void* opaque) {
+#else
 static void slirp_register_poll_fd(int fd, void* opaque) {
+#endif
     // nothing to do
 }
 
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+static void slirp_unregister_poll_socket(slirp_os_socket fd, void* opaque) {
+#else
 static void slirp_unregister_poll_fd(int fd, void* opaque) {
+#endif
     // nothing to do
 }
 
@@ -129,15 +146,28 @@ static void slirp_notify(void* opaque) {
 }
 
 static const SlirpCb SLIRP_CBS = {
-    /* send_packet        = */ slirp_send,
-    /* guest_error        = */ slirp_error,
-    /* clock_get_ns       = */ slirp_clock_ns,
-    /* timer_new          = */ slirp_timer_new,
-    /* timer_free         = */ slirp_timer_free,
-    /* timer_mod          = */ slirp_timer_mod,
-    /* register_poll_fd   = */ slirp_register_poll_fd,
-    /* unregister_poll_fd = */ slirp_unregister_poll_fd,
-    /* notify             = */ slirp_notify,
+    /* send_packet            = */ slirp_send,
+    /* guest_error            = */ slirp_error,
+    /* clock_get_ns           = */ slirp_clock_ns,
+    /* timer_new              = */ slirp_timer_new,
+    /* timer_free             = */ slirp_timer_free,
+    /* timer_mod              = */ slirp_timer_mod,
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+    /* register_poll_fd       = */ NULL,
+    /* unregister_poll_fd     = */ NULL,
+#else
+    /* register_poll_fd       = */ slirp_register_poll_fd,
+    /* unregister_poll_fd     = */ slirp_unregister_poll_fd,
+#endif
+    /* notify                 = */ slirp_notify,
+#if SLIRP_CHECK_VERSION(4, 7, 0)
+    /* init_completed         = */ NULL,
+    /* timer_new_opaque       = */ NULL,
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+    /* register_poll_socket   = */ slirp_register_poll_socket,
+    /* unregister_poll_socket = */ slirp_unregister_poll_socket,
+#endif
+#endif
 };
 
 void slirp_network::slirp_thread() {
@@ -148,7 +178,12 @@ void slirp_network::slirp_thread() {
         vector<pollfd> fds;
 
         m_mtx.lock();
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+        slirp_pollfds_fill_socket(m_slirp, &timeout, &slirp_add_poll_socket,
+                                  &fds);
+#else
         slirp_pollfds_fill(m_slirp, &timeout, &slirp_add_poll_fd, &fds);
+#endif
         m_mtx.unlock();
 
         if (fds.empty()) {
@@ -169,6 +204,32 @@ void slirp_network::slirp_thread() {
     }
 }
 
+static void icmp_permissions_check_once(logger& log) {
+    static bool once = false;
+    if (once)
+        return;
+
+    once = true;
+    auto sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+
+#ifdef MWR_MSVC
+    if (sock == INVALID_SOCKET) {
+#else
+    if (sock < 0) {
+#endif
+        log.warn("cannot create ICMP sockets, pings will not work");
+#ifdef MWR_LINUX
+        log.warn("try checking /proc/sys/net/ipv4/ping_group_range");
+#endif
+    } else {
+#ifdef MWR_MSVC
+        closesocket(sock);
+#else
+        close(sock);
+#endif
+    }
+}
+
 slirp_network::slirp_network(unsigned int id, logger& l):
     m_id(id),
     m_config(),
@@ -178,7 +239,13 @@ slirp_network::slirp_network(unsigned int id, logger& l):
     m_running(true),
     m_thread(),
     log(l) {
+#if SLIRP_CHECK_VERSION(4, 9, 0)
+    m_config.version = 6;
+#elif SLIRP_CHECK_VERSION(4, 7, 0)
+    m_config.version = 4;
+#else
     m_config.version = 1;
+#endif
 
     m_config.in_enabled = true;
     m_config.vnetwork = ipaddr("10.0.%u.0", id);
@@ -213,6 +280,12 @@ slirp_network::slirp_network(unsigned int id, logger& l):
         log_debug("created slirp ipv4 network 10.0.%u.0/24", id);
     if (m_config.in6_enabled)
         log_debug("created slirp ipv6 network %04x::", 0xfec0 + id);
+
+    // some OSes disallow the creation of ICMP sockets from userspace, so
+    // we run a quick test here and output a warning. We do this after
+    // slirp_new so the whole WSAStartup inititialization on windows has
+    // already been done for us by slirp.
+    icmp_permissions_check_once(log);
 
     m_thread = thread(&slirp_network::slirp_thread, this);
 }

@@ -18,7 +18,6 @@
 #include "vcml/models/ethernet/bridge.h"
 
 #include <libslirp.h>
-#include <libslirp-version.h>
 
 namespace vcml {
 namespace ethernet {
