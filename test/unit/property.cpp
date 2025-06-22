@@ -76,6 +76,7 @@ TEST(property, init) {
 
     test_component test("test");
     EXPECT_TRUE(test.prop_str.is_inited());
+    EXPECT_FALSE(test.prop_str.empty());
     EXPECT_EQ((std::string)test.prop_str, "hello world");
     EXPECT_EQ((std::string)test.prop_str.str(), "hello world");
     EXPECT_STREQ(test.prop_str.c_str(), "hello world");

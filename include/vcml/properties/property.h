@@ -69,6 +69,7 @@ public:
 
     void inherit_default();
 
+    bool empty() const;
     const char* c_str() const;
     size_t length() const;
 
@@ -322,6 +323,14 @@ inline void property<T, N>::inherit_default() {
 
     if (prop != nullptr)
         set_default(prop->get());
+}
+
+template <typename T, size_t N>
+bool property<T, N>::empty() const {
+    if constexpr (std::is_same_v<T, string>)
+        return get().empty();
+    else
+        return is_default();
 }
 
 template <typename T, size_t N>
