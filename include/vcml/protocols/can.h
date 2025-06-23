@@ -53,8 +53,8 @@ struct can_frame {
     u32 id() const { return msgid & (is_eff() ? CAN_EID : CAN_SID); }
     size_t length() const { return dlc2len(dlc); }
 
-    bool operator==(const can_frame& other);
-    bool operator!=(const can_frame& other);
+    bool operator==(const can_frame& other) const;
+    bool operator!=(const can_frame& other) const;
 };
 
 ostream& operator<<(ostream& os, const can_frame& frame);

@@ -38,12 +38,12 @@ size_t dlc2len(u8 dlc) {
     return len[dlc & 0xf];
 }
 
-bool can_frame::operator==(const can_frame& other) {
+bool can_frame::operator==(const can_frame& other) const {
     return msgid == other.msgid && dlc == other.dlc && flags == other.flags &&
            memcmp(data, other.data, length()) == 0;
 }
 
-bool can_frame::operator!=(const can_frame& other) {
+bool can_frame::operator!=(const can_frame& other) const {
     return !operator==(other);
 }
 
