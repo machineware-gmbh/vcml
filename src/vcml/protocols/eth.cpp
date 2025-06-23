@@ -76,6 +76,12 @@ eth_frame::eth_frame(const mac_addr& dest, const mac_addr& src,
         push_back(0);
 }
 
+bool eth_frame::operator==(const eth_frame& other) const {
+    if (size() != other.size())
+        return false;
+    return memcmp(data(), other.data(), size()) == 0;
+}
+
 u16 eth_frame::ether_type() const {
     u16 type = bswap(read<u16>(12));
     if (type == ETHER_TYPE_VLAN)

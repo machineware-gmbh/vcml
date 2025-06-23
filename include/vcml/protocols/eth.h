@@ -104,6 +104,9 @@ struct eth_frame : public vector<u8> {
     eth_frame& operator=(const eth_frame&) = default;
     eth_frame& operator=(eth_frame&&) = default;
 
+    bool operator==(const eth_frame& other) const;
+    bool operator!=(const eth_frame& other) const { return !(*this == other); }
+
     template <typename T>
     T read(size_t offset) const {
         T val = T();
