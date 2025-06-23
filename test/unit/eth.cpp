@@ -46,6 +46,7 @@ TEST(ethernet, frame) {
 
     EXPECT_TRUE(success(frame));
     EXPECT_FALSE(failed(frame));
+    EXPECT_EQ(frame, frame);
 }
 
 MATCHER_P(eth_match_socket, socket, "Matches an ethernet socket") {
