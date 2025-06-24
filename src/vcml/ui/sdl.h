@@ -51,6 +51,7 @@ class sdl
 {
 private:
     mutex m_mtx;
+    atomic<bool> m_exit;
     thread m_uithread;
     vector<sdl_client> m_clients;
 
