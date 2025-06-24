@@ -546,7 +546,7 @@ void sdl::run() {
         return;
     }
 
-    while (sim_running()) {
+    while (sim_running() && !m_exit) {
         check_clients();
         poll_events();
         draw_windows();
@@ -558,6 +558,7 @@ void sdl::run() {
 }
 
 sdl::~sdl() {
+    m_exit = true;
     if (m_uithread.joinable())
         m_uithread.join();
 }
