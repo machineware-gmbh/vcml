@@ -60,13 +60,22 @@ eth_frame::eth_frame(const u8* data, size_t len):
 }
 
 eth_frame::eth_frame(const mac_addr& dest, const mac_addr& src,
+                     const vector<u8>& payload):
+    eth_frame(dest, src, payload.size(), payload) {
+}
+
+eth_frame::eth_frame(const mac_addr& dest, const mac_addr& src, u16 ethertype,
                      const vector<u8>& payload) {
     insert(end(), dest.bytes.begin(), dest.bytes.end());
     insert(end(), src.bytes.begin(), src.bytes.end());
 
-    u16 len = payload.size();
-    push_back(len >> 0);
-    push_back(len >> 8);
+#ifdef MWR_HOST_LITTLE_ENDIAN
+    push_back(ethertype >> 0);
+    push_back(ethertype >> 8);
+#else
+    push_back(ethertype >> 8);
+    push_back(ethertype >> 0);
+#endif
 
     insert(end(), payload.begin(), payload.end());
 
@@ -82,10 +91,14 @@ bool eth_frame::operator==(const eth_frame& other) const {
     return memcmp(data(), other.data(), size()) == 0;
 }
 
+u16 eth_frame::ether_type_raw() const {
+    return read<u16>(12);
+}
+
 u16 eth_frame::ether_type() const {
-    u16 type = bswap(read<u16>(12));
+    u16 type = ether_type_raw();
     if (type == ETHER_TYPE_VLAN)
-        type = bswap(read<u16>(16));
+        type = read<u16>(16);
     return type;
 }
 
@@ -132,7 +145,9 @@ string eth_frame::identify() const {
         return "ETHERNET_AVTP";
 
     default:
-        return mkstr("ETHERNET_0x%02hx", type);
+        if (type < ETHER_TYPE_IEEE_802_3)
+            return mkstr("IEEE802.3");
+        return mkstr("ETHERNET_0x%04hx", type);
     }
 }
 

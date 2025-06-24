@@ -76,6 +76,7 @@ struct eth_frame : public vector<u8> {
     };
 
     enum : u16 {
+        ETHER_TYPE_IEEE_802_3 = 0x600,
         ETHER_TYPE_ARP = 0x0806,
         ETHER_TYPE_IPV4 = 0x0800,
         ETHER_TYPE_IPV6 = 0x86dd,
@@ -100,6 +101,8 @@ struct eth_frame : public vector<u8> {
     eth_frame(const u8* data, size_t len);
     eth_frame(const mac_addr& dest, const mac_addr& src,
               const vector<u8>& payload);
+    eth_frame(const mac_addr& dest, const mac_addr& src, u16 ethertype,
+              const vector<u8>& payload);
 
     eth_frame& operator=(const eth_frame&) = default;
     eth_frame& operator=(eth_frame&&) = default;
@@ -112,9 +115,14 @@ struct eth_frame : public vector<u8> {
         T val = T();
         VCML_ERROR_ON(sizeof(T) + offset > size(), "reading beyond frame");
         memcpy(&val, data() + offset, sizeof(T));
-        return val;
+#ifdef MWR_HOST_LITTLE_ENDIAN
+        return bswap(val);
+#else
+        return valo;
+#endif
     }
 
+    u16 ether_type_raw() const;
     u16 ether_type() const;
 
     size_t payload_size() const { return size() - FRAME_HEADER_SIZE; }
