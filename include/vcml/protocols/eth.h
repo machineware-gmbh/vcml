@@ -118,7 +118,7 @@ struct eth_frame : public vector<u8> {
 #ifdef MWR_HOST_LITTLE_ENDIAN
         return bswap(val);
 #else
-        return valo;
+        return val;
 #endif
     }
 
