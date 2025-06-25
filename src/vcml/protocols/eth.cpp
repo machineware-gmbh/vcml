@@ -70,11 +70,11 @@ eth_frame::eth_frame(const mac_addr& dest, const mac_addr& src, u16 ethertype,
     insert(end(), src.bytes.begin(), src.bytes.end());
 
 #ifdef MWR_HOST_LITTLE_ENDIAN
-    push_back(ethertype >> 0);
     push_back(ethertype >> 8);
+    push_back(ethertype >> 0);
 #else
-    push_back(ethertype >> 8);
     push_back(ethertype >> 0);
+    push_back(ethertype >> 8);
 #endif
 
     insert(end(), payload.begin(), payload.end());
