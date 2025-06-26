@@ -95,14 +95,16 @@ vector<pair<string, broker*>> broker::collect_unused() {
     return unused;
 }
 
-void broker::report_unused() {
+size_t broker::report_unused() {
     auto unused = collect_unused();
     if (unused.empty())
-        return;
+        return 0;
 
     log_warn("unused properties:");
     for (auto& prop : unused)
         log_warn("  %s (%s)", prop.first.c_str(), prop.second->name());
+
+    return unused.size();
 }
 
 } // namespace vcml

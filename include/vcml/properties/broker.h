@@ -59,7 +59,7 @@ public:
     static T get_or_default(const string& key, const T& def = T());
 
     static vector<pair<string, broker*>> collect_unused();
-    static void report_unused();
+    static size_t report_unused();
 };
 
 template <typename T>

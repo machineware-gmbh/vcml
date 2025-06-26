@@ -110,5 +110,8 @@ extern "C" int main(int argc, char** argv) {
 }
 
 extern "C" int sc_main(int argc, char** argv) {
-    return RUN_ALL_TESTS();
+    int res = RUN_ALL_TESTS();
+    if (broker::report_unused() > 0)
+        res = EXIT_FAILURE;
+    return res;
 }
