@@ -22,7 +22,18 @@ struct spi_payload {
     u8 mosi;
     u8 miso;
 
+    spi_payload(): mosi(), miso() {}
     spi_payload(u8 init): mosi(init), miso() {}
+    spi_payload(u8 mosi_init, u8 miso_init):
+        mosi(mosi_init), miso(miso_init) {}
+
+    bool operator==(const spi_payload& o) const {
+        return mosi == o.mosi && miso == o.miso;
+    }
+
+    bool operator!=(const spi_payload& o) const {
+        return mosi != o.mosi || miso != o.miso;
+    }
 };
 
 ostream& operator<<(ostream& os, const spi_payload& spi);
