@@ -178,6 +178,7 @@ void suspend_manager::handle_requests() {
     }
 
     if (!active_suspenders.empty()) {
+        sc_block_async();
         is_suspended = true;
         suspender_lock.unlock();
         notify_suspend();
@@ -201,6 +202,7 @@ void suspend_manager::handle_requests() {
         notify_resume();
         suspender_lock.lock();
         is_suspended = false;
+        sc_unblock_async();
     }
 
     suspender_lock.unlock();

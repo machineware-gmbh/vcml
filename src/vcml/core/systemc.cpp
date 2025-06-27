@@ -568,133 +568,187 @@ void async_timer::reset(const sc_time& delta) {
     g_helper.add_timer(m_event);
 }
 
-thread_local struct async_worker* g_async = nullptr;
+thread_local class async_worker* g_async = nullptr;
 
-struct async_worker {
+class async_worker
+{
+public:
     const size_t id;
     sc_process_b* const process;
 
-    atomic<bool> alive;
-    atomic<bool> working;
-    atomic<int> affinity;
-    function<void(void)> task;
+private:
+    atomic<bool> m_alive;
+    atomic<bool> m_working;
+    atomic<int> m_affinity;
+    function<void(void)> m_task;
 
-    atomic<u64> progress;
-    atomic<function<void(void)>*> request;
+    atomic<u64> m_progress;
+    atomic<function<void(void)>*> m_request;
 
-    mutex mtx;
-    condition_variable_any notify;
-    thread worker;
+    atomic<bool> m_blocked;
+    atomic<bool> m_block_request;
 
-    sc_time sc_thread_pos;
+    mutex m_mtx;
+    condition_variable_any m_notify;
+    thread m_worker;
 
+    sc_time m_sc_thread_pos;
+
+    void async_blocked() {
+        VCML_ERROR_ON(!g_async, "must be called from async thread");
+        m_blocked = true;
+    }
+
+    void async_unblocked() {
+        VCML_ERROR_ON(!g_async, "must be called from async thread");
+        std::unique_lock lk(m_mtx);
+
+        while (m_alive && m_block_request)
+            m_notify.wait(lk);
+
+        m_blocked = false;
+    }
+
+public:
     struct sim_terminated_exception {};
 
     async_worker(size_t worker_id, sc_process_b* worker_proc):
         id(worker_id),
         process(worker_proc),
-        alive(true),
-        working(false),
-        affinity(-1),
-        task(),
-        progress(0),
-        request(nullptr),
-        mtx(),
-        notify(),
-        worker(&async_worker::work, this),
-        sc_thread_pos(sc_time_stamp()) {
+        m_alive(true),
+        m_working(false),
+        m_affinity(-1),
+        m_task(),
+        m_progress(0),
+        m_request(nullptr),
+        m_blocked(false),
+        m_block_request(false),
+        m_mtx(),
+        m_notify(),
+        m_worker(&async_worker::work, this),
+        m_sc_thread_pos(sc_time_stamp()) {
         VCML_ERROR_ON(!process, "invalid parent process");
     }
 
     ~async_worker() { kill(); }
+
+    void block_async() {
+        m_block_request = true;
+        while (!m_blocked)
+            mwr::cpu_yield();
+    }
+
+    void unblock_async() {
+        m_block_request = false;
+        m_notify.notify_all();
+    }
 
     void work() {
         g_async = this;
         int curr_affinity = -1;
         mwr::set_thread_affinity(curr_affinity);
         mwr::set_thread_name(mkstr("vcml_async:%zu", id));
+        async_blocked();
 
-        mtx.lock();
-        while (alive) {
-            while (alive && !working)
-                notify.wait(mtx);
+        std::unique_lock lk(m_mtx);
+        while (m_alive) {
+            while (m_alive && !m_working)
+                m_notify.wait(lk);
 
-            if (!alive)
+            if (!m_alive)
                 break;
 
-            if (curr_affinity != affinity) {
-                curr_affinity = affinity;
+            if (curr_affinity != m_affinity) {
+                curr_affinity = m_affinity;
                 mwr::set_thread_affinity(curr_affinity);
             }
 
+            lk.unlock();
+            async_unblocked();
+
             try {
-                mtx.unlock();
-                task();
-                mtx.lock();
+                m_task();
             } catch (sim_terminated_exception& ex) {
                 (void)ex;
-                mtx.lock();
-                alive = false;
+                m_alive = false;
             }
 
-            working = false;
+            lk.lock();
+            async_blocked();
+
+            m_working = false;
         }
 
-        mtx.unlock();
         g_async = nullptr;
     }
 
     void kill() {
-        if (worker.joinable()) {
-            mtx.lock();
-            alive = false;
-            mtx.unlock();
-            notify.notify_all();
-            worker.join();
+        if (m_worker.joinable()) {
+            {
+                lock_guard lk(m_mtx);
+                m_alive = false;
+            }
+            m_notify.notify_all();
+            m_worker.join();
         }
     }
 
     void run_async(function<void(void)>& job, int job_affinity) {
-        mtx.lock();
-        task = job;
-        affinity = job_affinity;
-        working = true;
-        mtx.unlock();
-        notify.notify_one();
+        {
+            lock_guard lk(m_mtx);
+            m_task = job;
+            m_affinity = job_affinity;
+            m_working = true;
+        }
+        m_notify.notify_one();
 
-        while (working) {
+        while (m_working) {
             debugging::suspender::handle_requests();
-            u64 p = progress.exchange(0);
-            sc_thread_pos = sc_time_stamp() + time_from_value(p);
+            u64 p = m_progress.exchange(0);
+            m_sc_thread_pos = sc_time_stamp() + time_from_value(p);
             sc_core::wait(time_from_value(p));
 
-            if (request) {
-                p = progress.exchange(0);
+            if (m_request) {
+                p = m_progress.exchange(0);
                 if (p > 0) {
-                    sc_thread_pos = sc_time_stamp() + time_from_value(p);
+                    m_sc_thread_pos = sc_time_stamp() + time_from_value(p);
                     sc_core::wait(time_from_value(p));
                 }
 
-                (*request)();
-                request = nullptr;
+                (*m_request)();
+                m_request = nullptr;
             }
         }
 
-        u64 p = progress.exchange(0);
+        u64 p = m_progress.exchange(0);
         if (p > 0)
             sc_core::wait(time_from_value(p));
     }
 
     void run_sync(function<void(void)> job) {
-        g_async->request = &job;
-        while (g_async->request) {
-            if (!g_async->alive || !sim_running())
+        async_blocked();
+        g_async->m_request = &job;
+        while (g_async->m_request) {
+            if (!g_async->m_alive || !sim_running()) {
+                async_unblocked();
                 throw sim_terminated_exception();
+            }
             mwr::cpu_yield();
         }
+        async_unblocked();
     }
 
-    sc_time timestamp() { return sc_thread_pos + time_from_value(progress); }
+    void progress(u64 delta) {
+        VCML_ERROR_ON(!g_async, "no async thread to progress");
+
+        async_blocked();
+        m_progress += delta;
+        async_unblocked();
+    }
+
+    sc_time timestamp() {
+        return m_sc_thread_pos + time_from_value(m_progress);
+    }
 
     typedef unordered_map<sc_process_b*, shared_ptr<async_worker>> map_t;
     static map_t& all_workers() {
@@ -724,8 +778,7 @@ void sc_async(function<void(void)> job, int affinity) {
 }
 
 void sc_progress(const sc_time& delta) {
-    VCML_ERROR_ON(!g_async, "no async thread to progress");
-    g_async->progress += delta.value();
+    g_async->progress(delta.value());
 }
 
 void sc_sync(function<void(void)> job) {
@@ -740,6 +793,16 @@ void sc_sync(function<void(void)> job) {
 
 void sc_join_async() {
     async_worker::all_workers().clear();
+}
+
+void sc_block_async() {
+    for (auto& worker : async_worker::all_workers())
+        worker.second->block_async();
+}
+
+void sc_unblock_async() {
+    for (auto& worker : async_worker::all_workers())
+        worker.second->unblock_async();
 }
 
 bool sc_is_async() {
