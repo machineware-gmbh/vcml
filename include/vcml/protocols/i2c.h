@@ -61,6 +61,10 @@ constexpr tlm_command i2c_decode_tlm_command(u8 data) {
     return data & 1 ? TLM_READ_COMMAND : TLM_WRITE_COMMAND;
 }
 
+constexpr u8 i2c_decode_address(u8 data) {
+    return data >> 1;
+}
+
 const char* i2c_command_str(i2c_command cmd);
 const char* i2c_response_str(i2c_response resp);
 
@@ -75,16 +79,16 @@ class i2c_target_stub;
 
 class i2c_host
 {
+private:
+    unordered_map<u8, tlm_command> m_state;
+
 public:
     i2c_host() = default;
     virtual ~i2c_host() = default;
     i2c_host(i2c_host&&) = delete;
     i2c_host(const i2c_host&) = delete;
 
-    virtual i2c_response i2c_start(const i2c_target_socket&, i2c_payload&);
-    virtual i2c_response i2c_stop(const i2c_target_socket&, i2c_payload&);
-    virtual i2c_response i2c_read(const i2c_target_socket&, i2c_payload&);
-    virtual i2c_response i2c_write(const i2c_target_socket&, i2c_payload&);
+    virtual void i2c_transport(i2c_target_socket&, i2c_payload&);
 
     virtual i2c_response i2c_start(const i2c_target_socket&, tlm_command);
     virtual i2c_response i2c_stop(const i2c_target_socket&);
@@ -174,9 +178,7 @@ class i2c_target_socket : public i2c_base_target_socket
 {
 private:
     i2c_host* m_host;
-
     u8 m_address;
-    tlm_command m_state;
 
     struct i2c_fw_transport : i2c_fw_transport_if {
         i2c_target_socket* socket;
@@ -197,6 +199,9 @@ public:
     i2c_target_socket(const char* name, address_space as = VCML_AS_DEFAULT);
     virtual ~i2c_target_socket() = default;
     VCML_KIND(i2c_target_socket);
+
+    using base_socket::trace_fw;
+    using base_socket::trace_bw;
 };
 
 class i2c_initiator_stub : private i2c_bw_transport_if

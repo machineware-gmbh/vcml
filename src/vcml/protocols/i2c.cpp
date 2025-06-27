@@ -51,20 +51,50 @@ ostream& operator<<(ostream& os, const i2c_payload& tx) {
     return os << "(" << tx.resp << ")";
 }
 
-i2c_response i2c_host::i2c_start(const i2c_target_socket& s, i2c_payload& tx) {
-    return i2c_start(s, i2c_decode_tlm_command(tx.data));
-}
+void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
+    if (!stl_contains(m_state, socket.address()))
+        m_state[socket.as] = TLM_IGNORE_COMMAND;
 
-i2c_response i2c_host::i2c_stop(const i2c_target_socket& s, i2c_payload& tx) {
-    return i2c_stop(s);
-}
+    tlm_command& state = m_state[socket.address()];
+    if (state == TLM_IGNORE_COMMAND && tx.cmd != I2C_START)
+        return;
 
-i2c_response i2c_host::i2c_read(const i2c_target_socket& s, i2c_payload& tx) {
-    return i2c_read(s, tx.data);
-}
+    switch (tx.cmd) {
+    case I2C_START: {
+        state = TLM_IGNORE_COMMAND;
 
-i2c_response i2c_host::i2c_write(const i2c_target_socket& s, i2c_payload& tx) {
-    return i2c_write(s, tx.data);
+        u8 address = i2c_decode_address(tx.data);
+        if (address != I2C_ADDR_BCAST && address != socket.address())
+            return;
+
+        socket.trace_fw(tx);
+        state = i2c_decode_tlm_command(tx.data);
+        tx.resp = i2c_start(socket, state);
+        socket.trace_bw(tx);
+        return;
+    }
+
+    case I2C_STOP: {
+        socket.trace_fw(tx);
+        state = TLM_IGNORE_COMMAND;
+        tx.resp = i2c_stop(socket);
+        socket.trace_bw(tx);
+        return;
+    }
+
+    case I2C_DATA: {
+        socket.trace_fw(tx);
+        if (state == TLM_READ_COMMAND)
+            tx.resp = i2c_read(socket, tx.data);
+        if (state == TLM_WRITE_COMMAND)
+            tx.resp = i2c_write(socket, tx.data);
+        socket.trace_bw(tx);
+        return;
+    }
+
+    default:
+        VCML_ERROR("invalid i2c command: %d", (int)tx.cmd);
+    }
 }
 
 i2c_response i2c_host::i2c_start(const i2c_target_socket&, tlm_command) {
@@ -176,46 +206,7 @@ void i2c_initiator_socket::transport(i2c_payload& tx) {
 }
 
 void i2c_target_socket::i2c_transport(i2c_payload& tx) {
-    switch (tx.cmd) {
-    case I2C_START: {
-        m_state = TLM_IGNORE_COMMAND;
-
-        u8 address = tx.data >> 1;
-        if (address != m_address && address != I2C_ADDR_BCAST)
-            break;
-
-        trace_fw(tx);
-        m_state = i2c_decode_tlm_command(tx.data);
-        tx.resp = m_host->i2c_start(*this, tx);
-        trace_bw(tx);
-        break;
-    }
-
-    case I2C_STOP:
-        if (m_state == TLM_IGNORE_COMMAND)
-            break;
-
-        trace_fw(tx);
-        tx.resp = m_host->i2c_stop(*this, tx);
-        m_state = TLM_IGNORE_COMMAND;
-        trace_bw(tx);
-        break;
-
-    case I2C_DATA:
-        if (m_state == TLM_IGNORE_COMMAND)
-            break;
-
-        trace_fw(tx);
-        if (m_state == TLM_READ_COMMAND)
-            tx.resp = m_host->i2c_read(*this, tx);
-        if (m_state == TLM_WRITE_COMMAND)
-            tx.resp = m_host->i2c_write(*this, tx);
-        trace_bw(tx);
-        break;
-
-    default:
-        VCML_ERROR("invalid i2c_command: %d", tx.cmd);
-    }
+    m_host->i2c_transport(*this, tx);
 }
 
 void i2c_target_socket::set_address(u8 address) {
@@ -228,7 +219,6 @@ i2c_target_socket::i2c_target_socket(const char* nm, address_space as):
     i2c_base_target_socket(nm, as),
     m_host(hierarchy_search<i2c_host>()),
     m_address(I2C_ADDR_INVALID),
-    m_state(TLM_IGNORE_COMMAND),
     m_transport(this) {
     bind(m_transport);
     VCML_ERROR_ON(!m_host, "socket %s declared outside i2c_host", name());
