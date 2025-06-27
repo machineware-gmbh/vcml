@@ -51,6 +51,38 @@ ostream& operator<<(ostream& os, const i2c_payload& tx) {
     return os << "(" << tx.resp << ")";
 }
 
+i2c_response i2c_host::i2c_start(const i2c_target_socket& s, i2c_payload& tx) {
+    return i2c_start(s, i2c_decode_tlm_command(tx.data));
+}
+
+i2c_response i2c_host::i2c_stop(const i2c_target_socket& s, i2c_payload& tx) {
+    return i2c_stop(s);
+}
+
+i2c_response i2c_host::i2c_read(const i2c_target_socket& s, i2c_payload& tx) {
+    return i2c_read(s, tx.data);
+}
+
+i2c_response i2c_host::i2c_write(const i2c_target_socket& s, i2c_payload& tx) {
+    return i2c_write(s, tx.data);
+}
+
+i2c_response i2c_host::i2c_start(const i2c_target_socket&, tlm_command) {
+    return I2C_NACK;
+}
+
+i2c_response i2c_host::i2c_stop(const i2c_target_socket&) {
+    return I2C_NACK;
+}
+
+i2c_response i2c_host::i2c_read(const i2c_target_socket&, u8& data) {
+    return I2C_NACK;
+}
+
+i2c_response i2c_host::i2c_write(const i2c_target_socket&, u8 data) {
+    return I2C_NACK;
+}
+
 i2c_base_initiator_socket::i2c_base_initiator_socket(const char* nm,
                                                      address_space space):
     i2c_base_initiator_socket_b(nm, space), m_stub(nullptr) {
@@ -153,8 +185,8 @@ void i2c_target_socket::i2c_transport(i2c_payload& tx) {
             break;
 
         trace_fw(tx);
-        m_state = tx.data & 1 ? TLM_READ_COMMAND : TLM_WRITE_COMMAND;
-        tx.resp = m_host->i2c_start(*this, m_state);
+        m_state = i2c_decode_tlm_command(tx.data);
+        tx.resp = m_host->i2c_start(*this, tx);
         trace_bw(tx);
         break;
     }
@@ -164,7 +196,7 @@ void i2c_target_socket::i2c_transport(i2c_payload& tx) {
             break;
 
         trace_fw(tx);
-        tx.resp = m_host->i2c_stop(*this);
+        tx.resp = m_host->i2c_stop(*this, tx);
         m_state = TLM_IGNORE_COMMAND;
         trace_bw(tx);
         break;
@@ -175,9 +207,9 @@ void i2c_target_socket::i2c_transport(i2c_payload& tx) {
 
         trace_fw(tx);
         if (m_state == TLM_READ_COMMAND)
-            tx.resp = m_host->i2c_read(*this, tx.data);
+            tx.resp = m_host->i2c_read(*this, tx);
         if (m_state == TLM_WRITE_COMMAND)
-            tx.resp = m_host->i2c_write(*this, tx.data);
+            tx.resp = m_host->i2c_write(*this, tx);
         trace_bw(tx);
         break;
 
