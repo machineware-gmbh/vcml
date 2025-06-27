@@ -11,6 +11,7 @@
 #include "vcml/models/can/bridge.h"
 #include "vcml/models/can/backend.h"
 #include "vcml/models/can/backend_file.h"
+#include "vcml/models/can/backend_tcp.h"
 
 #ifdef HAVE_SOCKETCAN
 #include "vcml/models/can/backend_socket.h"
@@ -37,6 +38,7 @@ backend* backend::create(bridge* br, const string& type) {
     typedef function<backend*(bridge*, const string&)> construct;
     static const unordered_map<string, construct> backends = {
         { "file", backend_file::create },
+        { "tcp", backend_tcp::create },
 #ifdef HAVE_SOCKETCAN
         { "socket", backend_socket::create },
 #endif
