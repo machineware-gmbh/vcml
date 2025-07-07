@@ -53,6 +53,9 @@ public:
     bool execute(const string& name, ostream& os);
     bool execute(const string& name, const vector<string>& args, ostream& os);
 
+    void register_command(const string& name, unsigned int argc,
+                          command_func func, const string& description);
+
     template <class T>
     void register_command(const string& name, unsigned int argc, T* host,
                           bool (T::*func)(const vector<string>&, ostream&),
@@ -89,19 +92,24 @@ inline bool module::execute(const string& name, ostream& os) {
     return execute(name, std::vector<string>(), os);
 }
 
-template <class T>
-void module::register_command(const string& cmdnm, unsigned int argc, T* host,
-                              bool (T::*func)(const vector<string>&, ostream&),
-                              const string& desc) {
+inline void module::register_command(const string& cmdnm, unsigned int argc,
+                                     command_func func, const string& desc) {
     if (stl_contains(m_commands, cmdnm)) {
         VCML_ERROR("module %s already has a command called %s", name(),
                    cmdnm.c_str());
     }
 
+    m_commands[cmdnm] = new command(cmdnm, argc, std::move(func), desc);
+}
+
+template <class T>
+void module::register_command(const string& cmdnm, unsigned int argc, T* host,
+                              bool (T::*func)(const vector<string>&, ostream&),
+                              const string& desc) {
     using std::placeholders::_1;
     using std::placeholders::_2;
     command_func cb = std::bind(func, host, _1, _2);
-    m_commands[cmdnm] = new command(cmdnm, argc, cb, desc);
+    register_command(cmdnm, argc, std::move(cb), desc);
 }
 
 template <class T>
