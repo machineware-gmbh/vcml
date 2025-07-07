@@ -20,7 +20,7 @@ bool module::cmd_clist(const vector<string>& args, ostream& os) {
 }
 
 bool module::cmd_cinfo(const vector<string>& args, ostream& os) {
-    command_base* cmd = get_command(args[0]);
+    command* cmd = get_command(args[0]);
     if (cmd == nullptr) {
         os << "no such command: " << args[0];
         return false;
@@ -86,7 +86,7 @@ void module::session_resume() {
 
 bool module::execute(const string& name, const vector<string>& args,
                      ostream& os) {
-    command_base* cmd = get_command(name);
+    command* cmd = get_command(name);
     if (!cmd) {
         os << "command '" << name << "' not supported";
         return false;
@@ -101,8 +101,8 @@ bool module::execute(const string& name, const vector<string>& args,
     return cmd->execute(args, os);
 }
 
-vector<command_base*> module::get_commands() const {
-    vector<command_base*> list;
+vector<command*> module::get_commands() const {
+    vector<command*> list;
     for (const auto& cmd : m_commands)
         if (cmd.second != nullptr)
             list.push_back(cmd.second);

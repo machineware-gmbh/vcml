@@ -24,7 +24,7 @@ namespace vcml {
 class module : public sc_module, public hierarchy_element
 {
 private:
-    std::map<string, command_base*> m_commands;
+    std::map<string, command*> m_commands;
 
     bool cmd_clist(const vector<string>& args, ostream& os);
     bool cmd_cinfo(const vector<string>& args, ostream& os);
@@ -63,8 +63,8 @@ public:
                           bool (T::*func)(const vector<string>&, ostream&),
                           const string& description);
 
-    command_base* get_command(const string& name);
-    vector<command_base*> get_commands() const;
+    command* get_command(const string& name);
+    vector<command*> get_commands() const;
 
     template <typename PAYLOAD>
     void record(trace_direction, const sc_object&, const PAYLOAD& tx,
@@ -98,7 +98,10 @@ void module::register_command(const string& cmdnm, unsigned int argc, T* host,
                    cmdnm.c_str());
     }
 
-    m_commands[cmdnm] = new command<T>(cmdnm, argc, desc, host, func);
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+    command_func cb = std::bind(func, host, _1, _2);
+    m_commands[cmdnm] = new command(cmdnm, argc, cb, desc);
 }
 
 template <class T>
@@ -110,7 +113,7 @@ void module::register_command(const string& cmdnm, unsigned int argc,
     register_command(cmdnm, argc, host, func, desc);
 }
 
-inline command_base* module::get_command(const string& name) {
+inline command* module::get_command(const string& name) {
     if (!stl_contains(m_commands, name))
         return nullptr;
     return m_commands[name];

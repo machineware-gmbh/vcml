@@ -33,7 +33,7 @@ public:
 TEST(module, commands) {
     cmd_test_module mod;
 
-    vcml::command_base* cmd = mod.get_command("test");
+    vcml::command* cmd = mod.get_command("test");
     ASSERT_NE(cmd, nullptr);
     EXPECT_EQ(std::string(cmd->name()), std::string("test"));
     EXPECT_EQ(cmd->argc(), 3);

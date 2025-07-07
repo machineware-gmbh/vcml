@@ -133,7 +133,7 @@ static void list_object_xml(ostream& os, sc_object* obj) {
     // list object commands
     module* mod = dynamic_cast<module*>(obj);
     if (mod != nullptr) {
-        for (const command_base* cmd : mod->get_commands()) {
+        for (const auto* cmd : mod->get_commands()) {
             os << "<command"
                << " name=\"" << xml_escape(cmd->name()) << "\""
                << " argc=\"" << cmd->argc() << "\""
@@ -202,7 +202,7 @@ static bool list_object_json(ostream& os, sc_object* obj) {
     if (module* mod = dynamic_cast<module*>(obj)) {
         os << "\"commands\":[";
         for (size_t i = 0; i < mod->get_commands().size(); i++) {
-            const command_base* cmd = mod->get_commands()[i];
+            const auto* cmd = mod->get_commands()[i];
             os << "{\"name\":\"" << json_escape(cmd->name()) << "\","
                << "\"argc\":" << cmd->argc() << ","
                << "\"desc\":\"" << json_escape(cmd->desc()) << "\"}";
