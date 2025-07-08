@@ -94,6 +94,10 @@ void sifive::write_sckdiv(u32 val) {
     m_ev.notify();
 }
 
+constexpr u64 csdef_mask(size_t numcs) {
+    return bitmask(min<u32>(32, numcs));
+}
+
 constexpr u64 csid_mask(size_t numcs) {
     if (numcs == 0)
         return 0;
@@ -114,6 +118,7 @@ void sifive::write_csid(u32 val) {
 }
 
 void sifive::write_csdef(u32 val) {
+    val &= csdef_mask(numcs);
     if (csdef != val) {
         csdef = val;
         update_cs(false);
@@ -257,7 +262,7 @@ sifive::sifive(const sc_module_name& nm):
     sckdiv("sckdiv", 0x00, 3),
     sckmode("sckmode", 0x04, 0),
     csid("csid", 0x10, 0),
-    csdef("csdef", 0x14, 0xffffffff),
+    csdef("csdef", 0x14, csdef_mask(numcs)),
     csmode("csmode", 0x18, 0),
     delay0("delay0", 0x28, 0x00010001),
     delay1("delay1", 0x2c, 0000000001),
