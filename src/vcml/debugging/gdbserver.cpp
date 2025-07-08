@@ -956,6 +956,9 @@ string gdbserver::handle_vcont(const string& cmd) {
         }
     }
 
+    for (auto gtgt : m_targets)
+        gtgt.tgt.set_running(false);
+
     update_status(GDB_STOPPED);
 
     if (sim_running() && !simulation_suspended()) {
