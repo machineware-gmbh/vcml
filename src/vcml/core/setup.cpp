@@ -192,12 +192,9 @@ int main(int argc, char** argv) {
 
 } // namespace vcml
 
-extern "C" {
-
 #ifndef MWR_MSVC
 MWR_DECL_WEAK
 #endif
 int main(int argc, char** argv) {
     return vcml::main(argc, argv);
-}
 }
