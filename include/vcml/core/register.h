@@ -151,6 +151,15 @@ public:
     template <typename HOST>
     void on_read(DATA (HOST::*rd)(size_t), HOST* host = nullptr);
 
+    void on_debug_read(const readfn& rd);
+    void on_debug_read(const readfn_tagged& rd);
+
+    template <typename HOST>
+    void on_debug_read(DATA (HOST::*rd)(void), HOST* host = nullptr);
+
+    template <typename HOST>
+    void on_debug_read(DATA (HOST::*rd)(size_t), HOST* host = nullptr);
+
     void on_write(const writefn& wr);
     void on_write(const writefn_tagged& wr);
 
@@ -162,6 +171,15 @@ public:
 
     void on_write_mask(DATA mask);
     void on_write_mask(const array<DATA, N>& mask);
+
+    void on_debug_write(const writefn& wr);
+    void on_debug_write(const writefn_tagged& wr);
+
+    template <typename HOST>
+    void on_debug_write(void (HOST::*wr)(DATA), HOST* host = nullptr);
+
+    template <typename HOST>
+    void on_debug_write(void (HOST::*wr)(DATA, size_t), HOST* h = nullptr);
 
     void read_zero();
     void ignore_write();
@@ -267,8 +285,14 @@ private:
     readfn_tagged m_read_tagged;
     writefn_tagged m_write_tagged;
 
+    readfn m_debug_read;
+    writefn m_debug_write;
+    readfn_tagged m_debug_read_tagged;
+    writefn_tagged m_debug_write_tagged;
+
     void init_bank(int bank);
 };
+
 template <typename DATA, size_t N>
 void reg<DATA, N>::on_read(const readfn& rd) {
     VCML_ERROR_ON(m_read, "read callback already defined");
@@ -308,6 +332,44 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
 }
 
 template <typename DATA, size_t N>
+void reg<DATA, N>::on_debug_read(const readfn& rd) {
+    VCML_ERROR_ON(m_debug_read, "debug read callback already defined");
+    VCML_ERROR_ON(m_debug_read_tagged, "tagged debug read already defined");
+    m_debug_read = rd;
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_debug_read(const readfn_tagged& rd) {
+    VCML_ERROR_ON(m_debug_read, "debug read callback already defined");
+    VCML_ERROR_ON(m_debug_read_tagged, "tagged debug read already defined");
+    m_debug_read_tagged = rd;
+}
+
+template <typename DATA, size_t N>
+template <typename HOST>
+void reg<DATA, N>::on_debug_read(DATA (HOST::*rd)(void), HOST* host) {
+    if (host == nullptr)
+        host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
+    VCML_ERROR_ON(!host, "debug read callback has no host");
+    readfn fn = std::bind(rd, host);
+    on_debug_read(fn);
+}
+
+template <typename DATA, size_t N>
+template <typename HOST>
+void reg<DATA, N>::on_debug_read(DATA (HOST::*rd)(size_t), HOST* host) {
+    if (host == nullptr)
+        host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
+    VCML_ERROR_ON(!host, "tagged debug read callback has no host");
+    readfn_tagged fn = std::bind(rd, host, std::placeholders::_1);
+    on_debug_read(fn);
+}
+
+template <typename DATA, size_t N>
 void reg<DATA, N>::on_write(const writefn& wr) {
     VCML_ERROR_ON(m_write, "write callback already defined");
     VCML_ERROR_ON(m_write_tagged, "tagged write callback already defined");
@@ -344,6 +406,45 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
     writefn_tagged fn = std::bind(wr, host, std::placeholders::_1,
                                   std::placeholders::_2);
     on_write(fn);
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_debug_write(const writefn& wr) {
+    VCML_ERROR_ON(m_debug_write, "debug write callback already defined");
+    VCML_ERROR_ON(m_debug_write_tagged, "tagged debug write already defined");
+    m_debug_write = wr;
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::on_debug_write(const writefn_tagged& wr) {
+    VCML_ERROR_ON(m_debug_write, "debug write callback already defined");
+    VCML_ERROR_ON(m_debug_write_tagged, "tagged debug write already defined");
+    m_debug_write_tagged = wr;
+}
+
+template <typename DATA, size_t N>
+template <typename HOST>
+void reg<DATA, N>::on_debug_write(void (HOST::*wr)(DATA), HOST* host) {
+    if (host == nullptr)
+        host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
+    VCML_ERROR_ON(!host, "debug write callback has no host");
+    writefn fn = std::bind(wr, host, std::placeholders::_1);
+    on_debug_write(fn);
+}
+
+template <typename DATA, size_t N>
+template <typename HOST>
+void reg<DATA, N>::on_debug_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
+    if (host == nullptr)
+        host = dynamic_cast<HOST*>(get_host());
+    if (host == nullptr)
+        host = hierarchy_search<HOST>();
+    VCML_ERROR_ON(!host, "tagged debug write callback has no host");
+    writefn_tagged fn = std::bind(wr, host, std::placeholders::_1,
+                                  std::placeholders::_2);
+    on_debug_write(fn);
 }
 
 template <typename DATA, size_t N>
@@ -440,7 +541,11 @@ reg<DATA, N>::reg(address_space a, const string& nm, u64 addr, DATA d):
     m_read(),
     m_write(),
     m_read_tagged(),
-    m_write_tagged() {
+    m_write_tagged(),
+    m_debug_read(),
+    m_debug_write(),
+    m_debug_read_tagged(),
+    m_debug_write_tagged() {
     for (size_t i = 0; i < N; i++)
         m_init[i] = property<DATA, N>::get(i);
 }
@@ -456,7 +561,11 @@ reg<DATA, N>::reg(address_space a, const string& nm, u64 addr,
     m_read(),
     m_write(),
     m_read_tagged(),
-    m_write_tagged() {
+    m_write_tagged(),
+    m_debug_read(),
+    m_debug_write(),
+    m_debug_read_tagged(),
+    m_debug_write_tagged() {
     for (size_t i = 0; i < N; i++)
         m_init[i] = property<DATA, N>::get(i);
 }
@@ -502,7 +611,11 @@ void reg<DATA, N>::do_read(const range& txaddr, void* ptr, bool debug) {
 
         DATA val;
 
-        if (m_read_tagged)
+        if (debug && m_debug_read_tagged)
+            val = m_debug_read_tagged(N > 1 ? idx : tag);
+        else if (debug && m_debug_read)
+            val = m_debug_read();
+        else if (m_read_tagged)
             val = m_read_tagged(N > 1 ? idx : tag);
         else if (m_read)
             val = m_read();
@@ -536,7 +649,11 @@ void reg<DATA, N>::do_write(const range& txaddr, const void* data,
         unsigned char* ptr = (unsigned char*)&val + off;
         memcpy(ptr, src, size);
 
-        if (m_write_tagged)
+        if (debug && m_debug_write_tagged)
+            m_debug_write_tagged(val, N > 1 ? idx : tag);
+        else if (debug && m_debug_write)
+            m_debug_write(val);
+        else if (m_write_tagged)
             m_write_tagged(val, N > 1 ? idx : tag);
         else if (m_write)
             m_write(val);
