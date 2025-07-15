@@ -313,8 +313,7 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(bool), HOST* host) {
     if (host == nullptr)
         host = hierarchy_search<HOST>();
     VCML_ERROR_ON(!host, "read callback has no host");
-    readfn_tagged_dbg fn = std::bind(rd, host, tag, std::placeholders::_1);
-    on_read(std::move(fn));
+    on_read([=](size_t tag, bool dbg) { return (host->*rd)(dbg); });
 }
 
 template <typename DATA, size_t N>
@@ -362,9 +361,8 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, bool), HOST* host) {
     if (host == nullptr)
         host = hierarchy_search<HOST>();
     VCML_ERROR_ON(!host, "write callback has no host");
-    writefn_tagged_dbg fn = std::bind(wr, host, std::placeholders::_1, tag,
-                                      std::placeholders::_2);
-    on_write(std::move(fn));
+    on_write(
+        [=](DATA val, size_t tag, bool debug) { (host->*wr)(val, debug); });
 }
 
 template <typename DATA, size_t N>

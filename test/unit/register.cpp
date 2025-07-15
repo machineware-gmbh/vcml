@@ -792,3 +792,56 @@ TEST(registers, debug_read_write) {
     mock.test_reg_a.do_write({ 0, 3 }, &data, true);
     EXPECT_EQ(mock.test_reg_a, data + 1);
 }
+
+class mock_peripheral_debug : public peripheral
+{
+public:
+    reg<u32> test_reg;
+    reg<u32> test_reg_tag;
+
+    MOCK_METHOD(u32, reg_read, (bool));
+    MOCK_METHOD(void, reg_write, (u32, bool));
+
+    MOCK_METHOD(u32, reg_read_tag, (size_t, bool));
+    MOCK_METHOD(void, reg_write_tag, (u32, size_t, bool));
+
+    mock_peripheral_debug(
+        const sc_core::sc_module_name& nm =
+            sc_core::sc_gen_unique_name("mock_peripheral_debug")):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10),
+        test_reg("test_reg", 0x0, 0xffffffff),
+        test_reg_tag("test_reg_tag", 0x4, 0xffffffff) {
+        test_reg.allow_read_write();
+        test_reg.on_read(&mock_peripheral_debug::reg_read);
+        test_reg.on_write(&mock_peripheral_debug::reg_write);
+        test_reg_tag.allow_read_write();
+        test_reg_tag.on_read(&mock_peripheral_debug::reg_read_tag);
+        test_reg_tag.on_write(&mock_peripheral_debug::reg_write_tag);
+        test_reg_tag.tag = 123;
+        clk.stub(100 * MHz);
+        rst.stub();
+        handle_clock_update(0, clk.read());
+    }
+};
+
+TEST(registers, debug_read_write_periph) {
+    mock_peripheral_debug mock("mock");
+
+    u32 data = 0;
+    EXPECT_CALL(mock, reg_read(true)).WillOnce(Return(50));
+    mock.test_reg.do_read({ 0, 3 }, &data, true);
+    EXPECT_EQ(data, 50);
+
+    data = 0;
+    EXPECT_CALL(mock, reg_read_tag(123, true)).WillOnce(Return(55));
+    mock.test_reg_tag.do_read({ 0, 3 }, &data, true);
+    EXPECT_EQ(data, 55);
+
+    data = 56;
+    EXPECT_CALL(mock, reg_write(data, true));
+    mock.test_reg.do_write({ 0, 3 }, &data, true);
+
+    data = 57;
+    EXPECT_CALL(mock, reg_write_tag(data, 123, true));
+    mock.test_reg_tag.do_write({ 0, 3 }, &data, true);
+}
