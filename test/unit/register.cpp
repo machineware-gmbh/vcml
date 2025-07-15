@@ -770,3 +770,25 @@ TEST(registers, minmaxsize) {
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 0);
     EXPECT_EQ(mock.test_reg, 0xaabbccdd);
 }
+
+TEST(registers, debug_read_write) {
+    mock_peripheral mock("mock");
+
+    mock.test_reg_a.on_read(
+        [](size_t tag, bool debug) { return debug ? 44 : 42; });
+    mock.test_reg_a.on_write([&](u32 val, size_t tag, bool debug) {
+        mock.test_reg_a = val + (int)debug;
+    });
+
+    u32 data = 0;
+    mock.test_reg_a.do_read({ 0, 3 }, &data, false);
+    EXPECT_EQ(data, 42);
+    mock.test_reg_a.do_read({ 0, 3 }, &data, true);
+    EXPECT_EQ(data, 44);
+
+    data = 1;
+    mock.test_reg_a.do_write({ 0, 3 }, &data, false);
+    EXPECT_EQ(mock.test_reg_a, data);
+    mock.test_reg_a.do_write({ 0, 3 }, &data, true);
+    EXPECT_EQ(mock.test_reg_a, data + 1);
+}
