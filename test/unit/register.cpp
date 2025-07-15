@@ -774,13 +774,15 @@ TEST(registers, minmaxsize) {
 TEST(registers, debug_read_write) {
     mock_peripheral mock("mock");
 
-    mock.test_reg_a.on_debug_read([]() { return 44; });
-    mock.test_reg_a.on_debug_write(
-        [&](u32 val) { mock.test_reg_a = 2 * val; });
+    mock.test_reg_a.on_read(
+        [](size_t tag, bool debug) { return debug ? 44 : 42; });
+    mock.test_reg_a.on_write([&](u32 val, size_t tag, bool debug) {
+        mock.test_reg_a = val + (int)debug;
+    });
 
     u32 data = 0;
     mock.test_reg_a.do_read({ 0, 3 }, &data, false);
-    EXPECT_EQ(data, 0xffffffff);
+    EXPECT_EQ(data, 42);
     mock.test_reg_a.do_read({ 0, 3 }, &data, true);
     EXPECT_EQ(data, 44);
 
@@ -788,5 +790,5 @@ TEST(registers, debug_read_write) {
     mock.test_reg_a.do_write({ 0, 3 }, &data, false);
     EXPECT_EQ(mock.test_reg_a, data);
     mock.test_reg_a.do_write({ 0, 3 }, &data, true);
-    EXPECT_EQ(mock.test_reg_a, data * 2);
+    EXPECT_EQ(mock.test_reg_a, data + 1);
 }
