@@ -23,6 +23,7 @@ class backend_tui : public backend
 private:
     int m_fdin;
     int m_fdout;
+    char m_last_ch;
 
     atomic<bool> m_exit_requested;
     atomic<bool> m_backend_active;

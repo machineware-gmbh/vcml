@@ -73,10 +73,17 @@ void backend_tui::iothread() {
                     ch = CTRL_A;
             }
 
+            // Convert CRLF newlines to CR
+            if (m_last_ch == '\r' && ch == '\n') {
+                m_last_ch = '\0';
+                continue;
+            }
+
             m_mtx.lock();
             m_fifo.push(ch);
             m_mtx.unlock();
             m_term->notify(this);
+            m_last_ch = ch;
         }
     }
 }
@@ -133,6 +140,7 @@ backend_tui::backend_tui(terminal* term):
     backend(term, "term"),
     m_fdin(STDIN_FDNO),
     m_fdout(STDOUT_FDNO),
+    m_last_ch('\0'),
     m_exit_requested(false),
     m_backend_active(true),
     m_iothread(),
