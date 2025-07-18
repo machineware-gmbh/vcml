@@ -37,9 +37,10 @@ public:
         });
     }
 
-    virtual void run_test() override {
+    void test_async() {
         EXPECT_FALSE(success);
         EXPECT_TRUE(is_sysc_thread());
+        EXPECT_FALSE(sc_is_async());
         EXPECT_EQ(sc_time_stamp(), SC_ZERO_TIME);
 
         sc_time dura(10, SC_SEC);
@@ -49,6 +50,63 @@ public:
 
         EXPECT_TRUE(success);
         EXPECT_EQ(sc_time_stamp(), 2 * dura);
+    }
+
+    void test_suspend() {
+        EXPECT_TRUE(vcml::is_sysc_thread());
+        EXPECT_FALSE(vcml::sc_is_async());
+
+        atomic<bool> running = false;
+        atomic<unsigned int> cnt = 0;
+
+        thread t([&]() -> void {
+            EXPECT_FALSE(vcml::is_sysc_thread());
+            EXPECT_FALSE(vcml::sc_is_async());
+
+            // wait for async thread to start
+            while (!running)
+                mwr::cpu_yield();
+
+            // let the async thread run for a while
+            mwr::usleep(100);
+            EXPECT_GT(cnt, 0);
+
+            // suspend the async thread and check that it does not progress
+            vcml::sc_suspend_async(this);
+            unsigned int tmp_cnt = cnt;
+            mwr::usleep(100);
+            EXPECT_EQ(cnt, tmp_cnt);
+            tmp_cnt = cnt;
+
+            // resume the async thread and check that it progresses again
+            vcml::sc_resume_async(this);
+            mwr::usleep(100);
+            EXPECT_GT(cnt, tmp_cnt);
+
+            // stop the async thread
+            running = false;
+        });
+
+        sc_async([&]() -> void {
+            EXPECT_FALSE(vcml::is_sysc_thread());
+            EXPECT_TRUE(vcml::sc_is_async());
+            running = true;
+
+            while (running) {
+                cnt++;
+                mwr::usleep(10);
+                sc_progress(sc_time(1, SC_SEC));
+            }
+        });
+
+        EXPECT_TRUE(t.joinable());
+        t.join();
+        sc_join_async();
+    }
+
+    virtual void run_test() override {
+        test_async();
+        test_suspend();
     }
 };
 
