@@ -39,6 +39,7 @@ class processor : public component, public debugging::target
 {
 private:
     double m_run_time;
+    bool m_async;
 
     std::mutex m_cycle_mtx;
     std::unordered_map<sc_process_b*, u64> m_cycle_count;

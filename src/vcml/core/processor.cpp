@@ -145,9 +145,11 @@ void processor::processor_thread() {
         wait_clock_reset();
 
         if (async && !is_stepping()) {
+            m_async = true;
             vcml::sc_async([&]() { running = processor_thread_async(); },
                            async_affinity);
         } else {
+            m_async = false;
             running = processor_thread_sync();
         }
 
@@ -181,8 +183,10 @@ bool processor::processor_thread_async() {
             if (is_stepping())
                 return true;
 
-            if (!is_running())
+            if (!is_running()) {
+                lt += cycles_left * clock_cycle();
                 return true;
+            }
 
             // do not execute a single cycle to avoid tb flushes
             if (cycles_left == 1)
@@ -194,8 +198,10 @@ bool processor::processor_thread_async() {
             lt = SC_ZERO_TIME;
         }
 
-        while (sim_running() && async_time_offset() >= quantum)
+        while (sim_running() && async_time_offset() >= quantum) {
             mwr::cpu_yield();
+            sc_progress(SC_ZERO_TIME);
+        }
     }
 }
 
@@ -239,6 +245,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     component(nm),
     target(*(module*)this),
     m_run_time(0),
+    m_async(false),
     m_cycle_mtx(),
     m_cycle_count(0),
     m_gdb(nullptr),
@@ -301,12 +308,17 @@ void processor::reset() {
 
 void processor::session_suspend() {
     component::session_suspend();
+    if (m_async)
+        sc_suspend_async(this);
+
     fetch_cpuregs();
 }
 
 void processor::session_resume() {
     component::session_resume();
     flush_cpuregs();
+    if (m_async)
+        sc_resume_async(this);
 }
 
 bool processor::get_irq_stats(size_t irq, irq_stats& stats) const {

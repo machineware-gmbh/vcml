@@ -386,6 +386,8 @@ void sc_async(function<void(void)> job, int affinity = -1);
 void sc_progress(const sc_time& delta);
 void sc_sync(function<void(void)> job);
 void sc_join_async();
+void sc_suspend_async(const sc_module* owner = nullptr);
+void sc_resume_async(const sc_module* owner = nullptr);
 
 bool sc_is_async();
 
