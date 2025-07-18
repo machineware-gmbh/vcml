@@ -13,7 +13,7 @@ The model supports the following features:
   error upon attempts to write to memory
 * `discard_writes=true`: useful when modeling ROM memories that should
   silently ignore write commands, but report no errors
-* `images=file_a@0;file_b@0x1000;`: semicolon-separated list of files to load
+* `images=file_a@0 file_b@0x1000;`: space-separated list of files to load
   after a reset with their corresponding offsets
 * `poison=XX`: fills each memory cell with `XX` during reset (but before image
   loading). Useful for detecting memory errors.
@@ -65,4 +65,4 @@ The following ports and sockets must be connected prior to simulating:
 | `IN`  |`tlm_target_socket<64>`| Input socket for bus data requests       |
 
 ----
-Documentation updated March 2021
+Documentation updated July 2025
