@@ -120,16 +120,6 @@ public:
         ASSERT_OK(out.readw<u32>(ADDR_RXDATA, data));
         EXPECT_EQ(data, 0x80000000);
 
-        // test overflowing txfifo
-        for (int i = 0; i < 9; i++)
-            ASSERT_OK(out.writew<u32>(ADDR_TXDATA, i, SBI_DEBUG));
-        ASSERT_OK(out.readw<u32>(ADDR_TXDATA, data, SBI_DEBUG));
-        EXPECT_EQ(data, 0x80000000);
-
-        wait(1, SC_NS);
-        EXPECT_EQ(mosi.num_used(), 8);
-        mosi.reset();
-
         GTEST_LOG_(INFO) << "finished testing transmit";
     }
 

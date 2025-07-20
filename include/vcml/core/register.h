@@ -541,15 +541,15 @@ void reg<DATA, N>::do_read(const range& txaddr, void* ptr, bool debug) {
         u64 idx = addr.start / sizeof(DATA);
         u64 off = addr.start % sizeof(DATA);
         u64 size = min(addr.length(), (u64)sizeof(DATA));
+        size_t iot = N > 1 ? idx : tag;
 
         DATA val;
 
-        if (std::holds_alternative<readfn_tagged_dbg>(m_readfn)) {
-            val = std::get<readfn_tagged_dbg>(m_readfn)(N > 1 ? idx : tag,
-                                                        debug);
-        } else if (std::holds_alternative<readfn_tagged>(m_readfn))
-            val = std::get<readfn_tagged>(m_readfn)(N > 1 ? idx : tag);
-        else if (std::holds_alternative<readfn>(m_readfn))
+        if (std::holds_alternative<readfn_tagged_dbg>(m_readfn))
+            val = std::get<readfn_tagged_dbg>(m_readfn)(iot, debug);
+        else if (!debug && std::holds_alternative<readfn_tagged>(m_readfn))
+            val = std::get<readfn_tagged>(m_readfn)(iot);
+        else if (!debug && std::holds_alternative<readfn>(m_readfn))
             val = std::get<readfn>(m_readfn)();
         else
             val = current_bank(idx);
@@ -575,18 +575,18 @@ void reg<DATA, N>::do_write(const range& txaddr, const void* data,
         u64 idx = addr.start / sizeof(DATA);
         u64 off = addr.start % sizeof(DATA);
         u64 size = min(addr.length(), (u64)sizeof(DATA));
+        size_t iot = N > 1 ? idx : tag;
 
         DATA val = current_bank(idx);
 
         unsigned char* ptr = (unsigned char*)&val + off;
         memcpy(ptr, src, size);
 
-        if (std::holds_alternative<writefn_tagged_dbg>(m_writefn)) {
-            std::get<writefn_tagged_dbg>(m_writefn)(val, N > 1 ? idx : tag,
-                                                    debug);
-        } else if (std::holds_alternative<writefn_tagged>(m_writefn))
-            std::get<writefn_tagged>(m_writefn)(val, N > 1 ? idx : tag);
-        else if (std::holds_alternative<writefn>(m_writefn))
+        if (std::holds_alternative<writefn_tagged_dbg>(m_writefn))
+            std::get<writefn_tagged_dbg>(m_writefn)(val, iot, debug);
+        else if (!debug && std::holds_alternative<writefn_tagged>(m_writefn))
+            std::get<writefn_tagged>(m_writefn)(val, iot);
+        else if (!debug && std::holds_alternative<writefn>(m_writefn))
             std::get<writefn>(m_writefn)(val);
         else
             current_bank(idx) = val;
