@@ -547,9 +547,9 @@ void reg<DATA, N>::do_read(const range& txaddr, void* ptr, bool debug) {
 
         if (std::holds_alternative<readfn_tagged_dbg>(m_readfn))
             val = std::get<readfn_tagged_dbg>(m_readfn)(iot, debug);
-        else if (!debug && std::holds_alternative<readfn_tagged>(m_readfn))
+        else if (std::holds_alternative<readfn_tagged>(m_readfn))
             val = std::get<readfn_tagged>(m_readfn)(iot);
-        else if (!debug && std::holds_alternative<readfn>(m_readfn))
+        else if (std::holds_alternative<readfn>(m_readfn))
             val = std::get<readfn>(m_readfn)();
         else
             val = current_bank(idx);
@@ -584,9 +584,9 @@ void reg<DATA, N>::do_write(const range& txaddr, const void* data,
 
         if (std::holds_alternative<writefn_tagged_dbg>(m_writefn))
             std::get<writefn_tagged_dbg>(m_writefn)(val, iot, debug);
-        else if (!debug && std::holds_alternative<writefn_tagged>(m_writefn))
+        else if (std::holds_alternative<writefn_tagged>(m_writefn))
             std::get<writefn_tagged>(m_writefn)(val, iot);
-        else if (!debug && std::holds_alternative<writefn>(m_writefn))
+        else if (std::holds_alternative<writefn>(m_writefn))
             std::get<writefn>(m_writefn)(val);
         else
             current_bank(idx) = val;
