@@ -189,8 +189,10 @@ bool processor::processor_thread_async() {
             }
 
             // do not execute a single cycle to avoid tb flushes
-            if (cycles_left == 1)
+            if (cycles_left == 1) {
+                sc_progress(SC_ZERO_TIME);
                 break;
+            }
 
             simulate_cycles(min(cycles_left, step_size));
             update_local_time(lt, current_process());
