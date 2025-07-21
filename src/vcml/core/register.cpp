@@ -140,4 +140,41 @@ unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     return tx.is_response_ok() ? span.length() : 0;
 }
 
+string reg_base::str() {
+    stringstream ss;
+    if (m_cell_size > sizeof(u64))
+        return "unknown";
+
+    for (u64 i = 0; i < m_cell_count; i++) {
+        u64 val = 0;
+        range addr{ i * m_cell_size, i * m_cell_size + m_cell_size - 1 };
+        do_read(addr, &val, true);
+        ss << mkstr("0x%0*llx", (int)m_cell_size * 2, val);
+        if (i < m_cell_size - 1)
+            ss << " ";
+    }
+
+    return ss.str();
+}
+
+void reg_base::str(const string& s) {
+    if (m_cell_size > sizeof(u64))
+        return;
+
+    vector<string> args = split(s);
+    u64 size = args.size();
+
+    if (size < m_cell_count) {
+        log_warn("register %s has not enough initializers", name());
+    } else if (size > m_cell_count) {
+        log_warn("register %s has too many initializers", name());
+    }
+
+    for (u64 i = 0; i < min(m_cell_count, size); i++) {
+        u64 val = from_string<u64>(trim(args[i]));
+        range addr{ i * m_cell_size, i * m_cell_size + m_cell_size - 1 };
+        do_write(addr, &val, true);
+    }
+}
+
 } // namespace vcml

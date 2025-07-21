@@ -113,6 +113,9 @@ public:
 
     virtual void do_read(const range& addr, void* ptr, bool debug) = 0;
     virtual void do_write(const range& addr, const void* ptr, bool debug) = 0;
+
+    string str();
+    void str(const string& s);
 };
 
 inline bool reg_base::is_read_only() const {
@@ -269,6 +272,9 @@ public:
 
     template <const DATA BIT>
     void set_bit(bool set);
+
+    virtual string str() override;
+    virtual void str(const string& s) override;
 
 private:
     bool m_banked;
@@ -801,6 +807,16 @@ template <const DATA BIT>
 inline void reg<DATA, N>::set_bit(bool set) {
     for (size_t i = 0; i < N; i++)
         vcml::set_bit<BIT>(current_bank(i), set);
+}
+
+template <typename DATA, size_t N>
+string reg<DATA, N>::str() {
+    return reg_base::str();
+}
+
+template <typename DATA, size_t N>
+void reg<DATA, N>::str(const string& s) {
+    reg_base::str(s);
 }
 
 template <typename DATA, size_t N>

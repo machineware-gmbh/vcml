@@ -158,7 +158,7 @@ TEST(property, init) {
     EXPECT_TRUE(test.prop_range.is_inited());
     EXPECT_EQ(test.prop_range.get(), vcml::range(0x10, 0x1f));
     EXPECT_EQ(test.prop_range.get_default(), vcml::range(1, 2));
-    EXPECT_STREQ(test.prop_range.str(), "0x00000010..0x0000001f");
+    EXPECT_EQ(test.prop_range.str(), "0x00000010..0x0000001f");
     EXPECT_EQ(test.prop_range.length(), 0x1f - 0x10 + 1);
 
     test.prop_array_string[3] = "z z";
@@ -171,15 +171,15 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_void.count(), 2);
     EXPECT_TRUE(test.prop_void.is_inited());
     EXPECT_FALSE(test.prop_void.is_default());
-    EXPECT_STREQ(test.prop_void.str(), "2864434397 287454020");
+    EXPECT_EQ(test.prop_void.str(), "2864434397 287454020");
     test.prop_void.set(0x44002299, 1);
     EXPECT_EQ(test.prop_void[1], 0x44002299);
     EXPECT_DEATH(test.prop_void[2], "index 2 out of bounds");
     EXPECT_DEATH(test.prop_void.set(0, 4), "index 4 out of bounds");
     EXPECT_DEATH(test.prop_void.set(0x100000000, 0), "value too big");
-    EXPECT_STREQ(test.prop_void.str(), "2864434397 1140859545");
+    EXPECT_EQ(test.prop_void.str(), "2864434397 1140859545");
     test.prop_void.str("4 5");
-    EXPECT_STREQ(test.prop_void.str(), "4 5");
+    EXPECT_EQ(test.prop_void.str(), "4 5");
 
     EXPECT_STREQ(test.prop_vector.type(), "vector<i32>");
     EXPECT_EQ(test.prop_vector.get_default().size(), 3);
@@ -190,7 +190,7 @@ TEST(property, init) {
     vcml::i32 cmp = -1;
     for (vcml::i32 val : test.prop_vector)
         EXPECT_EQ(val, cmp--);
-    EXPECT_STREQ(test.prop_vector.str(), "-1 -2 -3 -4");
+    EXPECT_EQ(test.prop_vector.str(), "-1 -2 -3 -4");
     EXPECT_EQ(test.prop_vector[0], -1);
     EXPECT_EQ(test.prop_vector[1], -2);
     EXPECT_EQ(test.prop_vector[2], -3);
@@ -204,14 +204,14 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_vector2[3], -3);
     EXPECT_EQ(test.prop_vector2[4], -4);
     EXPECT_EQ(test.prop_vector2[5], 2);
-    EXPECT_STREQ(test.prop_vector2.str(), "1 -1 -2 -3 -4 2");
+    EXPECT_EQ(test.prop_vector2.str(), "1 -1 -2 -3 -4 2");
 
     EXPECT_TRUE(test.prop_vector3.is_inited());
     EXPECT_EQ(test.prop_vector3.count(), 3);
     EXPECT_EQ(test.prop_vector3[0], 9);
     EXPECT_EQ(test.prop_vector3[1], 8);
     EXPECT_EQ(test.prop_vector3[2], 7);
-    EXPECT_STREQ(test.prop_vector3.str(), "9 8 7");
+    EXPECT_EQ(test.prop_vector3.str(), "9 8 7");
 
     std::stringstream ss;
 

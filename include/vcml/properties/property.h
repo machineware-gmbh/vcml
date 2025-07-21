@@ -42,7 +42,7 @@ public:
 
     virtual void reset() override;
 
-    virtual const char* str() const override;
+    virtual string str() override;
     virtual void str(const string& s) override;
 
     virtual size_t size() const override;
@@ -171,7 +171,7 @@ inline void property<T, N>::reset() {
 }
 
 template <typename T, size_t N>
-inline const char* property<T, N>::str() const {
+inline string property<T, N>::str() {
     static const string delim = " ";
 
     m_str = "";
@@ -182,13 +182,13 @@ inline const char* property<T, N>::str() const {
         m_str += escape(to_string<T>(m_value[N - 1]), delim);
     }
 
-    return m_str.c_str();
+    return m_str;
 }
 
 template <>
-inline const char* property<string, 1>::str() const {
+inline string property<string, 1>::str() {
     m_str = m_value[0];
-    return m_str.c_str();
+    return m_str;
 }
 
 template <typename T, size_t N>
@@ -524,7 +524,7 @@ public:
 
     virtual void reset() override;
 
-    virtual const char* str() const override;
+    virtual string str() override;
     virtual void str(const string& s) override;
 
     virtual size_t size() const override { return m_size; }
@@ -603,7 +603,7 @@ inline void property<void, N>::reset() {
 }
 
 template <size_t N>
-inline const char* property<void, N>::str() const {
+inline string property<void, N>::str() {
     static const string delim = " ";
 
     m_str = "";
@@ -614,7 +614,7 @@ inline const char* property<void, N>::str() const {
         m_str += escape(to_string(get(m_count - 1)), delim);
     }
 
-    return m_str.c_str();
+    return m_str;
 }
 
 template <size_t N>
@@ -725,8 +725,7 @@ private:
     vector<T> m_def;
     bool m_inited;
     string m_type;
-
-    mutable string m_str;
+    string m_str;
 
 public:
     property(const char* nm, vector<T>&& defval);
@@ -742,7 +741,7 @@ public:
 
     virtual void reset() override;
 
-    virtual const char* str() const override;
+    virtual string str() override;
     virtual void str(const string& s) override;
 
     virtual size_t size() const override { return sizeof(T); }
@@ -840,7 +839,7 @@ inline void property<vector<T>, 1>::reset() {
 }
 
 template <typename T>
-inline const char* property<vector<T>, 1>::str() const {
+inline string property<vector<T>, 1>::str() {
     static const string delim = " ";
 
     m_str = "";
@@ -851,7 +850,7 @@ inline const char* property<vector<T>, 1>::str() const {
         m_str += escape(to_string(get(count() - 1)), delim);
     }
 
-    return m_str.c_str();
+    return m_str;
 }
 
 template <typename T>
@@ -910,7 +909,7 @@ inline void property<vector<T>, 1>::inherit_default() {
 }
 
 template <typename T, size_t N>
-ostream& operator<<(std::ostream& os, const property<T, N>& prop) {
+ostream& operator<<(std::ostream& os, property<T, N>& prop) {
     os << prop.str();
     return os;
 }
