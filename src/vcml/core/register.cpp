@@ -150,7 +150,7 @@ string reg_base::str() {
         range addr{ i * m_cell_size, i * m_cell_size + m_cell_size - 1 };
         do_read(addr, &val, true);
         ss << mkstr("0x%0*llx", (int)m_cell_size * 2, val);
-        if (i < m_cell_size - 1)
+        if (i < m_cell_count - 1)
             ss << " ";
     }
 
