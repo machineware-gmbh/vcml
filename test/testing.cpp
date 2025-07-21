@@ -96,7 +96,7 @@ string get_resource_path(const string& name) {
     return res;
 }
 
-extern "C" int main(int argc, char** argv) {
+int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::mwr::report_segfaults();
     ::mwr::publishers::terminal publisher;
