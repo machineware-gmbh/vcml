@@ -430,7 +430,7 @@ enum fctl_bits : u32 {
 };
 
 using DDTP_MODE = field<0, 4, u64>;
-using DDTP_PPN = field<PAGE_BITS, PPN_BITS, u64>;
+using DDTP_PPN = field<10, PPN_BITS, u64>;
 
 enum ddtp_bits : u64 {
     DDTP_MODE_OFF = 0,
