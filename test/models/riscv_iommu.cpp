@@ -84,7 +84,7 @@ public:
         test_base(nm),
         mem("mem", 1 * MiB),
         bus("bus"),
-        iommu("iommu"),
+        iommu("iommu", false),
         out("out"),
         dma("dma"),
         cirq("cirq"),
