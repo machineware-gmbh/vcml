@@ -133,7 +133,7 @@ public:
         u16 ppi_enabled_mask(size_t cpu);
 
         u32 read_ctlr();
-        void write_ctlr(u32 value, bool debug);
+        void write_ctlr(u32 value);
 
         u32 read_typer();
 
@@ -141,28 +141,28 @@ public:
         void write_igroupr(u32 value, size_t idx);
 
         u32 read_isenabler_ppi();
-        void write_isenabler_ppi(u32 value, bool debug);
+        void write_isenabler_ppi(u32 value);
 
         u32 read_isenabler_spi(size_t idx);
-        void write_isenabler_spi(u32 value, size_t idx, bool debug);
+        void write_isenabler_spi(u32 value, size_t idx);
 
         u32 read_icenabler_ppi();
-        void write_icenabler_ppi(u32 value, bool debug);
+        void write_icenabler_ppi(u32 value);
 
         u32 read_icenabler_spi(size_t idx);
-        void write_icenabler_spi(u32 value, size_t idx, bool debug);
+        void write_icenabler_spi(u32 value, size_t idx);
 
         u32 read_ispendr_ppi();
-        void write_ispendr_ppi(u32 value, bool debug);
+        void write_ispendr_ppi(u32 value);
 
         u32 read_sspr(size_t idx);
-        void write_sspr(u32 value, size_t idx, bool debug);
+        void write_sspr(u32 value, size_t idx);
 
         u32 read_icpendr_ppi();
-        void write_icpendr_ppi(u32 value, bool debug);
+        void write_icpendr_ppi(u32 value);
 
         u32 read_icpendr_spi(size_t cpu_id);
-        void write_icpendr_spi(u32 value, size_t idx, bool debug);
+        void write_icpendr_spi(u32 value, size_t idx);
 
         u32 read_isactiver_ppi();
         u32 read_isactiver_spi(size_t idx);
@@ -172,12 +172,12 @@ public:
 
         u32 read_itargets_ppi(size_t idx);
 
-        void write_icfgr(u32 value, bool debug);
-        void write_icfgr_spi(u32 value, size_t idx, bool debug);
+        void write_icfgr(u32 value);
+        void write_icfgr_spi(u32 value, size_t idx);
 
-        void write_sgir(u32 value, bool debug);
-        void write_spendsgir(u8 value, size_t idx, bool debug);
-        void write_cpendsgir(u8 value, size_t idx, bool debug);
+        void write_sgir(u32 value);
+        void write_spendsgir(u8 value, size_t idx);
+        void write_cpendsgir(u8 value, size_t idx);
 
     public:
         reg<u32> ctlr;  // Distributor Control register
@@ -247,11 +247,11 @@ public:
         template <bool ALIAS>
         u32 read_iar(bool debug);
         template <bool ALIAS>
-        void write_eoir(u32 val, bool debug);
+        void write_eoir(u32 val);
         u32 read_rpr();
         void write_abpr(u32 val);
         u32 read_aiar();
-        void write_dir(u32 val, bool debug);
+        void write_dir(u32 val);
 
         u32 get_active_prio(size_t cpu);
         void update_rpr_and_apr(size_t cpu, size_t irq, bool drop);
@@ -294,9 +294,9 @@ public:
         gic400* m_parent;
         list_entry m_lr_state[NVCPU][NLR];
 
-        void write_hcr(u32 val, bool debug);
+        void write_hcr(u32 val);
         u32 read_vtr();
-        void write_lr(u32 val, size_t idx, bool debug);
+        void write_lr(u32 val, size_t idx);
         u32 read_lr(size_t idx);
         void write_vmcr(u32 val);
         u32 read_vmcr();
@@ -348,7 +348,7 @@ public:
         template <bool ALIAS>
         u32 read_iar(bool debug);
         template <bool ALIAS>
-        void write_eoir(u32 val, bool debug);
+        void write_eoir(u32 val);
         void write_abpr(u32 val);
 
         // disabled

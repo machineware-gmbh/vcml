@@ -82,7 +82,7 @@ private:
     void transfer_data_to_port();
 
     void write_cmd(u16 val);
-    u32 read_buffer_data_port();
+    u32 read_buffer_data_port(bool debug);
     void write_buffer_data_port(u32 val);
     void write_clock_ctrl(u16 val);
     void write_software_reset(u8 val);
