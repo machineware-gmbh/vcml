@@ -254,9 +254,10 @@ void sdhci::write_cmd(u16 val) {
     cmd = val;
 }
 
-u32 sdhci::read_buffer_data_port() {
+u32 sdhci::read_buffer_data_port(bool debug) {
     if (!(present_state & BUFFER_READ_ENABLE)) {
-        log_warn("reading BUFFER_DATA_PORT not allowed");
+        if (!debug)
+            log_warn("reading BUFFER_DATA_PORT not allowed");
         return buffer_data_port;
     }
 
