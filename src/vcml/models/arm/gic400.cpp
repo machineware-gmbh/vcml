@@ -97,7 +97,12 @@ u32 gic400::distif::read_ctlr() {
     return ctlr;
 }
 
-void gic400::distif::write_ctlr(u32 val) {
+void gic400::distif::write_ctlr(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to ctlr reg is ignored");
+        return;
+    }
+
     if (m_parent->secure && !in_secure_transaction()) {
         val = (val << 1) & GICD_CTLR_ENABLE_GROUP1;
         val |= ctlr & ~GICD_CTLR_ENABLE_GROUP1;
@@ -153,7 +158,12 @@ u32 gic400::distif::read_isenabler_ppi() {
     return (mask << 16) | 0xffff; // SGIs are always enabled
 }
 
-void gic400::distif::write_isenabler_ppi(u32 val) {
+void gic400::distif::write_isenabler_ppi(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to isenabler_ppi reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "iser");
 
     size_t irq = NSGI;
@@ -184,7 +194,12 @@ u32 gic400::distif::read_isenabler_spi(size_t idx) {
     return value;
 }
 
-void gic400::distif::write_isenabler_spi(u32 val, size_t idx) {
+void gic400::distif::write_isenabler_spi(u32 val, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to isenabler_spi reg is ignored");
+        return;
+    }
+
     size_t irq = NPRV + idx * 32;
     for (size_t i = 0; i < 32; i++) {
         if (val & bit(i)) {
@@ -206,7 +221,12 @@ u32 gic400::distif::read_icenabler_ppi() {
     return (mask << 16) | 0xffff; // SGIs are always enabled
 }
 
-void gic400::distif::write_icenabler_ppi(u32 val) {
+void gic400::distif::write_icenabler_ppi(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to icenabler_ppi reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "icer");
 
     size_t irq = NSGI;
@@ -232,7 +252,12 @@ u32 gic400::distif::read_icenabler_spi(size_t idx) {
     return value;
 }
 
-void gic400::distif::write_icenabler_spi(u32 val, size_t idx) {
+void gic400::distif::write_icenabler_spi(u32 val, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to icenabler_spi reg is ignored");
+        return;
+    }
+
     size_t irq = NPRV + idx * 32;
     for (size_t i = 0; i < 32; i++) {
         if (val & bit(i))
@@ -248,7 +273,12 @@ u32 gic400::distif::read_ispendr_ppi() {
     return int_pending_mask(cpu);
 }
 
-void gic400::distif::write_ispendr_ppi(u32 value) {
+void gic400::distif::write_ispendr_ppi(u32 value, bool debug) {
+    if (debug) {
+        log_warn("debug write to ispendr_ppi reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "ispr");
 
     size_t irq = NSGI;
@@ -266,7 +296,12 @@ u32 gic400::distif::read_sspr(size_t idx) {
     return spi_pending_mask(idx);
 }
 
-void gic400::distif::write_sspr(u32 value, size_t idx) {
+void gic400::distif::write_sspr(u32 value, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to sspr reg is ignored");
+        return;
+    }
+
     size_t irq = NPRV + idx * 32;
     for (size_t i = 0; i < 32; i++) {
         if (value & bit(i))
@@ -282,7 +317,12 @@ u32 gic400::distif::read_icpendr_ppi() {
     return int_pending_mask(cpu);
 }
 
-void gic400::distif::write_icpendr_ppi(u32 value) {
+void gic400::distif::write_icpendr_ppi(u32 value, bool debug) {
+    if (debug) {
+        log_warn("debug write to icpendr_ppi reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "icpendr0");
 
     size_t irq = NSGI;
@@ -300,7 +340,12 @@ u32 gic400::distif::read_icpendr_spi(size_t idx) {
     return spi_pending_mask(idx);
 }
 
-void gic400::distif::write_icpendr_spi(u32 val, size_t idx) {
+void gic400::distif::write_icpendr_spi(u32 val, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to icpendr_spi reg is ignored");
+        return;
+    }
+
     size_t irq = NPRV + idx * 32;
     for (size_t i = 0; i < 32; i++) {
         if (val & bit(i))
@@ -359,7 +404,12 @@ u32 gic400::distif::read_itargets_ppi(size_t idx) {
     return 0x01010101 << get_cpu(*this, "intt");
 }
 
-void gic400::distif::write_icfgr(u32 value) {
+void gic400::distif::write_icfgr(u32 value, bool debug) {
+    if (debug) {
+        log_warn("debug write to icfgr reg is ignored");
+        return;
+    }
+
     icfgr_ppi = value & 0xaaaaaaaa; // odd bits are reserved, zero them out
 
     size_t irq = NSGI;
@@ -376,7 +426,12 @@ void gic400::distif::write_icfgr(u32 value) {
     m_parent->update();
 }
 
-void gic400::distif::write_icfgr_spi(u32 value, size_t idx) {
+void gic400::distif::write_icfgr_spi(u32 value, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to icfgr_spi reg is ignored");
+        return;
+    }
+
     icfgr_spi[idx] = value & 0xaaaaaaaa; // odd bits are reserved
 
     size_t irq = NPRV + idx * 16;
@@ -393,7 +448,12 @@ void gic400::distif::write_icfgr_spi(u32 value, size_t idx) {
     m_parent->update();
 }
 
-void gic400::distif::write_sgir(u32 value) {
+void gic400::distif::write_sgir(u32 value, bool debug) {
+    if (debug) {
+        log_warn("debug write to sgir reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "sgir");
 
     size_t src_cpu = bit(cpu);
@@ -428,7 +488,12 @@ void gic400::distif::write_sgir(u32 value) {
     m_parent->update();
 }
 
-void gic400::distif::write_spendsgir(u8 value, size_t idx) {
+void gic400::distif::write_spendsgir(u8 value, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to spendsgir reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "sgis");
 
     size_t mask = bit(cpu);
@@ -440,7 +505,12 @@ void gic400::distif::write_spendsgir(u8 value, size_t idx) {
     m_parent->update();
 }
 
-void gic400::distif::write_cpendsgir(u8 value, size_t idx) {
+void gic400::distif::write_cpendsgir(u8 value, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to cpendsgir reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "sgic");
 
     size_t mask = bit(cpu);
@@ -745,7 +815,10 @@ void gic400::cpuif::write_bpr(u32 val) {
 }
 
 template <bool ALIAS>
-u32 gic400::cpuif::read_iar() {
+u32 gic400::cpuif::read_iar(bool debug) {
+    if (debug)
+        return 0;
+
     const char* reg_nm = ALIAS ? "aiar" : "iar";
     size_t cpu = get_cpu(*this, reg_nm);
     u32& reg = ALIAS ? aiar.bank(cpu) : iar.bank(cpu);
@@ -810,7 +883,12 @@ u32 gic400::cpuif::read_iar() {
 }
 
 template <bool ALIAS>
-void gic400::cpuif::write_eoir(u32 val) {
+void gic400::cpuif::write_eoir(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to eoir reg is ignored");
+        return;
+    }
+
     const char* reg_nm = ALIAS ? "aeoir" : "eoir";
     size_t cpu = get_cpu(*this, reg_nm);
     size_t irq = extract(val, 0, 10); // interrupt id stored in bits [9..0]
@@ -855,7 +933,12 @@ void gic400::cpuif::write_abpr(u32 val) {
     abpr = std::clamp<u32>(ABPR_P::set(val), ABPR_MIN, ABPR_MAX);
 }
 
-void gic400::cpuif::write_dir(u32 val) {
+void gic400::cpuif::write_dir(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to dir reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "dir");
     size_t irq = extract(val, 0, 10); // interrupt id stored in bits [9..0]
     if (irq >= RESERVED_IRQ)
@@ -1020,7 +1103,12 @@ void gic400::cpuif::reset() {
         cidr[i] = extract(AMBA_PCID, i * 8, 8);
 }
 
-void gic400::vifctrl::write_hcr(u32 val) {
+void gic400::vifctrl::write_hcr(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to hcr reg is ignored");
+        return;
+    }
+
     hcr.bank(get_cpu(*this, "hcr")) = val;
     m_parent->update(true);
 }
@@ -1029,7 +1117,12 @@ u32 gic400::vifctrl::read_vtr() {
     return 0x90000000 | (NLR - 1);
 }
 
-void gic400::vifctrl::write_lr(u32 val, size_t idx) {
+void gic400::vifctrl::write_lr(u32 val, size_t idx, bool debug) {
+    if (debug) {
+        log_warn("debug write to lr reg is ignored");
+        return;
+    }
+
     size_t cpu = get_cpu(*this, "lr");
 
     u8 state = extract(val, 28, 2);
@@ -1188,7 +1281,10 @@ void gic400::vcpuif::write_bpr(u32 val) {
 }
 
 template <bool ALIAS>
-u32 gic400::vcpuif::read_iar() {
+u32 gic400::vcpuif::read_iar(bool debug) {
+    if (debug)
+        return 0;
+
     const char* reg_nm = ALIAS ? "aiar" : "iar";
     size_t cpu = get_cpu(*this, reg_nm);
 
@@ -1230,7 +1326,12 @@ u32 gic400::vcpuif::read_iar() {
 }
 
 template <bool ALIAS>
-void gic400::vcpuif::write_eoir(u32 val) {
+void gic400::vcpuif::write_eoir(u32 val, bool debug) {
+    if (debug) {
+        log_warn("debug write to eoir reg is ignored");
+        return;
+    }
+
     const char* reg_nm = ALIAS ? "aeoir" : "eoir";
     size_t cpu = get_cpu(*this, reg_nm);
     u32& reg = ALIAS ? aeoir.bank(cpu) : eoir.bank(cpu);
