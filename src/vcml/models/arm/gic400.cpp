@@ -745,7 +745,10 @@ void gic400::cpuif::write_bpr(u32 val) {
 }
 
 template <bool ALIAS>
-u32 gic400::cpuif::read_iar() {
+u32 gic400::cpuif::read_iar(bool debug) {
+    if (debug)
+        return 0;
+
     const char* reg_nm = ALIAS ? "aiar" : "iar";
     size_t cpu = get_cpu(*this, reg_nm);
     u32& reg = ALIAS ? aiar.bank(cpu) : iar.bank(cpu);
@@ -1188,7 +1191,10 @@ void gic400::vcpuif::write_bpr(u32 val) {
 }
 
 template <bool ALIAS>
-u32 gic400::vcpuif::read_iar() {
+u32 gic400::vcpuif::read_iar(bool debug) {
+    if (debug)
+        return 0;
+
     const char* reg_nm = ALIAS ? "aiar" : "iar";
     size_t cpu = get_cpu(*this, reg_nm);
 

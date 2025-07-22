@@ -245,7 +245,7 @@ public:
         u32 read_bpr();
         void write_bpr(u32 val);
         template <bool ALIAS>
-        u32 read_iar();
+        u32 read_iar(bool debug);
         template <bool ALIAS>
         void write_eoir(u32 val);
         u32 read_rpr();
@@ -346,7 +346,7 @@ public:
         void write_bpr(u32 val);
         void write_ctlr(u32 val);
         template <bool ALIAS>
-        u32 read_iar();
+        u32 read_iar(bool debug);
         template <bool ALIAS>
         void write_eoir(u32 val);
         void write_abpr(u32 val);
