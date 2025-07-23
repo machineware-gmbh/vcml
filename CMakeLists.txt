@@ -183,6 +183,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/virtio/net.cpp
     ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp
+    ${src}/vcml/models/virtio/sound.cpp
     ${src}/vcml/models/meta/loader.cpp
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp

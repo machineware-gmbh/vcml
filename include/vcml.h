@@ -148,6 +148,7 @@
 #include "vcml/models/virtio/net.h"
 #include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
+#include "vcml/models/virtio/sound.h"
 
 #include "vcml/models/meta/loader.h"
 #include "vcml/models/meta/simdev.h"
