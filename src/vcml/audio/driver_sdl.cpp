@@ -8,42 +8,42 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_AUDIO_WAV_H
-#define VCML_AUDIO_WAV_H
-
-#include "vcml/audio/driver.h"
+#include "vcml/audio/driver_sdl.h"
 
 namespace vcml {
 namespace audio {
 
-class wav_driver : public driver
+class sdl_audio
 {
 private:
-    string m_path;
-    ofstream m_file;
+    sdl_audio() { SDL_InitSubSystem(SDL_INIT_AUDIO); }
+    ~sdl_audio() { SDL_QuitSubSystem(SDL_INIT_AUDIO); }
 
 public:
-    wav_driver(const string& path): m_path(path), m_file() {}
-
-    virtual ~wav_driver() = default;
-
-    virtual bool configure_output(u32 format, u32 channels,
-                                  u32 rate) override {
-        m_file.open(m_path);
-        if (!m_file)
-            return false;
-
-        return true;
-    }
-
-    virtual void output(void* buf, size_t len) override {}
-
-    virtual void set_output_volume(float volume) override {
-        // nothing to do
+    static sdl_audio& instance() {
+        static sdl_audio singleton;
+        return singleton;
     }
 };
 
+driver_sdl::driver_sdl(): m_audio(sdl_audio::instance()) {
+}
+
+driver_sdl::~driver_sdl() {
+    // TODO
+}
+
+bool driver_sdl::configure_output(u32 format, u32 channels, u32 rate) {
+    return true;
+}
+
+void driver_sdl::output(void* buf, size_t len) {
+    // TODO
+}
+
+void driver_sdl::set_output_volume(float volume) {
+    // TODO
+}
+
 } // namespace audio
 } // namespace vcml
-
-#endif

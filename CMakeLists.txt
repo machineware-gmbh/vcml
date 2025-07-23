@@ -93,6 +93,7 @@ add_library(vcml STATIC
     ${src}/vcml/ui/vnc.cpp
     ${src}/vcml/audio/format.cpp
     ${src}/vcml/audio/driver.cpp
+    ${src}/vcml/audio/driver_wav.cpp
     ${src}/vcml/audio/ostream.cpp
     ${src}/vcml/protocols/tlm_sbi.cpp
     ${src}/vcml/protocols/tlm_exmon.cpp
@@ -250,6 +251,7 @@ if(SDL2_FOUND)
     target_include_directories(vcml SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
     target_sources(vcml PRIVATE ${src}/vcml/ui/sdl.cpp)
     target_sources(vcml PRIVATE ${src}/vcml/ui/icon.cpp)
+    target_sources(vcml PRIVATE ${src}/vcml/audio/driver_sdl.cpp)
     target_link_libraries(vcml PUBLIC ${SDL2_LIBRARIES})
 else()
     message(STATUS "Building without SDL2 support")

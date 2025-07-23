@@ -8,37 +8,32 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/audio/ostream.h"
-#include "vcml/audio/driver.h"
-#include "vcml/audio/driver_wav.h"
+#ifndef VCML_AUDIO_DRIVER_SDL_H
+#define VCML_AUDIO_DRIVER_SDL_H
 
-#ifdef HAVE_SDL2
-#include "vcml/audio/driver_sdl.h"
-#endif
+#include "vcml/audio/driver.h"
+
+#include <SDL.h>
 
 namespace vcml {
 namespace audio {
 
-static string wav_file_name(const string& type, const string& defval) {
-    size_t pos = type.find(':');
-    if (pos != string::npos && pos + 1 < type.size())
-        return type.substr(pos + 1);
-    else
-        return mkstr("%s.wav", defval.c_str());
-}
+class sdl_audio;
+class driver_sdl : public driver
+{
+private:
+    sdl_audio& m_audio;
 
-driver* driver::create(ostream& owner, const string& type) {
-    string kind = type.substr(0, type.find(':'));
-    if (kind == "wav")
-        return new driver_wav(wav_file_name(type, owner.name()));
+public:
+    driver_sdl();
+    virtual ~driver_sdl();
 
-#ifdef HAVE_SDL2
-    if (kind == "sdl")
-        return new driver_sdl();
-#endif
-
-    VCML_REPORT("unknown audio driver \"%s\"", kind.c_str());
-}
+    virtual bool configure_output(u32 format, u32 channels, u32 rate) override;
+    virtual void output(void* buf, size_t len) override;
+    virtual void set_output_volume(float volume) override;
+};
 
 } // namespace audio
 } // namespace vcml
+
+#endif
