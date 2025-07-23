@@ -91,6 +91,9 @@ add_library(vcml STATIC
     ${src}/vcml/ui/display.cpp
     ${src}/vcml/ui/console.cpp
     ${src}/vcml/ui/vnc.cpp
+    ${src}/vcml/audio/format.cpp
+    ${src}/vcml/audio/driver.cpp
+    ${src}/vcml/audio/ostream.cpp
     ${src}/vcml/protocols/tlm_sbi.cpp
     ${src}/vcml/protocols/tlm_exmon.cpp
     ${src}/vcml/protocols/tlm_dmi_cache.cpp

@@ -17,6 +17,8 @@
 #include "vcml/core/module.h"
 #include "vcml/core/model.h"
 
+#include "vcml/audio/ostream.h"
+
 #include "vcml/protocols/virtio.h"
 
 namespace vcml {
@@ -56,6 +58,8 @@ private:
 
     stream_info m_streamtx;
     stream_info m_streamrx;
+
+    audio::ostream m_output;
 
     sc_event m_ctrlev;
     sc_event m_txev;

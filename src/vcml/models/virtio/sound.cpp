@@ -166,6 +166,26 @@ static size_t virtio_snd_pcm_format_bps(u32 format) {
     }
 }
 
+static u32 virtio_snd_pcm_format_to_vcml(u32 format) {
+    switch (format) {
+    case VIRTIO_SND_PCM_FMT_S8:
+        return audio::FORMAT_S8;
+    case VIRTIO_SND_PCM_FMT_U8:
+        return audio::FORMAT_U8;
+    case VIRTIO_SND_PCM_FMT_S16:
+        return audio::FORMAT_S16LE;
+    case VIRTIO_SND_PCM_FMT_U16:
+        return audio::FORMAT_U16LE;
+    case VIRTIO_SND_PCM_FMT_S32:
+        return audio::FORMAT_S32LE;
+    case VIRTIO_SND_PCM_FMT_U32:
+        return audio::FORMAT_U32LE;
+    default:
+        VCML_ERROR("format unsupported: %s",
+                   virtio_snd_pcm_format_str(format));
+    }
+}
+
 enum virtio_snd_pcm_rates : u32 {
     VIRTIO_SND_PCM_RATE_5512 = 0,
     VIRTIO_SND_PCM_RATE_8000,
@@ -466,6 +486,13 @@ u32 sound::handle_pcm_set_params(vq_message& msg) {
     stream->rate = req.rate;
     stream->state = STATE_STOPPED;
 
+    u32 format = virtio_snd_pcm_format_to_vcml(req.format);
+    u32 rate = virtio_snd_pcm_rate_hz(req.rate);
+    if (!m_output.configure(format, req.channels, rate)) {
+        log_warn("error configuring output stream");
+        return VIRTIO_SND_S_IO_ERR;
+    }
+
     return VIRTIO_SND_S_OK;
 }
 
@@ -605,6 +632,9 @@ void sound::tx_thread() {
                     m_streamtx.rate);
                 log_debug("consuming buffer %zu bytes (%fs)", buflen,
                           delay.to_seconds());
+                vector<u8> buf(msg.length_out());
+                msg.copy_out(buf, sizeof(hdr));
+                m_output.output(buf.data(), buf.size());
                 wait(delay);
             }
 
@@ -683,6 +713,7 @@ sound::sound(const sc_module_name& nm):
     m_config(),
     m_streamtx(),
     m_streamrx(),
+    m_output("output"),
     m_ctrlev("ctrlev"),
     m_txev("txev"),
     m_rxev("rxev"),
@@ -705,8 +736,8 @@ sound::~sound() {
 }
 
 void sound::reset() {
-    m_streamtx.state = STATE_RELEASED;
-    m_streamrx.state = STATE_RELEASED;
+    m_streamtx.state = STATE_STOPPED;
+    m_streamrx.state = STATE_STOPPED;
 }
 
 VCML_EXPORT_MODEL(vcml::virtio::sound, name, args) {

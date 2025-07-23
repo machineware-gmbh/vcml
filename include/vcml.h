@@ -58,6 +58,8 @@
 #include "vcml/ui/display.h"
 #include "vcml/ui/console.h"
 
+#include "vcml/audio/format.h"
+
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
