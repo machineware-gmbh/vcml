@@ -273,17 +273,36 @@ virtio_status split_virtqueue::do_get(vq_message& msg) {
     }
 
     while (true) {
-        if (lookup_desc_ptr(desc) == nullptr) {
-            log_warn(
-                "cannot get DMI pointer for descriptor at address 0x%016llx",
-                desc->addr);
-            return VIRTIO_ERR_NODMI;
-        }
-
         if (!desc->is_write() && msg.length_out() > 0)
             log_warn("invalid descriptor order");
 
-        msg.append(desc->addr, desc->len, desc->is_write());
+        if (lookup_desc_ptr(desc)) {
+            msg.append(desc->addr, desc->len, desc->is_write());
+        } else {
+            // we could not get a DMI pointer for the entire chunk, so lets
+            // split it into smaller regions in case an IOMMU is in between us
+            // and the memory. best guess is to use 4k chunks as this seems to
+            // be a popular minimal page size
+            u64 addr = desc->addr;
+            u64 nbytes = 0;
+            vcml_access access = desc->is_write() ? VCML_ACCESS_WRITE
+                                                  : VCML_ACCESS_READ;
+            while (nbytes < desc->len) {
+                u64 psz = 4096;
+                u64 len = min(psz - (addr & (psz - 1)), desc->len - nbytes);
+                u8* ptr = dmi(addr, len, access);
+                if (!ptr) {
+                    log_error(
+                        "cannot get DMI pointer for descriptor at address "
+                        "0x%016llx",
+                        addr);
+                    return VIRTIO_ERR_NODMI;
+                };
+                msg.append(addr, len, desc->is_write());
+                addr += len;
+                nbytes += len;
+            }
+        }
 
         if (!desc->is_chained())
             return VIRTIO_OK;
@@ -422,17 +441,36 @@ virtio_status packed_virtqueue::do_get(vq_message& msg) {
             return VIRTIO_ERR_DESC;
         }
 
-        if (lookup_desc_ptr(desc) == nullptr) {
-            log_warn(
-                "cannot get DMI pointer for descriptor at address 0x%016llx",
-                desc->addr);
-            return VIRTIO_ERR_NODMI;
-        }
-
         if (!desc->is_write() && msg.length_out() > 0)
             log_warn("invalid descriptor order");
 
-        msg.append(desc->addr, desc->len, desc->is_write());
+        if (lookup_desc_ptr(desc)) {
+            msg.append(desc->addr, desc->len, desc->is_write());
+        } else {
+            // we could not get a DMI pointer for the entire chunk, so lets
+            // split it into smaller regions in case an IOMMU is in between us
+            // and the memory. best guess is to use 4k chunks as this seems to
+            // be a popular minimal page size
+            u64 addr = desc->addr;
+            u64 nbytes = 0;
+            vcml_access access = desc->is_write() ? VCML_ACCESS_WRITE
+                                                  : VCML_ACCESS_READ;
+            while (nbytes < desc->len) {
+                u64 psz = 4096;
+                u64 len = min(psz - (addr & (psz - 1)), desc->len - nbytes);
+                u8* ptr = dmi(addr, len, access);
+                if (!ptr) {
+                    log_error(
+                        "cannot get DMI pointer for descriptor at address "
+                        "0x%016llx",
+                        addr);
+                    return VIRTIO_ERR_NODMI;
+                };
+                msg.append(addr, len, desc->is_write());
+                addr += len;
+                nbytes += len;
+            }
+        }
 
         if (count++ >= limit) {
             log_warn("descriptor chain too long");
