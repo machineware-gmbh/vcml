@@ -84,7 +84,7 @@ public:
         test_base(nm),
         mem("mem", 1 * MiB),
         bus("bus"),
-        iommu("iommu"),
+        iommu("iommu", false),
         out("out"),
         dma("dma"),
         cirq("cirq"),
@@ -195,7 +195,7 @@ public:
         ddtp[13] = 0x0000000000000000; // dev[1].msi_addr_mask
         ddtp[14] = 0x0000000000000000; // dev[1].msi_addr_patter
         ddtp[15] = 0x0000000000000000; // dev[1].reserverd
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 2));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 2));
 
         u32 data;
         tlm_sbi info = sbi_cpuid(1);
@@ -222,7 +222,7 @@ public:
         ddtp1[21] = 0x0000000000000000; // dev[1].msi_addr_mask
         ddtp1[22] = 0x0000000000000000; // dev[1].msi_addr_patter
         ddtp1[23] = 0x0000000000000000; // dev[1].reserverd
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 3));
 
         EXPECT_TRUE(enable_counters(true));
 
@@ -330,7 +330,7 @@ public:
         ddtp1[21] = 0x0000000000000000; // dev[2].msi_addr_mask
         ddtp1[22] = 0x0000000000000000; // dev[2].msi_addr_patter
         ddtp1[23] = 0x0000000000000000; // dev[2].reserverd
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 3));
 
         // setup fault queue
         u64 fqb = FLTQ_ADDR >> 2 | 1; // 4 entries
@@ -406,7 +406,7 @@ public:
         ddtp[13] = 0xfffff0000000000f; // dev[1].msi_addr_mask
         ddtp[14] = 0x00000aabbbbcccc0; // dev[1].msi_addr_patter
         ddtp[15] = 0x0000000000000000; // dev[1].reserverd
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 2));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 2));
 
         u32 data;
         tlm_sbi info = sbi_cpuid(1);
@@ -443,7 +443,7 @@ public:
         ddtp[13] = 0xfffff0000000000f; // dev[1].msi_addr_mask
         ddtp[14] = 0x00000aabbbbcccc0; // dev[1].msi_addr_patter
         ddtp[15] = 0x0000000000000000; // dev[1].reserverd
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 2));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 2));
 
         u32 data, mrif;
         tlm_sbi info = sbi_cpuid(1);
@@ -480,7 +480,7 @@ public:
         ddtp1[30] = 0x0000000000000000; // dev[3].msi_addr_patter
         ddtp1[31] = 0x0000000000000000; // dev[3].reserverd
 
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 3));
 
         // begin test
         u64 iova = 0xc0000008;
@@ -531,7 +531,7 @@ public:
         ddtp1[38] = 0x0000000000000000; // dev[4].msi_addr_patter
         ddtp1[39] = 0x0000000000000000; // dev[4].reserverd
 
-        ASSERT_OK(out.writew(IOMMU_DDTP, DDTP0_ADDR | 3));
+        ASSERT_OK(out.writew(IOMMU_DDTP, (DDTP0_ADDR >> 2) | 3));
 
         iommu.flush_contexts();
         iommu.flush_tlb_g();

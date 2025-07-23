@@ -266,7 +266,7 @@ public:
     gpio_initiator_socket pmirq;
     gpio_initiator_socket pirq;
 
-    iommu(const sc_module_name& nm);
+    iommu(const sc_module_name& nm, bool passthrough = true);
     virtual ~iommu();
     VCML_KIND(riscv::iommu);
 

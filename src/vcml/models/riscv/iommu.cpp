@@ -430,7 +430,7 @@ enum fctl_bits : u32 {
 };
 
 using DDTP_MODE = field<0, 4, u64>;
-using DDTP_PPN = field<PAGE_BITS, PPN_BITS, u64>;
+using DDTP_PPN = field<10, PPN_BITS, u64>;
 
 enum ddtp_bits : u64 {
     DDTP_MODE_OFF = 0,
@@ -2203,7 +2203,7 @@ void iommu::send_msi(u32 irq) {
     }
 }
 
-iommu::iommu(const sc_module_name& nm):
+iommu::iommu(const sc_module_name& nm, bool passthrough):
     peripheral(nm),
     m_contexts(),
     m_iotlb_s(),
@@ -2237,7 +2237,7 @@ iommu::iommu(const sc_module_name& nm):
     pd8("pd8", true),
     pd17("pd17", true),
     pd20("pd20", true),
-    passthrough("passthrough", false),
+    passthrough("passthrough", passthrough),
     caps("caps", 0x0, 0),
     fctl("fctl", 0x8, 0),
     ddtp("ddtp", 0x10, 0),
