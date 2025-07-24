@@ -44,6 +44,10 @@ SDL_AudioFormat sdl_format_from_vcml(u32 format) {
         return AUDIO_S32LSB;
     case FORMAT_S32BE:
         return AUDIO_S32MSB;
+    case FORMAT_F32LE:
+        return AUDIO_F32LSB;
+    case FORMAT_F32BE:
+        return AUDIO_F32MSB;
     case FORMAT_U32LE:
     case FORMAT_U32BE:
     default:
@@ -104,8 +108,8 @@ bool driver_sdl::configure_output(u32 format, u32 channels, u32 rate) {
 void driver_sdl::output(void* buf, size_t len) {
     lock_guard<mutex> guard(m_mtx);
     log_debug("received %zu bytes audio data", len);
-    if (m_buffer.size() > 4 * KiB) {
-        log_warn("audio buffer overflow");
+    if (m_buffer.size() > 16 * KiB) {
+        log_warn("audio buffer overflow, samples dropped");
         return;
     }
 

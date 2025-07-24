@@ -180,6 +180,8 @@ static u32 virtio_snd_pcm_format_to_vcml(u32 format) {
         return audio::FORMAT_S32LE;
     case VIRTIO_SND_PCM_FMT_U32:
         return audio::FORMAT_U32LE;
+    case VIRTIO_SND_PCM_FMT_FLOAT:
+        return audio::FORMAT_F32LE;
     default:
         VCML_ERROR("format unsupported: %s",
                    virtio_snd_pcm_format_str(format));

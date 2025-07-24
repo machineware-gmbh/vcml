@@ -35,6 +35,10 @@ const char* format_str(u32 format) {
         return "FORMAT_U32BE";
     case FORMAT_S32BE:
         return "FORMAT_S32BE";
+    case FORMAT_F32LE:
+        return "FORMAT_F32LE";
+    case FORMAT_F32BE:
+        return "FORMAT_F32BE";
     default:
         VCML_ERROR("invalid audio format: 0x%x", format);
     }
@@ -54,6 +58,8 @@ size_t format_bits(u32 format) {
     case FORMAT_S32LE:
     case FORMAT_U32BE:
     case FORMAT_S32BE:
+    case FORMAT_F32LE:
+    case FORMAT_F32BE:
         return 32;
     default:
         VCML_ERROR("invalid audio format: 0x%x", format);
@@ -74,6 +80,31 @@ bool format_signed(u32 format) {
     case FORMAT_S16BE:
     case FORMAT_S32LE:
     case FORMAT_S32BE:
+    case FORMAT_F32LE:
+    case FORMAT_F32BE:
+        return true;
+
+    default:
+        VCML_ERROR("invalid audio format: 0x%x", format);
+    }
+}
+
+bool format_float(u32 format) {
+    switch (format) {
+    case FORMAT_U8:
+    case FORMAT_S8:
+    case FORMAT_U16LE:
+    case FORMAT_S16LE:
+    case FORMAT_U16BE:
+    case FORMAT_S16BE:
+    case FORMAT_U32LE:
+    case FORMAT_S32LE:
+    case FORMAT_U32BE:
+    case FORMAT_S32BE:
+        return false;
+
+    case FORMAT_F32LE:
+    case FORMAT_F32BE:
         return true;
 
     default:
@@ -91,12 +122,14 @@ bool format_native_endian(u32 format) {
     case FORMAT_S16LE:
     case FORMAT_U32LE:
     case FORMAT_S32LE:
+    case FORMAT_F32LE:
         return host_endian() == ENDIAN_LITTLE;
 
     case FORMAT_U16BE:
     case FORMAT_S16BE:
     case FORMAT_U32BE:
     case FORMAT_S32BE:
+    case FORMAT_F32BE:
         return host_endian() == ENDIAN_BIG;
 
     default:

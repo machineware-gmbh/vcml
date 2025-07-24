@@ -27,11 +27,14 @@ enum audio_format : u32 {
     FORMAT_S32LE,
     FORMAT_U32BE,
     FORMAT_S32BE,
+    FORMAT_F32LE,
+    FORMAT_F32BE,
 };
 
 const char* format_str(u32 format);
 size_t format_bits(u32 format);
 bool format_signed(u32 format);
+bool format_float(u32 format);
 bool format_native_endian(u32 format);
 
 void fill_silence(void* buf, size_t len, u32 format);
