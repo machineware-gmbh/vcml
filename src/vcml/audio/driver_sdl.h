@@ -12,6 +12,7 @@
 #define VCML_AUDIO_DRIVER_SDL_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/module.h"
 #include "vcml/audio/driver.h"
 
 #include <SDL.h>
@@ -23,6 +24,7 @@ class sdl_audio;
 class driver_sdl : public driver
 {
 private:
+    module& m_parent;
     sdl_audio& m_audio;
 
     u32 m_format;
@@ -34,7 +36,7 @@ private:
     vector<u8> m_buffer;
 
 public:
-    driver_sdl();
+    driver_sdl(module& parent);
     virtual ~driver_sdl();
 
     virtual bool configure_output(u32 format, u32 channels, u32 rate) override;

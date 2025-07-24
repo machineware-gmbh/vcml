@@ -637,8 +637,8 @@ void sound::tx_thread() {
                     m_streamtx.rate);
                 log_debug("consuming buffer %zu bytes (%fs)", buflen,
                           delay.to_seconds());
-                vector<u8> buf(msg.length_out());
-                msg.copy_out(buf, sizeof(hdr));
+                vector<u8> buf(msg.length_in() - sizeof(hdr));
+                msg.copy_in(buf, sizeof(hdr));
                 m_output.output(buf.data(), buf.size());
                 wait(delay);
             }

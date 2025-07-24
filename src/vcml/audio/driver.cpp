@@ -34,7 +34,7 @@ driver* driver::create(ostream& owner, const string& type) {
 
 #ifdef HAVE_SDL2
     if (kind == "sdl")
-        return new driver_sdl();
+        return new driver_sdl(owner);
 #endif
 
     VCML_REPORT("unknown audio driver \"%s\"", kind.c_str());
