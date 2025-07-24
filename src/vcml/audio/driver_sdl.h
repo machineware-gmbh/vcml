@@ -11,6 +11,7 @@
 #ifndef VCML_AUDIO_DRIVER_SDL_H
 #define VCML_AUDIO_DRIVER_SDL_H
 
+#include "vcml/core/types.h"
 #include "vcml/audio/driver.h"
 
 #include <SDL.h>
@@ -24,6 +25,14 @@ class driver_sdl : public driver
 private:
     sdl_audio& m_audio;
 
+    u32 m_format;
+    u32 m_channels;
+    u32 m_rate;
+    SDL_AudioDeviceID m_device;
+
+    mutex m_mtx;
+    vector<u8> m_buffer;
+
 public:
     driver_sdl();
     virtual ~driver_sdl();
@@ -31,6 +40,8 @@ public:
     virtual bool configure_output(u32 format, u32 channels, u32 rate) override;
     virtual void output(void* buf, size_t len) override;
     virtual void set_output_volume(float volume) override;
+
+    void audio_callback(void* buf, size_t len);
 };
 
 } // namespace audio

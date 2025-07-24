@@ -621,8 +621,13 @@ void sound::tx_thread() {
         while (m_streamtx.state == STATE_STOPPED)
             wait(m_txev);
 
-        vq_message msg;
-        while (virtio_in->get(VIRTQUEUE_TX, msg)) {
+        while (m_streamtx.state != STATE_STOPPED) {
+            vq_message msg;
+            if (!virtio_in->get(VIRTQUEUE_TX, msg)) {
+                m_streamtx.state = STATE_STOPPED;
+                break;
+            }
+
             virtio_snd_pcm_xfer hdr{};
             msg.copy_in(hdr);
             size_t buflen = msg.length_in() - sizeof(hdr);
@@ -640,9 +645,6 @@ void sound::tx_thread() {
 
             virtio_in->put(VIRTQUEUE_TX, msg);
         }
-
-        if (m_streamtx.state == STATE_RELEASED)
-            m_streamtx.state = STATE_STOPPED;
     }
 }
 
