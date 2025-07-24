@@ -276,14 +276,14 @@ VCML_TYPEINFO(endianess);
 istream& operator>>(istream& is, endianess& e);
 ostream& operator<<(ostream& os, endianess e);
 
-inline endianess host_endian() {
-    u32 test = 1;
-    u8* p = reinterpret_cast<u8*>(&test);
-    if (p[0] == 1)
-        return ENDIAN_LITTLE;
-    if (p[3] == 1)
-        return ENDIAN_BIG;
+constexpr endianess host_endian() {
+#if defined(MWR_HOST_LITTLE_ENDIAN)
+    return ENDIAN_LITTLE;
+#elif defined(MWR_HOST_ENDIAN_BIG)
+    return ENDIAN_BIG;
+#else
     return ENDIAN_UNKNOWN;
+#endif
 }
 
 typedef unsigned int address_space;

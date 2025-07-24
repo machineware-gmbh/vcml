@@ -16,7 +16,12 @@ namespace audio {
 class sdl_audio
 {
 private:
-    sdl_audio() { SDL_InitSubSystem(SDL_INIT_AUDIO); }
+    sdl_audio() {
+        SDL_InitSubSystem(SDL_INIT_AUDIO);
+        log_debug("SDL: using audiodriver \"%s\"",
+                  SDL_GetCurrentAudioDriver());
+    }
+
     ~sdl_audio() { SDL_QuitSubSystem(SDL_INIT_AUDIO); }
 
 public:

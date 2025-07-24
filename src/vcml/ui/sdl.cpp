@@ -546,6 +546,8 @@ void sdl::run() {
         return;
     }
 
+    log_debug("SDL: using videodriver \"%s\"", SDL_GetCurrentVideoDriver());
+
     while (sim_running() && !m_exit) {
         check_clients();
         poll_events();

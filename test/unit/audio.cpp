@@ -41,16 +41,26 @@ TEST(audio, format_bits) {
 }
 
 TEST(audio, format_endian) {
-    EXPECT_TRUE(audio::format_native_endian(FORMAT_U8));
-    EXPECT_TRUE(audio::format_native_endian(FORMAT_S8));
-    EXPECT_TRUE(audio::format_native_endian(FORMAT_U16LE));
-    EXPECT_TRUE(audio::format_native_endian(FORMAT_S16LE));
-    EXPECT_FALSE(audio::format_native_endian(FORMAT_U16BE));
-    EXPECT_FALSE(audio::format_native_endian(FORMAT_S16BE));
-    EXPECT_TRUE(audio::format_native_endian(FORMAT_U32LE));
-    EXPECT_TRUE(audio::format_native_endian(FORMAT_S32LE));
-    EXPECT_FALSE(audio::format_native_endian(FORMAT_U32BE));
-    EXPECT_FALSE(audio::format_native_endian(FORMAT_S32BE));
+    EXPECT_TRUE(audio::format_is_little_endian(FORMAT_U8));
+    EXPECT_TRUE(audio::format_is_little_endian(FORMAT_S8));
+    EXPECT_TRUE(audio::format_is_little_endian(FORMAT_U16LE));
+    EXPECT_TRUE(audio::format_is_little_endian(FORMAT_S16LE));
+    EXPECT_FALSE(audio::format_is_little_endian(FORMAT_U16BE));
+    EXPECT_FALSE(audio::format_is_little_endian(FORMAT_S16BE));
+    EXPECT_TRUE(audio::format_is_little_endian(FORMAT_U32LE));
+    EXPECT_TRUE(audio::format_is_little_endian(FORMAT_S32LE));
+    EXPECT_FALSE(audio::format_is_little_endian(FORMAT_U32BE));
+    EXPECT_FALSE(audio::format_is_little_endian(FORMAT_S32BE));
+    EXPECT_FALSE(audio::format_is_big_endian(FORMAT_U8));
+    EXPECT_FALSE(audio::format_is_big_endian(FORMAT_S8));
+    EXPECT_FALSE(audio::format_is_big_endian(FORMAT_U16LE));
+    EXPECT_FALSE(audio::format_is_big_endian(FORMAT_S16LE));
+    EXPECT_TRUE(audio::format_is_big_endian(FORMAT_U16BE));
+    EXPECT_TRUE(audio::format_is_big_endian(FORMAT_S16BE));
+    EXPECT_FALSE(audio::format_is_big_endian(FORMAT_U32LE));
+    EXPECT_FALSE(audio::format_is_big_endian(FORMAT_S32LE));
+    EXPECT_TRUE(audio::format_is_big_endian(FORMAT_U32BE));
+    EXPECT_TRUE(audio::format_is_big_endian(FORMAT_S32BE));
 }
 
 TEST(audio, fill_silence) {

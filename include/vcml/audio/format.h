@@ -17,25 +17,66 @@ namespace vcml {
 namespace audio {
 
 enum audio_format : u32 {
-    FORMAT_U8 = 0,
-    FORMAT_S8,
-    FORMAT_U16LE,
-    FORMAT_S16LE,
-    FORMAT_U16BE,
-    FORMAT_S16BE,
-    FORMAT_U32LE,
-    FORMAT_S32LE,
-    FORMAT_U32BE,
-    FORMAT_S32BE,
-    FORMAT_F32LE,
-    FORMAT_F32BE,
+    AUDIO_8BIT = 0 << 0,
+    AUDIO_16BIT = 1 << 0,
+    AUDIO_32BIT = 2 << 0,
+    AUDIO_64BIT = 3 << 0,
+    AUDIO_UNSIGNED = 0 << 2,
+    AUDIO_SIGNED = 1 << 2,
+    AUDIO_FLOAT = 2 << 2,
+    AUDIO_ENDIAN_LITTLE = 0 << 4,
+    AUDIO_ENDIAN_BIG = 1 << 4,
+
+    FORMAT_U8 = AUDIO_8BIT | AUDIO_UNSIGNED,
+    FORMAT_S8 = AUDIO_8BIT | AUDIO_SIGNED,
+
+    FORMAT_U16LE = AUDIO_16BIT | AUDIO_UNSIGNED | AUDIO_ENDIAN_LITTLE,
+    FORMAT_U16BE = AUDIO_16BIT | AUDIO_UNSIGNED | AUDIO_ENDIAN_BIG,
+    FORMAT_S16LE = AUDIO_16BIT | AUDIO_SIGNED | AUDIO_ENDIAN_LITTLE,
+    FORMAT_S16BE = AUDIO_16BIT | AUDIO_SIGNED | AUDIO_ENDIAN_BIG,
+
+    FORMAT_U32LE = AUDIO_32BIT | AUDIO_UNSIGNED | AUDIO_ENDIAN_LITTLE,
+    FORMAT_U32BE = AUDIO_32BIT | AUDIO_UNSIGNED | AUDIO_ENDIAN_BIG,
+    FORMAT_S32LE = AUDIO_32BIT | AUDIO_SIGNED | AUDIO_ENDIAN_LITTLE,
+    FORMAT_S32BE = AUDIO_32BIT | AUDIO_SIGNED | AUDIO_ENDIAN_BIG,
+
+    FORMAT_F32LE = AUDIO_32BIT | AUDIO_FLOAT | AUDIO_ENDIAN_LITTLE,
+    FORMAT_F32BE = AUDIO_32BIT | AUDIO_FLOAT | AUDIO_ENDIAN_BIG,
 };
 
+constexpr size_t format_bits(u32 format) {
+    return 8u << (format & 0b11);
+}
+
+constexpr bool format_is_unsigned(u32 format) {
+    return (format & 0b1100) == AUDIO_UNSIGNED;
+}
+
+constexpr bool format_is_signed(u32 format) {
+    return !format_is_unsigned(format);
+}
+
+constexpr bool format_is_float(u32 format) {
+    return (format & 0b1100) == AUDIO_FLOAT;
+}
+
+constexpr bool format_is_big_endian(u32 format) {
+    return (format & 0b10000) == AUDIO_ENDIAN_BIG;
+}
+
+constexpr bool format_is_little_endian(u32 format) {
+    return (format & 0b10000) == AUDIO_ENDIAN_LITTLE;
+}
+
+constexpr bool format_is_native_endian(u32 format) {
+    if (host_endian() == ENDIAN_LITTLE)
+        return format_is_little_endian(format);
+    if (host_endian() == ENDIAN_BIG)
+        return format_is_big_endian(format);
+    return false;
+}
+
 const char* format_str(u32 format);
-size_t format_bits(u32 format);
-bool format_signed(u32 format);
-bool format_float(u32 format);
-bool format_native_endian(u32 format);
 
 void fill_silence(void* buf, size_t len, u32 format);
 
