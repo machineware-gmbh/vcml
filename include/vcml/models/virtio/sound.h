@@ -17,6 +17,7 @@
 #include "vcml/core/module.h"
 #include "vcml/core/model.h"
 
+#include "vcml/audio/istream.h"
 #include "vcml/audio/ostream.h"
 
 #include "vcml/protocols/virtio.h"
@@ -57,6 +58,7 @@ private:
         u32 driver_min_channels;
         u32 driver_max_channels;
         audio::stream* driver;
+        sc_event* event;
     };
 
     sound_config m_config;
@@ -64,6 +66,7 @@ private:
     stream_info m_streamtx;
     stream_info m_streamrx;
 
+    audio::istream m_input;
     audio::ostream m_output;
 
     sc_event m_ctrlev;

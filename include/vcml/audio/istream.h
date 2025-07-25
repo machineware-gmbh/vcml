@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_AUDIO_OSTREAM_H
-#define VCML_AUDIO_OSTREAM_H
+#ifndef VCML_AUDIO_ISTREAM_H
+#define VCML_AUDIO_ISTREAM_H
 
 #include "vcml/core/types.h"
 #include "vcml/core/module.h"
@@ -23,11 +23,11 @@
 namespace vcml {
 namespace audio {
 
-class ostream : public stream
+class istream : public stream
 {
 public:
-    ostream(const sc_module_name& nm);
-    virtual ~ostream();
+    istream(const sc_module_name& nm);
+    virtual ~istream();
 
     virtual size_t min_channels() override;
     virtual size_t max_channels() override;
@@ -39,7 +39,7 @@ public:
     virtual void start() override;
     virtual void stop() override;
 
-    void output(void* buf, size_t len);
+    void input(void* buf, size_t len);
 };
 
 } // namespace audio

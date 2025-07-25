@@ -432,20 +432,20 @@ u32 sound::handle_pcm_info(vq_message& msg) {
         case STREAMID_TX:
             info.hdr.hda_fn_nid = 0;
             info.features = 0;
-            info.formats = virtio_snd_supported_formats(m_output);
-            info.rates = VIRTIO_SND_SUPPORTED_RATES;
+            info.formats = m_streamtx.driver_formats;
+            info.rates = m_streamtx.driver_rates;
             info.direction = VIRTIO_SND_D_OUTPUT;
-            info.channels_min = m_output.min_channels();
-            info.channels_max = m_output.max_channels();
+            info.channels_min = m_streamtx.driver_min_channels;
+            info.channels_max = m_streamtx.driver_max_channels;
             break;
         case STREAMID_RX:
             info.hdr.hda_fn_nid = 0;
             info.features = 0;
-            info.formats = VIRTIO_SND_PCM_FMT_S16;
-            info.rates = VIRTIO_SND_SUPPORTED_RATES;
+            info.formats = m_streamrx.driver_formats;
+            info.rates = m_streamrx.driver_rates;
             info.direction = VIRTIO_SND_D_INPUT;
-            info.channels_min = 1;
-            info.channels_max = 1;
+            info.channels_min = m_streamrx.driver_min_channels;
+            info.channels_max = m_streamrx.driver_max_channels;
             break;
 
         default:
@@ -502,7 +502,7 @@ u32 sound::handle_pcm_set_params(vq_message& msg) {
     stream->rate = req.rate;
     stream->state = STATE_STOPPED;
 
-    if (!m_output.configure(format, req.channels, rate)) {
+    if (!stream->driver->configure(format, req.channels, rate)) {
         log_warn("error configuring output stream");
         return VIRTIO_SND_S_IO_ERR;
     }
@@ -533,7 +533,7 @@ u32 sound::handle_pcm_start(vq_message& msg) {
     log_debug("start stream %u", stream->stream_id);
     stream->state = STATE_RUNNING;
     stream->driver->start();
-    m_txev.notify(SC_ZERO_TIME);
+    stream->event->notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
 }
 
@@ -550,7 +550,7 @@ u32 sound::handle_pcm_stop(vq_message& msg) {
     log_debug("stop stream %u", stream->stream_id);
     stream->state = STATE_STOPPED;
     stream->driver->stop();
-    m_txev.notify(SC_ZERO_TIME);
+    stream->event->notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
 }
 
@@ -565,8 +565,10 @@ u32 sound::handle_pcm_release(vq_message& msg) {
         return VIRTIO_SND_S_BAD_MSG;
 
     log_debug("release stream %u", stream->stream_id);
+    if (stream->state == STATE_RUNNING)
+        stream->driver->stop();
     stream->state = STATE_RELEASED;
-    m_txev.notify(SC_ZERO_TIME);
+    stream->event->notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
 }
 
@@ -657,6 +659,11 @@ void sound::tx_thread() {
                 msg.copy_in(buf, sizeof(hdr));
                 m_output.output(buf.data(), buf.size());
                 wait(delay);
+
+                virtio_snd_pcm_status sts{};
+                sts.status = VIRTIO_SND_S_OK;
+                sts.latency_bytes = buf.size();
+                msg.copy_out(sts);
             }
 
             virtio_in->put(VIRTQUEUE_TX, msg);
@@ -665,8 +672,41 @@ void sound::tx_thread() {
 }
 
 void sound::rx_thread() {
-    while (true)
-        wait(m_rxev);
+    while (true) {
+        while (m_streamrx.state == STATE_STOPPED)
+            wait(m_rxev);
+
+        while (m_streamrx.state != STATE_STOPPED) {
+            vq_message msg;
+            if (!virtio_in->get(VIRTQUEUE_RX, msg)) {
+                m_streamrx.state = STATE_STOPPED;
+                break;
+            }
+
+            virtio_snd_pcm_xfer hdr{};
+            virtio_snd_pcm_status sts{};
+            msg.copy_in(hdr);
+            size_t buflen = msg.length_out() - sizeof(sts);
+            if (m_streamrx.state == STATE_RUNNING) {
+                sc_time delay = virtio_snd_buffer_duration(
+                    buflen, m_streamrx.format, m_streamrx.channels,
+                    m_streamrx.rate);
+                log_debug("producing buffer %zu bytes (%fs)", buflen,
+                          delay.to_seconds());
+                vector<u8> buf(buflen);
+                m_input.input(buf.data(), buf.size());
+                msg.copy_out(buf);
+
+                wait(delay);
+
+                sts.status = VIRTIO_SND_S_IO_ERR;
+                sts.latency_bytes = buflen;
+                msg.copy_out(sts, buflen);
+            }
+
+            virtio_in->put(VIRTQUEUE_RX, msg);
+        }
+    }
 }
 
 void sound::identify(virtio_device_desc& desc) {
@@ -695,7 +735,7 @@ bool sound::notify(u32 vqid) {
         break;
 
     case VIRTQUEUE_RX:
-        m_txev.notify(SC_ZERO_TIME);
+        m_rxev.notify(SC_ZERO_TIME);
         break;
 
     default:
@@ -731,6 +771,7 @@ sound::sound(const sc_module_name& nm):
     m_config(),
     m_streamtx(),
     m_streamrx(),
+    m_input("input"),
     m_output("output"),
     m_ctrlev("ctrlev"),
     m_txev("txev"),
@@ -746,13 +787,15 @@ sound::sound(const sc_module_name& nm):
     m_streamtx.driver_min_channels = m_output.min_channels();
     m_streamtx.driver_max_channels = m_output.max_channels();
     m_streamtx.driver = &m_output;
+    m_streamtx.event = &m_txev;
 
     m_streamrx.stream_id = STREAMID_RX;
-    m_streamrx.driver_formats = bit(VIRTIO_SND_PCM_FMT_S16);
-    m_streamrx.driver_rates = bit(VIRTIO_SND_PCM_RATE_44100);
-    m_streamrx.driver_min_channels = 1;
-    m_streamrx.driver_max_channels = 1;
-    m_streamrx.driver = nullptr;
+    m_streamrx.driver_formats = virtio_snd_supported_formats(m_input);
+    m_streamrx.driver_rates = virtio_snd_supported_rates(m_input);
+    m_streamrx.driver_min_channels = m_input.min_channels();
+    m_streamrx.driver_max_channels = m_input.max_channels();
+    m_streamrx.driver = &m_input;
+    m_streamrx.event = &m_rxev;
 
     SC_HAS_PROCESS(sound);
     SC_THREAD(ctrl_thread);

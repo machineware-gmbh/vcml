@@ -30,10 +30,17 @@ private:
     u32 m_channels;
     u32 m_rate;
     size_t m_maxsz;
+
     SDL_AudioDeviceID m_output;
+    SDL_AudioDeviceID m_input;
 
     mutex m_mtx;
     vector<u8> m_buffer;
+
+    SDL_AudioDeviceID open(bool capture, u32 format, u32 channels, u32 rate);
+
+    void push_buffer(const void* buf, size_t len);
+    void pop_buffer(void* buf, size_t len);
 
 public:
     driver_sdl(stream& owner, int id);
@@ -45,9 +52,18 @@ public:
     virtual bool output_supports_rate(u32 rate) override;
     virtual bool output_configure(u32 format, u32 channels, u32 rate) override;
     virtual void output_enable(bool enable) override;
-    virtual void output(void* buf, size_t len) override;
+    virtual void output_xfer(const void* buf, size_t len) override;
 
-    void audio_callback(void* buf, size_t len);
+    virtual size_t input_min_channels() override;
+    virtual size_t input_max_channels() override;
+    virtual bool input_supports_format(u32 format) override;
+    virtual bool input_supports_rate(u32 rate) override;
+    virtual bool input_configure(u32 format, u32 channels, u32 rate) override;
+    virtual void input_enable(bool enable) override;
+    virtual void input_xfer(void* buf, size_t len) override;
+
+    void handle_tx(void* buf, size_t len);
+    void handle_rx(const void* buf, size_t len);
 };
 
 } // namespace audio

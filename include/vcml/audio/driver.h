@@ -37,7 +37,15 @@ public:
     virtual bool output_supports_rate(u32 rate) = 0;
     virtual bool output_configure(u32 format, u32 channels, u32 rate) = 0;
     virtual void output_enable(bool enable) = 0;
-    virtual void output(void* buf, size_t len) = 0;
+    virtual void output_xfer(const void* buf, size_t len) = 0;
+
+    virtual size_t input_min_channels() = 0;
+    virtual size_t input_max_channels() = 0;
+    virtual bool input_supports_format(u32 format) = 0;
+    virtual bool input_supports_rate(u32 rate) = 0;
+    virtual bool input_configure(u32 format, u32 channels, u32 rate) = 0;
+    virtual void input_enable(bool enable) = 0;
+    virtual void input_xfer(void* buf, size_t len) = 0;
 
     static driver* create(stream& owner, const string& type);
 };

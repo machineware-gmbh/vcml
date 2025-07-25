@@ -8,74 +8,74 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "vcml/audio/ostream.h"
+#include "vcml/audio/istream.h"
 
 namespace vcml {
 namespace audio {
 
-ostream::ostream(const sc_module_name& nm): stream(nm) {
+istream::istream(const sc_module_name& nm): stream(nm) {
     // nothing to do
 }
 
-ostream::~ostream() {
+istream::~istream() {
     // nothing to do
 }
 
-size_t ostream::min_channels() {
+size_t istream::min_channels() {
     size_t min_channels = 1;
     for (auto* drv : m_drivers)
-        min_channels = max(min_channels, drv->output_min_channels());
+        min_channels = max(min_channels, drv->input_min_channels());
     return min_channels;
 }
 
-size_t ostream::max_channels() {
+size_t istream::max_channels() {
     size_t max_channels = 8;
     for (auto* drv : m_drivers)
-        max_channels = min(max_channels, drv->output_max_channels());
+        max_channels = min(max_channels, drv->input_max_channels());
     return max_channels;
 }
 
-bool ostream::supports_format(u32 format) {
+bool istream::supports_format(u32 format) {
     if (format == FORMAT_INVALID)
         return false;
 
     for (auto* drv : m_drivers) {
-        if (!drv->output_supports_format(format))
+        if (!drv->input_supports_format(format))
             return false;
     }
 
     return true;
 }
 
-bool ostream::supports_rate(u32 rate) {
+bool istream::supports_rate(u32 rate) {
     for (auto* drv : m_drivers) {
-        if (!drv->output_supports_rate(rate))
+        if (!drv->input_supports_rate(rate))
             return false;
     }
 
     return true;
 }
 
-bool ostream::configure(u32 format, u32 channels, u32 rate) {
+bool istream::configure(u32 format, u32 channels, u32 rate) {
     bool ok = true;
     for (driver* drv : m_drivers)
-        ok &= drv->output_configure(format, channels, rate);
+        ok &= drv->input_configure(format, channels, rate);
     return ok;
 }
 
-void ostream::start() {
+void istream::start() {
     for (driver* drv : m_drivers)
-        drv->output_enable(true);
+        drv->input_enable(true);
 }
 
-void ostream::stop() {
+void istream::stop() {
     for (driver* drv : m_drivers)
-        drv->output_enable(false);
+        drv->input_enable(false);
 }
 
-void ostream::output(void* buf, size_t len) {
+void istream::input(void* buf, size_t len) {
     for (driver* drv : m_drivers)
-        drv->output_xfer(buf, len);
+        drv->input_xfer(buf, len);
 }
 
 } // namespace audio

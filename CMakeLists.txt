@@ -95,6 +95,7 @@ add_library(vcml STATIC
     ${src}/vcml/audio/driver.cpp
     ${src}/vcml/audio/driver_wav.cpp
     ${src}/vcml/audio/stream.cpp
+    ${src}/vcml/audio/istream.cpp
     ${src}/vcml/audio/ostream.cpp
     ${src}/vcml/protocols/tlm_sbi.cpp
     ${src}/vcml/protocols/tlm_exmon.cpp
