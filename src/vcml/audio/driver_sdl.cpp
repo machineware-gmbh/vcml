@@ -60,13 +60,14 @@ SDL_AudioFormat sdl_format_from_vcml(u32 format) {
     }
 }
 
-driver_sdl::driver_sdl(module& parent):
-    m_parent(parent),
+driver_sdl::driver_sdl(stream& owner, int id):
+    driver(owner),
     m_audio(sdl_audio::instance()),
-    m_format(),
+    m_format(FORMAT_INVALID),
     m_channels(),
     m_rate(),
-    m_device(),
+    m_maxsz(),
+    m_output(),
     m_mtx(),
     m_buffer() {
 }
@@ -74,9 +75,9 @@ driver_sdl::driver_sdl(module& parent):
 driver_sdl::~driver_sdl() {
     lock_guard<mutex> guard(m_mtx);
 
-    if (m_device) {
-        SDL_CloseAudioDevice(m_device);
-        m_device = 0;
+    if (m_output) {
+        SDL_CloseAudioDevice(m_output);
+        m_output = 0;
     }
 }
 
@@ -85,8 +86,56 @@ static void sdl_audio_callback(void* userdata, Uint8* buffer, int len) {
     driver->audio_callback(buffer, len);
 }
 
-bool driver_sdl::configure_output(u32 format, u32 channels, u32 rate) {
+size_t driver_sdl::output_min_channels() {
+    return 1;
+}
+
+size_t driver_sdl::output_max_channels() {
+    return 8;
+}
+
+bool driver_sdl::output_supports_format(u32 format) {
+    switch (format) {
+    case FORMAT_U8:
+    case FORMAT_S8:
+    case FORMAT_U16LE:
+    case FORMAT_U16BE:
+    case FORMAT_S16LE:
+    case FORMAT_S16BE:
+    case FORMAT_S32LE:
+    case FORMAT_S32BE:
+    case FORMAT_F32LE:
+    case FORMAT_F32BE:
+        return true;
+
+    case FORMAT_U32LE:
+    case FORMAT_U32BE:
+    default:
+        return false;
+    }
+}
+
+bool driver_sdl::output_supports_rate(u32 rate) {
+    return (rate >= 8000) && (rate <= 192000);
+}
+
+bool driver_sdl::output_configure(u32 format, u32 channels, u32 rate) {
     lock_guard<mutex> guard(m_mtx);
+
+    m_buffer.clear();
+
+    if (m_output) {
+        if (format == m_format && channels == m_channels && m_rate == rate)
+            return true;
+
+        SDL_CloseAudioDevice(m_output);
+        m_format = FORMAT_INVALID;
+        m_channels = 0;
+        m_rate = 0;
+    }
+
+    if (!output_supports_format(format))
+        return false;
 
     SDL_AudioSpec spec{};
     spec.freq = rate;
@@ -96,33 +145,45 @@ bool driver_sdl::configure_output(u32 format, u32 channels, u32 rate) {
     spec.callback = sdl_audio_callback;
     spec.userdata = this;
 
-    m_device = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
-    if (!m_device)
+    m_output = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
+    if (!m_output)
         return false;
 
     m_format = format;
     m_channels = channels;
     m_rate = rate;
-    m_parent.log_debug(
-        "successfully configured output stream: %s, %u channels, %uHz",
-        format_str(format), channels, rate);
-    SDL_PauseAudioDevice(m_device, 0);
+
+    // we choose a buffer size large enough to fit 250ms of audio samples in
+    // order to smooth out SystemC lag spikes; larger buffers induce an
+    // audible delay in sound playback
+    m_maxsz = buffer_size(250, m_format, m_channels, m_rate);
+    m_buffer.reserve(m_maxsz);
+
+    log_debug("successfully configured output stream");
+    log_debug("  format: %s (%u channels)", format_str(m_format), m_channels);
+    log_debug(" samples: %uHz", m_rate);
+    log_debug("  buffer: %zu bytes", m_maxsz);
+
     return true;
+}
+
+void driver_sdl::output_enable(bool enable) {
+    if (m_output)
+        SDL_PauseAudioDevice(m_output, enable ? 0 : 1);
 }
 
 void driver_sdl::output(void* buf, size_t len) {
     lock_guard<mutex> guard(m_mtx);
-    log_debug("received %zu bytes audio data", len);
-    if (m_buffer.size() > 16 * KiB) {
-        log_warn("audio buffer overflow, samples dropped");
+    if (!m_output)
         return;
+
+    size_t rem = m_maxsz - m_buffer.size();
+    if (len > rem) {
+        len = rem;
+        log_debug("audio buffer overflow, samples dropped");
     }
 
     m_buffer.insert(m_buffer.end(), (u8*)buf, (u8*)buf + len);
-}
-
-void driver_sdl::set_output_volume(float volume) {
-    // TODO
 }
 
 void driver_sdl::audio_callback(void* buf, size_t len) {
@@ -131,8 +192,6 @@ void driver_sdl::audio_callback(void* buf, size_t len) {
     memcpy(buf, m_buffer.data(), bytes);
     if (bytes < len)
         fill_silence((u8*)buf + bytes, len - bytes, m_format);
-    m_parent.log_debug("fetching %zu bytes audio data, %zu bytes silence",
-                       bytes, len - bytes);
     m_buffer.erase(m_buffer.begin(), m_buffer.begin() + bytes);
 }
 

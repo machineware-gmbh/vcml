@@ -1,3 +1,4 @@
+
 /******************************************************************************
  *                                                                            *
  * Copyright (C) 2025 MachineWare GmbH                                        *
@@ -8,32 +9,40 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_AUDIO_DRIVER_WAV_H
-#define VCML_AUDIO_DRIVER_WAV_H
+#ifndef VCML_AUDIO_STREAM_H
+#define VCML_AUDIO_STREAM_H
 
+#include "vcml/core/types.h"
+#include "vcml/core/module.h"
+
+#include "vcml/logging/logger.h"
+
+#include "vcml/audio/format.h"
 #include "vcml/audio/driver.h"
 
 namespace vcml {
 namespace audio {
 
-class driver_wav : public driver
+class stream : public module
 {
-private:
-    string m_path;
-    ofstream m_file;
-    bool m_enabled;
+protected:
+    vector<driver*> m_drivers;
 
 public:
-    driver_wav(stream& owner, const string& path);
-    virtual ~driver_wav();
+    property<string> drivers;
 
-    virtual size_t output_min_channels() override;
-    virtual size_t output_max_channels() override;
-    virtual bool output_supports_format(u32 format) override;
-    virtual bool output_supports_rate(u32 rate) override;
-    virtual bool output_configure(u32 format, u32 channels, u32 rate) override;
-    virtual void output_enable(bool enable) override;
-    virtual void output(void* buf, size_t len) override;
+    stream(const sc_core::sc_module_name& nm);
+    virtual ~stream();
+
+    virtual size_t min_channels() = 0;
+    virtual size_t max_channels() = 0;
+
+    virtual bool supports_format(u32 format) = 0;
+    virtual bool supports_rate(u32 rate) = 0;
+
+    virtual bool configure(u32 format, u32 channels, u32 rate) = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
 };
 
 } // namespace audio

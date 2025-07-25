@@ -52,6 +52,11 @@ private:
         u32 rate;
         u32 channels;
         stream_state state;
+        u64 driver_formats;
+        u64 driver_rates;
+        u32 driver_min_channels;
+        u32 driver_max_channels;
+        audio::stream* driver;
     };
 
     sound_config m_config;

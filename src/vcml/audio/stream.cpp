@@ -8,35 +8,28 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_AUDIO_DRIVER_WAV_H
-#define VCML_AUDIO_DRIVER_WAV_H
-
-#include "vcml/audio/driver.h"
+#include "vcml/audio/ostream.h"
 
 namespace vcml {
 namespace audio {
 
-class driver_wav : public driver
-{
-private:
-    string m_path;
-    ofstream m_file;
-    bool m_enabled;
+stream::stream(const sc_module_name& nm):
+    module(nm), m_drivers(), drivers("drivers") {
+    vector<string> types = split(drivers);
+    for (const auto& type : types) {
+        try {
+            driver* drv = driver::create(*this, type);
+            m_drivers.push_back(drv);
+        } catch (std::exception& ex) {
+            log.warn(ex);
+        }
+    }
+}
 
-public:
-    driver_wav(stream& owner, const string& path);
-    virtual ~driver_wav();
-
-    virtual size_t output_min_channels() override;
-    virtual size_t output_max_channels() override;
-    virtual bool output_supports_format(u32 format) override;
-    virtual bool output_supports_rate(u32 rate) override;
-    virtual bool output_configure(u32 format, u32 channels, u32 rate) override;
-    virtual void output_enable(bool enable) override;
-    virtual void output(void* buf, size_t len) override;
-};
+stream::~stream() {
+    for (driver* drv : m_drivers)
+        delete drv;
+}
 
 } // namespace audio
 } // namespace vcml
-
-#endif

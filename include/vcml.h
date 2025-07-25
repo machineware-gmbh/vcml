@@ -59,6 +59,9 @@
 #include "vcml/ui/console.h"
 
 #include "vcml/audio/format.h"
+#include "vcml/audio/driver.h"
+#include "vcml/audio/stream.h"
+#include "vcml/audio/ostream.h"
 
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"

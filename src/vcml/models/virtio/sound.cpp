@@ -70,6 +70,7 @@ enum virtio_snd_pcm_formats : u32 {
     VIRTIO_SND_PCM_FMT_DSD_U16,
     VIRTIO_SND_PCM_FMT_DSD_U32,
     VIRTIO_SND_PCM_FMT_IEC958_SUBFRAME,
+    VIRTIO_SND_PCM_FMT_NUM,
 };
 
 static const char* virtio_snd_pcm_format_str(u32 format) {
@@ -183,8 +184,7 @@ static u32 virtio_snd_pcm_format_to_vcml(u32 format) {
     case VIRTIO_SND_PCM_FMT_FLOAT:
         return audio::FORMAT_F32LE;
     default:
-        VCML_ERROR("format unsupported: %s",
-                   virtio_snd_pcm_format_str(format));
+        return audio::FORMAT_INVALID;
     }
 }
 
@@ -223,14 +223,7 @@ static sc_time virtio_snd_buffer_duration(size_t length, u32 format,
     return sc_time(num_frames * 1.0 / hz, SC_SEC);
 }
 
-enum virtio_snd_supported : u32 {
-    VIRTIO_SND_SUPPORTED_FORMATS = bit(VIRTIO_SND_PCM_FMT_S8) |
-                                   bit(VIRTIO_SND_PCM_FMT_U8) |
-                                   bit(VIRTIO_SND_PCM_FMT_S16) |
-                                   bit(VIRTIO_SND_PCM_FMT_U16) |
-                                   bit(VIRTIO_SND_PCM_FMT_S32) |
-                                   bit(VIRTIO_SND_PCM_FMT_U32) |
-                                   bit(VIRTIO_SND_PCM_FMT_FLOAT),
+enum virtio_snd_supported_rates : u32 {
     VIRTIO_SND_SUPPORTED_RATES = bit(VIRTIO_SND_PCM_RATE_5512) |
                                  bit(VIRTIO_SND_PCM_RATE_8000) |
                                  bit(VIRTIO_SND_PCM_RATE_11025) |
@@ -247,12 +240,30 @@ enum virtio_snd_supported : u32 {
                                  bit(VIRTIO_SND_PCM_RATE_384000),
 };
 
-constexpr bool virtio_snd_format_supported(u32 format) {
-    return VIRTIO_SND_SUPPORTED_FORMATS & bit(format);
-}
-
 constexpr bool virtio_snd_rate_supported(u32 rate) {
     return VIRTIO_SND_SUPPORTED_RATES & bit(rate);
+}
+
+static u64 virtio_snd_supported_formats(audio::stream& stream) {
+    u64 formats = 0;
+    for (u32 format = 0; format < VIRTIO_SND_PCM_FMT_NUM; format++) {
+        u32 vcml = virtio_snd_pcm_format_to_vcml(format);
+        if (stream.supports_format(vcml))
+            formats |= bit(format);
+    }
+
+    return formats;
+}
+
+static u32 virtio_snd_supported_rates(audio::stream& stream) {
+    u64 rates = 0;
+    for (u32 rate = 0; rate < VIRTIO_SND_PCM_RATE_NUM; rate++) {
+        u32 hz = virtio_snd_pcm_rate_hz(rate);
+        if (stream.supports_rate(hz))
+            rates |= bit(rate);
+    }
+
+    return rates;
 }
 
 enum virtio_snd_directions {
@@ -421,16 +432,16 @@ u32 sound::handle_pcm_info(vq_message& msg) {
         case STREAMID_TX:
             info.hdr.hda_fn_nid = 0;
             info.features = 0;
-            info.formats = VIRTIO_SND_SUPPORTED_FORMATS;
+            info.formats = virtio_snd_supported_formats(m_output);
             info.rates = VIRTIO_SND_SUPPORTED_RATES;
             info.direction = VIRTIO_SND_D_OUTPUT;
-            info.channels_min = 1;
-            info.channels_max = 2;
+            info.channels_min = m_output.min_channels();
+            info.channels_max = m_output.max_channels();
             break;
         case STREAMID_RX:
             info.hdr.hda_fn_nid = 0;
             info.features = 0;
-            info.formats = VIRTIO_SND_SUPPORTED_FORMATS;
+            info.formats = VIRTIO_SND_PCM_FMT_S16;
             info.rates = VIRTIO_SND_SUPPORTED_RATES;
             info.direction = VIRTIO_SND_D_INPUT;
             info.channels_min = 1;
@@ -462,34 +473,35 @@ u32 sound::handle_pcm_set_params(vq_message& msg) {
     log_debug("format = %s", virtio_snd_pcm_format_str(req.format));
     log_debug("rate = %zu", virtio_snd_pcm_rate_hz(req.rate));
 
-    if (req.channels < 1 || req.channels > 2) {
+    u32 format = virtio_snd_pcm_format_to_vcml(req.format);
+    u32 rate = virtio_snd_pcm_rate_hz(req.rate);
+
+    auto* stream = lookup_stream(req.hdr.stream_id);
+    if (!stream || stream->stream_id != req.hdr.stream_id)
+        return VIRTIO_SND_S_BAD_MSG;
+
+    if (req.channels < stream->driver_min_channels ||
+        req.channels > stream->driver_max_channels) {
         log_warn("unsupported PCM channel count: %hhu", req.channels);
         return VIRTIO_SND_S_NOT_SUPP;
     }
 
-    if (!virtio_snd_format_supported(req.format)) {
+    if (!stream->driver->supports_format(format)) {
         log_warn("unsupported PCM format: %hhu (%s)", req.format,
                  virtio_snd_pcm_format_str(req.format));
         return VIRTIO_SND_S_NOT_SUPP;
     }
 
-    if (!virtio_snd_rate_supported(req.rate)) {
-        log_warn("unsupported PCM rate: %hhu (%zu)", req.rate,
-                 virtio_snd_pcm_rate_hz(req.rate));
+    if (!stream->driver->supports_rate(rate)) {
+        log_warn("unsupported PCM rate: %uHz", rate);
         return VIRTIO_SND_S_NOT_SUPP;
     }
-
-    auto* stream = lookup_stream(req.hdr.stream_id);
-    if (!stream || stream->stream_id != req.hdr.stream_id)
-        return VIRTIO_SND_S_BAD_MSG;
 
     stream->channels = req.channels;
     stream->format = req.format;
     stream->rate = req.rate;
     stream->state = STATE_STOPPED;
 
-    u32 format = virtio_snd_pcm_format_to_vcml(req.format);
-    u32 rate = virtio_snd_pcm_rate_hz(req.rate);
     if (!m_output.configure(format, req.channels, rate)) {
         log_warn("error configuring output stream");
         return VIRTIO_SND_S_IO_ERR;
@@ -520,6 +532,7 @@ u32 sound::handle_pcm_start(vq_message& msg) {
 
     log_debug("start stream %u", stream->stream_id);
     stream->state = STATE_RUNNING;
+    stream->driver->start();
     m_txev.notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
 }
@@ -536,6 +549,7 @@ u32 sound::handle_pcm_stop(vq_message& msg) {
 
     log_debug("stop stream %u", stream->stream_id);
     stream->state = STATE_STOPPED;
+    stream->driver->stop();
     m_txev.notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
 }
@@ -550,7 +564,7 @@ u32 sound::handle_pcm_release(vq_message& msg) {
     if (!stream)
         return VIRTIO_SND_S_BAD_MSG;
 
-    log_debug("stop stream %u", stream->stream_id);
+    log_debug("release stream %u", stream->stream_id);
     stream->state = STATE_RELEASED;
     m_txev.notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
@@ -727,7 +741,18 @@ sound::sound(const sc_module_name& nm):
     m_config.chmaps = 0;
 
     m_streamtx.stream_id = STREAMID_TX;
+    m_streamtx.driver_formats = virtio_snd_supported_formats(m_output);
+    m_streamtx.driver_rates = virtio_snd_supported_rates(m_output);
+    m_streamtx.driver_min_channels = m_output.min_channels();
+    m_streamtx.driver_max_channels = m_output.max_channels();
+    m_streamtx.driver = &m_output;
+
     m_streamrx.stream_id = STREAMID_RX;
+    m_streamrx.driver_formats = bit(VIRTIO_SND_PCM_FMT_S16);
+    m_streamrx.driver_rates = bit(VIRTIO_SND_PCM_RATE_44100);
+    m_streamrx.driver_min_channels = 1;
+    m_streamrx.driver_max_channels = 1;
+    m_streamrx.driver = nullptr;
 
     SC_HAS_PROCESS(sound);
     SC_THREAD(ctrl_thread);

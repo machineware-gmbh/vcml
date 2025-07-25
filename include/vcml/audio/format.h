@@ -11,6 +11,7 @@
 #ifndef VCML_AUDIO_FORMAT_H
 #define VCML_AUDIO_FORMAT_H
 
+#include "vcml/core/systemc.h"
 #include "vcml/core/types.h"
 
 namespace vcml {
@@ -42,6 +43,8 @@ enum audio_format : u32 {
 
     FORMAT_F32LE = AUDIO_32BIT | AUDIO_FLOAT | AUDIO_ENDIAN_LITTLE,
     FORMAT_F32BE = AUDIO_32BIT | AUDIO_FLOAT | AUDIO_ENDIAN_BIG,
+
+    FORMAT_INVALID = ~0u,
 };
 
 constexpr size_t format_bits(u32 format) {
@@ -79,6 +82,11 @@ constexpr bool format_is_native_endian(u32 format) {
 const char* format_str(u32 format);
 
 void fill_silence(void* buf, size_t len, u32 format);
+
+constexpr size_t buffer_size(time_t ms, u32 format, u32 channels, u32 rate) {
+    size_t frame_size = format_bits(format) / 8 * channels;
+    return (frame_size * rate * ms) / 1000;
+}
 
 } // namespace audio
 } // namespace vcml

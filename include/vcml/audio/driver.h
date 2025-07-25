@@ -18,19 +18,28 @@
 namespace vcml {
 namespace audio {
 
-class ostream;
+class stream;
 
 class driver
 {
-public:
-    virtual ~driver() = default;
+protected:
+    stream& m_stream;
 
-    virtual bool configure_output(u32 format, u32 channels, u32 rate) = 0;
+public:
+    mwr::logger& log;
+
+    driver(stream& owner);
+    virtual ~driver();
+
+    virtual size_t output_min_channels() = 0;
+    virtual size_t output_max_channels() = 0;
+    virtual bool output_supports_format(u32 format) = 0;
+    virtual bool output_supports_rate(u32 rate) = 0;
+    virtual bool output_configure(u32 format, u32 channels, u32 rate) = 0;
+    virtual void output_enable(bool enable) = 0;
     virtual void output(void* buf, size_t len) = 0;
 
-    virtual void set_output_volume(float volume) = 0;
-
-    static driver* create(ostream& owner, const string& type);
+    static driver* create(stream& owner, const string& type);
 };
 
 } // namespace audio

@@ -13,44 +13,69 @@
 namespace vcml {
 namespace audio {
 
-ostream::ostream(const sc_module_name& nm):
-    module(nm), m_drivers(), drivers("drivers") {
-    vector<string> types = split(drivers);
-    for (const auto& type : types) {
-        try {
-            driver* drv = driver::create(*this, type);
-            m_drivers.push_back(drv);
-        } catch (std::exception& ex) {
-            log.warn(ex);
-        }
-    }
+ostream::ostream(const sc_module_name& nm): stream(nm) {
+    // nothing to do
 }
 
 ostream::~ostream() {
-    for (driver* drv : m_drivers)
-        delete drv;
+    // nothing to do
+}
+
+size_t ostream::min_channels() {
+    size_t min_channels = 1;
+    for (auto* drv : m_drivers)
+        min_channels = max(min_channels, drv->output_min_channels());
+    return min_channels;
+}
+
+size_t ostream::max_channels() {
+    size_t max_channels = 8;
+    for (auto* drv : m_drivers)
+        max_channels = min(max_channels, drv->output_max_channels());
+    return max_channels;
+}
+
+bool ostream::supports_format(u32 format) {
+    if (format == FORMAT_INVALID)
+        return false;
+
+    for (auto* drv : m_drivers) {
+        if (!drv->output_supports_format(format))
+            return false;
+    }
+
+    return true;
+}
+
+bool ostream::supports_rate(u32 rate) {
+    for (auto* drv : m_drivers) {
+        if (!drv->output_supports_rate(rate))
+            return false;
+    }
+
+    return true;
 }
 
 bool ostream::configure(u32 format, u32 channels, u32 rate) {
     bool ok = true;
     for (driver* drv : m_drivers)
-        ok &= drv->configure_output(format, channels, rate);
+        ok &= drv->output_configure(format, channels, rate);
     return ok;
+}
+
+void ostream::start() {
+    for (driver* drv : m_drivers)
+        drv->output_enable(true);
+}
+
+void ostream::stop() {
+    for (driver* drv : m_drivers)
+        drv->output_enable(false);
 }
 
 void ostream::output(void* buf, size_t len) {
     for (driver* drv : m_drivers)
         drv->output(buf, len);
-}
-
-void ostream::set_volume(float volume) {
-    if (volume < 0.0)
-        volume = 0.0;
-    if (volume > 1.0)
-        volume = 1.0;
-
-    for (driver* drv : m_drivers)
-        drv->set_output_volume(volume);
 }
 
 } // namespace audio
