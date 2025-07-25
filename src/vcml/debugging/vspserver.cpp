@@ -753,7 +753,9 @@ vspserver::vspserver(u16 server_port):
 
     // Create announce file
     ofstream of(m_announce.c_str());
-    of << "localhost:" << std::dec << port() << ":" << mwr::username() << ":"
+    of << "localhost" << std::endl
+       << std::dec << port() << std::endl
+       << mwr::username() << std::endl
        << mwr::progname() << std::endl;
 }
 
