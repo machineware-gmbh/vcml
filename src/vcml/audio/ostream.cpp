@@ -58,8 +58,11 @@ bool ostream::supports_rate(u32 rate) {
 
 bool ostream::configure(u32 format, u32 channels, u32 rate) {
     bool ok = true;
-    for (driver* drv : m_drivers)
+    for (driver* drv : m_drivers) {
         ok &= drv->output_configure(format, channels, rate);
+        if (!ok)
+            log_warn("config failed");
+    }
     return ok;
 }
 
@@ -73,7 +76,12 @@ void ostream::stop() {
         drv->output_enable(false);
 }
 
-void ostream::output(void* buf, size_t len) {
+void ostream::shutdown() {
+    for (driver* drv : m_drivers)
+        drv->output_shutdown();
+}
+
+void ostream::xfer(const void* buf, size_t len) {
     for (driver* drv : m_drivers)
         drv->output_xfer(buf, len);
 }

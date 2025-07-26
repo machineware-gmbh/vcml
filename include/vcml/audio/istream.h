@@ -38,8 +38,19 @@ public:
     virtual bool configure(u32 format, u32 channels, u32 rate) override;
     virtual void start() override;
     virtual void stop() override;
+    virtual void shutdown() override;
 
-    void input(void* buf, size_t len);
+    void xfer(void* buf, size_t len);
+
+    template <typename T>
+    void xfer(T& data) {
+        xfer(&data, sizeof(T));
+    }
+
+    template <typename T>
+    void xfer(vector<T>& v) {
+        xfer(v.data(), v.size() * sizeof(T));
+    }
 };
 
 } // namespace audio

@@ -43,6 +43,7 @@ public:
     virtual bool configure(u32 format, u32 channels, u32 rate) = 0;
     virtual void start() = 0;
     virtual void stop() = 0;
+    virtual void shutdown() = 0;
 };
 
 } // namespace audio

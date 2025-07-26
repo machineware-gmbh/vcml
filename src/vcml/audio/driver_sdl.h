@@ -53,6 +53,7 @@ public:
     virtual bool output_configure(u32 format, u32 channels, u32 rate) override;
     virtual void output_enable(bool enable) override;
     virtual void output_xfer(const void* buf, size_t len) override;
+    virtual void output_shutdown() override;
 
     virtual size_t input_min_channels() override;
     virtual size_t input_max_channels() override;
@@ -61,6 +62,7 @@ public:
     virtual bool input_configure(u32 format, u32 channels, u32 rate) override;
     virtual void input_enable(bool enable) override;
     virtual void input_xfer(void* buf, size_t len) override;
+    virtual void input_shutdown() override;
 
     void handle_tx(void* buf, size_t len);
     void handle_rx(const void* buf, size_t len);

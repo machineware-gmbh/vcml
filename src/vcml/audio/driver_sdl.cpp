@@ -208,6 +208,14 @@ void driver_sdl::output_xfer(const void* buf, size_t len) {
         push_buffer(buf, len);
 }
 
+void driver_sdl::output_shutdown() {
+    lock_guard<mutex> guard(m_mtx);
+    if (m_output) {
+        SDL_CloseAudioDevice(m_output);
+        m_output = 0;
+    }
+}
+
 size_t driver_sdl::input_min_channels() {
     return 1;
 }
@@ -256,6 +264,14 @@ void driver_sdl::input_enable(bool enable) {
 void driver_sdl::input_xfer(void* buf, size_t len) {
     lock_guard<mutex> guard(m_mtx);
     pop_buffer(buf, len);
+}
+
+void driver_sdl::input_shutdown() {
+    lock_guard<mutex> guard(m_mtx);
+    if (m_input) {
+        SDL_CloseAudioDevice(m_input);
+        m_input = 0;
+    }
 }
 
 void driver_sdl::handle_tx(void* buf, size_t len) {

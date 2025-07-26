@@ -223,27 +223,6 @@ static sc_time virtio_snd_buffer_duration(size_t length, u32 format,
     return sc_time(num_frames * 1.0 / hz, SC_SEC);
 }
 
-enum virtio_snd_supported_rates : u32 {
-    VIRTIO_SND_SUPPORTED_RATES = bit(VIRTIO_SND_PCM_RATE_5512) |
-                                 bit(VIRTIO_SND_PCM_RATE_8000) |
-                                 bit(VIRTIO_SND_PCM_RATE_11025) |
-                                 bit(VIRTIO_SND_PCM_RATE_16000) |
-                                 bit(VIRTIO_SND_PCM_RATE_22050) |
-                                 bit(VIRTIO_SND_PCM_RATE_32000) |
-                                 bit(VIRTIO_SND_PCM_RATE_44100) |
-                                 bit(VIRTIO_SND_PCM_RATE_48000) |
-                                 bit(VIRTIO_SND_PCM_RATE_64000) |
-                                 bit(VIRTIO_SND_PCM_RATE_88200) |
-                                 bit(VIRTIO_SND_PCM_RATE_96000) |
-                                 bit(VIRTIO_SND_PCM_RATE_176400) |
-                                 bit(VIRTIO_SND_PCM_RATE_192000) |
-                                 bit(VIRTIO_SND_PCM_RATE_384000),
-};
-
-constexpr bool virtio_snd_rate_supported(u32 rate) {
-    return VIRTIO_SND_SUPPORTED_RATES & bit(rate);
-}
-
 static u64 virtio_snd_supported_formats(audio::stream& stream) {
     u64 formats = 0;
     for (u32 format = 0; format < VIRTIO_SND_PCM_FMT_NUM; format++) {
@@ -568,6 +547,7 @@ u32 sound::handle_pcm_release(vq_message& msg) {
     if (stream->state == STATE_RUNNING)
         stream->driver->stop();
     stream->state = STATE_RELEASED;
+    stream->driver->shutdown();
     stream->event->notify(SC_ZERO_TIME);
     return VIRTIO_SND_S_OK;
 }
@@ -575,7 +555,6 @@ u32 sound::handle_pcm_release(vq_message& msg) {
 void sound::process_control(vq_message& msg) {
     u32 resp = VIRTIO_SND_S_NOT_SUPP;
     u32 code = virtio_snd_get_code(msg);
-    log_debug("%s", to_string(msg).c_str());
     log_debug("received command code 0x%08x (%s)", code,
               virtio_snd_code_str(code));
 
@@ -646,23 +625,24 @@ void sound::tx_thread() {
                 break;
             }
 
-            virtio_snd_pcm_xfer hdr{};
-            msg.copy_in(hdr);
-            size_t buflen = msg.length_in() - sizeof(hdr);
             if (m_streamtx.state == STATE_RUNNING) {
+                virtio_snd_pcm_xfer hdr{};
+                virtio_snd_pcm_status sts{};
+                msg.copy_in(hdr);
+
+                size_t buflen = msg.length_in() - sizeof(hdr);
                 sc_time delay = virtio_snd_buffer_duration(
                     buflen, m_streamtx.format, m_streamtx.channels,
                     m_streamtx.rate);
-                log_debug("consuming buffer %zu bytes (%fs)", buflen,
-                          delay.to_seconds());
-                vector<u8> buf(msg.length_in() - sizeof(hdr));
+
+                vector<u8> buf(buflen);
                 msg.copy_in(buf, sizeof(hdr));
-                m_output.output(buf.data(), buf.size());
+                m_output.xfer(buf);
+
                 wait(delay);
 
-                virtio_snd_pcm_status sts{};
                 sts.status = VIRTIO_SND_S_OK;
-                sts.latency_bytes = buf.size();
+                sts.latency_bytes = buflen;
                 msg.copy_out(sts);
             }
 
@@ -683,23 +663,22 @@ void sound::rx_thread() {
                 break;
             }
 
-            virtio_snd_pcm_xfer hdr{};
-            virtio_snd_pcm_status sts{};
-            msg.copy_in(hdr);
-            size_t buflen = msg.length_out() - sizeof(sts);
             if (m_streamrx.state == STATE_RUNNING) {
+                virtio_snd_pcm_xfer hdr{};
+                virtio_snd_pcm_status sts{};
+                msg.copy_in(hdr);
+
+                size_t buflen = msg.length_out() - sizeof(sts);
                 sc_time delay = virtio_snd_buffer_duration(
                     buflen, m_streamrx.format, m_streamrx.channels,
                     m_streamrx.rate);
-                log_debug("producing buffer %zu bytes (%fs)", buflen,
-                          delay.to_seconds());
-                vector<u8> buf(buflen);
-                m_input.input(buf.data(), buf.size());
-                msg.copy_out(buf);
-
                 wait(delay);
 
-                sts.status = VIRTIO_SND_S_IO_ERR;
+                vector<u8> buf(buflen);
+                m_input.xfer(buf);
+                msg.copy_out(buf);
+
+                sts.status = VIRTIO_SND_S_OK;
                 sts.latency_bytes = buflen;
                 msg.copy_out(sts, buflen);
             }

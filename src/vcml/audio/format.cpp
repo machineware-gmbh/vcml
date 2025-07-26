@@ -40,7 +40,7 @@ const char* format_str(u32 format) {
     case FORMAT_F32BE:
         return "FORMAT_F32BE";
     default:
-        VCML_ERROR("invalid audio format: 0x%x", format);
+        return "FORMAT_INVALID";
     }
 }
 

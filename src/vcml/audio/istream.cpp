@@ -73,7 +73,12 @@ void istream::stop() {
         drv->input_enable(false);
 }
 
-void istream::input(void* buf, size_t len) {
+void istream::shutdown() {
+    for (driver* drv : m_drivers)
+        drv->input_shutdown();
+}
+
+void istream::xfer(void* buf, size_t len) {
     for (driver* drv : m_drivers)
         drv->input_xfer(buf, len);
 }

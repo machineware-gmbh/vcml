@@ -20,8 +20,17 @@ class driver_wav : public driver
 {
 private:
     string m_path;
-    ofstream m_file;
-    bool m_enabled;
+    fstream m_output;
+    bool m_output_enabled;
+
+    fstream m_input;
+    size_t m_input_size;
+    u32 m_input_format;
+    u32 m_input_channels;
+    u32 m_input_rate;
+    bool m_input_enabled;
+
+    void load_input_params();
 
 public:
     driver_wav(stream& owner, const string& path);
@@ -34,6 +43,7 @@ public:
     virtual bool output_configure(u32 format, u32 channels, u32 rate) override;
     virtual void output_enable(bool enable) override;
     virtual void output_xfer(const void* buf, size_t len) override;
+    virtual void output_shutdown() override;
 
     virtual size_t input_min_channels() override;
     virtual size_t input_max_channels() override;
@@ -42,6 +52,7 @@ public:
     virtual bool input_configure(u32 format, u32 channels, u32 rate) override;
     virtual void input_enable(bool enable) override;
     virtual void input_xfer(void* buf, size_t len) override;
+    virtual void input_shutdown() override;
 };
 
 } // namespace audio
