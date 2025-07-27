@@ -58,6 +58,12 @@
 #include "vcml/ui/display.h"
 #include "vcml/ui/console.h"
 
+#include "vcml/audio/format.h"
+#include "vcml/audio/driver.h"
+#include "vcml/audio/stream.h"
+#include "vcml/audio/istream.h"
+#include "vcml/audio/ostream.h"
+
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
@@ -148,6 +154,7 @@
 #include "vcml/models/virtio/net.h"
 #include "vcml/models/virtio/console.h"
 #include "vcml/models/virtio/input.h"
+#include "vcml/models/virtio/sound.h"
 
 #include "vcml/models/meta/loader.h"
 #include "vcml/models/meta/simdev.h"

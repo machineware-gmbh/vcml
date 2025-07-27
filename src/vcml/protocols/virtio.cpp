@@ -333,7 +333,7 @@ virtio_status split_virtqueue::do_put(vq_message& msg) {
         notify = true;
 
     m_used->ring[m_used->idx % size].id = msg.index;
-    m_used->ring[m_used->idx % size].len = msg.length();
+    m_used->ring[m_used->idx % size].len = msg.length_out();
     m_used->idx++;
 
     return VIRTIO_OK;

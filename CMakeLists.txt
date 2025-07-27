@@ -91,6 +91,12 @@ add_library(vcml STATIC
     ${src}/vcml/ui/display.cpp
     ${src}/vcml/ui/console.cpp
     ${src}/vcml/ui/vnc.cpp
+    ${src}/vcml/audio/format.cpp
+    ${src}/vcml/audio/driver.cpp
+    ${src}/vcml/audio/driver_wav.cpp
+    ${src}/vcml/audio/stream.cpp
+    ${src}/vcml/audio/istream.cpp
+    ${src}/vcml/audio/ostream.cpp
     ${src}/vcml/protocols/tlm_sbi.cpp
     ${src}/vcml/protocols/tlm_exmon.cpp
     ${src}/vcml/protocols/tlm_dmi_cache.cpp
@@ -183,6 +189,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/virtio/net.cpp
     ${src}/vcml/models/virtio/console.cpp
     ${src}/vcml/models/virtio/input.cpp
+    ${src}/vcml/models/virtio/sound.cpp
     ${src}/vcml/models/meta/loader.cpp
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp
@@ -246,6 +253,7 @@ if(SDL2_FOUND)
     target_include_directories(vcml SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
     target_sources(vcml PRIVATE ${src}/vcml/ui/sdl.cpp)
     target_sources(vcml PRIVATE ${src}/vcml/ui/icon.cpp)
+    target_sources(vcml PRIVATE ${src}/vcml/audio/driver_sdl.cpp)
     target_link_libraries(vcml PUBLIC ${SDL2_LIBRARIES})
 else()
     message(STATUS "Building without SDL2 support")

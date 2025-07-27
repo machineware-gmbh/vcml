@@ -64,6 +64,7 @@ unit_test("model")
 unit_test("system")
 unit_test("peq")
 unit_test("simphases")
+unit_test("audio")
 
 if(LUA_FOUND)
     unit_test("lua")
