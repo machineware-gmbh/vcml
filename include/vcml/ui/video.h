@@ -8,8 +8,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef VCML_UI_FBMODE_H
-#define VCML_UI_FBMODE_H
+#ifndef VCML_UI_VIDEO_H
+#define VCML_UI_VIDEO_H
 
 #include "vcml/core/types.h"
 
