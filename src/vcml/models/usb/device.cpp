@@ -523,6 +523,13 @@ usb_result device::handle_ep0(usb_packet& p) {
     }
 }
 
+bool device::altset_active(u32 ifx, u32 altset) const {
+    auto it = m_iface_altsettings.find(ifx);
+    if (it == m_iface_altsettings.end())
+        return false;
+    return it->second == altset;
+}
+
 void device::define_string(u8 idx, const string& str) {
     VCML_ERROR_ON(!idx, "invalid string index: %hhu", idx);
 

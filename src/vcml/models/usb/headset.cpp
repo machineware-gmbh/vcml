@@ -39,9 +39,9 @@ enum audio_entities : u8 {
 
 enum audio_interface_settings : u8 {
     ALTSET_PLAYBACK_OFF = 0,
-    ALTSET_PLAYBACK_S16_48000HZ = 1,
+    ALTSET_PLAYBACK_ON = 1,
     ALTSET_CAPTURE_OFF = 0,
-    ALTSET_CAPTURE_S16_48000HZ = 1,
+    ALTSET_CAPTURE_ON = 1,
 };
 
 enum audio_endpoints : u8 {
@@ -249,12 +249,12 @@ static const device_desc HEADSET_DESC{
 
                 // interface 1 (altsetting 1 = stereo output)
                 {
-                    IFXID_PLAYBACK,              // bInterfaceNumber
-                    ALTSET_PLAYBACK_S16_48000HZ, // bAlternateSetting
-                    USB_CLASS_AUDIO,             // bInterfaceClass
-                    USB_SUBCLASS_STREAMING,      // bInterfaceSubClass
-                    0,                           // bInterfaceProtocol
-                    STRID_AUDIO_CAPTURE,         // iInterface
+                    IFXID_PLAYBACK,         // bInterfaceNumber
+                    ALTSET_PLAYBACK_ON,     // bAlternateSetting
+                    USB_CLASS_AUDIO,        // bInterfaceClass
+                    USB_SUBCLASS_STREAMING, // bInterfaceSubClass
+                    0,                      // bInterfaceProtocol
+                    STRID_AUDIO_CAPTURE,    // iInterface
                     {
                         // endpoints
                         {
@@ -318,12 +318,12 @@ static const device_desc HEADSET_DESC{
 
                 // interface 2 (altsetting 1 = mono recording)
                 {
-                    IFXID_CAPTURE,              // bInterfaceNumber
-                    ALTSET_CAPTURE_S16_48000HZ, // bAlternateSetting
-                    USB_CLASS_AUDIO,            // bInterfaceClass
-                    USB_SUBCLASS_STREAMING,     // bInterfaceSubClass
-                    0,                          // bInterfaceProtocol
-                    STRID_AUDIO_CAPTURE_OFF,    // iInterface
+                    IFXID_CAPTURE,           // bInterfaceNumber
+                    ALTSET_CAPTURE_ON,       // bAlternateSetting
+                    USB_CLASS_AUDIO,         // bInterfaceClass
+                    USB_SUBCLASS_STREAMING,  // bInterfaceSubClass
+                    0,                       // bInterfaceProtocol
+                    STRID_AUDIO_CAPTURE_OFF, // iInterface
                     {
                         // endpoints
                         {
@@ -449,10 +449,14 @@ usb_result headset::set_audio_attribute(u8 req, u8 control, u8 channel, u8 ifx,
 
     switch (audio_control(entity, control)) {
     case audio_control(ENTID_CAPTURE_FEATURE, USB_AUDIO_MUTE_CONTROL):
+        if (m_input_muted ^ !!data[0])
+            log_debug("input %smuted", m_input_muted ? "un" : "");
         m_input_muted = !!data[0];
         return USB_RESULT_SUCCESS;
 
     case audio_control(ENTID_PLAYBACK_FEATURE, USB_AUDIO_MUTE_CONTROL):
+        if (m_output_muted ^ !!data[0])
+            log_debug("output %smuted", m_output_muted ? "un" : "");
         m_output_muted = !!data[0];
         return USB_RESULT_SUCCESS;
 
@@ -469,7 +473,7 @@ usb_result headset::setup_playback_interface(u8 altsetting) {
         m_output.stop();
         m_output.shutdown();
         return USB_RESULT_SUCCESS;
-    case ALTSET_PLAYBACK_S16_48000HZ:
+    case ALTSET_PLAYBACK_ON:
         m_output.configure(audio::FORMAT_S16LE, 2, 48000);
         m_output.start();
         return USB_RESULT_SUCCESS;
@@ -481,7 +485,7 @@ usb_result headset::setup_playback_interface(u8 altsetting) {
 
 usb_result headset::setup_capture_interface(u8 altsetting) {
     switch (altsetting) {
-    case ALTSET_CAPTURE_S16_48000HZ:
+    case ALTSET_CAPTURE_ON:
         m_input.configure(audio::FORMAT_S16LE, 2, 48000);
         m_input.start();
         return USB_RESULT_SUCCESS;
@@ -511,20 +515,27 @@ usb_result headset::switch_interface(size_t idx, const interface_desc& ifx) {
 
 usb_result headset::get_data(u32 ep, u8* data, size_t len) {
     if (ep != EPID_CAPTURE) {
-        log_warn("invalid endpoint: %u", ep);
+        log_warn("invalid audio capture endpoint: %u", ep);
         return USB_RESULT_STALL;
     }
 
-    if (m_iface_altsettings[IFXID_CAPTURE] == ALTSET_CAPTURE_S16_48000HZ)
+    if (!m_input_muted && altset_active(IFXID_CAPTURE, ALTSET_CAPTURE_ON))
         m_input.xfer(data, len);
     else
         audio::fill_silence(data, len, audio::FORMAT_S16LE);
+
     return USB_RESULT_SUCCESS;
 }
 
 usb_result headset::set_data(u32 ep, const u8* data, size_t len) {
-    if (m_iface_altsettings[IFXID_PLAYBACK] == ALTSET_PLAYBACK_S16_48000HZ)
+    if (ep != EPID_PLAYBACK) {
+        log_warn("invalid audio playback endpoint: %u", ep);
+        return USB_RESULT_STALL;
+    }
+
+    if (!m_output_muted && altset_active(IFXID_PLAYBACK, ALTSET_PLAYBACK_ON))
         m_output.xfer(data, len);
+
     return USB_RESULT_SUCCESS;
 }
 

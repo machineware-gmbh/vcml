@@ -134,6 +134,7 @@ protected:
     config_desc* m_config;
     unordered_map<u32, u32> m_iface_altsettings;
 
+    bool altset_active(u32 ifx, u32 altset) const;
     void define_string(u8 idx, const string& str);
 
     virtual void start_of_simulation() override;
