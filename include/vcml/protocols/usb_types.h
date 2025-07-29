@@ -15,6 +15,23 @@
 
 namespace vcml {
 
+enum usb_release : u16 {
+    USB_1_0 = 0x100,
+    USB_1_1 = 0x110,
+    USB_2_0 = 0x200,
+    USB_2_1 = 0x210,
+    USB_3_0 = 0x300,
+    USB_3_1 = 0x310,
+    USB_3_2 = 0x320,
+    USB_4_0 = 0x400,
+};
+
+const char* usb_release_str(u16 release);
+
+enum usb_vendor_id : u16 {
+    USB_VENDOR_VCML = 0x1337,
+};
+
 enum usb_speed {
     USB_SPEED_NONE = -1,
     USB_SPEED_LOW = 0,
@@ -127,9 +144,9 @@ enum usb_descriptor_type : u8 {
 
 const char* usb_desc_str(u8 dt);
 
-enum usb_cfg_attrs : u8 {
+enum usb_config_attrs : u8 {
     USB_CFG_BATTERY = bit(4),
-    USB_CFG_WAKEUP = bit(5),
+    USB_CFG_REMOTE_WAKEUP = bit(5),
     USB_CFG_SELF_POWERED = bit(6),
     USB_CFG_ONE = bit(7),
 };
@@ -161,6 +178,17 @@ enum usb_endpoint_bits : u8 {
     USB_EP_ISOC = 1,
     USB_EP_BULK = 2,
     USB_EP_IRQ = 3,
+
+    USB_EP_IRQ_PERIODIC = 0 << 4,
+    USB_EP_IRQ_NOTIFICATION = 1 << 4,
+
+    USB_EP_ISOC_NOSYNC = 0 << 2,
+    USB_EP_ISOC_ASYNC = 1 << 2,
+    USB_EP_ISOC_ADAPT = 2 << 2,
+    USB_EP_ISOC_SYNC = 3 << 2,
+    USB_EP_ISOC_DATA = 0 << 4,
+    USB_EP_ISOC_FEEDBACK = 1 << 4,
+    USB_EP_ISOC_IMPL = 2 << 4,
 };
 
 const char* usb_endpoint_str(u8 type);

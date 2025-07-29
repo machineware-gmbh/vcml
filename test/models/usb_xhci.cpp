@@ -21,6 +21,7 @@ public:
     usb::keyboard keyboard3;
     usb::drive drive2;
     usb::hostdev hostdev;
+    usb::headset headset;
 
     tlm_initiator_socket out;
     gpio_target_socket irq;
@@ -34,12 +35,14 @@ public:
         keyboard3("keyboard3"),
         drive2("drive2"),
         hostdev("hostdev"),
+        headset("headset"),
         out("out"),
         irq("irq") {
         xhci.usb_out[0].bind(keyboard2.usb_in);
         xhci.usb_out[1].bind(keyboard3.usb_in);
         xhci.usb_out[2].bind(drive2.usb_in);
         xhci.usb_out[3].bind(hostdev.usb_in);
+        xhci.usb_out[4].bind(headset.usb_in);
 
         bus.bind(mem.in, 0, 0xfff);
         bus.bind(xhci.in, 0x1000, 0x1fff);
@@ -62,6 +65,7 @@ public:
         EXPECT_STREQ(keyboard3.kind(), "vcml::usb::keyboard");
         EXPECT_STREQ(drive2.kind(), "vcml::usb::drive");
         EXPECT_STREQ(hostdev.kind(), "vcml::usb::hostdev");
+        EXPECT_STREQ(headset.kind(), "vcml::usb::headset");
     }
 
     void test_capabilities() {
@@ -71,7 +75,7 @@ public:
 
         u32 hcsparams1;
         ASSERT_OK(out.readw(0x1004, hcsparams1));
-        EXPECT_EQ(hcsparams1, (2 * 5) << 24 | 1 << 8 | 64);
+        EXPECT_EQ(hcsparams1, (2 * xhci.num_ports) << 24 | 1 << 8 | 64);
 
         u32 excaps[2];
         ASSERT_OK(out.readw(0x1020, excaps[0]));
@@ -89,9 +93,9 @@ public:
         ASSERT_OK(out.readw(addr_portsc(0), portsc[0])); // usb2 port 0
         ASSERT_OK(out.readw(addr_portsc(1), portsc[1])); // usb2 port 1
         ASSERT_OK(out.readw(addr_portsc(2), portsc[2])); // usb2 port 2
-        ASSERT_OK(out.readw(addr_portsc(5), portsc[3])); // usb3 port 0
-        ASSERT_OK(out.readw(addr_portsc(6), portsc[4])); // usb3 port 1
-        ASSERT_OK(out.readw(addr_portsc(7), portsc[5])); // usb3 port 2
+        ASSERT_OK(out.readw(addr_portsc(6), portsc[3])); // usb3 port 0
+        ASSERT_OK(out.readw(addr_portsc(7), portsc[4])); // usb3 port 1
+        ASSERT_OK(out.readw(addr_portsc(8), portsc[5])); // usb3 port 2
 
         EXPECT_EQ((portsc[0] >> 10) & 0xf, 3); // usb2 speed
         EXPECT_EQ((portsc[1] >> 10) & 0xf, 0); // disconnected
@@ -122,7 +126,7 @@ public:
 
 TEST(usb, xhci) {
     broker brkr("brkr");
-    brkr.define("system.xhci.num_ports", 5);
+    brkr.define("system.xhci.num_ports", 6);
     brkr.define("system.keyboard2.usb3", false);
     brkr.define("system.keyboard3.usb3", true);
     brkr.define("system.drive2.usb3", false);

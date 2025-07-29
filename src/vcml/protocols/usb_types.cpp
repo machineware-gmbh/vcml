@@ -12,6 +12,29 @@
 
 namespace vcml {
 
+const char* usb_release_str(u16 release) {
+    switch (release) {
+    case USB_1_0:
+        return "USB 1.0";
+    case USB_1_1:
+        return "USB 1.1";
+    case USB_2_0:
+        return "USB 2.0";
+    case USB_2_1:
+        return "USB 2.1";
+    case USB_3_0:
+        return "USB 3.0";
+    case USB_3_1:
+        return "USB 3.1";
+    case USB_3_2:
+        return "USB 3.2";
+    case USB_4_0:
+        return "USB 4.0";
+    default:
+        return "unknown USB release";
+    }
+};
+
 const char* usb_speed_str(usb_speed speed) {
     switch (speed) {
     case USB_SPEED_LOW:

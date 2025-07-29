@@ -15,30 +15,32 @@ namespace vcml {
 namespace usb {
 
 static const device_desc DRIVE_DESC{
-    0x200,              // bcd_usb
+    USB_2_0,            // bcd_usb
     0,                  // device class
     0,                  // device subclass
     0,                  // device protocol
     8,                  // max packet size
-    0xaaaa,             // vendor id
-    0x1234,             // device id
+    0xffff,             // vendor id (patched later)
+    0xffff,             // device id (patched later)
     0x0,                // bcd_device
     "MachineWare GmbH", // vendor string
-    "VCML Keyboard",    // product string
+    "VCML USB Drive",   // product string
     VCML_GIT_REV_SHORT, // serial number string
     {
         // configurations
         {
-            11,                           // configuration0 value
-            USB_CFG_ONE | USB_CFG_WAKEUP, // configuration0 attributes
-            40,                           // configuration0 power (80mA)
+            11,                                  // configuration0 value
+            USB_CFG_ONE | USB_CFG_REMOTE_WAKEUP, // configuration0 attributes
+            40,                                  // configuration0 power (80mA)
             {
                 // interfaces
                 {
+                    0,                      // interface number
                     0,                      // interface0 alternate setting
                     USB_CLASS_MASS_STORAGE, // interface0 class
                     0x06,                   // interface0 subclass (SCSI)
                     0x50,                   // interface0 protocol (Bulk)
+                    0,                      // interface0 name
                     {
                         // endpoints
                         {
@@ -46,6 +48,7 @@ static const device_desc DRIVE_DESC{
                             USB_EP_BULK,  // endpoint1 attributes
                             512,          // endpoint1 max packet size
                             0,            // endpoint1 intervall (125us units)
+                            false,        // endpoint1 is_audio
                             0,            // endpoint1 refresh
                             0,            // endpoint1 sync address
                         },
@@ -54,6 +57,7 @@ static const device_desc DRIVE_DESC{
                             USB_EP_BULK,   // endpoint2 attributes
                             512,           // endpoint2 max packet size
                             0,             // endpoint2 intervall (125us units)
+                            false,         // endpoint2 is_audio
                             0,             // endpoint2 refresh
                             0,             // endpoint2 sync address
                         },
@@ -279,7 +283,7 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro, bool wi):
     m_tag(),
     m_sense(SENSE_NOTHING),
     usb3("usb3", true),
-    vendorid("vendorid", 0xabcd),
+    vendorid("vendorid", USB_VENDOR_VCML),
     productid("productid", 0x1),
     manufacturer("manufacturer", "MachineWare GmbH"),
     product("product", "VCML Flash Drive"),
@@ -296,7 +300,7 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro, bool wi):
     m_desc.serial_number = serialno;
 
     if (usb3) {
-        m_desc.bcd_usb = 0x300;
+        m_desc.bcd_usb = USB_3_0;
         m_desc.max_packet_size0 = 9;
         for (auto& epdesc : m_desc.configs[0].interfaces[0].endpoints) {
             epdesc.max_packet_size = 1024;

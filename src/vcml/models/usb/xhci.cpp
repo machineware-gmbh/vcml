@@ -359,6 +359,23 @@ enum ep_state : u32 {
     EP_ERROR = 4,
 };
 
+const char* ep_state_str(u32 state) {
+    switch (state) {
+    case EP_DISABLED:
+        return "EP_DISABLED";
+    case EP_RUNNING:
+        return "EP_RUNNING";
+    case EP_HALTED:
+        return "EP_HALTED";
+    case EP_STOPPED:
+        return "EP_STOPPED";
+    case EP_ERROR:
+        return "EP_ERROR";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 struct ep_context {
     u32 dwords[5];
 
@@ -393,7 +410,12 @@ struct ep_context {
     }
 
     constexpr u64 dequeue_ptr() const {
-        return ((u64)dwords[3] << 32) | (dwords[2] & bitmask(28, 4));
+        return ((u64)dwords[3] << 32) | (dwords[2] & ~0xf);
+    }
+
+    constexpr void set_dequeue_ptr(u64 addr, bool ccs) {
+        dwords[2] = (addr & ~0xf) | (ccs ? 1u : 0u);
+        dwords[3] = (addr >> 32);
     }
 
     constexpr void set_state(u32 newstate) {
@@ -648,6 +670,10 @@ enum erdp_bits : u64 {
     ERDP_EHB = bit(3),
     ERDP_MASK = bitmask(60, 4),
 };
+
+static sc_time mframe_time(u32 frames) {
+    return sc_time(125.0 * frames, SC_US);
+}
 
 void xhci::endpoint::reset() {
     context = 0;
@@ -907,8 +933,11 @@ void xhci::stop() {
 }
 
 void xhci::update_irq(size_t idx) {
+    bool prev = irq;
     irq = (usbcmd & USBCMD_INTE) &&
           ((runtime[idx].iman & IMAN_MASK) == IMAN_MASK);
+    if (prev != irq)
+        log_debug("%sing interrupt", irq ? "rais" : "clear");
 }
 
 void xhci::handle_event(size_t intr, trb& event) {
@@ -1047,7 +1076,7 @@ u32 xhci::handle_transmit(u32 slotid, u32 epid, trb& cmd) {
 }
 
 void xhci::schedule_transfers() {
-    u32 mfindex = get_mfindex();
+    u64 mfindex = get_mfindex();
     for (size_t i = 1; i < num_slots; i++) {
         auto slot = m_slots + i;
         if (slot->enabled) {
@@ -1055,7 +1084,7 @@ void xhci::schedule_transfers() {
                 auto ep = slot->endpoints + j;
                 if (ep->state == EP_RUNNING && ep->kicked &&
                     ep->mfindex > mfindex) {
-                    m_trev.notify(125 * (ep->mfindex - mfindex), SC_US);
+                    m_trev.notify(mframe_time(ep->mfindex - mfindex));
                 }
             }
         }
@@ -1092,9 +1121,6 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
         return;
     }
 
-    if (ep->state == EP_STOPPED)
-        update_endpoint(slotid, epid, EP_RUNNING);
-
     while (ep->state == EP_RUNNING) {
         trb request;
         u64 dequeue = ep->tr.dequeue;
@@ -1117,9 +1143,14 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
             continue;
         }
 
-        ep->tr.dequeue += TRB_SIZE;
         u32 type = get_trb_type(request);
         u32 code = TRB_CC_SUCCESS;
+
+        log_debug("running transfer %s (0x%llx) for slot%u.ep%u from 0x%llx",
+                  trb_type_str(type), request.parameter, slotid, epid,
+                  ep->tr.dequeue);
+
+        ep->tr.dequeue += TRB_SIZE;
 
         switch (type) {
         case TRB_TR_SETUP: {
@@ -1154,6 +1185,10 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
             break;
         }
 
+        case TRB_TR_NOOP: {
+            break;
+        }
+
         default:
             log_warn("unexpected trb: %s", trb_type_str(type));
             break;
@@ -1167,6 +1202,11 @@ void xhci::run_transfer(u32 slotid, u32 epid) {
 
         if (request.control & TRB_IOC || code != TRB_CC_SUCCESS)
             send_tr_event(get_trb_intr(request), code, slotid, epid, dequeue);
+
+        if (type == TRB_TR_ISOCH) {
+            ep->kicked = true;
+            break;
+        }
     }
 }
 
@@ -1208,18 +1248,9 @@ u32 xhci::enable_endpoint(u32 slotid, u32 epid, u64 context, u64 input) {
 }
 
 u32 xhci::update_endpoint(u32 slotid, u32 epid, u32 newstate) {
+    VCML_ERROR_ON(slotid < 1 || slotid > 31, "invalid slotid: %u", slotid);
+    VCML_ERROR_ON(epid > 31, "invalid endpoint id: %u", epid);
     auto ep = m_slots[slotid].endpoints + epid;
-    if (ep->state == newstate)
-        return TRB_CC_SUCCESS;
-
-    log_debug("slot%u.ep%u state %u -> %u", slotid, epid, ep->state, newstate);
-
-    ep->state = newstate;
-
-    if (newstate == EP_RUNNING)
-        kick_endpoint(slotid, epid);
-    else
-        ep->kicked = false;
 
     ep_context epctx;
     if (failed(dma.readw(ep->context, epctx))) {
@@ -1227,7 +1258,21 @@ u32 xhci::update_endpoint(u32 slotid, u32 epid, u32 newstate) {
         return TRB_CC_TRB_ERROR;
     }
 
-    epctx.set_state(newstate);
+    if (ep->state != newstate) {
+        log_debug("slot%u.ep%u state %s (%u) -> %s (%u)", slotid, epid,
+                  ep_state_str(ep->state), ep->state, ep_state_str(newstate),
+                  newstate);
+        ep->state = newstate;
+        epctx.set_state(newstate);
+    }
+
+    if (newstate == EP_RUNNING)
+        kick_endpoint(slotid, epid);
+    else
+        ep->kicked = false;
+
+    if (newstate == EP_STOPPED || newstate == EP_HALTED)
+        epctx.set_dequeue_ptr(ep->tr.dequeue, ep->tr.ccs);
 
     if (failed(dma.writew(ep->context, epctx)))
         return TRB_CC_TRB_ERROR;
@@ -1243,6 +1288,9 @@ void xhci::kick_endpoint(u32 slotid, u32 epid) {
     }
 
     auto* ep = slot->endpoints + epid;
+    if (ep->state == EP_STOPPED)
+        update_endpoint(slotid, epid, EP_RUNNING);
+
     if (ep->state != EP_RUNNING) {
         log_error("slot%u.ep%u is not running", slotid, epid);
         return;
@@ -1250,9 +1298,9 @@ void xhci::kick_endpoint(u32 slotid, u32 epid) {
 
     ep->kicked = true;
 
-    u32 mfindex = get_mfindex();
+    u64 mfindex = get_mfindex();
     if (ep->mfindex > mfindex)
-        m_trev.notify(125 * (ep->mfindex - mfindex), SC_US);
+        m_trev.notify(mframe_time(ep->mfindex - mfindex));
     else
         m_trev.notify(SC_ZERO_TIME);
 }
@@ -1553,11 +1601,11 @@ u32 xhci::cmd_reset_endpoint(trb& cmd, u32& slotid) {
     if (epid < 1 || epid > 31)
         return TRB_CC_TRB_ERROR;
 
-    auto ep = slot->endpoints + slotid;
+    auto ep = slot->endpoints + epid - 1;
     if (ep->state != EP_HALTED)
         return TRB_CC_CONTEXT_STATE_ERROR;
 
-    return update_endpoint(slotid, epid, EP_STOPPED);
+    return update_endpoint(slotid, epid - 1, EP_STOPPED);
 }
 
 u32 xhci::cmd_stop_endpoint(trb& cmd, u32& slotid) {
@@ -1571,14 +1619,14 @@ u32 xhci::cmd_stop_endpoint(trb& cmd, u32& slotid) {
         return TRB_CC_SLOT_NOT_ENABLED_ERROR;
 
     u32 epid = get_trb_ep_id(cmd);
-    if (epid == 0 || epid > 31)
+    if (epid < 1 || epid > 31)
         return TRB_CC_TRB_ERROR;
 
-    auto ep = slot->endpoints + epid;
-    if (ep->state != EP_RUNNING)
+    auto ep = slot->endpoints + epid - 1;
+    if (ep->state == EP_DISABLED)
         return TRB_CC_CONTEXT_STATE_ERROR;
 
-    return update_endpoint(slotid, epid, EP_STOPPED);
+    return update_endpoint(slotid, epid - 1, EP_STOPPED);
 }
 
 u32 xhci::cmd_set_tr_dequeue_pointer(trb& cmd, u32& slotid) {
@@ -1592,21 +1640,23 @@ u32 xhci::cmd_set_tr_dequeue_pointer(trb& cmd, u32& slotid) {
         return TRB_CC_SLOT_NOT_ENABLED_ERROR;
 
     u32 epid = get_trb_ep_id(cmd);
-    if (epid == 0 || epid > 31)
+    if (epid < 1 || epid > 31)
         return TRB_CC_TRB_ERROR;
 
-    auto ep = slot->endpoints + epid;
-    if (ep->state == EP_DISABLED || ep->state == EP_HALTED)
+    auto ep = slot->endpoints + epid - 1;
+    if (ep->state == EP_RUNNING)
         return TRB_CC_CONTEXT_STATE_ERROR;
 
-    if (ep->state == EP_ERROR)
-        update_endpoint(slotid, epid, EP_STOPPED);
+    u64 addr = cmd.parameter & bitmask(60, 4);
+    bool ccs = cmd.parameter & bit(0);
 
-    ep->tr.dequeue = cmd.parameter & bitmask(60, 4);
-    ep->tr.ccs = cmd.parameter & bit(0);
+    log_debug("slot%u.ep%u update dequeue ptr: 0x%llx (ccs %u)", slotid,
+              epid - 1, ep->tr.dequeue, (u32)ccs);
 
-    log_debug("slot%u.ep%u dequeue: 0x%llx", slotid, epid, ep->tr.dequeue);
-    return TRB_CC_SUCCESS;
+    ep->tr.dequeue = addr;
+    ep->tr.ccs = ccs;
+
+    return update_endpoint(slotid, epid - 1, EP_STOPPED);
 }
 
 u32 xhci::cmd_reset_device(trb& cmd, u32& slotid) {
@@ -1885,7 +1935,7 @@ xhci::xhci(const sc_module_name& nm):
     in("in"),
     dma("dma"),
     irq("irq"),
-    usb_out("usb_out", num_ports) {
+    usb_out("usb_out") {
     VCML_ERROR_ON(num_slots == 0u, "need non-zero device slots");
     VCML_ERROR_ON(num_ports == 0u, "need non-zero ports");
     VCML_ERROR_ON(num_intrs == 0u, "need non-zero interrupters");
@@ -1984,6 +2034,7 @@ void xhci::reset() {
 
 void xhci::usb_attach(usb_initiator_socket& socket) {
     size_t port = usb_out.index_of(socket);
+    VCML_ERROR_ON(port >= num_ports, "port index %zu out of bounds", port);
     if (socket.connection_speed() >= USB_SPEED_SUPER)
         port += num_ports;
     log_debug("port%zu connected", port);

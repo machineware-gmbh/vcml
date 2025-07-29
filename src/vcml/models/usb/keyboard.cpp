@@ -20,8 +20,8 @@ static const device_desc KEYBOARD_DESC{
     0,                  // device subclass
     0,                  // device protocol
     8,                  // max packet size
-    0xaaaa,             // vendor id
-    0x1234,             // device id
+    0xffff,             // vendor id (patched later)
+    0xffff,             // device id (patched later)
     0x0,                // bcd_device
     "MachineWare GmbH", // vendor string
     "VCML Keyboard",    // product string
@@ -29,16 +29,18 @@ static const device_desc KEYBOARD_DESC{
     {
         {
             // configurations
-            42,                           // configuration0 value
-            USB_CFG_ONE | USB_CFG_WAKEUP, // config0 attributes
-            40,                           // config0 power (80mA)
+            42,                                  // configuration0 value
+            USB_CFG_ONE | USB_CFG_REMOTE_WAKEUP, // config0 attributes
+            40,                                  // config0 power (80mA)
             {
                 // interfaces
                 {
+                    0,             // interface number
                     0,             // interface0 alternate setting
                     USB_CLASS_HID, // interface0 class
                     1,             // interface0 subclass (boot)
                     1,             // interface0 protocol (keyboard)
+                    0,             // interface0 name
                     {
                         // endpoints
                         {
@@ -46,23 +48,23 @@ static const device_desc KEYBOARD_DESC{
                             USB_EP_IRQ,   // endpoint1 attributes
                             8,            // endpoint1 max packet size
                             8,            // endpoint1 intervall (125us units)
+                            false,        // endpoint1 is_audio
                             0,            // endpoint1 refresh
                             0,            // endpoint1 sync address
                         },
+
                     },
                     {
                         // extra descriptors
-                        {
-                            0x09,
-                            USB_DT_HID,
-                            0x11,
-                            0x01,
-                            0x00,
-                            0x01,
-                            USB_DT_REPORT,
-                            0x3f,
-                            0x00,
-                        },
+                        0x09,          // bLength
+                        USB_DT_HID,    // bDescriptorType
+                        0x11,          // bcdHID[0]
+                        0x01,          // bcdHID[1]
+                        0x00,          // bCountryCode
+                        0x01,          // bNumDescriptors
+                        USB_DT_REPORT, // bDescriptorType
+                        0x3f,          // wDescriptorLength[0]
+                        0x00,          // wDescriptorLength[1]
                     },
                 },
             },
@@ -220,7 +222,7 @@ keyboard::keyboard(const sc_module_name& nm):
     m_keyboard(name()),
     m_console(),
     usb3("usb3", true),
-    vendorid("vendorid", 0xabcd),
+    vendorid("vendorid", USB_VENDOR_VCML),
     productid("productid", 0x1),
     manufacturer("manufacturer", "MachineWare GmbH"),
     product("product", "VCML Keyboard"),
@@ -235,7 +237,7 @@ keyboard::keyboard(const sc_module_name& nm):
     m_desc.serial_number = serialno;
 
     if (usb3) {
-        m_desc.bcd_usb = 0x300;
+        m_desc.bcd_usb = USB_3_0;
         m_desc.max_packet_size0 = 9;
         auto& extra = m_desc.configs[0].interfaces[0].endpoints[0].extra;
         for (auto ch : USB3_ENDPOINT_COMPANION_DT_KBD)

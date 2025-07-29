@@ -39,14 +39,17 @@ void write_data(u8*& ptr, size_t& size, const u16& val) {
 
 template <>
 void write_data(u8*& ptr, size_t& size, const endpoint_desc& desc) {
-    write_data<u8>(ptr, size, sizeof(usb_endpoint_desc));
+    write_data<u8>(ptr, size, desc.is_audio ? 9 : 7);
     write_data<u8>(ptr, size, USB_DT_ENDPOINT);
     write_data<u8>(ptr, size, desc.address);
     write_data<u8>(ptr, size, desc.attributes);
     write_data<u16>(ptr, size, desc.max_packet_size);
     write_data<u8>(ptr, size, desc.interval);
-    write_data<u8>(ptr, size, desc.refresh);
-    write_data<u8>(ptr, size, desc.sync_address);
+
+    if (desc.is_audio) {
+        write_data<u8>(ptr, size, desc.refresh);
+        write_data<u8>(ptr, size, desc.sync_address);
+    }
 
     for (auto ch : desc.extra)
         write_data<u8>(ptr, size, ch);
@@ -57,11 +60,23 @@ static size_t total_length(const config_desc& desc) {
     for (auto& ifx : desc.interfaces) {
         length += sizeof(usb_interface_desc);
         length += ifx.extra.size();
-        for (auto& ep : ifx.endpoints)
-            length += sizeof(usb_endpoint_desc) + ep.extra.size();
+        for (auto& ep : ifx.endpoints) {
+            if (ep.is_audio)
+                length += sizeof(usb_endpoint_desc);
+            else
+                length += sizeof(usb_endpoint_desc) - 2;
+            length += ep.extra.size();
+        }
     }
 
     return length;
+}
+
+static size_t count_interfaces(const vector<interface_desc>& v) {
+    std::set<u8> ifaces;
+    for (auto& desc : v)
+        ifaces.insert(desc.interface_number);
+    return ifaces.size();
 }
 
 template <>
@@ -69,7 +84,7 @@ void write_data(u8*& ptr, size_t& size, const config_desc& desc) {
     write_data<u8>(ptr, size, sizeof(usb_config_desc));
     write_data<u8>(ptr, size, USB_DT_CONFIG);
     write_data<u16>(ptr, size, total_length(desc));
-    write_data<u8>(ptr, size, desc.interfaces.size());
+    write_data<u8>(ptr, size, count_interfaces(desc.interfaces));
     write_data<u8>(ptr, size, desc.value);
     write_data<u8>(ptr, size, 0); // configuration name
     write_data<u8>(ptr, size, desc.attributes);
@@ -78,19 +93,19 @@ void write_data(u8*& ptr, size_t& size, const config_desc& desc) {
     for (size_t i = 0; i < desc.interfaces.size(); i++) {
         write_data<u8>(ptr, size, sizeof(usb_interface_desc));
         write_data<u8>(ptr, size, USB_DT_INTERFACE);
-        write_data<u8>(ptr, size, i);
+        write_data<u8>(ptr, size, desc.interfaces[i].interface_number);
         write_data<u8>(ptr, size, desc.interfaces[i].alternate_setting);
         write_data<u8>(ptr, size, desc.interfaces[i].endpoints.size());
         write_data<u8>(ptr, size, desc.interfaces[i].ifxclass);
         write_data<u8>(ptr, size, desc.interfaces[i].subclass);
         write_data<u8>(ptr, size, desc.interfaces[i].protocol);
-        write_data<u8>(ptr, size, 0); // interface name
-
-        for (auto& ep : desc.interfaces[i].endpoints)
-            write_data(ptr, size, ep);
+        write_data<u8>(ptr, size, desc.interfaces[i].iinterface);
 
         for (auto& ch : desc.interfaces[i].extra)
             write_data(ptr, size, ch);
+
+        for (auto& ep : desc.interfaces[i].endpoints)
+            write_data(ptr, size, ep);
     }
 }
 
@@ -183,11 +198,16 @@ device::device(const sc_module_name& nm, const device_desc& desc):
     m_stalled(false),
     m_state(STATE_DEFAULT),
     m_ep0(),
+    m_strtab(),
     start_attached("start_attached", true),
     m_desc(desc),
-    m_cur_config(0),
-    m_cur_iface(0) {
+    m_config(nullptr),
+    m_iface_altsettings() {
     memset(&m_ep0, 0, sizeof(m_ep0));
+
+    define_string(STRID_MANUFACTURER, m_desc.manufacturer);
+    define_string(STRID_PRODUCT, m_desc.product);
+    define_string(STRID_SERIALNO, m_desc.serial_number);
 
     register_command("usb_attach", 0, &device::cmd_usb_attach,
                      "usb_attach [port] attach the given port to the host");
@@ -200,27 +220,72 @@ device::~device() {
 }
 
 usb_result device::get_configuration(u8& data) {
-    data = m_cur_config;
+    data = m_config ? m_config->value : 0;
     return USB_RESULT_SUCCESS;
 }
 
 usb_result device::set_configuration(u8 data) {
+    if (!is_addressed())
+        return USB_RESULT_STALL;
+
+    if (data == 0) {
+        m_config = nullptr;
+        m_state = STATE_ADDRESSED;
+        m_iface_altsettings.clear();
+        return USB_RESULT_SUCCESS;
+    }
+
     for (size_t i = 0; i < m_desc.configs.size(); i++) {
         if (m_desc.configs[i].value == data) {
-            m_cur_config = i;
-            return USB_RESULT_SUCCESS;
+            m_config = m_desc.configs.data() + i;
+            m_iface_altsettings.clear();
+            m_state = STATE_CONFIGURED;
+            return switch_configuration(*m_config);
         }
     }
 
     return USB_RESULT_STALL;
 }
 
-usb_result device::get_interface(u8& data) {
+usb_result device::get_interface(size_t idx, u8& data) {
     if (!is_configured())
         return USB_RESULT_STALL;
 
-    data = m_cur_iface;
+    if (!m_config)
+        return USB_RESULT_STALL;
+
+    if (idx >= m_config->interfaces.size())
+        return USB_RESULT_STALL;
+
+    data = m_iface_altsettings[idx];
     return USB_RESULT_SUCCESS;
+}
+
+usb_result device::set_interface(size_t idx, u16 altset) {
+    if (!is_configured()) {
+        log_warn("not configured");
+        return USB_RESULT_STALL;
+    }
+
+    if (!m_config) {
+        log_warn("no config");
+        return USB_RESULT_STALL;
+    }
+
+    if (idx >= m_config->interfaces.size()) {
+        log_warn("invalid index");
+        return USB_RESULT_STALL;
+    }
+
+    for (const interface_desc& ifx : m_config->interfaces) {
+        if (ifx.interface_number == idx && ifx.alternate_setting == altset) {
+            m_iface_altsettings[idx] = altset;
+            return switch_interface(idx, ifx);
+        }
+    }
+
+    log_warn("invalid altsetting 0x%04hx for interface %zu", altset, idx);
+    return USB_RESULT_STALL;
 }
 
 usb_result device::get_descriptor(u8 type, u8 idx, u8* data, size_t size) {
@@ -241,31 +306,46 @@ usb_result device::get_descriptor(u8 type, u8 idx, u8* data, size_t size) {
     }
 
     case USB_DT_STRING: {
-        switch (idx) {
-        case STRID_LANGUAGE:
+        if (idx == STRID_LANGUAGE) {
             write_data<u8>(data, size, 4);
             write_data<u8>(data, size, USB_DT_STRING);
             write_data<u16>(data, size, 0x0409); // en_US
             return USB_RESULT_SUCCESS;
-        case STRID_MANUFACTURER:
-            write_data(data, size, m_desc.manufacturer);
-            return USB_RESULT_SUCCESS;
-        case STRID_PRODUCT:
-            write_data(data, size, m_desc.product);
-            return USB_RESULT_SUCCESS;
-        case STRID_SERIALNO:
-            write_data(data, size, m_desc.serial_number);
-            return USB_RESULT_SUCCESS;
-        default:
-            return USB_RESULT_STALL;
         }
+
+        string value = "???";
+        auto it = m_strtab.find(idx);
+        if (it != m_strtab.end())
+            value = it->second;
+        else
+            log_warn("unknown string index: %hhu", idx);
+
+        write_data(data, size, value);
+        return USB_RESULT_SUCCESS;
     }
+
+    case USB_DT_DEVICE_QUALIFIER: {
+        write_data<u8>(data, size, 0xa);
+        write_data<u8>(data, size, USB_DT_DEVICE_QUALIFIER);
+        write_data<u16>(data, size, m_desc.bcd_usb);
+        write_data<u8>(data, size, m_desc.device_class);
+        write_data<u8>(data, size, m_desc.device_subclass);
+        write_data<u8>(data, size, m_desc.device_protocol);
+        write_data<u8>(data, size, m_desc.max_packet_size0);
+        write_data<u8>(data, size, m_desc.configs.size());
+        write_data<u8>(data, size, 0);
+        return USB_RESULT_SUCCESS;
+    };
 
     case USB_DT_BOS: {
         write_data<u8>(data, size, sizeof(usb_bos_desc));
         write_data<u8>(data, size, USB_DT_BOS);
         return USB_RESULT_SUCCESS;
     }
+
+    case USB_DT_DEBUG:
+        // silently fail for this one, libusb queries this often
+        return USB_RESULT_STALL;
 
     default:
         log_error("unsupported descriptor: %s", usb_desc_str(type));
@@ -283,6 +363,20 @@ usb_result device::handle_control(u16 req, u16 val, u16 idx, u8* data,
         return USB_RESULT_SUCCESS;
     }
 
+    case USB_REQ_IN | USB_REQ_DEVICE | USB_REQ_GET_STATUS: {
+        log_debug("get_device_status(%hu)", val);
+        if (val != 0)
+            return USB_RESULT_STALL;
+
+        data[0] = 0;
+        if (m_config && (m_config->attributes & USB_CFG_SELF_POWERED))
+            data[0] |= bit(0);
+        if (m_config && (m_config->attributes & USB_CFG_REMOTE_WAKEUP))
+            data[0] |= bit(1);
+        data[1] = 0;
+        return USB_RESULT_SUCCESS;
+    }
+
     case USB_REQ_IN | USB_REQ_DEVICE | USB_REQ_GET_DESCRIPTOR: {
         u8 type = val >> 8;
         u8 index = val & 0xff;
@@ -296,13 +390,18 @@ usb_result device::handle_control(u16 req, u16 val, u16 idx, u8* data,
     }
 
     case USB_REQ_OUT | USB_REQ_DEVICE | USB_REQ_SET_CONFIGURATION: {
-        log_debug("set_configuration(%u)", (int)val & 0xff);
+        log_debug("set_configuration(%u)", val & 0xff);
         return set_configuration(val & 0xff);
     }
 
     case USB_REQ_IN | USB_REQ_IFACE | USB_REQ_GET_INTERFACE: {
-        log_debug("get_interface");
-        return get_interface(data[0]);
+        log_debug("get_interface(%hu)", idx);
+        return get_interface(idx, data[0]);
+    }
+
+    case USB_REQ_OUT | USB_REQ_IFACE | USB_REQ_SET_INTERFACE: {
+        log_debug("set_interface(%hu, %hu)", idx, val);
+        return set_interface(idx, val);
     }
 
     case USB_REQ_OUT | USB_REQ_DEVICE | USB_REQ_SET_ISOCH_DELAY: {
@@ -311,10 +410,20 @@ usb_result device::handle_control(u16 req, u16 val, u16 idx, u8* data,
     }
 
     default:
-        log_error("unknown request 0x%04hx val:0x%04hx idx:0x%04hx %zu bytes",
-                  req, val, idx, length);
-        return USB_RESULT_STALL;
+        break;
     }
+
+    const char* inout = req & USB_REQ_IN ? "rd" : "wr";
+    const char* vendor = req & USB_REQ_VENDOR ? "vendor " : "";
+    const char* clazz = req & USB_REQ_CLASS ? "class " : "";
+    const char* target = req & USB_REQ_ENDPOINT ? "endpoint "
+                         : req & USB_REQ_IFACE  ? "iface "
+                                                : "device ";
+    log_error(
+        "unknown %s%s%s%s request 0x%04hx val:0x%04hx idx:0x%04hx %zu bytes",
+        vendor, clazz, target, inout, req, val, idx, length);
+
+    return USB_RESULT_STALL;
 }
 
 usb_result device::handle_ep0(usb_packet& p) {
@@ -414,6 +523,16 @@ usb_result device::handle_ep0(usb_packet& p) {
     }
 }
 
+void device::define_string(u8 idx, const string& str) {
+    VCML_ERROR_ON(!idx, "invalid string index: %hhu", idx);
+
+    auto it = m_strtab.find(idx);
+    if (it != m_strtab.end())
+        VCML_ERROR("string index %hhu already in use", idx);
+
+    m_strtab[idx] = str;
+}
+
 void device::start_of_simulation() {
     module::start_of_simulation();
 
@@ -470,6 +589,17 @@ usb_result device::set_data(u32 ep, const u8* data, size_t len) {
 
     log_warn("unsupported data write request for ep%u", ep);
     return USB_RESULT_STALL;
+}
+
+usb_result device::switch_configuration(const config_desc& newcfg) {
+    log_debug("switched to configuration %u", newcfg.value);
+    return USB_RESULT_SUCCESS;
+}
+
+usb_result device::switch_interface(size_t idx, const interface_desc& ifx) {
+    log_debug("interface %zu switched to setting %hhu", idx,
+              ifx.alternate_setting);
+    return USB_RESULT_SUCCESS;
 }
 
 usb_result device::handle_data(usb_packet& p) {

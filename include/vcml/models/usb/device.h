@@ -26,16 +26,19 @@ struct endpoint_desc {
     u8 attributes;
     u16 max_packet_size;
     u8 interval;
+    u8 is_audio;
     u8 refresh;
     u8 sync_address;
     vector<u8> extra;
 };
 
 struct interface_desc {
+    u8 interface_number;
     u8 alternate_setting;
     u8 ifxclass;
     u8 subclass;
     u8 protocol;
+    u8 iinterface;
     vector<endpoint_desc> endpoints;
     vector<u8> extra;
 };
@@ -109,6 +112,8 @@ private:
         u8 buf[1u << 16];
     } m_ep0;
 
+    unordered_map<u8, string> m_strtab;
+
     bool cmd_usb_attach(const vector<string>& args, ostream& os);
     bool cmd_usb_detach(const vector<string>& args, ostream& os);
 
@@ -126,8 +131,10 @@ public:
 
 protected:
     device_desc m_desc;
-    size_t m_cur_config;
-    size_t m_cur_iface;
+    config_desc* m_config;
+    unordered_map<u32, u32> m_iface_altsettings;
+
+    void define_string(u8 idx, const string& str);
 
     virtual void start_of_simulation() override;
 
@@ -138,9 +145,13 @@ protected:
     virtual usb_result get_data(u32 ep, u8* data, size_t len);
     virtual usb_result set_data(u32 ep, const u8* data, size_t len);
 
+    virtual usb_result switch_configuration(const config_desc& newcfg);
+    virtual usb_result switch_interface(size_t idx, const interface_desc& ifx);
+
     virtual usb_result get_configuration(u8& config);
     virtual usb_result set_configuration(u8 config);
-    virtual usb_result get_interface(u8& interface);
+    virtual usb_result get_interface(size_t idx, u8& interface);
+    virtual usb_result set_interface(size_t idx, u16 altset);
     virtual usb_result get_descriptor(u8 type, u8 idx, u8* data, size_t size);
 
     virtual usb_result handle_control(u16 req, u16 val, u16 idx, u8* data,

@@ -141,6 +141,7 @@
 #include "vcml/models/usb/device.h"
 #include "vcml/models/usb/keyboard.h"
 #include "vcml/models/usb/drive.h"
+#include "vcml/models/usb/headset.h"
 #include "vcml/models/usb/hostdev.h"
 
 #include "vcml/models/pci/device.h"
