@@ -11,8 +11,8 @@
 #ifndef VCML_AUDIO_FORMAT_H
 #define VCML_AUDIO_FORMAT_H
 
-#include "vcml/core/systemc.h"
 #include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
 
 namespace vcml {
 namespace audio {
@@ -83,10 +83,7 @@ const char* format_str(u32 format);
 
 void fill_silence(void* buf, size_t len, u32 format);
 
-constexpr size_t buffer_size(time_t ms, u32 format, u32 channels, u32 rate) {
-    size_t frame_size = format_bits(format) / 8 * channels;
-    return (frame_size * rate * ms) / 1000;
-}
+size_t buffer_size(const sc_time& len, u32 format, u32 channels, u32 rate);
 
 } // namespace audio
 } // namespace vcml

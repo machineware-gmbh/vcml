@@ -75,5 +75,10 @@ void fill_silence(void* buf, size_t len, u32 format) {
     }
 }
 
+size_t buffer_size(const sc_time& len, u32 format, u32 channels, u32 rate) {
+    size_t frame_size = format_bits(format) / 8 * channels;
+    return frame_size * rate * len.to_seconds();
+}
+
 } // namespace audio
 } // namespace vcml

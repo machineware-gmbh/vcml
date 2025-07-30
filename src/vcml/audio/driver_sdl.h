@@ -13,7 +13,9 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/module.h"
+
 #include "vcml/audio/driver.h"
+#include "vcml/audio/stream.h"
 
 #include <SDL.h>
 
@@ -36,14 +38,17 @@ private:
 
     mutex m_mtx;
     vector<u8> m_buffer;
+    sc_time m_buflen;
 
     SDL_AudioDeviceID open(bool capture, u32 format, u32 channels, u32 rate);
 
     void push_buffer(const void* buf, size_t len);
     void pop_buffer(void* buf, size_t len);
 
+    void handle_option(const string& option);
+
 public:
-    driver_sdl(stream& owner, int id);
+    driver_sdl(stream& owner, const string& type);
     virtual ~driver_sdl();
 
     virtual size_t output_min_channels() override;

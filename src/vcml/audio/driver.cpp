@@ -19,18 +19,6 @@
 namespace vcml {
 namespace audio {
 
-static string driver_kind(const string& type) {
-    size_t pos = type.find(':');
-    return type.substr(0, pos);
-}
-
-static string driver_args(const string& type) {
-    size_t pos = type.find(':');
-    if (pos != string::npos && pos + 1 < type.size())
-        return type.substr(pos + 1);
-    return "";
-}
-
 driver::driver(stream& owner): m_stream(owner), log(owner.log) {
     // nothing to do
 }
@@ -40,22 +28,15 @@ driver::~driver() {
 }
 
 driver* driver::create(stream& owner, const string& type) {
-    string kind = driver_kind(type);
-    string args = driver_args(type);
-
-    if (kind == "wav") {
-        string path = args.empty() ? mkstr("%s.wav", owner.name()) : args;
-        return new driver_wav(owner, path);
-    }
+    if (starts_with(type, "wav"))
+        return new driver_wav(owner, type);
 
 #ifdef HAVE_SDL2
-    if (kind == "sdl") {
-        int id = args.empty() ? 0 : from_string<int>(args);
-        return new driver_sdl(owner, id);
-    }
+    if (starts_with(type, "sdl"))
+        return new driver_sdl(owner, type);
 #endif
 
-    VCML_REPORT("unknown audio driver \"%s\"", kind.c_str());
+    VCML_REPORT("unknown audio driver \"%s\"", type.c_str());
 }
 
 } // namespace audio

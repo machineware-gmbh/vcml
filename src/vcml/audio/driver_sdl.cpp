@@ -104,10 +104,7 @@ SDL_AudioDeviceID driver_sdl::open(bool capture, u32 format, u32 channels,
     m_channels = channels;
     m_rate = rate;
 
-    // we choose a buffer size large enough to fit 250ms of audio samples in
-    // order to smooth out SystemC lag spikes; larger buffers induce an
-    // audible delay in sound playback
-    m_maxsz = buffer_size(250, m_format, m_channels, m_rate);
+    m_maxsz = buffer_size(m_buflen, m_format, m_channels, m_rate);
     m_buffer.reserve(m_maxsz);
 
     log_debug("successfully configured %s stream",
@@ -136,7 +133,17 @@ void driver_sdl::pop_buffer(void* buf, size_t len) {
     m_buffer.erase(m_buffer.begin(), m_buffer.begin() + bytes);
 }
 
-driver_sdl::driver_sdl(stream& owner, int id):
+void driver_sdl::handle_option(const string& option) {
+    if (starts_with(option, "buflen=")) {
+        m_buflen = from_string<sc_time>(option.c_str() + 7);
+        log_debug("buffer duration: %s", to_string(m_buflen).c_str());
+        return;
+    }
+
+    log_warn("unknown sdl option: %s", option.c_str());
+}
+
+driver_sdl::driver_sdl(stream& owner, const string& type):
     driver(owner),
     m_audio(sdl_audio::instance()),
     m_format(FORMAT_INVALID),
@@ -145,7 +152,14 @@ driver_sdl::driver_sdl(stream& owner, int id):
     m_maxsz(),
     m_output(),
     m_mtx(),
-    m_buffer() {
+    m_buffer(),
+    // we choose a buffer size large enough to fit 250ms of audio samples in
+    // order to smooth out SystemC lag spikes; larger buffers induce an
+    // audible delay in sound playback
+    m_buflen(250, SC_MS) {
+    auto options = split(type, ',');
+    for (size_t i = 1; i < options.size(); i++)
+        handle_option(options[i]);
 }
 
 driver_sdl::~driver_sdl() {

@@ -13,12 +13,6 @@
 namespace vcml {
 namespace audio {
 
-#include <cstdint>
-
-using u32 = uint32_t;
-using u16 = uint16_t;
-using i8 = int8_t;
-
 // Audio format codes
 enum wav_audio_format : u16 {
     WAV_PCM = 0x0001,
@@ -83,6 +77,12 @@ static void wav_update_size(fstream& file) {
     file.seekp(0, std::ios::end);
 }
 
+void driver_wav::handle_option(const string& option) {
+    // setting file path is the only option we have
+    m_path = option;
+    log_debug("using file %s", m_path.c_str());
+}
+
 void driver_wav::load_input_params() {
     fstream input(m_path, std::ios::binary | std::ios::in);
     wav_file_header hdr{};
@@ -104,9 +104,9 @@ void driver_wav::load_input_params() {
     }
 }
 
-driver_wav::driver_wav(stream& owner, const string& path):
+driver_wav::driver_wav(stream& owner, const string& type):
     driver(owner),
-    m_path(path),
+    m_path(mkstr("%s.wav", owner.name())),
     m_output(),
     m_output_enabled(),
     m_input(),
@@ -115,6 +115,10 @@ driver_wav::driver_wav(stream& owner, const string& path):
     m_input_channels(),
     m_input_rate(),
     m_input_enabled() {
+    auto options = split(type, ':');
+    for (size_t i = 1; i < options.size(); i++)
+        handle_option(options[i]);
+
     load_input_params();
 }
 

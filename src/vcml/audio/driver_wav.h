@@ -11,7 +11,11 @@
 #ifndef VCML_AUDIO_DRIVER_WAV_H
 #define VCML_AUDIO_DRIVER_WAV_H
 
+#include "vcml/core/types.h"
+#include "vcml/core/module.h"
+
 #include "vcml/audio/driver.h"
+#include "vcml/audio/stream.h"
 
 namespace vcml {
 namespace audio {
@@ -30,10 +34,11 @@ private:
     u32 m_input_rate;
     bool m_input_enabled;
 
+    void handle_option(const string& option);
     void load_input_params();
 
 public:
-    driver_wav(stream& owner, const string& path);
+    driver_wav(stream& owner, const string& type);
     virtual ~driver_wav();
 
     virtual size_t output_min_channels() override;
