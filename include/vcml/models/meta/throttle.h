@@ -35,6 +35,7 @@ private:
 
 public:
     property<string> method; // "sleep" or "wait"
+    property<bool> allow_overrun;
     property<sc_time> update_interval;
     property<double> rtf;
 

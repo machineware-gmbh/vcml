@@ -14,25 +14,16 @@ namespace vcml {
 namespace meta {
 
 static u64 do_usleep(u64 delta) {
-#ifdef INSCIGHT_KTHREAD_THROTTLED
-    INSCIGHT_KTHREAD_THROTTLED();
-#endif
     u64 start = mwr::timestamp_us();
     mwr::usleep(delta);
     u64 end = mwr::timestamp_us();
     if (start >= end)
         return 0;
     u64 d = end - start;
-#ifdef INSCIGHT_KTHREAD_UNTHROTTLED
-    INSCIGHT_KTHREAD_UNTHROTTLED();
-#endif
     return d > delta ? d - delta : 0;
 }
 
 static u64 do_wait(u64 delta) {
-#ifdef INSCIGHT_KTHREAD_THROTTLED
-    INSCIGHT_KTHREAD_THROTTLED();
-#endif
     u64 start = mwr::timestamp_us();
     u64 end = mwr::timestamp_us() + delta;
     u64 t = start;
@@ -42,10 +33,20 @@ static u64 do_wait(u64 delta) {
     }
 
     u64 d = t - start;
+    return d > delta ? d - delta : 0;
+}
+
+static u64 do_throttle(u64 delta, bool use_wait) {
+    if (!delta)
+        return 0;
+#ifdef INSCIGHT_KTHREAD_THROTTLED
+    INSCIGHT_KTHREAD_THROTTLED();
+#endif
+    u64 over = use_wait ? do_wait(delta) : do_usleep(delta);
 #ifdef INSCIGHT_KTHREAD_UNTHROTTLED
     INSCIGHT_KTHREAD_UNTHROTTLED();
 #endif
-    return d > delta ? d - delta : 0;
+    return over;
 }
 
 void throttle::update() {
@@ -55,24 +56,23 @@ void throttle::update() {
         wait(interval);
 
         if (rtf > 0.0) {
-            u64 actual = mwr::timestamp_us() - m_start + m_extra;
-            u64 target = time_to_us(interval) / rtf;
+            u64 real = mwr::timestamp_us() - m_start + m_extra;
+            u64 sysc = time_to_us(interval) / rtf;
 
-            if (actual < target) {
-                m_extra = m_use_wait ? do_wait(target - actual)
-                                     : do_usleep(target - actual);
+            if (sysc > real) {
                 if (!m_throttling)
                     log_debug("throttling started");
                 m_throttling = true;
+                m_extra = do_throttle(sysc - real, m_use_wait);
             } else {
-                m_extra = actual - target;
+                m_extra = allow_overrun ? real - sysc : 0;
                 if (m_throttling)
                     log_debug("throttling stopped");
                 m_throttling = false;
             }
-        }
 
-        m_start = mwr::timestamp_us();
+            m_start = mwr::timestamp_us();
+        }
     }
 }
 
@@ -83,6 +83,7 @@ throttle::throttle(const sc_module_name& nm):
     m_start(mwr::timestamp_us()),
     m_extra(0),
     method("method", "sleep"),
+    allow_overrun("allow_overrun", true),
     update_interval("update_interval", sc_time(10.0, SC_MS)),
     rtf("rtf", 0.0) {
     if (rtf > 0.0) {
