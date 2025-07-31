@@ -254,7 +254,7 @@ void driver_wav::input_xfer(void* buf, size_t len) {
     size_t done = 0;
     while (m_input && m_input_enabled && done < len) {
         char* dest = (char*)buf + done;
-        size_t num = min(len - done, m_input_size - m_input.tellg());
+        size_t num = min<size_t>(len - done, m_input_size - m_input.tellg());
 
         if (num == 0) {
             // restart file from the beginning

@@ -145,29 +145,33 @@ static void slirp_notify(void* opaque) {
     // nothing to do
 }
 
-static const SlirpCb SLIRP_CBS = {
-    /* send_packet            = */ slirp_send,
-    /* guest_error            = */ slirp_error,
-    /* clock_get_ns           = */ slirp_clock_ns,
-    /* timer_new              = */ slirp_timer_new,
-    /* timer_free             = */ slirp_timer_free,
-    /* timer_mod              = */ slirp_timer_mod,
-#if SLIRP_CHECK_VERSION(4, 9, 0)
-    /* register_poll_fd       = */ NULL,
-    /* unregister_poll_fd     = */ NULL,
-#else
-    /* register_poll_fd       = */ slirp_register_poll_fd,
-    /* unregister_poll_fd     = */ slirp_unregister_poll_fd,
+struct slirp_callbacks : SlirpCb {
+    slirp_callbacks(): SlirpCb() {
+        send_packet = slirp_send;
+        guest_error = slirp_error;
+        clock_get_ns = slirp_clock_ns;
+        timer_new = slirp_timer_new;
+        timer_free = slirp_timer_free;
+        timer_mod = slirp_timer_mod;
+#if !SLIRP_CHECK_VERSION(4, 9, 0)
+        register_poll_fd = slirp_register_poll_fd;
+        unregister_poll_fd = slirp_unregister_poll_fd;
 #endif
-    /* notify                 = */ slirp_notify,
+        notify = slirp_notify;
 #if SLIRP_CHECK_VERSION(4, 7, 0)
-    /* init_completed         = */ NULL,
-    /* timer_new_opaque       = */ NULL,
+        init_completed = NULL;
+        timer_new_opaque = NULL;
 #if SLIRP_CHECK_VERSION(4, 9, 0)
-    /* register_poll_socket   = */ slirp_register_poll_socket,
-    /* unregister_poll_socket = */ slirp_unregister_poll_socket,
+        register_poll_socket = slirp_register_poll_socket;
+        unregister_poll_socket = slirp_unregister_poll_socket;
 #endif
 #endif
+    }
+
+    static const SlirpCb* instance() {
+        static slirp_callbacks singleton;
+        return &singleton;
+    }
 };
 
 void slirp_network::slirp_thread() {
@@ -279,7 +283,7 @@ slirp_network::slirp_network(unsigned int id, logger& l):
     m_config.enable_emu = false;
     m_config.restricted = false;
 
-    m_slirp = slirp_new(&m_config, &SLIRP_CBS, this);
+    m_slirp = slirp_new(&m_config, slirp_callbacks::instance(), this);
     VCML_REPORT_ON(!m_slirp, "failed to initialize SLIRP");
 
     if (m_config.in_enabled)
