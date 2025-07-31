@@ -15,6 +15,7 @@ are also provided, such as memories, memory-mapped buses, UARTs, etc.
 [![Nightly Status](https://github.com/machineware-gmbh/vcml/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/nightly.yml)
 [![Coverage Status](https://github.com/machineware-gmbh/vcml/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/coverage.yml)
 [![Windows Status](https://github.com/machineware-gmbh/vcml/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/windows.yml)
+[![MacOS Status](https://github.com/machineware-gmbh/vcml/actions/workflows/macos.yml/badge.svg?branch=main)](https://github.com/machineware-gmbh/vcml/actions/workflows/macos.yml)
 
 ----
 ## Documentation

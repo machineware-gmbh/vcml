@@ -1,0 +1,56 @@
+name: macos
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev**'
+
+env:
+  BUILD_TYPE: RelWithDebInfo
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+
+    name: ${{matrix.os}}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Setup Dependencies
+      run: |
+        brew update
+        brew install lua sdl2 libslirp libusb
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
+
+    - name: Configure
+      run: cmake -G Ninja -B BUILD -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSYSTEMC_UNITY_BUILD=ON -DVCML_BUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build BUILD
+
+    - name: Test
+      working-directory: BUILD
+      run: ctest --output-on-failure
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v4
+      if: '!cancelled()'
+      with:
+        name: ${{github.event.repository.name}}-logs-${{matrix.os}}
+        path: |
+            BUILD/.ninja_log
+            BUILD/CMakeCache.txt
+            BUILD/Testing/Temporary/LastTest.log
+        include-hidden-files: true
+        retention-days: 7

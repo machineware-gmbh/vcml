@@ -8,16 +8,20 @@
  #                                                                            #
  ##############################################################################
 
-macro(unit_test test)
+function(unit_test test)
     add_executable(${test} ${test}.cpp)
-    target_link_libraries(${test} testing)
+     if(${test} STREQUAL "logging")
+        target_link_libraries(${test} vcml gmock)
+    else()
+        target_link_libraries(${test} testing)
+    endif()
     target_compile_options(${test} PRIVATE ${MWR_COMPILER_WARN_FLAGS})
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
     add_test(NAME unit/${test} COMMAND ${test} ${VCML_TEST_RESOURCES})
     set_tests_properties(unit/${test} PROPERTIES ENVIRONMENT "${VCML_ENVVAR}")
     set_tests_properties(unit/${test} PROPERTIES TIMEOUT 10)
-endmacro()
+endfunction()
 
 unit_test("hello")
 unit_test("sysc")

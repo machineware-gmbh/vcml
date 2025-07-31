@@ -157,6 +157,11 @@ TEST(logging, reporting) {
     vcml::log.error(rep);
 }
 
+int sc_main(int argc, char** argv) {
+    ADD_FAILURE() << "sc_main should not be called";
+    return EXIT_FAILURE;
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::mwr::report_segfaults();
