@@ -129,6 +129,7 @@
 #include "vcml/models/spi/bus.h"
 #include "vcml/models/spi/spi2sd.h"
 #include "vcml/models/spi/max31855.h"
+#include "vcml/models/spi/mcp3208.h"
 #include "vcml/models/spi/flash.h"
 #include "vcml/models/spi/ocspi.h"
 #include "vcml/models/spi/sifive.h"

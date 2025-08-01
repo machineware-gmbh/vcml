@@ -169,6 +169,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/spi/bus.cpp
     ${src}/vcml/models/spi/spi2sd.cpp
     ${src}/vcml/models/spi/max31855.cpp
+    ${src}/vcml/models/spi/mcp3208.cpp
     ${src}/vcml/models/spi/flash.cpp
     ${src}/vcml/models/spi/ocspi.cpp
     ${src}/vcml/models/spi/sifive.cpp
