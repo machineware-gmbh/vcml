@@ -56,46 +56,67 @@ public:
         EXPECT_TRUE(vcml::is_sysc_thread());
         EXPECT_FALSE(vcml::sc_is_async());
 
-        atomic<bool> running = false;
+        /*
+         * O: inital
+         * 1: async thread running
+         * 2: async thread stopping
+         */
+        int state = 0;
+        mutex mtx;
+        condition_variable_any cv;
         atomic<unsigned int> cnt = 0;
 
         thread t([&]() -> void {
             EXPECT_FALSE(vcml::is_sysc_thread());
             EXPECT_FALSE(vcml::sc_is_async());
 
-            // wait for async thread to start
-            while (!running)
-                mwr::cpu_yield();
+            {
+                std::unique_lock lk(mtx);
 
-            // let the async thread run for a while
-            mwr::usleep(100);
-            EXPECT_GT(cnt, 0);
+                // wait for async thread to run
+                cv.wait(lk, [&]() -> bool { return state == 1 && cnt > 0; });
+            }
 
             // suspend the async thread and check that it does not progress
             vcml::sc_suspend_async(this);
             unsigned int tmp_cnt = cnt;
             mwr::usleep(100);
             EXPECT_EQ(cnt, tmp_cnt);
-            tmp_cnt = cnt;
 
-            // resume the async thread and check that it progresses again
-            vcml::sc_resume_async(this);
-            mwr::usleep(100);
-            EXPECT_GT(cnt, tmp_cnt);
+            {
+                std::unique_lock lk(mtx);
 
-            // stop the async thread
-            running = false;
+                // resume the async thread and check that it progresses again
+                state = 0;
+                vcml::sc_resume_async(this);
+                cv.wait(mtx,
+                        [&]() -> bool { return state == 1 && cnt > tmp_cnt; });
+
+                // stop the async thread
+                state = 2;
+            }
         });
 
         sc_async([&]() -> void {
             EXPECT_FALSE(vcml::is_sysc_thread());
             EXPECT_TRUE(vcml::sc_is_async());
-            running = true;
 
-            while (running) {
-                cnt++;
-                mwr::usleep(10);
-                sc_progress(sc_time(1, SC_SEC));
+            std::unique_lock lk(mtx);
+            EXPECT_EQ(state, 0);
+
+            while (state == 0) {
+                state = 1;
+
+                while (state == 1) {
+                    lk.unlock();
+
+                    cnt++;
+                    mwr::usleep(10);
+                    sc_progress(sc_time(1, SC_SEC));
+                    cv.notify_all();
+
+                    lk.lock();
+                }
             }
         });
 
