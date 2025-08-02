@@ -69,6 +69,7 @@ struct gdbarch {
     static const gdbarch AARCH64;
     static const gdbarch ARM;
     static const gdbarch ARM_M;
+    static const gdbarch AVR;
     static const gdbarch OR1K;
     static const gdbarch RISCV;
 };
