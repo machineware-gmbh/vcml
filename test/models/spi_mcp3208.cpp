@@ -57,7 +57,7 @@ public:
 
         // linux uses one leading and 4 trailing zeroes
         const u8 tx[3] = { 0x70, 0x00, 0x00 };
-        const u8 rx[3] = { 0x00, 0xa8, 0xf0 };
+        const u8 rx[3] = { 0x00, 0xa8, 0xe0 };
 
         for (int i = 0; i < 3; i++) {
             payload.mosi = tx[i];
@@ -76,7 +76,7 @@ public:
 
         // zephyr uses 5 leading an no trailing zeroes
         const u8 tx[3] = { 0x07, 0x00, 0x00 };
-        const u8 rx[3] = { 0x00, 0x0a, 0x8f };
+        const u8 rx[3] = { 0x00, 0x0a, 0x8e };
 
         for (int i = 0; i < 3; i++) {
             spi_payload payload{};

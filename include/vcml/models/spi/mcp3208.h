@@ -23,7 +23,7 @@
 namespace vcml {
 namespace spi {
 
-class mcp3208 : public component, public spi_host
+class mcp3208 : public module, public spi_host, public gpio_host
 {
 private:
     bool m_single;
@@ -34,7 +34,8 @@ private:
     u16 read_voltage();
     bool sample_bit(bool in);
 
-    virtual void gpio_notify(const gpio_target_socket& socket) override;
+    virtual void gpio_transport(const gpio_target_socket& socket,
+                                gpio_payload& tx) override;
     virtual void spi_transport(const spi_target_socket& socket,
                                spi_payload& spi) override;
 

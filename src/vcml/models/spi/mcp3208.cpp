@@ -13,8 +13,13 @@
 namespace vcml {
 namespace spi {
 
-static i16 mcp3208_convert(double vref, double v1, double v2) {
-    return 4096.0 * (v1 - v2) / vref;
+static constexpr i16 mcp3208_convert(double vref, double v1, double v2) {
+    double delta = v1 - v2;
+    if (delta > vref)
+        return 4095;
+    if (delta < 0.0)
+        return 0;
+    return 4095.0 * delta / vref;
 }
 
 u16 mcp3208::read_voltage() {
@@ -101,7 +106,8 @@ bool mcp3208::sample_bit(bool inbit) {
     return false;
 }
 
-void mcp3208::gpio_notify(const gpio_target_socket& socket) {
+void mcp3208::gpio_transport(const gpio_target_socket& socket,
+                             gpio_payload& tx) {
     m_bitidx = 0;
 }
 
@@ -122,8 +128,9 @@ void mcp3208::spi_transport(const spi_target_socket& socket,
 }
 
 mcp3208::mcp3208(const sc_module_name& nm):
-    component(nm),
+    module(nm),
     spi_host(),
+    gpio_host(),
     m_bitidx(),
     m_chanid(),
     m_buffer(),
@@ -139,8 +146,7 @@ mcp3208::mcp3208(const sc_module_name& nm):
     v7("v7", 5.0),
     spi_in("spi_in"),
     spi_cs("spi_cs") {
-    clk.stub();
-    rst.stub();
+    // nothing to do
 }
 
 mcp3208::~mcp3208() {
