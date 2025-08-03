@@ -162,6 +162,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/can/bus.cpp
     ${src}/vcml/models/can/m_can.cpp
     ${src}/vcml/models/i2c/lm75.cpp
+    ${src}/vcml/models/i2c/ads1015.cpp
     ${src}/vcml/models/i2c/oci2c.cpp
     ${src}/vcml/models/i2c/sifive.cpp
     ${src}/vcml/models/lin/network.cpp

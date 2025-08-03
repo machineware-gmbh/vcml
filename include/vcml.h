@@ -120,6 +120,7 @@
 #include "vcml/models/can/m_can.h"
 
 #include "vcml/models/i2c/lm75.h"
+#include "vcml/models/i2c/ads1015.h"
 #include "vcml/models/i2c/oci2c.h"
 #include "vcml/models/i2c/sifive.h"
 
