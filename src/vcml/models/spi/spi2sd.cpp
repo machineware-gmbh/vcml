@@ -182,7 +182,7 @@ spi2sd::~spi2sd() {
 
 void spi2sd::spi_transport(const spi_target_socket& socket, spi_payload& spi) {
     if (cs == cs_active_high)
-        spi.miso = do_spi_transport(spi.mosi);
+        spi.miso = do_spi_transport(spi.mosi & spi.mask);
 }
 
 VCML_EXPORT_MODEL(vcml::spi::spi2sd, name, args) {

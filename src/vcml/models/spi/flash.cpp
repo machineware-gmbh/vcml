@@ -146,40 +146,46 @@ void flash::complete() {
     }
 }
 
-void flash::process(spi_payload& tx) {
+u8 flash::process(u8 mosi) {
     switch (m_state) {
-    case STATE_IDLE:
-        decode(tx.mosi);
-        break;
+    case STATE_IDLE: {
+        decode(mosi);
+        return 0;
+    }
 
-    case STATE_COLLECTING:
-        m_buffer[m_len] = tx.mosi;
+    case STATE_COLLECTING: {
+        m_buffer[m_len] = mosi;
         m_len++;
         if (m_len == m_needed)
             complete();
-        break;
+        return 0;
+    }
 
-    case STATE_PROGRAMMING:
+    case STATE_PROGRAMMING: {
         if (m_write_enable) {
             disk.seek(m_address);
-            disk.write(&tx.mosi, 1);
+            disk.write(&mosi, 1);
             m_address = (m_address + 1) % size();
         }
-        break;
+        return 0;
+    }
 
-    case STATE_READING_STORAGE:
+    case STATE_READING_STORAGE: {
+        u8 miso = 0;
         disk.seek(m_address);
-        disk.read(&tx.miso, 1);
+        disk.read(&miso, 1);
         m_address = (m_address + 1) % size();
-        break;
+        return miso;
+    }
 
-    case STATE_READING_BUFFER:
-        tx.miso = m_buffer[m_pos++];
+    case STATE_READING_BUFFER: {
+        u8 miso = m_buffer[m_pos++];
         if (m_pos == m_len) {
             m_pos = m_len = 0;
             m_state = STATE_IDLE;
         }
-        break;
+        return miso;
+    }
 
     default:
         VCML_ERROR("unknown device state %u", (int)m_state);
@@ -188,7 +194,7 @@ void flash::process(spi_payload& tx) {
 
 void flash::spi_transport(const spi_target_socket& socket, spi_payload& tx) {
     if (cs_in)
-        process(tx);
+        tx.miso = process(tx.mosi & tx.mask) & tx.mask;
 }
 
 flash::flash(const sc_module_name& nm, const string& dev):

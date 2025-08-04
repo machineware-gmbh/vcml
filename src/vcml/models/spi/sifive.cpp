@@ -239,8 +239,9 @@ void sifive::transmit() {
             if (mode != CSMODE_OFF)
                 update_cs(true);
 
-            u8 data = format_data(m_txff.pop(), fmt);
-            spi_payload tx(data);
+            spi_payload tx;
+            tx.mask = 0xff;
+            tx.mosi = format_data(m_txff.pop(), fmt);
             spi_out.transport(tx);
 
             if (!m_rxff.full() && !(fmt & FMT_DIR))

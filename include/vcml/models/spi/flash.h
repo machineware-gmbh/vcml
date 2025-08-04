@@ -75,7 +75,7 @@ private:
 
     void decode(u8 val);
     void complete();
-    void process(spi_payload& tx);
+    u8 process(u8 mosi);
 
     virtual void spi_transport(const spi_target_socket& socket,
                                spi_payload& tx) override;

@@ -114,16 +114,16 @@ void mcp3208::gpio_transport(const gpio_target_socket& socket,
 void mcp3208::spi_transport(const spi_target_socket& socket,
                             spi_payload& spi) {
     if (spi_cs == csmode) {
-        u8 input = spi.mosi;
+        u8 input = spi.mosi & spi.mask;
         u8 output = 0;
 
-        for (int i = 7; i >= 0; i--) {
-            u8 mask = 1u << i;
-            if (sample_bit(input & mask))
+        for (int i = 31; i >= 0; i--) {
+            u32 mask = 1u << i;
+            if ((spi.mask & mask) && sample_bit(input & mask))
                 output |= mask;
         }
 
-        spi.miso = output;
+        spi.miso = output & spi.mask;
     }
 }
 

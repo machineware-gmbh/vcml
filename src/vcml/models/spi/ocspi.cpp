@@ -19,7 +19,9 @@ void ocspi::write_txdata(u8 val) {
     status &= ~STATUS_TXR;
     status &= ~STATUS_TXE;
 
-    spi_payload spi(val);
+    spi_payload spi;
+    spi.mosi = val;
+    spi.mask = 0xff;
 
     spi_out.transport(spi);
     rxdata = spi.miso;

@@ -19,13 +19,14 @@
 namespace vcml {
 
 struct spi_payload {
-    u8 mosi;
-    u8 miso;
+    u32 mosi;
+    u32 miso;
+    u32 mask;
 
-    spi_payload(): mosi(), miso() {}
-    spi_payload(u8 init): mosi(init), miso() {}
-    spi_payload(u8 mosi_init, u8 miso_init):
-        mosi(mosi_init), miso(miso_init) {}
+    spi_payload(): mosi(), miso(), mask(0xff) {}
+    spi_payload(u32 init): mosi(init), miso(), mask(0xff) {}
+    spi_payload(u32 mosi_init, u32 miso_init, u32 mask_init = 0xff):
+        mosi(mosi_init), miso(miso_init), mask(mask_init) {}
 
     bool operator==(const spi_payload& o) const {
         return mosi == o.mosi && miso == o.miso;

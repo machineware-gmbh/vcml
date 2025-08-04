@@ -93,3 +93,21 @@ TEST(spi, sockets) {
     spi_harness test("spi");
     sc_core::sc_start();
 }
+
+TEST(spi, to_string) {
+    spi_payload tx;
+    tx.miso = 0xeeeeee01;
+    tx.mosi = 0xeeeeeeab;
+    tx.mask = 0xff;
+    EXPECT_EQ(to_string(tx), "[mosi: 0xab miso: 0x01]");
+
+    tx.miso = 0xeeeee012;
+    tx.mosi = 0xeeeeeabc;
+    tx.mask = 0xfff;
+    EXPECT_EQ(to_string(tx), "[mosi: 0xabc miso: 0x012]");
+
+    tx.miso = 0x01234567;
+    tx.mosi = 0x89abcdef;
+    tx.mask = 0xffffffff;
+    EXPECT_EQ(to_string(tx), "[mosi: 0x89abcdef miso: 0x01234567]");
+}
