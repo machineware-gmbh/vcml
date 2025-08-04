@@ -127,6 +127,124 @@ void mcp3208::spi_transport(const spi_target_socket& socket,
     }
 }
 
+bool mcp3208::cmd_get_voltage(const vector<string>& args, ostream& os) {
+    if (args.empty()) {
+        os << mkstr("vref: %.3f\n", vref.get());
+        os << mkstr("v0: %.3f\n", v0.get());
+        os << mkstr("v1: %.3f\n", v1.get());
+        os << mkstr("v2: %.3f\n", v2.get());
+        os << mkstr("v3: %.3f\n", v3.get());
+        os << mkstr("v4: %.3f\n", v4.get());
+        os << mkstr("v5: %.3f\n", v5.get());
+        os << mkstr("v6: %.3f\n", v6.get());
+        os << mkstr("v7: %.3f", v7.get());
+        return true;
+    }
+
+    string channel = to_lower(args[0]);
+    if (channel == "vref") {
+        os << mkstr("vref: %.3f", vref.get());
+        return true;
+    }
+
+    if (channel == "v0") {
+        os << mkstr("v0: %.3f", v0.get());
+        return true;
+    }
+
+    if (channel == "v1") {
+        os << mkstr("v1: %.3f", v1.get());
+        return true;
+    }
+
+    if (channel == "v2") {
+        os << mkstr("v2: %.3f", v2.get());
+        return true;
+    }
+
+    if (channel == "v3") {
+        os << mkstr("v3: %.3f", v3.get());
+        return true;
+    }
+
+    if (channel == "v4") {
+        os << mkstr("v4: %.3f", v4.get());
+        return true;
+    }
+
+    if (channel == "v5") {
+        os << mkstr("v5: %.3f", v5.get());
+        return true;
+    }
+
+    if (channel == "v6") {
+        os << mkstr("v6: %.3f", v6.get());
+        return true;
+    }
+
+    if (channel == "v7") {
+        os << mkstr("v7: %.3f", v7.get());
+        return true;
+    }
+
+    os << "unknown channel: " << channel << "\n"
+       << "use: vref, v0, v1, v2, v3, v4, v5, v6, v7";
+    return false;
+}
+
+bool mcp3208::cmd_set_voltage(const vector<string>& args, ostream& os) {
+    string channel = to_lower(args[0]);
+
+    if (channel == "vref") {
+        vref = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v0") {
+        v0 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v1") {
+        v1 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v2") {
+        v2 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v3") {
+        v3 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v4") {
+        v4 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v5") {
+        v5 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v6") {
+        v6 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "v7") {
+        v7 = from_string<double>(args[1]);
+        return true;
+    }
+
+    os << "unknown channel: " << channel << "\n"
+       << "use: vref, v0, v1, v2, v3, v4, v5, v6, v7";
+    return false;
+}
+
 mcp3208::mcp3208(const sc_module_name& nm):
     module(nm),
     spi_host(),
@@ -146,7 +264,10 @@ mcp3208::mcp3208(const sc_module_name& nm):
     v7("v7", 5.0),
     spi_in("spi_in"),
     spi_cs("spi_cs") {
-    // nothing to do
+    register_command("get_voltage", 0, this, &mcp3208::cmd_get_voltage,
+                     "returns the voltage on a given channel");
+    register_command("set_voltage", 1, this, &mcp3208::cmd_set_voltage,
+                     "sets the voltage on a given channel");
 }
 
 mcp3208::~mcp3208() {

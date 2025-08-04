@@ -54,6 +54,9 @@ private:
     void post_read();
     void post_write();
 
+    bool cmd_get_voltage(const vector<string>& args, ostream& os);
+    bool cmd_set_voltage(const vector<string>& args, ostream& os);
+
 public:
     property<bool> polling;
 

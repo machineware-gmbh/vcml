@@ -39,6 +39,9 @@ private:
     virtual void spi_transport(const spi_target_socket& socket,
                                spi_payload& spi) override;
 
+    bool cmd_get_voltage(const vector<string>& args, ostream& os);
+    bool cmd_set_voltage(const vector<string>& args, ostream& os);
+
 public:
     property<bool> csmode;
 

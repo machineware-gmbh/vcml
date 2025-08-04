@@ -26,6 +26,8 @@ public:
         add_test("transfer_no_cs", &mcp3208test::test_transfer_no_cs);
         add_test("transfer_1", &mcp3208test::test_transfer_1);
         add_test("transfer_2", &mcp3208test::test_transfer_2);
+        add_test("commands_get", &mcp3208test::test_commands_get);
+        add_test("commands_set", &mcp3208test::test_commands_set);
     }
 
     void test_strings() {
@@ -86,6 +88,104 @@ public:
         }
 
         cs = !mcp3208.csmode;
+    }
+
+    void test_commands_get() {
+        stringstream ss;
+        EXPECT_TRUE(mcp3208.execute("get_voltage", ss));
+        EXPECT_EQ(ss.str(), mkstr("vref: %.3f\n", mcp3208.vref.get()) +
+                                mkstr("v0: %.3f\n", mcp3208.v0.get()) +
+                                mkstr("v1: %.3f\n", mcp3208.v1.get()) +
+                                mkstr("v2: %.3f\n", mcp3208.v2.get()) +
+                                mkstr("v3: %.3f\n", mcp3208.v3.get()) +
+                                mkstr("v4: %.3f\n", mcp3208.v4.get()) +
+                                mkstr("v5: %.3f\n", mcp3208.v5.get()) +
+                                mkstr("v6: %.3f\n", mcp3208.v6.get()) +
+                                mkstr("v7: %.3f", mcp3208.v7.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "vref" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("vref: %.3f", mcp3208.vref.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v0" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v0: %.3f", mcp3208.v0.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v1" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v1: %.3f", mcp3208.v1.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v2" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v2: %.3f", mcp3208.v2.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v3" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v3: %.3f", mcp3208.v3.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v4" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v4: %.3f", mcp3208.v4.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v5" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v5: %.3f", mcp3208.v5.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v6" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v6: %.3f", mcp3208.v6.get()));
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", { "v7" }, ss));
+        EXPECT_EQ(ss.str(), mkstr("v7: %.3f", mcp3208.vref.get()));
+
+        ss.str("");
+        EXPECT_FALSE(mcp3208.execute("get_voltage", { "xxx" }, ss));
+        EXPECT_EQ(ss.str(),
+                  "unknown channel: xxx\n"
+                  "use: vref, v0, v1, v2, v3, v4, v5, v6, v7");
+    }
+
+    void test_commands_set() {
+        stringstream ss;
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v0", "0.0" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v1", "0.1" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v2", "0.2" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v3", "0.3" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v4", "0.4" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v5", "0.5" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v6", "0.6" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "v7", "0.7" }, ss));
+        EXPECT_TRUE(mcp3208.execute("set_voltage", { "vref", "1.0" }, ss));
+
+        EXPECT_EQ(mcp3208.vref, 1.0);
+        EXPECT_EQ(mcp3208.v0, 0.0);
+        EXPECT_EQ(mcp3208.v1, 0.1);
+        EXPECT_EQ(mcp3208.v2, 0.2);
+        EXPECT_EQ(mcp3208.v3, 0.3);
+        EXPECT_EQ(mcp3208.v4, 0.4);
+        EXPECT_EQ(mcp3208.v5, 0.5);
+        EXPECT_EQ(mcp3208.v6, 0.6);
+        EXPECT_EQ(mcp3208.v7, 0.7);
+
+        ss.str("");
+        EXPECT_FALSE(mcp3208.execute("set_voltage", { "xxx", "0.0" }, ss));
+        EXPECT_EQ(ss.str(),
+                  "unknown channel: xxx\n"
+                  "use: vref, v0, v1, v2, v3, v4, v5, v6, v7");
+
+        ss.str("");
+        EXPECT_TRUE(mcp3208.execute("get_voltage", ss));
+        EXPECT_EQ(ss.str(),
+                  "vref: 1.000\n"
+                  "v0: 0.000\n"
+                  "v1: 0.100\n"
+                  "v2: 0.200\n"
+                  "v3: 0.300\n"
+                  "v4: 0.400\n"
+                  "v5: 0.500\n"
+                  "v6: 0.600\n"
+                  "v7: 0.700");
     }
 };
 

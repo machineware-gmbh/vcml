@@ -281,6 +281,68 @@ void ads1015::post_write() {
     }
 }
 
+bool ads1015::cmd_get_voltage(const vector<string>& args, ostream& os) {
+    if (args.empty()) {
+        os << mkstr("ain0: %.3f\n", ain0.get());
+        os << mkstr("ain1: %.3f\n", ain1.get());
+        os << mkstr("ain2: %.3f\n", ain2.get());
+        os << mkstr("ain3: %.3f", ain3.get());
+        return true;
+    }
+
+    string channel = to_lower(args[0]);
+    if (channel == "ain0") {
+        os << mkstr("ain0: %.3f", ain0.get());
+        return true;
+    }
+
+    if (channel == "ain1") {
+        os << mkstr("ain1: %.3f", ain1.get());
+        return true;
+    }
+
+    if (channel == "ain2") {
+        os << mkstr("ain2: %.3f", ain2.get());
+        return true;
+    }
+
+    if (channel == "ain3") {
+        os << mkstr("ain3: %.3f", ain3.get());
+        return true;
+    }
+
+    os << "unknown channel: " << channel << "\n"
+       << "use: ain0, ain1, ain2, or ain3";
+    return false;
+}
+
+bool ads1015::cmd_set_voltage(const vector<string>& args, ostream& os) {
+    string channel = to_lower(args[0]);
+    if (channel == "ain0") {
+        ain0 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "ain1") {
+        ain1 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "ain2") {
+        ain2 = from_string<double>(args[1]);
+        return true;
+    }
+
+    if (channel == "ain3") {
+        ain3 = from_string<double>(args[1]);
+        return true;
+    }
+
+    os << "unknown channel: " << channel << "\n"
+       << "use: ain0, ain1, ain2, or ain3";
+    return false;
+}
+
 ads1015::ads1015(const sc_module_name& nm, u8 addr):
     module(nm),
     i2c_host(),
@@ -309,6 +371,11 @@ ads1015::ads1015(const sc_module_name& nm, u8 addr):
     } else {
         sample_data();
     }
+
+    register_command("get_voltage", 0, this, &ads1015::cmd_get_voltage,
+                     "returns the voltage on a given channel");
+    register_command("set_voltage", 1, this, &ads1015::cmd_set_voltage,
+                     "sets the voltage on a given channel");
 }
 
 ads1015::~ads1015() {
