@@ -15,7 +15,7 @@ namespace vcml {
 ostream& operator<<(ostream& os, const spi_payload& spi) {
     u32 mosi = spi.mosi & spi.mask;
     u32 miso = spi.miso & spi.mask;
-    int len = (fls(spi.mask) + 1) / 4;
+    int len = (fls(spi.mask) + 4) / 4;
     os << mkstr("[mosi: 0x%0*x miso: 0x%0*x]", len, mosi, len, miso);
     return os;
 }

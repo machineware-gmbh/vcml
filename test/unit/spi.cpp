@@ -96,10 +96,20 @@ TEST(spi, sockets) {
 
 TEST(spi, to_string) {
     spi_payload tx;
+    tx.miso = 0xeeeeeee1;
+    tx.mosi = 0xeeeeeeea;
+    tx.mask = 0xf;
+    EXPECT_EQ(to_string(tx), "[mosi: 0xa miso: 0x1]");
+
     tx.miso = 0xeeeeee01;
     tx.mosi = 0xeeeeeeab;
     tx.mask = 0xff;
     EXPECT_EQ(to_string(tx), "[mosi: 0xab miso: 0x01]");
+
+    tx.miso = 0xeeeeef12;
+    tx.mosi = 0xeeeee9ab;
+    tx.mask = 0x7ff;
+    EXPECT_EQ(to_string(tx), "[mosi: 0x1ab miso: 0x712]");
 
     tx.miso = 0xeeeee012;
     tx.mosi = 0xeeeeeabc;
