@@ -1,0 +1,49 @@
+name: unity
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev**'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    name: Unity Build
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Setup Dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libvncserver-dev libslirp-dev libusb-1.0-0-dev ninja-build
+
+    - name: Configure
+      run: cmake -G Ninja -B BUILD -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON -DVCML_UNITY_BUILD=ON -DSYSTEMC_UNITY_BUILD=ON
+
+    - name: Build
+      run: cmake --build BUILD
+
+    - name: Test
+      working-directory: BUILD
+      run: ctest --output-on-failure
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v4
+      if: '!cancelled()'
+      with:
+        name: ${{github.event.repository.name}}-logs-unity-build
+        path: |
+            BUILD/.ninja_log
+            BUILD/CMakeCache.txt
+            BUILD/Testing/Temporary/LastTest.log
+        include-hidden-files: true
+        retention-days: 7
+
