@@ -17,7 +17,7 @@ using CR0_DSS = field<0, 4, u16>;
 using CR0_FRF = field<4, 2, u16>;
 using CR0_SCR = field<8, 8, u16>;
 
-enum cr0_bits : u16 {
+enum pl022_cr0_bits : u16 {
     CR0_SPO = bit(6),
     CR0_SPH = bit(7),
 };
@@ -44,7 +44,7 @@ static constexpr bool pl022_frame_is_tiformat(u16 cr0) {
     return get_field<CR0_FRF>(cr0) == 1;
 }
 
-enum cr1_bits : u16 {
+enum pl022_cr1_bits : u16 {
     CR1_LBM = bit(0),
     CR1_SSE = bit(1),
     CR1_MS = bit(2),
@@ -52,7 +52,7 @@ enum cr1_bits : u16 {
     CR1_MASK = CR1_LBM | CR1_SSE | CR1_MS | CR1_SOD,
 };
 
-enum sr_bits : u16 {
+enum pl022_sr_bits : u16 {
     SR_TFE = bit(0),
     SR_TNF = bit(1),
     SR_RNE = bit(2),
@@ -64,7 +64,7 @@ enum sr_bits : u16 {
 
 using CPSR_CPSDVSR = field<0, 8, u16>;
 
-enum irq_bits : u16 {
+enum pl022_irq_bits : u16 {
     IRQ_ROR = bit(0),
     IRQ_RT = bit(1),
     IRQ_RX = bit(2),
@@ -72,7 +72,7 @@ enum irq_bits : u16 {
     IRQ_MASK = IRQ_ROR | IRQ_RT | IRQ_RX | IRQ_TX,
 };
 
-enum dma_bits : u16 {
+enum pl022_dma_bits : u16 {
     DMACR_RXDMAE = bit(0),
     DMACR_TXDMAE = bit(1),
     DMACR_MASK = DMACR_RXDMAE | DMACR_TXDMAE,
