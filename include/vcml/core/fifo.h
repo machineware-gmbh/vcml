@@ -34,6 +34,8 @@ public:
     bool empty() const { return m_queue.empty(); }
     bool full() const { return m_queue.size() == m_capacity; }
 
+    T top() const { return m_queue.front(); }
+
     T pop() {
         T top = m_queue.front();
         m_queue.pop();

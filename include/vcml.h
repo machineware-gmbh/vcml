@@ -87,6 +87,7 @@
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
 
+#include "vcml/models/gpio/leds.h"
 #include "vcml/models/gpio/gate.h"
 #include "vcml/models/gpio/mmgpio.h"
 #include "vcml/models/gpio/sifive.h"
@@ -134,6 +135,7 @@
 #include "vcml/models/spi/flash.h"
 #include "vcml/models/spi/ocspi.h"
 #include "vcml/models/spi/sifive.h"
+#include "vcml/models/spi/pl022.h"
 
 #include "vcml/models/sd/card.h"
 #include "vcml/models/sd/sdhci.h"

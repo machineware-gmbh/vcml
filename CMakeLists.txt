@@ -124,6 +124,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/memory.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/gpio/leds.cpp
     ${src}/vcml/models/gpio/gate.cpp
     ${src}/vcml/models/gpio/mmgpio.cpp
     ${src}/vcml/models/gpio/sifive.cpp
@@ -174,6 +175,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/spi/flash.cpp
     ${src}/vcml/models/spi/ocspi.cpp
     ${src}/vcml/models/spi/sifive.cpp
+    ${src}/vcml/models/spi/pl022.cpp
     ${src}/vcml/models/sd/card.cpp
     ${src}/vcml/models/sd/sdhci.cpp
     ${src}/vcml/models/usb/device.cpp
