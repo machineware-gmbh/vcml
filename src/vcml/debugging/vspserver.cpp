@@ -766,11 +766,11 @@ vspserver::~vspserver() {
 }
 
 void vspserver::start() {
-    run_async();
-
     // Finish elaboration first before processing commands
     sc_start(SC_ZERO_TIME);
     suspend();
+
+    run_async();
 
     log_info("vspserver waiting on port %hu", port());
 
