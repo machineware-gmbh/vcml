@@ -91,6 +91,7 @@
 #include "vcml/models/gpio/gate.h"
 #include "vcml/models/gpio/mmgpio.h"
 #include "vcml/models/gpio/sifive.h"
+#include "vcml/models/gpio/pl061.h"
 
 #include "vcml/models/serial/backend.h"
 #include "vcml/models/serial/terminal.h"
