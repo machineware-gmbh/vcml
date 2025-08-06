@@ -583,7 +583,7 @@ struct async_worker {
     atomic<function<void(void)>*> request;
 
     atomic<bool> blocked;
-    atomic<bool> block_request;
+    bool block_request;
 
     mutex mtx;
     condition_variable_any notify;
@@ -614,13 +614,19 @@ struct async_worker {
     ~async_worker() { kill(); }
 
     void suspend() {
-        block_request = true;
+        {
+            std::scoped_lock lk(mtx);
+            block_request = true;
+        }
         while (!blocked)
             mwr::cpu_yield();
     }
 
     void resume() {
-        block_request = false;
+        {
+            std::scoped_lock lk(mtx);
+            block_request = false;
+        }
         notify.notify_all();
     }
 
