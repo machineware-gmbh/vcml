@@ -266,7 +266,7 @@ mcp3208::mcp3208(const sc_module_name& nm):
     spi_cs("spi_cs") {
     register_command("get_voltage", 0, this, &mcp3208::cmd_get_voltage,
                      "returns the voltage on a given channel");
-    register_command("set_voltage", 1, this, &mcp3208::cmd_set_voltage,
+    register_command("set_voltage", 2, this, &mcp3208::cmd_set_voltage,
                      "sets the voltage on a given channel");
 }
 
