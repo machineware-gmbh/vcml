@@ -839,8 +839,9 @@ void gic400::cpuif::write_eoir(u32 val) {
     if (ctlr.bank(cpu) & eoi_mode_mask)
         return;
 
-    m_parent->set_irq_active(irq, false, bit(cpu));
-    m_parent->set_irq_signaled(irq, false, bit(cpu));
+    cpu_mask_t cpu_mask = m_parent->get_cpu_mask(cpu, irq);
+    m_parent->set_irq_active(irq, false, cpu_mask);
+    m_parent->set_irq_signaled(irq, false, cpu_mask);
     m_parent->update();
 }
 
@@ -1391,6 +1392,9 @@ gic400::gic400(const sc_module_name& nm):
     rst.bind(cpuif.rst);
     rst.bind(vifctrl.rst);
     rst.bind(vcpuif.rst);
+
+    for (size_t i = NPRV; i < NPRV + NSPI; i++)
+        m_irq_state[i].model = N_1;
 }
 
 gic400::~gic400() {
