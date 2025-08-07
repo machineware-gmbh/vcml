@@ -267,16 +267,16 @@ void ads1015::post_read() {
 }
 
 void ads1015::post_write() {
-    u16 regval = m_regs[m_reg_ptr];
+    u32 regval = m_regs[m_reg_ptr];
     switch (m_reg_ptr) {
     case CONFIG:
         update_config();
         break;
     case THRESH_LO:
-        log_debug("setup lower threshold %hu", regval >> 4);
+        log_debug("setup lower threshold %u", regval >> 4);
         break;
     case THRESH_HI:
-        log_debug("setup upper threshold %hu", regval >> 4);
+        log_debug("setup upper threshold %u", regval >> 4);
         break;
     }
 }
