@@ -426,15 +426,22 @@ void processor::end_of_elaboration() {
     }
 
     if (gdb_port >= 0) {
-        auto run = gdb_wait ? debugging::GDB_STOPPED : debugging::GDB_RUNNING;
-        m_gdb = new debugging::gdbserver(gdb_port, *this, run);
-        m_gdb->echo(gdb_echo);
+        try {
+            auto run = gdb_wait ? debugging::GDB_STOPPED
+                                : debugging::GDB_RUNNING;
+            m_gdb = new debugging::gdbserver(gdb_port, *this, run);
+            m_gdb->echo(gdb_echo);
 
-        if (gdb_port == 0)
-            gdb_port = m_gdb->port();
+            if (gdb_port == 0)
+                gdb_port = m_gdb->port();
 
-        log_info("%s for GDB connection on port %hu",
-                 gdb_wait ? "waiting" : "listening", m_gdb->port());
+            log_info("%s for GDB connection on port %hu",
+                     gdb_wait ? "waiting" : "listening", m_gdb->port());
+        } catch (std::exception& ex) {
+            if (gdb_wait)
+                throw;
+            log_warn("error starting gdbserver: %s", ex.what());
+        }
     }
 }
 
