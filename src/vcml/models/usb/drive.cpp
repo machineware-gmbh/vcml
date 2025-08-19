@@ -108,180 +108,19 @@ static_assert(sizeof(usb_msd_cbw) == 31, "invalid cbw struct size");
 static_assert(sizeof(usb_msd_csw) == 13, "invalid csw struct size");
 #pragma pack(pop)
 
-enum msd_command : u8 {
-    CMD_FORMAT_UNIT = 0x04,
-    CMD_INQUIRY = 0x12,
-    CMD_START_STOP = 0x1b,
-    CMD_MODE_SELECT = 0x55,
-    CMD_MODE_SENSE_6 = 0x1a,
-    CMD_MODE_SENSE_10 = 0x5a,
-    CMD_ALLOW_MEDIUM_REMOVAL = 0x1e,
-    CMD_READ_10 = 0x28,
-    CMD_READ_12 = 0xa8,
-    CMD_READ_CAPACITY = 0x25,
-    CMD_READ_FORMAT_CAPACITY = 0x23,
-    CMD_REQUEST_SENSE = 0x03,
-    CMD_REZERO_UNIT = 0x01,
-    CMD_SEEK_10 = 0x10,
-    CMD_SEND_DIAGNOSTIC = 0x1d,
-    CMD_TEST_UNIT_READY = 0x00,
-    CMD_VERIFY = 0x2f,
-    CMD_WRITE_10 = 0x2a,
-    CMD_WRITE_12 = 0xaa,
-    CMD_WRITE_AND_VERIFY = 0x2e,
-    CMD_SYNC_CACHE = 0x35,
-};
-
 enum msd_status : u8 {
     STS_SUCCESS = 0,
     STS_ERROR = 1,
     STS_PROTOCOL = 2,
 };
 
-enum sense_key : u8 {
-    NO_SENSE = 0x00,
-    RECOVERED_ERROR = 0x01,
-    NOT_READY = 0x02,
-    MEDIUM_ERROR = 0x03,
-    HARDWARE_ERROR = 0x04,
-    ILLEGAL_REQUEST = 0x05,
-    UNIT_ATTENTION = 0x06,
-    DATA_PROTECT = 0x07,
-    BLANK_CHECK = 0x08,
-    COPY_ABORTED = 0x0a,
-    ABORTED_COMMAND = 0x0b,
-    VOLUME_OVERFLOW = 0x0d,
-    MISCOMPARE = 0x0e,
-};
-
-static const drive::sense SENSE_NOTHING{ 0x00, 0x00, 0x00 };
-static const drive::sense SENSE_NO_MEDIUM{ 0x02, 0x3a, 0x00 };
-
-u8 drive::handle_command(u8* cmdbuf) {
-    switch (cmdbuf[0]) {
-    case CMD_TEST_UNIT_READY: {
-        log_debug("test unit ready");
-        return STS_SUCCESS;
-    }
-
-    case CMD_REQUEST_SENSE: {
-        m_output.assign(18, 0);
-        m_output[0] = 0xf0;
-        m_output[2] = m_sense.key;
-        m_output[7] = 10;
-        m_output[12] = m_sense.asc;
-        m_output[13] = m_sense.ascq;
-        log_debug("request sense [0x%02hhx 0x%02hhx 0x%02hhx]", m_sense.key,
-                  m_sense.asc, m_sense.ascq);
-        return STS_SUCCESS;
-    }
-
-    case CMD_INQUIRY: {
-        log_debug("inquire request");
-        m_output.assign(36, 0);
-        m_output[1] = 0x80;
-        m_output[3] = 0x01;
-        m_output[4] = 36;
-        memcpy(&m_output[8], "MWARE  ", 8);
-        memcpy(&m_output[16], "vcml flash drive", 16);
-        memcpy(&m_output[32], "1.0", 4);
-        return STS_SUCCESS;
-    }
-
-    case CMD_READ_CAPACITY: {
-        if (disk.capacity() == 0) {
-            log_debug("read capacity: no medium");
-            m_sense = SENSE_NO_MEDIUM;
-            return STS_ERROR;
-        }
-
-        log_debug("read capacity: %zu bytes", disk.capacity());
-
-        size_t bsz = 512;
-        size_t lba = (disk.capacity() / bsz) - 1;
-
-        m_output.assign(8, 0);
-        m_output[0] = (u8)(lba >> 24);
-        m_output[1] = (u8)(lba >> 16);
-        m_output[2] = (u8)(lba >> 8);
-        m_output[3] = (u8)(lba >> 0);
-        m_output[4] = (u8)(bsz >> 24);
-        m_output[5] = (u8)(bsz >> 16);
-        m_output[6] = (u8)(bsz >> 8);
-        m_output[7] = (u8)(bsz >> 0);
-        return STS_SUCCESS;
-    }
-
-    case CMD_MODE_SENSE_6: {
-        u8 page = cmdbuf[2] & 0x3f;
-        log_debug("mode sense (page 0x%02hhx)", page);
-        m_output.assign(192, 0);
-        u8* p = m_output.data();
-        if (disk.readonly)
-            p[2] = 0x80;
-
-        p += 4;
-        if (page == 8 || page == 0x3f) {
-            p[0] = 8;
-            p[1] = 0x12;
-            p[2] = 0x4;
-            p += 20;
-        }
-
-        m_output[0] = p - m_output.data() - 1;
-        return STS_SUCCESS;
-    }
-
-    case CMD_ALLOW_MEDIUM_REMOVAL: {
-        if (cmdbuf[4] & 0x1)
-            log_debug("preventing media removal");
-        else
-            log_debug("permitting media removal");
-        return STS_SUCCESS;
-    }
-
-    case CMD_SYNC_CACHE: {
-        log_debug("cache flush requested");
-        return STS_SUCCESS;
-    }
-
-    case CMD_READ_10:
-    case CMD_READ_12: {
-        size_t pos = (size_t)cmdbuf[2] << 33 | (size_t)cmdbuf[3] << 25 |
-                     (size_t)cmdbuf[4] << 17 | (size_t)cmdbuf[5] << 9;
-        log_debug("read offset %zu, %zu bytes", pos, m_len);
-        m_output.assign(m_len, 0);
-        disk.seek(pos);
-        if (!disk.read(m_output.data(), m_output.size()))
-            return STS_ERROR;
-        return STS_SUCCESS;
-    }
-
-    case CMD_WRITE_10:
-    case CMD_WRITE_12: {
-        size_t pos = (size_t)cmdbuf[2] << 33 | (size_t)cmdbuf[3] << 25 |
-                     (size_t)cmdbuf[4] << 17 | (size_t)cmdbuf[5] << 9;
-        log_debug("write offset %zu, %zu bytes", pos, m_len);
-        disk.seek(pos);
-        return STS_SUCCESS;
-    }
-
-    default:
-        log_error("unsupported command: 0x%02hhx", cmdbuf[0]);
-        m_mode = MODE_CSW;
-        return STS_PROTOCOL;
-    }
-}
-
 drive::drive(const sc_module_name& nm, const string& img, bool ro, bool wi):
     device(nm, DRIVE_DESC),
     m_mode(MODE_CBW),
-    m_output(),
-    m_len(),
-    m_cmd(),
-    m_sts(),
+    m_req(),
+    m_buflen(),
+    m_status(),
     m_tag(),
-    m_sense(SENSE_NOTHING),
     usb3("usb3", true),
     vendorid("vendorid", USB_VENDOR_VCML),
     productid("productid", 0x1),
@@ -328,20 +167,21 @@ usb_result drive::get_data(u32 ep, u8* data, size_t len) {
         }
 
         usb_msd_csw csw;
-        csw.signature = 0x53425355;
+        csw.signature = fourcc("USBS");
         csw.tag = m_tag;
-        csw.residue = (u32)m_output.size();
-        csw.status = m_sts;
+        csw.residue = 0;
+        csw.status = m_status;
         memcpy(data, &csw, sizeof(csw));
         m_mode = MODE_CBW;
         return USB_RESULT_SUCCESS;
     }
 
     case MODE_DATA_IN: {
-        len = min(len, m_output.size());
-        memcpy(data, m_output.data(), len);
-        m_output.erase(m_output.begin(), m_output.begin() + len);
-        if (m_output.empty())
+        auto& buf = m_req.payload;
+        len = min(len, buf.size());
+        memcpy(data, buf.data(), len);
+        buf.erase(buf.begin(), buf.begin() + len);
+        if (buf.empty())
             m_mode = MODE_CSW;
         return USB_RESULT_SUCCESS;
     }
@@ -367,7 +207,7 @@ usb_result drive::set_data(u32 ep, const u8* data, size_t len) {
 
         usb_msd_cbw cbw;
         memcpy(&cbw, data, sizeof(usb_msd_cbw));
-        if (cbw.signature != 0x43425355) {
+        if (cbw.signature != fourcc("USBC")) {
             log_warn("invalid CBW signature 0x%08x", cbw.signature);
             return USB_RESULT_STALL;
         }
@@ -377,36 +217,31 @@ usb_result drive::set_data(u32 ep, const u8* data, size_t len) {
             return USB_RESULT_STALL;
         }
 
-        if (cbw.data_len == 0)
-            m_mode = MODE_CSW;
-        else if (cbw.flags & 0x80)
-            m_mode = MODE_DATA_IN;
-        else
-            m_mode = MODE_DATA_OUT;
-
+        memcpy(m_req.command, cbw.cmd, 16);
+        m_buflen = cbw.data_len;
+        m_status = STS_SUCCESS;
         m_tag = cbw.tag;
-        m_cmd = cbw.cmd[0];
-        m_len = cbw.data_len;
-        m_sts = handle_command(cbw.cmd);
+
+        if (cbw.flags & 0x80) {
+            m_mode = m_buflen ? MODE_DATA_IN : MODE_CSW;
+            if (failed(disk.scsi_handle_command(m_req))) {
+                m_req.payload.assign(m_buflen, 0xee);
+                m_status = STS_ERROR;
+            }
+        } else {
+            m_req.payload.clear();
+            m_mode = m_buflen ? MODE_DATA_OUT : MODE_CSW;
+        }
 
         return USB_RESULT_SUCCESS;
     }
 
     case MODE_DATA_OUT: {
-        if (m_cmd != CMD_WRITE_10 && m_cmd != CMD_WRITE_12) {
-            log_error("invalid data read request");
-            return USB_RESULT_STALL;
-        }
-
-        len = min(len, m_len);
-        if (disk.write(data, len)) {
-            m_len -= len;
-            if (m_len == 0) {
-                m_sts = STS_SUCCESS;
-                m_mode = MODE_CSW;
-            }
-        } else {
-            m_sts = STS_ERROR;
+        len = min(len, m_buflen);
+        m_req.payload.insert(m_req.payload.end(), data, data + len);
+        if (m_req.payload.size() == m_buflen) {
+            if (failed(disk.scsi_handle_command(m_req)))
+                m_status = STS_SUCCESS;
             m_mode = MODE_CSW;
         }
 
@@ -435,11 +270,8 @@ usb_result drive::handle_control(u16 req, u16 val, u16 idx, u8* data,
 
 void drive::usb_reset_device() {
     device::usb_reset_device();
-
     m_mode = MODE_CBW;
-    m_sense = SENSE_NOTHING;
-
-    m_output.clear();
+    m_req.payload.clear();
 }
 
 VCML_EXPORT_MODEL(vcml::usb::drive, name, args) {

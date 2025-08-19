@@ -62,10 +62,34 @@ using mwr::u16;
 using mwr::u32;
 using mwr::u64;
 
+using mwr::U8_MIN;
+using mwr::U8_MAX;
+
+using mwr::U16_MIN;
+using mwr::U16_MAX;
+
+using mwr::U32_MIN;
+using mwr::U32_MAX;
+
+using mwr::U64_MIN;
+using mwr::U64_MAX;
+
 using mwr::i8;
 using mwr::i16;
 using mwr::i32;
 using mwr::i64;
+
+using mwr::I8_MIN;
+using mwr::I8_MAX;
+
+using mwr::I16_MIN;
+using mwr::I16_MAX;
+
+using mwr::I32_MIN;
+using mwr::I32_MAX;
+
+using mwr::I64_MIN;
+using mwr::I64_MAX;
 
 using mwr::f32;
 using mwr::f64;
@@ -200,6 +224,9 @@ using mwr::stl_add_unique;
 
 using mwr::stream_guard;
 
+using mwr::imul64;
+using mwr::umul64;
+using mwr::udivup;
 using mwr::width_of;
 using mwr::popcnt;
 using mwr::parity;

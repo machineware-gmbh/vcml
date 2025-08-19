@@ -109,6 +109,7 @@
 
 #include "vcml/models/block/backend.h"
 #include "vcml/models/block/disk.h"
+#include "vcml/models/block/scsi.h"
 
 #include "vcml/models/ethernet/backend.h"
 #include "vcml/models/ethernet/bridge.h"

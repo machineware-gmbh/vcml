@@ -18,20 +18,13 @@
 
 #include "vcml/protocols/usb.h"
 #include "vcml/models/usb/device.h"
-#include "vcml/models/block/disk.h"
+#include "vcml/models/block/scsi.h"
 
 namespace vcml {
 namespace usb {
 
 class drive : public device
 {
-public:
-    struct sense {
-        u8 key;
-        u8 asc;
-        u8 ascq;
-    };
-
 private:
     enum drive_mode {
         MODE_CBW,
@@ -41,12 +34,10 @@ private:
     };
 
     drive_mode m_mode;
-    vector<u8> m_output;
-    size_t m_len;
-    u8 m_cmd;
-    u8 m_sts;
+    block::scsi_request m_req;
+    size_t m_buflen;
+    u32 m_status;
     u32 m_tag;
-    sense m_sense;
 
     u8 handle_command(u8* cmdbuf);
 
@@ -64,7 +55,7 @@ public:
     property<bool> readonly;
     property<bool> writeignore;
 
-    block::disk disk;
+    block::scsi_disk disk;
 
     usb_target_socket usb_in;
 

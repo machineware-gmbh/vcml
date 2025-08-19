@@ -151,6 +151,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/block/backend_ram.cpp
     ${src}/vcml/models/block/backend.cpp
     ${src}/vcml/models/block/disk.cpp
+    ${src}/vcml/models/block/scsi.cpp
     ${src}/vcml/models/ethernet/backend.cpp
     ${src}/vcml/models/ethernet/backend_file.cpp
     ${src}/vcml/models/ethernet/bridge.cpp
