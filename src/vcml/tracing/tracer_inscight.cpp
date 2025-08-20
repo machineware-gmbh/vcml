@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/tracing/tracer_inscight.h"
+#include "vcml/logging/logger.h"
 
 namespace vcml {
 
