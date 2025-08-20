@@ -34,7 +34,7 @@ void tracer_inscight::trace(const trace_activity& msg) {
 
 #else
 
-void inscight::trace(const activity_base& msg) {
+void tracer_inscight::trace(const trace_activity& msg) {
     (void)msg; // nothing to do
 }
 
