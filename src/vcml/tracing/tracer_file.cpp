@@ -27,11 +27,10 @@
 
 namespace vcml {
 
-template <typename PAYLOAD>
-void tracer_file::do_trace(const activity<PAYLOAD>& msg) {
-    vector<string> lines = split(escape(to_string(msg.payload)), '\n');
+void tracer_file::trace(const trace_activity& msg) {
+    vector<string> lines = split(escape(msg.to_string()), '\n');
     for (const string& line : lines) {
-        m_stream << "[" << protocol_name(msg.kind);
+        m_stream << "[" << msg.protocol_name();
         print_timing(m_stream, msg);
         m_stream << "] " << msg.port.name();
 
@@ -43,66 +42,6 @@ void tracer_file::do_trace(const activity<PAYLOAD>& msg) {
 
         m_stream << line << std::endl;
     }
-}
-
-void tracer_file::trace(const activity<tlm_generic_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<gpio_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<clk_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<pci_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<i2c_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<lin_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<spi_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<sd_command>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<sd_data>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<vq_message>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<serial_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<signal_payload_base>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<eth_frame>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<can_frame>& msg) {
-    do_trace(msg);
-}
-
-void tracer_file::trace(const activity<usb_packet>& msg) {
-    do_trace(msg);
 }
 
 tracer_file::tracer_file(const string& file):

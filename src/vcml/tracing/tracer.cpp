@@ -12,41 +12,6 @@
 
 namespace vcml {
 
-const char* protocol_name(protocol_kind kind) {
-    switch (kind) {
-    case PROTO_TLM:
-        return "TLM";
-    case PROTO_GPIO:
-        return "GPIO";
-    case PROTO_CLK:
-        return "CLK";
-    case PROTO_PCI:
-        return "PCI";
-    case PROTO_I2C:
-        return "I2C";
-    case PROTO_LIN:
-        return "LIN";
-    case PROTO_SPI:
-        return "SPI";
-    case PROTO_SD:
-        return "SD";
-    case PROTO_SERIAL:
-        return "SERIAL";
-    case PROTO_SIGNAL:
-        return "SIGNAL";
-    case PROTO_VIRTIO:
-        return "VIRTIO";
-    case PROTO_ETHERNET:
-        return "ETHERNET";
-    case PROTO_CAN:
-        return "CAN";
-    case PROTO_USB:
-        return "USB";
-    default:
-        return "unknown protocol";
-    }
-}
-
 tracer::tracer(): m_mtx() {
     all().insert(this);
 }

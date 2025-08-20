@@ -31,30 +31,12 @@ size_t tracer_term::trace_name_length = 16;
 size_t tracer_term::trace_indent_incr = 1;
 size_t tracer_term::trace_curr_indent = 0;
 
-array<const char*, NUM_PROTOCOLS> tracer_term::colors = {
-    /* [PROTO_TLM]      = */ mwr::termcolors::MAGENTA,
-    /* [PROTO_GPIO]     = */ mwr::termcolors::YELLOW,
-    /* [PROTO_CLK]      = */ mwr::termcolors::BLUE,
-    /* [PROTO_PCI]      = */ mwr::termcolors::CYAN,
-    /* [PROTO_I2C]      = */ mwr::termcolors::BRIGHT_GREEN,
-    /* [PROTO_LIN]      = */ mwr::termcolors::BRIGHT_GREEN,
-    /* [PROTO_SPI]      = */ mwr::termcolors::BRIGHT_YELLOW,
-    /* [PROTO_SD]       = */ mwr::termcolors::BRIGHT_MAGENTA,
-    /* [PROTO_SERIAL]   = */ mwr::termcolors::BRIGHT_RED,
-    /* [PROTO_SIGNAL]   = */ mwr::termcolors::RED,
-    /* [PROTO_VIRTIO]   = */ mwr::termcolors::BRIGHT_CYAN,
-    /* [PROTO_ETHERNET] = */ mwr::termcolors::BRIGHT_BLUE,
-    /* [PROTO_CAN]      = */ mwr::termcolors::RED,
-    /* [PROTO_USB]      = */ mwr::termcolors::CYAN,
-};
-
-template <typename PAYLOAD>
-void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
+void tracer_term::trace(const trace_activity& msg) {
     VCML_ERROR_ON(!m_os.good(), "trace stream broken");
 
     stringstream ss;
     if (m_colors)
-        ss << colors[msg.kind];
+        ss << msg.termcolor();
 
     string sender = msg.port.name();
     if (trace_name_length < sender.length())
@@ -63,9 +45,9 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
     if (msg.dir == TRACE_FW)
         trace_curr_indent += trace_indent_incr;
 
-    vector<string> lines = split(escape(to_string(msg.payload)), '\n');
+    vector<string> lines = split(escape(msg.to_string()), '\n');
     for (const string& line : lines) {
-        ss << "[" << protocol_name(msg.kind);
+        ss << "[" << msg.protocol_name();
         print_timing(ss, msg.t, msg.cycle);
         ss << "] " << sender;
 
@@ -94,66 +76,6 @@ void tracer_term::do_trace(const activity<PAYLOAD>& msg) {
         else
             trace_curr_indent = 0;
     }
-}
-
-void tracer_term::trace(const activity<tlm_generic_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<gpio_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<clk_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<pci_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<i2c_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<lin_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<spi_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<sd_command>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<sd_data>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<vq_message>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<serial_payload>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<signal_payload_base>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<eth_frame>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<can_frame>& msg) {
-    do_trace(msg);
-}
-
-void tracer_term::trace(const activity<usb_packet>& msg) {
-    do_trace(msg);
 }
 
 static bool use_colors(bool use_cerr) {

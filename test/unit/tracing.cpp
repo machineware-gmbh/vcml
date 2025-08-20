@@ -11,10 +11,11 @@
 #include "testing.h"
 
 MATCHER_P3(match_trace, dir, addr, data, "matches trace entry") {
-    return arg.kind == PROTO_TLM && arg.dir == dir && !arg.error &&
-           arg.payload.get_address() == addr &&
-           arg.payload.get_data_length() == 4 &&
-           memcmp(arg.payload.get_data_ptr(), &data, 4) == 0;
+    const tlm_generic_payload&
+        tx = arg.template get_payload<tlm_generic_payload>();
+    return arg.protocol_id() == PROTO_TLM && arg.dir == dir && !arg.error &&
+           tx.get_address() == addr && tx.get_data_length() == 4 &&
+           memcmp(tx.get_data_ptr(), &data, 4) == 0;
 }
 
 MATCHER_P(match_trace_error, err, "matches if trace has error set") {
@@ -25,23 +26,7 @@ class mock_tracer : public vcml::tracer
 {
 public:
     mock_tracer(): tracer() {}
-    MOCK_METHOD(void, trace, (const tracer::activity<tlm_generic_payload>&),
-                (override));
-
-    virtual void trace(const activity<gpio_payload>&) override {}
-    virtual void trace(const activity<clk_payload>&) override {}
-    virtual void trace(const activity<pci_payload>&) override {}
-    virtual void trace(const activity<i2c_payload>&) override {}
-    virtual void trace(const activity<lin_payload>&) override {}
-    virtual void trace(const activity<spi_payload>&) override {}
-    virtual void trace(const activity<sd_command>&) override {}
-    virtual void trace(const activity<sd_data>&) override {}
-    virtual void trace(const activity<vq_message>&) override {}
-    virtual void trace(const activity<serial_payload>&) override {}
-    virtual void trace(const activity<signal_payload_base>&) override {}
-    virtual void trace(const activity<eth_frame>&) override {}
-    virtual void trace(const activity<can_frame>&) override {}
-    virtual void trace(const activity<usb_packet>&) override {}
+    MOCK_METHOD(void, trace, (const trace_activity&), (override));
 };
 
 class test_harness : public test_base
@@ -105,14 +90,6 @@ public:
 };
 
 TEST(tracing, basic) {
-    for (int i = 0; i < NUM_PROTOCOLS; i++) {
-        EXPECT_STRNE(protocol_name((protocol_kind)i), "unknown protocol")
-            << "name undefined for protocol " << i;
-        EXPECT_NE(tracer_term::colors[i], nullptr)
-            << "color undefined for protocol "
-            << protocol_name((protocol_kind)i);
-    }
-
     test_harness test("harness");
     sc_core::sc_start();
 }

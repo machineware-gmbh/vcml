@@ -30,6 +30,8 @@
 #include "vcml/logging/logger.h"
 #include "vcml/logging/inscight.h"
 
+#include "vcml/tracing/protocol.h"
+#include "vcml/tracing/activity.h"
 #include "vcml/tracing/tracer.h"
 #include "vcml/tracing/tracer_file.h"
 #include "vcml/tracing/tracer_term.h"
