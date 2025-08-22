@@ -59,5 +59,9 @@ xhcipci::~xhcipci() {
     // nothing to do
 }
 
+VCML_EXPORT_MODEL(vcml::usb::xhcipci, name, args) {
+    return new xhcipci(name);
+}
+
 } // namespace usb
 } // namespace vcml
