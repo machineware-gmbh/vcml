@@ -130,7 +130,7 @@ drive::drive(const sc_module_name& nm, const string& img, bool ro, bool wi):
     image("image", img),
     readonly("readonly", ro),
     writeignore("writeignore", wi),
-    disk("disk", image, readonly, writeignore),
+    disk("disk", image, readonly, writeignore, true),
     usb_in("usb_in") {
     m_desc.vendor_id = vendorid;
     m_desc.product_id = productid;

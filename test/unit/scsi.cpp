@@ -89,10 +89,8 @@ TEST(scsi, read_capacity) {
     ASSERT_TRUE(success(disk.scsi_handle_command(req)));
     EXPECT_EQ(req.payload.size(), 8);
 
-    u32 bsz = req.payload[7] | (u32)req.payload[6] << 8 |
-              (u32)req.payload[5] << 16 | (u32)req.payload[4] << 24;
-    u32 lba = req.payload[3] | (u32)req.payload[2] << 8 |
-              (u32)req.payload[1] << 16 | (u32)req.payload[0] << 24;
+    u32 bsz = block::scsi_read(&req.payload[4], 4);
+    u32 lba = block::scsi_read(&req.payload[0], 4);
 
     EXPECT_EQ(disk.blocksize(), bsz);
     EXPECT_EQ(udivup(disk.capacity(), disk.blocksize()) - 1, lba);

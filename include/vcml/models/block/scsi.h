@@ -38,8 +38,12 @@ enum scsi_command : u8 {
     SCSI_WRITE_AND_VERIFY = 0x2e,
     SCSI_VERIFY = 0x2f,
     SCSI_SYNC_CACHE = 0x35,
+    SCSI_WRITE_SAME_10 = 0x41,
     SCSI_MODE_SELECT = 0x55,
     SCSI_MODE_SENSE_10 = 0x5a,
+    SCSI_WRITE_SAME_16 = 0x93,
+    SCSI_READ_CAPACITY_16 = 0x9e,
+    SCSI_REPORT_LUNS = 0xa0,
     SCSI_READ_12 = 0xa8,
     SCSI_WRITE_12 = 0xaa,
 };
@@ -112,24 +116,76 @@ extern const scsi_sense SENSE_NOT_READY;
 extern const scsi_sense SENSE_NO_MEDIUM;
 extern const scsi_sense SENSE_MEDIUM_ERROR;
 extern const scsi_sense SENSE_ILLEGAL_REQ;
+extern const scsi_sense SENSE_ILLEGAL_FIELD;
+extern const scsi_sense SENSE_ILLEGAL_PARAM;
 extern const scsi_sense SENSE_UNIT_ATTENTION;
 extern const scsi_sense SENSE_DATA_PROTECT;
+
+struct scsi_block_limits {
+    bool wnr;
+    u8 max_compare_and_write_length;
+    u16 opt_transfer_length_gran;
+    u32 max_transfer_length;
+    u32 opt_transfer_length;
+    u32 max_prefetch_length;
+    u32 max_unmap_lba_count;
+    u32 max_unmap_blk_desc_count;
+    u32 opt_unmap_gran;
+    u32 unmap_gran_align;
+    u64 max_write_same_len;
+    u32 max_atomic_transfer_length;
+    u32 atomic_align;
+    u32 atomic_transfer_length_gran;
+};
+
+enum scsi_device_type : u8 {
+    SCSI_DEVICE_DIRECT_ACCESS = 0x00,
+    SCSI_DEVICE_SEQUENTIAL_ACCESS = 0x01,
+    SCSI_DEVICE_PRINTER = 0x02,
+    SCSI_DEVICE_CD_DVD = 0x05,
+    SCSI_DEVICE_SCANNER = 0x06,
+    SCSI_DEVICE_WLUN = 0x1e,
+};
 
 enum scsi_mode_page : u8 {
     SCSI_MODE_PAGE_RW_ERROR = 0x01,
     SCSI_MODE_PAGE_CACHING = 0x08,
     SCSI_MODE_PAGE_CONTROL = 0x0a,
     SCSI_MODE_PAGE_EXCEPTIONS = 0x1c,
+    SCSI_MODE_PAGE_CAPABILITIES = 0x2a,
     SCSI_MODE_PAGE_ALL_PAGES = 0x3f,
 };
+
+u64 scsi_read(const u8* ptr, size_t len);
+void scsi_write(u8* ptr, size_t len, u64 data);
+void scsi_write_str(u8* buf, size_t len, const string& str);
+void scsi_write_sense(u8* buf, size_t len, const scsi_sense& sense);
+void scsi_write_block_limits(u8* buf, size_t len, const scsi_block_limits& bl);
 
 class scsi_disk : public disk
 {
 private:
     scsi_sense m_sense;
 
+    scsi_response scsi_inquiry(scsi_request& req);
+    scsi_response scsi_inquiry_vpd(scsi_request& req);
+    scsi_response scsi_report_luns(scsi_request& req);
+    scsi_response scsi_request_sense(scsi_request& req);
+    scsi_response scsi_mode_sense(scsi_request& req, bool is10);
+    scsi_response scsi_read_capacity(scsi_request& req, bool is16);
+    scsi_response scsi_handle_seek(scsi_request& req);
+    scsi_response scsi_handle_read(scsi_request& req, bool is12);
+    scsi_response scsi_handle_write(scsi_request& req, bool is12);
+    scsi_response scsi_write_same(scsi_request& req, bool is16);
+
 public:
+    property<bool> removable;
+
     property<size_t> blockbits;
+
+    property<u64> device_wwn;
+    property<u64> port_wwn;
+    property<u32> port_idx;
 
     property<string> vendor;
     property<string> product;
@@ -141,13 +197,14 @@ public:
     size_t blocksize() const { return 1ull << min<size_t>(blockbits, 15); }
 
     scsi_disk(const sc_module_name& nm, const string& image = "",
-              bool readonly = false, bool writeignore = false);
+              bool readonly = false, bool writeignore = false,
+              bool removable = false);
     virtual ~scsi_disk();
     VCML_KIND(block::scsi_disk);
 
     virtual scsi_response scsi_handle_command(scsi_request& req);
     virtual void scsi_write_mode_page(vector<u8>& data, u8 page, u8 control,
-                                      bool warn);
+                                      bool all);
 };
 
 } // namespace block
