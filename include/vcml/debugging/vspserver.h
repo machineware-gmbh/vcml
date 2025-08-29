@@ -29,6 +29,13 @@ private:
     sc_time m_duration;
 
     unordered_map<u64, const breakpoint*> m_breakpoints;
+    unordered_map<u64, const watchpoint*> m_watchpoints;
+
+    enum watchpoint_type {
+        VSP_WATCHPOINT_READ = 1,
+        VSP_WATCHPOINT_WRITE = 2,
+        VSP_WATCHPOINT_ACCESS = VSP_WATCHPOINT_READ | VSP_WATCHPOINT_WRITE
+    };
 
     string handle_version(const string& command);
     string handle_status(const string& command);
@@ -44,6 +51,8 @@ private:
     string handle_seta(const string& command);
     string handle_mkbp(const string& command);
     string handle_rmbp(const string& command);
+    string handle_mkwp(const string& command);
+    string handle_rmwp(const string& command);
     string handle_lreg(const string& command);
     string handle_getr(const string& command);
     string handle_setr(const string& command);

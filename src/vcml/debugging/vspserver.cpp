@@ -554,6 +554,95 @@ string vspserver::handle_rmbp(const string& cmd) {
     return "OK";
 }
 
+string vspserver::handle_mkwp(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 5)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 addr;
+    if (is_number(args[2]))
+        addr = from_string<u64>(args[2]);
+    else {
+        const symbol* sym = tgt->symbols().find_symbol(args[2]);
+        if (sym == nullptr)
+            return mkstr("E,no address or symbol: %s", args[2].c_str());
+        addr = sym->virt_addr();
+    }
+
+    u64 size = from_string<u64>(args[3]);
+    watchpoint_type vsp_type = (watchpoint_type)from_string<u32>(args[4]);
+
+    vcml_access vcml_type = VCML_ACCESS_NONE;
+    switch (vsp_type) {
+    case VSP_WATCHPOINT_READ:
+        vcml_type = VCML_ACCESS_READ;
+        break;
+    case VSP_WATCHPOINT_WRITE:
+        vcml_type = VCML_ACCESS_WRITE;
+        break;
+    case VSP_WATCHPOINT_ACCESS:
+        vcml_type = VCML_ACCESS_READ_WRITE;
+        break;
+    default:
+        return mkstr("E,invalid watchpoint type %u", vsp_type);
+    }
+
+    range wp_range(addr, addr + size - 1);
+    const watchpoint* wp = tgt->insert_watchpoint(wp_range, vcml_type, this);
+    if (wp == nullptr) {
+        return mkstr("E,failed to insert watchpoint at [0x%llx, 0x%llx]",
+                     wp_range.start, wp_range.end);
+    }
+
+    m_watchpoints[wp->id()] = wp;
+    return mkstr("OK,inserted watchpoint %llu", wp->id());
+}
+
+string vspserver::handle_rmwp(const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    u64 wpid = from_string<u64>(args[1]);
+    auto it = m_watchpoints.find(wpid);
+    if (it == m_watchpoints.end())
+        return mkstr("E,invalid watchpoint id: %llu", wpid);
+
+    target& tgt = it->second->owner();
+
+    watchpoint_type vsp_type = (watchpoint_type)from_string<u32>(args[2]);
+
+    vcml_access vcml_type = VCML_ACCESS_NONE;
+    switch (vsp_type) {
+    case VSP_WATCHPOINT_READ:
+        vcml_type = VCML_ACCESS_READ;
+        break;
+    case VSP_WATCHPOINT_WRITE:
+        vcml_type = VCML_ACCESS_WRITE;
+        break;
+    case VSP_WATCHPOINT_ACCESS:
+        vcml_type = VCML_ACCESS_READ_WRITE;
+        break;
+    default:
+        VCML_ERROR("invalid watchpoint type");
+    }
+    if (!tgt.remove_watchpoint(it->second, vcml_type, this))
+        return mkstr("E,model rejected watchpoint deletion");
+
+    m_watchpoints.erase(it);
+    return "OK";
+}
+
 string vspserver::handle_lreg(const string& cmd) {
     if (is_running())
         return "E,simulation running";
@@ -774,6 +863,8 @@ vspserver::vspserver(u16 server_port):
     register_handler("seta", &vspserver::handle_seta);
     register_handler("mkbp", &vspserver::handle_mkbp);
     register_handler("rmbp", &vspserver::handle_rmbp);
+    register_handler("mkwp", &vspserver::handle_mkwp);
+    register_handler("rmwp", &vspserver::handle_rmwp);
     register_handler("lreg", &vspserver::handle_lreg);
     register_handler("getr", &vspserver::handle_getr);
     register_handler("setr", &vspserver::handle_setr);

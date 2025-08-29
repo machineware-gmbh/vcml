@@ -691,8 +691,9 @@ bool target::remove_breakpoint(u64 addr, subscriber* subscr) {
     return remove_breakpoint(addr);
 }
 
-bool target::insert_watchpoint(const range& addr, vcml_access prot,
-                               subscriber* subscr) {
+const watchpoint* target::insert_watchpoint(const range& addr,
+                                            vcml_access prot,
+                                            subscriber* subscr) {
     auto wp = std::find_if(m_watchpoints.begin(), m_watchpoints.end(),
                            [addr](const watchpoint* wp) -> bool {
                                return wp->address() == addr;
@@ -708,15 +709,46 @@ bool target::insert_watchpoint(const range& addr, vcml_access prot,
     if (is_read_allowed(prot)) {
         if (!(*wp)->has_read_subscribers())
             if (!insert_watchpoint(addr, VCML_ACCESS_READ))
-                return false;
+                return nullptr;
         (*wp)->subscribe(VCML_ACCESS_READ, subscr);
     }
 
     if (is_write_allowed(prot)) {
         if (!(*wp)->has_write_subscribers())
             if (!insert_watchpoint(addr, VCML_ACCESS_WRITE))
-                return false;
+                return nullptr;
         (*wp)->subscribe(VCML_ACCESS_WRITE, subscr);
+    }
+
+    return *wp;
+}
+
+bool target::remove_watchpoint(const watchpoint* wp, vcml_access prot,
+                               subscriber* subscr) {
+    if (wp == nullptr)
+        return false;
+
+    auto it = std::find(m_watchpoints.begin(), m_watchpoints.end(), wp);
+    if (it == m_watchpoints.end())
+        return false;
+
+    if (is_read_allowed(prot)) {
+        (*it)->unsubscribe(VCML_ACCESS_READ, subscr);
+        if (!(*it)->has_read_subscribers())
+            if (!remove_watchpoint((*it)->address(), VCML_ACCESS_READ))
+                return false;
+    }
+
+    if (is_write_allowed(prot)) {
+        (*it)->unsubscribe(VCML_ACCESS_WRITE, subscr);
+        if (!(*it)->has_write_subscribers())
+            if (!remove_watchpoint((*it)->address(), VCML_ACCESS_WRITE))
+                return false;
+    }
+
+    if (!(*it)->has_any_subscribers()) {
+        delete *it;
+        m_watchpoints.erase(it);
     }
 
     return true;
