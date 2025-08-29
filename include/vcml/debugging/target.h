@@ -204,7 +204,9 @@ public:
     bool remove_breakpoint(const breakpoint* bp, subscriber* subscr);
     bool remove_breakpoint(u64 addr, subscriber* subscr);
 
-    bool insert_watchpoint(const range& mem, vcml_access a, subscriber* s);
+    const watchpoint* insert_watchpoint(const range& mem, vcml_access a,
+                                        subscriber* s);
+    bool remove_watchpoint(const watchpoint* wp, vcml_access a, subscriber* s);
     bool remove_watchpoint(const range& mem, vcml_access a, subscriber* s);
 
     bool is_stepping() const;
