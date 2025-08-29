@@ -325,25 +325,26 @@ bool target::remove_watchpoint(const range& addr, vcml_access a) {
     return false; // to be overloaded
 }
 
-void target::notify_breakpoint_hit(u64 pc) {
+void target::notify_breakpoint_hit(u64 pc, const sc_time& t) {
     for (auto& bp : m_breakpoints)
         if (bp->address() == pc)
-            bp->notify();
+            bp->notify(t);
 }
 
-void target::notify_watchpoint_read(const range& addr) {
+void target::notify_watchpoint_read(const range& addr, const sc_time& t) {
     for (auto& wp : m_watchpoints)
         if (wp->address().overlaps(addr))
-            wp->notify_read(addr);
+            wp->notify_read(addr, t);
 }
 
-void target::notify_watchpoint_write(const range& addr, u64 newval) {
+void target::notify_watchpoint_write(const range& addr, const void* newval,
+                                     const sc_time& t) {
     for (auto& wp : m_watchpoints)
         if (wp->address().overlaps(addr))
-            wp->notify_write(addr, newval);
+            wp->notify_write(addr, newval, t);
 }
 
-void target::notify_singlestep() {
+void target::notify_singlestep(const sc_time& t) {
     vector<subscriber*> prev_steppers;
 
     m_mtx.lock();
@@ -351,16 +352,17 @@ void target::notify_singlestep() {
     m_mtx.unlock();
 
     for (auto s : prev_steppers)
-        s->notify_step_complete(*this);
+        s->notify_step_complete(*this, t);
 }
 
-void target::notify_basic_block(u64 pc, size_t blksz, size_t icount) {
+void target::notify_basic_block(u64 pc, size_t blksz, size_t icount,
+                                const sc_time& t) {
     m_mtx.lock();
     vector<subscriber*> local(m_bbtracer);
     m_mtx.unlock();
 
     for (auto s : local)
-        s->notify_basic_block(*this, pc, blksz, icount);
+        s->notify_basic_block(*this, pc, blksz, icount, t);
 }
 
 target::target(module& host):

@@ -29,18 +29,19 @@ class subscriber
 public:
     virtual ~subscriber() {}
 
-    virtual void notify_step_complete(target& tgt);
+    virtual void notify_step_complete(target& tgt, const sc_time& t);
 
     virtual void notify_basic_block(target& tgt, u64 pc, size_t blksz,
-                                    size_t icount);
+                                    size_t icount, const sc_time& t);
 
-    virtual void notify_breakpoint_hit(const breakpoint& bp);
+    virtual void notify_breakpoint_hit(const breakpoint& bp, const sc_time& t);
 
     virtual void notify_watchpoint_read(const watchpoint& wp,
-                                        const range& addr);
+                                        const range& addr, const sc_time& t);
 
     virtual void notify_watchpoint_write(const watchpoint& wp,
-                                         const range& addr, u64 newval);
+                                         const range& addr, const void* newval,
+                                         const sc_time& t);
 };
 
 class breakpoint
@@ -69,7 +70,7 @@ public:
     breakpoint(const breakpoint&) = delete;
     breakpoint& operator=(const breakpoint&) = delete;
 
-    void notify();
+    void notify(const sc_time& t);
 
     bool subscribe(subscriber* s);
     bool unsubscribe(subscriber* s);
@@ -104,8 +105,8 @@ public:
     watchpoint(const watchpoint&) = delete;
     watchpoint& operator=(const watchpoint&) = delete;
 
-    void notify_read(const range& addr);
-    void notify_write(const range& addr, u64 newval);
+    void notify_read(const range& addr, const sc_time& t);
+    void notify_write(const range& addr, const void* newval, const sc_time& t);
 
     bool subscribe(vcml_access prot, subscriber* s);
     bool unsubscribe(vcml_access prot, subscriber* s);

@@ -231,7 +231,7 @@ bool processor::processor_thread_sync() {
         if (is_running()) {
             num_cycles = simulate_cycles(num_cycles);
             if (is_stepping() && num_cycles > 0)
-                notify_singlestep();
+                notify_singlestep(local_time_stamp());
             if (num_cycles == 0)
                 wait(quantum - local_time());
         } else

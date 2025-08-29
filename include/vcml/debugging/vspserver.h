@@ -57,16 +57,18 @@ private:
     void pause_simulation(const string& reason);
     void force_quit();
 
-    virtual void notify_step_complete(target& tgt) override;
+    virtual void notify_step_complete(target& tgt, const sc_time& t) override;
 
-    virtual void notify_breakpoint_hit(const breakpoint& bp) override;
+    virtual void notify_breakpoint_hit(const breakpoint& bp,
+                                       const sc_time& t) override;
 
     virtual void notify_watchpoint_read(const watchpoint& wp,
-                                        const range& addr) override;
+                                        const range& addr,
+                                        const sc_time& t) override;
 
     virtual void notify_watchpoint_write(const watchpoint& wp,
-                                         const range& addr,
-                                         u64 newval) override;
+                                         const range& addr, const void* newval,
+                                         const sc_time& t) override;
 
 public:
     vspserver() = delete;

@@ -129,12 +129,14 @@ protected:
     virtual bool insert_watchpoint(const range& addr, vcml_access prot);
     virtual bool remove_watchpoint(const range& addr, vcml_access prot);
 
-    void notify_breakpoint_hit(u64 addr);
-    void notify_watchpoint_read(const range& addr);
-    void notify_watchpoint_write(const range& addr, u64 newval);
+    void notify_breakpoint_hit(u64 addr, const sc_time& t);
+    void notify_watchpoint_read(const range& addr, const sc_time& t);
+    void notify_watchpoint_write(const range& addr, const void* newval,
+                                 const sc_time& t);
 
-    void notify_singlestep();
-    void notify_basic_block(u64 pc, size_t blksz, size_t icount);
+    void notify_singlestep(const sc_time& t);
+    void notify_basic_block(u64 pc, size_t blksz, size_t icount,
+                            const sc_time& t);
 
 public:
     bool is_suspendable() const { return m_suspendable; }

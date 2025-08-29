@@ -13,26 +13,28 @@
 namespace vcml {
 namespace debugging {
 
-void subscriber::notify_step_complete(target& tgt) {
+void subscriber::notify_step_complete(target& tgt, const sc_time& t) {
     // to be overloaded
 }
 
 void subscriber::notify_basic_block(target& tgt, u64 pc, size_t blksz,
-                                    size_t icount) {
+                                    size_t icount, const sc_time& t) {
     // to be overloaded
 }
 
-void subscriber::notify_breakpoint_hit(const breakpoint& bp) {
+void subscriber::notify_breakpoint_hit(const breakpoint& bp,
+                                       const sc_time& t) {
     // to be overloaded
 }
 
 void subscriber::notify_watchpoint_read(const watchpoint& wp,
-                                        const range& addr) {
+                                        const range& addr, const sc_time& t) {
     // to be overloaded
 }
 
 void subscriber::notify_watchpoint_write(const watchpoint& wp,
-                                         const range& addr, u64 newval) {
+                                         const range& addr, const void* newval,
+                                         const sc_time& t) {
     // to be overloaded
 }
 
@@ -47,11 +49,11 @@ breakpoint::breakpoint(target& tgt, u64 addr, const symbol* func):
     m_subscribers() {
 }
 
-void breakpoint::notify() {
+void breakpoint::notify(const sc_time& t) {
     m_count++;
 
     for (subscriber* s : m_subscribers)
-        s->notify_breakpoint_hit(*this);
+        s->notify_breakpoint_hit(*this, t);
 }
 
 bool breakpoint::subscribe(subscriber* s) {
@@ -80,18 +82,19 @@ watchpoint::watchpoint(target& tgt, const range& addr, const symbol* obj):
     m_subscribers_w() {
 }
 
-void watchpoint::notify_read(const range& addr) {
+void watchpoint::notify_read(const range& addr, const sc_time& t) {
     m_count++;
 
     for (subscriber* s : m_subscribers_r)
-        s->notify_watchpoint_read(*this, addr);
+        s->notify_watchpoint_read(*this, addr, t);
 }
 
-void watchpoint::notify_write(const range& addr, u64 newval) {
+void watchpoint::notify_write(const range& addr, const void* newval,
+                              const sc_time& t) {
     m_count++;
 
     for (subscriber* s : m_subscribers_w)
-        s->notify_watchpoint_write(*this, addr, newval);
+        s->notify_watchpoint_write(*this, addr, newval, t);
 }
 
 bool watchpoint::subscribe(vcml_access prot, subscriber* s) {

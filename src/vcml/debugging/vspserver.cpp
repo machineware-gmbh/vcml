@@ -34,6 +34,24 @@ static void cleanup_session() {
         session->cleanup();
 }
 
+// converts an array of bytes to an asci string, e.g.
+// { aa, bb, cc, dd } -> "ddccbbaa"
+static string hexstr(const u8* bytes, size_t len) {
+    string res;
+    if (len == 0)
+        return res;
+
+    res.reserve(len * 2);
+    if (bytes == nullptr) {
+        res.insert(res.begin(), 2 * len, '0');
+        return res;
+    }
+
+    for (size_t i = 0; i < len; i++)
+        res = mkstr("%02hhx%s", bytes[i], res.c_str());
+    return res;
+}
+
 static string xml_escape(const string& s) {
     stringstream ss;
     for (char c : s) {
@@ -701,22 +719,34 @@ void vspserver::force_quit() {
         disconnect();
 }
 
-void vspserver::notify_step_complete(target& tgt) {
-    pause_simulation(mkstr("target:%s", tgt.target_name()));
+void vspserver::notify_step_complete(target& tgt, const sc_time& t) {
+    // target:<target-name>:<time>
+    string reason = mkstr("target:%s:%llu", tgt.target_name(), time_to_ns(t));
+    pause_simulation(reason);
 }
 
-void vspserver::notify_breakpoint_hit(const breakpoint& bp) {
-    pause_simulation(mkstr("breakpoint:%llu", bp.id()));
+void vspserver::notify_breakpoint_hit(const breakpoint& bp, const sc_time& t) {
+    // breakpoint:<id>:<time>
+    string reason = mkstr("breakpoint:%llu:%llu", bp.id(), time_to_ns(t));
+    pause_simulation(reason);
 }
 
-void vspserver::notify_watchpoint_read(const watchpoint& wp,
-                                       const range& addr) {
-    pause_simulation(mkstr("rwatchpoint:%llu", wp.id()));
+void vspserver::notify_watchpoint_read(const watchpoint& wp, const range& addr,
+                                       const sc_time& t) {
+    // rwatchpoint:<id>:<addr>:<size>:<time>
+    string reason = mkstr("rwatchpoint:%llu:0x%llx:%llu:%llu", wp.id(),
+                          addr.start, addr.length(), time_to_ns(t));
+    pause_simulation(reason);
 }
 
 void vspserver::notify_watchpoint_write(const watchpoint& wp,
-                                        const range& addr, u64 newval) {
-    pause_simulation(mkstr("wwatchpoint:%llu", wp.id()));
+                                        const range& addr, const void* newval,
+                                        const sc_time& t) {
+    // wwatchpoint:<id>:<addr>:<data>:<time>
+    string data = hexstr((const u8*)newval, addr.length());
+    string reason = mkstr("wwatchpoint:%llu:0x%llx:0x%s:%llu", wp.id(),
+                          addr.start, data.c_str(), time_to_ns(t));
+    pause_simulation(reason);
 }
 
 vspserver::vspserver(u16 server_port):

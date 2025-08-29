@@ -74,10 +74,14 @@ string indicating what caused the simulation to stop.
 * Response: `$OK,runstate,time-stamp-ns,delta-cycle#**`
 
 Valid stop reasons include (but are not limited to):
-* `target:<name>`: target `<name>` completed its requested single-step
-* `breakpoint:<id>`: one processor in the simulation hits breakpoint `<id>`
-* `rwatchpoint:<id>`: watchpoint `<id>` is being read from
-* `watchpoint:<id>`: watchpoint `<id>` is being written to
+* `target:<name>:<t>`: target `<name>` completed its requested single-step at
+  time stamp `<t>` ns
+* `breakpoint:<id>:<t>`: one processor in the simulation hits breakpoint
+  `<id>` at time stamp `<t>` ns
+* `rwatchpoint:<id>:<addr>:<size>:<t>`: watchpoint `<id>` is being read
+  starting at `<addr>` with cpu access size `<size>` at time stamp `<t>` ns
+* `wwatchpoint:<id>:<addr>:<data>:<t>`: watchpoint `<id>` is being written at
+  address `<addr`> with value `<data>` at time stamp `<t>` ns
 * `step`: requested simulation duration has elapsed
 * `elaboration`: simulator has completed elaboration and is ready to simulate
 * The stop command can define custom exit reason strings to be used

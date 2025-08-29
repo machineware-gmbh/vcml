@@ -128,22 +128,30 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
     m_mtx.unlock();
 }
 
-void gdbserver::notify_step_complete(target& tgt) {
+void gdbserver::notify_step_complete(target& tgt, const sc_time& t) {
+    (void)t;
     update_status(GDB_STOPPED, find_target(tgt));
 }
 
-void gdbserver::notify_breakpoint_hit(const breakpoint& bp) {
+void gdbserver::notify_breakpoint_hit(const breakpoint& bp, const sc_time& t) {
+    (void)t;
     update_status(GDB_STOPPED, find_target(bp.owner()));
 }
 
-void gdbserver::notify_watchpoint_read(const watchpoint& wp,
-                                       const range& addr) {
+void gdbserver::notify_watchpoint_read(const watchpoint& wp, const range& addr,
+                                       const sc_time& t) {
+    (void)addr;
+    (void)t;
     update_status(GDB_STOPPED, find_target(wp.owner()), &wp.address(),
                   VCML_ACCESS_READ);
 }
 
 void gdbserver::notify_watchpoint_write(const watchpoint& wp,
-                                        const range& addr, u64 newval) {
+                                        const range& addr, const void* newval,
+                                        const sc_time& t) {
+    (void)addr;
+    (void)newval;
+    (void)t;
     update_status(GDB_STOPPED, find_target(wp.owner()), &wp.address(),
                   VCML_ACCESS_WRITE);
 }
