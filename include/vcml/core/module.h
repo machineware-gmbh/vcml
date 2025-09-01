@@ -83,7 +83,11 @@ public:
 
     bool is_local_process(sc_process_b* proc = current_process()) const;
 
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
     using sc_object::get_hierarchy_scope;
+#else
+    using hierarchy_element::get_hierarchy_scope;
+#endif
 };
 
 inline sc_object* module::find_child(const string& name) const {
