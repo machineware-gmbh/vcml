@@ -82,6 +82,8 @@ public:
                   const sc_time& t = SC_ZERO_TIME) const;
 
     bool is_local_process(sc_process_b* proc = current_process()) const;
+
+    using sc_object::get_hierarchy_scope;
 };
 
 inline sc_object* module::find_child(const string& name) const {

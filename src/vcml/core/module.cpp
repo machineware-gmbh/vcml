@@ -10,6 +10,7 @@
 
 #include "vcml/core/version.h"
 #include "vcml/core/module.h"
+#include "vcml/core/model.h"
 
 namespace vcml {
 
@@ -107,6 +108,10 @@ vector<command*> module::get_commands() const {
         if (cmd.second != nullptr)
             list.push_back(cmd.second);
     return list;
+}
+
+VCML_EXPORT_MODEL(vcml::module, name, args) {
+    return new module(name);
 }
 
 } // namespace vcml

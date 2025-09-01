@@ -25,6 +25,8 @@ public:
     model(const sc_module_name& name, const string& kind);
     virtual ~model() = default;
 
+    const char* name() const { return m_impl->name(); }
+
     model(const model& other) = default;
     model(model&& other) = default;
 
