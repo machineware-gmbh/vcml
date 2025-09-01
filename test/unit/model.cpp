@@ -45,7 +45,7 @@ TEST(model, empty) {
 }
 
 TEST(mode, nonexistent) {
-    EXPECT_DEATH(vcml::model("m", "nothing"), "model not found: nothing");
+    EXPECT_THROW(vcml::model("m", "nothing"), std::exception);
 }
 
 TEST(mode, duplicate) {

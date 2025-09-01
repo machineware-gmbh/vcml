@@ -34,6 +34,7 @@ public:
     shared_ptr<module> operator->() const { return m_impl; }
 
     static bool define(const string& kind, create_fn fn);
+    static void list_models(vector<string>& models);
     static void list_models(ostream& os);
 
 private:

@@ -34,10 +34,7 @@ module* model::create(const string& type, const sc_module_name& name) {
         return mod;
     }
 
-    std::cout << "known models:" << std::endl;
-    for (auto& [name, proc] : modeldb())
-        std::cout << "  " << name << std::endl;
-    VCML_ERROR("model not found: %s", kind.c_str());
+    VCML_REPORT("model not found: %s", kind.c_str());
 }
 
 bool model::define(const string& kind, create_fn create) {
@@ -49,8 +46,16 @@ bool model::define(const string& kind, create_fn create) {
     return true;
 }
 
-void model::list_models(ostream& os) {
+void model::list_models(vector<string>& models) {
+    models.reserve(modeldb().size());
     for (auto& [name, func] : modeldb())
+        models.push_back(name);
+}
+
+void model::list_models(ostream& os) {
+    vector<string> models;
+    list_models(models);
+    for (const string& name : models)
         os << name << std::endl;
 }
 
