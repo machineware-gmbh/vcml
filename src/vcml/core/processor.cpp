@@ -94,7 +94,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     log_debug("'%s'", ss.str().c_str());
 
     int res = system(ss.str().c_str());
-    if (res == -1) {
+    if (res != 0) {
         os << "failed to start gdb shell";
         return false;
     }
