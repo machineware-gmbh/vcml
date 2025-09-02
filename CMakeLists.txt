@@ -231,6 +231,8 @@ else()
     message(STATUS "Disable VCML unity build")
 endif()
 
+add_library(vcml-main STATIC ${src}/vcml/core/main.cpp)
+
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
 set_target_properties(vcml PROPERTIES VERSION "${VCML_VERSION}")
@@ -248,6 +250,7 @@ target_include_directories(vcml PRIVATE ${src})
 target_include_directories(vcml SYSTEM PUBLIC ${SYSTEMC_INCLUDE_DIRS})
 
 target_link_libraries(vcml PUBLIC mwr)
+target_link_libraries(vcml PUBLIC vcml-main)
 target_link_libraries(vcml PUBLIC ${SYSTEMC_LIBRARIES})
 
 if(APPLE AND SDL2_FOUND)
@@ -321,6 +324,7 @@ if(VCML_COVERAGE)
 endif()
 
 install(TARGETS vcml DESTINATION lib)
+install(TARGETS vcml-main DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
 install(DIRECTORY ${gen}/ DESTINATION include)
 
