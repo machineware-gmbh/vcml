@@ -232,6 +232,7 @@ else()
 endif()
 
 add_library(vcml-main STATIC ${src}/vcml/core/main.cpp)
+target_link_libraries(vcml-main PUBLIC vcml)
 
 set_target_properties(vcml PROPERTIES DEBUG_POSTFIX "d")
 set_target_properties(vcml PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
