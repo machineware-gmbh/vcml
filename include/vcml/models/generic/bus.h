@@ -121,7 +121,7 @@ public:
     bus() = delete;
     bus(const sc_module_name& nm);
     virtual ~bus();
-    VCML_KIND(bus);
+    VCML_KIND(generic::bus);
 };
 
 inline void bus::map(size_t target, const range& addr) {

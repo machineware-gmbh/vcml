@@ -57,7 +57,7 @@ public:
            alignment al = VCML_ALIGN_NONE, unsigned int read_latency = 0,
            unsigned int write_latency = 0);
     virtual ~memory();
-    VCML_KIND(memory);
+    VCML_KIND(generic::memory);
     virtual void reset() override;
 
     virtual tlm_response_status read(const range& addr, void* data,

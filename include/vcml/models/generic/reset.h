@@ -31,7 +31,7 @@ public:
     reset() = delete;
     reset(const sc_module_name& nm, bool init_state = false);
     virtual ~reset();
-    VCML_KIND(reset);
+    VCML_KIND(generic::reset);
 
 protected:
     virtual void end_of_elaboration() override;

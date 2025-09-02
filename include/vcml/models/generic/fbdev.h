@@ -48,7 +48,7 @@ public:
     fbdev() = delete;
     fbdev(const sc_module_name& nm, u32 width = 1280, u32 height = 720);
     virtual ~fbdev();
-    VCML_KIND(fbdev);
+    VCML_KIND(generic::fbdev);
 
     virtual void reset() override;
 

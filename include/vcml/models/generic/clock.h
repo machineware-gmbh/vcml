@@ -33,7 +33,7 @@ public:
 
     clock(const sc_module_name& nm, hz_t hz);
     virtual ~clock();
-    VCML_KIND(clock);
+    VCML_KIND(generic::clock);
 };
 
 } // namespace generic
