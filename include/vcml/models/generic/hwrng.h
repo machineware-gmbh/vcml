@@ -36,7 +36,7 @@ public:
     hwrng() = delete;
     hwrng(const sc_module_name& nm);
     virtual ~hwrng();
-    VCML_KIND(hwrng);
+    VCML_KIND(generic::hwrng);
 
     virtual void reset() override;
 };

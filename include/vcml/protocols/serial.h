@@ -137,6 +137,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class serial_base_target_socket : public serial_base_target_socket_b
@@ -151,6 +154,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 template <size_t N = SIZE_MAX>
@@ -246,16 +252,6 @@ using serial_initiator_array = socket_array<serial_initiator_socket, N>;
 
 template <size_t N = SIZE_MAX>
 using serial_target_array = socket_array<serial_target_socket, N>;
-
-serial_base_initiator_socket& serial_initiator(const sc_object& parent,
-                                               const string& port);
-serial_base_initiator_socket& serial_initiator(const sc_object& parent,
-                                               const string& port, size_t idx);
-
-serial_base_target_socket& serial_target(const sc_object& parent,
-                                         const string& port);
-serial_base_target_socket& serial_target(const sc_object& parent,
-                                         const string& port, size_t idx);
 
 void serial_stub(const sc_object& obj, const string& port);
 void serial_stub(const sc_object& obj, const string& port, size_t idx);

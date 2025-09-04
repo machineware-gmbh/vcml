@@ -26,7 +26,17 @@
 
 namespace vcml {
 
-class base_socket : public hierarchy_element
+class bindable_if
+{
+public:
+    bindable_if() = default;
+    virtual ~bindable_if() = default;
+
+    virtual void bind_socket(sc_object& other) = 0;
+    virtual void stub_socket(void* data) = 0;
+};
+
+class base_socket : public bindable_if, public hierarchy_element
 {
 private:
     sc_object* m_port;
@@ -39,6 +49,7 @@ public:
 
     base_socket() = delete;
     base_socket(sc_object* port, address_space space):
+        bindable_if(),
         hierarchy_element(),
         m_port(port),
         as(space),
@@ -51,6 +62,9 @@ public:
     virtual ~base_socket() = default;
 
     virtual const char* version() const { return VCML_VERSION_STRING; }
+
+    virtual void bind_socket(sc_object& other) override;
+    virtual void stub_socket(void* data) override;
 
 protected:
     template <typename PAYLOAD>
@@ -309,6 +323,51 @@ template <typename SOCKET, size_t N>
 bool operator==(const SOCKET& socket, const socket_array<SOCKET, N>& arr) {
     return arr.contains(socket);
 }
+
+template <typename INITIATOR, typename TARGET>
+void bind_generic(sc_object& socket1, sc_object& socket2) {
+    auto* i1 = dynamic_cast<INITIATOR*>(&socket1);
+    auto* i2 = dynamic_cast<INITIATOR*>(&socket2);
+    auto* t1 = dynamic_cast<TARGET*>(&socket1);
+    auto* t2 = dynamic_cast<TARGET*>(&socket2);
+
+    if (i1 && i2) {
+        i1->bind(*i2);
+        return;
+    }
+
+    if (i1 && t2) {
+        i1->bind(*t2);
+        return;
+    }
+
+    if (t1 && i2) {
+        i2->bind(*t1);
+        return;
+    }
+
+    if (t1 && t2) {
+        t1->bind(*t2);
+        return;
+    }
+
+    VCML_REPORT("cannot bind %s to %s", socket1.name(), socket2.name());
+}
+
+void stub(sc_object& port, void* data = nullptr);
+void stub(const sc_object& obj, const string& port, void* data = nullptr);
+void stub(const sc_object& obj, const string& port, size_t idx,
+          void* data = nullptr);
+
+void bind(sc_object& port1, sc_object& port2);
+void bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
+          const string& port2);
+void bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
+          const string& port2, size_t idx2);
+void bind(const sc_object& obj1, const string& port1, size_t idx1,
+          const sc_object& obj2, const string& port2);
+void bind(const sc_object& obj1, const string& port1, size_t idx1,
+          const sc_object& obj2, const string& port2, size_t idx2);
 
 } // namespace vcml
 

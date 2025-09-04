@@ -83,6 +83,9 @@ public:
     virtual void bind(gpio_base_target_socket& socket);
     virtual void bind(sc_signal_inout_if<bool>& signal);
 
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* stub) override;
+
     bool is_adapted() const { return m_adapter != nullptr; }
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
@@ -103,6 +106,9 @@ public:
     virtual void bind(gpio_base_initiator_socket& other);
     virtual void bind(sc_signal_inout_if<bool>& signal);
     virtual void complete_binding(gpio_base_initiator_socket& socket) {}
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* stub) override;
 
     bool is_adapted() const { return m_adapter != nullptr; }
     bool is_stubbed() const { return m_stub != nullptr; }
@@ -271,16 +277,6 @@ private:
     virtual void gpio_transport(const gpio_target_socket& socket,
                                 gpio_payload& tx) override;
 };
-
-gpio_base_initiator_socket& gpio_initiator(const sc_object& parent,
-                                           const string& port);
-gpio_base_initiator_socket& gpio_initiator(const sc_object& parent,
-                                           const string& port, size_t idx);
-
-gpio_base_target_socket& gpio_target(const sc_object& parent,
-                                     const string& port);
-gpio_base_target_socket& gpio_target(const sc_object& parent,
-                                     const string& port, size_t idx);
 
 void gpio_stub(const sc_object& obj, const string& port);
 void gpio_stub(const sc_object& obj, const string& port, size_t idx);

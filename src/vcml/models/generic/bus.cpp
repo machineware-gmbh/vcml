@@ -333,103 +333,162 @@ static generic::bus& get_bus(sc_object& obj) {
     return *b;
 }
 
-void tlm_stub(sc_object& obj, const sc_object& host, const string& port,
+void stub(sc_object& obj, const sc_object& host, const string& port,
+          const range& addr, tlm_response_status rs) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.stub(*std::get<initiator_t*>(socket), addr, rs);
+    else
+        bus.stub(*std::get<target_t*>(socket), addr, rs);
+}
+
+void stub(sc_object& obj, const sc_object& host, const string& port,
+          size_t idx, const range& addr, tlm_response_status rs) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port, idx);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.stub(*std::get<initiator_t*>(socket), addr, rs);
+    else
+        bus.stub(*std::get<target_t*>(socket), addr, rs);
+}
+
+void stub(sc_object& bus, const sc_object& host, const string& port, u64 lo,
+          u64 hi, tlm_response_status rs) {
+    stub(bus, host, port, range(lo, hi), rs);
+}
+
+void stub(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx, u64 lo, u64 hi, tlm_response_status rs) {
+    stub(bus, host, port, idx, range(lo, hi), rs);
+}
+
+void bind(sc_object& obj, const sc_object& host, const string& port) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.bind(*std::get<initiator_t*>(socket));
+    else
+        bus.bind(*std::get<target_t*>(socket));
+}
+
+void bind(sc_object& obj, const sc_object& host, const string& port,
+          size_t idx) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port, idx);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.bind(*std::get<initiator_t*>(socket));
+    else
+        bus.bind(*std::get<target_t*>(socket));
+}
+
+void bind(sc_object& obj, const sc_object& host, const string& port,
+          const range& addr, u64 offset) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.bind(*std::get<initiator_t*>(socket), addr, offset);
+    else
+        bus.bind(*std::get<target_t*>(socket), addr, offset);
+}
+
+void bind(sc_object& obj, const sc_object& host, const string& port,
+          size_t idx, const range& addr, u64 offset) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port, idx);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.bind(*std::get<initiator_t*>(socket), addr, offset);
+    else
+        bus.bind(*std::get<target_t*>(socket), addr, offset);
+}
+
+void bind(sc_object& bus, const sc_object& host, const string& port, u64 lo,
+          u64 hi, u64 offset) {
+    vcml::bind(bus, host, port, range(lo, hi), offset);
+}
+
+void bind(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx, u64 lo, u64 hi, u64 offset) {
+    vcml::bind(bus, host, port, idx, range(lo, hi), offset);
+}
+
+void bind_default(sc_object& obj, const sc_object& host, const string& port,
+                  u64 offset) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.bind_default(*std::get<initiator_t*>(socket), offset);
+    else
+        bus.bind_default(*std::get<target_t*>(socket), offset);
+}
+
+void bind_default(sc_object& obj, const sc_object& host, const string& port,
+                  size_t idx, u64 offset) {
+    auto& bus = get_bus(obj);
+    auto socket = get_socket(host, port, idx);
+    if (std::holds_alternative<initiator_t*>(socket))
+        bus.bind_default(*std::get<initiator_t*>(socket), offset);
+    else
+        bus.bind_default(*std::get<target_t*>(socket), offset);
+}
+
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, tlm_response_status rs) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.stub(*std::get<initiator_t*>(socket), addr, rs);
-    else
-        bus.stub(*std::get<target_t*>(socket), addr, rs);
+    stub(bus, host, port, addr, rs);
 }
 
-void tlm_stub(sc_object& obj, const sc_object& host, const string& port,
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, const range& addr, tlm_response_status rs) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.stub(*std::get<initiator_t*>(socket), addr, rs);
-    else
-        bus.stub(*std::get<target_t*>(socket), addr, rs);
+    stub(bus, host, port, idx, addr, rs);
 }
 
-void tlm_stub(sc_object& obj, const sc_object& host, const string& port,
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               u64 lo, u64 hi, tlm_response_status rs) {
-    tlm_stub(obj, host, port, range(lo, hi), rs);
+    stub(bus, host, port, range(lo, hi), rs);
 }
 
-void tlm_stub(sc_object& obj, const sc_object& host, const string& port,
+void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, u64 lo, u64 hi, tlm_response_status rs) {
-    tlm_stub(obj, host, port, idx, range(lo, hi), rs);
+    stub(bus, host, port, idx, range(lo, hi), rs);
 }
 
-void tlm_bind(sc_object& obj, const sc_object& host, const string& port) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket));
-    else
-        bus.bind(*std::get<target_t*>(socket));
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port) {
+    bind(bus, host, port);
 }
 
-void tlm_bind(sc_object& obj, const sc_object& host, const string& port,
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               size_t idx) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket));
-    else
-        bus.bind(*std::get<target_t*>(socket));
+    bind(bus, host, port, idx);
 }
 
-void tlm_bind(sc_object& obj, const sc_object& host, const string& port,
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket), addr, offset);
-    else
-        bus.bind(*std::get<target_t*>(socket), addr, offset);
+    bind(bus, host, port, addr, offset);
 }
 
-void tlm_bind(sc_object& obj, const sc_object& host, const string& port,
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, const range& addr, u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket), addr, offset);
-    else
-        bus.bind(*std::get<target_t*>(socket), addr, offset);
+    bind(bus, host, port, idx, addr, offset);
 }
 
-void tlm_bind(sc_object& obj, const sc_object& host, const string& port,
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               u64 lo, u64 hi, u64 offset) {
-    tlm_bind(obj, host, port, range(lo, hi), offset);
+    bind(bus, host, port, lo, hi, offset);
 }
 
-void tlm_bind(sc_object& obj, const sc_object& host, const string& port,
+void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, u64 lo, u64 hi, u64 offset) {
-    tlm_bind(obj, host, port, idx, range(lo, hi), offset);
+    bind(bus, host, port, idx, lo, hi, offset);
 }
 
-void tlm_bind_default(sc_object& obj, const sc_object& host,
+void tlm_bind_default(sc_object& bus, const sc_object& host,
                       const string& port, u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind_default(*std::get<initiator_t*>(socket), offset);
-    else
-        bus.bind_default(*std::get<target_t*>(socket), offset);
+    bind_default(bus, host, port, offset);
 }
 
-void tlm_bind_default(sc_object& obj, const sc_object& host,
+void tlm_bind_default(sc_object& bus, const sc_object& host,
                       const string& port, size_t idx, u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind_default(*std::get<initiator_t*>(socket), offset);
-    else
-        bus.bind_default(*std::get<target_t*>(socket), offset);
+    bind_default(bus, host, port, idx, offset);
 }
 
 } // namespace vcml

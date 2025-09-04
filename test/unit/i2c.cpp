@@ -16,7 +16,7 @@
 #define EXPECT_NACK(call) EXPECT_EQ((call), I2C_NACK)
 
 MATCHER_P(i2c_match_address, addr, "Matches an i2c socket address") {
-    return arg.address() == addr;
+    return arg.address == addr;
 }
 
 TEST(i2c, to_string) {
@@ -75,7 +75,7 @@ public:
         i2c_array_out("i2c_array_out"),
         i2c_array_in("i2c_array_in") {
         i2c_set_address(*this, "i2c_in", 42);
-        EXPECT_EQ(i2c_in.address(), 42);
+        EXPECT_EQ(i2c_in.address, 42);
 
         i2c_bind(*this, "i2c_out", *this, "i2c_out_h");
         i2c_bind(*this, "i2c_in_h", *this, "i2c_in");

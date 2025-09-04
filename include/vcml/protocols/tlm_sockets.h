@@ -32,6 +32,7 @@ namespace vcml {
 
 class tlm_initiator_socket
     : public simple_initiator_socket<tlm_initiator_socket>,
+      public bindable_if,
       public hierarchy_element
 {
 private:
@@ -127,6 +128,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(tlm_response_status resp = TLM_ADDRESS_ERROR_RESPONSE);
+
+    virtual void bind_socket(sc_object& other) override;
+    virtual void stub_socket(void* data) override;
 };
 
 inline void tlm_initiator_socket::trace_fw(const tlm_generic_payload& tx,
@@ -246,6 +250,7 @@ inline void tlm_initiator_socket::bind<32>(
 }
 
 class tlm_target_socket : public simple_target_socket<tlm_target_socket>,
+                          public bindable_if,
                           public hierarchy_element
 {
 private:
@@ -311,6 +316,9 @@ public:
         auto* s = const_cast<tlm_target_socket*>(this);
         return s->get_base_port().bind_count() > 0;
     }
+
+    virtual void bind_socket(sc_object& other) override;
+    virtual void stub_socket(void* data) override;
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();

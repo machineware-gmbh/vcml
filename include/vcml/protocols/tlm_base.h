@@ -25,6 +25,7 @@
 namespace vcml {
 
 class tlm_base_initiator_socket : public tlm::tlm_initiator_socket<>,
+                                  public bindable_if,
                                   public hierarchy_element
 {
 private:
@@ -33,15 +34,30 @@ private:
 public:
     tlm_base_initiator_socket(const char* nm,
                               address_space as = VCML_AS_DEFAULT):
-        tlm::tlm_initiator_socket<>(nm), hierarchy_element(), m_stub() {}
+        tlm::tlm_initiator_socket<>(nm),
+        bindable_if(),
+        hierarchy_element(),
+        m_stub() {}
     virtual ~tlm_base_initiator_socket() { delete m_stub; }
     VCML_KIND(tlm_base_initiator_socket);
+
+    virtual void bind_socket(sc_object& other) override {
+        using I = tlm::tlm_base_initiator_socket<>;
+        using T = tlm::tlm_base_target_socket<>;
+        bind_generic<I, T>(*this, other);
+    }
+
+    virtual void stub_socket(void* data) override {
+        if (data)
+            stub(*(tlm_response_status*)data);
+        else
+            stub();
+    }
 
     bool is_bound() const {
         auto* s = const_cast<tlm_base_initiator_socket*>(this);
         return s->get_base_port().bind_count() > 0;
     }
-
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(tlm_response_status r = TLM_ADDRESS_ERROR_RESPONSE) {
         VCML_ERROR_ON(m_stub, "socket %s already stubbed", name());
@@ -52,6 +68,7 @@ public:
 };
 
 class tlm_base_target_socket : public tlm::tlm_target_socket<>,
+                               public bindable_if,
                                public hierarchy_element
 {
 private:
@@ -59,9 +76,20 @@ private:
 
 public:
     tlm_base_target_socket(const char* nm, address_space as = VCML_AS_DEFAULT):
-        tlm::tlm_target_socket<>(nm), hierarchy_element(), m_stub() {}
+        tlm::tlm_target_socket<>(nm),
+        bindable_if(),
+        hierarchy_element(),
+        m_stub() {}
     virtual ~tlm_base_target_socket() { delete m_stub; }
     VCML_KIND(tlm_base_target_socket);
+
+    virtual void bind_socket(sc_object& other) override {
+        using I = tlm::tlm_base_initiator_socket<>;
+        using T = tlm::tlm_base_target_socket<>;
+        bind_generic<I, T>(*this, other);
+    }
+
+    virtual void stub_socket(void* data) override { stub(); }
 
     bool is_bound() const {
         auto* s = const_cast<tlm_base_target_socket*>(this);

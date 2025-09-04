@@ -227,6 +227,33 @@ size_t bus::bind_default(TARGET& target, u64 offset) {
 
 } // namespace generic
 
+void stub(sc_object& bus, const sc_object& host, const string& port,
+          const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
+void stub(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx, const range& addr,
+          tlm_response_status rs = TLM_OK_RESPONSE);
+void stub(sc_object& bus, const sc_object& host, const string& port, u64 lo,
+          u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
+void stub(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx, u64 lo, u64 hi,
+          tlm_response_status rs = TLM_OK_RESPONSE);
+
+void bind(sc_object& bus, const sc_object& host, const string& port);
+void bind(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx);
+void bind(sc_object& bus, const sc_object& host, const string& port,
+          const range& addr, u64 offset = 0);
+void bind(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx, const range& addr, u64 offset);
+void bind(sc_object& bus, const sc_object& host, const string& port, u64 lo,
+          u64 hi, u64 offset = 0);
+void bind(sc_object& bus, const sc_object& host, const string& port,
+          size_t idx, u64 lo, u64 hi, u64 offset);
+void bind_default(sc_object& bus, const sc_object& host, const string& port,
+                  u64 offset = 0);
+void bind_default(sc_object& bus, const sc_object& host, const string& port,
+                  size_t idx, u64 offset);
+
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,

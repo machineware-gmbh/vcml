@@ -61,11 +61,6 @@ public:
         EXPECT_EQ(arr_out.limit(), 256);
         EXPECT_EQ(arr_in.limit(), 256);
 
-        // check socket lookup
-        EXPECT_EQ(&out, &gpio_initiator(*this, "out"));
-        EXPECT_EQ(&out2, &gpio_initiator(*this, "out2"));
-        EXPECT_EQ(&out2, &gpio_initiator(*this, "out2"));
-
         // check simple binding
         gpio_bind(*this, "out", *this, "in", 0);
 

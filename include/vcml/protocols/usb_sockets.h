@@ -81,6 +81,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class usb_base_target_socket : public usb_base_target_socket_b
@@ -95,6 +98,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 template <size_t N = SIZE_MAX>
@@ -194,16 +200,6 @@ using usb_initiator_array = socket_array<usb_initiator_socket, N>;
 
 template <size_t N = SIZE_MAX>
 using usb_target_array = socket_array<usb_target_socket, N>;
-
-usb_base_initiator_socket& usb_initiator(const sc_object& parent,
-                                         const string& port);
-usb_base_initiator_socket& usb_initiator(const sc_object& parent,
-                                         const string& port, size_t idx);
-
-usb_base_target_socket& usb_target(const sc_object& parent,
-                                   const string& port);
-usb_base_target_socket& usb_target(const sc_object& parent, const string& port,
-                                   size_t idx);
 
 void usb_stub(const sc_object& obj, const string& port);
 void usb_stub(const sc_object& obj, const string& port, size_t idx);

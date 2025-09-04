@@ -195,6 +195,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class sd_base_target_socket : public sd_base_target_socket_b
@@ -209,6 +212,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 template <size_t N = SIZE_MAX>
@@ -292,15 +298,6 @@ public:
     sd_target_stub(const char* name);
     virtual ~sd_target_stub() = default;
 };
-
-sd_base_initiator_socket& sd_initiator(const sc_object& parent,
-                                       const string& port);
-sd_base_initiator_socket& sd_initiator(const sc_object& parent,
-                                       const string& port, size_t idx);
-
-sd_base_target_socket& sd_target(const sc_object& parent, const string& port);
-sd_base_target_socket& sd_target(const sc_object& parent, const string& port,
-                                 size_t idx);
 
 void sd_stub(const sc_object& obj, const string& port);
 void sd_stub(const sc_object& obj, const string& port, size_t idx);

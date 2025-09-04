@@ -221,6 +221,16 @@ void pci_base_initiator_socket::stub() {
     bind(m_stub->pci_in);
 }
 
+void pci_base_initiator_socket::bind_socket(sc_object& obj) {
+    using I = pci_base_initiator_socket;
+    using T = pci_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void pci_base_initiator_socket::stub_socket(void* data) {
+    stub();
+}
+
 pci_base_target_socket::pci_base_target_socket(const char* n, address_space a):
     pci_base_target_socket_b(n, a), m_stub(nullptr) {
 }
@@ -235,6 +245,16 @@ void pci_base_target_socket::stub() {
     auto guard = get_hierarchy_scope();
     m_stub = new pci_initiator_stub(basename());
     m_stub->pci_out.bind(*this);
+}
+
+void pci_base_target_socket::bind_socket(sc_object& obj) {
+    using I = pci_base_initiator_socket;
+    using T = pci_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void pci_base_target_socket::stub_socket(void* data) {
+    stub();
 }
 
 pci_initiator_socket::pci_initiator_socket(const char* nm, address_space as):
@@ -320,165 +340,32 @@ pci_target_stub::pci_target_stub(const char* nm):
     pci_in.bind(*this);
 }
 
-static pci_base_initiator_socket* pci_get_initiator_socket(sc_object* port) {
-    return dynamic_cast<pci_base_initiator_socket*>(port);
-}
-
-static pci_base_target_socket* pci_get_target_socket(sc_object* port) {
-    return dynamic_cast<pci_base_target_socket*>(port);
-}
-
-static pci_base_initiator_socket* pci_get_initiator_socket(sc_object* array,
-                                                           size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<pci_base_initiator_socket>(idx, true);
-    return nullptr;
-}
-
-static pci_base_target_socket* pci_get_target_socket(sc_object* array,
-                                                     size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<pci_base_target_socket>(idx, true);
-    return nullptr;
-}
-
 void pci_stub(const sc_object& obj, const string& port) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* ini = pci_get_initiator_socket(child);
-    auto* tgt = pci_get_target_socket(child);
-
-    if (!ini && !tgt)
-        VCML_ERROR("%s is not a valid pci socket", child->name());
-
-    if (ini)
-        ini->stub();
-    if (tgt)
-        tgt->stub();
+    stub(obj, port);
 }
 
 void pci_stub(const sc_object& obj, const string& port, size_t idx) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    pci_base_initiator_socket* isock = pci_get_initiator_socket(child, idx);
-    if (isock) {
-        isock->stub();
-        return;
-    }
-
-    pci_base_target_socket* tsock = pci_get_target_socket(child, idx);
-    if (tsock) {
-        tsock->stub();
-        return;
-    }
-
-    VCML_ERROR("%s is not a valid pci socket array", child->name());
+    stub(obj, port, idx);
 }
 
 void pci_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = pci_get_initiator_socket(p1);
-    auto* i2 = pci_get_initiator_socket(p2);
-    auto* t1 = pci_get_target_socket(p1);
-    auto* t2 = pci_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid pci port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid pci port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2);
 }
 
 void pci_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = pci_get_initiator_socket(p1);
-    auto* i2 = pci_get_initiator_socket(p2, idx2);
-    auto* t1 = pci_get_target_socket(p1);
-    auto* t2 = pci_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid pci port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid pci port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2, idx2);
 }
 
 void pci_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = pci_get_initiator_socket(p1, idx1);
-    auto* i2 = pci_get_initiator_socket(p2);
-    auto* t1 = pci_get_target_socket(p1, idx1);
-    auto* t2 = pci_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid pci port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid pci port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2);
 }
 
 void pci_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = pci_get_initiator_socket(p1, idx1);
-    auto* i2 = pci_get_initiator_socket(p2, idx2);
-    auto* t1 = pci_get_target_socket(p1, idx1);
-    auto* t2 = pci_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid pci port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid pci port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2, idx2);
 }
 
 } // namespace vcml

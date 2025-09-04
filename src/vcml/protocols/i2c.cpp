@@ -52,10 +52,10 @@ ostream& operator<<(ostream& os, const i2c_payload& tx) {
 }
 
 void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
-    if (!stl_contains(m_state, socket.address()))
+    if (!stl_contains(m_state, socket.address.get()))
         m_state[socket.as] = TLM_IGNORE_COMMAND;
 
-    tlm_command& state = m_state[socket.address()];
+    tlm_command& state = m_state[socket.address];
     if (state == TLM_IGNORE_COMMAND && tx.cmd != I2C_START)
         return;
 
@@ -64,7 +64,7 @@ void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
         state = TLM_IGNORE_COMMAND;
 
         u8 address = i2c_decode_address(tx.data);
-        if (address != I2C_ADDR_BCAST && address != socket.address())
+        if (address != I2C_ADDR_BCAST && address != socket.address)
             return;
 
         socket.trace_fw(tx);
@@ -130,6 +130,16 @@ void i2c_base_initiator_socket::stub() {
     bind(m_stub->i2c_in);
 }
 
+void i2c_base_initiator_socket::bind_socket(sc_object& obj) {
+    using I = i2c_base_initiator_socket_b;
+    using T = i2c_base_target_socket_b;
+    bind_generic<I, T>(*this, obj);
+}
+
+void i2c_base_initiator_socket::stub_socket(void* data) {
+    stub();
+}
+
 i2c_base_target_socket::i2c_base_target_socket(const char* nm,
                                                address_space space):
     i2c_base_target_socket_b(nm, space), m_stub(nullptr) {
@@ -145,6 +155,16 @@ void i2c_base_target_socket::stub() {
     auto guard = get_hierarchy_scope();
     m_stub = new i2c_initiator_stub(basename());
     m_stub->i2c_out.bind(*this);
+}
+
+void i2c_base_target_socket::bind_socket(sc_object& obj) {
+    using I = i2c_base_initiator_socket_b;
+    using T = i2c_base_target_socket_b;
+    bind_generic<I, T>(*this, obj);
+}
+
+void i2c_base_target_socket::stub_socket(void* data) {
+    stub();
 }
 
 i2c_initiator_socket::i2c_initiator_socket(const char* nm, address_space as):
@@ -209,17 +229,17 @@ void i2c_target_socket::i2c_transport(i2c_payload& tx) {
     m_host->i2c_transport(*this, tx);
 }
 
-void i2c_target_socket::set_address(u8 address) {
-    if (address == I2C_ADDR_BCAST || address > 127)
-        VCML_ERROR("invalid i2c socket address: %hhu", address);
-    m_address = address;
+void i2c_target_socket::set_address(u8 addr) {
+    if (addr == I2C_ADDR_BCAST || addr > 127)
+        VCML_ERROR("invalid i2c socket address: %hhu", addr);
+    address = addr;
 }
 
 i2c_target_socket::i2c_target_socket(const char* nm, address_space as):
     i2c_base_target_socket(nm, as),
     m_host(hierarchy_search<i2c_host>()),
-    m_address(I2C_ADDR_INVALID),
-    m_transport(this) {
+    m_transport(this),
+    address(this, "address", I2C_ADDR_INVALID) {
     bind(m_transport);
     VCML_ERROR_ON(!m_host, "socket %s declared outside i2c_host", name());
 }
@@ -238,64 +258,6 @@ i2c_target_stub::i2c_target_stub(const char* nm):
     i2c_fw_transport_if(),
     i2c_in(mkstr("%s_stub", nm).c_str(), VCML_AS_DEFAULT) {
     i2c_in.bind(*this);
-}
-
-static i2c_base_initiator_socket* i2c_get_initiator_socket(sc_object* port) {
-    return dynamic_cast<i2c_base_initiator_socket*>(port);
-}
-
-static i2c_base_target_socket* i2c_get_target_socket(sc_object* port) {
-    return dynamic_cast<i2c_base_target_socket*>(port);
-}
-
-static i2c_base_initiator_socket* i2c_get_initiator_socket(sc_object* array,
-                                                           size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<i2c_base_initiator_socket>(idx, true);
-    return nullptr;
-}
-
-static i2c_base_target_socket* i2c_get_target_socket(sc_object* array,
-                                                     size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<i2c_base_target_socket>(idx, true);
-    return nullptr;
-}
-
-i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
-                                         const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = i2c_get_initiator_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
-                                         const string& port, size_t idx) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = i2c_get_initiator_socket(child, idx);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-i2c_base_target_socket& i2c_target(const sc_object& parent,
-                                   const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = i2c_get_target_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
-}
-
-i2c_base_target_socket& i2c_target(const sc_object& parent, const string& port,
-                                   size_t idx) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = i2c_get_target_socket(child, idx);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
 }
 
 void i2c_set_address(const sc_object& obj, const string& port, u8 addr) {
@@ -317,142 +279,31 @@ void i2c_set_address(const sc_object& o, const string& port, size_t i, u8 a) {
 }
 
 void i2c_stub(const sc_object& obj, const string& port) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* ini = i2c_get_initiator_socket(child);
-    auto* tgt = i2c_get_target_socket(child);
-
-    if (!ini && !tgt)
-        VCML_ERROR("%s is not a valid i2c socket", child->name());
-
-    if (ini)
-        ini->stub();
-    if (tgt)
-        tgt->stub();
+    stub(obj, port);
 }
 
 void i2c_stub(const sc_object& obj, const string& port, size_t idx) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    i2c_base_initiator_socket* isock = i2c_get_initiator_socket(child, idx);
-    if (isock) {
-        isock->stub();
-        return;
-    }
-
-    i2c_base_target_socket* tsock = i2c_get_target_socket(child, idx);
-    if (tsock) {
-        tsock->stub();
-        return;
-    }
-
-    VCML_ERROR("%s is not a valid i2c socket array", child->name());
+    stub(obj, port, idx);
 }
 
 void i2c_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = i2c_get_initiator_socket(p1);
-    auto* i2 = i2c_get_initiator_socket(p2);
-    auto* t1 = i2c_get_target_socket(p1);
-    auto* t2 = i2c_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2);
 }
 
 void i2c_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = i2c_get_initiator_socket(p1);
-    auto* i2 = i2c_get_initiator_socket(p2, idx2);
-    auto* t1 = i2c_get_target_socket(p1);
-    auto* t2 = i2c_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2, idx2);
 }
 
 void i2c_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = i2c_get_initiator_socket(p1, idx1);
-    auto* i2 = i2c_get_initiator_socket(p2);
-    auto* t1 = i2c_get_target_socket(p1, idx1);
-    auto* t2 = i2c_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2);
 }
 
 void i2c_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = i2c_get_initiator_socket(p1, idx1);
-    auto* i2 = i2c_get_initiator_socket(p2, idx2);
-    auto* t1 = i2c_get_target_socket(p1, idx1);
-    auto* t2 = i2c_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid i2c port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid i2c port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2, idx2);
 }
 
 } // namespace vcml

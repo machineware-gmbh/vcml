@@ -33,6 +33,7 @@ tlm_generic_payload& tlm_initiator_socket::allocate_payload(
 tlm_initiator_socket::tlm_initiator_socket(const char* nm,
                                            address_space space):
     simple_initiator_socket<tlm_initiator_socket>(nm),
+    bindable_if(),
     hierarchy_element(),
     m_txdb(),
     m_txd(),
@@ -254,6 +255,19 @@ void tlm_initiator_socket::stub(tlm_response_status r) {
     base_type::bind(m_stub->in);
 }
 
+void tlm_initiator_socket::bind_socket(sc_object& other) {
+    using I = tlm::tlm_base_initiator_socket<>;
+    using T = tlm::tlm_base_target_socket<>;
+    bind_generic<I, T>(*this, other);
+}
+
+void tlm_initiator_socket::stub_socket(void* data) {
+    if (data)
+        stub(*(tlm_response_status*)data);
+    else
+        stub();
+}
+
 void tlm_target_socket::b_transport_int(tlm_generic_payload& tx, sc_time& t) {
     b_transport(tx, t);
 }
@@ -333,6 +347,7 @@ bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
 
 tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     simple_target_socket<tlm_target_socket>(nm),
+    bindable_if(),
     hierarchy_element(),
     m_curr(0),
     m_next(0),
@@ -401,6 +416,16 @@ void tlm_target_socket::invalidate_dmi() {
                                                dmi.get_end_address());
         }
     }
+}
+
+void tlm_target_socket::bind_socket(sc_object& other) {
+    using I = tlm::tlm_base_initiator_socket<>;
+    using T = tlm::tlm_base_target_socket<>;
+    bind_generic<I, T>(*this, other);
+}
+
+void tlm_target_socket::stub_socket(void* data) {
+    stub();
 }
 
 void tlm_target_socket::stub() {
@@ -472,158 +497,31 @@ tlm::tlm_base_target_socket<>& tlm_target(const sc_object& parent,
 }
 
 void tlm_stub(const sc_object& obj, const string& port) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* ini = get_initiator_socket<tlm_initiator_socket>(child);
-    auto* tgt = get_target_socket<tlm_target_socket>(child);
-
-    if (!ini && !tgt)
-        VCML_ERROR("%s is not a valid tlm socket", child->name());
-
-    if (ini)
-        ini->stub();
-    if (tgt)
-        tgt->stub();
+    stub(obj, port);
 }
 
 void tlm_stub(const sc_object& obj, const string& port, size_t idx) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* isock = get_initiator_socket(child, idx);
-    auto* ibase = dynamic_cast<tlm_base_initiator_socket*>(isock);
-    auto* ifull = dynamic_cast<tlm_initiator_socket*>(isock);
-
-    if (ibase) {
-        ibase->stub();
-        return;
-    }
-
-    if (ifull) {
-        ifull->stub();
-        return;
-    }
-
-    auto* tsock = get_target_socket(child, idx);
-    auto* tbase = dynamic_cast<tlm_base_target_socket*>(tsock);
-    auto* tfull = dynamic_cast<tlm_target_socket*>(tsock);
-
-    if (tbase) {
-        tbase->stub();
-        return;
-    }
-
-    if (tfull) {
-        tfull->stub();
-        return;
-    }
-
-    VCML_ERROR("%s is not a valid tlm socket array", child->name());
+    stub(obj, port, idx);
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = get_initiator_socket(p1);
-    auto* i2 = get_initiator_socket(p2);
-    auto* t1 = get_target_socket(p1);
-    auto* t2 = get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid tlm port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid tlm port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2);
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = get_initiator_socket(p1);
-    auto* i2 = get_initiator_socket(p2, idx2);
-    auto* t1 = get_target_socket(p1);
-    auto* t2 = get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid tlm port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid tlm port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2, idx2);
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = get_initiator_socket(p1, idx1);
-    auto* i2 = get_initiator_socket(p2);
-    auto* t1 = get_target_socket(p1, idx1);
-    auto* t2 = get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid tlm port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid tlm port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2);
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = get_initiator_socket(p1, idx1);
-    auto* i2 = get_initiator_socket(p2, idx2);
-    auto* t1 = get_target_socket(p1, idx1);
-    auto* t2 = get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid tlm port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid tlm port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2, idx2);
 }
 
 } // namespace vcml

@@ -539,6 +539,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* stub) override;
 };
 
 class pci_base_target_socket : public pci_base_target_socket_b
@@ -553,6 +556,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* stub) override;
 };
 
 template <size_t N = SIZE_MAX>

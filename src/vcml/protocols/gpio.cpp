@@ -47,6 +47,21 @@ void gpio_base_initiator_socket::bind(sc_signal_inout_if<bool>& signal) {
     bind(m_adapter->in);
 }
 
+void gpio_base_initiator_socket::bind_socket(sc_object& obj) {
+    if (auto* sig = dynamic_cast<sc_signal_inout_if<bool>*>(&obj)) {
+        bind(*sig);
+        return;
+    }
+
+    using I = gpio_base_initiator_socket;
+    using T = gpio_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void gpio_base_initiator_socket::stub_socket(void* unused) {
+    stub();
+}
+
 void gpio_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     auto guard = get_hierarchy_scope();
@@ -78,6 +93,21 @@ void gpio_base_target_socket::bind(sc_signal_inout_if<bool>& signal) {
     m_adapter = new gpio_initiator_adapter(name.c_str());
     m_adapter->in.bind(signal);
     bind(m_adapter->out);
+}
+
+void gpio_base_target_socket::bind_socket(sc_object& obj) {
+    if (auto* sig = dynamic_cast<sc_signal_inout_if<bool>*>(&obj)) {
+        bind(*sig);
+        return;
+    }
+
+    using I = gpio_base_initiator_socket;
+    using T = gpio_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void gpio_base_target_socket::stub_socket(void* unused) {
+    stub();
 }
 
 void gpio_base_target_socket::stub() {
@@ -311,233 +341,44 @@ void gpio_target_adapter::gpio_transport(const gpio_target_socket& socket,
     m_trigger.notify(SC_ZERO_TIME);
 }
 
-static gpio_base_initiator_socket* gpio_get_initiator_socket(sc_object* port) {
-    return dynamic_cast<gpio_base_initiator_socket*>(port);
-}
-
-static gpio_base_target_socket* gpio_get_target_socket(sc_object* port) {
-    return dynamic_cast<gpio_base_target_socket*>(port);
-}
-
-static gpio_base_initiator_socket* gpio_get_initiator_socket(sc_object* array,
-                                                             size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<gpio_base_initiator_socket>(idx, true);
-    return nullptr;
-}
-
-static gpio_base_target_socket* gpio_get_target_socket(sc_object* array,
-                                                       size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<gpio_base_target_socket>(idx, true);
-    return nullptr;
-}
-
-gpio_base_initiator_socket& gpio_initiator(const sc_object& parent,
-                                           const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = gpio_get_initiator_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-gpio_base_initiator_socket& gpio_initiator(const sc_object& parent,
-                                           const string& port, size_t idx) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = gpio_get_initiator_socket(child, idx);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-gpio_base_target_socket& gpio_target(const sc_object& parent,
-                                     const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = gpio_get_target_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
-}
-
-gpio_base_target_socket& gpio_target(const sc_object& parent,
-                                     const string& port, size_t idx) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = gpio_get_target_socket(child, idx);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
-}
-
 void gpio_stub(const sc_object& obj, const string& port) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* ini = gpio_get_initiator_socket(child);
-    auto* tgt = gpio_get_target_socket(child);
-
-    if (!ini && !tgt)
-        VCML_ERROR("%s is not a valid gpio socket", child->name());
-
-    if (ini)
-        ini->stub();
-    if (tgt)
-        tgt->stub();
+    stub(obj, port);
 }
 
 void gpio_stub(const sc_object& obj, const string& port, size_t idx) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    gpio_base_initiator_socket* isock = gpio_get_initiator_socket(child, idx);
-    if (isock) {
-        isock->stub();
-        return;
-    }
-
-    gpio_base_target_socket* tsock = gpio_get_target_socket(child, idx);
-    if (tsock) {
-        tsock->stub();
-        return;
-    }
-
-    VCML_ERROR("%s is not a valid gpio socket array", child->name());
+    stub(obj, port, idx);
 }
 
 void gpio_bind(const sc_object& obj1, const string& port1,
                const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = gpio_get_initiator_socket(p1);
-    auto* i2 = gpio_get_initiator_socket(p2);
-    auto* t1 = gpio_get_target_socket(p1);
-    auto* t2 = gpio_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid gpio port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid gpio port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2);
 }
 
 void gpio_bind(const sc_object& obj1, const string& port1,
                const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = gpio_get_initiator_socket(p1);
-    auto* i2 = gpio_get_initiator_socket(p2, idx2);
-    auto* t1 = gpio_get_target_socket(p1);
-    auto* t2 = gpio_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid gpio port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid gpio port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2, idx2);
 }
 
 void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
                const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = gpio_get_initiator_socket(p1, idx1);
-    auto* i2 = gpio_get_initiator_socket(p2);
-    auto* t1 = gpio_get_target_socket(p1, idx1);
-    auto* t2 = gpio_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid gpio port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid gpio port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2);
 }
 
 void gpio_bind(const sc_object& obj1, const string& port1, size_t idx1,
                const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = gpio_get_initiator_socket(p1, idx1);
-    auto* i2 = gpio_get_initiator_socket(p2, idx2);
-    auto* t1 = gpio_get_target_socket(p1, idx1);
-    auto* t2 = gpio_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid gpio port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid gpio port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2, idx2);
 }
 
 void gpio_bind(const sc_object& obj, const string& port,
-               sc_signal_inout_if<bool>& sig) {
-    auto* p = find_child(obj, port);
-    VCML_ERROR_ON(!p, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* i = gpio_get_initiator_socket(p);
-    auto* t = gpio_get_target_socket(p);
-
-    VCML_ERROR_ON(!i && !t, "%s is not a valid gpio port", p->name());
-
-    if (i)
-        i->bind(sig);
-    else if (t)
-        t->bind(sig);
+               sc_signal_inout_if<bool>& sigif) {
+    sc_object* sig = dynamic_cast<sc_object*>(&sigif);
+    vcml::bind(obj, port, *sig->get_parent_object(), sig->basename());
 }
 
 void gpio_bind(const sc_object& obj, const string& port, size_t idx,
-               sc_signal_inout_if<bool>& sig) {
-    auto* p = find_child(obj, port);
-    VCML_ERROR_ON(!p, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* i = gpio_get_initiator_socket(p, idx);
-    auto* t = gpio_get_target_socket(p, idx);
-
-    VCML_ERROR_ON(!i && !t, "%s is not a valid gpio port", p->name());
-
-    if (i)
-        i->bind(sig);
-    else if (t)
-        t->bind(sig);
+               sc_signal_inout_if<bool>& sigif) {
+    sc_object* sig = dynamic_cast<sc_object*>(&sigif);
+    vcml::bind(obj, port, idx, *sig->get_parent_object(), sig->basename());
 }
 
 } // namespace vcml

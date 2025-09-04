@@ -118,6 +118,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class can_base_target_socket : public can_base_target_socket_b
@@ -132,6 +135,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 template <size_t N = SIZE_MAX>
@@ -207,16 +213,6 @@ using can_initiator_array = socket_array<can_initiator_socket, N>;
 
 template <size_t N = SIZE_MAX>
 using can_target_array = socket_array<can_target_socket, N>;
-
-can_base_initiator_socket& can_initiator(const sc_object& parent,
-                                         const string& port);
-can_base_initiator_socket& can_initiator(const sc_object& parent,
-                                         const string& port, size_t idx);
-
-can_base_target_socket& can_target(const sc_object& parent,
-                                   const string& port);
-can_base_target_socket& can_target(const sc_object& parent, const string& port,
-                                   size_t idx);
 
 void can_stub(const sc_object& obj, const string& port);
 void can_stub(const sc_object& obj, const string& port, size_t idx);

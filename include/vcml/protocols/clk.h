@@ -81,6 +81,9 @@ public:
     using clk_base_initiator_socket_b::bind;
     virtual void bind(clk_base_target_socket& socket);
 
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* stub) override;
+
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
 };
@@ -98,6 +101,9 @@ public:
     using clk_base_target_socket_b::bind;
     virtual void bind(clk_base_initiator_socket& other);
     virtual void complete_binding(clk_base_initiator_socket& socket) {}
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* stub) override;
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub(hz_t hz = 100 * MHz);

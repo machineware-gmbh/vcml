@@ -128,6 +128,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class i2c_base_target_socket : public i2c_base_target_socket_b
@@ -142,6 +145,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 template <size_t N = SIZE_MAX>
@@ -178,7 +184,6 @@ class i2c_target_socket : public i2c_base_target_socket
 {
 private:
     i2c_host* m_host;
-    u8 m_address;
 
     struct i2c_fw_transport : i2c_fw_transport_if {
         i2c_target_socket* socket;
@@ -193,7 +198,7 @@ private:
     void i2c_transport(i2c_payload& tx);
 
 public:
-    u8 address() const { return m_address; }
+    property<u8> address;
     void set_address(u8 address);
 
     i2c_target_socket(const char* name, address_space as = VCML_AS_DEFAULT);
@@ -228,16 +233,6 @@ using i2c_initiator_array = socket_array<i2c_initiator_socket, N>;
 
 template <size_t N = SIZE_MAX>
 using i2c_target_array = socket_array<i2c_target_socket, N>;
-
-i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
-                                         const string& port);
-i2c_base_initiator_socket& i2c_initiator(const sc_object& parent,
-                                         const string& port, size_t idx);
-
-i2c_base_target_socket& i2c_target(const sc_object& parent,
-                                   const string& port);
-i2c_base_target_socket& i2c_target(const sc_object& parent, const string& port,
-                                   size_t idx);
 
 void i2c_set_address(const sc_object&, const string& port, u8 addr);
 void i2c_set_address(const sc_object&, const string& port, size_t i, u8 addr);

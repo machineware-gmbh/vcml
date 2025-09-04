@@ -85,17 +85,8 @@ template <typename T>
 using signal_base_target_socket_b = multi_target_socket<
     signal_fw_transport_if<T>, signal_bw_transport_if<T>>;
 
-class signal_socket_if
-{
-public:
-    virtual ~signal_socket_if() = default;
-    virtual bool try_bind(sc_object& other) = 0;
-    virtual void stub() = 0;
-};
-
 template <typename T>
-class signal_base_initiator_socket : public signal_base_initiator_socket_b<T>,
-                                     public signal_socket_if
+class signal_base_initiator_socket : public signal_base_initiator_socket_b<T>
 {
 private:
     signal_target_stub<T>* m_stub;
@@ -106,10 +97,7 @@ private:
 public:
     signal_base_initiator_socket(const char* nm,
                                  address_space space = VCML_AS_DEFAULT):
-        signal_base_initiator_socket_b<T>(nm, space),
-        signal_socket_if(),
-        m_stub(),
-        m_adapter() {
+        signal_base_initiator_socket_b<T>(nm, space), m_stub(), m_adapter() {
         // nothing to do
     }
 
@@ -137,29 +125,7 @@ public:
         bind(m_adapter->in);
     }
 
-    virtual bool try_bind(sc_object& obj) override {
-        auto* isock = dynamic_cast<signal_base_initiator_socket_b<T>*>(&obj);
-        if (isock) {
-            bind(*isock);
-            return true;
-        }
-
-        auto* tsock = dynamic_cast<signal_base_target_socket_b<T>*>(&obj);
-        if (tsock) {
-            bind(*tsock);
-            return true;
-        }
-
-        auto* signal = dynamic_cast<sc_signal_inout_if<T>*>(&obj);
-        if (signal) {
-            bind(*signal);
-            return true;
-        };
-
-        return false;
-    }
-
-    virtual void stub() override {
+    void stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", base::name());
         auto guard = base::get_hierarchy_scope();
         m_stub = new signal_target_stub<T>(base::basename());
@@ -168,11 +134,18 @@ public:
 
     bool is_adapted() const { return m_adapter != nullptr; }
     bool is_stubbed() const { return m_stub != nullptr; }
+
+    virtual void bind_socket(sc_object& obj) override {
+        using INI = signal_base_initiator_socket<T>;
+        using TGT = signal_base_target_socket<T>;
+        bind_generic<INI, TGT>(*this, obj);
+    }
+
+    virtual void stub_socket(void* data) override { stub(); }
 };
 
 template <typename T>
-class signal_base_target_socket : public signal_base_target_socket_b<T>,
-                                  public signal_socket_if
+class signal_base_target_socket : public signal_base_target_socket_b<T>
 {
 private:
     signal_initiator_stub<T>* m_stub;
@@ -183,10 +156,7 @@ private:
 public:
     signal_base_target_socket(const char* nm,
                               address_space space = VCML_AS_DEFAULT):
-        signal_base_target_socket_b<T>(nm, space),
-        signal_socket_if(),
-        m_stub(),
-        m_adapter() {
+        signal_base_target_socket_b<T>(nm, space), m_stub(), m_adapter() {
         // nothing to do
     }
 
@@ -214,30 +184,9 @@ public:
         bind(m_adapter->out);
     }
 
-    virtual bool try_bind(sc_object& obj) override {
-        auto* isock = dynamic_cast<signal_base_initiator_socket_b<T>*>(&obj);
-        if (isock) {
-            isock->bind(*this);
-            return true;
-        }
-
-        auto* tsock = dynamic_cast<signal_base_target_socket_b<T>*>(&obj);
-        if (tsock) {
-            bind(*tsock);
-            return true;
-        }
-
-        auto* signal = dynamic_cast<sc_signal_inout_if<T>*>(&obj);
-        if (signal) {
-            bind(*signal);
-            return true;
-        };
-
-        return false;
-    }
-
     virtual void complete_binding(signal_base_initiator_socket<T>& socket) {}
-    virtual void stub() override {
+
+    void stub() {
         VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", base::name());
         auto guard = base::get_hierarchy_scope();
         m_stub = new signal_initiator_stub<T>(base::basename());
@@ -246,6 +195,14 @@ public:
 
     bool is_adapted() const { return m_adapter != nullptr; }
     bool is_stubbed() const { return m_stub != nullptr; }
+
+    virtual void bind_socket(sc_object& obj) override {
+        using INI = signal_base_initiator_socket<T>;
+        using TGT = signal_base_target_socket<T>;
+        bind_generic<INI, TGT>(*this, obj);
+    }
+
+    virtual void stub_socket(void* data) override { stub(); }
 };
 
 template <typename T, size_t N = SIZE_MAX>

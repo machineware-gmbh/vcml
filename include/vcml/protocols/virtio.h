@@ -607,6 +607,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class virtio_base_target_socket : public virtio_base_target_socket_b
@@ -621,6 +624,9 @@ public:
 
     bool is_stubbed() const { return m_stub != nullptr; }
     virtual void stub();
+
+    virtual void bind_socket(sc_object& obj) override;
+    virtual void stub_socket(void* data) override;
 };
 
 class virtio_initiator_socket : public virtio_base_initiator_socket
@@ -747,11 +753,6 @@ public:
     virtio_target_stub(const char* nm);
     virtual ~virtio_target_stub() = default;
 };
-
-virtio_base_initiator_socket& virtio_initiator(const sc_object& parent,
-                                               const string& port);
-virtio_base_target_socket& virtio_target(const sc_object& parent,
-                                         const string& port);
 
 void virtio_stub(const sc_object& obj, const string& port);
 void virtio_bind(const sc_object& obj1, const string& port1,

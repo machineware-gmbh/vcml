@@ -723,6 +723,16 @@ void virtio_base_initiator_socket::stub() {
     bind(m_stub->virtio_in);
 }
 
+void virtio_base_initiator_socket::bind_socket(sc_object& obj) {
+    using I = virtio_base_initiator_socket;
+    using T = virtio_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void virtio_base_initiator_socket::stub_socket(void* data) {
+    stub();
+}
+
 virtio_base_target_socket::virtio_base_target_socket(const char* nm):
     virtio_base_target_socket_b(nm, VCML_AS_DEFAULT), m_stub(nullptr) {
 }
@@ -737,6 +747,16 @@ void virtio_base_target_socket::stub() {
     auto guard = get_hierarchy_scope();
     m_stub = new virtio_initiator_stub(basename());
     m_stub->virtio_out.bind(*this);
+}
+
+void virtio_base_target_socket::bind_socket(sc_object& obj) {
+    using I = virtio_base_initiator_socket;
+    using T = virtio_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void virtio_base_target_socket::stub_socket(void* data) {
+    stub();
 }
 
 virtio_initiator_socket::virtio_initiator_socket(const char* nm):
@@ -824,73 +844,13 @@ virtio_target_stub::virtio_target_stub(const char* nm):
     virtio_in.bind(*this);
 }
 
-static virtio_base_initiator_socket* virtio_get_initiator_socket(
-    sc_object* port) {
-    return dynamic_cast<virtio_base_initiator_socket*>(port);
-}
-
-static virtio_base_target_socket* virtio_get_target_socket(sc_object* port) {
-    return dynamic_cast<virtio_base_target_socket*>(port);
-}
-
-virtio_base_initiator_socket& virtio_initiator(const sc_object& parent,
-                                               const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = virtio_get_initiator_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-virtio_base_target_socket& virtio_target(const sc_object& parent,
-                                         const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = virtio_get_target_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
-}
-
 void virtio_stub(const sc_object& obj, const string& port) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* ini = virtio_get_initiator_socket(child);
-    auto* tgt = virtio_get_target_socket(child);
-
-    if (!ini && !tgt)
-        VCML_ERROR("%s is not a valid virtio socket", child->name());
-
-    if (ini)
-        ini->stub();
-    if (tgt)
-        tgt->stub();
+    stub(obj, port);
 }
 
 void virtio_bind(const sc_object& obj1, const string& port1,
                  const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = virtio_get_initiator_socket(p1);
-    auto* i2 = virtio_get_initiator_socket(p2);
-    auto* t1 = virtio_get_target_socket(p1);
-    auto* t2 = virtio_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid virtio port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid virtio port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2);
 }
 
 } // namespace vcml

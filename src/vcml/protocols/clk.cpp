@@ -42,6 +42,16 @@ void clk_base_initiator_socket::bind(clk_base_target_socket& socket) {
     socket.complete_binding(*this);
 }
 
+void clk_base_initiator_socket::bind_socket(sc_object& obj) {
+    using I = clk_base_initiator_socket;
+    using T = clk_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void clk_base_initiator_socket::stub_socket(void* unused) {
+    stub();
+}
+
 void clk_base_initiator_socket::stub() {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     auto guard = get_hierarchy_scope();
@@ -62,6 +72,19 @@ clk_base_target_socket::~clk_base_target_socket() {
 void clk_base_target_socket::bind(clk_base_initiator_socket& other) {
     clk_base_target_socket_b::bind(other);
     complete_binding(other);
+}
+
+void clk_base_target_socket::bind_socket(sc_object& obj) {
+    using I = clk_base_initiator_socket;
+    using T = clk_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void clk_base_target_socket::stub_socket(void* hz) {
+    if (hz)
+        stub(*(hz_t*)hz);
+    else
+        stub();
 }
 
 void clk_base_target_socket::stub(hz_t hz) {

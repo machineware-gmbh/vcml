@@ -375,6 +375,16 @@ void eth_base_initiator_socket::stub() {
     bind(m_stub->eth_rx);
 }
 
+void eth_base_initiator_socket::bind_socket(sc_object& obj) {
+    using I = eth_base_initiator_socket;
+    using T = eth_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void eth_base_initiator_socket::stub_socket(void* data) {
+    stub();
+}
+
 eth_base_target_socket::eth_base_target_socket(const char* nm,
                                                address_space space):
     eth_base_target_socket_b(nm, space), m_stub(nullptr) {
@@ -390,6 +400,16 @@ void eth_base_target_socket::stub() {
     auto guard = get_hierarchy_scope();
     m_stub = new eth_initiator_stub(basename());
     m_stub->eth_tx.bind(*this);
+}
+
+void eth_base_target_socket::bind_socket(sc_object& obj) {
+    using I = eth_base_initiator_socket;
+    using T = eth_base_target_socket;
+    bind_generic<I, T>(*this, obj);
+}
+
+void eth_base_target_socket::stub_socket(void* data) {
+    stub();
 }
 
 void eth_initiator_socket::set_link_up(bool up) {
@@ -481,201 +501,32 @@ eth_target_stub::eth_target_stub(const char* nm):
     eth_rx.bind(*this);
 }
 
-static eth_base_initiator_socket* eth_get_initiator_socket(sc_object* port) {
-    return dynamic_cast<eth_base_initiator_socket*>(port);
-}
-
-static eth_base_target_socket* eth_get_target_socket(sc_object* port) {
-    return dynamic_cast<eth_base_target_socket*>(port);
-}
-
-static eth_base_initiator_socket* eth_get_initiator_socket(sc_object* array,
-                                                           size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<eth_base_initiator_socket>(idx, true);
-    return nullptr;
-}
-
-static eth_base_target_socket* eth_get_target_socket(sc_object* array,
-                                                     size_t idx) {
-    if (auto* aif = dynamic_cast<socket_array_if*>(array))
-        return aif->fetch_as<eth_base_target_socket>(idx, true);
-    return nullptr;
-}
-
-eth_base_initiator_socket& eth_initiator(const sc_object& parent,
-                                         const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = eth_get_initiator_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-eth_base_initiator_socket& eth_initiator(const sc_object& parent,
-                                         const string& port, size_t idx) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = eth_get_initiator_socket(child, idx);
-    VCML_ERROR_ON(!sock, "%s is not a valid initiator socket", child->name());
-    return *sock;
-}
-
-eth_base_target_socket& eth_target(const sc_object& parent,
-                                   const string& port) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = eth_get_target_socket(child);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
-}
-
-eth_base_target_socket& eth_target(const sc_object& parent, const string& port,
-                                   size_t idx) {
-    sc_object* child = find_child(parent, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", parent.name(), port.c_str());
-    auto* sock = eth_get_target_socket(child, idx);
-    VCML_ERROR_ON(!sock, "%s is not a valid target socket", child->name());
-    return *sock;
-}
-
 void eth_stub(const sc_object& obj, const string& port) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    auto* ini = eth_get_initiator_socket(child);
-    auto* tgt = eth_get_target_socket(child);
-
-    if (!ini && !tgt)
-        VCML_ERROR("%s is not a valid ethernet socket", child->name());
-
-    if (ini)
-        ini->stub();
-    if (tgt)
-        tgt->stub();
+    stub(obj, port);
 }
 
 void eth_stub(const sc_object& obj, const string& port, size_t idx) {
-    sc_object* child = find_child(obj, port);
-    VCML_ERROR_ON(!child, "%s.%s does not exist", obj.name(), port.c_str());
-
-    eth_base_initiator_socket* isock = eth_get_initiator_socket(child, idx);
-    if (isock) {
-        isock->stub();
-        return;
-    }
-
-    eth_base_target_socket* tsock = eth_get_target_socket(child, idx);
-    if (tsock) {
-        tsock->stub();
-        return;
-    }
-
-    VCML_ERROR("%s is not a valid ethernet socket array", child->name());
+    stub(obj, port, idx);
 }
 
 void eth_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = eth_get_initiator_socket(p1);
-    auto* i2 = eth_get_initiator_socket(p2);
-    auto* t1 = eth_get_target_socket(p1);
-    auto* t2 = eth_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid ethernet port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid ethernet port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2);
 }
 
 void eth_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = eth_get_initiator_socket(p1);
-    auto* i2 = eth_get_initiator_socket(p2, idx2);
-    auto* t1 = eth_get_target_socket(p1);
-    auto* t2 = eth_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid ethernet port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid ethernet port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, obj2, port2, idx2);
 }
 
 void eth_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = eth_get_initiator_socket(p1, idx1);
-    auto* i2 = eth_get_initiator_socket(p2);
-    auto* t1 = eth_get_target_socket(p1, idx1);
-    auto* t2 = eth_get_target_socket(p2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid ethernet port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid ethernet port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2);
 }
 
 void eth_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* p1 = find_child(obj1, port1);
-    auto* p2 = find_child(obj2, port2);
-
-    VCML_ERROR_ON(!p1, "%s.%s does not exist", obj1.name(), port1.c_str());
-    VCML_ERROR_ON(!p2, "%s.%s does not exist", obj2.name(), port2.c_str());
-
-    auto* i1 = eth_get_initiator_socket(p1, idx1);
-    auto* i2 = eth_get_initiator_socket(p2, idx2);
-    auto* t1 = eth_get_target_socket(p1, idx1);
-    auto* t2 = eth_get_target_socket(p2, idx2);
-
-    VCML_ERROR_ON(!i1 && !t1, "%s is not a valid ethernet port", p1->name());
-    VCML_ERROR_ON(!i2 && !t2, "%s is not a valid ethernet port", p2->name());
-
-    if (i1 && i2)
-        i1->bind(*i2);
-    else if (i1 && t2)
-        i1->bind(*t2);
-    else if (t1 && i2)
-        i2->bind(*t1);
-    else if (t1 && t2)
-        t1->bind(*t2);
+    bind(obj1, port1, idx1, obj2, port2, idx2);
 }
 
 } // namespace vcml
