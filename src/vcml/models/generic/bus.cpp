@@ -314,7 +314,7 @@ static socket_t get_next_socket(socket_array_if* aif, const char* name) {
 
 static socket_t get_socket(const sc_object& host, const string& port) {
     sc_object* child = vcml::find_child(host, port);
-    VCML_REPORT_ON(!child, "%s.%s does not exsist", host.name(), port.c_str());
+    VCML_REPORT_ON(!child, "%s.%s does not exist", host.name(), port.c_str());
     auto* ini = dynamic_cast<initiator_t*>(child);
     if (ini)
         return ini;
@@ -332,7 +332,7 @@ static socket_t get_socket(const sc_object& host, const string& port) {
 static socket_t get_socket(const sc_object& host, const string& port,
                            size_t idx) {
     sc_object* child = vcml::find_child(host, port);
-    VCML_REPORT_ON(!child, "%s.%s does not exsist", host.name(), port.c_str());
+    VCML_REPORT_ON(!child, "%s.%s does not exist", host.name(), port.c_str());
     if (auto* aif = dynamic_cast<socket_array_if*>(child)) {
         auto* base = aif->fetch(idx, true);
         auto* ini = dynamic_cast<initiator_t*>(base);
