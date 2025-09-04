@@ -22,9 +22,20 @@ void base_socket::stub_socket(void* stub) {
     VCML_REPORT("%s does not support stubbing", obj ? obj->kind() : "socket");
 }
 
+static sc_object* find_next_socket(socket_array_if* array, const char* name) {
+    for (size_t idx = 0; idx < array->limit(); idx++) {
+        if (!array->exists(idx))
+            return array->fetch(idx, true);
+    }
+
+    VCML_REPORT("%s has no more free sockets", name);
+}
+
 static sc_object* find_socket(const sc_object& obj, const string& name) {
     sc_object* sock = find_child(obj, name);
     VCML_REPORT_ON(!sock, "socket %s.%s not found", obj.name(), name.c_str());
+    if (auto* array = dynamic_cast<socket_array_if*>(sock))
+        return find_next_socket(array, sock->name());
     return sock;
 }
 
