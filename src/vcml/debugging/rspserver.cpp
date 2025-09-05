@@ -246,10 +246,10 @@ string rspserver::handle_command(const string& command) {
         return ""; // empty response means command not supported
     } catch (report& rep) {
         log.error(rep);
-        return ERR_INTERNAL;
+        return rsp_error(EINVAL);
     } catch (std::exception& ex) {
         log.error(ex);
-        return ERR_INTERNAL;
+        return rsp_error(EINVAL);
     }
 }
 
@@ -274,11 +274,9 @@ void rspserver::unregister_handler(const char* cmd) {
     m_handlers.erase(cmd);
 }
 
-const char* const rspserver::ERR_COMMAND = "E01";
-const char* const rspserver::ERR_PARAM = "E02";
-const char* const rspserver::ERR_INTERNAL = "E03";
-const char* const rspserver::ERR_UNKNOWN = "E04";
-const char* const rspserver::ERR_PROTOCOL = "E05";
+string rsp_error(int eno) {
+    return mkstr("E%02x", eno);
+}
 
 } // namespace debugging
 } // namespace vcml

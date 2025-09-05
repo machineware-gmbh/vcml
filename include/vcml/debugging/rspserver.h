@@ -77,12 +77,6 @@ public:
 
     void register_handler(const char* command, handler handler);
     void unregister_handler(const char* command);
-
-    static const char* const ERR_COMMAND;  // malformed command
-    static const char* const ERR_PARAM;    // parameter has invalid value
-    static const char* const ERR_INTERNAL; // internal error
-    static const char* const ERR_UNKNOWN;  // unknown error
-    static const char* const ERR_PROTOCOL; // protocol error
 };
 
 template <typename HOST>
@@ -94,6 +88,8 @@ void rspserver::register_handler(const char* command,
         return (host->*handler)(args);
     });
 }
+
+string rsp_error(int eno);
 
 } // namespace debugging
 } // namespace vcml

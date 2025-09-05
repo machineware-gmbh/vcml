@@ -172,12 +172,12 @@ string gdbserver::handle_unknown(const string& cmd) {
 string gdbserver::handle_step(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     if (!m_c_target) {
         log_warn("no target specified");
-        return ERR_INTERNAL;
+        return rsp_error(EINVAL);
     }
 
     cancel_singlestep();
@@ -200,7 +200,7 @@ string gdbserver::handle_step(const string& cmd) {
 
     if (sim_running() && !simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     return create_stop_reply();
@@ -209,12 +209,12 @@ string gdbserver::handle_step(const string& cmd) {
 string gdbserver::handle_continue(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     if (!m_c_target) {
         log_warn("no target specified");
-        return ERR_INTERNAL;
+        return rsp_error(EINVAL);
     }
 
     cancel_singlestep();
@@ -235,7 +235,7 @@ string gdbserver::handle_continue(const string& cmd) {
 
     if (sim_running() && !simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     return create_stop_reply();
@@ -255,18 +255,18 @@ string gdbserver::handle_kill(const string& cmd) {
 string gdbserver::handle_query(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     if (m_targets.size() == 0) {
         log_warn("no available target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     m_q_target = &m_targets[0];
     if (!m_q_target) {
         log_warn("no target specified");
-        return ERR_INTERNAL;
+        return rsp_error(EINVAL);
     }
 
     if (starts_with(cmd, "qSupported")) {
@@ -304,7 +304,7 @@ string gdbserver::handle_query(const string& cmd) {
 string gdbserver::handle_rcmd(const string& cmd) {
     module* mod = dynamic_cast<module*>(&m_q_target->tgt);
     if (mod == nullptr)
-        return ERR_COMMAND;
+        return rsp_error(ENOENT);
 
     vector<string> args = split(cmd, ' ');
     string cmdname = args[0];
@@ -312,7 +312,7 @@ string gdbserver::handle_rcmd(const string& cmd) {
 
     stringstream ss;
     if (!mod->execute(cmdname, args, ss))
-        return ERR_COMMAND;
+        return rsp_error(ECHILD);
 
     return ss.str();
 }
@@ -320,18 +320,18 @@ string gdbserver::handle_rcmd(const string& cmd) {
 string gdbserver::handle_xfer(const string& cmd) {
     vector<string> args = split(cmd, ':');
     if (args.size() != 5)
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
 
     const string& object = args[1];
     const string& read = args[2];
     const string& annex = args[3];
 
     if (read != "read")
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
 
     size_t offset = 0, length = 0;
     if (sscanf(args[4].c_str(), "%zx,%zx", &offset, &length) != 2)
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
 
     if (object == "features" && annex == "target.xml") {
         if (m_q_target->xml.empty()) {
@@ -341,7 +341,7 @@ string gdbserver::handle_xfer(const string& cmd) {
         }
 
         if (offset > m_q_target->xml.length())
-            return ERR_COMMAND;
+            return rsp_error(EINVAL);
 
         bool more = offset + length < m_q_target->xml.length();
         return (more ? "m" : "l") + m_q_target->xml.substr(offset, length);
@@ -375,13 +375,13 @@ string gdbserver::handle_extra_threadinfo(const string& cmd) {
     int pid = 0, tid = 0;
     if (!parse_ids(str, pid, tid)) {
         log_warn("malformed command %s", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     gdb_target* gtgt = find_target(pid, tid);
     if (!gtgt) {
         log_warn("unknown target ids %d.%d", pid, tid);
-        return ERR_PARAM;
+        return rsp_error(ENOENT);
     }
 
     const char* info = gtgt->tgt.target_name();
@@ -395,18 +395,18 @@ string gdbserver::handle_extra_threadinfo(const string& cmd) {
 string gdbserver::handle_reg_read(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned int regno;
     if (sscanf(cmd.c_str(), "p%x", &regno) != 1) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     const cpureg* reg = m_g_target->tgt.find_cpureg(regno);
@@ -419,7 +419,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
 
     vector<u8> val(reg->total_size());
     if (!reg->read(val.data(), val.size()))
-        return ERR_INTERNAL;
+        return rsp_error(EFAULT);
 
     stringstream ss;
     ss << std::hex << std::setfill('0');
@@ -437,18 +437,18 @@ string gdbserver::handle_reg_read(const string& cmd) {
 string gdbserver::handle_reg_write(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned int regno;
     if (sscanf(cmd.c_str(), "P%x=", &regno) != 1) {
         log_warn("malformed command '%str'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     const cpureg* reg = m_g_target->tgt.find_cpureg(regno);
@@ -461,14 +461,14 @@ string gdbserver::handle_reg_write(const string& cmd) {
     const char* str = strrchr(cmd.c_str(), '=');
     if (str == nullptr || strlen(str + 1) != reg->total_size() * 2) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     str++; // step beyond '='
     for (u64 byte = 0; byte < val.size(); byte++, str += 2) {
         if (sscanf(str, "%02hhx", val.data() + byte) != 1) {
             log_warn("error parsing register value near %s", str);
-            return ERR_COMMAND;
+            return rsp_error(EINVAL);
         }
     }
 
@@ -478,7 +478,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
     }
 
     if (!reg->write(val.data(), val.size()))
-        return ERR_INTERNAL;
+        return rsp_error(EFAULT);
 
     return "OK";
 }
@@ -486,7 +486,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
 string gdbserver::handle_reg_read_all(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     stringstream ss;
@@ -494,7 +494,7 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     for (const cpureg* reg : m_g_target->cpuregs) {
@@ -503,7 +503,7 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
 
         vector<u8> val(reg->total_size());
         if (!reg->read(val.data(), val.size()))
-            return ERR_INTERNAL;
+            return rsp_error(EFAULT);
 
         if (!m_g_target->tgt.is_host_endian()) {
             for (size_t i = 0; i < val.size(); i += reg->size)
@@ -520,12 +520,12 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
 string gdbserver::handle_reg_write_all(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     const char* str = cmd.c_str() + 1;
@@ -535,7 +535,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
 
         if (strlen(str) < reg->total_size() * 2) {
             log_warn("malformed command '%s'", cmd.c_str());
-            return ERR_COMMAND;
+            return rsp_error(EINVAL);
         }
 
         vector<u8> val(reg->total_size());
@@ -548,7 +548,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
         }
 
         if (!reg->write(val.data(), val.size()))
-            return ERR_INTERNAL;
+            return rsp_error(EFAULT);
     }
 
     return "OK";
@@ -557,13 +557,13 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
 string gdbserver::handle_mem_read(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned long long addr = 0, size = 0;
     if (sscanf(cmd.c_str(), "m%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (size == 0)
@@ -571,7 +571,7 @@ string gdbserver::handle_mem_read(const string& cmd) {
 
     if (size > BUFFER_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
-        return ERR_PARAM;
+        return rsp_error(EINVAL);
     }
 
     vector<u8> buffer;
@@ -579,13 +579,15 @@ string gdbserver::handle_mem_read(const string& cmd) {
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     stringstream ss;
     ss << std::hex << std::setfill('0');
-    if (m_g_target->tgt.read_vmem_dbg(addr, buffer.data(), size) != size)
+    if (m_g_target->tgt.read_vmem_dbg(addr, buffer.data(), size) != size) {
         log_debug("failed to read 0x%llx..0x%llx", addr, addr + size - 1);
+        return rsp_error(EFAULT);
+    }
 
     for (unsigned long long i = 0; i < size; i++)
         ss << std::setw(2) << (int)buffer[i];
@@ -596,13 +598,13 @@ string gdbserver::handle_mem_read(const string& cmd) {
 string gdbserver::handle_mem_write(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned long long addr = 0, size = 0;
     if (sscanf(cmd.c_str(), "M%llx,%llx", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (size == 0)
@@ -610,13 +612,13 @@ string gdbserver::handle_mem_write(const string& cmd) {
 
     if (size > BUFFER_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
-        return ERR_PARAM;
+        return rsp_error(EINVAL);
     }
 
     const char* data = strchr(cmd.c_str(), ':');
     if (data == nullptr) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     data++;
@@ -630,11 +632,11 @@ string gdbserver::handle_mem_write(const string& cmd) {
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     if (m_g_target->tgt.write_vmem_dbg(addr, buffer.data(), size) != size)
-        return ERR_UNKNOWN;
+        return rsp_error(EFAULT);
 
     return "OK";
 }
@@ -642,13 +644,13 @@ string gdbserver::handle_mem_write(const string& cmd) {
 string gdbserver::handle_mem_write_bin(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned long long addr = 0, size = 0;
     if (sscanf(cmd.c_str(), "X%llx,%llx:", &addr, &size) != 2) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (size == 0)
@@ -656,13 +658,13 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
 
     if (size > PACKET_SIZE) {
         log_warn("too much data requested: %llu bytes", size);
-        return ERR_PARAM;
+        return rsp_error(EINVAL);
     }
 
     const char* data = strchr(cmd.c_str(), ':');
     if (data == nullptr) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     data++;
@@ -670,16 +672,16 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
     size_t len = cmd.c_str() + cmd.length() - data;
     if (len != size) {
         log_warn("mem_write_bin expected %llu bytes, got %zu", size, len);
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (!m_g_target) {
         log_warn("no specified target");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     if (m_g_target->tgt.write_vmem_dbg(addr, data, size) != size)
-        return ERR_UNKNOWN;
+        return rsp_error(EFAULT);
 
     return "OK";
 }
@@ -687,13 +689,13 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
 string gdbserver::handle_breakpoint_set(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned long long type, addr, length;
     if (sscanf(cmd.c_str(), "Z%llx,%llx,%llx", &type, &addr, &length) != 3) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     const range wp(addr, addr + length - 1);
@@ -702,34 +704,34 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
     case GDB_BREAKPOINT_HW:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.insert_breakpoint(addr, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     case GDB_WATCHPOINT_WRITE:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.insert_watchpoint(wp, VCML_ACCESS_WRITE, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     case GDB_WATCHPOINT_READ:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.insert_watchpoint(wp, VCML_ACCESS_READ, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     case GDB_WATCHPOINT_ACCESS:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.insert_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     default:
         log_warn("unknown breakpoint type %llu", type);
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     return "OK";
@@ -738,13 +740,13 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
 string gdbserver::handle_breakpoint_delete(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     unsigned long long type, addr, length;
     if (sscanf(cmd.c_str(), "z%llx,%llx,%llx", &type, &addr, &length) != 3) {
         log_warn("malformed command '%s'", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     const range wp(addr, addr + length - 1);
@@ -753,34 +755,34 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
     case GDB_BREAKPOINT_HW:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.remove_breakpoint(addr, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     case GDB_WATCHPOINT_WRITE:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.remove_watchpoint(wp, VCML_ACCESS_WRITE, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     case GDB_WATCHPOINT_READ:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.remove_watchpoint(wp, VCML_ACCESS_READ, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     case GDB_WATCHPOINT_ACCESS:
         for (auto& gtgt : m_targets) {
             if (!gtgt.tgt.remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this))
-                return ERR_INTERNAL;
+                return rsp_error(EIO);
         }
         break;
 
     default:
         log_warn("unknown breakpoint type %llu", type);
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     return "OK";
@@ -789,12 +791,12 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
 string gdbserver::handle_exception(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     if (!m_c_target) {
         log_warn("no target specified");
-        return ERR_INTERNAL;
+        return rsp_error(ENOENT);
     }
 
     return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
@@ -809,19 +811,19 @@ string gdbserver::handle_thread(const string& cmd) {
     bool is_g = starts_with(cmd, "Hg");
     if (!is_c && !is_g) {
         log_warn("malformed command %s", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (!parse_ids(str, pid, tid)) {
         log_warn("malformed command %s", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (pid != GDB_ALL_TARGETS && tid != GDB_ALL_TARGETS) {
         auto gtgt = find_target(pid, tid);
         if (!gtgt) {
             log_warn("unknown target ids %d.%d", pid, tid);
-            return ERR_PARAM;
+            return rsp_error(EINVAL);
         }
 
         if (is_c)
@@ -840,12 +842,12 @@ string gdbserver::handle_thread_alive(const string& cmd) {
     int pid = 0, tid = 0;
     if (!parse_ids(str, pid, tid)) {
         log_warn("malformed command %s", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
 
     if (!find_target(pid, tid)) {
         log_warn("target %d.%d is dead", pid, tid);
-        return ERR_PARAM;
+        return rsp_error(ENOENT);
     }
 
     return "OK";
@@ -854,7 +856,7 @@ string gdbserver::handle_thread_alive(const string& cmd) {
 string gdbserver::handle_vcont(const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     if (!starts_with(cmd, "vCont"))
@@ -866,7 +868,7 @@ string gdbserver::handle_vcont(const string& cmd) {
     vector<string> args = split(cmd, ';');
     if (args.size() <= 1) {
         log_warn("malformed command %s", cmd.c_str());
-        return ERR_COMMAND;
+        return rsp_error(EINVAL);
     }
     args.erase(args.begin());
 
@@ -885,7 +887,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                 auto s = split(a, ':');
                 if (!parse_ids(s[1], pid, tid)) {
                     log_warn("malformed command %s", cmd.c_str());
-                    return ERR_COMMAND;
+                    return rsp_error(EINVAL);
                 }
 
                 if (tid == GDB_ALL_TARGETS)
@@ -894,7 +896,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                 auto gtgt = find_target(pid, tid);
                 if (!gtgt) {
                     log_warn("unknown target ids %d.%d", pid, tid);
-                    return ERR_PARAM;
+                    return rsp_error(ENOENT);
                 }
 
                 if (!stl_contains(m_unused_targets, gtgt))
@@ -918,7 +920,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                 auto s = split(a, ':');
                 if (!parse_ids(s[1], pid, tid)) {
                     log_warn("malformed command %s", cmd.c_str());
-                    return ERR_COMMAND;
+                    return rsp_error(EINVAL);
                 }
 
                 if (tid == GDB_ALL_TARGETS)
@@ -927,7 +929,7 @@ string gdbserver::handle_vcont(const string& cmd) {
                 auto gtgt = find_target(pid, tid);
                 if (!gtgt) {
                     log_warn("unknown target ids %d.%d", pid, tid);
-                    return ERR_PARAM;
+                    return rsp_error(ENOENT);
                 }
 
                 if (!stl_contains(m_unused_targets, gtgt))
@@ -948,7 +950,7 @@ string gdbserver::handle_vcont(const string& cmd) {
             }
         } else {
             log_warn("malformed command %s", cmd.c_str());
-            return ERR_COMMAND;
+            return rsp_error(EINVAL);
         }
     }
 
@@ -971,7 +973,7 @@ string gdbserver::handle_vcont(const string& cmd) {
 
     if (sim_running() && !simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
-        return ERR_INTERNAL;
+        return rsp_error(EPERM);
     }
 
     return create_stop_reply();
