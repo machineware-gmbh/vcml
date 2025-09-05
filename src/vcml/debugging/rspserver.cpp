@@ -275,7 +275,7 @@ void rspserver::unregister_handler(const char* cmd) {
 }
 
 string rsp_error(int eno) {
-    return mkstr("E%02d", eno);
+    return mkstr("E%02x", eno);
 }
 
 } // namespace debugging
