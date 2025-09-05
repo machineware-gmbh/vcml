@@ -119,4 +119,17 @@ void bind(const sc_object& obj1, const string& port1, size_t idx1,
     bind(*socket1, *socket2);
 }
 
+std::map<string, string> list_sockets(const sc_object& parent) {
+    std::map<string, string> ports;
+    for (sc_object* obj : parent.get_child_objects()) {
+        if (dynamic_cast<base_socket*>(obj) ||
+            dynamic_cast<socket_array_if*>(obj) ||
+            dynamic_cast<tlm::tlm_base_initiator_socket<>*>(obj) ||
+            dynamic_cast<tlm::tlm_base_target_socket<>*>(obj)) {
+            ports[obj->basename()] = obj->kind();
+        }
+    }
+    return ports;
+}
+
 } // namespace vcml

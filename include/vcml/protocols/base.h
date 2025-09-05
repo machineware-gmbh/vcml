@@ -369,6 +369,8 @@ void bind(const sc_object& obj1, const string& port1, size_t idx1,
 void bind(const sc_object& obj1, const string& port1, size_t idx1,
           const sc_object& obj2, const string& port2, size_t idx2);
 
+std::map<string, string> list_sockets(const sc_object& obj);
+
 } // namespace vcml
 
 #endif

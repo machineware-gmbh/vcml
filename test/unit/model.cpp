@@ -51,3 +51,19 @@ TEST(mode, nonexistent) {
 TEST(mode, duplicate) {
     EXPECT_FALSE(vcml::model::define("my_model", nullptr));
 }
+
+TEST(model, list_ports) {
+    {
+        // force linking of uart8250.o
+        vcml::serial::uart8250 dummy("dummy");
+    }
+
+    vcml::model uart("uart", "vcml::serial::uart8250");
+    auto sockets = list_sockets(uart);
+    EXPECT_EQ(sockets["clk"], "vcml::clk_target_socket");
+    EXPECT_EQ(sockets["in"], "vcml::tlm_target_socket");
+    EXPECT_EQ(sockets["irq"], "vcml::gpio_initiator_socket");
+    EXPECT_EQ(sockets["rst"], "vcml::gpio_target_socket");
+    EXPECT_EQ(sockets["serial_rx"], "vcml::serial_target_socket");
+    EXPECT_EQ(sockets["serial_tx"], "vcml::serial_initiator_socket");
+}
