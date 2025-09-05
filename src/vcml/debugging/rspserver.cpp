@@ -274,9 +274,5 @@ void rspserver::unregister_handler(const char* cmd) {
     m_handlers.erase(cmd);
 }
 
-string rsp_error(int eno) {
-    return mkstr("E%02x", eno);
-}
-
 } // namespace debugging
 } // namespace vcml

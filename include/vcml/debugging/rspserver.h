@@ -89,7 +89,9 @@ void rspserver::register_handler(const char* command,
     });
 }
 
-string rsp_error(int eno);
+inline string rsp_error(int eno) {
+    return mkstr("E%02x", eno);
+}
 
 } // namespace debugging
 } // namespace vcml
