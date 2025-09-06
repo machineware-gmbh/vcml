@@ -84,6 +84,7 @@ void bind(sc_object& socket1, sc_object& socket2) {
         using I = tlm::tlm_base_initiator_socket<>;
         using T = tlm::tlm_base_target_socket<>;
         bind_generic<I, T>(socket1, socket2);
+        return;
     } catch (...) {
         // fall through
     }
