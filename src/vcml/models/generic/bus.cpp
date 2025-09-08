@@ -293,59 +293,6 @@ VCML_EXPORT_MODEL(vcml::generic::bus, name, args) {
 
 using initiator_t = tlm::tlm_base_initiator_socket<>;
 using target_t = tlm::tlm_base_target_socket<>;
-using socket_t = variant<initiator_t*, target_t*>;
-
-static socket_t get_next_socket(socket_array_if* aif, const char* name) {
-    for (size_t i = 0; i < aif->limit(); i++) {
-        if (!aif->exists(i)) {
-            auto* base = aif->fetch(i, true);
-            auto* ini = dynamic_cast<initiator_t*>(base);
-            if (ini)
-                return ini;
-
-            auto* tgt = dynamic_cast<target_t*>(base);
-            if (tgt)
-                return tgt;
-        }
-    }
-
-    VCML_REPORT("%s has no more free sockets to connect to", name);
-}
-
-static socket_t get_socket(const sc_object& host, const string& port) {
-    sc_object* child = vcml::find_child(host, port);
-    VCML_REPORT_ON(!child, "%s.%s does not exist", host.name(), port.c_str());
-    auto* ini = dynamic_cast<initiator_t*>(child);
-    if (ini)
-        return ini;
-
-    auto* tgt = dynamic_cast<target_t*>(child);
-    if (tgt)
-        return tgt;
-
-    if (auto* aif = dynamic_cast<socket_array_if*>(child))
-        return get_next_socket(aif, child->name());
-
-    VCML_REPORT("%s is not a valid tlm socket", child->name());
-}
-
-static socket_t get_socket(const sc_object& host, const string& port,
-                           size_t idx) {
-    sc_object* child = vcml::find_child(host, port);
-    VCML_REPORT_ON(!child, "%s.%s does not exist", host.name(), port.c_str());
-    if (auto* aif = dynamic_cast<socket_array_if*>(child)) {
-        auto* base = aif->fetch(idx, true);
-        auto* ini = dynamic_cast<initiator_t*>(base);
-        if (ini)
-            return ini;
-
-        auto* tgt = dynamic_cast<target_t*>(base);
-        if (tgt)
-            return tgt;
-    }
-
-    VCML_REPORT("%s[%zu] is not a valid tlm socket", child->name(), idx);
-}
 
 static generic::bus& get_bus(sc_object& obj) {
     auto b = dynamic_cast<generic::bus*>(&obj);
@@ -353,162 +300,173 @@ static generic::bus& get_bus(sc_object& obj) {
     return *b;
 }
 
-void stub(sc_object& obj, const sc_object& host, const string& port,
-          const range& addr, tlm_response_status rs) {
+void stub(sc_object& obj, const range& addr, tlm_response_status rs) {
     auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.stub(*std::get<initiator_t*>(socket), addr, rs);
-    else
-        bus.stub(*std::get<target_t*>(socket), addr, rs);
+    bus.stub(addr, rs);
 }
 
-void stub(sc_object& obj, const sc_object& host, const string& port,
-          size_t idx, const range& addr, tlm_response_status rs) {
+void stub(sc_object& bus, u64 lo, u64 hi, tlm_response_status rs) {
+    stub(bus, range(lo, hi), rs);
+}
+
+void stub(sc_object& obj, sc_object& socket, const range& addr,
+          tlm_response_status rs) {
     auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.stub(*std::get<initiator_t*>(socket), addr, rs);
-    else
-        bus.stub(*std::get<target_t*>(socket), addr, rs);
+    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+        bus.stub(*ini, addr, rs);
+        return;
+    }
+
+    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+        bus.stub(*tgt, addr, rs);
+        return;
+    }
+
+    VCML_REPORT("%s is not a valid tlm port", socket.name());
 }
 
-void stub(sc_object& bus, const sc_object& host, const string& port, u64 lo,
-          u64 hi, tlm_response_status rs) {
-    stub(bus, host, port, range(lo, hi), rs);
+void stub(sc_object& obj, sc_object& socket, u64 lo, u64 hi,
+          tlm_response_status rs) {
+    stub(obj, socket, range(lo, hi), rs);
 }
 
-void stub(sc_object& bus, const sc_object& host, const string& port,
-          size_t idx, u64 lo, u64 hi, tlm_response_status rs) {
-    stub(bus, host, port, idx, range(lo, hi), rs);
+void stub(sc_object& obj, const string& socket, const range& addr,
+          tlm_response_status rs) {
+    stub(obj, find_socket(socket), addr, rs);
 }
 
-void bind(sc_object& obj, const sc_object& host, const string& port) {
+void stub(sc_object& bus, const string& socket, u64 lo, u64 hi,
+          tlm_response_status rs) {
+    stub(bus, socket, range(lo, hi), rs);
+}
+
+void bind(sc_object& obj, sc_object& socket, bool dummy) {
+    // dummy is needed to differentiate binding two versions of binding two
+    // sc_objects: binding two sockets and binding an initiator to a bus
     auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket));
-    else
-        bus.bind(*std::get<target_t*>(socket));
+    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+        bus.bind(*ini);
+        return;
+    }
+
+    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+        bus.bind(*tgt);
+        return;
+    }
+
+    VCML_REPORT("%s is not a valid tlm port", socket.name());
 }
 
-void bind(sc_object& obj, const sc_object& host, const string& port,
-          size_t idx) {
+void bind(sc_object& bus, const string& socket) {
+    vcml::bind(bus, find_socket(socket), true);
+}
+
+void bind(sc_object& obj, sc_object& socket, const range& addr, u64 offset) {
     auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket));
-    else
-        bus.bind(*std::get<target_t*>(socket));
+    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+        bus.bind(*ini, addr, offset);
+        return;
+    }
+
+    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+        bus.bind(*tgt, addr, offset);
+        return;
+    }
+
+    VCML_REPORT("%s is not a valid tlm port", socket.name());
 }
 
-void bind(sc_object& obj, const sc_object& host, const string& port,
-          const range& addr, u64 offset) {
+void bind(sc_object& bus, const string& socket, const range& addr,
+          u64 offset) {
+    vcml::bind(bus, find_socket(socket), addr, offset);
+}
+
+void bind(sc_object& bus, sc_object& socket, u64 lo, u64 hi, u64 offset) {
+    vcml::bind(bus, socket, range(lo, hi), offset);
+}
+
+void bind(sc_object& bus, const string& socket, u64 lo, u64 hi, u64 offset) {
+    vcml::bind(bus, socket, range(lo, hi), offset);
+}
+
+void bind_default(sc_object& obj, sc_object& socket, u64 offset) {
     auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket), addr, offset);
-    else
-        bus.bind(*std::get<target_t*>(socket), addr, offset);
+    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+        bus.bind_default(*ini, offset);
+        return;
+    }
+
+    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+        bus.bind_default(*tgt, offset);
+        return;
+    }
+
+    VCML_REPORT("%s is not a valid tlm port", socket.name());
 }
 
-void bind(sc_object& obj, const sc_object& host, const string& port,
-          size_t idx, const range& addr, u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind(*std::get<initiator_t*>(socket), addr, offset);
-    else
-        bus.bind(*std::get<target_t*>(socket), addr, offset);
-}
-
-void bind(sc_object& bus, const sc_object& host, const string& port, u64 lo,
-          u64 hi, u64 offset) {
-    vcml::bind(bus, host, port, range(lo, hi), offset);
-}
-
-void bind(sc_object& bus, const sc_object& host, const string& port,
-          size_t idx, u64 lo, u64 hi, u64 offset) {
-    vcml::bind(bus, host, port, idx, range(lo, hi), offset);
-}
-
-void bind_default(sc_object& obj, const sc_object& host, const string& port,
-                  u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind_default(*std::get<initiator_t*>(socket), offset);
-    else
-        bus.bind_default(*std::get<target_t*>(socket), offset);
-}
-
-void bind_default(sc_object& obj, const sc_object& host, const string& port,
-                  size_t idx, u64 offset) {
-    auto& bus = get_bus(obj);
-    auto socket = get_socket(host, port, idx);
-    if (std::holds_alternative<initiator_t*>(socket))
-        bus.bind_default(*std::get<initiator_t*>(socket), offset);
-    else
-        bus.bind_default(*std::get<target_t*>(socket), offset);
+void bind_default(sc_object& bus, const string& socket, u64 offset) {
+    bind_default(bus, find_socket(socket), offset);
 }
 
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, tlm_response_status rs) {
-    stub(bus, host, port, addr, rs);
+    stub(bus, mkstr("%s.%s", host.name(), port.c_str()), addr, rs);
 }
 
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, const range& addr, tlm_response_status rs) {
-    stub(bus, host, port, idx, addr, rs);
+    stub(bus, mkstr("%s.%s[%zu]", host.name(), port.c_str(), idx), addr, rs);
 }
 
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               u64 lo, u64 hi, tlm_response_status rs) {
-    stub(bus, host, port, range(lo, hi), rs);
+    stub(bus, mkstr("%s.%s", host.name(), port.c_str()), lo, hi, rs);
 }
 
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, u64 lo, u64 hi, tlm_response_status rs) {
-    stub(bus, host, port, idx, range(lo, hi), rs);
+    stub(bus, mkstr("%s.%s[%zu]", host.name(), port.c_str(), idx), lo, hi, rs);
 }
 
 void tlm_bind(sc_object& bus, const sc_object& host, const string& port) {
-    bind(bus, host, port);
+    vcml::bind(bus, mkstr("%s.%s", host.name(), port.c_str()));
 }
 
 void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               size_t idx) {
-    bind(bus, host, port, idx);
+    vcml::bind(bus, mkstr("%s.%s[%zu]", host.name(), port.c_str(), idx));
 }
 
 void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               const range& addr, u64 offset) {
-    bind(bus, host, port, addr, offset);
+    vcml::bind(bus, mkstr("%s.%s", host.name(), port.c_str()), addr, offset);
 }
 
 void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, const range& addr, u64 offset) {
-    bind(bus, host, port, idx, addr, offset);
+    vcml::bind(bus, mkstr("%s.%s[%zu]", host.name(), port.c_str(), idx), addr,
+               offset);
 }
 
 void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               u64 lo, u64 hi, u64 offset) {
-    bind(bus, host, port, lo, hi, offset);
+    tlm_bind(bus, host, port, range(lo, hi), offset);
 }
 
 void tlm_bind(sc_object& bus, const sc_object& host, const string& port,
               size_t idx, u64 lo, u64 hi, u64 offset) {
-    bind(bus, host, port, idx, lo, hi, offset);
+    tlm_bind(bus, host, port, idx, range(lo, hi), offset);
 }
 
 void tlm_bind_default(sc_object& bus, const sc_object& host,
                       const string& port, u64 offset) {
-    bind_default(bus, host, port, offset);
+    bind_default(bus, mkstr("%s.%s", host.name(), port.c_str()), offset);
 }
 
 void tlm_bind_default(sc_object& bus, const sc_object& host,
                       const string& port, size_t idx, u64 offset) {
-    bind_default(bus, host, port, idx, offset);
+    bind_default(bus, mkstr("%s.%s[%zu]", host.name(), port.c_str(), idx),
+                 offset);
 }
 
 } // namespace vcml
