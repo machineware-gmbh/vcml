@@ -31,12 +31,6 @@ private:
     unordered_map<u64, const breakpoint*> m_breakpoints;
     unordered_map<u64, const watchpoint*> m_watchpoints;
 
-    enum watchpoint_type {
-        VSP_WATCHPOINT_READ = 1,
-        VSP_WATCHPOINT_WRITE = 2,
-        VSP_WATCHPOINT_ACCESS = VSP_WATCHPOINT_READ | VSP_WATCHPOINT_WRITE
-    };
-
     string handle_version(const string& command);
     string handle_status(const string& command);
     string handle_resume(const string& command);

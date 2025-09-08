@@ -566,39 +566,32 @@ string vspserver::handle_mkwp(const string& cmd) {
     if (tgt == nullptr)
         return mkstr("E,no such target: %s", args[1].c_str());
 
-    u64 addr;
+    u64 base;
     if (is_number(args[2]))
-        addr = from_string<u64>(args[2]);
+        base = from_string<u64>(args[2]);
     else {
         const symbol* sym = tgt->symbols().find_symbol(args[2]);
         if (sym == nullptr)
             return mkstr("E,no address or symbol: %s", args[2].c_str());
-        addr = sym->virt_addr();
+        base = sym->virt_addr();
     }
 
     u64 size = from_string<u64>(args[3]);
-    watchpoint_type vsp_type = (watchpoint_type)from_string<u32>(args[4]);
 
-    vcml_access vcml_type = VCML_ACCESS_NONE;
-    switch (vsp_type) {
-    case VSP_WATCHPOINT_READ:
-        vcml_type = VCML_ACCESS_READ;
-        break;
-    case VSP_WATCHPOINT_WRITE:
-        vcml_type = VCML_ACCESS_WRITE;
-        break;
-    case VSP_WATCHPOINT_ACCESS:
-        vcml_type = VCML_ACCESS_READ_WRITE;
-        break;
-    default:
-        return mkstr("E,invalid watchpoint type %u", vsp_type);
-    }
+    string type = args[4];
+    vcml_access vcml_type = (type == "r")    ? VCML_ACCESS_READ
+                            : (type == "w")  ? VCML_ACCESS_WRITE
+                            : (type == "rw") ? VCML_ACCESS_READ_WRITE
+                                             : VCML_ACCESS_NONE;
 
-    range wp_range(addr, addr + size - 1);
+    if (vcml_type == VCML_ACCESS_NONE)
+        return mkstr("E,invalid watchpoint type %s", type.c_str());
+
+    range wp_range(base, base + size - 1);
     const watchpoint* wp = tgt->insert_watchpoint(wp_range, vcml_type, this);
     if (wp == nullptr) {
-        return mkstr("E,failed to insert watchpoint at [0x%llx, 0x%llx]",
-                     wp_range.start, wp_range.end);
+        return mkstr("E,failed to insert watchpoint at %s",
+                     to_string(wp_range).c_str());
     }
 
     m_watchpoints[wp->id()] = wp;
@@ -620,22 +613,15 @@ string vspserver::handle_rmwp(const string& cmd) {
 
     target& tgt = it->second->owner();
 
-    watchpoint_type vsp_type = (watchpoint_type)from_string<u32>(args[2]);
+    string type = args[2];
+    vcml_access vcml_type = (type == "r")    ? VCML_ACCESS_READ
+                            : (type == "w")  ? VCML_ACCESS_WRITE
+                            : (type == "rw") ? VCML_ACCESS_READ_WRITE
+                                             : VCML_ACCESS_NONE;
 
-    vcml_access vcml_type = VCML_ACCESS_NONE;
-    switch (vsp_type) {
-    case VSP_WATCHPOINT_READ:
-        vcml_type = VCML_ACCESS_READ;
-        break;
-    case VSP_WATCHPOINT_WRITE:
-        vcml_type = VCML_ACCESS_WRITE;
-        break;
-    case VSP_WATCHPOINT_ACCESS:
-        vcml_type = VCML_ACCESS_READ_WRITE;
-        break;
-    default:
-        VCML_ERROR("invalid watchpoint type");
-    }
+    if (vcml_type == VCML_ACCESS_NONE)
+        return mkstr("E,invalid watchpoint type %s", type.c_str());
+
     if (!tgt.remove_watchpoint(it->second, vcml_type, this))
         return mkstr("E,model rejected watchpoint deletion");
 
