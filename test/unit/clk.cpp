@@ -77,7 +77,7 @@ public:
         EXPECT_FALSE(clk_array_out[5].is_stubbed());
         EXPECT_FALSE(clk_array_in[6].is_stubbed());
         clk_stub(*this, "clk_array_out", 5, 0 * MHz);
-        clk_target(*this, "clk_array_in", 6).stub(0);
+        clk_stub(*this, "clk_array_in", 6, 0 * MHz);
         EXPECT_TRUE(clk_array_out[5].is_stubbed());
         EXPECT_TRUE(clk_array_in[6].is_stubbed());
 

@@ -220,16 +220,6 @@ public:
     virtual ~clk_target_stub() = default;
 };
 
-clk_base_initiator_socket& clk_initiator(const sc_object& parent,
-                                         const string& port);
-clk_base_initiator_socket& clk_initiator(const sc_object& parent,
-                                         const string& port, size_t idx);
-
-clk_base_target_socket& clk_target(const sc_object& parent,
-                                   const string& port);
-clk_base_target_socket& clk_target(const sc_object& parent, const string& port,
-                                   size_t idx);
-
 void clk_stub(const sc_object& obj, const string& port, hz_t hz = 100 * MHz);
 void clk_stub(const sc_object& obj, const string& port, size_t idx, hz_t hz);
 

@@ -15,6 +15,8 @@
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
 
+#include "vcml/protocols/base.h"
+
 namespace vcml {
 
 class model
@@ -26,6 +28,7 @@ public:
     virtual ~model() = default;
 
     const char* name() const { return m_impl->name(); }
+    std::map<string, string> sockets() const { return list_sockets(*m_impl); }
 
     model(const model& other) = default;
     model(model&& other) = default;

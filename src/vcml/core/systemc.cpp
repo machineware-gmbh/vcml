@@ -91,6 +91,10 @@ bool is_child(const sc_object* obj, const sc_object* parent) {
 }
 
 sc_object* find_child(const sc_object& parent, const string& name) {
+    return find_child(&parent, name);
+}
+
+sc_object* find_child(const sc_object* parent, const string& name) {
     size_t pos = name.find(SC_HIERARCHY_CHAR);
     string cur = name.substr(0, pos);
     string rem = pos != std::string::npos ? name.substr(pos + 1) : "";
@@ -98,11 +102,14 @@ sc_object* find_child(const sc_object& parent, const string& name) {
     if (cur.empty())
         return nullptr;
 
-    for (auto child : parent.get_child_objects()) {
+    const auto& children = parent ? parent->get_child_objects()
+                                  : sc_core::sc_get_top_level_objects();
+
+    for (sc_object* child : children) {
         if (cur == child->basename()) {
             if (rem.empty())
                 return child;
-            return find_child(*child, rem);
+            return find_child(child, rem);
         }
     }
 

@@ -402,31 +402,35 @@ sd_target_stub::sd_target_stub(const char* nm):
 }
 
 void sd_stub(const sc_object& obj, const string& port) {
-    stub(obj, port);
+    stub(mkstr("%s.%s", obj.name(), port.c_str()));
 }
 
 void sd_stub(const sc_object& obj, const string& port, size_t idx) {
-    stub(obj, port, idx);
+    stub(mkstr("%s.%s[%zu]", obj.name(), port.c_str(), idx));
 }
 
 void sd_bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
              const string& port2) {
-    bind(obj1, port1, obj2, port2);
+    vcml::bind(mkstr("%s.%s", obj1.name(), port1.c_str()),
+               mkstr("%s.%s", obj2.name(), port2.c_str()));
 }
 
 void sd_bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
              const string& port2, size_t idx2) {
-    bind(obj1, port1, obj2, port2, idx2);
+    vcml::bind(mkstr("%s.%s", obj1.name(), port1.c_str()),
+               mkstr("%s.%s[%zu]", obj2.name(), port2.c_str(), idx2));
 }
 
 void sd_bind(const sc_object& obj1, const string& port1, size_t idx1,
              const sc_object& obj2, const string& port2) {
-    bind(obj1, port1, idx1, obj2, port2);
+    vcml::bind(mkstr("%s.%s[%zu]", obj1.name(), port1.c_str(), idx1),
+               mkstr("%s.%s", obj2.name(), port2.c_str()));
 }
 
 void sd_bind(const sc_object& obj1, const string& port1, size_t idx1,
              const sc_object& obj2, const string& port2, size_t idx2) {
-    bind(obj1, port1, idx1, obj2, port2, idx2);
+    vcml::bind(mkstr("%s.%s[%zu]", obj1.name(), port1.c_str(), idx1),
+               mkstr("%s.%s[%zu]", obj2.name(), port2.c_str(), idx2));
 }
 
 } // namespace vcml

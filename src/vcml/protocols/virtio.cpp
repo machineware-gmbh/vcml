@@ -845,12 +845,13 @@ virtio_target_stub::virtio_target_stub(const char* nm):
 }
 
 void virtio_stub(const sc_object& obj, const string& port) {
-    stub(obj, port);
+    stub(mkstr("%s.%s", obj.name(), port.c_str()));
 }
 
 void virtio_bind(const sc_object& obj1, const string& port1,
                  const sc_object& obj2, const string& port2) {
-    bind(obj1, port1, obj2, port2);
+    vcml::bind(mkstr("%s.%s", obj1.name(), port1.c_str()),
+               mkstr("%s.%s", obj2.name(), port2.c_str()));
 }
 
 } // namespace vcml

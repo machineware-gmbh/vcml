@@ -255,10 +255,17 @@ void tlm_initiator_socket::stub(tlm_response_status r) {
     base_type::bind(m_stub->in);
 }
 
-void tlm_initiator_socket::bind_socket(sc_object& other) {
-    using I = tlm::tlm_base_initiator_socket<>;
-    using T = tlm::tlm_base_target_socket<>;
-    bind_generic<I, T>(*this, other);
+void tlm_initiator_socket::bind_socket(sc_object& o) {
+    if (auto* s = dynamic_cast<tlm::tlm_base_target_socket<32>*>(&o))
+        bind(*s);
+    else if (auto* s = dynamic_cast<tlm::tlm_base_initiator_socket<32>*>(&o))
+        bind(*s);
+    else if (auto* s = dynamic_cast<tlm::tlm_base_target_socket<64>*>(&o))
+        bind(*s);
+    else if (auto* s = dynamic_cast<tlm::tlm_base_initiator_socket<64>*>(&o))
+        bind(*s);
+    else
+        VCML_REPORT("cannot bind %s to %s", name(), o.name());
 }
 
 void tlm_initiator_socket::stub_socket(void* data) {
@@ -418,10 +425,17 @@ void tlm_target_socket::invalidate_dmi() {
     }
 }
 
-void tlm_target_socket::bind_socket(sc_object& other) {
-    using I = tlm::tlm_base_initiator_socket<>;
-    using T = tlm::tlm_base_target_socket<>;
-    bind_generic<I, T>(*this, other);
+void tlm_target_socket::bind_socket(sc_object& o) {
+    if (auto* s = dynamic_cast<tlm::tlm_base_target_socket<32>*>(&o))
+        bind(*s);
+    else if (auto* s = dynamic_cast<tlm::tlm_base_initiator_socket<32>*>(&o))
+        bind(*s);
+    else if (auto* s = dynamic_cast<tlm::tlm_base_target_socket<64>*>(&o))
+        bind(*s);
+    else if (auto* s = dynamic_cast<tlm::tlm_base_initiator_socket<64>*>(&o))
+        bind(*s);
+    else
+        VCML_REPORT("cannot bind %s to %s", name(), o.name());
 }
 
 void tlm_target_socket::stub_socket(void* data) {
@@ -497,31 +511,35 @@ tlm::tlm_base_target_socket<>& tlm_target(const sc_object& parent,
 }
 
 void tlm_stub(const sc_object& obj, const string& port) {
-    stub(obj, port);
+    stub(mkstr("%s.%s", obj.name(), port.c_str()));
 }
 
 void tlm_stub(const sc_object& obj, const string& port, size_t idx) {
-    stub(obj, port, idx);
+    stub(mkstr("%s.%s[%zu]", obj.name(), port.c_str(), idx));
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2) {
-    bind(obj1, port1, obj2, port2);
+    vcml::bind(mkstr("%s.%s", obj1.name(), port1.c_str()),
+               mkstr("%s.%s", obj2.name(), port2.c_str()));
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    bind(obj1, port1, obj2, port2, idx2);
+    vcml::bind(mkstr("%s.%s", obj1.name(), port1.c_str()),
+               mkstr("%s.%s[%zu]", obj2.name(), port2.c_str(), idx2));
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2) {
-    bind(obj1, port1, idx1, obj2, port2);
+    vcml::bind(mkstr("%s.%s[%zu]", obj1.name(), port1.c_str(), idx1),
+               mkstr("%s.%s", obj2.name(), port2.c_str()));
 }
 
 void tlm_bind(const sc_object& obj1, const string& port1, size_t idx1,
               const sc_object& obj2, const string& port2, size_t idx2) {
-    bind(obj1, port1, idx1, obj2, port2, idx2);
+    vcml::bind(mkstr("%s.%s[%zu]", obj1.name(), port1.c_str(), idx1),
+               mkstr("%s.%s[%zu]", obj2.name(), port2.c_str(), idx2));
 }
 
 } // namespace vcml

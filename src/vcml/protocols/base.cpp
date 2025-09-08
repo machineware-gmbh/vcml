@@ -22,35 +22,57 @@ void base_socket::stub_socket(void* stub) {
     VCML_REPORT("%s does not support stubbing", obj ? obj->kind() : "socket");
 }
 
-static sc_object* find_next_socket(socket_array_if* array, const char* name) {
-    for (size_t idx = 0; idx < array->limit(); idx++) {
-        if (!array->exists(idx))
-            return array->fetch(idx, true);
+static bool parse_indexed_name(const string& name, string& base, size_t& idx) {
+    size_t ob = name.find('[');
+    size_t cb = name.find(']');
+    if (ob == string::npos || cb == string::npos || cb <= ob)
+        return false;
+
+    string temp_base = name.substr(0, ob);
+    string temp_index = name.substr(ob + 1, cb - ob - 1);
+
+    if (temp_base.empty() || temp_index.empty())
+        return false;
+
+    for (char c : temp_index) {
+        if (!std::isdigit(c))
+            return false;
     }
 
-    VCML_REPORT("%s has no more free sockets", name);
+    base = temp_base;
+    idx = from_string<size_t>(temp_index);
+    return true;
 }
 
-static sc_object* find_socket(const sc_object& obj, const string& name) {
-    sc_object* sock = find_child(obj, name);
-    VCML_REPORT_ON(!sock, "socket %s.%s not found", obj.name(), name.c_str());
-    if (auto* array = dynamic_cast<socket_array_if*>(sock))
-        return find_next_socket(array, sock->name());
-    return sock;
+static sc_object* find_indexed_socket(const string& name, size_t idx) {
+    auto* array = dynamic_cast<socket_array_if*>(find_object(name));
+    VCML_REPORT_ON(!array, "%s is not a valid socket array", name.c_str());
+    return array->fetch(idx, true);
 }
 
-static sc_object* find_socket(const sc_object& obj, const string& name,
-                              size_t idx) {
-    auto* array = dynamic_cast<socket_array_if*>(find_child(obj, name));
-    VCML_REPORT_ON(!array, "socket array %s.%s not found", obj.name(),
-                   name.c_str());
-    sc_object* socket = array->fetch(idx, true);
-    VCML_REPORT_ON(!socket, "socket %s.%s[%zu] not found", obj.name(),
-                   name.c_str(), idx);
-    return socket;
+sc_object* find_socket(const string& name) {
+    sc_object* socket = find_child(nullptr, name);
+    if (socket)
+        return socket;
+
+    string base;
+    size_t index;
+    if (parse_indexed_name(name, base, index))
+        return find_indexed_socket(base, index);
+
+    VCML_REPORT("socket %s not found", name.c_str());
+}
+
+sc_object* find_socket(const string& name, size_t idx) {
+    return find_socket(mkstr("%s[%zu]", name.c_str(), idx));
 }
 
 void stub(sc_object& socket, void* data) {
+    if (dynamic_cast<socket_array_if*>(&socket)) {
+        // socket arrays create ports upon binding them, so no stubbing needed
+        return;
+    }
+
     if (auto* bindable = dynamic_cast<bindable_if*>(&socket)) {
         bindable->stub_socket(data);
         return;
@@ -59,65 +81,50 @@ void stub(sc_object& socket, void* data) {
     VCML_REPORT("%s does not support stubbing", socket.name());
 }
 
-void stub(const sc_object& obj, const string& name, void* data) {
-    auto* socket = find_socket(obj, name);
+void stub(const string& name, void* data) {
+    sc_object* socket = find_socket(name);
     stub(*socket, data);
 }
 
-void stub(const sc_object& obj, const string& name, size_t idx, void* data) {
-    auto* socket = find_socket(obj, name, idx);
-    stub(*socket, data);
+static void do_bind(sc_object* socket1, sc_object* socket2) {
+    socket_array_if* array1 = dynamic_cast<socket_array_if*>(socket1);
+    socket_array_if* array2 = dynamic_cast<socket_array_if*>(socket2);
+
+    if (array1 && array2)
+        VCML_REPORT("attempt to bind two socket arrays");
+
+    if (array1)
+        socket1 = array1->alloc();
+
+    if (array2)
+        socket2 = array2->alloc();
+
+    if (auto* bindable = dynamic_cast<bindable_if*>(socket1)) {
+        bindable->bind_socket(*socket2);
+        return;
+    }
+
+    if (auto* bindable = dynamic_cast<bindable_if*>(socket2)) {
+        bindable->bind_socket(*socket1);
+        return;
+    }
+
+    if (tlm_try_bind_generic<32>(*socket1, *socket2) ||
+        tlm_try_bind_generic<64>(*socket1, *socket2)) {
+        return;
+    }
+
+    VCML_REPORT("%s cannot be bound to %s", socket1->name(), socket2->name());
 }
 
 void bind(sc_object& socket1, sc_object& socket2) {
-    if (auto* bindable = dynamic_cast<bindable_if*>(&socket1)) {
-        bindable->bind_socket(socket2);
-        return;
-    }
-
-    if (auto* bindable = dynamic_cast<bindable_if*>(&socket2)) {
-        bindable->bind_socket(socket1);
-        return;
-    }
-
-    try {
-        using I = tlm::tlm_base_initiator_socket<>;
-        using T = tlm::tlm_base_target_socket<>;
-        bind_generic<I, T>(socket1, socket2);
-        return;
-    } catch (...) {
-        // fall through
-    }
-
-    VCML_REPORT("%s cannot be bound to %s", socket1.name(), socket2.name());
+    do_bind(&socket1, &socket2);
 }
 
-void bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
-          const string& port2) {
-    auto* socket1 = find_socket(obj1, port1);
-    auto* socket2 = find_socket(obj2, port2);
-    bind(*socket1, *socket2);
-}
-
-void bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
-          const string& port2, size_t idx2) {
-    auto* socket1 = find_socket(obj1, port1);
-    auto* socket2 = find_socket(obj2, port2, idx2);
-    bind(*socket1, *socket2);
-}
-
-void bind(const sc_object& obj1, const string& port1, size_t idx1,
-          const sc_object& obj2, const string& port2) {
-    auto* socket1 = find_socket(obj1, port1, idx1);
-    auto* socket2 = find_socket(obj2, port2);
-    bind(*socket1, *socket2);
-}
-
-void bind(const sc_object& obj1, const string& port1, size_t idx1,
-          const sc_object& obj2, const string& port2, size_t idx2) {
-    auto* socket1 = find_socket(obj1, port1, idx1);
-    auto* socket2 = find_socket(obj2, port2, idx2);
-    bind(*socket1, *socket2);
+void bind(const string& name1, const string& name2) {
+    sc_object* socket1 = find_socket(name1);
+    sc_object* socket2 = find_socket(name2);
+    do_bind(socket1, socket2);
 }
 
 std::map<string, string> list_sockets(const sc_object& parent) {

@@ -171,6 +171,7 @@ bool is_parent(const sc_object* obj, const sc_object* child);
 bool is_child(const sc_object* obj, const sc_object* parent);
 
 sc_object* find_child(const sc_object& parent, const string& name);
+sc_object* find_child(const sc_object* parent, const string& name);
 
 #if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
 using hierarchy_guard = sc_core::sc_hierarchy_scope;

@@ -153,6 +153,7 @@ public:
     virtual size_t index_of(const sc_object& socket) const = 0;
     virtual bool exists(size_t idx) const = 0;
     virtual sc_object* fetch(size_t idx, bool create) = 0;
+    virtual sc_object* alloc() = 0;
 
     template <typename T>
     T* fetch_as(size_t idx, bool create) {
@@ -308,6 +309,8 @@ protected:
         return static_cast<sc_object*>(&get(idx));
     }
 
+    virtual sc_object* alloc() override { return &next(); }
+
 private:
     template <typename T, size_t M>
     friend class socket_array;
@@ -325,7 +328,7 @@ bool operator==(const SOCKET& socket, const socket_array<SOCKET, N>& arr) {
 }
 
 template <typename INITIATOR, typename TARGET>
-void bind_generic(sc_object& socket1, sc_object& socket2) {
+bool try_bind_generic(sc_object& socket1, sc_object& socket2) {
     auto* i1 = dynamic_cast<INITIATOR*>(&socket1);
     auto* i2 = dynamic_cast<INITIATOR*>(&socket2);
     auto* t1 = dynamic_cast<TARGET*>(&socket1);
@@ -333,41 +336,54 @@ void bind_generic(sc_object& socket1, sc_object& socket2) {
 
     if (i1 && i2) {
         i1->bind(*i2);
-        return;
+        return true;
     }
 
     if (i1 && t2) {
         i1->bind(*t2);
-        return;
+        return true;
     }
 
     if (t1 && i2) {
         i2->bind(*t1);
-        return;
+        return true;
     }
 
     if (t1 && t2) {
         t1->bind(*t2);
-        return;
+        return true;
     }
 
-    VCML_REPORT("cannot bind %s to %s", socket1.name(), socket2.name());
+    return false;
 }
 
-void stub(sc_object& port, void* data = nullptr);
-void stub(const sc_object& obj, const string& port, void* data = nullptr);
-void stub(const sc_object& obj, const string& port, size_t idx,
-          void* data = nullptr);
+template <typename INITIATOR, typename TARGET>
+void bind_generic(sc_object& socket1, sc_object& socket2) {
+    if (!try_bind_generic<INITIATOR, TARGET>(socket1, socket2))
+        VCML_REPORT("cannot bind %s to %s", socket1.name(), socket2.name());
+}
 
-void bind(sc_object& port1, sc_object& port2);
-void bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
-          const string& port2);
-void bind(const sc_object& obj1, const string& port1, const sc_object& obj2,
-          const string& port2, size_t idx2);
-void bind(const sc_object& obj1, const string& port1, size_t idx1,
-          const sc_object& obj2, const string& port2);
-void bind(const sc_object& obj1, const string& port1, size_t idx1,
-          const sc_object& obj2, const string& port2, size_t idx2);
+template <unsigned int INI_WIDTH, unsigned int TGT_WIDTH = INI_WIDTH>
+bool tlm_try_bind_generic(sc_object& socket1, sc_object& socket2) {
+    using INITIATOR = tlm::tlm_base_initiator_socket<INI_WIDTH>;
+    using TARGET = tlm::tlm_base_target_socket<TGT_WIDTH>;
+    return try_bind_generic<INITIATOR, TARGET>(socket1, socket2);
+}
+
+template <unsigned int INI_WIDTH, unsigned int TGT_WIDTH = INI_WIDTH>
+void tlm_bind_generic(sc_object& socket1, sc_object& socket2) {
+    if (!tlm_try_bind_generic<INI_WIDTH, TGT_WIDTH>(socket1, socket2))
+        VCML_REPORT("cannot bind %s to %s", socket1.name(), socket2.name());
+}
+
+sc_object* find_socket(const string& name);
+sc_object* find_socket(const string& name, size_t idx);
+
+void stub(sc_object& socket, void* data = nullptr);
+void stub(const string& socket, void* data = nullptr);
+
+void bind(sc_object& socket1, sc_object& socket2);
+void bind(const string& socket1, const string& socket2);
 
 std::map<string, string> list_sockets(const sc_object& obj);
 
