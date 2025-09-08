@@ -376,8 +376,8 @@ void tlm_bind_generic(sc_object& socket1, sc_object& socket2) {
         VCML_REPORT("cannot bind %s to %s", socket1.name(), socket2.name());
 }
 
-sc_object* find_socket(const string& name);
-sc_object* find_socket(const string& name, size_t idx);
+sc_object& find_socket(const string& name);
+sc_object& find_socket(const string& name, size_t idx);
 
 void stub(sc_object& socket, void* data = nullptr);
 void stub(const string& socket, void* data = nullptr);

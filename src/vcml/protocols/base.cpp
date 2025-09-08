@@ -44,16 +44,16 @@ static bool parse_indexed_name(const string& name, string& base, size_t& idx) {
     return true;
 }
 
-static sc_object* find_indexed_socket(const string& name, size_t idx) {
+static sc_object& find_indexed_socket(const string& name, size_t idx) {
     auto* array = dynamic_cast<socket_array_if*>(find_object(name));
     VCML_REPORT_ON(!array, "%s is not a valid socket array", name.c_str());
-    return array->fetch(idx, true);
+    return *array->fetch(idx, true);
 }
 
-sc_object* find_socket(const string& name) {
+sc_object& find_socket(const string& name) {
     sc_object* socket = find_child(nullptr, name);
     if (socket)
-        return socket;
+        return *socket;
 
     string base;
     size_t index;
@@ -63,7 +63,7 @@ sc_object* find_socket(const string& name) {
     VCML_REPORT("socket %s not found", name.c_str());
 }
 
-sc_object* find_socket(const string& name, size_t idx) {
+sc_object& find_socket(const string& name, size_t idx) {
     return find_socket(mkstr("%s[%zu]", name.c_str(), idx));
 }
 
@@ -82,8 +82,8 @@ void stub(sc_object& socket, void* data) {
 }
 
 void stub(const string& name, void* data) {
-    sc_object* socket = find_socket(name);
-    stub(*socket, data);
+    sc_object& socket = find_socket(name);
+    stub(socket, data);
 }
 
 static void do_bind(sc_object* socket1, sc_object* socket2) {
@@ -122,9 +122,9 @@ void bind(sc_object& socket1, sc_object& socket2) {
 }
 
 void bind(const string& name1, const string& name2) {
-    sc_object* socket1 = find_socket(name1);
-    sc_object* socket2 = find_socket(name2);
-    do_bind(socket1, socket2);
+    sc_object& socket1 = find_socket(name1);
+    sc_object& socket2 = find_socket(name2);
+    do_bind(&socket1, &socket2);
 }
 
 std::map<string, string> list_sockets(const sc_object& parent) {
