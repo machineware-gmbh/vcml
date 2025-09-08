@@ -587,11 +587,11 @@ string vspserver::handle_mkwp(const string& cmd) {
     if (vcml_type == VCML_ACCESS_NONE)
         return mkstr("E,invalid watchpoint type %s", type.c_str());
 
-    range wp_range(base, base + size - 1);
-    const watchpoint* wp = tgt->insert_watchpoint(wp_range, vcml_type, this);
+    range addr(base, base + size - 1);
+    const watchpoint* wp = tgt->insert_watchpoint(addr, vcml_type, this);
     if (wp == nullptr) {
         return mkstr("E,failed to insert watchpoint at %s",
-                     to_string(wp_range).c_str());
+                     to_string(addr).c_str());
     }
 
     m_watchpoints[wp->id()] = wp;
