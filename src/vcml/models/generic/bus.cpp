@@ -300,6 +300,13 @@ static generic::bus& get_bus(sc_object& obj) {
     return *b;
 }
 
+static sc_object& get_socket(const string& name) {
+    sc_object& socket = find_socket(name);
+    if (auto* arr = dynamic_cast<socket_array_if*>(&socket))
+        return *arr->alloc();
+    return socket;
+}
+
 void stub(sc_object& obj, const range& addr, tlm_response_status rs) {
     auto& bus = get_bus(obj);
     bus.stub(addr, rs);
@@ -332,7 +339,7 @@ void stub(sc_object& obj, sc_object& socket, u64 lo, u64 hi,
 
 void stub(sc_object& obj, const string& socket, const range& addr,
           tlm_response_status rs) {
-    stub(obj, find_socket(socket), addr, rs);
+    stub(obj, get_socket(socket), addr, rs);
 }
 
 void stub(sc_object& bus, const string& socket, u64 lo, u64 hi,
@@ -358,7 +365,7 @@ void bind(sc_object& obj, sc_object& socket, bool dummy) {
 }
 
 void bind(sc_object& bus, const string& socket) {
-    vcml::bind(bus, find_socket(socket), true);
+    vcml::bind(bus, get_socket(socket), true);
 }
 
 void bind(sc_object& obj, sc_object& socket, const range& addr, u64 offset) {
@@ -378,7 +385,7 @@ void bind(sc_object& obj, sc_object& socket, const range& addr, u64 offset) {
 
 void bind(sc_object& bus, const string& socket, const range& addr,
           u64 offset) {
-    vcml::bind(bus, find_socket(socket), addr, offset);
+    vcml::bind(bus, get_socket(socket), addr, offset);
 }
 
 void bind(sc_object& bus, sc_object& socket, u64 lo, u64 hi, u64 offset) {
@@ -405,7 +412,7 @@ void bind_default(sc_object& obj, sc_object& socket, u64 offset) {
 }
 
 void bind_default(sc_object& bus, const string& socket, u64 offset) {
-    bind_default(bus, find_socket(socket), offset);
+    bind_default(bus, get_socket(socket), offset);
 }
 
 void tlm_stub(sc_object& bus, const sc_object& host, const string& port,
