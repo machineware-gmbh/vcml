@@ -182,7 +182,8 @@ Removes a breakpoint globally identified via its `<id>`.
 #### Insert Watchpoint
 The insert watchpoint command installs a new watchpoint on a given target. Once
 the simulation is resumed next time, this watchpoint causes the simulation to
-be stopped and indicates its `id` in the stop reason. The first argument must
+be stopped when the target performs a memory access that overlaps with the
+watchpoint, and indicates its `id` in the stop reason. The first argument must
 be the full hierarchy name of a target. The second argument is the base address or
 the name of the symbol to place the watchpoint at. The third argument is the size in bytes
 for the watchpoint region. The fourth argument is the type of the watchpoint;
