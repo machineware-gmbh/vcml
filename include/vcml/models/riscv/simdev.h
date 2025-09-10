@@ -43,7 +43,7 @@ public:
 
     simdev(const sc_module_name& nm);
     virtual ~simdev();
-    VCML_KIND(sifive::simdev);
+    VCML_KIND(riscv::simdev);
 };
 
 } // namespace riscv

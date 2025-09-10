@@ -41,7 +41,7 @@ public:
 
     throttle(const sc_module_name& nm);
     virtual ~throttle() = default;
-    VCML_KIND(throttle);
+    VCML_KIND(meta::throttle);
 
     bool is_throttling() const { return m_throttling; }
 

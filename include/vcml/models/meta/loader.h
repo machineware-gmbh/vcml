@@ -33,7 +33,7 @@ public:
     loader(const sc_module_name& nm);
     loader(const sc_module_name& nm, const vector<string>& images);
     virtual ~loader();
-    VCML_KIND(loader);
+    VCML_KIND(meta::loader);
 
     virtual void reset() override;
 

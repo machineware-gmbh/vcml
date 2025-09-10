@@ -61,7 +61,7 @@ public:
 
     simdev(const sc_module_name& name);
     virtual ~simdev();
-    VCML_KIND(simdev);
+    VCML_KIND(meta::simdev);
 
     virtual void reset() override;
 };
