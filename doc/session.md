@@ -81,7 +81,7 @@ Valid stop reasons include (but are not limited to):
 * `rwatchpoint:<id>:<addr>:<size>:<t>`: watchpoint `<id>` is being read
   starting at `<addr>` with cpu access size `<size>` at time stamp `<t>` ns
 * `wwatchpoint:<id>:<addr>:<data>:<t>`: watchpoint `<id>` is being written at
-  address `<addr`> with value `<data>` at time stamp `<t>` ns
+  address `<addr>` with value `<data>` at time stamp `<t>` ns
 * `step`: requested simulation duration has elapsed
 * `elaboration`: simulator has completed elaboration and is ready to simulate
 * The stop command can define custom exit reason strings to be used
@@ -179,6 +179,25 @@ Removes a breakpoint globally identified via its `<id>`.
 * Command: `$rmbp,<id>#**`
 * Response: `$OK#**`
 
+#### Insert Watchpoint
+The insert watchpoint command installs a new watchpoint on a given target. Once
+the simulation is resumed next time, this watchpoint causes the simulation to
+be stopped when the target performs a memory access that overlaps with the
+watchpoint, and indicates its `id` in the stop reason. The first argument must
+be the full hierarchy name of a target. The second argument is the base address or
+the name of the symbol to place the watchpoint at. The third argument is the size in bytes
+for the watchpoint region. The fourth argument is the type of the watchpoint;
+which can be `r` (read), `w` (write), or `rw` (access). If successful, the response
+reports the global `id` under which the watchpoint can be referenced.
+* Command: `$mkwp,<target-name>,<address_or_symbol>,<number-of-bytes>,<type>#**`
+* Response: `$OK,inserted watchpoint <id>#**`
+
+#### Remove Watchpoint
+Removes the specified access type from a watchpoint. The first argument is its `<id>`. The second
+argument is the type of the access to remove, which can be `r` (read), `w` (write) or `rw` (access).
+* Command: `$rmwp,<id>,<type>#**`
+* Response: `$OK#**`
+
 #### List CPU Registers
 Returns a list of names of CPU registers of a given target.
 * Command: `$lreg,<target-name>#**`
@@ -214,4 +233,4 @@ the given bytes to memory.
 * Response: `OK,<n> bytes written#**`
 
 ----
-Documentation updated August 2024
+Documentation updated September 2025
