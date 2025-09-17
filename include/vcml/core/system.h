@@ -33,13 +33,14 @@ public:
 
     property<int> session;
     property<bool> session_debug;
+    property<string> session_host;
 
     property<sc_time> quantum;
     property<sc_time> duration;
 
     system() = delete;
     system(const system&) = delete;
-    explicit system(const sc_module_name& name);
+    system(const sc_module_name& name);
     virtual ~system();
     VCML_KIND(system);
 

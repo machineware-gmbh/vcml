@@ -66,6 +66,7 @@ public:
     property<bool> gdb_wait;
     property<bool> gdb_echo;
     property<int> gdb_port;
+    property<string> gdb_host;
     property<string> gdb_term;
 
     property<bool> async;

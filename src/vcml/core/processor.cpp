@@ -257,6 +257,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     gdb_wait("gdb_wait", false),
     gdb_echo("gdb_echo", false),
     gdb_port("gdb_port", gdb_wait ? 0 : -1),
+    gdb_host("gdb_host", "localhost"),
     gdb_term("gdb_term", "gdbterm"),
     async("async", false),
     async_rate("async_rate", 5),
@@ -429,7 +430,7 @@ void processor::end_of_elaboration() {
         try {
             auto run = gdb_wait ? debugging::GDB_STOPPED
                                 : debugging::GDB_RUNNING;
-            m_gdb = new debugging::gdbserver(gdb_port, *this, run);
+            m_gdb = new debugging::gdbserver(gdb_host, gdb_port, *this, run);
             m_gdb->echo(gdb_echo);
 
             if (gdb_port == 0)

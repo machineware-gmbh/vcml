@@ -116,7 +116,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
 
     case GDB_KILLED:
         stop();
-        disconnect();
+        disconnect(0);
         if (prev_status == GDB_STOPPED)
             resume();
         break;
@@ -165,11 +165,11 @@ bool gdbserver::check_suspension_point() {
     return true;
 }
 
-string gdbserver::handle_unknown(const string& cmd) {
+string gdbserver::handle_unknown(int client, const string& cmd) {
     return "";
 }
 
-string gdbserver::handle_step(const string& cmd) {
+string gdbserver::handle_step(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -190,7 +190,7 @@ string gdbserver::handle_step(const string& cmd) {
     update_status(GDB_STEPPING);
     while (sim_running() && is_stepping()) {
         int signal = 0;
-        if ((signal = recv_signal(1))) {
+        if ((signal = recv_signal(client, 1))) {
             log_debug("received signal %d", signal);
             break;
         }
@@ -206,7 +206,7 @@ string gdbserver::handle_step(const string& cmd) {
     return create_stop_reply();
 }
 
-string gdbserver::handle_continue(const string& cmd) {
+string gdbserver::handle_continue(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -225,7 +225,7 @@ string gdbserver::handle_continue(const string& cmd) {
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
         int signal = 0;
-        if ((signal = recv_signal(1))) {
+        if ((signal = recv_signal(client, 1))) {
             log_debug("received signal %d", signal);
             break;
         }
@@ -241,18 +241,18 @@ string gdbserver::handle_continue(const string& cmd) {
     return create_stop_reply();
 }
 
-string gdbserver::handle_detach(const string& cmd) {
-    disconnect();
+string gdbserver::handle_detach(int client, const string& cmd) {
+    disconnect(client);
     return "";
 }
 
-string gdbserver::handle_kill(const string& cmd) {
+string gdbserver::handle_kill(int client, const string& cmd) {
     update_status(GDB_KILLED);
     suspender::quit();
     return "";
 }
 
-string gdbserver::handle_query(const string& cmd) {
+string gdbserver::handle_query(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -282,26 +282,26 @@ string gdbserver::handle_query(const string& cmd) {
     if (starts_with(cmd, "qOffsets"))
         return "Text=0;Data=0;Bss=0";
     if (starts_with(cmd, "qRcmd"))
-        return handle_rcmd(cmd);
+        return handle_rcmd(client, cmd);
     if (starts_with(cmd, "qXfer"))
-        return handle_xfer(cmd);
+        return handle_xfer(client, cmd);
 
     if (starts_with(cmd, "qfThreadInfo")) {
         m_query_idx = 0;
-        return handle_threadinfo(cmd);
+        return handle_threadinfo(client, cmd);
     }
     if (starts_with(cmd, "qsThreadInfo"))
-        return handle_threadinfo(cmd);
+        return handle_threadinfo(client, cmd);
 
     if (starts_with(cmd, "qThreadExtraInfo,"))
-        return handle_extra_threadinfo(cmd);
+        return handle_extra_threadinfo(client, cmd);
     if (starts_with(cmd, "qC"))
         return mkstr("QC%llx", m_q_target->tid);
 
-    return handle_unknown(cmd);
+    return handle_unknown(client, cmd);
 }
 
-string gdbserver::handle_rcmd(const string& cmd) {
+string gdbserver::handle_rcmd(int client, const string& cmd) {
     module* mod = dynamic_cast<module*>(&m_q_target->tgt);
     if (mod == nullptr)
         return rsp_error(ENOENT);
@@ -317,7 +317,7 @@ string gdbserver::handle_rcmd(const string& cmd) {
     return ss.str();
 }
 
-string gdbserver::handle_xfer(const string& cmd) {
+string gdbserver::handle_xfer(int client, const string& cmd) {
     vector<string> args = split(cmd, ':');
     if (args.size() != 5)
         return rsp_error(EINVAL);
@@ -350,7 +350,7 @@ string gdbserver::handle_xfer(const string& cmd) {
     return "";
 }
 
-string gdbserver::handle_threadinfo(const string& cmd) {
+string gdbserver::handle_threadinfo(int client, const string& cmd) {
     if (m_query_idx >= m_targets.size())
         return "l";
 
@@ -369,7 +369,7 @@ string gdbserver::handle_threadinfo(const string& cmd) {
     return ss.str();
 }
 
-string gdbserver::handle_extra_threadinfo(const string& cmd) {
+string gdbserver::handle_extra_threadinfo(int client, const string& cmd) {
     const char* str = cmd.c_str();
     str += 17;
     int pid = 0, tid = 0;
@@ -392,7 +392,7 @@ string gdbserver::handle_extra_threadinfo(const string& cmd) {
     return ss.str();
 }
 
-string gdbserver::handle_reg_read(const string& cmd) {
+string gdbserver::handle_reg_read(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -434,7 +434,7 @@ string gdbserver::handle_reg_read(const string& cmd) {
     return ss.str();
 }
 
-string gdbserver::handle_reg_write(const string& cmd) {
+string gdbserver::handle_reg_write(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -483,7 +483,7 @@ string gdbserver::handle_reg_write(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_reg_read_all(const string& cmd) {
+string gdbserver::handle_reg_read_all(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -517,7 +517,7 @@ string gdbserver::handle_reg_read_all(const string& cmd) {
     return ss.str();
 }
 
-string gdbserver::handle_reg_write_all(const string& cmd) {
+string gdbserver::handle_reg_write_all(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -554,7 +554,7 @@ string gdbserver::handle_reg_write_all(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_mem_read(const string& cmd) {
+string gdbserver::handle_mem_read(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -595,7 +595,7 @@ string gdbserver::handle_mem_read(const string& cmd) {
     return ss.str();
 }
 
-string gdbserver::handle_mem_write(const string& cmd) {
+string gdbserver::handle_mem_write(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -641,7 +641,7 @@ string gdbserver::handle_mem_write(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_mem_write_bin(const string& cmd) {
+string gdbserver::handle_mem_write_bin(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -686,7 +686,7 @@ string gdbserver::handle_mem_write_bin(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_breakpoint_set(const string& cmd) {
+string gdbserver::handle_breakpoint_set(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -737,7 +737,7 @@ string gdbserver::handle_breakpoint_set(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_breakpoint_delete(const string& cmd) {
+string gdbserver::handle_breakpoint_delete(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -788,7 +788,7 @@ string gdbserver::handle_breakpoint_delete(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_exception(const string& cmd) {
+string gdbserver::handle_exception(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -802,7 +802,7 @@ string gdbserver::handle_exception(const string& cmd) {
     return mkstr("T%02uthread:%llx;", GDBSIG_TRAP, m_c_target->tid);
 }
 
-string gdbserver::handle_thread(const string& cmd) {
+string gdbserver::handle_thread(int client, const string& cmd) {
     const char* str = cmd.c_str();
     str += 2;
     int pid = 0, tid = 0;
@@ -835,7 +835,7 @@ string gdbserver::handle_thread(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_thread_alive(const string& cmd) {
+string gdbserver::handle_thread_alive(int client, const string& cmd) {
     const char* str = cmd.c_str();
     str++;
 
@@ -853,7 +853,7 @@ string gdbserver::handle_thread_alive(const string& cmd) {
     return "OK";
 }
 
-string gdbserver::handle_vcont(const string& cmd) {
+string gdbserver::handle_vcont(int client, const string& cmd) {
     if (!simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
         return rsp_error(EPERM);
@@ -960,7 +960,7 @@ string gdbserver::handle_vcont(const string& cmd) {
     update_status(stat);
     while (sim_running() && (is_stepping() || is_running())) {
         int signal = 0;
-        if ((signal = recv_signal(1))) {
+        if ((signal = recv_signal(client, 1))) {
             log_debug("received signal %d", signal);
             break;
         }
@@ -979,9 +979,9 @@ string gdbserver::handle_vcont(const string& cmd) {
     return create_stop_reply();
 }
 
-gdbserver::gdbserver(u16 port, const vector<target*>& stubs,
-                     gdb_status status):
-    rspserver(port),
+gdbserver::gdbserver(const string& host, u16 port,
+                     const vector<target*>& stubs, gdb_status status):
+    rspserver(host, port, 1),
     subscriber(),
     suspender(mkstr("gdbserver_%hu", port)),
     m_targets(),
@@ -1041,15 +1041,15 @@ gdbserver::~gdbserver() {
     shutdown();
 }
 
-void gdbserver::handle_connect(const char* peer) {
-    log_debug("gdb connected to %s", peer);
+void gdbserver::handle_connect(int client, const string& peer) {
+    log_debug("gdb connected to %s", peer.c_str());
     update_status(GDB_STOPPED);
 
     if (sim_running() && !simulation_suspended())
         log_warn("%s: simulation is not suspended", __func__);
 }
 
-void gdbserver::handle_disconnect() {
+void gdbserver::handle_disconnect(int client) {
     log_debug("gdb disconnected");
     if (sim_running())
         update_status(m_default);

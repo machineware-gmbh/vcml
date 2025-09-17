@@ -105,36 +105,36 @@ private:
         GDB_BREAKPOINT_HW = 1,
         GDB_WATCHPOINT_WRITE = 2,
         GDB_WATCHPOINT_READ = 3,
-        GDB_WATCHPOINT_ACCESS = 4
+        GDB_WATCHPOINT_ACCESS = 4,
     };
 
-    string handle_unknown(const string& command);
+    string handle_unknown(int client, const string& command);
 
-    string handle_query(const string& command);
-    string handle_rcmd(const string& command);
-    string handle_xfer(const string& command);
-    string handle_threadinfo(const string& command);
-    string handle_extra_threadinfo(const string& command);
-    string handle_step(const string& command);
-    string handle_continue(const string& command);
-    string handle_detach(const string& command);
-    string handle_kill(const string& command);
+    string handle_query(int client, const string& command);
+    string handle_rcmd(int client, const string& command);
+    string handle_xfer(int client, const string& command);
+    string handle_threadinfo(int client, const string& command);
+    string handle_extra_threadinfo(int client, const string& command);
+    string handle_step(int client, const string& command);
+    string handle_continue(int client, const string& command);
+    string handle_detach(int client, const string& command);
+    string handle_kill(int client, const string& command);
 
-    string handle_reg_read(const string& command);
-    string handle_reg_write(const string& command);
-    string handle_reg_read_all(const string& command);
-    string handle_reg_write_all(const string& command);
-    string handle_mem_read(const string& command);
-    string handle_mem_write(const string& command);
-    string handle_mem_write_bin(const string& command);
+    string handle_reg_read(int client, const string& command);
+    string handle_reg_write(int client, const string& command);
+    string handle_reg_read_all(int client, const string& command);
+    string handle_reg_write_all(int client, const string& command);
+    string handle_mem_read(int client, const string& command);
+    string handle_mem_write(int client, const string& command);
+    string handle_mem_write_bin(int client, const string& command);
 
-    string handle_breakpoint_set(const string& command);
-    string handle_breakpoint_delete(const string& command);
+    string handle_breakpoint_set(int client, const string& command);
+    string handle_breakpoint_delete(int client, const string& command);
 
-    string handle_exception(const string& command);
-    string handle_thread(const string& command);
-    string handle_thread_alive(const string& command);
-    string handle_vcont(const string& command);
+    string handle_exception(int client, const string& command);
+    string handle_thread(int client, const string& command);
+    string handle_thread_alive(int client, const string& command);
+    string handle_vcont(int client, const string& command);
 
 public:
     enum : size_t {
@@ -149,14 +149,20 @@ public:
 
     gdbserver() = delete;
     gdbserver(const gdbserver&) = delete;
-    gdbserver(u16 port, const vector<target*>& stubs,
+    gdbserver(const string& host, u16 port, const vector<target*>& stubs,
               gdb_status status = GDB_STOPPED);
+    gdbserver(const string& host, u16 port, target& stub,
+              gdb_status status = GDB_STOPPED):
+        gdbserver(host, port, { &stub }, status) {}
+    gdbserver(u16 port, const vector<target*>& stubs,
+              gdb_status status = GDB_STOPPED):
+        gdbserver("localhost", port, stubs, status) {}
     gdbserver(u16 port, target& stub, gdb_status status = GDB_STOPPED):
-        gdbserver(port, { &stub }, status) {}
+        gdbserver("localhost", port, { &stub }, status) {}
     virtual ~gdbserver();
 
-    virtual void handle_connect(const char* peer) override;
-    virtual void handle_disconnect() override;
+    virtual void handle_connect(int client, const string& peer) override;
+    virtual void handle_disconnect(int client) override;
 
     void add_target(target* tgt);
 };

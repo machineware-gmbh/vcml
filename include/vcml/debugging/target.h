@@ -156,6 +156,7 @@ public:
     u64 load_symbols_from_elf(const string& file);
 
     const char* target_name() const { return m_name.c_str(); }
+    module& target_host() { return m_host; }
 
     target(module& host);
     virtual ~target();

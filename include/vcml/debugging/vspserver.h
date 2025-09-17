@@ -31,28 +31,28 @@ private:
     unordered_map<u64, const breakpoint*> m_breakpoints;
     unordered_map<u64, const watchpoint*> m_watchpoints;
 
-    string handle_version(const string& command);
-    string handle_status(const string& command);
-    string handle_resume(const string& command);
-    string handle_step(const string& command);
-    string handle_stop(const string& command);
-    string handle_quit(const string& command);
-    string handle_list(const string& command);
-    string handle_exec(const string& command);
-    string handle_getq(const string& command);
-    string handle_setq(const string& command);
-    string handle_geta(const string& command);
-    string handle_seta(const string& command);
-    string handle_mkbp(const string& command);
-    string handle_rmbp(const string& command);
-    string handle_mkwp(const string& command);
-    string handle_rmwp(const string& command);
-    string handle_lreg(const string& command);
-    string handle_getr(const string& command);
-    string handle_setr(const string& command);
-    string handle_vapa(const string& command);
-    string handle_vread(const string& command);
-    string handle_vwrite(const string& command);
+    string handle_version(int client, const string& command);
+    string handle_status(int client, const string& command);
+    string handle_resume(int client, const string& command);
+    string handle_step(int client, const string& command);
+    string handle_stop(int client, const string& command);
+    string handle_quit(int client, const string& command);
+    string handle_list(int client, const string& command);
+    string handle_exec(int client, const string& command);
+    string handle_getq(int client, const string& command);
+    string handle_setq(int client, const string& command);
+    string handle_geta(int client, const string& command);
+    string handle_seta(int client, const string& command);
+    string handle_mkbp(int client, const string& command);
+    string handle_rmbp(int client, const string& command);
+    string handle_mkwp(int client, const string& command);
+    string handle_rmwp(int client, const string& command);
+    string handle_lreg(int client, const string& command);
+    string handle_getr(int client, const string& command);
+    string handle_setr(int client, const string& command);
+    string handle_vapa(int client, const string& command);
+    string handle_vread(int client, const string& command);
+    string handle_vwrite(int client, const string& command);
 
     bool is_running() const { return !is_suspending(); }
 
@@ -75,14 +75,14 @@ private:
 
 public:
     vspserver() = delete;
-    explicit vspserver(u16 port);
+    explicit vspserver(const string& host, u16 port);
     virtual ~vspserver();
 
     void start();
     void cleanup();
 
-    virtual void handle_connect(const char* peer) override;
-    virtual void handle_disconnect() override;
+    virtual void handle_connect(int client, const string& peer) override;
+    virtual void handle_disconnect(int client) override;
 
     static vspserver* instance();
 };

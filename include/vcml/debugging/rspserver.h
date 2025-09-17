@@ -20,10 +20,10 @@ namespace debugging {
 class rspserver
 {
 public:
-    typedef function<string(const string&)> handler;
+    typedef function<string(int, const string&)> handler;
 
 private:
-    mwr::socket m_sock;
+    mwr::server_socket m_sock;
 
     u16 m_port;
     string m_name;
@@ -52,40 +52,38 @@ public:
 
     void echo(bool e = true) { m_echo = e; }
 
-    rspserver(u16 port);
+    rspserver(const string& host, u16 port, size_t max_clients);
     virtual ~rspserver();
 
-    void send_packet(const string& s);
-    void send_packet(const char* format, ...);
-    string recv_packet();
-    int recv_signal(time_t timeoutms = ~0ull);
-
-    void listen();
-    void disconnect();
+    void send_packet(int client, const string& s);
+    void send_packet(int client, const char* format, ...);
+    string recv_packet(int client);
+    int recv_signal(int client, time_t timeoutms = ~0ull);
 
     void run_async();
     void run();
     void stop();
     void shutdown();
+    void disconnect(int client);
 
-    virtual string handle_command(const string& command);
-    virtual void handle_connect(const char* peer);
-    virtual void handle_disconnect();
+    virtual string handle_command(int client, const string& command);
+    virtual void handle_connect(int client, const string& peer);
+    virtual void handle_disconnect(int client);
 
     template <typename T>
-    void register_handler(const char* cmd, string (T::*func)(const string&));
-
+    void register_handler(const char* cmd,
+                          string (T::*func)(int, const string&));
     void register_handler(const char* command, handler handler);
     void unregister_handler(const char* command);
 };
 
 template <typename HOST>
 void rspserver::register_handler(const char* command,
-                                 string (HOST::*handler)(const string&)) {
+                                 string (HOST::*fn)(int, const string&)) {
     HOST* host = dynamic_cast<HOST*>(this);
     VCML_ERROR_ON(!host, "command host not found");
-    register_handler(command, [host, handler](const string& args) -> string {
-        return (host->*handler)(args);
+    register_handler(command, [host, fn](int c, const string& a) -> string {
+        return (host->*fn)(c, a);
     });
 }
 

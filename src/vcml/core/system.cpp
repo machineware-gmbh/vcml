@@ -72,6 +72,7 @@ system::system(const sc_module_name& nm):
     backtrace("backtrace", true),
     session("session", -1),
     session_debug("session_debug", false),
+    session_host("session_host", "localhost"),
     quantum("quantum", sc_time(1, SC_US)),
     duration("duration", SC_ZERO_TIME) {
     if (backtrace)
@@ -104,7 +105,7 @@ int system::run() {
 
     try {
         if (session >= 0) {
-            vcml::debugging::vspserver vspsession(session);
+            vcml::debugging::vspserver vspsession(session_host, session);
             vspsession.echo(session_debug);
             vspsession.start();
         } else if (duration != sc_core::SC_ZERO_TIME) {

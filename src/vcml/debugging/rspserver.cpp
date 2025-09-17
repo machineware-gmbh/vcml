@@ -39,8 +39,8 @@ static u8 checksum(const char* str) {
     return result;
 }
 
-rspserver::rspserver(u16 port):
-    m_sock(port),
+rspserver::rspserver(const string& host, u16 port, size_t max_clients):
+    m_sock(max_clients, port, host),
     m_port(m_sock.port()),
     m_name(mkstr("rsp_%hu", m_port)),
     m_echo(false),
@@ -49,6 +49,18 @@ rspserver::rspserver(u16 port):
     m_thread(),
     m_handlers(),
     log(m_name) {
+    m_sock.on_connect([&](int client, const string& peer, u16 port) -> bool {
+        if (m_running)
+            handle_connect(client, peer);
+        return true;
+    });
+
+    m_sock.on_disconnect([&](int client) {
+        if (m_running)
+            handle_disconnect(client);
+    });
+
+    m_sock.set_tcp_nodelay();
 }
 
 rspserver::~rspserver() {
@@ -56,15 +68,15 @@ rspserver::~rspserver() {
         VCML_ERROR("rspserver still running");
 }
 
-void rspserver::send_packet(const char* format, ...) {
+void rspserver::send_packet(int client, const char* format, ...) {
     va_list args;
     va_start(args, format);
-    send_packet(vmkstr(format, args));
+    send_packet(client, vmkstr(format, args));
     va_end(args);
 }
 
-void rspserver::send_packet(const string& s) {
-    VCML_ERROR_ON(!is_connected(), "no connection established");
+void rspserver::send_packet(int client, const string& s) {
+    VCML_REPORT_ON(!is_connected(), "no connection established");
     string esc = rsp_escape(s);
 
     stringstream ss;
@@ -77,18 +89,17 @@ void rspserver::send_packet(const string& s) {
 
     do {
         if (attempts-- == 0) {
-            log_error("giving up sending packet");
-            disconnect();
-            return;
+            m_sock.disconnect(client);
+            VCML_REPORT("client%d: giving up sending packet", client);
         }
 
         if (m_echo)
             log_debug("sending packet '%s'", ss.str().c_str());
 
-        m_sock.send(ss.str());
+        m_sock.send(client, ss.str());
 
         do {
-            ack = m_sock.recv_char();
+            ack = m_sock.recv_char(client);
         } while (ack != '+' && ack != '-');
 
         if (m_echo)
@@ -96,15 +107,15 @@ void rspserver::send_packet(const string& s) {
     } while (ack != '+');
 }
 
-string rspserver::recv_packet() {
+string rspserver::recv_packet(int client) {
     lock_guard<mutex> lock(m_mutex);
-    VCML_ERROR_ON(!is_connected(), "no connection established");
+    VCML_REPORT_ON(!is_connected(), "no connection established");
 
     u8 checksum = 0;
     stringstream ss;
 
     while (true) {
-        char ch = m_sock.recv_char();
+        char ch = m_sock.recv_char(client);
         switch (ch) {
         case '$':
             checksum = 0;
@@ -116,12 +127,12 @@ string rspserver::recv_packet() {
                 log_debug("received packet '%s'", ss.str().c_str());
 
             u8 refsum = 0;
-            refsum |= from_hex_ascii(m_sock.recv_char()) << 4;
-            refsum |= from_hex_ascii(m_sock.recv_char()) << 0;
+            refsum |= from_hex_ascii(m_sock.recv_char(client)) << 4;
+            refsum |= from_hex_ascii(m_sock.recv_char(client)) << 0;
 
             if (refsum > 0 && refsum != checksum) {
                 log_warn("checksum mismatch %02x != %02x", refsum, checksum);
-                m_sock.send_char('-');
+                m_sock.send_char(client, '-');
                 checksum = 0;
                 ss.str("");
                 break;
@@ -130,13 +141,13 @@ string rspserver::recv_packet() {
             if (m_echo)
                 log_debug("sending ack '+'");
 
-            m_sock.send_char('+');
+            m_sock.send_char(client, '+');
             return ss.str();
         }
 
         case '}':
             checksum += ch;
-            ch = m_sock.recv_char();
+            ch = m_sock.recv_char(client);
             checksum += ch;
             ch ^= 0x20;
             if (!needs_escape(ch))
@@ -151,38 +162,19 @@ string rspserver::recv_packet() {
         }
     }
 
-    VCML_ERROR("error receiving rsp packet");
+    VCML_REPORT("error receiving rsp packet");
     return "";
 }
 
-int rspserver::recv_signal(time_t timeoutms) {
+int rspserver::recv_signal(int client, time_t timeoutms) {
     lock_guard<mutex> lock(m_mutex);
 
     try {
-        if (!is_connected())
+        if (!m_sock.peek(client, timeoutms))
             return 0;
-        if (!m_sock.peek(timeoutms))
-            return 0;
-        return m_sock.recv_char();
+        return m_sock.recv_char(client);
     } catch (...) {
         return -1;
-    }
-}
-
-void rspserver::listen() {
-    m_sock.listen(m_port);
-    if (m_sock.accept()) {
-        m_sock.unlisten();
-        if (m_running)
-            handle_connect(m_sock.peer());
-    }
-}
-
-void rspserver::disconnect() {
-    if (m_sock.is_connected()) {
-        m_sock.disconnect();
-        if (m_running)
-            handle_disconnect();
     }
 }
 
@@ -203,21 +195,15 @@ void rspserver::run() {
     m_mutex.unlock();
 
     while (m_running) {
+        int client = m_sock.poll(100);
         try {
-            disconnect();
-            listen();
-            while (m_running && is_connected())
-                try {
-                    string command = recv_packet();
-                    string response = handle_command(command);
-                    if (is_connected())
-                        send_packet(response);
-                } catch (vcml::report& r) {
-                    log_debug("%s", r.message());
-                    break; // not an error, e.g. disconnect
-                }
-        } catch (vcml::report& r) {
-            log.error(r);
+            if (client >= 0) {
+                string command = recv_packet(client);
+                string response = handle_command(client, command);
+                send_packet(client, response);
+            }
+        } catch (std::exception& ex) {
+            log_debug("client%d: %s", client, ex.what());
         }
     }
 }
@@ -229,20 +215,25 @@ void rspserver::stop() {
 void rspserver::shutdown() {
     stop();
 
-    if (m_sock.is_listening())
-        m_sock.unlisten();
-    if (m_sock.is_connected())
-        m_sock.disconnect();
+    m_sock.disconnect_all();
 
     if (m_thread.joinable())
         m_thread.join();
 }
 
-string rspserver::handle_command(const string& command) {
+void rspserver::disconnect(int client) {
+    if (m_sock.is_connected(client)) {
+        m_sock.disconnect(client);
+        if (m_running)
+            handle_disconnect(client);
+    }
+}
+
+string rspserver::handle_command(int client, const string& command) {
     try {
         for (const auto& handler : m_handlers)
             if (starts_with(command, handler.first))
-                return handler.second(command);
+                return handler.second(client, command);
         return ""; // empty response means command not supported
     } catch (report& rep) {
         log.error(rep);
@@ -253,11 +244,11 @@ string rspserver::handle_command(const string& command) {
     }
 }
 
-void rspserver::handle_connect(const char* peer) {
+void rspserver::handle_connect(int client, const string& peer) {
     // to be overloaded
 }
 
-void rspserver::handle_disconnect() {
+void rspserver::handle_disconnect(int client) {
     // to be overloaded
 }
 

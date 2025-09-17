@@ -316,7 +316,7 @@ vspserver* vspserver::instance() {
     return session;
 }
 
-string vspserver::handle_version(const string& cmd) {
+string vspserver::handle_version(int client, const string& cmd) {
     stringstream ss;
     ss << "OK,";
     ss << SC_VERSION << ",";
@@ -327,14 +327,14 @@ string vspserver::handle_version(const string& cmd) {
     return ss.str();
 }
 
-string vspserver::handle_status(const string& cmd) {
+string vspserver::handle_status(int client, const string& cmd) {
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
     string status = is_running() ? "running" : ("stopped:" + m_stop_reason);
     return mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
 }
 
-string vspserver::handle_resume(const string& cmd) {
+string vspserver::handle_resume(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -348,7 +348,7 @@ string vspserver::handle_resume(const string& cmd) {
     return mkstr("OK");
 }
 
-string vspserver::handle_step(const string& cmd) {
+string vspserver::handle_step(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -365,19 +365,19 @@ string vspserver::handle_step(const string& cmd) {
     return mkstr("OK");
 }
 
-string vspserver::handle_stop(const string& cmd) {
+string vspserver::handle_stop(int client, const string& cmd) {
     vector<string> args = split(cmd, ',');
     if (is_running())
         pause_simulation(args.size() > 1 ? args[1] : "user");
     return "OK";
 }
 
-string vspserver::handle_quit(const string& cmd) {
+string vspserver::handle_quit(int client, const string& cmd) {
     force_quit();
     return "OK";
 }
 
-string vspserver::handle_list(const string& cmd) {
+string vspserver::handle_list(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -402,7 +402,7 @@ string vspserver::handle_list(const string& cmd) {
     return mkstr("E,unknown hierarchy format '%s'", format.c_str());
 }
 
-string vspserver::handle_exec(const string& cmd) {
+string vspserver::handle_exec(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -429,14 +429,14 @@ string vspserver::handle_exec(const string& cmd) {
     }
 }
 
-string vspserver::handle_getq(const string& cmd) {
+string vspserver::handle_getq(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
     sc_time quantum = tlm::tlm_global_quantum::instance().get();
     return mkstr("OK,%llu", time_to_ns(quantum));
 }
 
-string vspserver::handle_setq(const string& cmd) {
+string vspserver::handle_setq(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -450,7 +450,7 @@ string vspserver::handle_setq(const string& cmd) {
     return "OK";
 }
 
-string vspserver::handle_geta(const string& cmd) {
+string vspserver::handle_geta(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -470,7 +470,7 @@ string vspserver::handle_geta(const string& cmd) {
     return ss.str();
 }
 
-string vspserver::handle_seta(const string& cmd) {
+string vspserver::handle_seta(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -503,7 +503,7 @@ string vspserver::handle_seta(const string& cmd) {
     return "OK";
 }
 
-string vspserver::handle_mkbp(const string& cmd) {
+string vspserver::handle_mkbp(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -533,7 +533,7 @@ string vspserver::handle_mkbp(const string& cmd) {
     return mkstr("OK,inserted breakpoint %llu", bp->id());
 }
 
-string vspserver::handle_rmbp(const string& cmd) {
+string vspserver::handle_rmbp(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -554,7 +554,7 @@ string vspserver::handle_rmbp(const string& cmd) {
     return "OK";
 }
 
-string vspserver::handle_mkwp(const string& cmd) {
+string vspserver::handle_mkwp(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -598,7 +598,7 @@ string vspserver::handle_mkwp(const string& cmd) {
     return mkstr("OK,inserted watchpoint %llu", wp->id());
 }
 
-string vspserver::handle_rmwp(const string& cmd) {
+string vspserver::handle_rmwp(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -629,7 +629,7 @@ string vspserver::handle_rmwp(const string& cmd) {
     return "OK";
 }
 
-string vspserver::handle_lreg(const string& cmd) {
+string vspserver::handle_lreg(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -650,7 +650,7 @@ string vspserver::handle_lreg(const string& cmd) {
     return ss.str();
 }
 
-string vspserver::handle_getr(const string& cmd) {
+string vspserver::handle_getr(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -677,7 +677,7 @@ string vspserver::handle_getr(const string& cmd) {
     return ss.str();
 }
 
-string vspserver::handle_setr(const string& cmd) {
+string vspserver::handle_setr(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -703,7 +703,7 @@ string vspserver::handle_setr(const string& cmd) {
     return mkstr("OK,%zu bytes written", data.size());
 }
 
-string vspserver::handle_vapa(const string& cmd) {
+string vspserver::handle_vapa(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -724,7 +724,7 @@ string vspserver::handle_vapa(const string& cmd) {
     return mkstr("OK,0x%llx", phys);
 }
 
-string vspserver::handle_vread(const string& cmd) {
+string vspserver::handle_vread(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
 
@@ -751,7 +751,7 @@ string vspserver::handle_vread(const string& cmd) {
     return ss.str();
 }
 
-string vspserver::handle_vwrite(const string& cmd) {
+string vspserver::handle_vwrite(int client, const string& cmd) {
     vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -791,7 +791,7 @@ void vspserver::force_quit() {
     suspender::quit();
 
     if (is_connected())
-        disconnect();
+        disconnect(0);
 }
 
 void vspserver::notify_step_complete(target& tgt, const sc_time& t) {
@@ -824,8 +824,8 @@ void vspserver::notify_watchpoint_write(const watchpoint& wp,
     pause_simulation(reason);
 }
 
-vspserver::vspserver(u16 server_port):
-    rspserver(server_port),
+vspserver::vspserver(const string& server_host, u16 server_port):
+    rspserver(server_host, server_port, 1),
     suspender("vspserver"),
     subscriber(),
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%hu", port())),
@@ -895,7 +895,7 @@ void vspserver::start() {
     }
 
     if (is_connected())
-        disconnect();
+        disconnect(0);
 }
 
 void vspserver::cleanup() {
@@ -909,11 +909,11 @@ void vspserver::cleanup() {
     }
 }
 
-void vspserver::handle_connect(const char* peer) {
-    log_info("vspserver connected to %s", peer);
+void vspserver::handle_connect(int client, const string& peer) {
+    log_info("vspserver connected to client %d at %s", client, peer.c_str());
 }
 
-void vspserver::handle_disconnect() {
+void vspserver::handle_disconnect(int client) {
     if (sim_running())
         log_info("vspserver waiting on port %hu", port());
 }
