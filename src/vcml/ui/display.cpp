@@ -115,6 +115,9 @@ unordered_map<string, shared_ptr<display>> display::displays = {
 };
 
 shared_ptr<display> display::lookup(const string& name) {
+    if (mwr::getenv_or_default("VCML_NO_GUI", false))
+        return nullptr;
+
     shared_ptr<display>& disp = displays[name];
     if (disp != nullptr)
         return disp;
