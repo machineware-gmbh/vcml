@@ -109,11 +109,10 @@ void backend_socket::send_to_host(const can_frame& frame) {
     }
 }
 
-backend* backend_socket::create(bridge* br, const string& type) {
+backend* backend_socket::create(bridge* br, const vector<string>& args) {
     string tx = mkstr("%s.tx", br->name());
-    vector<string> args = split(type, ':');
-    if (args.size() > 1)
-        tx = args[1];
+    if (args.size() > 0)
+        tx = args[0];
 
     return new backend_socket(br, tx);
 }

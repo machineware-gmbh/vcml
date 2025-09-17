@@ -33,21 +33,36 @@ void backend::send_to_guest(can_frame frame) {
     m_parent->send_to_guest(frame);
 }
 
-backend* backend::create(bridge* br, const string& type) {
-    string kind = type.substr(0, type.find(':'));
-    typedef function<backend*(bridge*, const string&)> construct;
-    static const unordered_map<string, construct> backends = {
-        { "file", backend_file::create },
-        { "tcp", backend_tcp::create },
-#ifdef HAVE_SOCKETCAN
-        { "socket", backend_socket::create },
-#endif
-    };
+static unordered_map<string, backend::create_fn>& all_backends() {
+    static unordered_map<string, backend::create_fn> instance;
+    return instance;
+}
 
-    auto it = backends.find(kind);
+void backend::define(const string& type, create_fn fn) {
+    auto& backends = all_backends();
+    if (stl_contains(backends, type))
+        VCML_ERROR("can backend '%s' already defined", type.c_str());
+    backends[type] = std::move(fn);
+}
+
+VCML_DEFINE_CAN_BACKEND(file, backend_file::create)
+VCML_DEFINE_CAN_BACKEND(tcp, backend_tcp::create)
+#ifdef HAVE_SOCKETCAN
+VCML_DEFINE_CAN_BACKEND(socket, backend_socket::create)
+#endif
+
+backend* backend::create(bridge* br, const string& desc) {
+    size_t pos = desc.find(':');
+    string type = desc.substr(0, pos);
+    vector<string> args;
+    if (pos != string::npos)
+        args = split(desc.substr(pos + 1), ',');
+
+    auto& backends = all_backends();
+    auto it = backends.find(type);
     if (it == backends.end()) {
         stringstream ss;
-        ss << "unknown network backend '" << type << "'" << std::endl
+        ss << "unknown network backend '" << desc << "'" << std::endl
            << "the following can backends are known:" << std::endl;
         for (const auto& avail : backends)
             ss << "  " << avail.first;
@@ -55,11 +70,11 @@ backend* backend::create(bridge* br, const string& type) {
     }
 
     try {
-        return it->second(br, type);
+        return it->second(br, args);
     } catch (std::exception& ex) {
-        VCML_REPORT("%s: %s", type.c_str(), ex.what());
+        VCML_REPORT("%s: %s", desc.c_str(), ex.what());
     } catch (...) {
-        VCML_REPORT("%s: unknown error", type.c_str());
+        VCML_REPORT("%s: unknown error", desc.c_str());
     }
 }
 

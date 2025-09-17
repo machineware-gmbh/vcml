@@ -33,7 +33,7 @@ public:
 
     virtual void send_to_host(const can_frame& frame) override;
 
-    static backend* create(bridge* br, const string& type);
+    static backend* create(bridge* br, const vector<string>& args);
 };
 
 } // namespace can

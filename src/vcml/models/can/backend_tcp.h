@@ -25,23 +25,22 @@ namespace can {
 class backend_tcp : public backend
 {
 private:
-    mwr::socket m_socket;
+    mwr::server_socket m_socket;
 
     thread m_thread;
     atomic<bool> m_running;
 
     void iothread();
-    void receive();
 
 public:
     u16 port() const { return m_socket.port(); }
 
-    backend_tcp(bridge* br, u16 port);
+    backend_tcp(bridge* br, u16 port, const string& host);
     virtual ~backend_tcp();
 
     virtual void send_to_host(const can_frame& frame) override;
 
-    static backend* create(bridge* br, const string& type);
+    static backend* create(bridge* br, const vector<string>& args);
 };
 
 } // namespace can
