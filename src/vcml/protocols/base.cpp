@@ -68,8 +68,8 @@ sc_object& find_socket(const string& name, size_t idx) {
 }
 
 void stub(sc_object& socket, void* data) {
-    if (dynamic_cast<socket_array_if*>(&socket)) {
-        // socket arrays create ports upon binding them, so no stubbing needed
+    if (auto* array = dynamic_cast<socket_array_if*>(&socket)) {
+        stub(*array->alloc(), data);
         return;
     }
 

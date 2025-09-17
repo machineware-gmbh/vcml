@@ -70,6 +70,12 @@ public:
         EXPECT_EQ(tlm_out_h.limit(), 128);
         EXPECT_EQ(tlm_in_h.limit(), 128);
         EXPECT_EQ(tlm_in.limit(), 128);
+
+        // test generic stubbing
+        stub("tlm.tlm_out[77]");
+        stub("tlm.tlm_out");
+        EXPECT_TRUE(find_object("tlm.tlm_out[77]_stub"));
+        EXPECT_TRUE(find_object("tlm.tlm_out[78]_stub"));
     }
 
     virtual ~tlm_harness() = default;
