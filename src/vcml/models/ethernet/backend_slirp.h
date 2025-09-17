@@ -77,7 +77,7 @@ public:
 
     void handle_option(const string& option);
 
-    static backend* create(bridge* br, const string& type);
+    static backend* create(bridge* br, const vector<string>& type);
 };
 
 } // namespace ethernet

@@ -42,8 +42,15 @@ public:
     virtual void send_to_host(const eth_frame& frame) = 0;
     virtual void send_to_guest(eth_frame frame);
 
+    using create_fn = function<backend*(bridge*, const vector<string>&)>;
+    static void define(const string& type, create_fn create);
     static backend* create(bridge* br, const string& type);
 };
+
+#define VCML_DEFINE_ETHERNET_BACKEND(name, fn)        \
+    MWR_CONSTRUCTOR(define_ethernet_backend_##name) { \
+        vcml::ethernet::backend::define(#name, fn);   \
+    }
 
 } // namespace ethernet
 } // namespace vcml

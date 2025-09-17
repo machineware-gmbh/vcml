@@ -29,11 +29,10 @@ void backend_file::send_to_host(const eth_frame& frame) {
          << std::endl;
 }
 
-backend* backend_file::create(bridge* br, const string& type) {
+backend* backend_file::create(bridge* br, const vector<string>& args) {
     string tx = mkstr("%s.tx", br->name());
-    vector<string> args = split(type, ':');
-    if (args.size() > 1)
-        tx = args[1];
+    if (args.size() > 0)
+        tx = args[0];
 
     return new backend_file(br, tx);
 }

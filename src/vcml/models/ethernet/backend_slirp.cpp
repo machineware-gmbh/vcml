@@ -424,10 +424,10 @@ void backend_slirp::handle_option(const string& option) {
     log_warn("unknown slirp option: %s", option.c_str());
 }
 
-backend* backend_slirp::create(bridge* br, const string& type) {
+backend* backend_slirp::create(bridge* br, const vector<string>& args) {
     unsigned int netid = 0;
-    if (sscanf(type.c_str(), "slirp:%u", &netid) != 1)
-        netid = 0;
+    if (args.size() > 0)
+        netid = from_string<unsigned int>(args[0]);
 
     static unordered_map<unsigned int, shared_ptr<slirp_network> > networks;
     auto& network = networks[netid];
@@ -436,9 +436,8 @@ backend* backend_slirp::create(bridge* br, const string& type) {
 
     backend_slirp* slirp = new backend_slirp(br, network);
 
-    auto options = split(type, ',');
-    for (size_t i = 1; i < options.size(); i++)
-        slirp->handle_option(options[i]);
+    for (size_t i = 1; i < args.size(); i++)
+        slirp->handle_option(args[i]);
 
     return slirp;
 }

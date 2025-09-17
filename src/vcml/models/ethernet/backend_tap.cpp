@@ -82,10 +82,10 @@ void backend_tap::send_to_host(const eth_frame& frame) {
         mwr::fd_write(m_fd, frame.data(), frame.size());
 }
 
-backend* backend_tap::create(bridge* br, const string& type) {
-    unsigned int devno = 0;
-    if (sscanf(type.c_str(), "tap:%u", &devno) != 1)
-        devno = 0;
+backend* backend_tap::create(bridge* br, const vector<string>& args) {
+    int devno = 0;
+    if (!args.empty())
+        devno = from_string<int>(args[0]);
     return new backend_tap(br, devno);
 }
 

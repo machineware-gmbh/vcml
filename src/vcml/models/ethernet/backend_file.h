@@ -34,7 +34,7 @@ public:
 
     virtual void send_to_host(const eth_frame& frame) override;
 
-    static backend* create(bridge* gw, const string& type);
+    static backend* create(bridge* gw, const vector<string>& args);
 };
 
 } // namespace ethernet

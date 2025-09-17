@@ -36,20 +36,37 @@ void backend::send_to_guest(eth_frame frame) {
     m_parent->send_to_guest(std::move(frame));
 }
 
-backend* backend::create(bridge* br, const string& type) {
-    string kind = type.substr(0, type.find(':'));
-    typedef function<backend*(bridge*, const string&)> construct;
-    static const unordered_map<string, construct> backends = {
-        { "file", backend_file::create },
-#ifdef HAVE_TAP
-        { "tap", backend_tap::create },
-#endif
-#ifdef HAVE_LIBSLIRP
-        { "slirp", backend_slirp::create },
-#endif
-    };
+static unordered_map<string, backend::create_fn>& all_backends() {
+    static unordered_map<string, backend::create_fn> instance;
+    return instance;
+}
 
-    auto it = backends.find(kind);
+void backend::define(const string& type, create_fn create) {
+    auto& backends = all_backends();
+    if (stl_contains(backends, type))
+        VCML_ERROR("ethernet backend '%s' already registered", type.c_str());
+    backends[type] = std::move(create);
+}
+
+VCML_DEFINE_ETHERNET_BACKEND(file, backend_file::create)
+
+#ifdef HAVE_TAP
+VCML_DEFINE_ETHERNET_BACKEND(tap, backend_tap::create)
+#endif
+
+#ifdef HAVE_LIBSLIRP
+VCML_DEFINE_ETHERNET_BACKEND(slirp, backend_slirp::create)
+#endif
+
+backend* backend::create(bridge* br, const string& desc) {
+    size_t pos = desc.find(':');
+    string type = desc.substr(0, pos);
+    vector<string> args;
+    if (pos != string::npos)
+        args = split(desc.substr(pos + 1), ',');
+
+    auto& backends = all_backends();
+    auto it = backends.find(type);
     if (it == backends.end()) {
         stringstream ss;
         ss << "unknown network backend '" << type << "'" << std::endl
@@ -60,7 +77,7 @@ backend* backend::create(bridge* br, const string& type) {
     }
 
     try {
-        return it->second(br, type);
+        return it->second(br, args);
     } catch (std::exception& ex) {
         VCML_REPORT("%s: %s", type.c_str(), ex.what());
     } catch (...) {
