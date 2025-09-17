@@ -16,33 +16,27 @@ namespace serial {
 
 void backend_tcp::iothread() {
     mwr::set_thread_name(mkstr("serial_%hu", m_socket.port()));
+    m_socket.set_tcp_nodelay();
 
     while (m_running) {
         try {
-            receive();
+            int client = m_socket.poll(100);
+            if (client >= 0) {
+                u8 data = m_socket.recv_char(client);
+                m_mtx.lock();
+                m_fifo.push(data);
+                m_mtx.unlock();
+                m_term->notify(this);
+            }
         } catch (...) {
             // ignored
         }
     }
 }
 
-void backend_tcp::receive() {
-    if (!m_socket.accept())
-        return;
-
-    while (m_socket.is_connected() && sim_running()) {
-        u8 data;
-        m_socket.recv(data);
-        m_mtx.lock();
-        m_fifo.push(data);
-        m_mtx.unlock();
-        m_term->notify(this);
-    }
-}
-
-backend_tcp::backend_tcp(terminal* term, u16 port):
+backend_tcp::backend_tcp(terminal* term, u16 port, const string& host):
     backend(term, "tcp"),
-    m_socket(port),
+    m_socket(16, port, host),
     m_thread(),
     m_mtx(),
     m_fifo(),
@@ -55,11 +49,8 @@ backend_tcp::backend_tcp(terminal* term, u16 port):
 backend_tcp::~backend_tcp() {
     m_running = false;
 
-    if (m_socket.is_listening())
-        m_socket.unlisten();
-
-    if (m_socket.is_connected())
-        m_socket.disconnect();
+    m_socket.unlisten();
+    m_socket.disconnect_all();
 
     if (m_thread.joinable())
         m_thread.join();
@@ -76,22 +67,25 @@ bool backend_tcp::read(u8& val) {
 }
 
 void backend_tcp::write(u8 val) {
-    try {
-        if (m_socket.is_connected())
-            m_socket.send(val);
-    } catch (...) {
-        // nothing to do
+    for (int client : m_socket.clients()) {
+        try {
+            m_socket.send_char(client, val);
+        } catch (...) {
+            // nothing to do
+        }
     }
 }
 
-backend* backend_tcp::create(terminal* term, const string& type) {
-    vector<string> args = split(type, ':');
-
+backend* backend_tcp::create(terminal* term, const vector<string>& args) {
     u16 port = 0;
-    if (args.size() > 1)
-        port = from_string<u16>(args[1]);
+    if (args.size() > 0)
+        port = from_string<u16>(args[0]);
 
-    return new backend_tcp(term, port);
+    string host = "localhost";
+    if (args.size() > 1)
+        host = args[1];
+
+    return new backend_tcp(term, port, host);
 }
 
 } // namespace serial

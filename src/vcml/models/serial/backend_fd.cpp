@@ -29,13 +29,12 @@ void backend_fd::write(u8 val) {
     mwr::fd_write(m_fd, &val, sizeof(val));
 }
 
-backend* backend_fd::create(terminal* term, const string& type) {
-    if (starts_with(type, "stdout"))
-        return new backend_fd(term, STDOUT_FDNO);
-    if (starts_with(type, "stderr"))
-        return new backend_fd(term, STDERR_FDNO);
+backend* backend_fd::create_stdout(terminal* term, const vector<string>& a) {
+    return new backend_fd(term, STDOUT_FDNO);
+}
 
-    VCML_REPORT("unknown type: %s", type.c_str());
+backend* backend_fd::create_stderr(terminal* term, const vector<string>& a) {
+    return new backend_fd(term, STDERR_FDNO);
 }
 
 } // namespace serial

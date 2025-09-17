@@ -44,17 +44,35 @@ void backend::release_stdin() {
         stdin_owner = nullptr;
 }
 
-backend* backend::create(terminal* term, const string& type) {
-    string kind = type.substr(0, type.find(':'));
-    typedef function<backend*(terminal*, const string&)> construct;
-    static const unordered_map<string, construct> backends = {
-        { "null", backend_null::create }, { "file", backend_file::create },
-        { "tcp", backend_tcp::create },   { "stderr", backend_fd::create },
-        { "stdout", backend_fd::create }, { "term", backend_term::create },
-        { "tui", backend_tui::create },
-    };
+static unordered_map<string, backend::create_fn>& all_backends() {
+    static unordered_map<string, backend::create_fn> instance;
+    return instance;
+};
 
-    auto it = backends.find(kind);
+VCML_DEFINE_SERIAL_BACKEND(null, backend_null::create);
+VCML_DEFINE_SERIAL_BACKEND(file, backend_file::create);
+VCML_DEFINE_SERIAL_BACKEND(tcp, backend_tcp::create);
+VCML_DEFINE_SERIAL_BACKEND(stderr, backend_fd::create_stderr);
+VCML_DEFINE_SERIAL_BACKEND(stdout, backend_fd::create_stdout);
+VCML_DEFINE_SERIAL_BACKEND(term, backend_term::create);
+VCML_DEFINE_SERIAL_BACKEND(tui, backend_tui::create);
+
+void backend::define(const string& type, create_fn fn) {
+    auto& backends = all_backends();
+    if (mwr::stl_contains(backends, type))
+        VCML_ERROR("serial backend '%s' already registered", type.c_str());
+    backends[type] = std::move(fn);
+}
+
+backend* backend::create(terminal* term, const string& desc) {
+    size_t pos = desc.find(':');
+    string type = desc.substr(0, pos);
+    vector<string> args;
+    if (pos != string::npos)
+        args = split(desc.substr(pos + 1), ',');
+
+    auto& backends = all_backends();
+    auto it = backends.find(type);
     if (it == backends.end()) {
         stringstream ss;
         ss << "unknown serial backend '" << type << "'" << std::endl
@@ -65,7 +83,7 @@ backend* backend::create(terminal* term, const string& type) {
     }
 
     try {
-        return it->second(term, type);
+        return it->second(term, args);
     } catch (std::exception& ex) {
         VCML_REPORT("%s: %s", type.c_str(), ex.what());
     } catch (...) {

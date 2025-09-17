@@ -21,7 +21,7 @@ namespace serial {
 class backend_tcp : public backend
 {
 private:
-    mwr::socket m_socket;
+    mwr::server_socket m_socket;
 
     thread m_thread;
     mutex m_mtx;
@@ -29,18 +29,17 @@ private:
     atomic<bool> m_running;
 
     void iothread();
-    void receive();
 
 public:
     u16 port() const { return m_socket.port(); }
 
-    backend_tcp(terminal* term, u16 port);
+    backend_tcp(terminal* term, u16 port, const string& host);
     virtual ~backend_tcp();
 
     virtual bool read(u8& val) override;
     virtual void write(u8 val) override;
 
-    static backend* create(terminal* term, const string& type);
+    static backend* create(terminal* term, const vector<string>& args);
 };
 
 } // namespace serial

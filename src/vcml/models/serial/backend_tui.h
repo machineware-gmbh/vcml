@@ -49,7 +49,7 @@ public:
     virtual bool read(u8& val) override;
     virtual void write(u8 val) override;
 
-    static backend* create(terminal* term, const string& type);
+    static backend* create(terminal* term, const vector<string>& type);
 };
 
 } // namespace serial

@@ -51,20 +51,18 @@ void backend_file::write(u8 val) {
     }
 }
 
-backend* backend_file::create(terminal* term, const string& type) {
+backend* backend_file::create(terminal* term, const vector<string>& args) {
     string rx = mkstr("%s.rx", term->name());
     string tx = mkstr("%s.tx", term->name());
 
-    vector<string> args = split(type, ':');
-
-    if (args.size() == 2) {
-        rx = args[1] + ".rx";
-        tx = args[1] + ".tx";
+    if (args.size() == 1) {
+        rx = args[0] + ".rx";
+        tx = args[0] + ".tx";
     }
 
-    if (args.size() >= 3) {
-        rx = args[1];
-        tx = args[2];
+    if (args.size() >= 2) {
+        rx = args[0];
+        tx = args[1];
     }
 
     return new backend_file(term, rx, tx);

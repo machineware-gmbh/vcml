@@ -51,8 +51,15 @@ public:
     void capture_stdin();
     void release_stdin();
 
-    static backend* create(terminal* term, const string& type);
+    using create_fn = function<backend*(terminal*, const vector<string>&)>;
+    static void define(const string& type, create_fn fn);
+    static backend* create(terminal* term, const string& desc);
 };
+
+#define VCML_DEFINE_SERIAL_BACKEND(name, fn)        \
+    MWR_CONSTRUCTOR(define_serial_backend_##name) { \
+        vcml::serial::backend::define(#name, fn);   \
+    }
 
 } // namespace serial
 } // namespace vcml

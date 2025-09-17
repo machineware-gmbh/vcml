@@ -112,7 +112,7 @@ void backend_term::write(u8 val) {
     mwr::fd_write(m_fdout, &val, sizeof(val));
 }
 
-backend* backend_term::create(terminal* term, const string& type) {
+backend* backend_term::create(terminal* term, const vector<string>& args) {
     return new backend_term(term);
 }
 

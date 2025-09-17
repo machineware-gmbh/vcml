@@ -29,11 +29,8 @@ void backend_null::write(u8 val) {
     // nothing to do
 }
 
-backend* backend_null::create(terminal* term, const string& type) {
-    if (starts_with(type, "null"))
-        return new backend_null(term);
-
-    VCML_REPORT("unknown type: %s", type.c_str());
+backend* backend_null::create(terminal* term, const vector<string>& args) {
+    return new backend_null(term);
 }
 
 } // namespace serial

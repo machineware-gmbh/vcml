@@ -199,7 +199,7 @@ void backend_tui::write(u8 val) {
     draw_statusbar();
 }
 
-backend* backend_tui::create(terminal* term, const string& type) {
+backend* backend_tui::create(terminal* term, const vector<string>& args) {
     return new backend_tui(term);
 }
 
