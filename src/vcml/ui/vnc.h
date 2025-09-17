@@ -88,20 +88,22 @@ private:
     int m_bshift;
 
     vector<u8> m_buffer;
-    mwr::socket m_socket;
+    mwr::server_socket m_socket;
 
     atomic<bool> m_running;
     mutex m_mutex;
     thread m_thread;
 
+    int client();
+    void flush();
+
     template <typename T>
     T recv();
     void recv_padding(size_t n);
 
-    void flush();
-
     template <typename T>
     void send(const T& data);
+
     void send(const u8* buf, size_t sz);
     void send_padding(size_t n);
     void send_pixel(u32 pixel);
@@ -134,18 +136,6 @@ public:
 
     static display* create(u32 nr);
 };
-
-template <typename T>
-inline T vnc::recv() {
-    T val;
-    m_socket.recv(val);
-    return host_endian() == ENDIAN_BIG ? val : bswap(val);
-}
-
-inline void vnc::recv_padding(size_t n) {
-    while (n--)
-        recv<u8>();
-}
 
 } // namespace ui
 } // namespace vcml

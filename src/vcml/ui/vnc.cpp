@@ -284,11 +284,25 @@ static void vnc_encode_hextile(vector<u8>& d, u32 x, u32 y, u32 w, u32 h,
     vnc_encode_hextile(d, x, y, w, h);
 }
 
+int vnc::client() {
+    const auto& clients = m_socket.clients();
+    VCML_REPORT_ON(clients.empty(), "not connected");
+    return clients[0];
+}
+
 void vnc::flush() {
-    if (!m_buffer.empty()) {
-        m_socket.send(m_buffer.data(), m_buffer.size());
+    if (!m_buffer.empty() && m_socket.is_connected()) {
+        m_socket.send(client(), m_buffer.data(), m_buffer.size());
         m_buffer.clear();
     }
+}
+
+template <typename T>
+T vnc::recv() {
+    MWR_REPORT_ON(!m_socket.is_connected(), "not connected");
+    T val;
+    m_socket.recv(client(), val);
+    return host_endian() == ENDIAN_BIG ? val : bswap(val);
 }
 
 template <>
@@ -305,6 +319,11 @@ vnc_pixelformat vnc::recv() {
     format.goff = recv<u8>();
     format.boff = recv<u8>();
     return format;
+}
+
+void vnc::recv_padding(size_t n) {
+    while (n--)
+        recv<u8>();
 }
 
 template <>
@@ -359,7 +378,7 @@ void vnc::send(const u8* buf, size_t sz) {
             flush();
     } else {
         flush();
-        m_socket.send(buf, sz);
+        m_socket.send(client(), buf, sz);
     }
 }
 
@@ -565,23 +584,11 @@ void vnc::send_framebuffer_hextile() {
 }
 
 void vnc::handshake() {
-    if (m_socket.is_connected())
-        m_socket.disconnect();
-
-    m_buffer.clear();
-    m_socket.listen(m_port);
-    log_debug("listening on port %hu", m_port);
-    if (!m_socket.accept())
-        return;
-
-    m_socket.unlisten();
-    log_debug("connected to \"%s\"", m_socket.peer());
-
     // protocol handshake
     char proto[13]{};
     string rfb_3_8 = "RFB 003.008\n";
-    m_socket.send(rfb_3_8);
-    m_socket.recv(proto, 12);
+    m_socket.send(client(), rfb_3_8);
+    m_socket.recv(client(), proto, 12);
     log_debug("client requests protocol version: %s", proto);
     if (proto != rfb_3_8) {
         auto err = mkstr("unsupported RFB protocol version: %s", proto);
@@ -738,7 +745,7 @@ void vnc::handle_cut_text(const string& text) {
 }
 
 void vnc::handle_command() {
-    u8 request = m_socket.recv_char();
+    u8 request = m_socket.recv_char(client());
     switch (request) {
     case VNC_SET_PIXEL_FORMAT: {
         recv_padding(3);
@@ -788,7 +795,7 @@ void vnc::handle_command() {
         recv_padding(3);
         u32 len = recv<u32>();
         string text(len, ' ');
-        m_socket.recv(text.data(), len);
+        m_socket.recv(client(), text.data(), len);
         handle_cut_text(text);
         break;
     }
@@ -799,19 +806,20 @@ void vnc::handle_command() {
 }
 
 void vnc::run() {
-    try {
-        mwr::set_thread_name(mkstr("vnc_%u", dispno()));
-        m_socket.listen(m_port);
-    } catch (std::exception& ex) {
-        log.warn(ex);
-        return;
-    }
-
+    mwr::set_thread_name(mkstr("vnc_%u", dispno()));
     while (m_running && sim_running()) {
         try {
+            m_socket.listen(m_port);
+            while (m_running && sim_running() && !m_socket.is_connected())
+                m_socket.poll(100);
+
             handshake();
-            while (m_running && m_socket.is_connected())
-                handle_command();
+
+            while (m_running && sim_running()) {
+                if (m_socket.poll(100) >= 0)
+                    handle_command();
+            }
+
         } catch (std::exception& ex) {
             if (sim_running())
                 log.debug(ex);
@@ -829,7 +837,7 @@ vnc::vnc(u32 no):
     m_native(),
     m_client(),
     m_buffer(),
-    m_socket(),
+    m_socket(1),
     m_running(),
     m_mutex(),
     m_thread() {
@@ -843,6 +851,7 @@ vnc::vnc(u32 no):
     log.set_level(debug_vnc ? LOG_DEBUG : LOG_INFO);
 
     m_buffer.reserve(4096);
+    m_socket.set_tcp_nodelay(true);
 }
 
 vnc::~vnc() {
@@ -857,10 +866,9 @@ void vnc::init(const videomode& mode, u8* fb) {
 
 void vnc::shutdown() {
     m_running = false;
-    if (m_socket.is_connected())
-        m_socket.disconnect();
-    if (m_socket.is_listening())
-        m_socket.unlisten();
+
+    m_socket.unlisten();
+    m_socket.disconnect_all();
 
     if (m_thread.joinable())
         m_thread.join();

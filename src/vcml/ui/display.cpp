@@ -98,21 +98,28 @@ static bool parse_display(const string& name, string& id, u32& nr) {
     return true;
 }
 
-display* display::create(u32 nr) {
-    return new display("display", nr);
+display* create_null(u32 id) {
+    return new display("display", id);
 }
 
-unordered_map<string, function<display*(u32)>> display::types = {
-    { "null", display::create },
-    { "vnc", vnc::create },
+unordered_map<string, display::create_fn> display::types;
+
+VCML_DEFINE_UI_DISPLAY(null, create_null)
+VCML_DEFINE_UI_DISPLAY(vnc, vnc::create)
+
 #ifdef HAVE_SDL2
-    { "sdl", sdl::create },
+VCML_DEFINE_UI_DISPLAY(sdl, sdl::create)
 #endif
-};
 
 unordered_map<string, shared_ptr<display>> display::displays = {
-    { "", shared_ptr<display>(new display("", 0)) } // no-op server
+    { "", shared_ptr<display>(create_null(0)) } // no-op server
 };
+
+void display::define(const string& type, create_fn fn) {
+    if (stl_contains(types, type))
+        VCML_ERROR("display type '%s' already registered", type.c_str());
+    types[type] = std::move(fn);
+}
 
 shared_ptr<display> display::lookup(const string& name) {
     if (mwr::getenv_or_default("VCML_NO_GUI", false))
@@ -139,13 +146,6 @@ shared_ptr<display> display::lookup(const string& name) {
 
     disp.reset(it->second(nr));
     return disp;
-}
-
-void display::register_display_type(const string& type,
-                                    function<display*(u32)> creator) {
-    if (stl_contains(types, type))
-        VCML_ERROR("display type '%s' already registered", type.c_str());
-    types.insert({ type, std::move(creator) });
 }
 
 } // namespace ui

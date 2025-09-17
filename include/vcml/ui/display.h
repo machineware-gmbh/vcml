@@ -24,6 +24,9 @@ namespace ui {
 
 class display
 {
+public:
+    using create_fn = function<display*(u32)>;
+
 private:
     string m_name;
     string m_type;
@@ -35,14 +38,8 @@ private:
     vector<input*> m_inputs;
 
 protected:
-    static unordered_map<string, function<display*(u32)>> types;
+    static unordered_map<string, create_fn> types;
     static unordered_map<string, shared_ptr<display>> displays;
-
-    static display* create(u32 nr);
-
-    display() = delete;
-    display(const display&) = delete;
-    display(const string& type, u32 nr);
 
 public:
     mwr::logger log;
@@ -61,6 +58,9 @@ public:
     u64 framebuffer_size() const { return m_mode.size; }
     bool has_framebuffer() const { return m_mode.size > 0; }
 
+    display() = delete;
+    display(const display&) = delete;
+    display(const string& type, u32 nr);
     virtual ~display();
 
     virtual void init(const videomode& mode, u8* fbptr);
@@ -75,10 +75,14 @@ public:
     void attach(input* device);
     void detach(input* device);
 
+    static void define(const string& type, create_fn fn);
     static shared_ptr<display> lookup(const string& name);
-    static void register_display_type(const string& type,
-                                      function<display*(u32)> create);
 };
+
+#define VCML_DEFINE_UI_DISPLAY(name, fn)        \
+    MWR_CONSTRUCTOR(define_ui_display_##name) { \
+        vcml::ui::display::define(#name, fn);   \
+    }
 
 } // namespace ui
 } // namespace vcml
