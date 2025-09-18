@@ -161,7 +161,8 @@ public:
         gdbserver("localhost", port, { &stub }, status) {}
     virtual ~gdbserver();
 
-    virtual void handle_connect(int client, const string& peer) override;
+    virtual void handle_connect(int client, const string& peer,
+                                u16 port) override;
     virtual void handle_disconnect(int client) override;
 
     void add_target(target* tgt);

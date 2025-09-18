@@ -54,6 +54,7 @@
 #include "vcml/debugging/gdbarch.h"
 #include "vcml/debugging/gdbserver.h"
 #include "vcml/debugging/vspserver.h"
+#include "vcml/debugging/vspclient.h"
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/video.h"

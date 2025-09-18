@@ -21,15 +21,16 @@
 namespace vcml {
 namespace debugging {
 
-class vspserver : public rspserver, private suspender, private subscriber
+class vspclient;
+class vspserver : public rspserver, private suspender
 {
 private:
     string m_announce;
-    string m_stop_reason;
     sc_time m_duration;
+    unordered_map<int, vspclient*> m_clients;
+    bool m_quantum_boundary;
 
-    unordered_map<u64, const breakpoint*> m_breakpoints;
-    unordered_map<u64, const watchpoint*> m_watchpoints;
+    vspclient& find_client(int client);
 
     string handle_version(int client, const string& command);
     string handle_status(int client, const string& command);
@@ -55,33 +56,23 @@ private:
     string handle_vwrite(int client, const string& command);
 
     bool is_running() const { return !is_suspending(); }
-
-    void resume_simulation(const sc_time& duration);
-    void pause_simulation(const string& reason);
+    void disconnect_all();
     void force_quit();
+    void notify_step_complete();
 
-    virtual void notify_step_complete(target& tgt, const sc_time& t) override;
-
-    virtual void notify_breakpoint_hit(const breakpoint& bp,
-                                       const sc_time& t) override;
-
-    virtual void notify_watchpoint_read(const watchpoint& wp,
-                                        const range& addr,
-                                        const sc_time& t) override;
-
-    virtual void notify_watchpoint_write(const watchpoint& wp,
-                                         const range& addr, const void* newval,
-                                         const sc_time& t) override;
+    virtual bool check_suspension_point() override;
 
 public:
     vspserver() = delete;
-    explicit vspserver(const string& host, u16 port);
+    vspserver(const string& host, u16 port);
     virtual ~vspserver();
 
     void start();
     void cleanup();
+    void update();
 
-    virtual void handle_connect(int client, const string& peer) override;
+    virtual void handle_connect(int client, const string& peer,
+                                u16 port) override;
     virtual void handle_disconnect(int client) override;
 
     static vspserver* instance();

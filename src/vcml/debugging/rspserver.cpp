@@ -51,7 +51,7 @@ rspserver::rspserver(const string& host, u16 port, size_t max_clients):
     log(m_name) {
     m_sock.on_connect([&](int client, const string& peer, u16 port) -> bool {
         if (m_running)
-            handle_connect(client, peer);
+            handle_connect(client, peer, port);
         return true;
     });
 
@@ -244,7 +244,7 @@ string rspserver::handle_command(int client, const string& command) {
     }
 }
 
-void rspserver::handle_connect(int client, const string& peer) {
+void rspserver::handle_connect(int client, const string& peer, u16 port) {
     // to be overloaded
 }
 

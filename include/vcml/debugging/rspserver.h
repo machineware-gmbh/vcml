@@ -67,7 +67,7 @@ public:
     void disconnect(int client);
 
     virtual string handle_command(int client, const string& command);
-    virtual void handle_connect(int client, const string& peer);
+    virtual void handle_connect(int client, const string& peer, u16 port);
     virtual void handle_disconnect(int client);
 
     template <typename T>

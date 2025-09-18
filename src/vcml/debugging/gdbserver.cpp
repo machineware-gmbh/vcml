@@ -1041,7 +1041,7 @@ gdbserver::~gdbserver() {
     shutdown();
 }
 
-void gdbserver::handle_connect(int client, const string& peer) {
+void gdbserver::handle_connect(int client, const string& peer, u16 port) {
     log_debug("gdb connected to %s", peer.c_str());
     update_status(GDB_STOPPED);
 

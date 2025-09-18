@@ -12,6 +12,7 @@
 #include "vcml/core/version.h"
 #include "vcml/core/component.h"
 
+#include "vcml/debugging/vspclient.h"
 #include "vcml/debugging/vspserver.h"
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/loader.h"
@@ -32,24 +33,6 @@ static vspserver* session = nullptr;
 static void cleanup_session() {
     if (session != nullptr)
         session->cleanup();
-}
-
-// converts an array of bytes to an asci string, e.g.
-// { aa, bb, cc, dd } -> "ddccbbaa"
-static string hexstr(const u8* bytes, size_t len) {
-    string res;
-    if (len == 0)
-        return res;
-
-    res.reserve(len * 2);
-    if (bytes == nullptr) {
-        res.insert(res.begin(), 2 * len, '0');
-        return res;
-    }
-
-    for (size_t i = 0; i < len; i++)
-        res = mkstr("%02hhx%s", bytes[i], res.c_str());
-    return res;
 }
 
 static string xml_escape(const string& s) {
@@ -312,8 +295,10 @@ static void list_json(ostream& os) {
     os << "}";
 }
 
-vspserver* vspserver::instance() {
-    return session;
+vspclient& vspserver::find_client(int id) {
+    auto it = m_clients.find(id);
+    VCML_REPORT_ON(it == m_clients.end(), "client %d not found", id);
+    return *it->second;
 }
 
 string vspserver::handle_version(int client, const string& cmd) {
@@ -328,48 +313,19 @@ string vspserver::handle_version(int client, const string& cmd) {
 }
 
 string vspserver::handle_status(int client, const string& cmd) {
-    u64 delta = sc_delta_count();
-    u64 nanos = time_to_ns(sc_time_stamp());
-    string status = is_running() ? "running" : ("stopped:" + m_stop_reason);
-    return mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
+    return find_client(client).handle_status(cmd);
 }
 
 string vspserver::handle_resume(int client, const string& cmd) {
-    if (is_running())
-        return "E,simulation running";
-
-    vector<string> args = split(cmd, ',');
-    sc_time duration = SC_MAX_TIME;
-
-    if (args.size() > 1)
-        duration = from_string<sc_time>(args[1]);
-
-    resume_simulation(duration);
-    return mkstr("OK");
+    return find_client(client).handle_resume(cmd);
 }
 
 string vspserver::handle_step(int client, const string& cmd) {
-    if (is_running())
-        return "E,simulation running";
-
-    vector<string> args = split(cmd, ',');
-    if (args.size() < 2)
-        return mkstr("E,insufficient arguments %zu", args.size());
-
-    target* tgt = target::find(args[1]);
-    if (tgt == nullptr)
-        return mkstr("E,no such target: %s", args[1].c_str());
-
-    tgt->request_singlestep(this);
-    resume_simulation(SC_MAX_TIME);
-    return mkstr("OK");
+    return find_client(client).handle_step(cmd);
 }
 
 string vspserver::handle_stop(int client, const string& cmd) {
-    vector<string> args = split(cmd, ',');
-    if (is_running())
-        pause_simulation(args.size() > 1 ? args[1] : "user");
-    return "OK";
+    return find_client(client).handle_stop(cmd);
 }
 
 string vspserver::handle_quit(int client, const string& cmd) {
@@ -432,6 +388,7 @@ string vspserver::handle_exec(int client, const string& cmd) {
 string vspserver::handle_getq(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
+
     sc_time quantum = tlm::tlm_global_quantum::instance().get();
     return mkstr("OK,%llu", time_to_ns(quantum));
 }
@@ -504,129 +461,19 @@ string vspserver::handle_seta(int client, const string& cmd) {
 }
 
 string vspserver::handle_mkbp(int client, const string& cmd) {
-    if (is_running())
-        return "E,simulation running";
-
-    vector<string> args = split(cmd, ',');
-    if (args.size() < 3)
-        return mkstr("E,insufficient arguments %zu", args.size());
-
-    target* tgt = target::find(args[1]);
-    if (tgt == nullptr)
-        return mkstr("E,no such target: %s", args[1].c_str());
-
-    u64 addr;
-    if (is_number(args[2]))
-        addr = from_string<u64>(args[2]);
-    else {
-        const symbol* sym = tgt->symbols().find_symbol(args[2]);
-        if (sym == nullptr)
-            return mkstr("E,no address or symbol: %s", args[2].c_str());
-        addr = sym->virt_addr();
-    }
-
-    const breakpoint* bp = tgt->insert_breakpoint(addr, this);
-    if (bp == nullptr)
-        return mkstr("E,failed to insert breakpoint at 0x%llx", addr);
-
-    m_breakpoints[bp->id()] = bp;
-    return mkstr("OK,inserted breakpoint %llu", bp->id());
+    return find_client(client).handle_mkbp(cmd);
 }
 
 string vspserver::handle_rmbp(int client, const string& cmd) {
-    if (is_running())
-        return "E,simulation running";
-
-    vector<string> args = split(cmd, ',');
-    if (args.size() < 2)
-        return mkstr("E,insufficient arguments %zu", args.size());
-
-    u64 bpid = from_string<u64>(args[1]);
-    auto it = m_breakpoints.find(bpid);
-    if (it == m_breakpoints.end())
-        return mkstr("E,invalid breakpoint id: %llu", bpid);
-
-    target& tgt = it->second->owner();
-    if (!tgt.remove_breakpoint(it->second, this))
-        return mkstr("E,model rejected breakpoint deletion");
-
-    m_breakpoints.erase(it);
-    return "OK";
+    return find_client(client).handle_rmbp(cmd);
 }
 
 string vspserver::handle_mkwp(int client, const string& cmd) {
-    if (is_running())
-        return "E,simulation running";
-
-    vector<string> args = split(cmd, ',');
-    if (args.size() < 5)
-        return mkstr("E,insufficient arguments %zu", args.size());
-
-    target* tgt = target::find(args[1]);
-    if (tgt == nullptr)
-        return mkstr("E,no such target: %s", args[1].c_str());
-
-    u64 base;
-    if (is_number(args[2]))
-        base = from_string<u64>(args[2]);
-    else {
-        const symbol* sym = tgt->symbols().find_symbol(args[2]);
-        if (sym == nullptr)
-            return mkstr("E,no address or symbol: %s", args[2].c_str());
-        base = sym->virt_addr();
-    }
-
-    u64 size = from_string<u64>(args[3]);
-
-    string type = args[4];
-    vcml_access vcml_type = (type == "r")    ? VCML_ACCESS_READ
-                            : (type == "w")  ? VCML_ACCESS_WRITE
-                            : (type == "rw") ? VCML_ACCESS_READ_WRITE
-                                             : VCML_ACCESS_NONE;
-
-    if (vcml_type == VCML_ACCESS_NONE)
-        return mkstr("E,invalid watchpoint type %s", type.c_str());
-
-    range addr(base, base + size - 1);
-    const watchpoint* wp = tgt->insert_watchpoint(addr, vcml_type, this);
-    if (wp == nullptr) {
-        return mkstr("E,failed to insert watchpoint at %s",
-                     to_string(addr).c_str());
-    }
-
-    m_watchpoints[wp->id()] = wp;
-    return mkstr("OK,inserted watchpoint %llu", wp->id());
+    return find_client(client).handle_mkwp(cmd);
 }
 
 string vspserver::handle_rmwp(int client, const string& cmd) {
-    if (is_running())
-        return "E,simulation running";
-
-    vector<string> args = split(cmd, ',');
-    if (args.size() < 2)
-        return mkstr("E,insufficient arguments %zu", args.size());
-
-    u64 wpid = from_string<u64>(args[1]);
-    auto it = m_watchpoints.find(wpid);
-    if (it == m_watchpoints.end())
-        return mkstr("E,invalid watchpoint id: %llu", wpid);
-
-    target& tgt = it->second->owner();
-
-    string type = args[2];
-    vcml_access vcml_type = (type == "r")    ? VCML_ACCESS_READ
-                            : (type == "w")  ? VCML_ACCESS_WRITE
-                            : (type == "rw") ? VCML_ACCESS_READ_WRITE
-                                             : VCML_ACCESS_NONE;
-
-    if (vcml_type == VCML_ACCESS_NONE)
-        return mkstr("E,invalid watchpoint type %s", type.c_str());
-
-    if (!tgt.remove_watchpoint(it->second, vcml_type, this))
-        return mkstr("E,model rejected watchpoint deletion");
-
-    m_watchpoints.erase(it);
-    return "OK";
+    return find_client(client).handle_rmwp(cmd);
 }
 
 string vspserver::handle_lreg(int client, const string& cmd) {
@@ -752,6 +599,9 @@ string vspserver::handle_vread(int client, const string& cmd) {
 }
 
 string vspserver::handle_vwrite(int client, const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
     vector<string> args = split(cmd, ',');
     if (args.size() < 3)
         return mkstr("E,insufficient arguments %zu", args.size());
@@ -770,67 +620,37 @@ string vspserver::handle_vwrite(int client, const string& cmd) {
     return mkstr("OK,%zu bytes written", n);
 }
 
-void vspserver::resume_simulation(const sc_time& duration) {
-    if (is_suspending()) {
-        m_stop_reason.clear();
-        m_duration = duration;
-        resume();
+void vspserver::disconnect_all() {
+    for (auto [id, client] : m_clients) {
+        delete client;
+        disconnect(id);
     }
-}
 
-void vspserver::pause_simulation(const string& reason) {
-    if (!is_suspending()) {
-        m_stop_reason = reason;
-        sc_pause();
-        suspend();
-    }
+    m_clients.clear();
 }
 
 void vspserver::force_quit() {
     stop();
     suspender::quit();
-
-    if (is_connected())
-        disconnect(0);
+    disconnect_all();
 }
 
-void vspserver::notify_step_complete(target& tgt, const sc_time& t) {
-    // target:<target-name>:<time>
-    string reason = mkstr("target:%s:%llu", tgt.target_name(), time_to_ns(t));
-    pause_simulation(reason);
+void vspserver::notify_step_complete() {
+    for (auto [id, client] : m_clients)
+        client->notify_step_complete();
 }
 
-void vspserver::notify_breakpoint_hit(const breakpoint& bp, const sc_time& t) {
-    // breakpoint:<id>:<time>
-    string reason = mkstr("breakpoint:%llu:%llu", bp.id(), time_to_ns(t));
-    pause_simulation(reason);
-}
-
-void vspserver::notify_watchpoint_read(const watchpoint& wp, const range& addr,
-                                       const sc_time& t) {
-    // rwatchpoint:<id>:<addr>:<size>:<time>
-    string reason = mkstr("rwatchpoint:%llu:0x%llx:%llu:%llu", wp.id(),
-                          addr.start, addr.length(), time_to_ns(t));
-    pause_simulation(reason);
-}
-
-void vspserver::notify_watchpoint_write(const watchpoint& wp,
-                                        const range& addr, const void* newval,
-                                        const sc_time& t) {
-    // wwatchpoint:<id>:<addr>:<data>:<time>
-    string data = hexstr((const u8*)newval, addr.length());
-    string reason = mkstr("wwatchpoint:%llu:0x%llx:0x%s:%llu", wp.id(),
-                          addr.start, data.c_str(), time_to_ns(t));
-    pause_simulation(reason);
+bool vspserver::check_suspension_point() {
+    return m_quantum_boundary;
 }
 
 vspserver::vspserver(const string& server_host, u16 server_port):
-    rspserver(server_host, server_port, 1),
+    rspserver(server_host, server_port, 16),
     suspender("vspserver"),
-    subscriber(),
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%hu", port())),
-    m_stop_reason("elaboration"),
-    m_duration() {
+    m_duration(),
+    m_clients(),
+    m_quantum_boundary() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
     session = this;
     atexit(&cleanup_session);
@@ -868,6 +688,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
 
 vspserver::~vspserver() {
     shutdown();
+    disconnect_all();
     cleanup();
     session = nullptr;
 }
@@ -882,7 +703,10 @@ void vspserver::start() {
     log_info("vspserver waiting on port %hu", port());
 
     while (sim_running()) {
+        m_quantum_boundary = true;
         suspender::handle_requests();
+        m_quantum_boundary = false;
+
         if (!sim_running())
             break;
 
@@ -890,7 +714,7 @@ void vspserver::start() {
             sc_start();
         else {
             sc_start(m_duration);
-            pause_simulation("step");
+            notify_step_complete();
         }
     }
 
@@ -909,13 +733,46 @@ void vspserver::cleanup() {
     }
 }
 
-void vspserver::handle_connect(int client, const string& peer) {
+void vspserver::update() {
+    m_duration = SC_MAX_TIME;
+
+    sc_time until = SC_MAX_TIME;
+    bool stopped = false;
+
+    for (auto [id, client] : m_clients) {
+        stopped |= client->is_stopped();
+        until = min(until, client->until());
+    }
+
+    if (stopped && !is_suspending()) {
+        sc_pause();
+        suspend();
+    }
+
+    if (!stopped && is_suspending()) {
+        m_duration = until < SC_MAX_TIME ? until - sc_time_stamp() : until;
+        resume();
+    }
+}
+
+void vspserver::handle_connect(int client, const string& peer, u16 port) {
     log_info("vspserver connected to client %d at %s", client, peer.c_str());
+    m_clients[client] = new vspclient(*this, client, peer, port);
+    update();
 }
 
 void vspserver::handle_disconnect(int client) {
-    if (sim_running())
-        log_info("vspserver waiting on port %hu", port());
+    auto it = m_clients.find(client);
+    if (it != m_clients.end()) {
+        log_info("vspclient %d disconnected", client);
+        delete it->second;
+        m_clients.erase(it);
+        update();
+    }
+}
+
+vspserver* vspserver::instance() {
+    return session;
 }
 
 } // namespace debugging
