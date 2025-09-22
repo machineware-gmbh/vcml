@@ -65,6 +65,7 @@ public:
     void stop();
     void shutdown();
     void disconnect(int client);
+    void process(int client);
 
     virtual string handle_command(int client, const string& command);
     virtual void handle_connect(int client, const string& peer, u16 port);

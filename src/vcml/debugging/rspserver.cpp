@@ -195,15 +195,12 @@ void rspserver::run() {
     m_mutex.unlock();
 
     while (m_running) {
-        int client = m_sock.poll(100);
         try {
-            if (client >= 0) {
-                string command = recv_packet(client);
-                string response = handle_command(client, command);
-                send_packet(client, response);
-            }
+            int client = m_sock.poll(100);
+            if (client >= 0)
+                process(client);
         } catch (std::exception& ex) {
-            log_debug("client%d: %s", client, ex.what());
+            log.warn(ex);
         }
     }
 }
@@ -226,6 +223,16 @@ void rspserver::disconnect(int client) {
         m_sock.disconnect(client);
         if (m_running)
             handle_disconnect(client);
+    }
+}
+
+void rspserver::process(int client) {
+    try {
+        string command = recv_packet(client);
+        string response = handle_command(client, command);
+        send_packet(client, response);
+    } catch (std::exception& ex) {
+        log_debug("client%d: %s", client, ex.what());
     }
 }
 
