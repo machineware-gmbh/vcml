@@ -806,16 +806,22 @@ void vnc::handle_command() {
 }
 
 void vnc::run() {
-    mwr::set_thread_name(mkstr("vnc_%u", dispno()));
+    try {
+        mwr::set_thread_name(mkstr("vnc_%u", dispno()));
+        m_socket.listen(m_port);
+    } catch (std::exception& ex) {
+        log.warn(ex);
+        return;
+    }
+
     while (m_running && sim_running()) {
         try {
-            m_socket.listen(m_port);
             while (m_running && sim_running() && !m_socket.is_connected())
                 m_socket.poll(100);
 
             handshake();
 
-            while (m_running && sim_running()) {
+            while (m_running && sim_running() && m_socket.is_connected()) {
                 if (m_socket.poll(100) >= 0)
                     handle_command();
             }
