@@ -737,7 +737,7 @@ void vspserver::update() {
     m_duration = SC_MAX_TIME;
 
     sc_time until = SC_MAX_TIME;
-    bool stopped = false;
+    bool stopped = m_clients.empty();
 
     for (auto [id, client] : m_clients) {
         stopped |= client->is_stopped();
