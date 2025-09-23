@@ -14,17 +14,45 @@
 namespace vcml {
 namespace debugging {
 
-bool gdbserver::parse_ids(const string& ids, int& pid, int& tid) const {
-    if (m_support_processes) {
-        if (sscanf(ids.c_str(), "p%x.%x", &pid, &tid) != 2)
-            return false;
+static bool parse_ids(const string& ids, int& pid, int& tid) {
+    if (sscanf(ids.c_str(), "p%x.%x", &pid, &tid) == 2)
+        return true;
+
+    if (sscanf(ids.c_str(), "%x", &tid) == 1) {
+        pid = GDB_FIRST_TARGET;
         return true;
     }
 
-    pid = GDB_FIRST_TARGET;
-    if (sscanf(ids.c_str(), "%x", &tid) != 1)
-        return false;
-    return true;
+    return false;
+}
+
+static gdb_vcont_action parse_vcont_action(const string& arg) {
+    if (starts_with(arg, "s") || starts_with(arg, "S"))
+        return GDB_VCONT_STEP;
+    if (starts_with(arg, "c") || starts_with(arg, "C"))
+        return GDB_VCONT_CONTINUE;
+    return GDB_VCONT_HALT;
+}
+
+static gdb_vcont_action parse_vcont(const string& cmd, int pid, int tid) {
+    const auto& args = split(cmd, ';');
+    gdb_vcont_action result = GDB_VCONT_HALT;
+
+    for (const string& arg : args) {
+        int cur_pid = GDB_ALL_TARGETS;
+        int cur_tid = GDB_ALL_TARGETS;
+        size_t pos = arg.find(':');
+        if (pos != std::string::npos)
+            parse_ids(arg.substr(pos + 1), cur_pid, cur_tid);
+
+        if ((cur_pid == pid && cur_tid == tid) ||
+            (cur_pid == GDB_ALL_TARGETS && cur_tid == GDB_ALL_TARGETS &&
+             result == GDB_VCONT_HALT)) {
+            result = parse_vcont_action(arg);
+        }
+    }
+
+    return result;
 }
 
 gdbserver::gdb_target* gdbserver::find_target(int pid, int tid) {
@@ -107,7 +135,6 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
         return;
 
     case GDB_RUNNING:
-    case GDB_STEPPING:
         resume();
         break;
 
@@ -179,13 +206,11 @@ string gdbserver::handle_step(int client, const string& cmd) {
 
     cancel_singlestep();
 
-    for (auto& gtgt : m_targets)
-        gtgt.tgt.set_running(true);
-
     m_c_target->tgt.request_singlestep(this);
 
-    update_status(GDB_STEPPING);
-    while (sim_running() && is_stepping()) {
+    update_status(GDB_RUNNING);
+
+    while (sim_running() && is_running()) {
         int signal = 0;
         if ((signal = recv_signal(client, 1))) {
             log_debug("received signal %d", signal);
@@ -215,9 +240,6 @@ string gdbserver::handle_continue(int client, const string& cmd) {
     }
 
     cancel_singlestep();
-
-    for (auto& gtgt : m_targets)
-        gtgt.tgt.set_running(true);
 
     update_status(GDB_RUNNING);
     while (sim_running() && is_running()) {
@@ -862,100 +884,30 @@ string gdbserver::handle_vcont(int client, const string& cmd) {
     if (cmd == "vCont?")
         return "s;S;c;C";
 
-    vector<string> args = split(cmd, ';');
-    if (args.size() <= 1) {
-        log_warn("malformed command %s", cmd.c_str());
-        return rsp_error(EINVAL);
-    }
-    args.erase(args.begin());
+    vector<gdb_target*> halted;
+    for (gdb_target& gtgt : m_targets) {
+        switch (parse_vcont(cmd, gtgt.pid, gtgt.tid)) {
+        case GDB_VCONT_STEP: {
+            gtgt.tgt.request_singlestep(this);
+            break;
+        }
 
-    vector<gdb_target*> m_unused_targets(m_targets.size());
-    for (size_t i = 0; i < m_targets.size(); i++)
-        m_unused_targets[i] = &m_targets[i];
-
-    cancel_singlestep();
-
-    gdb_status stat = GDB_RUNNING;
-    for (auto& a : args) {
-        int pid = 0, tid = 0;
-        // Ignore signals for "C" and "S"
-        if (starts_with(a, "c") || starts_with(a, "C")) {
-            if (contains(a, ":")) {
-                auto s = split(a, ':');
-                if (!parse_ids(s[1], pid, tid)) {
-                    log_warn("malformed command %s", cmd.c_str());
-                    return rsp_error(EINVAL);
-                }
-
-                if (tid == GDB_ALL_TARGETS)
-                    goto continue_all;
-
-                auto gtgt = find_target(pid, tid);
-                if (!gtgt) {
-                    log_warn("unknown target ids %d.%d", pid, tid);
-                    return rsp_error(ENOENT);
-                }
-
-                if (!stl_contains(m_unused_targets, gtgt))
-                    continue;
-
-                gtgt->tgt.set_running(true);
-
-                stl_remove(m_unused_targets, gtgt);
-            } else {
-            continue_all:
-                for (auto gtgt : m_unused_targets)
-                    gtgt->tgt.set_running(true);
-
-                m_unused_targets.clear();
-                break;
+        case GDB_VCONT_HALT: {
+            if (gtgt.tgt.is_running()) {
+                gtgt.tgt.set_running(false);
+                halted.push_back(&gtgt);
             }
-        } else if (starts_with(a, "s") || starts_with(a, "S")) {
-            if (contains(a, ":")) {
-                stat = GDB_STEPPING;
+            break;
+        }
 
-                auto s = split(a, ':');
-                if (!parse_ids(s[1], pid, tid)) {
-                    log_warn("malformed command %s", cmd.c_str());
-                    return rsp_error(EINVAL);
-                }
-
-                if (tid == GDB_ALL_TARGETS)
-                    goto step_all;
-
-                auto gtgt = find_target(pid, tid);
-                if (!gtgt) {
-                    log_warn("unknown target ids %d.%d", pid, tid);
-                    return rsp_error(ENOENT);
-                }
-
-                if (!stl_contains(m_unused_targets, gtgt))
-                    continue;
-
-                gtgt->tgt.set_running(true);
-                gtgt->tgt.request_singlestep(this);
-                stl_remove(m_unused_targets, gtgt);
-            } else {
-            step_all:
-                for (auto gtgt : m_unused_targets) {
-                    gtgt->tgt.set_running(true);
-                    gtgt->tgt.request_singlestep(this);
-                }
-
-                m_unused_targets.clear();
-                break;
-            }
-        } else {
-            log_warn("malformed command %s", cmd.c_str());
-            return rsp_error(EINVAL);
+        case GDB_VCONT_CONTINUE:
+            break;
         }
     }
 
-    for (auto gtgt : m_unused_targets)
-        gtgt->tgt.set_running(false);
+    update_status(GDB_RUNNING);
 
-    update_status(stat);
-    while (sim_running() && (is_stepping() || is_running())) {
+    while (sim_running() && is_running()) {
         int signal = 0;
         if ((signal = recv_signal(client, 1))) {
             log_debug("received signal %d", signal);
@@ -963,10 +915,10 @@ string gdbserver::handle_vcont(int client, const string& cmd) {
         }
     }
 
-    for (auto gtgt : m_targets)
-        gtgt.tgt.set_running(false);
-
     update_status(GDB_STOPPED);
+
+    for (gdb_target* gtgt : halted)
+        gtgt->tgt.set_running(true);
 
     if (sim_running() && !simulation_suspended()) {
         log_warn("%s: simulation is not suspended", __func__);
@@ -987,7 +939,6 @@ gdbserver::gdbserver(const string& host, u16 port,
     m_q_target(),
     m_status(status),
     m_default(status),
-    m_support_processes(false),
     m_query_idx(0),
     m_next_tid(1),
     m_hit_wp_addr(),
@@ -1065,12 +1016,13 @@ void gdbserver::add_target(target* tgt) {
 
     for (const auto& feature : arch->features) {
         vector<const cpureg*> feature_cpuregs;
-        if (feature.collect_regs(*tgt, feature_cpuregs))
+        if (feature.collect_regs(*tgt, feature_cpuregs)) {
             log_debug("gdb feature %s is supported by %s", feature.name,
                       tgt->target_name());
-        else
+        } else {
             log_debug("gdb feature %s is not supported by %s", feature.name,
                       tgt->target_name());
+        }
     }
 
     m_targets.emplace_back(m_next_tid++, 1, arch, cpuregs, *tgt);
