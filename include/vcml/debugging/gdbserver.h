@@ -25,7 +25,6 @@ namespace debugging {
 
 enum gdb_status {
     GDB_STOPPED,
-    GDB_STEPPING,
     GDB_RUNNING,
     GDB_KILLED,
 };
@@ -33,6 +32,18 @@ enum gdb_status {
 enum gdb_signal {
     GDBSIG_TRAP = 5,
     GDBSIG_KILL = 9,
+};
+
+enum gdb_spec_ids {
+    GDB_ALL_TARGETS = -1,
+    GDB_ANY_TARGET = 0,
+    GDB_FIRST_TARGET = 1
+};
+
+enum gdb_vcont_action {
+    GDB_VCONT_HALT = 0,
+    GDB_VCONT_STEP = 's',
+    GDB_VCONT_CONTINUE = 'c',
 };
 
 class gdbserver : public rspserver, private subscriber, private suspender
@@ -57,7 +68,6 @@ private:
     gdb_target* m_q_target;
     atomic<gdb_status> m_status;
     gdb_status m_default;
-    bool m_support_processes;
     size_t m_query_idx;
     u64 m_next_tid;
     const range* m_hit_wp_addr;
@@ -67,13 +77,6 @@ private:
 
     mutable mutex m_mtx;
 
-    enum gdb_spec_ids {
-        GDB_ALL_TARGETS = -1,
-        GDB_ANY_TARGET = 0,
-        GDB_FIRST_TARGET = 1
-    };
-
-    bool parse_ids(const string& ids, int& pid, int& tid) const;
     gdb_target* find_target(int pid, int tid);
     gdb_target* find_target(target& tgt);
 
@@ -143,7 +146,6 @@ public:
     };
 
     bool is_stopped() const { return m_status == GDB_STOPPED; }
-    bool is_stepping() const { return m_status == GDB_STEPPING; }
     bool is_running() const { return m_status == GDB_RUNNING; }
     bool is_killed() const { return m_status == GDB_KILLED; }
 
