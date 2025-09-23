@@ -219,11 +219,8 @@ void rspserver::shutdown() {
 }
 
 void rspserver::disconnect(int client) {
-    if (m_sock.is_connected(client)) {
+    if (m_sock.is_connected(client))
         m_sock.disconnect(client);
-        if (m_running)
-            handle_disconnect(client);
-    }
 }
 
 void rspserver::process(int client) {
