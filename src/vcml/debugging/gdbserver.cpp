@@ -76,9 +76,6 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
                               const range* wp_addr, vcml_access wp_type) {
     m_mtx.lock();
 
-    if (!is_connected())
-        status = m_default;
-
     if (!sim_running())
         status = GDB_KILLED;
 
