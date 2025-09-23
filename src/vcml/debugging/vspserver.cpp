@@ -734,6 +734,9 @@ void vspserver::cleanup() {
 }
 
 void vspserver::update() {
+    if (!sim_running())
+        return;
+
     m_duration = SC_MAX_TIME;
 
     sc_time until = SC_MAX_TIME;
