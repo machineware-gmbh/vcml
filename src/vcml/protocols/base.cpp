@@ -25,8 +25,10 @@ void base_socket::stub_socket(void* stub) {
 static bool parse_indexed_name(const string& name, string& base, size_t& idx) {
     size_t ob = name.find('[');
     size_t cb = name.find(']');
-    if (ob == string::npos || cb == string::npos || cb <= ob)
+    if (ob == string::npos || cb == string::npos || cb <= ob ||
+        cb != name.size() - 1) {
         return false;
+    }
 
     string temp_base = name.substr(0, ob);
     string temp_index = name.substr(ob + 1, cb - ob - 1);
