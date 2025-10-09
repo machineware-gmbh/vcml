@@ -13,10 +13,10 @@
 namespace vcml {
 namespace generic {
 
-bool bus::mapping::operator<(const mapping& m) const {
-    if (addr.start == m.addr.start)
-        return target < m.target;
-    return addr.start < m.addr.start;
+bool operator<(const bus_mapping& a, const bus_mapping& b) {
+    if (a.addr.start == b.addr.start)
+        return a.target < b.target;
+    return a.addr.start < b.addr.start;
 }
 
 size_t bus::find_target_port(sc_object& peer) const {
@@ -51,7 +51,7 @@ const char* bus::source_peer_name(size_t port) const {
     return it->second->name();
 }
 
-const bus::mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
+const bus_mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
     size_t port = in.index_of(s);
 
     for (const auto& m : m_mappings) {
@@ -60,7 +60,7 @@ const bus::mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
     }
 
     for (const auto& m : m_mappings) {
-        if (m.addr.includes(mem) && m.source == SOURCE_ANY)
+        if (m.addr.includes(mem) && m.source == bus_mapping::SOURCE_ANY)
             return m;
     }
 
@@ -107,11 +107,11 @@ void bus::do_mmap(ostream& os) {
         os << mwr::pad(target_peer_name(m.target), w);
         os << " " << std::setw(y) << m.addr + m.offset - m.addr.start;
 
-        if (m.source != SOURCE_ANY)
+        if (m.source != bus_mapping::SOURCE_ANY)
             os << " (via " << source_peer_name(m.source) << " only)";
     }
 
-    if (m_default.target != TARGET_NONE)
+    if (m_default.target != bus_mapping::TARGET_NONE)
         os << "\ndefault route -> " << target_peer_name(m_default.target);
 }
 
@@ -132,8 +132,8 @@ void bus::end_of_elaboration() {
 
 void bus::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
                       sc_time& dt) {
-    const mapping& m = lookup(socket, tx);
-    if (m.target == TARGET_NONE) {
+    const bus_mapping& m = lookup(socket, tx);
+    if (m.target == bus_mapping::TARGET_NONE) {
         handle_bus_error(tx);
         return;
     }
@@ -146,8 +146,8 @@ void bus::b_transport(tlm_target_socket& socket, tlm_generic_payload& tx,
 
 unsigned int bus::transport_dbg(tlm_target_socket& origin,
                                 tlm_generic_payload& tx) {
-    const mapping& m = lookup(origin, tx);
-    if (m.target == TARGET_NONE) {
+    const bus_mapping& m = lookup(origin, tx);
+    if (m.target == bus_mapping::TARGET_NONE) {
         handle_bus_error(tx);
         return 0;
     }
@@ -161,8 +161,8 @@ unsigned int bus::transport_dbg(tlm_target_socket& origin,
 
 bool bus::get_direct_mem_ptr(tlm_target_socket& origin,
                              tlm_generic_payload& tx, tlm_dmi& dmi) {
-    const mapping& m = lookup(origin, tx);
-    if (m.target == TARGET_NONE)
+    const bus_mapping& m = lookup(origin, tx);
+    if (m.target == bus_mapping::TARGET_NONE)
         return false;
 
     u64 addr = tx.get_address();
@@ -208,7 +208,7 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
         return;
     }
 
-    for (const mapping& m : m_mappings) {
+    for (const bus_mapping& m : m_mappings) {
         if (m.target != port)
             continue;
 
@@ -228,7 +228,7 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
         e += m.addr.start;
 
         for (auto& [id, port] : in) {
-            if (m.source == SOURCE_ANY || id == m.source)
+            if (m.source == bus_mapping::SOURCE_ANY || id == m.source)
                 (*port)->invalidate_direct_mem_ptr(s, e);
         }
     }
@@ -242,14 +242,14 @@ void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
             continue;
 
         stringstream ss;
-        ss << "Cannot map " << target << ":" << addr << " to '"
+        ss << "cannot map " << target << ":" << addr << " to '"
            << target_peer_name(target) << "', because it overlaps with "
            << m.target << ":" << m.addr << " mapped to '"
            << target_peer_name(m.target) << "'";
-        VCML_ERROR("%s", ss.str().c_str());
+        VCML_REPORT("%s: %s", name(), ss.str().c_str());
     }
 
-    mapping m;
+    bus_mapping m;
     m.target = target;
     m.source = source;
     m.addr = addr;
@@ -258,9 +258,9 @@ void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
 }
 
 void bus::map_default(size_t target, u64 offset) {
-    if (m_default.target != TARGET_NONE) {
-        VCML_ERROR("default route already mapped to '%s'",
-                   target_peer_name(m_default.target));
+    if (m_default.target != bus_mapping::TARGET_NONE) {
+        VCML_REPORT("default route already mapped to '%s'",
+                    target_peer_name(m_default.target));
     }
 
     m_default.target = target;
@@ -285,6 +285,54 @@ bus::~bus() {
     // nothing to do
 }
 
+optional<bus_mapping> bus::get_default_mapping() const {
+    if (m_default.target != bus_mapping::TARGET_NONE)
+        return m_default;
+    return std::nullopt;
+}
+
+vector<bus_mapping> bus::get_all_mappings() const {
+    vector<bus_mapping> mm;
+    mm.reserve(m_mappings.size());
+    for (const auto& map : m_mappings)
+        mm.push_back(map);
+    if (auto defmap = get_default_mapping())
+        mm.push_back(*defmap);
+    return mm;
+}
+
+vector<bus_mapping> bus::get_source_mappings(size_t source) const {
+    vector<bus_mapping> mm;
+    if (!in.exists(source))
+        return mm;
+
+    for (const auto& map : m_mappings) {
+        if (map.source == source || map.source == bus_mapping::SOURCE_ANY)
+            mm.push_back(map);
+    }
+
+    if (m_default.target != bus_mapping::TARGET_NONE)
+        mm.push_back(m_default);
+
+    return mm;
+}
+
+vector<bus_mapping> bus::get_target_mappings(size_t target) const {
+    vector<bus_mapping> mm;
+    if (!out.exists(target))
+        return mm;
+
+    for (const auto& map : m_mappings) {
+        if (map.target == target)
+            mm.push_back(map);
+    }
+
+    if (m_default.target == target)
+        mm.push_back(m_default);
+
+    return mm;
+}
+
 VCML_EXPORT_MODEL(vcml::generic::bus, name, args) {
     return new bus(name);
 }
@@ -300,11 +348,15 @@ static generic::bus& get_bus(sc_object& obj) {
     return *b;
 }
 
-static sc_object& get_socket(const string& name) {
-    sc_object& socket = find_socket(name);
+static sc_object& get_socket(sc_object& socket) {
     if (auto* arr = dynamic_cast<socket_array_if*>(&socket))
         return *arr->alloc();
     return socket;
+}
+
+static sc_object& get_socket(const string& name) {
+    sc_object& socket = find_socket(name);
+    return get_socket(socket);
 }
 
 void stub(sc_object& obj, const range& addr, tlm_response_status rs) {
@@ -319,17 +371,18 @@ void stub(sc_object& bus, u64 lo, u64 hi, tlm_response_status rs) {
 void stub(sc_object& obj, sc_object& socket, const range& addr,
           tlm_response_status rs) {
     auto& bus = get_bus(obj);
-    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+    auto& sock = get_socket(socket);
+    if (auto* ini = dynamic_cast<initiator_t*>(&sock)) {
         bus.stub(*ini, addr, rs);
         return;
     }
 
-    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+    if (auto* tgt = dynamic_cast<target_t*>(&sock)) {
         bus.stub(*tgt, addr, rs);
         return;
     }
 
-    VCML_REPORT("%s is not a valid tlm port", socket.name());
+    VCML_REPORT("%s is not a valid tlm port", sock.name());
 }
 
 void stub(sc_object& obj, sc_object& socket, u64 lo, u64 hi,
@@ -351,17 +404,18 @@ void bind(sc_object& obj, sc_object& socket, bool dummy) {
     // dummy is needed to differentiate binding two versions of binding two
     // sc_objects: binding two sockets and binding an initiator to a bus
     auto& bus = get_bus(obj);
-    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+    auto& sock = get_socket(socket);
+    if (auto* ini = dynamic_cast<initiator_t*>(&sock)) {
         bus.bind(*ini);
         return;
     }
 
-    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+    if (auto* tgt = dynamic_cast<target_t*>(&sock)) {
         bus.bind(*tgt);
         return;
     }
 
-    VCML_REPORT("%s is not a valid tlm port", socket.name());
+    VCML_REPORT("%s is not a valid tlm port", sock.name());
 }
 
 void bind(sc_object& bus, const string& socket) {
@@ -370,17 +424,18 @@ void bind(sc_object& bus, const string& socket) {
 
 void bind(sc_object& obj, sc_object& socket, const range& addr, u64 offset) {
     auto& bus = get_bus(obj);
-    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+    auto& sock = get_socket(socket);
+    if (auto* ini = dynamic_cast<initiator_t*>(&sock)) {
         bus.bind(*ini, addr, offset);
         return;
     }
 
-    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+    if (auto* tgt = dynamic_cast<target_t*>(&sock)) {
         bus.bind(*tgt, addr, offset);
         return;
     }
 
-    VCML_REPORT("%s is not a valid tlm port", socket.name());
+    VCML_REPORT("%s is not a valid tlm port", sock.name());
 }
 
 void bind(sc_object& bus, const string& socket, const range& addr,
@@ -398,17 +453,18 @@ void bind(sc_object& bus, const string& socket, u64 lo, u64 hi, u64 offset) {
 
 void bind_default(sc_object& obj, sc_object& socket, u64 offset) {
     auto& bus = get_bus(obj);
-    if (auto* ini = dynamic_cast<initiator_t*>(&socket)) {
+    auto& sock = get_socket(socket);
+    if (auto* ini = dynamic_cast<initiator_t*>(&sock)) {
         bus.bind_default(*ini, offset);
         return;
     }
 
-    if (auto* tgt = dynamic_cast<target_t*>(&socket)) {
+    if (auto* tgt = dynamic_cast<target_t*>(&sock)) {
         bus.bind_default(*tgt, offset);
         return;
     }
 
-    VCML_REPORT("%s is not a valid tlm port", socket.name());
+    VCML_REPORT("%s is not a valid tlm port", sock.name());
 }
 
 void bind_default(sc_object& bus, const string& socket, u64 offset) {

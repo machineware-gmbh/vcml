@@ -22,23 +22,23 @@
 namespace vcml {
 namespace generic {
 
-class bus : public component
-{
-private:
+struct bus_mapping {
     enum : size_t {
         TARGET_NONE = SIZE_MAX,
         SOURCE_ANY = SIZE_MAX,
     };
 
-    struct mapping {
-        size_t target;
-        size_t source;
-        range addr;
-        u64 offset;
+    size_t target;
+    size_t source;
+    range addr;
+    u64 offset;
+};
 
-        bool operator<(const mapping& m) const;
-    };
+bool operator<(const bus_mapping& a, const bus_mapping& b);
 
+class bus : public component
+{
+private:
     std::map<size_t, sc_object*> m_target_peers;
     std::map<size_t, sc_object*> m_source_peers;
 
@@ -48,10 +48,10 @@ private:
     const char* target_peer_name(size_t port) const;
     const char* source_peer_name(size_t port) const;
 
-    set<mapping> m_mappings;
-    mapping m_default;
+    set<bus_mapping> m_mappings;
+    bus_mapping m_default;
 
-    const mapping& lookup(tlm_target_socket& src, const range& addr) const;
+    const bus_mapping& lookup(tlm_target_socket& src, const range& addr) const;
     void handle_bus_error(tlm_generic_payload& tx) const;
 
     void do_mmap(ostream& os);
@@ -122,6 +122,21 @@ public:
     bus(const sc_module_name& nm);
     virtual ~bus();
     VCML_KIND(generic::bus);
+
+    optional<bus_mapping> get_default_mapping() const;
+    vector<bus_mapping> get_all_mappings() const;
+    vector<bus_mapping> get_source_mappings(size_t source) const;
+    vector<bus_mapping> get_target_mappings(size_t target) const;
+
+    template <typename SOURCE>
+    vector<bus_mapping> get_source_mappings(const SOURCE& socket) const {
+        return get_source_mappings(in.index_of(socket));
+    }
+
+    template <typename TARGET>
+    vector<bus_mapping> get_target_mappings(const TARGET& socket) const {
+        return get_target_mappings(out.index_of(socket));
+    }
 };
 
 inline void bus::map(size_t target, const range& addr) {
@@ -129,7 +144,7 @@ inline void bus::map(size_t target, const range& addr) {
 }
 
 inline void bus::map(size_t target, const range& addr, u64 offset) {
-    map(target, addr, offset, SOURCE_ANY);
+    map(target, addr, offset, bus_mapping::SOURCE_ANY);
 }
 
 inline void bus::map(size_t target, u64 lo, u64 hi) {
@@ -170,7 +185,7 @@ inline void bus::stub(SOURCE& s, u64 lo, u64 hi, tlm_response_status rs) {
 template <typename SOURCE>
 size_t bus::bind(SOURCE& source) {
     size_t port = find_source_port(source);
-    if (port == TARGET_NONE) {
+    if (port == bus_mapping::TARGET_NONE) {
         port = in.next_index();
         in[port].bind(source);
         m_source_peers[port] = &source;
@@ -182,7 +197,7 @@ size_t bus::bind(SOURCE& source) {
 template <typename TARGET>
 size_t bus::bind(TARGET& target, const range& addr, u64 offset) {
     size_t port = find_target_port(target);
-    if (port == TARGET_NONE) {
+    if (port == bus_mapping::TARGET_NONE) {
         port = out.next_index();
         out[port].bind(target);
         m_target_peers[port] = &target;
@@ -201,7 +216,7 @@ template <typename SOURCE, typename TARGET>
 size_t bus::bind(SOURCE& source, TARGET& target, const range& addr, u64 off) {
     size_t source_port = bind(source);
     size_t target_port = find_target_port(target);
-    if (target_port == TARGET_NONE) {
+    if (target_port == bus_mapping::TARGET_NONE) {
         target_port = out.next_index();
         out[target_port].bind(target);
         m_target_peers[target_port] = &target;
@@ -243,7 +258,7 @@ void stub(sc_object& bus, const string& socket, u64 lo, u64 hi,
 void bind(sc_object& bus, sc_object& socket, bool dummy);
 void bind(sc_object& bus, const string& socket);
 
-void bind(sc_object& bus, const sc_object& socket, const range& addr,
+void bind(sc_object& bus, sc_object& socket, const range& addr,
           u64 offset = 0);
 void bind(sc_object& bus, const string& socket, const range& addr,
           u64 offset = 0);

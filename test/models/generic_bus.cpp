@@ -13,6 +13,8 @@
 class bus_harness : public test_base
 {
 public:
+    bool check_invalidate;
+
     generic::memory mem1;
     generic::memory mem2;
     generic::bus bus;
@@ -25,13 +27,14 @@ public:
 
     virtual void invalidate_direct_mem_ptr(tlm_initiator_socket& origin,
                                            u64 start, u64 end) override {
-        if (sc_get_status() > SC_END_OF_ELABORATION)
+        if (check_invalidate)
             invalidate(start, end);
         tlm_host::invalidate_direct_mem_ptr(origin, start, end);
     }
 
     bus_harness(const sc_module_name& nm):
         test_base(nm),
+        check_invalidate(false),
         mem1("mem1", 0x2000),
         mem2("mem2", 0x2000),
         bus("bus"),
@@ -59,9 +62,17 @@ public:
 
         bus.stub(0xe000, 0xe7ff);
         tlm_stub(bus, *this, "out2", 0xe800, 0xefff);
+
+        add_test("read_write", &bus_harness::test_read_write);
+        add_test("dmi", &bus_harness::test_dmi);
+        add_test("lenient", &bus_harness::test_lenient);
+        add_test("stubs", &bus_harness::test_stubs);
+        add_test("mmap", &bus_harness::test_mmap);
+        add_test("mappings", &bus_harness::test_mappings);
+        add_test("invalid_mapping", &bus_harness::test_invalid_mapping);
     }
 
-    virtual void run_test() override {
+    void test_read_write() {
         u32 data;
 
         ASSERT_OK(out1.writew<u32>(0x0000, 0x11111111ul))
@@ -95,6 +106,12 @@ public:
             << "read invalid data from 0x2000 (mem2 + 0x4)";
         ASSERT_AE(out1.readw<u32>(0x4000, data))
             << "bus reported success for reading from unmapped address";
+    }
+
+    void test_dmi() {
+        u32 data;
+        ASSERT_OK(out1.writew(0x0000, data = 0x11111111));
+        ASSERT_OK(out1.writew(0x2000, data = 0x55555555));
 
         tlm_dmi dmi;
         tlm_dmi_cache& cache = out1.dmi_cache();
@@ -111,6 +128,8 @@ public:
                       cache.get_entries()[1].get_dmi_ptr())
                 << "bus forwarded overlapping DMI pointers";
         }
+
+        check_invalidate = true;
 
         EXPECT_CALL(*this, invalidate(0x0000, 0x1fff)).Times(2);
         EXPECT_CALL(*this, invalidate(0x6000, 0x7fff)).Times(2);
@@ -147,11 +166,19 @@ public:
         EXPECT_EQ(data, 0x55555555)
             << "unexpected data from memory at privately mapped area";
 
+        check_invalidate = false;
+    }
+
+    void test_lenient() {
+        u32 data = 0;
         bus.lenient = true;
         EXPECT_OK(out1.writew<u32>(0xc000, data));
         bus.lenient = false;
         EXPECT_AE(out1.writew<u32>(0xc000, data));
+    }
 
+    void test_stubs() {
+        u32 data;
         EXPECT_OK(out1.readw<u32>(0xe000, data))
             << "cannot read from stubbed address area";
         EXPECT_OK(out1.writew<u32>(0xe0f0, data))
@@ -160,9 +187,23 @@ public:
             << "unexpected data from privately stubbed area";
         EXPECT_OK(out2.readw<u32>(0xe800, data))
             << "cannot read from privately stubbed area";
+    }
 
+    void test_mmap() {
         bus.execute("mmap", std::cout);
         std::cout << std::endl;
+    }
+
+    void test_mappings() {
+        EXPECT_EQ(bus.get_all_mappings().size(), 8);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 6);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[1]).size(), 7);
+        EXPECT_EQ(bus.get_target_mappings(bus.out[0]).size(), 3);
+        EXPECT_EQ(bus.get_target_mappings(bus.out[1]).size(), 2);
+    }
+
+    void test_invalid_mapping() {
+        EXPECT_THROW({ bus.map(0, 0x2000, 0x2ffff); }, std::exception);
     }
 };
 
