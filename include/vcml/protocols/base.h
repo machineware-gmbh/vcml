@@ -154,6 +154,7 @@ public:
     virtual bool exists(size_t idx) const = 0;
     virtual sc_object* fetch(size_t idx, bool create) = 0;
     virtual sc_object* alloc() = 0;
+    virtual sc_object* last() const = 0;
 
     template <typename T>
     T* fetch_as(size_t idx, bool create) {
@@ -182,6 +183,7 @@ public:
         socket_array_if(),
         trace_all(this, "trace", false),
         trace_errors(this, "trace_errors", false),
+        m_last(-1),
         m_next(0),
         m_space(VCML_AS_DEFAULT),
         m_sockets(),
@@ -230,6 +232,7 @@ public:
         }
 
         m_ids[socket] = idx;
+        m_last = idx;
         m_next = max(m_next, idx + 1);
 
         if (m_peer) {
@@ -260,8 +263,12 @@ public:
         return m_ids.find(&socket) != m_ids.end();
     }
 
-    size_t index_of(const SOCKET& socket) const {
-        return index_of(static_cast<const sc_object&>(socket));
+    virtual size_t index_of(const sc_object& obj) const override {
+        const SOCKET* socket = dynamic_cast<const SOCKET*>(&obj);
+        if (!socket)
+            return SIZE_MAX;
+        auto it = m_ids.find(socket);
+        return it != m_ids.end() ? it->second : SIZE_MAX;
     }
 
     set<size_t> all_keys() const {
@@ -294,15 +301,12 @@ public:
 
     virtual size_t limit() const override { return N; }
 
-protected:
-    virtual size_t index_of(const sc_object& obj) const override {
-        const SOCKET* socket = dynamic_cast<const SOCKET*>(&obj);
-        if (!socket)
-            return SIZE_MAX;
-        auto it = m_ids.find(socket);
-        return it != m_ids.end() ? it->second : SIZE_MAX;
+    virtual sc_object* last() const override {
+        auto it = m_sockets.find(m_last);
+        return it != m_sockets.end() ? it->second : nullptr;
     }
 
+protected:
     virtual sc_object* fetch(size_t idx, bool create) override {
         if (!create && !exists(idx))
             return nullptr;
@@ -315,6 +319,7 @@ private:
     template <typename T, size_t M>
     friend class socket_array;
 
+    size_t m_last;
     size_t m_next;
     address_space m_space;
     map_type m_sockets;
