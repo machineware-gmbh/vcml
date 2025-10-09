@@ -38,6 +38,7 @@ public:
 
     virtual void reset() = 0;
 
+    virtual string defstr() const = 0;
     virtual string str() = 0;
     virtual void str(const string& s) = 0;
 

@@ -78,39 +78,46 @@ TEST(property, init) {
     EXPECT_TRUE(test.prop_str.is_inited());
     EXPECT_FALSE(test.prop_str.empty());
     EXPECT_EQ((std::string)test.prop_str, "hello world");
-    EXPECT_EQ((std::string)test.prop_str.str(), "hello world");
+    EXPECT_EQ(test.prop_str.str(), "hello world");
+    EXPECT_EQ(test.prop_str.defstr(), "abc");
     EXPECT_STREQ(test.prop_str.c_str(), "hello world");
     EXPECT_EQ(test.prop_str.get_default(), "abc");
 
     EXPECT_TRUE(test.prop_u64.is_inited());
     EXPECT_EQ(test.prop_u64, 0x123456789ABCDEF0);
-    EXPECT_EQ(std::string(test.prop_u64.str()), "1311768467463790320");
+    EXPECT_EQ(test.prop_u64.str(), "1311768467463790320");
+    EXPECT_EQ(test.prop_u64.defstr(), std::to_string(0xffffffffffffffff));
     EXPECT_EQ(test.prop_u64.get_default(), 0xffffffffffffffff);
 
     EXPECT_TRUE(test.prop_u32.is_inited());
     EXPECT_EQ(test.prop_u32, 12345678);
     EXPECT_EQ(std::string(test.prop_u32.str()), "12345678");
+    EXPECT_EQ(test.prop_u32.defstr(), std::to_string(0xffffffff));
     EXPECT_EQ(test.prop_u32.get_default(), 0xffffffff);
 
     EXPECT_TRUE(test.prop_u16.is_inited());
     EXPECT_EQ(test.prop_u16, 12345);
     EXPECT_EQ(std::string(test.prop_u16.str()), "12345");
+    EXPECT_EQ(test.prop_u16.defstr(), std::to_string(0xffff));
     EXPECT_EQ(test.prop_u16.get_default(), 0xffff);
 
     EXPECT_TRUE(test.prop_u8.is_inited());
     EXPECT_EQ(test.prop_u8, 123);
     EXPECT_EQ(std::string(test.prop_u8.str()), "123");
+    EXPECT_EQ(test.prop_u8.defstr(), std::to_string(0xff));
     EXPECT_EQ(test.prop_u8.get_default(), 0xff);
 
     EXPECT_TRUE(test.prop_i32.is_inited());
     EXPECT_EQ(test.prop_i32, -2);
     EXPECT_EQ(std::string(test.prop_i32.str()), "-2");
+    EXPECT_EQ(test.prop_i32.defstr(), "-1");
     EXPECT_EQ(test.prop_i32.get_default(), -1);
 
     EXPECT_EQ((std::string)test.not_inited, std::string("not_inited"));
     EXPECT_EQ((std::string)test.not_inited, test.not_inited.get_default());
     EXPECT_TRUE(test.not_inited.is_default());
     EXPECT_FALSE(test.not_inited.is_inited());
+    EXPECT_EQ(test.not_inited.defstr(), "not_inited");
 
     EXPECT_TRUE(test.prop_array.is_inited());
     EXPECT_EQ(test.prop_array.count(), 4);
@@ -119,7 +126,8 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array[2], 3);
     EXPECT_EQ(test.prop_array[3], 4);
     EXPECT_EQ(test.prop_array.get_default(), 7);
-    EXPECT_EQ(std::string(test.prop_array.str()), "1 2 3 4");
+    EXPECT_EQ(test.prop_array.str(), "1 2 3 4");
+    EXPECT_EQ(test.prop_array.defstr(), "7 7 7 7");
 
     EXPECT_TRUE(test.prop_array2.is_inited());
     EXPECT_EQ(test.prop_array2.count(), 4);
@@ -128,7 +136,8 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array2[2], 3);
     EXPECT_EQ(test.prop_array2[3], 4);
     EXPECT_EQ(test.prop_array2.get_default(), 9);
-    EXPECT_EQ(std::string(test.prop_array2.str()), "1 2 3 4");
+    EXPECT_EQ(test.prop_array2.str(), "1 2 3 4");
+    EXPECT_EQ(test.prop_array2.defstr(), "9 9 9 9");
 
     EXPECT_FALSE(test.prop_array3.is_inited());
     EXPECT_TRUE(test.prop_array3.is_default());
@@ -136,7 +145,9 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array3[1], 3);
     EXPECT_EQ(test.prop_array3[2], 5);
     EXPECT_EQ(test.prop_array3[3], 7);
+    EXPECT_EQ(test.prop_array3.defstr(), "1 3 5 7");
     test.prop_array3.set_default({ 2, 4, 6, 8 });
+    EXPECT_EQ(test.prop_array3.defstr(), "2 4 6 8");
     EXPECT_EQ(test.prop_array3.get_default(0), 2);
     EXPECT_EQ(test.prop_array3.get_default(1), 4);
     EXPECT_EQ(test.prop_array3.get_default(2), 6);
@@ -153,17 +164,19 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array_string[1], "def");
     EXPECT_EQ(test.prop_array_string[2], "x y");
     EXPECT_EQ(test.prop_array_string[3], "zzz");
-    EXPECT_EQ(std::string(test.prop_array_string.str()), "abc def x\\ y zzz");
+    EXPECT_EQ(test.prop_array_string.str(), "abc def x\\ y zzz");
+    EXPECT_EQ(test.prop_array_string.defstr(),
+              "not_inited not_inited not_inited not_inited");
 
     EXPECT_TRUE(test.prop_range.is_inited());
     EXPECT_EQ(test.prop_range.get(), vcml::range(0x10, 0x1f));
     EXPECT_EQ(test.prop_range.get_default(), vcml::range(1, 2));
     EXPECT_EQ(test.prop_range.str(), "0x00000010..0x0000001f");
     EXPECT_EQ(test.prop_range.length(), 0x1f - 0x10 + 1);
+    EXPECT_EQ(test.prop_range.defstr(), "0x00000001..0x00000002");
 
     test.prop_array_string[3] = "z z";
-    EXPECT_EQ(std::string(test.prop_array_string.str()),
-              "abc def x\\ y z\\ z");
+    EXPECT_EQ(test.prop_array_string.str(), "abc def x\\ y z\\ z");
 
     EXPECT_EQ(test.prop_void.get(0), 0xaabbccdd);
     EXPECT_EQ(test.prop_void[1], 0x11223344);
@@ -171,6 +184,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_void.count(), 2);
     EXPECT_TRUE(test.prop_void.is_inited());
     EXPECT_FALSE(test.prop_void.is_default());
+    EXPECT_EQ(test.prop_void.defstr(), "0 0");
     EXPECT_EQ(test.prop_void.str(), "2864434397 287454020");
     test.prop_void.set(0x44002299, 1);
     EXPECT_EQ(test.prop_void[1], 0x44002299);
@@ -190,6 +204,7 @@ TEST(property, init) {
     vcml::i32 cmp = -1;
     for (vcml::i32 val : test.prop_vector)
         EXPECT_EQ(val, cmp--);
+    EXPECT_EQ(test.prop_vector.defstr(), "1 2 3");
     EXPECT_EQ(test.prop_vector.str(), "-1 -2 -3 -4");
     EXPECT_EQ(test.prop_vector[0], -1);
     EXPECT_EQ(test.prop_vector[1], -2);
@@ -205,6 +220,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_vector2[4], -4);
     EXPECT_EQ(test.prop_vector2[5], 2);
     EXPECT_EQ(test.prop_vector2.str(), "1 -1 -2 -3 -4 2");
+    EXPECT_EQ(test.prop_vector2.defstr(), "1 2 3");
 
     EXPECT_TRUE(test.prop_vector3.is_inited());
     EXPECT_EQ(test.prop_vector3.count(), 3);
@@ -212,6 +228,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_vector3[1], 8);
     EXPECT_EQ(test.prop_vector3[2], 7);
     EXPECT_EQ(test.prop_vector3.str(), "9 8 7");
+    EXPECT_EQ(test.prop_vector3.defstr(), "1 2 3");
 
     std::stringstream ss;
 

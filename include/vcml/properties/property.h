@@ -26,8 +26,7 @@ private:
     T m_value[N];
     T m_defval[N];
     bool m_inited;
-
-    mutable string m_str;
+    string m_str;
 
 public:
     property(const char* nm, const T& def = T());
@@ -42,6 +41,7 @@ public:
 
     virtual void reset() override;
 
+    virtual string defstr() const override;
     virtual string str() override;
     virtual void str(const string& s) override;
 
@@ -168,6 +168,26 @@ inline void property<T, N>::reset() {
     string init;
     if (broker::init(fullname(), init))
         property<T, N>::str(init);
+}
+
+template <typename T, size_t N>
+inline string property<T, N>::defstr() const {
+    static const string delim = " ";
+
+    string str;
+
+    if (N > 0) {
+        for (size_t i = 0; i < (N - 1); i++)
+            str += escape(to_string<T>(m_defval[i]), delim) + delim;
+        str += escape(to_string<T>(m_defval[N - 1]), delim);
+    }
+
+    return str;
+}
+
+template <>
+inline string property<string, 1>::defstr() const {
+    return m_defval[0];
 }
 
 template <typename T, size_t N>
@@ -508,8 +528,7 @@ private:
     size_t m_size;
     size_t m_count;
     bool m_inited;
-
-    mutable string m_str;
+    string m_str;
 
 public:
     property(const char* nm, size_t size, size_t count = N,
@@ -524,6 +543,7 @@ public:
 
     virtual void reset() override;
 
+    virtual string defstr() const override;
     virtual string str() override;
     virtual void str(const string& s) override;
 
@@ -541,6 +561,7 @@ public:
     void set(u64 val, size_t idx = 0);
 
     u8* get_default() const;
+    u64 get_default(size_t idx) const;
     void set_default(u8* defvals);
 
     void inherit_default();
@@ -600,6 +621,20 @@ inline void property<void, N>::reset() {
     string init;
     if (broker::init(fullname(), init))
         property<void, N>::str(init);
+}
+
+template <size_t N>
+inline string property<void, N>::defstr() const {
+    static const string delim = " ";
+
+    string str;
+    if (m_count > 0) {
+        for (size_t i = 0; i < m_count - 1; i++)
+            str += escape(to_string(get_default(i)), delim) + delim;
+        str += escape(to_string(get_default(m_count - 1)), delim);
+    }
+
+    return str;
 }
 
 template <size_t N>
@@ -678,6 +713,16 @@ inline u8* property<void, N>::get_default() const {
 }
 
 template <size_t N>
+u64 property<void, N>::get_default(size_t idx) const {
+    VCML_ERROR_ON(idx >= m_count, "index %zu out of bounds", idx);
+    if (!m_default)
+        return 0;
+    u64 val = 0;
+    memcpy(&val, m_default + m_size * idx, m_size);
+    return val;
+}
+
+template <size_t N>
 inline void property<void, N>::set_default(u8* defvals) {
     if (defvals) {
         if (!m_default)
@@ -741,6 +786,7 @@ public:
 
     virtual void reset() override;
 
+    virtual string defstr() const override;
     virtual string str() override;
     virtual void str(const string& s) override;
 
@@ -836,6 +882,23 @@ inline void property<vector<T>, 1>::reset() {
     string init;
     if (broker::init(fullname(), init))
         property<vector<T>, 1>::str(init);
+}
+
+template <typename T>
+inline string property<vector<T>, 1>::defstr() const {
+    static const string delim = " ";
+
+    string str;
+
+    const auto& def = get_default();
+
+    if (!def.empty()) {
+        for (size_t i = 0; i < def.size() - 1; i++)
+            str += escape(to_string(def[i]), delim) + delim;
+        str += escape(to_string(def.back()), delim);
+    }
+
+    return str;
 }
 
 template <typename T>
