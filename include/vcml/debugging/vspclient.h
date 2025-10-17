@@ -34,6 +34,7 @@ private:
     sc_time m_until;
     bool m_stop;
     string m_stop_reason;
+    mutex m_status_mtx;
 
     unordered_map<u64, const breakpoint*> m_breakpoints;
     unordered_map<u64, const watchpoint*> m_watchpoints;
