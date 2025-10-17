@@ -75,7 +75,7 @@ public:
 
         // program prescaler for 100kHz operation
         hz_t tgthz = 100 * kHz;
-        u16 prescaler = clk.read() / (5 * tgthz) - 1;
+        u16 prescaler = clk.get_hz() / (5 * tgthz) - 1;
         EXPECT_OK(reg_write(PRERHI, prescaler >> 8));
         EXPECT_OK(reg_write(PRERLO, prescaler));
         EXPECT_EQ(model.bus_hz(), 0);

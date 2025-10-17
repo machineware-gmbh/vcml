@@ -17,7 +17,7 @@ void oci2c::write_ctr(u8 val) {
     if ((val & CTR_EN) && !(ctr & CTR_EN)) {
         u32 pre = (u32)prerhi << 8 | (u32)prerlo;
 
-        m_hz = clk.read() / (pre + 1) / 5;
+        m_hz = clk.get_hz() / (pre + 1) / 5;
         log_debug("enabling device, prescale=0x%x, clock=%luhz", pre, m_hz);
     }
 

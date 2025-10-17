@@ -23,7 +23,7 @@ public:
                         sc_core::sc_gen_unique_name("mock_peripheral")):
         peripheral(nm, ENDIAN_LITTLE, 1, 10) {
         clk.stub(100 * MHz);
-        handle_clock_update(0, clk.read());
+        handle_clock_update(0, clk.get_hz());
     }
 
     MOCK_METHOD(tlm::tlm_response_status, read,
