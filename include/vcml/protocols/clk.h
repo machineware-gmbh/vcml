@@ -44,7 +44,7 @@ constexpr bool failed(const clk_payload& tx) {
 inline hz_t clk_get_hz(const clk_payload& tx) {
     if (tx.period == SC_ZERO_TIME)
         return 0;
-    return 1.0 / tx.period.to_seconds();
+    return (hz_t)(1.0 / tx.period.to_seconds() + 0.5);
 }
 
 inline void clk_set_hz(clk_payload& tx, hz_t hz) {
