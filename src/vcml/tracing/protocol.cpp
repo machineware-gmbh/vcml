@@ -10,6 +10,7 @@
 
 #include "vcml/tracing/protocol.h"
 
+#include "vcml/core/systemc.h"
 #include "vcml/protocols/tlm.h"
 #include "vcml/protocols/gpio.h"
 #include "vcml/protocols/clk.h"
@@ -102,11 +103,12 @@ string trace_payload_to_json(const gpio_payload& tx) {
     return os.str();
 }
 
-string trace_payload_to_json(const clk_payload& tx) {
+string trace_payload_to_json(const clk_desc& tx) {
     ostringstream os;
     os << "{";
-    os << "\"newhz\":" << tx.newhz << ",";
-    os << "\"oldhz\":" << tx.oldhz;
+    os << "\"period\":" << time_to_ns(tx.period) << ",";
+    os << "\"polarity\":\"" << (tx.polarity ? "pos" : "neg") << "edge\",";
+    os << "\"duty_cycle\":" << tx.duty_cycle;
     os << "}";
     return os.str();
 }

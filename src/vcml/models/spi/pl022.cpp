@@ -200,7 +200,7 @@ void pl022::write_cr0(u16 val, bool debug) {
         u32 div = cr0.get_field<CR0_SCR>();
         if (!debug)
             update_sclk();
-        log_debug("serial clock updated: %u (%zuHz)", div, sclk.get());
+        log_debug("serial clock updated: %u (%zuHz)", div, sclk.get_hz());
     }
 }
 

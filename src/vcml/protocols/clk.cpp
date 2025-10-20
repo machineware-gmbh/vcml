@@ -12,19 +12,17 @@
 
 namespace vcml {
 
-ostream& operator<<(ostream& os, const clk_payload& clk) {
+ostream& operator<<(ostream& os, const clk_desc& clk) {
     stream_guard guard(os);
     os << std::dec << "CLK [";
-    if (clk.oldhz)
-        os << clk.oldhz << "Hz";
-    else
+    if (clk.period == SC_ZERO_TIME) {
         os << "off";
-    os << "->";
-    if (clk.newhz)
-        os << clk.newhz << "Hz";
-    else
-        os << "off";
-    return os << "]";
+    } else {
+        os << clk.period << ", " << clk_get_hz(clk) << "Hz, " << clk.duty_cycle
+           << ", " << (clk.polarity ? "pos" : "neg") << "edge first";
+    }
+    os << "]";
+    return os;
 }
 
 clk_base_initiator_socket::clk_base_initiator_socket(const char* nm,
@@ -87,55 +85,60 @@ void clk_base_target_socket::stub_socket(void* hz) {
         stub();
 }
 
-void clk_base_target_socket::stub(hz_t hz) {
+void clk_base_target_socket::stub(const clk_desc& clk) {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     auto guard = get_hierarchy_scope();
-    m_stub = new clk_initiator_stub(basename(), hz);
+    m_stub = new clk_initiator_stub(basename(), clk);
     m_stub->clk_out.bind(*this);
+}
+
+void clk_base_target_socket::stub(hz_t hz) {
+    clk_desc clk{};
+    clk.polarity = true;
+    clk.duty_cycle = 0.5;
+    clk_set_hz(clk, hz);
+    stub(clk);
 }
 
 clk_initiator_socket::clk_initiator_socket(const char* nm, address_space as):
     clk_base_initiator_socket(nm, as),
     m_host(dynamic_cast<clk_host*>(hierarchy_top())),
-    m_hz(0),
+    m_clk(),
     m_transport(this) {
     bind(m_transport);
 }
 
-void clk_initiator_socket::set(hz_t hz) {
-    if (hz < 0)
-        hz = 0;
-
-    if (hz != m_hz) {
-        clk_payload tx;
-        tx.oldhz = m_hz;
-        tx.newhz = hz;
-        clk_transport(tx);
-        m_hz = hz;
+void clk_initiator_socket::set(const clk_desc& clk) {
+    if (clk != m_clk) {
+        clk_transport(clk);
+        m_clk = clk;
     }
 }
 
-clk_initiator_socket& clk_initiator_socket::operator=(hz_t hz) {
-    set(hz);
+clk_initiator_socket& clk_initiator_socket::operator=(clk_desc& clk) {
+    set(clk);
     return *this;
 }
 
-void clk_initiator_socket::clk_transport(const clk_payload& tx) {
+void clk_initiator_socket::set_hz(hz_t hz) {
+    if (hz < 0)
+        hz = 0;
+
+    clk_desc clk = m_clk;
+    clk_set_hz(clk, hz);
+    set(clk);
+}
+
+clk_initiator_socket& clk_initiator_socket::operator=(hz_t hz) {
+    set_hz(hz);
+    return *this;
+}
+
+void clk_initiator_socket::clk_transport(const clk_desc& tx) {
     trace_fw(tx);
     for (int i = 0; i < size(); i++)
         get_interface(i)->clk_transport(tx);
     trace_bw(tx);
-}
-
-void clk_target_socket::clk_transport_internal(const clk_payload& tx) {
-    trace_fw(tx);
-    if (tx.oldhz != tx.newhz)
-        clk_transport(tx);
-    trace_bw(tx);
-}
-
-void clk_target_socket::clk_transport(const clk_payload& tx) {
-    m_host->clk_notify(*this, tx);
 }
 
 clk_target_socket::clk_target_socket(const char* nm, address_space space):
@@ -166,25 +169,30 @@ void clk_target_socket::complete_binding(clk_base_initiator_socket& socket) {
     m_targets.clear();
 }
 
-hz_t clk_target_socket::read() const {
+clk_desc clk_target_socket::get() const {
     const clk_bw_transport_if* iface = get_base_port().get_interface(0);
     if (iface == nullptr)
-        return 0;
+        return clk_desc{};
 
-    return const_cast<clk_bw_transport_if*>(iface)->clk_get_hz();
+    return const_cast<clk_bw_transport_if*>(iface)->clk_query();
 }
 
-sc_time clk_target_socket::cycle() const {
-    hz_t hz = read();
-    return hz ? sc_time(1.0 / hz, SC_SEC) : SC_ZERO_TIME;
+void clk_target_socket::clk_transport_internal(const clk_desc& tx) {
+    trace_fw(tx);
+    clk_transport(tx);
+    trace_bw(tx);
 }
 
-clk_initiator_stub::clk_initiator_stub(const char* nm, hz_t hz):
-    clk_bw_transport_if(), m_hz(hz), clk_out(mkstr("%s_stub", nm).c_str()) {
+void clk_target_socket::clk_transport(const clk_desc& tx) {
+    m_host->clk_notify(*this, tx);
+}
+
+clk_initiator_stub::clk_initiator_stub(const char* nm, const clk_desc& clk):
+    clk_bw_transport_if(), m_clk(clk), clk_out(mkstr("%s_stub", nm).c_str()) {
     clk_out.bind(*(clk_bw_transport_if*)this);
 }
 
-void clk_target_stub::clk_transport(const clk_payload& clk) {
+void clk_target_stub::clk_transport(const clk_desc& clk) {
     // nothing to do
 }
 

@@ -16,11 +16,15 @@ namespace timers {
 constexpr u64 NSEC_PER_SEC = 1000000000ull;
 
 u32 nrf51::time_to_ticks(const sc_time& t) const {
-    return (time_to_ns(t) * (clk >> prescaler)) / NSEC_PER_SEC;
+    return (time_to_ns(t) * (clk.get_hz() >> prescaler)) / NSEC_PER_SEC;
 }
 
 sc_time nrf51::ticks_to_time(u32 ticks) const {
-    u64 nsec = (ticks * NSEC_PER_SEC) / (clk >> prescaler);
+    hz_t scale = clk.get_hz() >> prescaler;
+    if (scale == 0)
+        return SC_ZERO_TIME;
+
+    u64 nsec = (ticks * NSEC_PER_SEC) / scale;
     return sc_time((double)nsec, SC_NS);
 }
 

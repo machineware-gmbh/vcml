@@ -57,7 +57,7 @@ public:
     sc_time clock_cycle() const { return clk.cycle(); }
     sc_time clock_cycles(size_t n) const { return clk.cycles(n); }
 
-    hz_t clock_hz() const { return clk.read(); }
+    hz_t clock_hz() const { return clk.get_hz(); }
 
     virtual unsigned int transport(tlm_target_socket& socket,
                                    tlm_generic_payload& tx,
@@ -70,7 +70,7 @@ public:
 
 protected:
     virtual void clk_notify(const clk_target_socket& socket,
-                            const clk_payload& tx) override;
+                            const clk_desc& tx) override;
 
     virtual void gpio_transport(const gpio_target_socket& socket,
                                 gpio_payload& tx) override;

@@ -71,11 +71,11 @@ public:
     void test_serial_clock() {
         GTEST_LOG_(INFO) << "begin testing serial clock";
 
-        EXPECT_EQ(sclk.read(), clk.read() / 8);
+        EXPECT_EQ(sclk.get_hz(), clk.get_hz() / 8);
         ASSERT_OK(out.writew<u32>(ADDR_SCKDIV, 7));
-        EXPECT_EQ(sclk.read(), clk.read() / 16);
+        EXPECT_EQ(sclk.get_hz(), clk.get_hz() / 16);
         ASSERT_OK(out.writew<u32>(ADDR_SCKDIV, 15));
-        EXPECT_EQ(sclk.read(), clk.read() / 32);
+        EXPECT_EQ(sclk.get_hz(), clk.get_hz() / 32);
 
         GTEST_LOG_(INFO) << "finished testing serial clock";
     }

@@ -36,7 +36,7 @@ public:
         test_reg_b.on_write(&mock_peripheral::reg_write);
         clk.stub(100 * MHz);
         rst.stub();
-        handle_clock_update(0, clk.read());
+        handle_clock_update(0, clk.get_hz());
     }
 
     unsigned int test_transport(tlm::tlm_generic_payload& tx) {
@@ -436,7 +436,7 @@ public:
         test_reg_b.allow_read_write();
         clk.stub(100 * MHz);
         rst.stub();
-        handle_clock_update(0, clk.read());
+        handle_clock_update(0, clk.get_hz());
     }
 
     unsigned int test_transport(tlm::tlm_generic_payload& tx,
@@ -669,7 +669,7 @@ public:
         test_reg_b.allow_read_write();
         clk.stub(100 * MHz);
         rst.stub();
-        handle_clock_update(0, clk.read());
+        handle_clock_update(0, clk.get_hz());
     }
 
     unsigned int test_transport(tlm::tlm_generic_payload& tx,
@@ -820,7 +820,7 @@ public:
         test_reg_tag.tag = 123;
         clk.stub(100 * MHz);
         rst.stub();
-        handle_clock_update(0, clk.read());
+        handle_clock_update(0, clk.get_hz());
     }
 };
 

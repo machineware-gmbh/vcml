@@ -8,30 +8,28 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "vcml/protocols/clk.h"
 #include "testing.h"
 
 TEST(clk, to_string) {
-    clk_payload tx;
-    tx.oldhz = 0;
-    tx.newhz = 10;
+    clk_desc tx{};
+    tx.polarity = true;
+    tx.duty_cycle = 0.5;
+    clk_set_hz(tx, 10);
 
     stringstream ss1;
     ss1 << tx;
-    EXPECT_EQ(ss1.str(), "CLK [off->10Hz]");
+    EXPECT_EQ(ss1.str(), "CLK [100 ms, 10Hz, 0.5, posedge first]");
 
-    tx.oldhz = 10;
-    tx.newhz = 0;
+    clk_set_hz(tx, 0);
 
     stringstream ss2;
     ss2 << tx;
-    EXPECT_EQ(ss2.str(), "CLK [10Hz->off]");
+    EXPECT_EQ(ss2.str(), "CLK [off]");
 }
 
 TEST(clk, result) {
-    clk_payload tx;
-    tx.oldhz = 0;
-    tx.newhz = 0;
-
+    clk_desc tx{};
     EXPECT_TRUE(success(tx));
     EXPECT_FALSE(failed(tx));
 }
@@ -40,8 +38,8 @@ MATCHER_P(clk_match_socket, name, "Matches a clk socket by name") {
     return strcmp(arg.basename(), name) == 0;
 }
 
-MATCHER_P2(clk_match_payload, oldhz, newhz, "Matches a clk payload") {
-    return arg.oldhz == (vcml::hz_t)oldhz && arg.newhz == (vcml::hz_t)newhz;
+MATCHER_P(clk_match_payload, newhz, "Matches a clk payload") {
+    return clk_get_hz(arg) == (vcml::hz_t)newhz;
 }
 
 class clk_bench : public test_base
@@ -93,8 +91,7 @@ public:
         EXPECT_TRUE(find_object("clk.clk_array_in[6]_stub"));
     }
 
-    MOCK_METHOD(void, clk_notify,
-                (const clk_target_socket&, const clk_payload&));
+    MOCK_METHOD(void, clk_notify, (const clk_target_socket&, const clk_desc&));
 
     virtual void run_test() override {
         // Make sure clock starts turned off
@@ -105,9 +102,9 @@ public:
 
         // Turn on clock, make sure events trigger
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_in"),
-                                      clk_match_payload(0, 100 * MHz)));
+                                      clk_match_payload(100 * MHz)));
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_array_in[6]"),
-                                      clk_match_payload(0, 100 * MHz)));
+                                      clk_match_payload(100 * MHz)));
         clk_out = 100 * MHz;
         EXPECT_EQ(clk_out, 100 * MHz) << "clk port did not update";
         EXPECT_EQ(clk_out.cycle(), sc_time(10, SC_NS)) << "wrong cycle";
@@ -120,9 +117,9 @@ public:
 
         // Test turning clock off
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_in"),
-                                      clk_match_payload(100 * MHz, 0)));
+                                      clk_match_payload(0)));
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_array_in[6]"),
-                                      clk_match_payload(100 * MHz, 0)));
+                                      clk_match_payload(0)));
         clk_out = 0;
         EXPECT_EQ(clk_out, 0 * Hz) << "clk port did not turn off";
     }
