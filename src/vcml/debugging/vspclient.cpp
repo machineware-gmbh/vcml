@@ -42,7 +42,7 @@ void vspclient::resume_simulation(const sc_time& duration) {
 }
 
 void vspclient::pause_simulation(const string& reason) {
-    lock_guard<mutex> guard(m_status_mtx);
+    lock_guard<mutex> guard(m_mtx);
     m_stop_reason = reason;
     m_stop = true;
     m_server.update();
@@ -89,6 +89,7 @@ vspclient::vspclient(vspserver& server, int clientid, const string& peer,
     m_until(SC_MAX_TIME),
     m_stop(true),
     m_stop_reason("user"),
+    m_mtx(),
     m_breakpoints(),
     m_watchpoints() {
     // nothing to do
@@ -108,7 +109,7 @@ void vspclient::notify_step_complete() {
 }
 
 string vspclient::handle_status(const string& command) {
-    lock_guard<mutex> guard(m_status_mtx);
+    lock_guard<mutex> guard(m_mtx);
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
     string status = m_stop ? ("stopped:" + m_stop_reason) : "running";
