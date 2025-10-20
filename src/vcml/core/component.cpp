@@ -81,7 +81,7 @@ void component::handle_clock_update(hz_t oldclk, hz_t newclk) {
     // to be overloaded
 }
 
-void component::clk_notify(const clk_target_socket& s, const clk_payload& tx) {
+void component::clk_notify(const clk_target_socket& s, const clk_desc& tx) {
     hz_t oldhz = s.get_hz();
     hz_t newhz = clk_get_hz(tx);
     log_debug("changed clock from %zuHz to %zuHz", oldhz, newhz);

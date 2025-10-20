@@ -103,7 +103,7 @@ string trace_payload_to_json(const gpio_payload& tx) {
     return os.str();
 }
 
-string trace_payload_to_json(const clk_payload& tx) {
+string trace_payload_to_json(const clk_desc& tx) {
     ostringstream os;
     os << "{";
     os << "\"period\":" << time_to_ns(tx.period) << ",";

@@ -70,7 +70,7 @@ public:
 
 protected:
     virtual void clk_notify(const clk_target_socket& socket,
-                            const clk_payload& tx) override;
+                            const clk_desc& tx) override;
 
     virtual void gpio_transport(const gpio_target_socket& socket,
                                 gpio_payload& tx) override;

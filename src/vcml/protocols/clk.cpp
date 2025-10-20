@@ -12,7 +12,7 @@
 
 namespace vcml {
 
-ostream& operator<<(ostream& os, const clk_payload& clk) {
+ostream& operator<<(ostream& os, const clk_desc& clk) {
     stream_guard guard(os);
     os << std::dec << "CLK [";
     if (clk.period == SC_ZERO_TIME) {
@@ -85,7 +85,7 @@ void clk_base_target_socket::stub_socket(void* hz) {
         stub();
 }
 
-void clk_base_target_socket::stub(const clk_payload& clk) {
+void clk_base_target_socket::stub(const clk_desc& clk) {
     VCML_ERROR_ON(m_stub, "socket '%s' already stubbed", name());
     auto guard = get_hierarchy_scope();
     m_stub = new clk_initiator_stub(basename(), clk);
@@ -93,7 +93,7 @@ void clk_base_target_socket::stub(const clk_payload& clk) {
 }
 
 void clk_base_target_socket::stub(hz_t hz) {
-    clk_payload clk{};
+    clk_desc clk{};
     clk.polarity = true;
     clk.duty_cycle = 0.5;
     clk_set_hz(clk, hz);
@@ -108,14 +108,14 @@ clk_initiator_socket::clk_initiator_socket(const char* nm, address_space as):
     bind(m_transport);
 }
 
-void clk_initiator_socket::set(const clk_payload& clk) {
+void clk_initiator_socket::set(const clk_desc& clk) {
     if (clk != m_clk) {
         clk_transport(clk);
         m_clk = clk;
     }
 }
 
-clk_initiator_socket& clk_initiator_socket::operator=(clk_payload& clk) {
+clk_initiator_socket& clk_initiator_socket::operator=(clk_desc& clk) {
     set(clk);
     return *this;
 }
@@ -124,7 +124,7 @@ void clk_initiator_socket::set_hz(hz_t hz) {
     if (hz < 0)
         hz = 0;
 
-    clk_payload clk = m_clk;
+    clk_desc clk = m_clk;
     clk_set_hz(clk, hz);
     set(clk);
 }
@@ -134,7 +134,7 @@ clk_initiator_socket& clk_initiator_socket::operator=(hz_t hz) {
     return *this;
 }
 
-void clk_initiator_socket::clk_transport(const clk_payload& tx) {
+void clk_initiator_socket::clk_transport(const clk_desc& tx) {
     trace_fw(tx);
     for (int i = 0; i < size(); i++)
         get_interface(i)->clk_transport(tx);
@@ -169,30 +169,30 @@ void clk_target_socket::complete_binding(clk_base_initiator_socket& socket) {
     m_targets.clear();
 }
 
-clk_payload clk_target_socket::get() const {
+clk_desc clk_target_socket::get() const {
     const clk_bw_transport_if* iface = get_base_port().get_interface(0);
     if (iface == nullptr)
-        return clk_payload{};
+        return clk_desc{};
 
     return const_cast<clk_bw_transport_if*>(iface)->clk_query();
 }
 
-void clk_target_socket::clk_transport_internal(const clk_payload& tx) {
+void clk_target_socket::clk_transport_internal(const clk_desc& tx) {
     trace_fw(tx);
     clk_transport(tx);
     trace_bw(tx);
 }
 
-void clk_target_socket::clk_transport(const clk_payload& tx) {
+void clk_target_socket::clk_transport(const clk_desc& tx) {
     m_host->clk_notify(*this, tx);
 }
 
-clk_initiator_stub::clk_initiator_stub(const char* nm, const clk_payload& clk):
+clk_initiator_stub::clk_initiator_stub(const char* nm, const clk_desc& clk):
     clk_bw_transport_if(), m_clk(clk), clk_out(mkstr("%s_stub", nm).c_str()) {
     clk_out.bind(*(clk_bw_transport_if*)this);
 }
 
-void clk_target_stub::clk_transport(const clk_payload& clk) {
+void clk_target_stub::clk_transport(const clk_desc& clk) {
     // nothing to do
 }
 

@@ -12,7 +12,7 @@
 #include "testing.h"
 
 TEST(clk, to_string) {
-    clk_payload tx{};
+    clk_desc tx{};
     tx.polarity = true;
     tx.duty_cycle = 0.5;
     clk_set_hz(tx, 10);
@@ -29,7 +29,7 @@ TEST(clk, to_string) {
 }
 
 TEST(clk, result) {
-    clk_payload tx{};
+    clk_desc tx{};
     EXPECT_TRUE(success(tx));
     EXPECT_FALSE(failed(tx));
 }
@@ -91,8 +91,7 @@ public:
         EXPECT_TRUE(find_object("clk.clk_array_in[6]_stub"));
     }
 
-    MOCK_METHOD(void, clk_notify,
-                (const clk_target_socket&, const clk_payload&));
+    MOCK_METHOD(void, clk_notify, (const clk_target_socket&, const clk_desc&));
 
     virtual void run_test() override {
         // Make sure clock starts turned off

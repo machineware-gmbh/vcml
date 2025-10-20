@@ -56,7 +56,7 @@ enum trace_protocol_ids : size_t {
 };
 
 struct gpio_payload;
-struct clk_payload;
+struct clk_desc;
 struct pci_payload;
 struct i2c_payload;
 struct lin_payload;
@@ -88,7 +88,7 @@ constexpr bool is_backward_trace(trace_direction dir) {
 
 string trace_payload_to_json(const tlm_generic_payload& payload);
 string trace_payload_to_json(const gpio_payload& payload);
-string trace_payload_to_json(const clk_payload& payload);
+string trace_payload_to_json(const clk_desc& payload);
 string trace_payload_to_json(const pci_payload& payload);
 string trace_payload_to_json(const i2c_payload& payload);
 string trace_payload_to_json(const lin_payload& payload);
@@ -130,13 +130,13 @@ struct protocol<gpio_payload> {
 };
 
 template <>
-struct protocol<clk_payload> {
+struct protocol<clk_desc> {
     static constexpr size_t ID = PROTO_CLK;
     static constexpr const char* NAME = "CLK";
     static constexpr const char* TERMCOLOR = mwr::termcolors::BLUE;
     static constexpr bool TRACE_FW = true;
     static constexpr bool TRACE_BW = false;
-    static string to_json(const clk_payload& payload) {
+    static string to_json(const clk_desc& payload) {
         return trace_payload_to_json(payload);
     }
 };
