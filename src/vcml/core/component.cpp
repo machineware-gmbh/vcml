@@ -77,15 +77,20 @@ unsigned int component::transport(tlm_generic_payload& tx,
     return 0;
 }
 
+void component::handle_clock_update(const clk_desc& oldclk,
+                                    const clk_desc& newclk) {
+    handle_clock_update(clk_get_hz(oldclk), clk_get_hz(newclk));
+}
+
 void component::handle_clock_update(hz_t oldclk, hz_t newclk) {
     // to be overloaded
 }
 
 void component::clk_notify(const clk_target_socket& s, const clk_desc& tx) {
-    hz_t oldhz = s.get_hz();
-    hz_t newhz = clk_get_hz(tx);
-    log_debug("changed clock from %zuHz to %zuHz", oldhz, newhz);
-    handle_clock_update(oldhz, newhz);
+    auto oldclk = s.get();
+    log_debug("changed clock from \"%s\" to \"%s\"", to_string(oldclk).c_str(),
+              to_string(tx).c_str());
+    handle_clock_update(oldclk, tx);
     m_clkrst_ev.notify(SC_ZERO_TIME);
 }
 

@@ -19,13 +19,13 @@ TEST(clk, to_string) {
 
     stringstream ss1;
     ss1 << tx;
-    EXPECT_EQ(ss1.str(), "CLK [100 ms, 10Hz, 0.5, posedge first]");
+    EXPECT_EQ(ss1.str(), "10Hz (100 ms), duty: 50%, posedge first");
 
     clk_set_hz(tx, 0);
 
     stringstream ss2;
     ss2 << tx;
-    EXPECT_EQ(ss2.str(), "CLK [off]");
+    EXPECT_EQ(ss2.str(), "clock offline");
 }
 
 TEST(clk, result) {

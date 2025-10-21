@@ -14,14 +14,26 @@ namespace vcml {
 
 ostream& operator<<(ostream& os, const clk_desc& clk) {
     stream_guard guard(os);
-    os << std::dec << "CLK [";
-    if (clk.period == SC_ZERO_TIME) {
-        os << "off";
-    } else {
-        os << clk.period << ", " << clk_get_hz(clk) << "Hz, " << clk.duty_cycle
-           << ", " << (clk.polarity ? "pos" : "neg") << "edge first";
-    }
-    os << "]";
+    if (clk.period == SC_ZERO_TIME)
+        return os << "clock offline";
+
+    hz_t hz = clk_get_hz(clk);
+    if (hz % GHz == 0)
+        os << std::dec << hz / GHz << "GHz ";
+    else if (hz % MHz == 0)
+        os << std::dec << hz / MHz << "MHz ";
+    else if (hz % kHz == 0)
+        os << std::dec << hz / kHz << "kHz ";
+    else
+        os << std::dec << hz << "Hz ";
+
+    os << "(" << clk.period << "), ";
+    os << "duty: " << clk.duty_cycle * 100 << "%, ";
+
+    if (clk.polarity)
+        os << "posedge first";
+    else
+        os << "negedge first";
     return os;
 }
 
@@ -109,6 +121,11 @@ clk_initiator_socket::clk_initiator_socket(const char* nm, address_space as):
 }
 
 void clk_initiator_socket::set(const clk_desc& clk) {
+    if (clk_is_on(clk)) {
+        VCML_ERROR_ON(clk.duty_cycle < 0.0, "negative clock duty cycle");
+        VCML_ERROR_ON(clk.duty_cycle > 1.0, "clock duty cycle too big");
+    }
+
     if (clk != m_clk) {
         clk_transport(clk);
         m_clk = clk;
@@ -124,7 +141,9 @@ void clk_initiator_socket::set_hz(hz_t hz) {
     if (hz < 0)
         hz = 0;
 
-    clk_desc clk = m_clk;
+    clk_desc clk{};
+    clk.polarity = true;
+    clk.duty_cycle = 0.5;
     clk_set_hz(clk, hz);
     set(clk);
 }
@@ -134,11 +153,11 @@ clk_initiator_socket& clk_initiator_socket::operator=(hz_t hz) {
     return *this;
 }
 
-void clk_initiator_socket::clk_transport(const clk_desc& tx) {
-    trace_fw(tx);
+void clk_initiator_socket::clk_transport(const clk_desc& clk) {
+    trace_fw(clk);
     for (int i = 0; i < size(); i++)
-        get_interface(i)->clk_transport(tx);
-    trace_bw(tx);
+        get_interface(i)->clk_transport(clk);
+    trace_bw(clk);
 }
 
 clk_target_socket::clk_target_socket(const char* nm, address_space space):
@@ -177,14 +196,14 @@ clk_desc clk_target_socket::get() const {
     return const_cast<clk_bw_transport_if*>(iface)->clk_query();
 }
 
-void clk_target_socket::clk_transport_internal(const clk_desc& tx) {
-    trace_fw(tx);
-    clk_transport(tx);
-    trace_bw(tx);
+void clk_target_socket::clk_transport_internal(const clk_desc& clk) {
+    trace_fw(clk);
+    clk_transport(clk);
+    trace_bw(clk);
 }
 
-void clk_target_socket::clk_transport(const clk_desc& tx) {
-    m_host->clk_notify(*this, tx);
+void clk_target_socket::clk_transport(const clk_desc& clk) {
+    m_host->clk_notify(*this, clk);
 }
 
 clk_initiator_stub::clk_initiator_stub(const char* nm, const clk_desc& clk):

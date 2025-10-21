@@ -33,25 +33,33 @@ inline bool operator!=(const clk_desc& a, const clk_desc& b) {
     return !(a == b);
 }
 
-constexpr bool success(const clk_desc& tx) {
+constexpr bool success(const clk_desc& clk) {
     return true;
 }
 
-constexpr bool failed(const clk_desc& tx) {
+constexpr bool failed(const clk_desc& clk) {
     return false;
 }
 
-inline hz_t clk_get_hz(const clk_desc& tx) {
-    if (tx.period == SC_ZERO_TIME)
+inline hz_t clk_get_hz(const clk_desc& clk) {
+    if (clk.period == SC_ZERO_TIME)
         return 0;
-    return (hz_t)(1.0 / tx.period.to_seconds() + 0.5);
+    return (hz_t)(1.0 / clk.period.to_seconds() + 0.5);
 }
 
-inline void clk_set_hz(clk_desc& tx, hz_t hz) {
+inline void clk_set_hz(clk_desc& clk, hz_t hz) {
     if (hz > 0)
-        tx.period = sc_time(1.0 / hz, SC_SEC);
+        clk.period = sc_time(1.0 / hz, SC_SEC);
     else
-        tx.period = SC_ZERO_TIME;
+        clk.period = SC_ZERO_TIME;
+}
+
+inline bool clk_is_off(const clk_desc& clk) {
+    return clk.period == SC_ZERO_TIME;
+}
+
+inline bool clk_is_on(const clk_desc& clk) {
+    return !clk_is_off(clk);
 }
 
 ostream& operator<<(ostream& os, const clk_desc& clk);
@@ -171,7 +179,7 @@ private:
         virtual clk_desc clk_query() override { return socket->m_clk; }
     } m_transport;
 
-    void clk_transport(const clk_desc& tx);
+    void clk_transport(const clk_desc& clk);
 };
 
 class clk_target_socket : public clk_base_target_socket
@@ -205,18 +213,18 @@ private:
         clk_fw_transport(clk_target_socket* s):
             clk_fw_transport_if(), socket(s) {}
 
-        virtual void clk_transport(const clk_desc& tx) override {
-            socket->clk_transport_internal(tx);
+        virtual void clk_transport(const clk_desc& clk) override {
+            socket->clk_transport_internal(clk);
         }
     } m_transport;
 
     clk_base_initiator_socket* m_initiator;
     vector<clk_base_target_socket*> m_targets;
 
-    void clk_transport_internal(const clk_desc& tx);
+    void clk_transport_internal(const clk_desc& clk);
 
 protected:
-    virtual void clk_transport(const clk_desc& tx);
+    virtual void clk_transport(const clk_desc& clk);
 };
 
 template <size_t N = SIZE_MAX>
@@ -241,7 +249,7 @@ public:
 class clk_target_stub : private clk_fw_transport_if
 {
 private:
-    virtual void clk_transport(const clk_desc& tx) override;
+    virtual void clk_transport(const clk_desc& clk) override;
 
 public:
     clk_base_target_socket clk_in;

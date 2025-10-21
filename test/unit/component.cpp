@@ -28,15 +28,27 @@ public:
     tlm_target_socket in;
     tlm_initiator_socket out;
 
+    generic::clock clock_gen;
+    generic::reset reset_gen;
+
+    MOCK_METHOD(void, handle_clock_update, (hz_t, hz_t));
+    MOCK_METHOD(void, reset, ());
+
     test_component(const sc_module_name& nm):
-        component(nm), in("in"), out("out") {
+        component(nm),
+        in("in"),
+        out("out"),
+        clock_gen("clock_gen", 100 * MHz),
+        reset_gen("reset_gen") {
         out.bind(in);
 
-        clk.stub(100 * MHz);
-        rst.stub();
+        clock_gen.clk.bind(clk);
+        reset_gen.rst.bind(rst);
 
         SC_HAS_PROCESS(test_component);
         SC_THREAD(run_test);
+
+        EXPECT_CALL(*this, reset()); // initial reset
     }
 
     virtual unsigned int transport(tlm_generic_payload& tx, const tlm_sbi& sbi,
@@ -74,12 +86,22 @@ public:
         ASSERT_OK(out.writew<u32>(0, data))
             << "component did not respond to write command";
 
+        EXPECT_EQ(clk.get_hz(), 100 * MHz)
+            << "component reported invalid clock rate";
+        EXPECT_CALL(*this, handle_clock_update(100 * MHz, 10 * GHz));
+        clock_gen.clk = 10 * GHz;
+        EXPECT_EQ(clk.get_hz(), 10 * GHz)
+            << "component reported invalid new clock rate";
+
+        EXPECT_CALL(*this, reset());
+        reset_gen.rst.pulse();
+
         sc_stop();
     }
 };
 
 TEST(component, sockets) {
-    test_component test("component");
+    test_component test("test");
 
     sc_start();
 
