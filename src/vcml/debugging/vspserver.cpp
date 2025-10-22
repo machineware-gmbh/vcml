@@ -640,17 +640,12 @@ void vspserver::notify_step_complete() {
         client->notify_step_complete();
 }
 
-bool vspserver::check_suspension_point() {
-    return m_quantum_boundary;
-}
-
 vspserver::vspserver(const string& server_host, u16 server_port):
     rspserver(server_host, server_port, 16),
     suspender("vspserver"),
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%hu", port())),
     m_duration(),
-    m_clients(),
-    m_quantum_boundary() {
+    m_clients() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
     session = this;
     atexit(&cleanup_session);
@@ -703,9 +698,7 @@ void vspserver::start() {
     log_info("vspserver waiting on port %hu", port());
 
     while (sim_running()) {
-        m_quantum_boundary = true;
         suspender::handle_requests();
-        m_quantum_boundary = false;
 
         if (!sim_running())
             break;

@@ -28,7 +28,6 @@ private:
     string m_announce;
     sc_time m_duration;
     unordered_map<int, vspclient*> m_clients;
-    bool m_quantum_boundary;
 
     vspclient& find_client(int client);
 
@@ -59,8 +58,6 @@ private:
     void disconnect_all();
     void force_quit();
     void notify_step_complete();
-
-    virtual bool check_suspension_point() override;
 
 public:
     vspserver() = delete;
