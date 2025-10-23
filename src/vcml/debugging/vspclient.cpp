@@ -73,7 +73,7 @@ void vspclient::notify_watchpoint_write(const watchpoint& wp,
                                         const sc_time& t) {
     // wwatchpoint:<id>:<addr>:<data>:<time>
     string data = hexstr((const u8*)newval, addr.length());
-    string reason = mkstr("wwatchpoint:%llu:0x%llx:0x%s:%llu", wp.id(),
+    string reason = mkstr("wwatchpoint:%llu:0x%llx:%s:%llu", wp.id(),
                           addr.start, data.c_str(), time_to_ns(t));
     pause_simulation(reason);
 }

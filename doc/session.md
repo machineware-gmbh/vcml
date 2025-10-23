@@ -81,7 +81,7 @@ Valid stop reasons include (but are not limited to):
 * `rwatchpoint:<id>:<addr>:<size>:<t>`: watchpoint `<id>` is being read
   starting at `<addr>` with cpu access size `<size>` at time stamp `<t>` ns
 * `wwatchpoint:<id>:<addr>:<data>:<t>`: watchpoint `<id>` is being written at
-  address `<addr>` with value `<data>` at time stamp `<t>` ns
+  address `<addr>` with bytes `<data>` at time stamp `<t>` ns
 * `step`: requested simulation duration has elapsed
 * `elaboration`: simulator has completed elaboration and is ready to simulate
 * The stop command can define custom exit reason strings to be used
