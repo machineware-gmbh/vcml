@@ -42,9 +42,11 @@ void vspclient::resume_simulation(const sc_time& duration) {
 }
 
 void vspclient::pause_simulation(const string& reason) {
-    lock_guard<mutex> guard(m_mtx);
-    m_stop_reason = reason;
-    m_stop = true;
+    {
+        lock_guard<mutex> guard(m_mtx);
+        m_stop_reason = reason;
+        m_stop = true;
+    }
     m_server.update();
 }
 
