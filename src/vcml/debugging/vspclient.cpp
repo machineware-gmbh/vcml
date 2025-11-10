@@ -231,7 +231,7 @@ string vspclient::handle_mkwp(const string& command) {
 
     u64 size = from_string<u64>(args[3]);
 
-    string type = args[4];
+    const string& type = args[4];
     vcml_access vcml_type = (type == "r")    ? VCML_ACCESS_READ
                             : (type == "w")  ? VCML_ACCESS_WRITE
                             : (type == "rw") ? VCML_ACCESS_READ_WRITE
@@ -266,7 +266,7 @@ string vspclient::handle_rmwp(const string& command) {
 
     target& tgt = it->second->owner();
 
-    string type = args[2];
+    const string& type = args[2];
     vcml_access vcml_type = (type == "r")    ? VCML_ACCESS_READ
                             : (type == "w")  ? VCML_ACCESS_WRITE
                             : (type == "rw") ? VCML_ACCESS_READ_WRITE
