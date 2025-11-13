@@ -9,6 +9,7 @@ race:sc_core::sc_time::operator=
 race:sc_core::sc_time::from_value_and_unit
 race:sc_core::sc_time::from_value
 race:sc_core::sc_time::sc_time
+race:sc_core::sc_time::to_seconds
 
 # the async update list does not lock-protect its internal pending-requests
 # vector when checking if there are any pending requests via vector->size()
