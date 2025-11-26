@@ -59,6 +59,8 @@ public:
 
         bus.bind(out1, mem1.in, 0xa000, 0xbfff);
         bus.bind(out2, mem2.in, 0xc000, 0xdfff);
+        bus.bind(out1, mem1.in, 0x10000, 0x11fff);
+        bus.bind(out2, mem2.in, 0x10000, 0x11fff);
 
         bus.stub(0xe000, 0xe7ff);
         tlm_stub(bus, *this, "out2", 0xe800, 0xefff);
@@ -106,6 +108,17 @@ public:
             << "read invalid data from 0x2000 (mem2 + 0x4)";
         ASSERT_AE(out1.readw<u32>(0x4000, data))
             << "bus reported success for reading from unmapped address";
+
+        ASSERT_OK(out1.writew<u32>(0x10000, 0x10101010))
+            << "failed to write to out1 private memory";
+        ASSERT_OK(out2.writew<u32>(0x10000, 0x20202020))
+            << "failed to write to out2 private memory";
+        ASSERT_OK(out1.readw<u32>(0x10000, data))
+            << "failed to read from out1 private memory";
+        EXPECT_EQ(data, 0x10101010) << "wrong data from out1 private memory";
+        ASSERT_OK(out2.readw<u32>(0x10000, data))
+            << "failed to read from out2 private memory";
+        EXPECT_EQ(data, 0x20202020) << "wrong data from out2 private memory";
     }
 
     void test_dmi() {
@@ -134,6 +147,7 @@ public:
         EXPECT_CALL(*this, invalidate(0x0000, 0x1fff)).Times(2);
         EXPECT_CALL(*this, invalidate(0x6000, 0x7fff)).Times(2);
         EXPECT_CALL(*this, invalidate(0xa000, 0xbfff)).Times(1);
+        EXPECT_CALL(*this, invalidate(0x10000, 0x11fff)).Times(1);
         mem1.unmap_dmi(0, 0x1fff);
         ASSERT_EQ(cache.get_entries().size(), 1)
             << "bus did not forward DMI invalidation";
@@ -195,11 +209,11 @@ public:
     }
 
     void test_mappings() {
-        EXPECT_EQ(bus.get_all_mappings().size(), 8);
-        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 6);
-        EXPECT_EQ(bus.get_source_mappings(bus.in[1]).size(), 7);
-        EXPECT_EQ(bus.get_target_mappings(bus.out[0]).size(), 3);
-        EXPECT_EQ(bus.get_target_mappings(bus.out[1]).size(), 2);
+        EXPECT_EQ(bus.get_all_mappings().size(), 10);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 7);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[1]).size(), 8);
+        EXPECT_EQ(bus.get_target_mappings(bus.out[0]).size(), 4);
+        EXPECT_EQ(bus.get_target_mappings(bus.out[1]).size(), 3);
     }
 
     void test_invalid_mapping() {
