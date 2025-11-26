@@ -34,6 +34,8 @@ struct bus_mapping {
     u64 offset;
 };
 
+bool operator==(const bus_mapping& a, const bus_mapping& b);
+bool operator!=(const bus_mapping& a, const bus_mapping& b);
 bool operator<(const bus_mapping& a, const bus_mapping& b);
 
 class bus : public component

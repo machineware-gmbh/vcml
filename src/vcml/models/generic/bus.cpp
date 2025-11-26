@@ -13,10 +13,25 @@
 namespace vcml {
 namespace generic {
 
+bool operator==(const bus_mapping& a, const bus_mapping& b) {
+    return a.addr == b.addr && a.offset == b.offset && a.target == b.target &&
+           a.source == b.source;
+}
+
+bool operator!=(const bus_mapping& a, const bus_mapping& b) {
+    return !(a == b);
+}
+
 bool operator<(const bus_mapping& a, const bus_mapping& b) {
-    if (a.addr.start == b.addr.start)
+    if (a.addr.start != b.addr.start)
+        return a.addr.start < b.addr.start;
+    if (a.addr.end != b.addr.end)
+        return a.addr.end < b.addr.end;
+    if (a.offset != b.offset)
+        return a.offset < b.offset;
+    if (a.target != b.target)
         return a.target < b.target;
-    return a.addr.start < b.addr.start;
+    return a.source < b.source;
 }
 
 size_t bus::find_target_port(sc_object& peer) const {
@@ -54,14 +69,22 @@ const char* bus::source_peer_name(size_t port) const {
 const bus_mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
     size_t port = in.index_of(s);
 
-    for (const auto& m : m_mappings) {
-        if (m.addr.includes(mem) && m.source == port)
-            return m;
+    bus_mapping search{};
+    search.addr.start = mem.start;
+    search.addr.end = U64_MAX;
+
+    auto it = m_mappings.upper_bound(search);
+
+    for (auto rit = std::make_reverse_iterator(it);
+         rit != m_mappings.rend() && rit->addr.includes(mem); rit++) {
+        if (rit->source == port)
+            return *rit;
     }
 
-    for (const auto& m : m_mappings) {
-        if (m.addr.includes(mem) && m.source == bus_mapping::SOURCE_ANY)
-            return m;
+    for (auto rit = std::make_reverse_iterator(it);
+         rit != m_mappings.rend() && rit->addr.includes(mem); rit++) {
+        if (rit->source == bus_mapping::SOURCE_ANY)
+            return *rit;
     }
 
     return m_default;
@@ -249,7 +272,7 @@ void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
         VCML_REPORT("%s: %s", name(), ss.str().c_str());
     }
 
-    bus_mapping m;
+    bus_mapping m{};
     m.target = target;
     m.source = source;
     m.addr = addr;
