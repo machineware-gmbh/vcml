@@ -59,7 +59,11 @@ void suspend_manager::request_pause(suspender* s) {
 
     suspender_lock.lock();
 
-    if (!active_suspenders.empty() && s->check_suspension_point()) {
+    if (stl_contains(active_suspenders, s) ||
+        stl_contains(waiting_suspenders, s)) {
+        // another thread already called suspend on this suspender, release
+        // the lock and yield until we are paused
+    } else if (!active_suspenders.empty() && s->check_suspension_point()) {
         // if the simulation is already suspended, and we like the current
         // suspension point, we just join the active suspenders
         stl_add_unique(active_suspenders, s);

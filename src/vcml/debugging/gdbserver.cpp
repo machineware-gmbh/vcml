@@ -110,7 +110,7 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
     if (m_status == status) {
         if (m_status == GDB_STOPPED && !is_sysc_thread()) {
             m_mtx.unlock();
-            yield(); // wait until actually stopped
+            suspend(); // wait until actually stopped
             return;
         }
         m_mtx.unlock();
