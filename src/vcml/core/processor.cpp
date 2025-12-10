@@ -385,7 +385,6 @@ void processor::gpio_notify(const gpio_target_socket& socket, bool state,
         stats.irq_uptime += delta;
     }
 
-    log_debug("%sing IRQ %zu", state ? "sett" : "clear", irqno);
     interrupt(irqno, state, vector);
 }
 
