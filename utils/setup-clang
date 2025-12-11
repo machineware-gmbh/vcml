@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
  ##############################################################################
  #                                                                            #
@@ -22,6 +22,7 @@ home="$(cd $(dirname $(dirname ${BASH_SOURCE[0]})) &>/dev/null && pwd)"
 linter=$(which clang-tidy 2>/dev/null)
 bindir=$home/BUILD
 builds=$@
+num_cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
 
 [ -z "$builds" ] && builds="DEBUG RELEASE ASAN TSAN UBSAN"
 
@@ -45,5 +46,5 @@ for type in $builds; do (
           -DVCML_LINTER=$linter              \
           $home
 
-    cmake --build $build -j $(nproc) -- install
+    cmake --build $build -j $num_cores -- install
 ) done
