@@ -78,7 +78,7 @@ istream& operator>>(istream& is, alignment& a) {
 
 ostream& operator<<(ostream& os, alignment a) {
     if (a == VCML_ALIGN_NONE)
-        return os << "unaligned" << std::endl;
+        return os << "unaligned";
     if (a >= 30)
         return os << (1ull << (a - 30)) << "G";
     if (a >= 20)
