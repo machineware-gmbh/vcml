@@ -290,7 +290,7 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
     pci_vendor_id(PCI_AS_CFG, "pci_vendor_id", 0x0, cfg.vendor_id),
     pci_device_id(PCI_AS_CFG, "pci_device_id", 0x2, cfg.device_id),
     pci_command(PCI_AS_CFG, "pci_command", 0x4, 0),
-    pci_status(PCI_AS_CFG, "pci_status", 0x6, pci_status_init(cfg.pcie)),
+    pci_status(PCI_AS_CFG, "pci_status", 0x6, pci_status_init(pcie)),
     pci_class(PCI_AS_CFG, "pci_class", 0x8, cfg.class_code),
     pci_cache_line(PCI_AS_CFG, "pci_cache_line", 0xc, 0),
     pci_latency_timer(PCI_AS_CFG, "pci_latency_timer", 0xd, 0),
