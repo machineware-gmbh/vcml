@@ -474,4 +474,9 @@ std::ostream& operator<<(std::ostream& os, tlm_response_status sts);
 std::ostream& operator<<(std::ostream& os, const tlm_generic_payload&);
 } // namespace tlm
 
+namespace mwr {
+template <>
+string to_string<sc_core::sc_time>(const sc_core::sc_time& t);
+} // namespace mwr
+
 #endif
