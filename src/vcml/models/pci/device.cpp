@@ -370,6 +370,7 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
     for (u32 i = 0; i < PCI_NUM_BARS; i++) {
         m_bars[i].barno = i;
         m_bars[i].size = 0;
+        m_bars[i].is_implemented = false;
     }
 
     if (pcie)
@@ -418,6 +419,10 @@ void device::pci_declare_bar(int barno, u64 size, u32 type, void* ptr) {
     m_bars[barno].addr_lo = PCI_BAR_UNMAPPED & ~(size - 1);
     m_bars[barno].addr_hi = is_64 ? PCI_BAR_UNMAPPED : 0u;
     m_bars[barno].host = (u8*)ptr;
+    m_bars[barno].is_implemented = true;
+
+    if (is_64)
+        m_bars[barno + 1].is_implemented = true;
 }
 
 void device::pci_declare_pm_cap(u16 pm_caps) {
@@ -627,6 +632,9 @@ void device::msix_process() {
 }
 
 void device::write_bars(u32 val, size_t barno) {
+    if (!m_bars[barno].is_implemented)
+        return;
+
     pci_bars[barno] = val;
     update_bars();
 }
