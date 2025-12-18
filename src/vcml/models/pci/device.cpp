@@ -337,7 +337,7 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
 
     pci_latency_timer.allow_read_write();
     pci_latency_timer.sync_never();
-    if (pcie.get())
+    if (pcie)
         pci_latency_timer.ignore_write();
 
     pci_header_type.allow_read_only();
