@@ -929,16 +929,27 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
     mwr::u64 val = strtoull(str.c_str(), &endptr, 0);
     double float_val = (double)val;
 
-    if (strcmp(endptr, "ps") == 0)
-        t = sc_time(float_val, sc_core::SC_PS);
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    if (strcmp(endptr, "ys") == 0)
+        t = sc_time(float_val, SC_YS);
+    else if (strcmp(endptr, "zs") == 0)
+        t = sc_time(float_val, SC_ZS);
+    else if (strcmp(endptr, "as") == 0)
+        t = sc_time(float_val, SC_AS);
+    else
+#endif
+        if (strcmp(endptr, "fs") == 0)
+        t = sc_time(float_val, SC_FS);
+    else if (strcmp(endptr, "ps") == 0)
+        t = sc_time(float_val, SC_PS);
     else if (strcmp(endptr, "ns") == 0)
-        t = sc_time(float_val, sc_core::SC_NS);
+        t = sc_time(float_val, SC_NS);
     else if (strcmp(endptr, "us") == 0)
-        t = sc_time(float_val, sc_core::SC_US);
+        t = sc_time(float_val, SC_US);
     else if (strcmp(endptr, "ms") == 0)
-        t = sc_time(float_val, sc_core::SC_MS);
+        t = sc_time(float_val, SC_MS);
     else if (strcmp(endptr, "s") == 0)
-        t = sc_time(float_val, sc_core::SC_SEC);
+        t = sc_time(float_val, SC_SEC);
     else
         t = ::vcml::time_from_value(val);
 
