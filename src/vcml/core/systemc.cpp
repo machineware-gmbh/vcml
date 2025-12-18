@@ -926,7 +926,7 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
     str = vcml::to_lower(str);
 
     char* endptr = nullptr;
-    sc_dt::uint64 val = strtoul(str.c_str(), &endptr, 0);
+    mwr::u64 val = strtoull(str.c_str(), &endptr, 0);
     double float_val = (double)val;
 
     if (strcmp(endptr, "ps") == 0)
