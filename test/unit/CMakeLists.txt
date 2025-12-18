@@ -70,8 +70,8 @@ unit_test("peq")
 unit_test("simphases")
 unit_test("audio")
 unit_test("scsi")
+unit_test("sc_time")
 
 if(LUA_FOUND)
     unit_test("lua")
 endif()
-
