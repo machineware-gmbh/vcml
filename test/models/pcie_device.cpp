@@ -98,7 +98,6 @@ public:
         test_reg_io.allow_read_write();
         test_reg_io.sync_always();
         test_reg_io.on_write(&pcie_test_device::write_test_reg_io);
-        pci_declare_bar(0, MMAP_PCI_MMIO_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
         pci_declare_bar(2, MMAP_PCI_IO_SIZE, PCI_BAR_IO);
         pci_declare_bar(3, MMAP_PCI_MSIX_TABLE_SIZE, PCI_BAR_MMIO);
         pci_declare_bar(4, MMAP_PCI_MMIO_SIZE,
@@ -185,6 +184,9 @@ public:
         rst.bind(io_bus.rst);
         rst.bind(pcie_root.rst);
         rst.bind(pcie_device.rst);
+
+        add_test("test_unimplemented_bar", &pcie_test::test_unimplemented_bar);
+        add_test("test_general", &pcie_test::test_general);
     }
 
     template <typename T>
@@ -214,7 +216,15 @@ public:
         return 0;
     }
 
-    virtual void run_test() override {
+    void test_unimplemented_bar() {
+        u32 unimplemented_bar;
+        pcie_write_cfg(0, PCI_BAR0_OFFSET, ~0u);
+        pcie_read_cfg(0, PCI_BAR0_OFFSET, unimplemented_bar);
+        EXPECT_EQ(unimplemented_bar, 0)
+            << "unimplemented bar must be hardwired to 0";
+    }
+
+    void test_general() {
         u16 vendor_id = 0, device_id = 0;
         pcie_read_cfg(0, PCI_VENDOR_OFFSET, vendor_id);
         pcie_read_cfg(0, PCI_DEVICE_OFFSET, device_id);
@@ -231,6 +241,8 @@ public:
         //
         // test mapping bar0
         //
+        pcie_device.pci_declare_bar(0, MMAP_PCI_MMIO_SIZE,
+                                    PCI_BAR_MMIO | PCI_BAR_64);
         u32 dummy = 0; // make sure, nothing has been mapped yet
         EXPECT_AE(mmio.readw(MMAP_PCI_MMIO_ADDR, dummy))
             << "something has already been mapped to PCI MMIO address range";
