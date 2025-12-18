@@ -375,8 +375,10 @@ device::device(const sc_module_name& nm, const pci_config& cfg):
         m_bars[i].is_implemented = false;
     }
 
-    if (pcie)
+    if (pcie) {
         m_pcie = new cap_pcie("pci_cap_pcie");
+        m_pm = new cap_pm("pci_cap_pm", PCI_PM_CAP_VER_1_2);
+    }
 }
 
 device::~device() {
