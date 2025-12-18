@@ -123,6 +123,7 @@ struct pci_bar {
     bool is_io;
     bool is_64bit;
     bool is_prefetch;
+    bool is_implemented;
     union {
         u64 addr;
         struct {
