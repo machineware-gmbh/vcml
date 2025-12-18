@@ -32,6 +32,8 @@ enum : u64 {
     PCI_VENDOR_OFFSET = 0x0,
     PCI_DEVICE_OFFSET = 0x2,
     PCI_COMMAND_OFFSET = 0x4,
+    PCI_LATENCY_OFFSET = 0xd,
+    PCI_HEADER_TYPE = 0xe,
     PCI_BAR0_OFFSET = 0x10,
     PCI_BAR1_OFFSET = 0x14,
     PCI_BAR2_OFFSET = 0x18,
@@ -186,6 +188,7 @@ public:
         rst.bind(pcie_device.rst);
 
         add_test("test_unimplemented_bar", &pcie_test::test_unimplemented_bar);
+        add_test("test_readonly_regs", &pcie_test::test_readonly_regs);
         add_test("test_general", &pcie_test::test_general);
     }
 
@@ -222,6 +225,23 @@ public:
         pcie_read_cfg(0, PCI_BAR0_OFFSET, unimplemented_bar);
         EXPECT_EQ(unimplemented_bar, 0)
             << "unimplemented bar must be hardwired to 0";
+    }
+
+    void test_readonly_regs() {
+        u8 old_val;
+        u8 new_val;
+
+        pcie_read_cfg(0, PCI_LATENCY_OFFSET, old_val);
+        pcie_write_cfg(0, PCI_LATENCY_OFFSET, (u8)~0u);
+        pcie_read_cfg(0, PCI_LATENCY_OFFSET, new_val);
+        EXPECT_EQ(old_val, new_val)
+            << "latency timer register must be read-only";
+
+        pcie_read_cfg(0, PCI_HEADER_TYPE, old_val);
+        pcie_write_cfg(0, PCI_HEADER_TYPE, (u8)~0u);
+        pcie_read_cfg(0, PCI_HEADER_TYPE, new_val);
+        EXPECT_EQ(old_val, new_val)
+            << "header type register must be read-only";
     }
 
     void test_general() {
