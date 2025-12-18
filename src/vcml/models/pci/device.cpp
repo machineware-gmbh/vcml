@@ -198,7 +198,7 @@ tlm_response_status cap_msix::read_tbl(const range& addr, void* data) {
 
     unsigned int vector = addr.start / sizeof(msix_entry);
     unsigned int offset = addr.start % sizeof(msix_entry);
-    VCML_ERROR_ON(vector > num_vectors, "read out of bounds");
+    VCML_ERROR_ON(vector >= num_vectors, "read out of bounds");
 
     msix_entry* entry = msix_table + vector;
     memcpy(data, (u8*)(entry) + offset, addr.length());
@@ -211,7 +211,7 @@ tlm_response_status cap_msix::write_tbl(const range& addr, const void* data) {
 
     unsigned int vector = (addr.start - tbl.start) / sizeof(msix_entry);
     unsigned int offset = (addr.start - tbl.start) % sizeof(msix_entry);
-    VCML_ERROR_ON(vector > num_vectors, "read out of bounds");
+    VCML_ERROR_ON(vector >= num_vectors, "read out of bounds");
 
     msix_entry* entry = msix_table + vector;
     memcpy((u8*)(entry) + offset, data, addr.length());
