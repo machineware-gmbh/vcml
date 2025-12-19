@@ -572,7 +572,7 @@ tlm_response_status device::read(const range& addr, void* data,
     if (m_msix && m_msix->tbl_as == as && addr.overlaps(m_msix->tbl))
         return m_msix->read_tbl(addr, data);
     if (m_msix && m_msix->pba_as == as && addr.overlaps(m_msix->pba))
-        return m_msix->write_pba(addr, data);
+        return m_msix->read_pba(addr, data);
     if (read_mem_bar(addr, data, info, as))
         return TLM_OK_RESPONSE;
     return peripheral::read(addr, data, info, as);
