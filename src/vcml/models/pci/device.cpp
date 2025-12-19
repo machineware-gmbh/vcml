@@ -112,6 +112,7 @@ cap_msix::cap_msix(const string& nm, u32 bar, size_t nvec, u32 off):
     msix_bir_off() {
     VCML_ERROR_ON(bar < 0 || bar >= PCI_NUM_BARS, "invalid BAR specified");
     VCML_ERROR_ON(off & 7, "offset must be 8 byte aligned");
+    VCML_ERROR_ON(nvec == 0, "need at least one vector");
 
     size_t tblsz = nvec * sizeof(msix_entry);
     size_t pbasz = ((nvec + 31) / 32) * sizeof(u32);
@@ -174,7 +175,7 @@ void cap_msix::update() {
     pba.start = *msix_pba_off & ~PCI_MSIX_BIR_MASK;
 
     tbl.end = tbl.start + num_vec * sizeof(msix_entry) - 1;
-    pba.end = pba.start + ((num_vec + 31) / 32) * sizeof(u32);
+    pba.end = pba.start + ((num_vec + 31) / 32) * sizeof(u32) - 1;
 
     if (tbl.end >= dev->m_bars[tbl_bar].size)
         VCML_ERROR("MSIX table does not fit into BAR%u", tbl_bar);
