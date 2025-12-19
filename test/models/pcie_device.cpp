@@ -391,6 +391,7 @@ public:
         u64 pba_addr = MMAP_PCI_MSIX_TABLE_ADDR + pba_offset;
         u32 pba_data = ~0u;
         EXPECT_OK(mmio.readw(pba_addr, pba_data));
+        // interrupt masked, pending bit should be 1
         EXPECT_EQ(pba_data, 1 << TEST_IRQ_VECTOR);
 
         msix_mask = ~PCI_MSIX_MASKED; // trigger MSI by unmasking
@@ -399,6 +400,10 @@ public:
         wait_clock_cycle();
         EXPECT_EQ(msi_addr, msix_addr) << "got wrong MSIX address";
         EXPECT_EQ(msi_data, msix_data) << "got wrong MSIX data";
+
+        // interrupt unmasked, pending bit should be 0
+        EXPECT_OK(mmio.readw(pba_addr, pba_data));
+        EXPECT_EQ(pba_data, 0);
 
         //
         // test resetting bar0 & bar2
