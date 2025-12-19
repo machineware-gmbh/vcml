@@ -387,12 +387,23 @@ public:
         EXPECT_EQ(msi_addr, 0) << "got MSIX address despite masked";
         EXPECT_EQ(msi_data, 0) << "got MSIX data despite masked";
 
+        u32 pba_offset = pba & ~0x7u;
+        u64 pba_addr = MMAP_PCI_MSIX_TABLE_ADDR + pba_offset;
+        u32 pba_data = ~0u;
+        EXPECT_OK(mmio.readw(pba_addr, pba_data));
+        // interrupt masked, pending bit should be 1
+        EXPECT_EQ(pba_data, 1 << TEST_IRQ_VECTOR);
+
         msix_mask = ~PCI_MSIX_MASKED; // trigger MSI by unmasking
         EXPECT_OK(mmio.writew(msix_table_addr + 12, msix_mask))
             << "cannot write MSIX vector table";
         wait_clock_cycle();
         EXPECT_EQ(msi_addr, msix_addr) << "got wrong MSIX address";
         EXPECT_EQ(msi_data, msix_data) << "got wrong MSIX data";
+
+        // interrupt unmasked, pending bit should be 0
+        EXPECT_OK(mmio.readw(pba_addr, pba_data));
+        EXPECT_EQ(pba_data, 0);
 
         //
         // test resetting bar0 & bar2
