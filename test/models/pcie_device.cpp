@@ -28,6 +28,7 @@ enum : u64 {
     TEST_REG_IO_OFF = 0x4,
     TEST_IRQ_VECTOR = 5,
     TEST_MSIX_NVEC = 128,
+    TEST_MSIX_TBL_OFFSET = 0x100,
 
     PCI_VENDOR_OFFSET = 0x0,
     PCI_DEVICE_OFFSET = 0x2,
@@ -105,7 +106,7 @@ public:
         pci_declare_bar(4, MMAP_PCI_MMIO_SIZE,
                         PCI_BAR_MMIO | PCI_BAR_PREFETCH | PCI_BAR_64, bar4);
         pci_declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_QMASK32);
-        pci_declare_msix_cap(3, TEST_MSIX_NVEC);
+        pci_declare_msix_cap(3, TEST_MSIX_NVEC, TEST_MSIX_TBL_OFFSET);
     }
 
     virtual ~pcie_test_device() = default;
@@ -350,10 +351,15 @@ public:
         pcie_read_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
         EXPECT_EQ(msix_ctrl, TEST_MSIX_NVEC - 1);
 
-        u32 bir, pba, pba_expect = TEST_MSIX_NVEC * 16 | 3;
-        pcie_read_cfg(0, msix_off + PCI_MSIX_BIR_OFF, bir);
-        EXPECT_EQ(bir, 3) << "MSIX BIR not pointing to BAR3";
+        u32 table_bir, table_offset, table, pba;
+        pcie_read_cfg(0, msix_off + PCI_MSIX_BIR_OFF, table);
+        table_offset = table & ~0x7u;
+        table_bir = table & 0x7u;
+        EXPECT_EQ(table_offset, TEST_MSIX_TBL_OFFSET)
+            << "incorrect table offset";
+        EXPECT_EQ(table_bir, 3) << "MSIX BIR not pointing to BAR3";
         pcie_read_cfg(0, msix_off + PCI_MSIX_PBA_OFF, pba);
+        u32 pba_expect = (table_offset + TEST_MSIX_NVEC * 16) | 3;
         EXPECT_EQ(pba, pba_expect) << "MSIX PBA not pointing to BAR3";
         msix_ctrl |= PCI_MSIX_ENABLE;
         pcie_write_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
@@ -362,8 +368,9 @@ public:
         pcie_write_cfg(0, PCI_BAR3_OFFSET, (u32)bar3);
 
         msi_addr = msi_data = 0;
-        u64 msix_table_addr = MMAP_PCI_MSIX_TABLE_ADDR + TEST_IRQ_VECTOR * 16;
-        u32 msix_addr, msix_data, msix_mask;
+        u64 msix_table_addr = table_offset + MMAP_PCI_MSIX_TABLE_ADDR +
+                              TEST_IRQ_VECTOR * 16;
+        u32 msix_addr, msix_data, msix_mask, msix_table_entry;
         EXPECT_OK(mmio.readw(msix_table_addr + 0, msix_addr))
             << "cannot read MSIX vector table";
         EXPECT_OK(mmio.readw(msix_table_addr + 8, msix_data))
@@ -379,8 +386,14 @@ public:
         msix_data = 1234567;
         EXPECT_OK(mmio.writew(msix_table_addr + 0, msix_addr + 3))
             << "cannot write MSIX vector table";
+        mmio.readw(msix_table_addr + 0, msix_table_entry);
+        EXPECT_EQ(msix_table_entry, msix_addr)
+            << "wrong value in MSIX vector table";
         EXPECT_OK(mmio.writew(msix_table_addr + 8, msix_data))
             << "cannot write MSIX vector table";
+        mmio.readw(msix_table_addr + 8, msix_table_entry);
+        EXPECT_EQ(msix_table_entry, msix_data)
+            << "wrong value in MSIX vector table";
         EXPECT_OK(io.writew(MMAP_PCI_IO_ADDR + TEST_REG_IO_OFF, 0x1234))
             << "BAR2 setup failed: cannot read BAR2 range";
         wait_clock_cycle();

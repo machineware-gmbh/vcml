@@ -196,8 +196,8 @@ tlm_response_status cap_msix::read_tbl(const range& addr, void* data) {
     if (addr.length() != 4 || addr.start % 4)
         return TLM_BURST_ERROR_RESPONSE;
 
-    unsigned int vector = addr.start / sizeof(msix_entry);
-    unsigned int offset = addr.start % sizeof(msix_entry);
+    unsigned int vector = (addr.start - tbl.start) / sizeof(msix_entry);
+    unsigned int offset = (addr.start - tbl.start) % sizeof(msix_entry);
     VCML_ERROR_ON(vector >= num_vectors, "read out of bounds");
 
     msix_entry* entry = msix_table + vector;
