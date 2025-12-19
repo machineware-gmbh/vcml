@@ -104,7 +104,6 @@ public:
         pci_declare_bar(3, MMAP_PCI_MSIX_TABLE_SIZE, PCI_BAR_MMIO);
         pci_declare_bar(4, MMAP_PCI_MMIO_SIZE,
                         PCI_BAR_MMIO | PCI_BAR_PREFETCH | PCI_BAR_64, bar4);
-        pci_declare_pm_cap(PCI_PM_CAP_VER_1_2);
         pci_declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_QMASK32);
         pci_declare_msix_cap(3, TEST_MSIX_NVEC);
     }
