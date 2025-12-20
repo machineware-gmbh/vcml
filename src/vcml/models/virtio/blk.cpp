@@ -180,7 +180,7 @@ bool blk::process_get_id(virtio_blk_req& req, vq_message& msg) {
     log_debug("get_id request");
     char buffer[20] = {};
     snprintf(buffer, sizeof(buffer), "%s", disk.serial.get().c_str());
-    msg.copy_in(buffer);
+    msg.copy_out(buffer, 0);
     put_status(msg, VIRTIO_BLK_S_OK);
     return true;
 }
