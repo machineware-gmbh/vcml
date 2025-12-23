@@ -134,7 +134,7 @@ u64 scsi_read(const u8* ptr, size_t len) {
 #ifdef MWR_HOST_LITTLE_ENDIAN
         result |= (u64)ptr[i] << ((len - i - 1) * 8);
 #else
-        result |= (u64)data[i] << (i * 8);
+        result |= (u64)ptr[i] << (i * 8);
 #endif
     }
 
