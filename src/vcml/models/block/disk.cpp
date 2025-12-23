@@ -19,7 +19,7 @@ bool disk::cmd_show_stats(const vector<string>& args, ostream& os) {
     os << "seek requests    " << stats.num_seek_req << std::endl;
     os << "read requests    " << stats.num_read_req << std::endl;
     os << "write requests   " << stats.num_write_req << std::endl;
-    os << "flush requests   " << stats.num_write_req << std::endl;
+    os << "flush requests   " << stats.num_flush_req << std::endl;
     os << "discard requests " << stats.num_discard_req << std::endl;
     os << "total requests   " << stats.num_req << std::endl;
     os << "seek errors      " << stats.num_seek_err << std::endl;
