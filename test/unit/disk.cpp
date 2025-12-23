@@ -193,5 +193,5 @@ TEST(disk, commands) {
 
     cmd = disk.get_command("save_image");
     ASSERT_NE(cmd, nullptr);
-    ASSERT_FALSE(cmd->execute({"output_file"}, ss));
+    ASSERT_FALSE(cmd->execute({ "output_file" }, ss));
 }
