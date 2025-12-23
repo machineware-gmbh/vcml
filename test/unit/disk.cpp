@@ -179,3 +179,19 @@ TEST(ramdisk, unmap_zero) {
     EXPECT_EQ(disk.stats.num_req, 3);
     EXPECT_EQ(disk.stats.num_err, 0);
 }
+
+TEST(disk, commands) {
+    block::disk disk("disk", "nothing");
+
+    command* cmd;
+    stringstream ss;
+
+    cmd = disk.get_command("show_stats");
+    ASSERT_NE(cmd, nullptr);
+    cmd->execute({}, ss);
+    EXPECT_NE(ss.str().length(), 0);
+
+    cmd = disk.get_command("save_image");
+    ASSERT_NE(cmd, nullptr);
+    ASSERT_FALSE(cmd->execute({"output_file"}, ss));
+}

@@ -32,10 +32,15 @@ bool disk::cmd_show_stats(const vector<string>& args, ostream& os) {
 }
 
 bool disk::cmd_save_image(const vector<string>& args, ostream& os) {
-    const string& file = args[1];
+    const string& file = args[0];
     ofstream stream(file.c_str(), ofstream::binary);
     if (!stream.good()) {
         os << mkstr("cannot open '%s'", file.c_str());
+        return false;
+    }
+
+    if (m_backend == nullptr) {
+        os << "undefined backend";
         return false;
     }
 
@@ -66,6 +71,11 @@ disk::disk(const sc_module_name& nm, const string& img, bool ro, bool wi):
     } catch (std::exception& ex) {
         log_warn("%s", ex.what());
     }
+
+    register_command("save_image", 1, &disk::cmd_save_image,
+                     "save disk image to file");
+    register_command("show_stats", 0, &disk::cmd_show_stats,
+                     "show statistics of the disk");
 }
 
 disk::~disk() {
