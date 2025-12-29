@@ -407,14 +407,14 @@ inline property<T, N>& property<T, N>::operator=(const T2& other) {
 template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator+=(const T2& other) {
-    set(get() + other, 0);
+    set(get() + other);
     return *this;
 }
 
 template <typename T, size_t N>
 template <typename T2>
 inline property<T, N>& property<T, N>::operator-=(const T2& other) {
-    set(get() - other, 0);
+    set(get() - other);
     return *this;
 }
 
