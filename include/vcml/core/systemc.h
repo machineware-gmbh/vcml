@@ -71,25 +71,68 @@ using sc_core::SC_MS;
 using sc_core::SC_US;
 using sc_core::SC_NS;
 using sc_core::SC_PS;
+using sc_core::SC_FS;
 
-inline u64 time_to_ps(const sc_time& t) {
-    return t.value() / sc_time(1.0, SC_PS).value();
-}
-
-inline u64 time_to_ns(const sc_time& t) {
-    return t.value() / sc_time(1.0, SC_NS).value();
-}
-
-inline u64 time_to_us(const sc_time& t) {
-    return t.value() / sc_time(1.0, SC_US).value();
-}
-
-inline u64 time_to_ms(const sc_time& t) {
-    return t.value() / sc_time(1.0, SC_MS).value();
+inline bool time_unit_is_resolvable(sc_time_unit tu) {
+    return sc_time(1.0, tu) != SC_ZERO_TIME;
 }
 
 inline u64 time_to_sec(const sc_time& t) {
     return t.value() / sc_time(1.0, SC_SEC).value();
+}
+
+inline u64 time_to_ms(const sc_time& t) {
+    if (time_unit_is_resolvable(SC_MS))
+        return t.value() / sc_time(1.0, SC_MS).value();
+    return time_to_sec(t) * 1000;
+}
+
+inline u64 time_to_us(const sc_time& t) {
+    if (time_unit_is_resolvable(SC_US))
+        return t.value() / sc_time(1.0, SC_US).value();
+    return time_to_ms(t) * 1000;
+}
+
+inline u64 time_to_ns(const sc_time& t) {
+    if (time_unit_is_resolvable(SC_NS))
+        return t.value() / sc_time(1.0, SC_NS).value();
+    return time_to_us(t) * 1000;
+}
+
+inline u64 time_to_ps(const sc_time& t) {
+    if (time_unit_is_resolvable(SC_PS))
+        return t.value() / sc_time(1.0, SC_PS).value();
+    return time_to_ns(t) * 1000;
+}
+
+inline u64 time_to_fs(const sc_time& t) {
+    if (time_unit_is_resolvable(SC_FS))
+        return t.value() / sc_time(1.0, SC_FS).value();
+    return time_to_ps(t) * 1000;
+}
+
+inline u64 time_to_as(const sc_time& t) {
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    if (time_unit_is_resolvable(sc_core::SC_AS))
+        return t.value() / sc_time(1.0, sc_core::SC_AS).value();
+#endif
+    return time_to_fs(t) * 1000;
+}
+
+inline u64 time_to_zs(const sc_time& t) {
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    if (time_unit_is_resolvable(sc_core::SC_ZS))
+        return t.value() / sc_time(1.0, sc_core::SC_ZS).value();
+#endif
+    return time_to_as(t) * 1000;
+}
+
+inline u64 time_to_ys(const sc_time& t) {
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    if (time_unit_is_resolvable(sc_core::SC_YS))
+        return t.value() / sc_time(1.0, sc_core::SC_YS).value();
+#endif
+    return time_to_zs(t) * 1000;
 }
 
 inline u64 time_stamp_ns() {
@@ -430,5 +473,10 @@ namespace tlm {
 std::ostream& operator<<(std::ostream& os, tlm_response_status sts);
 std::ostream& operator<<(std::ostream& os, const tlm_generic_payload&);
 } // namespace tlm
+
+namespace mwr {
+template <>
+string to_string<sc_core::sc_time>(const sc_core::sc_time& t);
+} // namespace mwr
 
 #endif

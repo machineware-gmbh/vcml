@@ -926,19 +926,30 @@ std::istream& operator>>(std::istream& is, sc_time& t) {
     str = vcml::to_lower(str);
 
     char* endptr = nullptr;
-    sc_dt::uint64 val = strtoul(str.c_str(), &endptr, 0);
+    mwr::u64 val = strtoull(str.c_str(), &endptr, 0);
     double float_val = (double)val;
 
-    if (strcmp(endptr, "ps") == 0)
-        t = sc_time(float_val, sc_core::SC_PS);
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+    if (strcmp(endptr, "ys") == 0)
+        t = sc_time(float_val, SC_YS);
+    else if (strcmp(endptr, "zs") == 0)
+        t = sc_time(float_val, SC_ZS);
+    else if (strcmp(endptr, "as") == 0)
+        t = sc_time(float_val, SC_AS);
+    else
+#endif
+        if (strcmp(endptr, "fs") == 0)
+        t = sc_time(float_val, SC_FS);
+    else if (strcmp(endptr, "ps") == 0)
+        t = sc_time(float_val, SC_PS);
     else if (strcmp(endptr, "ns") == 0)
-        t = sc_time(float_val, sc_core::SC_NS);
+        t = sc_time(float_val, SC_NS);
     else if (strcmp(endptr, "us") == 0)
-        t = sc_time(float_val, sc_core::SC_US);
+        t = sc_time(float_val, SC_US);
     else if (strcmp(endptr, "ms") == 0)
-        t = sc_time(float_val, sc_core::SC_MS);
+        t = sc_time(float_val, SC_MS);
     else if (strcmp(endptr, "s") == 0)
-        t = sc_time(float_val, sc_core::SC_SEC);
+        t = sc_time(float_val, SC_SEC);
     else
         t = ::vcml::time_from_value(val);
 
@@ -961,3 +972,56 @@ std::ostream& operator<<(std::ostream& os,
 }
 
 } // namespace tlm
+
+inline bool time_in_unit(const sc_core::sc_time& t, sc_core::sc_time_unit tu) {
+    return t.value() % sc_core::sc_time(1.0, tu).value() == 0;
+}
+
+namespace mwr {
+
+using sc_core::sc_time;
+
+using sc_core::SC_ZERO_TIME;
+using sc_core::SC_SEC;
+using sc_core::SC_MS;
+using sc_core::SC_US;
+using sc_core::SC_NS;
+using sc_core::SC_PS;
+using sc_core::SC_FS;
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+using sc_core::SC_AS;
+using sc_core::SC_ZS;
+using sc_core::SC_YS;
+#endif
+
+using vcml::time_unit_is_resolvable;
+
+template <>
+string to_string<sc_time>(const sc_time& t) {
+    if (t == SC_ZERO_TIME)
+        return "0s";
+
+    if (time_in_unit(t, SC_SEC) || !time_unit_is_resolvable(SC_MS))
+        return mkstr("%llus", vcml::time_to_sec(t));
+    if (time_in_unit(t, SC_MS) || !time_unit_is_resolvable(SC_US))
+        return mkstr("%llums", vcml::time_to_ms(t));
+    if (time_in_unit(t, SC_US) || !time_unit_is_resolvable(SC_NS))
+        return mkstr("%lluus", vcml::time_to_us(t));
+    if (time_in_unit(t, SC_NS) || !time_unit_is_resolvable(SC_PS))
+        return mkstr("%lluns", vcml::time_to_ns(t));
+    if (time_in_unit(t, SC_PS) || !time_unit_is_resolvable(SC_FS))
+        return mkstr("%llups", vcml::time_to_ps(t));
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_3_0_0
+    return mkstr("%llufs", vcml::time_to_fs(t));
+#else
+    if (time_in_unit(t, SC_FS) || !time_unit_is_resolvable(SC_AS))
+        return mkstr("%llufs", vcml::time_to_fs(t));
+    if (time_in_unit(t, SC_AS) || !time_unit_is_resolvable(SC_ZS))
+        return mkstr("%lluas", vcml::time_to_as(t));
+    if (time_in_unit(t, SC_ZS) || !time_unit_is_resolvable(SC_YS))
+        return mkstr("%lluzs", vcml::time_to_zs(t));
+    return mkstr("%lluys", vcml::time_to_ys(t));
+#endif
+}
+
+} // namespace mwr
