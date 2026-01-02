@@ -563,7 +563,7 @@ static void pl330_insn_dmastz(pl330* dma, pl330::channel* ch, u8 opcode,
     bool inc = !!((ch->ccr >> 14) & 0b1);
 
     pl330::queue_entry entry{ ch->dar, size, num, inc, 1, ch->chid };
-    ch->stall = dma->write_queue.push(entry);
+    ch->stall = !dma->write_queue.push(entry);
 
     if (inc)
         ch->dar += size * num;
