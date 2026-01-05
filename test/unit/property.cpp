@@ -129,6 +129,68 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array.str(), "1 2 3 4");
     EXPECT_EQ(test.prop_array.defstr(), "7 7 7 7");
 
+    test.prop_array += test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 2);
+    EXPECT_EQ(test.prop_array[1], 2);
+    EXPECT_EQ(test.prop_array[2], 2);
+    EXPECT_EQ(test.prop_array[3], 2);
+
+    test.prop_array -= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 1);
+    EXPECT_EQ(test.prop_array[1], 1);
+    EXPECT_EQ(test.prop_array[2], 1);
+    EXPECT_EQ(test.prop_array[3], 1);
+
+    test.prop_array += test.prop_array2;
+    test.prop_array *= test.prop_array;
+    EXPECT_EQ(test.prop_array[0], 4);
+    EXPECT_EQ(test.prop_array[1], 4);
+    EXPECT_EQ(test.prop_array[2], 4);
+    EXPECT_EQ(test.prop_array[3], 4);
+
+    test.prop_array /= test.prop_array;
+    EXPECT_EQ(test.prop_array[0], 1);
+    EXPECT_EQ(test.prop_array[1], 1);
+    EXPECT_EQ(test.prop_array[2], 1);
+    EXPECT_EQ(test.prop_array[3], 1);
+
+    test.prop_array %= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 0);
+    EXPECT_EQ(test.prop_array[1], 0);
+    EXPECT_EQ(test.prop_array[2], 0);
+    EXPECT_EQ(test.prop_array[3], 0);
+
+    test.prop_array &= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 0);
+    EXPECT_EQ(test.prop_array[1], 0);
+    EXPECT_EQ(test.prop_array[2], 0);
+    EXPECT_EQ(test.prop_array[3], 0);
+
+    test.prop_array |= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 1);
+    EXPECT_EQ(test.prop_array[1], 1);
+    EXPECT_EQ(test.prop_array[2], 1);
+    EXPECT_EQ(test.prop_array[3], 1);
+
+    test.prop_array ^= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 0);
+    EXPECT_EQ(test.prop_array[1], 0);
+    EXPECT_EQ(test.prop_array[2], 0);
+    EXPECT_EQ(test.prop_array[3], 0);
+
+    test.prop_array |= test.prop_array2;
+    test.prop_array <<= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 2);
+    EXPECT_EQ(test.prop_array[1], 2);
+    EXPECT_EQ(test.prop_array[2], 2);
+    EXPECT_EQ(test.prop_array[3], 2);
+
+    test.prop_array >>= test.prop_array2;
+    EXPECT_EQ(test.prop_array[0], 1);
+    EXPECT_EQ(test.prop_array[1], 1);
+    EXPECT_EQ(test.prop_array[2], 1);
+    EXPECT_EQ(test.prop_array[3], 1);
+
     EXPECT_TRUE(test.prop_array2.is_inited());
     EXPECT_EQ(test.prop_array2.count(), 4);
     EXPECT_EQ(test.prop_array2[0], 1);
