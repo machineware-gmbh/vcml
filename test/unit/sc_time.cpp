@@ -8,7 +8,18 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <testing.h>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+
+using namespace ::testing;
+
+#include "vcml.h"
+
+using namespace ::vcml;
+
+TEST(sc_time, max_time) {
+    EXPECT_EQ(sc_max_time().value(), ~0ull);
+}
 
 TEST(sc_time, time_unit_is_resolvable) {
     EXPECT_TRUE(time_unit_is_resolvable(SC_SEC));
@@ -44,4 +55,18 @@ TEST(sc_time, to_string) {
     EXPECT_EQ(mwr::to_string(sc_time(1000.0, SC_FS)), "1ps");
     EXPECT_EQ(mwr::to_string(sc_time(500.0, SC_FS)), "1ps");
     EXPECT_EQ(mwr::to_string(sc_time(499.0, SC_FS)), "0s");
+}
+
+int sc_main(int argc, char** argv) {
+    ADD_FAILURE() << "sc_main should not be called";
+    return EXIT_FAILURE;
+}
+
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    ::mwr::report_segfaults();
+
+    sc_set_time_resolution(1, SC_PS);
+
+    return RUN_ALL_TESTS();
 }

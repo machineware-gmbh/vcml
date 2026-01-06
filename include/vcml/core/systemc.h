@@ -62,9 +62,7 @@ using sc_core::sc_delta_count;
 using sc_core::sc_time;
 using sc_core::sc_time_unit;
 using sc_core::sc_time_stamp;
-
-extern const sc_core::sc_time SC_MAX_TIME;
-
+using sc_core::sc_max_time;
 using sc_core::SC_ZERO_TIME;
 using sc_core::SC_SEC;
 using sc_core::SC_MS;
@@ -72,6 +70,12 @@ using sc_core::SC_US;
 using sc_core::SC_NS;
 using sc_core::SC_PS;
 using sc_core::SC_FS;
+
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+using sc_core::SC_AS;
+using sc_core::SC_ZS;
+using sc_core::SC_YS;
+#endif
 
 inline bool time_unit_is_resolvable(sc_time_unit tu) {
     return sc_time(1.0, tu) != SC_ZERO_TIME;

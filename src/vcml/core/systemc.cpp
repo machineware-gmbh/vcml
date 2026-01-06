@@ -43,8 +43,6 @@ sc_attr_base* find_attribute(const string& name) {
     return parent->get_attribute(name.substr(pos + 1));
 }
 
-const sc_time SC_MAX_TIME = time_from_value(~0ull);
-
 sc_module* hierarchy_top() {
     sc_simcontext* simc = sc_get_curr_simcontext();
     VCML_ERROR_ON(!simc, "no simulation context");

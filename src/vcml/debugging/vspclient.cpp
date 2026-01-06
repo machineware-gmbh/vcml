@@ -33,10 +33,10 @@ static string hexstr(const u8* bytes, size_t len) {
 
 void vspclient::resume_simulation(const sc_time& duration) {
     m_stop_reason.clear();
-    if (duration < SC_MAX_TIME)
+    if (duration < sc_max_time())
         m_until = sc_time_stamp() + duration;
     else
-        m_until = SC_MAX_TIME;
+        m_until = sc_max_time();
     m_stop = false;
     m_server.update();
 }
@@ -88,7 +88,7 @@ vspclient::vspclient(vspserver& server, int clientid, const string& peer,
     m_port(port),
     m_peer(peer),
     m_name(mkstr("vspclient%d[%s:%hu]", clientid, peer.c_str(), port)),
-    m_until(SC_MAX_TIME),
+    m_until(),
     m_stop(true),
     m_stop_reason("user"),
     m_mtx(),
@@ -123,7 +123,7 @@ string vspclient::handle_resume(const string& command) {
         return "E,simulation running";
 
     vector<string> args = split(command, ',');
-    sc_time duration = SC_MAX_TIME;
+    sc_time duration = sc_max_time();
 
     if (args.size() > 1)
         duration = from_string<sc_time>(args[1]);
@@ -145,7 +145,7 @@ string vspclient::handle_step(const string& command) {
         return mkstr("E,no such target: %s", args[1].c_str());
 
     tgt->request_singlestep(this);
-    resume_simulation(SC_MAX_TIME);
+    resume_simulation(sc_max_time());
     return "OK";
 }
 

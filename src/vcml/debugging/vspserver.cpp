@@ -703,7 +703,7 @@ void vspserver::start() {
         if (!sim_running())
             break;
 
-        if (m_duration == SC_MAX_TIME)
+        if (m_duration == sc_max_time())
             sc_start();
         else {
             sc_start(m_duration);
@@ -730,9 +730,9 @@ void vspserver::update() {
     if (!sim_running())
         return;
 
-    m_duration = SC_MAX_TIME;
+    m_duration = sc_max_time();
 
-    sc_time until = SC_MAX_TIME;
+    sc_time until = sc_max_time();
     bool stopped = m_clients.empty();
 
     for (auto [id, client] : m_clients) {
@@ -746,7 +746,7 @@ void vspserver::update() {
     }
 
     if (!stopped && is_suspending()) {
-        m_duration = until < SC_MAX_TIME ? until - sc_time_stamp() : until;
+        m_duration = until < sc_max_time() ? until - sc_time_stamp() : until;
         resume();
     }
 }

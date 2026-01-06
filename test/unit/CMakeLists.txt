@@ -8,13 +8,9 @@
  #                                                                            #
  ##############################################################################
 
-function(unit_test test)
+function(define_test test)
     add_executable(${test} ${test}.cpp)
-     if(${test} STREQUAL "logging")
-        target_link_libraries(${test} vcml gmock)
-    else()
-        target_link_libraries(${test} testing)
-    endif()
+   target_link_libraries(${test} ${ARGN})
     target_compile_options(${test} PRIVATE ${MWR_COMPILER_WARN_FLAGS})
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
@@ -23,9 +19,17 @@ function(unit_test test)
     set_tests_properties(unit/${test} PROPERTIES TIMEOUT 10)
 endfunction()
 
+macro(unit_test test)
+    define_test(${test} testing)
+endmacro()
+
+macro(unit_test_main test)
+    define_test(${test} vcml gmock)
+endmacro()
+
 unit_test("hello")
 unit_test("sysc")
-unit_test("logging")
+unit_test_main("logging")
 unit_test("version")
 unit_test("dmi")
 unit_test("range")
@@ -70,7 +74,7 @@ unit_test("peq")
 unit_test("simphases")
 unit_test("audio")
 unit_test("scsi")
-unit_test("sc_time")
+unit_test_main("sc_time")
 
 if(LUA_FOUND)
     unit_test("lua")
