@@ -53,6 +53,12 @@ public:
     u8& operator[](size_t idx) { return m_memory[idx]; }
     u8 operator[](size_t idx) const { return m_memory[idx]; }
 
+    template <typename T>
+    T get(u64 offset) const;
+
+    template <typename T>
+    void set(u64 offset, T data);
+
     memory(const sc_module_name& name, u64 size, bool read_only = false,
            alignment al = VCML_ALIGN_NONE, unsigned int read_latency = 0,
            unsigned int write_latency = 0);
@@ -65,6 +71,22 @@ public:
     virtual tlm_response_status write(const range& addr, const void* data,
                                       const tlm_sbi& info) override;
 };
+
+template <typename T>
+T memory::get(u64 offset) const {
+    T data = 0;
+    VCML_ERROR_ON(sizeof(T) > m_memory.size(), "access too big");
+    VCML_ERROR_ON(offset > m_memory.size() - sizeof(T), "offset too big");
+    memcpy(&data, m_memory.data() + offset, sizeof(data));
+    return data;
+}
+
+template <typename T>
+void memory::set(u64 offset, T data) {
+    VCML_ERROR_ON(sizeof(T) > m_memory.size(), "access too big");
+    VCML_ERROR_ON(offset > m_memory.size() - sizeof(T), "offset too big");
+    memcpy(m_memory.data() + offset, &data, sizeof(data));
+}
 
 } // namespace generic
 } // namespace vcml

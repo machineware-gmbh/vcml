@@ -31,6 +31,11 @@ public:
         rom.rst.stub();
         ram.clk.stub(10 * MHz);
         rom.clk.stub(10 * MHz);
+
+        u32 data = 0x12345678;
+        u64 addr = ram.size - sizeof(data);
+        ram.set(addr, data);
+        EXPECT_EQ(ram.get<u32>(addr), data);
     }
 
     virtual void run_test() override {
