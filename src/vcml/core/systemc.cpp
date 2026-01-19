@@ -715,16 +715,20 @@ struct async_worker {
 
         while (working) {
             debugging::suspender::handle_requests();
+            mtx.lock();
             u64 p = progress.exchange(0);
             sc_thread_pos = sc_time_stamp() + time_from_value(p);
+            mtx.unlock();
             sc_core::wait(time_from_value(p));
 
             if (request) {
+                mtx.lock();
                 p = progress.exchange(0);
-                if (p > 0) {
-                    sc_thread_pos = sc_time_stamp() + time_from_value(p);
+                sc_thread_pos = sc_time_stamp() + time_from_value(p);
+                mtx.unlock();
+
+                if (p > 0)
                     sc_core::wait(time_from_value(p));
-                }
 
                 (*request)();
                 request = nullptr;
@@ -749,7 +753,10 @@ struct async_worker {
         pre_run();
     }
 
-    sc_time timestamp() { return sc_thread_pos + time_from_value(progress); }
+    sc_time timestamp() {
+        std::lock_guard<std::mutex> lock(mtx);
+        return sc_thread_pos + time_from_value(progress);
+    }
 
     typedef unordered_map<sc_process_b*, shared_ptr<async_worker>> map_t;
     static map_t& all_workers() {
