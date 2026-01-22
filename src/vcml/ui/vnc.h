@@ -76,7 +76,8 @@ struct vnc_pixelformat {
 class vnc : public display
 {
 private:
-    u16 m_port;
+    int m_port;
+    string m_host;
     u8 m_buttons;
     u16 m_ptr_x;
     u16 m_ptr_y;
@@ -133,6 +134,8 @@ public:
 
     virtual void init(const videomode& mode, u8* fb) override;
     virtual void shutdown() override;
+
+    virtual void handle_option(const string& option) override;
 
     static display* create(u32 nr);
 };

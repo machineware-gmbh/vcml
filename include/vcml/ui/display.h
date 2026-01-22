@@ -39,7 +39,7 @@ private:
 
 protected:
     static unordered_map<string, create_fn> types;
-    static unordered_map<string, shared_ptr<display>> displays;
+    static unordered_map<u32, shared_ptr<display>> displays;
 
 public:
     mwr::logger log;
@@ -71,6 +71,8 @@ public:
     virtual void notify_key(u32 keysym, bool down);
     virtual void notify_btn(u32 button, bool down);
     virtual void notify_pos(u32 x, u32 y);
+
+    virtual void handle_option(const string& option);
 
     void attach(input* device);
     void detach(input* device);

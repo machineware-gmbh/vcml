@@ -78,6 +78,10 @@ void display::notify_pos(u32 x, u32 y) {
     }
 }
 
+void display::handle_option(const string& option) {
+    VCML_REPORT("%s: unsupported option \"%s\"", name(), option.c_str());
+}
+
 void display::attach(input* device) {
     m_inputs.push_back(device);
     if (!has_framebuffer())
@@ -88,13 +92,26 @@ void display::detach(input* device) {
     stl_remove(m_inputs, device);
 }
 
-static bool parse_display(const string& name, string& id, u32& nr) {
-    auto it = name.rfind(':');
-    if (it == string::npos)
+static bool parse_display(const string& name, string& type, u32& nr,
+                          vector<string>& options) {
+    size_t comma = name.find(',');
+    string head = name.substr(0, comma);
+
+    if (comma != string::npos)
+        options = split(name.substr(comma + 1), ',');
+
+    size_t colon = head.find(':');
+    if (colon == string::npos)
         return false;
 
-    id = name.substr(0, it);
-    nr = from_string<u32>(name.substr(it + 1, string::npos));
+    type = head.substr(0, colon);
+    string nr_str = head.substr(colon + 1);
+
+    char* end;
+    nr = strtoul(nr_str.c_str(), &end, 0);
+    if (*end || nr_str.empty())
+        return false;
+
     return true;
 }
 
@@ -111,8 +128,8 @@ VCML_DEFINE_UI_DISPLAY(vnc, vnc::create)
 VCML_DEFINE_UI_DISPLAY(sdl, sdl::create)
 #endif
 
-unordered_map<string, shared_ptr<display>> display::displays = {
-    { "", shared_ptr<display>(create_null(0)) } // no-op server
+unordered_map<u32, shared_ptr<display>> display::displays = {
+    { 0, shared_ptr<display>(create_null(0)) } // no-op server
 };
 
 void display::define(const string& type, create_fn fn) {
@@ -125,26 +142,33 @@ shared_ptr<display> display::lookup(const string& name) {
     if (mwr::getenv_or_default("VCML_NO_GUI", false))
         return nullptr;
 
-    shared_ptr<display>& disp = displays[name];
-    if (disp != nullptr)
-        return disp;
+    if (name.empty())
+        return displays[0];
 
     u32 nr;
     string type;
+    vector<string> options;
 
-    if (!parse_display(name, type, nr))
+    if (!parse_display(name, type, nr, options))
         VCML_ERROR("cannot parse display name: %s", name.c_str());
 
-    auto it = types.find(type);
-    if (it == types.end()) {
-        stringstream ss;
-        ss << "unknown display '" << type << "', available displays:";
-        for (const auto& avail : types)
-            ss << " " << avail.first;
-        VCML_REPORT("%s", ss.str().c_str());
+    shared_ptr<display>& disp = displays[nr];
+    if (disp == nullptr) {
+        auto it = types.find(type);
+        if (it == types.end()) {
+            stringstream ss;
+            ss << "unknown display '" << type << "', available displays:";
+            for (const auto& avail : types)
+                ss << " " << avail.first;
+            VCML_REPORT("%s", ss.str().c_str());
+        }
+
+        disp.reset(it->second(nr));
     }
 
-    disp.reset(it->second(nr));
+    for (const string& option : options)
+        disp->handle_option(option);
+
     return disp;
 }
 

@@ -808,7 +808,16 @@ void vnc::handle_command() {
 void vnc::run() {
     try {
         mwr::set_thread_name(mkstr("vnc_%u", dispno()));
-        m_socket.listen(m_port);
+        log_info("thread started");
+
+        if (m_port < 0)
+            m_port = dispno();
+        if (m_port > U16_MAX)
+            VCML_REPORT("%s: invalid port specified: %u", name(), m_port);
+        if (m_host.empty())
+            m_host = "localhost";
+
+        m_socket.listen(m_port, m_host);
     } catch (std::exception& ex) {
         log.warn(ex);
         return;
@@ -835,7 +844,8 @@ void vnc::run() {
 
 vnc::vnc(u32 no):
     display("vnc", no),
-    m_port(no), // vnc port = display number
+    m_port(-1),
+    m_host(),
     m_buttons(),
     m_ptr_x(),
     m_ptr_y(),
@@ -847,8 +857,6 @@ vnc::vnc(u32 no):
     m_running(),
     m_mutex(),
     m_thread() {
-    VCML_ERROR_ON(no != (u32)m_port, "invalid port specified: %u", no);
-
     static bool debug_vnc = []() {
         auto env = mwr::getenv("VCML_DEBUG_VNC");
         return env && *env != "0";
@@ -880,6 +888,32 @@ void vnc::shutdown() {
         m_thread.join();
 
     display::shutdown();
+}
+
+void vnc::handle_option(const string& option) {
+    if (starts_with(option, "port=")) {
+        u32 port = from_string<u32>(option.substr(5));
+        if (port >= U16_MAX)
+            VCML_REPORT("%s: invalid port %u", name(), port);
+        if (m_port > 0 && port > 0 && port != (u32)m_port)
+            VCML_REPORT("%s: port redefined %u -> %u", name(), m_port, port);
+
+        m_port = port;
+        return;
+    }
+
+    if (starts_with(option, "host=")) {
+        string host = option.substr(5);
+        if (!m_host.empty() && host != m_host) {
+            VCML_REPORT("%s: host redefined %s -> %s", name(), m_host.c_str(),
+                        host.c_str());
+        }
+
+        m_host = host;
+        return;
+    }
+
+    display::handle_option(option);
 }
 
 display* vnc::create(u32 nr) {
