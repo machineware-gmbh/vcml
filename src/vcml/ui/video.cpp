@@ -241,6 +241,25 @@ videomode::videomode(pixelformat fmt, u32 w, u32 h):
     endian(ENDIAN_LITTLE) {
 }
 
+void videomode::clear() {
+    xres = 0;
+    yres = 0;
+
+    bpp = 0;
+    stride = 0;
+    size = 0;
+
+    format = FORMAT_INVALID;
+
+    a = {};
+    r = {};
+    g = {};
+    b = {};
+
+    grayscale = false;
+    endian = ENDIAN_UNKNOWN;
+}
+
 string videomode::to_string() const {
     const char* fmt = pixelformat_to_str(format);
     const char* end = endian == ENDIAN_BIG ? "BE" : "LE";

@@ -64,9 +64,11 @@ public:
     virtual ~display();
 
     virtual void init(const videomode& mode, u8* fbptr);
+    virtual void reinit(const videomode& newmode, u8* newptr);
+    virtual void shutdown();
+
     virtual void render(u32 x, u32 y, u32 w, u32 h);
     virtual void render();
-    virtual void shutdown();
 
     virtual void notify_key(u32 keysym, bool down);
     virtual void notify_btn(u32 button, bool down);

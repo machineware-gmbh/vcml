@@ -808,7 +808,6 @@ void vnc::handle_command() {
 void vnc::run() {
     try {
         mwr::set_thread_name(mkstr("vnc_%u", dispno()));
-        log_info("thread started");
 
         if (m_port < 0)
             m_port = dispno();

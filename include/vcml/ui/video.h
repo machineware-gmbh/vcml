@@ -22,6 +22,8 @@ struct color_channel {
 };
 
 enum pixelformat {
+    FORMAT_INVALID = 0,
+
     // 32bit color formats
     FORMAT_A8R8G8B8,
     FORMAT_X8R8G8B8,
@@ -79,6 +81,8 @@ struct videomode {
 
     bool operator==(const videomode& other) const;
     bool operator!=(const videomode& other) const;
+
+    void clear();
 
     string to_string() const;
 

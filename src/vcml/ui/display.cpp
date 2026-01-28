@@ -43,18 +43,23 @@ void display::init(const videomode& mode, u8* fbptr) {
         m_fb = m_nullfb = new u8[mode.size]();
 }
 
-void display::render(u32 x, u32 y, u32 w, u32 h) {
-    // nothing to do
-}
-
-void display::render() {
-    // nothing to do
+void display::reinit(const videomode& newmode, u8* newptr) {
+    shutdown();
+    init(newmode, newptr);
 }
 
 void display::shutdown() {
     if (m_nullfb)
         delete[] m_nullfb;
     m_fb = m_nullfb = nullptr;
+}
+
+void display::render(u32 x, u32 y, u32 w, u32 h) {
+    // nothing to do
+}
+
+void display::render() {
+    render(0, 0, xres(), yres());
 }
 
 void display::notify_key(u32 keysym, bool down) {

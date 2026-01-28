@@ -37,11 +37,15 @@ void console::notify(input& device) {
 }
 
 void console::setup(const videomode& mode, u8* fbptr) {
+    for (auto& disp : m_displays) {
+        if (disp->has_framebuffer())
+            disp->reinit(mode, fbptr);
+        else
+            disp->init(mode, fbptr);
+    }
+
     m_mode = mode;
     m_fbptr = fbptr;
-
-    for (auto& disp : m_displays)
-        disp->init(mode, fbptr);
 }
 
 void console::render(u32 x, u32 y, u32 w, u32 h) {
@@ -55,6 +59,7 @@ void console::render() {
 }
 
 void console::shutdown() {
+    m_mode.clear();
     m_fbptr = nullptr;
 
     for (auto& disp : m_displays) {
