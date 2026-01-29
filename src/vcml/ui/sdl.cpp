@@ -1,4 +1,4 @@
-/******************************************************************************
+/******************************************************************************ce().run();
  *                                                                            *
  * Copyright (C) 2022 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
@@ -374,6 +374,30 @@ void sdl_client::init_window() {
     SDL_RenderPresent(renderer);
 }
 
+void sdl_client::reinit_window() {
+    const int w = (int)disp->xres();
+    const int h = (int)disp->yres();
+
+    SDL_SetWindowSize(window, w, h);
+
+    if (SDL_RenderSetLogicalSize(renderer, w, h) < 0)
+        VCML_ERROR("cannot set renderer size: %s", SDL_GetError());
+
+    if (texture)
+        SDL_DestroyTexture(texture);
+
+    const int access = SDL_TEXTUREACCESS_STREAMING;
+    const int format = sdl_format_from_fbmode(disp->mode());
+    texture = SDL_CreateTexture(renderer, format, access, w, h);
+    if (texture == nullptr)
+        VCML_ERROR("cannot create SDL texture: %s", SDL_GetError());
+
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    reinit = false;
+}
+
 void sdl_client::exit_window() {
     if (texture) {
         SDL_DestroyTexture(texture);
@@ -454,6 +478,8 @@ void sdl::check_clients() {
             client.init_window();
         if (client.window && !client.disp)
             client.exit_window();
+        if (client.reinit)
+            client.reinit_window();
     }
 
     stl_remove_if(m_clients, [](const sdl_client& client) -> bool {
@@ -598,6 +624,20 @@ void sdl::unregister_display(display* disp) {
     it->disp = nullptr;
 }
 
+void sdl::update_display(display* disp) {
+    lock_guard<mutex> lock(m_mtx);
+
+    auto finder = [disp](const sdl_client& s) -> bool {
+        return s.disp == disp;
+    };
+
+    auto it = std::find_if(m_clients.begin(), m_clients.end(), finder);
+    if (it == m_clients.end())
+        return;
+
+    it->reinit = true;
+}
+
 sdl& sdl::instance() {
     static sdl singleton;
     return singleton;
@@ -618,6 +658,12 @@ sdl_display::~sdl_display() {
 void sdl_display::init(const videomode& mode, u8* fb) {
     display::init(mode, fb);
     m_owner.register_display(this);
+}
+
+void sdl_display::reinit(const videomode& mode, u8* fb) {
+    display::shutdown();
+    display::init(mode, fb);
+    m_owner.update_display(this);
 }
 
 void sdl_display::render(u32 x, u32 y, u32 w, u32 h) {

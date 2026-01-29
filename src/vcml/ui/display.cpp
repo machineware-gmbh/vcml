@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/ui/display.h"
+#include "vcml/ui/icon.h"
 #include "vcml/ui/vnc.h"
 
 #ifdef HAVE_SDL2
@@ -17,6 +18,20 @@
 
 namespace vcml {
 namespace ui {
+
+static void draw_icon_centered(u8* fbptr, u32 width, u32 height) {
+    MWR_ERROR_ON(width < ICON_WIDTH, "screen too small");
+    MWR_ERROR_ON(height < ICON_HEIGHT, "screen too small");
+
+    u32 sx = (width - ICON_WIDTH) / 2;
+    u32 sy = (height - ICON_HEIGHT) / 2;
+
+    for (u32 y = 0; y < ICON_HEIGHT; y++) {
+        u8* dest = fbptr + ((sy + y) * width + sx) * sizeof(u32);
+        const u32* src = ICON_DATA + y * ICON_WIDTH;
+        memcpy(dest, src, ICON_WIDTH * sizeof(u32));
+    }
+}
 
 display::display(const string& type, u32 nr):
     m_name(mkstr("%s:%u", type.c_str(), nr)),
@@ -34,7 +49,7 @@ display::~display() {
 
 void display::init(const videomode& mode, u8* fbptr) {
     if (has_framebuffer())
-        shutdown();
+        VCML_ERROR("display %s already initialized", name());
 
     m_mode = mode;
     m_fb = fbptr;
@@ -52,6 +67,7 @@ void display::shutdown() {
     if (m_nullfb)
         delete[] m_nullfb;
     m_fb = m_nullfb = nullptr;
+    m_mode.clear();
 }
 
 void display::render(u32 x, u32 y, u32 w, u32 h) {
@@ -87,10 +103,24 @@ void display::handle_option(const string& option) {
     VCML_REPORT("%s: unsupported option \"%s\"", name(), option.c_str());
 }
 
+void display::setup(const videomode& mode, u8* fbptr) {
+    if (has_framebuffer())
+        reinit(mode, fbptr);
+    else
+        init(mode, fbptr);
+}
+
+void display::cleanup() {
+    m_inputs.clear();
+    shutdown();
+}
+
 void display::attach(input* device) {
     m_inputs.push_back(device);
-    if (!has_framebuffer())
+    if (!has_framebuffer()) {
         init(videomode::a8r8g8b8(320, 200), nullptr);
+        draw_icon_centered(framebuffer(), xres(), yres());
+    }
 }
 
 void display::detach(input* device) {

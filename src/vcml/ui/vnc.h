@@ -88,6 +88,9 @@ private:
     int m_gshift;
     int m_bshift;
 
+    bool m_can_resize;
+    bool m_needs_resize;
+
     vector<u8> m_buffer;
     mwr::server_socket m_socket;
 
@@ -115,6 +118,7 @@ private:
     void send_framebuffer_hextile(u32 x, u32 y, u32 w, u32 h,
                                   optional<u32>& bg, optional<u32>& fg);
     void send_framebuffer_hextile();
+    void send_framebuffer(i32 encoding);
 
     void handshake();
     void handle_set_encodings(const vector<i32>& encodings);
@@ -133,6 +137,7 @@ public:
     virtual ~vnc();
 
     virtual void init(const videomode& mode, u8* fb) override;
+    virtual void reinit(const videomode& newmode, u8* newfb) override;
     virtual void shutdown() override;
 
     virtual void handle_option(const string& option) override;

@@ -348,6 +348,11 @@ void vnc::send(const u32& data) {
 }
 
 template <>
+void vnc::send(const i32& data) {
+    send<u32>(data);
+}
+
+template <>
 void vnc::send(const string& s) {
     send((u8*)s.data(), s.size());
 }
@@ -583,6 +588,33 @@ void vnc::send_framebuffer_hextile() {
     }
 }
 
+void vnc::send_framebuffer(i32 encoding) {
+    const videomode& vm = mode();
+    send<u8>(VNC_FRAMEBUFFER_UPDATE);
+    send_padding(1);
+    send<u16>(1); // one square
+    send<u16>(0); // change caused by server
+    send<u16>(0); // change caused no errors
+    send<u16>(vm.xres);
+    send<u16>(vm.yres);
+    send<i32>(encoding);
+
+    switch (encoding) {
+    case VNC_ENC_RAW:
+        send_framebuffer_raw();
+        break;
+    case VNC_ENC_HEXTILE:
+        send_framebuffer_hextile();
+        break;
+    case VNC_ENC_DESKTOP_SIZE:
+        break;
+    default:
+        VCML_REPORT("unsupported VNC encoding: 0x%08x", encoding);
+    }
+
+    flush();
+}
+
 void vnc::handshake() {
     // protocol handshake
     char proto[13]{};
@@ -655,6 +687,7 @@ void vnc::handle_set_encodings(const vector<i32>& encodings) {
             break;
         case VNC_ENC_DESKTOP_SIZE:
             log_debug("desktop_size extension is supported");
+            m_can_resize = true;
             break;
         default:
             log_debug("ignoring unknown encoding 0x%08x", *it);
@@ -681,28 +714,12 @@ void vnc::handle_framebuffer_request(u8 inc, u16 x, u16 y, u16 w, u16 h) {
     log_debug("handle_framebuffer_request inc:%hhu x:%hu y:%hu w:%hu h:%hu",
               inc, x, y, w, h);
 
-    const videomode& vm = mode();
-    send<u8>(VNC_FRAMEBUFFER_UPDATE);
-    send_padding(1);
-    send<u16>(1); // one square
-    send<u16>(0); // x
-    send<u16>(0); // y
-    send<u16>(vm.xres);
-    send<u16>(vm.yres);
-    send<u32>(m_encoding);
-
-    switch (m_encoding) {
-    case VNC_ENC_RAW:
-        send_framebuffer_raw();
-        break;
-    case VNC_ENC_HEXTILE:
-        send_framebuffer_hextile();
-        break;
-    default:
-        VCML_REPORT("unsupported VNC encoding: 0x%08x", m_encoding);
+    if (m_needs_resize && m_can_resize) {
+        send_framebuffer(VNC_ENC_DESKTOP_SIZE);
+        m_needs_resize = false;
+    } else {
+        send_framebuffer(m_encoding);
     }
-
-    flush();
 }
 
 void vnc::handle_key_event(u32 key, u8 down) {
@@ -746,6 +763,7 @@ void vnc::handle_cut_text(const string& text) {
 
 void vnc::handle_command() {
     u8 request = m_socket.recv_char(client());
+    lock_guard<mutex> lock(m_mutex);
     switch (request) {
     case VNC_SET_PIXEL_FORMAT: {
         recv_padding(3);
@@ -806,28 +824,25 @@ void vnc::handle_command() {
 }
 
 void vnc::run() {
-    try {
-        mwr::set_thread_name(mkstr("vnc_%u", dispno()));
+    mwr::set_thread_name(mkstr("vnc_%u", dispno()));
 
-        if (m_port < 0)
-            m_port = dispno();
-        if (m_port > U16_MAX)
-            VCML_REPORT("%s: invalid port specified: %u", name(), m_port);
-        if (m_host.empty())
-            m_host = "localhost";
-
-        m_socket.listen(m_port, m_host);
-    } catch (std::exception& ex) {
-        log.warn(ex);
-        return;
-    }
+    if (m_port < 0)
+        m_port = dispno();
+    if (m_port > U16_MAX)
+        VCML_ERROR("%s: invalid port specified: %u", name(), m_port);
+    if (m_host.empty())
+        m_host = "localhost";
 
     while (m_running && sim_running()) {
         try {
+            log_debug("listening...");
+            m_socket.listen(m_port, m_host);
+
             while (m_running && sim_running() && !m_socket.is_connected())
                 m_socket.poll(100);
 
-            handshake();
+            if (m_running)
+                handshake();
 
             while (m_running && sim_running() && m_socket.is_connected()) {
                 if (m_socket.poll(100) >= 0)
@@ -837,8 +852,14 @@ void vnc::run() {
         } catch (std::exception& ex) {
             if (sim_running())
                 log.debug(ex);
+
+            m_socket.unlisten();
+            m_socket.disconnect_all();
         }
     }
+
+    m_socket.unlisten();
+    m_socket.disconnect_all();
 }
 
 vnc::vnc(u32 no):
@@ -851,6 +872,8 @@ vnc::vnc(u32 no):
     m_encoding(VNC_ENC_RAW),
     m_native(),
     m_client(),
+    m_can_resize(false),
+    m_needs_resize(false),
     m_buffer(),
     m_socket(1),
     m_running(),
@@ -877,14 +900,30 @@ void vnc::init(const videomode& mode, u8* fb) {
     m_thread = thread(&vnc::run, this);
 }
 
+void vnc::reinit(const videomode& newmode, u8* newfb) {
+    lock_guard lock(m_mutex);
+    if (!m_can_resize) {
+        shutdown();
+        init(newmode, newfb);
+        return;
+    }
+
+    m_needs_resize = true;
+
+    display::shutdown();
+    display::init(newmode, newfb);
+}
+
 void vnc::shutdown() {
     m_running = false;
 
-    m_socket.unlisten();
-    m_socket.disconnect_all();
-
     if (m_thread.joinable())
         m_thread.join();
+
+    m_can_resize = false;
+    m_needs_resize = false;
+
+    m_encoding = VNC_ENC_RAW;
 
     display::shutdown();
 }

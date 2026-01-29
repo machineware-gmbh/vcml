@@ -93,6 +93,7 @@ add_library(vcml STATIC
     ${src}/vcml/ui/display.cpp
     ${src}/vcml/ui/console.cpp
     ${src}/vcml/ui/vnc.cpp
+    ${src}/vcml/ui/icon.cpp
     ${src}/vcml/audio/format.cpp
     ${src}/vcml/audio/driver.cpp
     ${src}/vcml/audio/driver_wav.cpp
@@ -266,7 +267,6 @@ if(SDL2_FOUND)
     target_compile_definitions(vcml PRIVATE HAVE_SDL2)
     target_include_directories(vcml SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
     target_sources(vcml PRIVATE ${src}/vcml/ui/sdl.cpp)
-    target_sources(vcml PRIVATE ${src}/vcml/ui/icon.cpp)
     target_sources(vcml PRIVATE ${src}/vcml/audio/driver_sdl.cpp)
     target_link_libraries(vcml PUBLIC ${SDL2_LIBRARIES})
 else()

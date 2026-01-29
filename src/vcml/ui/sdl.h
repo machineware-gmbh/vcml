@@ -36,6 +36,7 @@ struct sdl_client {
     u64 time_sim;
     u64 frames;
     bool grabbing;
+    bool reinit;
 
     void notify_key(u32 keysym, bool down);
     void notify_btn(SDL_MouseButtonEvent& event);
@@ -43,6 +44,7 @@ struct sdl_client {
     void notify_wheel(SDL_MouseWheelEvent& event);
 
     void init_window();
+    void reinit_window();
     void exit_window();
     void draw_window();
 };
@@ -70,6 +72,7 @@ public:
     void run();
     void register_display(display* disp);
     void unregister_display(display* disp);
+    void update_display(display* disp);
 
     static sdl& instance();
     static display* create(u32 nr);
@@ -85,6 +88,7 @@ public:
     virtual ~sdl_display();
 
     virtual void init(const videomode& mode, u8* fb) override;
+    virtual void reinit(const videomode& mode, u8* fb) override;
     virtual void render(u32 x, u32 y, u32 w, u32 h) override;
     virtual void render() override;
     virtual void shutdown() override;

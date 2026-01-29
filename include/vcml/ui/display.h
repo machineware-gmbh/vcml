@@ -76,6 +76,9 @@ public:
 
     virtual void handle_option(const string& option);
 
+    void setup(const videomode& mode, u8* fbptr);
+    void cleanup();
+
     void attach(input* device);
     void detach(input* device);
 
