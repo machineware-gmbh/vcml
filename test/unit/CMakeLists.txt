@@ -10,7 +10,7 @@
 
 function(define_test test)
     add_executable(${test} ${test}.cpp)
-   target_link_libraries(${test} ${ARGN})
+    target_link_libraries(${test} ${ARGN})
     target_compile_options(${test} PRIVATE ${MWR_COMPILER_WARN_FLAGS})
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     set_target_properties(${test} PROPERTIES CXX_CLANG_TIDY "${VCML_LINTER}")
@@ -77,5 +77,5 @@ unit_test("scsi")
 unit_test_main("sc_time")
 
 if(LUA_FOUND)
-    unit_test("lua")
+    unit_test("lua_broker")
 endif()

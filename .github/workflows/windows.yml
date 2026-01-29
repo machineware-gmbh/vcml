@@ -23,8 +23,19 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Cache vcpkg dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          C:/vcpkg/installed
+          C:/vcpkg/downloads
+        key: vcml-vcpkg-${{ matrix.os }}
+
+    - name: Install dependencies
+      run: vcpkg install sdl2 lua libusb libslirp
+
     - name: Configure
-      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON
+      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
 
     - name: Build
       run: cmake --build BUILD --config ${{matrix.cfg}} --parallel -- /bl
@@ -45,4 +56,3 @@ jobs:
             BUILD/Testing/Temporary/LastTest.log
         include-hidden-files: true
         retention-days: 7
-
