@@ -57,7 +57,7 @@ TEST(publisher, levels) {
     mwr::publishers::terminal cons;
     mock_publisher publisher;
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_INFO))).Times(1);
-    vcml::log_info("this is an informational message");
+    log_info("this is an informational message");
 
     publisher.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
     cons.set_level(vcml::LOG_ERROR, vcml::LOG_WARN);
@@ -66,12 +66,12 @@ TEST(publisher, levels) {
     EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_INFO));
     EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_DEBUG));
     EXPECT_CALL(publisher, publish(_)).Times(0);
-    vcml::log_info("this is an informational message");
+    log_info("this is an informational message");
 
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_ERROR))).Times(1);
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_WARN))).Times(1);
-    vcml::log_error("this is an error message");
-    vcml::log_warn("this is a warning message");
+    log_error("this is an error message");
+    log_warn("this is a warning message");
 
     publisher.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
     cons.set_level(vcml::LOG_DEBUG, vcml::LOG_DEBUG);
@@ -80,16 +80,16 @@ TEST(publisher, levels) {
     EXPECT_FALSE(mwr::publisher::can_publish(vcml::LOG_INFO));
     EXPECT_TRUE(mwr::publisher::can_publish(vcml::LOG_DEBUG));
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_DEBUG))).Times(1);
-    vcml::log_debug("this is a debug message");
-    vcml::log_info("this is an informational message");
-    vcml::log_error("this is an error message");
-    vcml::log_warn("this is a warning message");
+    log_debug("this is a debug message");
+    log_info("this is an informational message");
+    log_error("this is an error message");
+    log_warn("this is a warning message");
 
     EXPECT_CALL(publisher, publish(match_lines(3))).Times(1);
-    vcml::log_debug("multi\nline\nmessage");
+    log_debug("multi\nline\nmessage");
 
     EXPECT_CALL(publisher, publish(match_source())).Times(1);
-    vcml::log_debug("does this message hold source info?");
+    log_debug("does this message hold source info?");
 }
 
 TEST(logging, component) {
@@ -103,15 +103,15 @@ TEST(logging, component) {
     comp.loglvl = vcml::LOG_WARN;
 
     EXPECT_CALL(publisher, publish(match_level(vcml::LOG_WARN))).Times(1);
-    comp.log_warn("this is a warning message");
-    comp.log_debug("this debug message should be filtered out");
+    comp.log.warn("this is a warning message");
+    comp.log.debug("this debug message should be filtered out");
 
     EXPECT_CALL(publisher, publish(match_sender(comp.name()))).Times(4);
     comp.loglvl = vcml::LOG_DEBUG;
-    comp.log_debug("debug message");
-    comp.log_info("info message");
-    comp.log_warn("warning message");
-    comp.log_error("error message");
+    comp.log.debug("debug message");
+    comp.log.info("info message");
+    comp.log.warn("warning message");
+    comp.log.error("error message");
 }
 
 class mock_component : public vcml::component
@@ -141,8 +141,8 @@ TEST(logging, hierarchy) {
     EXPECT_CALL(publisher, publish(match_sender(comp.name()))).Times(1);
     EXPECT_CALL(publisher, publish(match_sender(comp.subcomp.name())))
         .Times(1);
-    comp.log_debug("top level debug message");
-    comp.subcomp.log_debug("sub level debug message");
+    comp.log.debug("top level debug message");
+    comp.subcomp.log.debug("sub level debug message");
 
     mock_component comp2("mock2");
     EXPECT_EQ(comp2.loglvl.get(), vcml::LOG_INFO);

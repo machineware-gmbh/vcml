@@ -75,6 +75,7 @@ unit_test("simphases")
 unit_test("audio")
 unit_test("scsi")
 unit_test_main("sc_time")
+unit_test_main("sc_report")
 
 if(LUA_FOUND)
     unit_test("lua_broker")

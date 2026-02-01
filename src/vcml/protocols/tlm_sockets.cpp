@@ -240,7 +240,7 @@ tlm_response_status tlm_initiator_socket::access(tlm_command cmd, u64 addr,
         rs = TLM_OK_RESPONSE;
 
     if (rs == TLM_INCOMPLETE_RESPONSE)
-        m_parent->log_warn("got incomplete response from 0x%016llx", addr);
+        m_parent->log.warn("got incomplete response from 0x%016llx", addr);
 
     if (sz != nullptr)
         *sz = size;

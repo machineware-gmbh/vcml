@@ -43,6 +43,38 @@ static bool exit_models() {
     exit(EXIT_FAILURE);
 }
 
+#define KERNEL_LOGGER_NAME           \
+    "systemc-" SC_STRINGIFY_HELPER_( \
+        SC_VERSION_MAJOR.SC_VERSION_MINOR.SC_VERSION_PATCH)
+
+static mwr::logger klog(KERNEL_LOGGER_NAME);
+static sc_core::sc_report_handler_proc orig_handler;
+static void vcml_report_handler(const sc_report& rep, const sc_actions& act) {
+    const sc_actions mask = sc_core::SC_DISPLAY | sc_core::SC_LOG;
+    if (act & mask) {
+        switch (rep.get_severity()) {
+        case sc_core::SC_INFO:
+            klog.info(rep.get_file_name(), rep.get_line_number(), "(%s) %s",
+                      rep.get_msg_type(), rep.get_msg());
+            break;
+        case sc_core::SC_WARNING:
+            klog.warn(rep.get_file_name(), rep.get_line_number(), "(%s) %s",
+                      rep.get_msg_type(), rep.get_msg());
+            break;
+        case sc_core::SC_ERROR:
+        case sc_core::SC_FATAL:
+            klog.error(rep.get_file_name(), rep.get_line_number(), "(%s) %s",
+                       rep.get_msg_type(), rep.get_msg());
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (act & ~mask)
+        orig_handler(rep, act & ~mask);
+}
+
 setup* setup::s_instance = nullptr;
 
 setup::setup(int argc, char** argv):
@@ -63,6 +95,13 @@ setup::setup(int argc, char** argv):
     m_brokers() {
     VCML_ERROR_ON(s_instance != nullptr, "setup already created");
     s_instance = this;
+
+#if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_0a
+    orig_handler = sc_core::sc_report_handler::get_handler();
+#else
+    orig_handler = sc_core::sc_report_handler::default_handler;
+#endif
+    sc_core::sc_report_handler::set_handler(vcml_report_handler);
 
     if (!mwr::options::parse(argc, argv))
         exit_usage();

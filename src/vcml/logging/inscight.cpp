@@ -15,7 +15,7 @@ namespace publishers {
 
 inscight::inscight(): publisher(LOG_ERROR, LOG_DEBUG) {
 #if !defined(HAVE_INSCIGHT) || !defined(INSCIGHT_LOG_MESSAGE)
-    mwr::log_warn("InSCight logging not available");
+    log_warn("InSCight logging not available");
 #endif
 }
 
