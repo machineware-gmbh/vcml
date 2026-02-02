@@ -76,6 +76,7 @@ unit_test("audio")
 unit_test("scsi")
 unit_test_main("sc_time")
 unit_test_main("sc_report")
+unit_test_main("sc_report_pub")
 
 if(LUA_FOUND)
     unit_test("lua_broker")

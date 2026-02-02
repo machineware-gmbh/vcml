@@ -28,6 +28,7 @@
 #include "vcml/core/model.h"
 
 #include "vcml/logging/logger.h"
+#include "vcml/logging/report.h"
 #include "vcml/logging/inscight.h"
 
 #include "vcml/tracing/protocol.h"
