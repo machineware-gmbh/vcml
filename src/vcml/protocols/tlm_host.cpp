@@ -116,13 +116,15 @@ void tlm_host::sync(sc_process_b* proc) {
     offset = SC_ZERO_TIME;
 }
 
-void tlm_host::map_dmi(const tlm_dmi& dmi) {
-    for (auto socket : m_target_sockets)
-        socket->map_dmi(dmi);
+void tlm_host::map_dmi(const tlm_dmi& dmi, address_space as) {
+    for (auto socket : m_target_sockets) {
+        if (socket->as == as)
+            socket->map_dmi(dmi);
+    }
 }
 
 void tlm_host::map_dmi(unsigned char* p, u64 start, u64 end, vcml_access a,
-                       const sc_time& read_latency,
+                       address_space as, const sc_time& read_latency,
                        const sc_time& write_latency) {
     tlm_dmi dmi;
     dmi.set_dmi_ptr(p);
@@ -131,7 +133,7 @@ void tlm_host::map_dmi(unsigned char* p, u64 start, u64 end, vcml_access a,
     dmi.set_read_latency(read_latency);
     dmi.set_write_latency(write_latency);
     dmi_set_access(dmi, a);
-    map_dmi(dmi);
+    map_dmi(dmi, as);
 }
 
 void tlm_host::unmap_dmi(u64 start, u64 end) {

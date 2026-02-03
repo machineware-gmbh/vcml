@@ -83,8 +83,9 @@ public:
     const vector<reg_base*>& get_registers() const;
     const vector<reg_base*>& get_registers(address_space as) const;
 
-    void map_dmi(const tlm_dmi& dmi);
-    void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a);
+    void map_dmi(const tlm_dmi& dmi, address_space as = VCML_AS_DEFAULT);
+    void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a,
+                 address_space = VCML_AS_DEFAULT);
 
     virtual unsigned int transport(tlm_generic_payload& tx,
                                    const tlm_sbi& info,

@@ -66,7 +66,7 @@ public:
 
         u32 data = 0xf3f3f3f3;
         unsigned char* dmi_ptr = (unsigned char*)&data;
-        map_dmi(dmi_ptr, 0, 3, VCML_ACCESS_READ);
+        map_dmi(dmi_ptr, 0, 3, VCML_ACCESS_READ, VCML_AS_DEFAULT);
 
         ASSERT_OK(out.readw<u32>(0, data))
             << "component did respond to read command";

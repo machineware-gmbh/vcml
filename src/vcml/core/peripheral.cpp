@@ -115,16 +115,16 @@ const vector<reg_base*>& peripheral::get_registers(address_space as) const {
     return it->second;
 }
 
-void peripheral::map_dmi(const tlm_dmi& dmi) {
+void peripheral::map_dmi(const tlm_dmi& dmi, address_space as) {
     tlm_dmi copy(dmi);
     copy.set_read_latency(read_cycles());
     copy.set_write_latency(write_cycles());
-    tlm_host::map_dmi(copy);
+    tlm_host::map_dmi(copy, as);
 }
 
 void peripheral::map_dmi(unsigned char* ptr, u64 start, u64 end,
-                         vcml_access acs) {
-    tlm_host::map_dmi(ptr, start, end, acs, read_cycles(), write_cycles());
+                         vcml_access acs, address_space as) {
+    tlm_host::map_dmi(ptr, start, end, acs, as, read_cycles(), write_cycles());
 }
 
 unsigned int peripheral::transport(tlm_generic_payload& tx,

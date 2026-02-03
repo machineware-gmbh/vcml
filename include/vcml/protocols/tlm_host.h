@@ -80,9 +80,9 @@ public:
     bool needs_sync(sc_process_b* proc = current_process());
     void sync(sc_process_b* proc = current_process());
 
-    void map_dmi(const tlm_dmi& dmi);
+    void map_dmi(const tlm_dmi& dmi, address_space as);
     void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a,
-                 const sc_time& read_latency = SC_ZERO_TIME,
+                 address_space as, const sc_time& read_latency = SC_ZERO_TIME,
                  const sc_time& write_latency = SC_ZERO_TIME);
     void unmap_dmi(const tlm_dmi& dmi);
     void unmap_dmi(u64 start, u64 end);
