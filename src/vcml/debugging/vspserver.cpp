@@ -736,7 +736,7 @@ void vspserver::update() {
     bool stopped = m_clients.empty();
 
     for (auto [id, client] : m_clients) {
-        stopped |= client->is_stopped();
+        stopped |= client->stop_requested();
         until = min(until, client->until());
     }
 

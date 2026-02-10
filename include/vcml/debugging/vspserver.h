@@ -24,6 +24,8 @@ namespace debugging {
 class vspclient;
 class vspserver : public rspserver, private suspender
 {
+    friend class vspclient;
+
 private:
     string m_announce;
     sc_time m_duration;
