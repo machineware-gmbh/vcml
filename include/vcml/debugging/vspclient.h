@@ -58,7 +58,7 @@ public:
     const char* peer() const { return m_peer.c_str(); }
     const char* name() const { return m_name.c_str(); }
     sc_time until() const { return m_until; }
-    bool is_stopped() const { return m_server.is_suspending(); }
+    bool is_stopped() const { return m_stop && !m_server.is_running(); }
     constexpr bool stop_requested() const { return m_stop; }
 
     vspclient(vspserver& server, int id, const string& peer, u16 port);

@@ -24,8 +24,6 @@ namespace debugging {
 class vspclient;
 class vspserver : public rspserver, private suspender
 {
-    friend class vspclient;
-
 private:
     string m_announce;
     sc_time m_duration;
@@ -56,7 +54,6 @@ private:
     string handle_vread(int client, const string& command);
     string handle_vwrite(int client, const string& command);
 
-    bool is_running() const { return !is_suspending(); }
     void disconnect_all();
     void force_quit();
     void notify_step_complete();
@@ -69,6 +66,7 @@ public:
     void start();
     void cleanup();
     void update();
+    bool is_running() const { return !is_suspending(); }
 
     virtual void handle_connect(int client, const string& peer,
                                 u16 port) override;
