@@ -56,6 +56,33 @@ bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
     return true;
 }
 
+unsigned int peripheral::forward_to_regs(tlm_generic_payload& tx,
+                                         const tlm_sbi& info,
+                                         address_space as) {
+    unsigned int bytes = 0;
+
+    auto it = m_registers.find(as);
+    if (it != m_registers.end()) {
+        for (reg_base* reg : it->second) {
+            if (reg->get_range().overlaps(tx)) {
+                bytes += reg->receive(tx, info);
+
+                if (success(tx) && reg->is_natural_accesses_only())
+                    break;
+
+                if (failed(tx))
+                    break;
+            }
+        }
+    }
+
+    // if no register took the access, try again in the global address space
+    if (as != VCML_AS_GLOBAL && !success(tx) && !failed(tx))
+        bytes += forward_to_regs(tx, info, VCML_AS_GLOBAL);
+
+    return bytes;
+}
+
 peripheral::peripheral(const sc_module_name& nm, endianess default_endian,
                        unsigned int rlatency, unsigned int wlatency):
     component(nm),
@@ -210,19 +237,7 @@ unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
     }
 
     set_current_cpu(info.cpuid);
-
-    for (auto* reg : m_registers[as]) {
-        if (reg->get_range().overlaps(tx)) {
-            bytes += reg->receive(tx, info);
-
-            if (success(tx) && reg->is_natural_accesses_only())
-                break;
-
-            if (failed(tx))
-                break;
-        }
-    }
-
+    bytes = forward_to_regs(tx, info, as);
     set_current_cpu(SBI_NONE.cpuid);
     if (success(tx) || failed(tx)) // stop if at least one reg took the access
         return bytes;

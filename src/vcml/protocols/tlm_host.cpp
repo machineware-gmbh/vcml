@@ -16,10 +16,11 @@ namespace vcml {
 unsigned int tlm_host::do_transport(tlm_target_socket& socket,
                                     tlm_generic_payload& tx,
                                     const tlm_sbi& info) {
-    sc_process_b* proc = current_process();
+    auto& current = lookup_process_data();
 
-    m_processes[proc].tx = &tx;
-    m_processes[proc].sbi = &info;
+    current.tx = &tx;
+    current.sbi = &info;
+    current.as = socket.as;
 
     if (tx.get_response_status() != TLM_INCOMPLETE_RESPONSE)
         VCML_ERROR("invalid in-bound transaction response status");
@@ -29,8 +30,9 @@ unsigned int tlm_host::do_transport(tlm_target_socket& socket,
     if (tx.get_response_status() == TLM_INCOMPLETE_RESPONSE)
         VCML_ERROR("invalid out-bound transaction response status");
 
-    m_processes[proc].tx = nullptr;
-    m_processes[proc].sbi = nullptr;
+    current.tx = nullptr;
+    current.sbi = nullptr;
+    current.as = VCML_AS_DEFAULT;
 
     return n;
 }

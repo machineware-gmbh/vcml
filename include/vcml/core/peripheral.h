@@ -33,6 +33,9 @@ private:
 
     bool cmd_mmap(const vector<string>& args, ostream& os);
 
+    unsigned int forward_to_regs(tlm_generic_payload& tx, const tlm_sbi& info,
+                                 address_space as);
+
 public:
     property<endianess> endian;
 

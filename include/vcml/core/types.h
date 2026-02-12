@@ -328,7 +328,8 @@ constexpr endianess host_endian() {
 typedef unsigned int address_space;
 
 enum vcml_address_space : address_space {
-    VCML_AS_DEFAULT = 0,
+    VCML_AS_DEFAULT = 0u,
+    VCML_AS_GLOBAL = ~0u,
 };
 
 typedef enum vcml_alignment {
