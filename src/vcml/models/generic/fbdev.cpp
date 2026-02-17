@@ -44,6 +44,9 @@ fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
     yres("yres", defy),
     format("format", "a8r8g8b8"),
     out("out") {
+    if (xres == 0u && yres == 0u)
+        return;
+
     VCML_ERROR_ON(xres == 0u, "xres cannot be zero");
     VCML_ERROR_ON(yres == 0u, "yres cannot be zero");
     VCML_ERROR_ON(xres > 8192u, "xres out of bounds %u", xres.get());
@@ -85,6 +88,11 @@ void fbdev::reset() {
 
 void fbdev::end_of_elaboration() {
     component::end_of_elaboration();
+
+    if (size() == 0) {
+        log_debug("disabling framebuffer");
+        return;
+    }
 
     range vmem(addr, addr + size() - 1);
     log_debug("video memory at 0x%016llx..0x%016llx", vmem.start, vmem.end);
