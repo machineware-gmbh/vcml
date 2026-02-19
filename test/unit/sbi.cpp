@@ -34,6 +34,27 @@ TEST(sbi, init) {
     EXPECT_FALSE(secure.is_debug);
 }
 
+TEST(sbi, to_string) {
+    auto sbi0 = SBI_DEBUG | SBI_NODMI | SBI_SYNC | SBI_INSN | SBI_EXCL |
+                SBI_LOCK | SBI_SECURE | SBI_TR_REQ | sbi_cpuid(4) |
+                sbi_privilege(2) | sbi_asid(6);
+    EXPECT_EQ(tlm_sbi_to_str(sbi0),
+              "CPU4 P2 ASID6 +debug +nodmi +sync +insn +excl +lock +secure "
+              "+txrq");
+
+    auto sbi1 = SBI_EXCL | SBI_SECURE | SBI_TRANSLATED;
+    EXPECT_EQ(tlm_sbi_to_str(sbi1), "CPU0 +excl +secure +translated");
+
+    u32 data = 0x44332211;
+    tlm_generic_payload tx;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x1234, &data, sizeof(data));
+    tx_set_sbi(tx, SBI_NODMI | SBI_SYNC | SBI_SECURE);
+    tx.set_response_status(TLM_OK_RESPONSE);
+    EXPECT_EQ(tlm_transaction_to_str(tx),
+              "WR 0x00001234 [11 22 33 44] CPU0 +nodmi +sync +secure "
+              "(TLM_OK_RESPONSE)");
+}
+
 TEST(sbi, error) {
     EXPECT_DEATH({ sbi_cpuid(3) | sbi_cpuid(4); }, "sbi.cpuid");
     EXPECT_DEATH({ sbi_asid(12) | sbi_asid(13); }, "sbi.asid");

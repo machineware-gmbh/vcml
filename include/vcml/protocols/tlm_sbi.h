@@ -146,6 +146,12 @@ inline bool tlm_sbi::operator!=(const tlm_sbi& other) const {
     return !operator==(other);
 }
 
+string tlm_sbi_to_str(const tlm_sbi& sbi);
+
+inline ostream& operator<<(ostream& os, const tlm_sbi& sbi) {
+    return os << tlm_sbi_to_str(sbi);
+}
+
 extern const tlm_sbi SBI_NONE;
 extern const tlm_sbi SBI_DEBUG;
 extern const tlm_sbi SBI_NODMI;
@@ -214,12 +220,16 @@ inline bool tx_is_secure(const tlm_generic_payload& tx) {
     return tx_get_sbi(tx).is_secure;
 }
 
+inline u64 tx_atype(const tlm_generic_payload& tx) {
+    return tx_get_sbi(tx).atype;
+}
+
 inline bool tx_is_translated(const tlm_generic_payload& tx) {
-    return tx_get_sbi(tx).atype == SBI_ATYPE_TX;
+    return tx_atype(tx) == SBI_ATYPE_TX;
 }
 
 inline bool tx_is_tr_req(const tlm_generic_payload& tx) {
-    return tx_get_sbi(tx).atype == SBI_ATYPE_RQ;
+    return tx_atype(tx) == SBI_ATYPE_RQ;
 }
 
 inline u64 tx_cpuid(const tlm_generic_payload& tx) {

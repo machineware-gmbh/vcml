@@ -12,6 +12,7 @@
 #include "vcml/core/systemc.h"
 
 #include "vcml/debugging/suspender.h"
+#include "vcml/protocols/tlm_sbi.h"
 
 namespace vcml {
 
@@ -180,6 +181,10 @@ string tlm_transaction_to_str(const tlm_generic_payload& tx) {
             ss << " ";
     }
     ss << "]";
+
+    // sbi extension
+    if (auto* sbi = tx.get_extension<sbiext>())
+        ss << " " << tlm_sbi_to_str(*sbi);
 
     // response status
     ss << " (" << tx.get_response_string() << ")";

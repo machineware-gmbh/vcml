@@ -81,6 +81,13 @@ string trace_payload_to_json(const tlm_generic_payload& tx) {
         os << "\"is_lock\":" << (tx_is_lock(tx) ? "true" : "false") << ",";
         os << "\"is_secure\":" << (tx_is_secure(tx) ? "true" : "false") << ",";
 
+        if (tx_is_translated(tx))
+            os << "\"atype\":\"translated\",";
+        else if (tx_is_tr_req(tx))
+            os << "\"atype\":\"tx-req\",";
+        else
+            os << "\"atype\":\"untranslated\",";
+
         os << std::dec;
         os << "\"cpuid\":" << tx_cpuid(tx) << ",";
         os << "\"privilege\":" << tx_privilege(tx) << ",";

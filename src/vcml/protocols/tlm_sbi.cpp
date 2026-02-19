@@ -82,7 +82,7 @@ static void sbi_copy_integer_props(tlm_sbi& dest, const tlm_sbi& src) {
 
     if (dest.atype == SBI_ATYPE_UX)
         dest.atype = src.atype;
-    else if (dest.atype != SBI_ATYPE_UX && dest.atype != src.atype)
+    else if (src.atype != SBI_ATYPE_UX && dest.atype != src.atype)
         VCML_ERROR("multiple initializations given for sbi.atype");
 }
 
@@ -120,6 +120,46 @@ tlm_sbi& tlm_sbi::operator^=(const tlm_sbi& other) {
     is_secure ^= other.is_secure;
     sbi_copy_integer_props(*this, other);
     return *this;
+}
+
+string tlm_sbi_to_str(const tlm_sbi& sbi) {
+    std::stringstream ss;
+    ss << "CPU" << sbi.cpuid;
+
+    if (sbi.privilege != SBI_PRIVILEGE_NONE)
+        ss << " P" << sbi.privilege;
+
+    if (sbi.asid != SBI_ASID_GLOBAL)
+        ss << " ASID" << sbi.asid;
+
+    if (sbi.is_debug)
+        ss << " +debug";
+    if (sbi.is_nodmi)
+        ss << " +nodmi";
+    if (sbi.is_sync)
+        ss << " +sync";
+    if (sbi.is_insn)
+        ss << " +insn";
+    if (sbi.is_excl)
+        ss << " +excl";
+    if (sbi.is_lock)
+        ss << " +lock";
+    if (sbi.is_secure)
+        ss << " +secure";
+
+    switch (sbi.atype) {
+    case SBI_ATYPE_RQ:
+        ss << " +txrq";
+        break;
+    case SBI_ATYPE_TX:
+        ss << " +translated";
+        break;
+    case SBI_ATYPE_UX:
+    default:
+        break;
+    }
+
+    return ss.str();
 }
 
 const tlm_sbi SBI_NONE = { 0, 0, 0, 0, 0, 0, 0 };
