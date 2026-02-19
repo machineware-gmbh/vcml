@@ -12,6 +12,8 @@
 
 namespace vcml {
 
+const clk_desc CLK_OFF{ SC_ZERO_TIME, false, 0.0 };
+
 ostream& operator<<(ostream& os, const clk_desc& clk) {
     stream_guard guard(os);
     if (clk.period == SC_ZERO_TIME)
@@ -127,12 +129,13 @@ void clk_initiator_socket::set(const clk_desc& clk) {
     }
 
     if (clk != m_clk) {
-        clk_transport(clk);
+        clk_desc oldclk = m_clk;
         m_clk = clk;
+        clk_transport(m_clk, oldclk);
     }
 }
 
-clk_initiator_socket& clk_initiator_socket::operator=(clk_desc& clk) {
+clk_initiator_socket& clk_initiator_socket::operator=(const clk_desc& clk) {
     set(clk);
     return *this;
 }
@@ -153,11 +156,18 @@ clk_initiator_socket& clk_initiator_socket::operator=(hz_t hz) {
     return *this;
 }
 
-void clk_initiator_socket::clk_transport(const clk_desc& clk) {
-    trace_fw(clk);
+clk_initiator_socket& clk_initiator_socket::operator=(
+    const clk_target_socket& other) {
+    set(other.get());
+    return *this;
+}
+
+void clk_initiator_socket::clk_transport(const clk_desc& newclk,
+                                         const clk_desc& oldclk) {
+    trace_fw(newclk);
     for (int i = 0; i < size(); i++)
-        get_interface(i)->clk_transport(clk);
-    trace_bw(clk);
+        get_interface(i)->clk_transport(newclk, oldclk);
+    trace_bw(newclk);
 }
 
 clk_target_socket::clk_target_socket(const char* nm, address_space space):
@@ -191,19 +201,21 @@ void clk_target_socket::complete_binding(clk_base_initiator_socket& socket) {
 clk_desc clk_target_socket::get() const {
     const clk_bw_transport_if* iface = get_base_port().get_interface(0);
     if (iface == nullptr)
-        return clk_desc{};
+        return CLK_OFF;
 
     return const_cast<clk_bw_transport_if*>(iface)->clk_query();
 }
 
-void clk_target_socket::clk_transport_internal(const clk_desc& clk) {
-    trace_fw(clk);
-    clk_transport(clk);
-    trace_bw(clk);
+void clk_target_socket::clk_transport_internal(const clk_desc& newclk,
+                                               const clk_desc& oldclk) {
+    trace_fw(newclk);
+    clk_transport(newclk, oldclk);
+    trace_bw(newclk);
 }
 
-void clk_target_socket::clk_transport(const clk_desc& clk) {
-    m_host->clk_notify(*this, clk);
+void clk_target_socket::clk_transport(const clk_desc& newclk,
+                                      const clk_desc& oldclk) {
+    m_host->clk_notify(*this, newclk, oldclk);
 }
 
 clk_initiator_stub::clk_initiator_stub(const char* nm, const clk_desc& clk):
@@ -211,7 +223,8 @@ clk_initiator_stub::clk_initiator_stub(const char* nm, const clk_desc& clk):
     clk_out.bind(*(clk_bw_transport_if*)this);
 }
 
-void clk_target_stub::clk_transport(const clk_desc& clk) {
+void clk_target_stub::clk_transport(const clk_desc& newclk,
+                                    const clk_desc& oldclk) {
     // nothing to do
 }
 

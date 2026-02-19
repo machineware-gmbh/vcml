@@ -91,7 +91,8 @@ public:
         EXPECT_TRUE(find_object("clk.clk_array_in[6]_stub"));
     }
 
-    MOCK_METHOD(void, clk_notify, (const clk_target_socket&, const clk_desc&));
+    MOCK_METHOD(void, clk_notify,
+                (const clk_target_socket&, const clk_desc&, const clk_desc&));
 
     virtual void run_test() override {
         // Make sure clock starts turned off
@@ -102,24 +103,28 @@ public:
 
         // Turn on clock, make sure events trigger
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_in"),
-                                      clk_match_payload(100 * MHz)));
+                                      clk_match_payload(100 * MHz),
+                                      clk_match_payload(0 * Hz)));
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_array_in[6]"),
-                                      clk_match_payload(100 * MHz)));
+                                      clk_match_payload(100 * MHz),
+                                      clk_match_payload(0 * Hz)));
         clk_out = 100 * MHz;
         EXPECT_EQ(clk_out, 100 * MHz) << "clk port did not update";
         EXPECT_EQ(clk_out.cycle(), sc_time(10, SC_NS)) << "wrong cycle";
         EXPECT_EQ(clk_out.cycles(2), sc_time(20, SC_NS)) << "wrong cycles";
 
         // Setting same frequency should not trigger anything
-        EXPECT_CALL(*this, clk_notify(_, _)).Times(0);
+        EXPECT_CALL(*this, clk_notify(_, _, _)).Times(0);
         clk_out = 100 * MHz;
         EXPECT_EQ(clk_out, 100 * MHz) << "clk port changed unexpectedly";
 
         // Test turning clock off
-        EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_in"),
-                                      clk_match_payload(0)));
+        EXPECT_CALL(
+            *this, clk_notify(clk_match_socket("clk_in"), clk_match_payload(0),
+                              clk_match_payload(100 * MHz)));
         EXPECT_CALL(*this, clk_notify(clk_match_socket("clk_array_in[6]"),
-                                      clk_match_payload(0)));
+                                      clk_match_payload(0),
+                                      clk_match_payload(100 * MHz)));
         clk_out = 0;
         EXPECT_EQ(clk_out, 0 * Hz) << "clk port did not turn off";
     }

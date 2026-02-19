@@ -86,11 +86,11 @@ void component::handle_clock_update(hz_t oldclk, hz_t newclk) {
     // to be overloaded
 }
 
-void component::clk_notify(const clk_target_socket& s, const clk_desc& tx) {
-    auto oldclk = s.get();
+void component::clk_notify(const clk_target_socket& s, const clk_desc& newclk,
+                           const clk_desc& oldclk) {
     log_debug("changed clock from \"%s\" to \"%s\"", to_string(oldclk).c_str(),
-              to_string(tx).c_str());
-    handle_clock_update(oldclk, tx);
+              to_string(newclk).c_str());
+    handle_clock_update(oldclk, newclk);
     m_clkrst_ev.notify(SC_ZERO_TIME);
 }
 

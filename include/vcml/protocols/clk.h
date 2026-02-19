@@ -24,6 +24,8 @@ struct clk_desc {
     double duty_cycle;
 };
 
+extern const clk_desc CLK_OFF;
+
 inline bool operator==(const clk_desc& a, const clk_desc& b) {
     return a.period == b.period && a.polarity == b.polarity &&
            a.duty_cycle == b.duty_cycle;
@@ -62,13 +64,50 @@ inline bool clk_is_on(const clk_desc& clk) {
     return !clk_is_off(clk);
 }
 
+inline clk_desc clk_mul(const clk_desc& clk, u64 mul) {
+    clk_desc r(clk);
+    r.period = mul ? r.period / mul : SC_ZERO_TIME;
+    return r;
+}
+
+inline clk_desc clk_div(const clk_desc& clk, u64 div) {
+    clk_desc r(clk);
+    r.period *= div;
+    return r;
+}
+
+inline clk_desc clk_scale(const clk_desc& clk, u64 mul, u64 div) {
+    clk_desc r(clk);
+    r.period = mul ? (r.period * div) / mul : SC_ZERO_TIME;
+    return r;
+}
+
+inline clk_desc clk_fmul(const clk_desc& clk, double mul) {
+    clk_desc r(clk);
+    r.period /= mul;
+    return r;
+}
+
+inline clk_desc clk_fdiv(const clk_desc& clk, double div) {
+    clk_desc r(clk);
+    r.period *= div;
+    return r;
+}
+
+inline clk_desc clk_fscale(const clk_desc& clk, double mul, double div) {
+    clk_desc r(clk);
+    r.period = (r.period * div) / mul;
+    return r;
+}
+
 ostream& operator<<(ostream& os, const clk_desc& clk);
 
 class clk_fw_transport_if : public sc_core::sc_interface
 {
 public:
     typedef clk_desc protocol_types;
-    virtual void clk_transport(const clk_desc& clk) = 0;
+    virtual void clk_transport(const clk_desc& newclk,
+                               const clk_desc& oldclk) = 0;
 };
 
 class clk_bw_transport_if : public sc_core::sc_interface
@@ -90,7 +129,9 @@ class clk_host
 public:
     clk_host() = default;
     virtual ~clk_host() = default;
-    virtual void clk_notify(const clk_target_socket&, const clk_desc&) = 0;
+    virtual void clk_notify(const clk_target_socket& socket,
+                            const clk_desc& newclk,
+                            const clk_desc& oldclk) = 0;
 };
 
 typedef multi_initiator_socket<clk_fw_transport_if, clk_bw_transport_if>
@@ -160,10 +201,12 @@ public:
     void set_hz(hz_t hz);
 
     operator clk_desc() const { return get(); }
-    clk_initiator_socket& operator=(clk_desc& clk);
+    clk_initiator_socket& operator=(const clk_desc& clk);
 
     operator hz_t() const { return get_hz(); }
     clk_initiator_socket& operator=(hz_t hz);
+
+    clk_initiator_socket& operator=(const clk_target_socket& other);
 
     sc_time cycle() const { return m_clk.period; }
     sc_time cycles(size_t n) const { return cycle() * n; }
@@ -179,8 +222,16 @@ private:
         virtual clk_desc clk_query() override { return socket->m_clk; }
     } m_transport;
 
-    void clk_transport(const clk_desc& clk);
+    void clk_transport(const clk_desc& newclk, const clk_desc& oldclk);
 };
+
+inline clk_desc operator*(const clk_initiator_socket& s, double d) {
+    return clk_mul(s, d);
+}
+
+inline clk_desc operator/(const clk_initiator_socket& s, double d) {
+    return clk_div(s, d);
+}
 
 class clk_target_socket : public clk_base_target_socket
 {
@@ -213,18 +264,20 @@ private:
         clk_fw_transport(clk_target_socket* s):
             clk_fw_transport_if(), socket(s) {}
 
-        virtual void clk_transport(const clk_desc& clk) override {
-            socket->clk_transport_internal(clk);
+        virtual void clk_transport(const clk_desc& newclk,
+                                   const clk_desc& oldclk) override {
+            socket->clk_transport_internal(newclk, oldclk);
         }
     } m_transport;
 
     clk_base_initiator_socket* m_initiator;
     vector<clk_base_target_socket*> m_targets;
 
-    void clk_transport_internal(const clk_desc& clk);
+    void clk_transport_internal(const clk_desc& newclk,
+                                const clk_desc& oldclk);
 
 protected:
-    virtual void clk_transport(const clk_desc& clk);
+    virtual void clk_transport(const clk_desc& newclk, const clk_desc& oldclk);
 };
 
 template <size_t N = SIZE_MAX>
@@ -249,7 +302,8 @@ public:
 class clk_target_stub : private clk_fw_transport_if
 {
 private:
-    virtual void clk_transport(const clk_desc& clk) override;
+    virtual void clk_transport(const clk_desc& newclk,
+                               const clk_desc& oldclk) override;
 
 public:
     clk_base_target_socket clk_in;
