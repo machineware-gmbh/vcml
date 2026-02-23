@@ -52,10 +52,8 @@ public:
 
     logger& log;
 
-    range get_range() const {
-        u64 size = m_cell_stride * (m_cell_count - 1) + m_cell_size;
-        return range(m_addr, m_addr + size - 1);
-    }
+    u64 get_size() const;
+    range get_range() const { return range(m_addr, m_addr + get_size() - 1); }
 
     u64 get_address() const { return get_range().start; }
     u64 get_limit() const { return get_range().end; }
@@ -131,6 +129,10 @@ public:
     string str();
     void str(const string& s);
 };
+
+inline u64 reg_base::get_size() const {
+    return m_cell_stride * (m_cell_count - 1) + m_cell_size;
+}
 
 inline bool reg_base::is_read_only() const {
     return m_access == VCML_ACCESS_READ;

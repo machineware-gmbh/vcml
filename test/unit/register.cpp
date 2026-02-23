@@ -881,6 +881,10 @@ public:
         clk.stub(100 * MHz);
         rst.stub();
         handle_clock_update(0, clk.get_hz());
+        EXPECT_EQ(test_reg.get_size(), 52);
+        EXPECT_EQ(test_reg_a.get_size(), 13);
+        EXPECT_EQ(test_reg_b.get_size(), 13);
+        EXPECT_EQ(test_reg_c.get_size(), 13);
     }
 };
 
