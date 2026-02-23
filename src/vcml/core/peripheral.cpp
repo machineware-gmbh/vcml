@@ -25,7 +25,7 @@ bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
 
     auto regs = get_registers(as);
     std::sort(regs.begin(), regs.end(), [](reg_base* a, reg_base* b) -> bool {
-        return a->get_range().start < b->get_range().start;
+        return a->get_address() < b->get_address();
     });
 
     if (regs.empty()) {
@@ -41,7 +41,7 @@ bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
 
     size_t y = 8;
     for (const auto& r : regs) {
-        if (r->get_range().end > ~0u)
+        if (r->get_limit() > ~0u)
             y = 16;
     }
 
@@ -64,7 +64,7 @@ unsigned int peripheral::forward_to_regs(tlm_generic_payload& tx,
     auto it = m_registers.find(as);
     if (it != m_registers.end()) {
         for (reg_base* reg : it->second) {
-            if (reg->get_range().overlaps(tx)) {
+            if (reg->overlaps(tx)) {
                 bytes += reg->receive(tx, info);
 
                 if (success(tx) && reg->is_natural_accesses_only())
@@ -112,7 +112,7 @@ void peripheral::add_register(reg_base* reg) {
         VCML_ERROR("register %s already assigned", reg->name());
 
     for (auto r : m_registers[reg->as]) {
-        if (r->get_range().overlaps(reg->get_range()))
+        if (r->overlaps(*reg))
             VCML_ERROR(
                 "address space of register %s (%d: %s) already in "
                 "use by register %s",

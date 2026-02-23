@@ -26,9 +26,10 @@ class peripheral;
 class reg_base : public sc_object
 {
 private:
+    u64 m_addr;
     u64 m_cell_size;
     u64 m_cell_count;
-    range m_range;
+    u64 m_cell_stride;
     vcml_access m_access;
     bool m_rsync;
     bool m_wsync;
@@ -42,7 +43,7 @@ private:
 
     tlm_response_status check_access(const tlm_generic_payload& tx,
                                      const tlm_sbi& info) const;
-    void do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
+    unsigned int do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
 public:
     const address_space as;
@@ -51,11 +52,16 @@ public:
 
     logger& log;
 
-    u64 get_address() const { return m_range.start; }
+    range get_range() const {
+        u64 size = m_cell_stride * (m_cell_count - 1) + m_cell_size;
+        return range(m_addr, m_addr + size - 1);
+    }
+
+    u64 get_address() const { return get_range().start; }
+    u64 get_limit() const { return get_range().end; }
     u64 get_cell_size() const { return m_cell_size; }
     u64 get_cell_count() const { return m_cell_count; }
-    u64 get_size() const { return m_range.length(); }
-    const range& get_range() const { return m_range; }
+    u64 get_cell_stride() const { return m_cell_stride; }
 
     bool is_array() const { return m_cell_count > 1; }
 
@@ -99,20 +105,28 @@ public:
     u64 get_max_access_size() const { return m_maxsize; }
     void set_access_size(u64 min, u64 max);
 
+    endianess get_endian() const;
+
     peripheral* get_host() const { return m_host; }
     int current_cpu() const;
 
-    reg_base(address_space as, const string& nm, u64 addr, u64 size, u64 n);
+    reg_base(address_space as, const string& nm, u64 addr, u64 size, u64 n,
+             u64 stride);
     virtual ~reg_base();
 
     VCML_KIND(reg_base);
 
     virtual void reset() = 0;
 
+    bool overlaps(const range& r) const;
+    bool overlaps(const reg_base& r) const;
+
     unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
-    virtual void do_read(const range& addr, void* ptr, bool debug) = 0;
-    virtual void do_write(const range& addr, const void* ptr, bool debug) = 0;
+    virtual void do_read(size_t idx, u64 off, u64 len, void* ptr,
+                         bool dbg) = 0;
+    virtual void do_write(size_t idx, u64 off, u64 len, const void* ptr,
+                          bool dbg) = 0;
 
     string str();
     void str(const string& s);
@@ -136,7 +150,7 @@ inline void reg_base::natural_accesses_only(bool only) {
     m_maxsize = only ? m_cell_size : -1;
 }
 
-template <typename DATA, size_t N = 1>
+template <typename DATA, size_t N = 1, size_t STRIDE = sizeof(DATA)>
 class reg : public reg_base, public property<DATA, N>
 {
 public:
@@ -214,8 +228,10 @@ public:
 
     virtual void reset() override;
 
-    virtual void do_read(const range& addr, void* ptr, bool dbg) override;
-    virtual void do_write(const range& addr, const void*, bool dbg) override;
+    virtual void do_read(size_t idx, u64 off, u64 len, void* ptr,
+                         bool dbg) override;
+    virtual void do_write(size_t idx, u64 off, u64 len, const void* ptr,
+                          bool dbg) override;
 
     operator DATA() const;
     operator DATA&();
@@ -226,29 +242,29 @@ public:
     DATA operator++(int);
     DATA operator--(int);
 
-    reg<DATA, N>& operator++();
-    reg<DATA, N>& operator--();
+    reg<DATA, N, STRIDE>& operator++();
+    reg<DATA, N, STRIDE>& operator--();
 
-    reg<DATA, N>& operator=(const reg<DATA, N>& other);
+    reg<DATA, N, STRIDE>& operator=(const reg<DATA, N, STRIDE>& other);
     template <typename T>
-    reg<DATA, N>& operator=(const reg<T, N>& r);
+    reg<DATA, N, STRIDE>& operator=(const reg<T, N>& r);
 
     template <typename T>
-    reg<DATA, N>& operator=(const T& value);
+    reg<DATA, N, STRIDE>& operator=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator|=(const T& value);
+    reg<DATA, N, STRIDE>& operator|=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator&=(const T& value);
+    reg<DATA, N, STRIDE>& operator&=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator^=(const T& value);
+    reg<DATA, N, STRIDE>& operator^=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator+=(const T& value);
+    reg<DATA, N, STRIDE>& operator+=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator-=(const T& value);
+    reg<DATA, N, STRIDE>& operator-=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator*=(const T& value);
+    reg<DATA, N, STRIDE>& operator*=(const T& value);
     template <typename T>
-    reg<DATA, N>& operator/=(const T& value);
+    reg<DATA, N, STRIDE>& operator/=(const T& value);
 
     template <typename T>
     bool operator==(const T& other) const;
@@ -289,19 +305,19 @@ private:
     void init_bank(int bank);
 };
 
-template <typename DATA, size_t N>
-bool reg<DATA, N>::has_readfn() const {
+template <typename DATA, size_t N, size_t STRIDE>
+bool reg<DATA, N, STRIDE>::has_readfn() const {
     return !std::holds_alternative<std::monostate()>(m_readfn);
 }
 
-template <typename DATA, size_t N>
-bool reg<DATA, N>::has_writefn() const {
+template <typename DATA, size_t N, size_t STRIDE>
+bool reg<DATA, N, STRIDE>::has_writefn() const {
     return !std::holds_alternative<std::monostate()>(m_writefn);
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_read(DATA (HOST::*rd)(void), HOST* host) {
+void reg<DATA, N, STRIDE>::on_read(DATA (HOST::*rd)(void), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -311,9 +327,9 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(void), HOST* host) {
     on_read(std::move(fn));
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_read(DATA (HOST::*rd)(bool), HOST* host) {
+void reg<DATA, N, STRIDE>::on_read(DATA (HOST::*rd)(bool), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -322,9 +338,9 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(bool), HOST* host) {
     on_read([=](size_t tag, bool dbg) { return (host->*rd)(dbg); });
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
+void reg<DATA, N, STRIDE>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -334,9 +350,10 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t), HOST* host) {
     on_read(std::move(fn));
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t, bool), HOST* host) {
+void reg<DATA, N, STRIDE>::on_read(DATA (HOST::*rd)(size_t, bool),
+                                   HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -347,9 +364,9 @@ void reg<DATA, N>::on_read(DATA (HOST::*rd)(size_t, bool), HOST* host) {
     on_read(std::move(fn));
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_write(void (HOST::*wr)(DATA), HOST* host) {
+void reg<DATA, N, STRIDE>::on_write(void (HOST::*wr)(DATA), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -359,9 +376,9 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA), HOST* host) {
     on_write(std::move(fn));
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, bool), HOST* host) {
+void reg<DATA, N, STRIDE>::on_write(void (HOST::*wr)(DATA, bool), HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -371,9 +388,10 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, bool), HOST* host) {
         [=](DATA val, size_t tag, bool debug) { (host->*wr)(val, debug); });
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
+void reg<DATA, N, STRIDE>::on_write(void (HOST::*wr)(DATA, size_t),
+                                    HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -384,9 +402,10 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t), HOST* host) {
     on_write(std::move(fn));
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename HOST>
-void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t, bool), HOST* host) {
+void reg<DATA, N, STRIDE>::on_write(void (HOST::*wr)(DATA, size_t, bool),
+                                    HOST* host) {
     if (host == nullptr)
         host = dynamic_cast<HOST*>(get_host());
     if (host == nullptr)
@@ -398,51 +417,51 @@ void reg<DATA, N>::on_write(void (HOST::*wr)(DATA, size_t, bool), HOST* host) {
     on_write(std::move(fn));
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::on_write_mask(DATA mask) {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::on_write_mask(DATA mask) {
     on_write([this, mask](DATA val) -> void {
         *this = (*this & ~mask) | (val & mask);
     });
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::on_write_mask(const array<DATA, N>& mask) {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::on_write_mask(const array<DATA, N>& mask) {
     on_write([this, mask](DATA val, size_t i) -> void {
         current_bank(i) = (current_bank(i) & ~mask[i]) | (val & mask[i]);
     });
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::read_zero() {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::read_zero() {
     on_read([]() -> DATA { return 0; });
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::ignore_write() {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::ignore_write() {
     on_write([&](DATA val) -> void {
         (void)val;
         log_debug("write to read-only register %s", sc_object::basename());
     });
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::allow_read_ignore_write() {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::allow_read_ignore_write() {
     allow_read_write();
     ignore_write();
 }
 
-template <typename DATA, size_t N>
-const DATA& reg<DATA, N>::bank(int bk) const {
+template <typename DATA, size_t N, size_t STRIDE>
+const DATA& reg<DATA, N, STRIDE>::bank(int bk) const {
     return bank(bk, 0);
 }
 
-template <typename DATA, size_t N>
-DATA& reg<DATA, N>::bank(int bk) {
+template <typename DATA, size_t N, size_t STRIDE>
+DATA& reg<DATA, N, STRIDE>::bank(int bk) {
     return bank(bk, 0);
 }
 
-template <typename DATA, size_t N>
-const DATA& reg<DATA, N>::bank(int bk, size_t idx) const {
+template <typename DATA, size_t N, size_t STRIDE>
+const DATA& reg<DATA, N, STRIDE>::bank(int bk, size_t idx) const {
     VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
     if (bk == 0 || !m_banked)
         return property<DATA, N>::get(idx);
@@ -451,8 +470,8 @@ const DATA& reg<DATA, N>::bank(int bk, size_t idx) const {
     return m_banks.at(bk)[idx];
 }
 
-template <typename DATA, size_t N>
-DATA& reg<DATA, N>::bank(int bk, size_t idx) {
+template <typename DATA, size_t N, size_t STRIDE>
+DATA& reg<DATA, N, STRIDE>::bank(int bk, size_t idx) {
     VCML_ERROR_ON(idx >= N, "index %zu out of bounds", idx);
     if (bk == 0 || !m_banked)
         return property<DATA, N>::get(idx);
@@ -461,30 +480,30 @@ DATA& reg<DATA, N>::bank(int bk, size_t idx) {
     return m_banks[bk][idx];
 }
 
-template <typename DATA, size_t N>
-const DATA& reg<DATA, N>::current_bank(size_t idx) const {
+template <typename DATA, size_t N, size_t STRIDE>
+const DATA& reg<DATA, N, STRIDE>::current_bank(size_t idx) const {
     return bank(current_cpu(), idx);
 }
 
-template <typename DATA, size_t N>
-DATA& reg<DATA, N>::current_bank(size_t idx) {
+template <typename DATA, size_t N, size_t STRIDE>
+DATA& reg<DATA, N, STRIDE>::current_bank(size_t idx) {
     return bank(current_cpu(), idx);
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::reg(const string& nm, u64 addr, DATA def):
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(const string& nm, u64 addr, DATA def):
     reg(VCML_AS_DEFAULT, nm, addr, def) {
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::reg(const string& nm, u64 addr,
-                  std::initializer_list<DATA> init):
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(const string& nm, u64 addr,
+                          std::initializer_list<DATA> init):
     reg(VCML_AS_DEFAULT, nm, addr, init) {
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::reg(address_space a, const string& nm, u64 addr, DATA d):
-    reg_base(a, nm, addr, sizeof(DATA), N),
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(address_space a, const string& nm, u64 addr, DATA d):
+    reg_base(a, nm, addr, sizeof(DATA), N, STRIDE),
     property<DATA, N>(nm.c_str(), d),
     m_banked(false),
     m_init(),
@@ -495,10 +514,10 @@ reg<DATA, N>::reg(address_space a, const string& nm, u64 addr, DATA d):
         m_init[i] = property<DATA, N>::get(i);
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::reg(address_space a, const string& nm, u64 addr,
-                  std::initializer_list<DATA> init):
-    reg_base(a, nm, addr, sizeof(DATA), N),
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(address_space a, const string& nm, u64 addr,
+                          std::initializer_list<DATA> init):
+    reg_base(a, nm, addr, sizeof(DATA), N, STRIDE),
     property<DATA, N>(nm.c_str(), init),
     m_banked(false),
     m_init(),
@@ -509,26 +528,26 @@ reg<DATA, N>::reg(address_space a, const string& nm, u64 addr,
         m_init[i] = property<DATA, N>::get(i);
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::reg(const tlm_target_socket& socket, const string& name,
-                  u64 addr, DATA data):
-    reg<DATA, N>(socket.as, name, addr, data) {
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(const tlm_target_socket& socket, const string& name,
+                          u64 addr, DATA data):
+    reg<DATA, N, STRIDE>(socket.as, name, addr, data) {
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::reg(const tlm_target_socket& socket, const string& name,
-                  u64 addr, std::initializer_list<DATA> data):
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(const tlm_target_socket& socket, const string& name,
+                          u64 addr, std::initializer_list<DATA> data):
     reg_base(socket.as, name, addr, data) {
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::~reg() {
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::~reg() {
     for (auto bank : m_banks)
         delete[] bank.second;
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::reset() {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::reset() {
     for (size_t i = 0; i < N; i++)
         property<DATA, N>::set(m_init[i], i);
 
@@ -538,92 +557,81 @@ void reg<DATA, N>::reset() {
     }
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::do_read(const range& txaddr, void* ptr, bool debug) {
-    range addr(txaddr);
-    unsigned char* dest = (unsigned char*)ptr;
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::do_read(size_t idx, u64 off, u64 len, void* ptr,
+                                   bool dbg) {
+    VCML_ERROR_ON(idx >= N, "register index out of bounds");
+    VCML_ERROR_ON(off + len > get_cell_size(), "invalid access length");
 
-    while (addr.start <= addr.end) {
-        u64 idx = addr.start / sizeof(DATA);
-        u64 off = addr.start % sizeof(DATA);
-        u64 size = min(addr.length(), (u64)sizeof(DATA));
-        size_t iot = N > 1 ? idx : tag;
+    DATA val;
+    size_t iot = N > 1 ? idx : tag;
 
-        DATA val;
+    if (std::holds_alternative<readfn_tagged_dbg>(m_readfn))
+        val = std::get<readfn_tagged_dbg>(m_readfn)(iot, dbg);
+    else if (std::holds_alternative<readfn_tagged>(m_readfn))
+        val = std::get<readfn_tagged>(m_readfn)(iot);
+    else if (std::holds_alternative<readfn>(m_readfn))
+        val = std::get<readfn>(m_readfn)();
+    else
+        val = current_bank(idx);
 
-        if (std::holds_alternative<readfn_tagged_dbg>(m_readfn))
-            val = std::get<readfn_tagged_dbg>(m_readfn)(iot, debug);
-        else if (std::holds_alternative<readfn_tagged>(m_readfn))
-            val = std::get<readfn_tagged>(m_readfn)(iot);
-        else if (std::holds_alternative<readfn>(m_readfn))
-            val = std::get<readfn>(m_readfn)();
-        else
-            val = current_bank(idx);
+    if (!dbg && is_writeback())
+        current_bank(idx) = val;
 
-        if (!debug && is_writeback())
-            current_bank(idx) = val;
+    if (get_endian() != host_endian())
+        val = bswap(val);
 
-        unsigned char* ptr = (unsigned char*)&val + off;
-        memcpy(dest, ptr, size);
-
-        addr.start += size;
-        dest += size;
-    }
+    memcpy(ptr, (u8*)&val + off, len);
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::do_write(const range& txaddr, const void* data,
-                            bool debug) {
-    range addr(txaddr);
-    const unsigned char* src = (const unsigned char*)data;
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::do_write(size_t idx, u64 off, u64 len,
+                                    const void* ptr, bool dbg) {
+    VCML_ERROR_ON(idx >= N, "register index out of bounds");
+    VCML_ERROR_ON(off + len > get_cell_size(), "invalid access length");
+    size_t iot = N > 1 ? idx : tag;
 
-    while (addr.start <= addr.end) {
-        u64 idx = addr.start / sizeof(DATA);
-        u64 off = addr.start % sizeof(DATA);
-        u64 size = min(addr.length(), (u64)sizeof(DATA));
-        size_t iot = N > 1 ? idx : tag;
+    DATA val = current_bank(idx);
+    if (get_endian() != host_endian())
+        val = bswap(val);
 
-        DATA val = current_bank(idx);
+    memcpy((u8*)&val + off, ptr, len);
 
-        unsigned char* ptr = (unsigned char*)&val + off;
-        memcpy(ptr, src, size);
+    if (get_endian() != host_endian())
+        val = bswap(val);
 
-        if (std::holds_alternative<writefn_tagged_dbg>(m_writefn))
-            std::get<writefn_tagged_dbg>(m_writefn)(val, iot, debug);
-        else if (std::holds_alternative<writefn_tagged>(m_writefn))
-            std::get<writefn_tagged>(m_writefn)(val, iot);
-        else if (std::holds_alternative<writefn>(m_writefn))
-            std::get<writefn>(m_writefn)(val);
-        else
-            current_bank(idx) = val;
-
-        addr.start += size;
-        src += size;
-    }
+    if (std::holds_alternative<writefn_tagged_dbg>(m_writefn))
+        std::get<writefn_tagged_dbg>(m_writefn)(val, iot, dbg);
+    else if (std::holds_alternative<writefn_tagged>(m_writefn))
+        std::get<writefn_tagged>(m_writefn)(val, iot);
+    else if (std::holds_alternative<writefn>(m_writefn))
+        std::get<writefn>(m_writefn)(val);
+    else
+        current_bank(idx) = val;
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::operator DATA() const {
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::operator DATA() const {
     return current_bank();
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>::operator DATA&() {
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::operator DATA&() {
     return current_bank();
 }
 
-template <typename DATA, size_t N>
-const DATA& reg<DATA, N>::operator[](size_t idx) const {
+template <typename DATA, size_t N, size_t STRIDE>
+const DATA& reg<DATA, N, STRIDE>::operator[](size_t idx) const {
     return current_bank(idx);
 }
 
-template <typename DATA, size_t N>
-DATA& reg<DATA, N>::operator[](size_t idx) {
+template <typename DATA, size_t N, size_t STRIDE>
+DATA& reg<DATA, N, STRIDE>::operator[](size_t idx) {
     return current_bank(idx);
 }
 
-template <typename DATA, size_t N>
-DATA reg<DATA, N>::operator++(int unused) {
+template <typename DATA, size_t N, size_t STRIDE>
+DATA reg<DATA, N, STRIDE>::operator++(int unused) {
     (void)unused;
     DATA result = current_bank();
 
@@ -633,8 +641,8 @@ DATA reg<DATA, N>::operator++(int unused) {
     return result;
 }
 
-template <typename DATA, size_t N>
-DATA reg<DATA, N>::operator--(int unused) {
+template <typename DATA, size_t N, size_t STRIDE>
+DATA reg<DATA, N, STRIDE>::operator--(int unused) {
     (void)unused;
     DATA result = current_bank();
 
@@ -644,183 +652,185 @@ DATA reg<DATA, N>::operator--(int unused) {
     return result;
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>& reg<DATA, N>::operator++() {
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator++() {
     for (size_t i = 0; i < N; i++)
         current_bank(i)++;
     return *this;
 }
 
-template <typename DATA, size_t N>
-reg<DATA, N>& reg<DATA, N>::operator--() {
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator--() {
     for (size_t i = 0; i < N; i++)
         current_bank(i)--;
     return *this;
 }
 
-template <typename DATA, size_t N>
-inline reg<DATA, N>& reg<DATA, N>::operator=(const reg<DATA, N>& r) {
+template <typename DATA, size_t N, size_t STRIDE>
+inline reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator=(
+    const reg<DATA, N, STRIDE>& r) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) = r.current_bank(i);
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline reg<DATA, N>& reg<DATA, N>::operator=(const reg<T, N>& r) {
+inline reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator=(
+    const reg<T, N>& r) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) = r.current_bank(i);
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) = value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator|=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator|=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) |= value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator&=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator&=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) &= value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator^=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator^=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) ^= value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator+=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator+=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) += value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator-=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator-=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) -= value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator*=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator*=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) *= value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-reg<DATA, N>& reg<DATA, N>::operator/=(const T& value) {
+reg<DATA, N, STRIDE>& reg<DATA, N, STRIDE>::operator/=(const T& value) {
     for (size_t i = 0; i < N; i++)
         current_bank(i) /= value;
     return *this;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline bool reg<DATA, N>::operator==(const T& other) const {
+inline bool reg<DATA, N, STRIDE>::operator==(const T& other) const {
     for (size_t i = 0; i < N; i++)
         if (current_bank(i) != other)
             return false;
     return true;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline bool reg<DATA, N>::operator<(const T& other) const {
+inline bool reg<DATA, N, STRIDE>::operator<(const T& other) const {
     for (size_t i = 0; i < N; i++)
         if (current_bank(i) >= other)
             return false;
     return true;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline bool reg<DATA, N>::operator>(const T& other) const {
+inline bool reg<DATA, N, STRIDE>::operator>(const T& other) const {
     for (size_t i = 0; i < N; i++)
         if (current_bank(i) <= other)
             return false;
     return true;
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline bool reg<DATA, N>::operator!=(const T& other) const {
+inline bool reg<DATA, N, STRIDE>::operator!=(const T& other) const {
     return !operator==(other);
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline bool reg<DATA, N>::operator<=(const T& other) const {
+inline bool reg<DATA, N, STRIDE>::operator<=(const T& other) const {
     return !operator>(other);
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename T>
-inline bool reg<DATA, N>::operator>=(const T& other) const {
+inline bool reg<DATA, N, STRIDE>::operator>=(const T& other) const {
     return !operator<(other);
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename F>
-inline DATA reg<DATA, N>::get_field() const {
+inline DATA reg<DATA, N, STRIDE>::get_field() const {
     return vcml::get_field<F>(current_bank());
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename F>
-inline void reg<DATA, N>::set_field() {
+inline void reg<DATA, N, STRIDE>::set_field() {
     for (size_t i = 0; i < N; i++)
         vcml::set_field<F>(current_bank(i));
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <typename F>
-inline void reg<DATA, N>::set_field(DATA val) {
+inline void reg<DATA, N, STRIDE>::set_field(DATA val) {
     for (size_t i = 0; i < N; i++)
         vcml::set_field<F>(current_bank(i), val);
 }
 
-template <typename DATA, size_t N>
+template <typename DATA, size_t N, size_t STRIDE>
 template <const DATA BIT>
-inline void reg<DATA, N>::set_bit(bool set) {
+inline void reg<DATA, N, STRIDE>::set_bit(bool set) {
     for (size_t i = 0; i < N; i++)
         vcml::set_bit<BIT>(current_bank(i), set);
 }
 
-template <typename DATA, size_t N>
-string reg<DATA, N>::str() {
+template <typename DATA, size_t N, size_t STRIDE>
+string reg<DATA, N, STRIDE>::str() {
     return reg_base::str();
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::str(const string& s) {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::str(const string& s) {
     reg_base::str(s);
 }
 
-template <typename DATA, size_t N>
-void reg<DATA, N>::init_bank(int bank) {
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::init_bank(int bank) {
     VCML_ERROR_ON(!m_banked, "cannot create banks in register %s", name());
 
     if (bank == 0 || stl_contains(m_banks, bank))

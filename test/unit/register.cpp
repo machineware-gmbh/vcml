@@ -781,15 +781,15 @@ TEST(registers, debug_read_write) {
     });
 
     u32 data = 0;
-    mock.test_reg_a.do_read({ 0, 3 }, &data, false);
+    mock.test_reg_a.do_read(0, 0, 4, &data, false);
     EXPECT_EQ(data, 42);
-    mock.test_reg_a.do_read({ 0, 3 }, &data, true);
+    mock.test_reg_a.do_read(0, 0, 4, &data, true);
     EXPECT_EQ(data, 44);
 
     data = 1;
-    mock.test_reg_a.do_write({ 0, 3 }, &data, false);
+    mock.test_reg_a.do_write(0, 0, 4, &data, false);
     EXPECT_EQ(mock.test_reg_a, data);
-    mock.test_reg_a.do_write({ 0, 3 }, &data, true);
+    mock.test_reg_a.do_write(0, 0, 4, &data, true);
     EXPECT_EQ(mock.test_reg_a, data + 1);
 }
 
@@ -829,19 +829,118 @@ TEST(registers, debug_read_write_periph) {
 
     u32 data = 0;
     EXPECT_CALL(mock, reg_read(true)).WillOnce(Return(50));
-    mock.test_reg.do_read({ 0, 3 }, &data, true);
+    mock.test_reg.do_read(0, 0, 4, &data, true);
     EXPECT_EQ(data, 50);
 
     data = 0;
     EXPECT_CALL(mock, reg_read_tag(123, true)).WillOnce(Return(55));
-    mock.test_reg_tag.do_read({ 0, 3 }, &data, true);
+    mock.test_reg_tag.do_read(0, 0, 4, &data, true);
     EXPECT_EQ(data, 55);
 
     data = 56;
     EXPECT_CALL(mock, reg_write(data, true));
-    mock.test_reg.do_write({ 0, 3 }, &data, true);
+    mock.test_reg.do_write(0, 0, 4, &data, true);
 
     data = 57;
     EXPECT_CALL(mock, reg_write_tag(data, 123, true));
-    mock.test_reg_tag.do_write({ 0, 3 }, &data, true);
+    mock.test_reg_tag.do_write(0, 0, 4, &data, true);
+}
+
+class mock_peripheral_strided : public peripheral
+{
+public:
+    reg<u32, 4, 0x10> test_reg;
+
+    reg<u8, 4, 4> test_reg_a;
+    reg<u8, 4, 4> test_reg_b;
+    reg<u8, 4, 4> test_reg_c;
+
+    MOCK_METHOD(u8, reg_a_read, (size_t));
+    MOCK_METHOD(void, reg_a_write, (u8, size_t));
+    MOCK_METHOD(u8, reg_b_read, (size_t));
+    MOCK_METHOD(void, reg_b_write, (u8, size_t));
+    MOCK_METHOD(u8, reg_c_read, (size_t));
+    MOCK_METHOD(void, reg_c_write, (u8, size_t));
+
+    mock_peripheral_strided(const sc_core::sc_module_name& nm):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10),
+        test_reg("test_reg", 0x0, 0xffffffff),
+        test_reg_a("test_reg_a", 0x100),
+        test_reg_b("test_reg_b", 0x101),
+        test_reg_c("test_reg_c", 0x102) {
+        test_reg.allow_read_write();
+        test_reg_a.allow_read_write();
+        test_reg_a.on_read(&mock_peripheral_strided::reg_a_read);
+        test_reg_a.on_write(&mock_peripheral_strided::reg_a_write);
+        test_reg_b.allow_read_write();
+        test_reg_b.on_read(&mock_peripheral_strided::reg_b_read);
+        test_reg_b.on_write(&mock_peripheral_strided::reg_b_write);
+        test_reg_c.allow_read_write();
+        test_reg_c.on_read(&mock_peripheral_strided::reg_c_read);
+        test_reg_c.on_write(&mock_peripheral_strided::reg_c_write);
+        clk.stub(100 * MHz);
+        rst.stub();
+        handle_clock_update(0, clk.get_hz());
+    }
+};
+
+TEST(registers, strided) {
+    mock_peripheral_strided mock("mock");
+
+    u32 data = 0;
+    tlm_generic_payload tx;
+
+    data = 0x11111111;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x00, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.test_reg[0], data);
+
+    data = 0x22222222;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x10, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.test_reg[1], data);
+
+    data = 0x33333333;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x20, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.test_reg[2], data);
+
+    data = 0x44444444;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x30, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(mock.test_reg[3], data);
+
+    data = 0xffffffff;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x04, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 0);
+    EXPECT_EQ(tx.get_response_status(), TLM_ADDRESS_ERROR_RESPONSE);
+
+    data = 0xffeeddcc;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x108, &data, sizeof(data));
+    EXPECT_CALL(mock, reg_a_write(0xcc, 2));
+    EXPECT_CALL(mock, reg_b_write(0xdd, 2));
+    EXPECT_CALL(mock, reg_c_write(0xee, 2));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 3);
+}
+
+class mock_peripheral_strided_broken : public peripheral
+{
+public:
+    reg<u32, 4, 8> test_reg_a;
+    reg<u32, 4, 6> test_reg_b;
+
+    mock_peripheral_strided_broken(const sc_core::sc_module_name& nm):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10),
+        test_reg_a("test_reg_a", 0x0),
+        test_reg_b("test_reg_b", 0x4) {
+        clk.stub(100 * MHz);
+        rst.stub();
+        handle_clock_update(0, clk.get_hz());
+    }
+};
+
+TEST(registers, strided_broken) {
+    EXPECT_DEATH(
+        { mock_peripheral_strided_broken mock("mock"); },
+        "already in use by register");
 }
