@@ -874,8 +874,9 @@ void gic400::cpuif::write_dir(u32 val) {
         return;
     }
 
-    m_parent->set_irq_active(irq, false, bit(cpu));
-    m_parent->set_irq_signaled(irq, false, bit(cpu));
+    cpu_mask_t cpu_mask = m_parent->get_cpu_mask(cpu, irq);
+    m_parent->set_irq_active(irq, false, cpu_mask);
+    m_parent->set_irq_signaled(irq, false, cpu_mask);
     m_parent->update();
 }
 
