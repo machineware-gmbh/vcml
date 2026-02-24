@@ -944,7 +944,5 @@ public:
 };
 
 TEST(registers, strided_broken) {
-    EXPECT_DEATH(
-        { mock_peripheral_strided_broken mock("mock"); },
-        "already in use by register");
+    EXPECT_DEATH({ mock_peripheral_strided_broken mock("mock"); }, "overlap");
 }

@@ -93,7 +93,7 @@ void rtc1742::load_nvram(const string& filename) {
     }
 
     u64 nbytes = file.tellg();
-    u64 size = m_addr.length() - control.get_address();
+    u64 size = m_addr.length();
 
     if (nbytes > size) {
         nbytes = size;
@@ -113,7 +113,7 @@ void rtc1742::save_nvram(const string& filename) {
         return;
     }
 
-    u64 size = m_addr.length() - control.get_address();
+    u64 size = m_addr.length();
     file.write((char*)m_nvmem, size);
 }
 

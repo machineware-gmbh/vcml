@@ -29,12 +29,16 @@ class peripheral : public component
 {
 private:
     int m_current_cpu;
-    unordered_map<address_space, vector<reg_base*>> m_registers;
+
+    unordered_map<address_space, reg_bank*> m_registers;
 
     bool cmd_mmap(const vector<string>& args, ostream& os);
 
     unsigned int forward_to_regs(tlm_generic_payload& tx, const tlm_sbi& info,
                                  address_space as);
+
+    reg_bank& lookup_address_space(address_space as);
+    reg_bank* find_address_space(address_space as) const;
 
 public:
     property<endianess> endian;
@@ -80,11 +84,19 @@ public:
 
     virtual void reset() override;
 
-    void add_register(reg_base* reg);
+    void add_register(reg_base* reg, u64 offset, address_space as);
     void remove_register(reg_base* reg);
 
-    const vector<reg_base*>& get_registers() const;
-    const vector<reg_base*>& get_registers(address_space as) const;
+    vector<reg_base*> get_registers() const;
+    vector<reg_base*> get_registers(address_space as) const;
+
+    address_space address_space_of(const reg_base& reg) const;
+    address_space address_space_of(const string& reg_name) const;
+
+    u64 offset_of(const reg_base& reg, address_space as) const;
+    u64 offset_of(const reg_base& reg) const;
+    u64 offset_of(const string& reg_name, address_space as) const;
+    u64 offset_of(const string& reg_name) const;
 
     void map_dmi(const tlm_dmi& dmi, address_space as = VCML_AS_DEFAULT);
     void map_dmi(unsigned char* ptr, u64 start, u64 end, vcml_access a,
@@ -133,39 +145,36 @@ inline T peripheral::from_host_endian(T val) const {
 }
 
 inline void peripheral::aligned_accesses_only(bool only) {
-    for (auto& [as, regs] : m_registers)
-        for (auto* reg : regs)
-            reg->aligned_accesses_only(only);
+    for (auto& [_, regs] : m_registers)
+        regs->aligned_accesses_only(only);
 }
 
 inline void peripheral::aligned_accesses_only(address_space as, bool only) {
-    for (auto* reg : get_registers(as))
-        reg->aligned_accesses_only(only);
+    if (auto* regs = find_address_space(as))
+        regs->aligned_accesses_only(only);
 }
 
 inline void peripheral::natural_accesses_only(bool only) {
-    for (auto& [as, regs] : m_registers)
-        for (auto* reg : regs)
-            reg->natural_accesses_only(only);
+    for (auto& [_, regs] : m_registers)
+        regs->natural_accesses_only(only);
 }
 
 inline void peripheral::natural_accesses_only(address_space as, bool only) {
-    for (auto* reg : get_registers(as))
-        reg->natural_accesses_only(only);
+    if (auto* regs = find_address_space(as))
+        regs->natural_accesses_only(only);
 }
 
 inline void peripheral::set_access_size(u64 min, u64 max) {
-    for (auto& [as, regs] : m_registers)
-        for (auto* reg : regs)
-            reg->set_access_size(min, max);
+    for (auto [_, regs] : m_registers)
+        regs->set_access_size(min, max);
 }
 
 inline void peripheral::set_access_size(address_space as, u64 min, u64 max) {
-    for (auto* reg : get_registers(as))
-        reg->set_access_size(min, max);
+    if (auto* regs = find_address_space(as))
+        regs->set_access_size(min, max);
 }
 
-inline const vector<reg_base*>& peripheral::get_registers() const {
+inline vector<reg_base*> peripheral::get_registers() const {
     return get_registers(VCML_AS_DEFAULT);
 }
 

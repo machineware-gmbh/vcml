@@ -129,20 +129,24 @@ public:
         u32 dbginst0_val = 0b00000001 | 0b00000000 << 8 |
                            (0b10100000 | channel_non_secure << 1) << 16 |
                            (channel_nr & 0xf) << 24;
-        out.write(dma.dbginst0.get_address(), &dbginst0_val, 4);
-
         u32 dbginst1_val = start_address;
-        out.write(dma.dbginst1.get_address(), &dbginst1_val, 4);
-
         u32 dbgctr_val = 0b00;
-        out.write(dma.dbgcmd.get_address(), &dbgctr_val, 4);
+
+        u64 dbginst0_addr = dma.offset_of("dbginst0");
+        u64 dbginst1_addr = dma.offset_of("dbginst1");
+        u64 dbgctr_addr = dma.offset_of("dbgcmd");
+
+        out.write(dbginst0_addr, &dbginst0_val, 4);
+        out.write(dbginst1_addr, &dbginst1_val, 4);
+        out.write(dbgctr_addr, &dbgctr_val, 4);
     }
 
     void set_ev_to_irq(u32 ev_id) {
+        u64 inten_addr = dma.offset_of("inten");
         u32 irq_enable_bit;
-        out.read(dma.inten.get_address(), &irq_enable_bit, 4);
+        out.read(inten_addr, &irq_enable_bit, 4);
         irq_enable_bit |= 0b1 << ev_id;
-        out.write(dma.inten.get_address(), &irq_enable_bit, 4);
+        out.write(inten_addr, &irq_enable_bit, 4);
     }
 
     void test_transfer() {

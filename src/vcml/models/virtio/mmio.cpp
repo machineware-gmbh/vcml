@@ -224,13 +224,13 @@ unsigned int mmio::receive(tlm_generic_payload& tx, const tlm_sbi& info,
 
 tlm_response_status mmio::read(const range& addr, void* data,
                                const tlm_sbi& info) {
-    const range& regbase = config_gen.get_range();
-    if (addr.start <= regbase.end) {
+    u64 limit = 0x100;
+    if (addr.start < limit) {
         memset(data, 0xff, addr.length());
         return TLM_OK_RESPONSE;
     }
 
-    if (!virtio_out->read_config(addr - regbase.end - 1, data))
+    if (!virtio_out->read_config(addr - limit, data))
         return TLM_ADDRESS_ERROR_RESPONSE;
 
     return TLM_OK_RESPONSE;
@@ -243,11 +243,11 @@ tlm_response_status mmio::write(const range& addr, const void* data,
         return TLM_COMMAND_ERROR_RESPONSE;
     }
 
-    const range& regbase = config_gen.get_range();
-    if (addr.start <= regbase.end)
+    u64 limit = 0x100;
+    if (addr.start <= limit)
         return TLM_OK_RESPONSE;
 
-    if (!virtio_out->write_config(addr - regbase.end - 1, data))
+    if (!virtio_out->write_config(addr - limit, data))
         return TLM_ADDRESS_ERROR_RESPONSE;
 
     config_gen++;

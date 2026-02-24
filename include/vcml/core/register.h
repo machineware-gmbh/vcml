@@ -26,7 +26,6 @@ class peripheral;
 class reg_base : public sc_object
 {
 private:
-    u64 m_addr;
     u64 m_cell_size;
     u64 m_cell_count;
     u64 m_cell_stride;
@@ -41,22 +40,15 @@ private:
     u64 m_maxsize;
     peripheral* m_host;
 
-    tlm_response_status check_access(const tlm_generic_payload& tx,
-                                     const tlm_sbi& info) const;
     unsigned int do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
 public:
-    const address_space as;
-
     size_t tag;
 
     logger& log;
 
     u64 get_size() const;
-    range get_range() const { return range(m_addr, m_addr + get_size() - 1); }
 
-    u64 get_address() const { return get_range().start; }
-    u64 get_limit() const { return get_range().end; }
     u64 get_cell_size() const { return m_cell_size; }
     u64 get_cell_count() const { return m_cell_count; }
     u64 get_cell_stride() const { return m_cell_stride; }
@@ -108,6 +100,7 @@ public:
     peripheral* get_host() const { return m_host; }
     int current_cpu() const;
 
+    reg_base(const string& nm, u64 size, u64 n, u64 stride);
     reg_base(address_space as, const string& nm, u64 addr, u64 size, u64 n,
              u64 stride);
     virtual ~reg_base();
@@ -116,8 +109,8 @@ public:
 
     virtual void reset() = 0;
 
-    bool overlaps(const range& r) const;
-    bool overlaps(const reg_base& r) const;
+    tlm_response_status check_access(const tlm_generic_payload& tx,
+                                     const tlm_sbi& info) const;
 
     unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
@@ -150,6 +143,64 @@ inline void reg_base::natural_accesses_only(bool only) {
     m_aligned = only;
     m_minsize = only ? m_cell_size : 0;
     m_maxsize = only ? m_cell_size : -1;
+}
+
+class reg_bank : public sc_object
+{
+public:
+    typedef std::map<u64, reg_base*> map_type;
+    typedef map_type::iterator iterator;
+    typedef map_type::const_iterator const_iterator;
+
+    reg_bank(const char* name);
+    virtual ~reg_bank();
+
+    size_t size() const { return m_regs.size(); }
+
+    iterator begin() { return m_regs.begin(); }
+    iterator end() { return m_regs.end(); }
+
+    const_iterator begin() const { return m_regs.begin(); }
+    const_iterator end() const { return m_regs.end(); }
+
+    bool contains(const reg_base& reg) const;
+    bool contains(const string& reg_name) const;
+
+    optional<u64> offset_of(const reg_base& reg) const;
+    optional<u64> offset_of(const string& reg_name) const;
+
+    void aligned_accesses_only(bool set = true);
+    void natural_accesses_only(bool set = true);
+    void set_access_size(u64 min, u64 max);
+
+    void collect(vector<reg_base*>& regs);
+
+    void reset();
+
+    void insert(reg_base* reg, u64 offset);
+    void remove(reg_base* reg);
+
+    virtual unsigned int receive(tlm_generic_payload& tx, const tlm_sbi& sbi);
+
+private:
+    std::optional<bool> m_aligned_only;
+    std::optional<bool> m_natural_only;
+    std::optional<pair<u64, u64>> m_access_size;
+
+    map_type m_regs;
+
+    bool check_access(const reg_base& reg, u64 off, tlm_generic_payload& tx,
+                      const tlm_sbi& sbi) const;
+
+    bool overlaps(const reg_base& reg, u64 off, const range& r) const;
+    bool overlaps(const reg_base& reg, u64 off, u64 addr, u64 lenth) const;
+    bool overlaps(const reg_base& reg0, u64 off0, const reg_base& reg1,
+                  u64 off1) const;
+};
+
+inline bool reg_bank::overlaps(const reg_base& reg, u64 off, u64 addr,
+                               u64 length) const {
+    return overlaps(reg, off, range(addr, addr + length - 1));
 }
 
 template <typename DATA, size_t N = 1, size_t STRIDE = sizeof(DATA)>
@@ -214,6 +265,7 @@ public:
 
     const char* name() const { return sc_core::sc_object::name(); }
 
+    reg(const string& name, std::initializer_list<DATA> init = {});
     reg(const string& name, u64 addr, DATA init = DATA());
     reg(const string& name, u64 addr, std::initializer_list<DATA> init);
     reg(address_space as, const string& name, u64 addr, DATA init = DATA());
@@ -490,6 +542,19 @@ const DATA& reg<DATA, N, STRIDE>::current_bank(size_t idx) const {
 template <typename DATA, size_t N, size_t STRIDE>
 DATA& reg<DATA, N, STRIDE>::current_bank(size_t idx) {
     return bank(current_cpu(), idx);
+}
+
+template <typename DATA, size_t N, size_t STRIDE>
+reg<DATA, N, STRIDE>::reg(const string& nm, std::initializer_list<DATA> init):
+    reg_base(nm, sizeof(DATA), N, STRIDE),
+    property<DATA, N>(nm.c_str(), init),
+    m_banked(false),
+    m_init(),
+    m_banks(),
+    m_readfn(),
+    m_writefn() {
+    for (size_t i = 0; i < N; i++)
+        m_init[i] = property<DATA, N>::get(i);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>

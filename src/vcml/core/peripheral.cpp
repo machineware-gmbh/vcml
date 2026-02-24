@@ -23,37 +23,50 @@ bool peripheral::cmd_mmap(const vector<string>& args, ostream& os) {
         os << " (address space " << as << ")";
     }
 
-    auto regs = get_registers(as);
-    std::sort(regs.begin(), regs.end(), [](reg_base* a, reg_base* b) -> bool {
-        return a->get_address() < b->get_address();
-    });
-
-    if (regs.empty()) {
+    auto* regs = find_address_space(as);
+    if (!regs) {
         os << "\n<no registers>";
         return true;
     }
 
     size_t l = 0;
-    size_t z = regs.size();
+    size_t z = regs->size();
     do {
         l++;
     } while (z /= 10);
 
     size_t y = 8;
-    for (const auto& r : regs) {
-        if (r->get_limit() > ~0u)
+    for (const auto& [off, r] : *regs) {
+        if (off + r->get_size() > ~0u)
             y = 16;
     }
 
     size_t i = 0;
-    for (const auto& r : regs) {
+    for (const auto& [off, r] : *regs) {
+        range addr(off, off + r->get_size() - 1);
         os << "\n[";
         os << std::dec << std::setw(l) << std::setfill(' ') << i++ << "] ";
-        os << std::hex << std::setw(y) << r->get_range() << " -> ";
+        os << std::hex << std::setw(y) << addr << " -> ";
         os << r->basename();
     }
 
     return true;
+}
+
+reg_bank& peripheral::lookup_address_space(address_space as) {
+    auto it = m_registers.find(as);
+    if (it != m_registers.end())
+        return *it->second;
+
+    auto guard = get_hierarchy_scope();
+    reg_bank* bank = new reg_bank(mkstr("as%d", (int)as).c_str());
+    m_registers[as] = bank;
+    return *bank;
+}
+
+reg_bank* peripheral::find_address_space(address_space as) const {
+    auto it = m_registers.find(as);
+    return it != m_registers.end() ? it->second : nullptr;
 }
 
 unsigned int peripheral::forward_to_regs(tlm_generic_payload& tx,
@@ -62,19 +75,8 @@ unsigned int peripheral::forward_to_regs(tlm_generic_payload& tx,
     unsigned int bytes = 0;
 
     auto it = m_registers.find(as);
-    if (it != m_registers.end()) {
-        for (reg_base* reg : it->second) {
-            if (reg->overlaps(tx)) {
-                bytes += reg->receive(tx, info);
-
-                if (success(tx) && reg->is_natural_accesses_only())
-                    break;
-
-                if (failed(tx))
-                    break;
-            }
-        }
-    }
+    if (it != m_registers.end())
+        bytes += it->second->receive(tx, info);
 
     // if no register took the access, try again in the global address space
     if (as != VCML_AS_GLOBAL && !success(tx) && !failed(tx))
@@ -96,50 +98,95 @@ peripheral::peripheral(const sc_module_name& nm, endianess default_endian,
 }
 
 peripheral::~peripheral() {
-    // nothing to do
+    for (auto [_, regs] : m_registers)
+        delete regs;
 }
 
 void peripheral::reset() {
     component::reset();
 
-    for (auto& [as, regs] : m_registers)
-        for (auto* r : regs)
-            r->reset();
+    for (auto [_, regs] : m_registers)
+        regs->reset();
 }
 
-void peripheral::add_register(reg_base* reg) {
-    if (stl_contains(m_registers[reg->as], reg))
-        VCML_ERROR("register %s already assigned", reg->name());
-
-    for (auto r : m_registers[reg->as]) {
-        if (r->overlaps(*reg))
-            VCML_ERROR(
-                "address space of register %s (%d: %s) already in "
-                "use by register %s",
-                reg->name(), reg->as, to_string(reg->get_range()).c_str(),
-                r->name());
-    }
-
-    mwr::stl_insert_sorted(m_registers[reg->as], reg,
-                           [](const reg_base* a, const reg_base* b) -> bool {
-                               return a->get_address() < b->get_address();
-                           });
+void peripheral::add_register(reg_base* reg, u64 offset, address_space as) {
+    lookup_address_space(as).insert(reg, offset);
 }
 
 void peripheral::remove_register(reg_base* reg) {
-    if (!stl_contains(m_registers[reg->as], reg))
-        VCML_ERROR("unknown register '%s'", reg->name());
-    stl_remove(m_registers[reg->as], reg);
+    for (auto [as, regs] : m_registers)
+        regs->remove(reg);
 }
 
-const vector<reg_base*>& peripheral::get_registers(address_space as) const {
-    auto it = m_registers.find(as);
-    if (it == m_registers.end()) {
-        static const vector<reg_base*> none;
-        return none;
+vector<reg_base*> peripheral::get_registers(address_space as) const {
+    vector<reg_base*> result;
+    if (auto* regs = find_address_space(as))
+        regs->collect(result);
+    return result;
+}
+
+address_space peripheral::address_space_of(const reg_base& reg) const {
+    for (auto [as, regs] : m_registers) {
+        if (regs->contains(reg))
+            return as;
     }
 
-    return it->second;
+    VCML_ERROR("register %s is not part of %s", reg.name(), name());
+}
+
+address_space peripheral::address_space_of(const string& reg_name) const {
+    for (auto [as, regs] : m_registers) {
+        if (regs->contains(reg_name))
+            return as;
+    }
+
+    VCML_ERROR("register %s is not part of %s", reg_name.c_str(), name());
+}
+
+u64 peripheral::offset_of(const reg_base& reg, address_space as) const {
+    auto* regs = find_address_space(as);
+    VCML_ERROR_ON(!regs, "address space %d of %s has no registers", as,
+                  name());
+
+    auto offset = regs->offset_of(reg);
+    VCML_ERROR_ON(!offset, "register %s is not within address space %d of %s",
+                  reg.name(), as, name());
+
+    return offset.value();
+}
+
+u64 peripheral::offset_of(const reg_base& reg) const {
+    for (auto [_, regs] : m_registers) {
+        if (auto offset = regs->offset_of(reg))
+            return offset.value();
+    }
+
+    VCML_ERROR("register %s is not part of %s", reg.name(), name());
+}
+
+u64 peripheral::offset_of(const string& reg_name, address_space as) const {
+    auto* regs = find_address_space(as);
+    VCML_ERROR_ON(!regs, "address space %d of %s has no registers", as,
+                  name());
+
+    for (auto [offset, reg] : *regs) {
+        if (reg_name == reg->basename())
+            return offset;
+    }
+
+    VCML_ERROR("register %s is not within address space %d of %s",
+               reg_name.c_str(), as, name());
+}
+
+u64 peripheral::offset_of(const string& reg_name) const {
+    for (auto [_, regs] : m_registers) {
+        for (auto [offset, reg] : *regs) {
+            if (reg_name == reg->basename())
+                return offset;
+        }
+    }
+
+    VCML_ERROR("register %s is not part of %s", reg_name.c_str(), name());
 }
 
 void peripheral::map_dmi(const tlm_dmi& dmi, address_space as) {

@@ -87,8 +87,9 @@ public:
 
         // make sure only naturally aligned accesses work
         for (auto* r : aplic_m.get_registers()) {
-            ASSERT_CE(out_m.readw(r->get_address() + 1, data));
-            ASSERT_CE(out_m.writew<u64>(r->get_address(), 0));
+            u64 addr = aplic_m.offset_of(*r);
+            ASSERT_CE(out_m.readw(addr + 1, data));
+            ASSERT_CE(out_m.writew<u64>(addr, 0));
         }
 
         // make sure no contexts got spawned
