@@ -114,7 +114,7 @@ string vspclient::handle_status(const string& command) {
     lock_guard<mutex> guard(m_mtx);
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
-    string status = m_stop ? ("stopped:" + m_stop_reason) : "running";
+    string status = is_stopped() ? ("stopped:" + m_stop_reason) : "running";
     return mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
 }
 
