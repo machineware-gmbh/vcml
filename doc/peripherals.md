@@ -97,10 +97,10 @@ public:
 In order to react to read and write requests, you need to assign a callback
 function that can be called whenever an access is detected. The signatures of
 read and write callbacks for a register of type `vcml::reg<T>` are `T read_reg()`
-and `T write_reg(T val)`, respectively. Extended callbacks holding extra
+and `void write_reg(T val)`, respectively. Extended callbacks holding extra
 information about the access are also available:
 `T read_reg(size_t tag, bool debug)` and
-`T write_reg(T val, size_t tag, bool debug)`.
+`void write_reg(T val, size_t tag, bool debug)`.
 If the extended callbacks are used, `vcml::reg<T>::tag` will be passed as `tag`,
 and `debug` will be `true` if the access originated from a `transport_dbg` call.
 You can assign these during the constructor of your peripheral:
@@ -115,8 +115,8 @@ public:
         return my_reg; // here you can modify my_reg before returning its value
     }
 
-    u32 write_my_reg(u32 val) {
-        return val; // value returned here will be written to the register
+    void write_my_reg(u32 val) {
+        my_reg = val; // manually assign the value in the callback
     }
 
     my_peripheral(const sc_core::sc_module_name& nm):
@@ -202,8 +202,8 @@ public:
         return my_reg[idx]; // here you can modify reg before returning its value
     }
 
-    u32 write_my_reg(u32 val, size_t idx, bool debug) {
-        return val; // value returned here will be assigned to my_reg[idx]
+    void write_my_reg(u32 val, size_t idx, bool debug) {
+        my_reg[idx] = val; // assign value to my_reg at idx
     }
 
     my_peripheral(const sc_core::sc_module_name& nm):
@@ -218,7 +218,7 @@ public:
 ```
 
 Note that you can also use the `size_t` indexed callback functions for scalar
-registers. In this case, the value of `my_register.tag` will be passed as `idx`.
+registers. In this case, the value of `my_reg.tag` will be passed as `idx`.
 
 ----
 ## Banked Registers

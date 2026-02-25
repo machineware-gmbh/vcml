@@ -13,6 +13,10 @@
 
 namespace vcml {
 
+u64 reg_base::get_address(address_space as) const {
+    return m_host ? m_host->offset_of(*this, as) : 0;
+}
+
 void reg_base::set_access_size(u64 min, u64 max) {
     VCML_ERROR_ON(min > max, "invalid access size specification");
     VCML_ERROR_ON(max > m_cell_size, "maximum access size exceeded");

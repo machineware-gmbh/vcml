@@ -49,6 +49,9 @@ public:
 
     u64 get_size() const;
 
+    u64 get_address(address_space as = VCML_AS_DEFAULT) const;
+    range get_range(address_space as = VCML_AS_DEFAULT) const;
+
     u64 get_cell_size() const { return m_cell_size; }
     u64 get_cell_count() const { return m_cell_count; }
     u64 get_cell_stride() const { return m_cell_stride; }
@@ -125,6 +128,11 @@ public:
 
 inline u64 reg_base::get_size() const {
     return m_cell_stride * (m_cell_count - 1) + m_cell_size;
+}
+
+inline range reg_base::get_range(address_space as) const {
+    u64 addr = get_address(as);
+    return range(addr, addr + get_size() - 1);
 }
 
 inline bool reg_base::is_read_only() const {
