@@ -244,7 +244,7 @@ tlm_response_status mmio::write(const range& addr, const void* data,
     }
 
     u64 limit = 0x100;
-    if (addr.start <= limit)
+    if (addr.start < limit)
         return TLM_OK_RESPONSE;
 
     if (!virtio_out->write_config(addr - limit, data))
