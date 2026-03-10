@@ -101,6 +101,8 @@ private:
     bool cmd_stack(const vector<string>& args, ostream& os);
     bool cmd_vread(const vector<string>& args, ostream& os);
     bool cmd_vwrite(const vector<string>& args, ostream& os);
+    bool cmd_pread(const vector<string>& args, ostream& os);
+    bool cmd_pwrite(const vector<string>& args, ostream& os);
 
     static unordered_map<string, target*> s_targets;
 

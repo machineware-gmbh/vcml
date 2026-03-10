@@ -232,5 +232,17 @@ the given bytes to memory.
 * Command: `$vwrite,<target-name>,<virtual-address>,<byte0>,<byte1>,..#**`
 * Response: `OK,<n> bytes written#**`
 
+#### Read Physical Memory
+Performs a debug read access using the provided physical address and returns
+the requested number of bytes.
+* Command: `$pread,<target-name>,<physical-address>,<number-of-bytes>#**`
+* Response: `OK,<byte0>,<byte1>,<byte2>,...#**`
+
+#### Write Physical Memory
+Performs a debug write access using the provided physical address and stores
+the given bytes to memory.
+* Command: `$pwrite,<target-name>,<physical-address>,<byte0>,<byte1>,..#**`
+* Response: `OK,<n> bytes written#**`
+
 ----
-Documentation updated September 2025
+Documentation updated March 2026
