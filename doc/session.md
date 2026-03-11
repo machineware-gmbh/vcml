@@ -61,10 +61,10 @@ The following general VSP commands have been defined with `[optional]` and
 `<mandatory>` arguments:
 
 #### Version
-The version command queries the SystemC as VCML versions used in the target
-simulator. It does not receive any arguments:
+The version command queries the SystemC, VCML, and protocol versions used in
+the target simulator. It does not receive any arguments:
 - Command  `$version#**`
-- Response `$OK,systemc-version-string,vcml-version-string#**`
+- Response `$OK,systemc-version-string,vcml-version-string,session-protver#**`
 
 #### Status
 The status command queries the current time-stamp, delta-cycle and runstate.

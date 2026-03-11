@@ -25,6 +25,8 @@ class vspclient;
 class vspserver : public rspserver, private suspender
 {
 private:
+    static constexpr int PROTVER = 1;
+
     string m_announce;
     sc_time m_duration;
     unordered_map<int, vspclient*> m_clients;
