@@ -309,6 +309,7 @@ string vspserver::handle_version(int client, const string& cmd) {
 #ifdef VCML_DEBUG
     ss << "-debug";
 #endif
+    ss << "," << PROTVER;
     return ss.str();
 }
 
