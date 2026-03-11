@@ -493,7 +493,7 @@ string vspserver::handle_lreg(int client, const string& cmd) {
     stringstream ss;
     ss << "OK";
     for (const auto& reg : regs)
-        ss << "," << reg.name;
+        ss << "," << reg.name << ":" << reg.size;
     return ss.str();
 }
 
