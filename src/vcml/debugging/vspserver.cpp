@@ -589,14 +589,12 @@ string vspserver::handle_vread(int client, const string& cmd) {
         return mkstr("E,too much data requested %llu / 4096", size);
 
     vector<u8> data(size);
-    u64 n = tgt->read_vmem_dbg(addr, data.data(), data.size());
-    if (!n)
-        return mkstr("E,error reading %llu bytes from 0x%llx", size, addr);
+    u64 nbytes = tgt->read_vmem_dbg(addr, data.data(), data.size());
 
     stringstream ss;
     ss << "OK";
-    for (u8 ch : data)
-        ss << mkstr(",0x%02hhx", ch);
+    for (size_t i = 0; i < nbytes; i++)
+        ss << mkstr(",0x%02hhx", data[i]);
     return ss.str();
 }
 
@@ -640,14 +638,12 @@ string vspserver::handle_pread(int client, const string& cmd) {
         return mkstr("E,too much data requested %llu / 4096", size);
 
     vector<u8> data(size);
-    u64 n = tgt->read_pmem_dbg(addr, data.data(), data.size());
-    if (!n)
-        return mkstr("E,error reading %llu bytes from 0x%llx", size, addr);
+    u64 nbytes = tgt->read_pmem_dbg(addr, data.data(), data.size());
 
     stringstream ss;
     ss << "OK";
-    for (u8 ch : data)
-        ss << mkstr(",0x%02hhx", ch);
+    for (size_t i = 0; i < nbytes; i++)
+        ss << mkstr(",0x%02hhx", data[i]);
     return ss.str();
 }
 
