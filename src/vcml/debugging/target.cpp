@@ -242,7 +242,7 @@ bool target::cmd_pread(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    size_t offset = 0;
+    u64 offset = 0;
     while (offset < buffer.size()) {
         os << mkstr("\n0x%llx:", addr + offset);
         for (size_t i = 0; i < 8; i++, offset++) {
