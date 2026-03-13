@@ -53,6 +53,8 @@ private:
     string handle_vapa(int client, const string& command);
     string handle_vread(int client, const string& command);
     string handle_vwrite(int client, const string& command);
+    string handle_pread(int client, const string& command);
+    string handle_pwrite(int client, const string& command);
 
     void disconnect_all();
     void force_quit();

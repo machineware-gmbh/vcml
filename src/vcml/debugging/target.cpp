@@ -178,7 +178,7 @@ bool target::cmd_stack(const vector<string>& args, ostream& os) {
 
 bool target::cmd_vread(const vector<string>& args, ostream& os) {
     u64 addr = strtoull(args[0].c_str(), NULL, 0);
-    u64 size = 1;
+    size_t size = 1;
     if (args.size() > 1)
         size = strtoull(args[1].c_str(), NULL, 0);
 
@@ -192,7 +192,7 @@ bool target::cmd_vread(const vector<string>& args, ostream& os) {
     u64 offset = 0;
     while (offset < buffer.size()) {
         os << mkstr("\n0x%llx:", addr + offset);
-        for (int i = 0; i < 8; i++, offset++) {
+        for (size_t i = 0; i < 8; i++, offset++) {
             if (offset < buffer.size())
                 os << mkstr(" %02hhx", buffer[offset]);
         }
@@ -222,6 +222,46 @@ bool target::cmd_vwrite(const vector<string>& args, ostream& os) {
 
     if (!write_vmem_dbg(addr, buffer.data(), buffer.size())) {
         os << mkstr("error writing virtual address 0x%llx", addr);
+        return false;
+    }
+
+    os << mkstr("successfully wrote %zu bytes to 0x%llx", buffer.size(), addr);
+    return true;
+}
+
+bool target::cmd_pread(const vector<string>& args, ostream& os) {
+    u64 addr = strtoull(args[0].c_str(), NULL, 0);
+    size_t size = 1;
+    if (args.size() > 1)
+        size = strtoull(args[1].c_str(), NULL, 0);
+
+    vector<u8> buffer(size);
+
+    if (!read_pmem_dbg(addr, buffer.data(), size)) {
+        os << mkstr("error reading physical address 0x%llx", addr);
+        return false;
+    }
+
+    u64 offset = 0;
+    while (offset < buffer.size()) {
+        os << mkstr("\n0x%llx:", addr + offset);
+        for (size_t i = 0; i < 8; i++, offset++) {
+            if (offset < buffer.size())
+                os << mkstr(" %02hhx", buffer[offset]);
+        }
+    }
+
+    return true;
+}
+
+bool target::cmd_pwrite(const vector<string>& args, ostream& os) {
+    u64 addr = strtoull(args[0].c_str(), NULL, 0);
+    vector<u8> buffer;
+    for (size_t i = 1; i < args.size(); i++)
+        append_bytes(buffer, args[i]);
+
+    if (!write_pmem_dbg(addr, buffer.data(), buffer.size())) {
+        os << mkstr("error writing physical address 0x%llx", addr);
         return false;
     }
 
@@ -398,6 +438,10 @@ target::target(module& host):
                           "read virtual memory: vread <addr> <count>");
     host.register_command("vwrite", 2, this, &target::cmd_vwrite,
                           "write virtual memory: vwrite <addr> <bytes>");
+    host.register_command("pread", 1, this, &target::cmd_pread,
+                          "read physical memory: pread <addr> <count>");
+    host.register_command("pwrite", 2, this, &target::cmd_pwrite,
+                          "write physical memory: pwrite <addr> <bytes>");
 }
 
 target::~target() {
