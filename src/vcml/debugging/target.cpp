@@ -178,7 +178,7 @@ bool target::cmd_stack(const vector<string>& args, ostream& os) {
 
 bool target::cmd_vread(const vector<string>& args, ostream& os) {
     u64 addr = strtoull(args[0].c_str(), NULL, 0);
-    u64 size = 1;
+    size_t size = 1;
     if (args.size() > 1)
         size = strtoull(args[1].c_str(), NULL, 0);
 
@@ -192,7 +192,7 @@ bool target::cmd_vread(const vector<string>& args, ostream& os) {
     u64 offset = 0;
     while (offset < buffer.size()) {
         os << mkstr("\n0x%llx:", addr + offset);
-        for (int i = 0; i < 8; i++, offset++) {
+        for (size_t i = 0; i < 8; i++, offset++) {
             if (offset < buffer.size())
                 os << mkstr(" %02hhx", buffer[offset]);
         }
@@ -231,7 +231,7 @@ bool target::cmd_vwrite(const vector<string>& args, ostream& os) {
 
 bool target::cmd_pread(const vector<string>& args, ostream& os) {
     u64 addr = strtoull(args[0].c_str(), NULL, 0);
-    u64 size = 1;
+    size_t size = 1;
     if (args.size() > 1)
         size = strtoull(args[1].c_str(), NULL, 0);
 
@@ -242,10 +242,10 @@ bool target::cmd_pread(const vector<string>& args, ostream& os) {
         return false;
     }
 
-    u64 offset = 0;
+    size_t offset = 0;
     while (offset < buffer.size()) {
         os << mkstr("\n0x%llx:", addr + offset);
-        for (int i = 0; i < 8; i++, offset++) {
+        for (size_t i = 0; i < 8; i++, offset++) {
             if (offset < buffer.size())
                 os << mkstr(" %02hhx", buffer[offset]);
         }
