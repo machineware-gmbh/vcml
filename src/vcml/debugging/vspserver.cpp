@@ -620,6 +620,55 @@ string vspserver::handle_vwrite(int client, const string& cmd) {
     return mkstr("OK,%zu bytes written", n);
 }
 
+string vspserver::handle_pread(int client, const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 4)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 addr = from_string<u64>(args[2]);
+    u64 size = from_string<u64>(args[3]);
+    if (size > 4096)
+        return mkstr("E,too much data requested %llu / 4096", size);
+
+    vector<u8> data(size);
+    tgt->read_pmem_dbg(addr, data.data(), data.size());
+
+    stringstream ss;
+    ss << "OK";
+    for (u8 ch : data)
+        ss << mkstr(",0x%02hhx", ch);
+    return ss.str();
+}
+
+string vspserver::handle_pwrite(int client, const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 3)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 addr = from_string<u64>(args[2]);
+
+    vector<u8> data;
+    for (size_t i = 3; i < args.size(); i++)
+        data.push_back(from_string<u8>(args[i]));
+
+    size_t n = tgt->write_pmem_dbg(addr, data.data(), data.size());
+    return mkstr("OK,%zu bytes written", n);
+}
+
 void vspserver::disconnect_all() {
     for (auto [id, client] : m_clients) {
         delete client;
@@ -672,6 +721,8 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("vapa", &vspserver::handle_vapa);
     register_handler("vread", &vspserver::handle_vread);
     register_handler("vwrite", &vspserver::handle_vwrite);
+    register_handler("pread", &vspserver::handle_pread);
+    register_handler("pwrite", &vspserver::handle_pwrite);
 
     // Create announce file
     ofstream of(m_announce.c_str());
