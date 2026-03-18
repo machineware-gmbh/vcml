@@ -199,9 +199,9 @@ argument is the type of the access to remove, which can be `r` (read), `w` (writ
 * Response: `$OK#**`
 
 #### List CPU Registers
-Returns a list of names of CPU registers of a given target.
+Returns a list of names and sizes (in byte) of CPU registers of a given target.
 * Command: `$lreg,<target-name>#**`
-* Response: `OK,reg_a,reg_b,reg_c#**`
+* Response: `OK,reg_a:rega_a_size,reg_b:reg_b_size,reg_c:reg_c_size#**`
 
 #### Read CPU Register
 Returns the content of a CPU register.
