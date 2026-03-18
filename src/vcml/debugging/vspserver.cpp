@@ -423,7 +423,7 @@ string vspserver::handle_geta(int client, const string& cmd) {
 
     stringstream ss;
     property_base* prop = dynamic_cast<property_base*>(attr);
-    ss << "OK," << (prop ? prop->str() : attr->name());
+    ss << "OK," << mwr::escape(prop ? prop->str() : attr->name());
 
     return ss.str();
 }
