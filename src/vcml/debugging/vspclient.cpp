@@ -46,6 +46,7 @@ void vspclient::pause_simulation(const string& reason) {
         lock_guard<mutex> guard(m_mtx);
         m_stop_reason = reason;
         m_stop = true;
+        m_server.set_suspend_targets(reason != "debugger");
     }
     m_server.update();
 }

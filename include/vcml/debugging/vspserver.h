@@ -30,6 +30,7 @@ private:
     string m_announce;
     sc_time m_duration;
     unordered_map<int, vspclient*> m_clients;
+    bool m_suspend_targets;
 
     vspclient& find_client(int client);
 
@@ -62,6 +63,8 @@ private:
     void force_quit();
     void notify_step_complete();
 
+    virtual bool check_suspension_point() override;
+
 public:
     vspserver() = delete;
     vspserver(const string& host, u16 port);
@@ -71,6 +74,8 @@ public:
     void cleanup();
     void update();
     bool is_running() const { return !is_suspending(); }
+
+    void set_suspend_targets(bool suspend) { m_suspend_targets = suspend; }
 
     virtual void handle_connect(int client, const string& peer,
                                 u16 port) override;

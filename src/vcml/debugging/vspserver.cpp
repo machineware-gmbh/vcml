@@ -690,12 +690,25 @@ void vspserver::notify_step_complete() {
         client->notify_step_complete();
 }
 
+bool vspserver::check_suspension_point() {
+    if (m_suspend_targets)
+        return true;
+
+    for (auto& target : target::all()) {
+        if (!target->is_suspendable())
+            return false;
+    }
+
+    return true;
+}
+
 vspserver::vspserver(const string& server_host, u16 server_port):
     rspserver(server_host, server_port, 16),
     suspender("vspserver"),
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%hu", port())),
     m_duration(),
-    m_clients() {
+    m_clients(),
+    m_suspend_targets(true) {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
     session = this;
     atexit(&cleanup_session);
