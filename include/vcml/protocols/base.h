@@ -143,6 +143,13 @@ struct is_initiator_socket : std::is_base_of<sc_core::sc_port_base, T> {};
 template <typename T>
 struct is_target_socket : std::is_base_of<sc_core::sc_export_base, T> {};
 
+template <typename T1, typename T2>
+struct is_initiator_and_target_sockets
+    : std::integral_constant<bool, (is_initiator_socket<T1>::value &&
+                                    is_target_socket<T2>::value) ||
+                                       (is_target_socket<T1>::value &&
+                                        is_initiator_socket<T2>::value)> {};
+
 class socket_array_if
 {
 public:
@@ -155,6 +162,7 @@ public:
     virtual sc_object* fetch(size_t idx, bool create) = 0;
     virtual sc_object* alloc() = 0;
     virtual sc_object* last() const = 0;
+    virtual const char* array_name() const = 0;
 
     template <typename T>
     T* fetch_as(size_t idx, bool create) {
@@ -172,7 +180,6 @@ public:
     typedef unordered_map<const SOCKET*, size_t> revmap_type;
     typedef typename map_type::iterator iterator;
     typedef typename map_type::const_iterator const_iterator;
-    typedef std::function<SOCKET&(size_t idx)> peer_fn;
 
     property<bool> trace_all;
     property<bool> trace_errors;
@@ -188,7 +195,7 @@ public:
         m_space(VCML_AS_DEFAULT),
         m_sockets(),
         m_ids(),
-        m_peer() {
+        m_peers() {
         trace_all.inherit_default();
         trace_errors.inherit_default();
     }
@@ -235,11 +242,12 @@ public:
         m_last = idx;
         m_next = max(m_next, idx + 1);
 
-        if (m_peer) {
+        auto [peer, offset] = find_peer(idx, idx);
+        if (peer) {
             if (is_initiator_socket<SOCKET>::value)
-                m_peer(idx).bind(*socket);
+                ((SOCKET*)peer->fetch(idx - offset, true))->bind(*socket);
             if (is_target_socket<SOCKET>::value)
-                socket->bind(m_peer(idx));
+                socket->bind(*(SOCKET*)peer->fetch(idx - offset, true));
         }
 
         return *socket;
@@ -279,23 +287,18 @@ public:
     }
 
     template <typename T, size_t M>
-    void bind(socket_array<T, M>& other) {
-        static_assert(
-            is_initiator_socket<SOCKET>::value ==
-                    is_initiator_socket<T>::value &&
-                is_target_socket<SOCKET>::value == is_target_socket<T>::value,
-            "cannot bind socket arrays");
+    void bind(socket_array<T, M>& other, size_t offset = 0) {
+        static_assert(!is_initiator_and_target_sockets<SOCKET, T>::value,
+                      "cannot bind two opposing socket arrays");
 
         if constexpr (is_initiator_socket<SOCKET>::value) {
             // initiator binds to base-initiator
-            other.m_peer = [&](size_t idx) -> T& { return (T&)get(idx); };
+            other.add_peer(*this, offset);
         }
 
         if constexpr (is_target_socket<SOCKET>::value) {
             // base-target binds to target
-            m_peer = [&](size_t idx) -> SOCKET& {
-                return (SOCKET&)other.get(idx);
-            };
+            add_peer(other, offset);
         }
     }
 
@@ -305,6 +308,8 @@ public:
         auto it = m_sockets.find(m_last);
         return it != m_sockets.end() ? it->second : nullptr;
     }
+
+    virtual const char* array_name() const override { return name(); }
 
 protected:
     virtual sc_object* fetch(size_t idx, bool create) override {
@@ -324,7 +329,33 @@ private:
     address_space m_space;
     map_type m_sockets;
     revmap_type m_ids;
-    peer_fn m_peer;
+    std::map<size_t, socket_array_if*> m_peers;
+
+    pair<socket_array_if*, size_t> find_peer(size_t start, size_t end) const {
+        auto it = m_peers.lower_bound(start);
+        if (it != m_peers.end()) {
+            auto [last, peer] = *it;
+            size_t first = last - peer->limit() + 1;
+            if (first <= end)
+                return std::make_pair(peer, first);
+        }
+        return std::make_pair(nullptr, 0);
+    }
+
+    void add_peer(socket_array_if& peer, size_t offset) {
+        VCML_ERROR_ON(offset >= N, "binding index out of bounds: %zu", offset);
+        size_t end = SIZE_MAX;
+        if (SIZE_MAX - offset > peer.limit())
+            end = offset + peer.limit() - 1;
+        size_t start = end - peer.limit() + 1;
+        auto [overlap, _] = find_peer(start, end);
+        if (overlap) {
+            VCML_ERROR("cannot bind %s to %s, because it overlaps with %s",
+                       name(), peer.array_name(), overlap->array_name());
+        }
+
+        m_peers[end] = &peer;
+    }
 };
 
 template <typename SOCKET, size_t N>

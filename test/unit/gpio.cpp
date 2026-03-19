@@ -43,6 +43,14 @@ public:
     sc_signal<bool> signal2;
     gpio_target_array<256> arr_in;
 
+    // for array offset binding test
+    gpio_initiator_array<4> ab_out0;
+    gpio_initiator_array<4> ab_out1;
+    gpio_base_initiator_array<8> ab_out_base;
+    gpio_target_array<6> ab_in0;
+    gpio_target_array<2> ab_in1;
+    gpio_base_target_array<8> ab_in_base;
+
     gpio_test_harness(const sc_module_name& nm):
         test_base(nm),
         out("out"),
@@ -55,7 +63,13 @@ public:
         a_in("a_in"),
         arr_out("arr_out"),
         signal2("signal2"),
-        arr_in("arr_in") {
+        arr_in("arr_in"),
+        ab_out0("ab_out0"),
+        ab_out1("ab_out1"),
+        ab_out_base("ab_out_base"),
+        ab_in0("ab_in0"),
+        ab_in1("ab_in1"),
+        ab_in_base("ab_in_base") {
         // check array dimensions
         EXPECT_EQ(in.limit(), 256);
         EXPECT_EQ(arr_out.limit(), 256);
@@ -94,6 +108,17 @@ public:
         EXPECT_TRUE(find_object("gpio.a_in_adapter"));
         EXPECT_TRUE(find_object("gpio.arr_out[14]_adapter"));
         EXPECT_TRUE(find_object("gpio.arr_in[102]_adapter"));
+
+        // test array binding with offsets
+        ab_out0.bind(ab_out_base, 0);
+        ab_out1.bind(ab_out_base, 4);
+        ab_in_base.bind(ab_in0, 0);
+
+        EXPECT_DEATH({ ab_in_base.bind(ab_in1, 5); }, "cannot bind");
+        ab_in_base.bind(ab_in1, 6);
+
+        for (size_t i = 0; i < ab_out_base.limit(); i++)
+            ab_out_base[i].bind(ab_in_base[i]);
     }
 
     MOCK_METHOD(void, gpio_notify,
@@ -165,6 +190,32 @@ public:
         arr_out[14].raise();
         wait(signal2.default_event());
         EXPECT_TRUE(arr_in[102]);
+
+        // test array offset bindings
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in0[0]"), true, GPIO_NO_VECTOR));
+        ab_out0[0].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in0[1]"), true, GPIO_NO_VECTOR));
+        ab_out0[1].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in0[2]"), true, GPIO_NO_VECTOR));
+        ab_out0[2].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in0[3]"), true, GPIO_NO_VECTOR));
+        ab_out0[3].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in0[4]"), true, GPIO_NO_VECTOR));
+        ab_out1[0].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in0[5]"), true, GPIO_NO_VECTOR));
+        ab_out1[1].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in1[0]"), true, GPIO_NO_VECTOR));
+        ab_out1[2].raise();
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("ab_in1[1]"), true, GPIO_NO_VECTOR));
+        ab_out1[3].raise();
     }
 };
 
