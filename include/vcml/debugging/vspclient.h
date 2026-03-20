@@ -33,8 +33,8 @@ private:
     string m_name;
     sc_time m_until;
     bool m_stop;
-    string m_stop_reason;
     bool m_soft_stop;
+    string m_stop_reason;
     mutex m_mtx;
 
     unordered_map<u64, const breakpoint*> m_breakpoints;
