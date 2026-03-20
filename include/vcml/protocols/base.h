@@ -331,30 +331,37 @@ private:
     revmap_type m_ids;
     std::map<size_t, socket_array_if*> m_peers;
 
+    static constexpr size_t last_safe(size_t start, size_t length) {
+        if (length == 0)
+            return start;
+        if (SIZE_MAX - start < length)
+            return SIZE_MAX;
+        return start + length - 1;
+    }
+
     pair<socket_array_if*, size_t> find_peer(size_t start, size_t end) const {
-        auto it = m_peers.lower_bound(start);
-        if (it != m_peers.end()) {
-            auto [last, peer] = *it;
-            size_t first = last - peer->limit() + 1;
-            if (first <= end)
-                return std::make_pair(peer, first);
+        if (!m_peers.empty()) {
+            auto it = m_peers.upper_bound(end);
+            if (it != m_peers.begin()) {
+                it--;
+                auto [offset, peer] = *it;
+                if (start <= last_safe(offset, peer->limit()))
+                    return std::make_pair(peer, offset);
+            }
         }
         return std::make_pair(nullptr, 0);
     }
 
     void add_peer(socket_array_if& peer, size_t offset) {
         VCML_ERROR_ON(offset >= N, "binding index out of bounds: %zu", offset);
-        size_t end = SIZE_MAX;
-        if (SIZE_MAX - offset > peer.limit())
-            end = offset + peer.limit() - 1;
-        size_t start = end - peer.limit() + 1;
-        auto [overlap, _] = find_peer(start, end);
+        size_t last = last_safe(offset, peer.limit());
+        auto [overlap, _] = find_peer(offset, last);
         if (overlap) {
             VCML_ERROR("cannot bind %s to %s, because it overlaps with %s",
                        name(), peer.array_name(), overlap->array_name());
         }
 
-        m_peers[end] = &peer;
+        m_peers[offset] = &peer;
     }
 };
 
