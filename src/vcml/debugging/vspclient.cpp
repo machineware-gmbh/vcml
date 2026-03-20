@@ -90,6 +90,7 @@ vspclient::vspclient(vspserver& server, int clientid, const string& peer,
     m_name(mkstr("vspclient%d[%s:%hu]", clientid, peer.c_str(), port)),
     m_until(),
     m_stop(true),
+    m_soft_stop(false),
     m_stop_reason("user"),
     m_mtx(),
     m_breakpoints(),
@@ -279,6 +280,22 @@ string vspclient::handle_rmwp(const string& command) {
         return mkstr("E,model rejected watchpoint deletion");
 
     m_watchpoints.erase(it);
+    return "OK";
+}
+
+string vspclient::handle_setsm(const string& command) {
+    vector<string> args = split(command, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    string mode = to_lower(args[1]);
+    if (mode == "hard")
+        m_soft_stop = false;
+    else if (mode == "soft")
+        m_soft_stop = true;
+    else
+        return mkstr("E,unknown stop mode '%s'", mode.c_str());
+
     return "OK";
 }
 

@@ -477,6 +477,10 @@ string vspserver::handle_rmwp(int client, const string& cmd) {
     return find_client(client).handle_rmwp(cmd);
 }
 
+string vspserver::handle_setsm(int client, const string& cmd) {
+    return find_client(client).handle_setsm(cmd);
+}
+
 string vspserver::handle_lreg(int client, const string& cmd) {
     if (is_running())
         return "E,simulation running";
@@ -690,6 +694,22 @@ void vspserver::notify_step_complete() {
         client->notify_step_complete();
 }
 
+bool vspserver::check_suspension_point() {
+    bool soft_stop = false;
+
+    for (auto [id, client] : m_clients)
+        soft_stop |= client->soft_stop_requested();
+
+    if (soft_stop) {
+        for (auto& target : target::all()) {
+            if (!target->is_suspendable())
+                return false;
+        }
+    }
+
+    return true;
+}
+
 vspserver::vspserver(const string& server_host, u16 server_port):
     rspserver(server_host, server_port, 16),
     suspender("vspserver"),
@@ -724,6 +744,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("vwrite", &vspserver::handle_vwrite);
     register_handler("pread", &vspserver::handle_pread);
     register_handler("pwrite", &vspserver::handle_pwrite);
+    register_handler("setsm", &vspserver::handle_setsm);
 
     // Create announce file
     ofstream of(m_announce.c_str());

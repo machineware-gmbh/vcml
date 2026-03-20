@@ -101,6 +101,13 @@ paused simulation in which case it is simply ignored.
 * Command: `$stop[,reason]#**`
 * Response: `$OK#**`
 
+#### Set Stop Mode
+Sends a request to change the current stop mode. The default mode is `hard`, meaning
+the simulation can stop in the current quantum. Soft stop waits until all targets
+complete the current quantum and has precedence over hard stop in multiclient scenarios.
+* Command: `$setsm,<stop-mode>#**`
+* Response: `$OK#**`
+
 #### Quit
 Sends a termination request to the simulation. The current delta-cycle will be
 finished and `vspserver::start` will return normally, allowing all cleanup

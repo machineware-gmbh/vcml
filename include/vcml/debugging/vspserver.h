@@ -57,10 +57,13 @@ private:
     string handle_vwrite(int client, const string& command);
     string handle_pread(int client, const string& command);
     string handle_pwrite(int client, const string& command);
+    string handle_setsm(int client, const string& command);
 
     void disconnect_all();
     void force_quit();
     void notify_step_complete();
+
+    virtual bool check_suspension_point() override;
 
 public:
     vspserver() = delete;

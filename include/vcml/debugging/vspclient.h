@@ -33,6 +33,7 @@ private:
     string m_name;
     sc_time m_until;
     bool m_stop;
+    bool m_soft_stop;
     string m_stop_reason;
     mutex m_mtx;
 
@@ -60,6 +61,7 @@ public:
     sc_time until() const { return m_until; }
     bool is_stopped() const { return m_stop && !m_server.is_running(); }
     constexpr bool stop_requested() const { return m_stop; }
+    constexpr bool soft_stop_requested() const { return m_soft_stop; }
 
     vspclient(vspserver& server, int id, const string& peer, u16 port);
     virtual ~vspclient();
@@ -74,6 +76,7 @@ public:
     string handle_rmbp(const string& command);
     string handle_mkwp(const string& command);
     string handle_rmwp(const string& command);
+    string handle_setsm(const string& command);
 };
 
 } // namespace debugging
