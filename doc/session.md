@@ -96,11 +96,16 @@ The stop reason returned by `status` will be `step` in this case.
 #### Stop
 Interrupts a currently running simulation and brings it into the paused state.
 An optional first argument can specify a custom stop reason, otherwise, the
-stop reason `user` will be used. If the stop reason is `debugger`, the
-simulation will stop after all targets finish simulating the current quantum.
-This command may also be issued to a currently paused simulation in which case
-it is simply ignored.
+stop reason `user` will be used. This command may also be issued to a currently
+paused simulation in which case it is simply ignored.
 * Command: `$stop[,reason]#**`
+* Response: `$OK#**`
+
+#### Set Stop Mode
+Sends a request to change the current stop mode. The default mode is `hard`, meaning
+the simulation can stop in the current quantum. Soft stop waits until all targets
+complete the current quantum and has precedence over hard stop in multiclient scenarios.
+* Command: `$setsm,<stop-mode>#**`
 * Response: `$OK#**`
 
 #### Quit
