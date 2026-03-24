@@ -31,7 +31,11 @@ private:
         tlm_generic_payload* tx;
         const tlm_sbi* sbi;
         address_space as;
-        proc_data(): time(SC_ZERO_TIME), tx(nullptr), sbi(nullptr) {}
+        proc_data():
+            time(SC_ZERO_TIME),
+            tx(nullptr),
+            sbi(nullptr),
+            as(VCML_AS_DEFAULT) {}
     };
 
     per_scthread<proc_data> m_processes;
@@ -62,6 +66,9 @@ protected:
         sc_process_b* proc = current_process()) const;
     address_space current_transaction_address_space(
         sc_process_b* proc = current_process()) const;
+
+    void set_current_response_status(tlm_response_status status,
+                                     sc_process_b* proc = current_process());
 
 public:
     void register_socket(tlm_initiator_socket* socket);
@@ -120,8 +127,11 @@ public:
 
 inline const tlm_host::proc_data& tlm_host::lookup_process_data(
     sc_process_b* proc) const {
-    if (!m_processes.has_value(proc))
-        VCML_ERROR("no transaction for process %s", proc->name());
+    if (!m_processes.has_value(proc)) {
+        static proc_data none;
+        return none;
+    }
+
     return m_processes.get(proc);
 }
 
@@ -146,37 +156,47 @@ inline bool tlm_host::in_secure_transaction(sc_process_b* proc) const {
 
 inline int tlm_host::current_cpu(sc_process_b* proc) const {
     const auto& current = lookup_process_data(proc);
-    return current.sbi ? current.sbi->cpuid : -1;
+    return current.sbi ? current.sbi->cpuid : SBI_CPUID_DEFAULT;
 }
 
 inline int tlm_host::current_privilege(sc_process_b* proc) const {
-    return m_processes[proc].sbi ? m_processes[proc].sbi->privilege : 0;
+    return m_processes[proc].sbi ? m_processes[proc].sbi->privilege
+                                 : SBI_PRIVILEGE_NONE;
 }
 
 inline const tlm_generic_payload& tlm_host::current_transaction(
     sc_process_b* proc) const {
     const auto& current = lookup_process_data(proc);
+    VCML_ERROR_ON(!current.tx, "no current transaction");
     return *current.tx;
 }
 
 inline const tlm_sbi& tlm_host::current_sideband(sc_process_b* proc) const {
     const auto& current = lookup_process_data(proc);
-    return *current.sbi;
+    return current.sbi ? *current.sbi : SBI_NONE;
 }
 
 inline size_t tlm_host::current_transaction_size(sc_process_b* proc) const {
     const auto& current = lookup_process_data(proc);
-    return current.tx->get_data_length();
+    return current.tx ? current.tx->get_data_length() : 0;
 }
 
 inline range tlm_host::current_transaction_address(sc_process_b* proc) const {
-    return range(current_transaction(proc));
+    const auto& current = lookup_process_data(proc);
+    return current.tx ? range(*current.tx) : range(0, U64_MAX);
 }
 
 inline address_space tlm_host::current_transaction_address_space(
     sc_process_b* proc) const {
     const auto& current = lookup_process_data(proc);
     return current.as;
+}
+
+inline void tlm_host::set_current_response_status(tlm_response_status sts,
+                                                  sc_process_b* proc) {
+    const auto& current = lookup_process_data(proc);
+    if (current.tx)
+        current.tx->set_response_status(sts);
 }
 
 inline const vector<tlm_initiator_socket*>&

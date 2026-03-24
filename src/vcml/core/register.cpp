@@ -96,7 +96,7 @@ unsigned int reg_base::do_receive(tlm_generic_payload& tx,
         addr = (idx + 1) * m_cell_stride;
     }
 
-    if (nbytes > 0)
+    if (nbytes > 0 && tx.get_response_status() == TLM_INCOMPLETE_RESPONSE)
         tx.set_response_status(TLM_OK_RESPONSE);
 
     return nbytes;
