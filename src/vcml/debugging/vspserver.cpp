@@ -259,7 +259,7 @@ static void list_json(ostream& os) {
     for (size_t i = 0; i < keyboards.size(); i++) {
         string keyboard = keyboards[i]->input_name();
         os << "\"" << json_escape(keyboard) << "\"";
-        if (i < keyboard.size() - 1)
+        if (i < keyboards.size() - 1)
             os << ",";
     }
     os << "],";
