@@ -27,6 +27,16 @@ public:
 
     MOCK_METHOD(void, serial_receive, (u8), (override));
 
+    enum addresses2 : u64 {
+        TXDATA = 0x00,
+        RXDATA = 0x04,
+        TXCTRL = 0x08,
+        RXCTRL = 0x0c,
+        IE = 0x10,
+        IP = 0x14,
+        DIV = 0x18,
+    };
+
     sifive_bench(const sc_module_name& nm):
         test_base(nm),
         serial_host(),
@@ -46,18 +56,12 @@ public:
 
         uart.serial_rx.bind(bench_tx);
         uart.serial_tx.bind(bench_rx);
+
+        add_test("general", &sifive_bench::test_general);
+        add_test("div", &sifive_bench::test_div);
     }
 
-    virtual void run_test() override {
-        enum addresses2 : u64 {
-            TXDATA = 0x00,
-            RXDATA = 0x04,
-            TXCTRL = 0x08,
-            RXCTRL = 0x0c,
-            IE = 0x10,
-            IP = 0x14,
-
-        };
+    virtual void test_general() {
         u32 val = 0;
         // check initial UART status
         EXPECT_OK(out.readw(TXDATA, val));
@@ -135,6 +139,34 @@ public:
         EXPECT_OK(out.readw(IE, val));
         EXPECT_EQ(val, 0x0) << "IE not reset to zero";
         EXPECT_FALSE(tx_irq_in) << "interrupt state did not reset";
+    }
+
+    virtual void test_div() {
+        u32 val = 0;
+
+        // write a new divisor and read it back
+        constexpr u32 new_div = 867;
+        EXPECT_OK(out.writew(DIV, new_div));
+        EXPECT_OK(out.readw(DIV, val));
+        EXPECT_EQ(val, new_div) << "div read/write failed";
+
+        // baud rate should be clk / (div + 1)
+        EXPECT_EQ(uart.serial_tx.baud(), clk.get_hz() / (new_div + 1))
+            << "wrong baud rate after div write";
+
+        // upper 16 bits are reserved and must be masked off
+        constexpr u32 div_with_reserved = 0xdead0000 | new_div;
+        EXPECT_OK(out.writew(DIV, div_with_reserved));
+        EXPECT_OK(out.readw(DIV, val));
+        EXPECT_EQ(val, div_with_reserved & 0xffffu)
+            << "reserved bits of div not masked";
+        EXPECT_EQ(uart.serial_tx.baud(), clk.get_hz() / (new_div + 1))
+            << "wrong baud rate after div write with upper bits";
+
+        // writing 0 must not crash
+        EXPECT_OK(out.writew(DIV, 0u));
+        EXPECT_EQ(uart.serial_tx.baud(), clk.get_hz() / 1)
+            << "wrong baud rate after 0 div write";
     }
 };
 
