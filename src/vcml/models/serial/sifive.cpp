@@ -162,7 +162,7 @@ void sifive::write_ie(u32 val) {
 
 void sifive::write_div(u32 val) {
     div = val & 0xffff;
-    serial_tx.set_baud(clock_hz() / val);
+    serial_tx.set_baud(clock_hz() / (div + 1));
 }
 
 void sifive::serial_receive(u8 data) {
