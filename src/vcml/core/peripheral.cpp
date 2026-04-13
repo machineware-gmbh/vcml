@@ -88,7 +88,6 @@ unsigned int peripheral::forward_to_regs(tlm_generic_payload& tx,
 peripheral::peripheral(const sc_module_name& nm, endianess default_endian,
                        unsigned int rlatency, unsigned int wlatency):
     component(nm),
-    m_current_cpu(SBI_NONE.cpuid),
     m_registers(),
     endian("endian", default_endian),
     read_latency("read_latency", rlatency),
@@ -211,6 +210,12 @@ unsigned int peripheral::transport(tlm_generic_payload& tx,
     unsigned int be_length = tx.get_byte_enable_length();
     unsigned int be_index = 0;
     unsigned int nbytes = 0;
+    bool clear_tx = false;
+
+    if (!in_transaction()) {
+        set_current_transaction(tx, info, as);
+        clear_tx = true;
+    }
 
     VCML_ERROR_ON(ptr == nullptr, "transaction data pointer cannot be null");
     VCML_ERROR_ON(length == 0, "transaction data length cannot be zero");
@@ -259,6 +264,9 @@ unsigned int peripheral::transport(tlm_generic_payload& tx,
     tx.set_byte_enable_ptr(be_ptr);
     tx.set_byte_enable_length(be_length);
 
+    if (clear_tx)
+        clear_current_transaction();
+
     // check for quantum overshoot
     if (!info.is_debug && needs_sync())
         sync();
@@ -283,9 +291,7 @@ unsigned int peripheral::receive(tlm_generic_payload& tx, const tlm_sbi& info,
         return 0;
     }
 
-    set_current_cpu(info.cpuid);
     bytes = forward_to_regs(tx, info, as);
-    set_current_cpu(SBI_NONE.cpuid);
     if (success(tx) || failed(tx)) // stop if at least one reg took the access
         return bytes;
 

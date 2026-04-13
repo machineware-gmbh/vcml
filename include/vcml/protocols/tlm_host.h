@@ -67,6 +67,10 @@ protected:
     address_space current_transaction_address_space(
         sc_process_b* proc = current_process()) const;
 
+    void set_current_transaction(tlm_generic_payload& tx, const tlm_sbi& sbi,
+                                 address_space as,
+                                 sc_process_b* proc = current_process());
+    void clear_current_transaction(sc_process_b* proc = current_process());
     void set_current_response_status(tlm_response_status status,
                                      sc_process_b* proc = current_process());
 
