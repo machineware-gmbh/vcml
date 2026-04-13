@@ -28,8 +28,6 @@ class reg_base;
 class peripheral : public component
 {
 private:
-    int m_current_cpu;
-
     unordered_map<address_space, reg_bank*> m_registers;
 
     bool cmd_mmap(const vector<string>& args, ostream& os);
@@ -61,8 +59,7 @@ public:
     template <typename T>
     T from_host_endian(T val) const;
 
-    int current_cpu() const { return m_current_cpu; }
-    void set_current_cpu(int cpu) { m_current_cpu = cpu; }
+    int current_cpu() const { return current_sideband().cpuid; }
 
     void aligned_accesses_only(bool only = true);
     void aligned_accesses_only(address_space as, bool only = true);
