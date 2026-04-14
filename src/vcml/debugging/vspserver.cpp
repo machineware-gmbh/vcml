@@ -713,7 +713,7 @@ bool vspserver::check_suspension_point() {
 vspserver::vspserver(const string& server_host, u16 server_port):
     rspserver(server_host, server_port, 16),
     suspender("vspserver"),
-    m_announce(mwr::temp_dir() + mkstr("/vcml_session_%hu", port())),
+    m_announce(mwr::temp_dir() + mkstr("/vcml_session_%u", mwr::getpid())),
     m_duration(),
     m_clients() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
