@@ -23,6 +23,9 @@ namespace gpio {
 
 class leds : public module, public gpio_host
 {
+private:
+    bool cmd_status(const vector<string>& args, ostream& os);
+
 public:
     gpio_target_array<> gpio_in;
 

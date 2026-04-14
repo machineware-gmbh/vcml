@@ -13,8 +13,21 @@
 namespace vcml {
 namespace gpio {
 
+bool leds::cmd_status(const vector<string>& args, ostream& os) {
+    if (gpio_in.count() == 0) {
+        os << "no LEDs connected" << std::endl;
+        return true;
+    }
+
+    for (auto [id, led] : gpio_in)
+        os << "LED" << id << ": " << (led->read() ? "on" : "off") << std::endl;
+
+    return true;
+}
+
 leds::leds(const sc_module_name& nm): module(nm), gpio_in("gpio_in") {
-    // nothing to do
+    register_command("status", 0, &leds::cmd_status,
+                     "reports the status of all connected LEDs");
 }
 
 void leds::gpio_transport(const gpio_target_socket& socket, gpio_payload& tx) {
