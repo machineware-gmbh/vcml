@@ -837,7 +837,12 @@ void vnc::run() {
         try {
             log_debug("listening...");
             m_socket.listen(m_port, m_host);
+        } catch (std::exception& ex) {
+            log.error(ex);
+            return;
+        }
 
+        try {
             while (m_running && sim_running() && !m_socket.is_connected())
                 m_socket.poll(100);
 
