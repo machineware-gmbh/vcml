@@ -145,10 +145,11 @@ void gdbarch::write_xml(target& t, ostream& os) const {
     if (abi_name && strlen(abi_name))
         os << "<osabi>" << abi_name << "</osabi>" << std::endl;
 
+    // allow targets to write their xml first to define custom types
+    t.write_gdb_xml_feature(os);
+
     for (auto& feat : features)
         feat.write_xml(t, os);
-
-    t.write_gdb_xml_feature(os);
 
     os << "</target>" << std::endl;
 }
