@@ -32,7 +32,7 @@ bool cpureg::write(const void* buf, size_t len) const {
     return true;
 }
 
-unordered_map<string, target*> target::s_targets;
+std::map<string, target*> target::s_targets;
 
 bool target::cmd_cpustatus(const vector<string>& args, ostream& os) {
     os << "Registers:" << mkstr("\n  PC 0x%016llx", program_counter())

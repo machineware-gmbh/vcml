@@ -104,7 +104,7 @@ private:
     bool cmd_pread(const vector<string>& args, ostream& os);
     bool cmd_pwrite(const vector<string>& args, ostream& os);
 
-    static unordered_map<string, target*> s_targets;
+    static std::map<string, target*> s_targets;
 
 protected:
     virtual void define_cpureg(size_t regno, const string& name, size_t size,
