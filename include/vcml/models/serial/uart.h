@@ -26,7 +26,7 @@ namespace serial {
 
 class uart : public peripheral, public serial_host
 {
-private:
+protected:
     const size_t m_rx_size;
     const size_t m_tx_size;
 
@@ -49,8 +49,11 @@ private:
     void write_fcr(u8 val);
 
     // serial_host
-    void serial_receive(const serial_target_socket& socket,
-                        serial_payload& tx) override;
+    virtual void serial_receive(const serial_target_socket& socket,
+                                serial_payload& tx) override;
+
+    bool rx_fifo_full() const { return m_rx_fifo.size() >= m_rx_size; }
+    bool tx_fifo_full() const { return m_tx_fifo.size() >= m_tx_size; }
 
 public:
     enum : baud_t { DEFAULT_BAUD = SERIAL_9600BD };
