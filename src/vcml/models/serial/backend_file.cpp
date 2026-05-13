@@ -16,19 +16,13 @@ namespace serial {
 
 backend_file::backend_file(terminal* term, const string& rx, const string& tx):
     backend(term, mkstr("file:%s:%s", rx.c_str(), tx.c_str())),
+    m_tx_file(tx),
     m_rx(),
     m_tx() {
     if (!rx.empty()) {
-        m_rx.open(rx.c_str(), ifstream::binary | ifstream::in);
-        if (!m_rx.good())
-            log_warn("failed to open file '%s'", rx.c_str());
-    }
-
-    if (!tx.empty()) {
-        auto mode = ofstream::binary | ofstream::app | ofstream::out;
-        m_tx.open(tx.c_str(), mode);
-        if (!m_tx.good())
-            log_warn("failed to open file '%s'", tx.c_str());
+        m_rx.open(rx, ifstream::binary | ifstream::in);
+        if (!m_rx)
+            log_warn("failed to open rx file '%s'", rx.c_str());
     }
 }
 
@@ -45,25 +39,29 @@ bool backend_file::read(u8& val) {
 }
 
 void backend_file::write(u8 val) {
-    if (m_tx.is_open() && m_tx.good()) {
+    if (!m_tx && !m_tx_file.empty()) {
+        auto mode = ofstream::binary | ofstream::app | ofstream::out;
+        m_tx.open(m_tx_file, mode);
+        if (!m_tx.good()) {
+            log_warn("failed to open tx file '%s'", m_tx_file.c_str());
+            m_tx_file.clear();
+        }
+    }
+
+    if (m_tx) {
         m_tx.write(reinterpret_cast<const char*>(&val), sizeof(val));
         m_tx.flush();
     }
 }
 
 backend* backend_file::create(terminal* term, const vector<string>& args) {
-    string rx = mkstr("%s.rx", term->name());
-    string tx = mkstr("%s.tx", term->name());
+    string rx, tx = mkstr("%s.tx", term->name());
 
-    if (args.size() == 1) {
-        rx = args[0] + ".rx";
-        tx = args[0] + ".tx";
-    }
+    if (args.size() >= 1)
+        tx = args[0];
 
-    if (args.size() >= 2) {
-        rx = args[0];
-        tx = args[1];
-    }
+    if (args.size() >= 2)
+        rx = args[1];
 
     return new backend_file(term, rx, tx);
 }

@@ -21,6 +21,8 @@ namespace serial {
 class backend_file : public backend
 {
 private:
+    string m_tx_file;
+
     ifstream m_rx;
     ofstream m_tx;
 
