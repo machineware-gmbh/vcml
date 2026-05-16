@@ -70,6 +70,7 @@ system::system(const sc_module_name& nm):
     desc("desc", mwr::progname()),
     config("config", ""),
     backtrace("backtrace", true),
+    elab_only("elab_only", false),
     session("session", -1),
     session_debug("session_debug", false),
     session_host("session_host", "localhost"),
@@ -86,7 +87,7 @@ system::system(const sc_module_name& nm):
         }
     }
 
-    if (config.get().empty())
+    if (config.get().empty() && !elab_only)
         log_warn("no configuration specified, use -f <config>");
 }
 
@@ -104,7 +105,11 @@ int system::run() {
     tlm::tlm_global_quantum::instance().set(quantum);
 
     try {
-        if (session >= 0) {
+        if (elab_only) {
+            log_info("starting elaboration only");
+            sc_core::sc_start(SC_ZERO_TIME);
+            log_info("elaboration complete");
+        } else if (session >= 0) {
             vcml::debugging::vspserver vspsession(session_host, session);
             vspsession.echo(session_debug);
             vspsession.start();

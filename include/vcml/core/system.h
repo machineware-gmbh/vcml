@@ -30,6 +30,7 @@ public:
     property<string> config;
 
     property<bool> backtrace;
+    property<bool> elab_only;
 
     property<int> session;
     property<bool> session_debug;
