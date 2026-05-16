@@ -117,6 +117,11 @@ public:
     template <typename SOURCE, typename TARGET>
     size_t bind(SOURCE& source, TARGET& d, u64 lo, u64 hi, u64 offset = 0);
 
+    template <typename MEMORY>
+    size_t bind(MEMORY& mem, u64 addr);
+    template <typename SOURCE, typename MEMORY>
+    size_t bind(SOURCE& source, MEMORY& mem, u64 addr);
+
     template <typename SOCKET>
     size_t bind_default(SOCKET& s, u64 offset = 0);
 
@@ -231,6 +236,16 @@ size_t bus::bind(SOURCE& source, TARGET& target, const range& addr, u64 off) {
 template <typename SOURCE, typename TARGET>
 size_t bus::bind(SOURCE& source, TARGET& target, u64 lo, u64 hi, u64 offset) {
     return bind(source, target, range(lo, hi), offset);
+}
+
+template <typename MEMORY>
+size_t bus::bind(MEMORY& mem, u64 addr) {
+    return bind(mem.in, addr, addr + mem.size - 1);
+}
+
+template <typename SOURCE, typename MEMORY>
+size_t bus::bind(SOURCE& source, MEMORY& mem, u64 addr) {
+    return bind(source, mem.in, addr, addr + mem.size - 1);
 }
 
 template <typename TARGET>

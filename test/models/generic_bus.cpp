@@ -61,6 +61,8 @@ public:
         bus.bind(out2, mem2.in, 0xc000, 0xdfff);
         bus.bind(out1, mem1.in, 0x10000, 0x11fff);
         bus.bind(out2, mem2.in, 0x10000, 0x11fff);
+        bus.bind(mem1, 0xe0000000);
+        bus.bind(out1, mem1, 0xe1000000);
 
         bus.stub(0xe000, 0xe7ff);
         tlm_stub(bus, *this, "out2", 0xe800, 0xefff);
@@ -148,6 +150,8 @@ public:
         EXPECT_CALL(*this, invalidate(0x6000, 0x7fff)).Times(2);
         EXPECT_CALL(*this, invalidate(0xa000, 0xbfff)).Times(1);
         EXPECT_CALL(*this, invalidate(0x10000, 0x11fff)).Times(1);
+        EXPECT_CALL(*this, invalidate(0xe0000000, 0xe0001fff)).Times(2);
+        EXPECT_CALL(*this, invalidate(0xe1000000, 0xe1001fff)).Times(1);
         mem1.unmap_dmi(0, 0x1fff);
         ASSERT_EQ(cache.get_entries().size(), 1)
             << "bus did not forward DMI invalidation";
@@ -209,10 +213,10 @@ public:
     }
 
     void test_mappings() {
-        EXPECT_EQ(bus.get_all_mappings().size(), 10);
-        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 7);
-        EXPECT_EQ(bus.get_source_mappings(bus.in[1]).size(), 8);
-        EXPECT_EQ(bus.get_target_mappings(bus.out[0]).size(), 4);
+        EXPECT_EQ(bus.get_all_mappings().size(), 12);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 9);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[1]).size(), 9);
+        EXPECT_EQ(bus.get_target_mappings(bus.out[0]).size(), 6);
         EXPECT_EQ(bus.get_target_mappings(bus.out[1]).size(), 3);
     }
 
