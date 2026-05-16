@@ -19,8 +19,12 @@ model::model(const sc_module_name& name, const string& kind):
 
 module* model::create(const string& type, const sc_module_name& name) {
     vector<string> args = split(type);
-    string kind = args[0];
-    args.erase(args.begin());
+    string kind = "null";
+
+    if (!args.empty()) {
+        kind = args[0];
+        args.erase(args.begin());
+    }
 
     auto it = modeldb().find(kind);
     if (it != modeldb().end()) {
@@ -69,10 +73,10 @@ class empty : public module
 public:
     empty(const sc_module_name& nm): module(nm) {}
     virtual ~empty() = default;
-    virtual const char* kind() const override { return "empty"; }
+    virtual const char* kind() const override { return "null"; }
 };
 
-VCML_EXPORT_MODEL(empty, name, args) {
+VCML_EXPORT_MODEL(null, name, args) {
     return new empty(name);
 }
 

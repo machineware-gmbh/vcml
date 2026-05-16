@@ -39,9 +39,13 @@ TEST(model, create) {
 }
 
 TEST(model, empty) {
-    vcml::model m("m", "empty");
-    EXPECT_STREQ(m->kind(), "empty");
+    vcml::model m("m", "null");
+    EXPECT_STREQ(m->kind(), "null");
     EXPECT_STREQ(m->name(), "m");
+
+    vcml::model m2("m2", "");
+    EXPECT_STREQ(m2->kind(), "null");
+    EXPECT_STREQ(m2->name(), "m2");
 }
 
 TEST(mode, nonexistent) {
