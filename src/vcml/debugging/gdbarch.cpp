@@ -37,7 +37,7 @@ bool gdbfeature::collect_regs(const target& t, vector<const cpureg*>& regs,
     return missing.empty();
 }
 
-static void write_vec_init(const cpureg* reg, ostream& os) {
+static string write_vec_union(size_t vlen, ostream& os) {
     struct vec_type_size {
         const char* gdb_type;
         const char* id;
@@ -52,24 +52,26 @@ static void write_vec_init(const cpureg* reg, ostream& os) {
     };
 
     for (auto& vec : vec_lanes) {
-        if (vec.size <= reg->total_width()) {
-            os << "<vector id=\"" << vec.id << "\""
-               << "  type=\"" << vec.gdb_type << "\""
-               << "  count=\"" << reg->total_width() / vec.size << "\" />"
+        if (vec.size <= vlen) {
+            os << "<vector id=\"vl" << vlen << "_" << vec.id << "\""
+               << " type=\"" << vec.gdb_type << "\""
+               << " count=\"" << vlen / vec.size << "\" />" << std::endl;
+        }
+    }
+
+    string type = mkstr("vector_union_%zu", vlen);
+    os << "<union id=\"" << type << "\">" << std::endl;
+
+    for (auto& vec : vec_lanes) {
+        if (vec.size <= vlen) {
+            os << "<field name=\"" << vec.suffix << "\""
+               << "  type=\"vl" << vlen << "_" << vec.id << "\"/>"
                << std::endl;
         }
     }
 
-    os << "<union id=\"vector_union\">" << std::endl;
-
-    for (auto& vec : vec_lanes) {
-        if (vec.size <= reg->total_width()) {
-            os << "<field name=\"" << vec.suffix << "\""
-               << "  type=\"" << vec.id << "\"/>" << std::endl;
-        }
-    }
-
-    os << "</union>";
+    os << "</union>" << std::endl;
+    return type;
 }
 
 void gdbfeature::write_xml(const target& t, ostream& os) const {
@@ -77,31 +79,25 @@ void gdbfeature::write_xml(const target& t, ostream& os) const {
     if (!collect_regs(t, cpuregs) || cpuregs.empty())
         return;
 
+    std::map<size_t, string> vtypes;
     os << "<feature name=\"" << name << "\">" << std::endl;
 
-    size_t vec_size = 0;
     for (size_t i = 0; i < cpuregs.size(); i++) {
         if (cpuregs[i]->count <= 1) {
-            os << "<reg name=\"" << registers[i] << "\""
-               << "  regnum=\"" << cpuregs[i]->regno << "\""
-               << "  bitsize=\"" << cpuregs[i]->width() << "\" />"
-               << std::endl;
+            os << "<reg name=\"" << cpuregs[i]->name << "\""
+               << " regnum=\"" << cpuregs[i]->regno << "\""
+               << " bitsize=\"" << cpuregs[i]->width() << "\" />" << std::endl;
         } else {
-            if (vec_size == 0) {
-                write_vec_init(cpuregs[i], os);
-                vec_size = cpuregs[i]->total_size();
-            } else if (vec_size != cpuregs[i]->total_size()) {
-                VCML_ERROR(
-                    "vector register %s should be size %zu, but it is %zu",
-                    cpuregs[i]->name.c_str(), vec_size,
-                    cpuregs[i]->total_size());
-            }
+            size_t vlen = cpuregs[i]->total_width();
+            string& type = vtypes[vlen];
+            if (type.empty())
+                type = write_vec_union(vlen, os);
 
-            os << "<reg name=\"" << registers[i] << "\""
-               << "  regnum=\"" << cpuregs[i]->regno << "\""
-               << "  bitsize=\"" << cpuregs[i]->total_width() << "\""
-               << "  group=\"vector\""
-               << "  type=\"vector_union\" />" << std::endl;
+            os << "<reg name=\"" << cpuregs[i]->name << "\""
+               << " regnum=\"" << cpuregs[i]->regno << "\""
+               << " bitsize=\"" << cpuregs[i]->total_width() << "\""
+               << " group=\"vector\""
+               << " type=\"" << type << "\" />" << std::endl;
         }
     }
 
@@ -177,12 +173,12 @@ const gdbarch gdbarch::AARCH64 = gdbarch(
             "v18", "v19", "v20", "v21", "v22", "v23",  "v24", "v25", "v26",
             "v27", "v28", "v29", "v30", "v31", "fpsr", "fpcr" } },
         { "org.gnu.gdb.aarch64.sve",
-          { "z0",  "z1",  "z2",  "z3",  "z4",  "z5",  "z6",  "z7",  "z8",
-            "z9",  "z10", "z11", "z12", "z13", "z14", "z15", "z16", "z17",
-            "z18", "z19", "z20", "z21", "z22", "z23", "z24", "z25", "z26",
-            "z27", "z28", "z29", "z30", "z31", "p0",  "p1",  "p2",  "p3",
-            "p4",  "p5",  "p6",  "p7",  "p8",  "p9",  "p10", "p11", "p12",
-            "p13", "p14", "p15", "ffr", "vg" } },
+          { "z0",  "z1",  "z2",  "z3",  "z4",  "z5",   "z6",  "z7",  "z8",
+            "z9",  "z10", "z11", "z12", "z13", "z14",  "z15", "z16", "z17",
+            "z18", "z19", "z20", "z21", "z22", "z23",  "z24", "z25", "z26",
+            "z27", "z28", "z29", "z30", "z31", "p0",   "p1",  "p2",  "p3",
+            "p4",  "p5",  "p6",  "p7",  "p8",  "p9",   "p10", "p11", "p12",
+            "p13", "p14", "p15", "ffr", "vg",  "fpsr", "fpcr" } },
         { "org.gnu.gdb.aarch64.pauth", { "pauth_dmask", "pauth_cmask" } },
     });
 
