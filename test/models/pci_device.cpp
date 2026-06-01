@@ -220,9 +220,9 @@ public:
         EXPECT_EQ(bar, 0xfffff004) << "invalid BAR0 initialization value";
 
         // setup bar0
-        u64 bar0 = MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO;
+        u64 bar0 = MMAP_PCI_MMIO_ADDR | (u64)PCI_BAR_64 | (u64)PCI_BAR_MMIO;
         pci_write_cfg(0, PCI_BAR1_OFFSET, (u32)(bar0 >> 32));
-        pci_write_cfg(0, PCI_BAR0_OFFSET, (u32)(bar0));
+        pci_write_cfg(0, PCI_BAR0_OFFSET, (u32)bar0);
 
         u32 val = 0; // read bar0 offset 0 (TEST_REG)
         EXPECT_OK(mmio.readw(MMAP_PCI_MMIO_ADDR + TEST_REG_OFFSET, val))
@@ -232,7 +232,7 @@ public:
         //
         // test legacy interrupts
         //
-        u32 bar2 = MMAP_PCI_IO_ADDR | PCI_BAR_IO;
+        u32 bar2 = (u32)MMAP_PCI_IO_ADDR | PCI_BAR_IO;
         pci_write_cfg(0, PCI_BAR2_OFFSET, bar2);
 
         // write bar2 offset 4 (TEST_REG_IO) to trigger interrupt

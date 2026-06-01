@@ -280,9 +280,9 @@ public:
         EXPECT_EQ(bar, 0xfffff004) << "invalid BAR0 initialization value";
 
         // setup bar0
-        u64 bar0 = MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO;
+        u64 bar0 = MMAP_PCI_MMIO_ADDR | (u64)PCI_BAR_64 | (u64)PCI_BAR_MMIO;
         pcie_write_cfg(0, PCI_BAR1_OFFSET, (u32)(bar0 >> 32));
-        pcie_write_cfg(0, PCI_BAR0_OFFSET, (u32)(bar0));
+        pcie_write_cfg(0, PCI_BAR0_OFFSET, (u32)bar0);
 
         u32 val = 0; // read bar0 offset 0 (TEST_REG)
         EXPECT_OK(mmio.readw(MMAP_PCI_MMIO_ADDR + TEST_REG_OFFSET, val))
@@ -292,7 +292,7 @@ public:
         //
         // test MSI interrupt
         //
-        u32 bar2 = MMAP_PCI_IO_ADDR | PCI_BAR_IO;
+        u32 bar2 = MMAP_PCI_IO_ADDR | (u64)PCI_BAR_IO;
         pcie_write_cfg(0, PCI_BAR2_OFFSET, bar2);
 
         u8 cap_off = find_cap(PCI_CAPABILITY_MSI);
@@ -364,7 +364,7 @@ public:
         msix_ctrl |= PCI_MSIX_ENABLE;
         pcie_write_cfg(0, msix_off + PCI_MSIX_CTRL_OFF, msix_ctrl);
 
-        u64 bar3 = MMAP_PCI_MSIX_TABLE_ADDR | PCI_BAR_MMIO;
+        u64 bar3 = MMAP_PCI_MSIX_TABLE_ADDR | (u64)PCI_BAR_MMIO;
         pcie_write_cfg(0, PCI_BAR3_OFFSET, (u32)bar3);
 
         msi_addr = msi_data = 0;
@@ -442,10 +442,10 @@ public:
         EXPECT_EQ(bar, 0xfffff00c) << "invalid BAR4 initialization value";
 
         // setup bar0
-        u64 bar4 = MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO |
+        u64 bar4 = (u32)MMAP_PCI_MMIO_ADDR | PCI_BAR_64 | PCI_BAR_MMIO |
                    PCI_BAR_PREFETCH;
         pcie_write_cfg(0, PCI_BAR5_OFFSET, (u32)(bar4 >> 32));
-        pcie_write_cfg(0, PCI_BAR4_OFFSET, (u32)(bar4));
+        pcie_write_cfg(0, PCI_BAR4_OFFSET, (u32)bar4);
 
         val = 0x87654321;
         EXPECT_OK(mmio.writew(MMAP_PCI_MMIO_ADDR, val))
