@@ -280,7 +280,7 @@ static void pl330_insn_dmago(pl330* dma, pl330::channel* ch, u8 opcode,
 
     auto& channel = dma->channels[chan_id];
     u32 pc = (((u32)args[4]) << 24) | (((u32)args[3]) << 16) |
-             (((u32)args[2]) << 8) | (((u32)args[1]));
+             (((u32)args[2]) << 8) | ((u32)args[1]);
 
     if (!channel.is_state(CHS_STOPPED))
         return; // perform NOP

@@ -333,11 +333,11 @@ void card::init_csd_sdsc() {
     m_csd[4] = 0x5F; // Card Command Classes (0,2,4,5,6,7,8,10)
     m_csd[5] = 0x50 | (u8)read_bl_len;
     m_csd[6] = 0x80 | ((c_size >> 10) & 3); // no DSR
-    m_csd[7] = ((c_size) >> 2) & 0xFF;      // middle part of device size
+    m_csd[7] = (c_size >> 2) & 0xff;        // middle part of device size
     m_csd[8] = ((c_size & 3) << 6) | 0x0f;  // VDD 1mA..100mA
     m_csd[9] = 0x3c | ((c_size_mult >> 1) & 3);
     m_csd[10] = ((c_size_mult & 1) << 7) | 1 << 6 | (sector_size >> 1);
-    m_csd[11] = (sector_size & 1) << 7 | (wpgrp_size & 0x7F);
+    m_csd[11] = (sector_size & 1) << 7 | (wpgrp_size & 0x7f);
     m_csd[12] = (1 << 7) | ((read_bl_len >> 2) & 3); // R2W -> 1:1
     m_csd[13] = ((read_bl_len & 3) << 6) | (1 << 5); // part. WR OK
     m_csd[14] = 0x00; // hard disk type, original data, no protect

@@ -202,7 +202,7 @@ tlm_response_status cap_msix::read_tbl(const range& addr, void* data) {
     VCML_ERROR_ON(vector >= num_vectors, "read out of bounds");
 
     msix_entry* entry = msix_table + vector;
-    memcpy(data, (u8*)(entry) + offset, addr.length());
+    memcpy(data, (u8*)entry + offset, addr.length());
     return TLM_OK_RESPONSE;
 }
 
@@ -215,7 +215,7 @@ tlm_response_status cap_msix::write_tbl(const range& addr, const void* data) {
     VCML_ERROR_ON(vector >= num_vectors, "read out of bounds");
 
     msix_entry* entry = msix_table + vector;
-    memcpy((u8*)(entry) + offset, data, addr.length());
+    memcpy((u8*)entry + offset, data, addr.length());
     entry->addr &= ~3ull;
     entry->ctrl &= PCI_MSIX_MASKED;
     dev->m_msix_notify.notify(SC_ZERO_TIME);
