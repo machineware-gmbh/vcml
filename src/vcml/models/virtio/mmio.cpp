@@ -46,7 +46,7 @@ void mmio::enable_virtqueue(u32 vqid) {
         qd.size = qd.limit;
     }
 
-    virtio_dmifn dmifn = [=](u64 addr, u64 len, vcml_access acs) -> u8* {
+    virtio_dmifn dmifn = [this](u64 addr, u64 len, vcml_access acs) -> u8* {
         return out.lookup_dmi_ptr(addr, len, acs);
     };
 

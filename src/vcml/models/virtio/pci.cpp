@@ -78,7 +78,7 @@ void pci::enable_virtqueue(u32 vqid) {
 
     virtio_queue_desc& qd = it->second;
     qd.has_event_idx = has_feature(VIRTIO_F_RING_EVENT_IDX);
-    virtio_dmifn dmifn = [=](u64 addr, u64 len, vcml_access rw) -> u8* {
+    virtio_dmifn dmifn = [this](u64 addr, u64 len, vcml_access rw) -> u8* {
         return (u8*)pci_in->pci_dma_ptr(rw, addr, len);
     };
 
