@@ -39,7 +39,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: 'recursive'
 
@@ -57,7 +57,7 @@ jobs:
 
     - name: Cache SystemC
       id: cache-systemc
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{github.workspace}}/systemc
         key: cache-systemc-${{matrix.systemc}}-${{runner.arch}}-${{matrix.os}}
@@ -77,7 +77,7 @@ jobs:
       run: ctest --output-on-failure
 
     - name: Upload Logs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: '!cancelled()'
       with:
         name: ${{github.event.repository.name}}-logs-${{matrix.systemc}}-${{matrix.os}}
