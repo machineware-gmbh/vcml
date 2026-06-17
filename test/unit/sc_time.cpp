@@ -64,6 +64,13 @@ TEST(sc_time, time_resolution) {
     EXPECT_EQ(test.value(), 1u);
 }
 
+TEST(sc_time, time_unit_scale) {
+    EXPECT_EQ(time_unit_scale(SC_PS), 1ull);
+    EXPECT_EQ(time_unit_scale(SC_NS), 1000ull);
+    EXPECT_EQ(time_unit_scale(SC_US), 1000ull * 1000ull);
+    EXPECT_EQ(time_unit_scale(SC_MS), 1000ull * 1000ull * 1000ull);
+}
+
 int sc_main(int argc, char** argv) {
     ADD_FAILURE() << "sc_main should not be called";
     return EXIT_FAILURE;

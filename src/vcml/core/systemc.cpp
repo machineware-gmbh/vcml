@@ -68,7 +68,7 @@ u64 time_unit_scale(sc_time_unit tu) {
         return 0;
 
     u64 scale = 1;
-    while (itu-- > scale)
+    while (itu-- > res)
         scale *= 1000;
 
     return scale;
