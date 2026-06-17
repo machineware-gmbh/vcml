@@ -71,6 +71,41 @@ TEST(sc_time, time_unit_scale) {
     EXPECT_EQ(time_unit_scale(SC_MS), 1000ull * 1000ull * 1000ull);
 }
 
+TEST(sc_time, time_to_ticks) {
+    EXPECT_EQ(time_to_ticks(SC_ZERO_TIME, MHz), 0u);
+
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_SEC), kHz), 1000u);
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_SEC), MHz), 1000000u);
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_SEC), GHz), 1000000000u);
+
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_MS), kHz), 1u);
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_US), MHz), 1u);
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_NS), GHz), 1u);
+
+    EXPECT_EQ(time_to_ticks(sc_time(100.0, SC_MS), MHz), 100000u);
+
+    EXPECT_EQ(time_to_ticks(sc_time(1.0, SC_NS), 500 * MHz), 0u);
+    EXPECT_EQ(time_to_ticks(sc_time(2.0, SC_NS), 500 * MHz), 1u);
+
+    EXPECT_EQ(time_to_ticks(sc_time(1.5, SC_NS), GHz), 1u);
+}
+
+TEST(sc_time, ticks_to_time) {
+    EXPECT_EQ(ticks_to_time(0, kHz), SC_ZERO_TIME);
+
+    EXPECT_EQ(ticks_to_time(1, kHz), sc_time(1.0, SC_MS));
+    EXPECT_EQ(ticks_to_time(1, MHz), sc_time(1.0, SC_US));
+    EXPECT_EQ(ticks_to_time(1, GHz), sc_time(1.0, SC_NS));
+
+    EXPECT_EQ(ticks_to_time(1000, kHz), sc_time(1.0, SC_SEC));
+    EXPECT_EQ(ticks_to_time(1000000, MHz), sc_time(1.0, SC_SEC));
+
+    EXPECT_EQ(time_to_ticks(ticks_to_time(100, kHz), kHz), 100u);
+    EXPECT_EQ(time_to_ticks(ticks_to_time(1000, MHz), MHz), 1000u);
+
+    EXPECT_EQ(ticks_to_time(2, 3 * GHz), sc_time(667.0, SC_PS));
+}
+
 int sc_main(int argc, char** argv) {
     ADD_FAILURE() << "sc_main should not be called";
     return EXIT_FAILURE;
