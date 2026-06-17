@@ -57,6 +57,13 @@ TEST(sc_time, to_string) {
     EXPECT_EQ(mwr::to_string(sc_time(499.0, SC_FS)), "0s");
 }
 
+TEST(sc_time, time_resolution) {
+    auto tu = time_resolution();
+    EXPECT_EQ(tu, SC_PS);
+    sc_time test(1.0, tu);
+    EXPECT_EQ(test.value(), 1u);
+}
+
 int sc_main(int argc, char** argv) {
     ADD_FAILURE() << "sc_main should not be called";
     return EXIT_FAILURE;

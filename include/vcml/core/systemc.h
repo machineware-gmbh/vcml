@@ -163,6 +163,25 @@ inline sc_time time_from_value(u64 val) {
 #endif
 }
 
+sc_time_unit __time_resolution();
+
+inline sc_time_unit time_resolution() {
+    static sc_time_unit res = __time_resolution();
+    return res;
+}
+
+u64 time_unit_scale(sc_time_unit tu);
+
+inline u64 time_to_ticks(const sc_time& t, hz_t hz) {
+    u64 lo, hi;
+    mwr::umul64(hi, lo, t.value(), hz);
+    return mwr::udiv128lo(hi, lo, time_unit_scale(SC_SEC));
+}
+
+inline sc_time ticks_to_time(u64 ticks, hz_t hz) {
+    return sc_time((double)ticks / hz, SC_SEC);
+}
+
 VCML_TYPEINFO(sc_time);
 
 using sc_core::sc_start;

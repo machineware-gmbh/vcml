@@ -44,6 +44,36 @@ sc_attr_base* find_attribute(const string& name) {
     return parent->get_attribute(name.substr(pos + 1));
 }
 
+sc_time_unit __time_resolution() {
+    static const sc_time_unit time_units[] = {
+#if SYSTEMC_VERSION >= SYSTEMC_VERSION_3_0_0
+        SC_YS, SC_ZS, SC_AS,
+#endif
+        SC_FS, SC_PS, SC_NS, SC_US, SC_MS, SC_SEC,
+    };
+
+    for (sc_time_unit tu : time_units) {
+        if (time_unit_is_resolvable(tu))
+            return tu;
+    }
+
+    return SC_SEC;
+}
+
+u64 time_unit_scale(sc_time_unit tu) {
+    int itu = (int)tu;
+    int res = time_resolution();
+
+    if (itu < res)
+        return 0;
+
+    u64 scale = 1;
+    while (itu-- > scale)
+        scale *= 1000;
+
+    return scale;
+}
+
 sc_module* hierarchy_top() {
     sc_simcontext* simc = sc_get_curr_simcontext();
     VCML_ERROR_ON(!simc, "no simulation context");
