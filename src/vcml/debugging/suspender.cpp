@@ -43,6 +43,8 @@ struct suspend_manager {
 
     void handle_requests();
 
+    size_t num_waiting() const;
+
     suspend_manager();
 
     static suspend_manager& instance();
@@ -210,6 +212,11 @@ void suspend_manager::handle_requests() {
     suspender_lock.unlock();
 }
 
+size_t suspend_manager::num_waiting() const {
+    lock_guard<mutex> guard(suspender_lock);
+    return waiting_suspenders.size();
+}
+
 suspend_manager::suspend_manager():
     is_quitting(false),
     is_suspended(false),
@@ -268,6 +275,10 @@ void suspender::quit() {
 
 bool suspender::simulation_suspended() {
     return suspend_manager::instance().is_suspended;
+}
+
+bool suspender::suspenders_waiting() {
+    return suspend_manager::instance().num_waiting() > 0;
 }
 
 void suspender::handle_requests() {

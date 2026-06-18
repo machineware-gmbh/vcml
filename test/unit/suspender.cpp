@@ -19,6 +19,7 @@ public:
         std::atomic<bool> done = false;
         std::thread t0([&]() -> void {
             EXPECT_FALSE(is_suspending());
+            EXPECT_FALSE(debugging::suspender::suspenders_waiting());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
 
             suspend();
@@ -34,6 +35,7 @@ public:
 
             EXPECT_FALSE(is_suspending());
             EXPECT_EQ(debugging::suspender::current(), nullptr);
+            EXPECT_FALSE(debugging::suspender::suspenders_waiting());
         });
 
         EXPECT_FALSE(done);
