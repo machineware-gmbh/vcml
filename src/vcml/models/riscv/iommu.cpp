@@ -623,12 +623,11 @@ tlm_response_status iommu::dma_write(u64 addr, void* data, size_t size,
     if (debug)
         return TLM_OK_RESPONSE;
 
-    if (excl && size <= 8 && m_dma_xptr && addr == m_dma_addr &&
-        mwr::atomic_cas(m_dma_xptr, &m_dma_xval, data, size)) {
+    if (excl && size <= 8 && m_dma_xptr && addr == m_dma_addr) {
+        *excl = mwr::atomic_cas(m_dma_xptr, &m_dma_xval, data, size);
         m_dma_addr = ~0ull;
         m_dma_xptr = nullptr;
         m_dma_xval = 0;
-        *excl = true;
         return TLM_OK_RESPONSE;
     }
 
