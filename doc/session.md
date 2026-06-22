@@ -251,5 +251,11 @@ the given bytes to memory.
 * Command: `$pwrite,<target-name>,<physical-address>,<byte0>,<byte1>,..#**`
 * Response: `OK,<n> bytes written#**`
 
+#### Architecture
+Retrieves the architecture string defined by the target. The response holds the queried
+string or an error if something went wrong:
+* Command: `$arch,<target-name>#**`
+* Response: `OK,<architecture>#**`
+
 ----
-Documentation updated March 2026
+Documentation updated June 2026
