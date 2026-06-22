@@ -14,6 +14,7 @@ namespace vcml {
 
 static mwr::option<bool> list_properties("--list-properties",
                                          "Prints a list of all properties");
+static mwr::option<bool> start_session("--session", "Start a VSP Session");
 
 static void list_object_properties(sc_object* obj) {
     bool colors = mwr::is_tty(STDOUT_FDNO);
@@ -71,7 +72,7 @@ system::system(const sc_module_name& nm):
     config("config", ""),
     backtrace("backtrace", true),
     elab_only("elab_only", false),
-    session("session", -1),
+    session("session", start_session ? 0 : -1),
     session_debug("session_debug", false),
     session_host("session_host", "localhost"),
     quantum("quantum", sc_time(1, SC_US)),
