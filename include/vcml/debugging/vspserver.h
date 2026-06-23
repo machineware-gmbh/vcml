@@ -25,7 +25,7 @@ class vspclient;
 class vspserver : public rspserver, private suspender
 {
 private:
-    static constexpr int PROTOVER = 1;
+    static constexpr int PROTOVER = 2;
 
     string m_announce;
     sc_time m_duration;
@@ -58,6 +58,7 @@ private:
     string handle_pread(int client, const string& command);
     string handle_pwrite(int client, const string& command);
     string handle_setsm(int client, const string& command);
+    string handle_arch(int client, const string& command);
 
     void disconnect_all();
     void force_quit();
