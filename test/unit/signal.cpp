@@ -60,6 +60,9 @@ public:
     sc_signal<u64> signal64;
     sc_signal<sc_biguint<256>> signal256;
 
+    signal_initiator_socket<u64> bw_out;
+    signal_target_socket<u64> bw_in;
+
     signal_test(const sc_module_name& nm):
         test_base(nm),
         signal_host<u64>(),
@@ -76,7 +79,9 @@ public:
         inh256("inh256"),
         in256x8("in256x8"),
         signal64("signal64"),
-        signal256("signal256") {
+        signal256("signal256"),
+        bw_out("bw_out"),
+        bw_in("bw_in") {
         EXPECT_STREQ(out64.kind(), "vcml::signal_initiator_socket");
         EXPECT_STREQ(outh64.kind(), "vcml::signal_base_initiator_socket");
         EXPECT_STREQ(inh64.kind(), "vcml::signal_base_target_socket");
@@ -113,8 +118,11 @@ public:
         EXPECT_TRUE(find_object("test.in256x8[6]_stub"));
         EXPECT_TRUE(find_object("test.in256x8[7]_stub"));
 
+        bw_out.bind(bw_in);
+
         add_test("signal_u64", &signal_test::test_signal_u64);
         add_test("signal_u256", &signal_test::test_signal_u256);
+        add_test("signal_pull", &signal_test::test_signal_pull);
     }
 
     void test_signal_u64() {
@@ -153,6 +161,11 @@ public:
         signal256 = b;
         wait(SC_ZERO_TIME);
         EXPECT_EQ(in256x8[1], b);
+    }
+
+    void test_signal_pull() {
+        bw_out.on_read([]() -> u64 { return 123; });
+        EXPECT_EQ(bw_in, 123);
     }
 };
 

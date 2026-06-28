@@ -40,7 +40,7 @@ class signal_fw_transport_if : public sc_core::sc_interface
 {
 public:
     typedef signal_payload<T> protocol_types;
-    virtual void signal_transport(signal_payload<T>& tx) = 0;
+    virtual void signal_transport_fw(signal_payload<T>& tx) = 0;
 };
 
 template <typename T>
@@ -48,6 +48,7 @@ class signal_bw_transport_if : public sc_core::sc_interface
 {
 public:
     typedef signal_payload<T> protocol_types;
+    virtual void signal_transport_bw(signal_payload<T>& tx) = 0;
 };
 
 template <typename T>
@@ -223,6 +224,7 @@ public:
         m_host(hierarchy_search<signal_host<T>>()),
         m_event(),
         m_state(),
+        m_read_fn(),
         m_transport(this) {
         base::bind(m_transport);
     }
@@ -249,7 +251,7 @@ public:
         if (state != m_state) {
             m_state = state;
             signal_payload<T> tx(state);
-            signal_transport(tx);
+            signal_transport_fw(tx);
         }
     }
 
@@ -273,27 +275,44 @@ public:
         return *this;
     }
 
+    using read_fn = std::function<T(void)>;
+    void on_read(read_fn fn) { m_read_fn = std::move(fn); }
+
 private:
     signal_host<T>* m_host;
     sc_event* m_event;
     T m_state;
+    read_fn m_read_fn;
 
     struct signal_bw_transport : public signal_bw_transport_if<T> {
         mutable signal_initiator_socket<T>* socket;
         signal_bw_transport(signal_initiator_socket<T>* s):
             signal_bw_transport_if<T>(), socket(s) {}
 
+        virtual void signal_transport_bw(signal_payload<T>& tx) override {
+            socket->signal_transport_bw(tx);
+        }
+
         virtual const sc_event& default_event() const override {
             return socket->default_event();
         }
     } m_transport;
 
-    void signal_transport(signal_payload<T>& tx) {
+    void signal_transport_fw(signal_payload<T>& tx) {
         base_socket::trace_fw<signal_payload_base>(tx);
         for (int i = 0; i < base::size(); i++)
-            base::get_interface(i)->signal_transport(tx);
+            base::get_interface(i)->signal_transport_fw(tx);
         if (m_event)
             m_event->notify(SC_ZERO_TIME);
+        base_socket::trace_bw<signal_payload_base>(tx);
+    }
+
+    void signal_transport_bw(signal_payload<T>& tx) {
+        base_socket::trace_fw<signal_payload_base>(tx);
+        if (m_read_fn)
+            tx.data = m_read_fn();
+        else
+            tx.data = m_state;
         base_socket::trace_bw<signal_payload_base>(tx);
     }
 };
@@ -352,7 +371,16 @@ public:
         return *m_event;
     }
 
-    const T& read() const { return m_state; }
+    T read() const {
+        if (m_state)
+            return *m_state;
+
+        signal_payload<T> tx;
+        auto* self = const_cast<signal_target_socket<T>*>(this);
+        self->signal_transport_bw_internal(tx);
+        return tx.data;
+    }
+
     operator T() const { return read(); }
 
     bool operator==(const signal_target_socket<T>& o) const {
@@ -366,7 +394,7 @@ public:
 private:
     signal_host<T>* m_host;
     sc_event* m_event;
-    T m_state;
+    optional<T> m_state;
     signal_base_initiator_socket<T>* m_initiator;
     vector<signal_base_target_socket<T>*> m_targets;
 
@@ -375,8 +403,8 @@ private:
         signal_fw_transport(signal_target_socket<T>* s):
             signal_fw_transport_if<T>(), socket(s) {}
 
-        virtual void signal_transport(signal_payload<T>& tx) override {
-            socket->signal_transport_internal(tx);
+        virtual void signal_transport_fw(signal_payload<T>& tx) override {
+            socket->signal_transport_fw_internal(tx);
         }
 
         virtual const sc_event& default_event() const override {
@@ -384,12 +412,18 @@ private:
         }
     } m_transport;
 
-    void signal_transport_internal(signal_payload<T>& tx) {
+    void signal_transport_fw_internal(signal_payload<T>& tx) {
         base_socket::trace_fw<signal_payload_base>(tx);
         m_state = tx.data;
         signal_transport(tx);
         if (m_event)
             m_event->notify(SC_ZERO_TIME);
+        base_socket::trace_bw<signal_payload_base>(tx);
+    }
+
+    void signal_transport_bw_internal(signal_payload<T>& tx) {
+        base_socket::trace_fw<signal_payload_base>(tx);
+        (*this)->signal_transport_bw(tx);
         base_socket::trace_bw<signal_payload_base>(tx);
     }
 
@@ -408,6 +442,9 @@ using signal_target_array = socket_array<signal_target_socket<T>, N>;
 template <typename T>
 class signal_initiator_stub : private signal_bw_transport_if<T>
 {
+private:
+    virtual void signal_transport_bw(signal_payload<T>& tx) override {}
+
 public:
     signal_base_initiator_socket<T> signal_out;
     signal_initiator_stub(const char* nm):
@@ -421,7 +458,7 @@ template <typename T>
 class signal_target_stub : private signal_fw_transport_if<T>
 {
 private:
-    virtual void signal_transport(signal_payload<T>& tx) override {}
+    virtual void signal_transport_fw(signal_payload<T>& tx) override {}
 
 public:
     signal_base_target_socket<T> signal_in;
