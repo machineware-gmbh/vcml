@@ -59,7 +59,7 @@ static string xml_escape(const string& s) {
         }
     }
 
-    return escape(ss.str(), ",");
+    return ss.str();
 }
 
 static string json_escape(const string& s) {
@@ -79,7 +79,7 @@ static string json_escape(const string& s) {
         }
     }
 
-    return escape(ss.str(), ",");
+    return ss.str();
 }
 
 static string attr_type(const sc_attr_base* attr) {
