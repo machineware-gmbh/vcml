@@ -12,9 +12,9 @@
 
 namespace vcml {
 
-u8 len2dlc(size_t len) {
+u16 len2dlc(size_t len) {
     if (len > 64)
-        return 0xf;
+        return len;
     if (len <= 8)
         return len;
     if (len <= 12)
@@ -32,7 +32,10 @@ u8 len2dlc(size_t len) {
     return 15;
 }
 
-size_t dlc2len(u8 dlc) {
+size_t dlc2len(u16 dlc) {
+    if (dlc >= 16)
+        return dlc;
+
     static const size_t len[16] = { 0, 1,  2,  3,  4,  5,  6,  7,
                                     8, 12, 16, 20, 24, 32, 48, 64 };
     return len[dlc & 0xf];
@@ -49,9 +52,12 @@ bool can_frame::operator!=(const can_frame& other) const {
 
 ostream& operator<<(ostream& os, const can_frame& frame) {
     stream_guard guard(os);
-    os << "CAN";
-    if (frame.is_fdf())
-        os << "FD";
+    if (frame.is_xlf())
+        os << "CANXL";
+    else if (frame.is_fdf())
+        os << "CANFD";
+    else
+        os << "CAN";
     if (frame.is_rtr())
         os << " +rtr";
     if (frame.is_err())
@@ -60,6 +66,10 @@ ostream& operator<<(ostream& os, const can_frame& frame) {
         os << " +brs";
     if (frame.is_esi())
         os << " +esi";
+    if (frame.is_sec())
+        os << " +sec";
+    if (frame.is_rrs())
+        os << " +rrs";
 
     os << mkstr(" %x [%02hhx]", frame.id(), frame.flags);
 

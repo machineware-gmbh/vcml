@@ -25,6 +25,31 @@ TEST(can, to_string) {
     std::cout << frame << std::endl;
 }
 
+TEST(canfd, to_string) {
+    can_frame frame;
+    frame.msgid = 0x321;
+    frame.dlc = len2dlc(8);
+    frame.flags = CANFD_FDF;
+    for (int i = 0; i < 8; i++)
+        frame.data[i] = 0xff - i;
+
+    stringstream ss;
+    ss << frame;
+    std::cout << frame << std::endl;
+}
+
+TEST(canxl, to_string) {
+    can_frame frame;
+    frame.msgid = 0x543;
+    frame.dlc = len2dlc(12);
+    frame.flags = CANXL_XLF;
+    for (int i = 0; i < 12; i++)
+        frame.data[i] = 0x10 + i;
+
+    stringstream ss;
+    ss << frame;
+    std::cout << frame << std::endl;
+}
 MATCHER_P(can_match_socket, name, "Matches a CAN socket") {
     return strcmp(arg.basename(), name) == 0;
 }

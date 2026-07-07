@@ -19,8 +19,8 @@
 
 namespace vcml {
 
-u8 len2dlc(size_t len);
-size_t dlc2len(u8 dlc);
+u16 len2dlc(size_t len);
+size_t dlc2len(u16 dlc);
 
 enum can_msgid_flags : u32 {
     CAN_SID = bitmask(11),
@@ -34,13 +34,16 @@ enum can_flags : u8 {
     CANFD_BRS = bit(0),
     CANFD_ESI = bit(1),
     CANFD_FDF = bit(2),
+    CANXL_XLF = bit(4),
+    CANXL_SEC = bit(0),
+    CANXL_RRS = bit(1),
 };
 
 struct can_frame {
     u32 msgid;
-    u8 dlc;
+    u16 dlc;
     u8 flags;
-    u8 MWR_DECL_ALIGN(8) data[64];
+    u8 MWR_DECL_ALIGN(8) data[2048];
 
     bool is_eff() const { return msgid & CAN_EFF; }
     bool is_rtr() const { return msgid & CAN_RTR; }
@@ -49,6 +52,10 @@ struct can_frame {
     bool is_brs() const { return flags & CANFD_BRS; }
     bool is_esi() const { return flags & CANFD_ESI; }
     bool is_fdf() const { return flags & CANFD_FDF; }
+
+    bool is_xlf() const { return flags & CANXL_XLF; }
+    bool is_sec() const { return is_xlf() && (flags & CANXL_SEC); }
+    bool is_rrs() const { return is_xlf() && (flags & CANXL_RRS); }
 
     u32 id() const { return msgid & (is_eff() ? CAN_EID : CAN_SID); }
     size_t length() const { return dlc2len(dlc); }

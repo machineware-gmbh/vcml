@@ -719,40 +719,40 @@ void m_can::txthread() {
                 continue;
             }
 
-            can_frame tx{};
+            auto tx = std::make_unique<can_frame>();
             if (tx_buf_elem_hdr[0] & BUF_HDR0_XTD) {
-                tx.msgid = get_field<BUF_HDR0_ID_XTD>(tx_buf_elem_hdr[0]);
-                tx.msgid |= CAN_EFF;
+                tx->msgid = get_field<BUF_HDR0_ID_XTD>(tx_buf_elem_hdr[0]);
+                tx->msgid |= CAN_EFF;
             } else {
-                tx.msgid = get_field<BUF_HDR0_ID_STD>(tx_buf_elem_hdr[0]);
+                tx->msgid = get_field<BUF_HDR0_ID_STD>(tx_buf_elem_hdr[0]);
             }
 
             if (tx_buf_elem_hdr[0] & BUF_HDR0_RTR)
-                tx.msgid |= CAN_RTR;
+                tx->msgid |= CAN_RTR;
 
-            tx.dlc = get_field<BUF_HDR1_DLC>(tx_buf_elem_hdr[1]);
-            tx.flags = 0;
+            tx->dlc = get_field<BUF_HDR1_DLC>(tx_buf_elem_hdr[1]);
+            tx->flags = 0;
 
             if (tx_buf_elem_hdr[1] & BUF_HDR1_FDF) {
-                tx.flags |= CANFD_FDF;
+                tx->flags |= CANFD_FDF;
                 if (tx_buf_elem_hdr[1] & BUF_HDR1_BRS)
-                    tx.flags |= CANFD_BRS;
+                    tx->flags |= CANFD_BRS;
                 if (tx_buf_elem_hdr[0] & BUF_HDR0_ESI)
-                    tx.flags |= CANFD_ESI;
+                    tx->flags |= CANFD_ESI;
             }
 
             addr += TX_BUF_ELEM_HDR_SZ;
 
-            if (failed(dma.read(addr, tx.data, tx.length())))
+            if (failed(dma.read(addr, tx->data, tx->length())))
                 log_error("failed to read message %zu data", idx);
 
             if (test & TEST_LBCK) {
-                do_receive(tx);
+                do_receive(*tx);
 
                 if (!(cccr & CCCR_MON))
-                    can_tx.send(tx);
+                    can_tx.send(*tx);
             } else
-                can_tx.send(tx);
+                can_tx.send(*tx);
 
             txbar &= ~bit(idx);
             txbto |= bit(idx);
@@ -770,8 +770,8 @@ void m_can::rxthread() {
     while (true) {
         wait(m_rxev);
 
-        can_frame rx{};
-        while (can_rx_pop(rx)) {
+        auto rx = std::make_shared<can_frame>();
+        while (can_rx_pop(*rx)) {
             if (!m_tx_rx_enabled || get_tx_buf_elems() == 0) {
                 log_debug("rx disabled, frame dropped");
                 break;
@@ -787,16 +787,16 @@ void m_can::rxthread() {
             u64 addr = msg_ram_addr.get().start + rxf0c.get_field<RXFC_FSA>();
             u32 rx_buf_elem_hdr[2] = {};
 
-            if (rx.is_eff()) {
-                set_field<BUF_HDR0_ID_XTD>(rx_buf_elem_hdr[0], rx.msgid);
+            if (rx->is_eff()) {
+                set_field<BUF_HDR0_ID_XTD>(rx_buf_elem_hdr[0], rx->msgid);
                 rx_buf_elem_hdr[0] |= BUF_HDR0_XTD;
             } else {
-                set_field<BUF_HDR0_ID_STD>(rx_buf_elem_hdr[0], rx.msgid);
+                set_field<BUF_HDR0_ID_STD>(rx_buf_elem_hdr[0], rx->msgid);
             }
 
-            set_bit<BUF_HDR0_RTR>(rx_buf_elem_hdr[0], rx.is_rtr());
-            set_bit<BUF_HDR1_FDF>(rx_buf_elem_hdr[1], rx.is_fdf());
-            set_field<BUF_HDR1_DLC>(rx_buf_elem_hdr[1], rx.dlc);
+            set_bit<BUF_HDR0_RTR>(rx_buf_elem_hdr[0], rx->is_rtr());
+            set_bit<BUF_HDR1_FDF>(rx_buf_elem_hdr[1], rx->is_fdf());
+            set_field<BUF_HDR1_DLC>(rx_buf_elem_hdr[1], rx->dlc);
 
             addr += put_idx * (RX_BUF_ELEM_HDR_SZ + m_rx_fifo0_elem_data_sz);
             if (failed(dma.writew(addr, rx_buf_elem_hdr))) {
@@ -805,7 +805,7 @@ void m_can::rxthread() {
             }
 
             addr += RX_BUF_ELEM_HDR_SZ;
-            if (failed(dma.write(addr, rx.data, m_rx_fifo0_elem_data_sz))) {
+            if (failed(dma.write(addr, rx->data, m_rx_fifo0_elem_data_sz))) {
                 log_warn("DMA access failed at 0x%llx", addr);
                 break;
             }

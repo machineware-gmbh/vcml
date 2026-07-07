@@ -15,12 +15,14 @@ MATCHER_P(fifo_match, n, "Equality matcher for TX event FIFO elements") {
 }
 
 MATCHER_P(can_frame_match, n, "Equality matcher for CAN frames") {
+    return arg == n;
     return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
            std::equal(std::begin(arg.data), std::end(arg.data),
                       std::begin(n.data));
 }
 
 MATCHER_P(canfd_frame_match, n, "Equality matcher for CAN FD frames") {
+    return arg == n;
     return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
            (arg.flags == n.flags) &&
            std::equal(std::begin(arg.data), std::end(arg.data),
@@ -402,7 +404,7 @@ public:
             << "rx fifo0 elem header not matching";
         EXPECT_EQ(test.dlc << BUF_HDR1_DLC::OFFSET, rx_fifo0_hdr[1])
             << "rx fifo0 elem header not matching";
-        EXPECT_THAT(test.data, ContainerEq(rx_fifo0_data))
+        EXPECT_EQ(memcmp(test.data, rx_fifo0_data, 64), 0)
             << "rx fifo0 elem data not matching";
 
         // check rx fifo0 fill level
@@ -455,7 +457,7 @@ public:
             << "rx fifo0 elem header not matching";
         EXPECT_EQ(test.dlc << BUF_HDR1_DLC::OFFSET | 1u << 21, rx_fifo0_hdr[1])
             << "rx fifo0 elem header not matching";
-        EXPECT_THAT(test.data, ContainerEq(rx_fifo0_data))
+        EXPECT_THAT(memcmp(test.data, rx_fifo0_data, 64), 0)
             << "rx fifo0 elem data not matching";
 
         // check rx fifo0 fill level
