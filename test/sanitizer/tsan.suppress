@@ -1,3 +1,13 @@
+##############################################################################
+#                                                                            #
+# Copyright (C) 2022 MachineWare GmbH                                        #
+# All Rights Reserved                                                        #
+#                                                                            #
+# This work is licensed under the terms described in the LICENSE file found  #
+# in the root directory of this source tree.                                 #
+#                                                                            #
+##############################################################################
+
 # from_value_and_unit is called by most sc_time constructors and always writes
 # 'true' to 'time_resolution_fixed', unsynchronized from other threads
 race:from_value_and_unit
