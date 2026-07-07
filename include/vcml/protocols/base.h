@@ -181,6 +181,10 @@ public:
     typedef typename map_type::iterator iterator;
     typedef typename map_type::const_iterator const_iterator;
 
+    static constexpr auto
+        IS_INITIATOR_ARRAY = is_initiator_socket<SOCKET>::value;
+    static constexpr auto IS_TARGET_ARRAY = is_target_socket<SOCKET>::value;
+
     property<bool> trace_all;
     property<bool> trace_errors;
 
@@ -242,12 +246,13 @@ public:
         m_last = idx;
         m_next = max(m_next, idx + 1);
 
-        auto [peer, offset] = find_peer(idx, idx);
-        if (peer) {
-            if (is_initiator_socket<SOCKET>::value)
-                ((SOCKET*)peer->fetch(idx - offset, true))->bind(*socket);
-            if (is_target_socket<SOCKET>::value)
-                socket->bind(*(SOCKET*)peer->fetch(idx - offset, true));
+        peer_info info = find_peer(idx, idx);
+        if (info.peer) {
+            size_t peer_idx = idx - info.offset + info.peer_offset;
+            if (IS_INITIATOR_ARRAY)
+                ((SOCKET*)info.peer->fetch(peer_idx, true))->bind(*socket);
+            if (IS_TARGET_ARRAY)
+                socket->bind(*(SOCKET*)info.peer->fetch(peer_idx, true));
         }
 
         return *socket;
@@ -287,18 +292,19 @@ public:
     }
 
     template <typename T, size_t M>
-    void bind(socket_array<T, M>& other, size_t offset = 0) {
+    void bind(socket_array<T, M>& other, size_t offset = 0,
+              size_t peer_offset = 0) {
         static_assert(!is_initiator_and_target_sockets<SOCKET, T>::value,
                       "cannot bind two opposing socket arrays");
 
-        if constexpr (is_initiator_socket<SOCKET>::value) {
+        if constexpr (IS_INITIATOR_ARRAY) {
             // initiator binds to base-initiator
-            other.add_peer(*this, offset);
+            other.add_peer(*this, offset, peer_offset);
         }
 
-        if constexpr (is_target_socket<SOCKET>::value) {
+        if constexpr (IS_TARGET_ARRAY) {
             // base-target binds to target
-            add_peer(other, offset);
+            add_peer(other, offset, peer_offset);
         }
     }
 
@@ -329,7 +335,14 @@ private:
     address_space m_space;
     map_type m_sockets;
     revmap_type m_ids;
-    std::map<size_t, socket_array_if*> m_peers;
+
+    struct peer_info {
+        size_t offset;
+        socket_array_if* peer;
+        size_t peer_offset;
+    };
+
+    std::map<size_t, peer_info> m_peers;
 
     static constexpr size_t last_safe(size_t start, size_t length) {
         if (length == 0)
@@ -339,29 +352,34 @@ private:
         return start + length - 1;
     }
 
-    pair<socket_array_if*, size_t> find_peer(size_t start, size_t end) const {
+    peer_info find_peer(size_t start, size_t end) const {
         if (!m_peers.empty()) {
             auto it = m_peers.upper_bound(end);
             if (it != m_peers.begin()) {
                 it--;
-                auto [offset, peer] = *it;
+                size_t offset = it->second.offset;
+                auto* peer = it->second.peer;
                 if (start <= last_safe(offset, peer->limit()))
-                    return std::make_pair(peer, offset);
+                    return it->second;
             }
         }
-        return std::make_pair(nullptr, 0);
+
+        return peer_info{ 0, nullptr, 0 };
     }
 
-    void add_peer(socket_array_if& peer, size_t offset) {
+    void add_peer(socket_array_if& peer, size_t offset, size_t peer_offset) {
         VCML_ERROR_ON(offset >= N, "binding index out of bounds: %zu", offset);
+        VCML_ERROR_ON(peer_offset >= peer.limit(),
+                      "peer offset out of bounds: %zu", peer_offset);
+
         size_t last = last_safe(offset, peer.limit());
-        auto [overlap, _] = find_peer(offset, last);
-        if (overlap) {
+        auto overlap = find_peer(offset, last);
+        if (overlap.peer) {
             VCML_ERROR("cannot bind %s to %s, because it overlaps with %s",
-                       name(), peer.array_name(), overlap->array_name());
+                       name(), peer.array_name(), overlap.peer->array_name());
         }
 
-        m_peers[offset] = &peer;
+        m_peers[offset] = peer_info{ offset, &peer, peer_offset };
     }
 };
 

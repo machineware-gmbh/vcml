@@ -51,6 +51,12 @@ public:
     gpio_target_array<2> ab_in1;
     gpio_base_target_array<8> ab_in_base;
 
+    // for array slice binding test
+    gpio_initiator_array<8> slice_out;
+    gpio_base_initiator_array<4> slice_out_base;
+    gpio_base_target_array<4> slice_in_base;
+    gpio_target_array<8> slice_in;
+
     gpio_test_harness(const sc_module_name& nm):
         test_base(nm),
         out("out"),
@@ -69,7 +75,11 @@ public:
         ab_out_base("ab_out_base"),
         ab_in0("ab_in0"),
         ab_in1("ab_in1"),
-        ab_in_base("ab_in_base") {
+        ab_in_base("ab_in_base"),
+        slice_out("slice_out"),
+        slice_out_base("slice_out_base"),
+        slice_in_base("slice_in_base"),
+        slice_in("slice_in") {
         // check array dimensions
         EXPECT_EQ(in.limit(), 256);
         EXPECT_EQ(arr_out.limit(), 256);
@@ -119,6 +129,12 @@ public:
 
         for (size_t i = 0; i < ab_out_base.limit(); i++)
             ab_out_base[i].bind(ab_in_base[i]);
+
+        // test array binding with slices
+        slice_out.bind(slice_out_base, 0, 1);
+        slice_in_base.bind(slice_in, 0, 3);
+        for (size_t i = 0; i < slice_out_base.limit(); i++)
+            slice_out_base[i].bind(slice_in_base[i]);
     }
 
     MOCK_METHOD(void, gpio_notify,
@@ -216,6 +232,11 @@ public:
         EXPECT_CALL(*this,
                     gpio_notify(gpio_s("ab_in1[1]"), true, GPIO_NO_VECTOR));
         ab_out1[3].raise();
+
+        // test array slice binding
+        EXPECT_CALL(*this,
+                    gpio_notify(gpio_s("slice_in[6]"), true, GPIO_NO_VECTOR));
+        slice_out[4].raise();
     }
 };
 
