@@ -40,7 +40,7 @@ public:
     backend(backend&&) = default;
 
     virtual void send_to_host(const can_frame& frame) = 0;
-    virtual void send_to_guest(can_frame frame);
+    virtual void send_to_guest(unique_ptr<can_frame> frame);
 
     using create_fn = function<backend*(bridge*, const vector<string>&)>;
     static void define(const string& type, create_fn fn);

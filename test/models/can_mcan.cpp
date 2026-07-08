@@ -14,21 +14,6 @@ MATCHER_P(fifo_match, n, "Equality matcher for TX event FIFO elements") {
     return (arg[0] == n[0]) && ((arg[1] | bit(22)) == n[1]);
 }
 
-MATCHER_P(can_frame_match, n, "Equality matcher for CAN frames") {
-    return arg == n;
-    return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
-           std::equal(std::begin(arg.data), std::end(arg.data),
-                      std::begin(n.data));
-}
-
-MATCHER_P(canfd_frame_match, n, "Equality matcher for CAN FD frames") {
-    return arg == n;
-    return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
-           (arg.flags == n.flags) &&
-           std::equal(std::begin(arg.data), std::end(arg.data),
-                      std::begin(n.data));
-}
-
 enum m_can_addr : u64 {
     REG_CREL = 0x00,
     REG_ENDN = 0x04,
@@ -122,30 +107,30 @@ constexpr u64 TX_EVFIFO_START_ADDR = (RX_FIFO0_START_ADDR +
 constexpr u64 TX_FIFO_START_ADDR = (TX_EVFIFO_START_ADDR +
                                     TX_EVFIFO_ELEMS * TX_EFIFO_ELEM_SZ);
 
-static can_frame generate_can_frame(bool xtd_id, bool rtr_frame) {
-    can_frame frame{};
-    frame.flags = 0;
-    frame.dlc = rtr_frame ? 0 : 4;
-    frame.msgid = xtd_id ? 0x9f334455 : 0x000005a1;
+static unique_ptr<can_frame> generate_can_frame(bool xtd_id, bool rtr_frame) {
+    auto frame = std::make_unique<can_frame>();
+    frame->flags = 0;
+    frame->dlc = rtr_frame ? 0 : 4;
+    frame->msgid = xtd_id ? 0x9f334455 : 0x000005a1;
 
     if (rtr_frame)
-        frame.msgid |= CAN_RTR;
+        frame->msgid |= CAN_RTR;
 
     if (!rtr_frame) {
-        frame.data[0] = 0xde;
-        frame.data[1] = 0xad;
-        frame.data[2] = 0xbe;
-        frame.data[3] = 0xef;
+        frame->data[0] = 0xde;
+        frame->data[1] = 0xad;
+        frame->data[2] = 0xbe;
+        frame->data[3] = 0xef;
     }
 
     return frame;
 }
 
-static can_frame generate_canfd_frame(bool xtd_id) {
-    can_frame frame{};
-    frame.msgid = xtd_id ? 0x9f334455 : 0x000005a1;
-    frame.dlc = len2dlc(16);
-    frame.flags = CANFD_FDF;
+static unique_ptr<can_frame> generate_canfd_frame(bool xtd_id) {
+    auto frame = std::make_unique<can_frame>();
+    frame->msgid = xtd_id ? 0x9f334455 : 0x000005a1;
+    frame->dlc = len2dlc(16);
+    frame->flags = CAN_FD_FDF;
 
     static const u8 data[64] = {
         0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe,
@@ -156,7 +141,7 @@ static can_frame generate_canfd_frame(bool xtd_id) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
 
-    memcpy(frame.data, data, min(sizeof(frame.data), sizeof(data)));
+    memcpy(frame->data, data, min(sizeof(frame->data), sizeof(data)));
     return frame;
 }
 
@@ -290,7 +275,7 @@ public:
             << "wrong tx evfifo fill level";
     }
 
-    void test_tx_frame(const can_frame test) {
+    void test_tx_frame(const can_frame& test) {
         u64 addr = addr_msgram.start + TX_FIFO_START_ADDR;
 
         // construct tx buffer element
@@ -320,10 +305,9 @@ public:
 
         wait(1, SC_NS);
 
-        can_frame chk = {};
-        ASSERT_TRUE(can.can_rx_pop(chk));
-        EXPECT_THAT(test, can_frame_match(chk))
-            << "tx can frames to not match";
+        auto chk = std::make_unique<can_frame>();
+        ASSERT_TRUE(can.can_rx_pop(*chk));
+        EXPECT_EQ(*chk, test);
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
         EXPECT_FALSE(irq0.read()) << "irq did not get cleared";
@@ -331,7 +315,7 @@ public:
         check_tx_evfifo(hdr);
     }
 
-    void test_tx_fd_frame(const can_frame test) {
+    void test_tx_fd_frame(const can_frame& test) {
         const u64 addr = addr_msgram.start + TX_FIFO_START_ADDR;
 
         // construct tx buffer element
@@ -354,10 +338,9 @@ public:
 
         wait(1, SC_NS);
 
-        can_frame chk = {};
-        ASSERT_TRUE(can.can_rx_pop(chk));
-        EXPECT_THAT(test, canfd_frame_match(chk))
-            << "tx can frames to not match";
+        auto chk = std::make_unique<can_frame>();
+        ASSERT_TRUE(can.can_rx_pop(*chk));
+        EXPECT_EQ(*chk, test);
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
         EXPECT_FALSE(irq0.read()) << "irq did not get cleared";
@@ -365,7 +348,7 @@ public:
         check_tx_evfifo(hdr);
     }
 
-    void test_rx_frame(can_frame test) {
+    void test_rx_frame(can_frame& test) {
         // receive frame and check irqs
         can.can_out.send(test);
         wait(1, SC_NS);
@@ -418,7 +401,7 @@ public:
             << "wrong rx fifo0 fill level";
     }
 
-    void test_rx_fd_frame(can_frame test) {
+    void test_rx_fd_frame(can_frame& test) {
         // receive frame and check irqs
         can.can_out.send(test);
         wait(1, SC_NS);
@@ -474,18 +457,18 @@ public:
         setup_m_can();
 
         // transmission tests
-        test_tx_frame(generate_can_frame(false, false)); // can
-        test_tx_frame(generate_can_frame(true, false));  // can + eff
-        test_tx_frame(generate_can_frame(false, true));  // can + rtr
-        test_tx_fd_frame(generate_canfd_frame(false));   // canfd
-        test_tx_fd_frame(generate_canfd_frame(true));    // canfd + eff
+        test_tx_frame(*generate_can_frame(false, false)); // can
+        test_tx_frame(*generate_can_frame(true, false));  // can + eff
+        test_tx_frame(*generate_can_frame(false, true));  // can + rtr
+        test_tx_fd_frame(*generate_canfd_frame(false));   // canfd
+        test_tx_fd_frame(*generate_canfd_frame(true));    // canfd + eff
 
         // reception tests
-        test_rx_frame(generate_can_frame(false, false)); // can
-        test_rx_frame(generate_can_frame(true, false));  // can + eff
-        test_rx_frame(generate_can_frame(false, true));  // can + rtr
-        test_rx_fd_frame(generate_canfd_frame(false));   // canfd
-        test_rx_fd_frame(generate_canfd_frame(true));    // canfd + eff
+        test_rx_frame(*generate_can_frame(false, false)); // can
+        test_rx_frame(*generate_can_frame(true, false));  // can + eff
+        test_rx_frame(*generate_can_frame(false, true));  // can + rtr
+        test_rx_fd_frame(*generate_canfd_frame(false));   // canfd
+        test_rx_fd_frame(*generate_canfd_frame(true));    // canfd + eff
     }
 };
 

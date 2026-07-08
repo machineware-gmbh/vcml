@@ -29,8 +29,8 @@ backend::~backend() {
         m_parent->detach(this);
 }
 
-void backend::send_to_guest(can_frame frame) {
-    m_parent->send_to_guest(frame);
+void backend::send_to_guest(unique_ptr<can_frame> frame) {
+    m_parent->send_to_guest(std::move(frame));
 }
 
 static unordered_map<string, backend::create_fn>& all_backends() {

@@ -21,9 +21,9 @@ void backend_tcp::iothread() {
         try {
             int client = m_socket.poll(100);
             if (client >= 0) {
-                can_frame frame;
-                m_socket.recv(client, frame);
-                send_to_guest(frame);
+                auto frame = std::make_unique<can_frame>();
+                m_socket.recv(client, *frame);
+                send_to_guest(std::move(frame));
             }
         } catch (...) {
             // ignored

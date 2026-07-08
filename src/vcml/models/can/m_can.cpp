@@ -734,11 +734,11 @@ void m_can::txthread() {
             tx->flags = 0;
 
             if (tx_buf_elem_hdr[1] & BUF_HDR1_FDF) {
-                tx->flags |= CANFD_FDF;
+                tx->flags |= CAN_FD_FDF;
                 if (tx_buf_elem_hdr[1] & BUF_HDR1_BRS)
-                    tx->flags |= CANFD_BRS;
+                    tx->flags |= CAN_FD_BRS;
                 if (tx_buf_elem_hdr[0] & BUF_HDR0_ESI)
-                    tx->flags |= CANFD_ESI;
+                    tx->flags |= CAN_FD_ESI;
             }
 
             addr += TX_BUF_ELEM_HDR_SZ;
@@ -770,7 +770,7 @@ void m_can::rxthread() {
     while (true) {
         wait(m_rxev);
 
-        auto rx = std::make_shared<can_frame>();
+        auto rx = std::make_unique<can_frame>();
         while (can_rx_pop(*rx)) {
             if (!m_tx_rx_enabled || get_tx_buf_elems() == 0) {
                 log_debug("rx disabled, frame dropped");

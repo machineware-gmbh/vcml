@@ -33,7 +33,7 @@ private:
     vector<backend*> m_backends;
 
     mutable mutex m_mtx;
-    queue<can_frame> m_rx;
+    queue<unique_ptr<can_frame>> m_rx;
     sc_event m_ev;
 
     bool cmd_create_backend(const vector<string>& args, ostream& os);
@@ -57,7 +57,7 @@ public:
     VCML_KIND(can::bridge);
 
     void send_to_host(const can_frame& frame);
-    void send_to_guest(can_frame frame);
+    void send_to_guest(unique_ptr<can_frame> frame);
 
     void attach(backend* b);
     void detach(backend* b);

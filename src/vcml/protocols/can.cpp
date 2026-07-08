@@ -58,6 +58,7 @@ ostream& operator<<(ostream& os, const can_frame& frame) {
         os << "CANFD";
     else
         os << "CAN";
+
     if (frame.is_rtr())
         os << " +rtr";
     if (frame.is_err())
@@ -71,7 +72,11 @@ ostream& operator<<(ostream& os, const can_frame& frame) {
     if (frame.is_rrs())
         os << " +rrs";
 
-    os << mkstr(" %x [%02hhx]", frame.id(), frame.flags);
+    if (frame.is_canxl())
+        os << mkstr("%02x%03x [%02hhx]", frame.vcid(), frame.id(),
+                    frame.flags);
+    else
+        os << mkstr(" %x [%02hhx]", frame.id(), frame.flags);
 
     size_t len = frame.length();
     if (len == 0)
