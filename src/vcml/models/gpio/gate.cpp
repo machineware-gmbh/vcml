@@ -73,7 +73,7 @@ const char* gate::kind() const {
 }
 
 void gate::gpio_transport(const gpio_target_socket& socket, gpio_payload& tx) {
-    bool state = tx.state;
+    bool state;
 
     switch (m_type) {
     case LOGIC_NOT:
@@ -95,6 +95,7 @@ void gate::gpio_transport(const gpio_target_socket& socket, gpio_payload& tx) {
         state = calc_xor(in);
         break;
     default:
+        state = tx.state;
         break;
     }
 
