@@ -73,34 +73,32 @@ const char* gate::kind() const {
 }
 
 void gate::gpio_transport(const gpio_target_socket& socket, gpio_payload& tx) {
-    gpio_payload txout;
-    txout.state = tx.state;
-    txout.vector = tx.vector;
+    bool state = tx.state;
 
     switch (m_type) {
     case LOGIC_NOT:
-        txout.state = !tx.state;
+        state = !tx.state;
         break;
     case LOGIC_AND:
-        txout.state = calc_and(in);
+        state = calc_and(in);
         break;
     case LOGIC_OR:
-        txout.state = calc_or(in);
+        state = calc_or(in);
         break;
     case LOGIC_NAND:
-        txout.state = calc_nand(in);
+        state = calc_nand(in);
         break;
     case LOGIC_NOR:
-        txout.state = calc_nor(in);
+        state = calc_nor(in);
         break;
     case LOGIC_XOR:
-        txout.state = calc_xor(in);
+        state = calc_xor(in);
         break;
     default:
         break;
     }
 
-    out->gpio_transport(txout);
+    out.write(state, tx.vector);
 }
 
 VCML_EXPORT_MODEL(vcml::generic::not_gate, name, args) {
