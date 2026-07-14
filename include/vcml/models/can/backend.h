@@ -47,6 +47,12 @@ public:
     static backend* create(bridge* br, const string& type);
 };
 
+using send_fn = function<void(const u8* data, size_t s)>;
+using recv_fn = function<void(u8* data, size_t s)>;
+
+void serialize(const can_frame& f, const send_fn& send);
+void deserialize(can_frame& f, const recv_fn& recv);
+
 #define VCML_DEFINE_CAN_BACKEND(name, fn)        \
     MWR_CONSTRUCTOR(define_can_backend_##name) { \
         vcml::can::backend::define(#name, fn);   \
