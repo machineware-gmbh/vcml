@@ -68,7 +68,7 @@ public:
     void test_tx() {
         can_frame frame{};
         frame.msgid = 10;
-        frame.dlc = len2dlc(2);
+        frame.data.resize(2);
         frame.data[0] = 4;
         frame.data[1] = 6;
         can_out.send(frame);
@@ -78,7 +78,7 @@ public:
     void test_rx() {
         can_frame frame{};
         frame.msgid = 11;
-        frame.dlc = len2dlc(2);
+        frame.data.resize(2);
         can_out.send(frame);
         ASSERT_FALSE(frame.is_err());
         EXPECT_EQ(frame.data[0], 1);
@@ -88,7 +88,7 @@ public:
     void test_nodev() {
         can_frame frame{};
         frame.msgid = 12;
-        frame.dlc = len2dlc(2);
+        frame.data.resize(2);
         can_out.send(frame);
         EXPECT_TRUE(frame.is_err());
     }

@@ -19,7 +19,7 @@ void gateway::can_receive(const can_target_socket& sock, can_frame& frame) {
     tx.linid = frame.id();
 
     size_t len = min(tx.size(), frame.length());
-    memcpy(tx.data, frame.data, len);
+    memcpy(tx.data, frame.data.data(), len);
 
     lin_out.transport(tx);
 
@@ -29,7 +29,7 @@ void gateway::can_receive(const can_target_socket& sock, can_frame& frame) {
     }
 
     frame.msgid &= ~CAN_ERR;
-    memcpy(frame.data, tx.data, len);
+    memcpy(frame.data.data(), tx.data, len);
 }
 
 gateway::gateway(const sc_module_name& nm):

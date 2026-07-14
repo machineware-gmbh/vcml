@@ -70,7 +70,7 @@ void bridge::can_transmit() {
 
         lock_guard<mutex> guard(m_mtx);
         while (!m_rx.empty()) {
-            can_frame frame = m_rx.front();
+            can_frame frame = std::move(m_rx.front());
             m_rx.pop();
             can_tx.send(frame);
         }
@@ -132,7 +132,7 @@ void bridge::send_to_host(const can_frame& frame) {
 
 void bridge::send_to_guest(can_frame frame) {
     lock_guard<mutex> guard(m_mtx);
-    m_rx.push(frame);
+    m_rx.push(std::move(frame));
     on_next_update([&]() -> void { m_ev.notify(SC_ZERO_TIME); });
 }
 

@@ -26,6 +26,13 @@ class backend_socket : public backend
 private:
     string m_name;
     int m_socket;
+    bool m_canfd;
+    bool m_canxl;
+    size_t m_mtu;
+
+    void send_to_host_cc(const can_frame& frame);
+    void send_to_host_fd(const can_frame& frame);
+    void send_to_host_xl(const can_frame& frame);
 
 public:
     backend_socket(bridge* br, const string& ifname);

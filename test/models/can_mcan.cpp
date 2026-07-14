@@ -14,19 +14,6 @@ MATCHER_P(fifo_match, n, "Equality matcher for TX event FIFO elements") {
     return (arg[0] == n[0]) && ((arg[1] | bit(22)) == n[1]);
 }
 
-MATCHER_P(can_frame_match, n, "Equality matcher for CAN frames") {
-    return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
-           std::equal(std::begin(arg.data), std::end(arg.data),
-                      std::begin(n.data));
-}
-
-MATCHER_P(canfd_frame_match, n, "Equality matcher for CAN FD frames") {
-    return (arg.msgid == n.msgid) && (arg.dlc == n.dlc) &&
-           (arg.flags == n.flags) &&
-           std::equal(std::begin(arg.data), std::end(arg.data),
-                      std::begin(n.data));
-}
-
 enum m_can_addr : u64 {
     REG_CREL = 0x00,
     REG_ENDN = 0x04,
@@ -123,7 +110,7 @@ constexpr u64 TX_FIFO_START_ADDR = (TX_EVFIFO_START_ADDR +
 static can_frame generate_can_frame(bool xtd_id, bool rtr_frame) {
     can_frame frame{};
     frame.flags = 0;
-    frame.dlc = rtr_frame ? 0 : 4;
+    frame.data.resize(rtr_frame ? 0 : 4);
     frame.msgid = xtd_id ? 0x9f334455 : 0x000005a1;
 
     if (rtr_frame)
@@ -142,8 +129,8 @@ static can_frame generate_can_frame(bool xtd_id, bool rtr_frame) {
 static can_frame generate_canfd_frame(bool xtd_id) {
     can_frame frame{};
     frame.msgid = xtd_id ? 0x9f334455 : 0x000005a1;
-    frame.dlc = len2dlc(16);
-    frame.flags = CANFD_FDF;
+    frame.data.resize(16);
+    frame.flags = CAN_FD_FDF;
 
     static const u8 data[64] = {
         0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe,
@@ -154,7 +141,7 @@ static can_frame generate_canfd_frame(bool xtd_id) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
 
-    memcpy(frame.data, data, min(sizeof(frame.data), sizeof(data)));
+    memcpy(frame.data.data(), data, min(frame.data.size(), sizeof(data)));
     return frame;
 }
 
@@ -244,13 +231,13 @@ public:
         EXPECT_OK(out.writew(REG_TXBTIE, 1u << 0))
             << "cannot enable tx occured irq 0";
 
-        data = TX_FIFO_START_ADDR | TX_FIFO_ELEMS << TXBC_TFQS::OFFSET;
+        data = TX_FIFO_START_ADDR | TXBC_TFQS::set(TX_FIFO_ELEMS);
         EXPECT_OK(out.writew(REG_TXBC, data)) << "cannot set tx buffer config";
 
-        data = RX_FIFO0_START_ADDR | RX_FIFO0_ELEMS << RXFC_FS::OFFSET;
+        data = RX_FIFO0_START_ADDR | RXFC_FS::set(RX_FIFO0_ELEMS);
         EXPECT_OK(out.writew(REG_RXF0C, data)) << "cannot set rx fifo0 config";
 
-        data = TX_EVFIFO_START_ADDR | TX_EVFIFO_ELEMS << TXEFC_EFS::OFFSET;
+        data = TX_EVFIFO_START_ADDR | TXEFC_EFS::set(TX_EVFIFO_ELEMS);
         EXPECT_OK(out.writew(REG_TXEFC, data)) << "cannot set tx fifo cofnig";
 
         EXPECT_OK(out.writew(REG_TXESC, 7u))
@@ -288,7 +275,7 @@ public:
             << "wrong tx evfifo fill level";
     }
 
-    void test_tx_frame(const can_frame test) {
+    void test_tx_frame(const can_frame& test) {
         u64 addr = addr_msgram.start + TX_FIFO_START_ADDR;
 
         // construct tx buffer element
@@ -303,7 +290,7 @@ public:
         if (test.is_rtr())
             hdr[0] |= BUF_HDR0_RTR;
 
-        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc);
+        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc());
 
         hdr[1] |= TXBUF_T1_EFC;
 
@@ -318,10 +305,9 @@ public:
 
         wait(1, SC_NS);
 
-        can_frame chk = {};
+        can_frame chk{};
         ASSERT_TRUE(can.can_rx_pop(chk));
-        EXPECT_THAT(test, can_frame_match(chk))
-            << "tx can frames to not match";
+        EXPECT_EQ(chk, test) << "tx can frames to not match";
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
         EXPECT_FALSE(irq0.read()) << "irq did not get cleared";
@@ -329,7 +315,7 @@ public:
         check_tx_evfifo(hdr);
     }
 
-    void test_tx_fd_frame(const can_frame test) {
+    void test_tx_fd_frame(const can_frame& test) {
         const u64 addr = addr_msgram.start + TX_FIFO_START_ADDR;
 
         // construct tx buffer element
@@ -340,7 +326,7 @@ public:
         } else {
             set_field<BUF_HDR0_ID_STD>(hdr[0], test.msgid);
         }
-        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc);
+        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc());
         hdr[1] |= BUF_HDR1_FDF;
         hdr[1] |= TXBUF_T1_EFC;
         EXPECT_OK(out.writew(addr, hdr)) << "cannot write hdr";
@@ -352,10 +338,9 @@ public:
 
         wait(1, SC_NS);
 
-        can_frame chk = {};
+        can_frame chk{};
         ASSERT_TRUE(can.can_rx_pop(chk));
-        EXPECT_THAT(test, canfd_frame_match(chk))
-            << "tx can frames to not match";
+        EXPECT_EQ(chk, test) << "tx can frames to not match";
         EXPECT_TRUE(irq0.read()) << "irq did not get raised";
         check_irq(IR_TEFN | IR_TC);
         EXPECT_FALSE(irq0.read()) << "irq did not get cleared";
@@ -400,10 +385,13 @@ public:
 
         EXPECT_EQ(buf0, rx_fifo0_hdr[0])
             << "rx fifo0 elem header not matching";
-        EXPECT_EQ(test.dlc << BUF_HDR1_DLC::OFFSET, rx_fifo0_hdr[1])
+        EXPECT_EQ(BUF_HDR1_DLC::set(test.dlc()), rx_fifo0_hdr[1])
             << "rx fifo0 elem header not matching";
-        EXPECT_THAT(test.data, ContainerEq(rx_fifo0_data))
-            << "rx fifo0 elem data not matching";
+        if (!test.data.empty()) {
+            EXPECT_EQ(
+                memcmp(test.data.data(), rx_fifo0_data, test.data.size()), 0)
+                << "rx fifo0 elem data not matching";
+        }
 
         // check rx fifo0 fill level
         EXPECT_EQ(get_field<RXFS_FFL>(rxf0s), 1)
@@ -453,10 +441,14 @@ public:
 
         EXPECT_EQ(buf0, rx_fifo0_hdr[0])
             << "rx fifo0 elem header not matching";
-        EXPECT_EQ(test.dlc << BUF_HDR1_DLC::OFFSET | 1u << 21, rx_fifo0_hdr[1])
+        EXPECT_EQ(BUF_HDR1_DLC::set(test.dlc()) | mwr::bit(21),
+                  rx_fifo0_hdr[1])
             << "rx fifo0 elem header not matching";
-        EXPECT_THAT(test.data, ContainerEq(rx_fifo0_data))
-            << "rx fifo0 elem data not matching";
+        if (!test.data.empty()) {
+            EXPECT_EQ(
+                memcmp(test.data.data(), rx_fifo0_data, test.data.size()), 0)
+                << "rx fifo0 elem data not matching";
+        }
 
         // check rx fifo0 fill level
         EXPECT_EQ(get_field<RXFS_FFL>(rxf0s), 1)

@@ -730,20 +730,22 @@ void m_can::txthread() {
             if (tx_buf_elem_hdr[0] & BUF_HDR0_RTR)
                 tx.msgid |= CAN_RTR;
 
-            tx.dlc = get_field<BUF_HDR1_DLC>(tx_buf_elem_hdr[1]);
+            u32 dlc = get_field<BUF_HDR1_DLC>(tx_buf_elem_hdr[1]);
+            tx.data.resize(dlc2len(dlc));
             tx.flags = 0;
 
             if (tx_buf_elem_hdr[1] & BUF_HDR1_FDF) {
-                tx.flags |= CANFD_FDF;
+                tx.flags |= CAN_FD_FDF;
                 if (tx_buf_elem_hdr[1] & BUF_HDR1_BRS)
-                    tx.flags |= CANFD_BRS;
+                    tx.flags |= CAN_FD_BRS;
                 if (tx_buf_elem_hdr[0] & BUF_HDR0_ESI)
-                    tx.flags |= CANFD_ESI;
+                    tx.flags |= CAN_FD_ESI;
             }
 
             addr += TX_BUF_ELEM_HDR_SZ;
 
-            if (failed(dma.read(addr, tx.data, tx.length())))
+            void* data = tx.data.data();
+            if (!tx.data.empty() && failed(dma.read(addr, data, tx.length())))
                 log_error("failed to read message %zu data", idx);
 
             if (test & TEST_LBCK) {
@@ -796,7 +798,7 @@ void m_can::rxthread() {
 
             set_bit<BUF_HDR0_RTR>(rx_buf_elem_hdr[0], rx.is_rtr());
             set_bit<BUF_HDR1_FDF>(rx_buf_elem_hdr[1], rx.is_fdf());
-            set_field<BUF_HDR1_DLC>(rx_buf_elem_hdr[1], rx.dlc);
+            set_field<BUF_HDR1_DLC>(rx_buf_elem_hdr[1], rx.dlc());
 
             addr += put_idx * (RX_BUF_ELEM_HDR_SZ + m_rx_fifo0_elem_data_sz);
             if (failed(dma.writew(addr, rx_buf_elem_hdr))) {
@@ -805,7 +807,18 @@ void m_can::rxthread() {
             }
 
             addr += RX_BUF_ELEM_HDR_SZ;
-            if (failed(dma.write(addr, rx.data, m_rx_fifo0_elem_data_sz))) {
+            void* data = rx.data.data();
+            size_t len = rx.data.size();
+            if (!rx.data.empty() && failed(dma.write(addr, data, len))) {
+                log_warn("DMA access failed at 0x%llx", addr);
+                break;
+            }
+
+            addr += rx.data.size();
+            vector<u8> zeros(m_rx_fifo0_elem_data_sz - rx.data.size(), 0);
+            data = zeros.data();
+            len = zeros.size();
+            if (!zeros.empty() && failed(dma.write(addr, data, len))) {
                 log_warn("DMA access failed at 0x%llx", addr);
                 break;
             }

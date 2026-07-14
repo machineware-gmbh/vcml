@@ -109,9 +109,18 @@ public:
     tlm_response_status readw(u64 addr, T& data,
                               const tlm_sbi& info = SBI_NONE,
                               unsigned int* nbytes = nullptr);
+    template <typename T>
+    tlm_response_status readw(u64 addr, vector<T>& data,
+                              const tlm_sbi& info = SBI_NONE,
+                              unsigned int* nbytes = nullptr);
 
     template <typename T>
     tlm_response_status writew(u64 addr, const T& data,
+                               const tlm_sbi& info = SBI_NONE,
+                               unsigned int* nbytes = nullptr);
+
+    template <typename T>
+    tlm_response_status writew(u64 addr, const vector<T>& data,
                                const tlm_sbi& info = SBI_NONE,
                                unsigned int* nbytes = nullptr);
 
@@ -202,11 +211,33 @@ inline tlm_response_status tlm_initiator_socket::readw(u64 addr, T& data,
 }
 
 template <typename T>
+inline tlm_response_status tlm_initiator_socket::readw(u64 addr,
+                                                       vector<T>& data,
+                                                       const tlm_sbi& info,
+                                                       unsigned int* nbytes) {
+    if (data.empty())
+        return tlm::TLM_OK_RESPONSE;
+
+    return read(addr, data.data(), data.size() * sizeof(T), info, nbytes);
+}
+
+template <typename T>
 inline tlm_response_status tlm_initiator_socket::writew(u64 addr,
                                                         const T& data,
                                                         const tlm_sbi& info,
                                                         unsigned int* nbytes) {
     return write(addr, &data, sizeof(T), info, nbytes);
+}
+
+template <typename T>
+inline tlm_response_status tlm_initiator_socket::writew(u64 addr,
+                                                        const vector<T>& data,
+                                                        const tlm_sbi& info,
+                                                        unsigned int* nbytes) {
+    if (data.empty())
+        return tlm::TLM_OK_RESPONSE;
+
+    return write(addr, data.data(), data.size() * sizeof(T), info, nbytes);
 }
 
 template <unsigned int WIDTH>

@@ -11,14 +11,40 @@
 #include "testing.h"
 
 TEST(can, to_string) {
-    can_frame frame;
+    can_frame frame{};
     frame.msgid = 0x123;
-    frame.dlc = len2dlc(4);
+    frame.data.resize(4);
     frame.flags = 0;
     frame.data[0] = 0x11;
     frame.data[1] = 0x22;
     frame.data[2] = 0x33;
     frame.data[3] = 0x44;
+
+    stringstream ss;
+    ss << frame;
+    std::cout << frame << std::endl;
+}
+
+TEST(canfd, to_string) {
+    can_frame frame{};
+    frame.msgid = 0x321;
+    frame.data.resize(8);
+    frame.flags = CAN_FD_FDF;
+    for (size_t i = 0; i < frame.data.size(); i++)
+        frame.data[i] = 0xff - i;
+
+    stringstream ss;
+    ss << frame;
+    std::cout << frame << std::endl;
+}
+
+TEST(canxl, to_string) {
+    can_frame frame{};
+    frame.msgid = 0x543;
+    frame.data.resize(12);
+    frame.flags = CAN_FD_FDF | CAN_XL_XLF;
+    for (size_t i = 0; i < frame.data.size(); i++)
+        frame.data[i] = 0x10 + i;
 
     stringstream ss;
     ss << frame;
@@ -81,9 +107,9 @@ public:
     virtual void run_test() override {
         wait(SC_ZERO_TIME);
 
-        can_frame frame;
+        can_frame frame{};
         frame.msgid = 0x123;
-        frame.dlc = len2dlc(4);
+        frame.data.resize(4);
         frame.flags = 0;
         frame.data[0] = 0x11;
         frame.data[1] = 0x22;

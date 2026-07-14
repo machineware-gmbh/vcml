@@ -13,6 +13,41 @@
 namespace vcml {
 namespace can {
 
+#pragma pack(push, 1)
+struct frame_header {
+    u32 msgid;
+    u32 af;
+    u8 flags;
+    u8 sdt;
+    u16 len;
+};
+#pragma pack(pop)
+
+void backend_tcp::send_frame(int client, const can_frame& frame) {
+    frame_header header{};
+    header.msgid = mwr::cpu_to_le32(frame.msgid);
+    header.af = mwr::cpu_to_le32(frame.af);
+    header.flags = frame.flags;
+    header.sdt = frame.sdt;
+    header.len = mwr::cpu_to_le16(frame.length());
+
+    m_socket.send(client, header);
+    m_socket.send(client, frame.data.data(), frame.length());
+}
+
+void backend_tcp::receive_frame(int client, can_frame& frame) {
+    frame_header header{};
+
+    m_socket.recv(client, header);
+    frame.msgid = mwr::le32_to_cpu(header.msgid);
+    frame.af = mwr::le32_to_cpu(header.af);
+    frame.flags = header.flags;
+    frame.sdt = header.sdt;
+    frame.data.resize(mwr::le16_to_cpu(header.len));
+
+    m_socket.recv(client, frame.data.data(), frame.data.size());
+}
+
 void backend_tcp::iothread() {
     mwr::set_thread_name(mkstr("canio_%hu", m_socket.port()));
     m_socket.set_tcp_nodelay(true);
@@ -21,9 +56,9 @@ void backend_tcp::iothread() {
         try {
             int client = m_socket.poll(100);
             if (client >= 0) {
-                can_frame frame;
-                m_socket.recv(client, frame);
-                send_to_guest(frame);
+                can_frame frame{};
+                receive_frame(client, frame);
+                send_to_guest(std::move(frame));
             }
         } catch (...) {
             // ignored
@@ -52,7 +87,7 @@ void backend_tcp::send_to_host(const can_frame& frame) {
     const auto& clients = m_socket.clients();
     for (int client : clients) {
         try {
-            m_socket.send(client, frame);
+            send_frame(client, frame);
         } catch (...) {
             // nothing to do
         }

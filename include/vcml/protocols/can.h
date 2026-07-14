@@ -19,8 +19,8 @@
 
 namespace vcml {
 
-u8 len2dlc(size_t len);
-size_t dlc2len(u8 dlc);
+u16 len2dlc(size_t len);
+size_t dlc2len(u16 dlc);
 
 enum can_msgid_flags : u32 {
     CAN_SID = bitmask(11),
@@ -31,27 +31,51 @@ enum can_msgid_flags : u32 {
 };
 
 enum can_flags : u8 {
-    CANFD_BRS = bit(0),
-    CANFD_ESI = bit(1),
-    CANFD_FDF = bit(2),
+    CAN_FD_BRS = bit(0),
+    CAN_FD_ESI = bit(1),
+    CAN_FD_FDF = bit(2),
+    CAN_XL_SEC = bit(0),
+    CAN_XL_RRS = bit(1),
+    CAN_XL_XLF = bit(7),
 };
+
+using CAN_XL_MSGID_VCID = field<8, 16, u32>;
 
 struct can_frame {
     u32 msgid;
-    u8 dlc;
     u8 flags;
-    u8 MWR_DECL_ALIGN(8) data[64];
+    u8 sdt; // CAN XL Service Data Unit Type f or CANsec
+    u32 af; // CAN XL Acceptance Field
+    vector<u8> data;
 
-    bool is_eff() const { return msgid & CAN_EFF; }
-    bool is_rtr() const { return msgid & CAN_RTR; }
-    bool is_err() const { return msgid & CAN_ERR; }
+    bool is_eff() const { return !is_canxl() && (msgid & CAN_EFF); }
+    bool is_rtr() const { return !is_canxl() && (msgid & CAN_RTR); }
+    bool is_err() const { return !is_canxl() && (msgid & CAN_ERR); }
 
-    bool is_brs() const { return flags & CANFD_BRS; }
-    bool is_esi() const { return flags & CANFD_ESI; }
-    bool is_fdf() const { return flags & CANFD_FDF; }
+    bool is_cancc() const { return !is_canxl() && !is_canfd(); };
+    bool is_canfd() const {
+        return (flags & CAN_FD_FDF) && !(flags & CAN_XL_XLF);
+    };
+    bool is_canxl() const { return flags & CAN_XL_XLF; }
+
+    bool is_brs() const {
+        return (is_canfd() && (flags & CAN_FD_BRS)) || is_canxl();
+    }
+    bool is_esi() const { return is_canfd() && (flags & CAN_FD_ESI); }
+    bool is_fdf() const { return !is_cancc(); }
+
+    bool is_xlf() const { return is_canxl(); }
+    bool is_sec() const { return is_canxl() && (flags & CAN_XL_SEC); }
+    bool is_rrs() const { return is_canxl() && (flags & CAN_XL_RRS); }
+
+    void set_vcid(u32 vcid) { set_field<CAN_XL_MSGID_VCID>(msgid, vcid); }
 
     u32 id() const { return msgid & (is_eff() ? CAN_EID : CAN_SID); }
-    size_t length() const { return dlc2len(dlc); }
+    u32 vcid() const {
+        return is_canxl() ? get_field<CAN_XL_MSGID_VCID>(msgid) : 0ul;
+    }
+    size_t length() const { return data.size(); }
+    u16 dlc() const { return is_canxl() ? length() : len2dlc(length()); }
 
     bool operator==(const can_frame& other) const;
     bool operator!=(const can_frame& other) const;
