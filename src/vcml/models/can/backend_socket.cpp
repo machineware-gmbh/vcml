@@ -91,7 +91,9 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
         }
 
 #ifdef CANXL_VCID_OFFSET
-        /* try to enable the CAN XL VCID pass through mode */
+        struct can_raw_vcid_options vcid_opts {};
+
+        vcid_opts.flags = CAN_RAW_XL_VCID_TX_PASS;
         if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_XL_VCID_OPTS, &vcid_opts,
                        sizeof(vcid_opts))) {
             VCML_ERROR("error when enabling CAN XL VCID pass through\n");
@@ -124,7 +126,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
             return;
         }
 
-        auto frame = std::make_unique<can_frame>();
+        can_frame frame{};
 
 #ifdef CANXL_MTU
         if ((rec_frame->xl.flags & CANXL_XLF)) {
@@ -132,14 +134,14 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
                 log_error("received a too small CAN XL frame");
 
             auto& xl_frame = rec_frame->xl;
-            frame->msgid = xl_frame.prio & mwr::bitmask(11);
-            frame->sdt = xl_frame.sdt;
-            frame->dlc = len2dlc(xl_frame.len);
-            frame->af = xl_frame.af;
-            frame->flags = CAN_FD_FDF | CAN_XL_XLF;
+            frame.msgid = xl_frame.prio & mwr::bitmask(11);
+            frame.sdt = xl_frame.sdt;
+            frame.af = xl_frame.af;
+            frame.flags = CAN_FD_FDF | CAN_XL_XLF;
+            frame.data.resize(xl_frame.len);
 
             if (xl_frame.flags & CANXL_SEC)
-                frame->flags |= CAN_XL_SEC;
+                frame.flags |= CAN_XL_SEC;
 
 #ifdef CANXL_RRS
             if (xl_frame.flags & CANXL_RRS)
@@ -150,32 +152,37 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
             frame->set_vcid(get_field<CAN_XL_VCID_MASK>(xl_frame.prio));
 #endif
 
-            memcpy(frame->data, xl_frame.data, xl_frame.len);
+            if (static_cast<size_t>(n) != (CAN_XL_HDR_SIZE + xl_frame.len)) {
+                log_error("mtu size does not match data length");
+                return;
+            }
+
+            memcpy(frame.data.data(), xl_frame.data, xl_frame.len);
         } else
 #endif
             if (static_cast<size_t>(n) == CAN_CC_MTU ||
                 static_cast<size_t>(n) == CAN_FD_MTU) {
-            frame->msgid = rec_frame->fd.can_id;
-            frame->dlc = vcml::len2dlc(rec_frame->fd.len);
-            frame->flags = 0;
+            frame.msgid = rec_frame->fd.can_id;
+            frame.flags = 0;
+            frame.data.resize(rec_frame->fd.len);
 
 #ifdef CANFD_FDF
             if (rec_frame->fd.flags & CANFD_FDF)
-                frame->flags |= CANFD_FDF;
+                frame.flags |= CANFD_FDF;
 #else
             if (n == CAN_FD_MTU)
-                frame->flags |= CAN_FD_FDF;
+                frame.flags |= CAN_FD_FDF;
 #endif
 
-            if (frame->is_canfd()) {
+            if (frame.is_canfd()) {
                 if (rec_frame->fd.flags & CANFD_BRS)
-                    frame->flags |= CANFD_BRS;
+                    frame.flags |= CANFD_BRS;
 
                 if (rec_frame->fd.flags & CANFD_ESI)
-                    frame->flags |= CANFD_ESI;
+                    frame.flags |= CANFD_ESI;
             }
 
-            memcpy(frame->data, rec_frame->fd.data, rec_frame->fd.len);
+            memcpy(frame.data.data(), rec_frame->fd.data, rec_frame->fd.len);
         } else {
             log_warn("received invalid frame of %zu bytes on %s", n,
                      m_name.c_str());
@@ -203,7 +210,7 @@ void backend_socket::send_to_host_cc(const can_frame& frame) {
     ::can_frame canraw{};
     canraw.can_id = frame.msgid;
     canraw.can_dlc = min(frame.length(), sizeof(canraw.data));
-    memcpy(canraw.data, frame.data, canraw.can_dlc);
+    memcpy(canraw.data, frame.data.data(), canraw.can_dlc);
 
     size_t ret = mwr::fd_write(m_socket, &canraw, sizeof(canraw));
     if (ret != sizeof(canraw))
@@ -235,7 +242,7 @@ void backend_socket::send_to_host_fd(const can_frame& frame) {
         canfdraw.flags |= CANFD_FDF;
 #endif
 
-    memcpy(canfdraw.data, frame.data, canfdraw.len);
+    memcpy(canfdraw.data, frame.data.data(), canfdraw.len);
 
     size_t ret = mwr::fd_write(m_socket, &canfdraw, sizeof(canfdraw));
     if (ret != sizeof(canfdraw))
@@ -252,7 +259,7 @@ void backend_socket::send_to_host_xl(const can_frame& frame) {
     }
 
 #ifdef CANXL_MTU
-    size_t len = dlc2len(frame.dlc);
+    size_t len = frame.length();
     size_t mtu = CAN_XL_HDR_SIZE + len;
     if (mtu > m_mtu) {
         log_error("MTU size too large, dropping frame");
@@ -281,7 +288,7 @@ void backend_socket::send_to_host_xl(const can_frame& frame) {
         xl_frame->flags |= CANXL_RRS;
 #endif
 
-    memcpy(xl_frame->data, frame.data, xl_frame->len);
+    memcpy(xl_frame->data, frame.data.data(), xl_frame->len);
 
     if (mwr::fd_write(m_socket, xl_frame.get(), mtu) != mtu)
         log_error("failed to send CAN XL frame: %s", strerror(errno));

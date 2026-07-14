@@ -42,8 +42,17 @@ size_t dlc2len(u16 dlc) {
 }
 
 bool can_frame::operator==(const can_frame& other) const {
-    return msgid == other.msgid && dlc == other.dlc && flags == other.flags &&
-           memcmp(data, other.data, length()) == 0;
+    if (msgid != other.msgid || length() != other.length() ||
+        flags != other.flags)
+        return false;
+
+    if (!data.empty() && memcmp(data.data(), other.data.data(), length()) != 0)
+        return false;
+
+    if (is_canxl() && (sdt != other.sdt || af != other.af))
+        return false;
+
+    return true;
 }
 
 bool can_frame::operator!=(const can_frame& other) const {
@@ -52,9 +61,9 @@ bool can_frame::operator!=(const can_frame& other) const {
 
 ostream& operator<<(ostream& os, const can_frame& frame) {
     stream_guard guard(os);
-    if (frame.is_xlf())
+    if (frame.is_canxl())
         os << "CANXL";
-    else if (frame.is_fdf())
+    else if (frame.is_canfd())
         os << "CANFD";
     else
         os << "CAN";
@@ -72,11 +81,12 @@ ostream& operator<<(ostream& os, const can_frame& frame) {
     if (frame.is_rrs())
         os << " +rrs";
 
-    if (frame.is_canxl())
-        os << mkstr("%02x%03x [%02hhx]", frame.vcid(), frame.id(),
-                    frame.flags);
-    else
+    if (frame.is_canxl()) {
+        os << mkstr(" %02x:%03x [%02hhx] sdt:%02x af:%08x", frame.vcid(),
+                    frame.id(), frame.flags, frame.sdt, frame.af);
+    } else {
         os << mkstr(" %x [%02hhx]", frame.id(), frame.flags);
+    }
 
     size_t len = frame.length();
     if (len == 0)
@@ -93,14 +103,14 @@ void can_host::can_receive(const can_target_socket& sock, can_frame& frame) {
 }
 
 void can_host::can_receive(can_frame& frame) {
-    m_rx_queue.push(frame);
+    m_rx_queue.push(frame); // create a copy
 }
 
 bool can_host::can_rx_pop(can_frame& frame) {
     if (m_rx_queue.empty())
         return false;
 
-    frame = m_rx_queue.front();
+    frame = std::move(m_rx_queue.front());
     m_rx_queue.pop();
     return true;
 }

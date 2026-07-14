@@ -43,17 +43,16 @@ using CAN_XL_MSGID_VCID = field<8, 16, u32>;
 
 struct can_frame {
     u32 msgid;
-    u16 dlc;
     u8 flags;
     u8 sdt; // CAN XL Service Data Unit Type f or CANsec
     u32 af; // CAN XL Acceptance Field
-    u8 MWR_DECL_ALIGN(8) data[2048];
+    vector<u8> data;
 
     bool is_eff() const { return !is_canxl() && (msgid & CAN_EFF); }
     bool is_rtr() const { return !is_canxl() && (msgid & CAN_RTR); }
     bool is_err() const { return !is_canxl() && (msgid & CAN_ERR); }
 
-    bool is_cancc() const { return !(flags & CAN_FD_FDF); };
+    bool is_cancc() const { return !is_canxl() && !is_canfd(); };
     bool is_canfd() const {
         return (flags & CAN_FD_FDF) && !(flags & CAN_XL_XLF);
     };
@@ -75,7 +74,8 @@ struct can_frame {
     u32 vcid() const {
         return is_canxl() ? get_field<CAN_XL_MSGID_VCID>(msgid) : 0ul;
     }
-    size_t length() const { return dlc2len(dlc); }
+    size_t length() const { return data.size(); }
+    u16 dlc() const { return is_canxl() ? length() : len2dlc(length()); }
 
     bool operator==(const can_frame& other) const;
     bool operator!=(const can_frame& other) const;
