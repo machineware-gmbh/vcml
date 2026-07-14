@@ -78,5 +78,40 @@ backend* backend::create(bridge* br, const string& desc) {
     }
 }
 
+#pragma pack(push, 1)
+struct frame_header {
+    u32 msgid;
+    u32 af;
+    u8 flags;
+    u8 sdt;
+    u16 len;
+};
+#pragma pack(pop)
+
+void serialize(const can_frame& f, const send_fn& send) {
+    frame_header header{};
+    header.msgid = mwr::cpu_to_le32(f.msgid);
+    header.af = mwr::cpu_to_le32(f.af);
+    header.flags = f.flags;
+    header.sdt = f.sdt;
+    header.len = mwr::cpu_to_le16(f.length());
+
+    send(reinterpret_cast<u8*>(&header), sizeof(header));
+    send(f.data.data(), f.length());
+}
+
+void deserialize(can_frame& f, const recv_fn& recv) {
+    frame_header header{};
+
+    recv(reinterpret_cast<u8*>(&header), sizeof(header));
+    f.msgid = mwr::le32_to_cpu(header.msgid);
+    f.af = mwr::le32_to_cpu(header.af);
+    f.flags = header.flags;
+    f.sdt = header.sdt;
+    f.data.resize(mwr::le16_to_cpu(header.len));
+
+    recv(f.data.data(), f.data.size());
+}
+
 } // namespace can
 } // namespace vcml

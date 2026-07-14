@@ -31,8 +31,6 @@ private:
     atomic<bool> m_running;
 
     void iothread();
-    void send_frame(int client, const can_frame& frame);
-    void receive_frame(int client, can_frame& frame);
 
 public:
     u16 port() const { return m_socket.port(); }
