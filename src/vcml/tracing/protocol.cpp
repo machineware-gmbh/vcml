@@ -316,16 +316,35 @@ string trace_payload_to_json(const can_frame& tx) {
     ostringstream os;
     os << "{";
 
-    if (tx.is_fdf())
+    if (tx.is_canxl())
+        os << "\"type\":\"CAN_XL\",";
+    else if (tx.is_fdf())
         os << "\"type\":\"CAN_FD\",";
     else
         os << "\"type\":\"CAN\",";
 
-    os << "\"flags\":" << (int)tx.flags << ",";
+    os << "\"id\":" << tx.id() << ",";
+    os << "\"eff\":" << (tx.is_eff() ? "true" : "false") << ",";
     os << "\"rtr\":" << (tx.is_rtr() ? "true" : "false") << ",";
     os << "\"err\":" << (tx.is_err() ? "true" : "false") << ",";
-    os << "\"brs\":" << (tx.is_brs() ? "true" : "false") << ",";
-    os << "\"esi\":" << (tx.is_esi() ? "true" : "false") << ",";
+
+    if (tx.is_canxl()) {
+        os << "\"xlf\":true,";
+        os << "\"fdf\":false,";
+        os << "\"sec\":" << (tx.is_sec() ? "true" : "false") << ",";
+        os << "\"rrs\":" << (tx.is_rrs() ? "true" : "false") << ",";
+        os << "\"vcid\":" << tx.vcid() << ",";
+        os << "\"sdt\":" << (int)tx.sdt << ",";
+        os << "\"af\":" << tx.af << ",";
+    } else if (tx.is_canfd()) {
+        os << "\"xlf\":false,";
+        os << "\"fdf\":true,";
+        os << "\"brs\":" << (tx.is_brs() ? "true" : "false") << ",";
+        os << "\"esi\":" << (tx.is_esi() ? "true" : "false") << ",";
+    } else {
+        os << "\"xlf\":false,";
+        os << "\"fdf\":false,";
+    }
 
     os << "\"data\":[";
     for (size_t i = 0; i < tx.length(); i++) {

@@ -58,6 +58,10 @@ enum can_constants : size_t {
 #endif
 };
 
+#ifdef CANXL_VCID_OFFSET
+using CAN_XL_VCID_MASK = field<8, CANXL_VCID_OFFSET, u32>;
+#endif
+
 backend_socket::backend_socket(bridge* br, const string& ifname):
     backend(br),
     m_name(ifname),
@@ -103,10 +107,6 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
         m_canxl = true;
         log_debug("using CAN-XL mode");
     }
-
-#ifdef CANXL_VCID_OFFSET
-    using CAN_XL_VCID_MASK = field<8, CANXL_VCID_OFFSET, u32>;
-#endif
 #endif
 
     struct sockaddr_can addr;
