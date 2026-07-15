@@ -94,10 +94,9 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
         struct can_raw_vcid_options vcid_opts {};
 
         vcid_opts.flags = CAN_RAW_XL_VCID_TX_PASS;
-        if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_XL_VCID_OPTS, &vcid_opts,
+        if (setsockopt(m_socket, SOL_CAN_RAW, CAN_RAW_XL_VCID_OPTS, &vcid_opts,
                        sizeof(vcid_opts))) {
-            VCML_ERROR("error when enabling CAN XL VCID pass through\n");
-            return 1;
+            VCML_ERROR("error when enabling CAN XL VCID pass through");
         }
 #endif
 
@@ -149,7 +148,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 #endif
 
 #ifdef CANXL_VCID_OFFSET
-            frame->set_vcid(get_field<CAN_XL_VCID_MASK>(xl_frame.prio));
+            frame.set_vcid(get_field<CAN_XL_VCID_MASK>(xl_frame.prio));
 #endif
 
             if (static_cast<size_t>(n) != (CAN_XL_HDR_SIZE + xl_frame.len)) {
@@ -270,7 +269,7 @@ void backend_socket::send_to_host_xl(const can_frame& frame) {
     xl_frame->prio = frame.id();
 
 #ifdef CANXL_VCID_OFFSET
-    xl_frame->prio |= CAN_XL_VCID_MASK::set(frame.vcid());
+    xl_frame->prio |= CAN_XL_MSGID_VCID::set(frame.vcid());
 #endif
     xl_frame->sdt = frame.sdt;
     xl_frame->len = len;

@@ -39,24 +39,22 @@ enum can_flags : u8 {
     CAN_XL_XLF = bit(7),
 };
 
-using CAN_XL_MSGID_VCID = field<8, 16, u32>;
+using CAN_XL_MSGID_VCID = field<16, 8, u32>;
 
 struct can_frame {
     u32 msgid;
     u8 flags;
-    u8 sdt; // CAN XL Service Data Unit Type f or CANsec
-    u32 af; // CAN XL Acceptance Field
+    u8 sdt;
+    u32 af;
     vector<u8> data;
 
     bool is_eff() const { return !is_canxl() && (msgid & CAN_EFF); }
     bool is_rtr() const { return !is_canxl() && (msgid & CAN_RTR); }
     bool is_err() const { return !is_canxl() && (msgid & CAN_ERR); }
 
-    bool is_cancc() const { return !is_canxl() && !is_canfd(); };
-    bool is_canfd() const {
-        return (flags & CAN_FD_FDF) && !(flags & CAN_XL_XLF);
-    };
     bool is_canxl() const { return flags & CAN_XL_XLF; }
+    bool is_canfd() const { return !is_canxl() && (flags & CAN_FD_FDF); }
+    bool is_cancc() const { return !is_canxl() && !is_canfd(); }
 
     bool is_brs() const {
         return (is_canfd() && (flags & CAN_FD_BRS)) || is_canxl();
@@ -68,18 +66,26 @@ struct can_frame {
     bool is_sec() const { return is_canxl() && (flags & CAN_XL_SEC); }
     bool is_rrs() const { return is_canxl() && (flags & CAN_XL_RRS); }
 
-    void set_vcid(u32 vcid) { set_field<CAN_XL_MSGID_VCID>(msgid, vcid); }
-
     u32 id() const { return msgid & (is_eff() ? CAN_EID : CAN_SID); }
-    u32 vcid() const {
-        return is_canxl() ? get_field<CAN_XL_MSGID_VCID>(msgid) : 0ul;
-    }
+
+    u32 vcid() const;
+    void set_vcid(u32 vcid);
+
     size_t length() const { return data.size(); }
     u16 dlc() const { return is_canxl() ? length() : len2dlc(length()); }
 
     bool operator==(const can_frame& other) const;
     bool operator!=(const can_frame& other) const;
 };
+
+inline u32 can_frame::vcid() const {
+    return is_canxl() ? get_field<CAN_XL_MSGID_VCID>(msgid) : 0;
+}
+
+inline void can_frame::set_vcid(u32 vcid) {
+    if (is_canxl())
+        set_field<CAN_XL_MSGID_VCID>(msgid, vcid);
+}
 
 ostream& operator<<(ostream& os, const can_frame& frame);
 
