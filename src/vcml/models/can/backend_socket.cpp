@@ -59,7 +59,7 @@ enum can_constants : size_t {
 };
 
 #ifdef CANXL_VCID_OFFSET
-using CAN_XL_VCID_MASK = field<8, CANXL_VCID_OFFSET, u32>;
+using CAN_XL_VCID_MASK = field<CANXL_VCID_OFFSET, 8, u32>;
 #endif
 
 backend_socket::backend_socket(bridge* br, const string& ifname):
@@ -269,7 +269,7 @@ void backend_socket::send_to_host_xl(const can_frame& frame) {
     xl_frame->prio = frame.id();
 
 #ifdef CANXL_VCID_OFFSET
-    xl_frame->prio |= CAN_XL_MSGID_VCID::set(frame.vcid());
+    xl_frame->prio |= CAN_XL_VCID_MASK::set(frame.vcid());
 #endif
     xl_frame->sdt = frame.sdt;
     xl_frame->len = len;
