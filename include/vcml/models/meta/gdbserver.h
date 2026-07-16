@@ -39,16 +39,23 @@ public:
         return m_targets;
     }
 
+    void add_target(vcml::debugging::target& target);
+    void add_targets_from(const sc_module& parent);
+
+    gdbserver(const sc_module_name& name);
     gdbserver(const sc_module_name& name, vcml::debugging::target& target);
     gdbserver(const sc_module_name& name,
-              const vector<vcml::debugging::target*>& targets =
-                  vcml::debugging::target::all());
+              const vector<vcml::debugging::target*>& targets);
     virtual ~gdbserver();
     VCML_KIND(meta::gdbserver);
 
 protected:
     virtual void end_of_elaboration() override;
 };
+
+inline gdbserver::gdbserver(const sc_module_name& nm): gdbserver(nm, {}) {
+    // nothing to do
+}
 
 inline gdbserver::gdbserver(const sc_module_name& nm,
                             vcml::debugging::target& target):

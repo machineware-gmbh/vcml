@@ -13,6 +13,18 @@
 namespace vcml {
 namespace meta {
 
+void gdbserver::add_target(vcml::debugging::target& target) {
+    VCML_ERROR_ON(m_gdb, "cannot add targets after elaboration");
+    stl_add_unique(m_targets, &target);
+}
+
+void gdbserver::add_targets_from(const sc_module& parent) {
+    for (auto* target : vcml::debugging::target::all()) {
+        if (starts_with(target->target_name(), parent.name()))
+            add_target(*target);
+    }
+}
+
 gdbserver::gdbserver(const sc_module_name& nm,
                      const vector<vcml::debugging::target*>& targets):
     module(nm),
