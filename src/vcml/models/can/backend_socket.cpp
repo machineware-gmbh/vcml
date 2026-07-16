@@ -144,7 +144,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 
 #ifdef CANXL_RRS
             if (xl_frame.flags & CANXL_RRS)
-                frame->flags |= CAN_XL_RRS;
+                frame.flags |= CAN_XL_RRS;
 #endif
 
 #ifdef CANXL_VCID_OFFSET
