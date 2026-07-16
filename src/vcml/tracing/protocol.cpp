@@ -318,32 +318,28 @@ string trace_payload_to_json(const can_frame& tx) {
 
     if (tx.is_canxl())
         os << "\"type\":\"CAN_XL\",";
-    else if (tx.is_fdf())
+    else if (tx.is_canfd())
         os << "\"type\":\"CAN_FD\",";
     else
         os << "\"type\":\"CAN\",";
 
     os << "\"id\":" << tx.id() << ",";
-    os << "\"eff\":" << (tx.is_eff() ? "true" : "false") << ",";
-    os << "\"rtr\":" << (tx.is_rtr() ? "true" : "false") << ",";
-    os << "\"err\":" << (tx.is_err() ? "true" : "false") << ",";
+    os << "\"xlf\":" << (tx.xlf ? "true" : "false") << ",";
+    os << "\"fdf\":" << (tx.fdf ? "true" : "false") << ",";
+    os << "\"eff\":" << (tx.eff ? "true" : "false") << ",";
 
     if (tx.is_canxl()) {
-        os << "\"xlf\":true,";
-        os << "\"fdf\":false,";
-        os << "\"sec\":" << (tx.is_sec() ? "true" : "false") << ",";
-        os << "\"rrs\":" << (tx.is_rrs() ? "true" : "false") << ",";
-        os << "\"vcid\":" << tx.vcid() << ",";
+        os << "\"sec\":" << (tx.sec ? "true" : "false") << ",";
+        os << "\"rrs\":" << (tx.rrs ? "true" : "false") << ",";
+        os << "\"vcid\":" << tx.vcid << ",";
         os << "\"sdt\":" << (int)tx.sdt << ",";
         os << "\"af\":" << tx.af << ",";
     } else if (tx.is_canfd()) {
-        os << "\"xlf\":false,";
-        os << "\"fdf\":true,";
-        os << "\"brs\":" << (tx.is_brs() ? "true" : "false") << ",";
-        os << "\"esi\":" << (tx.is_esi() ? "true" : "false") << ",";
-    } else {
-        os << "\"xlf\":false,";
-        os << "\"fdf\":false,";
+        os << "\"brs\":" << (tx.brs ? "true" : "false") << ",";
+        os << "\"esi\":" << (tx.esi ? "true" : "false") << ",";
+    } else if (tx.is_cancc()) {
+        os << "\"rtr\":" << (tx.rtr ? "true" : "false") << ",";
+        os << "\"err\":" << (tx.err ? "true" : "false") << ",";
     }
 
     os << "\"data\":[";

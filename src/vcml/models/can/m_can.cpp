@@ -600,9 +600,12 @@ void m_can::write_rxesc(u32 val) {
     if (is_cfg_allowed()) {
         rxesc = val & RXESC_MASK;
 
-        m_rx_buf_elem_data_sz = dlc2len(rxesc.get_field<RXESC_RBDS>() + 8);
-        m_rx_fifo0_elem_data_sz = dlc2len(rxesc.get_field<RXESC_F0DS>() + 8);
-        m_rx_fifo1_elem_data_sz = dlc2len(rxesc.get_field<RXESC_F1DS>() + 8);
+        m_rx_buf_elem_data_sz = dlc2len(rxesc.get_field<RXESC_RBDS>() + 8,
+                                        false);
+        m_rx_fifo0_elem_data_sz = dlc2len(rxesc.get_field<RXESC_F0DS>() + 8,
+                                          false);
+        m_rx_fifo1_elem_data_sz = dlc2len(rxesc.get_field<RXESC_F1DS>() + 8,
+                                          false);
     }
 }
 
@@ -721,25 +724,25 @@ void m_can::txthread() {
 
             can_frame tx{};
             if (tx_buf_elem_hdr[0] & BUF_HDR0_XTD) {
-                tx.msgid = get_field<BUF_HDR0_ID_XTD>(tx_buf_elem_hdr[0]);
-                tx.msgid |= CAN_EFF;
+                tx.canid = get_field<BUF_HDR0_ID_XTD>(tx_buf_elem_hdr[0]);
+                tx.eff = true;
             } else {
-                tx.msgid = get_field<BUF_HDR0_ID_STD>(tx_buf_elem_hdr[0]);
+                tx.canid = get_field<BUF_HDR0_ID_STD>(tx_buf_elem_hdr[0]);
             }
 
-            if (tx_buf_elem_hdr[0] & BUF_HDR0_RTR)
-                tx.msgid |= CAN_RTR;
+            tx.dlc = get_field<BUF_HDR1_DLC>(tx_buf_elem_hdr[1]);
 
-            u32 dlc = get_field<BUF_HDR1_DLC>(tx_buf_elem_hdr[1]);
-            tx.data.resize(dlc2len(dlc));
-            tx.flags = 0;
+            if (tx_buf_elem_hdr[0] & BUF_HDR0_RTR)
+                tx.rtr = true;
+            else
+                tx.data.resize(dlc2len(tx.dlc));
 
             if (tx_buf_elem_hdr[1] & BUF_HDR1_FDF) {
-                tx.flags |= CAN_FD_FDF;
+                tx.fdf = true;
                 if (tx_buf_elem_hdr[1] & BUF_HDR1_BRS)
-                    tx.flags |= CAN_FD_BRS;
+                    tx.brs = true;
                 if (tx_buf_elem_hdr[0] & BUF_HDR0_ESI)
-                    tx.flags |= CAN_FD_ESI;
+                    tx.esi = true;
             }
 
             addr += TX_BUF_ELEM_HDR_SZ;
@@ -789,16 +792,16 @@ void m_can::rxthread() {
             u64 addr = msg_ram_addr.get().start + rxf0c.get_field<RXFC_FSA>();
             u32 rx_buf_elem_hdr[2] = {};
 
-            if (rx.is_eff()) {
-                set_field<BUF_HDR0_ID_XTD>(rx_buf_elem_hdr[0], rx.msgid);
+            if (rx.eff) {
+                set_field<BUF_HDR0_ID_XTD>(rx_buf_elem_hdr[0], rx.id());
                 rx_buf_elem_hdr[0] |= BUF_HDR0_XTD;
             } else {
-                set_field<BUF_HDR0_ID_STD>(rx_buf_elem_hdr[0], rx.msgid);
+                set_field<BUF_HDR0_ID_STD>(rx_buf_elem_hdr[0], rx.id());
             }
 
-            set_bit<BUF_HDR0_RTR>(rx_buf_elem_hdr[0], rx.is_rtr());
-            set_bit<BUF_HDR1_FDF>(rx_buf_elem_hdr[1], rx.is_fdf());
-            set_field<BUF_HDR1_DLC>(rx_buf_elem_hdr[1], rx.dlc());
+            set_bit<BUF_HDR0_RTR>(rx_buf_elem_hdr[0], rx.rtr);
+            set_bit<BUF_HDR1_FDF>(rx_buf_elem_hdr[1], rx.fdf);
+            set_field<BUF_HDR1_DLC>(rx_buf_elem_hdr[1], rx.dlc);
 
             addr += put_idx * (RX_BUF_ELEM_HDR_SZ + m_rx_fifo0_elem_data_sz);
             if (failed(dma.writew(addr, rx_buf_elem_hdr))) {

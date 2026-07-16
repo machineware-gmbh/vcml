@@ -12,9 +12,12 @@
 
 namespace vcml {
 
-u16 len2dlc(size_t len) {
-    if (len > 64)
-        return len;
+u16 len2dlc(size_t len, bool canxl) {
+    VCML_ERROR_ON(canxl && len == 0, "CAN XL cannot have 0-length payloads");
+
+    if (canxl)
+        return len - 1;
+
     if (len <= 8)
         return len;
     if (len <= 12)
@@ -32,7 +35,10 @@ u16 len2dlc(size_t len) {
     return 15;
 }
 
-size_t dlc2len(u16 dlc) {
+size_t dlc2len(u16 dlc, bool canxl) {
+    if (canxl)
+        return dlc + 1;
+
     if (dlc >= 16)
         return dlc;
 
@@ -42,14 +48,29 @@ size_t dlc2len(u16 dlc) {
 }
 
 bool can_frame::operator==(const can_frame& other) const {
-    if (msgid != other.msgid || length() != other.length() ||
-        flags != other.flags)
+    if (id() != other.id() || length() != other.length() || dlc != other.dlc)
+        return false;
+
+    if (is_cancc() != other.is_cancc() || is_canfd() != other.is_canfd() ||
+        is_canxl() != other.is_canxl())
+        return false;
+
+    if (is_cancc() &&
+        (eff != other.eff || rtr != other.rtr || err != other.err))
+        return false;
+
+    if (is_canfd() &&
+        (eff != other.eff || brs != other.brs || esi != other.esi ||
+         fdf != other.fdf || rrs != other.rrs))
+        return false;
+
+    if (is_canxl() &&
+        (sdt != other.sdt || af != other.af || vcid != other.vcid ||
+         eff != other.eff || esi != other.esi || sec != other.sec ||
+         rrs != other.rrs))
         return false;
 
     if (!data.empty() && memcmp(data.data(), other.data.data(), length()) != 0)
-        return false;
-
-    if (is_canxl() && (sdt != other.sdt || af != other.af))
         return false;
 
     return true;
@@ -68,32 +89,34 @@ ostream& operator<<(ostream& os, const can_frame& frame) {
     else
         os << "CAN";
 
-    if (frame.is_rtr())
+    if (frame.eff)
+        os << " +eff";
+    if (frame.is_cancc() && frame.rtr)
         os << " +rtr";
-    if (frame.is_err())
+    if (frame.is_cancc() && frame.err)
         os << " +err";
-    if (frame.is_brs())
+    if (frame.is_canfd() && frame.brs)
         os << " +brs";
-    if (frame.is_esi())
+    if ((frame.is_canfd() || frame.is_canxl()) && frame.esi)
         os << " +esi";
-    if (frame.is_sec())
+    if (frame.is_canxl() && frame.sec)
         os << " +sec";
-    if (frame.is_rrs())
+    if ((frame.is_canfd() || frame.is_canxl()) && frame.rrs)
         os << " +rrs";
 
     if (frame.is_canxl()) {
-        os << mkstr(" %02x:%03x [%02hhx] sdt:%02x af:%08x", frame.vcid(),
-                    frame.id(), frame.flags, frame.sdt, frame.af);
+        os << mkstr(" %03x [%04zx] (%02x|%02x:%08x)", frame.id(),
+                    frame.length(), frame.vcid, frame.sdt, frame.af);
     } else {
-        os << mkstr(" %x [%02hhx]", frame.id(), frame.flags);
+        os << mkstr(" %x [%zx]", frame.id(), frame.length());
     }
 
     size_t len = frame.length();
     if (len == 0)
         os << " <no data>";
 
-    for (size_t i = 0; i < len; i++)
-        os << mkstr(" %02hhx", frame.data[i]);
+    for (u8 data : frame.data)
+        os << mkstr(" %02hhx", data);
 
     return os;
 }
