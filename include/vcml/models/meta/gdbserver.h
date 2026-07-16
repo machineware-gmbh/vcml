@@ -26,18 +26,15 @@ namespace meta {
 class gdbserver : public module
 {
 private:
-    module& m_parent;
     vcml::debugging::gdbserver* m_gdb;
-
-    module& find_parent();
 
 public:
     vector<vcml::debugging::target*> targets;
 
-    property<int> gdb_port;
-    property<string> gdb_host;
-    property<bool> gdb_wait;
-    property<bool> gdb_echo;
+    property<int> port;
+    property<string> host;
+    property<bool> wait;
+    property<bool> echo;
 
     gdbserver(const sc_module_name& name,
               vector<vcml::debugging::target*> = {});

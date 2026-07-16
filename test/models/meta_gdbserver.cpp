@@ -131,10 +131,10 @@ public:
     }
 
     void test_properties() {
-        auto& gdb_host = find_property<string>("test.gdb_host");
-        auto& gdb_port = find_property<int>("test.gdb_port");
-        auto& gdb_wait = find_property<bool>("test.gdb_wait");
-        auto& gdb_echo = find_property<bool>("test.gdb_echo");
+        auto& gdb_host = find_property<string>("test.gdb.host");
+        auto& gdb_port = find_property<int>("test.gdb.port");
+        auto& gdb_wait = find_property<bool>("test.gdb.wait");
+        auto& gdb_echo = find_property<bool>("test.gdb.echo");
 
         EXPECT_EQ(gdb_host.get(), "localhost");
         EXPECT_NE(gdb_port, 0u);

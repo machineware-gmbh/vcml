@@ -13,21 +13,15 @@
 namespace vcml {
 namespace meta {
 
-module& gdbserver::find_parent() {
-    module* m = dynamic_cast<module*>(get_parent_object());
-    return m ? *m : *this;
-}
-
 gdbserver::gdbserver(const sc_module_name& nm,
                      vector<vcml::debugging::target*> gdb_targets):
     module(nm),
-    m_parent(find_parent()),
     m_gdb(),
     targets(std::move(gdb_targets)),
-    gdb_port(&m_parent, "gdb_port", 0),
-    gdb_host(&m_parent, "gdb_host", "localhost"),
-    gdb_wait(&m_parent, "gdb_wait", gdb_port > 0),
-    gdb_echo(&m_parent, "gdb_echo", false) {
+    port("port", 0),
+    host("host", "localhost"),
+    wait("wait", port > 0),
+    echo("echo", false) {
 }
 
 gdbserver::~gdbserver() {
@@ -38,7 +32,7 @@ gdbserver::~gdbserver() {
 void gdbserver::end_of_elaboration() {
     module::end_of_elaboration();
 
-    if (gdb_port < 0)
+    if (port < 0)
         return;
 
     if (targets.empty())
@@ -49,16 +43,15 @@ void gdbserver::end_of_elaboration() {
     }
 
     try {
-        auto wait = gdb_wait ? vcml::debugging::GDB_STOPPED
-                             : vcml::debugging::GDB_RUNNING;
-        m_gdb = new vcml::debugging::gdbserver(gdb_host, gdb_port, targets,
-                                               wait);
-        m_gdb->echo(gdb_echo);
-        if (gdb_port == 0)
-            gdb_port = m_gdb->port();
+        auto state = wait ? vcml::debugging::GDB_STOPPED
+                          : vcml::debugging::GDB_RUNNING;
+        m_gdb = new vcml::debugging::gdbserver(host, port, targets, state);
+        m_gdb->echo(echo);
+        if (port == 0)
+            port = m_gdb->port();
 
-        m_parent.log.info("%s for GDB connection on port %hu",
-                          gdb_wait ? "waiting" : "listening", m_gdb->port());
+        log_info("%s for GDB connection on port %hu",
+                 wait ? "waiting" : "listening", m_gdb->port());
     } catch (std::exception& ex) {
         VCML_REPORT("error starting gdbserver: %s", ex.what());
     }
