@@ -170,6 +170,7 @@
 #include "vcml/models/meta/loader.h"
 #include "vcml/models/meta/simdev.h"
 #include "vcml/models/meta/throttle.h"
+#include "vcml/models/meta/gdbserver.h"
 
 #include "vcml/models/opencores/ompic.h"
 #include "vcml/models/opencores/ockbd.h"
