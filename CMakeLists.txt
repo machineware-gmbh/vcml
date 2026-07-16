@@ -205,6 +205,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/meta/loader.cpp
     ${src}/vcml/models/meta/simdev.cpp
     ${src}/vcml/models/meta/throttle.cpp
+    ${src}/vcml/models/meta/gdbserver.cpp
     ${src}/vcml/models/opencores/ompic.cpp
     ${src}/vcml/models/opencores/ockbd.cpp
     ${src}/vcml/models/opencores/ocfbc.cpp
