@@ -113,12 +113,12 @@ public:
         module& m = gdb;
         auto* model = dynamic_cast<vcml::meta::gdbserver*>(&m);
         ASSERT_NE(model, nullptr);
-        EXPECT_FALSE(model->targets.empty());
-        ASSERT_EQ(model->targets.size(), 4);
-        EXPECT_STREQ(model->targets[0]->target_name(), "test.cpu0");
-        EXPECT_STREQ(model->targets[1]->target_name(), "test.cpu1");
-        EXPECT_STREQ(model->targets[2]->target_name(), "test.cpu2");
-        EXPECT_STREQ(model->targets[3]->target_name(), "test.cpu3");
+        EXPECT_FALSE(model->targets().empty());
+        ASSERT_EQ(model->targets().size(), 4);
+        EXPECT_STREQ(model->targets()[0]->target_name(), "test.cpu0");
+        EXPECT_STREQ(model->targets()[1]->target_name(), "test.cpu1");
+        EXPECT_STREQ(model->targets()[2]->target_name(), "test.cpu2");
+        EXPECT_STREQ(model->targets()[3]->target_name(), "test.cpu3");
     }
 
     template <typename T>

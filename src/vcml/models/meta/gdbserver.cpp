@@ -14,10 +14,10 @@ namespace vcml {
 namespace meta {
 
 gdbserver::gdbserver(const sc_module_name& nm,
-                     vector<vcml::debugging::target*> gdb_targets):
+                     const vector<vcml::debugging::target*>& targets):
     module(nm),
+    m_targets(targets),
     m_gdb(),
-    targets(std::move(gdb_targets)),
     port("port", 0),
     host("host", "localhost"),
     wait("wait", port > 0),
@@ -35,17 +35,15 @@ void gdbserver::end_of_elaboration() {
     if (port < 0)
         return;
 
-    if (targets.empty())
-        targets = vcml::debugging::target::all();
-    if (targets.empty()) {
-        log_debug("no targets to debug, disabling GDB server");
+    if (m_targets.empty()) {
+        log_warn("no targets to debug, disabling GDB server");
         return;
     }
 
     try {
         auto state = wait ? vcml::debugging::GDB_STOPPED
                           : vcml::debugging::GDB_RUNNING;
-        m_gdb = new vcml::debugging::gdbserver(host, port, targets, state);
+        m_gdb = new vcml::debugging::gdbserver(host, port, m_targets, state);
         m_gdb->echo(echo);
         if (port == 0)
             port = m_gdb->port();
