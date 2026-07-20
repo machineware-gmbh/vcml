@@ -417,11 +417,14 @@ size_t m_can::get_tx_evfifo_elems() const {
 }
 
 void m_can::tx_evfifo_upd_fill_lvl() {
+    size_t nelem = get_tx_evfifo_elems();
+    if (nelem == 0)
+        return;
+
     u8 get_idx = txefs.get_field<TXEFS_EFGI>();
     u8 put_idx = txefs.get_field<TXEFS_EFPI>();
-    u8 fill_lvl = put_idx >= get_idx
-                      ? put_idx - get_idx
-                      : get_tx_evfifo_elems() - get_idx + put_idx;
+    u8 fill_lvl = put_idx >= get_idx ? put_idx - get_idx
+                                     : nelem - get_idx + put_idx;
 
     txefs.set_field<TXEFS_EFFL>(fill_lvl);
 
@@ -429,7 +432,7 @@ void m_can::tx_evfifo_upd_fill_lvl() {
     if ((watermark > 0) && (watermark <= 32) && (fill_lvl >= watermark))
         raise_irq(IR_RF0W);
 
-    if (fill_lvl >= get_tx_evfifo_elems()) {
+    if (fill_lvl >= nelem) {
         txefs |= TXEFS_EFF;
         raise_irq(IR_TEFF);
     } else {
@@ -443,11 +446,14 @@ size_t m_can::get_rx_fifo0_elems() const {
 }
 
 void m_can::rx_fifo0_upd_fill_lvl() {
+    size_t nelem = get_rx_fifo0_elems();
+    if (nelem == 0)
+        return;
+
     size_t get_idx = rxf0s.get_field<RXFS_FGI>();
     size_t put_idx = rxf0s.get_field<RXFS_FPI>();
-    size_t fill_lvl = put_idx >= get_idx
-                          ? put_idx - get_idx
-                          : get_rx_fifo0_elems() - get_idx + put_idx;
+    size_t fill_lvl = put_idx >= get_idx ? put_idx - get_idx
+                                         : nelem - get_idx + put_idx;
 
     rxf0s.set_field<RXFS_FFL>(fill_lvl);
 
@@ -455,7 +461,7 @@ void m_can::rx_fifo0_upd_fill_lvl() {
     if (watermark > 0 && watermark <= 64 && fill_lvl >= watermark)
         raise_irq(IR_RF0W);
 
-    if (fill_lvl >= get_rx_fifo0_elems()) {
+    if (fill_lvl >= nelem) {
         rxf0s |= RXFS_FF;
         if (rxf0c & RXFC_FOM) { // overwrite mode
             rxf0s.set_field<RXFS_FGI>(get_idx + 1);
@@ -580,10 +586,12 @@ void m_can::write_rxf0c(u32 val) {
 }
 
 void m_can::write_rxf0a(u32 val) {
-    rxf0a = (val & RXFA_FAI);
-    rxf0s.set_field<RXFS_FGI>(((rxf0a & RXFA_FAI) + 1) % get_rx_fifo0_elems());
-
-    rx_fifo0_upd_fill_lvl();
+    size_t nelem = get_rx_fifo0_elems();
+    if (nelem != 0) {
+        rxf0a = (val & RXFA_FAI);
+        rxf0s.set_field<RXFS_FGI>(((rxf0a & RXFA_FAI) + 1) % nelem);
+        rx_fifo0_upd_fill_lvl();
+    }
 }
 
 void m_can::write_rxbc(u32 val) {
@@ -637,11 +645,13 @@ void m_can::write_txefc(u32 val) {
 }
 
 void m_can::write_txefa(u32 val) {
-    txefa = (val & TXEFA_EFAI);
+    size_t nelem = get_tx_evfifo_elems();
 
-    txefs.set_field<TXEFS_EFGI>(((txefa & TXEFA_EFAI) + 1) %
-                                get_tx_evfifo_elems());
-    tx_evfifo_upd_fill_lvl();
+    if (nelem != 0) {
+        txefa = (val & TXEFA_EFAI);
+        txefs.set_field<TXEFS_EFGI>(((txefa & TXEFA_EFAI) + 1) % nelem);
+        tx_evfifo_upd_fill_lvl();
+    }
 }
 
 u32 m_can::read_ecr() {
@@ -668,6 +678,10 @@ void m_can::update_irq() {
 }
 
 void m_can::add_txevent(const u32 tx_buf_elem_hdr[2]) {
+    size_t nelem = get_tx_evfifo_elems();
+    if (nelem == 0)
+        return;
+
     if (txefs & TXEFS_EFF) {
         txefs |= TXEFS_TEFL;
         raise_irq(IR_TEFL);
@@ -695,7 +709,7 @@ void m_can::add_txevent(const u32 tx_buf_elem_hdr[2]) {
     if (failed(dma.writew(addr, tx_efifo_elem)))
         log_warn("failed to write txevent data to 0x%llx", addr);
 
-    txefs.set_field<TXEFS_EFPI>((put_idx + 1) % get_tx_evfifo_elems());
+    txefs.set_field<TXEFS_EFPI>((put_idx + 1) % nelem);
     tx_evfifo_upd_fill_lvl();
     raise_irq(IR_TEFN);
 }
@@ -774,7 +788,8 @@ void m_can::rxthread() {
 
         can_frame rx{};
         while (can_rx_pop(rx)) {
-            if (!m_tx_rx_enabled || get_tx_buf_elems() == 0) {
+            if (!m_tx_rx_enabled || get_tx_buf_elems() == 0 ||
+                get_rx_fifo0_elems() == 0) {
                 log_debug("rx disabled, frame dropped");
                 break;
             }
