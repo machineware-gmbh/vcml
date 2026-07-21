@@ -12,89 +12,57 @@
 #define VCML_PROTOCOLS_CAN_H
 
 #include "vcml/core/types.h"
-#include "vcml/core/range.h"
 #include "vcml/core/systemc.h"
 
 #include "vcml/protocols/base.h"
 
 namespace vcml {
 
-u16 len2dlc(size_t len);
-size_t dlc2len(u16 dlc);
+u16 len2dlc(size_t len, bool canxl = false);
+size_t dlc2len(u16 dlc, bool canxl = false);
 
-enum can_msgid_flags : u32 {
-    CAN_SID = bitmask(11),
-    CAN_EID = bitmask(29),
-    CAN_EFF = bit(31), // extended frame format (29 bit id)
-    CAN_RTR = bit(30), // remote transmission request
-    CAN_ERR = bit(29), // error message frame
+enum can_msg_id_masks : u32 {
+    CAN_MSG_ID_SID = bitmask(11),
+    CAN_MSG_ID_EID = bitmask(29),
 };
-
-enum can_flags : u8 {
-    CAN_FD_BRS = bit(0),
-    CAN_FD_ESI = bit(1),
-    CAN_FD_FDF = bit(2),
-    CAN_XL_SEC = bit(0),
-    CAN_XL_RRS = bit(1),
-    CAN_XL_XLF = bit(7),
-};
-
-using CAN_XL_MSGID_VCID = field<16, 8, u32>;
 
 struct can_frame {
-    u32 msgid;
-    u8 flags;
+    u32 canid;
+    u32 eff : 1;
+    u32 rtr : 1;
+    u32 err : 1;
+    u32 brs : 1;
+    u32 esi : 1;
+    u32 fdf : 1;
+    u32 sec : 1;
+    u32 rrs : 1;
+    u32 xlf : 1;
+    u16 dlc;
     u8 sdt;
+    u8 vcid;
     u32 af;
     vector<u8> data;
 
-    bool is_eff() const { return !is_canxl() && (msgid & CAN_EFF); }
-    bool is_rtr() const { return !is_canxl() && (msgid & CAN_RTR); }
-    bool is_err() const { return !is_canxl() && (msgid & CAN_ERR); }
-
-    bool is_canxl() const { return flags & CAN_XL_XLF; }
-    bool is_canfd() const { return !is_canxl() && (flags & CAN_FD_FDF); }
+    bool is_canxl() const { return xlf; }
+    bool is_canfd() const { return fdf && !is_canxl(); }
     bool is_cancc() const { return !is_canxl() && !is_canfd(); }
 
-    bool is_brs() const {
-        return (is_canfd() && (flags & CAN_FD_BRS)) || is_canxl();
-    }
-    bool is_esi() const { return is_canfd() && (flags & CAN_FD_ESI); }
-    bool is_fdf() const { return !is_cancc(); }
-
-    bool is_xlf() const { return is_canxl(); }
-    bool is_sec() const { return is_canxl() && (flags & CAN_XL_SEC); }
-    bool is_rrs() const { return is_canxl() && (flags & CAN_XL_RRS); }
-
-    u32 id() const { return msgid & (is_eff() ? CAN_EID : CAN_SID); }
-
-    u32 vcid() const;
-    void set_vcid(u32 vcid);
+    u32 id() const { return canid & (eff ? CAN_MSG_ID_EID : CAN_MSG_ID_SID); }
 
     size_t length() const { return data.size(); }
-    u16 dlc() const { return is_canxl() ? length() : len2dlc(length()); }
 
     bool operator==(const can_frame& other) const;
     bool operator!=(const can_frame& other) const;
 };
 
-inline u32 can_frame::vcid() const {
-    return is_canxl() ? get_field<CAN_XL_MSGID_VCID>(msgid) : 0;
-}
-
-inline void can_frame::set_vcid(u32 vcid) {
-    if (is_canxl())
-        set_field<CAN_XL_MSGID_VCID>(msgid, vcid);
-}
-
 ostream& operator<<(ostream& os, const can_frame& frame);
 
 inline bool success(const can_frame& frame) {
-    return !frame.is_err();
+    return !frame.err;
 }
 
 inline bool failed(const can_frame& frame) {
-    return frame.is_err();
+    return frame.err;
 }
 
 class can_initiator_socket;

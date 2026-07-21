@@ -97,7 +97,9 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 #ifdef CANXL_VCID_OFFSET
         struct can_raw_vcid_options vcid_opts {};
 
-        vcid_opts.flags = CAN_RAW_XL_VCID_TX_PASS;
+        vcid_opts.flags = CAN_RAW_XL_VCID_TX_PASS | CAN_RAW_XL_VCID_RX_FILTER;
+        vcid_opts.rx_vcid = 0;
+        vcid_opts.rx_vcid_mask = 0;
         if (setsockopt(m_socket, SOL_CAN_RAW, CAN_RAW_XL_VCID_OPTS, &vcid_opts,
                        sizeof(vcid_opts))) {
             VCML_ERROR("error when enabling CAN XL VCID pass through");
@@ -133,22 +135,24 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
                 log_error("received a too small CAN XL frame");
 
             auto& xl_frame = rec_frame->xl;
-            frame.msgid = xl_frame.prio & mwr::bitmask(11);
+            frame.canid = xl_frame.prio & mwr::bitmask(11);
             frame.sdt = xl_frame.sdt;
             frame.af = xl_frame.af;
-            frame.flags = CAN_FD_FDF | CAN_XL_XLF;
+            frame.fdf = true;
+            frame.xlf = true;
             frame.data.resize(xl_frame.len);
+            frame.dlc = len2dlc(frame.length(), true);
 
             if (xl_frame.flags & CANXL_SEC)
-                frame.flags |= CAN_XL_SEC;
+                frame.sec = true;
 
 #ifdef CANXL_RRS
             if (xl_frame.flags & CANXL_RRS)
-                frame.flags |= CAN_XL_RRS;
+                frame.rrs = true;
 #endif
 
 #ifdef CANXL_VCID_OFFSET
-            frame.set_vcid(get_field<CAN_XL_VCID_MASK>(xl_frame.prio));
+            frame.vcid = get_field<CAN_XL_VCID_MASK>(xl_frame.prio);
 #endif
 
             if (static_cast<size_t>(n) != (CAN_XL_HDR_SIZE + xl_frame.len)) {
@@ -161,24 +165,24 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 #endif
             if (static_cast<size_t>(n) == CAN_CC_MTU ||
                 static_cast<size_t>(n) == CAN_FD_MTU) {
-            frame.msgid = rec_frame->fd.can_id;
-            frame.flags = 0;
+            frame.canid = rec_frame->fd.can_id;
             frame.data.resize(rec_frame->fd.len);
+            frame.dlc = len2dlc(frame.length());
 
 #ifdef CANFD_FDF
             if (rec_frame->fd.flags & CANFD_FDF)
-                frame.flags |= CANFD_FDF;
+                frame.fdf = true;
 #else
             if (n == CAN_FD_MTU)
-                frame.flags |= CAN_FD_FDF;
+                frame.fdf = true;
 #endif
 
             if (frame.is_canfd()) {
                 if (rec_frame->fd.flags & CANFD_BRS)
-                    frame.flags |= CANFD_BRS;
+                    frame.brs = true;
 
                 if (rec_frame->fd.flags & CANFD_ESI)
-                    frame.flags |= CANFD_ESI;
+                    frame.esi = true;
             }
 
             memcpy(frame.data.data(), rec_frame->fd.data, rec_frame->fd.len);
@@ -207,7 +211,7 @@ void backend_socket::send_to_host_cc(const can_frame& frame) {
         return;
 
     ::can_frame canraw{};
-    canraw.can_id = frame.msgid;
+    canraw.can_id = frame.id();
     canraw.can_dlc = min(frame.length(), sizeof(canraw.data));
     memcpy(canraw.data, frame.data.data(), canraw.can_dlc);
 
@@ -226,18 +230,18 @@ void backend_socket::send_to_host_fd(const can_frame& frame) {
     }
 
     ::canfd_frame canfdraw{};
-    canfdraw.can_id = frame.msgid;
+    canfdraw.can_id = frame.id();
     canfdraw.len = min(frame.length(), sizeof(canfdraw.data));
     canfdraw.flags = 0;
 
-    if (frame.is_brs())
+    if (frame.brs)
         canfdraw.flags |= CANFD_BRS;
 
-    if (frame.is_esi())
+    if (frame.esi)
         canfdraw.flags |= CANFD_ESI;
 
 #ifdef CANFD_FDF
-    if (frame.is_fdf())
+    if (frame.fdf)
         canfdraw.flags |= CANFD_FDF;
 #endif
 
@@ -269,21 +273,21 @@ void backend_socket::send_to_host_xl(const can_frame& frame) {
     xl_frame->prio = frame.id();
 
 #ifdef CANXL_VCID_OFFSET
-    xl_frame->prio |= CAN_XL_VCID_MASK::set(frame.vcid());
+    xl_frame->prio |= CAN_XL_VCID_MASK::set(frame.vcid);
 #endif
     xl_frame->sdt = frame.sdt;
     xl_frame->len = len;
     xl_frame->af = frame.af;
     xl_frame->flags = 0;
 
-    if (frame.flags & CAN_XL_XLF)
+    if (frame.xlf)
         xl_frame->flags |= CANXL_XLF;
 
-    if (frame.flags & CAN_XL_SEC)
+    if (frame.sec)
         xl_frame->flags |= CANXL_SEC;
 
 #ifdef CANXL_RRS
-    if (frame.flags & CAN_XL_RRS)
+    if (frame.rrs)
         xl_frame->flags |= CANXL_RRS;
 #endif
 

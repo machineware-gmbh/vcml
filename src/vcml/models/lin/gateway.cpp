@@ -24,11 +24,11 @@ void gateway::can_receive(const can_target_socket& sock, can_frame& frame) {
     lin_out.transport(tx);
 
     if (failed(tx)) {
-        frame.msgid |= CAN_ERR;
+        frame.err = true;
         return;
     }
 
-    frame.msgid &= ~CAN_ERR;
+    frame.err = false;
     memcpy(frame.data.data(), tx.data, len);
 }
 

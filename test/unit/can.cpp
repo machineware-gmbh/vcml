@@ -12,9 +12,9 @@
 
 TEST(can, to_string) {
     can_frame frame{};
-    frame.msgid = 0x123;
+    frame.canid = 0x123;
     frame.data.resize(4);
-    frame.flags = 0;
+    frame.dlc = len2dlc(frame.length());
     frame.data[0] = 0x11;
     frame.data[1] = 0x22;
     frame.data[2] = 0x33;
@@ -27,9 +27,10 @@ TEST(can, to_string) {
 
 TEST(canfd, to_string) {
     can_frame frame{};
-    frame.msgid = 0x321;
+    frame.canid = 0x321;
+    frame.fdf = true;
     frame.data.resize(8);
-    frame.flags = CAN_FD_FDF;
+    frame.dlc = len2dlc(frame.length());
     for (size_t i = 0; i < frame.data.size(); i++)
         frame.data[i] = 0xff - i;
 
@@ -40,15 +41,86 @@ TEST(canfd, to_string) {
 
 TEST(canxl, to_string) {
     can_frame frame{};
-    frame.msgid = 0x543;
+    frame.canid = 0x543;
+    frame.fdf = true;
+    frame.xlf = true;
     frame.data.resize(12);
-    frame.flags = CAN_FD_FDF | CAN_XL_XLF;
+    frame.dlc = len2dlc(frame.length(), true);
     for (size_t i = 0; i < frame.data.size(); i++)
         frame.data[i] = 0x10 + i;
 
     stringstream ss;
     ss << frame;
     std::cout << frame << std::endl;
+}
+
+can_frame serialize_deserialize(const can_frame& frame) {
+    vector<u8> buffer;
+    can::serialize(frame, [&](const u8* data, size_t s) -> void {
+        buffer.insert(buffer.end(), data, data + s);
+    });
+
+    can_frame frame2{};
+    size_t pos = 0;
+    can::deserialize(frame2, [&](u8* data, size_t s) -> void {
+        memcpy(data, buffer.data() + pos, s);
+        pos += s;
+    });
+
+    return frame2;
+}
+
+TEST(can, serialization) {
+    can_frame frame{};
+    frame.canid = 0x123;
+    frame.data.resize(4);
+    frame.dlc = len2dlc(frame.length());
+    frame.data[0] = 0x11;
+    frame.data[1] = 0x22;
+    frame.data[2] = 0x33;
+    frame.data[3] = 0x44;
+
+    EXPECT_TRUE(frame.is_cancc());
+
+    can_frame frame2 = serialize_deserialize(frame);
+    EXPECT_EQ(frame, frame2);
+}
+
+TEST(can, serialization_canfd) {
+    can_frame frame{};
+    frame.canid = 0x123;
+    frame.fdf = true;
+    frame.brs = true;
+    frame.rrs = true;
+    frame.data.resize(16);
+    frame.dlc = len2dlc(frame.length());
+    for (size_t i = 0; i < frame.data.size(); i++)
+        frame.data[i] = 0xff - i;
+
+    EXPECT_TRUE(frame.is_canfd());
+
+    can_frame frame2 = serialize_deserialize(frame);
+    EXPECT_EQ(frame, frame2);
+}
+
+TEST(can, serialization_canxl) {
+    can_frame frame{};
+    frame.canid = 0x123;
+    frame.fdf = true;
+    frame.xlf = true;
+    frame.sec = true;
+    frame.data.resize(11);
+    frame.dlc = len2dlc(frame.length(), true);
+    frame.af = 0xcaffee;
+    frame.sdt = 0x12;
+    frame.vcid = 0x28;
+    for (size_t i = 0; i < frame.data.size(); i++)
+        frame.data[i] = 0xff - i;
+
+    EXPECT_TRUE(frame.is_canxl());
+
+    can_frame frame2 = serialize_deserialize(frame);
+    EXPECT_EQ(frame, frame2);
 }
 
 MATCHER_P(can_match_socket, name, "Matches a CAN socket") {
@@ -108,9 +180,9 @@ public:
         wait(SC_ZERO_TIME);
 
         can_frame frame{};
-        frame.msgid = 0x123;
+        frame.canid = 0x123;
         frame.data.resize(4);
-        frame.flags = 0;
+        frame.dlc = len2dlc(frame.length());
         frame.data[0] = 0x11;
         frame.data[1] = 0x22;
         frame.data[2] = 0x33;

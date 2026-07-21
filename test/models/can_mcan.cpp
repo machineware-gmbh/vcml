@@ -109,12 +109,12 @@ constexpr u64 TX_FIFO_START_ADDR = (TX_EVFIFO_START_ADDR +
 
 static can_frame generate_can_frame(bool xtd_id, bool rtr_frame) {
     can_frame frame{};
-    frame.flags = 0;
     frame.data.resize(rtr_frame ? 0 : 4);
-    frame.msgid = xtd_id ? 0x9f334455 : 0x000005a1;
+    frame.canid = xtd_id ? 0x9f334455 : 0x000005a1;
+    frame.dlc = len2dlc(frame.length());
 
     if (rtr_frame)
-        frame.msgid |= CAN_RTR;
+        frame.rtr = true;
 
     if (!rtr_frame) {
         frame.data[0] = 0xde;
@@ -128,9 +128,10 @@ static can_frame generate_can_frame(bool xtd_id, bool rtr_frame) {
 
 static can_frame generate_canfd_frame(bool xtd_id) {
     can_frame frame{};
-    frame.msgid = xtd_id ? 0x9f334455 : 0x000005a1;
+    frame.canid = xtd_id ? 0x9f334455 : 0x000005a1;
     frame.data.resize(16);
-    frame.flags = CAN_FD_FDF;
+    frame.dlc = len2dlc(frame.length());
+    frame.fdf = true;
 
     static const u8 data[64] = {
         0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe,
@@ -280,17 +281,17 @@ public:
 
         // construct tx buffer element
         u32 hdr[2] = {};
-        if (test.is_eff()) {
-            set_field<BUF_HDR0_ID_XTD>(hdr[0], test.msgid);
+        if (test.eff) {
+            set_field<BUF_HDR0_ID_XTD>(hdr[0], test.id());
             hdr[0] |= BUF_HDR0_XTD;
         } else {
-            set_field<BUF_HDR0_ID_STD>(hdr[0], test.msgid);
+            set_field<BUF_HDR0_ID_STD>(hdr[0], test.id());
         }
 
-        if (test.is_rtr())
+        if (test.rtr)
             hdr[0] |= BUF_HDR0_RTR;
 
-        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc());
+        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc);
 
         hdr[1] |= TXBUF_T1_EFC;
 
@@ -320,13 +321,13 @@ public:
 
         // construct tx buffer element
         u32 hdr[2] = {};
-        if (test.is_eff()) {
-            set_field<BUF_HDR0_ID_XTD>(hdr[0], test.msgid);
+        if (test.eff) {
+            set_field<BUF_HDR0_ID_XTD>(hdr[0], test.id());
             hdr[0] |= BUF_HDR0_XTD;
         } else {
-            set_field<BUF_HDR0_ID_STD>(hdr[0], test.msgid);
+            set_field<BUF_HDR0_ID_STD>(hdr[0], test.id());
         }
-        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc());
+        set_field<BUF_HDR1_DLC>(hdr[1], test.dlc);
         hdr[1] |= BUF_HDR1_FDF;
         hdr[1] |= TXBUF_T1_EFC;
         EXPECT_OK(out.writew(addr, hdr)) << "cannot write hdr";
@@ -375,17 +376,17 @@ public:
             << "cannot read rx fifo0 elem data";
 
         u32 buf0 = 0;
-        set_bit<BUF_HDR0_RTR>(buf0, test.is_rtr());
-        if (test.is_eff()) {
-            set_field<BUF_HDR0_ID_XTD>(buf0, test.msgid);
+        set_bit<BUF_HDR0_RTR>(buf0, test.rtr);
+        if (test.eff) {
+            set_field<BUF_HDR0_ID_XTD>(buf0, test.id());
             buf0 |= BUF_HDR0_XTD;
         } else {
-            set_field<BUF_HDR0_ID_STD>(buf0, test.msgid);
+            set_field<BUF_HDR0_ID_STD>(buf0, test.id());
         }
 
         EXPECT_EQ(buf0, rx_fifo0_hdr[0])
             << "rx fifo0 elem header not matching";
-        EXPECT_EQ(BUF_HDR1_DLC::set(test.dlc()), rx_fifo0_hdr[1])
+        EXPECT_EQ(BUF_HDR1_DLC::set(test.dlc), rx_fifo0_hdr[1])
             << "rx fifo0 elem header not matching";
         if (!test.data.empty()) {
             EXPECT_EQ(
@@ -431,18 +432,17 @@ public:
             << "cannot read rx fifo0 elem data";
 
         u32 buf0 = 0;
-        set_bit<BUF_HDR0_RTR>(buf0, test.is_rtr());
-        if (test.is_eff()) {
-            set_field<BUF_HDR0_ID_XTD>(buf0, test.msgid);
+        set_bit<BUF_HDR0_RTR>(buf0, test.rtr);
+        if (test.eff) {
+            set_field<BUF_HDR0_ID_XTD>(buf0, test.id());
             buf0 |= BUF_HDR0_XTD;
         } else {
-            set_field<BUF_HDR0_ID_STD>(buf0, test.msgid);
+            set_field<BUF_HDR0_ID_STD>(buf0, test.id());
         }
 
         EXPECT_EQ(buf0, rx_fifo0_hdr[0])
             << "rx fifo0 elem header not matching";
-        EXPECT_EQ(BUF_HDR1_DLC::set(test.dlc()) | mwr::bit(21),
-                  rx_fifo0_hdr[1])
+        EXPECT_EQ(BUF_HDR1_DLC::set(test.dlc) | mwr::bit(21), rx_fifo0_hdr[1])
             << "rx fifo0 elem header not matching";
         if (!test.data.empty()) {
             EXPECT_EQ(

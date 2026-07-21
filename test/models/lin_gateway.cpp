@@ -67,30 +67,33 @@ public:
 
     void test_tx() {
         can_frame frame{};
-        frame.msgid = 10;
+        frame.canid = 10;
         frame.data.resize(2);
+        frame.dlc = len2dlc(frame.length());
         frame.data[0] = 4;
         frame.data[1] = 6;
         can_out.send(frame);
-        EXPECT_FALSE(frame.is_err());
+        EXPECT_FALSE(frame.err);
     }
 
     void test_rx() {
         can_frame frame{};
-        frame.msgid = 11;
+        frame.canid = 11;
         frame.data.resize(2);
+        frame.dlc = len2dlc(frame.length());
         can_out.send(frame);
-        ASSERT_FALSE(frame.is_err());
+        ASSERT_FALSE(frame.err);
         EXPECT_EQ(frame.data[0], 1);
         EXPECT_EQ(frame.data[1], 2);
     }
 
     void test_nodev() {
         can_frame frame{};
-        frame.msgid = 12;
+        frame.canid = 12;
         frame.data.resize(2);
+        frame.dlc = len2dlc(frame.length());
         can_out.send(frame);
-        EXPECT_TRUE(frame.is_err());
+        EXPECT_TRUE(frame.err);
     }
 };
 
