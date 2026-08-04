@@ -73,8 +73,10 @@ class target
 private:
     mutable mutex m_mtx;
 
-    module& m_host;
+    sc_object& m_host;
+
     string m_name;
+    string m_group;
 
     atomic<bool> m_suspendable;
 
@@ -158,9 +160,15 @@ public:
     u64 load_symbols_from_elf(const string& file);
 
     const char* target_name() const { return m_name.c_str(); }
-    module& target_host() { return m_host; }
+    const char* target_group() const { return m_group.c_str(); }
 
-    target(module& host);
+    void set_target_group(const string& group) { m_group = group; }
+    void set_target_group(const sc_object& grp) { m_group = grp.name(); }
+
+    sc_object& target_host() { return m_host; }
+
+    target(sc_object& host): target(host, host.name()) {}
+    target(sc_object& host, const string& group);
     virtual ~target();
 
     vector<cpureg> cpuregs() const;
@@ -186,6 +194,7 @@ public:
     virtual void write_gdb_xml_feature(ostream& os);
 
     virtual const char* arch();
+    const char* arch_safe();
 
     virtual u64 core_id();
     virtual u64 program_counter();

@@ -156,8 +156,11 @@ static void list_xml(ostream& os) {
     for (auto obj : sc_core::sc_get_top_level_objects())
         list_object_xml(os, obj);
 
-    for (auto tgt : debugging::target::all())
-        os << "<target>" << xml_escape(tgt->target_name()) << "</target>";
+    for (auto tgt : debugging::target::all()) {
+        os << "<target arch=\"" << xml_escape(tgt->arch_safe()) << "\""
+           << " group=\"" << xml_escape(tgt->target_group()) << "\">"
+           << xml_escape(tgt->target_name()) << "</target>";
+    }
 
     for (auto loader : debugging::loader::all())
         os << "<loader>" << xml_escape(loader->loader_name()) << "</loader>";
@@ -169,10 +172,10 @@ static void list_xml(ostream& os) {
         os << "<mouse>" << xml_escape(ptr->input_name()) << "</mouse>";
 
     for (auto terminal : serial::terminal::all())
-        os << "<terminal>" << xml_escape(terminal->name()) << "</terminal>";
+        os << "<serial>" << xml_escape(terminal->name()) << "</serial>";
 
     for (auto bridge : ethernet::bridge::all())
-        os << "<bridge>" << xml_escape(bridge->name()) << "</bridge>";
+        os << "<ethernet>" << xml_escape(bridge->name()) << "</ethernet>";
 
     os << "</hierarchy>";
 }
@@ -238,8 +241,10 @@ static void list_json(ostream& os) {
 
     os << "\"targets\":[";
     for (size_t i = 0; i < debugging::target::all().size(); i++) {
-        string target = debugging::target::all()[i]->target_name();
-        os << "\"" << json_escape(target) << "\"";
+        auto* target = debugging::target::all()[i];
+        os << "{\"name\":\"" << json_escape(target->target_name()) << "\","
+           << "\"arch\":\"" << json_escape(target->arch_safe()) << "\","
+           << "\"group\":\"" << json_escape(target->target_group()) << "\"}";
         if (i < debugging::target::all().size() - 1)
             os << ",";
     }
@@ -247,8 +252,8 @@ static void list_json(ostream& os) {
 
     os << "\"loaders\":[";
     for (size_t i = 0; i < debugging::loader::all().size(); i++) {
-        string loader = debugging::loader::all()[i]->loader_name();
-        os << "\"" << json_escape(loader) << "\"";
+        auto* loader = debugging::loader::all()[i];
+        os << "{\"name\":\"" << json_escape(loader->loader_name()) << "\"}";
         if (i < debugging::loader::all().size() - 1)
             os << ",";
     }
@@ -257,8 +262,8 @@ static void list_json(ostream& os) {
     os << "\"keyboards\":[";
     auto keyboards = ui::input::all<ui::keyboard>();
     for (size_t i = 0; i < keyboards.size(); i++) {
-        string keyboard = keyboards[i]->input_name();
-        os << "\"" << json_escape(keyboard) << "\"";
+        os << "{\"name\":\"" << json_escape(keyboards[i]->input_name())
+           << "\"}";
         if (i < keyboards.size() - 1)
             os << ",";
     }
@@ -267,26 +272,25 @@ static void list_json(ostream& os) {
     os << "\"mice\":[";
     auto mice = ui::input::all<ui::mouse>();
     for (size_t i = 0; i < mice.size(); i++) {
-        string pointer = mice[i]->input_name();
-        os << "\"" << json_escape(pointer) << "\"";
+        os << "{\"name\":\"" << json_escape(mice[i]->input_name()) << "\"}";
         if (i < mice.size() - 1)
             os << ",";
     }
     os << "],";
 
-    os << "\"terminals\":[";
+    os << "\"serial\":[";
     for (size_t i = 0; i < serial::terminal::all().size(); i++) {
-        string terminal = serial::terminal::all()[i]->name();
-        os << "\"" << json_escape(terminal) << "\"";
+        auto* term = serial::terminal::all()[i];
+        os << "{\"name\":\"" << json_escape(term->name()) << "\"}";
         if (i < serial::terminal::all().size() - 1)
             os << ",";
     }
     os << "],";
 
-    os << "\"bridges\":[";
+    os << "\"ethernet\":[";
     for (size_t i = 0; i < ethernet::bridge::all().size(); i++) {
-        string bridge = ethernet::bridge::all()[i]->name();
-        os << "\"" << json_escape(bridge) << "\"";
+        auto* bridge = ethernet::bridge::all()[i];
+        os << "{\"name\":\"" << json_escape(bridge->name()) << "\"}";
         if (i < ethernet::bridge::all().size() - 1)
             os << ",";
     }
@@ -423,7 +427,7 @@ string vspserver::handle_geta(int client, const string& cmd) {
 
     stringstream ss;
     property_base* prop = dynamic_cast<property_base*>(attr);
-    ss << "OK," << mwr::escape(prop ? prop->str() : attr->name());
+    ss << "OK," << escape(prop ? prop->str() : attr->name(), ",");
 
     return ss.str();
 }

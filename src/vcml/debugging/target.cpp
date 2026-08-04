@@ -405,10 +405,11 @@ void target::notify_basic_block(u64 pc, size_t blksz, size_t icount,
         s->notify_basic_block(*this, pc, blksz, icount, t);
 }
 
-target::target(module& host):
+target::target(sc_object& host, const string& group):
     m_mtx(),
     m_host(host),
     m_name(host.name()),
+    m_group(group),
     m_suspendable(true),
     m_running(true),
     m_endian(ENDIAN_UNKNOWN),
@@ -422,26 +423,28 @@ target::target(module& host):
         VCML_ERROR("debug target '%s' already exists", m_name.c_str());
     s_targets[m_name] = this;
 
-    host.register_command("cpustatus", 0, this, &target::cmd_cpustatus,
-                          "prints cpu status registers");
-    host.register_command("loadsyms", 1, this, &target::cmd_loadsyms,
-                          "load a symbol file for use in disassembly");
-    host.register_command("lsym", 0, this, &target::cmd_lsym,
-                          "show a list of all available symbols");
-    host.register_command("disas", 0, this, &target::cmd_disas,
-                          "disassemble instructions from memory");
-    host.register_command("v2p", 1, this, &target::cmd_v2p,
-                          "translate a virtual address to physical");
-    host.register_command("stack", 0, this, &target::cmd_stack,
-                          "generates a stack trace");
-    host.register_command("vread", 1, this, &target::cmd_vread,
-                          "read virtual memory: vread <addr> <count>");
-    host.register_command("vwrite", 2, this, &target::cmd_vwrite,
-                          "write virtual memory: vwrite <addr> <bytes>");
-    host.register_command("pread", 1, this, &target::cmd_pread,
-                          "read physical memory: pread <addr> <count>");
-    host.register_command("pwrite", 2, this, &target::cmd_pwrite,
-                          "write physical memory: pwrite <addr> <bytes>");
+    if (auto* h = dynamic_cast<module*>(&host)) {
+        h->register_command("cpustatus", 0, this, &target::cmd_cpustatus,
+                            "prints cpu status registers");
+        h->register_command("loadsyms", 1, this, &target::cmd_loadsyms,
+                            "load a symbol file for use in disassembly");
+        h->register_command("lsym", 0, this, &target::cmd_lsym,
+                            "show a list of all available symbols");
+        h->register_command("disas", 0, this, &target::cmd_disas,
+                            "disassemble instructions from memory");
+        h->register_command("v2p", 1, this, &target::cmd_v2p,
+                            "translate a virtual address to physical");
+        h->register_command("stack", 0, this, &target::cmd_stack,
+                            "generates a stack trace");
+        h->register_command("vread", 1, this, &target::cmd_vread,
+                            "read virtual memory: vread <addr> <count>");
+        h->register_command("vwrite", 2, this, &target::cmd_vwrite,
+                            "write virtual memory: vwrite <addr> <bytes>");
+        h->register_command("pread", 1, this, &target::cmd_pread,
+                            "read physical memory: pread <addr> <count>");
+        h->register_command("pwrite", 2, this, &target::cmd_pwrite,
+                            "write physical memory: pwrite <addr> <bytes>");
+    }
 }
 
 target::~target() {
@@ -573,6 +576,11 @@ void target::write_gdb_xml_feature(ostream& os) {
 
 const char* target::arch() {
     return nullptr; // to be overloaded
+}
+
+const char* target::arch_safe() {
+    const char* a = arch();
+    return a ? a : "unknown";
 }
 
 u64 target::core_id() {
