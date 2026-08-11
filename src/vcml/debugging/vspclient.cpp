@@ -53,6 +53,8 @@ void vspclient::pause_simulation(const string& reason) {
 void vspclient::notify_step_complete(target& tgt, const sc_time& t) {
     // target:<target-name>:<time>
     string reason = mkstr("target:%s:%llu", tgt.target_name(), time_to_ns(t));
+    for (target* tgt : target::all())
+        tgt->cancel_singlestep(this);
     pause_simulation(reason);
 }
 
@@ -141,11 +143,14 @@ string vspclient::handle_step(const string& command) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    target* tgt = target::find(args[1]);
-    if (tgt == nullptr)
-        return mkstr("E,no such target: %s", args[1].c_str());
+    for (size_t i = 1; i < args.size(); ++i) {
+        target* tgt = target::find(args[i]);
+        if (tgt == nullptr)
+            return mkstr("E,no such target: %s", args[i].c_str());
 
-    tgt->request_singlestep(this);
+        tgt->request_singlestep(this);
+    }
+
     resume_simulation(sc_max_time());
     return "OK";
 }
