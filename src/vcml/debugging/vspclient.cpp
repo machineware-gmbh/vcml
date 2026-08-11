@@ -143,13 +143,16 @@ string vspclient::handle_step(const string& command) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
+    vector<target*> targets;
     for (size_t i = 1; i < args.size(); ++i) {
         target* tgt = target::find(args[i]);
         if (tgt == nullptr)
             return mkstr("E,no such target: %s", args[i].c_str());
-
-        tgt->request_singlestep(this);
+        targets.push_back(tgt);
     }
+
+    for (target* tgt : targets)
+        tgt->request_singlestep(this);
 
     resume_simulation(sc_max_time());
     return "OK";
