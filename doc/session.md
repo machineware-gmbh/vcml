@@ -165,10 +165,10 @@ The following target VSP commands have been defined to interact with processors
 that implement `vcml::target`:
 
 #### Step
-The step command performs a single step of a given target. Simulation will
-automatically be stopped once the specified target has completed its step.
-During this time, all other targets will be free-running.
-* Command: `$step,<target-name>#**`
+The step command performs a single step for one or more specified targets.
+The simulation will automatically stop when any of the specified targets
+completes its step. During this time, all other targets will be free-running.
+* Command: `$step,<target-name>[,target-name1]...#**`
 * Response: `$OK#**`
 
 #### Insert Breakpoint
