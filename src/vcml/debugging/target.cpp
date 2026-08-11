@@ -293,8 +293,12 @@ void target::define_cpureg(size_t regno, const string& name, size_t size,
     newreg.prot = prot;
     newreg.name = name;
     newreg.host = this;
-    newreg.prop = std::make_shared<property<void>>(&m_host, name.c_str(), size,
-                                                   count, def);
+    newreg.prop = nullptr;
+
+    if (m_host.get_attribute(name) == nullptr) {
+        newreg.prop = std::make_shared<property<void>>(&m_host, name.c_str(),
+                                                       size, count, def);
+    }
 }
 
 void target::define_cpureg_r(size_t regno, const string& name, size_t size,
@@ -314,7 +318,7 @@ void target::define_cpureg_rw(size_t regno, const string& name, size_t size,
 
 void target::fetch_cpuregs() {
     for (auto& [id, reg] : m_cpuregs) {
-        if (!reg.is_readable())
+        if (!reg.is_readable() || !reg.prop)
             continue;
 
         if (!reg.read(reg.prop->raw_ptr(), reg.prop->raw_len()))
@@ -324,7 +328,7 @@ void target::fetch_cpuregs() {
 
 void target::flush_cpuregs() {
     for (auto& [id, reg] : m_cpuregs) {
-        if (!reg.is_writeable())
+        if (!reg.is_writeable() || !reg.prop)
             continue;
 
         if (!reg.write(reg.prop->raw_ptr(), reg.prop->raw_len()))
@@ -333,8 +337,10 @@ void target::flush_cpuregs() {
 }
 
 void target::reset_cpuregs() {
-    for (auto& [id, reg] : m_cpuregs)
-        reg.prop->reset();
+    for (auto& [id, reg] : m_cpuregs) {
+        if (reg.prop)
+            reg.prop->reset();
+    }
 }
 
 void target::update_single_stepping(bool on) {
