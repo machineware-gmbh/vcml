@@ -21,7 +21,7 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
         return false;
 
     u64 addr = start & ~0xf;
-    while (addr < end) {
+    while (addr <= end) {
         if ((addr % 16) == 0)
             os << "\n" << mkstr("%0*llx", 8, addr) << ":";
         if ((addr % 4) == 0)
