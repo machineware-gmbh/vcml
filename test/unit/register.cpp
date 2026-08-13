@@ -202,6 +202,8 @@ TEST(registers, permissions) {
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(local, cycle * mock.write_latency);
+    EXPECT_TRUE(mock.test_reg_b.is_read_only());
+    EXPECT_FALSE(mock.test_reg_b.is_write_only());
 
     local = sc_core::SC_ZERO_TIME;
     mock.test_reg_b.allow_write_only();
@@ -213,6 +215,8 @@ TEST(registers, permissions) {
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
     EXPECT_EQ(local, cycle * mock.read_latency);
+    EXPECT_FALSE(mock.test_reg_b.is_read_only());
+    EXPECT_TRUE(mock.test_reg_b.is_write_only());
 }
 
 TEST(registers, secure) {
@@ -404,6 +408,18 @@ TEST(registers, operators) {
     EXPECT_FALSE(mock.test_reg_a != 3u);
     EXPECT_FALSE(mock.test_reg_b != 3u);
 
+    EXPECT_FALSE(mock.test_reg_a < 3u);
+    EXPECT_TRUE(mock.test_reg_b < 4u);
+
+    EXPECT_FALSE(mock.test_reg_a > 3u);
+    EXPECT_TRUE(mock.test_reg_b > 2u);
+
+    EXPECT_TRUE(mock.test_reg_a <= 3u);
+    EXPECT_FALSE(mock.test_reg_b <= 2u);
+
+    EXPECT_TRUE(mock.test_reg_a >= 3u);
+    EXPECT_FALSE(mock.test_reg_b >= 4u);
+
     EXPECT_EQ(mock.test_reg_a++, 3u);
     EXPECT_EQ(mock.test_reg_a, 4u);
     EXPECT_EQ(++mock.test_reg_a, 5u);
@@ -414,6 +430,15 @@ TEST(registers, operators) {
 
     EXPECT_EQ(mock.test_reg_b += 1, 2u);
     EXPECT_EQ(mock.test_reg_a -= 1, 4u);
+
+    EXPECT_EQ(mock.test_reg_a ^= 1, 5u);
+    EXPECT_EQ(mock.test_reg_b ^= 2, 0u);
+
+    EXPECT_EQ(mock.test_reg_a |= 1, 5u);
+    EXPECT_EQ(mock.test_reg_b |= 4, 4u);
+
+    EXPECT_EQ(mock.test_reg_a &= 1, 1u);
+    EXPECT_EQ(mock.test_reg_b &= 2, 0u);
 }
 
 enum : address_space {
@@ -508,10 +533,40 @@ public:
     class wrapper : public sc_core::sc_module
     {
     public:
-        reg<u64> test_reg;
+        reg<u64> reg_void;
+        reg<u64> reg_dbg;
+        reg<u64> reg_tag;
+        reg<u64> reg_tag_dbg;
+
+        u64 read_void() { return reg_void; }
+        u64 read_dbg(bool) { return reg_dbg; }
+        u64 read_tag(size_t) { return reg_tag; }
+        u64 read_tag_dbg(size_t, bool) { return reg_tag_dbg; }
+
+        void write_void(u64 val) { reg_void = val; }
+        void write_dbg(u64 val, bool) { reg_dbg = val; }
+        void write_tag(u64 val, size_t) { reg_tag = val; }
+        void write_tag_dbg(u64 val, size_t, bool) { reg_tag_dbg = val; }
 
         wrapper(const sc_core::sc_module_name& nm):
-            sc_core::sc_module(nm), test_reg("test_reg", 0) {}
+            sc_core::sc_module(nm),
+            reg_void("reg_void", 0x00),
+            reg_dbg("reg_dbg", 0x08),
+            reg_tag("reg_tag", 0x10),
+            reg_tag_dbg("reg_tag_dbg", 0x18) {
+            reg_void.allow_read_write();
+            reg_void.on_read(&wrapper::read_void);
+            reg_void.on_write(&wrapper::write_void);
+            reg_dbg.allow_read_write();
+            reg_dbg.on_read(&wrapper::read_dbg);
+            reg_dbg.on_write(&wrapper::write_dbg);
+            reg_tag.allow_read_write();
+            reg_tag.on_read(&wrapper::read_tag);
+            reg_tag.on_write(&wrapper::write_tag);
+            reg_tag_dbg.allow_read_write();
+            reg_tag_dbg.on_read(&wrapper::read_tag_dbg);
+            reg_tag_dbg.on_write(&wrapper::write_tag_dbg);
+        }
 
         virtual ~wrapper() = default;
     };
@@ -524,11 +579,48 @@ public:
 
 TEST(registers, hierarchy) {
     hierarchy_test h("h");
-    EXPECT_STREQ(h.w.test_reg.name(), "h.w.test_reg");
+    EXPECT_STREQ(h.w.reg_void.name(), "h.w.reg_void");
     std::vector<reg_base*> regs = h.get_registers();
     ASSERT_FALSE(regs.empty());
-    EXPECT_STREQ(regs[0]->name(), "h.w.test_reg");
-    EXPECT_EQ(regs[0], (reg_base*)&h.w.test_reg);
+}
+
+TEST(registers, hierarchy_search_callback) {
+    hierarchy_test h("h_search");
+
+    tlm::tlm_generic_payload tx;
+    u64 data;
+
+    data = 0x11;
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0x00, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    data = 0;
+    tx_setup(tx, tlm::TLM_READ_COMMAND, 0x00, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    EXPECT_EQ(data, 0x11u);
+
+    data = 0x22;
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0x08, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    data = 0;
+    tx_setup(tx, tlm::TLM_READ_COMMAND, 0x08, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    EXPECT_EQ(data, 0x22u);
+
+    data = 0x33;
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0x10, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    data = 0;
+    tx_setup(tx, tlm::TLM_READ_COMMAND, 0x10, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    EXPECT_EQ(data, 0x33u);
+
+    data = 0x44;
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 0x18, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    data = 0;
+    tx_setup(tx, tlm::TLM_READ_COMMAND, 0x18, &data, sizeof(data));
+    EXPECT_EQ(h.transport(tx, SBI_NONE, VCML_AS_DEFAULT), sizeof(data));
+    EXPECT_EQ(data, 0x44u);
 }
 
 TEST(registers, bitfields) {
@@ -982,4 +1074,34 @@ public:
 
 TEST(registers, strided_broken) {
     EXPECT_DEATH({ mock_peripheral_strided_broken mock("mock"); }, "overlap");
+}
+
+TEST(registers, str_scalar) {
+    mock_peripheral mock;
+
+    mock.test_reg_a = 0xdeadbeef;
+    EXPECT_EQ(mock.test_reg_a.str(), "0xdeadbeef");
+
+    mock.test_reg_a.str("0x12345678");
+    EXPECT_EQ(mock.test_reg_a, 0x12345678u);
+
+    mock.test_reg_a.str("255");
+    EXPECT_EQ(mock.test_reg_a, 255u);
+}
+
+TEST(registers, str_array) {
+    mock_peripheral_strided mock("mock");
+
+    mock.test_reg[0] = 0x1337;
+    mock.test_reg[1] = 0x22222222;
+    mock.test_reg[2] = 0x33333333;
+    mock.test_reg[3] = 0x44444444;
+    EXPECT_EQ(mock.test_reg.str(),
+              "0x00001337 0x22222222 0x33333333 0x44444444");
+
+    mock.test_reg.str("0x1234 0x000bbbbb 0xcccccccc 0xdddddddd");
+    EXPECT_EQ(mock.test_reg[0], 0x1234u);
+    EXPECT_EQ(mock.test_reg[1], 0xbbbbbu);
+    EXPECT_EQ(mock.test_reg[2], 0xccccccccu);
+    EXPECT_EQ(mock.test_reg[3], 0xddddddddu);
 }
