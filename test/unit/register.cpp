@@ -455,11 +455,18 @@ TEST(registers, operators) {
     EXPECT_EQ(mock.test_reg_b &= 2, 0u);
 }
 
-TEST(registers, ranges) {
+TEST(registers, range) {
     mock_peripheral mock;
 
     EXPECT_EQ(mock.test_reg_a.get_range(), range(0, 3));
     EXPECT_EQ(mock.test_reg_b.get_range(), range(4, 7));
+}
+
+TEST(registers, get_address) {
+    mock_peripheral mock;
+
+    EXPECT_EQ(mock.test_reg_a.get_address(), 0x0);
+    EXPECT_EQ(mock.test_reg_b.get_address(), 0x4);
 }
 
 enum : address_space {
