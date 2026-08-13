@@ -667,6 +667,29 @@ TEST(registers, write_mask_scalar_array) {
     EXPECT_EQ(mock.scalar_masked_reg[1], 0x00ffu);
 }
 
+class mock_peripheral_mask_tagged : public peripheral
+{
+public:
+    reg<u32> tagged_reg;
+
+    mock_peripheral_mask_tagged(const sc_module_name& nm):
+        peripheral(nm), tagged_reg("tagged_reg", 0x0, 0xdeadbeef) {
+        tagged_reg.allow_read_write();
+        tagged_reg.tag = 42;
+        tagged_reg.on_write_mask(0x0000ffffu);
+        clk.stub(100 * MHz);
+        rst.stub();
+    }
+};
+
+TEST(registers, write_mask_nonzero_tag) {
+    mock_peripheral_mask_tagged mock("write_mask_nonzero_tag");
+
+    u32 val = 0xffffffffu;
+    mock.tagged_reg.do_write(0, 0, sizeof(u32), &val, false);
+    EXPECT_EQ(mock.tagged_reg, 0xdeadffffu);
+}
+
 class test_peripheral_sockets : public peripheral
 {
 public:
