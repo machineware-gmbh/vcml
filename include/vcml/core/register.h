@@ -612,7 +612,7 @@ reg<DATA, N, STRIDE>::reg(const tlm_target_socket& socket, const string& name,
 template <typename DATA, size_t N, size_t STRIDE>
 reg<DATA, N, STRIDE>::reg(const tlm_target_socket& socket, const string& name,
                           u64 addr, std::initializer_list<DATA> data):
-    reg_base(socket.as, name, addr, data) {
+    reg<DATA, N, STRIDE>(socket.as, name, addr, data) {
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
