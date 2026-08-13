@@ -369,12 +369,12 @@ private:
 
 template <typename DATA, size_t N, size_t STRIDE>
 bool reg<DATA, N, STRIDE>::has_readfn() const {
-    return !std::holds_alternative<std::monostate()>(m_readfn);
+    return !std::holds_alternative<std::monostate>(m_readfn);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
 bool reg<DATA, N, STRIDE>::has_writefn() const {
-    return !std::holds_alternative<std::monostate()>(m_writefn);
+    return !std::holds_alternative<std::monostate>(m_writefn);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>

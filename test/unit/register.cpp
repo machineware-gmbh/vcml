@@ -846,6 +846,21 @@ TEST(registers, debug_read_write_periph) {
     mock.test_reg_tag.do_write(0, 0, 4, &data, true);
 }
 
+TEST(registers, has_fn) {
+    mock_peripheral mock;
+
+    EXPECT_FALSE(mock.test_reg_a.has_readfn());
+    EXPECT_FALSE(mock.test_reg_a.has_writefn());
+
+    mock.test_reg_a.on_read([]() -> u32 { return 0; });
+    EXPECT_TRUE(mock.test_reg_a.has_readfn());
+    EXPECT_FALSE(mock.test_reg_a.has_writefn());
+
+    mock.test_reg_a.on_write([](u32) {});
+    EXPECT_TRUE(mock.test_reg_a.has_readfn());
+    EXPECT_TRUE(mock.test_reg_a.has_writefn());
+}
+
 class mock_peripheral_strided : public peripheral
 {
 public:
