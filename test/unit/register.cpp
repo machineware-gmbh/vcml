@@ -217,6 +217,19 @@ TEST(registers, permissions) {
     EXPECT_EQ(local, cycle * mock.read_latency);
     EXPECT_FALSE(mock.test_reg_b.is_read_only());
     EXPECT_TRUE(mock.test_reg_b.is_write_only());
+
+    local = sc_core::SC_ZERO_TIME;
+    mock.test_reg_b.allow_read_ignore_write();
+    tx_setup(tx, tlm::TLM_WRITE_COMMAND, 4, buffer, sizeof(buffer));
+
+    EXPECT_CALL(mock, reg_write(_)).Times(0);
+    EXPECT_EQ(mock.test_transport(tx), 4);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
+    EXPECT_EQ(mock.test_reg_b, 0xffffffffu);
+    EXPECT_EQ(local, cycle * mock.write_latency);
+    EXPECT_FALSE(mock.test_reg_b.is_read_only());
+    EXPECT_FALSE(mock.test_reg_b.is_write_only());
 }
 
 TEST(registers, secure) {
@@ -326,6 +339,7 @@ TEST(registers, misaligned_accesses) {
 TEST(registers, banking) {
     mock_peripheral mock;
     mock.test_reg_a.set_banked();
+    EXPECT_TRUE(mock.test_reg_a.is_banked());
 
     sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);
 
@@ -439,6 +453,13 @@ TEST(registers, operators) {
 
     EXPECT_EQ(mock.test_reg_a &= 1, 1u);
     EXPECT_EQ(mock.test_reg_b &= 2, 0u);
+}
+
+TEST(registers, ranges) {
+    mock_peripheral mock;
+
+    EXPECT_EQ(mock.test_reg_a.get_range(), range(0, 3));
+    EXPECT_EQ(mock.test_reg_b.get_range(), range(4, 7));
 }
 
 enum : address_space {
