@@ -657,6 +657,7 @@ public:
 
     reg<u32> test_reg_a;
     reg<u32> test_reg_b;
+    reg<u32, 2> test_reg_array;
 
     test_peripheral_sockets(
         const sc_module_name& nm = sc_gen_unique_name("peripheral_sockets")):
@@ -664,7 +665,8 @@ public:
         in_a("in_a", VCML_AS_TEST1),
         in_b("in_b", VCML_AS_TEST2),
         test_reg_a(in_a, "test_reg_a", 0x0, 0xffffffff),
-        test_reg_b(in_b, "test_reg_b", 0x0, 0xffffffff) {
+        test_reg_b(in_b, "test_reg_b", 0x0, 0xffffffff),
+        test_reg_array(in_a, "test_reg_array", 0x4, { 0x11u, 0x22u }) {
         test_reg_b.allow_read_write();
         test_reg_b.allow_read_write();
         clk.stub(100 * MHz);
@@ -706,6 +708,26 @@ TEST(registers, socket_address_spaces) {
     EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST2), 4);
     EXPECT_EQ(mock.test_reg_a, 0xffffffffu);
     EXPECT_EQ(mock.test_reg_b, 0x44332211u);
+    EXPECT_TRUE(tx.is_response_ok());
+    mock.reset();
+    tx_reset(tx);
+
+    EXPECT_EQ(mock.test_reg_array[0], 0x11u);
+    EXPECT_EQ(mock.test_reg_array[1], 0x22u);
+    tx.set_address(0x04);
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST1), 4);
+    EXPECT_EQ(mock.test_reg_array[0], 0x44332211u);
+    EXPECT_EQ(mock.test_reg_array[1], 0x22u);
+    EXPECT_TRUE(tx.is_response_ok());
+    mock.reset();
+    tx_reset(tx);
+
+    EXPECT_EQ(mock.test_reg_array[0], 0x11u);
+    EXPECT_EQ(mock.test_reg_array[1], 0x22u);
+    tx.set_address(0x08);
+    EXPECT_EQ(mock.test_transport(tx, VCML_AS_TEST1), 4);
+    EXPECT_EQ(mock.test_reg_array[0], 0x11u);
+    EXPECT_EQ(mock.test_reg_array[1], 0x44332211u);
     EXPECT_TRUE(tx.is_response_ok());
     mock.reset();
     tx_reset(tx);
