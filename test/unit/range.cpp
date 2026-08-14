@@ -60,6 +60,14 @@ TEST(range, intersect) {
     EXPECT_EQ(c, d);
 }
 
+TEST(range, empty_intersect) {
+    vcml::range a(300, 400);
+    vcml::range b(150, 250);
+    vcml::range c = a.intersect(b);
+    EXPECT_EQ(c.start, 0);
+    EXPECT_EQ(c.end, 0);
+}
+
 TEST(range, transaction) {
     tlm::tlm_generic_payload tx;
     tx.set_address(100);
@@ -91,24 +99,104 @@ TEST(range, operators) {
     vcml::range a = { 10, 20 };
     vcml::range b = { 15, 25 };
     vcml::range c = { 30, 40 };
+    vcml::range d = { 30, 50 };
+    vcml::range e = { 40, 50 };
 
-    EXPECT_EQ(a, a);
-    EXPECT_NE(a, c);
-    EXPECT_LT(a, c);
-    EXPECT_GT(c, a);
+    EXPECT_TRUE(a == a);
+    EXPECT_FALSE(a == b);
+    EXPECT_FALSE(a == c);
+    EXPECT_FALSE(c == a);
+    EXPECT_FALSE(c == d);
+    EXPECT_FALSE(e == d);
 
+    EXPECT_FALSE(a != a);
+    EXPECT_TRUE(a != b);
+    EXPECT_TRUE(a != c);
+    EXPECT_TRUE(c != a);
+    EXPECT_TRUE(c != d);
+    EXPECT_TRUE(e != d);
+
+    EXPECT_FALSE(a < a);
+    EXPECT_FALSE(a < b);
+    EXPECT_TRUE(a < c);
+    EXPECT_FALSE(c < a);
+    EXPECT_FALSE(c < d);
+    EXPECT_FALSE(e < d);
+
+    EXPECT_FALSE(a > a);
     EXPECT_FALSE(a > b);
-    EXPECT_FALSE(b < a);
+    EXPECT_FALSE(a > c);
+    EXPECT_TRUE(c > a);
+    EXPECT_FALSE(c > d);
+    EXPECT_FALSE(e > d);
+
+    a += 5;
+    EXPECT_EQ(a, b);
+
+    e -= 10;
+    EXPECT_EQ(e, c);
+
+    vcml::range g = a + 15;
+    EXPECT_EQ(g, c);
+
+    vcml::range h = c - 15;
+    EXPECT_EQ(h, b);
 }
 
 TEST(range, tostring) {
-    vcml::range a = { 0x10, 0x20 };
+    vcml::range a(0x10, 0x20);
     std::string s = to_string(a);
     EXPECT_EQ(s, "0x00000010..0x00000020");
 
-    vcml::range b = { 0xababababcdcdcdcdull, 0xfefefefe12121212ull };
+    vcml::range b(0xababababcdcdcdcdull, 0xfefefefe12121212ull);
     std::string t = to_string(b);
     EXPECT_EQ(t, "0xababababcdcdcdcd..0xfefefefe12121212");
+}
+
+TEST(range, stream_out) {
+    vcml::range a(0x100, 0x1ff);
+    std::ostringstream oss0;
+    oss0 << a;
+    EXPECT_EQ(oss0.str(), "0x00000100..0x000001ff");
+
+    vcml::range b(0x100000000ull, 0x1ffffffffull);
+    std::ostringstream oss1;
+    oss1 << b;
+    EXPECT_EQ(oss1.str(), "0x0000000100000000..0x00000001ffffffff");
+
+    vcml::range c(0xaa, 0xbb);
+    std::ostringstream oss2;
+    oss2 << std::setw(4) << c;
+    EXPECT_EQ(oss2.str(), "0x00aa..0x00bb");
+
+    std::ostringstream oss3;
+    oss3 << std::setfill('*') << c;
+    EXPECT_EQ(oss3.str(), "0x******aa..0x******bb");
+}
+
+TEST(range, stream_in) {
+    vcml::range a(0x1000, 0x1fff);
+    std::ostringstream oss0;
+    oss0 << a;
+    std::istringstream iss0(oss0.str());
+    vcml::range b;
+    iss0 >> b;
+    EXPECT_FALSE(iss0.fail());
+    EXPECT_EQ(b, a);
+
+    vcml::range c(0xdeadbeef00000000ull, 0xdeadbeefffffffffull);
+    std::ostringstream oss1;
+    oss1 << c;
+    std::istringstream iss1(oss1.str());
+    vcml::range d;
+    iss1 >> d;
+    EXPECT_FALSE(iss1.fail());
+    EXPECT_EQ(d, c);
+
+    std::istringstream iss2("not-a-range");
+    vcml::range e;
+    iss2 >> e;
+    EXPECT_TRUE(iss2.fail());
 }
 
 TEST(range, limits) {
