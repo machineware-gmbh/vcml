@@ -125,6 +125,7 @@ TEST(systemc, callback) {
 
     sc_core::sc_start(10, SC_SEC);
     EXPECT_TRUE(update_called);
+    clear_timed_callbacks();
 }
 
 TEST(systemc, time_stamp) {
@@ -142,4 +143,5 @@ TEST(systemc, time_stamp) {
 
     sc_core::sc_start(1, SC_SEC);
     EXPECT_TRUE(checked);
+    clear_timed_callbacks();
 }
