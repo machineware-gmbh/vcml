@@ -711,15 +711,19 @@ class mock_peripheral_mask : public peripheral
 public:
     reg<u32> test_reg;
     reg<u32, 4> array_reg;
+    reg<u32, 2> scalar_masked_reg;
 
     mock_peripheral_mask(const sc_module_name& nm):
         peripheral(nm),
         test_reg("test_reg", 0x0),
-        array_reg("array_reg", 0x10, { 1, 2, 4, 8 }) {
+        array_reg("array_reg", 0x10, { 1, 2, 4, 8 }),
+        scalar_masked_reg("scalar_masked_reg", 0x20, { 0xaa00u, 0xbbu }) {
         test_reg.allow_read_write();
         array_reg.allow_read_write();
+        scalar_masked_reg.allow_read_write();
         test_reg.on_write_mask(0x10101010);
         array_reg.on_write_mask({ { 1, 2, 4, 8 } });
+        scalar_masked_reg.on_write_mask(0xffu);
         clk.stub(100 * MHz);
         rst.stub();
     }
@@ -767,6 +771,43 @@ TEST(registers, masking) {
     tx_setup(tx, TLM_WRITE_COMMAND, 0x1c, &data, sizeof(data));
     EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
     EXPECT_EQ(mock.array_reg[3], 8);
+}
+
+TEST(registers, write_mask_scalar_array) {
+    mock_peripheral_mask mock("write_mask_scalar_array");
+
+    u32 val = 0xffu;
+
+    mock.scalar_masked_reg.do_write(0, 0, sizeof(u32), &val, false);
+    EXPECT_EQ(mock.scalar_masked_reg[0], 0xaaffu);
+    EXPECT_EQ(mock.scalar_masked_reg[1], 0x00bbu);
+
+    mock.scalar_masked_reg.do_write(1, 0, sizeof(u32), &val, false);
+    EXPECT_EQ(mock.scalar_masked_reg[0], 0xaaffu);
+    EXPECT_EQ(mock.scalar_masked_reg[1], 0x00ffu);
+}
+
+class mock_peripheral_mask_tagged : public peripheral
+{
+public:
+    reg<u32> tagged_reg;
+
+    mock_peripheral_mask_tagged(const sc_module_name& nm):
+        peripheral(nm), tagged_reg("tagged_reg", 0x0, 0xdeadbeef) {
+        tagged_reg.allow_read_write();
+        tagged_reg.tag = 42;
+        tagged_reg.on_write_mask(0x0000ffffu);
+        clk.stub(100 * MHz);
+        rst.stub();
+    }
+};
+
+TEST(registers, write_mask_nonzero_tag) {
+    mock_peripheral_mask_tagged mock("write_mask_nonzero_tag");
+
+    u32 val = 0xffffffffu;
+    mock.tagged_reg.do_write(0, 0, sizeof(u32), &val, false);
+    EXPECT_EQ(mock.tagged_reg, 0xdeadffffu);
 }
 
 class test_peripheral_sockets : public peripheral

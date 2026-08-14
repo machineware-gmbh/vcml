@@ -481,15 +481,18 @@ void reg<DATA, N, STRIDE>::on_write(void (HOST::*wr)(DATA, size_t, bool),
 
 template <typename DATA, size_t N, size_t STRIDE>
 void reg<DATA, N, STRIDE>::on_write_mask(DATA mask) {
-    on_write([this, mask](DATA val) -> void {
-        *this = (*this & ~mask) | (val & mask);
+    on_write([this, mask](DATA val, size_t i) -> void {
+        size_t idx = N > 1 ? i : 0;
+        current_bank(idx) = (current_bank(idx) & ~mask) | (val & mask);
     });
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
 void reg<DATA, N, STRIDE>::on_write_mask(const array<DATA, N>& mask) {
     on_write([this, mask](DATA val, size_t i) -> void {
-        current_bank(i) = (current_bank(i) & ~mask[i]) | (val & mask[i]);
+        size_t idx = N > 1 ? i : 0;
+        current_bank(idx) = (current_bank(idx) & ~mask[idx]) |
+                            (val & mask[idx]);
     });
 }
 
