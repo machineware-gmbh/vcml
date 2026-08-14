@@ -74,7 +74,7 @@ tlm_memory::tlm_memory(tlm_memory&& other) noexcept:
     m_base(other.m_base),
     m_size(other.m_size),
     m_discard(other.m_discard),
-    m_shared(other.m_shared) {
+    m_shared(std::move(other.m_shared)) {
     other.m_handle = INVALID_HANDLE_VALUE;
     other.m_base = nullptr;
     other.m_size = 0;
