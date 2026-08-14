@@ -130,8 +130,8 @@ TEST(memory, move_constructor) {
 
     tlm_memory moved = std::move(orig);
 
-    EXPECT_FALSE(orig.is_shared());
-    EXPECT_EQ(orig.size(), 0);
+    EXPECT_FALSE(orig.is_shared()); // NOLINT
+    EXPECT_EQ(orig.size(), 0);      // NOLINT
 
     EXPECT_TRUE(moved.is_shared());
     EXPECT_EQ(moved.size(), size);
@@ -154,4 +154,21 @@ TEST(memory, aligned_oob_rejected) {
         << "read into alignment must be rejected";
     EXPECT_AE(mem.write(range(size, size), buf.data(), false))
         << "write into alignment must berejected";
+}
+
+TEST(memory, fill) {
+    tlm_memory mem(4 * KiB, VCML_ALIGN_4K);
+
+    ASSERT_OK(mem.fill(0xaa, false));
+    ASSERT_EQ(mem[0], 0xaa);
+
+    // TODO: What should be the behavior here?
+    mem.discard_writes(true);
+    ASSERT_OK(mem.fill(0xcc, true));
+    ASSERT_EQ(mem[0], 0xcc);
+
+    // TODO: What should be the behavior here?
+    // mem.discard_writes(true);
+    // ASSERT_OK(mem.fill(0xbb, false));
+    // ASSERT_EQ(mem[0], 0xaa);
 }
