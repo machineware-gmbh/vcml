@@ -85,6 +85,24 @@ TEST(memory, readwrite) {
     EXPECT_EQ(mem[0], data) << "debug write has no effect";
 }
 
+TEST(memory, transport) {
+    tlm_memory mem(1);
+    u8 data = 0x42;
+    tlm_generic_payload tx;
+    tlm_sbi sbi;
+
+    tx_setup(tx, TLM_WRITE_COMMAND, 0, &data, sizeof(data));
+    mem.transport(tx, sbi);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(mem[0], 0x42);
+
+    mem[0] = 0x23;
+    tx_setup(tx, TLM_READ_COMMAND, 0, &data, sizeof(data));
+    mem.transport(tx, sbi);
+    EXPECT_EQ(tx.get_response_status(), tlm::TLM_OK_RESPONSE);
+    EXPECT_EQ(data, 0x23);
+}
+
 TEST(memory, move) {
     const size_t size = 4 * KiB;
 
