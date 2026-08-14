@@ -78,6 +78,7 @@ tlm_memory::tlm_memory(tlm_memory&& other) noexcept:
     other.m_handle = nullptr;
     other.m_base = nullptr;
     other.m_size = 0;
+    other.m_shared = "";
     other.free();
 }
 
