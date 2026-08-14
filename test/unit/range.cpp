@@ -144,27 +144,27 @@ TEST(range, operators) {
 }
 
 TEST(range, tostring) {
-    vcml::range a = { 0x10, 0x20 };
+    vcml::range a(0x10, 0x20);
     std::string s = to_string(a);
     EXPECT_EQ(s, "0x00000010..0x00000020");
 
-    vcml::range b = { 0xababababcdcdcdcdull, 0xfefefefe12121212ull };
+    vcml::range b(0xababababcdcdcdcdull, 0xfefefefe12121212ull);
     std::string t = to_string(b);
     EXPECT_EQ(t, "0xababababcdcdcdcd..0xfefefefe12121212");
 }
 
 TEST(range, stream_out) {
-    vcml::range a = { 0x100, 0x1ff };
+    vcml::range a(0x100, 0x1ff);
     std::ostringstream oss0;
     oss0 << a;
     EXPECT_EQ(oss0.str(), "0x00000100..0x000001ff");
 
-    vcml::range b = { 0x100000000ull, 0x1ffffffffull };
+    vcml::range b(0x100000000ull, 0x1ffffffffull);
     std::ostringstream oss1;
     oss1 << b;
     EXPECT_EQ(oss1.str(), "0x0000000100000000..0x00000001ffffffff");
 
-    vcml::range c = { 0xaa, 0xbb };
+    vcml::range c(0xaa, 0xbb);
     std::ostringstream oss2;
     oss2 << std::setw(4) << c;
     EXPECT_EQ(oss2.str(), "0x00aa..0x00bb");
@@ -175,7 +175,7 @@ TEST(range, stream_out) {
 }
 
 TEST(range, stream_in) {
-    vcml::range a = { 0x1000, 0x1fff };
+    vcml::range a(0x1000, 0x1fff);
     std::ostringstream oss0;
     oss0 << a;
     std::istringstream iss0(oss0.str());
@@ -184,7 +184,7 @@ TEST(range, stream_in) {
     EXPECT_FALSE(iss0.fail());
     EXPECT_EQ(b, a);
 
-    vcml::range c = { 0xdeadbeef00000000ull, 0xdeadbeefffffffffull };
+    vcml::range c(0xdeadbeef00000000ull, 0xdeadbeefffffffffull);
     std::ostringstream oss1;
     oss1 << c;
     std::istringstream iss1(oss1.str());
