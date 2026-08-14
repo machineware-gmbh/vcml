@@ -577,6 +577,13 @@ void on_each_time_step(function<void(void)> callback) {
     helper.tsteps.push_back(std::move(callback));
 }
 
+void clear_timed_callbacks() {
+    helper_module& helper = helper_module::instance();
+    lock_guard<mutex> guard(helper.mtx);
+    helper.deltas.clear();
+    helper.tsteps.clear();
+}
+
 async_timer::async_timer(function<void(async_timer&)> cb):
     m_triggers(0), m_timeout(), m_event(nullptr), m_cb(std::move(cb)) {
 }
