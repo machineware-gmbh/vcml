@@ -60,6 +60,13 @@ TEST(memory, readwrite) {
     tlm_memory mem(1);
 
     u8 data = 0x42;
+
+    mem.discard_writes(true);
+    mem[0] = 0;
+    EXPECT_OK(mem.write(0, data)) << "discard_writes mem rejected write";
+    EXPECT_EQ(mem[0], 0) << "discard_writes mem stored the write";
+
+    mem.discard_writes(false);
     EXPECT_OK(mem.write(range(0, 0), &data, false)) << "write failed";
     EXPECT_EQ(mem[0], data) << "data not stored";
 
@@ -111,4 +118,40 @@ TEST(memory, sharing_wrong_size) {
     tlm_memory a(name, size);
     EXPECT_DEATH({ tlm_memory b(name, size * 2); }, "unexpected size");
     EXPECT_DEATH({ tlm_memory b(name, size / 2); }, "unexpected size");
+}
+
+TEST(memory, move_constructor) {
+    const size_t size = 4 * KiB;
+    const string name = "/vcml-test-move-shared";
+
+    tlm_memory orig(name, size);
+    orig[0] = 0xab;
+    EXPECT_TRUE(orig.is_shared());
+
+    tlm_memory moved = std::move(orig);
+
+    EXPECT_FALSE(orig.is_shared());
+    EXPECT_EQ(orig.size(), 0);
+
+    EXPECT_TRUE(moved.is_shared());
+    EXPECT_EQ(moved.size(), size);
+    EXPECT_STREQ(moved.shared_name(), name.c_str());
+
+    u8 data;
+    EXPECT_OK(moved.read(0, data));
+    EXPECT_EQ(data, 0xab);
+}
+
+TEST(memory, aligned_oob_rejected) {
+    const size_t size = 4 * KiB;
+    tlm_memory mem(size, VCML_ALIGN_8M); // force extra size by aligment
+    vector<u8> buf(size, 0xff);
+
+    EXPECT_OK(mem.read(range(0, size - 1), buf.data(), false))
+        << "accesses within [0, size-1] must succeed";
+
+    EXPECT_AE(mem.read(range(size, size), buf.data(), false))
+        << "read into alignment must be rejected";
+    EXPECT_AE(mem.write(range(size, size), buf.data(), false))
+        << "write into alignment must berejected";
 }
