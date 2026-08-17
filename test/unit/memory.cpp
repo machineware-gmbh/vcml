@@ -180,13 +180,9 @@ TEST(memory, fill) {
     ASSERT_OK(mem.fill(0xaa, false));
     ASSERT_EQ(mem[0], 0xaa);
 
-    // TODO: What should be the behavior here?
     mem.discard_writes(true);
-    ASSERT_OK(mem.fill(0xcc, true));
+    ASSERT_OK(mem.fill(0xbb, true));
+    ASSERT_EQ(mem[0], 0xbb);
+    ASSERT_OK(mem.fill(0xcc, false));
     ASSERT_EQ(mem[0], 0xcc);
-
-    // TODO: What should be the behavior here?
-    // mem.discard_writes(true);
-    // ASSERT_OK(mem.fill(0xbb, false));
-    // ASSERT_EQ(mem[0], 0xaa);
 }
