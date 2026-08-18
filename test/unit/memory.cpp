@@ -118,6 +118,29 @@ TEST(memory, move) {
     EXPECT_EQ(move.data(), data) << "memory pointer not moved";
 }
 
+TEST(memory, move_shared) {
+    const size_t size = 4 * KiB;
+    const string name = "/vcml-test-move-shared";
+
+    tlm_memory orig(name, size);
+    orig[0] = 0xab;
+    EXPECT_TRUE(orig.is_shared());
+
+    tlm_memory moved = std::move(orig);
+
+    EXPECT_FALSE(orig.is_shared()); // NOLINT
+    EXPECT_EQ(orig.size(), 0);      // NOLINT
+    EXPECT_EQ(orig.data(), nullptr);
+
+    EXPECT_TRUE(moved.is_shared());
+    EXPECT_EQ(moved.size(), size);
+    EXPECT_STREQ(moved.shared_name(), name.c_str());
+
+    u8 data;
+    EXPECT_OK(moved.read(0, data));
+    EXPECT_EQ(data, 0xab);
+}
+
 TEST(memory, sharing) {
     const size_t size = 16 * KiB;
     const string name = "/vcml-test-shared";
@@ -136,28 +159,6 @@ TEST(memory, sharing_wrong_size) {
     tlm_memory a(name, size);
     EXPECT_DEATH({ tlm_memory b(name, size * 2); }, "unexpected size");
     EXPECT_DEATH({ tlm_memory b(name, size / 2); }, "unexpected size");
-}
-
-TEST(memory, move_constructor) {
-    const size_t size = 4 * KiB;
-    const string name = "/vcml-test-move-shared";
-
-    tlm_memory orig(name, size);
-    orig[0] = 0xab;
-    EXPECT_TRUE(orig.is_shared());
-
-    tlm_memory moved = std::move(orig);
-
-    EXPECT_FALSE(orig.is_shared()); // NOLINT
-    EXPECT_EQ(orig.size(), 0);      // NOLINT
-
-    EXPECT_TRUE(moved.is_shared());
-    EXPECT_EQ(moved.size(), size);
-    EXPECT_STREQ(moved.shared_name(), name.c_str());
-
-    u8 data;
-    EXPECT_OK(moved.read(0, data));
-    EXPECT_EQ(data, 0xab);
 }
 
 TEST(memory, aligned_oob_rejected) {
