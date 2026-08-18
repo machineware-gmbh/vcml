@@ -148,6 +148,8 @@ gpio_initiator_socket::gpio_initiator_socket(const char* nm, address_space as):
     gpio_base_initiator_socket(nm, as),
     m_host(dynamic_cast<gpio_host*>(hierarchy_top())),
     m_event(nullptr),
+    m_event_p(nullptr),
+    m_event_n(nullptr),
     m_state(),
     m_transport(this) {
     bind(m_transport);
@@ -156,6 +158,10 @@ gpio_initiator_socket::gpio_initiator_socket(const char* nm, address_space as):
 gpio_initiator_socket::~gpio_initiator_socket() {
     if (m_event)
         delete m_event;
+    if (m_event_p)
+        delete m_event_p;
+    if (m_event_n)
+        delete m_event_n;
 }
 
 const sc_event& gpio_initiator_socket::default_event() {
@@ -165,6 +171,24 @@ const sc_event& gpio_initiator_socket::default_event() {
     }
 
     return *m_event;
+}
+
+const sc_event& gpio_initiator_socket::posedge_event() {
+    if (m_event_p == nullptr) {
+        auto guard = get_hierarchy_scope();
+        m_event_p = new sc_event(mkstr("%s_posedge_ev", basename()).c_str());
+    }
+
+    return *m_event_p;
+}
+
+const sc_event& gpio_initiator_socket::negedge_event() {
+    if (m_event_n == nullptr) {
+        auto guard = get_hierarchy_scope();
+        m_event_n = new sc_event(mkstr("%s_negedge_ev", basename()).c_str());
+    }
+
+    return *m_event_n;
 }
 
 bool gpio_initiator_socket::read(gpio_vector vector) const {
@@ -227,6 +251,10 @@ void gpio_initiator_socket::gpio_transport(gpio_payload& tx) {
         get_interface(i)->gpio_transport(tx);
     if (m_event)
         m_event->notify(SC_ZERO_TIME);
+    if (m_event_p && tx.state)
+        m_event_p->notify(SC_ZERO_TIME);
+    if (m_event_n && !tx.state)
+        m_event_n->notify(SC_ZERO_TIME);
     trace_bw(tx);
 }
 
@@ -234,6 +262,8 @@ gpio_target_socket::gpio_target_socket(const char* nm, address_space space):
     gpio_base_target_socket(nm, space),
     m_host(hierarchy_search<gpio_host>()),
     m_event(nullptr),
+    m_event_p(nullptr),
+    m_event_n(nullptr),
     m_state(),
     m_initiator(nullptr),
     m_targets(),
@@ -245,6 +275,10 @@ gpio_target_socket::gpio_target_socket(const char* nm, address_space space):
 gpio_target_socket::~gpio_target_socket() {
     if (m_event)
         delete m_event;
+    if (m_event_p)
+        delete m_event_p;
+    if (m_event_n)
+        delete m_event_n;
 }
 
 const sc_event& gpio_target_socket::default_event() {
@@ -254,6 +288,24 @@ const sc_event& gpio_target_socket::default_event() {
     }
 
     return *m_event;
+}
+
+const sc_event& gpio_target_socket::posedge_event() {
+    if (m_event_p == nullptr) {
+        auto guard = get_hierarchy_scope();
+        m_event_p = new sc_event(mkstr("%s_posedge_ev", basename()).c_str());
+    }
+
+    return *m_event_p;
+}
+
+const sc_event& gpio_target_socket::negedge_event() {
+    if (m_event_n == nullptr) {
+        auto guard = get_hierarchy_scope();
+        m_event_n = new sc_event(mkstr("%s_negedge_ev", basename()).c_str());
+    }
+
+    return *m_event_n;
 }
 
 void gpio_target_socket::bind(base_type& base) {
@@ -291,6 +343,10 @@ void gpio_target_socket::gpio_transport_internal(gpio_payload& tx) {
         gpio_transport(tx);
         if (m_event)
             m_event->notify(SC_ZERO_TIME);
+        if (m_event_p && tx.state)
+            m_event_p->notify(SC_ZERO_TIME);
+        if (m_event_n && !tx.state)
+            m_event_n->notify(SC_ZERO_TIME);
     }
     trace_bw(tx);
 }

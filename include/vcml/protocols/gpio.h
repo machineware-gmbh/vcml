@@ -140,6 +140,8 @@ public:
     VCML_KIND(gpio_initiator_socket);
 
     const sc_event& default_event();
+    const sc_event& posedge_event();
+    const sc_event& negedge_event();
 
     bool read(gpio_vector vector = GPIO_NO_VECTOR) const;
     operator bool() const { return read(GPIO_NO_VECTOR); }
@@ -158,6 +160,8 @@ public:
 private:
     gpio_host* m_host;
     sc_event* m_event;
+    sc_event* m_event_p;
+    sc_event* m_event_n;
     unordered_map<gpio_vector, gpio_state_tracker> m_state;
 
     struct gpio_bw_transport : public gpio_bw_transport_if {
@@ -185,6 +189,8 @@ public:
     virtual void complete_binding(gpio_base_initiator_socket& socket) override;
 
     const sc_event& default_event();
+    const sc_event& posedge_event();
+    const sc_event& negedge_event();
 
     bool read(gpio_vector vector = GPIO_NO_VECTOR) const;
     bool operator[](gpio_vector vector) const { return read(vector); }
@@ -196,6 +202,8 @@ public:
 private:
     gpio_host* m_host;
     sc_event* m_event;
+    sc_event* m_event_p;
+    sc_event* m_event_n;
     unordered_map<gpio_vector, bool> m_state;
     gpio_base_initiator_socket* m_initiator;
     vector<gpio_base_target_socket*> m_targets;
