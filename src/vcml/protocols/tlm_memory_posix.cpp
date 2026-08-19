@@ -73,10 +73,12 @@ tlm_memory::tlm_memory(tlm_memory&& other) noexcept:
     m_handle(other.m_handle),
     m_base(other.m_base),
     m_size(other.m_size),
-    m_discard(other.m_discard) {
+    m_discard(other.m_discard),
+    m_shared(std::move(other.m_shared)) {
     other.m_handle = nullptr;
     other.m_base = nullptr;
     other.m_size = 0;
+    other.m_shared = "";
     other.free();
 }
 
@@ -104,6 +106,8 @@ void tlm_memory::init(const string& shared, size_t size, alignment al) {
         flags |= MAP_PRIVATE | MAP_ANON;
 
     m_base = mmap(0, m_size, perms, flags, fd, 0);
+    if (fd >= 0)
+        close(fd);
     VCML_ERROR_ON(m_base == MAP_FAILED, "mmap failed: %s", strerror(errno));
     u8* ptr = (u8*)(((u64)m_base + extra) & ~extra);
     VCML_ERROR_ON(!is_aligned(ptr, al), "memory alignment failed");
@@ -141,7 +145,7 @@ tlm_response_status tlm_memory::fill(u8 data, bool debug) {
 
 tlm_response_status tlm_memory::read(const range& addr, void* dest,
                                      bool debug) {
-    if (addr.end >= m_size)
+    if (addr.end >= size())
         return TLM_ADDRESS_ERROR_RESPONSE;
 
     if (!debug && !is_read_allowed())
@@ -153,7 +157,7 @@ tlm_response_status tlm_memory::read(const range& addr, void* dest,
 
 tlm_response_status tlm_memory::write(const range& addr, const void* src,
                                       bool debug) {
-    if (addr.end >= m_size)
+    if (addr.end >= size())
         return TLM_ADDRESS_ERROR_RESPONSE;
 
     if (!debug) {

@@ -73,10 +73,12 @@ tlm_memory::tlm_memory(tlm_memory&& other) noexcept:
     m_handle(other.m_handle),
     m_base(other.m_base),
     m_size(other.m_size),
-    m_discard(other.m_discard) {
+    m_discard(other.m_discard),
+    m_shared(std::move(other.m_shared)) {
     other.m_handle = INVALID_HANDLE_VALUE;
     other.m_base = nullptr;
     other.m_size = 0;
+    other.m_shared = "";
     other.free();
 }
 
@@ -138,7 +140,7 @@ tlm_response_status tlm_memory::fill(u8 data, bool debug) {
 
 tlm_response_status tlm_memory::read(const range& addr, void* dest,
                                      bool debug) {
-    if (addr.end >= m_size)
+    if (addr.end >= size())
         return TLM_ADDRESS_ERROR_RESPONSE;
 
     if (!debug && !is_read_allowed())
@@ -150,7 +152,7 @@ tlm_response_status tlm_memory::read(const range& addr, void* dest,
 
 tlm_response_status tlm_memory::write(const range& addr, const void* src,
                                       bool debug) {
-    if (addr.end >= m_size)
+    if (addr.end >= size())
         return TLM_ADDRESS_ERROR_RESPONSE;
 
     if (!debug) {
