@@ -130,8 +130,17 @@ protected:
     virtual bool insert_breakpoint(u64 addr);
     virtual bool remove_breakpoint(u64 addr);
 
+    virtual bool insert_breakpoint_id(u64 addr, u64& id);
+    virtual bool remove_breakpoint_id(u64 id);
+
     virtual bool insert_watchpoint(const range& addr, vcml_access prot);
     virtual bool remove_watchpoint(const range& addr, vcml_access prot);
+
+    virtual bool insert_watchpoint_id(const range& a, vcml_access p, u64& id);
+    virtual bool remove_watchpoint_id(u64 id);
+
+    bool try_remove_breakpoint(const breakpoint& wp);
+    bool try_remove_watchpoint(const watchpoint& wp, vcml_access prot);
 
     void notify_breakpoint_hit(u64 addr, const sc_time& t);
     void notify_watchpoint_read(const range& addr, const sc_time& t);

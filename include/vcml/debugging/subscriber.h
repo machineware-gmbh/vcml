@@ -24,6 +24,8 @@ class target;
 class breakpoint;
 class watchpoint;
 
+constexpr u64 USER_ID_NONE = 0;
+
 class subscriber
 {
 public:
@@ -49,6 +51,7 @@ class breakpoint
 private:
     target& m_target;
     u64 m_id;
+    u64 m_user_id;
     u64 m_addr;
     u64 m_count;
     const symbol* m_func;
@@ -58,13 +61,14 @@ public:
     target& owner() const { return m_target; }
 
     u64 id() const { return m_id; }
+    u64 user_id() const { return m_user_id; }
     u64 address() const { return m_addr; }
     u64 hit_count() const { return m_count; }
     const symbol* function() const { return m_func; }
 
     bool has_subscribers() const { return !m_subscribers.empty(); }
 
-    breakpoint(target& tgt, u64 addr, const symbol* func);
+    breakpoint(target& tgt, u64 addr, const symbol* func, u64 user_id);
     virtual ~breakpoint() = default;
 
     breakpoint(const breakpoint&) = delete;
@@ -89,6 +93,9 @@ private:
     vector<subscriber*> m_subscribers_w;
 
 public:
+    u64 user_id_r;
+    u64 user_id_w;
+
     target& owner() const { return m_target; }
     u64 id() const { return m_id; }
     u64 hit_count() const { return m_count; }
@@ -99,7 +106,8 @@ public:
     bool has_write_subscribers() const { return !m_subscribers_w.empty(); }
     bool has_any_subscribers() const;
 
-    watchpoint(target& tgt, const range& addr, const symbol* obj);
+    watchpoint(target& tgt, const range& addr, const symbol* obj,
+               u64 user_id_r, u64 user_id_w);
     virtual ~watchpoint() = default;
 
     watchpoint(const watchpoint&) = delete;

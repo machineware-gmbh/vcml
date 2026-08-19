@@ -40,9 +40,10 @@ void subscriber::notify_watchpoint_write(const watchpoint& wp,
 
 static u64 g_next_id = 0;
 
-breakpoint::breakpoint(target& tgt, u64 addr, const symbol* func):
+breakpoint::breakpoint(target& tgt, u64 addr, const symbol* func, u64 user_id):
     m_target(tgt),
     m_id(g_next_id++),
+    m_user_id(user_id),
     m_addr(addr),
     m_count(0),
     m_func(func),
@@ -72,14 +73,17 @@ bool breakpoint::unsubscribe(subscriber* s) {
     return true;
 }
 
-watchpoint::watchpoint(target& tgt, const range& addr, const symbol* obj):
+watchpoint::watchpoint(target& tgt, const range& addr, const symbol* obj,
+                       u64 id_r, u64 id_w):
     m_target(tgt),
     m_id(g_next_id++),
     m_addr(addr),
     m_count(0),
     m_obj(obj),
     m_subscribers_r(),
-    m_subscribers_w() {
+    m_subscribers_w(),
+    user_id_r(id_r),
+    user_id_w(id_w) {
 }
 
 void watchpoint::notify_read(const range& addr, const sc_time& t) {

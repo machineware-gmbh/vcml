@@ -363,12 +363,43 @@ bool target::remove_breakpoint(u64 addr) {
     return false; // to be overloaded
 }
 
+bool target::insert_breakpoint_id(u64 addr, u64& id) {
+    return insert_breakpoint(addr);
+}
+
+bool target::remove_breakpoint_id(u64 id) {
+    return false; // to be overloaded
+}
+
 bool target::insert_watchpoint(const range& addr, vcml_access a) {
     return false; // to be overloaded
 }
 
 bool target::remove_watchpoint(const range& addr, vcml_access a) {
     return false; // to be overloaded
+}
+
+bool target::insert_watchpoint_id(const range& addr, vcml_access a, u64& id) {
+    return insert_watchpoint(addr, a);
+}
+
+bool target::remove_watchpoint_id(u64 id) {
+    return false; // to be overloaded
+}
+
+bool target::try_remove_breakpoint(const breakpoint& bp) {
+    if (bp.user_id())
+        return remove_breakpoint_id(bp.user_id());
+    else
+        return remove_breakpoint(bp.address());
+}
+
+bool target::try_remove_watchpoint(const watchpoint& wp, vcml_access prot) {
+    if (prot == VCML_ACCESS_READ && wp.user_id_r)
+        return remove_watchpoint_id(wp.user_id_r);
+    if (prot == VCML_ACCESS_WRITE && wp.user_id_w)
+        return remove_watchpoint_id(wp.user_id_w);
+    return remove_watchpoint(wp.address(), prot);
 }
 
 void target::notify_breakpoint_hit(u64 pc, const sc_time& t) {
@@ -696,11 +727,12 @@ const breakpoint* target::insert_breakpoint(u64 addr, subscriber* subscr) {
             return bp;
         }
 
-    if (!insert_breakpoint(addr))
+    u64 user_id = USER_ID_NONE;
+    if (!insert_breakpoint_id(addr, user_id))
         return nullptr;
 
     const symbol* func = m_symbols.find_function(addr);
-    breakpoint* newbp = new breakpoint(*this, addr, func);
+    breakpoint* newbp = new breakpoint(*this, addr, func, user_id);
     newbp->subscribe(subscr);
     m_breakpoints.push_back(newbp);
     return newbp;
@@ -720,7 +752,7 @@ bool target::remove_breakpoint(const breakpoint* bp, subscriber* subscr) {
     if ((*it)->has_subscribers())
         return true;
 
-    if (!remove_breakpoint((*it)->address()))
+    if (!try_remove_breakpoint(**it))
         return false;
 
     delete *it;
@@ -743,10 +775,12 @@ bool target::remove_breakpoint(u64 addr, subscriber* subscr) {
     if ((*it)->has_subscribers())
         return true;
 
+    if (!try_remove_breakpoint(**it))
+        return false;
+
     delete *it;
     m_breakpoints.erase(it);
-
-    return remove_breakpoint(addr);
+    return true;
 }
 
 const watchpoint* target::insert_watchpoint(const range& addr,
@@ -758,25 +792,53 @@ const watchpoint* target::insert_watchpoint(const range& addr,
                            });
 
     if (wp == m_watchpoints.end()) {
+        u64 id_r = USER_ID_NONE;
+        u64 id_w = USER_ID_NONE;
+        if (is_read_allowed(prot)) {
+            if (!insert_watchpoint_id(addr, VCML_ACCESS_READ, id_r))
+                return nullptr;
+        }
+
+        if (is_write_allowed(prot)) {
+            if (!insert_watchpoint_id(addr, VCML_ACCESS_WRITE, id_w)) {
+                if (is_read_allowed(prot)) {
+                    if (id_r)
+                        remove_watchpoint_id(id_r);
+                    else
+                        remove_watchpoint(addr, VCML_ACCESS_READ);
+                }
+                return nullptr;
+            }
+        }
+
         const symbol* obj = m_symbols.find_object(addr.start);
-        watchpoint* newwp = new watchpoint(*this, addr, obj);
+        watchpoint* newwp = new watchpoint(*this, addr, obj, id_r, id_w);
         m_watchpoints.push_back(newwp);
         wp = m_watchpoints.end() - 1;
+        (*wp)->subscribe(prot, subscr);
+        return *wp;
     }
 
-    if (is_read_allowed(prot)) {
-        if (!(*wp)->has_read_subscribers())
-            if (!insert_watchpoint(addr, VCML_ACCESS_READ))
-                return nullptr;
+    if (is_read_allowed(prot) && !(*wp)->has_read_subscribers()) {
+        if (!insert_watchpoint_id(addr, VCML_ACCESS_READ, (*wp)->user_id_r))
+            return nullptr;
+    }
+
+    if (is_write_allowed(prot) && !(*wp)->has_write_subscribers()) {
+        if (!insert_watchpoint_id(addr, VCML_ACCESS_WRITE, (*wp)->user_id_w)) {
+            if (is_read_allowed(prot) && !(*wp)->has_read_subscribers()) {
+                try_remove_watchpoint(**wp, VCML_ACCESS_READ);
+                (*wp)->user_id_r = 0;
+            }
+            return nullptr;
+        }
+    }
+
+    if (is_read_allowed(prot))
         (*wp)->subscribe(VCML_ACCESS_READ, subscr);
-    }
 
-    if (is_write_allowed(prot)) {
-        if (!(*wp)->has_write_subscribers())
-            if (!insert_watchpoint(addr, VCML_ACCESS_WRITE))
-                return nullptr;
+    if (is_write_allowed(prot))
         (*wp)->subscribe(VCML_ACCESS_WRITE, subscr);
-    }
 
     return *wp;
 }
@@ -793,14 +855,14 @@ bool target::remove_watchpoint(const watchpoint* wp, vcml_access prot,
     if (is_read_allowed(prot)) {
         (*it)->unsubscribe(VCML_ACCESS_READ, subscr);
         if (!(*it)->has_read_subscribers())
-            if (!remove_watchpoint((*it)->address(), VCML_ACCESS_READ))
+            if (!try_remove_watchpoint(**it, VCML_ACCESS_READ))
                 return false;
     }
 
     if (is_write_allowed(prot)) {
         (*it)->unsubscribe(VCML_ACCESS_WRITE, subscr);
         if (!(*it)->has_write_subscribers())
-            if (!remove_watchpoint((*it)->address(), VCML_ACCESS_WRITE))
+            if (!try_remove_watchpoint(**it, VCML_ACCESS_WRITE))
                 return false;
     }
 
@@ -825,14 +887,14 @@ bool target::remove_watchpoint(const range& addr, vcml_access prot,
     if (is_read_allowed(prot)) {
         (*wp)->unsubscribe(VCML_ACCESS_READ, subscr);
         if (!(*wp)->has_read_subscribers())
-            if (!remove_watchpoint(addr, VCML_ACCESS_READ))
+            if (!try_remove_watchpoint(**wp, VCML_ACCESS_READ))
                 return false;
     }
 
     if (is_write_allowed(prot)) {
         (*wp)->unsubscribe(VCML_ACCESS_WRITE, subscr);
         if (!(*wp)->has_write_subscribers())
-            if (!remove_watchpoint(addr, VCML_ACCESS_WRITE))
+            if (!try_remove_watchpoint(**wp, VCML_ACCESS_WRITE))
                 return false;
     }
 
