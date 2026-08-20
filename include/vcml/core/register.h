@@ -547,12 +547,12 @@ DATA& reg<DATA, N, STRIDE>::bank(int bk, size_t idx) {
 
 template <typename DATA, size_t N, size_t STRIDE>
 const DATA& reg<DATA, N, STRIDE>::current_bank(size_t idx) const {
-    return bank(current_cpu(), idx);
+    return bank(m_banked ? current_cpu() : SBI_CPUID_DEFAULT, idx);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
 DATA& reg<DATA, N, STRIDE>::current_bank(size_t idx) {
-    return bank(current_cpu(), idx);
+    return bank(m_banked ? current_cpu() : SBI_CPUID_DEFAULT, idx);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
