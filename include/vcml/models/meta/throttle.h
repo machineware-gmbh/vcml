@@ -34,10 +34,10 @@ private:
     void update();
 
 public:
+    property<double> rtf;
     property<string> method; // "sleep" or "wait"
     property<bool> allow_overrun;
     property<sc_time> update_interval;
-    property<double> rtf;
 
     throttle(const sc_module_name& nm);
     virtual ~throttle() = default;

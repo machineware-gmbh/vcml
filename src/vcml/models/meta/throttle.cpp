@@ -49,15 +49,21 @@ static u64 do_throttle(u64 delta, bool use_wait) {
     return over;
 }
 
+static u64 throttle_time_us(const sc_time& t, double rtf) {
+    if (rtf < 1e-6)
+        return time_to_ps(t) / rtf / 1e6;
+    if (rtf < 1e-3)
+        return time_to_ns(t) / rtf / 1e3;
+    return time_to_us(t) / rtf;
+}
+
 void throttle::update() {
     while (true) {
-        sc_time quantum = tlm::tlm_global_quantum::instance().get();
-        sc_time interval = max<sc_time>(quantum, update_interval);
-        wait(interval);
+        wait(update_interval);
 
         if (rtf > 0.0) {
             u64 real = mwr::timestamp_us() - m_start + m_extra;
-            u64 sysc = time_to_us(interval) / rtf;
+            u64 sysc = throttle_time_us(update_interval, rtf);
 
             if (sysc > real) {
                 if (!m_throttling)
@@ -82,10 +88,10 @@ throttle::throttle(const sc_module_name& nm):
     m_use_wait(false),
     m_start(mwr::timestamp_us()),
     m_extra(0),
+    rtf("rtf", 0.0),
     method("method", "sleep"),
     allow_overrun("allow_overrun", true),
-    update_interval("update_interval", sc_time(10.0, SC_MS)),
-    rtf("rtf", 0.0) {
+    update_interval("update_interval", sc_time(rtf / 100.0, SC_SEC)) {
     if (rtf > 0.0) {
         SC_HAS_PROCESS(throttle);
         SC_THREAD(update);
