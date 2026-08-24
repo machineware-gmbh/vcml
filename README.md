@@ -1,3 +1,6 @@
+![Logo](logo-lm.svg#gh-light-mode-only)
+![Logo](logo-dm.svg#gh-dark-mode-only)
+
 # Virtual Components Modeling Library (vcml)
 
 The Virtual Components Modeling Library contains a set of SystemC/TLM modeling
