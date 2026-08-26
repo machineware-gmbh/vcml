@@ -9,20 +9,114 @@
  ******************************************************************************/
 
 #include "vcml/ui/console.h"
+#include "vcml/core/module.h"
 
 namespace vcml {
 namespace ui {
 
-console::console():
-    m_fbptr(), m_mode(), m_inputs(), m_displays(), displays("displays") {
+size_t console::attach_display(const string& type) {
+    m_displays[m_next_id] = display::lookup(type);
+    return m_next_id++;
+}
+
+bool console::detach_display(size_t id) {
+    auto it = m_displays.find(id);
+    if (it == m_displays.end())
+        return false;
+    m_displays.erase(it);
+    return true;
+}
+
+bool console::cmd_attach_display(const vector<string>& args, ostream& os) {
+    try {
+        size_t id = attach_display(args[0]);
+        os << "created display " << id;
+        return true;
+    } catch (std::exception& ex) {
+        os << "error creating display " << args[0] << ":" << ex.what();
+        return false;
+    }
+}
+
+bool console::cmd_detach_display(const vector<string>& args, ostream& os) {
+    for (const string& arg : args) {
+        if (to_lower(arg) == "all") {
+            m_displays.clear();
+            return true;
+        } else {
+            size_t id = from_string<size_t>(arg);
+            if (!detach_display(id))
+                os << "invalid backend id: " << id;
+        }
+    }
+
+    return true;
+}
+
+bool console::cmd_list_displays(const vector<string>& args, ostream& os) {
+    if (args.empty()) {
+        for (auto& it : m_displays)
+            os << it.first << ": " << it.second->type() << ",";
+        return true;
+    }
+
+    for (const string& arg : args) {
+        size_t id = from_string<size_t>(arg);
+
+        auto it = m_displays.find(id);
+        os << id << ": ";
+        os << (it == m_displays.end() ? "none" : it->second->type());
+        os << ",";
+    }
+
+    return true;
+}
+
+bool console::cmd_screenshot(const vector<string>& args, ostream& os) {
+    string path = mkstr("%s.bmp", m_parent ? m_parent->name() : "screenshot");
+    if (args.size() > 0)
+        path = args[0];
+
+    if (screenshot(path)) {
+        os << "screenshot stored in '" << path << "'";
+        return true;
+    }
+
+    os << "failed to store screenshot in '" << path << "'";
+    return false;
+}
+
+console::console(sc_object* parent):
+    m_parent(parent),
+    m_fbptr(),
+    m_mode(),
+    m_next_id(),
+    m_inputs(),
+    m_displays(),
+    displays(parent, "displays") {
     for (const string& type : displays) {
         try {
-            auto disp = display::lookup(type);
-            if (disp)
-                m_displays.insert(disp);
+            attach_display(type);
         } catch (std::exception& ex) {
             log_warn("%s", ex.what());
         }
+    }
+
+    if (module* host = dynamic_cast<module*>(parent)) {
+        host->register_command(
+            "attach_display", 1, this, &console::cmd_attach_display,
+            "creates a new display of a given type and attaches it to this "
+            "console, usage: attach_display <type>");
+        host->register_command(
+            "detach_display", 1, this, &console::cmd_detach_display,
+            "disconnects a display from this console with the given IDs, "
+            "usage: detach_display <ID> [ID]..| all");
+        host->register_command(
+            "list_backends", 0, this, &console::cmd_list_displays,
+            "lists all known displays that are attached to this console");
+        host->register_command(
+            "screenshot", 0, this, &console::cmd_screenshot,
+            "store a screenshot of the framebuffer, usage: screenshot [path]");
     }
 }
 
@@ -32,12 +126,12 @@ console::~console() {
 
 void console::notify(input& device) {
     m_inputs.insert(&device);
-    for (auto& disp : m_displays)
+    for (auto& [id, disp] : m_displays)
         disp->attach(&device);
 }
 
 void console::setup(const videomode& mode, u8* fbptr) {
-    for (auto& disp : m_displays)
+    for (auto& [id, disp] : m_displays)
         disp->setup(mode, fbptr);
 
     m_mode = mode;
@@ -45,12 +139,12 @@ void console::setup(const videomode& mode, u8* fbptr) {
 }
 
 void console::render(u32 x, u32 y, u32 w, u32 h) {
-    for (auto& disp : m_displays)
+    for (auto& [id, disp] : m_displays)
         disp->render(x, y, w, h);
 }
 
 void console::render() {
-    for (auto& disp : m_displays)
+    for (auto& [id, disp] : m_displays)
         disp->render();
 }
 
@@ -58,7 +152,7 @@ void console::shutdown() {
     m_mode.clear();
     m_fbptr = nullptr;
 
-    for (auto& disp : m_displays)
+    for (auto& [id, disp] : m_displays)
         disp->cleanup();
 
     m_inputs.clear();

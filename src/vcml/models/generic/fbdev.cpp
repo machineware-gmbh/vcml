@@ -20,20 +20,6 @@ void fbdev::update() {
     }
 }
 
-bool fbdev::cmd_screenshot(const vector<string>& args, ostream& os) {
-    string path = mkstr("%s.bmp", name());
-    if (args.size() > 0)
-        path = args[0];
-
-    if (m_console.screenshot(path)) {
-        os << "screenshot stored in '" << path << "'";
-        return true;
-    }
-
-    os << "failed to store screenshot in '" << path << "'";
-    return false;
-}
-
 fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
     component(nm),
     m_console(),
@@ -73,9 +59,6 @@ fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
         SC_HAS_PROCESS(fbdev);
         SC_THREAD(update);
     }
-
-    register_command("screenshot", 0, &fbdev::cmd_screenshot,
-                     "store a screenshot of the framebuffer");
 }
 
 fbdev::~fbdev() {

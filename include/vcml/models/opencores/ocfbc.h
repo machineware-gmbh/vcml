@@ -64,7 +64,6 @@ private:
     void update();
 
     bool cmd_info(const vector<string>& args, ostream& os);
-    bool cmd_screenshot(const vector<string>& args, ostream& os);
 
     // disabled
     ocfbc();

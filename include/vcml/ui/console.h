@@ -12,6 +12,7 @@
 #define VCML_UI_CONSOLE_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/module.h"
 
 #include "vcml/ui/video.h"
 #include "vcml/ui/keymap.h"
@@ -27,11 +28,22 @@ namespace ui {
 class console
 {
 private:
+    sc_object* m_parent;
+
     u8* m_fbptr;
     videomode m_mode;
+    size_t m_next_id;
 
     unordered_set<input*> m_inputs;
-    unordered_set<shared_ptr<display>> m_displays;
+    unordered_map<size_t, shared_ptr<display>> m_displays;
+
+    size_t attach_display(const string& type);
+    bool detach_display(size_t id);
+
+    bool cmd_attach_display(const vector<string>& args, ostream& os);
+    bool cmd_detach_display(const vector<string>& args, ostream& os);
+    bool cmd_list_displays(const vector<string>& args, ostream& os);
+    bool cmd_screenshot(const vector<string>& args, ostream& os);
 
 public:
     property<vector<string>> displays;
@@ -46,7 +58,7 @@ public:
     u32 yres() const { return m_mode.yres; }
     u32 read_pixel(u32 x, u32 y) const;
 
-    console();
+    console(sc_object* host = hierarchy_top());
     virtual ~console();
 
     void notify(input& device);
