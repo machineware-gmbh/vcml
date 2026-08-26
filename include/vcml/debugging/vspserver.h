@@ -59,6 +59,7 @@ private:
     string handle_pwrite(int client, const string& command);
     string handle_setsm(int client, const string& command);
     string handle_arch(int client, const string& command);
+    string handle_tinfo(int client, const string& command);
 
     void disconnect_all();
     void force_quit();

@@ -697,6 +697,23 @@ string vspserver::handle_arch(int client, const string& cmd) {
     return mkstr("OK,%s", arch);
 }
 
+string vspserver::handle_tinfo(int client, const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    return mkstr("OK,id:0x%llx,pc:0x%llx,lr:0x%llx,sp:0x%llx,fp:0x%llx",
+                 tgt->core_id(), tgt->program_counter(), tgt->link_register(),
+                 tgt->stack_pointer(), tgt->frame_pointer());
+}
+
 void vspserver::disconnect_all() {
     for (auto [id, client] : m_clients) {
         delete client;
@@ -769,6 +786,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("pwrite", &vspserver::handle_pwrite);
     register_handler("setsm", &vspserver::handle_setsm);
     register_handler("arch", &vspserver::handle_arch);
+    register_handler("tinfo", &vspserver::handle_tinfo);
 
     // Create announce file
     ofstream of(m_announce.c_str());
