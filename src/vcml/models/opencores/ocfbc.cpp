@@ -303,6 +303,7 @@ bool ocfbc::cmd_info(const vector<string>& args, ostream& os) {
 
 ocfbc::ocfbc(const sc_module_name& nm):
     peripheral(nm),
+    m_console(this),
     m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
     m_palette(),
     m_fb(nullptr),

@@ -15,7 +15,10 @@ namespace vcml {
 namespace ui {
 
 size_t console::attach_display(const string& type) {
-    m_displays[m_next_id] = display::lookup(type);
+    auto display = display::lookup(type);
+    if (m_mode.is_valid())
+        display->init(m_mode, m_fbptr);
+    m_displays[m_next_id] = display;
     return m_next_id++;
 }
 
@@ -23,6 +26,7 @@ bool console::detach_display(size_t id) {
     auto it = m_displays.find(id);
     if (it == m_displays.end())
         return false;
+    display::remove(it->second);
     m_displays.erase(it);
     return true;
 }
@@ -112,7 +116,7 @@ console::console(sc_object* parent):
             "disconnects a display from this console with the given IDs, "
             "usage: detach_display <ID> [ID]..| all");
         host->register_command(
-            "list_backends", 0, this, &console::cmd_list_displays,
+            "list_displays", 0, this, &console::cmd_list_displays,
             "lists all known displays that are attached to this console");
         host->register_command(
             "screenshot", 0, this, &console::cmd_screenshot,

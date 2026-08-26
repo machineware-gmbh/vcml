@@ -22,7 +22,7 @@ void fbdev::update() {
 
 fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
     component(nm),
-    m_console(),
+    m_console(this),
     m_mode(),
     m_vptr(nullptr),
     addr("addr", 0),

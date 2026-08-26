@@ -38,8 +38,19 @@ private:
     vector<input*> m_inputs;
 
 protected:
+    struct display_info {
+        atomic<size_t> users;
+        shared_ptr<display> disp;
+        display_info() = default;
+        display_info(display* ptr): users(), disp(ptr) {}
+        display_info(const display_info& o):
+            users(o.users.load()), disp(o.disp) {}
+        display_info(display_info&& other) noexcept:
+            users(other.users.load()), disp(std::move(other.disp)) {}
+    };
+
     static unordered_map<string, create_fn> types;
-    static unordered_map<u32, shared_ptr<display>> displays;
+    static unordered_map<u32, display_info> displays;
 
 public:
     mwr::logger log;
@@ -84,6 +95,7 @@ public:
 
     static void define(const string& type, create_fn fn);
     static shared_ptr<display> lookup(const string& name);
+    static void remove(const shared_ptr<display>& disp);
 };
 
 #define VCML_DEFINE_UI_DISPLAY(name, fn)        \

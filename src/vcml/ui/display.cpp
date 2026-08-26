@@ -163,8 +163,8 @@ VCML_DEFINE_UI_DISPLAY(vnc, vnc::create)
 VCML_DEFINE_UI_DISPLAY(sdl, sdl::create)
 #endif
 
-unordered_map<u32, shared_ptr<display>> display::displays = {
-    { 0, shared_ptr<display>(create_null(0)) } // no-op server
+unordered_map<u32, display::display_info> display::displays = {
+    { 0, display_info(create_null(0)) } // no-op server
 };
 
 void display::define(const string& type, create_fn fn) {
@@ -178,17 +178,17 @@ shared_ptr<display> display::lookup(const string& name) {
         return nullptr;
 
     if (name.empty())
-        return displays[0];
+        return displays[0].disp;
 
     u32 nr;
     string type;
     vector<string> options;
 
     if (!parse_display(name, type, nr, options))
-        VCML_ERROR("cannot parse display name: %s", name.c_str());
+        VCML_REPORT("cannot parse display name: %s", name.c_str());
 
-    shared_ptr<display>& disp = displays[nr];
-    if (disp == nullptr) {
+    display_info& info = displays[nr];
+    if (info.disp == nullptr) {
         auto it = types.find(type);
         if (it == types.end()) {
             stringstream ss;
@@ -198,13 +198,24 @@ shared_ptr<display> display::lookup(const string& name) {
             VCML_REPORT("%s", ss.str().c_str());
         }
 
-        disp.reset(it->second(nr));
+        info.users = 1;
+        info.disp.reset(it->second(nr));
     }
 
     for (const string& option : options)
-        disp->handle_option(option);
+        info.disp->handle_option(option);
 
-    return disp;
+    return info.disp;
+}
+
+void display::remove(const shared_ptr<display>& disp) {
+    for (auto& [id, info] : displays) {
+        if (info.disp == disp) {
+            if (--info.users == 0)
+                info.disp = nullptr;
+            return;
+        }
+    }
 }
 
 } // namespace ui
