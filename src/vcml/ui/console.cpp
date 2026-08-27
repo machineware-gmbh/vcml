@@ -26,6 +26,8 @@ bool console::detach_display(size_t id) {
     auto it = m_displays.find(id);
     if (it == m_displays.end())
         return false;
+    if (m_mode.is_valid())
+        it->second->shutdown();
     display::remove(it->second);
     m_displays.erase(it);
     return true;

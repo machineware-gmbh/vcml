@@ -893,8 +893,6 @@ vnc::vnc(u32 no):
 
     m_buffer.reserve(4096);
     m_socket.set_tcp_nodelay(true);
-
-    std::cout << "created VNC " << std::endl;
 }
 
 vnc::~vnc() {
