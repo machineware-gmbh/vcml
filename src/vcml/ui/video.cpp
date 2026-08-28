@@ -131,9 +131,9 @@ color_channel pixelformat_r(pixelformat fmt) {
     case FORMAT_B8G8R8X8:
         return { 8, 8 };
     case FORMAT_R8G8B8:
-        return { 16, 8 };
-    case FORMAT_B8G8R8:
         return { 0, 8 };
+    case FORMAT_B8G8R8:
+        return { 16, 8 };
     case FORMAT_R5G6B5:
         return { 11, 5 };
     case FORMAT_B5G6R5:
@@ -197,9 +197,9 @@ color_channel pixelformat_b(pixelformat fmt) {
     case FORMAT_B8G8R8X8:
         return { 24, 8 };
     case FORMAT_R8G8B8:
-        return { 0, 8 };
-    case FORMAT_B8G8R8:
         return { 16, 8 };
+    case FORMAT_B8G8R8:
+        return { 0, 8 };
     case FORMAT_R5G6B5:
         return { 0, 5 };
     case FORMAT_B5G6R5:
