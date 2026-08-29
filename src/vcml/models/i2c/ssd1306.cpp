@@ -1,6 +1,14 @@
-#include "ssd1306.h"
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2026 MachineWare GmbH                                        *
+ * All Rights Reserved                                                        *
+ *                                                                            *
+ * This work is licensed under the terms described in the LICENSE file found  *
+ * in the root directory of this source tree.                                 *
+ *                                                                            *
+ ******************************************************************************/
 
-#include <cstring>
+#include "vcml/models/i2c/ssd1306.h"
 
 namespace vcml {
 namespace i2c {
@@ -10,7 +18,7 @@ ssd1306::ssd1306(const sc_core::sc_module_name& nm):
     i2c_host(),
     alternate_address("alternate_address", false),
     rotated("rotated", true),
-    on_color("on_color", 0x66ccffu),
+    on_color("on_color", 0xffffffu),
     off_color("off_color", 0x000000u),
     in("in"),
     m_console() {
