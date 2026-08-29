@@ -175,6 +175,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/i2c/ads1015.cpp
     ${src}/vcml/models/i2c/oci2c.cpp
     ${src}/vcml/models/i2c/sifive.cpp
+    ${src}/vcml/models/i2c/ssd1306.cpp
     ${src}/vcml/models/lin/network.cpp
     ${src}/vcml/models/lin/gateway.cpp
     ${src}/vcml/models/spi/bus.cpp
