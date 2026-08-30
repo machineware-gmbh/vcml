@@ -68,9 +68,9 @@ TEST(display, server) {
     EXPECT_EQ(p4->id(), port2);
     EXPECT_EQ(p5->id(), port2);
 
-    p1->shutdown();
-    p2->shutdown();
-    p3->shutdown();
-    p4->shutdown();
-    p5->shutdown();
+    ui::backend::destroy(p1);
+    ui::backend::destroy(p2);
+    ui::backend::destroy(p3);
+    ui::backend::destroy(p4);
+    ui::backend::destroy(p5);
 }
