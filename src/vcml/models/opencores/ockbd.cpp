@@ -18,17 +18,18 @@ namespace opencores {
 void ockbd::update() {
     ui::input_event event;
     while (m_keyboard.pop_event(event)) {
-        VCML_ERROR_ON(!event.is_key(), "illegal event from keyboard");
-        u8 scancode = (u8)(event.code & 0xff);
-        bool down = event.state > 0;
+        if (event.is_key()) {
+            u8 scancode = (u8)(event.code & 0xff);
+            bool down = event.state > 0;
 
-        if (!down)
-            scancode |= MOD_RELEASE;
+            if (!down)
+                scancode |= MOD_RELEASE;
 
-        if (m_key_fifo.size() < fifosize)
-            m_key_fifo.push(scancode);
-        else
-            log_debug("FIFO full, dropping key");
+            if (m_key_fifo.size() < fifosize)
+                m_key_fifo.push(scancode);
+            else
+                log_debug("FIFO full, dropping key");
+        }
     }
 
     if (!irq && !m_key_fifo.empty())
@@ -63,8 +64,7 @@ u8 ockbd::read_khr() {
 ockbd::ockbd(const sc_module_name& nm):
     peripheral(nm),
     m_key_fifo(),
-    m_keyboard(name()),
-    m_console(),
+    m_keyboard("keyboard"),
     khr("khr", 0x0, 0),
     irq("irq"),
     in("in"),
@@ -75,20 +75,12 @@ ockbd::ockbd(const sc_module_name& nm):
     khr.allow_read_only();
     khr.on_read(&ockbd::read_khr);
 
-    if (m_console.has_display()) {
-        m_console.notify(m_keyboard);
-        SC_HAS_PROCESS(ockbd);
-        SC_METHOD(update);
-    }
+    SC_HAS_PROCESS(ockbd);
+    SC_METHOD(update);
 }
 
 ockbd::~ockbd() {
     // nothing to do
-}
-
-void ockbd::end_of_simulation() {
-    m_console.shutdown();
-    peripheral::end_of_simulation();
 }
 
 VCML_EXPORT_MODEL(vcml::opencores::ockbd, name, args) {

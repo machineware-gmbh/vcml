@@ -18,7 +18,7 @@
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/video.h"
-#include "vcml/ui/display.h"
+#include "vcml/ui/backend.h"
 
 namespace vcml {
 namespace ui {
@@ -73,7 +73,7 @@ struct vnc_pixelformat {
     u8 boff;
 };
 
-class vnc : public display
+class vnc : public backend
 {
 private:
     int m_port;
@@ -142,7 +142,7 @@ public:
 
     virtual void handle_option(const string& option) override;
 
-    static display* create(u32 nr);
+    static backend* create(u32 nr);
 };
 
 } // namespace ui

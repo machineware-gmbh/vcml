@@ -33,7 +33,6 @@ private:
     queue<u8> m_key_fifo;
 
     ui::keyboard m_keyboard;
-    ui::console m_console;
 
     void update();
     void key_event(u32 key, u32 down);
@@ -56,9 +55,6 @@ public:
     ockbd(const sc_module_name& name);
     virtual ~ockbd();
     VCML_KIND(opencores::ockbd);
-
-protected:
-    virtual void end_of_simulation() override;
 };
 
 } // namespace opencores

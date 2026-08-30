@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright (C) 2022 MachineWare GmbH                                        *
+ * Copyright (C) 2026 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
  *                                                                            *
  * This work is licensed under the terms described in the LICENSE file found  *
@@ -22,86 +22,64 @@
 namespace vcml {
 namespace ui {
 
-class display
+class display_if
 {
 public:
-    using create_fn = function<display*(u32)>;
+    virtual ~display_if() = default;
 
+    virtual void display_setup(const videomode& mode, u8* fbptr) = 0;
+    virtual void display_render(u32 x, u32 y, u32 w, u32 h) = 0;
+};
+
+class display : public sc_object
+{
 private:
-    string m_name;
-    string m_type;
-    u32 m_dispno;
+    mutable mutex m_mtx;
+    vector<display_if*> m_ifs;
+
+    u8* m_fbptr;
     videomode m_mode;
-    u8* m_fb;
-    u8* m_nullfb;
-
-    vector<input*> m_inputs;
-
-protected:
-    struct display_info {
-        atomic<size_t> users;
-        shared_ptr<display> disp;
-        display_info() = default;
-        display_info(display* ptr): users(), disp(ptr) {}
-        display_info(const display_info& o):
-            users(o.users.load()), disp(o.disp) {}
-        display_info(display_info&& other) noexcept:
-            users(other.users.load()), disp(std::move(other.disp)) {}
-    };
-
-    static unordered_map<string, create_fn> types;
-    static unordered_map<u32, display_info> displays;
 
 public:
-    mwr::logger log;
+    display(const string& nm = "display");
+    virtual ~display();
 
     u32 xres() const { return m_mode.xres; }
     u32 yres() const { return m_mode.yres; }
 
-    u32 dispno() const { return m_dispno; }
-
-    const char* type() const { return m_type.c_str(); }
-    const char* name() const { return m_name.c_str(); }
-
-    const videomode& mode() const { return m_mode; }
-
-    u8* framebuffer() const { return m_fb; }
-    u64 framebuffer_size() const { return m_mode.size; }
-    bool has_framebuffer() const { return m_mode.size > 0; }
-
-    display() = delete;
-    display(const display&) = delete;
-    display(const string& type, u32 nr);
-    virtual ~display();
-
-    virtual void init(const videomode& mode, u8* fbptr);
-    virtual void reinit(const videomode& newmode, u8* newptr);
-    virtual void shutdown();
-
-    virtual void render(u32 x, u32 y, u32 w, u32 h);
-    virtual void render();
-
-    virtual void notify_key(u32 keysym, bool down);
-    virtual void notify_btn(u32 button, bool down);
-    virtual void notify_pos(u32 x, u32 y);
-
-    virtual void handle_option(const string& option);
+    u32 read_pixel(u32 x, u32 y) const;
 
     void setup(const videomode& mode, u8* fbptr);
-    void cleanup();
+    void render(u32 x, u32 y, u32 w, u32 h);
+    void render();
 
-    void attach(input* device);
-    void detach(input* device);
+    void attach(display_if* dif);
+    void detach(display_if* dif);
 
-    static void define(const string& type, create_fn fn);
-    static shared_ptr<display> lookup(const string& name);
-    static void remove(const shared_ptr<display>& disp);
+    bool screenshot(const string& path) const;
 };
 
-#define VCML_DEFINE_UI_DISPLAY(name, fn)        \
-    MWR_CONSTRUCTOR(define_ui_display_##name) { \
-        vcml::ui::display::define(#name, fn);   \
+inline u32 display::read_pixel(u32 x, u32 y) const {
+    if (m_fbptr == nullptr || x >= xres() || y >= yres())
+        return 0;
+
+    const void* ptr = m_fbptr + y * m_mode.stride + x * m_mode.bpp;
+
+    switch (m_mode.bpp) {
+    case 1:
+        return mwr::read_once<u8>(ptr);
+    case 2:
+        return mwr::read_once<u16>(ptr);
+    case 4:
+        return mwr::read_once<u32>(ptr);
+    default:
+        VCML_ERROR("invalid videomode: %zubpp", m_mode.bpp);
     }
+}
+
+inline void display::render() {
+    render(0, 0, xres(), yres());
+}
 
 } // namespace ui
 } // namespace vcml

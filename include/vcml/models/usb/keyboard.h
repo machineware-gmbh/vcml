@@ -33,7 +33,6 @@ private:
     vector<u8> m_keys;
 
     ui::keyboard m_keyboard;
-    ui::console m_console;
 
     void poll_modifier_keys(u8& data);
     void poll_standard_keys(u8* data, size_t len);
@@ -67,9 +66,6 @@ public:
     VCML_KIND(usb::keyboard);
 
 protected:
-    virtual void start_of_simulation() override;
-    virtual void end_of_simulation() override;
-
     virtual usb_result get_report(u8* data, size_t size);
     virtual usb_result set_report(u8* data, size_t size);
 

@@ -19,7 +19,7 @@
 
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/video.h"
-#include "vcml/ui/display.h"
+#include "vcml/ui/backend.h"
 
 #include <SDL.h>
 
@@ -27,7 +27,7 @@ namespace vcml {
 namespace ui {
 
 struct sdl_client {
-    display* disp;
+    backend* disp;
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* texture;
@@ -70,15 +70,15 @@ public:
     ~sdl();
 
     void run();
-    void register_display(display* disp);
-    void unregister_display(display* disp);
-    void update_display(display* disp);
+    void register_display(backend* disp);
+    void unregister_display(backend* disp);
+    void update_display(backend* disp);
 
     static sdl& instance();
-    static display* create(u32 nr);
+    static backend* create(u32 nr);
 };
 
-class sdl_display : public display
+class sdl_display : public backend
 {
 private:
     sdl& m_owner;
@@ -89,8 +89,6 @@ public:
 
     virtual void init(const videomode& mode, u8* fb) override;
     virtual void reinit(const videomode& mode, u8* fb) override;
-    virtual void render(u32 x, u32 y, u32 w, u32 h) override;
-    virtual void render() override;
     virtual void shutdown() override;
 };
 

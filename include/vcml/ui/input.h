@@ -30,11 +30,9 @@ struct input_event {
     constexpr bool is_rel() const { return type == EV_REL; }
 };
 
-class input
+class input : public sc_object
 {
 private:
-    string m_name;
-
     mutable mutex m_mutex;
     queue<input_event> m_events;
 
@@ -52,7 +50,7 @@ protected:
     virtual void handle_pos(u32 x, u32 y) = 0;
 
 public:
-    const char* input_name() const { return m_name.c_str(); }
+    const char* input_name() const { return name(); }
 
     size_t xmax() const { return 10000; }
     size_t ymax() const { return 10000; }

@@ -339,7 +339,7 @@ void sdl_client::init_window() {
     const char* name = disp->name();
     const int w = (int)disp->xres();
     const int h = (int)disp->yres();
-    SDL_Point pos = gen_window_pos(w, h, disp->dispno() % 10);
+    SDL_Point pos = gen_window_pos(w, h, disp->id() % 10);
 
     window = SDL_CreateWindow(name, pos.x, pos.y, w, h, 0);
     if (window == nullptr)
@@ -591,7 +591,7 @@ sdl::~sdl() {
         m_uithread.join();
 }
 
-void sdl::register_display(display* disp) {
+void sdl::register_display(backend* disp) {
     auto finder = [disp](const sdl_client& s) -> bool {
         return s.disp == disp;
     };
@@ -610,7 +610,7 @@ void sdl::register_display(display* disp) {
 #endif
 }
 
-void sdl::unregister_display(display* disp) {
+void sdl::unregister_display(backend* disp) {
     lock_guard<mutex> lock(m_mtx);
 
     auto finder = [disp](const sdl_client& s) -> bool {
@@ -624,7 +624,7 @@ void sdl::unregister_display(display* disp) {
     it->disp = nullptr;
 }
 
-void sdl::update_display(display* disp) {
+void sdl::update_display(backend* disp) {
     lock_guard<mutex> lock(m_mtx);
 
     auto finder = [disp](const sdl_client& s) -> bool {
@@ -643,12 +643,12 @@ sdl& sdl::instance() {
     return singleton;
 }
 
-display* sdl::create(u32 nr) {
+backend* sdl::create(u32 nr) {
     return new sdl_display(nr, instance());
 }
 
 sdl_display::sdl_display(u32 nr, sdl& owner):
-    display("sdl", nr), m_owner(owner) {
+    backend("sdl", nr), m_owner(owner) {
 }
 
 sdl_display::~sdl_display() {
@@ -656,27 +656,19 @@ sdl_display::~sdl_display() {
 }
 
 void sdl_display::init(const videomode& mode, u8* fb) {
-    display::init(mode, fb);
+    backend::init(mode, fb);
     m_owner.register_display(this);
 }
 
 void sdl_display::reinit(const videomode& mode, u8* fb) {
-    display::shutdown();
-    display::init(mode, fb);
+    backend::shutdown();
+    backend::init(mode, fb);
     m_owner.update_display(this);
-}
-
-void sdl_display::render(u32 x, u32 y, u32 w, u32 h) {
-    // nothing to do
-}
-
-void sdl_display::render() {
-    // nothing to do
 }
 
 void sdl_display::shutdown() {
     m_owner.unregister_display(this);
-    display::shutdown();
+    backend::shutdown();
 }
 
 } // namespace ui

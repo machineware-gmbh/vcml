@@ -13,10 +13,12 @@
 
 #include "vcml/core/types.h"
 #include "vcml/core/module.h"
+#include "vcml/core/model.h"
 
 #include "vcml/ui/video.h"
 #include "vcml/ui/keymap.h"
 #include "vcml/ui/input.h"
+#include "vcml/ui/backend.h"
 #include "vcml/ui/display.h"
 
 #include "vcml/logging/logger.h"
@@ -25,76 +27,42 @@
 namespace vcml {
 namespace ui {
 
-class console
+class console : public module, private display_if
 {
 private:
-    sc_object* m_parent;
-
-    u8* m_fbptr;
-    videomode m_mode;
     size_t m_next_id;
 
+    class display* m_display;
     unordered_set<input*> m_inputs;
-    unordered_map<size_t, shared_ptr<display>> m_displays;
+    unordered_map<size_t, backend*> m_backends;
 
-    size_t attach_display(const string& type);
-    bool detach_display(size_t id);
+    class display* find_display(const string& name);
+    class input* find_input(const string& name);
 
-    bool cmd_attach_display(const vector<string>& args, ostream& os);
-    bool cmd_detach_display(const vector<string>& args, ostream& os);
-    bool cmd_list_displays(const vector<string>& args, ostream& os);
+    size_t attach_backend(const string& type);
+    bool detach_backend(size_t id);
+
+    bool cmd_attach_backend(const vector<string>& args, ostream& os);
+    bool cmd_detach_backend(const vector<string>& args, ostream& os);
+    bool cmd_list_backend(const vector<string>& args, ostream& os);
     bool cmd_screenshot(const vector<string>& args, ostream& os);
 
 public:
-    property<vector<string>> displays;
+    property<string> display;
+    property<vector<string>> inputs;
+    property<vector<string>> backends;
 
-    bool has_display() const { return !m_displays.empty(); }
-
-    const videomode& mode() const { return m_mode; }
-    const u8* framebuffer() const { return m_fbptr; }
-    u8* framebuffer() { return m_fbptr; }
-
-    u32 xres() const { return m_mode.xres; }
-    u32 yres() const { return m_mode.yres; }
-    u32 read_pixel(u32 x, u32 y) const;
-
-    console(sc_object* host = hierarchy_top());
+    console(const sc_module_name& name);
     virtual ~console();
+    VCML_KIND(ui::console);
 
-    void notify(input& device);
+protected:
+    virtual void end_of_elaboration() override;
+    virtual void end_of_simulation() override;
 
-    void setup(const videomode& mode, u8* fbptr);
-    void render(u32 x, u32 y, u32 w, u32 h);
-    void render();
-    void shutdown();
-
-    bool screenshot(const string& path) const;
+    virtual void display_setup(const videomode& mode, u8* fbptr) override;
+    virtual void display_render(u32 x, u32 y, u32 w, u32 h) override;
 };
-
-inline u32 console::read_pixel(u32 x, u32 y) const {
-    if (m_fbptr == nullptr || x >= xres() || y >= yres())
-        return 0;
-
-    const void* ptr = m_fbptr + y * m_mode.stride + x * m_mode.bpp;
-
-    switch (m_mode.bpp) {
-    case 1:
-        return mwr::read_once<u8>(ptr);
-
-    case 2: {
-        u16 pixel = mwr::read_once<u16>(ptr);
-        return m_mode.endian != host_endian() ? bswap(pixel) : pixel;
-    }
-
-    case 4: {
-        u32 pixel = mwr::read_once<u32>(ptr);
-        return m_mode.endian != host_endian() ? bswap(pixel) : pixel;
-    }
-
-    default:
-        VCML_ERROR("invalid videomode: %zubpp", m_mode.bpp);
-    }
-}
 
 } // namespace ui
 } // namespace vcml

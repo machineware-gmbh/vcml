@@ -219,8 +219,7 @@ void keyboard::poll_keys(u8* data, size_t length) {
 keyboard::keyboard(const sc_module_name& nm):
     device(nm, KEYBOARD_DESC),
     m_leds(),
-    m_keyboard(name()),
-    m_console(),
+    m_keyboard("keyboard"),
     usb3("usb3", true),
     vendorid("vendorid", USB_VENDOR_VCML),
     productid("productid", 0x1),
@@ -247,17 +246,6 @@ keyboard::keyboard(const sc_module_name& nm):
 
 keyboard::~keyboard() {
     // nothing to do
-}
-
-void keyboard::start_of_simulation() {
-    device::start_of_simulation();
-    if (m_console.has_display())
-        m_console.notify(m_keyboard);
-}
-
-void keyboard::end_of_simulation() {
-    m_console.shutdown();
-    device::end_of_simulation();
 }
 
 usb_result keyboard::get_report(u8* data, size_t length) {

@@ -54,9 +54,8 @@ unordered_map<string, input*>& input::all_inputs() {
     return inputs;
 }
 
-input::input(const string& name): m_name(name), m_mutex(), m_events() {
-    VCML_ERROR_ON(find(name), "input '%s' already exists", name.c_str());
-    all_inputs()[name] = this;
+input::input(const string& nm): sc_object(nm.c_str()), m_mutex(), m_events() {
+    all_inputs()[name()] = this;
 }
 
 input::~input() {

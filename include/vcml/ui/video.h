@@ -69,7 +69,6 @@ struct videomode {
     color_channel b;
 
     bool grayscale;
-    endianess endian;
 
     videomode();
     videomode(pixelformat fmt, u32 xres, u32 yres);
@@ -105,8 +104,7 @@ struct videomode {
 };
 
 inline bool videomode::operator==(const videomode& other) const {
-    return xres == other.xres && yres == other.yres &&
-           format == other.format && endian == other.endian;
+    return xres == other.xres && yres == other.yres && format == other.format;
 }
 
 inline bool videomode::operator!=(const videomode& other) const {

@@ -16,13 +16,13 @@ namespace generic {
 void fbdev::update() {
     while (true) {
         wait_clock_cycle();
-        m_console.render();
+        m_display.render();
     }
 }
 
 fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
     component(nm),
-    m_console(this),
+    m_display("display"),
     m_mode(),
     m_vptr(nullptr),
     addr("addr", 0),
@@ -55,10 +55,8 @@ fbdev::fbdev(const sc_module_name& nm, u32 defx, u32 defy):
         m_mode = ui::videomode::a8r8g8b8(xres, yres);
     }
 
-    if (m_console.has_display()) {
-        SC_HAS_PROCESS(fbdev);
-        SC_THREAD(update);
-    }
+    SC_HAS_PROCESS(fbdev);
+    SC_THREAD(update);
 }
 
 fbdev::~fbdev() {
@@ -92,12 +90,7 @@ void fbdev::end_of_elaboration() {
     }
 
     log_debug("using DMI pointer %p", m_vptr);
-    m_console.setup(m_mode, m_vptr);
-}
-
-void fbdev::end_of_simulation() {
-    m_console.shutdown();
-    component::end_of_simulation();
+    m_display.setup(m_mode, m_vptr);
 }
 
 VCML_EXPORT_MODEL(vcml::generic::fbdev, name, args) {
