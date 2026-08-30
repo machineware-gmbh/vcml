@@ -131,6 +131,7 @@
 #include "vcml/models/i2c/ads1015.h"
 #include "vcml/models/i2c/oci2c.h"
 #include "vcml/models/i2c/sifive.h"
+#include "vcml/models/i2c/ssd1306.h"
 
 #include "vcml/models/lin/network.h"
 #include "vcml/models/lin/gateway.h"

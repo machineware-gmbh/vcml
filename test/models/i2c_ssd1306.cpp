@@ -36,9 +36,69 @@ struct ssd1306_test : public test_base, i2c_host {
         add_test("write_gddram", &ssd1306_test::test_write_gddram);
         add_test("nop", &ssd1306_test::test_nop);
         add_test("entire_display_on", &ssd1306_test::test_entire_display_on);
+        add_test("scroll_default_off", &ssd1306_test::test_scroll_default_off);
+        add_test("scroll_activate_deactivate",
+                 &ssd1306_test::test_scroll_activate_deactivate);
+        add_test("horizontal_scroll_right",
+                 &ssd1306_test::test_horizontal_scroll_right);
+        add_test("horizontal_scroll_left",
+                 &ssd1306_test::test_horizontal_scroll_left);
+        add_test("horizontal_scroll_page_range",
+                 &ssd1306_test::test_horizontal_scroll_page_range);
+        add_test("vertical_scroll_area",
+                 &ssd1306_test::test_vertical_scroll_area);
+        add_test("scroll_setup_split_across_transactions",
+                 &ssd1306_test::test_scroll_setup_split_across_transactions);
 
-        screen.rotated = false;
         rst.bind(screen.rst);
+    }
+
+    void send_commands(std::initializer_list<u8> bytes) {
+        resp = socket.start(SSD1306_ADDR, tlm::TLM_WRITE_COMMAND);
+        ASSERT_EQ(resp, I2C_ACK);
+        data = CONTROL_MULTI_CMD;
+        resp = socket.transport(data);
+        ASSERT_EQ(resp, I2C_ACK);
+
+        for (u8 b : bytes) {
+            data = b;
+            resp = socket.transport(data);
+            ASSERT_EQ(resp, I2C_ACK);
+        }
+
+        resp = socket.stop();
+        ASSERT_EQ(resp, I2C_ACK);
+    }
+
+    void send_commands_split(std::initializer_list<u8> bytes) {
+        for (u8 b : bytes) {
+            resp = socket.start(SSD1306_ADDR, tlm::TLM_WRITE_COMMAND);
+            ASSERT_EQ(resp, I2C_ACK);
+            data = CONTROL_SINGLE_CMD;
+            resp = socket.transport(data);
+            ASSERT_EQ(resp, I2C_ACK);
+            data = b;
+            resp = socket.transport(data);
+            ASSERT_EQ(resp, I2C_ACK);
+            resp = socket.stop();
+            ASSERT_EQ(resp, I2C_ACK);
+        }
+    }
+
+    void write_byte(u8 page, u8 col, u8 value) {
+        send_commands({ (u8)(0xb0 | (page & 0x7)), (u8)(0x00 | (col & 0x0f)),
+                        (u8)(0x10 | ((col >> 4) & 0x0f)) });
+
+        resp = socket.start(SSD1306_ADDR, tlm::TLM_WRITE_COMMAND);
+        ASSERT_EQ(resp, I2C_ACK);
+        data = CONTROL_SINGLE_DATA;
+        resp = socket.transport(data);
+        ASSERT_EQ(resp, I2C_ACK);
+        data = value;
+        resp = socket.transport(data);
+        ASSERT_EQ(resp, I2C_ACK);
+        resp = socket.stop();
+        ASSERT_EQ(resp, I2C_ACK);
     }
 
     void test_init_state() {
@@ -176,20 +236,20 @@ struct ssd1306_test : public test_base, i2c_host {
         ASSERT_EQ(resp, I2C_ACK);
 
         for (size_t i = 0; i < 8; i++)
-            ASSERT_TRUE(screen.read_pixel(0, i));
+            ASSERT_TRUE(screen.read_pixel(127, 63 - i));
 
-        ASSERT_FALSE(screen.read_pixel(0, 8));
-        ASSERT_FALSE(screen.read_pixel(1, 0));
+        ASSERT_FALSE(screen.read_pixel(127, 55));
+        ASSERT_FALSE(screen.read_pixel(126, 63));
 
         data = 0xff;
         resp = socket.transport(data);
         ASSERT_EQ(resp, I2C_ACK);
 
         for (size_t i = 0; i < 8; i++)
-            ASSERT_TRUE(screen.read_pixel(1, i));
+            ASSERT_TRUE(screen.read_pixel(126, 63 - i));
 
-        ASSERT_FALSE(screen.read_pixel(1, 8));
-        ASSERT_FALSE(screen.read_pixel(2, 0));
+        ASSERT_FALSE(screen.read_pixel(126, 55));
+        ASSERT_FALSE(screen.read_pixel(125, 63));
 
         resp = socket.stop();
         ASSERT_EQ(resp, I2C_ACK);
@@ -231,6 +291,145 @@ struct ssd1306_test : public test_base, i2c_host {
 
         resp = socket.stop();
         ASSERT_EQ(resp, I2C_ACK);
+    }
+
+    void test_scroll_default_off() {
+        screen.reset();
+
+        ASSERT_FALSE(screen.is_scrolling());
+        ASSERT_GT(screen.frame_period().to_seconds(), 0.0);
+    }
+
+    void test_scroll_activate_deactivate() {
+        screen.reset();
+
+        send_commands({ 0x2e });
+        ASSERT_FALSE(screen.is_scrolling());
+
+        send_commands({ 0x26, 0x00, 0x00, 0x07, 0x07, 0x00, 0xff });
+        ASSERT_FALSE(screen.is_scrolling());
+
+        send_commands({ 0x2f });
+        ASSERT_TRUE(screen.is_scrolling());
+
+        send_commands({ 0x2e });
+        ASSERT_FALSE(screen.is_scrolling());
+    }
+
+    void test_horizontal_scroll_right() {
+        screen.reset();
+        send_commands({ 0xaf });
+        send_commands({ 0xa4 });
+        write_byte(0, 0, 0xff);
+
+        for (size_t i = 0; i < 8; i++)
+            ASSERT_TRUE(screen.read_pixel(127, 63 - i));
+
+        send_commands({ 0x26, 0x00, 0x00, 0x07, 0x07, 0x00, 0xff });
+        send_commands({ 0x2f });
+        ASSERT_TRUE(screen.is_scrolling());
+
+        wait(screen.frame_period() * 2.0);
+        wait(sc_core::SC_ZERO_TIME);
+
+        for (size_t i = 0; i < 8; i++) {
+            ASSERT_FALSE(screen.read_pixel(127, 63 - i));
+            ASSERT_TRUE(screen.read_pixel(126, 63 - i));
+        }
+    }
+
+    void test_horizontal_scroll_left() {
+        screen.reset();
+        send_commands({ 0xaf });
+        send_commands({ 0xa4 });
+        write_byte(0, 0, 0xff);
+
+        for (size_t i = 0; i < 8; i++)
+            ASSERT_TRUE(screen.read_pixel(127, 63 - i));
+
+        send_commands({ 0x27, 0x00, 0x00, 0x07, 0x07, 0x00, 0xff });
+        send_commands({ 0x2f });
+
+        wait(screen.frame_period() * 2.0);
+        wait(sc_core::SC_ZERO_TIME);
+
+        for (size_t i = 0; i < 8; i++) {
+            ASSERT_FALSE(screen.read_pixel(127, 63 - i));
+            ASSERT_TRUE(screen.read_pixel(0, 63 - i));
+        }
+    }
+
+    void test_horizontal_scroll_page_range() {
+        screen.reset();
+        send_commands({ 0xaf });
+        send_commands({ 0xa4 });
+        write_byte(0, 0, 0xff);
+        write_byte(1, 0, 0xff);
+
+        send_commands({ 0x26, 0x00, 0x00, 0x07, 0x00, 0x00, 0xff });
+        send_commands({ 0x2f });
+
+        wait(screen.frame_period() * 2.0);
+        wait(sc_core::SC_ZERO_TIME);
+
+        for (size_t i = 0; i < 8; i++) {
+            ASSERT_FALSE(screen.read_pixel(127, 63 - i));
+            ASSERT_TRUE(screen.read_pixel(126, 63 - i));
+        }
+
+        for (size_t i = 0; i < 8; i++)
+            ASSERT_TRUE(screen.read_pixel(127, 55 - i));
+    }
+
+    void test_vertical_scroll_area() {
+        screen.reset();
+        send_commands({ 0xaf });
+        send_commands({ 0xa4 });
+        write_byte(0, 5, 0x01);
+
+        ASSERT_TRUE(screen.read_pixel(122, 63));
+        for (size_t y = 56; y <= 62; y++)
+            ASSERT_FALSE(screen.read_pixel(122, y));
+
+        send_commands({ 0xa3, 0x00, 0x08 });
+        send_commands({ 0x29, 0x00, 0x01, 0x07, 0x01, 0x01 });
+        send_commands({ 0x2f });
+        ASSERT_TRUE(screen.is_scrolling());
+
+        wait(screen.frame_period() * 2.0);
+        wait(sc_core::SC_ZERO_TIME);
+
+        ASSERT_FALSE(screen.read_pixel(122, 63));
+        ASSERT_TRUE(screen.read_pixel(122, 56));
+        for (size_t y = 57; y <= 62; y++)
+            ASSERT_FALSE(screen.read_pixel(122, y));
+    }
+
+    void test_scroll_setup_split_across_transactions() {
+        screen.reset();
+        send_commands({ 0xaf });
+        send_commands({ 0xa4 });
+        write_byte(0, 0, 0xff);
+
+        for (size_t i = 0; i < 8; i++)
+            ASSERT_TRUE(screen.read_pixel(127, 63 - i));
+
+        send_commands({ 0x26, 0x00 });
+        send_commands_split({ 0x00 });
+        send_commands_split({ 0x00 });
+        send_commands_split({ 0x07 });
+        send_commands({ 0x00, 0xff });
+        send_commands_split({ 0x2f });
+
+        ASSERT_TRUE(screen.is_scrolling());
+
+        wait(screen.frame_period() * 5.0);
+        wait(sc_core::SC_ZERO_TIME);
+
+        for (size_t i = 0; i < 8; i++) {
+            ASSERT_FALSE(screen.read_pixel(127, 63 - i));
+            ASSERT_TRUE(screen.read_pixel(126, 63 - i));
+        }
     }
 };
 
