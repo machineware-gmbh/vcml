@@ -92,6 +92,7 @@ add_library(vcml STATIC
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
     ${src}/vcml/ui/display.cpp
+    ${src}/vcml/ui/backend.cpp
     ${src}/vcml/ui/console.cpp
     ${src}/vcml/ui/vnc.cpp
     ${src}/vcml/ui/icon.cpp

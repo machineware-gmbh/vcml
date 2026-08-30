@@ -33,7 +33,7 @@ private:
         PALETTE_SIZE = 0x200 // 2x 256x4bytes
     };
 
-    ui::console m_console;
+    ui::display m_display;
 
     const range m_palette_addr;
     u32 m_palette[PALETTE_SIZE];
@@ -64,7 +64,6 @@ private:
     void update();
 
     bool cmd_info(const vector<string>& args, ostream& os);
-    bool cmd_screenshot(const vector<string>& args, ostream& os);
 
     // disabled
     ocfbc();
@@ -120,9 +119,6 @@ public:
     ocfbc(const sc_module_name& name);
     virtual ~ocfbc();
     VCML_KIND(opencores::ocfbc);
-
-protected:
-    virtual void end_of_simulation() override;
 };
 
 } // namespace opencores

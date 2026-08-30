@@ -1,0 +1,97 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright (C) 2022 MachineWare GmbH                                        *
+ * All Rights Reserved                                                        *
+ *                                                                            *
+ * This work is licensed under the terms described in the LICENSE file found  *
+ * in the root directory of this source tree.                                 *
+ *                                                                            *
+ ******************************************************************************/
+
+#ifndef VCML_UI_BACKEND_H
+#define VCML_UI_BACKEND_H
+
+#include "vcml/core/types.h"
+
+#include "vcml/logging/logger.h"
+
+#include "vcml/ui/video.h"
+#include "vcml/ui/keymap.h"
+#include "vcml/ui/input.h"
+
+namespace vcml {
+namespace ui {
+
+class backend
+{
+public:
+    using create_fn = function<backend*(u32)>;
+
+private:
+    string m_name;
+    string m_type;
+    u32 m_id;
+    videomode m_mode;
+    u8* m_fb;
+    u8* m_nullfb;
+
+    mutex m_inputs_mtx;
+    vector<input*> m_inputs;
+
+protected:
+    static unordered_map<string, create_fn> types;
+
+public:
+    mwr::logger log;
+
+    u32 xres() const { return m_mode.xres; }
+    u32 yres() const { return m_mode.yres; }
+
+    u32 id() const { return m_id; }
+
+    const char* type() const { return m_type.c_str(); }
+    const char* name() const { return m_name.c_str(); }
+
+    const videomode& mode() const { return m_mode; }
+
+    u8* framebuffer() const { return m_fb; }
+    u64 framebuffer_size() const { return m_mode.size; }
+    bool has_framebuffer() const { return m_mode.size > 0; }
+
+    backend() = delete;
+    backend(const backend&) = delete;
+    backend(const string& type, u32 id);
+    virtual ~backend();
+
+    virtual void init(const videomode& mode, u8* fbptr);
+    virtual void reinit(const videomode& newmode, u8* newptr);
+    virtual void shutdown();
+    virtual void render(u32 x, u32 y, u32 w, u32 h);
+
+    virtual void notify_key(u32 keysym, bool down);
+    virtual void notify_btn(u32 button, bool down);
+    virtual void notify_pos(u32 x, u32 y);
+
+    virtual void handle_option(const string& option);
+
+    void setup(const videomode& mode, u8* fbptr);
+    void cleanup();
+
+    void attach(input* device);
+    void detach(input* device);
+
+    static void define(const string& type, create_fn fn);
+
+    static backend* create(const string& desc);
+    static void destroy(backend* b);
+};
+
+#define VCML_DEFINE_UI_BACKEND(name, fn)        \
+    MWR_CONSTRUCTOR(define_ui_backend_##name) { \
+        vcml::ui::backend::define(#name, fn);   \
+    }
+
+} // namespace ui
+} // namespace vcml
+
+#endif

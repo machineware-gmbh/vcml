@@ -284,11 +284,10 @@ input::input(const sc_module_name& nm):
     module(nm),
     virtio_device(),
     m_config(),
-    m_keyboard(mkstr("%s_keyboard", name())),
-    m_touchpad(mkstr("%s_touchpad", name())),
-    m_mouse(mkstr("%s_mouse", name())),
-    m_multitouch(mkstr("%s_multitouch", name())),
-    m_console(),
+    m_keyboard("keyboard"),
+    m_touchpad("touchpad"),
+    m_mouse("mouse"),
+    m_multitouch("multitouch"),
     touchpad("touchpad", false),
     keyboard("keyboard", true),
     mouse("mouse", true),
@@ -299,20 +298,8 @@ input::input(const sc_module_name& nm):
     xmax("xmax", 0x7fff),
     ymax("ymax", 0x7fff),
     virtio_in("virtio_in") {
-    if (keyboard) {
+    if (keyboard)
         m_keyboard.set_layout(keymap);
-        m_console.notify(m_keyboard);
-    }
-
-    if (touchpad)
-        m_console.notify(m_touchpad);
-
-    if (mouse)
-        m_console.notify(m_mouse);
-
-    if (multitouch)
-        m_console.notify(m_multitouch);
-
     if (keyboard || touchpad || mouse) {
         SC_HAS_PROCESS(input);
         SC_METHOD(update);
@@ -327,11 +314,6 @@ void input::reset() {
     memset(&m_config, 0, sizeof(m_config));
     m_messages = {};
     m_events = {};
-}
-
-void input::end_of_simulation() {
-    module::end_of_simulation();
-    m_console.shutdown();
 }
 
 VCML_EXPORT_MODEL(vcml::virtio::input, name, args) {

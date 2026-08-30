@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright (C) 2022 MachineWare GmbH                                        *
+ * Copyright (C) 2026 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
  *                                                                            *
  * This work is licensed under the terms described in the LICENSE file found  *
@@ -9,202 +9,159 @@
  ******************************************************************************/
 
 #include "vcml/ui/display.h"
-#include "vcml/ui/icon.h"
-#include "vcml/ui/vnc.h"
-
-#ifdef HAVE_SDL2
-#include "vcml/ui/sdl.h"
-#endif
 
 namespace vcml {
 namespace ui {
 
-static void draw_icon_centered(u8* fbptr, u32 width, u32 height) {
-    MWR_ERROR_ON(width < ICON_WIDTH, "screen too small");
-    MWR_ERROR_ON(height < ICON_HEIGHT, "screen too small");
-
-    u32 sx = (width - ICON_WIDTH) / 2;
-    u32 sy = (height - ICON_HEIGHT) / 2;
-
-    for (u32 y = 0; y < ICON_HEIGHT; y++) {
-        u8* dest = fbptr + ((sy + y) * width + sx) * sizeof(u32);
-        const u32* src = ICON_DATA + y * ICON_WIDTH;
-        memcpy(dest, src, ICON_WIDTH * sizeof(u32));
-    }
-}
-
-display::display(const string& type, u32 nr):
-    m_name(mkstr("%s:%u", type.c_str(), nr)),
-    m_type(type),
-    m_dispno(nr),
-    m_mode(),
-    m_fb(nullptr),
-    m_nullfb(nullptr),
-    log(m_name) {
+display::display(const string& nm):
+    sc_object(nm.c_str()), m_mtx(), m_ifs(), m_fbptr(), m_mode() {
 }
 
 display::~display() {
     // nothing to do
 }
 
-void display::init(const videomode& mode, u8* fbptr) {
-    if (has_framebuffer())
-        VCML_ERROR("display %s already initialized", name());
+void display::setup(const videomode& mode, u8* fbptr) {
+    lock_guard guard(m_mtx);
+    for (auto* dif : m_ifs)
+        dif->display_setup(mode, fbptr);
 
     m_mode = mode;
-    m_fb = fbptr;
-
-    if (m_fb == nullptr)
-        m_fb = m_nullfb = new u8[mode.size]();
-}
-
-void display::reinit(const videomode& newmode, u8* newptr) {
-    shutdown();
-    init(newmode, newptr);
-}
-
-void display::shutdown() {
-    if (m_nullfb)
-        delete[] m_nullfb;
-    m_fb = m_nullfb = nullptr;
-    m_mode.clear();
+    m_fbptr = fbptr;
 }
 
 void display::render(u32 x, u32 y, u32 w, u32 h) {
-    // nothing to do
+    lock_guard guard(m_mtx);
+    for (auto* dif : m_ifs)
+        dif->display_render(x, y, w, h);
 }
 
-void display::render() {
-    render(0, 0, xres(), yres());
+void display::attach(display_if* dif) {
+    lock_guard guard(m_mtx);
+    if (mwr::stl_contains(m_ifs, dif))
+        return;
+
+    m_ifs.push_back(dif);
+    if (m_mode.is_valid() && m_fbptr)
+        dif->display_setup(m_mode, m_fbptr);
 }
 
-void display::notify_key(u32 keysym, bool down) {
-    for (auto input : m_inputs)
-        input->notify_key(keysym, down);
+void display::detach(display_if* dif) {
+    lock_guard guard(m_mtx);
+    stl_remove(m_ifs, dif);
 }
 
-void display::notify_btn(u32 button, bool down) {
-    for (auto input : m_inputs)
-        input->notify_btn(button, down);
-}
-
-void display::notify_pos(u32 x, u32 y) {
-    for (auto input : m_inputs) {
-        x = min(x, xres() - 1);
-        y = min(y, yres() - 1);
-
-        // normalise absolute positions to [0..10000]
-        input->notify_pos((u64)(x * input->xmax()) / (xres() - 1),
-                          (u64)(y * input->ymax()) / (yres() - 1));
-    }
-}
-
-void display::handle_option(const string& option) {
-    VCML_REPORT("%s: unsupported option \"%s\"", name(), option.c_str());
-}
-
-void display::setup(const videomode& mode, u8* fbptr) {
-    if (has_framebuffer())
-        reinit(mode, fbptr);
-    else
-        init(mode, fbptr);
-}
-
-void display::cleanup() {
-    m_inputs.clear();
-    shutdown();
-}
-
-void display::attach(input* device) {
-    m_inputs.push_back(device);
-    if (!has_framebuffer()) {
-        init(videomode::a8r8g8b8(320, 200), nullptr);
-        draw_icon_centered(framebuffer(), xres(), yres());
-    }
-}
-
-void display::detach(input* device) {
-    stl_remove(m_inputs, device);
-}
-
-static bool parse_display(const string& name, string& type, u32& nr,
-                          vector<string>& options) {
-    size_t comma = name.find(',');
-    string head = name.substr(0, comma);
-
-    if (comma != string::npos)
-        options = split(name.substr(comma + 1), ',');
-
-    size_t colon = head.find(':');
-    if (colon == string::npos)
-        return false;
-
-    type = head.substr(0, colon);
-    string nr_str = head.substr(colon + 1);
-
-    char* end;
-    nr = strtoul(nr_str.c_str(), &end, 0);
-    if (*end || nr_str.empty())
-        return false;
-
-    return true;
-}
-
-display* create_null(u32 id) {
-    return new display("display", id);
-}
-
-unordered_map<string, display::create_fn> display::types;
-
-VCML_DEFINE_UI_DISPLAY(null, create_null)
-VCML_DEFINE_UI_DISPLAY(vnc, vnc::create)
-
-#ifdef HAVE_SDL2
-VCML_DEFINE_UI_DISPLAY(sdl, sdl::create)
-#endif
-
-unordered_map<u32, shared_ptr<display>> display::displays = {
-    { 0, shared_ptr<display>(create_null(0)) } // no-op server
+struct bmp_header {
+    char header[2]; // 0x42 0x4d for BMP (BM)
+    u32 size;       // total size (bytes)
+    u16 res0;
+    u16 res1;
+    u32 offset; // offset of the pixel array
 };
 
-void display::define(const string& type, create_fn fn) {
-    if (stl_contains(types, type))
-        VCML_ERROR("display type '%s' already registered", type.c_str());
-    types[type] = std::move(fn);
+struct dib_header {
+    u32 size;           // size of this header (bytes) -> 40
+    i32 width;          // in pixels
+    i32 height;         // in pixels
+    u16 color_planes;   // number of color planes -> 1
+    u16 bits_per_pixel; // typically 1, 4, 5, 16, 24, 32
+    u32 method;         // compression method
+    u32 image_size;     // raw bitmap size; 0 for BI_RGB bitmaps
+    i32 xres;           // (pixel per metre, signed integer)
+    i32 yres;           // (pixel per metre, signed integer)
+    u32 col_num;        // colors in the color palette; 0 default to 2^n
+    u32 imp_col;        // important colors used; 0 means all
+};
+
+template <typename T>
+inline void write_binary(ostream& os, const T& val) {
+    os.write((const char*)&val, sizeof(T));
 }
 
-shared_ptr<display> display::lookup(const string& name) {
-    if (mwr::getenv_or_default("VCML_NO_GUI", false))
-        return nullptr;
+template <>
+inline void write_binary<bmp_header>(ostream& os, const bmp_header& h) {
+    write_binary(os, h.header[0]);
+    write_binary(os, h.header[1]);
+    write_binary(os, h.size);
+    write_binary(os, h.res0);
+    write_binary(os, h.res1);
+    write_binary(os, h.offset);
+}
 
-    if (name.empty())
-        return displays[0];
+template <>
+inline void write_binary<dib_header>(ostream& os, const dib_header& h) {
+    write_binary(os, h.size);
+    write_binary(os, h.width);
+    write_binary(os, h.height);
+    write_binary(os, h.color_planes);
+    write_binary(os, h.bits_per_pixel);
+    write_binary(os, h.method);
+    write_binary(os, h.image_size);
+    write_binary(os, h.xres);
+    write_binary(os, h.yres);
+    write_binary(os, h.col_num);
+    write_binary(os, h.imp_col);
+}
 
-    u32 nr;
-    string type;
-    vector<string> options;
+bool display::screenshot(const string& path) const {
+    // need to have a framebuffer and a sane pixelformat
+    if (!m_fbptr || m_mode.bpp > 4 || m_mode.grayscale)
+        return false;
 
-    if (!parse_display(name, type, nr, options))
-        VCML_ERROR("cannot parse display name: %s", name.c_str());
+    // lines must be multiples of 32bits long
+    u32 padding = (4 - ((m_mode.xres * 3) % 4)) % 4;
+    u32 stride = m_mode.xres * 3 + padding;
+    u32 size = stride * m_mode.yres;
 
-    shared_ptr<display>& disp = displays[nr];
-    if (disp == nullptr) {
-        auto it = types.find(type);
-        if (it == types.end()) {
-            stringstream ss;
-            ss << "unknown display '" << type << "', available displays:";
-            for (const auto& avail : types)
-                ss << " " << avail.first;
-            VCML_REPORT("%s", ss.str().c_str());
+    bmp_header bmp{};
+    dib_header dib{};
+
+    dib.size = 40;
+    dib.width = m_mode.xres;
+    dib.height = m_mode.yres;
+    dib.color_planes = 1;
+    dib.bits_per_pixel = 24;
+    dib.method = 0;
+    dib.image_size = size;
+    dib.xres = 0;
+    dib.yres = 0;
+    dib.col_num = 0;
+    dib.imp_col = 0;
+
+    bmp.header[0] = 'B';
+    bmp.header[1] = 'M';
+    bmp.offset = 14 + dib.size;
+    bmp.size = bmp.offset + size;
+
+    ofstream stream(path, std::ios::binary);
+    if (!stream)
+        return false;
+
+    write_binary(stream, bmp);
+    write_binary(stream, dib);
+
+    u32 r_mask = bitmask(m_mode.r.size);
+    u32 g_mask = bitmask(m_mode.g.size);
+    u32 b_mask = bitmask(m_mode.b.size);
+
+    for (u32 y = m_mode.yres; y-- > 0;) {
+        for (u32 x = 0; x < m_mode.xres; x++) {
+            u32 pixel = read_pixel(x, y);
+
+            u8 r = (pixel >> m_mode.r.offset) & r_mask;
+            u8 g = (pixel >> m_mode.g.offset) & g_mask;
+            u8 b = (pixel >> m_mode.b.offset) & b_mask;
+
+            write_binary(stream, b);
+            write_binary(stream, g);
+            write_binary(stream, r);
         }
 
-        disp.reset(it->second(nr));
+        for (u32 i = 0; i < padding; i++)
+            write_binary<u8>(stream, 0);
     }
 
-    for (const string& option : options)
-        disp->handle_option(option);
-
-    return disp;
+    return true;
 }
 
 } // namespace ui

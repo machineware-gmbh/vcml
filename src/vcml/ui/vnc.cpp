@@ -196,7 +196,7 @@ static vnc_pixelformat pixelformat_from_mode(const videomode& vm) {
     vnc_pixelformat format{};
     format.bpp = vm.bpp * 8;
     format.depth = vm.r.size + vm.g.size + vm.b.size;
-    format.endian = vm.endian == ENDIAN_BIG;
+    format.endian = 0;
     format.truecolor = 1;
     format.rmax = bitmask(vm.r.size);
     format.gmax = bitmask(vm.g.size);
@@ -824,10 +824,10 @@ void vnc::handle_command() {
 }
 
 void vnc::run() {
-    mwr::set_thread_name(mkstr("vnc_%u", dispno()));
+    mwr::set_thread_name(mkstr("vnc_%u", id()));
 
     if (m_port < 0)
-        m_port = dispno();
+        m_port = id();
     if (m_port > U16_MAX)
         VCML_ERROR("%s: invalid port specified: %u", name(), m_port);
     if (m_host.empty())
@@ -868,7 +868,7 @@ void vnc::run() {
 }
 
 vnc::vnc(u32 no):
-    display("vnc", no),
+    backend("vnc", no),
     m_port(-1),
     m_host(),
     m_buttons(),
@@ -900,7 +900,7 @@ vnc::~vnc() {
 }
 
 void vnc::init(const videomode& mode, u8* fb) {
-    display::init(mode, fb);
+    backend::init(mode, fb);
     m_running = true;
     m_thread = thread(&vnc::run, this);
 }
@@ -915,8 +915,8 @@ void vnc::reinit(const videomode& newmode, u8* newfb) {
 
     m_needs_resize = true;
 
-    display::shutdown();
-    display::init(newmode, newfb);
+    backend::shutdown();
+    backend::init(newmode, newfb);
 }
 
 void vnc::shutdown() {
@@ -930,7 +930,7 @@ void vnc::shutdown() {
 
     m_encoding = VNC_ENC_RAW;
 
-    display::shutdown();
+    backend::shutdown();
 }
 
 void vnc::handle_option(const string& option) {
@@ -956,10 +956,10 @@ void vnc::handle_option(const string& option) {
         return;
     }
 
-    display::handle_option(option);
+    backend::handle_option(option);
 }
 
-display* vnc::create(u32 nr) {
+backend* vnc::create(u32 nr) {
     return new vnc(nr);
 }
 

@@ -157,20 +157,14 @@ void ocfbc::create() {
             mode = ui::videomode::a8r8g8b8(m_xres, m_yres);
         else
             mode = ui::videomode::b8g8r8a8(m_xres, m_yres);
-        mode.endian = ENDIAN_LITTLE;
         break;
 
     case 3:
-        if (is_little_endian())
-            mode = ui::videomode::r8g8b8(m_xres, m_yres);
-        else
-            mode = ui::videomode::b8g8r8(m_xres, m_yres);
-        mode.endian = ENDIAN_LITTLE;
+        mode = ui::videomode::r8g8b8(m_xres, m_yres);
         break;
 
     case 2:
         mode = ui::videomode::r5g6b5(m_xres, m_yres);
-        mode.endian = endian;
         break;
 
     case 1:
@@ -178,7 +172,6 @@ void ocfbc::create() {
             mode = ui::videomode::a8r8g8b8(m_xres, m_yres);
         else
             mode = ui::videomode::gray8(m_xres, m_yres);
-        mode.endian = ENDIAN_LITTLE;
         break;
 
     default:
@@ -189,10 +182,10 @@ void ocfbc::create() {
     if (!vram || m_pc) {
         log_debug("copying vnc framebuffer from vram");
         m_fb = new u8[mode.size];
-        m_console.setup(mode, m_fb);
+        m_display.setup(mode, m_fb);
     } else {
         log_debug("mapping vnc framebuffer into vram");
-        m_console.setup(mode, vram);
+        m_display.setup(mode, vram);
         m_fb = nullptr;
     }
 }
@@ -269,7 +262,7 @@ void ocfbc::render() {
         irq = true; // VSYNC interrupt
     }
 
-    m_console.render(); // output image
+    m_display.render(); // output image
 }
 
 void ocfbc::update() {
@@ -301,22 +294,9 @@ bool ocfbc::cmd_info(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool ocfbc::cmd_screenshot(const vector<string>& args, ostream& os) {
-    string path = mkstr("%s.bmp", name());
-    if (args.size() > 0)
-        path = args[0];
-
-    if (m_console.screenshot(path)) {
-        os << "screenshot stored in '" << path << "'";
-        return true;
-    }
-
-    os << "failed to store screenshot in '" << path << "'";
-    return false;
-}
-
 ocfbc::ocfbc(const sc_module_name& nm):
     peripheral(nm),
+    m_display("display"),
     m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
     m_palette(),
     m_fb(nullptr),
@@ -354,18 +334,11 @@ ocfbc::ocfbc(const sc_module_name& nm):
 
     register_command("info", 0, &ocfbc::cmd_info,
                      "shows information about the framebuffer");
-    register_command("screenshot", 0, &ocfbc::cmd_screenshot,
-                     "store a screenshot of the framebuffer");
 }
 
 ocfbc::~ocfbc() {
     if (m_fb != nullptr)
         delete[] m_fb;
-}
-
-void ocfbc::end_of_simulation() {
-    m_console.shutdown();
-    peripheral::end_of_simulation();
 }
 
 VCML_EXPORT_MODEL(vcml::opencores::ocfbc, name, args) {

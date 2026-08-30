@@ -56,39 +56,21 @@ TEST(display, server) {
     u16 port1 = 40000;
     u16 port2 = 40001;
 
-    shared_ptr<display> p1 = display::lookup("null:40000");
-    shared_ptr<display> p2 = display::lookup("null:40000");
-    shared_ptr<display> p3 = display::lookup("null:40001");
-    shared_ptr<display> p4 = display::lookup("null:40001");
-    shared_ptr<display> p5 = display::lookup("null:40001");
+    ui::backend* p1 = backend::create("null:40000");
+    ui::backend* p2 = backend::create("null:40000");
+    ui::backend* p3 = backend::create("null:40001");
+    ui::backend* p4 = backend::create("null:40001");
+    ui::backend* p5 = backend::create("null:40001");
 
-    EXPECT_EQ(p1->dispno(), port1);
-    EXPECT_EQ(p2->dispno(), port1);
-    EXPECT_EQ(p3->dispno(), port2);
-    EXPECT_EQ(p4->dispno(), port2);
-    EXPECT_EQ(p5->dispno(), port2);
+    EXPECT_EQ(p1->id(), port1);
+    EXPECT_EQ(p2->id(), port1);
+    EXPECT_EQ(p3->id(), port2);
+    EXPECT_EQ(p4->id(), port2);
+    EXPECT_EQ(p5->id(), port2);
 
-    EXPECT_EQ(p1, p2);
-    EXPECT_EQ(p3, p4);
-    EXPECT_EQ(p4, p5);
-
-    EXPECT_NE(p1, p3);
-    EXPECT_NE(p1, p4);
-    EXPECT_NE(p1, p5);
-
-    EXPECT_NE(p2, p3);
-    EXPECT_NE(p2, p4);
-    EXPECT_NE(p2, p5);
-
-    EXPECT_EQ(p1.use_count(), 3);
-    EXPECT_EQ(p2.use_count(), 3);
-    EXPECT_EQ(p3.use_count(), 4);
-    EXPECT_EQ(p4.use_count(), 4);
-    EXPECT_EQ(p5.use_count(), 4);
-
-    p1->shutdown();
-    p2->shutdown();
-    p3->shutdown();
-    p4->shutdown();
-    p5->shutdown();
+    ui::backend::destroy(p1);
+    ui::backend::destroy(p2);
+    ui::backend::destroy(p3);
+    ui::backend::destroy(p4);
+    ui::backend::destroy(p5);
 }

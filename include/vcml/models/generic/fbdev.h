@@ -17,7 +17,7 @@
 #include "vcml/core/model.h"
 
 #include "vcml/protocols/tlm.h"
-#include "vcml/ui/console.h"
+#include "vcml/ui/display.h"
 
 namespace vcml {
 namespace generic {
@@ -25,13 +25,11 @@ namespace generic {
 class fbdev : public component
 {
 private:
-    ui::console m_console;
+    ui::display m_display;
     ui::videomode m_mode;
     u8* m_vptr;
 
     void update();
-
-    bool cmd_screenshot(const vector<string>& args, ostream& os);
 
 public:
     u8* vptr() const { return m_vptr; }
@@ -54,7 +52,6 @@ public:
 
 protected:
     void end_of_elaboration() override;
-    void end_of_simulation() override;
 };
 
 } // namespace generic

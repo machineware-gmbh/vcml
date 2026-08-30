@@ -79,7 +79,6 @@ private:
     ui::touchpad m_touchpad;
     ui::mouse m_mouse;
     ui::multitouch m_multitouch;
-    ui::console m_console;
 
     queue<ui::input_event> m_events;
     queue<vq_message> m_messages;
@@ -127,9 +126,6 @@ public:
     VCML_KIND(virtio::input);
 
     virtual void reset() override;
-
-protected:
-    virtual void end_of_simulation() override;
 };
 
 } // namespace virtio
