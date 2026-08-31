@@ -70,6 +70,16 @@ inline u32 display::read_pixel(u32 x, u32 y) const {
         return mwr::read_once<u8>(ptr);
     case 2:
         return mwr::read_once<u16>(ptr);
+    case 3: {
+        u32 val = mwr::read_once<u32>(ptr);
+        if (host_endian() == ENDIAN_BIG) {
+            val >>= 8;
+        } else {
+            val = (mwr::extract(val, 0, 8) << 16) |
+                  (mwr::extract(val, 8, 8) << 8) | mwr::extract(val, 16, 8);
+        }
+        return val;
+    }
     case 4:
         return mwr::read_once<u32>(ptr);
     default:
