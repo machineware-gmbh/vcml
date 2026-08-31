@@ -12,6 +12,7 @@
 #define VCML_UI_CONSOLE_H
 
 #include "vcml/core/types.h"
+#include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
 #include "vcml/core/model.h"
 

@@ -15,14 +15,14 @@ namespace vcml {
 namespace ui {
 
 display* console::find_display(const string& name) {
-    auto* disp = dynamic_cast<class display*>(find_object(name));
+    auto* disp = dynamic_cast<class display*>(vcml::find_object(name));
     if (!disp)
         log_error("display not found: %s", name.c_str());
     return disp;
 }
 
 input* console::find_input(const string& name) {
-    input* inp = dynamic_cast<input*>(find_object(name));
+    input* inp = dynamic_cast<input*>(vcml::find_object(name));
     if (!inp)
         log_error("input not found: %s", name.c_str());
     return inp;
