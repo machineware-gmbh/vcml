@@ -47,7 +47,40 @@ enum pixelformat {
 };
 
 const char* pixelformat_to_str(pixelformat fmt);
-size_t pixelformat_bpp(pixelformat fmt);
+
+constexpr size_t pixelformat_bpp(pixelformat fmt) {
+    switch (fmt) {
+    case FORMAT_A8R8G8B8:
+        return 4;
+    case FORMAT_X8R8G8B8:
+        return 4;
+    case FORMAT_R8G8B8A8:
+        return 4;
+    case FORMAT_R8G8B8X8:
+        return 4;
+    case FORMAT_A8B8G8R8:
+        return 4;
+    case FORMAT_X8B8G8R8:
+        return 4;
+    case FORMAT_B8G8R8A8:
+        return 4;
+    case FORMAT_B8G8R8X8:
+        return 4;
+    case FORMAT_R8G8B8:
+        return 3;
+    case FORMAT_B8G8R8:
+        return 3;
+    case FORMAT_R5G6B5:
+        return 2;
+    case FORMAT_B5G6R5:
+        return 2;
+    case FORMAT_GRAY8:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 color_channel pixelformat_a(pixelformat fmt);
 color_channel pixelformat_r(pixelformat fmt);
 color_channel pixelformat_g(pixelformat fmt);
