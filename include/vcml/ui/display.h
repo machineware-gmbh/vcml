@@ -70,6 +70,8 @@ inline u32 display::read_pixel(u32 x, u32 y) const {
         return mwr::read_once<u8>(ptr);
     case 2:
         return mwr::read_once<u16>(ptr);
+    case 3:
+        return mwr::extract(mwr::read_once<u32>(ptr), 0, 24);
     case 4:
         return mwr::read_once<u32>(ptr);
     default:
