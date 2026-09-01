@@ -53,7 +53,7 @@ ostream& operator<<(ostream& os, const i2c_payload& tx) {
 
 void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
     if (!stl_contains(m_state, socket.address.get()))
-        m_state[socket.as] = TLM_IGNORE_COMMAND;
+        m_state[socket.address.get()] = TLM_IGNORE_COMMAND;
 
     tlm_command& state = m_state[socket.address];
     if (state == TLM_IGNORE_COMMAND && tx.cmd != I2C_START)
