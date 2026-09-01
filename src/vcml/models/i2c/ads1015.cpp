@@ -247,6 +247,7 @@ void ads1015::update_config() {
     if (config & ADS1015_OS) {
         config &= ~ADS1015_OS;
         sample_data();
+        config |= ADS1015_OS;
     } else if (!polling && ads1015_is_continuous(config)) {
         sample_data();
     }
@@ -412,9 +413,6 @@ i2c_response ads1015::i2c_stop(const i2c_target_socket& socket) {
 i2c_response ads1015::i2c_read(const i2c_target_socket& socket, u8& data) {
     switch (m_state) {
     case STARTED:
-        data = m_reg_ptr;
-        m_state = MSB;
-        return I2C_ACK;
     case MSB:
         data = m_regs[m_reg_ptr] >> 8;
         m_state = LSB;
