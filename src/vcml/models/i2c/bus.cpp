@@ -26,19 +26,14 @@ void bus::i2c_transport(i2c_target_socket&, i2c_payload& tx) {
         port.second->transport(tx);
 }
 
-unsigned int bus::next_free() const {
-    unsigned int idx = 0;
-    while (i2c_out.exists(idx))
-        VCML_ERROR_ON(++idx == 0, "no free ports");
-    return idx;
-}
-
-void bus::bind(i2c_initiator_socket& initiator) {
-    i2c_in.bind(initiator);
+unsigned int bus::bind(i2c_initiator_socket& initiator) {
+    unsigned int port = i2c_in.next_index();
+    i2c_in[port].bind(initiator);
+    return port;
 }
 
 unsigned int bus::bind(i2c_target_socket& target) {
-    unsigned int port = next_free();
+    unsigned int port = i2c_out.next_index();
     i2c_out[port].bind(target);
     return port;
 }

@@ -33,7 +33,7 @@ public:
     virtual ~bus() = default;
     VCML_KIND(i2c::bus);
 
-    i2c_target_socket i2c_in;
+    i2c_target_array<> i2c_in;
     i2c_initiator_array<> i2c_out;
 
     virtual void reset() override;
@@ -41,9 +41,7 @@ public:
     virtual void i2c_transport(i2c_target_socket& socket,
                                i2c_payload& tx) override;
 
-    unsigned int next_free() const;
-
-    void bind(i2c_initiator_socket& initiator);
+    unsigned int bind(i2c_initiator_socket& initiator);
     unsigned int bind(i2c_target_socket& target);
 };
 
