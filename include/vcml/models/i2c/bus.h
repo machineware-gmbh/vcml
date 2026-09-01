@@ -47,8 +47,9 @@ public:
 
 } // namespace i2c
 
-void i2c_bind(i2c::bus& bus, sc_object& socket, string port);
-void i2c_bind(i2c::bus& bus, sc_object& socket, string portarray, size_t idx);
+void i2c_bind(i2c::bus& bus, sc_object& socket, const string& port);
+void i2c_bind(i2c::bus& bus, sc_object& socket, const string& portarray,
+              size_t idx);
 void i2c_bind(i2c::bus& bus, const string& socket);
 void i2c_bind(i2c::bus& bus, const string& socket, size_t idx);
 

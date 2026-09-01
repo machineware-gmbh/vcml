@@ -58,13 +58,14 @@ static void i2c_bind_socket(i2c::bus& bus, sc_object& socket) {
     VCML_ERROR("%s is not a valid i2c socket", socket.name());
 }
 
-void i2c_bind(i2c::bus& bus, sc_object& socket, string port) {
+void i2c_bind(i2c::bus& bus, sc_object& socket, const string& port) {
     sc_object* child = find_child(socket, port);
     VCML_ERROR_ON(!child, "%s.%s does not exist", socket.name(), port.c_str());
     i2c_bind_socket(bus, *child);
 }
 
-void i2c_bind(i2c::bus& bus, sc_object& socket, string portarray, size_t idx) {
+void i2c_bind(i2c::bus& bus, sc_object& socket, const string& portarray,
+              size_t idx) {
     sc_object* child = find_child(socket, portarray);
     VCML_ERROR_ON(!child, "%s.%s does not exist", socket.name(),
                   portarray.c_str());
