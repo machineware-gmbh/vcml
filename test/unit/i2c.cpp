@@ -111,6 +111,15 @@ public:
     MOCK_METHOD(i2c_response, i2c_write, (const i2c_target_socket&, u8));
 
     virtual void run_test() override {
+        // non-start commands must be ignored
+        EXPECT_CALL(*this, i2c_read(_, _)).Times(0);
+        EXPECT_CALL(*this, i2c_write(_, _)).Times(0);
+        EXPECT_CALL(*this, i2c_stop(_)).Times(0);
+
+        u8 unsolicited = 0xab;
+        EXPECT_NACK(i2c_out.transport(unsolicited));
+        EXPECT_NACK(i2c_out.stop());
+
         // test starting a read transfer
         EXPECT_CALL(*this, i2c_start(i2c_match_address(42), TLM_READ_COMMAND))
             .Times(1)
