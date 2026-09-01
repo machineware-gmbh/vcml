@@ -65,6 +65,11 @@ public:
     i2c_initiator_array<> i2c_array_out;
     i2c_target_array<> i2c_array_in;
 
+    i2c::bus bus;
+    i2c_initiator_socket i2c_bus_master1;
+    i2c_initiator_socket i2c_bus_master2;
+    i2c_target_array<> i2c_bus_slaves;
+
     i2c_bench(const sc_module_name& nm):
         test_base(nm),
         i2c_host(),
@@ -73,7 +78,11 @@ public:
         i2c_in_h("i2c_in_h"),
         i2c_in("i2c_in"),
         i2c_array_out("i2c_array_out"),
-        i2c_array_in("i2c_array_in") {
+        i2c_array_in("i2c_array_in"),
+        bus("bus"),
+        i2c_bus_master1("i2c_bus_master1"),
+        i2c_bus_master2("i2c_bus_master2"),
+        i2c_bus_slaves("i2c_bus_slaves") {
         i2c_set_address(*this, "i2c_in", 42);
         EXPECT_EQ(i2c_in.address, 42);
 
@@ -102,6 +111,30 @@ public:
         // did the stubs get created?
         EXPECT_TRUE(find_object("i2c.i2c_array_out[5]_stub"));
         EXPECT_TRUE(find_object("i2c.i2c_array_in[6]_stub"));
+
+        clk_bind(*this, "clk", bus, "clk");
+        gpio_bind(*this, "rst", bus, "rst");
+
+        // wire up two masters sharing the same bus
+        EXPECT_EQ(bus.bind(i2c_bus_master1), 0u);
+        EXPECT_EQ(bus.bind(i2c_bus_master2), 1u);
+
+        EXPECT_EQ(bus.bind(i2c_bus_slaves[10]), 0u);
+        EXPECT_EQ(bus.bind(i2c_bus_slaves[20]), 1u);
+        EXPECT_EQ(bus.bind(i2c_bus_slaves[30]), 2u);
+
+        i2c_set_address(*this, "i2c_bus_slaves", 10, 10);
+        i2c_set_address(*this, "i2c_bus_slaves", 20, 20);
+        i2c_set_address(*this, "i2c_bus_slaves", 30, 30);
+
+        EXPECT_TRUE(find_object("i2c.bus.i2c_in[0]"));
+        EXPECT_TRUE(find_object("i2c.bus.i2c_in[1]"));
+        EXPECT_TRUE(find_object("i2c.bus.i2c_out[0]"));
+        EXPECT_TRUE(find_object("i2c.bus.i2c_out[1]"));
+        EXPECT_TRUE(find_object("i2c.bus.i2c_out[2]"));
+
+        add_test("protocol", &i2c_bench::test_protocol);
+        add_test("bus", &i2c_bench::test_bus);
     }
 
     MOCK_METHOD(i2c_response, i2c_start,
@@ -110,7 +143,7 @@ public:
     MOCK_METHOD(i2c_response, i2c_read, (const i2c_target_socket&, u8&));
     MOCK_METHOD(i2c_response, i2c_write, (const i2c_target_socket&, u8));
 
-    virtual void run_test() override {
+    void test_protocol() {
         // non-start commands must be ignored
         EXPECT_CALL(*this, i2c_read(_, _)).Times(0);
         EXPECT_CALL(*this, i2c_write(_, _)).Times(0);
@@ -151,6 +184,43 @@ public:
         EXPECT_ACK(i2c_out.stop());
         EXPECT_CALL(*this, i2c_write(_, data)).Times(0);
         EXPECT_NACK(i2c_out.transport(data));
+    }
+
+    void test_bus() {
+        // master1 talks to the slave at address 20
+        EXPECT_CALL(*this, i2c_start(i2c_match_address(20), TLM_WRITE_COMMAND))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_bus_master1.start(20, TLM_WRITE_COMMAND));
+
+        u8 data = 0x55;
+        EXPECT_CALL(*this, i2c_write(i2c_match_address(20), data))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_bus_master1.transport(data));
+
+        EXPECT_CALL(*this, i2c_stop(i2c_match_address(20)))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_bus_master1.stop());
+
+        // the same bus is reachable from a second master
+        EXPECT_CALL(*this, i2c_start(i2c_match_address(30), TLM_WRITE_COMMAND))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_bus_master2.start(30, TLM_WRITE_COMMAND));
+
+        EXPECT_CALL(*this, i2c_write(i2c_match_address(30), data))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_bus_master2.transport(data));
+
+        EXPECT_CALL(*this, i2c_stop(i2c_match_address(30)))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_bus_master2.stop());
+
+        EXPECT_NACK(i2c_bus_master1.start(99, TLM_WRITE_COMMAND));
     }
 };
 
