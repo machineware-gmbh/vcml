@@ -24,21 +24,17 @@ ssd1306::ssd1306(const sc_core::sc_module_name& nm):
     rotated("rotated", true),
     color_off("color_off", 0x000000u),
     color_on("color_on", 0xffffffu),
-    in("in"),
-    m_console() {
-    in.set_address(alternate_address ? 0x3du : 0x3cu);
+    i2c_in("i2c_in"),
+    m_display("display") {
+    i2c_in.set_address(alternate_address ? 0x3du : 0x3cu);
     clk.stub();
     SC_THREAD(scroll_thread);
     reset();
 }
 
 void ssd1306::end_of_elaboration() {
-    m_console.setup(ui::videomode(PIXEL_FORMAT, SCREEN_WIDTH, SCREEN_HEIGHT),
+    m_display.setup(ui::videomode(PIXEL_FORMAT, SCREEN_WIDTH, SCREEN_HEIGHT),
                     m_video);
-}
-
-void ssd1306::end_of_simulation() {
-    m_console.shutdown();
 }
 
 bool ssd1306::is_display_on() const {
@@ -54,7 +50,7 @@ u8 ssd1306::get_contrast() const {
 }
 
 bool ssd1306::read_pixel(u32 x, u32 y) const {
-    return m_console.read_pixel(x, y) != color_off;
+    return m_display.read_pixel(x, y) != color_off;
 }
 
 bool ssd1306::is_scrolling() const {
@@ -123,7 +119,7 @@ void ssd1306::reset() {
 
     m_scroll_ev.notify(sc_core::SC_ZERO_TIME);
 
-    m_console.render();
+    m_display.render();
 }
 
 i2c_response ssd1306::i2c_start(const i2c_target_socket&, tlm::tlm_command) {
@@ -133,7 +129,7 @@ i2c_response ssd1306::i2c_start(const i2c_target_socket&, tlm::tlm_command) {
 }
 
 i2c_response ssd1306::i2c_stop(const i2c_target_socket&) {
-    m_console.render();
+    m_display.render();
     return I2C_ACK;
 }
 
@@ -367,10 +363,6 @@ void ssd1306::write_gddram(u8 byte) {
     else
         redraw_column(m_page, m_col);
 
-    advance_pointer();
-}
-
-void ssd1306::advance_pointer() {
     switch (m_addr_mode) {
     case MODE_PAGE:
         if (++m_col > SCREEN_WIDTH - 1)
@@ -475,7 +467,7 @@ void ssd1306::redraw_all_columns() {
 
 void ssd1306::redraw() {
     redraw_all_columns();
-    m_console.render();
+    m_display.render();
 }
 
 void ssd1306::advance_scroll() {

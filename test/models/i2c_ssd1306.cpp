@@ -26,7 +26,7 @@ struct ssd1306_test : public test_base, i2c_host {
 
     ssd1306_test(const sc_module_name& nm):
         test_base(nm), screen("screen"), socket("socket") {
-        socket.bind(screen.in);
+        socket.bind(screen.i2c_in);
         add_test("init_state", &ssd1306_test::test_init_state);
         add_test("address", &ssd1306_test::test_address);
         add_test("on_off", &ssd1306_test::test_on_off);

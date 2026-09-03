@@ -18,7 +18,7 @@
 
 #include "vcml/protocols/i2c.h"
 
-#include "vcml/ui/console.h"
+#include "vcml/ui/display.h"
 
 namespace vcml {
 namespace i2c {
@@ -31,7 +31,7 @@ public:
     property<u32> color_off;
     property<u32> color_on;
 
-    i2c_target_socket in;
+    i2c_target_socket i2c_in;
 
     ssd1306(const sc_core::sc_module_name& nm);
     virtual ~ssd1306() = default;
@@ -61,13 +61,11 @@ protected:
     virtual i2c_response i2c_write(const i2c_target_socket&, u8 data) override;
 
     virtual void end_of_elaboration() override;
-    virtual void end_of_simulation() override;
 
     void handle_control_byte(u8 byte);
     void handle_command_byte(u8 byte);
     void execute_command(u8 opcode, const u8* args);
     void write_gddram(u8 byte);
-    void advance_pointer();
 
     void redraw_column(uint page, uint col);
     void redraw_all_columns();
@@ -82,7 +80,7 @@ protected:
     void advance_scroll();
     void scroll_thread();
 
-    ui::console m_console;
+    ui::display m_display;
 
     u8 m_video[SCREEN_WIDTH * SCREEN_HEIGHT * 3];
     u8 m_gddram[NUM_PAGES][SCREEN_WIDTH];
