@@ -70,6 +70,8 @@ void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
         socket.trace_fw(tx);
         state = i2c_decode_tlm_command(tx.data);
         tx.resp = i2c_start(socket, state);
+        if (failed(tx.resp))
+            state = TLM_IGNORE_COMMAND;
         socket.trace_bw(tx);
         return;
     }
