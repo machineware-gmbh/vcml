@@ -23,7 +23,12 @@ option(VCML_COVERAGE "Enable generation of code coverage data" OFF)
 option(VCML_UNITY_BUILD "Enable unity build" OFF)
 set(VCML_LINTER "" CACHE STRING "Code linter to use")
 
-include(cmake/common.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(FindGithubRepo)
+include(GenVersionInfo)
+include(Sanitizer)
+include(WarnLevel)
+
 find_github_repo(mwr "machineware-gmbh/mwr")
 find_package(Git REQUIRED)
 find_package(SystemC "2.3.0" REQUIRED)
