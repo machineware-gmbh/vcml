@@ -28,7 +28,10 @@ ssd1306::ssd1306(const sc_core::sc_module_name& nm):
     m_display("display") {
     i2c_in.set_address(alternate_address ? 0x3du : 0x3cu);
     clk.stub();
+
+    SC_HAS_PROCESS(ssd1306);
     SC_THREAD(scroll_thread);
+
     reset();
 }
 
