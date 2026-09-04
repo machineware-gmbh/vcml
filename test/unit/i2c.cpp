@@ -135,6 +135,7 @@ public:
 
         add_test("protocol", &i2c_bench::test_protocol);
         add_test("bus", &i2c_bench::test_bus);
+        add_test("start_nack", &i2c_bench::test_start_nack);
     }
 
     MOCK_METHOD(i2c_response, i2c_start,
@@ -221,6 +222,20 @@ public:
         EXPECT_ACK(i2c_bus_master2.stop());
 
         EXPECT_NACK(i2c_bus_master1.start(99, TLM_WRITE_COMMAND));
+    }
+
+    void test_start_nack() {
+        EXPECT_CALL(*this, i2c_start(i2c_match_address(45), TLM_WRITE_COMMAND))
+            .Times(1)
+            .WillOnce(Return(I2C_NACK));
+        EXPECT_NACK(i2c_out.start(45, TLM_WRITE_COMMAND));
+
+        u8 data = 0x42;
+        EXPECT_CALL(*this, i2c_write(i2c_match_address(45), data)).Times(0);
+        EXPECT_NACK(i2c_out.transport(data));
+
+        EXPECT_CALL(*this, i2c_stop(i2c_match_address(45))).Times(0);
+        EXPECT_NACK(i2c_out.stop());
     }
 };
 
