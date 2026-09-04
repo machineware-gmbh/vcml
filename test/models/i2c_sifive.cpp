@@ -51,6 +51,11 @@ public:
         clk.bind(model.clk);
         model.irq.bind(irq);
         model.i2c.bind(i2c);
+
+        add_test("setup", &sifive_i2c_bench::test_setup);
+        add_test("write", &sifive_i2c_bench::test_write);
+        add_test("read", &sifive_i2c_bench::test_read);
+        add_test("error", &sifive_i2c_bench::test_error);
     }
 
     tlm_response_status reg_read(u32 addr, u8& val) {
@@ -80,6 +85,9 @@ public:
 
     void test_write() {
         u8 data = 0;
+
+        // enable device, interrupts masked
+        EXPECT_OK(reg_write(CTR, i2c::sifive::CTR_EN));
 
         // setup write operation
         ASSERT_OK(reg_write(TXR, i2c_addr_w(42)));
@@ -172,8 +180,8 @@ public:
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, i2c::sifive::SR_NACK | i2c::sifive::SR_IF);
 
-        // finish transfer
-        EXPECT_CALL(*this, i2c_stop(_)).Times(1).WillOnce(Return(I2C_NACK));
+        // start was already rejected, so it should not see the stop condition
+        EXPECT_CALL(*this, i2c_stop(_)).Times(0);
         ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STO | i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         EXPECT_EQ(data, i2c::sifive::SR_NACK | i2c::sifive::SR_IF);
@@ -181,16 +189,9 @@ public:
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, 0) << "unexpected status received";
     }
-
-    virtual void run_test() override {
-        test_setup();
-        test_write();
-        test_read();
-        test_error();
-    }
 };
 
-TEST(i2c_sigive, simulate) {
+TEST(i2c_sifive, simulate) {
     sifive_i2c_bench test("test");
     sc_core::sc_start();
 }
