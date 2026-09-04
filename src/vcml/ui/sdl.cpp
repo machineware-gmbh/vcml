@@ -647,8 +647,13 @@ sdl& sdl::instance() {
     return singleton;
 }
 
+static mwr::option<bool> no_sdl("--no-sdl", "Disable SDL windows");
+
 backend* sdl::create(u32 nr) {
-    return new sdl_display(nr, instance());
+    if (no_sdl)
+        return new backend("null", nr);
+    else
+        return new sdl_display(nr, instance());
 }
 
 sdl_display::sdl_display(u32 nr, sdl& owner):
