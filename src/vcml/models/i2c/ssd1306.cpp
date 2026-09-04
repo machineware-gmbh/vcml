@@ -492,9 +492,11 @@ void ssd1306::scroll_thread() {
             continue;
         }
 
+        sc_time deadline = sc_core::sc_time_stamp() + scroll_step_period();
+
         wait(scroll_step_period(), m_scroll_ev);
 
-        if (m_scroll_ev.triggered())
+        if (sc_core::sc_time_stamp() < deadline)
             continue;
 
         advance_scroll();
