@@ -580,7 +580,11 @@ void sdl::run() {
         draw_windows();
     }
 
-    check_clients();
+    {
+        lock_guard<mutex> lock(m_mtx);
+        for (auto& client : m_clients)
+            client.exit_window();
+    }
 
     SDL_Quit();
 }
