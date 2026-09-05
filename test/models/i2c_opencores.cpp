@@ -18,9 +18,7 @@ template <typename DATA, const u8 REG_SHIFT>
 class sifive_i2c_bench : public test_base, public i2c_host
 {
 public:
-    test / models / i2c_sifive.cpp constexpr DATA i2c_addr_w(u8 addr) {
-        return (DATA)addr << 1;
-    }
+    constexpr DATA i2c_addr_w(u8 addr) { return (DATA)addr << 1; }
     constexpr DATA i2c_addr_r(u8 addr) { return (DATA)addr << 1 | 1; }
 
     enum address : u32 {
