@@ -80,7 +80,12 @@ class i2c_target_stub;
 class i2c_host
 {
 private:
-    unordered_map<u8, tlm_command> m_state;
+    struct i2c_state {
+        tlm_command cmd = TLM_IGNORE_COMMAND;
+        bool selected = false;
+    };
+
+    unordered_map<u8, i2c_state> m_state;
 
 public:
     i2c_host() = default;

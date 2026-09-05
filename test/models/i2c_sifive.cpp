@@ -180,8 +180,8 @@ public:
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, i2c::sifive::SR_NACK | i2c::sifive::SR_IF);
 
-        // start was already rejected, so it should not see the stop condition
-        EXPECT_CALL(*this, i2c_stop(_)).Times(0);
+        // finish transfer
+        EXPECT_CALL(*this, i2c_stop(_)).Times(1).WillOnce(Return(I2C_NACK));
         ASSERT_OK(reg_write(CR, i2c::sifive::CMD_STO | i2c::sifive::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         EXPECT_EQ(data, i2c::sifive::SR_NACK | i2c::sifive::SR_IF);

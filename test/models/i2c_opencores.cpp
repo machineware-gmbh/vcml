@@ -18,7 +18,9 @@ template <typename DATA, const u8 REG_SHIFT>
 class sifive_i2c_bench : public test_base, public i2c_host
 {
 public:
-    constexpr DATA i2c_addr_w(u8 addr) { return (DATA)addr << 1; }
+    test / models / i2c_sifive.cpp constexpr DATA i2c_addr_w(u8 addr) {
+        return (DATA)addr << 1;
+    }
     constexpr DATA i2c_addr_r(u8 addr) { return (DATA)addr << 1 | 1; }
 
     enum address : u32 {
@@ -184,8 +186,8 @@ public:
         ASSERT_OK(reg_read(SR, data));
         ASSERT_EQ(data, oci2c::SR_NACK | oci2c::SR_IF);
 
-        // start was already rejected, so it should not see the stop condition
-        EXPECT_CALL(*this, i2c_stop(_)).Times(0);
+        // finish transfer
+        EXPECT_CALL(*this, i2c_stop(_)).Times(1).WillOnce(Return(I2C_NACK));
         ASSERT_OK(reg_write(CR, oci2c::CMD_STO | oci2c::CMD_IACK));
         ASSERT_OK(reg_read(SR, data));
         EXPECT_EQ(data, oci2c::SR_NACK | oci2c::SR_IF);
