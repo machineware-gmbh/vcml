@@ -384,7 +384,8 @@ string vspserver::handle_exec(int client, const string& cmd) {
         stringstream ss;
         vector<string> cmdargs(args.begin() + 3, args.end());
         bool success = mod->execute(args[2], cmdargs, ss);
-        return mkstr("%s,%s", success ? "OK" : "E", ss.str().c_str());
+        string resp = escape(ss.str(), ",");
+        return mkstr("%s,%s", success ? "OK" : "E", resp.c_str());
     } catch (std::exception& e) {
         return mkstr("E,%s", escape(e.what(), ",").c_str());
     }
