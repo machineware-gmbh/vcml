@@ -226,9 +226,9 @@ template <typename T, size_t N>
 inline void property<T, N>::assign(const vector<string>& sv) {
     m_inited = true;
 
-    if (sv.size() < count_min()) {
+    if (sv.size() < property<T, N>::count_min()) {
         log_warn("property %s has not enough initializers", name().c_str());
-    } else if (sv.size() > count_max()) {
+    } else if (sv.size() > property<T, N>::count_max()) {
         log_warn("property %s has too many initializers", name().c_str());
     }
 
@@ -668,9 +668,9 @@ template <size_t N>
 inline void property<void, N>::assign(const vector<string>& sv) {
     m_inited = true;
 
-    if (sv.size() < count_min()) {
+    if (sv.size() < property<void, N>::count_min()) {
         log_warn("property %s has not enough initializers", name().c_str());
-    } else if (sv.size() > count_max()) {
+    } else if (sv.size() > property<void, N>::count_max()) {
         log_warn("property %s has too many initializers", name().c_str());
     }
 
