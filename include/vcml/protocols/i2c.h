@@ -80,9 +80,11 @@ class i2c_target_stub;
 class i2c_host
 {
 private:
-    struct i2c_state {
-        tlm_command cmd = TLM_IGNORE_COMMAND;
-        bool selected = false;
+   enum i2c_state {
+       I2C_LISTEN = 0,
+       I2C_START_NACK,
+       I2C_READ,
+       I2C_WRITE,
     };
 
     unordered_map<u8, i2c_state> m_state;
