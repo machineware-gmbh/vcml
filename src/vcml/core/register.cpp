@@ -181,12 +181,11 @@ string reg_base::str() {
     return ss.str();
 }
 
-void reg_base::str(const string& s) {
+void reg_base::assign(const vector<string>& sv) {
     if (m_cell_size > sizeof(u64))
         return;
 
-    vector<string> args = split(s);
-    u64 size = args.size();
+    u64 size = sv.size();
 
     if (size < m_cell_count) {
         log_warn("register %s has not enough initializers", name());
@@ -195,7 +194,7 @@ void reg_base::str(const string& s) {
     }
 
     for (u64 i = 0; i < min(m_cell_count, size); i++) {
-        u64 val = from_string<u64>(trim(args[i]));
+        u64 val = from_string<u64>(trim(sv[i]));
         do_write(i, 0, m_cell_size, (u8*)&val, true);
     }
 }

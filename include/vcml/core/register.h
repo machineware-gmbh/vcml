@@ -123,7 +123,7 @@ public:
                           bool dbg) = 0;
 
     string str();
-    void str(const string& s);
+    void assign(const vector<string>& sv);
 };
 
 inline u64 reg_base::get_size() const {
@@ -352,7 +352,7 @@ public:
     void set_bit(bool set);
 
     virtual string str() override;
-    virtual void str(const string& s) override;
+    virtual void assign(const vector<string>& s) override;
 
 private:
     bool m_banked;
@@ -903,8 +903,8 @@ string reg<DATA, N, STRIDE>::str() {
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
-void reg<DATA, N, STRIDE>::str(const string& s) {
-    reg_base::str(s);
+void reg<DATA, N, STRIDE>::assign(const vector<string>& sv) {
+    reg_base::assign(sv);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>

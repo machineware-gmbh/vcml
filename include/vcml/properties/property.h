@@ -43,10 +43,12 @@ public:
 
     virtual string defstr() const override;
     virtual string str() override;
-    virtual void str(const string& s) override;
+    virtual void assign(const vector<string>& sv) override;
 
     virtual size_t size() const override;
     virtual size_t count() const override;
+    virtual size_t count_min() const override;
+    virtual size_t count_max() const override;
     virtual const char* type() const override;
 
     constexpr bool is_inited() const { return m_inited; }
@@ -167,7 +169,16 @@ inline void property<T, N>::reset() {
 
     string init;
     if (broker::init(fullname(), init))
-        property<T, N>::str(init);
+        property<T, N>::assign(split(init));
+}
+
+template <>
+inline void property<string, 1>::reset() {
+    m_value[0] = m_defval[0];
+
+    string init;
+    if (broker::init(fullname(), init))
+        property<string, 1>::assign({ init });
 }
 
 template <typename T, size_t N>
@@ -212,28 +223,17 @@ inline string property<string, 1>::str() {
 }
 
 template <typename T, size_t N>
-inline void property<T, N>::str(const string& s) {
+inline void property<T, N>::assign(const vector<string>& sv) {
     m_inited = true;
-    vector<string> args = split(s);
-    size_t size = args.size();
 
-    if (size < N) {
+    if (sv.size() < count_min()) {
         log_warn("property %s has not enough initializers", name().c_str());
-    } else if (size > N) {
+    } else if (sv.size() > count_max()) {
         log_warn("property %s has too many initializers", name().c_str());
     }
 
-    for (size_t i = 0; i < min(N, size); i++)
-        m_value[i] = from_string<T>(trim(args[i]));
-}
-
-template <>
-inline void property<string, 1>::str(const string& s) {
-    m_inited = true;
-    if (s.length() > 1 && s.front() == '"' && s.back() == '"')
-        m_value[0] = s.substr(1, s.length() - 2);
-    else
-        m_value[0] = s;
+    for (size_t i = 0; i < min(N, sv.size()); i++)
+        m_value[i] = from_string<T>(trim(sv[i]));
 }
 
 template <typename T, size_t N>
@@ -243,6 +243,16 @@ inline size_t property<T, N>::size() const {
 
 template <typename T, size_t N>
 inline size_t property<T, N>::count() const {
+    return N;
+}
+
+template <typename T, size_t N>
+inline size_t property<T, N>::count_min() const {
+    return N;
+}
+
+template <typename T, size_t N>
+inline size_t property<T, N>::count_max() const {
     return N;
 }
 
@@ -545,10 +555,12 @@ public:
 
     virtual string defstr() const override;
     virtual string str() override;
-    virtual void str(const string& s) override;
+    virtual void assign(const vector<string>& sv) override;
 
     virtual size_t size() const override { return m_size; }
     virtual size_t count() const override { return m_count; }
+    virtual size_t count_min() const override { return m_count; }
+    virtual size_t count_max() const override { return m_count; }
     virtual const char* type() const override;
 
     constexpr bool is_inited() const { return m_inited; }
@@ -620,7 +632,7 @@ inline void property<void, N>::reset() {
 
     string init;
     if (broker::init(fullname(), init))
-        property<void, N>::str(init);
+        property<void, N>::assign(split(init));
 }
 
 template <size_t N>
@@ -653,21 +665,18 @@ inline string property<void, N>::str() {
 }
 
 template <size_t N>
-inline void property<void, N>::str(const string& s) {
+inline void property<void, N>::assign(const vector<string>& sv) {
     m_inited = true;
 
-    vector<string> args = split(s);
-    size_t count = args.size();
-
-    if (count < m_count) {
+    if (sv.size() < count_min()) {
         log_warn("property %s has not enough initializers", name().c_str());
-    } else if (count > m_count) {
+    } else if (sv.size() > count_max()) {
         log_warn("property %s has too many initializers", name().c_str());
     }
 
     u8* ptr = m_data;
-    for (size_t i = 0; i < min(m_count, count); i++, ptr += m_size) {
-        u64 val = from_string<u64>(trim(args[i]));
+    for (size_t i = 0; i < min(m_count, sv.size()); i++, ptr += m_size) {
+        u64 val = from_string<u64>(trim(sv[i]));
         if (mwr::encode_size(val) / 8u > m_size) {
             log_warn("property %s initialization value too big: 0x%llx",
                      name().c_str(), val);
@@ -788,10 +797,12 @@ public:
 
     virtual string defstr() const override;
     virtual string str() override;
-    virtual void str(const string& s) override;
+    virtual void assign(const vector<string>& sv) override;
 
     virtual size_t size() const override { return sizeof(T); }
     virtual size_t count() const override { return m_val.size(); }
+    virtual size_t count_min() const override { return 0; }
+    virtual size_t count_max() const override { return SIZE_MAX; }
     virtual const char* type() const override { return m_type.c_str(); }
 
     bool empty() const { return m_val.empty(); }
@@ -881,7 +892,7 @@ inline void property<vector<T>, 1>::reset() {
 
     string init;
     if (broker::init(fullname(), init))
-        property<vector<T>, 1>::str(init);
+        property<vector<T>, 1>::assign(split(init));
 }
 
 template <typename T>
@@ -917,15 +928,14 @@ inline string property<vector<T>, 1>::str() {
 }
 
 template <typename T>
-inline void property<vector<T>, 1>::str(const string& s) {
+inline void property<vector<T>, 1>::assign(const vector<string>& sv) {
     m_inited = true;
 
-    vector<string> args = split(s);
-    size_t size = args.size();
+    size_t size = sv.size();
 
     m_val.resize(size);
     for (size_t i = 0; i < size; i++)
-        m_val[i] = from_string<T>(trim(args[i]));
+        m_val[i] = from_string<T>(trim(sv[i]));
 }
 
 template <typename T>

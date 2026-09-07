@@ -99,6 +99,16 @@ static size_t attr_count(const sc_attr_base* attr) {
     return prop != nullptr ? prop->count() : 0;
 }
 
+static size_t attr_count_min(const sc_attr_base* attr) {
+    const property_base* prop = dynamic_cast<const property_base*>(attr);
+    return prop != nullptr ? prop->count_min() : 0;
+}
+
+static size_t attr_count_max(const sc_attr_base* attr) {
+    const property_base* prop = dynamic_cast<const property_base*>(attr);
+    return prop != nullptr ? prop->count_max() : 0;
+}
+
 static const char* obj_version(sc_object* obj) {
     module* mod = dynamic_cast<module*>(obj);
     if (mod)
@@ -128,6 +138,8 @@ static void list_object_xml(ostream& os, sc_object* obj) {
            << " name=\"" << xml_escape(attr_name(attr)) << "\""
            << " type=\"" << xml_escape(attr_type(attr)) << "\""
            << " count=\"" << attr_count(attr) << "\""
+           << " count-min=\"" << attr_count_min(attr) << "\""
+           << " count-max=\"" << attr_count_max(attr) << "\""
            << " />";
     }
 
@@ -196,7 +208,9 @@ static bool list_object_json(ostream& os, sc_object* obj) {
     for (const sc_attr_base* attr : obj->attr_cltn()) {
         os << "{\"name\":\"" << json_escape(attr_name(attr)) << "\","
            << "\"type\":\"" << json_escape(attr_type(attr)) << "\","
-           << "\"count\":" << attr_count(attr) << "}";
+           << "\"count\":" << attr_count(attr) << ","
+           << "\"count-min\":" << attr_count_min(attr) << ","
+           << "\"count-max\":" << attr_count_max(attr) << "}";
         if (nattr++ < obj->attr_cltn().size() - 1)
             os << ",";
     }
@@ -452,16 +466,17 @@ string vspserver::handle_seta(int client, const string& cmd) {
     if (prop == nullptr)
         return mkstr("E,attribute '%s' not writable", name.c_str());
 
-    if (values.size() != prop->count()) {
-        return mkstr("E,attribute '%s' needs %zu initializers, %zu given",
-                     name.c_str(), prop->count(), values.size());
+    if (values.size() < prop->count_min()) {
+        return mkstr("E,attribute '%s' at least %zu initializers (%zu given)",
+                     name.c_str(), prop->count_min(), values.size());
     }
 
-    stringstream ss;
-    for (unsigned int i = 0; i < (prop->count() - 1); i++)
-        ss << values[i] << " ";
-    ss << values[prop->count() - 1];
-    prop->str(ss.str());
+    if (values.size() > prop->count_max()) {
+        return mkstr("E,attribute '%s' at most %zu initializers (%zu given)",
+                     name.c_str(), prop->count_max(), values.size());
+    }
+
+    prop->assign(values);
 
     return "OK";
 }

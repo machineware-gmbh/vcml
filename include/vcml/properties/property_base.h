@@ -40,10 +40,12 @@ public:
 
     virtual string defstr() const = 0;
     virtual string str() = 0;
-    virtual void str(const string& s) = 0;
+    virtual void assign(const vector<string>& sv) = 0;
 
     virtual size_t size() const = 0;
     virtual size_t count() const = 0;
+    virtual size_t count_min() const = 0;
+    virtual size_t count_max() const = 0;
     virtual const char* type() const = 0;
 };
 
