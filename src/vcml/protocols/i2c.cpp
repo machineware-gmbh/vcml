@@ -52,43 +52,52 @@ ostream& operator<<(ostream& os, const i2c_payload& tx) {
 }
 
 void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
-    if (!stl_contains(m_state, socket.address.get()))
-        m_state[socket.address.get()] = TLM_IGNORE_COMMAND;
-
-    tlm_command& state = m_state[socket.address];
-    if (state == TLM_IGNORE_COMMAND && tx.cmd != I2C_START)
-        return;
+    i2c_state& state = m_state[socket.address];
 
     switch (tx.cmd) {
     case I2C_START: {
-        state = TLM_IGNORE_COMMAND;
+        state = I2C_LISTEN;
 
         u8 address = i2c_decode_address(tx.data);
         if (address != I2C_ADDR_BCAST && address != socket.address)
             return;
 
         socket.trace_fw(tx);
-        state = i2c_decode_tlm_command(tx.data);
-        tx.resp = i2c_start(socket, state);
+
+        if (i2c_decode_tlm_command(tx.data) == TLM_READ_COMMAND) {
+            state = I2C_READ;
+            tx.resp = i2c_start(socket, TLM_READ_COMMAND);
+        } else {
+            state = I2C_WRITE;
+            tx.resp = i2c_start(socket, TLM_WRITE_COMMAND);
+        }
+
         if (failed(tx.resp))
-            state = TLM_IGNORE_COMMAND;
+            state = I2C_START_NACK;
+
         socket.trace_bw(tx);
         return;
     }
 
     case I2C_STOP: {
+        if (state == I2C_LISTEN)
+            return;
+
         socket.trace_fw(tx);
-        state = TLM_IGNORE_COMMAND;
+        state = I2C_LISTEN;
         tx.resp = i2c_stop(socket);
         socket.trace_bw(tx);
         return;
     }
 
     case I2C_DATA: {
+        if (state != I2C_READ && state != I2C_WRITE)
+            return;
+
         socket.trace_fw(tx);
-        if (state == TLM_READ_COMMAND)
+        if (state == I2C_READ)
             tx.resp = i2c_read(socket, tx.data);
-        if (state == TLM_WRITE_COMMAND)
+        if (state == I2C_WRITE)
             tx.resp = i2c_write(socket, tx.data);
         socket.trace_bw(tx);
         return;

@@ -136,6 +136,7 @@ public:
         add_test("protocol", &i2c_bench::test_protocol);
         add_test("bus", &i2c_bench::test_bus);
         add_test("start_nack", &i2c_bench::test_start_nack);
+        add_test("repeated_start", &i2c_bench::test_repeated_start);
     }
 
     MOCK_METHOD(i2c_response, i2c_start,
@@ -234,8 +235,44 @@ public:
         EXPECT_CALL(*this, i2c_write(i2c_match_address(45), data)).Times(0);
         EXPECT_NACK(i2c_out.transport(data));
 
-        EXPECT_CALL(*this, i2c_stop(i2c_match_address(45))).Times(0);
+        // target rejected address, but it must still see a subsequent stop
+        EXPECT_CALL(*this, i2c_stop(i2c_match_address(45)))
+            .Times(1)
+            .WillOnce(Return(I2C_NACK));
         EXPECT_NACK(i2c_out.stop());
+
+        // another stop will remain unnoticed
+        EXPECT_CALL(*this, i2c_stop(_)).Times(0);
+        EXPECT_NACK(i2c_out.stop());
+    }
+
+    void test_repeated_start() {
+        EXPECT_CALL(*this, i2c_start(i2c_match_address(44), TLM_WRITE_COMMAND))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_out.start(44, TLM_WRITE_COMMAND));
+
+        // repeated start for another target, no stop condition in between
+        EXPECT_CALL(*this, i2c_start(i2c_match_address(45), TLM_READ_COMMAND))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_out.start(45, TLM_READ_COMMAND));
+
+        // data must only go to the newly selected target
+        u8 data = 0;
+        EXPECT_CALL(*this, i2c_write(_, _)).Times(0);
+        EXPECT_CALL(*this, i2c_read(i2c_match_address(45), _))
+            .Times(1)
+            .WillOnce(DoAll(SetArgReferee<1>(0x37), Return(I2C_ACK)));
+        EXPECT_ACK(i2c_out.transport(data));
+        EXPECT_EQ(data, 0x37);
+
+        // the deselected target must not see the stop condition
+        EXPECT_CALL(*this, i2c_stop(i2c_match_address(44))).Times(0);
+        EXPECT_CALL(*this, i2c_stop(i2c_match_address(45)))
+            .Times(1)
+            .WillOnce(Return(I2C_ACK));
+        EXPECT_ACK(i2c_out.stop());
     }
 };
 
