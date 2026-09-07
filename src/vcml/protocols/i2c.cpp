@@ -65,12 +65,12 @@ void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
         socket.trace_fw(tx);
 
         if (i2c_decode_tlm_command(tx.data) == TLM_READ_COMMAND) {
-        	state = I2C_READ;
-        	tx.resp = i2c_start(socket, TLM_READ_COMMAND);
+            state = I2C_READ;
+            tx.resp = i2c_start(socket, TLM_READ_COMMAND);
         } else {
-        	state = I2C_WRITE;
-        	tx.resp = i2c_start(socket, TLM_WRITE_COMMAND);
-	    }
+            state = I2C_WRITE;
+            tx.resp = i2c_start(socket, TLM_WRITE_COMMAND);
+        }
 
         if (failed(tx.resp))
             state = I2C_START_NACK;
@@ -92,7 +92,7 @@ void i2c_host::i2c_transport(i2c_target_socket& socket, i2c_payload& tx) {
 
     case I2C_DATA: {
         if (state != I2C_READ && state != I2C_WRITE)
-           return;
+            return;
 
         socket.trace_fw(tx);
         if (state == I2C_READ)
