@@ -135,6 +135,7 @@ add_library(vcml STATIC
     ${src}/vcml/models/generic/memory.cpp
     ${src}/vcml/models/generic/hwrng.cpp
     ${src}/vcml/models/generic/fbdev.cpp
+    ${src}/vcml/models/gpio/buttons.cpp
     ${src}/vcml/models/gpio/leds.cpp
     ${src}/vcml/models/gpio/gate.cpp
     ${src}/vcml/models/gpio/mmgpio.cpp
