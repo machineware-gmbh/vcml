@@ -13,6 +13,21 @@
 namespace vcml {
 namespace gpio {
 
+bool buttons::cmd_status(const vector<string>& args, ostream& os) {
+    if (gpio_in.count() == 0) {
+        os << "no buttons connected" << std::endl;
+        return true;
+    }
+
+    for (auto [id, button] : gpio_in) {
+        bool pressed = button->read() == pressed_state;
+        os << "BUTTON" << id << ": " << (pressed ? "pressed" : "released")
+           << std::endl;
+    }
+
+    return true;
+}
+
 static optional<size_t> find_button(gpio_initiator_array<>& gpio_in,
                                     const string& arg, ostream& os) {
     size_t idx = from_string<size_t>(arg);
@@ -60,6 +75,8 @@ buttons::buttons(const sc_module_name& nm):
     gpio_host(),
     pressed_state("pressed_state", true),
     gpio_in("gpio_in") {
+    register_command("status", 0, &buttons::cmd_status,
+                     "reports the status of all connected buttons");
     register_command("push", 1, &buttons::cmd_push,
                      "presses the given button");
     register_command("release", 1, &buttons::cmd_release,

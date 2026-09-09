@@ -36,9 +36,19 @@ public:
     void test_active_high() {
         stringstream ss;
 
+        EXPECT_TRUE(button0.execute("status", {}, ss));
+        EXPECT_EQ(ss.str(), "BUTTON0: released\n");
+
+        ss.str("");
+        ss.clear();
         EXPECT_TRUE(button0.execute("push", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 pressed");
         EXPECT_TRUE(button0_target.read());
+
+        ss.str("");
+        ss.clear();
+        EXPECT_TRUE(button0.execute("status", {}, ss));
+        EXPECT_EQ(ss.str(), "BUTTON0: pressed\n");
 
         ss.str("");
         ss.clear();
@@ -63,6 +73,11 @@ public:
 
         EXPECT_FALSE(button1_target.read());
 
+        EXPECT_TRUE(button1.execute("status", {}, ss));
+        EXPECT_EQ(ss.str(), "BUTTON0: pressed\n");
+
+        ss.str("");
+        ss.clear();
         EXPECT_TRUE(button1.execute("push", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 pressed");
         EXPECT_FALSE(button1_target.read());

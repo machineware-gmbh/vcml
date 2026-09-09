@@ -24,6 +24,7 @@ namespace gpio {
 class buttons : public module, public gpio_host
 {
 private:
+    bool cmd_status(const vector<string>& args, ostream& os);
     bool cmd_push(const vector<string>& args, ostream& os);
     bool cmd_release(const vector<string>& args, ostream& os);
     bool cmd_pulse(const vector<string>& args, ostream& os);
