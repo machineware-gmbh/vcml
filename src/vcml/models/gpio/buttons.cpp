@@ -13,49 +13,45 @@
 namespace vcml {
 namespace gpio {
 
-static bool released_state(const buttons& btn) {
-    return !btn.pressed_state;
-}
-
-static bool find_button(gpio_initiator_array<>& gpio_in, const string& arg,
-                        size_t& idx, ostream& os) {
-    idx = from_string<size_t>(arg);
+static optional<size_t> find_button(gpio_initiator_array<>& gpio_in,
+                                    const string& arg, ostream& os) {
+    size_t idx = from_string<size_t>(arg);
     if (!gpio_in.exists(idx)) {
         os << "button" << idx << " not connected";
-        return false;
+        return {};
     }
 
-    return true;
+    return idx;
 }
 
 bool buttons::cmd_push(const vector<string>& args, ostream& os) {
-    size_t idx;
-    if (!find_button(gpio_in, args[0], idx, os))
+    auto idx = find_button(gpio_in, args[0], os);
+    if (!idx)
         return false;
 
-    gpio_in[idx] = pressed_state;
-    os << "button" << idx << " pressed";
+    gpio_in[*idx] = pressed_state;
+    os << "button" << *idx << " pressed";
     return true;
 }
 
 bool buttons::cmd_release(const vector<string>& args, ostream& os) {
-    size_t idx;
-    if (!find_button(gpio_in, args[0], idx, os))
+    auto idx = find_button(gpio_in, args[0], os);
+    if (!idx)
         return false;
 
-    gpio_in[idx] = released_state(*this);
-    os << "button" << idx << " released";
+    gpio_in[*idx] = !pressed_state;
+    os << "button" << *idx << " released";
     return true;
 }
 
 bool buttons::cmd_pulse(const vector<string>& args, ostream& os) {
-    size_t idx;
-    if (!find_button(gpio_in, args[0], idx, os))
+    auto idx = find_button(gpio_in, args[0], os);
+    if (!idx)
         return false;
 
-    gpio_in[idx] = pressed_state;
-    gpio_in[idx] = released_state(*this);
-    os << "button" << idx << " pulsed";
+    gpio_in[*idx] = pressed_state;
+    gpio_in[*idx] = !pressed_state;
+    os << "button" << *idx << " pulsed";
     return true;
 }
 
