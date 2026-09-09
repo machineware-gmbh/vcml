@@ -39,6 +39,8 @@ public:
     property<sc_time> quantum;
     property<sc_time> duration;
 
+    property<bool> list_properties;
+
     system() = delete;
     system(const system&) = delete;
     system(const sc_module_name& name);

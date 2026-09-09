@@ -72,11 +72,12 @@ system::system(const sc_module_name& nm):
     config("config", ""),
     backtrace("backtrace", true),
     elab_only("elab_only", false),
-    session("session", start_session ? 0 : -1),
+    session("session", ::vcml::start_session ? 0 : -1),
     session_debug("session_debug", false),
     session_host("session_host", "localhost"),
     quantum("quantum", sc_time(1, SC_US)),
-    duration("duration", SC_ZERO_TIME) {
+    duration("duration", SC_ZERO_TIME),
+    list_properties("list_properties", ::vcml::list_properties) {
     if (backtrace)
         mwr::report_segfaults();
 
@@ -104,12 +105,14 @@ int system::run() {
 
     broker::report_unused();
     tlm::tlm_global_quantum::instance().set(quantum);
+    double simstart = mwr::timestamp();
 
     try {
         if (elab_only) {
             log_info("starting elaboration only");
             sc_core::sc_start(SC_ZERO_TIME);
             log_info("elaboration complete");
+            return EXIT_SUCCESS;
         } else if (session >= 0) {
             vcml::debugging::vspserver vspsession(session_host, session);
             vspsession.echo(session_debug);
@@ -119,13 +122,22 @@ int system::run() {
                      duration.get().to_string().c_str(),
                      quantum.get().to_string().c_str());
             sc_core::sc_start();
-            log_info("simulation stopped");
+            log_info("simulation completed");
         } else {
             log_info("starting infinite simulation using %s quantum",
                      quantum.get().to_string().c_str());
             sc_core::sc_start();
             log_info("simulation stopped");
         }
+
+        double realtime = mwr::timestamp() - simstart;
+        double duration = sc_core::sc_time_stamp().to_seconds();
+        setlocale(LC_ALL, "");
+        log_info("simulation duration:       %.9fs", duration);
+        log_info("simulation runtime:        %.3fs", realtime);
+        log_info("simulation realtime ratio: %.2fs / 1s",
+                 duration == 0.0 ? 0.0 : realtime / duration);
+        return EXIT_SUCCESS;
     } catch (sc_report& rep) {
         log_error("%s", rep.what());
         return EXIT_FAILURE;
@@ -136,8 +148,6 @@ int system::run() {
         log_error("Caught unknown exception");
         return EXIT_FAILURE;
     }
-
-    return EXIT_SUCCESS;
 }
 
 } // namespace vcml
