@@ -91,6 +91,7 @@
 #include "vcml/models/generic/hwrng.h"
 #include "vcml/models/generic/fbdev.h"
 
+#include "vcml/models/gpio/buttons.h"
 #include "vcml/models/gpio/leds.h"
 #include "vcml/models/gpio/gate.h"
 #include "vcml/models/gpio/mmgpio.h"
