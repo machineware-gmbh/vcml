@@ -21,7 +21,7 @@ bool buttons::cmd_status(const vector<string>& args, ostream& os) {
 
     for (auto [id, button] : gpio_in) {
         bool pressed = button->read() == pressed_state;
-        os << "BUTTON" << id << ": " << (pressed ? "pressed" : "released")
+        os << "button" << id << ": " << (pressed ? "pressed" : "released")
            << std::endl;
     }
 
@@ -31,18 +31,18 @@ bool buttons::cmd_status(const vector<string>& args, ostream& os) {
 static optional<size_t> find_button(gpio_initiator_array<>& gpio_in,
                                     const string& arg, ostream& os) {
     size_t idx = from_string<size_t>(arg);
-    if (!gpio_in.exists(idx)) {
-        os << "button" << idx << " not connected";
+    if (!gpio_in.exists(idx))
         return {};
-    }
 
     return idx;
 }
 
 bool buttons::cmd_push(const vector<string>& args, ostream& os) {
     auto idx = find_button(gpio_in, args[0], os);
-    if (!idx)
+    if (!idx) {
+        os << "button" << args[0] << " not connected";
         return false;
+    }
 
     m_cmd_functions.push_back(
         [this, idx = *idx]() { gpio_in[idx] = pressed_state; });
@@ -54,8 +54,10 @@ bool buttons::cmd_push(const vector<string>& args, ostream& os) {
 
 bool buttons::cmd_release(const vector<string>& args, ostream& os) {
     auto idx = find_button(gpio_in, args[0], os);
-    if (!idx)
+    if (!idx) {
+        os << "button" << args[0] << " not connected";
         return false;
+    }
 
     m_cmd_functions.push_back(
         [this, idx = *idx]() { gpio_in[idx] = !pressed_state; });
@@ -67,14 +69,15 @@ bool buttons::cmd_release(const vector<string>& args, ostream& os) {
 
 bool buttons::cmd_pulse(const vector<string>& args, ostream& os) {
     auto idx = find_button(gpio_in, args[0], os);
-    if (!idx)
+    if (!idx) {
+        os << "button" << args[0] << " not connected";
         return false;
+    }
 
     m_cmd_functions.push_back([this, idx = *idx]() {
         gpio_in[idx] = pressed_state;
         gpio_in[idx] = !pressed_state;
     });
-
     on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
 
     os << "button" << *idx << " pulsed";

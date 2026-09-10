@@ -37,7 +37,7 @@ public:
         stringstream ss;
 
         EXPECT_TRUE(button0.execute("status", {}, ss));
-        EXPECT_EQ(ss.str(), "BUTTON0: released\n");
+        EXPECT_EQ(ss.str(), "button0: released\n");
 
         ss.str("");
         ss.clear();
@@ -49,7 +49,7 @@ public:
         ss.str("");
         ss.clear();
         EXPECT_TRUE(button0.execute("status", {}, ss));
-        EXPECT_EQ(ss.str(), "BUTTON0: pressed\n");
+        EXPECT_EQ(ss.str(), "button0: pressed\n");
 
         ss.str("");
         ss.clear();
@@ -77,7 +77,7 @@ public:
         EXPECT_FALSE(button1_target.read());
 
         EXPECT_TRUE(button1.execute("status", {}, ss));
-        EXPECT_EQ(ss.str(), "BUTTON0: pressed\n");
+        EXPECT_EQ(ss.str(), "button0: pressed\n");
 
         ss.str("");
         ss.clear();
