@@ -45,7 +45,7 @@ bool buttons::cmd_push(const vector<string>& args, ostream& os) {
         return false;
 
     m_cmd_functions.push_back(
-        [this, idx]() { gpio_in[*idx] = pressed_state; });
+        [this, idx = *idx]() { gpio_in[idx] = pressed_state; });
     on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
 
     os << "button" << *idx << " pressed";
@@ -58,7 +58,7 @@ bool buttons::cmd_release(const vector<string>& args, ostream& os) {
         return false;
 
     m_cmd_functions.push_back(
-        [this, idx]() { gpio_in[*idx] = !pressed_state; });
+        [this, idx = *idx]() { gpio_in[idx] = !pressed_state; });
     on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
 
     os << "button" << *idx << " released";
@@ -70,9 +70,9 @@ bool buttons::cmd_pulse(const vector<string>& args, ostream& os) {
     if (!idx)
         return false;
 
-    m_cmd_functions.push_back([this, idx]() {
-        gpio_in[*idx] = pressed_state;
-        gpio_in[*idx] = !pressed_state;
+    m_cmd_functions.push_back([this, idx = *idx]() {
+        gpio_in[idx] = pressed_state;
+        gpio_in[idx] = !pressed_state;
     });
 
     on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
