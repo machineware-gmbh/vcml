@@ -29,6 +29,11 @@ private:
     bool cmd_release(const vector<string>& args, ostream& os);
     bool cmd_pulse(const vector<string>& args, ostream& os);
 
+    vector<function<void(void)>> m_cmd_functions;
+    sc_event m_cmd_event;
+    std::mutex m_cmd_mutex;
+    void exec_cmd();
+
 public:
     property<bool> pressed_state;
 

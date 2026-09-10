@@ -43,6 +43,7 @@ public:
         ss.clear();
         EXPECT_TRUE(button0.execute("push", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 pressed");
+        sc_core::wait(1, sc_core::SC_NS);
         EXPECT_TRUE(button0_target.read());
 
         ss.str("");
@@ -54,12 +55,14 @@ public:
         ss.clear();
         EXPECT_TRUE(button0.execute("release", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 released");
+        sc_core::wait(1, sc_core::SC_NS);
         EXPECT_FALSE(button0_target.read());
 
         ss.str("");
         ss.clear();
         EXPECT_TRUE(button0.execute("pulse", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 pulsed");
+        sc_core::wait(1, sc_core::SC_NS);
         EXPECT_FALSE(button0_target.read());
 
         ss.str("");
@@ -80,18 +83,21 @@ public:
         ss.clear();
         EXPECT_TRUE(button1.execute("push", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 pressed");
+        sc_core::wait(1, sc_core::SC_NS);
         EXPECT_FALSE(button1_target.read());
 
         ss.str("");
         ss.clear();
         EXPECT_TRUE(button1.execute("release", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 released");
+        sc_core::wait(1, sc_core::SC_NS);
         EXPECT_TRUE(button1_target.read());
 
         ss.str("");
         ss.clear();
         EXPECT_TRUE(button1.execute("pulse", { "0" }, ss));
         EXPECT_EQ(ss.str(), "button0 pulsed");
+        sc_core::wait(1, sc_core::SC_NS);
         EXPECT_TRUE(button1_target.read());
     }
 };

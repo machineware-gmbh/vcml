@@ -40,34 +40,55 @@ static optional<size_t> find_button(gpio_initiator_array<>& gpio_in,
 }
 
 bool buttons::cmd_push(const vector<string>& args, ostream& os) {
+    lock_guard<mutex> guard(m_cmd_mutex);
     auto idx = find_button(gpio_in, args[0], os);
     if (!idx)
         return false;
 
-    gpio_in[*idx] = pressed_state;
+    m_cmd_functions.push_back(
+        [this, idx]() { gpio_in[*idx] = pressed_state; });
+    on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
+
     os << "button" << *idx << " pressed";
     return true;
 }
 
 bool buttons::cmd_release(const vector<string>& args, ostream& os) {
+    lock_guard<mutex> guard(m_cmd_mutex);
     auto idx = find_button(gpio_in, args[0], os);
     if (!idx)
         return false;
 
-    gpio_in[*idx] = !pressed_state;
+    m_cmd_functions.push_back(
+        [this, idx]() { gpio_in[*idx] = !pressed_state; });
+    on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
+
     os << "button" << *idx << " released";
     return true;
 }
 
 bool buttons::cmd_pulse(const vector<string>& args, ostream& os) {
+    lock_guard<mutex> guard(m_cmd_mutex);
     auto idx = find_button(gpio_in, args[0], os);
     if (!idx)
         return false;
 
-    gpio_in[*idx] = pressed_state;
-    gpio_in[*idx] = !pressed_state;
+    m_cmd_functions.push_back([this, idx]() {
+        gpio_in[*idx] = pressed_state;
+        gpio_in[*idx] = !pressed_state;
+    });
+
+    on_next_update([this]() { m_cmd_event.notify(SC_ZERO_TIME); });
+
     os << "button" << *idx << " pulsed";
     return true;
+}
+
+void buttons::exec_cmd() {
+    lock_guard<std::mutex> guard(m_cmd_mutex);
+    for (auto& cmd : m_cmd_functions)
+        cmd();
+    m_cmd_functions.clear();
 }
 
 buttons::buttons(const sc_module_name& nm):
@@ -83,6 +104,9 @@ buttons::buttons(const sc_module_name& nm):
                      "releases the given button");
     register_command("pulse", 1, &buttons::cmd_pulse,
                      "presses and releases the given button");
+    SC_METHOD(exec_cmd);
+    sensitive << m_cmd_event;
+    dont_initialize();
 }
 
 void buttons::gpio_transport(const gpio_target_socket& socket,
