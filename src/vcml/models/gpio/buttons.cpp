@@ -100,6 +100,7 @@ buttons::buttons(const sc_module_name& nm):
                      "releases the given button");
     register_command("pulse", 1, &buttons::cmd_pulse,
                      "presses and releases the given button");
+    SC_HAS_PROCESS(buttons);
     SC_METHOD(exec_cmd);
     sensitive << m_cmd_event;
     dont_initialize();

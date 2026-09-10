@@ -31,7 +31,6 @@ private:
 
     vector<function<void(void)>> m_cmd_functions;
     sc_event m_cmd_event;
-    std::mutex m_cmd_mutex;
     void exec_cmd();
 
 public:
