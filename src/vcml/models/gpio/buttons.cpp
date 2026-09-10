@@ -40,7 +40,6 @@ static optional<size_t> find_button(gpio_initiator_array<>& gpio_in,
 }
 
 bool buttons::cmd_push(const vector<string>& args, ostream& os) {
-    lock_guard<mutex> guard(m_cmd_mutex);
     auto idx = find_button(gpio_in, args[0], os);
     if (!idx)
         return false;
@@ -54,7 +53,6 @@ bool buttons::cmd_push(const vector<string>& args, ostream& os) {
 }
 
 bool buttons::cmd_release(const vector<string>& args, ostream& os) {
-    lock_guard<mutex> guard(m_cmd_mutex);
     auto idx = find_button(gpio_in, args[0], os);
     if (!idx)
         return false;
@@ -68,7 +66,6 @@ bool buttons::cmd_release(const vector<string>& args, ostream& os) {
 }
 
 bool buttons::cmd_pulse(const vector<string>& args, ostream& os) {
-    lock_guard<mutex> guard(m_cmd_mutex);
     auto idx = find_button(gpio_in, args[0], os);
     if (!idx)
         return false;
@@ -85,7 +82,6 @@ bool buttons::cmd_pulse(const vector<string>& args, ostream& os) {
 }
 
 void buttons::exec_cmd() {
-    lock_guard<std::mutex> guard(m_cmd_mutex);
     for (auto& cmd : m_cmd_functions)
         cmd();
     m_cmd_functions.clear();
