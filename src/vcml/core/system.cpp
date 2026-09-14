@@ -133,8 +133,8 @@ int system::run() {
         double realtime = mwr::timestamp() - simstart;
         double duration = sc_core::sc_time_stamp().to_seconds();
         setlocale(LC_ALL, "");
-        log_info("simulation duration:       %.9fs", duration);
-        log_info("simulation runtime:        %.3fs", realtime);
+        log_info("elapsed SystemC time:      %.9fs", duration);
+        log_info("elapsed wall-clock time:   %.3fs", realtime);
         log_info("simulation realtime ratio: %.2fs / 1s",
                  duration == 0.0 ? 0.0 : realtime / duration);
         return EXIT_SUCCESS;
