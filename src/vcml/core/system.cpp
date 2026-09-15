@@ -130,13 +130,13 @@ int system::run() {
             log_info("simulation stopped");
         }
 
-        double realtime = mwr::timestamp() - simstart;
-        double duration = sc_core::sc_time_stamp().to_seconds();
+        double wall_clock_time = mwr::timestamp() - simstart;
+        double systemc_time = sc_core::sc_time_stamp().to_seconds();
         setlocale(LC_ALL, "");
-        log_info("simulation duration:       %.9fs", duration);
-        log_info("simulation runtime:        %.3fs", realtime);
+        log_info("elapsed systemc time:      %.9fs", systemc_time);
+        log_info("elapsed wall-clock time:   %.3fs", wall_clock_time);
         log_info("simulation realtime ratio: %.2fs / 1s",
-                 duration == 0.0 ? 0.0 : realtime / duration);
+                 systemc_time == 0.0 ? 0.0 : wall_clock_time / systemc_time);
         return EXIT_SUCCESS;
     } catch (sc_report& rep) {
         log_error("%s", rep.what());
