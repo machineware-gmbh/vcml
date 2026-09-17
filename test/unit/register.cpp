@@ -1151,10 +1151,10 @@ TEST(registers, str_scalar) {
     mock.test_reg_a = 0xdeadbeef;
     EXPECT_EQ(mock.test_reg_a.str(), "0xdeadbeef");
 
-    mock.test_reg_a.str("0x12345678");
+    mock.test_reg_a.assign({ "0x12345678" });
     EXPECT_EQ(mock.test_reg_a, 0x12345678u);
 
-    mock.test_reg_a.str("255");
+    mock.test_reg_a.assign({ "255" });
     EXPECT_EQ(mock.test_reg_a, 255u);
 }
 
@@ -1168,7 +1168,8 @@ TEST(registers, str_array) {
     EXPECT_EQ(mock.test_reg.str(),
               "0x00001337 0x22222222 0x33333333 0x44444444");
 
-    mock.test_reg.str("0x1234 0x000bbbbb 0xcccccccc 0xdddddddd");
+    mock.test_reg.assign(
+        { "0x1234", "0x000bbbbb", "0xcccccccc", "0xdddddddd" });
     EXPECT_EQ(mock.test_reg[0], 0x1234u);
     EXPECT_EQ(mock.test_reg[1], 0xbbbbbu);
     EXPECT_EQ(mock.test_reg[2], 0xccccccccu);

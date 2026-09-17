@@ -254,7 +254,7 @@ TEST(property, init) {
     EXPECT_DEATH(test.prop_void.set(0, 4), "index 4 out of bounds");
     EXPECT_DEATH(test.prop_void.set(0x100000000, 0), "value too big");
     EXPECT_EQ(test.prop_void.str(), "2864434397 1140859545");
-    test.prop_void.str("4 5");
+    test.prop_void.assign({ "4", "5" });
     EXPECT_EQ(test.prop_void.str(), "4 5");
 
     EXPECT_STREQ(test.prop_vector.type(), "vector<i32>");
