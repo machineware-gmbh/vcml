@@ -30,17 +30,13 @@ input* console::find_input(const string& name) {
 
 size_t console::attach_backend(const string& desc) {
     auto* backend = ui::backend::create(desc);
-    if (backend == nullptr) {
-        log_debug("backend creation disabled: %s", desc.c_str());
-        return m_next_id++;
-    }
-
+    VCML_REPORT_ON(!backend, "error creating backend %s", desc.c_str());
     log_debug("creating backend: %s", backend->name());
     m_backends[m_next_id] = backend;
     for (auto* input : m_inputs)
         backend->attach(input);
-    if (m_setup.initialized)
-        backend->setup(m_setup.mode, m_setup.fbptr);
+    if (m_mode.is_valid())
+        backend->setup(m_mode, m_fbptr);
     return m_next_id++;
 }
 
@@ -123,7 +119,8 @@ console::console(const sc_module_name& nm):
     display_if(),
     m_next_id(),
     m_display(),
-    m_setup(),
+    m_mode(),
+    m_fbptr(),
     m_inputs(),
     m_backends(),
     display("display"),
@@ -188,9 +185,8 @@ void console::end_of_simulation() {
 }
 
 void console::display_setup(const videomode& mode, u8* fbptr) {
-    m_setup.mode = mode;
-    m_setup.fbptr = fbptr;
-    m_setup.initialized = true;
+    m_mode = mode;
+    m_fbptr = fbptr;
 
     for (auto [_, backend] : m_backends)
         backend->setup(mode, fbptr);

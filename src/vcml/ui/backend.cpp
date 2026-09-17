@@ -179,7 +179,7 @@ void backend::define(const string& type, create_fn fn) {
 
 backend* backend::create(const string& desc) {
     if (mwr::getenv_or_default("VCML_NO_GUI", false))
-        return nullptr;
+        return create_null(0);
 
     u32 nr;
     string type;
