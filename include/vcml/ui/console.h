@@ -36,8 +36,8 @@ private:
     class display* m_display;
     struct setup {
         videomode mode;
-        u8* fbptr;
-        bool initialized;
+        u8* fbptr = nullptr;
+        bool initialized = 0;
     } m_setup;
     unordered_set<input*> m_inputs;
     unordered_map<size_t, backend*> m_backends;
