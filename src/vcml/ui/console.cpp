@@ -30,9 +30,17 @@ input* console::find_input(const string& name) {
 
 size_t console::attach_backend(const string& desc) {
     auto* backend = ui::backend::create(desc);
+    if (backend == nullptr) {
+        log_debug("backend creation disabled: %s", desc.c_str());
+        return m_next_id++;
+    }
+
+    log_debug("creating backend: %s", backend->name());
     m_backends[m_next_id] = backend;
     for (auto* input : m_inputs)
         backend->attach(input);
+    if (m_setup.initialized)
+        backend->setup(m_setup.mode, m_setup.fbptr);
     return m_next_id++;
 }
 
@@ -40,6 +48,7 @@ bool console::detach_backend(size_t id) {
     auto it = m_backends.find(id);
     if (it == m_backends.end())
         return false;
+    log_debug("destroying backend: %s", it->second->name());
     ui::backend::destroy(it->second);
     m_backends.erase(it);
     return true;
@@ -114,6 +123,7 @@ console::console(const sc_module_name& nm):
     display_if(),
     m_next_id(),
     m_display(),
+    m_setup(),
     m_inputs(),
     m_backends(),
     display("display"),
@@ -178,6 +188,10 @@ void console::end_of_simulation() {
 }
 
 void console::display_setup(const videomode& mode, u8* fbptr) {
+    m_setup.mode = mode;
+    m_setup.fbptr = fbptr;
+    m_setup.initialized = true;
+
     for (auto [_, backend] : m_backends)
         backend->setup(mode, fbptr);
 }
