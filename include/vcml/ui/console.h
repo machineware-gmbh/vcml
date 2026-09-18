@@ -34,6 +34,9 @@ private:
     size_t m_next_id;
 
     class display* m_display;
+    videomode m_mode;
+    u8* m_fbptr;
+
     unordered_set<input*> m_inputs;
     unordered_map<size_t, backend*> m_backends;
 

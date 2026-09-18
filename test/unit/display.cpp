@@ -16,6 +16,19 @@
 using namespace vcml;
 using namespace vcml::ui;
 
+class test_backend : public backend
+{
+public:
+    static test_backend* instance;
+
+    test_backend(u32 id): backend("test", id) { instance = this; }
+    virtual ~test_backend() { instance = nullptr; }
+
+    static backend* create(u32 id) { return new test_backend(id); }
+};
+
+test_backend* test_backend::instance = nullptr;
+
 TEST(display, videomode) {
     u32 resx = 800;
     u32 resy = 600;
@@ -73,4 +86,23 @@ TEST(display, server) {
     ui::backend::destroy(p3);
     ui::backend::destroy(p4);
     ui::backend::destroy(p5);
+}
+
+TEST(display, attach_backend) {
+    backend::define("test", test_backend::create);
+
+    display display("display");
+    console console("console");
+    console.display = display.name();
+
+    auto mode = videomode::a8r8g8b8(16, 16);
+    vector<u8> framebuffer(mode.size);
+    display.setup(mode, framebuffer.data());
+    sc_start(SC_ZERO_TIME);
+
+    stringstream output;
+    EXPECT_TRUE(console.execute("attach_backend", { "test:1" }, output));
+    ASSERT_NE(test_backend::instance, nullptr);
+    EXPECT_EQ(test_backend::instance->framebuffer(), framebuffer.data());
+    EXPECT_EQ(test_backend::instance->mode(), mode);
 }
