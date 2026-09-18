@@ -41,6 +41,8 @@ private:
 protected:
     static unordered_map<string, create_fn> types;
 
+    virtual void members_to_json(ostream& os) const;
+
 public:
     mwr::logger log;
 
@@ -73,6 +75,8 @@ public:
     virtual void notify_pos(u32 x, u32 y);
 
     virtual void handle_option(const string& option);
+
+    void to_json(ostream& os) const;
 
     void setup(const videomode& mode, u8* fbptr);
     void cleanup();

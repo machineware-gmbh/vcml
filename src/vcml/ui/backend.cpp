@@ -102,6 +102,18 @@ void backend::handle_option(const string& option) {
     VCML_REPORT("%s: unsupported option \"%s\"", name(), option.c_str());
 }
 
+void backend::members_to_json(ostream& os) const {
+    os << "\"type\":\"" << m_type << "\",";
+    os << "\"name\":\"" << m_name << "\",";
+    os << "\"id\":" << m_id;
+}
+
+void backend::to_json(ostream& os) const {
+    os << "{";
+    members_to_json(os);
+    os << "}";
+}
+
 void backend::setup(const videomode& mode, u8* fbptr) {
     if (has_framebuffer())
         reinit(mode, fbptr);

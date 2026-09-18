@@ -95,6 +95,34 @@ bool console::cmd_list_backends(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool console::cmd_list_backends_json(const vector<string>& args, ostream& os) {
+    bool first = true;
+    os << "{";
+
+    if (args.empty()) {
+        for (auto& [id, backend] : m_backends) {
+            os << (first ? "" : ",") << "\"" << id << "\":";
+            backend->to_json(os);
+            first = false;
+        }
+    }
+
+    for (const string& arg : args) {
+        size_t id = from_string<size_t>(arg);
+
+        auto it = m_backends.find(id);
+        if (it == m_backends.end())
+            continue;
+
+        os << (first ? "" : ",") << "\"" << id << "\":";
+        it->second->to_json(os);
+        first = false;
+    }
+
+    os << "}";
+    return true;
+}
+
 bool console::cmd_screenshot(const vector<string>& args, ostream& os) {
     if (!m_display) {
         os << "no display to take screenshot from";
@@ -137,6 +165,10 @@ console::console(const sc_module_name& nm):
     register_command(
         "list_backends", 0, &console::cmd_list_backends,
         "lists all known UI backends that are attached to this console");
+    register_command(
+        "list_backends_json", 0, &console::cmd_list_backends_json,
+        "lists all known UI backends that are attached to this console in "
+        "json format");
     register_command(
         "screenshot", 0, &console::cmd_screenshot,
         "store a screenshot of the framebuffer, usage: screenshot [path]");
