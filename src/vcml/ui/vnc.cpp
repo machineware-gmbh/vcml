@@ -837,6 +837,7 @@ void vnc::run() {
         try {
             log_debug("listening...");
             m_socket.listen(m_port, m_host);
+            m_port = m_socket.port();
         } catch (std::exception& ex) {
             log.error(ex);
             return;
@@ -957,6 +958,12 @@ void vnc::handle_option(const string& option) {
     }
 
     backend::handle_option(option);
+}
+
+void vnc::members_to_json(ostream& os) const {
+    backend::members_to_json(os);
+    os << ",\"host\":\"" << (m_host.empty() ? "localhost" : m_host) << "\"";
+    os << ",\"port\":" << m_port;
 }
 
 backend* vnc::create(u32 nr) {

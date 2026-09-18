@@ -49,6 +49,7 @@ private:
     bool cmd_attach_backend(const vector<string>& args, ostream& os);
     bool cmd_detach_backend(const vector<string>& args, ostream& os);
     bool cmd_list_backends(const vector<string>& args, ostream& os);
+    bool cmd_list_backends_json(const vector<string>& args, ostream& os);
     bool cmd_screenshot(const vector<string>& args, ostream& os);
 
 public:

@@ -130,6 +130,9 @@ private:
     void handle_command();
     void run();
 
+protected:
+    virtual void members_to_json(ostream& os) const override;
+
 public:
     u16 port() const { return m_port; }
 
