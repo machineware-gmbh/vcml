@@ -177,8 +177,10 @@ inline void property<string, 1>::reset() {
     m_value[0] = m_defval[0];
 
     string init;
-    if (broker::init(fullname(), init))
+    if (broker::init(fullname(), init)) {
+        init = join(split(init), " ");
         property<string, 1>::assign({ init });
+    }
 }
 
 template <typename T, size_t N>
@@ -226,11 +228,10 @@ template <typename T, size_t N>
 inline void property<T, N>::assign(const vector<string>& sv) {
     m_inited = true;
 
-    if (sv.size() < property<T, N>::count_min()) {
+    if (sv.size() < property<T, N>::count_min())
         log_warn("property %s has not enough initializers", name().c_str());
-    } else if (sv.size() > property<T, N>::count_max()) {
+    else if (sv.size() > property<T, N>::count_max())
         log_warn("property %s has too many initializers", name().c_str());
-    }
 
     for (size_t i = 0; i < min(N, sv.size()); i++)
         m_value[i] = from_string<T>(trim(sv[i]));

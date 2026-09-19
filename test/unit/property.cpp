@@ -17,6 +17,7 @@ class test_component : public vcml::component
 {
 public:
     vcml::property<std::string> prop_str;
+    vcml::property<std::string> prop_str_quote;
     vcml::property<vcml::u64> prop_u64;
     vcml::property<vcml::u32> prop_u32;
     vcml::property<vcml::u16> prop_u16;
@@ -36,6 +37,7 @@ public:
     test_component(const sc_core::sc_module_name& nm):
         vcml::component(nm),
         prop_str("prop_str", "abc"),
+        prop_str_quote("prop_str_quote", ""),
         prop_u64("prop_u64", 0xffffffffffffffff),
         prop_u32("prop_u32", 0xffffffff),
         prop_u16("prop_u16", 0xffff),
@@ -60,6 +62,7 @@ public:
 TEST(property, init) {
     vcml::broker broker("test", true);
     broker.define("test.prop_str", "hello world");
+    broker.define("test.prop_str_quote", "\"a b c\"");
     broker.define("test.prop_u64", "0x123456789abcdef0");
     broker.define("test.prop_u32", "12345678");
     broker.define("test.prop_u16", "12345");
@@ -82,6 +85,14 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_str.defstr(), "abc");
     EXPECT_STREQ(test.prop_str.c_str(), "hello world");
     EXPECT_EQ(test.prop_str.get_default(), "abc");
+
+    EXPECT_TRUE(test.prop_str_quote.is_inited());
+    EXPECT_FALSE(test.prop_str_quote.empty());
+    EXPECT_EQ((std::string)test.prop_str_quote, "a b c");
+    EXPECT_EQ(test.prop_str_quote.str(), "a b c");
+    EXPECT_TRUE(test.prop_str_quote.defstr().empty());
+    EXPECT_STREQ(test.prop_str_quote.c_str(), "a b c");
+    EXPECT_EQ(test.prop_str_quote.get_default(), "");
 
     EXPECT_TRUE(test.prop_u64.is_inited());
     EXPECT_EQ(test.prop_u64, 0x123456789ABCDEF0);
