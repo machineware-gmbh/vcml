@@ -68,6 +68,24 @@ public:
         ADDR_IP = 0x74,
     };
 
+    void test_fmt_reset() {
+        u32 data;
+        GTEST_LOG_(INFO) << "begin testing fmt reset value";
+
+        ASSERT_OK(out.readw<u32>(ADDR_FMT, data));
+        EXPECT_EQ(data, 0x00080000u);
+
+        // a transfer in the reset format must capture miso
+        miso.push(0x5a);
+        ASSERT_OK(out.writew<u32>(ADDR_TXDATA, 0xa5));
+        ASSERT_EQ(mosi.num_used(), 1);
+        EXPECT_EQ(mosi.pop(), 0xa5);
+        ASSERT_OK(out.readw<u32>(ADDR_RXDATA, data));
+        EXPECT_EQ(data, 0x5au);
+
+        GTEST_LOG_(INFO) << "finished testing fmt reset value";
+    }
+
     void test_serial_clock() {
         GTEST_LOG_(INFO) << "begin testing serial clock";
 
@@ -182,6 +200,8 @@ public:
     }
 
     virtual void run_test() override {
+        wait(SC_ZERO_TIME);
+        test_fmt_reset();
         wait(SC_ZERO_TIME);
         test_serial_clock();
         wait(SC_ZERO_TIME);

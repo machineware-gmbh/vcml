@@ -267,7 +267,7 @@ sifive::sifive(const sc_module_name& nm):
     csmode("csmode", 0x18, 0),
     delay0("delay0", 0x28, 0x00010001),
     delay1("delay1", 0x2c, 0000000001),
-    fmt("fmt", 0x40, 0x00080008),
+    fmt("fmt", 0x40, 0x00080000),
     txdata("txdata", 0x48, 0),
     rxdata("rxdata", 0x4c, 0),
     txmark("txmark", 0x50, 0),
