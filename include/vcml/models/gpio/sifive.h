@@ -71,6 +71,8 @@ public:
     reg<u32> high_ip;
     reg<u32> low_ie;
     reg<u32> low_ip;
+    reg<u32> iof_en;
+    reg<u32> iof_sel;
     reg<u32> out_xor;
 
     gpio_initiator_array<32> irq;

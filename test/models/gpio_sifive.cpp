@@ -51,6 +51,8 @@ public:
         ADDR_HIGH_IP = 0x2c,
         ADDR_LOW_IE = 0x30,
         ADDR_LOW_IP = 0x34,
+        ADDR_IOF_EN = 0x38,
+        ADDR_IOF_SEL = 0x3c,
         ADDR_OUT_XOR = 0x40,
     };
 
@@ -136,6 +138,20 @@ public:
         GTEST_LOG_(INFO) << "test complete";
     }
 
+    void test_iof() {
+        GTEST_LOG_(INFO) << "testing iof registers";
+
+        u32 data;
+        ASSERT_OK(out.writew<u32>(ADDR_IOF_EN, 0u));
+        ASSERT_OK(out.writew<u32>(ADDR_IOF_SEL, 0u));
+        ASSERT_OK(out.readw<u32>(ADDR_IOF_EN, data));
+        EXPECT_EQ(data, 0u);
+        ASSERT_OK(out.readw<u32>(ADDR_IOF_SEL, data));
+        EXPECT_EQ(data, 0u);
+
+        GTEST_LOG_(INFO) << "test complete";
+    }
+
     void test_commands() {
         GTEST_LOG_(INFO) << "testing commands";
 
@@ -154,6 +170,8 @@ public:
         test_output();
         wait(SC_ZERO_TIME);
         test_input();
+        wait(SC_ZERO_TIME);
+        test_iof();
         wait(SC_ZERO_TIME);
         test_commands();
     }

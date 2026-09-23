@@ -176,6 +176,8 @@ sifive::sifive(const sc_module_name& nm, size_t n):
     high_ip("high_ip", 0x2c),
     low_ie("low_ie", 0x30),
     low_ip("low_ip", 0x34),
+    iof_en("iof_en", 0x38),
+    iof_sel("iof_sel", 0x3c),
     out_xor("out_xor", 0x40),
     irq("irq"),
     gpio_out("gpio_out"),
@@ -248,6 +250,12 @@ sifive::sifive(const sc_module_name& nm, size_t n):
     low_ip.allow_read_write();
     low_ip.sync_always();
     low_ip.on_write(&sifive::write_low_ip);
+
+    iof_en.allow_read_write();
+    iof_en.sync_never();
+
+    iof_sel.allow_read_write();
+    iof_sel.sync_never();
 
     out_xor.allow_read_write();
     out_xor.sync_always();
