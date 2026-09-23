@@ -21,13 +21,22 @@ public:
     gpio_initiator_socket irqs1;
     gpio_initiator_socket irqs2;
 
+    size_t irqt1_edges;
+
     plic_stim(const sc_module_name& nm):
         test_base(nm),
         out("out"),
         irqt1("irqt1"),
         irqt2("irqt2"),
         irqs1("irqs1"),
-        irqs2("irqs2") {}
+        irqs2("irqs2"),
+        irqt1_edges() {}
+
+    virtual void gpio_notify(const gpio_target_socket& socket,
+                             bool state) override {
+        if (&socket == &irqt1)
+            irqt1_edges++;
+    }
 
     virtual void run_test() override {
         // test that interrupts are reset
@@ -94,6 +103,21 @@ public:
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irqt1.read()) << "irqt1 not disabled";
         EXPECT_FALSE(irqt2.read()) << "irqt2 not disabled";
+
+        // test that re-evaluating does not toggle an already active line
+        irqs1.write(true);
+        wait(SC_ZERO_TIME);
+        ASSERT_TRUE(irqt1.read()) << "irqt1 not received";
+
+        irqt1_edges = 0;
+        EXPECT_OK(out.writew(0x000008, 1u)); // irq 2 priority, irq 2 is low
+        wait(SC_ZERO_TIME);
+        EXPECT_EQ(irqt1_edges, 0) << "irqt1 glitched while irqs1 stayed high";
+        EXPECT_TRUE(irqt1.read()) << "irqt1 lost";
+
+        irqs1.write(false);
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irqt1.read()) << "irqt1 not disabled";
     }
 };
 

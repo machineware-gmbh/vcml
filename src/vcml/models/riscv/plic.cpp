@@ -161,17 +161,19 @@ void plic::write_complete(u32 value, size_t ctxno) {
 
 void plic::update() {
     for (auto ctx : irqt) {
-        ctx.second->write(false);
         u32 th = ctx_threshold(ctx.first);
+        bool pending = false;
 
         for (auto irq : irqs) {
             if (is_pending(irq.first) && is_enabled(irq.first, ctx.first) &&
                 !is_claimed(irq.first) && irq_priority(irq.first) > th) {
-                ctx.second->write(true);
                 log_debug("forwarding irq %zu to context %zu", irq.first,
                           ctx.first);
+                pending = true;
             }
         }
+
+        ctx.second->write(pending);
     }
 }
 
