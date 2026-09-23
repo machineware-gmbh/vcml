@@ -96,7 +96,7 @@ u32 plic::read_pending(size_t regno) {
 
     u32 pending = 0u;
     for (unsigned int irqno = 0; irqno < 32; irqno++) {
-        if (is_pending(irqbase + irqno) && !is_claimed(irqno))
+        if (is_pending(irqbase + irqno) && !is_claimed(irqbase + irqno))
             pending |= (1u << irqno);
     }
 

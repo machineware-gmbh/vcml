@@ -20,6 +20,7 @@ public:
 
     gpio_initiator_socket irqs1;
     gpio_initiator_socket irqs2;
+    gpio_initiator_socket irqs33;
 
     size_t irqt1_edges;
 
@@ -30,6 +31,7 @@ public:
         irqt2("irqt2"),
         irqs1("irqs1"),
         irqs2("irqs2"),
+        irqs33("irqs33"),
         irqt1_edges() {}
 
     virtual void gpio_notify(const gpio_target_socket& socket,
@@ -118,6 +120,27 @@ public:
         irqs1.write(false);
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irqt1.read()) << "irqt1 not disabled";
+
+        // test that pending reports an irq above 31 against its own claim
+        EXPECT_OK(out.writew(0x000084, 1u)); // irq 33 priority
+        EXPECT_OK(out.writew(0x002084, 2u)); // enable irq 33 on ctx 1
+
+        irqs1.write(true);
+        irqs33.write(true);
+        wait(SC_ZERO_TIME);
+
+        u32 claim;
+        EXPECT_OK(out.readw(0x201004, claim)) << "cannot read CTX1_CLAIM";
+        EXPECT_EQ(claim, 1) << "irqs1 should have been claimed";
+
+        vcml::u32 pending;
+        EXPECT_OK(out.readw(0x001004, pending)) << "cannot read PENDING1";
+        EXPECT_EQ(pending, bit(1)) << "irqs33 masked by the claim of irq 1";
+
+        EXPECT_OK(out.writew(0x201004, claim)) << "cannot write CTX1_COMPLETE";
+        irqs1.write(false);
+        irqs33.write(false);
+        wait(SC_ZERO_TIME);
     }
 };
 
@@ -135,6 +158,7 @@ TEST(plic, plic) {
 
     stim.irqs1.bind(plic.irqs[1]);
     stim.irqs2.bind(plic.irqs[2]);
+    stim.irqs33.bind(plic.irqs[33]);
 
     sc_core::sc_start();
 }
