@@ -36,21 +36,28 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
     return true;
 }
 
-bool memory::cmd_set(const vector<string>& args, ostream& os) {
+bool memory::cmd_memset(const vector<string>& args, ostream& os) {
     u64 addr = strtoull(args[0].c_str(), NULL, 0);
-    u64 value = strtoull(args[1].c_str(), NULL, 0);
+    u64 count = args.size() - 1;
 
-    if (addr >= size) {
-        os << "address 0x" << std::hex << addr << " out of bounds";
+    if (addr >= size || count > size - addr) {
+        os << mkstr("access out of bounds");
         return false;
     }
 
-    if (value > 0xff) {
-        os << "value 0x" << std::hex << value << " exceeds one byte";
-        return false;
+    vector<u8> bytes;
+    bytes.reserve(count);
+    for (size_t i = 1; i < args.size(); i++) {
+        u64 value = strtoull(args[i].c_str(), NULL, 0);
+        if (value > 0xff) {
+            os << mkstr("value 0x%llx exceeds one byte", value);
+            return false;
+        }
+
+        bytes.push_back((u8)value);
     }
 
-    m_memory[addr] = (u8)value;
+    memcpy(m_memory.data() + addr, bytes.data(), bytes.size());
     return true;
 }
 
@@ -103,9 +110,9 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
 
     register_command("show", 2, &memory::cmd_show,
                      "show [start] [end] to print memory contents");
-    register_command(
-        "set_byte", 2, &memory::cmd_set,
-        "set_byte [address] [1-byte value] to set a value in the memory");
+    register_command("cmd_memset", 2, &memory::cmd_memset,
+                     "cmd_memset [address] [byte0] [byte1] ... [byteN-1] "
+                     "to set values in the memory");
 }
 
 memory::~memory() {
