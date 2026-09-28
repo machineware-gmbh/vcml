@@ -36,6 +36,24 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool memory::cmd_set(const vector<string>& args, ostream& os) {
+    u64 addr = strtoull(args[0].c_str(), NULL, 0);
+    u64 value = strtoull(args[1].c_str(), NULL, 0);
+
+    if (addr >= size) {
+        os << "address 0x" << std::hex << addr << " out of bounds";
+        return false;
+    }
+
+    if (value > 0xff) {
+        os << "value 0x" << std::hex << value << " exceeds one byte";
+        return false;
+    }
+
+    m_memory[addr] = (u8)value;
+    return true;
+}
+
 u8* memory::allocate_image(u64 sz, u64 off) {
     if (off >= size)
         VCML_REPORT("offset 0x%llx exceeds memory size", off);
@@ -85,6 +103,9 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
 
     register_command("show", 2, &memory::cmd_show,
                      "show [start] [end] to print memory contents");
+    register_command(
+        "set", 2, &memory::cmd_set,
+        "set [address] [1-byte value] to set a value in the memory");
 }
 
 memory::~memory() {
