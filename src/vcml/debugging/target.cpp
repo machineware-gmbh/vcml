@@ -442,10 +442,11 @@ void target::notify_basic_block(u64 pc, size_t blksz, size_t icount,
         s->notify_basic_block(*this, pc, blksz, icount, t);
 }
 
-target::target(sc_object& host, const string& group):
+target::target(sc_object& host, const string& target_name,
+               const string& group):
     m_mtx(),
     m_host(host),
-    m_name(host.name()),
+    m_name(target_name),
     m_group(group),
     m_suspendable(true),
     m_running(true),

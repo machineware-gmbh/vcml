@@ -177,7 +177,9 @@ public:
     sc_object& target_host() { return m_host; }
 
     target(sc_object& host): target(host, host.name()) {}
-    target(sc_object& host, const string& group);
+    target(sc_object& host, const string& group):
+        target(host, host.name(), group) {}
+    target(sc_object& host, const string& name, const string& group);
     virtual ~target();
 
     vector<cpureg> cpuregs() const;
