@@ -29,7 +29,7 @@ private:
     tlm_memory m_memory;
 
     bool cmd_show(const vector<string>& args, ostream& os);
-    bool cmd_set(const vector<string>& args, ostream& os);
+    bool set_byte(const vector<string>& args, ostream& os);
 
     memory();
     memory(const memory&);

@@ -104,8 +104,8 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
     register_command("show", 2, &memory::cmd_show,
                      "show [start] [end] to print memory contents");
     register_command(
-        "set", 2, &memory::cmd_set,
-        "set [address] [1-byte value] to set a value in the memory");
+        "set_byte", 2, &memory::cmd_set,
+        "set_byte [address] [1-byte value] to set a value in the memory");
 }
 
 memory::~memory() {
