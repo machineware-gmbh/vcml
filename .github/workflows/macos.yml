@@ -29,6 +29,7 @@ jobs:
     - name: Setup Dependencies
       run: |
         brew update
+        brew unlink openssl@1.1 || true
         brew install lua sdl2 libslirp libusb
         echo "CC=clang" >> $GITHUB_ENV
         echo "CXX=clang++" >> $GITHUB_ENV
