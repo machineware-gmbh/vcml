@@ -36,6 +36,32 @@ bool memory::cmd_show(const vector<string>& args, ostream& os) {
     return true;
 }
 
+bool memory::cmd_memset(const vector<string>& args, ostream& os) {
+    u64 addr = strtoull(args[0].c_str(), NULL, 0);
+    u64 count = args.size() - 1;
+
+    if (addr >= size || count > size - addr) {
+        os << mkstr("access at 0x%llx out of bounds", addr);
+        return false;
+    }
+
+    vector<u8> bytes;
+    bytes.reserve(count);
+    for (size_t i = 1; i < args.size(); i++) {
+        u64 value = strtoull(args[i].c_str(), NULL, 0);
+        if (value > 0xff) {
+            os << mkstr("value 0x%llx at index %d exceeds one byte", value,
+                        (int)i - 1);
+            return false;
+        }
+
+        bytes.push_back((u8)value);
+    }
+
+    memcpy(m_memory.data() + addr, bytes.data(), bytes.size());
+    return true;
+}
+
 u8* memory::allocate_image(u64 sz, u64 off) {
     if (off >= size)
         VCML_REPORT("offset 0x%llx exceeds memory size", off);
@@ -85,6 +111,9 @@ memory::memory(const sc_module_name& nm, u64 sz, bool read_only, alignment al,
 
     register_command("show", 2, &memory::cmd_show,
                      "show [start] [end] to print memory contents");
+    register_command("memset", 2, &memory::cmd_memset,
+                     "memset [address] [byte0] [byte1] ... [byteN-1] "
+                     "to set values in the memory");
 }
 
 memory::~memory() {
