@@ -1175,3 +1175,93 @@ TEST(registers, str_array) {
     EXPECT_EQ(mock.test_reg[2], 0xccccccccu);
     EXPECT_EQ(mock.test_reg[3], 0xddddddddu);
 }
+
+class mock_tracer : public tracer
+{
+public:
+    mock_tracer(): tracer() {}
+    MOCK_METHOD(void, trace, (const trace_activity&), (override));
+};
+
+MATCHER_P2(match_reg_trace, reg, dir, "matches register trace entry") {
+    return &arg.port == reg && arg.dir == dir;
+}
+
+class trace_test : public peripheral
+{
+public:
+    class submodule : public vcml::module
+    {
+    public:
+        reg<u32> sub_reg;
+
+        submodule(const sc_core::sc_module_name& nm):
+            vcml::module(nm), sub_reg("sub_reg", 0x4) {
+            sub_reg.allow_read_write();
+        }
+
+        virtual ~submodule() = default;
+    };
+
+    reg<u32> top_reg;
+    submodule sub;
+
+    trace_test(const sc_core::sc_module_name& nm):
+        peripheral(nm), top_reg("top_reg", 0x0), sub("sub") {
+        top_reg.allow_read_write();
+    }
+
+    unsigned int test_write(u64 addr, u32 data) {
+        tlm::tlm_generic_payload tx;
+        tx_setup(tx, tlm::TLM_WRITE_COMMAND, addr, &data, sizeof(data));
+        return transport(tx, SBI_NONE, VCML_AS_DEFAULT);
+    }
+};
+
+TEST(registers, tracing_nested) {
+    mock_tracer mock;
+    trace_test test("trace_test");
+    const reg_base* top = &test.top_reg;
+    const reg_base* sub = &test.sub.sub_reg;
+
+    // only the submodule traces: registers below it are traced exactly once
+    test.trace_all = false;
+    test.sub.trace_all = true;
+    EXPECT_CALL(mock, trace(match_reg_trace(sub, TRACE_FW))).Times(1);
+    EXPECT_CALL(mock, trace(match_reg_trace(sub, TRACE_BW))).Times(1);
+    EXPECT_EQ(test.test_write(0x4, 0x11), 4u);
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // ... but registers directly in the peripheral are not traced
+    EXPECT_CALL(mock, trace(_)).Times(0);
+    EXPECT_EQ(test.test_write(0x0, 0x22), 4u);
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // only the peripheral traces: submodule registers are not traced
+    test.trace_all = true;
+    test.sub.trace_all = false;
+    EXPECT_CALL(mock, trace(_)).Times(0);
+    EXPECT_EQ(test.test_write(0x4, 0x33), 4u);
+    Mock::VerifyAndClearExpectations(&mock);
+
+    EXPECT_CALL(mock, trace(match_reg_trace(top, TRACE_FW))).Times(1);
+    EXPECT_CALL(mock, trace(match_reg_trace(top, TRACE_BW))).Times(1);
+    EXPECT_EQ(test.test_write(0x0, 0x44), 4u);
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // both trace: submodule registers must still only be traced once
+    test.trace_all = true;
+    test.sub.trace_all = true;
+    EXPECT_CALL(mock, trace(match_reg_trace(sub, TRACE_FW))).Times(1);
+    EXPECT_CALL(mock, trace(match_reg_trace(sub, TRACE_BW))).Times(1);
+    EXPECT_EQ(test.test_write(0x4, 0x55), 4u);
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // trace_errors in the submodule: successful accesses are not traced
+    test.trace_all = false;
+    test.sub.trace_all = false;
+    test.sub.trace_errors = true;
+    EXPECT_CALL(mock, trace(_)).Times(0);
+    EXPECT_EQ(test.test_write(0x4, 0x66), 4u);
+    Mock::VerifyAndClearExpectations(&mock);
+}

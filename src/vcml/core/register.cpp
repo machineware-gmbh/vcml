@@ -32,12 +32,6 @@ int reg_base::current_cpu() const {
     return m_host ? m_host->current_cpu() : SBI_CPUID_DEFAULT;
 }
 
-static logger& find_logger() {
-    if (auto* parent = hierarchy_search<module>())
-        return parent->log;
-    return vcml::log;
-}
-
 reg_base::reg_base(const string& regname, u64 cell_size, u64 cell_count,
                    u64 cell_stride):
     sc_object(regname.c_str()),
@@ -53,9 +47,10 @@ reg_base::reg_base(const string& regname, u64 cell_size, u64 cell_count,
     m_privilege(0),
     m_minsize(0),
     m_maxsize(U64_MAX),
+    m_module(hierarchy_search<module>()),
     m_host(hierarchy_search<peripheral>()),
     tag(),
-    log(find_logger()) {
+    log(m_module ? m_module->log : vcml::log) {
     VCML_ERROR_ON(m_cell_size == 0, "register cell size cannot be 0");
     VCML_ERROR_ON(m_cell_count == 0, "register cell count cannot be 0");
     VCML_ERROR_ON(m_cell_stride < m_cell_size, "cell stride less than size");
@@ -128,6 +123,21 @@ tlm_response_status reg_base::check_access(const tlm_generic_payload& tx,
     return TLM_OK_RESPONSE;
 }
 
+void reg_base::trace_fw(const tlm_generic_payload& tx) const {
+    if (m_module && m_module->trace_all) {
+        sc_time t = m_host ? m_host->local_time() : SC_ZERO_TIME;
+        tracer::record(TRACE_FW, *this, tx, t);
+    }
+}
+
+void reg_base::trace_bw(const tlm_generic_payload& tx) const {
+    if (m_module &&
+        (m_module->trace_all || (m_module->trace_errors && failed(tx)))) {
+        sc_time t = m_host ? m_host->local_time() : SC_ZERO_TIME;
+        tracer::record(TRACE_BW, *this, tx, t);
+    }
+}
+
 unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     u64 addr = tx.get_address();
     u64 size = tx.get_data_length();
@@ -151,13 +161,11 @@ unsigned int reg_base::receive(tlm_generic_payload& tx, const tlm_sbi& info) {
     tx.set_streaming_width(length);
     tx.set_data_length(length);
 
-    if (m_host)
-        m_host->trace_fw(*this, tx, m_host->local_time());
+    trace_fw(tx);
 
     unsigned int nbytes = do_receive(tx, info);
 
-    if (m_host)
-        m_host->trace_bw(*this, tx, m_host->local_time());
+    trace_bw(tx);
 
     tx.set_data_length(size);
     tx.set_streaming_width(strw);

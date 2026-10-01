@@ -21,6 +21,7 @@
 
 namespace vcml {
 
+class module;
 class peripheral;
 
 class reg_base : public sc_object
@@ -38,7 +39,11 @@ private:
     u64 m_privilege;
     u64 m_minsize;
     u64 m_maxsize;
+    module* m_module;
     peripheral* m_host;
+
+    void trace_fw(const tlm_generic_payload& tx) const;
+    void trace_bw(const tlm_generic_payload& tx) const;
 
     unsigned int do_receive(tlm_generic_payload& tx, const tlm_sbi& info);
 
