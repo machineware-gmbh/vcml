@@ -45,6 +45,10 @@ private:
     u32 m_claims[NIRQ];
     context* m_contexts[NCTX];
 
+    std::bitset<NIRQ> m_edge;
+    std::bitset<NIRQ> m_level;
+    std::bitset<NIRQ> m_latched;
+
     bool is_pending(size_t irqno) const;
     bool is_claimed(size_t irqno) const;
     bool is_enabled(size_t irqno, size_t ctxno) const;
@@ -70,6 +74,8 @@ public:
     reg<u32, NIRQ> priority;
     reg<u32, NIRQ / 32> pending;
 
+    property<vector<size_t>> edge_irqs;
+
     gpio_target_array<NIRQ> irqs;
     gpio_initiator_array<NCTX> irqt;
 
@@ -78,6 +84,9 @@ public:
     plic(const sc_module_name& nm);
     virtual ~plic();
     VCML_KIND(riscv::plic);
+
+    void set_edge_triggered(size_t irqno, bool edge = true);
+    bool is_edge_triggered(size_t irqno) const { return m_edge[irqno]; }
 
     virtual void reset() override;
 

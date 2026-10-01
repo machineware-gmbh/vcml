@@ -51,6 +51,9 @@ bool plic::is_pending(size_t irqno) const {
     if (!irqs.exists(irqno))
         return false;
 
+    if (m_edge[irqno])
+        return m_latched[irqno];
+
     return irqs[irqno].read();
 }
 
@@ -118,8 +121,10 @@ u32 plic::read_claim(size_t ctxno) {
         }
     }
 
-    if (irq > 0)
+    if (irq > 0) {
         m_claims[irq] = ctxno;
+        m_latched.reset(irq);
+    }
 
     log_debug("context %zu claims irq %u", ctxno, irq);
 
@@ -181,8 +186,12 @@ plic::plic(const sc_module_name& nm):
     peripheral(nm),
     m_claims(),
     m_contexts(),
+    m_edge(),
+    m_level(),
+    m_latched(),
     priority("priority", 0x0, 0),
     pending("pending", 0x1000, 0),
+    edge_irqs("edge_irqs"),
     irqs("irqs"),
     irqt("irqt"),
     in("in") {
@@ -209,6 +218,16 @@ void plic::reset() {
 
     for (unsigned int irq = 0; irq < NIRQ; irq++)
         m_claims[irq] = ~0u;
+
+    m_level.reset();
+    m_latched.reset();
+}
+
+void plic::set_edge_triggered(size_t irqno, bool edge) {
+    VCML_ERROR_ON(irqno == 0 || irqno >= NIRQ, "invalid irq %zu", irqno);
+    m_edge[irqno] = edge;
+    if (!edge)
+        m_latched.reset(irqno);
 }
 
 void plic::end_of_elaboration() {
@@ -216,6 +235,9 @@ void plic::end_of_elaboration() {
         m_contexts[ctx.first] = new context(ctx.first);
 
     VCML_ERROR_ON(irqs.exists(0), "irq0 must not be used");
+
+    for (size_t irqno : edge_irqs)
+        set_edge_triggered(irqno);
 }
 
 void plic::gpio_notify(const gpio_target_socket& socket) {
@@ -223,7 +245,13 @@ void plic::gpio_notify(const gpio_target_socket& socket) {
 #if defined(HAVE_INSCIGHT) && defined(INSCIGHT_IRQ_LEVEL)
     INSCIGHT_IRQ_LEVEL(id(), irqno, socket.read());
 #endif
-    log_debug("irq %u %s", irqno, socket.read() ? "set" : "cleared");
+    bool level = socket.read();
+    log_debug("irq %u %s", irqno, level ? "set" : "cleared");
+
+    if (m_edge[irqno] && level && !m_level[irqno])
+        m_latched.set(irqno);
+    m_level[irqno] = level;
+
     update();
 }
 

@@ -20,6 +20,7 @@ public:
 
     gpio_initiator_socket irqs1;
     gpio_initiator_socket irqs2;
+    gpio_initiator_socket irqs3;
     gpio_initiator_socket irqs33;
 
     size_t irqt1_edges;
@@ -31,6 +32,7 @@ public:
         irqt2("irqt2"),
         irqs1("irqs1"),
         irqs2("irqs2"),
+        irqs3("irqs3"),
         irqs33("irqs33"),
         irqt1_edges() {}
 
@@ -141,10 +143,30 @@ public:
         irqs1.write(false);
         irqs33.write(false);
         wait(SC_ZERO_TIME);
+
+        // test that an edge-triggered source latches a pulse until claimed
+        EXPECT_OK(out.writew(0x00000c, 1u)); // irq 3 priority
+        EXPECT_OK(out.writew(0x002080, 8u)); // enable only irq 3 on ctx 1
+        irqs3.write(true);
+        irqs3.write(false);
+        wait(SC_ZERO_TIME);
+        EXPECT_TRUE(irqt1.read()) << "irqs3 pulse not latched";
+
+        EXPECT_OK(out.readw(0x201004, claim)) << "cannot read CTX1_CLAIM";
+        EXPECT_EQ(claim, 3) << "irqs3 pulse should have been claimed";
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irqt1.read()) << "irqt1 not reset";
+
+        EXPECT_OK(out.writew(0x201004, claim)) << "cannot write CTX1_COMPLETE";
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irqt1.read()) << "irqs3 pending again after complete";
     }
 };
 
 TEST(plic, plic) {
+    vcml::broker broker("test");
+    broker.define("PLIC.edge_irqs", "3");
+
     plic_stim stim("STIM");
     riscv::plic plic("PLIC");
 
@@ -158,6 +180,7 @@ TEST(plic, plic) {
 
     stim.irqs1.bind(plic.irqs[1]);
     stim.irqs2.bind(plic.irqs[2]);
+    stim.irqs3.bind(plic.irqs[3]);
     stim.irqs33.bind(plic.irqs[33]);
 
     sc_core::sc_start();
