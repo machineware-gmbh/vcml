@@ -168,6 +168,7 @@ public:
     virtual void handle_disconnect(int client) override;
 
     void add_target(target* tgt);
+    void notify_stop(target& tgt);
 };
 
 } // namespace debugging

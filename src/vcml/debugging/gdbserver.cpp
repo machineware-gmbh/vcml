@@ -152,14 +152,18 @@ void gdbserver::update_status(gdb_status status, gdb_target* gtgt,
     m_mtx.unlock();
 }
 
+void gdbserver::notify_stop(target& tgt) {
+    update_status(GDB_STOPPED, find_target(tgt));
+}
+
 void gdbserver::notify_step_complete(target& tgt, const sc_time& t) {
     (void)t;
-    update_status(GDB_STOPPED, find_target(tgt));
+    notify_stop(tgt);
 }
 
 void gdbserver::notify_breakpoint_hit(const breakpoint& bp, const sc_time& t) {
     (void)t;
-    update_status(GDB_STOPPED, find_target(bp.owner()));
+    notify_stop(bp.owner());
 }
 
 void gdbserver::notify_watchpoint_read(const watchpoint& wp, const range& addr,
