@@ -122,6 +122,11 @@ static const char* obj_version(sc_object* obj) {
     return starts_with(kind, "vcml::") ? VCML_VERSION_STRING : SC_VERSION;
 }
 
+static vector<string> obj_events(sc_object* obj) {
+    auto* publisher = dynamic_cast<vsppublisher*>(obj);
+    return publisher ? publisher->published_events() : vector<string>();
+}
+
 static void list_object_xml(ostream& os, sc_object* obj) {
     // hide object names starting with $$$
     if (starts_with(obj->basename(), "$$$"))
@@ -130,7 +135,14 @@ static void list_object_xml(ostream& os, sc_object* obj) {
     os << "<object"
        << " name=\"" << xml_escape(obj->basename()) << "\""
        << " kind=\"" << xml_escape(obj->kind()) << "\""
-       << " version=\"" << xml_escape(obj_version(obj)) << "\">";
+       << " version=\"" << xml_escape(obj_version(obj)) << "\"";
+
+    // list events published by the object itself, not by its children
+    vector<string> events = obj_events(obj);
+    if (!events.empty())
+        os << " events=\"" << xml_escape(join(events, ",")) << "\"";
+
+    os << ">";
 
     // list object attributes
     for (const sc_attr_base* attr : obj->attr_cltn()) {
@@ -201,6 +213,15 @@ static bool list_object_json(ostream& os, sc_object* obj) {
        << "\"name\":\"" << json_escape(obj->basename()) << "\","
        << "\"kind\":\"" << json_escape(obj->kind()) << "\","
        << "\"version\":\"" << json_escape(obj_version(obj)) << "\",";
+
+    // list events published by the object itself, not by its children
+    vector<string> events = obj_events(obj);
+    if (!events.empty()) {
+        os << "\"events\":[";
+        for (size_t i = 0; i < events.size(); i++)
+            os << (i ? "," : "") << "\"" << json_escape(events[i]) << "\"";
+        os << "],";
+    }
 
     // list object attributes
     os << "\"attributes\":[";
@@ -313,10 +334,20 @@ static void list_json(ostream& os) {
     os << "}";
 }
 
-vspclient& vspserver::find_client(int id) {
+shared_ptr<vspclient> vspserver::find_client(int id) const {
+    lock_guard<mutex> guard(m_clients_mtx);
     auto it = m_clients.find(id);
     VCML_REPORT_ON(it == m_clients.end(), "client %d not found", id);
-    return *it->second;
+    return it->second;
+}
+
+vector<shared_ptr<vspclient>> vspserver::all_clients() const {
+    lock_guard<mutex> guard(m_clients_mtx);
+    vector<shared_ptr<vspclient>> clients;
+    clients.reserve(m_clients.size());
+    for (const auto& [id, client] : m_clients)
+        clients.push_back(client);
+    return clients;
 }
 
 string vspserver::handle_version(int client, const string& cmd) {
@@ -332,19 +363,19 @@ string vspserver::handle_version(int client, const string& cmd) {
 }
 
 string vspserver::handle_status(int client, const string& cmd) {
-    return find_client(client).handle_status(cmd);
+    return find_client(client)->handle_status(cmd);
 }
 
 string vspserver::handle_resume(int client, const string& cmd) {
-    return find_client(client).handle_resume(cmd);
+    return find_client(client)->handle_resume(cmd);
 }
 
 string vspserver::handle_step(int client, const string& cmd) {
-    return find_client(client).handle_step(cmd);
+    return find_client(client)->handle_step(cmd);
 }
 
 string vspserver::handle_stop(int client, const string& cmd) {
-    return find_client(client).handle_stop(cmd);
+    return find_client(client)->handle_stop(cmd);
 }
 
 string vspserver::handle_quit(int client, const string& cmd) {
@@ -482,23 +513,23 @@ string vspserver::handle_seta(int client, const string& cmd) {
 }
 
 string vspserver::handle_mkbp(int client, const string& cmd) {
-    return find_client(client).handle_mkbp(cmd);
+    return find_client(client)->handle_mkbp(cmd);
 }
 
 string vspserver::handle_rmbp(int client, const string& cmd) {
-    return find_client(client).handle_rmbp(cmd);
+    return find_client(client)->handle_rmbp(cmd);
 }
 
 string vspserver::handle_mkwp(int client, const string& cmd) {
-    return find_client(client).handle_mkwp(cmd);
+    return find_client(client)->handle_mkwp(cmd);
 }
 
 string vspserver::handle_rmwp(int client, const string& cmd) {
-    return find_client(client).handle_rmwp(cmd);
+    return find_client(client)->handle_rmwp(cmd);
 }
 
 string vspserver::handle_setsm(int client, const string& cmd) {
-    return find_client(client).handle_setsm(cmd);
+    return find_client(client)->handle_setsm(cmd);
 }
 
 string vspserver::handle_lreg(int client, const string& cmd) {
@@ -730,30 +761,39 @@ string vspserver::handle_tinfo(int client, const string& cmd) {
                  tgt->stack_pointer(), tgt->frame_pointer());
 }
 
+string vspserver::handle_sub(int client, const string& cmd) {
+    return find_client(client)->handle_sub(cmd);
+}
+
+string vspserver::handle_unsub(int client, const string& cmd) {
+    return find_client(client)->handle_unsub(cmd);
+}
+
 void vspserver::disconnect_all() {
-    for (auto [id, client] : m_clients) {
-        delete client;
-        disconnect(id);
+    unordered_map<int, shared_ptr<vspclient>> clients;
+    {
+        lock_guard<mutex> guard(m_clients_mtx);
+        clients.swap(m_clients);
     }
 
-    m_clients.clear();
+    for (const auto& [id, client] : clients)
+        disconnect(id);
 }
 
 void vspserver::force_quit() {
     stop();
     suspender::quit();
-    disconnect_all();
 }
 
 void vspserver::notify_step_complete() {
-    for (auto [id, client] : m_clients)
+    for (const auto& client : all_clients())
         client->notify_step_complete();
 }
 
 bool vspserver::check_suspension_point() {
     bool soft_stop = false;
 
-    for (auto [id, client] : m_clients)
+    for (const auto& client : all_clients())
         soft_stop |= client->soft_stop_requested();
 
     if (soft_stop) {
@@ -771,6 +811,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     suspender("vspserver"),
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%u", mwr::getpid())),
     m_duration(),
+    m_clients_mtx(),
     m_clients() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
     session = this;
@@ -803,6 +844,8 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("setsm", &vspserver::handle_setsm);
     register_handler("arch", &vspserver::handle_arch);
     register_handler("tinfo", &vspserver::handle_tinfo);
+    register_handler("sub", &vspserver::handle_sub);
+    register_handler("unsub", &vspserver::handle_unsub);
 
     // Create announce file
     ofstream of(m_announce.c_str());
@@ -841,9 +884,6 @@ void vspserver::start() {
             notify_step_complete();
         }
     }
-
-    if (is_connected())
-        disconnect(0);
 }
 
 void vspserver::cleanup() {
@@ -864,9 +904,10 @@ void vspserver::update() {
     m_duration = sc_max_time();
 
     sc_time until = sc_max_time();
-    bool stopped = m_clients.empty();
+    auto clients = all_clients();
+    bool stopped = clients.empty();
 
-    for (auto [id, client] : m_clients) {
+    for (const auto& client : clients) {
         stopped |= client->stop_requested();
         until = min(until, client->until());
     }
@@ -884,18 +925,43 @@ void vspserver::update() {
 
 void vspserver::handle_connect(int client, const string& peer, u16 port) {
     log_info("vspserver connected to client %d at %s", client, peer.c_str());
-    m_clients[client] = new vspclient(*this, client, peer, port);
+    auto vsp = std::make_shared<vspclient>(*this, client, peer, port);
+    {
+        lock_guard<mutex> guard(m_clients_mtx);
+        m_clients[client] = std::move(vsp);
+    }
+
     update();
 }
 
 void vspserver::handle_disconnect(int client) {
-    auto it = m_clients.find(client);
-    if (it != m_clients.end()) {
-        log_info("vspclient %d disconnected", client);
-        delete it->second;
+    shared_ptr<vspclient> vsp;
+    {
+        lock_guard<mutex> guard(m_clients_mtx);
+        auto it = m_clients.find(client);
+        if (it == m_clients.end())
+            return;
+
+        vsp = std::move(it->second);
         m_clients.erase(it);
-        update();
     }
+
+    log_info("vspclient %d disconnected", client);
+
+    // the client destructor removes its breakpoints and watchpoints from the
+    // targets, so we must make sure the simulation is paused at that point
+    bool was_running = !is_suspending();
+    suspend();
+
+    // also end the current sc_start call, like update does for a stop:
+    // its duration was computed for the old set of clients, so a later
+    // resume must start a new one with the duration the remaining or new
+    // clients ask for
+    if (was_running)
+        sc_pause();
+
+    vsp.reset();
+    update();
 }
 
 vspserver* vspserver::instance() {

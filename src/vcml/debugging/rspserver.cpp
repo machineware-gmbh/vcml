@@ -48,14 +48,26 @@ rspserver::rspserver(const string& host, u16 port, size_t max_clients):
     m_mutex(),
     m_thread(),
     m_handlers(),
+    m_rxmtx(),
+    m_rx(),
     log(m_name) {
     m_sock.on_connect([&](int client, const string& peer, u16 port) -> bool {
+        {
+            lock_guard<mutex> guard(m_rxmtx);
+            m_rx.erase(client); // client ids get reused
+        }
+
         if (m_running)
             handle_connect(client, peer, port);
         return true;
     });
 
     m_sock.on_disconnect([&](int client) {
+        {
+            lock_guard<mutex> guard(m_rxmtx);
+            m_rx.erase(client);
+        }
+
         if (m_running)
             handle_disconnect(client);
     });
@@ -99,7 +111,7 @@ void rspserver::send_packet(int client, const string& s) {
         m_sock.send(client, ss.str());
 
         do {
-            ack = m_sock.recv_char(client);
+            ack = recv_char(client);
         } while (ack != '+' && ack != '-');
 
         if (m_echo)
@@ -115,7 +127,7 @@ string rspserver::recv_packet(int client) {
     stringstream ss;
 
     while (true) {
-        char ch = m_sock.recv_char(client);
+        char ch = recv_char(client);
         switch (ch) {
         case '$':
             checksum = 0;
@@ -127,8 +139,8 @@ string rspserver::recv_packet(int client) {
                 log_debug("received packet '%s'", ss.str().c_str());
 
             u8 refsum = 0;
-            refsum |= from_hex_ascii(m_sock.recv_char(client)) << 4;
-            refsum |= from_hex_ascii(m_sock.recv_char(client)) << 0;
+            refsum |= from_hex_ascii(recv_char(client)) << 4;
+            refsum |= from_hex_ascii(recv_char(client)) << 0;
 
             if (refsum > 0 && refsum != checksum) {
                 log_warn("checksum mismatch %02x != %02x", refsum, checksum);
@@ -147,7 +159,7 @@ string rspserver::recv_packet(int client) {
 
         case '}':
             checksum += ch;
-            ch = m_sock.recv_char(client);
+            ch = recv_char(client);
             checksum += ch;
             ch ^= 0x20;
             if (!needs_escape(ch))
@@ -170,12 +182,47 @@ int rspserver::recv_signal(int client, time_t timeoutms) {
     lock_guard<mutex> lock(m_mutex);
 
     try {
-        if (!m_sock.peek(client, timeoutms))
+        if (!has_buffered(client) && !m_sock.peek(client, timeoutms))
             return 0;
-        return m_sock.recv_char(client);
+        return recv_char(client);
     } catch (...) {
         return -1;
     }
+}
+
+int rspserver::recv_char(int client) {
+    {
+        lock_guard<mutex> guard(m_rxmtx);
+        rxbuf& rx = m_rx[client];
+        if (rx.pos < rx.data.size())
+            return (char)rx.data[rx.pos++];
+    }
+
+    // do not hold m_rxmtx here: recv_some blocks and may call on_disconnect
+    u8 buf[4096];
+    size_t n = m_sock.recv_some(client, buf, sizeof(buf));
+
+    lock_guard<mutex> guard(m_rxmtx);
+    rxbuf& rx = m_rx[client];
+    rx.data.assign(buf + 1, buf + n);
+    rx.pos = 0;
+    return (char)buf[0];
+}
+
+bool rspserver::has_buffered(int client) {
+    lock_guard<mutex> guard(m_rxmtx);
+    auto it = m_rx.find(client);
+    return it != m_rx.end() && it->second.pos < it->second.data.size();
+}
+
+int rspserver::buffered_client() {
+    lock_guard<mutex> guard(m_rxmtx);
+    for (const auto& [client, rx] : m_rx) {
+        if (rx.pos < rx.data.size())
+            return client;
+    }
+
+    return -1;
 }
 
 void rspserver::run_async() {
@@ -196,7 +243,10 @@ void rspserver::run() {
 
     while (m_running) {
         try {
-            int client = m_sock.poll(100);
+            // data we already received does not show up in poll
+            int client = buffered_client();
+            if (client < 0)
+                client = m_sock.poll(100);
             if (client >= 0)
                 process(client);
         } catch (std::exception& ex) {

@@ -131,10 +131,29 @@ void terminal::serial_transmit() {
     }
 }
 
+// encodes one byte as a json string, bytes that are not printable ascii are
+// encoded as \u00XX, i.e. the code point equals the byte value
+static string json_char(u8 data) {
+    if (data == '"' || data == '\\')
+        return mkstr("\"\\%c\"", data);
+    if (data < 0x20 || data >= 0x7f)
+        return mkstr("\"\\u%04x\"", data);
+    return mkstr("\"%c\"", data);
+}
+
 void terminal::serial_receive(u8 data) {
+    if (has_subscribers()) {
+        publish_event(*this, debugging::VSP_EVENT_UART, sc_time_stamp(),
+                      json_char(data));
+    }
+
     m_hist.insert(data);
     for (backend* b : m_listeners)
         b->write(data);
+}
+
+vector<string> terminal::published_events() const {
+    return { debugging::VSP_EVENT_UART };
 }
 
 unordered_map<string, terminal*>& terminal::terminals() {

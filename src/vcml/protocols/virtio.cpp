@@ -125,7 +125,8 @@ ostream& operator<<(ostream& os, const vq_message& msg) {
     return os;
 }
 
-virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi):
+virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi,
+                     const trace_publisher& tpub):
     sc_object(mkstr("vq%u", desc.id).c_str()),
     id(desc.id),
     limit(desc.limit),
@@ -138,6 +139,7 @@ virtqueue::virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi):
     vector(desc.vector),
     dmi(std::move(dmi)),
     parent(hierarchy_search<module>()),
+    tracer(tpub),
     log(this) {
     VCML_ERROR_ON(!parent, "virtqueue created outside module");
 }
@@ -162,6 +164,8 @@ bool virtqueue::get(vq_message& msg) {
         return false;
 
     parent->record(TRACE_FW_NOINDENT, *this, msg);
+    tracer.publish_trace(TRACE_FW_NOINDENT, *this, msg);
+
     return success(msg);
 }
 
@@ -170,13 +174,16 @@ bool virtqueue::put(vq_message& msg) {
         return false;
 
     parent->record(TRACE_BW_NOINDENT, *this, msg);
+    tracer.publish_trace(TRACE_BW_NOINDENT, *this, msg);
+
     msg.status = do_put(msg);
     return success(msg);
 }
 
 split_virtqueue::split_virtqueue(const virtio_queue_desc& queue_desc,
-                                 virtio_dmifn dmifn):
-    virtqueue(queue_desc, std::move(dmifn)),
+                                 virtio_dmifn dmifn,
+                                 const trace_publisher& tracer):
+    virtqueue(queue_desc, std::move(dmifn), tracer),
     m_last_avail_idx(0),
     m_desc(nullptr),
     m_avail(nullptr),
@@ -340,8 +347,9 @@ virtio_status split_virtqueue::do_put(vq_message& msg) {
 }
 
 packed_virtqueue::packed_virtqueue(const virtio_queue_desc& queue_desc,
-                                   virtio_dmifn dmifn):
-    virtqueue(queue_desc, std::move(dmifn)),
+                                   virtio_dmifn dmifn,
+                                   const trace_publisher& tracer):
+    virtqueue(queue_desc, std::move(dmifn), tracer),
     m_last_avail_idx(0),
     m_desc(nullptr),
     m_driver(nullptr),

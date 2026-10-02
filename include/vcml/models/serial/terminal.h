@@ -23,7 +23,9 @@
 namespace vcml {
 namespace serial {
 
-class terminal : public module, public serial_host
+class terminal : public module,
+                 public serial_host,
+                 public debugging::vsppublisher
 {
 private:
     struct history {
@@ -66,6 +68,8 @@ public:
     terminal(const sc_module_name& nm);
     virtual ~terminal();
     VCML_KIND(serial::terminal);
+
+    virtual vector<string> published_events() const override;
 
     void attach(backend* b);
     void detach(backend* b);

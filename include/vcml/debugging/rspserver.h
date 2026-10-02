@@ -37,6 +37,20 @@ private:
 
     std::map<string, handler> m_handlers;
 
+    // received but not yet processed data per client, so that we can read
+    // whatever is available at once instead of byte by byte
+    struct rxbuf {
+        vector<u8> data;
+        size_t pos = 0;
+    };
+
+    mutex m_rxmtx;
+    unordered_map<int, rxbuf> m_rx;
+
+    int recv_char(int client);
+    bool has_buffered(int client);
+    int buffered_client();
+
     // disabled
     rspserver();
     rspserver(const rspserver&);

@@ -86,9 +86,9 @@ void pci::enable_virtqueue(u32 vqid) {
 
     virtqueue* q;
     if (has_feature(VIRTIO_F_RING_PACKED))
-        q = m_queues[vqid] = new packed_virtqueue(qd, dmifn);
+        q = m_queues[vqid] = new packed_virtqueue(qd, dmifn, virtio_out);
     else
-        q = m_queues[vqid] = new split_virtqueue(qd, dmifn);
+        q = m_queues[vqid] = new split_virtqueue(qd, dmifn, virtio_out);
 
     if (!q->validate()) {
         log_warn("failed to enable virtqueue %u", vqid);

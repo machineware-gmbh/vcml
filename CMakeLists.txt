@@ -93,6 +93,7 @@ add_library(vcml STATIC
     ${src}/vcml/debugging/gdbserver.cpp
     ${src}/vcml/debugging/vspserver.cpp
     ${src}/vcml/debugging/vspclient.cpp
+    ${src}/vcml/debugging/vspevents.cpp
     ${src}/vcml/ui/video.cpp
     ${src}/vcml/ui/keymap.cpp
     ${src}/vcml/ui/input.cpp
