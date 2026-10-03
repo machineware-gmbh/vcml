@@ -10,8 +10,6 @@
 
 #include "vsptest.h"
 
-#include <regex>
-
 using vcml::debugging::vspclient;
 using vcml::debugging::VSP_EVENT_LED;
 using vcml::debugging::VSP_EVENT_TRACE;
@@ -78,8 +76,23 @@ static string events_of(const string& status) {
     return fields.size() == 5 ? fields[4] : "";
 }
 
-static bool matches(const string& s, const string& regex) {
-    return std::regex_search(s, std::regex(regex));
+// returns s from the first occurrence of start up to the next occurrence of
+// stop, e.g. the opening tag of an xml element
+static string section(const string& s, const string& start,
+                      const string& stop) {
+    size_t pos = s.find(start);
+    if (pos == string::npos)
+        return "";
+    size_t end = s.find(stop, pos + start.length());
+    return s.substr(pos, end == string::npos ? end : end - pos);
+}
+
+static string xml_tag(const string& xml, const string& name) {
+    return section(xml, "<object name=\"" + name + "\"", ">");
+}
+
+static string json_obj(const string& json, const string& name) {
+    return section(json, "{\"name\":\"" + name + "\"", "\"attributes\"");
 }
 
 static size_t count(const string& s, const string& what) {
@@ -119,17 +132,17 @@ static void run_client(vspserver& session, traffic& tr, gpio::leds& leds,
 
     // list reports the events published by each object itself
     string xml = vsp.command("list,xml");
-    EXPECT_TRUE(matches(xml, "<object name=\"leds\"[^>]* events=\"led\">"));
-    EXPECT_TRUE(matches(xml, "<object name=\"out\"[^>]* events=\"trace\">"));
-    EXPECT_TRUE(matches(xml, "<object name=\"term\"[^>]* events=\"uart\">"));
-    EXPECT_FALSE(matches(xml, "<object name=\"tr\"[^>]* events="));
+    EXPECT_TRUE(ends_with(xml_tag(xml, "leds"), " events=\"led\"")) << xml;
+    EXPECT_TRUE(ends_with(xml_tag(xml, "out"), " events=\"trace\"")) << xml;
+    EXPECT_TRUE(ends_with(xml_tag(xml, "term"), " events=\"uart\"")) << xml;
+    EXPECT_FALSE(contains(xml_tag(xml, "tr"), "events=")) << xml;
+    EXPECT_FALSE(xml_tag(xml, "tr").empty()) << xml;
 
     string json = vsp.command("list,json");
-    EXPECT_TRUE(
-        matches(json, "\"name\":\"leds\"[^{]*\"events\":\\[\"led\"\\]"));
-    EXPECT_TRUE(
-        matches(json, "\"name\":\"out\"[^{]*\"events\":\\[\"trace\"\\]"));
-    EXPECT_FALSE(matches(json, "\"name\":\"tr\"[^{]*\"events\""));
+    EXPECT_TRUE(contains(json_obj(json, "leds"), "\"events\":[\"led\"]"));
+    EXPECT_TRUE(contains(json_obj(json, "out"), "\"events\":[\"trace\"]"));
+    EXPECT_FALSE(contains(json_obj(json, "tr"), "\"events\"")) << json;
+    EXPECT_FALSE(json_obj(json, "tr").empty()) << json;
 
     // no events are reported without subscriptions
     string status = vsp.command("status");
