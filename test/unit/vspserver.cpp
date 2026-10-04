@@ -228,6 +228,37 @@ static void run_client(vspserver& session, traffic& tr, gpio::leds& leds,
     EXPECT_EQ(vsp.command("resume"), "OK");
 }
 
+static vector<string> read_announce() {
+    string path = mwr::temp_dir() + mkstr("/vcml_session_%u", mwr::getpid());
+    std::ifstream file(path);
+    vector<string> lines;
+    for (string line; std::getline(file, line);)
+        lines.push_back(line);
+    return lines;
+}
+
+TEST(vspserver, announce) {
+    {
+        vspserver session("127.0.0.1", 0);
+        vector<string> lines = read_announce();
+        ASSERT_EQ(lines.size(), 4);
+        EXPECT_EQ(lines[0], "127.0.0.1");
+        EXPECT_EQ(lines[1], std::to_string(session.port()));
+        EXPECT_EQ(lines[2], mwr::username());
+        EXPECT_EQ(lines[3], mwr::progname());
+    }
+
+    EXPECT_TRUE(read_announce().empty()) << "announce file not removed";
+
+    // wildcard addresses are not reachable, local clients use localhost
+    {
+        vspserver session("0.0.0.0", 0);
+        vector<string> lines = read_announce();
+        ASSERT_EQ(lines.size(), 4);
+        EXPECT_EQ(lines[0], "localhost");
+    }
+}
+
 TEST(vspserver, events) {
     traffic tr("tr");
     gpio::leds leds("leds");

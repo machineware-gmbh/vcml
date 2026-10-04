@@ -24,6 +24,20 @@ such as MachineWare's ViPER GUI or Python PyVP CI scripting framework, enabling 
 * View processor disassembly, memory content, bus memory maps, terminal output
 * List and execute `vcml::module` commands
 
+### Session Discovery
+While a session is running, it announces itself to local tools with a file
+`vcml_session_<pid>` in the temporary directory (usually `/tmp`), where
+`<pid>` is the process id of the simulator. The file is removed when the
+session ends. It holds four lines:
+1. the host the session listens on, as given via `session_host`; wildcard
+   addresses such as `0.0.0.0` or `::` are reported as `localhost`
+2. the port of the session
+3. the name of the user running the simulator
+4. the path of the simulator executable
+
+If the simulator crashes, the file is left behind. Tools should check whether
+a process with that id still exists before connecting.
+
 ----
 ## VCML Session Protocol (VSP)
 Communication between UI tool and simulation is conducted according to the VCML

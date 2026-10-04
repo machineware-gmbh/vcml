@@ -30,6 +30,12 @@ namespace debugging {
 
 static vspserver* session = nullptr;
 
+static string announce_host(const string& host) {
+    if (host.empty() || host == "0.0.0.0" || host == "::" || host == "[::]")
+        return "localhost";
+    return host;
+}
+
 static void cleanup_session() {
     if (session != nullptr)
         session->cleanup();
@@ -849,7 +855,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
 
     // Create announce file
     ofstream of(m_announce.c_str());
-    of << "localhost" << std::endl
+    of << announce_host(server_host) << std::endl
        << std::dec << port() << std::endl
        << mwr::username() << std::endl
        << mwr::progname() << std::endl;
