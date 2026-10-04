@@ -32,6 +32,32 @@ sc_object* find_object(const string& name) {
     return sc_core::sc_find_object(name.c_str());
 }
 
+static void json_escape(ostream& os, const char* s) {
+    for (; *s; s++) {
+        unsigned char c = *s;
+        if (c == '"' || c == '\\')
+            os << '\\' << c;
+        else if (c < 0x20)
+            os << mkstr("\\u%04x", c);
+        else
+            os << c;
+    }
+}
+
+string json_string(const string& str) {
+    ostringstream os;
+    os << '"';
+    json_escape(os, str.c_str());
+    os << '"';
+    return os.str();
+}
+
+string json_name(const sc_object& obj) {
+    ostringstream os;
+    json_escape(os, obj.name());
+    return os.str();
+}
+
 sc_attr_base* find_attribute(const string& name) {
     size_t pos = name.rfind(SC_HIERARCHY_CHAR);
     if (pos == string::npos)
@@ -529,6 +555,7 @@ protected:
     }
 
     virtual void end_of_simulation() override {
+        debugging::suspender::quit();
         sim_running = false;
 
         for (auto& func : end_of_sim)

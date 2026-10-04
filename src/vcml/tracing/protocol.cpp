@@ -66,7 +66,7 @@ string trace_payload_to_json(const tlm_generic_payload& tx) {
             os << ",";
     }
     os << "],";
-    os << "\"streaming_width\":\"" << tx.get_streaming_width() << "\",";
+    os << "\"streaming_width\":" << tx.get_streaming_width() << ",";
     os << "\"dmi_allowed\":" << (tx.is_dmi_allowed() ? "true" : "false")
        << ",";
     os << "\"response_status\":\"" << tx.get_response_string() << "\"";
@@ -155,7 +155,7 @@ string trace_payload_to_json(const i2c_payload& tx) {
 string trace_payload_to_json(const lin_payload& tx) {
     ostringstream os;
     os << "{";
-    os << "\"linid\":\"" << (int)tx.linid << "\",";
+    os << "\"linid\":" << (int)tx.linid << ",";
     os << "\"data\":[";
     if (tx.size() > 0) {
         for (size_t i = 0; i < tx.size() - 1; i++)
@@ -164,7 +164,7 @@ string trace_payload_to_json(const lin_payload& tx) {
     }
     os << "],";
 
-    os << "\"status\":\"" << lin_status_str(tx.status) << "\",";
+    os << "\"status\":\"" << lin_status_str(tx.status) << "\"";
     os << "}";
     return os.str();
 }
@@ -201,7 +201,7 @@ string trace_payload_to_json(const sd_command& tx) {
     }
 
     os << "],";
-    os << "\"status:\":\"" << sd_status_str(tx.status) << "\"";
+    os << "\"status\":\"" << sd_status_str(tx.status) << "\"";
     os << "}";
     return os.str();
 }
@@ -279,7 +279,7 @@ string trace_payload_to_json(const serial_payload& tx) {
 string trace_payload_to_json(const signal_payload_base& tx) {
     ostringstream os;
     os << "{";
-    os << "\"data\":" << tx.to_string();
+    os << "\"data\":" << tx.to_json();
     os << "}";
     return os.str();
 }
@@ -331,7 +331,7 @@ string trace_payload_to_json(const can_frame& tx) {
     if (tx.is_canxl()) {
         os << "\"sec\":" << (tx.sec ? "true" : "false") << ",";
         os << "\"rrs\":" << (tx.rrs ? "true" : "false") << ",";
-        os << "\"vcid\":" << tx.vcid << ",";
+        os << "\"vcid\":" << (int)tx.vcid << ",";
         os << "\"sdt\":" << (int)tx.sdt << ",";
         os << "\"af\":" << tx.af << ",";
     } else if (tx.is_canfd()) {

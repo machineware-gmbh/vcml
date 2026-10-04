@@ -54,6 +54,9 @@ using sc_core::sc_attr_base;
 sc_object* find_object(const string& name);
 sc_attr_base* find_attribute(const string& name);
 
+string json_string(const string& str);
+string json_name(const sc_object& obj);
+
 using sc_core::sc_gen_unique_name;
 using sc_core::SC_HIERARCHY_CHAR;
 

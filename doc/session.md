@@ -71,7 +71,16 @@ The status command queries the current time-stamp, delta-cycle and runstate.
 The runstate can either be `running` or `stopped:<reason>`. Stop reason is a
 string indicating what caused the simulation to stop.
 * Command: `$status#**`
-* Response: `$OK,runstate,time-stamp-ns,delta-cycle#**`
+* Response: `$OK,runstate,time-stamp-ns,delta-cycle[,events]#**`
+
+If the client has subscribed to at least one event (see
+[Event Commands](#event-commands)), the response carries an additional field
+holding a JSON object with all events that occurred since the previous status
+request. Like any other field, it is escaped: commas, backslashes and quotes
+are prefixed with a backslash, which clients must remove before parsing the
+JSON. The first response that reports
+`stopped:<reason>` is guaranteed to contain all remaining events up to the
+point where the simulation stopped.
 
 Valid stop reasons include (but are not limited to):
 * `target:<name>:<t>`: target `<name>` completed its requested single-step at
@@ -120,11 +129,23 @@ afterward.
 #### List
 The list command queries a listing of the entire object hierarchy of the
 simulation. The command accepts an optional first argument, specifying the
-desired format in which the hierarchy should be reported. The default (and
-currently only supported format) is `xml`. This command may only be issued when
-the simulation is stopped, otherwise, an error response will be returned.
+desired format in which the hierarchy should be reported: `xml` (default) or
+`json`. This command may only be issued when the simulation is stopped,
+otherwise, an error response will be returned.
 * Command: `$list[,format]#**`
 * Response: `$OK,<hierarchy>...</hierarchy>#**`
+
+Objects that publish events (see [Event Commands](#event-commands)) list the
+names of these events: as a comma-separated `events` attribute of `<object>`
+in `xml`, and as an `"events"` array in `json`. Only the events published by
+the object itself are listed, not those of its children. Objects that do not
+publish any events have no `events` entry.
+```xml
+<object name="leds" kind="vcml::gpio::leds" version="..." events="led">
+```
+```json
+{"name":"leds","kind":"vcml::gpio::leds","version":"...","events":["led"],...}
+```
 
 #### Execute
 The execute command sends a request to a `vcml::module` to perform a given
@@ -257,5 +278,89 @@ string or an error if something went wrong:
 * Command: `$arch,<target-name>#**`
 * Response: `OK,<architecture>#**`
 
+### Event Commands
+Clients can subscribe to events published by objects in the simulation, such
+as LED changes or transactions on ports. The session buffers these events per
+client and delivers them with the next `status` response, which then clears
+the buffer of that client. Clients do not see the events of other clients, and
+all subscriptions of a client are removed when it disconnects.
+
+Both event commands can only be used while the simulation is stopped. While it
+is running, they return `$E,simulation running#**`.
+
+#### Subscribe
+Subscribes to an event of one or more publishers, given by their full
+hierarchical name. Subscriptions are not recursive: every object must publish
+the event itself, as reported by `list`. Modules do not publish events of
+their children, so to subscribe to all trace events below a module, a client
+walks the hierarchy reported by `list` and subscribes every publisher it
+finds. Socket arrays are not publishers either, only their sockets are. If
+any object cannot be found or does not publish the event, nothing is
+subscribed and an error is returned. Subscribing to a publisher that is
+already subscribed has no effect, each event is reported only once.
+
+The object hierarchy is fixed once the simulation has been elaborated, so the
+publishers reported by `list` do not change. Publishers that models create
+after the simulation has started are not supported: clients that listed the
+hierarchy before will not know about them.
+* Command: `$sub,<event>,<object>[,object1]...#**`
+* Response: `$OK#**` or `$E,errmsg#**`
+
+#### Unsubscribe
+Removes subscriptions. Without arguments, all subscriptions of the client are
+removed. With only an event, all subscriptions to that event are removed.
+Otherwise, exactly the given publishers are unsubscribed from that event.
+Unsubscribing an object that is not subscribed is not an error, but all
+objects must exist.
+* Command: `$unsub[,event][,object][,object1]...#**`
+* Response: `$OK#**` or `$E,errmsg#**`
+
+#### Events Object
+The events object reported by `status` lists all events in the order they
+were published. `dropped` is only present if events were lost because the
+client did not poll `status` often enough: each client buffers at most 65536
+events, after that the oldest ones are dropped.
+```json
+{"events":[{"event":"led","sender":"top.leds","time":10000,"delta":4,"payload":{...}},...],"dropped":3}
+```
+* `event`: name of the event
+* `sender`: full hierarchical name of the object that published the event
+* `time`: simulation time of the event in picoseconds. For transactions this
+  includes the local time offset of the sender, so due to temporal decoupling,
+  timestamps of different senders are not guaranteed to be in ascending order.
+* `delta`: SystemC delta cycle count when the event was published
+* `payload`: event-specific contents, see below
+
+#### Events
+* `led`: published by `vcml::gpio::leds` whenever an LED changes:
+  `{"led":<index>,"state":<true|false>}`
+* `uart`: published by `vcml::serial::terminal` for every character it
+  receives, i.e. every character the UART model transmits. The payload is a
+  JSON string holding exactly one character: printable ASCII as is, all other
+  bytes as `\u00XX`, where the code point equals the byte value (so `0xff` is
+  sent as `"\u00ff"`, not as UTF-8). Concatenate the payloads of consecutive
+  `uart` events of the same sender to get the output text. Note that this
+  event is meant for displaying terminal output: interactive terminals should
+  keep using a serial backend such as `tcp`, which also handles input.
+* `trace`: published by ports, sockets and registers for every
+  forward and backward transaction, independent of the `trace` and
+  `trace_errors` properties and of any tracers given on the command line:
+  ```json
+  {"dir":"fw","protocol":"TLM","error":false,"tx":{...}}
+  ```
+  * `dir`: `fw` for requests, `bw` for responses. Protocols without responses
+    (`CLK`, `SERIAL`, `SIGNAL`, `ETHERNET`, `CAN`) only report `fw`.
+  * `protocol`: one of `TLM`, `GPIO`, `CLK`, `PCI`, `I2C`, `LIN`, `SPI`, `SD`,
+    `SERIAL`, `SIGNAL`, `VIRTIO`, `ETHERNET`, `CAN`, `USB`
+  * `error`: `true` if the transaction failed
+  * `tx`: protocol-specific contents, as produced by `trace_payload_to_json`
+    in `src/vcml/tracing/protocol.cpp`
+
+Models publish events by deriving from `vcml::debugging::vsppublisher`
+(`vcml/debugging/vspevents.h`), listing their event names in
+`published_events()` and calling `publish_event()` with a JSON payload. Only
+build the payload if `has_subscribers()` returns `true`, so that there is no
+overhead while nobody is subscribed.
+
 ----
-Documentation updated June 2026
+Documentation updated October 2026

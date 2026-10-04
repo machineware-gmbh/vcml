@@ -309,11 +309,14 @@ public:
 
     module* parent;
 
+    const trace_publisher& tracer;
+
     logger log;
 
     virtqueue() = delete;
     virtqueue(const virtqueue&) = delete;
-    virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
+    virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi,
+              const trace_publisher& tracer);
     virtual ~virtqueue();
 
     virtual bool validate() = 0;
@@ -407,7 +410,8 @@ private:
 public:
     split_virtqueue() = delete;
     split_virtqueue(const split_virtqueue&) = delete;
-    split_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
+    split_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi,
+                    const trace_publisher& tracer);
     virtual ~split_virtqueue();
 
     virtual bool validate() override;
@@ -501,7 +505,8 @@ private:
 public:
     packed_virtqueue() = delete;
     packed_virtqueue(const packed_virtqueue&) = delete;
-    packed_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi);
+    packed_virtqueue(const virtio_queue_desc& desc, virtio_dmifn dmi,
+                     const trace_publisher& tracer);
     virtual ~packed_virtqueue();
 
     virtual bool validate() override;

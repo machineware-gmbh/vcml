@@ -22,6 +22,7 @@ namespace vcml {
 struct signal_payload_base {
     virtual ~signal_payload_base() = default;
     virtual string to_string() const = 0;
+    virtual string to_json() const = 0;
 };
 
 ostream& operator<<(ostream& os, const signal_payload_base& tx);
@@ -33,6 +34,17 @@ struct signal_payload : signal_payload_base {
     template <typename U>
     signal_payload(const U& val): signal_payload_base(), data(val) {}
     virtual string to_string() const override { return mwr::to_string(data); }
+
+    virtual string to_json() const override {
+        if constexpr (std::is_same_v<T, bool>)
+            return data ? "true" : "false";
+        else if constexpr (std::is_integral_v<T>)
+            return std::to_string(data); // also prints chars as numbers
+        else if constexpr (std::is_floating_point_v<T>)
+            return std::isfinite(data) ? mwr::to_string(data) : "null";
+        else
+            return json_string(to_string()); // e.g. sc_biguint or strings
+    }
 };
 
 template <typename T>

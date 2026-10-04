@@ -29,9 +29,9 @@ private:
 
     string m_announce;
     sc_time m_duration;
-    unordered_map<int, vspclient*> m_clients;
 
-    vspclient& find_client(int client);
+    mutable mutex m_clients_mtx;
+    unordered_map<int, shared_ptr<vspclient>> m_clients;
 
     string handle_version(int client, const string& command);
     string handle_status(int client, const string& command);
@@ -60,6 +60,8 @@ private:
     string handle_setsm(int client, const string& command);
     string handle_arch(int client, const string& command);
     string handle_tinfo(int client, const string& command);
+    string handle_sub(int client, const string& command);
+    string handle_unsub(int client, const string& command);
 
     void disconnect_all();
     void force_quit();
@@ -75,7 +77,11 @@ public:
     void start();
     void cleanup();
     void update();
+
     bool is_running() const { return !is_suspending(); }
+
+    vector<shared_ptr<vspclient>> all_clients() const;
+    shared_ptr<vspclient> find_client(int client) const;
 
     virtual void handle_connect(int client, const string& peer,
                                 u16 port) override;

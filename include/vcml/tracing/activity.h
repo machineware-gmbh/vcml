@@ -40,6 +40,15 @@ struct trace_activity {
     virtual string to_json() const = 0;
     virtual string termcolor() const = 0;
 
+    string to_json_record() const {
+        ostringstream os;
+        os << "{\"dir\":\"" << (is_backward_trace(dir) ? "bw" : "fw")
+           << "\",\"protocol\":\"" << protocol_name()
+           << "\",\"error\":" << (error ? "true" : "false")
+           << ",\"tx\":" << to_json() << "}";
+        return os.str();
+    }
+
     template <typename PAYLOAD>
     const PAYLOAD& get_payload() const;
 };

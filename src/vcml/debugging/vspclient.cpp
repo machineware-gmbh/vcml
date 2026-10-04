@@ -96,7 +96,11 @@ vspclient::vspclient(vspserver& server, int clientid, const string& peer,
     m_stop_reason("user"),
     m_mtx(),
     m_breakpoints(),
-    m_watchpoints() {
+    m_watchpoints(),
+    m_subscriptions(),
+    m_events_mtx(),
+    m_events(),
+    m_dropped(0) {
     // nothing to do
 }
 
@@ -106,6 +110,64 @@ vspclient::~vspclient() {
 
     for (auto [id, wp] : m_watchpoints)
         wp->owner().remove_watchpoint(wp, VCML_ACCESS_READ_WRITE, this);
+
+    for (const auto& [event, pub] : m_subscriptions)
+        pub->unsubscribe_event(event, this);
+}
+
+void vspclient::unsubscribe(const string& event, vsppublisher* pub) {
+    if (m_subscriptions.erase({ event, pub }))
+        pub->unsubscribe_event(event, this);
+
+    if (m_subscriptions.empty()) {
+        lock_guard<mutex> guard(m_events_mtx);
+        m_events.clear();
+        m_dropped = 0;
+    }
+}
+
+bool vspclient::has_subscriptions() const {
+    return !m_subscriptions.empty();
+}
+
+string vspclient::fetch_events() {
+    deque<string> events;
+    u64 dropped = 0;
+
+    {
+        lock_guard<mutex> guard(m_events_mtx);
+        events.swap(m_events);
+        std::swap(dropped, m_dropped);
+    }
+
+    ostringstream os;
+    os << "{\"events\":[";
+    for (size_t i = 0; i < events.size(); i++)
+        os << (i ? "," : "") << events[i];
+    os << "]";
+
+    if (dropped > 0)
+        os << ",\"dropped\":" << dropped;
+
+    os << "}";
+    return os.str();
+}
+
+void vspclient::on_event(const sc_object& sender, const string& event,
+                         const sc_time& t, const string& payload) {
+    ostringstream os;
+    os << "{\"event\":" << json_string(event) << ",\"sender\":\""
+       << json_name(sender) << "\",\"time\":" << time_to_ps(t)
+       << ",\"delta\":" << sc_delta_count() << ",\"payload\":" << payload
+       << "}";
+
+    lock_guard<mutex> guard(m_events_mtx);
+    if (m_events.size() >= EVENT_LIMIT) {
+        m_events.pop_front(); // drop oldest
+        m_dropped++;
+    }
+
+    m_events.push_back(os.str());
 }
 
 void vspclient::notify_step_complete() {
@@ -115,10 +177,17 @@ void vspclient::notify_step_complete() {
 
 string vspclient::handle_status(const string& command) {
     lock_guard<mutex> guard(m_mtx);
+
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
+
     string status = is_stopped() ? ("stopped:" + m_stop_reason) : "running";
-    return mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
+    string resp = mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
+
+    if (has_subscriptions())
+        resp += "," + escape(fetch_events(), ",");
+
+    return resp;
 }
 
 string vspclient::handle_resume(const string& command) {
@@ -303,6 +372,82 @@ string vspclient::handle_setsm(const string& command) {
         m_soft_stop = true;
     else
         return mkstr("E,unknown stop mode '%s'", mode.c_str());
+
+    return "OK";
+}
+
+static string find_objects(const vector<string>& args, size_t first,
+                           vector<sc_object*>& objects) {
+    for (size_t i = first; i < args.size(); i++) {
+        sc_object* obj = find_object(args[i]);
+        if (obj == nullptr)
+            return mkstr("E,object '%s' not found", args[i].c_str());
+        objects.push_back(obj);
+    }
+
+    return "";
+}
+
+string vspclient::handle_sub(const string& command) {
+    if (!is_stopped())
+        return "E,simulation running";
+
+    vector<string> args = split(command, ',');
+    if (args.size() < 3)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    vector<sc_object*> objects;
+    string err = find_objects(args, 2, objects);
+    if (!err.empty())
+        return err;
+
+    const string& event = args[1];
+    vector<vsppublisher*> publishers;
+    for (size_t i = 0; i < objects.size(); i++) {
+        auto* pub = dynamic_cast<vsppublisher*>(objects[i]);
+        if (pub == nullptr || !pub->publishes(event)) {
+            return mkstr("E,'%s' does not publish '%s' events",
+                         args[i + 2].c_str(), event.c_str());
+        }
+
+        publishers.push_back(pub);
+    }
+
+    for (vsppublisher* pub : publishers) {
+        if (m_subscriptions.insert({ event, pub }).second)
+            pub->subscribe_event(event, this);
+    }
+
+    return "OK";
+}
+
+string vspclient::handle_unsub(const string& command) {
+    if (!is_stopped())
+        return "E,simulation running";
+
+    vector<string> args = split(command, ',');
+    vector<sc_object*> objects;
+    string err = find_objects(args, 2, objects);
+    if (!err.empty())
+        return err;
+
+    vector<pair<string, vsppublisher*>> remove;
+    if (args.size() < 2) {
+        remove.assign(m_subscriptions.begin(), m_subscriptions.end());
+    } else if (objects.empty()) {
+        for (const auto& [event, pub] : m_subscriptions) {
+            if (event == args[1])
+                remove.push_back({ event, pub });
+        }
+    } else {
+        for (sc_object* obj : objects) {
+            if (auto* pub = dynamic_cast<vsppublisher*>(obj))
+                remove.push_back({ args[1], pub });
+        }
+    }
+
+    for (const auto& [event, pub] : remove)
+        unsubscribe(event, pub);
 
     return "OK";
 }

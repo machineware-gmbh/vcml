@@ -17,13 +17,14 @@
 
 #include "vcml/debugging/target.h"
 #include "vcml/debugging/vspserver.h"
+#include "vcml/debugging/vspevents.h"
 
 namespace vcml {
 namespace debugging {
 
 class vspserver;
 
-class vspclient : public subscriber
+class vspclient : public subscriber, public vspsubscriber
 {
 private:
     vspserver& m_server;
@@ -39,6 +40,16 @@ private:
 
     unordered_map<u64, const breakpoint*> m_breakpoints;
     unordered_map<u64, const watchpoint*> m_watchpoints;
+
+    set<pair<string, vsppublisher*>> m_subscriptions;
+
+    mutex m_events_mtx;
+    deque<string> m_events;
+    u64 m_dropped;
+
+    void unsubscribe(const string& event, vsppublisher* pub);
+    bool has_subscriptions() const;
+    string fetch_events();
 
     void resume_simulation(const sc_time& duration);
     void pause_simulation(const string& reason);
@@ -66,7 +77,12 @@ public:
     vspclient(vspserver& server, int id, const string& peer, u16 port);
     virtual ~vspclient();
 
+    static constexpr size_t EVENT_LIMIT = 64 * 1024;
+
     void notify_step_complete();
+
+    virtual void on_event(const sc_object& sender, const string& event,
+                          const sc_time& t, const string& payload) override;
 
     string handle_status(const string& command);
     string handle_resume(const string& command);
@@ -77,6 +93,8 @@ public:
     string handle_mkwp(const string& command);
     string handle_rmwp(const string& command);
     string handle_setsm(const string& command);
+    string handle_sub(const string& command);
+    string handle_unsub(const string& command);
 };
 
 } // namespace debugging

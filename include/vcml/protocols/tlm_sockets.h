@@ -33,6 +33,7 @@ namespace vcml {
 class tlm_initiator_socket
     : public simple_initiator_socket<tlm_initiator_socket>,
       public bindable_if,
+      public trace_publisher,
       public hierarchy_element
 {
 private:
@@ -146,12 +147,14 @@ inline void tlm_initiator_socket::trace_fw(const tlm_generic_payload& tx,
                                            const sc_time& t) {
     if (trace_all)
         tracer::record(TRACE_FW, *this, tx, t);
+    publish_trace(TRACE_FW, *this, tx, t);
 }
 
 inline void tlm_initiator_socket::trace_bw(const tlm_generic_payload& tx,
                                            const sc_time& t) {
     if (trace_all || (trace_errors && failed(tx)))
         tracer::record(TRACE_BW, *this, tx, t);
+    publish_trace(TRACE_BW, *this, tx, t);
 }
 
 inline void tlm_initiator_socket::set_insn(bool ind) {
@@ -282,6 +285,7 @@ inline void tlm_initiator_socket::bind<32>(
 
 class tlm_target_socket : public simple_target_socket<tlm_target_socket>,
                           public bindable_if,
+                          public trace_publisher,
                           public hierarchy_element
 {
 private:
@@ -377,12 +381,14 @@ inline void tlm_target_socket::trace_fw(const tlm_generic_payload& tx,
                                         const sc_time& t) {
     if (trace_all)
         tracer::record(TRACE_FW, *this, tx, t);
+    publish_trace(TRACE_FW, *this, tx, t);
 }
 
 inline void tlm_target_socket::trace_bw(const tlm_generic_payload& tx,
                                         const sc_time& t) {
     if (trace_all || (trace_errors && failed(tx)))
         tracer::record(TRACE_BW, *this, tx, t);
+    publish_trace(TRACE_BW, *this, tx, t);
 }
 
 inline tlm_dmi_cache& tlm_target_socket::dmi_cache() {

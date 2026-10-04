@@ -25,7 +25,7 @@ private:
     mutable mutex m_mtx;
 
 public:
-    tracer();
+    tracer(bool global = true);
     virtual ~tracer();
 
     virtual void trace(const trace_activity& act) = 0;

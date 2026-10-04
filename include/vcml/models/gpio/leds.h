@@ -21,7 +21,7 @@
 namespace vcml {
 namespace gpio {
 
-class leds : public module, public gpio_host
+class leds : public module, public gpio_host, public debugging::vsppublisher
 {
 private:
     bool cmd_status(const vector<string>& args, ostream& os);
@@ -32,6 +32,8 @@ public:
     leds(const sc_module_name& name);
     virtual ~leds() = default;
     VCML_KIND(gpio::leds);
+
+    virtual vector<string> published_events() const override;
 
 protected:
     virtual void gpio_transport(const gpio_target_socket& socket,

@@ -145,3 +145,12 @@ TEST(systemc, time_stamp) {
     EXPECT_TRUE(checked);
     clear_timed_callbacks();
 }
+
+TEST(systemc, json_name) {
+    struct test_object : sc_object {
+        test_object(const char* nm): sc_object(nm) {}
+    } obj("we\"ird\\name");
+    string name = json_name(obj);
+    EXPECT_NE(name.find("we\\\"ird\\\\name"), string::npos) << name;
+    EXPECT_EQ(name.find("we\"ird"), string::npos) << name;
+}

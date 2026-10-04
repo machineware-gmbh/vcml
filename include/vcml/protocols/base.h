@@ -16,6 +16,7 @@
 #include "vcml/core/version.h"
 
 #include "vcml/tracing/tracer.h"
+#include "vcml/debugging/vspevents.h"
 #include "vcml/properties/property.h"
 
 #if SYSTEMC_VERSION < SYSTEMC_VERSION_2_3_2
@@ -25,6 +26,33 @@
 #endif
 
 namespace vcml {
+
+class trace_publisher : public debugging::vsppublisher
+{
+public:
+    trace_publisher() = default;
+    virtual ~trace_publisher() = default;
+
+    virtual vector<string> published_events() const override {
+        return { debugging::VSP_EVENT_TRACE };
+    }
+
+    template <typename PAYLOAD>
+    void publish_trace(trace_direction dir, const sc_object& port,
+                       const PAYLOAD& payload,
+                       const sc_time& t = SC_ZERO_TIME) const {
+        if (!has_subscribers())
+            return;
+
+        dir = translate_direction_default<PAYLOAD>(dir);
+        if (dir == TRACE_NONE)
+            return;
+
+        trace_activity_proto<PAYLOAD> act(dir, port, payload, t);
+        publish_event(port, debugging::VSP_EVENT_TRACE, act.t,
+                      act.to_json_record());
+    }
+};
 
 class bindable_if
 {
@@ -36,7 +64,9 @@ public:
     virtual void stub_socket(void* data) = 0;
 };
 
-class base_socket : public bindable_if, public hierarchy_element
+class base_socket : public bindable_if,
+                    public trace_publisher,
+                    public hierarchy_element
 {
 private:
     sc_object* m_port;
@@ -50,6 +80,7 @@ public:
     base_socket() = delete;
     base_socket(sc_object* port, address_space space):
         bindable_if(),
+        trace_publisher(),
         hierarchy_element(),
         m_port(port),
         as(space),
@@ -71,12 +102,14 @@ protected:
     void trace_fw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
         if (trace_all)
             tracer::record(TRACE_FW, *m_port, tx, t);
+        publish_trace(TRACE_FW, *m_port, tx, t);
     }
 
     template <typename PAYLOAD>
     void trace_bw(const PAYLOAD& tx, const sc_time& t = SC_ZERO_TIME) {
         if (trace_all || (trace_errors && failed(tx)))
             tracer::record(TRACE_BW, *m_port, tx, t);
+        publish_trace(TRACE_BW, *m_port, tx, t);
     }
 };
 

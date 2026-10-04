@@ -24,7 +24,7 @@ namespace vcml {
 class module;
 class peripheral;
 
-class reg_base : public sc_object
+class reg_base : public sc_object, public trace_publisher
 {
 private:
     u64 m_cell_size;

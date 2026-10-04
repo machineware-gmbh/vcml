@@ -53,10 +53,13 @@ struct suspend_manager {
 suspend_manager& g_manager = suspend_manager::instance();
 
 void suspend_manager::request_pause(suspender* s) {
+    // read sim_running first: end_of_simulation sets is_quitting before it
+    // clears sim_running, so we never see a stopped but not quitting sim
+    bool running = sim_running();
     if (is_quitting)
         return;
 
-    if (!sim_running())
+    if (!running)
         VCML_ERROR("cannot suspend, simulation not running");
 
     suspender_lock.lock();
@@ -105,8 +108,9 @@ void suspend_manager::request_yield(suspender* s) {
         // must have at least queued a suspend request before yielding
         if (!stl_contains(waiting_suspenders, s))
             VCML_ERROR("cannot call yield without suspend");
-        cv_pause.wait(suspender_lock,
-                      [&] { return stl_contains(active_suspenders, s); });
+        cv_pause.wait(suspender_lock, [&] {
+            return stl_contains(active_suspenders, s) || is_quitting;
+        });
     }
 
     suspender_lock.unlock();
@@ -138,6 +142,7 @@ void suspend_manager::quit() {
     waiting_suspenders.clear();
     active_suspenders.clear();
     cv_resume.notify_all();
+    cv_pause.notify_all();
 }
 
 void suspend_manager::notify_suspend(sc_object* obj) {

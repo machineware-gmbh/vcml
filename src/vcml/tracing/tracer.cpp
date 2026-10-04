@@ -12,8 +12,9 @@
 
 namespace vcml {
 
-tracer::tracer(): m_mtx() {
-    all().insert(this);
+tracer::tracer(bool global): m_mtx() {
+    if (global)
+        all().insert(this);
 }
 
 tracer::~tracer() {

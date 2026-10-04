@@ -35,6 +35,7 @@ int reg_base::current_cpu() const {
 reg_base::reg_base(const string& regname, u64 cell_size, u64 cell_count,
                    u64 cell_stride):
     sc_object(regname.c_str()),
+    trace_publisher(),
     m_cell_size(cell_size),
     m_cell_count(cell_count),
     m_cell_stride(cell_stride),
@@ -128,6 +129,11 @@ void reg_base::trace_fw(const tlm_generic_payload& tx) const {
         sc_time t = m_host ? m_host->local_time() : SC_ZERO_TIME;
         tracer::record(TRACE_FW, *this, tx, t);
     }
+
+    if (has_subscribers()) {
+        sc_time t = m_host ? m_host->local_time() : SC_ZERO_TIME;
+        publish_trace(TRACE_FW, *this, tx, t);
+    }
 }
 
 void reg_base::trace_bw(const tlm_generic_payload& tx) const {
@@ -135,6 +141,11 @@ void reg_base::trace_bw(const tlm_generic_payload& tx) const {
         (m_module->trace_all || (m_module->trace_errors && failed(tx)))) {
         sc_time t = m_host ? m_host->local_time() : SC_ZERO_TIME;
         tracer::record(TRACE_BW, *this, tx, t);
+    }
+
+    if (has_subscribers()) {
+        sc_time t = m_host ? m_host->local_time() : SC_ZERO_TIME;
+        publish_trace(TRACE_BW, *this, tx, t);
     }
 }
 

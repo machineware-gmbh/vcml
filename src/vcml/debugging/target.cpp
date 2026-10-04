@@ -137,7 +137,8 @@ bool target::cmd_disas(const vector<string>& args, ostream& os) {
         for (u64 i = insn.size; i < maxsz; i++)
             os << "   ";
 
-        os << " " << escape(insn.code, ",");
+        if (!insn.code.empty())
+            os << " " << insn.code;
     }
 
     return true;

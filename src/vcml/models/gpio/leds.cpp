@@ -33,6 +33,16 @@ leds::leds(const sc_module_name& nm): module(nm), gpio_in("gpio_in") {
 void leds::gpio_transport(const gpio_target_socket& socket, gpio_payload& tx) {
     size_t idx = gpio_in.index_of(socket);
     log_info("LED%zu switched %s", idx, tx.state ? "on" : "off");
+    if (has_subscribers()) {
+        string payload = mkstr("{\"led\":%zu,\"state\":%s}", idx,
+                               tx.state ? "true" : "false");
+        publish_event(*this, debugging::VSP_EVENT_LED, sc_time_stamp(),
+                      payload);
+    }
+}
+
+vector<string> leds::published_events() const {
+    return { debugging::VSP_EVENT_LED };
 }
 
 VCML_EXPORT_MODEL(vcml::gpio::leds, name, args) {

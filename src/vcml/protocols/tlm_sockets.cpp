@@ -34,6 +34,7 @@ tlm_initiator_socket::tlm_initiator_socket(const char* nm,
                                            address_space space):
     simple_initiator_socket<tlm_initiator_socket>(nm),
     bindable_if(),
+    trace_publisher(),
     hierarchy_element(),
     m_txdb(),
     m_txd(),
@@ -355,6 +356,7 @@ bool tlm_target_socket::get_dmi_ptr(tlm_generic_payload& tx, tlm_dmi& dmi) {
 tlm_target_socket::tlm_target_socket(const char* nm, address_space a):
     simple_target_socket<tlm_target_socket>(nm),
     bindable_if(),
+    trace_publisher(),
     hierarchy_element(),
     m_curr(0),
     m_next(0),
