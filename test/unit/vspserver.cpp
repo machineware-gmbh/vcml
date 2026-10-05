@@ -208,8 +208,18 @@ static void run_client(vspserver& session, traffic& tr, gpio::leds& leds,
     status = vsp.command("status");
     EXPECT_EQ(events_of(status), "{\"events\":[]}") << status;
 
+    // data sent while paused is buffered until the simulation resumes, one
+    // level of backslashes is consumed by the vsp argument parser
+    EXPECT_EQ(vsp.command("exec,term,send,hi\\\\n"), "OK,queued 3 bytes");
+    EXPECT_TRUE(is_error(vsp.command("exec,term,send,\\\\q")));
+    EXPECT_EQ(term.send_pending(), 3);
+
     // too many events between two status requests drop the oldest ones
     events = run_for(session, vsp, "1us");
+
+    // 9600 baud only allows for one byte to be transmitted within 1us
+    EXPECT_EQ(term.send_pending(), 2);
+
     size_t total = 2 * BURST;
     size_t dropped = total - vspclient::EVENT_LIMIT;
     EXPECT_EQ(count(events, "\"sender\":\"tr.out\""), vspclient::EVENT_LIMIT);

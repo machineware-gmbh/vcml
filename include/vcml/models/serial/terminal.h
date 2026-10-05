@@ -46,11 +46,16 @@ private:
     vector<backend*> m_listeners;
     sc_event m_async_ev;
 
+    mutable mutex m_send_mtx;
+    deque<u8> m_send_buf;
+
     bool cmd_create_backend(const vector<string>& args, ostream& os);
     bool cmd_destroy_backend(const vector<string>& args, ostream& os);
     bool cmd_list_backends(const vector<string>& args, ostream& os);
     bool cmd_history(const vector<string>& args, ostream& os);
+    bool cmd_send(const vector<string>& args, ostream& os);
 
+    bool next_byte(u8& data);
     void serial_transmit();
 
     virtual void serial_receive(u8 data) override;
@@ -74,6 +79,9 @@ public:
     void attach(backend* b);
     void detach(backend* b);
     void notify(backend* b);
+
+    void send(const string& data);
+    size_t send_pending() const;
 
     size_t create_backend(const string& type);
     bool destroy_backend(size_t id);

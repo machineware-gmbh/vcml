@@ -116,18 +116,95 @@ bool terminal::cmd_history(const vector<string>& args, ostream& os) {
     return true;
 }
 
-void terminal::serial_transmit() {
-    while (true) {
-        for (backend* b : m_listeners) {
-            u8 data = 0xff;
-            while (b->read(data)) {
-                serial_tx.send(data);
-                if (!untimed)
-                    wait(serial_tx.cycle());
-            }
+// decodes c-style escape sequences, i.e. \n, \r, \t, \e, \0, \\ and \xHH
+static bool decode_escapes(const string& s, string& out, ostream& os) {
+    for (size_t i = 0; i < s.length(); i++) {
+        if (s[i] != '\\') {
+            out += s[i];
+            continue;
         }
 
-        wait(m_async_ev);
+        if (++i == s.length()) {
+            os << "incomplete escape sequence";
+            return false;
+        }
+
+        switch (s[i]) {
+        case 'n':
+            out += '\n';
+            break;
+        case 'r':
+            out += '\r';
+            break;
+        case 't':
+            out += '\t';
+            break;
+        case 'e':
+            out += '\x1b';
+            break;
+        case '0':
+            out += '\0';
+            break;
+        case '\\':
+            out += '\\';
+            break;
+        case 'x': {
+            string hex = s.substr(i + 1, 2);
+            if (hex.length() != 2 || !isxdigit(hex[0]) || !isxdigit(hex[1])) {
+                os << "invalid escape sequence \\x" << hex;
+                return false;
+            }
+            out += (char)strtoul(hex.c_str(), nullptr, 16);
+            i += 2;
+            break;
+        }
+        default:
+            os << "invalid escape sequence \\" << s[i];
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool terminal::cmd_send(const vector<string>& args, ostream& os) {
+    string data;
+    for (const string& arg : args) {
+        if (!decode_escapes(arg, data, os))
+            return false;
+    }
+
+    send(data);
+    os << "queued " << data.length() << " bytes";
+    return true;
+}
+
+bool terminal::next_byte(u8& data) {
+    for (backend* b : m_listeners) {
+        if (b->read(data))
+            return true;
+    }
+
+    lock_guard<mutex> guard(m_send_mtx);
+    if (m_send_buf.empty())
+        return false;
+
+    data = m_send_buf.front();
+    m_send_buf.pop_front();
+    return true;
+}
+
+void terminal::serial_transmit() {
+    while (true) {
+        u8 data = 0xff;
+        if (!next_byte(data)) {
+            wait(m_async_ev);
+            continue;
+        }
+
+        serial_tx.send(data);
+        if (!untimed)
+            wait(serial_tx.cycle());
     }
 }
 
@@ -168,6 +245,8 @@ terminal::terminal(const sc_module_name& nm):
     m_backends(),
     m_listeners(),
     m_async_ev("async_ev"),
+    m_send_mtx(),
+    m_send_buf(),
     backends("backends", ""),
     config("config", "9600N8"),
     untimed("untimed", false),
@@ -209,6 +288,11 @@ terminal::terminal(const sc_module_name& nm):
                      "lists all known backends of this terminal");
     register_command("history", 0, this, &terminal::cmd_history,
                      "show previously transmitted data from this terminal");
+    register_command("send", 1, this, &terminal::cmd_send,
+                     "queues data to be sent via serial_tx once the "
+                     "simulation resumes, supports escape sequences \\n, "
+                     "\\r, \\t, \\e, \\0, \\xHH and \\\\, usage: "
+                     "send <data> [data]..");
 
     SC_HAS_PROCESS(terminal);
     SC_THREAD(serial_transmit);
@@ -235,6 +319,23 @@ void terminal::detach(backend* b) {
 
 void terminal::notify(backend* b) {
     on_next_update([&] { m_async_ev.notify(SC_ZERO_TIME); });
+}
+
+void terminal::send(const string& data) {
+    if (data.empty())
+        return;
+
+    {
+        lock_guard<mutex> guard(m_send_mtx);
+        m_send_buf.insert(m_send_buf.end(), data.begin(), data.end());
+    }
+
+    on_next_update([&] { m_async_ev.notify(SC_ZERO_TIME); });
+}
+
+size_t terminal::send_pending() const {
+    lock_guard<mutex> guard(m_send_mtx);
+    return m_send_buf.size();
 }
 
 size_t terminal::create_backend(const string& type) {
