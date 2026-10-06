@@ -95,7 +95,7 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
         }
 
 #ifdef CANXL_VCID_OFFSET
-        struct can_raw_vcid_options vcid_opts {};
+        struct can_raw_vcid_options vcid_opts{};
 
         vcid_opts.flags = CAN_RAW_XL_VCID_TX_PASS | CAN_RAW_XL_VCID_RX_FILTER;
         vcid_opts.rx_vcid = 0;

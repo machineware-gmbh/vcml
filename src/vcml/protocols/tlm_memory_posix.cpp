@@ -36,7 +36,7 @@ int tlm_memory::init_shared(const string& shared, size_t size) {
     VCML_ERROR_ON(fd < 0, "cannot access shared memory '%s': %s",
                   m_shared.c_str(), strerror(errno));
 
-    struct stat stat {};
+    struct stat stat{};
     VCML_ERROR_ON(fstat(fd, &stat), "fstat failed: %s", strerror(errno));
     if ((size_t)stat.st_size != m_size) {
         VCML_ERROR(

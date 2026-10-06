@@ -152,7 +152,7 @@ public:
 
         EXPECT_CALL(sdcard, test_data_read(_))
             .WillOnce(DoAll(SetArgReferee<0>(0x01), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0X02), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x02), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x03), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x04), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x05), Return(SDTX_OK)))
@@ -161,7 +161,7 @@ public:
             .WillOnce(DoAll(SetArgReferee<0>(0x08), Return(SDTX_OK_BLK_DONE)))
             .WillOnce(DoAll(SetArgReferee<0>(0x09), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x0a), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0X0b), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0b), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x0c), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x0d), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x0e), Return(SDTX_OK)))
@@ -204,7 +204,7 @@ public:
         EXPECT_EQ(0x08070605, value_of_buffer_data_port);
         ASSERT_OK(out.readw(0x20, value_of_buffer_data_port))
             << "read BUFFER_DATA_PORT register";
-        EXPECT_EQ(0x0C0B0A09, value_of_buffer_data_port);
+        EXPECT_EQ(0x0c0b0a09, value_of_buffer_data_port);
         ASSERT_OK(out.readw(0x20, value_of_buffer_data_port))
             << "read BUFFER_DATA_PORT register";
         EXPECT_EQ(0x100f0e0d, value_of_buffer_data_port);
@@ -338,7 +338,7 @@ public:
          *                                                                    *
          **********************************************************************/
 
-        ASSERT_OK(out.writew<u8>(0x2F, 0x01)) << "reset the SDHCI";
+        ASSERT_OK(out.writew<u8>(0x2f, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = true; // tests with DMA
 
         cmd.spi = false;
@@ -359,7 +359,7 @@ public:
 
         EXPECT_CALL(sdcard, test_data_read(_))
             .WillOnce(DoAll(SetArgReferee<0>(0x01), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0X02), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x02), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x03), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x04), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x05), Return(SDTX_OK)))
@@ -367,12 +367,12 @@ public:
             .WillOnce(DoAll(SetArgReferee<0>(0x07), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x08), Return(SDTX_OK_BLK_DONE)))
             .WillOnce(DoAll(SetArgReferee<0>(0x09), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0x0A), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0X0B), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0x0C), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0x0D), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0x0E), Return(SDTX_OK)))
-            .WillOnce(DoAll(SetArgReferee<0>(0x0F), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0a), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0b), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0c), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0d), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0e), Return(SDTX_OK)))
+            .WillOnce(DoAll(SetArgReferee<0>(0x0f), Return(SDTX_OK)))
             .WillOnce(DoAll(SetArgReferee<0>(0x10), Return(SDTX_OK_BLK_DONE)));
 
         ASSERT_OK(out.writew<u32>(0x00, 0x00000010)) << "set the SDMA address";
@@ -417,7 +417,7 @@ public:
          *                                                                    *
          **********************************************************************/
 
-        ASSERT_OK(out.writew(0x2F, 0x01)) << "reset the SDHCI controller";
+        ASSERT_OK(out.writew(0x2f, 0x01)) << "reset the SDHCI controller";
         sdhci.dma_enabled = true; // tests with DMA
 
         cmd.spi = false;

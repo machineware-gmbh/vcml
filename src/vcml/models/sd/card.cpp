@@ -284,7 +284,7 @@ void card::init_ocr() {
 }
 
 void card::init_cid() {
-    m_cid[0] = 0xBB; // manufacturer ID
+    m_cid[0] = 0xbb; // manufacturer ID
 
     m_cid[1] = 'J'; // OEM ID
     m_cid[2] = 'W';
@@ -299,8 +299,8 @@ void card::init_cid() {
 
     m_cid[9] = 0x13; // product serial number
     m_cid[10] = 0x37;
-    m_cid[11] = 0xBE;
-    m_cid[12] = 0xEF;
+    m_cid[11] = 0xbe;
+    m_cid[12] = 0xef;
 
     m_cid[13] = 0x01; // manufacturing date in format ryym (r stands for
                       // reserved)
@@ -330,7 +330,7 @@ void card::init_csd_sdsc() {
     m_csd[1] = 0x26; // TAAC (time unit 1ms, time value 1.5)
     m_csd[2] = 0x00; // NSAC
     m_csd[3] = 0x32; // 25MHz TX speed (fixed by spec)
-    m_csd[4] = 0x5F; // Card Command Classes (0,2,4,5,6,7,8,10)
+    m_csd[4] = 0x5f; // Card Command Classes (0,2,4,5,6,7,8,10)
     m_csd[5] = 0x50 | (u8)read_bl_len;
     m_csd[6] = 0x80 | ((c_size >> 10) & 3); // no DSR
     m_csd[7] = (c_size >> 2) & 0xff;        // middle part of device size

@@ -468,7 +468,7 @@ ethoc::ethoc(const sc_module_name& nm):
     ipgr1("ipgr1", 0x10, 0xc),
     ipgr2("ipgr2", 0x14, 0x12),
     packetlen("packetlen", 0x18, 0x400600),
-    collconf("collconf", 0x1C, 0xF003f),
+    collconf("collconf", 0x1c, 0xf003f),
     tx_bd_num("tx_bd_num", 0x20, ETHOC_NUMBD / 2),
     ctrlmoder("ctrlmoder", 0x24, 0),
     miimoder("miimoder", 0x28, 0x64),

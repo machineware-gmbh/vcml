@@ -23,7 +23,7 @@ u32 ocfbc::read_stat() {
 
 void ocfbc::write_stat(u32 val) {
     // only the lower 8 bits are writable
-    val = (stat & 0xFFFFFF00) | (val & 0xFF);
+    val = (stat & 0xffffff00) | (val & 0xff);
 
     if ((stat & STAT_SINT) && !(val & STAT_SINT)) {
         log_debug("clearing system error interrupt");

@@ -18,7 +18,7 @@ static u8 bin2bcd(u8 val) {
 }
 
 static u8 bcd2bin(u8 val) {
-    return (val >> 4) * 10 + (val & 0xF);
+    return (val >> 4) * 10 + (val & 0xf);
 }
 
 static char* strtime(struct tm* t) {
@@ -50,27 +50,27 @@ void rtc1742::load_time() {
     u8 btb = day & DAY_BF;          /* battery indicator */
     u8 ftb = day & DAY_FT;          /* frequency test bit */
 
-    seconds = (bin2bcd(timeinfo->tm_sec) & 0x7F) | osc;
-    minutes = (bin2bcd(timeinfo->tm_min) & 0x7F);
-    hour = (bin2bcd(timeinfo->tm_hour) & 0x3F);
+    seconds = (bin2bcd(timeinfo->tm_sec) & 0x7f) | osc;
+    minutes = (bin2bcd(timeinfo->tm_min) & 0x7f);
+    hour = (bin2bcd(timeinfo->tm_hour) & 0x3f);
     day = (bin2bcd(timeinfo->tm_wday) & 0x03) | btb | ftb;
-    date = (bin2bcd(timeinfo->tm_mday) & 0x3F);
-    month = (bin2bcd(timeinfo->tm_mon + 1) & 0x1F);
-    year = (bin2bcd(timeinfo->tm_year % 100) & 0xFF);
+    date = (bin2bcd(timeinfo->tm_mday) & 0x3f);
+    month = (bin2bcd(timeinfo->tm_mon + 1) & 0x1f);
+    year = (bin2bcd(timeinfo->tm_year % 100) & 0xff);
 
     u32 century = (timeinfo->tm_year + 1900) / 100;
-    control = (bin2bcd((u8)century) & 0x3F);
+    control = (bin2bcd((u8)century) & 0x3f);
 }
 
 void rtc1742::save_time() {
     struct tm tinfo = {};
-    tinfo.tm_sec = bcd2bin(seconds & 0x7F);
-    tinfo.tm_min = bcd2bin(minutes & 0x7F);
-    tinfo.tm_hour = bcd2bin(hour & 0x3F);
+    tinfo.tm_sec = bcd2bin(seconds & 0x7f);
+    tinfo.tm_min = bcd2bin(minutes & 0x7f);
+    tinfo.tm_hour = bcd2bin(hour & 0x3f);
     tinfo.tm_wday = bcd2bin(day & 0x03);
-    tinfo.tm_mday = bcd2bin(date & 0x3F);
-    tinfo.tm_mon = bcd2bin(month & 0x1F) - 1;
-    tinfo.tm_year = bcd2bin(year) + bcd2bin(control & 0x3F) * 100 - 1900;
+    tinfo.tm_mday = bcd2bin(date & 0x3f);
+    tinfo.tm_mon = bcd2bin(month & 0x1f) - 1;
+    tinfo.tm_year = bcd2bin(year) + bcd2bin(control & 0x3f) * 100 - 1900;
 
     // Set the new offset time. Future calculations will use the specified
     // real time stamp as the base on to which the elapsed SystemC time

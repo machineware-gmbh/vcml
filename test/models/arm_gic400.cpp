@@ -151,7 +151,7 @@ public:
         val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_RPR, val, sbi_cpuid(0)))
             << "failed to read GICC_RPR";
-        EXPECT_EQ(val, 0xfF) << "GICC_RPR should be 255 (idle priority)"
+        EXPECT_EQ(val, 0xff) << "GICC_RPR should be 255 (idle priority)"
                              << " -> no handling of interrupt";
 
         val = 0x0;
@@ -180,7 +180,7 @@ public:
         val = 0x21;
         EXPECT_OK(cpuif_out.writew(GICC_EOIR, val, sbi_cpuid(0)))
             << "cpu0 failed to write in GICC_EOIR";
-        val = 0x3FF;
+        val = 0x3ff;
         EXPECT_CE(cpuif_out.writew(GICC_IIDR, val, sbi_cpuid(1)))
             << "writing spurious interrupt ID to GICC_EOIR should"
             << " not be allowed";
