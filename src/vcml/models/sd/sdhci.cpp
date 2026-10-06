@@ -337,8 +337,8 @@ void sdhci::write_software_reset(u8 val) {
         break;
 
     case RESET_DAT_LINE:
-        present_state &= ~0x00000F06;
-        normal_int_stat &= ~0x003E;
+        present_state &= ~0x00000f06;
+        normal_int_stat &= ~0x003e;
         break;
 
     default:
@@ -469,11 +469,11 @@ sdhci::sdhci(const sc_module_name& nm):
     arg("arg", 0x008, 0x00000000),
     transfer_mode("transfer_mode", 0x00c, 0x0000),
     cmd("cmd", 0x00e, 0x0000),
-    response("response", 0X010, 0X00),
+    response("response", 0x010, 0x00),
     buffer_data_port("buffer_data_port", 0x020, 0x00000000),
     present_state("present_state", 0x024, CARD_INSERTED),
     host_control_1("host_control_1", 0x028, 0x00),
-    power_ctrl("power_ctrl", 0x029, 0x0E),
+    power_ctrl("power_ctrl", 0x029, 0x0e),
     clock_ctrl("clock_ctrl", 0x02c, 0x0000),
     timeout_ctrl("timeout_ctrl", 0x02e, 0x00),
     software_reset("software_reset", 0x02f, 0x00),

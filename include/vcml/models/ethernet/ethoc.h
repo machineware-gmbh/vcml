@@ -182,7 +182,7 @@ public:
     };
 
     enum tx_bd_num_mask {
-        TX_BD_NUM_M = 0xFF, // transmit buffer descriptor number mask
+        TX_BD_NUM_M = 0xff, // transmit buffer descriptor number mask
     };
 
     enum ctrlmoder_status {

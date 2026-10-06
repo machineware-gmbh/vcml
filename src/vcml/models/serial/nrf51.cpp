@@ -64,7 +64,7 @@ static baud_t nrf51_baud(u32 val) {
         return 230400;
     case 0x04000000:
         return 250000;
-    case 0x075F7000:
+    case 0x075f7000:
         return 460800;
     case 0x0ebedfa4:
         return 921600;

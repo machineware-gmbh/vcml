@@ -21,7 +21,7 @@ home = Path(__file__).resolve().parents[1]
 ext = '.exe' if platform.system() == 'Windows' else ''
 arch = platform.machine().lower()
 formatter = home / 'cmake' / 'Tools' / platform.system()\
-            / f'clang-format-18.{arch}{ext}'
+            / f'clang-format-22.{arch}{ext}'
 srcdirs = [home / 'src', home / 'include', home / 'test']
 
 with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:

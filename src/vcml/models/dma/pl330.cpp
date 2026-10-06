@@ -39,7 +39,7 @@ enum mn_state : u8 {
     MNS_CACHE_MISS = 0x2,
     MNS_UPDATING_PC = 0x3,
     MNS_WAITING_FOR_EVENT = 0x4,
-    MNS_FAULTING = 0xF,
+    MNS_FAULTING = 0xf,
 };
 
 enum pl_330_mfifo_width : u32 {

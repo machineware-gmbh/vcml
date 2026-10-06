@@ -21,7 +21,7 @@ void sp804::timer::trigger() {
             irq = true;
 
         if (!is_oneshot())
-            schedule(is_periodic() ? load : 0xFFFFFFFF);
+            schedule(is_periodic() ? load : 0xffffffff);
     }
 
     m_timer->update_irqc();
@@ -92,7 +92,7 @@ sp804::timer::timer(const sc_module_name& nm):
     load("load", 0x00, 0x00000000),
     value("value", 0x04, 0xffffffff),
     control("control", 0x08, 0x00000020),
-    intclr("intclr", 0x0C, 0x00000000),
+    intclr("intclr", 0x0c, 0x00000000),
     ris("ris", 0x10, 0x00000000),
     mis("mis", 0x14, 0x00000000),
     bgload("bgload", 0x18, 0x00000000),

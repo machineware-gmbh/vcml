@@ -95,7 +95,7 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_str_quote.get_default(), "");
 
     EXPECT_TRUE(test.prop_u64.is_inited());
-    EXPECT_EQ(test.prop_u64, 0x123456789ABCDEF0);
+    EXPECT_EQ(test.prop_u64, 0x123456789abcdef0);
     EXPECT_EQ(test.prop_u64.str(), "1311768467463790320");
     EXPECT_EQ(test.prop_u64.defstr(), std::to_string(0xffffffffffffffff));
     EXPECT_EQ(test.prop_u64.get_default(), 0xffffffffffffffff);

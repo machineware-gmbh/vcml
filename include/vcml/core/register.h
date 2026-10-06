@@ -926,10 +926,10 @@ void reg<DATA, N, STRIDE>::init_bank(int bank) {
 
 } // namespace vcml
 
-#define VCML_LOG_REG_BIT_CHANGE(bit, reg, val)                       \
-    do {                                                             \
-        if ((reg & bit) != (val & bit))                              \
-            log_debug(#bit " bit %s", val& bit ? "set" : "cleared"); \
+#define VCML_LOG_REG_BIT_CHANGE(bit, reg, val)                        \
+    do {                                                              \
+        if ((reg & bit) != (val & bit))                               \
+            log_debug(#bit " bit %s", val & bit ? "set" : "cleared"); \
     } while (0)
 
 #define VCML_LOG_REG_FIELD_CHANGE(field, reg, val)                        \
