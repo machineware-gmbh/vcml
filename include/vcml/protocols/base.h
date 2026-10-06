@@ -52,6 +52,18 @@ public:
         publish_event(port, debugging::VSP_EVENT_TRACE, act.t,
                       act.to_json_record());
     }
+
+    template <typename PAYLOAD>
+    void publish_replay(debugging::vspsubscriber* s, const sc_object& port,
+                        const PAYLOAD& payload) const {
+        trace_direction dir = translate_direction_default<PAYLOAD>(TRACE_FW);
+        if (dir == TRACE_NONE)
+            return;
+
+        trace_activity_proto<PAYLOAD> act(dir, port, payload, SC_ZERO_TIME);
+        s->on_event(port, debugging::VSP_EVENT_TRACE, act.t,
+                    act.to_json_record());
+    }
 };
 
 class bindable_if

@@ -245,6 +245,12 @@ gpio_initiator_socket::gpio_state_tracker& gpio_initiator_socket::operator[](
     return m_state[vector] = state;
 }
 
+void gpio_initiator_socket::on_subscribe(const string& event,
+                                         debugging::vspsubscriber* s) const {
+    for (const auto& [vector, tracker] : m_state)
+        publish_replay<gpio_payload>(s, *this, tracker);
+}
+
 void gpio_initiator_socket::gpio_transport(gpio_payload& tx) {
     trace_fw(tx);
     for (int i = 0; i < size(); i++)
@@ -334,6 +340,12 @@ bool gpio_target_socket::operator==(const gpio_target_socket& other) const {
 
 bool gpio_target_socket::operator!=(const gpio_target_socket& other) const {
     return !(operator==(other));
+}
+
+void gpio_target_socket::on_subscribe(const string& event,
+                                      debugging::vspsubscriber* s) const {
+    for (const auto& [vector, state] : m_state)
+        publish_replay(s, *this, gpio_payload{ vector, state });
 }
 
 void gpio_target_socket::gpio_transport_internal(gpio_payload& tx) {

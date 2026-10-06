@@ -127,7 +127,7 @@ void backend::cleanup() {
 }
 
 void backend::attach(input* device) {
-    log_info("attached to %s", device->input_name());
+    log_debug("attached to %s", device->input_name());
     lock_guard<mutex> l(m_inputs_mtx);
     m_inputs.push_back(device);
     if (!has_framebuffer()) {

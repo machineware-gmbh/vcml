@@ -290,6 +290,12 @@ public:
     using read_fn = std::function<T(void)>;
     void on_read(read_fn fn) { m_read_fn = std::move(fn); }
 
+    virtual void on_subscribe(const string& event,
+                              debugging::vspsubscriber* s) const override {
+        signal_payload<T> tx(m_state);
+        base_socket::publish_replay<signal_payload_base>(s, *this, tx);
+    }
+
 private:
     signal_host<T>* m_host;
     sc_event* m_event;
@@ -401,6 +407,15 @@ public:
 
     bool operator!=(const signal_target_socket<T>& o) const {
         return this == &o;
+    }
+
+    virtual void on_subscribe(const string& event,
+                              debugging::vspsubscriber* s) const override {
+        // without a received value there is no state to replay
+        if (m_state) {
+            signal_payload<T> tx(*m_state);
+            base_socket::publish_replay<signal_payload_base>(s, *this, tx);
+        }
     }
 
 private:

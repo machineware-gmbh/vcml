@@ -162,6 +162,11 @@ clk_initiator_socket& clk_initiator_socket::operator=(
     return *this;
 }
 
+void clk_initiator_socket::on_subscribe(const string& event,
+                                        debugging::vspsubscriber* s) const {
+    publish_replay(s, *this, m_clk);
+}
+
 void clk_initiator_socket::clk_transport(const clk_desc& newclk,
                                          const clk_desc& oldclk) {
     trace_fw(newclk);
@@ -204,6 +209,11 @@ clk_desc clk_target_socket::get() const {
         return CLK_OFF;
 
     return const_cast<clk_bw_transport_if*>(iface)->clk_query();
+}
+
+void clk_target_socket::on_subscribe(const string& event,
+                                     debugging::vspsubscriber* s) const {
+    publish_replay(s, *this, get());
 }
 
 void clk_target_socket::clk_transport_internal(const clk_desc& newclk,

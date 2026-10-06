@@ -44,9 +44,12 @@ bool vsppublisher::subscribe_event(const string& event, vspsubscriber* s) {
 
     lock_guard<mutex> guard(m_mtx);
     auto sub = std::make_pair(event, s);
-    if (!stl_contains(m_subscriptions, sub))
+    if (!stl_contains(m_subscriptions, sub)) {
         m_subscriptions.push_back(sub);
-    m_subscribed = true;
+        m_subscribed = true;
+        on_subscribe(event, s);
+    }
+
     return true;
 }
 

@@ -17,9 +17,9 @@
 namespace vcml {
 namespace debugging {
 
-constexpr const char VSP_EVENT_TRACE[] = "trace";
-constexpr const char VSP_EVENT_LED[] = "led";
-constexpr const char VSP_EVENT_UART[] = "uart";
+constexpr const char* VSP_EVENT_TRACE = "trace";
+constexpr const char* VSP_EVENT_LED = "led";
+constexpr const char* VSP_EVENT_UART = "uart";
 
 class vspsubscriber
 {
@@ -45,6 +45,8 @@ public:
 
     virtual vector<string> published_events() const = 0;
     bool publishes(const string& event) const;
+
+    virtual void on_subscribe(const string& event, vspsubscriber* s) const {}
 
     bool has_subscribers() const { return m_subscribed; }
     bool is_subscribed(const string& event, const vspsubscriber* s) const;

@@ -106,6 +106,7 @@ public:
         add_test("errors", &test_harness::test_errors);
         add_test("duplicate", &test_harness::test_duplicate);
         add_test("publishers", &test_harness::test_publishers);
+        add_test("replay", &test_harness::test_replay);
         add_test("socket_array", &test_harness::test_socket_array);
         add_test("virtqueue", &test_harness::test_virtqueue);
         add_test("register", &test_harness::test_register);
@@ -139,6 +140,39 @@ public:
             .Times(0);
         EXPECT_OK(out.writew(0x0, 0x22u));
         Mock::VerifyAndClearExpectations(&mock);
+    }
+
+    void test_replay() {
+        // new subscribers get the current state of stateful sockets, but
+        // nothing happened afterwards, so only exactly one event each
+        gpio_out[0].write(true);
+
+        EXPECT_CALL(mock, on_event(named("harness.gpio_out[0]"),
+                                   StrEq(VSP_EVENT_TRACE), _,
+                                   AllOf(fw(), HasSubstr("\"state\":true"))))
+            .Times(1);
+        EXPECT_CALL(mock, on_event(named("harness.clk"),
+                                   StrEq(VSP_EVENT_TRACE), _, fw()))
+            .Times(1);
+        EXPECT_CALL(
+            mock, on_event(named("harness.gpio_in[0]"), StrEq(VSP_EVENT_TRACE),
+                           _, AllOf(fw(), HasSubstr("\"state\":true"))))
+            .Times(1);
+
+        gpio_out[0].subscribe_event(VSP_EVENT_TRACE, &mock);
+        gpio_in[0].subscribe_event(VSP_EVENT_TRACE, &mock);
+        clk.subscribe_event(VSP_EVENT_TRACE, &mock);
+        Mock::VerifyAndClearExpectations(&mock);
+
+        // resubscribing does not replay again
+        EXPECT_CALL(mock, on_event(_, _, _, _)).Times(0);
+        gpio_out[0].subscribe_event(VSP_EVENT_TRACE, &mock);
+        Mock::VerifyAndClearExpectations(&mock);
+
+        gpio_out[0].unsubscribe_event(VSP_EVENT_TRACE, &mock);
+        gpio_in[0].unsubscribe_event(VSP_EVENT_TRACE, &mock);
+        clk.unsubscribe_event(VSP_EVENT_TRACE, &mock);
+        gpio_out[0].write(false);
     }
 
     void test_errors() {
