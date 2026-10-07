@@ -151,7 +151,7 @@ protected:
 
     virtual usb_result get_configuration(u8& config);
     virtual usb_result set_configuration(u8 config);
-    virtual usb_result get_interface(size_t idx, u8& interface);
+    virtual usb_result get_interface(size_t idx, u8& data);
     virtual usb_result set_interface(size_t idx, u16 altset);
     virtual usb_result get_descriptor(u8 type, u8 idx, u8* data, size_t size);
 

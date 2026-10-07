@@ -10,9 +10,9 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
+  linux:
     runs-on: ubuntu-24.04
-    name: Unity Build
+    name: Unity Build (Linux)
 
     steps:
     - name: Checkout
@@ -47,3 +47,45 @@ jobs:
         include-hidden-files: true
         retention-days: 7
 
+  windows:
+    runs-on: windows-2025
+    name: Unity Build (Windows)
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        submodules: 'recursive'
+
+    - name: Cache vcpkg dependencies
+      uses: actions/cache@v5
+      with:
+        path: |
+          C:/vcpkg/installed
+          C:/vcpkg/downloads
+        key: vcml-vcpkg-windows
+
+    - name: Install dependencies
+      run: vcpkg install sdl2 lua libusb libslirp
+
+    - name: Configure
+      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVCML_BUILD_TESTS=ON -DVCML_UNITY_BUILD=ON -DSYSTEMC_UNITY_BUILD=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+    - name: Build
+      run: cmake --build BUILD --config ${{env.BUILD_TYPE}} --parallel -- /bl
+
+    - name: Test
+      working-directory: BUILD
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v7
+      if: '!cancelled()'
+      with:
+        name: ${{github.event.repository.name}}-logs-unity-build-windows
+        path: |
+            BUILD/CMakeCache.txt
+            BUILD/msbuild.binlog
+            BUILD/Testing/Temporary/LastTest.log
+        include-hidden-files: true
+        retention-days: 7
