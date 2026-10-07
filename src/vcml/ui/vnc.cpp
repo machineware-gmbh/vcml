@@ -219,7 +219,21 @@ static bool operator!=(const vnc_pixelformat& a, const vnc_pixelformat& b) {
 }
 
 static u32 vnc_read_pixel(u32 x, u32 y, const u8* fb, const videomode& vm) {
-    return mwr::read_once<u32>(fb + y * vm.stride + x * vm.bpp);
+    const u8* ptr = fb + y * vm.stride + x * vm.bpp;
+    switch (vm.bpp) {
+    case 1:
+        return mwr::read_once<u8>(ptr);
+    case 2:
+        return mwr::read_once<u16>(ptr);
+    case 3:
+        return (u32)mwr::read_once<u8>(ptr) |
+               (u32)mwr::read_once<u8>(ptr + 1) << 8 |
+               (u32)mwr::read_once<u8>(ptr + 2) << 16;
+    case 4:
+        return mwr::read_once<u32>(ptr);
+    default:
+        VCML_ERROR("unsupported videomode");
+    }
 }
 
 static u32 vnc_shift(u32 pixel, int shift) {
@@ -418,9 +432,8 @@ void vnc::send_pixels(u32 x, u32 y, u32 w, u32 h) {
         if (!conv) {
             send(fb, w * vm.bpp);
         } else {
-            u32* pixel = (u32*)fb;
             for (u32 i = 0; i < w; i++)
-                send_pixel(pixel[i]);
+                send_pixel(vnc_read_pixel(i, 0, fb, vm));
         }
     }
 }
