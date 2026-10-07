@@ -219,7 +219,11 @@ static bool operator!=(const vnc_pixelformat& a, const vnc_pixelformat& b) {
 }
 
 static u32 vnc_read_pixel(u32 x, u32 y, const u8* fb, const videomode& vm) {
-    return mwr::read_once<u32>(fb + y * vm.stride + x * vm.bpp);
+    const u8* ptr = fb + y * vm.stride + x * vm.bpp;
+    u32 pixel = 0;
+    for (u32 i = 0; i < vm.bpp; i++)
+        pixel |= (u32)mwr::read_once<u8>(ptr + i) << (i * 8);
+    return pixel;
 }
 
 static u32 vnc_shift(u32 pixel, int shift) {
@@ -418,9 +422,8 @@ void vnc::send_pixels(u32 x, u32 y, u32 w, u32 h) {
         if (!conv) {
             send(fb, w * vm.bpp);
         } else {
-            u32* pixel = (u32*)fb;
             for (u32 i = 0; i < w; i++)
-                send_pixel(pixel[i]);
+                send_pixel(vnc_read_pixel(i, 0, fb, vm));
         }
     }
 }
