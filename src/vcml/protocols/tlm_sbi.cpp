@@ -178,7 +178,7 @@ tlm_extension_base* sbiext::clone() const {
 }
 
 void sbiext::copy_from(const tlm_extension_base& ext) {
-    VCML_ERROR_ON(typeid(this) != typeid(ext), "cannot copy extension");
+    VCML_ERROR_ON(typeid(*this) != typeid(ext), "cannot copy extension");
     const sbiext& other = (const sbiext&)ext;
     copy(other);
 }
