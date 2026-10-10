@@ -1,0 +1,224 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/BUILD/${presetName}/.BUILD",
+            "installDir": "${sourceDir}/BUILD/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "VCML_BUILD_TESTS": "ON",
+                "VCML_BUILD_UTILS": "ON"
+            }
+        },
+        {
+            "name": "gcc",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "clang",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "msvc",
+            "hidden": true,
+            "inherits": "base",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "gcc-debug",
+            "displayName": "GCC Debug",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "gcc-release",
+            "displayName": "GCC Release",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "gcc-asan",
+            "displayName": "GCC AddressSanitizer",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "ASAN" }
+        },
+        {
+            "name": "gcc-tsan",
+            "displayName": "GCC ThreadSanitizer",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "TSAN" }
+        },
+        {
+            "name": "gcc-ubsan",
+            "displayName": "GCC UndefinedBehaviorSanitizer",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "UBSAN" }
+        },
+        {
+            "name": "clang-debug",
+            "displayName": "Clang Debug",
+            "inherits": "clang",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "clang-release",
+            "displayName": "Clang Release",
+            "inherits": "clang",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "clang-tidy",
+            "displayName": "Clang Debug with clang-tidy",
+            "inherits": "clang",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VCML_LINTER": "clang-tidy"
+            }
+        },
+        {
+            "name": "msvc-debug",
+            "displayName": "MSVC Debug",
+            "inherits": "msvc"
+        },
+        {
+            "name": "msvc-release",
+            "displayName": "MSVC Release",
+            "inherits": "msvc"
+        }
+    ],
+    "buildPresets": [
+        { "name": "gcc-debug", "configurePreset": "gcc-debug", "targets": [ "install" ] },
+        { "name": "gcc-release", "configurePreset": "gcc-release", "targets": [ "install" ] },
+        { "name": "gcc-asan", "configurePreset": "gcc-asan", "targets": [ "install" ] },
+        { "name": "gcc-tsan", "configurePreset": "gcc-tsan", "targets": [ "install" ] },
+        { "name": "gcc-ubsan", "configurePreset": "gcc-ubsan", "targets": [ "install" ] },
+        { "name": "clang-debug", "configurePreset": "clang-debug", "targets": [ "install" ] },
+        { "name": "clang-release", "configurePreset": "clang-release", "targets": [ "install" ] },
+        { "name": "clang-tidy", "configurePreset": "clang-tidy", "targets": [ "install" ] },
+        { "name": "msvc-debug", "configurePreset": "msvc-debug", "configuration": "Debug", "targets": [ "install" ] },
+        { "name": "msvc-release", "configurePreset": "msvc-release", "configuration": "Release", "targets": [ "install" ] }
+    ],
+    "testPresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "output": { "outputOnFailure": true }
+        },
+        { "name": "gcc-debug", "inherits": "base", "configurePreset": "gcc-debug" },
+        { "name": "gcc-release", "inherits": "base", "configurePreset": "gcc-release" },
+        { "name": "gcc-asan", "inherits": "base", "configurePreset": "gcc-asan" },
+        { "name": "gcc-tsan", "inherits": "base", "configurePreset": "gcc-tsan" },
+        { "name": "gcc-ubsan", "inherits": "base", "configurePreset": "gcc-ubsan" },
+        { "name": "clang-debug", "inherits": "base", "configurePreset": "clang-debug" },
+        { "name": "clang-release", "inherits": "base", "configurePreset": "clang-release" },
+        { "name": "clang-tidy", "inherits": "base", "configurePreset": "clang-tidy" },
+        { "name": "msvc-debug", "inherits": "base", "configurePreset": "msvc-debug", "configuration": "Debug" },
+        { "name": "msvc-release", "inherits": "base", "configurePreset": "msvc-release", "configuration": "Release" }
+    ],
+    "workflowPresets": [
+        {
+            "name": "gcc-debug",
+            "steps": [
+                { "type": "configure", "name": "gcc-debug" },
+                { "type": "build", "name": "gcc-debug" }
+            ]
+        },
+        {
+            "name": "gcc-release",
+            "steps": [
+                { "type": "configure", "name": "gcc-release" },
+                { "type": "build", "name": "gcc-release" }
+            ]
+        },
+        {
+            "name": "gcc-asan",
+            "steps": [
+                { "type": "configure", "name": "gcc-asan" },
+                { "type": "build", "name": "gcc-asan" }
+            ]
+        },
+        {
+            "name": "gcc-tsan",
+            "steps": [
+                { "type": "configure", "name": "gcc-tsan" },
+                { "type": "build", "name": "gcc-tsan" }
+            ]
+        },
+        {
+            "name": "gcc-ubsan",
+            "steps": [
+                { "type": "configure", "name": "gcc-ubsan" },
+                { "type": "build", "name": "gcc-ubsan" }
+            ]
+        },
+        {
+            "name": "clang-debug",
+            "steps": [
+                { "type": "configure", "name": "clang-debug" },
+                { "type": "build", "name": "clang-debug" }
+            ]
+        },
+        {
+            "name": "clang-release",
+            "steps": [
+                { "type": "configure", "name": "clang-release" },
+                { "type": "build", "name": "clang-release" }
+            ]
+        },
+        {
+            "name": "clang-tidy",
+            "steps": [
+                { "type": "configure", "name": "clang-tidy" },
+                { "type": "build", "name": "clang-tidy" }
+            ]
+        },
+        {
+            "name": "msvc-debug",
+            "steps": [
+                { "type": "configure", "name": "msvc-debug" },
+                { "type": "build", "name": "msvc-debug" }
+            ]
+        },
+        {
+            "name": "msvc-release",
+            "steps": [
+                { "type": "configure", "name": "msvc-release" },
+                { "type": "build", "name": "msvc-release" }
+            ]
+        }
+    ]
+}

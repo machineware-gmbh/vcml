@@ -47,14 +47,18 @@ additional libraries:
 | SDL2                   | With SDL2, VCML can create a window that displays graphical output of a Virtual Platform. |
 
 ## Easy Build
-VCML provides helper scripts that automatically setup, build and install VCML and its dependencies
-using GCC or Clang. It is possible to build debug and release versions of VMCL.
+VCML provides CMake presets that configure, build and install VCML and its dependencies
+using GCC or Clang. Available presets are `gcc-debug`, `gcc-release`, `gcc-asan`, `gcc-tsan`,
+`gcc-ubsan`, `clang-debug`, `clang-release` and `clang-tidy` (requires CMake 3.25 or newer and Ninja):
 ```sh
-<source-dir>/utils/setup-gcc [DEBUG|RELEASE|...] # for GCC builds
-<source-dir>/utils/setup-clang [DEBUG|RELEASE|...] # for Clang builds
+cd <source-dir>
+cmake --workflow --preset gcc-debug  # configure, build and install
+ctest --preset gcc-debug             # run unit tests
 ```
-After running the helper script, the installed library can be found in `<source-dir>/BUILD/<build-type>`. Setting
-the environment variable `VCML_HOME` to that path will allow other projects to use this build.
+After building, the installed library can be found in `<source-dir>/BUILD/<preset>`, while the
+build tree is located in `<source-dir>/BUILD/<preset>/.BUILD`. Setting the environment variable
+`VCML_HOME` to the install path will allow other projects to use this build. The `clang-tidy`
+preset builds a Clang debug version with `clang-tidy` enabled as code linter.
 
 ## Expert Build
 If an advanced configuration of VCML is desired, such as modifying the installation path
@@ -189,13 +193,13 @@ Windows builds are currently supported using
 [Microsoft Visual Studio](https://visualstudio.microsoft.com/).
 There are two ways to build `vcml` on Windows:
 
-1. Using a helper script:
+1. Using CMake presets:
    - Install [Git for Windows](https://git-scm.com/download/win)
    - Launch PowerShell
    - Run `git clone --recursive https://github.com:machineware-gmbh/vcml`
-   - Run `.\utils\setup-msvc.ps1 [DEBUG|RELEASE]`
+   - Run `cmake --workflow --preset [msvc-debug|msvc-release]`
 
-   After executing the script, the library can be found in `BUILD\[DEBUG|RELEASE]\`.
+   Afterwards, the library can be found in `BUILD\[msvc-debug|msvc-release]\`.
 
 2. Using Visual Studio IDE:
    - Launch Visual Studio
