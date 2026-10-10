@@ -45,6 +45,7 @@ private:
 
     mutex m_events_mtx;
     deque<string> m_events;
+    size_t m_event_limit;
     u64 m_dropped;
 
     void unsubscribe(const string& event, vsppublisher* pub);
@@ -95,6 +96,7 @@ public:
     string handle_setsm(const string& command);
     string handle_sub(const string& command);
     string handle_unsub(const string& command);
+    string handle_sebs(const string& command);
 };
 
 } // namespace debugging

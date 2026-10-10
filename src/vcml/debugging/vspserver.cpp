@@ -775,6 +775,10 @@ string vspserver::handle_unsub(int client, const string& cmd) {
     return find_client(client)->handle_unsub(cmd);
 }
 
+string vspserver::handle_sebs(int client, const string& cmd) {
+    return find_client(client)->handle_sebs(cmd);
+}
+
 void vspserver::disconnect_all() {
     unordered_map<int, shared_ptr<vspclient>> clients;
     {
@@ -852,6 +856,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("tinfo", &vspserver::handle_tinfo);
     register_handler("sub", &vspserver::handle_sub);
     register_handler("unsub", &vspserver::handle_unsub);
+    register_handler("sebs", &vspserver::handle_sebs);
 
     // Create announce file
     ofstream of(m_announce.c_str());

@@ -62,6 +62,7 @@ private:
     string handle_tinfo(int client, const string& command);
     string handle_sub(int client, const string& command);
     string handle_unsub(int client, const string& command);
+    string handle_sebs(int client, const string& command);
 
     void disconnect_all();
     void force_quit();

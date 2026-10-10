@@ -100,6 +100,7 @@ vspclient::vspclient(vspserver& server, int clientid, const string& peer,
     m_subscriptions(),
     m_events_mtx(),
     m_events(),
+    m_event_limit(EVENT_LIMIT),
     m_dropped(0) {
     // nothing to do
 }
@@ -162,12 +163,11 @@ void vspclient::on_event(const sc_object& sender, const string& event,
        << "}";
 
     lock_guard<mutex> guard(m_events_mtx);
-    if (m_events.size() >= EVENT_LIMIT) {
+    m_events.push_back(os.str());
+    while (m_events.size() > m_event_limit) {
         m_events.pop_front(); // drop oldest
         m_dropped++;
     }
-
-    m_events.push_back(os.str());
 }
 
 void vspclient::notify_step_complete() {
@@ -448,6 +448,24 @@ string vspclient::handle_unsub(const string& command) {
 
     for (const auto& [event, pub] : remove)
         unsubscribe(event, pub);
+
+    return "OK";
+}
+
+string vspclient::handle_sebs(const string& command) {
+    vector<string> args = split(command, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    if (!is_number(args[1]) || from_string<size_t>(args[1]) == 0)
+        return mkstr("E,invalid buffer size '%s'", args[1].c_str());
+
+    lock_guard<mutex> guard(m_events_mtx);
+    m_event_limit = from_string<size_t>(args[1]);
+    while (m_events.size() > m_event_limit) {
+        m_events.pop_front();
+        m_dropped++;
+    }
 
     return "OK";
 }

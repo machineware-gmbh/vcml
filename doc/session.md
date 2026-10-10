@@ -329,11 +329,18 @@ objects must exist.
 * Command: `$unsub[,event][,object][,object1]...#**`
 * Response: `$OK#**` or `$E,errmsg#**`
 
+#### Set Event Buffer Size
+Sets how many events the client buffers between two `status` requests. Once
+the buffer is full, the oldest events are dropped and counted in `dropped`.
+The default size is 65536 events.
+* Command: `$sebs,<size>#**`
+* Response: `$OK#**` or `$E,errmsg#**`
+
 #### Events Object
 The events object reported by `status` lists all events in the order they
 were published. `dropped` is only present if events were lost because the
 client did not poll `status` often enough: each client buffers at most 65536
-events, after that the oldest ones are dropped.
+events (see `sebs`), after that the oldest ones are dropped.
 ```json
 {"events":[{"event":"led","sender":"top.leds","time":10000,"delta":4,"payload":{...}},...],"dropped":3}
 ```

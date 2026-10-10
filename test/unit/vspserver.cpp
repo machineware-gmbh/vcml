@@ -215,14 +215,18 @@ static void run_client(vspserver& session, traffic& tr, gpio::leds& leds,
     EXPECT_EQ(term.send_pending(), 3);
 
     // too many events between two status requests drop the oldest ones
+    EXPECT_TRUE(is_error(vsp.command("sebs")));
+    EXPECT_TRUE(is_error(vsp.command("sebs,0")));
+    EXPECT_TRUE(is_error(vsp.command("sebs,x")));
+    EXPECT_EQ(vsp.command("sebs,1000"), "OK");
     events = run_for(session, vsp, "1us");
 
     // 9600 baud only allows for one byte to be transmitted within 1us
     EXPECT_EQ(term.send_pending(), 2);
 
     size_t total = 2 * BURST;
-    size_t dropped = total - vspclient::EVENT_LIMIT;
-    EXPECT_EQ(count(events, "\"sender\":\"tr.out\""), vspclient::EVENT_LIMIT);
+    size_t dropped = total - 1000;
+    EXPECT_EQ(count(events, "\"sender\":\"tr.out\""), 1000);
     EXPECT_NE(events.find(mkstr("\"dropped\":%zu}", dropped)), string::npos);
     EXPECT_EQ(count(events, "\"data\":[0,0,0,0]"), 0) << "oldest not dropped";
     EXPECT_EQ(count(events, "\"data\":[63,156,0,0]"), 2) << "newest dropped";
