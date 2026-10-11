@@ -20,8 +20,16 @@ void usb_host_if::usb_detach(usb_initiator_socket& s) {
     // to be overloaded
 }
 
+void usb_dev_if::usb_reset_device(const usb_target_socket& socket) {
+    usb_reset_device();
+}
+
 void usb_dev_if::usb_reset_device() {
     // to be overloaded
+}
+
+void usb_dev_if::usb_reset_endpoint(const usb_target_socket& socket, int ep) {
+    usb_reset_endpoint(ep);
 }
 
 void usb_dev_if::usb_reset_endpoint(int ep) {
@@ -134,9 +142,9 @@ void usb_initiator_socket::reset_endpoint(int ep) {
 void usb_target_socket::usb_reset(int ep) {
     if (is_attached()) {
         if (ep < 0)
-            m_dev->usb_reset_device();
+            m_dev->usb_reset_device(*this);
         else
-            m_dev->usb_reset_endpoint(ep);
+            m_dev->usb_reset_endpoint(*this, ep);
     }
 }
 

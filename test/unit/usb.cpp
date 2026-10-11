@@ -47,6 +47,33 @@ MATCHER_P(usb_match_packet, data, "Matches an USB packet by data") {
     return arg.length == 8 && *(u64*)arg.data == data;
 }
 
+class usb_socket_dev : public module, public usb_dev_if
+{
+public:
+    usb_target_socket usb_in_a;
+    usb_target_socket usb_in_b;
+
+    usb_socket_dev(const sc_module_name& nm):
+        module(nm), usb_dev_if(), usb_in_a("usb_in_a"), usb_in_b("usb_in_b") {}
+
+    MOCK_METHOD(void, usb_reset_device, (const usb_target_socket&),
+                (override));
+    MOCK_METHOD(void, usb_reset_endpoint, (const usb_target_socket&, int),
+                (override));
+};
+
+class usb_legacy_dev : public module, public usb_dev_if
+{
+public:
+    usb_target_socket usb_in;
+
+    usb_legacy_dev(const sc_module_name& nm):
+        module(nm), usb_dev_if(), usb_in("usb_in") {}
+
+    MOCK_METHOD(void, usb_reset_device, (), (override));
+    MOCK_METHOD(void, usb_reset_endpoint, (int), (override));
+};
+
 class usb_bench : public test_base, public usb_host_if, public usb_dev_if
 {
 public:
@@ -58,6 +85,13 @@ public:
     usb_initiator_array<> usb_array_out;
     usb_target_array<> usb_array_in;
 
+    usb_initiator_socket usb_out_a;
+    usb_initiator_socket usb_out_b;
+    usb_initiator_socket usb_out_legacy;
+
+    usb_socket_dev sockdev;
+    usb_legacy_dev legacydev;
+
     usb_bench(const sc_module_name& nm):
         test_base(nm),
         usb_host_if(),
@@ -67,7 +101,16 @@ public:
         usb_in_h("usb_in_h"),
         usb_in("usb_in"),
         usb_array_out("usb_array_out"),
-        usb_array_in("usb_array_in") {
+        usb_array_in("usb_array_in"),
+        usb_out_a("usb_out_a"),
+        usb_out_b("usb_out_b"),
+        usb_out_legacy("usb_out_legacy"),
+        sockdev("sockdev"),
+        legacydev("legacydev") {
+        usb_out_a.bind(sockdev.usb_in_a);
+        usb_out_b.bind(sockdev.usb_in_b);
+        usb_out_legacy.bind(legacydev.usb_in);
+
         usb_bind(*this, "usb_out", *this, "usb_out_h");
         usb_bind(*this, "usb_in_h", *this, "usb_in");
         usb_bind(*this, "usb_out_h", *this, "usb_in_h");
@@ -140,6 +183,69 @@ public:
         EXPECT_FALSE(usb_out.is_attached());
         EXPECT_EQ(usb_in.connection_speed(), USB_SPEED_NONE);
         EXPECT_EQ(usb_out.connection_speed(), USB_SPEED_NONE);
+
+        test_socket_resets();
+        test_legacy_resets();
+    }
+
+    void test_socket_resets() {
+        // resets on detached sockets must be dropped
+        EXPECT_CALL(sockdev, usb_reset_device(_)).Times(0);
+        EXPECT_CALL(sockdev, usb_reset_endpoint(_, _)).Times(0);
+        usb_out_a.reset_device();
+        usb_out_b.reset_endpoint(1);
+        testing::Mock::VerifyAndClearExpectations(&sockdev);
+
+        EXPECT_CALL(*this, usb_attach(usb_match_socket("usb_out_a")));
+        EXPECT_CALL(*this, usb_attach(usb_match_socket("usb_out_b")));
+        sockdev.usb_in_a.attach(USB_SPEED_HIGH);
+        sockdev.usb_in_b.attach(USB_SPEED_HIGH);
+
+        // each reset must arrive on the socket it was sent to
+        EXPECT_CALL(sockdev, usb_reset_device(usb_match_socket("usb_in_a")));
+        usb_out_a.reset_device();
+        EXPECT_CALL(sockdev, usb_reset_device(usb_match_socket("usb_in_b")));
+        usb_out_b.reset_device();
+        EXPECT_CALL(sockdev,
+                    usb_reset_endpoint(usb_match_socket("usb_in_a"), 2));
+        usb_out_a.reset_endpoint(2);
+        EXPECT_CALL(sockdev,
+                    usb_reset_endpoint(usb_match_socket("usb_in_b"), 3));
+        usb_out_b.reset_endpoint(3);
+        testing::Mock::VerifyAndClearExpectations(&sockdev);
+
+        EXPECT_CALL(*this, usb_detach(usb_match_socket("usb_out_a")));
+        EXPECT_CALL(*this, usb_detach(usb_match_socket("usb_out_b")));
+        sockdev.usb_in_a.detach();
+        sockdev.usb_in_b.detach();
+
+        // resets after detaching must be dropped again
+        EXPECT_CALL(sockdev, usb_reset_device(_)).Times(0);
+        EXPECT_CALL(sockdev, usb_reset_endpoint(_, _)).Times(0);
+        usb_out_a.reset_device();
+        usb_out_b.reset_endpoint(1);
+    }
+
+    void test_legacy_resets() {
+        // resets on detached sockets must be dropped
+        EXPECT_CALL(legacydev, usb_reset_device()).Times(0);
+        EXPECT_CALL(legacydev, usb_reset_endpoint(_)).Times(0);
+        usb_out_legacy.reset_device();
+        usb_out_legacy.reset_endpoint(1);
+        testing::Mock::VerifyAndClearExpectations(&legacydev);
+
+        EXPECT_CALL(*this, usb_attach(usb_match_socket("usb_out_legacy")));
+        legacydev.usb_in.attach(USB_SPEED_FULL);
+
+        // socket-less overloads must still be reached via default forwarding
+        EXPECT_CALL(legacydev, usb_reset_device());
+        usb_out_legacy.reset_device();
+        EXPECT_CALL(legacydev, usb_reset_endpoint(4));
+        usb_out_legacy.reset_endpoint(4);
+        testing::Mock::VerifyAndClearExpectations(&legacydev);
+
+        EXPECT_CALL(*this, usb_detach(usb_match_socket("usb_out_legacy")));
+        legacydev.usb_in.detach();
     }
 };
 

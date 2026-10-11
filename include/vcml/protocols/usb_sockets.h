@@ -40,7 +40,9 @@ public:
     usb_dev_if() = default;
     virtual ~usb_dev_if() = default;
 
+    virtual void usb_reset_device(const usb_target_socket& s);
     virtual void usb_reset_device();
+    virtual void usb_reset_endpoint(const usb_target_socket& s, int ep);
     virtual void usb_reset_endpoint(int ep);
     virtual void usb_transport(const usb_target_socket& s, usb_packet& p);
     virtual void usb_transport(usb_packet& p);
