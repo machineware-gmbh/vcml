@@ -328,6 +328,11 @@ inline void property<T, N>::set_default(const T& defval) {
 
 template <typename T, size_t N>
 inline void property<T, N>::set_default(std::initializer_list<T> def) {
+    if (def.size() == 0) {
+        set_default(T());
+        return;
+    }
+
     VCML_ERROR_ON(def.size() < N, "too few initializers for %s", fullname());
     VCML_ERROR_ON(def.size() > N, "too many initializers for %s", fullname());
     auto it = def.begin();

@@ -226,6 +226,8 @@ TEST(property, init) {
     EXPECT_EQ(test.prop_array3.get_default(2), 6);
     EXPECT_EQ(test.prop_array3.get_default(3), 8);
     EXPECT_DEATH(test.prop_array3.get_default(4), "index 4 out of bounds");
+    test.prop_array3.set_default({});
+    EXPECT_EQ(test.prop_array3.defstr(), "0 0 0 0");
     EXPECT_DEATH(test.prop_array3.set_default({ 0, 0 }),
                  "too few initializers");
     EXPECT_DEATH(test.prop_array3.set_default({ 0, 0, 0, 0, 0 }),

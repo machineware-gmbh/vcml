@@ -555,6 +555,33 @@ TEST(registers, lambda) {
     EXPECT_EQ(data, 0x42);
 }
 
+class no_host_test : public sc_core::sc_module
+{
+public:
+    reg<u32> reg_single;
+    reg<u32, 4> reg_array;
+
+    no_host_test(const sc_core::sc_module_name& nm):
+        sc_core::sc_module(nm),
+        reg_single("reg_single"),
+        reg_array("reg_array") {}
+
+    virtual ~no_host_test() = default;
+};
+
+TEST(registers, no_host) {
+    no_host_test test("no_host");
+    EXPECT_EQ(test.reg_single.get_host(), nullptr);
+    EXPECT_EQ(test.reg_array.get_host(), nullptr);
+    EXPECT_EQ(test.reg_single.str(), "0x00000000");
+    EXPECT_EQ(test.reg_array.str(),
+              "0x00000000 0x00000000 0x00000000 0x00000000");
+
+    test.reg_array.on_read([](size_t idx, bool) -> u32 { return idx + 1; });
+    EXPECT_EQ(test.reg_array.str(),
+              "0x00000001 0x00000002 0x00000003 0x00000004");
+}
+
 class hierarchy_test : public peripheral
 {
 public:
