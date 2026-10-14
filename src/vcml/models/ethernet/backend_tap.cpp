@@ -24,7 +24,7 @@ namespace vcml {
 namespace ethernet {
 
 static bool tap_read(int fd, vector<u8>& buf) {
-    size_t len;
+    ssize_t len;
     buf.resize(eth_frame::FRAME_MAX_SIZE);
 
     do {
