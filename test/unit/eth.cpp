@@ -49,6 +49,45 @@ TEST(ethernet, frame) {
     EXPECT_EQ(frame, frame);
 }
 
+// Note: eth_frame does not include FSC!
+TEST(ethernet, frame_size) {
+    mac_addr dst("ff:ff:ff:ff:ff:ff");
+    mac_addr src("12:23:34:45:56:67");
+
+    eth_frame small(dst, src, eth_frame::ETHER_TYPE_IPV4, { 1, 2, 3 });
+    EXPECT_EQ(small.size(), 60);
+    EXPECT_TRUE(small.valid());
+
+    eth_frame min(vector<u8>(60, 0xff));
+    EXPECT_EQ(min.size(), 60);
+    EXPECT_TRUE(min.valid());
+
+    eth_frame mtu(dst, src, eth_frame::ETHER_TYPE_IPV4, vector<u8>(1500));
+    EXPECT_EQ(mtu.size(), 1514);
+    EXPECT_TRUE(mtu.valid());
+
+    vector<u8> tagged(1504);
+    tagged[0] = 0x00;
+    tagged[1] = 0x2a;
+    tagged[2] = 0x08;
+    tagged[3] = 0x00;
+    eth_frame vlan(dst, src, eth_frame::ETHER_TYPE_VLAN, tagged);
+    EXPECT_EQ(vlan.size(), 1518);
+    EXPECT_EQ(vlan.ether_type(), eth_frame::ETHER_TYPE_IPV4);
+    EXPECT_TRUE(vlan.valid());
+
+    vector<u8> big(1518 + 1);
+    EXPECT_DEATH(eth_frame{ big }, "payload too big");
+    EXPECT_DEATH(eth_frame(big.data(), big.size()), "payload too big");
+    EXPECT_DEATH(
+        eth_frame(dst, src, eth_frame::ETHER_TYPE_VLAN, vector<u8>(1505)),
+        "payload too big");
+
+    EXPECT_TRUE(eth_frame(60).valid());
+    EXPECT_FALSE(eth_frame(60 - 1).valid());
+    EXPECT_FALSE(eth_frame(1518 + 1).valid());
+}
+
 MATCHER_P(eth_match_socket, socket, "Matches an ethernet socket") {
     return &arg == socket;
 }
