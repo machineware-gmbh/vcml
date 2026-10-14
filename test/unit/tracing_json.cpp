@@ -166,7 +166,7 @@ TEST(tracing_json, eth) {
     eth_frame tx(dst, src, eth_frame::ETHER_TYPE_IPV4, { 1, 2, 3 });
     EXPECT_EQ(
         trace_payload_to_json(tx),
-        R"({"type":"ETHERNET_IPv4","sourceaddr":"11:22:33:44:55:66","destaddr":"aa:bb:cc:dd:ee:ff","data":[170,187,204,221,238,255,17,34,51,68,85,102,8,0,1,2,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]})");
+        R"({"type":"ETHERNET_IPv4","sourceaddr":"11:22:33:44:55:66","destaddr":"aa:bb:cc:dd:ee:ff","data":[170,187,204,221,238,255,17,34,51,68,85,102,8,0,1,2,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]})");
 }
 
 TEST(tracing_json, can) {

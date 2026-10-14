@@ -71,8 +71,8 @@ struct mac_addr {
 struct eth_frame : public vector<u8> {
     enum : size_t {
         FRAME_HEADER_SIZE = 14,
-        FRAME_MIN_SIZE = 64,
-        FRAME_MAX_SIZE = 1522,
+        FRAME_MIN_SIZE = 60,
+        FRAME_MAX_SIZE = 1518,
     };
 
     enum : u16 {
