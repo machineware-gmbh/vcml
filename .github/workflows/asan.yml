@@ -14,13 +14,13 @@ env:
 
 jobs:
   sanitize:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: ${{matrix.sanitizer}}
 
     strategy:
       fail-fast: false
       matrix:
-        systemc: [2.3.3]
+        systemc: [3.0.0]
         sanitizer: [ASAN, TSAN, UBSAN]
 
     env:
@@ -69,4 +69,3 @@ jobs:
             BUILD/Testing/Temporary/LastTest.log
         include-hidden-files: true
         retention-days: 7
-
