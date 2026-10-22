@@ -20,12 +20,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        systemc: [3.0.0]
         sanitizer: [ASAN, TSAN, UBSAN]
-
-    env:
-      SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
-
+      
     steps:
     - name: Checkout
       uses: actions/checkout@v6
@@ -36,17 +32,6 @@ jobs:
       run: |
         sudo apt-get update -y -qq
         sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libslirp-dev libusb-1.0-0-dev ninja-build
-
-    - name: Cache SystemC
-      id: cache-systemc
-      uses: actions/cache@v5
-      with:
-        path: ${{github.workspace}}/systemc
-        key: cache-systemc-${{matrix.systemc}}-${{runner.arch}}-sanitizer
-
-    - name: Download SystemC
-      if: steps.cache-systemc.outputs.cache-hit != 'true'
-      run: ./utils/setup-systemc -p ${{github.workspace}} -v ${{matrix.systemc}}
 
     - name: Configure
       run: cmake -G Ninja -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.sanitizer}} -DVCML_BUILD_TESTS=ON
