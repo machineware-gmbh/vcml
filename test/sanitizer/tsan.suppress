@@ -21,6 +21,17 @@ race:sc_core::sc_time::from_value
 race:sc_core::sc_time::sc_time
 race:sc_core::sc_time::to_seconds
 
+# same thing for sc_delta_count, which reads simcontext m_delta_count while
+# the kernel increments it in sc_simcontext::crunch: vspclient::handle_status
+# reports the current delta to its client without stopping the simulation
+race:sc_core::sc_delta_count
+
+# sc_get_status reads the simulation status that the kernel maintains while it
+# advances through its phases; we poll it from threads other than the main
+# SystemC thread to wait for the simulation to reach a certain state
+race:sc_core::sc_get_status
+race:sc_core::sc_simcontext::get_thread_safe_status
+
 # the async update list does not lock-protect its internal pending-requests
 # vector when checking if there are any pending requests via vector->size()
 race:sc_core::sc_prim_channel_registry::async_update_list::pending

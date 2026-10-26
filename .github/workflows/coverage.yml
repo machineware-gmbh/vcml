@@ -13,12 +13,12 @@ env:
 jobs:
   build:
     name: coverage
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     strategy:
       fail-fast: false
       matrix:
-          systemc: [2.3.3]
+          systemc: [3.0.0]
 
     env:
       SYSTEMC_HOME: ${{github.workspace}}/systemc/${{matrix.systemc}}
@@ -79,4 +79,3 @@ jobs:
             BUILD/Testing/Temporary/LastTest.log
         include-hidden-files: true
         retention-days: 7
-
