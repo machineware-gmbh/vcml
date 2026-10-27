@@ -223,7 +223,9 @@ reg_bank::reg_bank(const char* name):
     m_aligned_only(),
     m_natural_only(),
     m_access_size(),
-    m_regs() {
+    m_regs(),
+    m_offsets(),
+    m_max_size() {
     // nothing to do
 }
 
@@ -240,11 +242,9 @@ bool reg_bank::contains(const string& regnm) const {
 }
 
 optional<u64> reg_bank::offset_of(const reg_base& reg) const {
-    auto it = std::find_if(
-        m_regs.begin(), m_regs.end(),
-        [rr = &reg](const auto& entry) { return entry.second == rr; });
-    if (it != m_regs.end())
-        return it->first;
+    auto it = m_offsets.find(&reg);
+    if (it != m_offsets.end())
+        return it->second;
     return std::nullopt;
 }
 
@@ -286,16 +286,24 @@ void reg_bank::reset() {
 }
 
 void reg_bank::insert(reg_base* reg, u64 offset) {
-    for (const auto& [addr, other] : m_regs) {
+    VCML_ERROR_ON(m_offsets.count(reg), "register %s already in bank %s",
+                  reg->name(), name());
+
+    u64 lo = offset >= m_max_size ? offset - m_max_size + 1 : 0;
+    u64 hi = offset + reg->get_size();
+    auto first = m_regs.lower_bound(lo);
+    auto last = hi < offset ? m_regs.end() : m_regs.lower_bound(hi);
+    for (auto it = first; it != last; it++) {
+        const auto& [addr, other] = *it;
         if (overlaps(*reg, offset, *other, addr)) {
-            VCML_ERROR(
-                "register %s at 0x%llx overlaps with register %s at "
-                "0x%llx",
-                reg->name(), offset, other->name(), addr);
+            VCML_ERROR("register %s at 0x%llx overlaps with %s at 0x%llx",
+                       reg->name(), offset, other->name(), addr);
         }
     }
 
     m_regs[offset] = reg;
+    m_offsets[reg] = offset;
+    m_max_size = std::max(m_max_size, reg->get_size());
 
     if (m_aligned_only)
         reg->aligned_accesses_only(*m_aligned_only);
@@ -306,10 +314,12 @@ void reg_bank::insert(reg_base* reg, u64 offset) {
 }
 
 void reg_bank::remove(reg_base* reg) {
-    auto it = std::find_if(m_regs.begin(), m_regs.end(),
-                           [reg](const auto& it) { return it.second == reg; });
-    if (it != m_regs.end())
-        m_regs.erase(it);
+    auto it = m_offsets.find(reg);
+    if (it == m_offsets.end())
+        return;
+
+    m_regs.erase(it->second);
+    m_offsets.erase(it);
 }
 
 unsigned int reg_bank::receive(tlm_generic_payload& tx, const tlm_sbi& sbi) {

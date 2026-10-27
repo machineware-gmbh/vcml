@@ -1172,6 +1172,73 @@ TEST(registers, strided_broken) {
     EXPECT_DEATH({ mock_peripheral_strided_broken mock("mock"); }, "overlap");
 }
 
+class mock_peripheral_far : public peripheral
+{
+public:
+    reg<u32, 16> test_reg_a;
+    reg<u32> test_reg_b;
+
+    mock_peripheral_far(const sc_core::sc_module_name& nm, u64 a, u64 b):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10),
+        test_reg_a("test_reg_a", a),
+        test_reg_b("test_reg_b", b) {
+        // nothing to do
+    }
+};
+
+class mock_peripheral_far_rev : public peripheral
+{
+public:
+    reg<u32> test_reg_b;
+    reg<u32, 16> test_reg_a;
+
+    mock_peripheral_far_rev(const sc_core::sc_module_name& nm, u64 a, u64 b):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10),
+        test_reg_b("test_reg_b", b),
+        test_reg_a("test_reg_a", a) {
+        // nothing to do
+    }
+};
+
+TEST(registers, overlap_far) {
+    EXPECT_DEATH({ mock_peripheral_far mock("mock", 0x0, 0x3c); }, "overlap");
+    EXPECT_DEATH(
+        { mock_peripheral_far_rev mock("mock", 0x0, 0x3c); }, "overlap");
+    mock_peripheral_far ok("ok", 0x0, 0x40);
+    EXPECT_EQ(ok.test_reg_b.get_address(), 0x40);
+}
+
+class mock_peripheral_readd : public peripheral
+{
+public:
+    std::unique_ptr<reg<u32>> test_reg;
+
+    mock_peripheral_readd(const sc_core::sc_module_name& nm):
+        peripheral(nm, ENDIAN_LITTLE, 1, 10), test_reg() {
+        {
+            reg<u32> tmp("tmp", 0x80);
+        }
+        test_reg = std::make_unique<reg<u32>>("test_reg", 0x80);
+        test_reg->allow_read_write();
+    }
+};
+
+TEST(registers, remove) {
+    mock_peripheral_readd mock("mock");
+    u32 data = 0x12345678;
+    tlm_generic_payload tx;
+    tx_setup(tx, TLM_WRITE_COMMAND, 0x80, &data, sizeof(data));
+    EXPECT_EQ(mock.transport(tx, SBI_NONE, VCML_AS_DEFAULT), 4);
+    EXPECT_EQ(*mock.test_reg, data);
+}
+
+TEST(registers, double_insert) {
+    mock_peripheral mock;
+    EXPECT_DEATH(
+        { mock.add_register(&mock.test_reg_a, 0x1000, VCML_AS_DEFAULT); },
+        "already in bank");
+}
+
 TEST(registers, str_scalar) {
     mock_peripheral mock;
 

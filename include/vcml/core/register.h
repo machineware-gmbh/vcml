@@ -162,6 +162,7 @@ class reg_bank : public sc_object
 {
 public:
     typedef std::map<u64, reg_base*> map_type;
+    typedef std::unordered_map<const reg_base*, u64> revmap_type;
     typedef map_type::iterator iterator;
     typedef map_type::const_iterator const_iterator;
 
@@ -201,6 +202,8 @@ private:
     std::optional<pair<u64, u64>> m_access_size;
 
     map_type m_regs;
+    revmap_type m_offsets;
+    u64 m_max_size;
 
     bool check_access(const reg_base& reg, u64 off, tlm_generic_payload& tx,
                       const tlm_sbi& sbi) const;
