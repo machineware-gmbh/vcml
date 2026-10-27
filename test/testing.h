@@ -30,7 +30,7 @@ using namespace ::vcml;
 #define EXPECT_CE(tlmcall) EXPECT_EQ(tlmcall, TLM_COMMAND_ERROR_RESPONSE)
 
 #define EXPECT_SUCCESS(fn) EXPECT_TRUE(vcml::success(fn))
-#define EXPECT_FAILURE(fn) EXPECT_TRUE(vcml::failure(fn))
+#define EXPECT_FAILURE(fn) EXPECT_TRUE(vcml::failed(fn))
 
 MATCHER_P2(match_log, lvl, txt, "Matches a log message on level and text") {
     if (arg.level != lvl)
