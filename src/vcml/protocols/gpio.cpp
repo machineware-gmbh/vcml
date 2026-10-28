@@ -192,7 +192,8 @@ const sc_event& gpio_initiator_socket::negedge_event() {
 }
 
 bool gpio_initiator_socket::read(gpio_vector vector) const {
-    return m_state.count(vector) ? m_state.at(vector) : false;
+    auto it = m_state.find(vector);
+    return it != m_state.end() && it->second.state;
 }
 
 void gpio_initiator_socket::write(bool state, gpio_vector vector) {
@@ -234,8 +235,9 @@ gpio_initiator_socket& gpio_initiator_socket::operator^=(bool set) {
 
 gpio_initiator_socket::gpio_state_tracker& gpio_initiator_socket::operator[](
     gpio_vector vector) {
-    if (m_state.count(vector))
-        return m_state[vector];
+    auto it = m_state.find(vector);
+    if (it != m_state.end())
+        return it->second;
 
     gpio_state_tracker state;
     state.parent = this;
@@ -331,7 +333,8 @@ void gpio_target_socket::complete_binding(gpio_base_initiator_socket& socket) {
 }
 
 bool gpio_target_socket::read(gpio_vector vector) const {
-    return m_state.count(vector) ? m_state.at(vector) : false;
+    auto it = m_state.find(vector);
+    return it != m_state.end() && it->second;
 }
 
 bool gpio_target_socket::operator==(const gpio_target_socket& other) const {
@@ -350,8 +353,9 @@ void gpio_target_socket::on_subscribe(const string& event,
 
 void gpio_target_socket::gpio_transport_internal(gpio_payload& tx) {
     trace_fw(tx);
-    if (m_state.count(tx.vector) == 0 || m_state[tx.vector] != tx.state) {
-        m_state[tx.vector] = tx.state;
+    auto [it, added] = m_state.try_emplace(tx.vector, tx.state);
+    if (added || it->second != tx.state) {
+        it->second = tx.state;
         gpio_transport(tx);
         if (m_event)
             m_event->notify(SC_ZERO_TIME);
