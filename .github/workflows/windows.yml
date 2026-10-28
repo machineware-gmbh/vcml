@@ -35,7 +35,7 @@ jobs:
       run: vcpkg install sdl2 lua libusb libslirp
 
     - name: Configure
-      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+      run: cmake -B BUILD -DCMAKE_BUILD_TYPE=${{matrix.cfg}} -DVCML_BUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DX_VCPKG_APPLOCAL_DEPS_SERIALIZED=ON
 
     - name: Build
       run: cmake --build BUILD --config ${{matrix.cfg}} --parallel -- /bl
