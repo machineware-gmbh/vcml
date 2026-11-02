@@ -50,9 +50,9 @@ jobs:
         sudo apt-get update -y -qq
         sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libslirp-dev libusb-1.0-0-dev ninja-build
 
-    - name: Cache SystemC
+    - name: Restore SystemC cache
       id: cache-systemc
-      uses: actions/cache@v5
+      uses: actions/cache/restore@v6
       with:
         path: ${{github.workspace}}/systemc
         key: cache-systemc-${{matrix.systemc}}-${{matrix.os}}
