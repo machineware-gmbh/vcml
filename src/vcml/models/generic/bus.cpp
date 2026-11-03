@@ -201,6 +201,7 @@ bool bus::get_direct_mem_ptr(tlm_target_socket& origin,
         if (s < m.addr.start) {
             log_warn("truncating DMI start from 0x%016llx to 0x%016llx", s,
                      m.addr.start);
+            dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (m.addr.start - s));
             s = m.addr.start;
         }
 
