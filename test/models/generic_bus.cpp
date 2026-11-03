@@ -63,12 +63,14 @@ public:
         bus.bind(out2, mem2.in, 0x10000, 0x11fff);
         bus.bind(mem1, 0xe0000000);
         bus.bind(out1, mem1, 0xe1000000);
+        bus.bind(out1, mem2.in, 0x20000, 0x20fff, 0x1000);
 
         bus.stub(0xe000, 0xe7ff);
         tlm_stub(bus, *this, "out2", 0xe800, 0xefff);
 
         add_test("read_write", &bus_harness::test_read_write);
         add_test("dmi", &bus_harness::test_dmi);
+        add_test("dmi_offset", &bus_harness::test_dmi_offset);
         add_test("lenient", &bus_harness::test_lenient);
         add_test("stubs", &bus_harness::test_stubs);
         add_test("mmap", &bus_harness::test_mmap);
@@ -187,6 +189,27 @@ public:
         check_invalidate = false;
     }
 
+    void test_dmi_offset() {
+        mem2.set<u32>(0x0000, 0x00000000);
+        mem2.set<u32>(0x1000, 0x12345678);
+
+        u32 data;
+        ASSERT_OK(out1.readw<u32>(0x20000, data));
+        EXPECT_EQ(data, 0x12345678);
+
+        tlm_dmi dmi;
+        ASSERT_TRUE(out1.dmi_cache().lookup(0x20000, 4, TLM_READ_COMMAND, dmi))
+            << "bus did not forward DMI region of offset mapping";
+        EXPECT_EQ(dmi.get_start_address(), 0x20000);
+        EXPECT_EQ(dmi.get_end_address(), 0x20fff);
+        EXPECT_EQ(dmi.get_dmi_ptr(), mem2.data() + 0x1000)
+            << "bus did not adjust DMI pointer of offset mapping";
+
+        mem2.set<u32>(0x1000, 0x87654321);
+        ASSERT_OK(out1.readw<u32>(0x20000, data));
+        EXPECT_EQ(data, 0x87654321) << "read wrong data via DMI";
+    }
+
     void test_lenient() {
         u32 data = 0;
         bus.lenient = true;
@@ -213,11 +236,11 @@ public:
     }
 
     void test_mappings() {
-        EXPECT_EQ(bus.get_all_mappings().size(), 12);
-        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 9);
+        EXPECT_EQ(bus.get_all_mappings().size(), 13);
+        EXPECT_EQ(bus.get_source_mappings(bus.in[0]).size(), 10);
         EXPECT_EQ(bus.get_source_mappings(bus.in[1]).size(), 9);
         EXPECT_EQ(bus.get_target_mappings(bus.out[0]).size(), 6);
-        EXPECT_EQ(bus.get_target_mappings(bus.out[1]).size(), 3);
+        EXPECT_EQ(bus.get_target_mappings(bus.out[1]).size(), 4);
     }
 
     void test_invalid_mapping() {
