@@ -41,6 +41,12 @@ module* model::create(const string& type, const sc_module_name& name) {
     VCML_REPORT("model not found: %s", kind.c_str());
 }
 
+property_base* model::find_property(const string& name) const {
+    string full = mkstr("%s%c%s", m_impl->name(), SC_HIERARCHY_CHAR,
+                        name.c_str());
+    return dynamic_cast<property_base*>(find_attribute(full));
+}
+
 bool model::define(const string& kind, create_fn create) {
     auto it = modeldb().find(kind);
     if (it != modeldb().end())

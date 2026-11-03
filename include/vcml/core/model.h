@@ -15,6 +15,8 @@
 #include "vcml/core/systemc.h"
 #include "vcml/core/module.h"
 
+#include "vcml/properties/property.h"
+
 #include "vcml/protocols/base.h"
 
 namespace vcml {
@@ -36,6 +38,18 @@ public:
     operator module&() const { return *m_impl; }
     shared_ptr<module> operator->() const { return m_impl; }
 
+    property_base* find_property(const string& name) const;
+
+    template <typename T, size_t N = 1>
+    const property<T, N>* find_property(const string& name) const;
+
+    template <typename T, size_t N = 1>
+    T get_property(const string& name, size_t idx = 0) const;
+
+    template <typename T, size_t N = 1>
+    T get_property_or_default(const string& name, const T& defval,
+                              size_t idx = 0) const;
+
     static bool define(const string& kind, create_fn fn);
     static void list_models(vector<string>& models);
     static void list_models(ostream& os);
@@ -46,6 +60,40 @@ private:
     static module* create(const string& kind, const sc_module_name& name);
     static std::map<string, create_fn>& modeldb();
 };
+
+template <typename T, size_t N>
+const property<T, N>* model::find_property(const string& name) const {
+    property_base* prop = find_property(name);
+    if (prop == nullptr)
+        return nullptr;
+
+    auto* typed = dynamic_cast<const property<T, N>*>(prop);
+    VCML_REPORT_ON(!typed, "property %s has type %s[%zu], requested %s[%zu]",
+                   prop->fullname(), prop->type(), prop->count(),
+                   type_name<T>(), N);
+    return typed;
+}
+
+template <typename T, size_t N>
+T model::get_property(const string& name, size_t idx) const {
+    const property<T, N>* prop = find_property<T, N>(name);
+    VCML_REPORT_ON(!prop, "%s has no property '%s'", this->name(),
+                   name.c_str());
+    VCML_REPORT_ON(idx >= N, "index %zu out of bounds for property %s[%zu]",
+                   idx, prop->fullname(), N);
+    if constexpr (N == 1)
+        return prop->get();
+    else
+        return prop->get(idx);
+}
+
+template <typename T, size_t N>
+T model::get_property_or_default(const string& name, const T& defval,
+                                 size_t idx) const {
+    if (find_property<T, N>(name) == nullptr)
+        return defval;
+    return get_property<T, N>(name, idx);
+}
 
 } // namespace vcml
 
