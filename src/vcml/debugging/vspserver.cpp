@@ -930,6 +930,7 @@ void vspserver::update() {
 
     if (!stopped && is_suspending()) {
         m_duration = until < sc_max_time() ? until - sc_time_stamp() : until;
+        sc_pause();
         resume();
     }
 }
