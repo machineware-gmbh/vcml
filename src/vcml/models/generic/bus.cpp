@@ -90,6 +90,24 @@ const bus_mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
     return m_default;
 }
 
+bool bus::is_default(const bus_mapping& m) const {
+    return &m == &m_default;
+}
+
+range bus::default_window(size_t port, u64 addr) const {
+    range window(0ull, ~0ull);
+    for (const bus_mapping& m : m_mappings) {
+        if (m.source != port && m.source != bus_mapping::SOURCE_ANY)
+            continue;
+        if (m.addr.end < addr && m.addr.end >= window.start)
+            window.start = m.addr.end + 1;
+        if (m.addr.start > addr && m.addr.start <= window.end)
+            window.end = m.addr.start - 1;
+    }
+
+    return window;
+}
+
 void bus::handle_bus_error(tlm_generic_payload& tx) const {
     if (lenient) {
         if (tx.is_read())
@@ -193,29 +211,36 @@ bool bus::get_direct_mem_ptr(tlm_target_socket& origin,
     bool use_dmi = out[m.target]->get_direct_mem_ptr(tx, dmi);
     tx.set_address(addr);
 
-    if (use_dmi) {
-        u64 s = dmi.get_start_address() + m.addr.start - m.offset;
-        u64 e = dmi.get_end_address() + m.addr.start - m.offset;
+    if (!use_dmi)
+        return false;
 
-        // check if target gave more DMI space than it has address space
-        if (s < m.addr.start) {
-            log_warn("truncating DMI start from 0x%016llx to 0x%016llx", s,
-                     m.addr.start);
-            dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (m.addr.start - s));
-            s = m.addr.start;
-        }
+    // default routes must not grant DMI over other mapped regions
+    bool def = is_default(m);
+    range limit = def ? default_window(in.index_of(origin), addr) : m.addr;
 
-        if (e > m.addr.end) {
-            log_warn("truncating DMI end from 0x%016llx to 0x%016llx", e,
-                     m.addr.end);
-            e = m.addr.end;
-        }
+    // clip in target address space to avoid wrapping around
+    u64 span = limit.end - m.addr.start;
+    u64 lo = m.offset + (limit.start - m.addr.start);
+    u64 hi = span > ~0ull - m.offset ? ~0ull : m.offset + span;
+    u64 s = dmi.get_start_address();
+    u64 e = dmi.get_end_address();
 
-        dmi.set_start_address(s);
-        dmi.set_end_address(e);
+    if (s < lo) {
+        if (!def)
+            log_warn("clipping DMI start from 0x%016llx to 0x%016llx", s, lo);
+        dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (lo - s));
+        s = lo;
     }
 
-    return use_dmi;
+    if (e > hi) {
+        if (!def)
+            log_warn("clipping DMI end from 0x%016llx to 0x%016llx", e, hi);
+        e = hi;
+    }
+
+    dmi.set_start_address(s - m.offset + m.addr.start);
+    dmi.set_end_address(e - m.offset + m.addr.start);
+    return true;
 }
 
 void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,

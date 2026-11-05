@@ -54,6 +54,8 @@ private:
     bus_mapping m_default;
 
     const bus_mapping& lookup(tlm_target_socket& src, const range& addr) const;
+    bool is_default(const bus_mapping& m) const;
+    range default_window(size_t port, u64 addr) const;
     void handle_bus_error(tlm_generic_payload& tx) const;
 
     void do_mmap(ostream& os);
