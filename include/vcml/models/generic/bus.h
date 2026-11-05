@@ -51,7 +51,7 @@ private:
     const char* source_peer_name(size_t port) const;
 
     set<bus_mapping> m_mappings;
-    bus_mapping m_default;
+    std::map<size_t, bus_mapping> m_defaults;
 
     const bus_mapping& lookup(tlm_target_socket& src, const range& addr) const;
     bool is_default(const bus_mapping& m) const;
@@ -95,7 +95,8 @@ public:
     void map(size_t target, u64 lo, u64 hi, u64 offset);
     void map(size_t target, u64 lo, u64 hi, u64 offset, size_t source);
 
-    void map_default(size_t target, u64 offset = 0);
+    void map_default(size_t target, u64 offset = 0,
+                     size_t source = bus_mapping::SOURCE_ANY);
 
     void stub(const range& addr, tlm_response_status rs = TLM_OK_RESPONSE);
     void stub(u64 lo, u64 hi, tlm_response_status rs = TLM_OK_RESPONSE);
@@ -126,6 +127,8 @@ public:
 
     template <typename SOCKET>
     size_t bind_default(SOCKET& s, u64 offset = 0);
+    template <typename SOURCE, typename TARGET>
+    size_t bind_default(SOURCE& s, TARGET& d, u64 offset = 0);
 
     bus() = delete;
     bus(const sc_module_name& nm);
@@ -133,6 +136,7 @@ public:
     VCML_KIND(generic::bus);
 
     optional<bus_mapping> get_default_mapping() const;
+    optional<bus_mapping> get_default_mapping(size_t source) const;
     vector<bus_mapping> get_all_mappings() const;
     vector<bus_mapping> get_source_mappings(size_t source) const;
     vector<bus_mapping> get_target_mappings(size_t target) const;
@@ -257,6 +261,20 @@ size_t bus::bind_default(TARGET& target, u64 offset) {
     out[port].bind(target);
     m_target_peers[port] = &target;
     return port;
+}
+
+template <typename SOURCE, typename TARGET>
+size_t bus::bind_default(SOURCE& source, TARGET& target, u64 offset) {
+    size_t source_port = bind(source);
+    size_t target_port = find_target_port(target);
+    if (target_port == bus_mapping::TARGET_NONE) {
+        target_port = out.next_index();
+        out[target_port].bind(target);
+        m_target_peers[target_port] = &target;
+    }
+
+    map_default(target_port, offset, source_port);
+    return target_port;
 }
 
 } // namespace generic

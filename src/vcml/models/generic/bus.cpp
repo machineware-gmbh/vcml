@@ -87,11 +87,25 @@ const bus_mapping& bus::lookup(tlm_target_socket& s, const range& mem) const {
             return *rit;
     }
 
-    return m_default;
+    auto def = m_defaults.find(port);
+    if (def == m_defaults.end())
+        def = m_defaults.find(bus_mapping::SOURCE_ANY);
+    if (def != m_defaults.end())
+        return def->second;
+
+    static const bus_mapping none{
+        bus_mapping::TARGET_NONE,
+        bus_mapping::SOURCE_ANY,
+        range(0ull, ~0ull),
+        0,
+    };
+
+    return none;
 }
 
 bool bus::is_default(const bus_mapping& m) const {
-    return &m == &m_default;
+    auto it = m_defaults.find(m.source);
+    return it != m_defaults.end() && &m == &it->second;
 }
 
 range bus::default_window(size_t port, u64 addr) const {
@@ -152,8 +166,11 @@ void bus::do_mmap(ostream& os) {
             os << " (via " << source_peer_name(m.source) << " only)";
     }
 
-    if (m_default.target != bus_mapping::TARGET_NONE)
-        os << "\ndefault route -> " << target_peer_name(m_default.target);
+    for (const auto& [source, m] : m_defaults) {
+        os << "\ndefault route -> " << target_peer_name(m.target);
+        if (source != bus_mapping::SOURCE_ANY)
+            os << " (via " << source_peer_name(source) << " only)";
+    }
 }
 
 bool bus::cmd_mmap(const vector<string>& args, ostream& os) {
@@ -247,14 +264,17 @@ void bus::invalidate_direct_mem_ptr(tlm_initiator_socket& origin, u64 start,
                                     u64 end) {
     VCML_ERROR_ON(start > end, "invalid dmi invalidation request");
     size_t port = out.index_of(origin);
-    if (port == m_default.target) {
-        u64 s = start > m_default.offset ? start - m_default.offset : 0;
-        u64 e = end != ~0ull ? end - m_default.offset : end;
+    for (const auto& [source, m] : m_defaults) {
+        if (m.target != port || end < m.offset)
+            continue;
 
-        for (auto& [id, port] : in)
-            (*port)->invalidate_direct_mem_ptr(s, e);
+        u64 s = start > m.offset ? start - m.offset : 0;
+        u64 e = end != ~0ull ? end - m.offset : end;
 
-        return;
+        for (auto& [id, socket] : in) {
+            if (source == bus_mapping::SOURCE_ANY || id == source)
+                (*socket)->invalidate_direct_mem_ptr(s, e);
+        }
     }
 
     for (const bus_mapping& m : m_mappings) {
@@ -306,27 +326,33 @@ void bus::map(size_t target, const range& addr, u64 offset, size_t source) {
     m_mappings.insert(m);
 }
 
-void bus::map_default(size_t target, u64 offset) {
-    if (m_default.target != bus_mapping::TARGET_NONE) {
-        VCML_REPORT("default route already mapped to '%s'",
-                    target_peer_name(m_default.target));
+void bus::map_default(size_t target, u64 offset, size_t source) {
+    auto it = m_defaults.find(source);
+    if (it != m_defaults.end()) {
+        if (source == bus_mapping::SOURCE_ANY) {
+            VCML_REPORT("default route already mapped to '%s'",
+                        target_peer_name(it->second.target));
+        }
+
+        VCML_REPORT("default route of '%s' already mapped to '%s'",
+                    source_peer_name(source),
+                    target_peer_name(it->second.target));
     }
 
-    m_default.target = target;
-    m_default.offset = offset;
+    bus_mapping& m = m_defaults[source];
+    m.target = target;
+    m.source = source;
+    m.addr = range(0ull, ~0ull);
+    m.offset = offset;
 }
 
 bus::bus(const sc_module_name& nm):
     component(nm),
     m_mappings(),
-    m_default(),
+    m_defaults(),
     lenient("lenient", false),
     in("in"),
     out("out") {
-    m_default.target = -1;
-    m_default.source = -1;
-    m_default.addr = range(0ull, ~0ull);
-    m_default.offset = 0;
     register_command("mmap", 0, &bus::cmd_mmap, "shows the bus memory map");
 }
 
@@ -335,18 +361,25 @@ bus::~bus() {
 }
 
 optional<bus_mapping> bus::get_default_mapping() const {
-    if (m_default.target != bus_mapping::TARGET_NONE)
-        return m_default;
+    return get_default_mapping(bus_mapping::SOURCE_ANY);
+}
+
+optional<bus_mapping> bus::get_default_mapping(size_t source) const {
+    auto it = m_defaults.find(source);
+    if (it == m_defaults.end())
+        it = m_defaults.find(bus_mapping::SOURCE_ANY);
+    if (it != m_defaults.end())
+        return it->second;
     return std::nullopt;
 }
 
 vector<bus_mapping> bus::get_all_mappings() const {
     vector<bus_mapping> mm;
-    mm.reserve(m_mappings.size());
+    mm.reserve(m_mappings.size() + m_defaults.size());
     for (const auto& map : m_mappings)
         mm.push_back(map);
-    if (auto defmap = get_default_mapping())
-        mm.push_back(*defmap);
+    for (const auto& [source, map] : m_defaults)
+        mm.push_back(map);
     return mm;
 }
 
@@ -360,8 +393,8 @@ vector<bus_mapping> bus::get_source_mappings(size_t source) const {
             mm.push_back(map);
     }
 
-    if (m_default.target != bus_mapping::TARGET_NONE)
-        mm.push_back(m_default);
+    if (auto defmap = get_default_mapping(source))
+        mm.push_back(*defmap);
 
     return mm;
 }
@@ -376,8 +409,10 @@ vector<bus_mapping> bus::get_target_mappings(size_t target) const {
             mm.push_back(map);
     }
 
-    if (m_default.target == target)
-        mm.push_back(m_default);
+    for (const auto& [source, map] : m_defaults) {
+        if (map.target == target)
+            mm.push_back(map);
+    }
 
     return mm;
 }

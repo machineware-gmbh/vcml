@@ -20,6 +20,7 @@ macro(model_test test)
 endmacro()
 
 model_test("generic_bus")
+model_test("generic_bus_default")
 model_test("generic_memory")
 model_test("generic_fbdev")
 model_test("sd_sdhci")
