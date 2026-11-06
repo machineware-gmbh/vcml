@@ -29,6 +29,7 @@ private:
 
     string m_announce;
     sc_time m_duration;
+    atomic<bool> m_finished;
 
     mutable mutex m_clients_mtx;
     unordered_map<int, shared_ptr<vspclient>> m_clients;
@@ -80,6 +81,9 @@ public:
     void update();
 
     bool is_running() const { return !is_suspending(); }
+    bool is_finished() const { return m_finished; }
+
+    void linger();
 
     vector<shared_ptr<vspclient>> all_clients() const;
     shared_ptr<vspclient> find_client(int client) const;

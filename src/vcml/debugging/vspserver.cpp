@@ -801,6 +801,9 @@ void vspserver::notify_step_complete() {
 }
 
 bool vspserver::check_suspension_point() {
+    if (m_finished)
+        return !all_clients().empty();
+
     bool soft_stop = false;
 
     for (const auto& client : all_clients())
@@ -821,6 +824,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     suspender("vspserver"),
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%u", mwr::getpid())),
     m_duration(),
+    m_finished(false),
     m_clients_mtx(),
     m_clients() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
@@ -908,9 +912,27 @@ void vspserver::cleanup() {
     }
 }
 
+void vspserver::linger() {
+    m_finished = true;
+
+    size_t n = all_clients().size();
+    if (n == 0 || suspender::quitting())
+        return;
+
+    log_info("simulation finished, waiting for %zu vspclient(s) to leave", n);
+    suspend();
+    suspender::handle_requests();
+}
+
 void vspserver::update() {
     if (!sim_running())
         return;
+
+    if (m_finished) {
+        if (all_clients().empty())
+            resume();
+        return;
+    }
 
     m_duration = sc_max_time();
 

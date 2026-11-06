@@ -12,6 +12,7 @@
 #include "vcml/core/systemc.h"
 
 #include "vcml/debugging/suspender.h"
+#include "vcml/debugging/vspserver.h"
 #include "vcml/protocols/tlm_sbi.h"
 
 namespace vcml {
@@ -555,6 +556,9 @@ protected:
     }
 
     virtual void end_of_simulation() override {
+        if (auto* session = debugging::vspserver::instance())
+            session->linger();
+
         debugging::suspender::quit();
         sim_running = false;
 

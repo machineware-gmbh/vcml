@@ -296,10 +296,9 @@ TEST(vspserver, events) {
             }
 
             // the server pauses the simulation when its last client leaves,
-            // so stay connected until the simulation has ended
-            wait_for([]() {
-                return sc_core::sc_get_status() == sc_core::SC_STOPPED;
-            });
+            // so stay connected until the simulation has finished; it then
+            // lingers until we disconnect
+            EXPECT_TRUE(wait_finished(vsp));
         });
 
         session.start();

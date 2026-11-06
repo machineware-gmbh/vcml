@@ -42,6 +42,7 @@ public:
     static suspender* current();
     static void current(vector<suspender*>& v);
     static void quit();
+    static bool quitting();
     static bool simulation_suspended();
     static bool suspenders_waiting();
     static void handle_requests();

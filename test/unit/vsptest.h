@@ -115,6 +115,12 @@ inline bool wait_for(FN cond, size_t timeoutms = 5000) {
     return cond();
 }
 
+inline bool wait_finished(test_vsp_client& vsp) {
+    return wait_for([&]() {
+        return starts_with(vsp.command("status"), "OK,stopped:finished");
+    });
+}
+
 inline bool has_client(vspserver& session, int id) {
     try {
         return session.find_client(id) != nullptr;

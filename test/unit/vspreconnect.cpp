@@ -50,11 +50,10 @@ static void run_client(vspserver& session, test_vsp_cpu& cpu) {
     EXPECT_TRUE(starts_with(status, "OK,stopped:step")) << status;
     EXPECT_EQ(status_time(status), start + 1000) << status;
 
-    // let the simulation finish, stay connected until it has ended
+    // let the simulation finish, it lingers until we disconnect
     cpu.done = true;
     EXPECT_EQ(vsp.command("resume"), "OK");
-    EXPECT_TRUE(wait_for(
-        [&]() { return sc_core::sc_get_status() == sc_core::SC_STOPPED; }));
+    EXPECT_TRUE(wait_finished(vsp));
 }
 
 TEST(vspserver, reconnect) {

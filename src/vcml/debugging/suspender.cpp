@@ -278,6 +278,10 @@ void suspender::quit() {
     suspend_manager::instance().quit();
 }
 
+bool suspender::quitting() {
+    return suspend_manager::instance().is_quitting;
+}
+
 bool suspender::simulation_suspended() {
     return suspend_manager::instance().is_suspended;
 }

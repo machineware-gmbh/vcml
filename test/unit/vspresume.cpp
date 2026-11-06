@@ -77,12 +77,10 @@ TEST(vspserver, stop_before_resume_completes) {
 
         // end the simulation, whether it is still running or not; stay
         // connected, otherwise the server pauses it when its last client
-        // leaves
+        // leaves; the simulation then lingers until we disconnect
         cpu.done = true;
         vsp.command("resume");
-        EXPECT_TRUE(wait_for([&]() {
-            return sc_core::sc_get_status() == sc_core::SC_STOPPED;
-        }));
+        EXPECT_TRUE(wait_finished(vsp));
     });
 
     session.start();

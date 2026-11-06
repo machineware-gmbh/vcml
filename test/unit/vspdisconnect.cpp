@@ -54,10 +54,9 @@ TEST(vspserver, disconnect) {
         cpu.done = true;
 
         // stay connected until the end, otherwise the server pauses the
-        // simulation when its last client leaves
-        EXPECT_TRUE(wait_for([&]() {
-            return sc_core::sc_get_status() == sc_core::SC_STOPPED;
-        }));
+        // simulation when its last client leaves; the simulation then
+        // lingers until we disconnect
+        EXPECT_TRUE(wait_finished(stay));
     });
 
     session.start();

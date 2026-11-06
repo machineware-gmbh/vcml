@@ -181,7 +181,8 @@ string vspclient::handle_status(const string& command) {
     u64 delta = sc_delta_count();
     u64 nanos = time_to_ns(sc_time_stamp());
 
-    string status = is_stopped() ? ("stopped:" + m_stop_reason) : "running";
+    string reason = m_server.is_finished() ? "finished" : m_stop_reason;
+    string status = is_stopped() ? ("stopped:" + reason) : "running";
     string resp = mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
 
     if (has_subscriptions())
@@ -191,6 +192,9 @@ string vspclient::handle_status(const string& command) {
 }
 
 string vspclient::handle_resume(const string& command) {
+    if (m_server.is_finished())
+        return "E,simulation finished";
+
     if (!is_stopped())
         return "E,simulation running";
 
@@ -205,6 +209,9 @@ string vspclient::handle_resume(const string& command) {
 }
 
 string vspclient::handle_step(const string& command) {
+    if (m_server.is_finished())
+        return "E,simulation finished";
+
     if (!is_stopped())
         return "E,simulation running";
 
