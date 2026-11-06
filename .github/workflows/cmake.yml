@@ -48,9 +48,7 @@ jobs:
         submodules: 'recursive'
 
     - name: Setup Dependencies
-      run: |
-        sudo apt-get update -y -qq
-        sudo apt-get install libelf-dev libsdl2-dev liblua5.3-dev libslirp-dev libusb-1.0-0-dev ninja-build
+      uses: ./.github/actions/setup-deps
 
     - name: Cache SystemC
       id: cache-systemc
