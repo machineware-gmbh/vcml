@@ -650,13 +650,128 @@ string vspserver::handle_vread(int client, const string& cmd) {
     if (size > 4096)
         return mkstr("E,too much data requested %llu / 4096", size);
 
+    bool with_status = args.size() > 4 && args[4] == "status";
+
     vector<u8> data(size);
-    tgt->read_vmem_dbg(addr, data.data(), data.size());
+    vector<vmem_status> status(size);
+    tgt->read_vmem_dbg(addr, data.data(), data.size(), status.data());
 
     stringstream ss;
     ss << "OK";
-    for (u8 ch : data)
-        ss << mkstr(",0x%02hhx", ch);
+    for (size_t i = 0; i < data.size(); i++) {
+        if (!with_status)
+            ss << mkstr(",0x%02hhx", data[i]);
+        else if (status[i] == VMEM_MMU_FAULT)
+            ss << ",--";
+        else if (status[i] == VMEM_BUS_ERROR)
+            ss << ",**";
+        else
+            ss << mkstr(",%02hhx", data[i]);
+    }
+
+    return ss.str();
+}
+
+string vspserver::handle_lsym(int client, const string& cmd) {
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    const symtab& syms = tgt->symbols();
+    stringstream ss;
+    ss << "OK";
+    for (const auto& func : syms.functions()) {
+        ss << mkstr(",F,0x%llx,%llu,", func.virt_addr(), func.size())
+           << escape(func.name(), ",");
+    }
+    for (const auto& obj : syms.objects()) {
+        ss << mkstr(",O,0x%llx,%llu,", obj.virt_addr(), obj.size())
+           << escape(obj.name(), ",");
+    }
+
+    return ss.str();
+}
+
+static string symbol_fields(const symbol* sym, u64 addr) {
+    if (sym == nullptr)
+        return ",,";
+    return mkstr(",%s,0x%llx", escape(sym->name(), ",").c_str(),
+                 addr - sym->virt_addr());
+}
+
+string vspserver::handle_disas(int client, const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 4)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 addr = from_string<u64>(args[2]);
+    u64 count = from_string<u64>(args[3]);
+    if (count > 1024)
+        return mkstr("E,too many instructions requested %llu / 1024", count);
+
+    vector<disassembly> insns;
+    tgt->disassemble(addr, count, insns);
+    if (insns.empty() && count > 0)
+        return "E,disassembler reported error";
+
+    u64 pgsz = 0;
+    bool paged = tgt->page_size(pgsz);
+
+    stringstream ss;
+    ss << "OK";
+    for (const auto& insn : insns) {
+        u64 phys = insn.addr;
+        ss << mkstr(",0x%llx,", insn.addr);
+        if (!paged || tgt->virt_to_phys(insn.addr, phys))
+            ss << mkstr("0x%llx", phys);
+
+        ss << ",";
+        for (u64 i = 0; i < insn.size; i++)
+            ss << mkstr("%02hhx", insn.insn[i]);
+
+        ss << symbol_fields(insn.sym, insn.addr) << ","
+           << escape(insn.code, ",");
+    }
+
+    return ss.str();
+}
+
+string vspserver::handle_stack(int client, const string& cmd) {
+    if (is_running())
+        return "E,simulation running";
+
+    vector<string> args = split(cmd, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    target* tgt = target::find(args[1]);
+    if (tgt == nullptr)
+        return mkstr("E,no such target: %s", args[1].c_str());
+
+    u64 limit = args.size() > 2 ? from_string<u64>(args[2]) : 64;
+
+    vector<stackframe> frames;
+    tgt->stacktrace(frames, limit);
+
+    stringstream ss;
+    ss << "OK";
+    for (const auto& frame : frames) {
+        ss << mkstr(",0x%llx,0x%llx", frame.program_counter,
+                    frame.frame_pointer)
+           << symbol_fields(frame.sym, frame.program_counter);
+    }
+
     return ss.str();
 }
 
@@ -852,6 +967,9 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("setr", &vspserver::handle_setr);
     register_handler("vapa", &vspserver::handle_vapa);
     register_handler("vread", &vspserver::handle_vread);
+    register_handler("lsym", &vspserver::handle_lsym);
+    register_handler("disas", &vspserver::handle_disas);
+    register_handler("stack", &vspserver::handle_stack);
     register_handler("vwrite", &vspserver::handle_vwrite);
     register_handler("pread", &vspserver::handle_pread);
     register_handler("pwrite", &vspserver::handle_pwrite);

@@ -26,6 +26,12 @@ namespace debugging {
 
 class target;
 
+enum vmem_status : u8 {
+    VMEM_OK = 0,
+    VMEM_MMU_FAULT = 1,
+    VMEM_BUS_ERROR = 2,
+};
+
 struct cpureg {
     size_t regno;
     string name;
@@ -196,7 +202,8 @@ public:
     virtual u64 read_pmem_dbg(u64 addr, void* buffer, u64 size);
     virtual u64 write_pmem_dbg(u64 addr, const void* buffer, u64 size);
 
-    virtual u64 read_vmem_dbg(u64 addr, void* buffer, u64 size);
+    virtual u64 read_vmem_dbg(u64 addr, void* buffer, u64 size,
+                              vmem_status* status = nullptr);
     virtual u64 write_vmem_dbg(u64 addr, const void* buffer, u64 size);
 
     virtual bool page_size(u64& size);

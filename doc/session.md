@@ -63,7 +63,10 @@ separator, it must be escaped using a backslash (in C strings, the backslash
 must also be escaped, resulting in the character sequence `\\,`).
 Response packets return their data in comma-separated lists as well, with the
 first element always indicating response status: `OK` for success and `E` for
-errors.
+errors. Commands the simulator does not know are answered with an empty
+response. Clients can use this to detect commands that older simulators do not
+support yet and fall back to alternatives, such as the module commands of a
+target.
 
 VSP commands can be divided into two groups currently, with more likely being
 added in the future. General simulation commands control the global SystemC
@@ -264,9 +267,19 @@ the currently active translation regime.
 
 #### Read Virtual Memory
 Performs a debug read access using the provided virtual address and returns
-the requested number of bytes.
+the requested number of bytes, each formatted as `0x<hex>`. Bytes that cannot
+be read are returned as `0x00`. At most 4096 bytes can be read at once.
 * Command: `$vread,<target-name>,<virtual-address>,<number-of-bytes>#**`
 * Response: `OK,<byte0>,<byte1>,<byte2>,...#**`
+
+With the optional `status` argument, every byte is instead returned as two hex
+digits without `0x`, or as `--` if its virtual address does not translate, or
+as `**` if it translates, but the bus reported an error. Errors are reported
+for entire chunks of a page: if part of a chunk cannot be read, all of its
+bytes are reported as `**`. Simulators that do not support `status` ignore it
+and answer in the format above, so clients must accept both.
+* Command: `$vread,<target-name>,<virtual-address>,<number-of-bytes>,status#**`
+* Response: `OK,<byte0>,<byte1>,<byte2>,...#**`, e.g. `OK,fc,fd,--,--#**`
 
 #### Write Virtual Memory
 Performs a debug write access using the provided virtual address and stores
@@ -291,6 +304,61 @@ Retrieves the architecture string defined by the target. The response holds the 
 string or an error if something went wrong:
 * Command: `$arch,<target-name>#**`
 * Response: `OK,<architecture>#**`
+
+#### Target Info
+Retrieves the core id, program counter, link register, stack pointer and
+frame pointer of the target, independent of the names the architecture uses
+for these registers. All values are hexadecimal. Targets that do not have a
+register report `0x0` for it.
+* Command: `$tinfo,<target-name>#**`
+* Response: `OK,id:<id>,pc:<pc>,lr:<lr>,sp:<sp>,fp:<fp>#**`
+
+#### List Symbols
+Lists the symbols the target knows, e.g. from the ELF file given via its
+`symbols` property, with four fields per symbol: its kind, `F` for functions
+and `O` for objects, its hexadecimal address, its size in bytes (decimal, `0`
+if unknown) and its name. Functions are listed before objects. Unlike most
+target commands, this command can also be used while the simulation is
+running.
+* Command: `$lsym,<target-name>#**`
+* Response: `OK,<kind>,<address>,<size>,<name>[,kind1,address1,size1,name1]...#**`,
+  e.g. `OK,F,0x80000000,32,main,O,0x80001000,4,counter#**`
+
+Simulators without this command answer it with an empty response. Clients can
+then execute the `lsym` module command of the target instead, which lists the
+symbols as text, but without their sizes.
+
+#### Disassemble
+Disassembles up to `<count>` instructions from the given virtual address, with
+six fields per instruction: its hexadecimal virtual address, its hexadecimal
+physical address (empty if the address does not translate), its bytes as hex
+digits in memory order, the name of the function it belongs to and its
+hexadecimal offset into it (both empty if there is none) and finally its
+disassembly. The response holds fewer instructions if the disassembler stops
+early, and an error if not even the first instruction can be disassembled. At
+most 1024 instructions can be disassembled at once.
+* Command: `$disas,<target-name>,<virtual-address>,<count>#**`
+* Response: `OK,<virt>,<phys>,<bytes>,<symbol>,<offset>,<code>[,virt1,...]...#**`,
+  e.g. `OK,0x80000000,0x80000000,13050000,main,0x0,li a0\, 0#**`
+
+Simulators without this command answer it with an empty response. Clients can
+then execute the `disas` module command of the target instead, which takes an
+address range and prints the instructions as text.
+
+#### Stack Trace
+Returns the call stack of the target, innermost frame first, with four fields
+per frame: its hexadecimal program counter and frame pointer, the name of the
+function the program counter belongs to and its hexadecimal offset into it
+(both empty if there is none). The optional `[limit]` gives the maximum number
+of frames, 64 by default. Targets that cannot unwind their stack report only
+the innermost frame.
+* Command: `$stack,<target-name>[,limit]#**`
+* Response: `OK,<pc>,<fp>,<symbol>,<offset>[,pc1,fp1,symbol1,offset1]...#**`,
+  e.g. `OK,0x80000010,0x8000fff0,main,0x10#**`
+
+Simulators without this command answer it with an empty response. Clients can
+then execute the `stack` module command of the target instead, which prints
+the frames as text, but without their frame pointers.
 
 ### Event Commands
 Clients can subscribe to events published by objects in the simulation, such
@@ -384,4 +452,4 @@ build the payload if `has_subscribers()` returns `true`, so that there is no
 overhead while nobody is subscribed.
 
 ----
-Documentation updated October 2026
+Documentation updated November 2026

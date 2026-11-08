@@ -553,25 +553,37 @@ u64 target::write_pmem_dbg(u64 addr, const void* buffer, u64 size) {
     return 0; // to be overloaded
 }
 
-u64 target::read_vmem_dbg(u64 addr, void* buffer, u64 size) {
+u64 target::read_vmem_dbg(u64 addr, void* buffer, u64 size,
+                          vmem_status* status) {
     u64 pgsz = 0;
-    if (!page_size(pgsz))
-        return read_pmem_dbg(addr, buffer, size);
+    bool paged = page_size(pgsz) && pgsz > 0;
 
     u64 count = 0;
     u64 end = addr + size;
     u8* dest = (u8*)buffer;
 
     while (addr < end) {
-        u64 pa = 0;
-        u64 todo = min(end - addr, pgsz - (addr % pgsz));
-        if (virt_to_phys(addr, pa))
-            count += read_pmem_dbg(pa, dest, todo);
+        u64 pa = addr;
+        u64 todo = paged ? min(end - addr, pgsz - (addr % pgsz)) : end - addr;
+
+        vmem_status res = VMEM_OK;
+        if (paged && !virt_to_phys(addr, pa))
+            res = VMEM_MMU_FAULT;
+        else if (read_pmem_dbg(pa, dest, todo) != todo)
+            res = VMEM_BUS_ERROR;
+
+        if (res == VMEM_OK)
+            count += todo;
         else
-            memset(buffer, 0xee, todo);
+            memset(dest, 0, todo);
+
+        if (status)
+            std::fill(status, status + todo, res);
 
         addr += todo;
         dest += todo;
+        if (status)
+            status += todo;
     }
 
     return count;
