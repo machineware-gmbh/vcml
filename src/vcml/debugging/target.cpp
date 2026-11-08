@@ -673,8 +673,14 @@ bool target::disassemble(u64 addr, u64 count, vector<disassembly>& s) {
         disassembly disas = {};
         disas.addr = addr;
 
-        const u64 size = sizeof(disas.insn);
-        if (read_vmem_dbg(addr, disas.insn, size) != size)
+        u64 size = sizeof(disas.insn);
+        vmem_status status[sizeof(disas.insn)];
+        read_vmem_dbg(addr, disas.insn, size, status);
+
+        u64 valid = 0;
+        while (valid < size && status[valid] == VMEM_OK)
+            valid++;
+        if (valid == 0)
             break;
 
         if (!disassemble(disas.insn, addr, disas.code))
@@ -683,6 +689,8 @@ bool target::disassemble(u64 addr, u64 count, vector<disassembly>& s) {
         disas.size = addr - disas.addr;
         VCML_ERROR_ON(disas.size == 0, "disassembler address stuck");
         VCML_ERROR_ON(disas.size > size, "instruction size exceeds limit");
+        if (disas.size > valid)
+            break;
 
         if (disas.size < size)
             memset(disas.insn + disas.size, 0, size - disas.size);

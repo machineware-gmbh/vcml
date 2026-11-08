@@ -145,6 +145,11 @@ TEST(vspserver, memory_and_symbols) {
                       "OK,0x80,0x80,8081,,,op 80\\,81");
             EXPECT_TRUE(starts_with(vsp.command("disas,tgt,0x100,1"), "E,"));
 
+            // up to the page that does not translate
+            EXPECT_EQ(vsp.command("disas,tgt,0xfc,4"),
+                      "OK,0xfc,0xfc,fcfd,,,op fc\\,fd,"
+                      "0xfe,0xfe,feff,,,op fe\\,ff");
+
             // pc, fp, symbol and offset of each frame
             EXPECT_EQ(vsp.command("stack,tgt"),
                       "OK,0x44,0x3f0,main,0x4,0x80,0x3f8,,");
