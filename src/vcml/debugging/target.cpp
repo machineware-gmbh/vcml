@@ -555,16 +555,24 @@ u64 target::write_pmem_dbg(u64 addr, const void* buffer, u64 size) {
 
 u64 target::read_vmem_dbg(u64 addr, void* buffer, u64 size,
                           vmem_status* status) {
+    if (!size)
+        return 0;
+
     u64 pgsz = 0;
     bool paged = page_size(pgsz) && pgsz > 0;
 
-    u64 count = 0;
-    u64 end = addr + size;
     u8* dest = (u8*)buffer;
+    u64 left = min(~addr, size - 1) + 1;
+    if (left < size) {
+        memset(dest + left, 0, size - left);
+        if (status)
+            std::fill(status + left, status + size, VMEM_BUS_ERROR);
+    }
 
-    while (addr < end) {
+    u64 count = 0;
+    while (left > 0) {
         u64 pa = addr;
-        u64 todo = paged ? min(end - addr, pgsz - (addr % pgsz)) : end - addr;
+        u64 todo = paged ? min(left, pgsz - (addr % pgsz)) : left;
 
         vmem_status res = VMEM_OK;
         if (paged && !virt_to_phys(addr, pa))
@@ -582,6 +590,8 @@ u64 target::read_vmem_dbg(u64 addr, void* buffer, u64 size,
 
         addr += todo;
         dest += todo;
+        left -= todo;
+
         if (status)
             status += todo;
     }
@@ -590,22 +600,24 @@ u64 target::read_vmem_dbg(u64 addr, void* buffer, u64 size,
 }
 
 u64 target::write_vmem_dbg(u64 addr, const void* buffer, u64 size) {
+    if (!size)
+        return 0;
+
     u64 pgsz = 0;
-    if (!page_size(pgsz))
-        return write_pmem_dbg(addr, buffer, size);
+    bool paged = page_size(pgsz) && pgsz > 0;
+    const u8* src = (const u8*)buffer;
+    u64 left = min(~addr, size - 1) + 1;
 
     u64 count = 0;
-    u64 end = addr + size;
-    const u8* dest = (const u8*)buffer;
-
-    while (addr < end) {
-        u64 pa = 0;
-        u64 todo = min(end - addr, pgsz - (addr % pgsz));
-        if (virt_to_phys(addr, pa))
-            count += write_pmem_dbg(pa, dest, todo);
+    while (left > 0) {
+        u64 pa = addr;
+        u64 todo = paged ? min(left, pgsz - (addr % pgsz)) : left;
+        if (!paged || virt_to_phys(addr, pa))
+            count += write_pmem_dbg(pa, src, todo);
 
         addr += todo;
-        dest += todo;
+        src += todo;
+        left -= todo;
     }
 
     return count;

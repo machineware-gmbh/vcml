@@ -17,15 +17,29 @@ using debugging::SYMKIND_OBJECT;
 
 // Pages of 0x100 bytes, each byte holding the low byte of its address. Page
 // 1 does not translate, and 0x210..0x21f is a hole in the bus behind page 2.
+// The last 16 bytes of the address space are memory, too.
 class test_mem_target : public module, public debugging::target
 {
 public:
     u8 mem[0x400];
+    u8 top[16];
+
+    static constexpr u64 TOP = ~0ull - sizeof(top) + 1;
+
+    u8* byte_at(u64 addr) {
+        if (addr >= TOP) // TOP is a multiple of sizeof(top)
+            return &top[addr % sizeof(top)];
+        if (addr < sizeof(mem) && (addr < 0x210 || addr >= 0x220))
+            return &mem[addr];
+        return nullptr;
+    }
 
     test_mem_target(const sc_module_name& nm):
         module(nm), debugging::target(static_cast<sc_object&>(*this)) {
         for (size_t i = 0; i < sizeof(mem); i++)
             mem[i] = (u8)i;
+        for (size_t i = 0; i < sizeof(top); i++)
+            top[i] = (u8)(0xf0 + i);
 
         symtab& syms = const_cast<symtab&>(symbols());
         syms.insert(
@@ -49,12 +63,15 @@ public:
     // reads up to the first byte that fails, like a bus read would
     virtual u64 read_pmem_dbg(u64 addr, void* buf, u64 size) override {
         u64 n = 0;
-        for (; n < size && addr + n < sizeof(mem); n++) {
-            if (addr + n >= 0x210 && addr + n < 0x220)
-                break;
-            ((u8*)buf)[n] = mem[addr + n];
-        }
+        for (u8* p; n < size && (p = byte_at(addr + n)); n++)
+            ((u8*)buf)[n] = *p;
+        return n;
+    }
 
+    virtual u64 write_pmem_dbg(u64 addr, const void* buf, u64 size) override {
+        u64 n = 0;
+        for (u8* p; n < size && (p = byte_at(addr + n)); n++)
+            *p = ((const u8*)buf)[n];
         return n;
     }
 
@@ -108,6 +125,24 @@ TEST(vspserver, memory_and_symbols) {
     EXPECT_EQ(tgt.read_vmem_dbg(0x20e, data, 4), 0u);
     EXPECT_EQ(data[0], 0);
     EXPECT_EQ(data[3], 0);
+
+    // up to the last byte of the address space, but not beyond
+    memset(data, 0x55, sizeof(data));
+    EXPECT_EQ(tgt.read_vmem_dbg(~0ull - 1, data, 4, status), 2u);
+    EXPECT_EQ(data[0], 0xfe);
+    EXPECT_EQ(data[1], 0xff);
+    EXPECT_EQ(status[1], debugging::VMEM_OK);
+    EXPECT_EQ(status[2], debugging::VMEM_BUS_ERROR);
+    EXPECT_EQ(status[3], debugging::VMEM_BUS_ERROR);
+    EXPECT_EQ(data[2], 0);
+    EXPECT_EQ(data[3], 0);
+
+    const u8 four[4] = { 0x11, 0x22, 0x33, 0x44 };
+    EXPECT_EQ(tgt.write_vmem_dbg(~0ull - 1, four, 4), 2u);
+    EXPECT_EQ(tgt.top[14], 0x11);
+    EXPECT_EQ(tgt.top[15], 0x22);
+    EXPECT_EQ(tgt.mem[0], 0x00); // not wrapped around
+    EXPECT_EQ(tgt.mem[1], 0x01);
 
     {
         vspserver session("localhost", 0);
