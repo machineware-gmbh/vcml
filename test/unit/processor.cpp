@@ -17,6 +17,19 @@ using namespace ::testing;
 
 const vcml::hz_t DEFCLK = 1 * vcml::kHz;
 
+class callstack_subscriber : public vcml::debugging::vspsubscriber
+{
+public:
+    std::vector<std::string> payloads;
+    virtual void on_event(const sc_core::sc_object& sender,
+                          const std::string& event, const sc_core::sc_time& t,
+                          const std::string& payload) override {
+        EXPECT_STREQ(sender.name(), "CPU");
+        EXPECT_EQ(event, vcml::debugging::VSP_EVENT_CALLSTACK);
+        payloads.push_back(payload);
+    }
+};
+
 class mock_processor : public vcml::processor
 {
 public:
@@ -151,4 +164,23 @@ TEST(processor, processor) {
     EXPECT_CALL(cpu, handle_clock_update(0, DEFCLK)).Times(1);
     cpu.clk_out = DEFCLK;
     sc_core::sc_start(10 * quantum);
+
+    // test callstack events: the default stacktrace yields a single frame
+    // without a symbol, reported by its address (pc is 0 for mock_processor)
+    callstack_subscriber subscr;
+    EXPECT_TRUE(
+        cpu.subscribe_event(vcml::debugging::VSP_EVENT_CALLSTACK, &subscr));
+    ASSERT_EQ(subscr.payloads.size(), 1);
+    EXPECT_EQ(subscr.payloads[0], "{\"pop\":0,\"push\":[\"0x0\"]}");
+
+    EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(10);
+    sc_core::sc_start(10 * quantum);
+    ASSERT_EQ(subscr.payloads.size(), 11);
+    for (size_t i = 1; i < subscr.payloads.size(); i++)
+        EXPECT_EQ(subscr.payloads[i], "{\"pop\":0,\"push\":[]}");
+
+    cpu.unsubscribe_event(vcml::debugging::VSP_EVENT_CALLSTACK, &subscr);
+    EXPECT_CALL(cpu, simulate2(quantum / cycle)).Times(10);
+    sc_core::sc_start(10 * quantum);
+    EXPECT_EQ(subscr.payloads.size(), 11);
 }

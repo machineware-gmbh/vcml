@@ -209,7 +209,7 @@ public:
     clk_initiator_socket& operator=(const clk_target_socket& other);
 
     virtual void on_subscribe(const string& event,
-                              debugging::vspsubscriber* s) const override;
+                              debugging::vspsubscriber* s) override;
 
     sc_time cycle() const { return m_clk.period; }
     sc_time cycles(size_t n) const { return cycle() * n; }
@@ -260,7 +260,7 @@ public:
     sc_time cycles(size_t n) const { return cycle() * n; }
 
     virtual void on_subscribe(const string& event,
-                              debugging::vspsubscriber* s) const override;
+                              debugging::vspsubscriber* s) override;
 
 private:
     clk_host* m_host;

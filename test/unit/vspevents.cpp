@@ -364,3 +364,116 @@ TEST(vspevents, trace) {
     test_harness test("harness");
     sc_core::sc_start();
 }
+
+using vcml::debugging::symbol;
+using vcml::debugging::stackframe;
+using vcml::debugging::VSP_EVENT_CALLSTACK;
+
+class test_callstack_cpu : public sc_object, public debugging::target
+{
+public:
+    vector<symbol> syms;
+    vector<stackframe> frames;
+
+    test_callstack_cpu(const char* nm):
+        sc_object(nm),
+        debugging::target(static_cast<sc_object&>(*this)),
+        syms(),
+        frames() {
+        for (const char* name : { "main", "func", "printf", "puts" })
+            syms.emplace_back(name, debugging::SYMKIND_FUNCTION, ENDIAN_LITTLE,
+                              4, 0, 0);
+    }
+
+    // innermost frame first, just like a real stacktrace
+    void set_callstack(const vector<size_t>& idx) {
+        frames.clear();
+        for (auto it = idx.rbegin(); it != idx.rend(); it++)
+            frames.push_back({ 0, 0, &syms[*it] });
+    }
+
+    // pushes a frame without a symbol on top of the current callstack
+    void push_unknown(u64 pc) { frames.insert(frames.begin(), { pc, 0, 0 }); }
+
+    void sample() { notify_callstack(frames, sc_time_stamp()); }
+
+    virtual void stacktrace(vector<stackframe>& trace, size_t limit) override {
+        trace = frames;
+    }
+};
+
+TEST(vspevents, callstack) {
+    test_callstack_cpu cpu("cpu");
+    mock_subscriber mock;
+    mock_subscriber mock2;
+
+    EXPECT_TRUE(cpu.publishes(VSP_EVENT_CALLSTACK));
+    EXPECT_FALSE(cpu.has_subscribers());
+
+    // no subscribers, nothing to publish
+    cpu.set_callstack({ 0, 1 });
+    cpu.sample();
+
+    // subscribing sends the current callstack once
+    cpu.set_callstack({ 0, 1, 2 });
+    EXPECT_CALL(
+        mock, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                       StrEq(R"({"pop":0,"push":["main","func","printf"]})")))
+        .Times(1);
+    EXPECT_TRUE(cpu.subscribe_event(VSP_EVENT_CALLSTACK, &mock));
+    EXPECT_TRUE(cpu.has_subscribers());
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // every sample sends an update relative to the previous one
+    cpu.set_callstack({ 0, 1, 3 });
+    EXPECT_CALL(mock, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                               StrEq(R"({"pop":1,"push":["puts"]})")))
+        .Times(1);
+    cpu.sample();
+    Mock::VerifyAndClearExpectations(&mock);
+
+    EXPECT_CALL(mock, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                               StrEq(R"({"pop":0,"push":[]})")))
+        .Times(1);
+    cpu.sample();
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // frames without a symbol are reported by their address
+    cpu.push_unknown(0x8000f2a4);
+    EXPECT_CALL(mock, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                               StrEq(R"({"pop":0,"push":["0x8000f2a4"]})")))
+        .Times(1);
+    cpu.sample();
+    Mock::VerifyAndClearExpectations(&mock);
+
+    // late subscriber gets the full callstack, existing ones get synced up
+    cpu.set_callstack({ 0 });
+    EXPECT_CALL(mock, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                               StrEq(R"({"pop":3,"push":[]})")))
+        .Times(1);
+    EXPECT_CALL(mock2, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                                StrEq(R"({"pop":0,"push":["main"]})")))
+        .Times(1);
+    EXPECT_TRUE(cpu.subscribe_event(VSP_EVENT_CALLSTACK, &mock2));
+    Mock::VerifyAndClearExpectations(&mock);
+    Mock::VerifyAndClearExpectations(&mock2);
+
+    cpu.set_callstack({ 0, 2 });
+    EXPECT_CALL(mock, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                               StrEq(R"({"pop":0,"push":["printf"]})")))
+        .Times(1);
+    EXPECT_CALL(mock2, on_event(named("cpu"), StrEq(VSP_EVENT_CALLSTACK), _,
+                                StrEq(R"({"pop":0,"push":["printf"]})")))
+        .Times(1);
+    cpu.sample();
+    Mock::VerifyAndClearExpectations(&mock);
+    Mock::VerifyAndClearExpectations(&mock2);
+
+    // no more events after unsubscribing
+    cpu.unsubscribe_event(VSP_EVENT_CALLSTACK, &mock);
+    cpu.unsubscribe_event(VSP_EVENT_CALLSTACK, &mock2);
+    EXPECT_FALSE(cpu.has_subscribers());
+    EXPECT_CALL(mock, on_event(_, _, _, _)).Times(0);
+    EXPECT_CALL(mock2, on_event(_, _, _, _)).Times(0);
+    cpu.sample();
+}

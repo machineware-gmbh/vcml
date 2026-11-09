@@ -158,7 +158,7 @@ public:
     gpio_state_tracker& operator[](gpio_vector vector);
 
     virtual void on_subscribe(const string& event,
-                              debugging::vspsubscriber* s) const override;
+                              debugging::vspsubscriber* s) override;
 
 private:
     gpio_host* m_host;
@@ -203,7 +203,7 @@ public:
     bool operator!=(const gpio_target_socket& o) const;
 
     virtual void on_subscribe(const string& event,
-                              debugging::vspsubscriber* s) const override;
+                              debugging::vspsubscriber* s) override;
 
 private:
     gpio_host* m_host;

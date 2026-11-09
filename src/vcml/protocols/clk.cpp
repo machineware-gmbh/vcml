@@ -163,7 +163,7 @@ clk_initiator_socket& clk_initiator_socket::operator=(
 }
 
 void clk_initiator_socket::on_subscribe(const string& event,
-                                        debugging::vspsubscriber* s) const {
+                                        debugging::vspsubscriber* s) {
     publish_replay(s, *this, m_clk);
 }
 
@@ -212,7 +212,7 @@ clk_desc clk_target_socket::get() const {
 }
 
 void clk_target_socket::on_subscribe(const string& event,
-                                     debugging::vspsubscriber* s) const {
+                                     debugging::vspsubscriber* s) {
     publish_replay(s, *this, get());
 }
 

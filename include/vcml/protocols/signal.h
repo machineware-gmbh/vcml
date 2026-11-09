@@ -291,7 +291,7 @@ public:
     void on_read(read_fn fn) { m_read_fn = std::move(fn); }
 
     virtual void on_subscribe(const string& event,
-                              debugging::vspsubscriber* s) const override {
+                              debugging::vspsubscriber* s) override {
         signal_payload<T> tx(m_state);
         base_socket::publish_replay<signal_payload_base>(s, *this, tx);
     }
@@ -410,7 +410,7 @@ public:
     }
 
     virtual void on_subscribe(const string& event,
-                              debugging::vspsubscriber* s) const override {
+                              debugging::vspsubscriber* s) override {
         // without a received value there is no state to replay
         if (m_state) {
             signal_payload<T> tx(*m_state);

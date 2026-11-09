@@ -431,6 +431,20 @@ events (see `sebs`), after that the oldest ones are dropped.
   `uart` events of the same sender to get the output text. Note that this
   event is meant for displaying terminal output: interactive terminals should
   keep using a serial backend such as `tcp`, which also handles input.
+* `callstack`: published by processors (any `vcml::debugging::target`) each
+  time the callstack is sampled, i.e. before every quantum and before
+  entering idle. The payload describes the change relative to the previous
+  event of the same sender:
+  ```json
+  {"pop":1,"push":["printf","puts"]}
+  ```
+  * `pop`: number of innermost frames to remove from the previously reported
+    callstack
+  * `push`: function names to add afterwards, outermost first; frames without
+    a symbol are reported by their address instead, e.g. `"0x8000f2a4"`
+  Directly after subscribing, the first event carries the complete current
+  callstack with `pop` set to 0. An unchanged callstack is reported as
+  `{"pop":0,"push":[]}`, so every sample produces exactly one event.
 * `trace`: published by ports, sockets and registers for every
   forward and backward transaction, independent of the `trace` and
   `trace_errors` properties and of any tracers given on the command line:

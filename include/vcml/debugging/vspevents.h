@@ -20,6 +20,7 @@ namespace debugging {
 constexpr const char* VSP_EVENT_TRACE = "trace";
 constexpr const char* VSP_EVENT_LED = "led";
 constexpr const char* VSP_EVENT_UART = "uart";
+constexpr const char* VSP_EVENT_CALLSTACK = "callstack";
 
 class vspsubscriber
 {
@@ -39,6 +40,11 @@ private:
     atomic<bool> m_subscribed;
     vector<pair<string, vspsubscriber*>> m_subscriptions;
 
+protected:
+    void publish_event_locked(const sc_object& sender, const string& event,
+                              const sc_time& t, const string& payload,
+                              const vspsubscriber* except = nullptr) const;
+
 public:
     vsppublisher();
     virtual ~vsppublisher() = default;
@@ -46,9 +52,10 @@ public:
     virtual vector<string> published_events() const = 0;
     bool publishes(const string& event) const;
 
-    virtual void on_subscribe(const string& event, vspsubscriber* s) const {}
+    virtual void on_subscribe(const string& event, vspsubscriber* s) {}
 
     bool has_subscribers() const { return m_subscribed; }
+    bool has_subscribers(const string& event) const;
     bool is_subscribed(const string& event, const vspsubscriber* s) const;
     vector<pair<string, vspsubscriber*>> subscriptions() const;
 

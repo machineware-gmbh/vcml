@@ -443,6 +443,65 @@ void target::notify_basic_block(u64 pc, size_t blksz, size_t icount,
         s->notify_basic_block(*this, pc, blksz, icount, t);
 }
 
+static vector<string> callstack_names(const vector<stackframe>& frames) {
+    vector<string> names;
+    names.reserve(frames.size());
+    for (auto it = frames.rbegin(); it != frames.rend(); it++) {
+        if (it->sym)
+            names.push_back(it->sym->name());
+        else
+            names.push_back(mkstr("0x%llx", it->program_counter));
+    }
+    return names;
+}
+
+static string callstack_update(const vector<string>& prev,
+                               const vector<string>& next) {
+    size_t common = 0;
+    while (common < prev.size() && common < next.size() &&
+           prev[common] == next[common]) {
+        common++;
+    }
+
+    ostringstream os;
+    os << "{\"pop\":" << prev.size() - common << ",\"push\":[";
+    for (size_t i = common; i < next.size(); i++)
+        os << (i > common ? "," : "") << json_string(next[i]);
+    os << "]}";
+    return os.str();
+}
+
+void target::notify_callstack(const vector<stackframe>& frames,
+                              const sc_time& t) {
+    if (!has_subscribers(VSP_EVENT_CALLSTACK))
+        return;
+
+    vector<string> names = callstack_names(frames);
+    string update = callstack_update(m_callstack, names);
+    m_callstack.swap(names);
+    publish_event(m_host, VSP_EVENT_CALLSTACK, t, update);
+}
+
+vector<string> target::published_events() const {
+    return { VSP_EVENT_CALLSTACK };
+}
+
+void target::on_subscribe(const string& event, vspsubscriber* s) {
+    if (event != VSP_EVENT_CALLSTACK)
+        return;
+
+    vector<stackframe> frames;
+    stacktrace(frames);
+    vector<string> names = callstack_names(frames);
+    sc_time now = sc_time_stamp();
+
+    string update = callstack_update(m_callstack, names);
+    m_callstack.swap(names);
+    publish_event_locked(m_host, event, now, update, s);
+
+    s->on_event(m_host, event, now, callstack_update({}, m_callstack));
+}
+
 target::target(sc_object& host, const string& target_name,
                const string& group):
     m_mtx(),

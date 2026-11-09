@@ -104,26 +104,37 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
 }
 
 void processor::sample_callstack() {
+    bool publish = has_subscribers(debugging::VSP_EVENT_CALLSTACK);
 #if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_CALL_STACK)
-    if (!trace_callstack)
+    if (!publish && !trace_callstack)
         return;
+#else
+    if (!publish)
+        return;
+#endif
 
-    u64 time = time_to_ps(local_time_stamp());
+    sc_time now = local_time_stamp();
     vector<debugging::stackframe> frames;
     stacktrace(frames);
 
-    for (size_t i = 0; i < frames.size(); i++) {
-        u64 addr = frames[i].program_counter;
-        string sym = frames[i].sym ? frames[i].sym->name() : "unknown";
-        // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
-        INSCIGHT_CPU_CALL_STACK(*this, time, i, addr, sym.c_str());
+#if defined(HAVE_INSCIGHT) && defined(INSCIGHT_CPU_CALL_STACK)
+    if (trace_callstack) {
+        u64 time = time_to_ps(now);
+        for (size_t i = 0; i < frames.size(); i++) {
+            u64 addr = frames[i].program_counter;
+            string sym = frames[i].sym ? frames[i].sym->name() : "unknown";
+            // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
+            INSCIGHT_CPU_CALL_STACK(*this, time, i, addr, sym.c_str());
+        }
     }
 #endif
+
+    if (publish)
+        notify_callstack(frames, now);
 }
 
 u64 processor::simulate_cycles(size_t cycles) {
-    if (trace_callstack)
-        sample_callstack();
+    sample_callstack();
 
     u64 count = cycle_count();
     double start = mwr::timestamp();
@@ -489,8 +500,7 @@ void processor::wait_for_interrupt(sc_event& ev) {
     INSCIGHT_CPU_IDLE_ENTER(*this);
 #endif
 
-    if (trace_callstack)
-        sample_callstack();
+    sample_callstack();
 
     set_suspendable(true);
     wait(ev);

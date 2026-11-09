@@ -21,6 +21,19 @@ bool vsppublisher::publishes(const string& event) const {
     return stl_contains(published_events(), event);
 }
 
+bool vsppublisher::has_subscribers(const string& event) const {
+    if (!m_subscribed)
+        return false;
+
+    lock_guard<mutex> guard(m_mtx);
+    for (const auto& [ev, sub] : m_subscriptions) {
+        if (ev == event)
+            return true;
+    }
+
+    return false;
+}
+
 bool vsppublisher::is_subscribed(const string& event,
                                  const vspsubscriber* s) const {
     lock_guard<mutex> guard(m_mtx);
@@ -62,11 +75,16 @@ void vsppublisher::unsubscribe_event(const string& event, vspsubscriber* s) {
 void vsppublisher::publish_event(const sc_object& sender, const string& event,
                                  const sc_time& t,
                                  const string& payload) const {
-    // holding the lock guarantees that subscribers are not destroyed while
-    // we notify them, see unsubscribe_event
     lock_guard<mutex> guard(m_mtx);
+    publish_event_locked(sender, event, t, payload);
+}
+
+void vsppublisher::publish_event_locked(const sc_object& sender,
+                                        const string& event, const sc_time& t,
+                                        const string& payload,
+                                        const vspsubscriber* except) const {
     for (const auto& [ev, sub] : m_subscriptions) {
-        if (ev == event)
+        if (ev == event && sub != except)
             sub->on_event(sender, event, t, payload);
     }
 }

@@ -248,7 +248,7 @@ gpio_initiator_socket::gpio_state_tracker& gpio_initiator_socket::operator[](
 }
 
 void gpio_initiator_socket::on_subscribe(const string& event,
-                                         debugging::vspsubscriber* s) const {
+                                         debugging::vspsubscriber* s) {
     for (const auto& [vector, tracker] : m_state)
         publish_replay<gpio_payload>(s, *this, tracker);
 }
@@ -346,7 +346,7 @@ bool gpio_target_socket::operator!=(const gpio_target_socket& other) const {
 }
 
 void gpio_target_socket::on_subscribe(const string& event,
-                                      debugging::vspsubscriber* s) const {
+                                      debugging::vspsubscriber* s) {
     for (const auto& [vector, state] : m_state)
         publish_replay(s, *this, gpio_payload{ vector, state });
 }

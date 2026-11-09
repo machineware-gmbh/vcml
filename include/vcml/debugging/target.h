@@ -20,6 +20,7 @@
 #include "vcml/debugging/symtab.h"
 #include "vcml/debugging/subscriber.h"
 #include "vcml/debugging/suspender.h"
+#include "vcml/debugging/vspevents.h"
 
 namespace vcml {
 namespace debugging {
@@ -74,7 +75,7 @@ struct stackframe {
     const symbol* sym;
 };
 
-class target
+class target : public vsppublisher
 {
 private:
     mutable mutex m_mtx;
@@ -97,6 +98,8 @@ private:
 
     vector<breakpoint*> m_breakpoints;
     vector<watchpoint*> m_watchpoints;
+
+    vector<string> m_callstack;
 
     target(const target&) = delete;
     target(target&&) = delete;
@@ -156,6 +159,8 @@ protected:
     void notify_singlestep(const sc_time& t);
     void notify_basic_block(u64 pc, size_t blksz, size_t icount,
                             const sc_time& t);
+
+    void notify_callstack(const vector<stackframe>& frames, const sc_time& t);
 
 public:
     bool is_suspendable() const { return m_suspendable; }
@@ -246,6 +251,9 @@ public:
     bool is_tracing_basic_blocks() const;
     bool trace_basic_blocks(subscriber* subscr);
     bool untrace_basic_blocks(subscriber* subscr);
+
+    virtual vector<string> published_events() const override;
+    virtual void on_subscribe(const string& event, vspsubscriber* s) override;
 
     static vector<target*> all();
     static target* find(const string& name);
