@@ -283,10 +283,8 @@ void host::pci_dmi_invalidate(const pci_initiator_socket& socket, int bar,
                               u64 start, u64 end) {
     u32 devno = pci_devno(socket);
     const auto& m = rev_lookup(devno, bar);
-    if (!m.is_valid())
-        VCML_ERROR("invalid DMI invalidation from dev%u bar%u", devno, bar);
-
-    invalidate_dmi_mapping(m, start, end);
+    if (m.is_valid())
+        invalidate_dmi_mapping(m, start, end);
 }
 
 bool host::get_direct_mem_ptr(tlm_target_socket& socket,

@@ -188,6 +188,8 @@ public:
         rst.bind(pcie_device.rst);
 
         add_test("test_unimplemented_bar", &pcie_test::test_unimplemented_bar);
+        add_test("test_dmi_invalidate_unmapped",
+                 &pcie_test::test_dmi_invalidate_unmapped);
         add_test("test_readonly_regs", &pcie_test::test_readonly_regs);
         add_test("test_general", &pcie_test::test_general);
     }
@@ -225,6 +227,11 @@ public:
         pcie_read_cfg(0, PCI_BAR0_OFFSET, unimplemented_bar);
         EXPECT_EQ(unimplemented_bar, 0)
             << "unimplemented bar must be hardwired to 0";
+    }
+
+    void test_dmi_invalidate_unmapped() {
+        EXPECT_NO_THROW(pcie_device.pci_in->pci_dmi_invalidate(
+            4, 0, MMAP_PCI_MMIO_SIZE - 1));
     }
 
     void test_readonly_regs() {
