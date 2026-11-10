@@ -118,3 +118,18 @@ TEST(pci, sockets) {
     pci_harness test("pci");
     sc_core::sc_start();
 }
+
+TEST(pci, response) {
+    EXPECT_STREQ(pci_response_str(PCI_RESP_RETRY), "PCI_RESP_RETRY");
+    EXPECT_TRUE(failed(PCI_RESP_RETRY));
+    EXPECT_FALSE(success(PCI_RESP_RETRY));
+    EXPECT_EQ(pci_translate_response(PCI_RESP_RETRY),
+              TLM_GENERIC_ERROR_RESPONSE);
+
+    pci_payload tx{};
+    tx.response = PCI_RESP_RETRY;
+    EXPECT_TRUE(tx.is_retry());
+    EXPECT_TRUE(tx.is_error());
+    EXPECT_FALSE(tx.is_address_error());
+    EXPECT_FALSE(tx.is_command_error());
+}

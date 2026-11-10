@@ -65,6 +65,15 @@ public:
     pci_target_socket pci_in;
     reg<u32> test_reg;
     reg<u32> test_reg_io;
+    bool not_ready;
+
+    virtual void pci_transport(const pci_target_socket& socket,
+                               pci_payload& tx) override {
+        if (not_ready && tx.is_cfg())
+            tx.response = PCI_RESP_RETRY;
+        else
+            pci::device::pci_transport(socket, tx);
+    }
 
     void write_test_reg_io(u32 val) {
         if (val == 0x1234)
@@ -77,7 +86,8 @@ public:
         device(nm, TEST_CONFIG),
         pci_in("PCI_IN"),
         test_reg(PCI_AS_BAR0, "TEST_REG", TEST_REG_OFFSET, 1234),
-        test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234) {
+        test_reg_io(PCI_AS_BAR2, "TEST_REG_IO", TEST_REG_IO_OFF, 0x1234),
+        not_ready(false) {
         test_reg.allow_read_write();
         test_reg.sync_always();
         test_reg_io.allow_read_write();
@@ -190,6 +200,19 @@ public:
     }
 
     virtual void run_test() override {
+        //
+        // devices that are not ready must look like empty slots
+        //
+        u32 notready = 0;
+        pci_device.not_ready = true;
+        pci_read_cfg(0, PCI_VENDOR_OFFSET, notready);
+        EXPECT_EQ(notready, 0xffffffff) << "device answered before ready";
+        pci_write_cfg(0, PCI_COMMAND_OFFSET, (u16)3);
+        pci_device.not_ready = false;
+        u16 early = 0xffff;
+        pci_read_cfg(0, PCI_COMMAND_OFFSET, early);
+        EXPECT_EQ(early, 0) << "write accepted before device was ready";
+
         u16 vendor_id = 0, device_id = 0;
         pci_read_cfg(0, PCI_VENDOR_OFFSET, vendor_id);
         pci_read_cfg(0, PCI_DEVICE_OFFSET, device_id);

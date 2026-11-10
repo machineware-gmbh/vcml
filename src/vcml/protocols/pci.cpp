@@ -58,6 +58,8 @@ const char* pci_response_str(pci_response resp) {
         return "PCI_RESP_ADDRESS_ERROR";
     case PCI_RESP_COMMAND_ERROR:
         return "PCI_RESP_COMMAND_ERROR";
+    case PCI_RESP_RETRY:
+        return "PCI_RESP_RETRY";
     default:
         return "PCI_UNKNOWN_RESP";
     }
@@ -110,6 +112,8 @@ tlm_response_status pci_translate_response(pci_response resp) {
         return TLM_ADDRESS_ERROR_RESPONSE;
     case PCI_RESP_COMMAND_ERROR:
         return TLM_COMMAND_ERROR_RESPONSE;
+    case PCI_RESP_RETRY:
+        return TLM_GENERIC_ERROR_RESPONSE;
     default:
         VCML_ERROR("invalid pci response %d", (int)resp);
     }

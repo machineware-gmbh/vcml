@@ -41,6 +41,7 @@ enum pci_response {
     PCI_RESP_SUCCESS = 1,
     PCI_RESP_ADDRESS_ERROR = -1,
     PCI_RESP_COMMAND_ERROR = -2,
+    PCI_RESP_RETRY = -3,
 };
 
 enum pci_irq {
@@ -95,6 +96,8 @@ struct pci_payload {
     bool is_command_error() const {
         return response == PCI_RESP_COMMAND_ERROR;
     }
+
+    bool is_retry() const { return response == PCI_RESP_RETRY; }
 };
 
 ostream& operator<<(ostream& os, const pci_payload& tx);
