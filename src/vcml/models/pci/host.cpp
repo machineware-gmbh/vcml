@@ -193,6 +193,13 @@ void host::pci_transport_cfg(pci_payload& tx) {
     pci_out[devno].transport(tx);
     tx.addr = addr;
 
+    // devices that are not ready yet look like empty slots
+    if (tx.is_retry()) {
+        tx.response = PCI_RESP_SUCCESS;
+        tx.data = ~0u;
+        return;
+    }
+
     // treat nonexistent registers as reserved memory
     if (tx.is_address_error()) {
         tx.response = PCI_RESP_SUCCESS;
