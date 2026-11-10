@@ -72,7 +72,8 @@ void max31855::gpio_notify(const gpio_target_socket& socket) {
 
 void max31855::spi_transport(const spi_target_socket& socket,
                              spi_payload& spi) {
-    spi.miso = do_spi_transport(spi.mosi & spi.mask);
+    if (cs == m_cs_mode)
+        spi.miso = do_spi_transport(spi.mosi & spi.mask);
 }
 
 void max31855::bind(gpio_initiator_socket& s, bool cs_active_high) {

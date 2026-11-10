@@ -21,9 +21,17 @@ public:
         test_base(nm), max31855("max31855"), spi("spi"), cs("cs") {
         spi.bind(max31855.spi_in);
         max31855.bind(cs, true);
+
+        add_test("temperature", &max31855_bench::test_temperature);
+        add_test("negative_temperature",
+                 &max31855_bench::test_negative_temperature);
+        add_test("max_temperature", &max31855_bench::test_max_temperature);
+        add_test("min_temperature", &max31855_bench::test_min_temperature);
+        add_test("cs", &max31855_bench::test_cs);
+        add_test("cs_inactive", &max31855_bench::test_cs_inactive);
     }
 
-    void test_read(const u8 byte[4]) {
+    void check_read(const u8 byte[4]) {
         spi_payload payload(0);
         cs = true;
         for (int i = 0; i < 4; i++) {
@@ -32,6 +40,50 @@ public:
             EXPECT_EQ(payload.miso, byte[i]);
         }
         cs = false;
+    }
+
+    void test_temperature() {
+        max31855.temp_thermocouple = 25.0;
+        max31855.temp_internal = 25.0;
+        max31855.fault = false;
+        max31855.scv = false;
+        max31855.scg = false;
+        max31855.oc = false;
+        const u8 data[4] = { 0b00000001, 0b10010000, 0b00011001, 0b00000000 };
+        check_read(data);
+    }
+
+    void test_negative_temperature() {
+        max31855.temp_thermocouple = -0.25;
+        max31855.temp_internal = -0.0625;
+        max31855.fault = true;
+        max31855.scv = true;
+        max31855.scg = true;
+        max31855.oc = true;
+        const u8 data[4] = { 0b11111111, 0b11111101, 0b11111111, 0b11110111 };
+        check_read(data);
+    }
+
+    void test_max_temperature() {
+        max31855.temp_thermocouple = 4096.0;
+        max31855.temp_internal = 256.0;
+        max31855.fault = false;
+        max31855.scv = false;
+        max31855.scg = false;
+        max31855.oc = false;
+        const u8 data[4] = { 0b01111111, 0b11111100, 0b01111111, 0b11110000 };
+        check_read(data);
+    }
+
+    void test_min_temperature() {
+        max31855.temp_thermocouple = -4096.0;
+        max31855.temp_internal = -256.0;
+        max31855.fault = false;
+        max31855.scv = false;
+        max31855.scg = false;
+        max31855.oc = false;
+        const u8 data[4] = { 0b10000000, 0b00000000, 0b10000000, 0b00000000 };
+        check_read(data);
     }
 
     void test_cs() {
@@ -68,49 +120,42 @@ public:
         wait(SC_ZERO_TIME);
     }
 
-    virtual void run_test() override {
-        // Test temperature reading
+    void test_cs_inactive() {
         max31855.temp_thermocouple = 25.0;
         max31855.temp_internal = 25.0;
         max31855.fault = false;
         max31855.scv = false;
         max31855.scg = false;
         max31855.oc = false;
-        const u8 data1[4] = { 0b00000001, 0b10010000, 0b00011001, 0b00000000 };
-        test_read(data1);
+        const u8 data[4] = { 0b00000001, 0b10010000, 0b00011001, 0b00000000 };
 
-        // Test negative temperature reading
-        max31855.temp_thermocouple = -0.25;
-        max31855.temp_internal = -0.0625;
-        max31855.fault = true;
-        max31855.scv = true;
-        max31855.scg = true;
-        max31855.oc = true;
-        const u8 data2[4] = { 0b11111111, 0b11111101, 0b11111111, 0b11110111 };
-        test_read(data2);
+        cs = false;
+        wait(SC_ZERO_TIME);
+        for (int i = 0; i < 8; i++) {
+            spi_payload payload(0, 0xab);
+            spi.transport(payload);
+            EXPECT_EQ(payload.miso, 0xab);
+        }
 
-        // Test restricting to max temperature
-        max31855.temp_thermocouple = 4096.0;
-        max31855.temp_internal = 256.0;
-        max31855.fault = false;
-        max31855.scv = false;
-        max31855.scg = false;
-        max31855.oc = false;
-        const u8 data3[4] = { 0b01111111, 0b11111100, 0b01111111, 0b11110000 };
-        test_read(data3);
+        check_read(data);
 
-        // Test restricting to min temperature
-        max31855.temp_thermocouple = -4096.0;
-        max31855.temp_internal = -256.0;
-        max31855.fault = false;
-        max31855.scv = false;
-        max31855.scg = false;
-        max31855.oc = false;
-        const u8 data4[4] = { 0b10000000, 0b00000000, 0b10000000, 0b00000000 };
-        test_read(data4);
+        spi_payload payload(0);
+        cs = true;
+        wait(SC_ZERO_TIME);
+        spi.transport(payload);
+        EXPECT_EQ(payload.miso, data[0]);
+        spi.transport(payload);
+        EXPECT_EQ(payload.miso, data[1]);
 
-        // Test Chip Select
-        test_cs();
+        cs = false;
+        wait(SC_ZERO_TIME);
+        payload.miso = 0xab;
+        spi.transport(payload);
+        EXPECT_EQ(payload.miso, 0xab);
+        spi.transport(payload);
+        EXPECT_EQ(payload.miso, 0xab);
+
+        check_read(data);
     }
 };
 
