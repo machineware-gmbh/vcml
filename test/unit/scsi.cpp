@@ -19,6 +19,8 @@ TEST(scsi, transfer) {
     EXPECT_FALSE(block::scsi_command_transfers_from_device(0x2a));
     EXPECT_FALSE(block::scsi_command_transfers_to_device(0x28));
     EXPECT_TRUE(block::scsi_command_transfers_from_device(0x28));
+    EXPECT_TRUE(block::scsi_command_transfers_to_device(0x41));
+    EXPECT_TRUE(block::scsi_command_transfers_to_device(0x93));
 }
 
 TEST(scsi, strings) {
@@ -116,6 +118,57 @@ TEST(scsi, read_write) {
     ASSERT_TRUE(success(disk.scsi_handle_command(req_r)));
 
     EXPECT_EQ(req_w.payload, req_r.payload);
+}
+
+TEST(scsi, block_limits) {
+    block::scsi_disk disk("disk");
+    block::scsi_request req{};
+    req.command[0] = 0x12; // inquiry
+    req.command[1] = 0x01; // vital product data
+    req.command[2] = 0xb0; // block limits
+    ASSERT_TRUE(success(disk.scsi_handle_command(req)));
+    ASSERT_EQ(req.payload.size(), 64);
+    EXPECT_EQ(req.payload[1], 0xb0);
+    EXPECT_EQ(req.payload[3], 60);
+
+    // maximum and optimal transfer length are 1MiB
+    u32 blocks = MiB / disk.blocksize();
+    const vector<u8> length = {
+        (u8)(blocks >> 24),
+        (u8)(blocks >> 16),
+        (u8)(blocks >> 8),
+        (u8)(blocks >> 0),
+    };
+
+    auto it = req.payload.begin();
+    EXPECT_EQ(vector<u8>(it + 8, it + 12), length);
+    EXPECT_EQ(vector<u8>(it + 12, it + 16), length);
+}
+
+TEST(scsi, write_same) {
+    block::scsi_disk disk("disk");
+    block::scsi_request req_w{};
+    req_w.command[0] = 0x41; // write same 10
+    req_w.command[5] = 0x02; // lba 2
+    req_w.command[8] = 0x03; // 3 blocks
+    req_w.payload.assign(512, 0xab);
+    ASSERT_TRUE(success(disk.scsi_handle_command(req_w)));
+
+    block::scsi_request req_r{};
+    req_r.command[0] = 0x28; // read10
+    req_r.command[5] = 0x01; // lba 1
+    req_r.command[8] = 0x05; // 5 blocks
+    ASSERT_TRUE(success(disk.scsi_handle_command(req_r)));
+
+    vector<u8> expect(5 * 512, 0x00);
+    std::fill(expect.begin() + 512, expect.begin() + 4 * 512, 0xab);
+    EXPECT_EQ(req_r.payload, expect);
+
+    // an all zero block clears the range again
+    req_w.payload.assign(512, 0x00);
+    ASSERT_TRUE(success(disk.scsi_handle_command(req_w)));
+    ASSERT_TRUE(success(disk.scsi_handle_command(req_r)));
+    EXPECT_EQ(req_r.payload, vector<u8>(5 * 512, 0x00));
 }
 
 TEST(scsi, illegal_command) {

@@ -75,6 +75,8 @@ bool scsi_command_transfers_to_device(u8 opcode) {
     switch (opcode) {
     case SCSI_WRITE_10:
     case SCSI_WRITE_12:
+    case SCSI_WRITE_SAME_10:
+    case SCSI_WRITE_SAME_16:
     case SCSI_MODE_SELECT:
     case SCSI_FORMAT_UNIT:
         return true;
@@ -273,8 +275,8 @@ scsi_response scsi_disk::scsi_inquiry_vpd(scsi_request& req) {
     case 0xb0: { // block limits
         req.payload.insert(req.payload.end(), 60, 0);
         scsi_block_limits bl{};
-        bl.max_transfer_length = 4096 / blocksize();
-        bl.opt_transfer_length = 4096 / blocksize();
+        bl.max_transfer_length = max<u32>(MiB / blocksize(), 1);
+        bl.opt_transfer_length = bl.max_transfer_length;
         bl.max_unmap_blk_desc_count = 255;
         bl.max_write_same_len = 1;
         scsi_write_block_limits(req.payload.data(), req.payload.size(), bl);
