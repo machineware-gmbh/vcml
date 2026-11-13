@@ -95,8 +95,8 @@ void backend_ram::wzero(size_t size, bool may_unmap) {
         else
             memset(sector + off, 0, num);
 
-        m_pos += size;
-        done += size;
+        m_pos += num;
+        done += num;
     }
 }
 
@@ -115,8 +115,8 @@ void backend_ram::discard(size_t size) {
             m_sectors.erase(it);
         }
 
-        m_pos += size;
-        done += size;
+        m_pos += num;
+        done += num;
     }
 }
 
