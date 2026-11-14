@@ -177,7 +177,7 @@ public:
     bool is_host_endian() const;
 
     const symtab& symbols() const;
-    u64 load_symbols_from_elf(const string& file);
+    u64 load_symbols_from_elf(const string& file, u64 offset = 0);
 
     const char* target_name() const { return m_name.c_str(); }
     const char* target_group() const { return m_group.c_str(); }
@@ -283,8 +283,8 @@ inline const symtab& target::symbols() const {
     return m_symbols;
 }
 
-inline u64 target::load_symbols_from_elf(const string& file) {
-    return m_symbols.load_elf(file);
+inline u64 target::load_symbols_from_elf(const string& file, u64 offset) {
+    return m_symbols.load_elf(file, offset);
 }
 
 inline const vector<breakpoint*>& target::breakpoints() const {

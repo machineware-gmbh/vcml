@@ -100,7 +100,7 @@ public:
 
     void merge(const symtab&);
 
-    u64 load_elf(const string& filename);
+    u64 load_elf(const string& filename, u64 offset = 0);
 
 private:
     std::set<symbol, symbol_compare> m_functions;

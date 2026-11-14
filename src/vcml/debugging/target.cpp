@@ -50,7 +50,11 @@ bool target::cmd_loadsyms(const vector<string>& args, ostream& os) {
     }
 
     try {
-        u64 n = load_symbols_from_elf(args[0]);
+        u64 offset = 0;
+        if (args.size() > 1)
+            offset = strtoull(args[1].c_str(), NULL, 0);
+
+        u64 n = load_symbols_from_elf(args[0], offset);
         os << "Found " << n << " symbols in file '" << args[0] << "'";
         return true;
     } catch (std::exception& e) {
@@ -525,7 +529,8 @@ target::target(sc_object& host, const string& target_name,
         h->register_command("cpustatus", 0, this, &target::cmd_cpustatus,
                             "prints cpu status registers");
         h->register_command("loadsyms", 1, this, &target::cmd_loadsyms,
-                            "load a symbol file for use in disassembly");
+                            "load a symbol file for use in disassembly: "
+                            "loadsyms <file> [offset]");
         h->register_command("lsym", 0, this, &target::cmd_lsym,
                             "show a list of all available symbols");
         h->register_command("disas", 0, this, &target::cmd_disas,

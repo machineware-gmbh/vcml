@@ -12,6 +12,15 @@
 
 namespace vcml {
 
+static pair<string, u64> parse_symbols(const string& s) {
+    size_t separator = s.find('@');
+    string file = trim(s.substr(0, separator));
+    u64 offset = 0;
+    if (separator != string::npos)
+        offset = strtoull(s.c_str() + separator + 1, NULL, 0);
+    return { file, offset };
+}
+
 bool processor::cmd_dump(const vector<string>& args, ostream& os) {
     os << "Registers:" << std::endl
        << "  PC 0x" << mkstr("%0*llx", 16, program_counter()) << std::endl
@@ -88,7 +97,7 @@ bool processor::cmd_gdb(const vector<string>& args, ostream& os) {
     stringstream ss;
     ss << gdb_term.str() << " -n " << name() << " -p " << gdb_port.str();
     for (const auto& symfile : symbols)
-        ss << " -s " << symfile;
+        ss << " -s " << parse_symbols(symfile).first;
 
     log_debug("gdbterm command line:");
     log_debug("'%s'", ss.str().c_str());
@@ -284,7 +293,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
     data.set_insn(false);
 
     for (const string& s : symbols) {
-        string symfile = trim(s);
+        auto [symfile, offset] = parse_symbols(s);
         if (symfile.empty())
             continue;
 
@@ -293,7 +302,7 @@ processor::processor(const sc_module_name& nm, const string& cpuarch):
             continue;
         }
 
-        u64 n = load_symbols_from_elf(symfile);
+        u64 n = load_symbols_from_elf(symfile, offset);
         log_debug("loaded %llu symbols from '%s'", n, symfile.c_str());
     }
 

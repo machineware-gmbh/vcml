@@ -210,3 +210,18 @@ TEST(symtab, find_with_offset) {
         }
     }
 }
+
+TEST(symtab, load_elf_with_offset) {
+    symtab syms, moved;
+    syms.load_elf(get_resource_path("elf.elf"));
+    moved.load_elf(get_resource_path("elf.elf"), 0x80000000);
+
+    const symbol* func = syms.find_symbol("func_c");
+    const symbol* moved_func = moved.find_symbol("func_c");
+    ASSERT_TRUE(func != nullptr);
+    ASSERT_TRUE(moved_func != nullptr);
+    EXPECT_EQ(moved_func->virt_addr(), func->virt_addr() + 0x80000000);
+    EXPECT_EQ(moved_func->phys_addr(), func->phys_addr() + 0x80000000);
+    EXPECT_EQ(moved_func->size(), func->size());
+    EXPECT_EQ(moved.find_function(moved_func->virt_addr()), moved_func);
+}

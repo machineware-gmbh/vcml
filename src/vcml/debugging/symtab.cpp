@@ -128,7 +128,7 @@ void symtab::merge(const symtab& other) {
         insert_object(obj);
 }
 
-u64 symtab::load_elf(const string& filename) {
+u64 symtab::load_elf(const string& filename, u64 offset) {
     if (!mwr::file_exists(filename))
         return 0;
 
@@ -141,12 +141,12 @@ u64 symtab::load_elf(const string& filename) {
         case mwr::elf::KIND_COMMON:
         case mwr::elf::KIND_TLS:
             insert({ symbol.name, SYMKIND_OBJECT, endian, symbol.size,
-                     symbol.virt, symbol.phys });
+                     symbol.virt + offset, symbol.phys + offset });
             break;
 
         case mwr::elf::KIND_FUNC:
             insert({ symbol.name, SYMKIND_FUNCTION, endian, symbol.size,
-                     symbol.virt, symbol.phys });
+                     symbol.virt + offset, symbol.phys + offset });
             break;
 
         case mwr::elf::KIND_UNKNOWN:
@@ -157,7 +157,7 @@ u64 symtab::load_elf(const string& filename) {
                         symbol.virt < seg.virt + seg.size) {
                         auto kind = seg.x ? SYMKIND_FUNCTION : SYMKIND_OBJECT;
                         insert({ symbol.name, kind, endian, symbol.size,
-                                 symbol.virt, symbol.phys });
+                                 symbol.virt + offset, symbol.phys + offset });
                         break;
                     }
                 }
