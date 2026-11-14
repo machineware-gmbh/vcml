@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "vcml/debugging/vspevents.h"
+#include "vcml/debugging/vspserver.h"
 
 namespace vcml {
 namespace debugging {
@@ -75,8 +76,15 @@ void vsppublisher::unsubscribe_event(const string& event, vspsubscriber* s) {
 void vsppublisher::publish_event(const sc_object& sender, const string& event,
                                  const sc_time& t,
                                  const string& payload) const {
-    lock_guard<mutex> guard(m_mtx);
-    publish_event_locked(sender, event, t, payload);
+    {
+        lock_guard<mutex> guard(m_mtx);
+        publish_event_locked(sender, event, t, payload);
+    }
+
+    // subscribers that must not lose events hold up the simulation here,
+    // where it does not keep others from our subscriptions
+    if (vspserver* server = vspserver::instance())
+        server->wait_for_event_space();
 }
 
 void vsppublisher::publish_event_locked(const sc_object& sender,

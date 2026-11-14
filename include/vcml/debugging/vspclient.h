@@ -48,6 +48,11 @@ private:
     size_t m_event_limit;
     u64 m_dropped;
 
+    condition_variable m_events_cv;
+    bool m_event_wait;
+    bool m_event_stalled;
+    u64 m_event_timeout_ms;
+
     void unsubscribe(const string& event, vsppublisher* pub);
     bool has_subscriptions() const;
     string fetch_events(size_t limit = SIZE_MAX);
@@ -79,8 +84,10 @@ public:
     virtual ~vspclient();
 
     static constexpr size_t EVENT_LIMIT = 64 * 1024;
+    static constexpr u64 EVENT_TIMEOUT_MS = 10000;
 
     void notify_step_complete();
+    void wait_for_event_space();
 
     virtual void on_event(const sc_object& sender, const string& event,
                           const sc_time& t, const string& payload) override;
@@ -97,6 +104,7 @@ public:
     string handle_sub(const string& command);
     string handle_unsub(const string& command);
     string handle_sebs(const string& command);
+    string handle_sebm(const string& command);
 };
 
 inline bool vspclient::is_stopped() const {

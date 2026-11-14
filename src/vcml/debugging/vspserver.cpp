@@ -906,6 +906,10 @@ string vspserver::handle_sebs(int client, const string& cmd) {
     return find_client(client)->handle_sebs(cmd);
 }
 
+string vspserver::handle_sebm(int client, const string& cmd) {
+    return find_client(client)->handle_sebm(cmd);
+}
+
 void vspserver::disconnect_all() {
     unordered_map<int, shared_ptr<vspclient>> clients;
     {
@@ -952,6 +956,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     m_announce(mwr::temp_dir() + mkstr("/vcml_session_%u", mwr::getpid())),
     m_duration(),
     m_finished(false),
+    m_events_full(false),
     m_clients_mtx(),
     m_clients() {
     VCML_ERROR_ON(session != nullptr, "vspserver already created");
@@ -991,6 +996,7 @@ vspserver::vspserver(const string& server_host, u16 server_port):
     register_handler("sub", &vspserver::handle_sub);
     register_handler("unsub", &vspserver::handle_unsub);
     register_handler("sebs", &vspserver::handle_sebs);
+    register_handler("sebm", &vspserver::handle_sebm);
 
     // Create announce file
     ofstream of(m_announce.c_str());
@@ -1126,6 +1132,15 @@ void vspserver::handle_disconnect(int client) {
 
     vsp.reset();
     update();
+}
+
+void vspserver::wait_for_event_space() {
+    if (!m_events_full || !is_sysc_thread())
+        return;
+
+    m_events_full = false;
+    for (const auto& client : all_clients())
+        client->wait_for_event_space();
 }
 
 vspserver* vspserver::instance() {

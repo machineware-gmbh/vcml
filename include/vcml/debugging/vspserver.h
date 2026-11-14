@@ -30,6 +30,7 @@ private:
     string m_announce;
     sc_time m_duration;
     atomic<bool> m_finished;
+    atomic<bool> m_events_full;
 
     mutable mutex m_clients_mtx;
     unordered_map<int, shared_ptr<vspclient>> m_clients;
@@ -67,6 +68,7 @@ private:
     string handle_sub(int client, const string& command);
     string handle_unsub(int client, const string& command);
     string handle_sebs(int client, const string& command);
+    string handle_sebm(int client, const string& command);
 
     void disconnect_all();
     void force_quit();
@@ -85,6 +87,9 @@ public:
 
     bool is_running() const { return !is_suspending(); }
     bool is_finished() const { return m_finished; }
+
+    void notify_events_full() { m_events_full = true; }
+    void wait_for_event_space();
 
     void linger();
 

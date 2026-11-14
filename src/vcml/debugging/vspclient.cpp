@@ -101,11 +101,23 @@ vspclient::vspclient(vspserver& server, int clientid, const string& peer,
     m_events_mtx(),
     m_events(),
     m_event_limit(EVENT_LIMIT),
-    m_dropped(0) {
+    m_dropped(0),
+    m_events_cv(),
+    m_event_wait(false),
+    m_event_stalled(false),
+    m_event_timeout_ms(EVENT_TIMEOUT_MS) {
     // nothing to do
 }
 
 vspclient::~vspclient() {
+    // nobody is left to fetch the events the simulation may be waiting for
+    {
+        lock_guard<mutex> guard(m_events_mtx);
+        m_event_wait = false;
+    }
+
+    m_events_cv.notify_all();
+
     for (auto [id, bp] : m_breakpoints)
         bp->owner().remove_breakpoint(bp, this);
 
@@ -124,6 +136,7 @@ void vspclient::unsubscribe(const string& event, vsppublisher* pub) {
         lock_guard<mutex> guard(m_events_mtx);
         m_events.clear();
         m_dropped = 0;
+        m_events_cv.notify_all();
     }
 }
 
@@ -149,6 +162,8 @@ string vspclient::fetch_events(size_t limit) {
         }
 
         std::swap(dropped, m_dropped);
+        m_event_stalled = false;
+        m_events_cv.notify_all();
     }
 
     ostringstream os;
@@ -177,9 +192,38 @@ void vspclient::on_event(const sc_object& sender, const string& event,
 
     lock_guard<mutex> guard(m_events_mtx);
     m_events.push_back(os.str());
+
+    if (m_event_wait && !m_event_stalled) {
+        if (m_events.size() >= m_event_limit)
+            m_server.notify_events_full();
+        return;
+    }
+
     while (m_events.size() > m_event_limit) {
         m_events.pop_front(); // drop oldest
         m_dropped++;
+    }
+}
+
+void vspclient::wait_for_event_space() {
+    std::unique_lock<mutex> lock(m_events_mtx);
+    if (m_event_stalled)
+        return;
+
+    using namespace std::chrono;
+    auto timeout = steady_clock::now() + milliseconds(m_event_timeout_ms);
+    while (m_event_wait && m_events.size() >= m_event_limit) {
+        // a simulation that is asked to suspend must get to where it does
+        if (suspender::suspenders_waiting() || suspender::quitting())
+            return;
+
+        if (steady_clock::now() >= timeout) {
+            log_warn("%s does not fetch its events, dropping them", name());
+            m_event_stalled = true;
+            return;
+        }
+
+        m_events_cv.wait_for(lock, milliseconds(10));
     }
 }
 
@@ -487,11 +531,36 @@ string vspclient::handle_sebs(const string& command) {
 
     lock_guard<mutex> guard(m_events_mtx);
     m_event_limit = from_string<size_t>(args[1]);
-    while (m_events.size() > m_event_limit) {
+    while (!m_event_wait && m_events.size() > m_event_limit) {
         m_events.pop_front();
         m_dropped++;
     }
 
+    m_events_cv.notify_all();
+    return "OK";
+}
+
+string vspclient::handle_sebm(const string& command) {
+    vector<string> args = split(command, ',');
+    if (args.size() < 2)
+        return mkstr("E,insufficient arguments %zu", args.size());
+
+    string mode = to_lower(args[1]);
+    if (mode != "wait" && mode != "drop")
+        return mkstr("E,invalid buffer mode '%s'", args[1].c_str());
+
+    u64 timeout = EVENT_TIMEOUT_MS;
+    if (args.size() > 2) {
+        if (!is_number(args[2]) || from_string<u64>(args[2]) == 0)
+            return mkstr("E,invalid timeout '%s'", args[2].c_str());
+        timeout = from_string<u64>(args[2]);
+    }
+
+    lock_guard<mutex> guard(m_events_mtx);
+    m_event_wait = mode == "wait";
+    m_event_stalled = false;
+    m_event_timeout_ms = timeout;
+    m_events_cv.notify_all();
     return "OK";
 }
 

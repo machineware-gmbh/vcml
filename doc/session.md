@@ -425,6 +425,20 @@ The default size is 65536 events.
 * Command: `$sebs,<size>#**`
 * Response: `$OK#**` or `$E,errmsg#**`
 
+#### Set Event Buffer Mode
+Sets what happens once the event buffer of the client is full. In mode `drop`,
+which is the default, the oldest events are dropped. In mode `wait`, the
+simulation waits until the client has fetched events with a `status` request
+instead, so that none are lost. This slows the simulation down to the pace at
+which the client fetches its events, for all clients.
+
+A simulation that is asked to stop does not wait, so that it stops quickly.
+The events it publishes until it has stopped are kept beyond the size of the
+buffer. If the client does not fetch any events for `timeout-ms` milliseconds
+(10000 by default), the oldest events are dropped again until it does.
+* Command: `$sebm,<drop|wait>[,timeout-ms]#**`
+* Response: `$OK#**` or `$E,errmsg#**`
+
 #### Events Object
 The events object reported by `status` lists all events in the order they
 were published. `dropped` is only present if events were lost because the
