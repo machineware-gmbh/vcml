@@ -31,4 +31,5 @@ target_link_libraries(testing vcml gtest gmock)
 target_compile_options(testing PUBLIC ${MWR_COMPILER_WARN_FLAGS})
 
 add_subdirectory(unit)
+add_subdirectory(vsp)
 add_subdirectory(models)
