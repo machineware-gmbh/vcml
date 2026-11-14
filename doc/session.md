@@ -87,7 +87,7 @@ the target simulator. It does not receive any arguments:
 The status command queries the current time-stamp, delta-cycle and runstate.
 The runstate can either be `running` or `stopped:<reason>`. Stop reason is a
 string indicating what caused the simulation to stop.
-* Command: `$status#**`
+* Command: `$status[,max-events]#**`
 * Response: `$OK,runstate,time-stamp-ns,delta-cycle[,events]#**`
 
 If the client has subscribed to at least one event (see
@@ -98,6 +98,13 @@ are prefixed with a backslash, which clients must remove before parsing the
 JSON. The first response that reports
 `stopped:<reason>` is guaranteed to contain all remaining events up to the
 point where the simulation stopped.
+
+To keep responses short, `max-events` limits the number of events of a
+response to the oldest ones. The remaining events are kept for the following
+status requests and their number is reported as `pending` in the events
+object. In that case, all events up to the point where the simulation stopped
+have only been received once a response reports `stopped:<reason>` without
+`pending` events. Older servers ignore `max-events`.
 
 Valid stop reasons include (but are not limited to):
 * `target:<name>:<t>`: target `<name>` completed its requested single-step at
@@ -422,7 +429,8 @@ The default size is 65536 events.
 The events object reported by `status` lists all events in the order they
 were published. `dropped` is only present if events were lost because the
 client did not poll `status` often enough: each client buffers at most 65536
-events (see `sebs`), after that the oldest ones are dropped.
+events (see `sebs`), after that the oldest ones are dropped. `pending` is only
+present if the request limited the number of events and more are buffered.
 ```json
 {"events":[{"event":"led","sender":"top.leds","time":10000,"delta":4,"payload":{...}},...],"dropped":3}
 ```

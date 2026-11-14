@@ -131,13 +131,23 @@ bool vspclient::has_subscriptions() const {
     return !m_subscriptions.empty();
 }
 
-string vspclient::fetch_events() {
+string vspclient::fetch_events(size_t limit) {
     deque<string> events;
     u64 dropped = 0;
+    size_t pending = 0;
 
     {
         lock_guard<mutex> guard(m_events_mtx);
-        events.swap(m_events);
+        if (m_events.size() <= limit) {
+            events.swap(m_events);
+        } else {
+            auto end = m_events.begin() + limit;
+            events.assign(std::make_move_iterator(m_events.begin()),
+                          std::make_move_iterator(end));
+            m_events.erase(m_events.begin(), end);
+            pending = m_events.size();
+        }
+
         std::swap(dropped, m_dropped);
     }
 
@@ -149,6 +159,9 @@ string vspclient::fetch_events() {
 
     if (dropped > 0)
         os << ",\"dropped\":" << dropped;
+
+    if (pending > 0)
+        os << ",\"pending\":" << pending;
 
     os << "}";
     return os.str();
@@ -185,8 +198,13 @@ string vspclient::handle_status(const string& command) {
     string status = is_stopped() ? ("stopped:" + reason) : "running";
     string resp = mkstr("OK,%s,%llu,%llu", status.c_str(), nanos, delta);
 
-    if (has_subscriptions())
-        resp += "," + escape(fetch_events(), ",");
+    if (has_subscriptions()) {
+        size_t limit = SIZE_MAX;
+        vector<string> args = split(command, ',');
+        if (args.size() > 1 && is_number(args[1]))
+            limit = from_string<size_t>(args[1]);
+        resp += "," + escape(fetch_events(limit), ",");
+    }
 
     return resp;
 }

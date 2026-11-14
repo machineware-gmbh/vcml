@@ -105,12 +105,12 @@ static size_t count(const string& s, const string& what) {
 
 // resumes for the given duration and returns the events of the final status
 static string run_for(vspserver& session, test_vsp_client& vsp,
-                      const string& duration) {
+                      const string& duration, const string& limit = "") {
     // wait without polling status, since that would fetch the events
     EXPECT_EQ(vsp.command("resume," + duration), "OK");
     EXPECT_TRUE(wait_for([&]() { return !session.is_running(); }));
 
-    string status = vsp.command("status");
+    string status = vsp.command("status" + limit);
     EXPECT_TRUE(starts_with(status, "OK,stopped:step,")) << status;
     return events_of(status);
 }
@@ -219,17 +219,28 @@ static void run_client(vspserver& session, traffic& tr, gpio::leds& leds,
     EXPECT_TRUE(is_error(vsp.command("sebs,0")));
     EXPECT_TRUE(is_error(vsp.command("sebs,x")));
     EXPECT_EQ(vsp.command("sebs,1000"), "OK");
-    events = run_for(session, vsp, "1us");
+    // a status request can limit its events, the others stay for the next
+    events = run_for(session, vsp, "1us", ",300");
 
     // 9600 baud only allows for one byte to be transmitted within 1us
     EXPECT_EQ(term.send_pending(), 2);
 
     size_t total = 2 * BURST;
     size_t dropped = total - 1000;
-    EXPECT_EQ(count(events, "\"sender\":\"tr.out\""), 1000);
-    EXPECT_NE(events.find(mkstr("\"dropped\":%zu}", dropped)), string::npos);
+    EXPECT_EQ(count(events, "\"sender\":\"tr.out\""), 300);
+    EXPECT_NE(events.find(mkstr("\"dropped\":%zu,\"pending\":700}", dropped)),
+              string::npos);
     EXPECT_EQ(count(events, "\"data\":[0,0,0,0]"), 0) << "oldest not dropped";
+    EXPECT_EQ(count(events, "\"data\":[76,154,0,0]"), 2) << "oldest not first";
+
+    events = events_of(vsp.command("status,0"));
+    EXPECT_EQ(events, "{\"events\":[],\"pending\":700}");
+    events = events_of(vsp.command("status,x"));
+    EXPECT_EQ(count(events, "\"sender\":\"tr.out\""), 700);
     EXPECT_EQ(count(events, "\"data\":[63,156,0,0]"), 2) << "newest dropped";
+    EXPECT_EQ(count(events, "pending"), 0) << events.substr(0, 200);
+    EXPECT_EQ(count(events, "dropped"), 0) << events.substr(0, 200);
+    EXPECT_EQ(events_of(vsp.command("status,300")), "{\"events\":[]}");
 
     EXPECT_EQ(vsp.command("unsub"), "OK");
     EXPECT_FALSE(tr.out.has_subscribers());

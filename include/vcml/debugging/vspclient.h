@@ -50,7 +50,7 @@ private:
 
     void unsubscribe(const string& event, vsppublisher* pub);
     bool has_subscriptions() const;
-    string fetch_events();
+    string fetch_events(size_t limit = SIZE_MAX);
 
     void resume_simulation(const sc_time& duration);
     void pause_simulation(const string& reason);
