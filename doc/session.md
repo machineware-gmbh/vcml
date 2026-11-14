@@ -185,10 +185,13 @@ Set the global quantum from a given value in nanoseconds.
 * Response: `$OK#**`
 
 #### Get Attribute
-Fetches the value of a given attribute via its full hierarchical name. This
-includes all `vcml::properties`. In case of array properties, multiple values
-are returned for each array element.
-* Command: `$geta,<attribute-name>#**`
+Fetches the values of one or more attributes via their full hierarchical names.
+This includes all `vcml::properties`. The response holds one value per
+requested attribute, in the order of the request. The elements of an array
+property are separated by spaces within its value. If any of the attributes
+does not exist, the entire command fails. Older servers only return the value
+of the first attribute.
+* Command: `$geta,<attribute-name>[,attribute-name1]...#**`
 * Response: `$OK,<attribute-value>[,attribute-value1]...#**`
 
 #### Set Attribute

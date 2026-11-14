@@ -472,14 +472,18 @@ string vspserver::handle_geta(int client, const string& cmd) {
     if (args.size() < 2)
         return mkstr("E,insufficient arguments %zu", args.size());
 
-    const string& name = args[1];
-    sc_attr_base* attr = find_attribute(name);
-    if (attr == nullptr)
-        return mkstr("E,attribute '%s' not found", name.c_str());
-
     stringstream ss;
-    property_base* prop = dynamic_cast<property_base*>(attr);
-    ss << "OK," << escape(prop ? prop->str() : attr->name(), ",");
+    ss << "OK";
+
+    for (size_t i = 1; i < args.size(); i++) {
+        const string& name = args[i];
+        sc_attr_base* attr = find_attribute(name);
+        if (attr == nullptr)
+            return mkstr("E,attribute '%s' not found", name.c_str());
+
+        property_base* prop = dynamic_cast<property_base*>(attr);
+        ss << "," << escape(prop ? prop->str() : attr->name(), ",");
+    }
 
     return ss.str();
 }
