@@ -575,18 +575,26 @@ string vspserver::handle_getr(int client, const string& cmd) {
     if (tgt == nullptr)
         return mkstr("E,no such target: %s", args[1].c_str());
 
-    const cpureg* reg = tgt->find_cpureg(args[2]);
-    if (reg == nullptr)
-        return mkstr("E,no such register: %s", args[2].c_str());
-
-    vector<u8> data(reg->total_size());
-    if (!reg->read(data.data(), data.size()))
-        return mkstr("E,error reading %s", args[2].c_str());
-
     stringstream ss;
     ss << "OK";
-    for (u8 ch : data)
-        ss << mkstr(",0x%02hhx", ch);
+
+    bool bulk = args.size() > 3;
+    for (size_t i = 2; i < args.size(); i++) {
+        const cpureg* reg = tgt->find_cpureg(args[i]);
+        if (reg == nullptr)
+            return mkstr("E,no such register: %s", args[i].c_str());
+
+        vector<u8> data(reg->total_size());
+        bool ok = reg->read(data.data(), data.size());
+        if (!ok && !bulk)
+            return mkstr("E,error reading %s", args[i].c_str());
+
+        if (bulk)
+            ss << ",";
+        for (size_t j = 0; ok && j < data.size(); j++)
+            ss << mkstr(bulk ? "%02hhx" : ",0x%02hhx", data[j]);
+    }
+
     return ss.str();
 }
 

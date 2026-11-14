@@ -256,6 +256,17 @@ Returns the content of a CPU register.
 * Command: `$getr,<target-name>,<reg-name>#**`
 * Response: `OK,<byte0>,<byte1>,<byte2>,...#**`
 
+#### Read CPU Registers
+Returns the contents of multiple CPU registers of a given target at once. The
+response holds one value per requested register, in the order of the request.
+Each value consists of the bytes of the register as two hex digits each,
+without prefix or separator. The value of a register that cannot be read is
+empty. If any of the registers does not exist, the entire command fails. Older
+servers only return the content of the first register, with its bytes
+formatted as `0x<hex>`.
+* Command: `$getr,<target-name>,<reg-name>,<reg-name1>[,reg-name2]...#**`
+* Response: `OK,<reg-bytes>,<reg1-bytes>[,reg2-bytes]...#**`
+
 #### Write CPU Register
 Attempts to set the contents of the given CPU register to the given bytes.
 It is implementation defined if partial writes are supported.
