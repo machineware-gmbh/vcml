@@ -144,7 +144,7 @@ TEST(vspserver, backpressure) {
 
         // a client that leaves does not keep the simulation waiting, which
         // then runs on for the one that drops its events
-        size_t before = 0;
+        size_t before = bst.published;
         {
             test_vsp_client other(session.port()); // client 1
             ASSERT_TRUE(wait_for([&]() { return has_client(session, 1); }));
@@ -153,8 +153,6 @@ TEST(vspserver, backpressure) {
             EXPECT_EQ(other.command("sebm,wait"), "OK");
             EXPECT_EQ(other.command("resume"), "OK");
             EXPECT_EQ(vsp.command("resume"), "OK");
-
-            before = bst.published;
             ASSERT_TRUE(wait_for([&]() { return bst.published > before; }));
             mwr::usleep(50000);
             EXPECT_LE(bst.published, before + 100);

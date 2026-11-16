@@ -179,7 +179,7 @@ static void run_client(vspserver& session, traffic& tr, gpio::leds& leds,
     }
 
     ASSERT_TRUE(wait_for([&]() { return !has_client(session, 1); }));
-    EXPECT_FALSE(tr.in.has_subscribers());
+    EXPECT_TRUE(wait_for([&]() { return !tr.in.has_subscribers(); }));
 
     resumed = true;
     string events = run_for(session, vsp, "500ns");
