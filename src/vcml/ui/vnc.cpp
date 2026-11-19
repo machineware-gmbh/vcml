@@ -244,13 +244,23 @@ static u32 vnc_shift(u32 pixel, int shift) {
     return pixel;
 }
 
+static u32 vnc_bswap(u32 pixel, u8 bpp) {
+    switch (bpp) {
+    case 16:
+        return bswap((u16)pixel);
+    case 24:
+        return bswap(pixel) >> 8;
+    case 32:
+        return bswap(pixel);
+    default:
+        return pixel;
+    }
+}
+
 static u32 vnc_convert_pixel(u32 pixel, const vnc_pixelformat& src,
                              const vnc_pixelformat& dst) {
-    if (src == dst)
-        return pixel;
-
     if (src.endian)
-        pixel = bswap(pixel);
+        pixel = vnc_bswap(pixel, src.bpp);
 
     u32 r = (pixel >> src.roff) & src.rmax;
     u32 g = (pixel >> src.goff) & src.gmax;
@@ -260,8 +270,16 @@ static u32 vnc_convert_pixel(u32 pixel, const vnc_pixelformat& src,
     g = vnc_shift(g, popcnt(src.gmax) - popcnt(dst.gmax));
     b = vnc_shift(b, popcnt(src.bmax) - popcnt(dst.bmax));
 
-    pixel = r << dst.roff | g << dst.goff | b << dst.boff;
-    return dst.endian ? bswap(pixel) : pixel;
+    return r << dst.roff | g << dst.goff | b << dst.boff;
+}
+
+template <typename EMIT>
+static void vnc_emit_pixel(u32 pixel, const vnc_pixelformat& fmt, EMIT emit) {
+    u32 nbytes = fmt.bpp / 8;
+    for (u32 i = 0; i < nbytes; i++) {
+        u32 byte = fmt.endian ? nbytes - 1 - i : i;
+        emit((u8)(pixel >> (byte * 8)));
+    }
 }
 
 static void vnc_encode_hextile(vector<u8>& data, u32 x, u32 y, u32 w, u32 h) {
@@ -277,23 +295,7 @@ static void vnc_encode_hextile(vector<u8>& d, u32 x, u32 y, u32 w, u32 h,
                                u32 col, const vnc_pixelformat& s,
                                const vnc_pixelformat& c) {
     u32 pixel = vnc_convert_pixel(col, s, c);
-    if (c.endian) {
-        if (c.bpp > 24)
-            d.push_back(pixel >> 24);
-        if (c.bpp > 16)
-            d.push_back(pixel >> 16);
-        if (c.bpp > 8)
-            d.push_back(pixel >> 8);
-        d.push_back(pixel);
-    } else {
-        d.push_back(pixel);
-        if (c.bpp > 8)
-            d.push_back(pixel >> 8);
-        if (c.bpp > 16)
-            d.push_back(pixel >> 16);
-        if (c.bpp > 24)
-            d.push_back(pixel >> 24);
-    }
+    vnc_emit_pixel(pixel, c, [&d](u8 byte) { d.push_back(byte); });
 
     vnc_encode_hextile(d, x, y, w, h);
 }
@@ -408,13 +410,7 @@ void vnc::send_padding(size_t n) {
 
 void vnc::send_pixel(u32 pixel) {
     u32 px = vnc_convert_pixel(pixel, m_native, m_client);
-    send<u8>(px);
-    if (m_client.bpp > 8)
-        send<u8>(px >> 8);
-    if (m_client.bpp > 16)
-        send<u8>(px >> 16);
-    if (m_client.bpp > 24)
-        send<u8>(px >> 24);
+    vnc_emit_pixel(px, m_client, [this](u8 byte) { send<u8>(byte); });
 }
 
 void vnc::send_pixels(u32 x, u32 y, u32 w, u32 h) {
