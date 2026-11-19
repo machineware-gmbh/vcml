@@ -240,7 +240,7 @@ static u32 vnc_shift(u32 pixel, int shift) {
     if (shift > 0)
         return pixel >> shift;
     if (shift < 0)
-        return pixel << shift;
+        return pixel << -shift;
     return pixel;
 }
 
