@@ -146,7 +146,6 @@ class rsp_client
 {
 private:
     mwr::socket m_sock;
-    const atomic<bool>& m_suspended;
 
     static bool needs_escape(char c) {
         return c == '$' || c == '#' || c == '}' || c == '*';
@@ -159,21 +158,11 @@ private:
     }
 
 public:
-    rsp_client(u16 port, const atomic<bool>& suspended):
-        m_sock("localhost", port), m_suspended(suspended) {}
-
-    void wait_suspended() {
-        for (size_t i = 0; !m_suspended; i++) {
-            if (i > 50000)
-                VCML_REPORT("timeout waiting for simulation to suspend");
-            mwr::usleep(100);
-        }
-    }
+    rsp_client(u16 port): m_sock("localhost", port) {}
 
     void send_raw(const string& s) { m_sock.send(s); }
 
     void send_packet(const string& payload, u8 checksum_error = 0) {
-        wait_suspended();
         string esc;
         for (char c : payload) {
             if (needs_escape(c)) {
@@ -237,18 +226,6 @@ public:
 
     model gdb;
 
-    atomic<bool> suspended;
-
-    virtual void session_suspend() override {
-        test_base::session_suspend();
-        suspended = true;
-    }
-
-    virtual void session_resume() override {
-        suspended = false;
-        test_base::session_resume();
-    }
-
     gdbserver_test(const sc_module_name& nm):
         test_base(nm),
         cpu0("cpu0", 0x1000),
@@ -260,8 +237,7 @@ public:
         mem2("mem2", MEM_SIZE),
         mem3("mem3", MEM_SIZE),
         gdb("gdb",
-            "vcml::meta::gdbserver test.cpu0 test.cpu1 test.cpu2 test.cpu3"),
-        suspended(false) {
+            "vcml::meta::gdbserver test.cpu0 test.cpu1 test.cpu2 test.cpu3") {
         test_processor* cpus[] = { &cpu0, &cpu1, &cpu2, &cpu3 };
         generic::memory* mems[] = { &mem0, &mem1, &mem2, &mem3 };
         for (size_t i = 0; i < 4; i++) {
@@ -330,7 +306,7 @@ public:
         atomic<bool> done(false);
         thread client([&]() {
             try {
-                rsp_client rsp(port, suspended);
+                rsp_client rsp(port);
                 session(rsp);
                 rsp.send_packet("D");
                 EXPECT_EQ(rsp.recv_ack(), '+');

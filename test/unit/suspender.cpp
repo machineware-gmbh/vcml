@@ -14,6 +14,25 @@ class suspender_test : public test_base, debugging::suspender
 {
 public:
     std::thread t1;
+    std::atomic<bool> slow;
+    std::atomic<bool> entered;
+    std::atomic<bool> notified;
+
+    virtual void session_suspend() override {
+        test_base::session_suspend();
+        if (slow) {
+            entered = true;
+            mwr::usleep(100000);
+        }
+
+        notified = true;
+    }
+
+    virtual void session_resume() override {
+        entered = false;
+        notified = false;
+        test_base::session_resume();
+    }
 
     void test_resume() {
         std::atomic<bool> done = false;
@@ -46,6 +65,30 @@ public:
         t0.join();
     }
 
+    void test_notified() {
+        std::atomic<bool> done = false;
+        slow = true;
+
+        std::thread t0([&]() -> void {
+            while (!entered)
+                mwr::usleep(100);
+
+            suspend();
+            EXPECT_TRUE(is_suspending());
+            EXPECT_TRUE(notified) << "suspend returned during session_suspend";
+
+            done = true;
+            resume();
+        });
+
+        suspend();
+        while (!done)
+            wait(1, SC_MS);
+
+        t0.join();
+        slow = false;
+    }
+
     void test_forced_resume() {
         t1 = std::thread([&]() -> void {
             EXPECT_FALSE(is_suspending());
@@ -71,7 +114,12 @@ public:
     }
 
     suspender_test(const sc_module_name& nm = "test"):
-        test_base(nm), debugging::suspender("suspender"), t1() {}
+        test_base(nm),
+        debugging::suspender("suspender"),
+        t1(),
+        slow(false),
+        entered(false),
+        notified(false) {}
     virtual ~suspender_test() {
         if (t1.joinable())
             t1.join();
@@ -82,6 +130,7 @@ public:
         EXPECT_STREQ(suspender::name(), "test.suspender");
 
         test_resume();
+        test_notified();
         test_forced_resume();
     }
 };

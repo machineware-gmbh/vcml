@@ -101,19 +101,17 @@ void suspend_manager::request_yield(suspender* s) {
     if (is_sysc_thread())
         VCML_ERROR("cannot call yield on systemc thread");
 
-    suspender_lock.lock();
+    lock_guard<mutex> guard(suspender_lock);
 
-    // no point in yielding when we are already suspended
-    if (!stl_contains(active_suspenders, s)) {
-        // must have at least queued a suspend request before yielding
-        if (!stl_contains(waiting_suspenders, s))
-            VCML_ERROR("cannot call yield without suspend");
-        cv_pause.wait(suspender_lock, [&] {
-            return stl_contains(active_suspenders, s) || is_quitting;
-        });
+    if (!stl_contains(active_suspenders, s) &&
+        !stl_contains(waiting_suspenders, s)) {
+        VCML_ERROR("cannot call yield without suspend");
     }
 
-    suspender_lock.unlock();
+    cv_pause.wait(suspender_lock, [&] {
+        return (is_suspended && stl_contains(active_suspenders, s)) ||
+               is_quitting;
+    });
 }
 
 bool suspend_manager::is_suspending(const suspender* s) const {
@@ -189,11 +187,11 @@ void suspend_manager::handle_requests() {
     }
 
     if (!active_suspenders.empty()) {
-        is_suspended = true;
         suspender_lock.unlock();
         notify_suspend();
         suspender_lock.lock();
 
+        is_suspended = true;
         cv_pause.notify_all();
 
 #ifdef INSCIGHT_KTHREAD_SUSPENDED
