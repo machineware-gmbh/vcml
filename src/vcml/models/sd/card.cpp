@@ -92,7 +92,7 @@ void card::make_r6(sd_command& tx) {
     tx.response[0] = 0x03;
     tx.response[1] = m_rca >> 8;
     tx.response[2] = m_rca & 0xff;
-    tx.response[3] = (m_status & CURRENT_STATE) << 1;
+    tx.response[3] = (m_status & CURRENT_STATE) >> 8;
     if (m_status & COM_CRC_ERROR)
         tx.response[3] |= 1 << 7;
     if (m_status & ILLEGAL_COMMAND)

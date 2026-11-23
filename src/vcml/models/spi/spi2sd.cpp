@@ -144,10 +144,13 @@ u8 spi2sd::do_spi_transport(u8 mosi) {
             m_state = IDLE;
             return SPIRX_OK;
         case SDRX_ERR_CRC:
+            m_state = IDLE;
             return SPIRX_ERR_CRC;
         case SDRX_ERR_INT:
+            m_state = IDLE;
             return SPIRX_ERR_WR;
         case SDRX_ERR_ILLEGAL:
+            m_state = IDLE;
             return SPIRX_ERR_WR;
         default:
             VCML_ERROR("card returned invalid write response");
