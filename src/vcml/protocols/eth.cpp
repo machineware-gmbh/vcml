@@ -245,15 +245,29 @@ void eth_host::eth_link_up() {
     // to be overloaded
 }
 
+static bool all_links_up(const eth_host& host) {
+    for (const auto* socket : host.all_eth_initiator_sockets()) {
+        if (!socket->link_up())
+            return false;
+    }
+
+    for (const auto* socket : host.all_eth_target_sockets()) {
+        if (!socket->link_up())
+            return false;
+    }
+
+    return true;
+}
+
 void eth_host::eth_link_up(const eth_initiator_socket& sock) {
-    if (!m_link_up) {
+    if (!m_link_up && all_links_up(*this)) {
         m_link_up = true;
         eth_link_up();
     }
 }
 
 void eth_host::eth_link_up(const eth_target_socket& sock) {
-    if (!m_link_up) {
+    if (!m_link_up && all_links_up(*this)) {
         m_link_up = true;
         eth_link_up();
     }
