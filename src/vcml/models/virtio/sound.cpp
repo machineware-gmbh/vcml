@@ -459,6 +459,11 @@ u32 sound::handle_pcm_set_params(vq_message& msg) {
     if (!stream || stream->stream_id != req.hdr.stream_id)
         return VIRTIO_SND_S_BAD_MSG;
 
+    if (req.rate >= VIRTIO_SND_PCM_RATE_NUM) {
+        log_warn("unsupported PCM rate index: %hhu", req.rate);
+        return VIRTIO_SND_S_NOT_SUPP;
+    }
+
     if (req.channels < stream->driver_min_channels ||
         req.channels > stream->driver_max_channels) {
         log_warn("unsupported PCM channel count: %hhu", req.channels);
@@ -508,6 +513,11 @@ u32 sound::handle_pcm_start(vq_message& msg) {
     auto* stream = lookup_stream(hdr.stream_id);
     if (!stream)
         return VIRTIO_SND_S_BAD_MSG;
+
+    if (stream->channels == 0) {
+        log_warn("stream %u has not been configured", stream->stream_id);
+        return VIRTIO_SND_S_BAD_MSG;
+    }
 
     log_debug("start stream %u", stream->stream_id);
     stream->state = STATE_RUNNING;
@@ -625,7 +635,9 @@ void sound::tx_thread() {
                 break;
             }
 
-            if (m_streamtx.state == STATE_RUNNING) {
+            if (msg.length_in() < sizeof(virtio_snd_pcm_xfer)) {
+                set_response_status(msg, VIRTIO_SND_S_BAD_MSG);
+            } else if (m_streamtx.state == STATE_RUNNING) {
                 virtio_snd_pcm_xfer hdr{};
                 virtio_snd_pcm_status sts{};
                 msg.copy_in(hdr);
@@ -663,7 +675,9 @@ void sound::rx_thread() {
                 break;
             }
 
-            if (m_streamrx.state == STATE_RUNNING) {
+            if (msg.length_out() < sizeof(virtio_snd_pcm_status)) {
+                set_response_status(msg, VIRTIO_SND_S_BAD_MSG);
+            } else if (m_streamrx.state == STATE_RUNNING) {
                 virtio_snd_pcm_xfer hdr{};
                 virtio_snd_pcm_status sts{};
                 msg.copy_in(hdr);
