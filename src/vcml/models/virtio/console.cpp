@@ -97,6 +97,11 @@ bool console::write_config(const range& addr, const void* ptr) {
 }
 
 void console::serial_receive(u8 data) {
+    if (m_fifo.empty()) {
+        log_debug("no receive buffer available, dropping 0x%02hhx", data);
+        return;
+    }
+
     vq_message msg(m_fifo.front());
     msg.copy_out(data);
     msg.trim(1);
@@ -123,6 +128,7 @@ console::~console() {
 }
 
 void console::reset() {
+    m_fifo = {};
     m_config.cols = cols;
     m_config.rows = rows;
     m_config.max_nr_ports = 1;
