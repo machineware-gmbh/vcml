@@ -298,6 +298,9 @@ public:
 
     virtual void reset() override;
 
+    using property<DATA, N>::set_default;
+    void set_default(const DATA& defval);
+
     virtual void do_read(size_t idx, u64 off, u64 len, void* ptr,
                          bool dbg) override;
     virtual void do_write(size_t idx, u64 off, u64 len, const void* ptr,
@@ -641,6 +644,13 @@ void reg<DATA, N, STRIDE>::reset() {
         for (unsigned int i = 0; i < N; i++)
             m_banks[bank.first][i] = m_init[i];
     }
+}
+
+template <typename DATA, size_t N, size_t STRIDE>
+void reg<DATA, N, STRIDE>::set_default(const DATA& defval) {
+    property<DATA, N>::set_default(defval);
+    for (size_t i = 0; i < N; i++)
+        m_init[i] = property<DATA, N>::get(i);
 }
 
 template <typename DATA, size_t N, size_t STRIDE>
