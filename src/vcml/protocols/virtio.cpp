@@ -425,8 +425,9 @@ virtio_status packed_virtqueue::do_get(vq_message& msg) {
     u32 count = 0;
     u32 limit = size;
     u32 index = msg.index;
-
+    bool wrap = m_wrap_get;
     bool indirect = desc->is_indirect();
+
     if (indirect) {
         if (!desc->len || desc->len % sizeof(vq_desc)) {
             log_warn("broken indirect descriptor");
@@ -444,7 +445,7 @@ virtio_status packed_virtqueue::do_get(vq_message& msg) {
     }
 
     while (true) {
-        if (!desc->is_avail(m_wrap_get) || desc->is_used(m_wrap_get)) {
+        if (!indirect && (!desc->is_avail(wrap) || desc->is_used(wrap))) {
             log_warn("descriptor not available");
             return VIRTIO_ERR_DESC;
         }
@@ -474,82 +475,79 @@ virtio_status packed_virtqueue::do_get(vq_message& msg) {
                         addr);
                     return VIRTIO_ERR_NODMI;
                 };
+
                 msg.append(addr, len, desc->is_write());
                 addr += len;
                 nbytes += len;
             }
         }
 
-        if (count++ >= limit) {
+        count++;
+
+        if (indirect ? count >= limit : !desc->is_chained())
+            break;
+
+        if (count >= limit) {
             log_warn("descriptor chain too long");
             return VIRTIO_ERR_CHAIN;
         }
 
-        index++;
-        if (index >= limit) {
-            index -= limit;
-            m_wrap_get = !m_wrap_get;
-            VCML_ERROR_ON(indirect, "indirect descriptors must not wrap");
+        if (++index >= limit) {
+            index = 0;
+            wrap = !wrap;
         }
-
-        if (!desc->is_chained())
-            break;
 
         desc = base + index;
     }
 
-    m_last_avail_idx += indirect ? 1 : msg.ndescs();
-    if (m_last_avail_idx >= size)
+    m_last_avail_idx += indirect ? 1 : count;
+    if (m_last_avail_idx >= size) {
         m_last_avail_idx -= size;
+        m_wrap_get = !m_wrap_get;
+    }
 
     return VIRTIO_OK;
 }
 
 virtio_status packed_virtqueue::do_put(vq_message& msg) {
-    u32 count = 0;
     u32 index = msg.index;
-    u32 limit = size;
-
-    vq_desc* base = m_desc;
-    vq_desc* desc = base + index;
-
-    notify = m_driver->should_notify(index);
-
-    if (desc->is_indirect()) {
-        if (!desc->len || desc->len % sizeof(vq_desc)) {
-            log_warn("broken indirect descriptor");
-            return VIRTIO_ERR_DESC;
-        }
-
-        index = 0;
-        limit = desc->len / sizeof(vq_desc);
-        desc = base = (vq_desc*)lookup_desc_ptr(desc);
-
-        if (!desc) {
-            log_warn("cannot access indirect descriptor");
-            return VIRTIO_ERR_INDIRECT;
-        }
+    if (index >= size) {
+        log_warn("index out of bounds: %u", index);
+        return VIRTIO_ERR_DESC;
     }
 
-    while (true) {
-        desc->mark_used(m_wrap_put);
+    vq_desc* head = m_desc + index;
+    notify = m_driver ? m_driver->should_notify(index) : true;
 
-        if (count++ >= limit) {
-            log_warn("descriptor chain too long");
-            return VIRTIO_ERR_CHAIN;
+    // the buffer id is stored in the last descriptor of a chain
+    u32 count = 1;
+    u16 id = head->id;
+    if (!head->is_indirect()) {
+        vq_desc* desc = head;
+        while (desc->is_chained()) {
+            if (count++ >= size) {
+                log_warn("descriptor chain too long");
+                return VIRTIO_ERR_CHAIN;
+            }
+
+            desc = m_desc + (index + count - 1) % size;
         }
 
-        index++;
-        if (index >= limit) {
-            index -= limit;
+        id = desc->id;
+    }
+
+    head->id = id;
+    head->len = msg.length_out();
+
+    for (u32 i = 0; i < count; i++) {
+        m_desc[index].mark_used(m_wrap_put);
+        if (++index >= size) {
+            index = 0;
             m_wrap_put = !m_wrap_put;
         }
-
-        if (!desc->is_chained())
-            return VIRTIO_OK;
-
-        desc = base + index;
     }
+
+    return VIRTIO_OK;
 }
 
 virtio_shared_region::virtio_shared_region(u32 shmid, u64 base, u64 size):

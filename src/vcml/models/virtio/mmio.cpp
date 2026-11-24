@@ -116,6 +116,16 @@ void mmio::cleanup_virtqueues() {
 
 void mmio::reset_device() {
     cleanup_virtqueues();
+
+    for (auto& [vqid, desc] : m_device_desc.virtqueues) {
+        desc.size = desc.limit;
+        desc.desc = 0;
+        desc.driver = 0;
+        desc.device = 0;
+        desc.vector = VIRTIO_NO_VECTOR;
+        desc.has_event_idx = false;
+    }
+
     m_drv_features = 0;
     status = 0;
     virtio_out->reset();
