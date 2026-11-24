@@ -79,7 +79,7 @@ bool net::filter(const eth_frame& frame) {
     if (m_promisc)
         return true;
 
-    if (frame.is_multicast()) {
+    if (frame.is_multicast() && !frame.is_broadcast()) {
         if (m_nomulti)
             return false;
 
@@ -184,18 +184,25 @@ void net::handle_ctrl_announce(vq_message& msg) {
     }
 }
 
-static void parse_mac_tables(vq_message& msg, vector<mac_addr>& macs,
+static bool parse_mac_tables(vq_message& msg, vector<mac_addr>& macs,
                              size_t& offset) {
     u32 nentries;
-    msg.copy_in(nentries, offset);
+    if (msg.copy_in(nentries, offset) != sizeof(nentries))
+        return false;
+
     offset += sizeof(nentries);
 
     for (u32 i = 0; i < nentries; i++) {
         mac_addr addr;
-        msg.copy_in(addr.bytes.data(), addr.bytes.size(), offset);
+        size_t size = addr.bytes.size();
+        if (msg.copy_in(addr.bytes.data(), size, offset) != size)
+            return false;
+
         macs.push_back(addr);
-        offset += addr.bytes.size();
+        offset += size;
     }
+
+    return true;
 }
 
 void net::handle_ctrl_mac_addr(vq_message& msg) {
@@ -216,8 +223,15 @@ void net::handle_ctrl_mac_addr(vq_message& msg) {
         m_unicast.clear();
         m_multicast.clear();
         size_t offset = 2; // skip command + subcommand bytes
-        parse_mac_tables(msg, m_unicast, offset);
-        parse_mac_tables(msg, m_multicast, offset);
+        if (!parse_mac_tables(msg, m_unicast, offset) ||
+            !parse_mac_tables(msg, m_multicast, offset)) {
+            log_warn("malformed mac table");
+            m_unicast.clear();
+            m_multicast.clear();
+            msg.copy_out(VIRTIO_NET_CTRL_ERR);
+            break;
+        }
+
         msg.copy_out(VIRTIO_NET_CTRL_OK);
         break;
     }
@@ -289,8 +303,13 @@ void net::rx_thread() {
         while (!virtio_in->get(VIRTQUEUE_RX, msg))
             wait(m_rxev);
 
-        if (!handle_rx(msg, frame) || !virtio_in->put(VIRTQUEUE_RX, msg))
+        if (!handle_rx(msg, frame)) {
             log_warn("packet reception failed");
+            msg.trim(0);
+        }
+
+        if (!virtio_in->put(VIRTQUEUE_RX, msg))
+            log_warn("failed to return reception buffer");
     }
 }
 
@@ -300,8 +319,10 @@ void net::tx_thread() {
         while (!virtio_in->get(VIRTQUEUE_TX, msg))
             wait(m_txev);
 
-        if (!handle_tx(msg) || !virtio_in->put(VIRTQUEUE_TX, msg))
+        if (!handle_tx(msg))
             log_warn("packet transmission failed");
+        if (!virtio_in->put(VIRTQUEUE_TX, msg))
+            log_warn("failed to return transmission buffer");
     }
 }
 
