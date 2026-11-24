@@ -148,6 +148,16 @@ void pci::cleanup_virtqueues() {
 
 void pci::reset_device() {
     cleanup_virtqueues();
+
+    for (auto& [vqid, desc] : m_device_desc.virtqueues) {
+        desc.size = desc.limit;
+        desc.desc = 0;
+        desc.driver = 0;
+        desc.device = 0;
+        desc.vector = VIRTIO_NO_VECTOR;
+        desc.has_event_idx = false;
+    }
+
     m_drv_features = 0;
     device_status = 0;
     virtio_out->reset();
@@ -660,6 +670,7 @@ pci::pci(const sc_module_name& nm):
     irq_status.sync_always();
     irq_status.allow_read_write();
     irq_status.on_read(&pci::read_irq_status);
+    irq_status.no_writeback();
 
     pci_declare_bar(virtio_bar, 0x4000, PCI_BAR_MMIO | PCI_BAR_64);
 
