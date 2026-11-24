@@ -211,6 +211,7 @@ void mouse::handle_btn(u32 button, bool down) {
         break;
     case BUTTON_EXTRA:
         push_key(BTN_EXTRA, down);
+        break;
     case BUTTON_WHEEL_UP:
         push_rel(REL_WHEEL, down ? 1 : 0);
         break;
