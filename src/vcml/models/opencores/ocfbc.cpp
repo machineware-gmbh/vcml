@@ -178,6 +178,8 @@ void ocfbc::create() {
         VCML_ERROR("unknown mode: %ubpp", m_bpp * 8);
     }
 
+    u8* prev = m_fb;
+
     // cannot use DMI with pseudocolor
     if (!vram || m_pc) {
         log_debug("copying vnc framebuffer from vram");
@@ -188,6 +190,8 @@ void ocfbc::create() {
         m_display.setup(mode, vram);
         m_fb = nullptr;
     }
+
+    delete[] prev;
 }
 
 void ocfbc::render() {
@@ -208,7 +212,8 @@ void ocfbc::render() {
                 u32 base = (stat & STAT_AVMP) ? vbarb : vbara;
                 u32 addr = base + y * linesz + x;
                 u8* dest = m_pc ? linebuf : fb;
-                if (failed(rs = out.read(addr, dest + x, burstsz))) {
+                u32 size = min(burstsz, linesz - x);
+                if (failed(rs = out.read(addr, dest + x, size))) {
                     log_debug("failed to read vmem at 0x%08x: %s", addr,
                               tlm_response_to_str(rs));
                     stat |= STAT_SINT;
@@ -297,7 +302,7 @@ bool ocfbc::cmd_info(const vector<string>& args, ostream& os) {
 ocfbc::ocfbc(const sc_module_name& nm):
     peripheral(nm),
     m_display("display"),
-    m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette)),
+    m_palette_addr(PALETTE_ADDR, PALETTE_ADDR + sizeof(m_palette) - 1),
     m_palette(),
     m_fb(nullptr),
     m_xres(0),
