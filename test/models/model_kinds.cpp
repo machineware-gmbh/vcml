@@ -20,7 +20,7 @@ TEST(model, kinds) {
     };
 
     for (const char* type : types) {
-        vcml::model m("m", type);
+        vcml::model m(sc_gen_unique_name("model"), type);
         EXPECT_STREQ(m->kind(), type);
     }
 
@@ -44,7 +44,7 @@ TEST(model, kinds) {
     };
 
     for (const auto& [type, kind] : gates) {
-        vcml::model gate("gate", type);
+        vcml::model gate(sc_gen_unique_name("gate"), type);
         EXPECT_STREQ(gate->kind(), kind);
     }
 
