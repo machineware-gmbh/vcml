@@ -79,6 +79,19 @@ static void systemc_report_handler(const sc_report& r, const sc_actions& a) {
 
 vector<string> args;
 
+static void collect_kinds(const sc_object& parent, std::set<string>& kinds) {
+    for (sc_object* child : parent.get_child_objects()) {
+        kinds.insert(child->kind());
+        collect_kinds(*child, kinds);
+    }
+}
+
+std::set<string> kinds_of_children(const sc_object& parent) {
+    std::set<string> kinds;
+    collect_kinds(parent, kinds);
+    return kinds;
+}
+
 string get_resource_path(const string& name) {
     if (args.size() < 2) {
         ADD_FAILURE() << "test resource path information not provided";

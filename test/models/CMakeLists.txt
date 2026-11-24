@@ -19,6 +19,7 @@ macro(model_test test)
     set_tests_properties(models/${test} PROPERTIES TIMEOUT 10)
 endmacro()
 
+model_test("model_kinds")
 model_test("generic_bus")
 model_test("generic_bus_default")
 model_test("generic_memory")

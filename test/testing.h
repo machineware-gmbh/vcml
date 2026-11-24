@@ -105,4 +105,6 @@ extern vector<string> args;
 
 string get_resource_path(const string& name);
 
+std::set<string> kinds_of_children(const sc_object& parent);
+
 #endif

@@ -44,7 +44,6 @@ xhcipci::xhcipci(const sc_module_name& nm):
     m_xhci.dma.bind(m_ep.dma_in);
 
     m_ep.pci_declare_bar(0, XHCIPCI_MEMORY_SIZE, PCI_BAR_MMIO | PCI_BAR_64);
-    m_ep.pci_declare_pm_cap(PCI_PM_CAP_VER_1_1);
     m_ep.pci_declare_msi_cap(PCI_MSI_VECTOR | PCI_MSI_64BIT | PCI_MSI_QMASK1);
     m_ep.pci_declare_msix_cap(0, m_ep.irq_in.count(), XHCIPCI_MSIX_OFFSET);
 
