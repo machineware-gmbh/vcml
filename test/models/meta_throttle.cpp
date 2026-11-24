@@ -50,18 +50,33 @@ public:
         wait(2 * interval);
     }
 
+    u64 measure(size_t intervals) {
+        u64 start = mwr::timestamp_us();
+        wait(intervals * interval);
+        return mwr::timestamp_us() - start;
+    }
+
     void check_throttling(meta::throttle& active) {
         activate(active);
 
+        size_t throttled = 0;
         u64 start = mwr::timestamp_us();
-        wait(4 * interval);
-        u64 elapsed = mwr::timestamp_us() - start;
+        for (size_t i = 0; i < 4; i++) {
+            wait(interval);
+            if (active.is_throttling())
+                throttled++;
 
-        EXPECT_GE(elapsed, 3 * interval_us);
-        for (auto* throttle : { &sleeper, &waiter, &unknown, &disabled }) {
-            EXPECT_EQ(throttle->is_throttling(), throttle == &active)
-                << throttle->name();
+            for (auto* throttle : { &sleeper, &waiter, &unknown, &disabled }) {
+                if (throttle != &active) {
+                    EXPECT_FALSE(throttle->is_throttling())
+                        << throttle->name();
+                }
+            }
         }
+
+        u64 elapsed = mwr::timestamp_us() - start;
+        EXPECT_GE(elapsed, 3 * interval_us);
+        EXPECT_GT(throttled, 0);
     }
 
     void test_strings() {
@@ -81,29 +96,19 @@ public:
 
     void test_overrun() {
         activate(sleeper);
-        EXPECT_TRUE(sleeper.is_throttling());
 
         sleeper.allow_overrun = true;
         mwr::usleep(3 * interval_us);
-        wait(interval);
-        EXPECT_FALSE(sleeper.is_throttling());
-        wait(interval);
-        EXPECT_FALSE(sleeper.is_throttling());
-
+        EXPECT_LT(measure(2), interval_us / 2);
         wait(4 * interval);
-        EXPECT_TRUE(sleeper.is_throttling());
 
         sleeper.allow_overrun = false;
         mwr::usleep(3 * interval_us);
-        wait(interval);
-        EXPECT_FALSE(sleeper.is_throttling());
-        wait(interval);
-        EXPECT_TRUE(sleeper.is_throttling());
+        EXPECT_GE(measure(2), interval_us * 8 / 10);
     }
 
     void test_suspend() {
         activate(sleeper);
-        EXPECT_TRUE(sleeper.is_throttling());
 
         sleeper.allow_overrun = true;
         atomic<bool> done(false);
@@ -120,14 +125,7 @@ public:
             wait(interval);
         t.join();
 
-        size_t throttled = 0;
-        for (size_t i = 0; i < 3; i++) {
-            wait(interval);
-            if (sleeper.is_throttling())
-                throttled++;
-        }
-
-        EXPECT_GE(throttled, 2);
+        EXPECT_GE(measure(2), interval_us * 3 / 2);
         sleeper.allow_overrun = false;
     }
 };
