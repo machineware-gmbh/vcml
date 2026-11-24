@@ -74,18 +74,19 @@ void lm75::irq_update() {
         return;
     }
 
+    double t = from_temp9(temp);
     if (config & CFG_INT) { // interrupt mode
-        if (!m_evt && temp > high) {
+        if (!m_evt && t > from_temp9(high)) {
             m_evt = true;
             alarm = true;
-        } else if (m_evt && temp < hyst) {
+        } else if (m_evt && t < from_temp9(hyst)) {
             m_evt = false;
             alarm = true;
         }
     } else { // comparator mode
-        if (temp > high)
+        if (t > from_temp9(high))
             alarm = true;
-        if (temp < hyst)
+        if (t < from_temp9(hyst))
             alarm = false;
     }
 }
@@ -207,12 +208,13 @@ i2c_response lm75::i2c_read(const i2c_target_socket& socket, u8& data) {
 i2c_response lm75::i2c_write(const i2c_target_socket& socket, u8 data) {
     if (m_len == 0) {
         pointer = data;
-    } else {
+    } else if (m_len <= sizeof(m_buf)) {
         m_buf[m_len - 1] = data;
         save_buffer();
     }
 
-    m_len++;
+    if (m_len <= sizeof(m_buf))
+        m_len++;
     return I2C_ACK;
 }
 
