@@ -29,11 +29,7 @@ static char* strtime(struct tm* t) {
 
 #if defined(MWR_MSVC)
 static time_t timegm(struct tm* tm) {
-    time_t local = mktime(tm);
-    struct tm tmp = *tm;
-    gmtime_s(&tmp, &local);
-    time_t utc = mktime(&tmp);
-    return utc - local;
+    return _mkgmtime(tm);
 }
 #endif
 
