@@ -43,7 +43,7 @@ additional libraries:
 | Host TAP support       | If the host Linux kernel is built with TAP support, TAP devices can be used as an Ethernet backend. This is significantly faster than SLiRP, but requires elevated privileges on the host for creating the TAP devices. TAP devices are **not** supported on Windows! |
 | libslirp               | SLiRP can be used for forwarding Ethernet frames to/from the virtualized environment without the need for elevated rights on the host. |
 | libusb                 | VCML can expose host USB devices to the virtual environment with the help of libusb. |
-| Lua                    | VCML-based VPs can be configured using Lua scripts. See [here](lua.md) under section `Configuration via LUA Scripting` for further information. |
+| Lua                    | VCML-based VPs can be configured using Lua scripts. See [here](properties.md#configuration-via-lua-scripting) under section `Configuration via LUA Scripting` for further information. |
 | SDL2                   | With SDL2, VCML can create a window that displays graphical output of a Virtual Platform. |
 
 ## Easy Build
@@ -56,9 +56,12 @@ cmake --workflow --preset gcc-debug  # configure, build and install
 ctest --preset gcc-debug             # run unit tests
 ```
 After building, the installed library can be found in `<source-dir>/BUILD/<preset>`, while the
-build tree is located in `<source-dir>/BUILD/<preset>/.BUILD`. Setting the environment variable
-`VCML_HOME` to the install path will allow other projects to use this build. The `clang-tidy`
+build tree is located in `<source-dir>/BUILD/<preset>/.BUILD`. The `clang-tidy`
 preset builds a Clang debug version with `clang-tidy` enabled as code linter.
+
+Other CMake projects that use VCML do not link against this installation. They build VCML
+from source as part of their own build. To let them find it, set the environment variable
+`VCML_HOME` to `<source-dir>` (with initialized submodules), not to the install path.
 
 ## Expert Build
 If an advanced configuration of VCML is desired, such as modifying the installation path
@@ -126,8 +129,9 @@ give guidance on how this can be done.
      * `-DVCML_BUILD_TESTS=[ON|OFF]`: build unit tests (default: `OFF`)
 
    Optional dependencies are automatically enabled if found by `cmake` on the
-   host build system. To disable their use, `-DUSE_<DEPENDENCY_NAME>=FALSE` can be passed
-   to `cmake` during configuration. More information about the dependencies of VCML
+   host build system. To disable their use, `-DVCML_USE_<FEATURE>=OFF` can be passed
+   to `cmake` during configuration, where `<FEATURE>` is one of `SDL2`, `SLIRP`, `TAP`,
+   `LUA`, `SOCKETCAN` or `USB`. More information about the dependencies of VCML
    can be found in the [corresponding section](#dependencies).
 
    Release and debug build configurations are controlled via the regular
@@ -156,9 +160,11 @@ After installation, the following new files should be present:
 <install-dir>/include/vcml/   # header files
 <install-dir>/bin/            # utility programs/scripts
 ```
-The environment should be updated so that other projects can reference the build:
+Other CMake projects that use VCML build it from source as part of their own build
+instead of linking against `<install-dir>`. The environment should be updated so that
+they can find the VCML sources:
 ```sh
-export VCML_HOME=<install-dir>
+export VCML_HOME=<source-dir>
 ```
 
 ### Maintaining Multiple Builds
@@ -181,10 +187,14 @@ for type in "DEBUG" "RELEASE"; do
     cmake --install .
 done
 ```
-Afterwards, you can use the environment variable `VCML_HOME` to point to the
-build you want to use:
-* `export VCML_HOME=(...)/vcml/BUILD/DEBUG` for the debug build or
-* `export VCML_HOME=(...)/vcml/BUILD/RELEASE` for the release build
+Afterwards, the two builds are installed side by side:
+* `(...)/vcml/BUILD/DEBUG` holds the debug build and
+* `(...)/vcml/BUILD/RELEASE` holds the release build
+
+CMake projects that find VCML via `VCML_HOME` do not use these installations.
+They build VCML from source with their own `CMAKE_BUILD_TYPE`, so keep
+`VCML_HOME` pointing to the source directory and use separate build
+directories in the downstream project instead.
 
 
 ## Windows Build

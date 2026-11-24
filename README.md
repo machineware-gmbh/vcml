@@ -44,8 +44,8 @@ Platforms can be found on our community projects website at:
 ----
 ## Contributions
 Please note that we currently cannot accept Pull Requests on GitHub.
-Contributions to VCML can be submitted as patch files via [email](https://www.machineware.de)
-instead.
+Contributions to VCML can be submitted as patch files via email to
+[contact@machineware.de](mailto:contact@machineware.de) instead.
 
 ----
 ## License
