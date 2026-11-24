@@ -32,6 +32,7 @@ private:
 
     void update();
 
+    void write_ints(u32 val);
     void write_inte(u32 val);
     void write_iecr(u32 val);
     void write_sint(u32 val);

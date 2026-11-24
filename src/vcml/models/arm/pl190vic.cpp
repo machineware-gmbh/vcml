@@ -32,9 +32,15 @@ void pl190vic::update() {
                 addr = vaddr[l];
                 m_current_irq = source;
                 m_vect_int = true;
+                break;
             }
         }
     }
+}
+
+void pl190vic::write_ints(u32 val) {
+    ints = val;
+    update();
 }
 
 void pl190vic::write_inte(u32 val) {
@@ -63,12 +69,10 @@ void pl190vic::write_addr(u32 val) {
         m_vect_int = false;
         update();
     }
-
-    vaddr = val;
 }
 
 void pl190vic::write_vctrl(u32 val, size_t idx) {
-    vctrl = val & VCTRL_M;
+    vctrl[idx] = val & VCTRL_M;
 }
 
 pl190vic::pl190vic(const sc_module_name& nm):
@@ -100,6 +104,7 @@ pl190vic::pl190vic(const sc_module_name& nm):
     risr.allow_read_only();
 
     ints.allow_read_write();
+    ints.on_write(&pl190vic::write_ints);
 
     inte.allow_read_write();
     inte.on_write(&pl190vic::write_inte);
