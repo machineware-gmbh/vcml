@@ -163,16 +163,18 @@ void rtc1742::write_control(u8 val) {
     VCML_LOG_REG_BIT_CHANGE(CONTROL_R, control, val);
     VCML_LOG_REG_BIT_CHANGE(CONTROL_W, control, val);
 
-    if ((val & CONTROL_R) && !(control & CONTROL_R)) {
-        load_time(); // CONTROL_R set
-        control |= CONTROL_R;
-    } else if ((val & CONTROL_W) && !(control & CONTROL_W)) {
-        load_time(); // CONTROL_W set
-        control |= CONTROL_W;
-    } else if (!(val & CONTROL_W) && (control & CONTROL_W)) {
-        save_time(); // CONTROL_W cleared
-        control &= ~CONTROL_W;
+    if (control & CONTROL_W) {
+        control = val; // century is writable while CONTROL_W is set
+        if (!(val & CONTROL_W))
+            save_time(); // CONTROL_W cleared
+        return;
     }
+
+    u8 flags = CONTROL_R | CONTROL_W;
+    if (val & ~control & flags)
+        load_time(); // CONTROL_R or CONTROL_W set
+
+    control = (control & ~flags) | (val & flags);
 }
 
 rtc1742::rtc1742(const sc_module_name& nm, u32 nvmemsz):
