@@ -22,6 +22,19 @@ public:
     const sc_time interval;
     const u64 interval_us;
 
+    u64 suspend_start;
+    u64 suspended_us;
+
+    virtual void session_suspend() override {
+        test_base::session_suspend();
+        suspend_start = mwr::timestamp_us();
+    }
+
+    virtual void session_resume() override {
+        suspended_us += mwr::timestamp_us() - suspend_start;
+        test_base::session_resume();
+    }
+
     throttle_test(const sc_module_name& nm):
         test_base(nm),
         sleeper("sleeper"),
@@ -30,7 +43,9 @@ public:
         disabled("disabled"),
         suspender("suspender"),
         interval(50, SC_MS),
-        interval_us(50000) {
+        interval_us(50000),
+        suspend_start(0),
+        suspended_us(0) {
         for (auto* throttle : { &sleeper, &waiter, &unknown }) {
             throttle->update_interval = interval;
             throttle->allow_overrun = false;
@@ -110,23 +125,20 @@ public:
     void test_suspend() {
         activate(sleeper);
 
-        sleeper.allow_overrun = true;
-        atomic<bool> done(false);
+        suspended_us = 0;
         suspender.suspend();
         thread t([&]() {
             while (!suspender.is_suspending())
                 mwr::usleep(100);
             mwr::usleep(3 * interval_us);
             suspender.resume();
-            done = true;
         });
 
-        while (!done)
-            wait(interval);
+        u64 elapsed = measure(1);
         t.join();
 
-        EXPECT_GE(measure(2), interval_us * 3 / 2);
-        sleeper.allow_overrun = false;
+        EXPECT_GE(suspended_us, 3 * interval_us);
+        EXPECT_GE(elapsed - suspended_us, interval_us * 8 / 10);
     }
 };
 
