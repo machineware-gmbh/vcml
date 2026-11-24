@@ -129,5 +129,10 @@ public:
 
 TEST(virtio, sockets) {
     virtio_harness test("virtio");
+    EXPECT_STREQ(test.virtio_out_h.kind(),
+                 "vcml::virtio_base_initiator_socket");
+    EXPECT_STREQ(test.virtio_in_h.kind(), "vcml::virtio_base_target_socket");
+    EXPECT_STREQ(test.virtio_out.kind(), "vcml::virtio_initiator_socket");
+    EXPECT_STREQ(test.virtio_in.kind(), "vcml::virtio_target_socket");
     sc_core::sc_start();
 }

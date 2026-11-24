@@ -78,6 +78,9 @@ TEST(property, init) {
     broker.define("test.prop_vector3", std::vector<int>{ 9, 8, 7 });
 
     test_component test("test");
+    EXPECT_STREQ(test.prop_u32.kind(), "vcml::property");
+    EXPECT_STREQ(test.prop_void.kind(), "vcml::property");
+    EXPECT_STREQ(test.prop_vector.kind(), "vcml::property");
     EXPECT_TRUE(test.prop_str.is_inited());
     EXPECT_FALSE(test.prop_str.empty());
     EXPECT_EQ((std::string)test.prop_str, "hello world");

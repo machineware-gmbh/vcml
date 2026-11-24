@@ -84,6 +84,7 @@ TEST(processor, processor) {
     vcml::generic::memory dmem("DMEM", 0x1000);
 
     mock_processor cpu("CPU");
+    EXPECT_STREQ(cpu.processor::kind(), "vcml::processor");
 
     cpu.clk_out.bind(cpu.clk);
     cpu.rst_out.bind(cpu.rst);

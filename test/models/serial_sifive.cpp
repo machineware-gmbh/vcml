@@ -172,5 +172,6 @@ public:
 
 TEST(sifive, main) {
     sifive_bench bench("bench");
+    EXPECT_STREQ(bench.uart.kind(), "vcml::serial::sifive");
     sc_core::sc_start();
 }

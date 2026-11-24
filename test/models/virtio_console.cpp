@@ -282,5 +282,6 @@ TEST(virtio, rng) {
     stim.rst.stub();
 
     tlm::tlm_global_quantum::instance().set(sc_time(10, SC_MS));
+    EXPECT_STREQ(stim.console.kind(), "vcml::virtio::console");
     sc_core::sc_start();
 }

@@ -89,5 +89,6 @@ public:
 
 TEST(arm_pl011, main) {
     pl011_bench bench("bench");
+    EXPECT_STREQ(bench.uart.kind(), "vcml::serial::pl011");
     sc_core::sc_start();
 }

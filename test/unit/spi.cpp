@@ -91,6 +91,10 @@ public:
 
 TEST(spi, sockets) {
     spi_harness test("spi");
+    EXPECT_STREQ(test.spi_out_h.kind(), "vcml::spi_base_initiator_socket");
+    EXPECT_STREQ(test.spi_in_h.kind(), "vcml::spi_base_target_socket");
+    EXPECT_STREQ(test.spi_out.kind(), "vcml::spi_initiator_socket");
+    EXPECT_STREQ(test.spi_in1.kind(), "vcml::spi_target_socket");
     sc_core::sc_start();
 }
 

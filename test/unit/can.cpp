@@ -196,5 +196,9 @@ public:
 
 TEST(can, simulate) {
     can_bench bench("can");
+    EXPECT_STREQ(bench.can_tx_h.kind(), "vcml::can_base_initiator_socket");
+    EXPECT_STREQ(bench.can_rx_h.kind(), "vcml::can_base_target_socket");
+    EXPECT_STREQ(bench.can_tx.kind(), "vcml::can_initiator_socket");
+    EXPECT_STREQ(bench.can_rx.kind(), "vcml::can_target_socket");
     sc_core::sc_start();
 }

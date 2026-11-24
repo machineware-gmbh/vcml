@@ -171,5 +171,8 @@ public:
 
 TEST(signal, sockets) {
     signal_test test("test");
+    EXPECT_THAT(kinds_of_children(test),
+                IsSupersetOf({ "vcml::signal_initiator_adapter",
+                               "vcml::signal_target_adapter" }));
     sc_core::sc_start();
 }

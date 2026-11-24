@@ -26,6 +26,8 @@ TEST(broker, file) {
     string s;
     mwr::publishers::terminal logger;
     broker_file broker(get_resource_path("test.cfg"));
+    EXPECT_STREQ(broker.kind(), "vcml::broker_file");
+    EXPECT_STREQ(broker.vcml::broker::kind(), "vcml::broker");
 
     EXPECT_DEF(broker, "a", "b");
     EXPECT_DEF(broker, "a.b", "c");
@@ -38,4 +40,12 @@ TEST(broker, file) {
     EXPECT_DEF(broker, "loop.iter1", "1");
     EXPECT_DEF(broker, "loop.iter2", "2");
     EXPECT_UDF(broker, "loop.iter3");
+}
+
+TEST(broker, kinds) {
+    const char* argv[] = { "test", nullptr };
+    broker_arg arg(1, argv);
+    broker_env env;
+    EXPECT_STREQ(arg.kind(), "vcml::broker_arg");
+    EXPECT_STREQ(env.kind(), "vcml::broker_env");
 }

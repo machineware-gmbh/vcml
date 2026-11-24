@@ -242,5 +242,9 @@ public:
 
 TEST(gpio, sockets) {
     gpio_test_harness test("gpio");
+    EXPECT_STREQ(test.h_in.kind(), "vcml::gpio_base_target_socket");
+    EXPECT_THAT(kinds_of_children(test),
+                IsSupersetOf({ "vcml::gpio_initiator_adapter",
+                               "vcml::gpio_target_adapter" }));
     sc_core::sc_start();
 }

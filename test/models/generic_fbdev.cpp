@@ -45,5 +45,6 @@ TEST(generic_fbdev, run) {
     vcml::broker broker("test");
     broker.define("harness.fb.displays", "null:0");
     test_harness test("harness");
+    EXPECT_STREQ(test.fb.kind(), "vcml::generic::fbdev");
     sc_core::sc_start();
 }

@@ -507,5 +507,6 @@ public:
 
 TEST(sd, sdhci) {
     sdhci_harness test("TEST");
+    EXPECT_STREQ(test.sdhci.kind(), "vcml::sd::sdhci");
     sc_core::sc_start();
 }

@@ -15,6 +15,7 @@ TEST(disk, ramdisk) {
     log.set_level(LOG_DEBUG);
 
     block::disk disk("disk", "ramdisk:8MiB");
+    EXPECT_STREQ(disk.kind(), "vcml::block::disk");
     EXPECT_EQ(disk.capacity(), 8 * MiB);
     EXPECT_EQ(disk.pos(), 0);
     EXPECT_EQ(disk.remaining(), disk.capacity());

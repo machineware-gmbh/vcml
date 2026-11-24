@@ -104,5 +104,6 @@ public:
 
 TEST(gpio, buttons) {
     gpio_buttons_test test("test");
+    EXPECT_STREQ(test.button0.kind(), "vcml::gpio::buttons");
     sc_core::sc_start();
 }

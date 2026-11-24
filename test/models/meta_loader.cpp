@@ -63,5 +63,6 @@ public:
 
 TEST(loader, simulate) {
     loader_test stim;
+    EXPECT_STREQ(stim.loader.kind(), "vcml::meta::loader");
     sc_core::sc_start();
 }

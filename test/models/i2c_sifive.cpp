@@ -193,5 +193,6 @@ public:
 
 TEST(i2c_sifive, simulate) {
     sifive_i2c_bench test("test");
+    EXPECT_STREQ(test.model.kind(), "vcml::i2c::sifive");
     sc_core::sc_start();
 }

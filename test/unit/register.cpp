@@ -44,6 +44,13 @@ public:
     }
 };
 
+TEST(registers, kind) {
+    mock_peripheral mock;
+    EXPECT_STREQ(mock.test_reg_a.kind(), "vcml::reg");
+    EXPECT_STREQ(mock.test_reg_a.reg_base::kind(), "vcml::reg_base");
+    EXPECT_STREQ(mock.peripheral::kind(), "vcml::peripheral");
+}
+
 TEST(registers, read) {
     mock_peripheral mock;
     sc_core::sc_time cycle(1.0 / mock.clk, sc_core::SC_SEC);

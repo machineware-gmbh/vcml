@@ -486,5 +486,6 @@ TEST(virtio, rng) {
     broker.define("stim.mtouch.multitouch", "true");
 
     virtio_rng_stim stim("stim");
+    EXPECT_STREQ(stim.input.kind(), "vcml::virtio::input");
     sc_core::sc_start();
 }

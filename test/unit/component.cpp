@@ -102,6 +102,8 @@ public:
 
 TEST(component, sockets) {
     test_component test("test");
+    EXPECT_STREQ(test.clock_gen.kind(), "vcml::generic::clock");
+    EXPECT_STREQ(test.reset_gen.kind(), "vcml::generic::reset");
 
     sc_start();
 

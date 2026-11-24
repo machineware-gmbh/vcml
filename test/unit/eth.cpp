@@ -170,5 +170,9 @@ public:
 
 TEST(ethernet, simulate) {
     ethernet_bench bench("eth");
+    EXPECT_STREQ(bench.eth_tx_h.kind(), "vcml::eth_base_initiator_socket");
+    EXPECT_STREQ(bench.eth_rx_h.kind(), "vcml::eth_base_target_socket");
+    EXPECT_STREQ(bench.eth_tx.kind(), "vcml::eth_initiator_socket");
+    EXPECT_STREQ(bench.eth_rx.kind(), "vcml::eth_target_socket");
     sc_core::sc_start();
 }

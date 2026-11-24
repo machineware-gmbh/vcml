@@ -172,5 +172,8 @@ public:
 
 TEST(eth, lan9118) {
     lan9118_bench test("bench");
+    EXPECT_STREQ(test.lan.kind(), "vcml::ethernet::lan9118");
+    EXPECT_STREQ(test.lan.phy.kind(), "vcml::ethernet::lan9118_phy");
+    EXPECT_STREQ(test.lan.mac.kind(), "vcml::ethernet::lan9118_mac");
     sc_core::sc_start();
 }

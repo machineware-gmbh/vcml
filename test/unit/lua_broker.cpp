@@ -14,6 +14,7 @@ TEST(core, lua) {
     string s;
     mwr::publishers::terminal logger;
     broker_lua lua(get_resource_path("test.lua"));
+    EXPECT_STREQ(lua.kind(), "vcml::broker_lua");
 
     const vector<pair<string, string>> properties = {
         { "test.property", VCML_VERSION_STRING },

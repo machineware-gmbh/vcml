@@ -132,5 +132,7 @@ public:
 
 TEST(clk, simulate) {
     clk_bench bench("clk");
+    EXPECT_STREQ(bench.clk_in_h.kind(), "vcml::clk_base_target_socket");
+    EXPECT_STREQ(bench.clk_out.kind(), "vcml::clk_initiator_socket");
     sc_core::sc_start();
 }

@@ -61,5 +61,6 @@ public:
 
 TEST(generic_memory, access) {
     test_harness test("spi");
+    EXPECT_STREQ(test.flash.kind(), "vcml::spi::flash");
     sc_core::sc_start();
 }

@@ -173,5 +173,9 @@ TEST(sd, to_string) {
 
 TEST(sd, sockets) {
     sd_harness test("sd");
+    EXPECT_STREQ(test.sd_out_h.kind(), "vcml::sd_base_initiator_socket");
+    EXPECT_STREQ(test.sd_in_h.kind(), "vcml::sd_base_target_socket");
+    EXPECT_STREQ(test.sd_out.kind(), "vcml::sd_initiator_socket");
+    EXPECT_STREQ(test.sd_in.kind(), "vcml::sd_target_socket");
     sc_core::sc_start();
 }

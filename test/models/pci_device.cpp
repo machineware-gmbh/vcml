@@ -286,5 +286,6 @@ public:
 
 TEST(pci, simulate) {
     pci_test test("pci");
+    EXPECT_STREQ(test.pci_device.pci::device::kind(), "vcml::pci::device");
     sc_core::sc_start();
 }

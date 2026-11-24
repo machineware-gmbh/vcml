@@ -161,5 +161,6 @@ public:
 
 TEST(max31855, simulate) {
     max31855_bench test("bench");
+    EXPECT_STREQ(test.max31855.kind(), "vcml::spi::max31855");
     sc_core::sc_start();
 }

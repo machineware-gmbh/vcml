@@ -117,5 +117,7 @@ public:
 
 TEST(serial, simulate) {
     serial_bench bench("serial");
+    EXPECT_STREQ(bench.serial_tx_h.kind(),
+                 "vcml::serial_base_initiator_socket");
     sc_core::sc_start();
 }

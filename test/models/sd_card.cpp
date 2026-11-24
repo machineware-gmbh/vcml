@@ -789,5 +789,7 @@ public:
 
 TEST(sd, card) {
     sd_card_bench test("bench");
+    EXPECT_STREQ(test.sdsc.kind(), "vcml::sd::card");
+    EXPECT_STREQ(test.bridge.kind(), "vcml::spi::spi2sd");
     sc_core::sc_start();
 }

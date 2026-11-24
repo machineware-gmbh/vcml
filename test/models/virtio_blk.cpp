@@ -335,5 +335,6 @@ public:
 
 TEST(virtio, blk) {
     virtio_blk_stim stim;
+    EXPECT_STREQ(stim.blk.kind(), "vcml::virtio::blk");
     sc_core::sc_start();
 }

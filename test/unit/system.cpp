@@ -36,5 +36,6 @@ TEST(system, exceptions) {
     ::sc_core::sc_report_handler::set_handler(handler);
 
     harness test("harness");
+    EXPECT_STREQ(test.vcml::system::kind(), "vcml::system");
     EXPECT_EQ(test.run(), EXIT_FAILURE);
 }

@@ -183,5 +183,6 @@ public:
 
 TEST(virtio, rng) {
     virtio_rng_stim stim;
+    EXPECT_STREQ(stim.rng.kind(), "vcml::virtio::rng");
     sc_core::sc_start();
 }

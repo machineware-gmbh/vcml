@@ -35,5 +35,8 @@ public:
 
 TEST(stubs, transactions) {
     test_harness test("harness");
+    EXPECT_THAT(
+        kinds_of_children(test),
+        IsSupersetOf({ "vcml::tlm_initiator_stub", "vcml::tlm_target_stub" }));
     sc_core::sc_start();
 }

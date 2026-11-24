@@ -80,5 +80,7 @@ public:
 
 TEST(adapter, test) {
     test_harness test("harness");
+    EXPECT_THAT(kinds_of_children(test),
+                Contains("vcml::tlm_bus_width_adapter"));
     sc_core::sc_start();
 }

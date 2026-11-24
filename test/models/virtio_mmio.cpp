@@ -938,5 +938,7 @@ TEST(virtio, mmio) {
     broker.define("test.mmio2.shm_base", to_string((u64)SHM_BASE));
 
     virtio_mmio_test test("test");
+    EXPECT_STREQ(test.bus.kind(), "vcml::generic::bus");
+    EXPECT_STREQ(test.mem.kind(), "vcml::generic::memory");
     sc_core::sc_start();
 }

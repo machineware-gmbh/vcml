@@ -278,5 +278,10 @@ public:
 
 TEST(i2c, simulate) {
     i2c_bench bench("i2c");
+    EXPECT_STREQ(bench.bus.kind(), "vcml::i2c::bus");
+    EXPECT_STREQ(bench.i2c_out_h.kind(), "vcml::i2c_base_initiator_socket");
+    EXPECT_STREQ(bench.i2c_in_h.kind(), "vcml::i2c_base_target_socket");
+    EXPECT_STREQ(bench.i2c_out.kind(), "vcml::i2c_initiator_socket");
+    EXPECT_STREQ(bench.i2c_in.kind(), "vcml::i2c_target_socket");
     sc_core::sc_start();
 }

@@ -116,6 +116,11 @@ public:
 
 TEST(pci, sockets) {
     pci_harness test("pci");
+    EXPECT_STREQ(test.pci_out_nocon.kind(), "vcml::pci_initiator_socket");
+    EXPECT_STREQ(test.pci_in_nocon.kind(), "vcml::pci_target_socket");
+    EXPECT_THAT(kinds_of_children(test),
+                IsSupersetOf({ "vcml::pci_base_initiator_socket",
+                               "vcml::pci_base_target_socket" }));
     sc_core::sc_start();
 }
 

@@ -87,6 +87,8 @@ public:
 TEST(sp804, main) {
     sp804_stim stim("stim");
     timers::sp804 sp804("sp804");
+    EXPECT_STREQ(sp804.kind(), "vcml::arm::sp804");
+    EXPECT_STREQ(sp804.timer1.kind(), "vcml::arm::sp804::timer");
 
     stim.out.bind(sp804.in);
     stim.clk.bind(sp804.clk);

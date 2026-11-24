@@ -26,6 +26,10 @@ public:
 
 TEST(vspserver, attributes) {
     attr_cpu cpu("cpu");
+    EXPECT_STREQ(cpu.scalar.kind(), "vcml::property");
+    EXPECT_STREQ(cpu.array.kind(), "vcml::property");
+    EXPECT_STREQ(cpu.text.kind(), "vcml::property");
+    EXPECT_STREQ(cpu.scalar.property_base::kind(), "vcml::property");
 
     vspserver session("localhost", 0);
     thread client([&]() {

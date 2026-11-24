@@ -299,5 +299,8 @@ public:
 
 TEST(arm_pl330, main) {
     pl330_bench bench("bench");
+    EXPECT_STREQ(bench.dma.kind(), "vcml::dma::pl330");
+    EXPECT_STREQ(bench.dma.manager.kind(), "vcml::dma::pl330::manager");
+    EXPECT_STREQ(bench.dma.channels[0].kind(), "vcml::dma::pl330::channel");
     sc_core::sc_start();
 }

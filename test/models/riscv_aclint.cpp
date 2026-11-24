@@ -137,5 +137,6 @@ public:
 
 TEST(aclint, aclint) {
     aclint_test test("test");
+    EXPECT_STREQ(test.aclint.kind(), "vcml::riscv::aclint");
     sc_core::sc_start();
 }

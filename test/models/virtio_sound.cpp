@@ -507,5 +507,6 @@ public:
 
 TEST(virtio, sound) {
     virtio_sound_stim stim;
+    EXPECT_STREQ(stim.sound.kind(), "vcml::virtio::sound");
     sc_core::sc_start();
 }

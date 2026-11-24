@@ -103,5 +103,7 @@ public:
 
 TEST(tlm, base_sockets) {
     tlm_harness test("tlm");
+    EXPECT_STREQ(test.tlm_ibase.kind(), "vcml::tlm_base_initiator_socket");
+    EXPECT_STREQ(test.tlm_tbase.kind(), "vcml::tlm_base_target_socket");
     sc_core::sc_start();
 }
