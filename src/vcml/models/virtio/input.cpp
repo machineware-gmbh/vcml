@@ -226,10 +226,11 @@ void input::update() {
                       event.code, event.state);
         }
 
-        if (virtio_in->put(VIRTQUEUE_EVENT, msg)) {
-            m_events.pop();
-            m_messages.pop();
-        }
+        if (!virtio_in->put(VIRTQUEUE_EVENT, msg))
+            break;
+
+        m_events.pop();
+        m_messages.pop();
     }
 
     sc_time quantum = tlm_global_quantum::instance().get();
@@ -300,7 +301,7 @@ input::input(const sc_module_name& nm):
     virtio_in("virtio_in") {
     if (keyboard)
         m_keyboard.set_layout(keymap);
-    if (keyboard || touchpad || mouse) {
+    if (keyboard || touchpad || mouse || multitouch) {
         SC_HAS_PROCESS(input);
         SC_METHOD(update);
     }
