@@ -55,8 +55,12 @@ backend_tap::backend_tap(bridge* br, int devno): backend(br) {
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     snprintf(ifr.ifr_name, IFNAMSIZ, "tap%d", devno);
 
-    int err = ioctl(m_fd, TUNSETIFF, (void*)&ifr);
-    VCML_REPORT_ON(err < 0, "error creating tapdev: %s", strerror(errno));
+    if (ioctl(m_fd, TUNSETIFF, (void*)&ifr) < 0) {
+        int err = errno;
+        close(m_fd);
+        VCML_REPORT("error creating tapdev: %s", strerror(err));
+    }
+
     log_info("using tap device %s", ifr.ifr_name);
 
     m_type = mkstr("tap:%d", devno);

@@ -56,6 +56,8 @@ public:
     void send_packet(const u8* ptr, size_t len);
     void recv_packet(const u8* ptr, size_t len);
 
+    void handle_timer(const function<void(void)>& callback);
+
     void register_client(backend_slirp* client);
     void unregister_client(backend_slirp* client);
 

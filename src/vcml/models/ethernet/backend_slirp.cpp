@@ -33,7 +33,7 @@ namespace ethernet {
 static struct in_addr ipaddr(const string& str) {
     struct in_addr addr;
     if (inet_pton(AF_INET, str.c_str(), &addr) != 1)
-        VCML_ERROR("cannot parse ipv4 address: %s", str.c_str());
+        VCML_REPORT("cannot parse ipv4 address: %s", str.c_str());
     return addr;
 }
 
@@ -44,7 +44,7 @@ static struct in_addr ipaddr(const string& format, int val) {
 static struct in6_addr ipaddr6(const string& str) {
     struct in6_addr addr6;
     if (inet_pton(AF_INET6, str.c_str(), &addr6) != 1)
-        VCML_ERROR("cannot parse ipv6 address: %s", str.c_str());
+        VCML_REPORT("cannot parse ipv6 address: %s", str.c_str());
     return addr6;
 }
 
@@ -113,7 +113,10 @@ static int64_t slirp_clock_ns(void* opaque) {
 }
 
 static void* slirp_timer_new(SlirpTimerCb cb, void* obj, void* opaque) {
-    return new async_timer([cb, obj](async_timer& t) -> void { (*cb)(obj); });
+    slirp_network* network = (slirp_network*)opaque;
+    return new async_timer([network, cb, obj](async_timer& t) -> void {
+        network->handle_timer([cb, obj]() -> void { (*cb)(obj); });
+    });
 }
 
 static void slirp_timer_free(void* t, void* opaque) {
@@ -122,7 +125,9 @@ static void slirp_timer_free(void* t, void* opaque) {
 }
 
 static void slirp_timer_mod(void* t, int64_t expire_time, void* opaque) {
-    ((async_timer*)t)->reset(expire_time, SC_MS);
+    sc_time now = sc_time_stamp();
+    sc_time expire((double)expire_time, SC_MS);
+    ((async_timer*)t)->reset(expire > now ? expire - now : SC_ZERO_TIME);
 }
 
 #if SLIRP_CHECK_VERSION(4, 9, 0)
@@ -334,18 +339,25 @@ void slirp_network::recv_packet(const u8* ptr, size_t len) {
     slirp_input(m_slirp, ptr, len);
 }
 
+void slirp_network::handle_timer(const function<void(void)>& callback) {
+    lock_guard<mutex> guard(m_mtx);
+    callback();
+}
+
 void slirp_network::register_client(backend_slirp* client) {
+    lock_guard<mutex> guard(m_mtx);
     m_clients.insert(client);
 }
 
 void slirp_network::unregister_client(backend_slirp* client) {
+    lock_guard<mutex> guard(m_mtx);
     m_clients.erase(client);
 }
 
 void slirp_network::host_port_forwarding(const string& desc) {
     vector<string> args = split(desc, ':');
     if (args.size() != 4)
-        VCML_ERROR("invalid port forwarding: '%s'", desc.c_str());
+        VCML_REPORT("invalid port forwarding: '%s'", desc.c_str());
 
     const string& protocol = args[0];
     const string& guest_addr = args[1];
@@ -368,7 +380,7 @@ void slirp_network::host_port_forwarding(const string& desc) {
         flags = 1;
 #endif
     else
-        VCML_ERROR("invalid slirp protocol: %s", protocol.c_str());
+        VCML_REPORT("invalid slirp protocol: %s", protocol.c_str());
 
     sockaddr_in guest{};
     guest.sin_family = AF_INET;
@@ -382,6 +394,8 @@ void slirp_network::host_port_forwarding(const string& desc) {
     host.sin_family = AF_INET;
     host.sin_port = htons(host_port);
     host.sin_addr.s_addr = INADDR_ANY;
+
+    lock_guard<mutex> guard(m_mtx);
 
 #if SLIRP_CHECK_VERSION(4, 5, 0)
     int err = slirp_add_hostxfwd(m_slirp, (sockaddr*)&host, sizeof(host),
@@ -434,12 +448,12 @@ backend* backend_slirp::create(bridge* br, const vector<string>& args) {
     if (network == nullptr)
         network = std::make_shared<slirp_network>(netid, br->log);
 
-    backend_slirp* slirp = new backend_slirp(br, network);
+    auto slirp = std::make_unique<backend_slirp>(br, network);
 
     for (size_t i = 1; i < args.size(); i++)
         slirp->handle_option(args[i]);
 
-    return slirp;
+    return slirp.release();
 }
 
 } // namespace ethernet
