@@ -35,11 +35,13 @@ private:
     atomic<u64> m_time_sim;
     atomic<u64> m_time_host;
     double m_rtf;
+    size_t m_cols;
     string m_linebuf;
 
     void iothread();
     void terminate();
 
+    void update_window_size();
     void draw_statusbar();
 
 public:

@@ -652,7 +652,7 @@ public:
 
     void test_tui() {
 #ifdef HAVE_PTY
-        const string line0(80, '#');
+        const string line0(53, '#');
         const string line1 = "wrap";
         tty_result res = run_tty(
             "tui", line0.length(), line0 + line1 + "\nrest\b\x1b[J",

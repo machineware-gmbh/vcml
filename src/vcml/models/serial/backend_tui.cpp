@@ -13,24 +13,6 @@
 
 #include "vcml/debugging/suspender.h"
 
-#include <csignal>
-
-static size_t max_cols = 80;
-
-#ifdef MWR_LINUX
-#include <sys/ioctl.h>
-#include <unistd.h>
-
-static void update_window_size(int sig) {
-    struct winsize tty_size;
-    if (ioctl(mwr::STDOUT_FDNO, TIOCGWINSZ, &tty_size) == 0 &&
-        tty_size.ws_col > 0) {
-        max_cols = tty_size.ws_col;
-    }
-}
-
-#endif
-
 namespace vcml {
 namespace serial {
 
@@ -57,6 +39,7 @@ void backend_tui::iothread() {
             m_time_sim = now_sim;
         }
 
+        update_window_size();
         draw_statusbar();
         m_mtx.unlock();
 
@@ -103,6 +86,12 @@ static string collect_suspenders() {
     return s;
 }
 
+void backend_tui::update_window_size() {
+    size_t cols, rows;
+    if (mwr::tty_size(m_fdout, cols, rows))
+        m_cols = cols;
+}
+
 void backend_tui::draw_statusbar() {
     if (!sc_core::sc_start_of_simulation_invoked())
         return;
@@ -121,10 +110,10 @@ void backend_tui::draw_statusbar() {
     if (debugging::suspender::simulation_suspended())
         text += mkstr("   suspended (%s)", collect_suspenders().c_str());
 
-    if (text.length() < max_cols)
-        text.append(max_cols - text.length(), ' ');
+    if (text.length() < m_cols)
+        text.append(m_cols - text.length(), ' ');
     else
-        text = text.substr(0, max_cols);
+        text = text.substr(0, m_cols);
 
     const string statusbar = mkstr(
         "\n"      // make room for the status bar
@@ -155,18 +144,21 @@ backend_tui::backend_tui(terminal* term):
     m_time_sim(time_to_us(sc_time_stamp())),
     m_time_host(mwr::timestamp_us()),
     m_rtf(),
+    m_cols(80),
     m_linebuf() {
     capture_stdin();
 
-    if (mwr::is_tty(m_fdin)) {
+    if (mwr::is_tty(m_fdin))
         mwr::tty_push(m_fdin, true);
-        mwr::tty_setup_vt100(m_fdin);
-    }
+    if (mwr::is_tty(m_fdout))
+        mwr::tty_push(m_fdout, true);
 
-#ifdef MWR_LINUX
-    update_window_size(0);
-    std::signal(SIGWINCH, update_window_size);
-#endif
+    if (mwr::is_tty(m_fdin))
+        mwr::tty_setup_vt100(m_fdin);
+    if (mwr::is_tty(m_fdout))
+        mwr::tty_setup_vt100(m_fdout);
+
+    update_window_size();
 
     m_iothread = thread(&backend_tui::iothread, this);
 }
@@ -178,6 +170,8 @@ backend_tui::~backend_tui() {
 
     if (mwr::is_tty(m_fdin))
         mwr::tty_pop(m_fdin);
+    if (mwr::is_tty(m_fdout))
+        mwr::tty_pop(m_fdout);
 
     release_stdin();
 }
@@ -194,7 +188,7 @@ bool backend_tui::read(u8& value) {
 
 void backend_tui::write(u8 val) {
     lock_guard<mutex> lock(m_mtx);
-    if (val == '\n' || m_linebuf.length() >= max_cols) {
+    if (val == '\n' || m_linebuf.length() >= m_cols) {
         string line = mkstr("\r\x1b[K%s\n", m_linebuf.c_str());
         mwr::fd_write(m_fdout, line.data(), line.size());
         m_linebuf.clear();
