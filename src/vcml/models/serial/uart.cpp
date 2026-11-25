@@ -13,12 +13,12 @@
 namespace vcml {
 namespace serial {
 
-static serial_bits uart8250_data_bits(u8 lcr) {
+constexpr serial_bits uart8250_data_bits(u8 lcr) {
     return (serial_bits)(SERIAL_5_BITS + (lcr & 3));
 }
 
-static serial_stop uart8250_stop_bits(u8 lcr) {
-    if (lcr & uart::LCR_SPB)
+constexpr serial_stop uart8250_stop_bits(u8 lcr) {
+    if (lcr & uart::LCR_STP)
         return (lcr & 3) ? SERIAL_STOP_2 : SERIAL_STOP_1_5;
     return SERIAL_STOP_1;
 }
@@ -34,8 +34,8 @@ static serial_parity uart8250_parity(u8 lcr) {
     }
 
     if (lcr & uart::LCR_EPS)
-        return SERIAL_PARITY_MARK;
-    return SERIAL_PARITY_SPACE;
+        return SERIAL_PARITY_SPACE;
+    return SERIAL_PARITY_MARK;
 }
 
 void uart::calibrate() {
@@ -196,6 +196,8 @@ void uart::write_fcr(u8 val) {
     default:
         break;
     }
+
+    update();
 }
 
 void uart::serial_receive(const serial_target_socket& socket,
@@ -258,6 +260,7 @@ uart::uart(const sc_module_name& nm, size_t reg_sz, size_t rx_size,
     lsr.sync_always();
     lsr.allow_read_only();
     lsr.on_read(&uart::read_lsr);
+    lsr.no_writeback();
 
     mcr.allow_read_write();
     msr.allow_read_write();
