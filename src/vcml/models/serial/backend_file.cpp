@@ -39,7 +39,7 @@ bool backend_file::read(u8& val) {
 }
 
 void backend_file::write(u8 val) {
-    if (!m_tx && !m_tx_file.empty()) {
+    if (!m_tx.is_open() && !m_tx_file.empty()) {
         auto mode = ofstream::binary | ofstream::app | ofstream::out;
         m_tx.open(m_tx_file, mode);
         if (!m_tx.good()) {

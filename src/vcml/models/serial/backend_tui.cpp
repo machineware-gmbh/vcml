@@ -23,8 +23,10 @@ static size_t max_cols = 80;
 
 static void update_window_size(int sig) {
     struct winsize tty_size;
-    ioctl(mwr::STDOUT_FDNO, TIOCGWINSZ, &tty_size);
-    max_cols = tty_size.ws_col;
+    if (ioctl(mwr::STDOUT_FDNO, TIOCGWINSZ, &tty_size) == 0 &&
+        tty_size.ws_col > 0) {
+        max_cols = tty_size.ws_col;
+    }
 }
 
 #endif
@@ -47,13 +49,14 @@ void backend_tui::iothread() {
     while (m_backend_active && sim_running()) {
         u64 now_host = mwr::timestamp_us();
         u64 now_sim = time_to_us(sc_time_stamp());
+
+        m_mtx.lock();
         if (now_host > m_time_host) {
             m_rtf = (double)(now_sim - m_time_sim) / (now_host - m_time_host);
             m_time_host = now_host;
             m_time_sim = now_sim;
         }
 
-        m_mtx.lock();
         draw_statusbar();
         m_mtx.unlock();
 
@@ -124,20 +127,23 @@ void backend_tui::draw_statusbar() {
         text = text.substr(0, max_cols);
 
     const string statusbar = mkstr(
-        "\n"      // begin status bar
+        "\n"      // make room for the status bar
+        "\x1b[F"  // return to previous line
+        "\x1b[K"  // clear line
+        "%s"      // print line buffer
+        "\0337"   // save cursor
+        "\x1b[E"  // begin status bar
         "\x1b[7m" // invert colors
         "%s"      // print status bar
         "\x1b[0m" // restore colors
-        "\x1b[F"  // return to previous line
-        "\x1b[K"  // clear line
-        "%s",     // print line buffer
-        text.c_str(), m_linebuf.c_str());
+        "\0338",  // restore cursor
+        m_linebuf.c_str(), text.c_str());
 
     mwr::fd_write(m_fdout, statusbar.c_str(), statusbar.length());
 }
 
 backend_tui::backend_tui(terminal* term):
-    backend(term, "term"),
+    backend(term, "tui"),
     m_fdin(STDIN_FDNO),
     m_fdout(STDOUT_FDNO),
     m_last_ch('\0'),
@@ -192,9 +198,10 @@ void backend_tui::write(u8 val) {
         string line = mkstr("\r\x1b[K%s\n", m_linebuf.c_str());
         mwr::fd_write(m_fdout, line.data(), line.size());
         m_linebuf.clear();
-    } else {
-        m_linebuf.push_back(val);
     }
+
+    if (val != '\n')
+        m_linebuf.push_back(val);
 
     draw_statusbar();
 }

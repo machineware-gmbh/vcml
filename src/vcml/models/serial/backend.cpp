@@ -34,8 +34,8 @@ backend::~backend() {
 static backend* stdin_owner = nullptr;
 
 void backend::capture_stdin() {
-    VCML_ERROR_ON(stdin_owner, "stdin already owned by %s on %s",
-                  stdin_owner->type(), stdin_owner->term()->name());
+    VCML_REPORT_ON(stdin_owner, "stdin already owned by %s on %s",
+                   stdin_owner->type(), stdin_owner->term()->name());
     stdin_owner = this;
 }
 
