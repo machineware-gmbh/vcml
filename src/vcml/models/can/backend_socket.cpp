@@ -73,7 +73,16 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
     if (m_socket < 0)
         VCML_REPORT("error creating can socket: %s", strerror(errno));
 
-    size_t mtu = can_iface_mtu(m_socket, m_name.c_str());
+    size_t mtu = 0;
+    int idx = 0;
+    try {
+        mtu = can_iface_mtu(m_socket, m_name.c_str());
+        idx = can_iface_idx(m_socket, m_name.c_str());
+    } catch (...) {
+        mwr::fd_close(m_socket);
+        throw;
+    }
+
     m_mtu = mtu;
     if (mtu >= CAN_FD_MTU) {
         int enable = 1;
@@ -113,9 +122,12 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 
     struct sockaddr_can addr;
     addr.can_family = AF_CAN;
-    addr.can_ifindex = can_iface_idx(m_socket, m_name.c_str());
-    if (bind(m_socket, (struct sockaddr*)&addr, sizeof(addr)) < 0)
-        VCML_REPORT("failed to bind %s: %s", m_name.c_str(), strerror(errno));
+    addr.can_ifindex = idx;
+    if (bind(m_socket, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        int err = errno;
+        mwr::fd_close(m_socket);
+        VCML_REPORT("failed to bind %s: %s", m_name.c_str(), strerror(err));
+    }
 
     mwr::aio_notify(m_socket, [this](int fd) -> void {
         auto rec_frame = std::make_unique<linux_can_frame>();
@@ -165,7 +177,11 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
 #endif
             if (static_cast<size_t>(n) == CAN_CC_MTU ||
                 static_cast<size_t>(n) == CAN_FD_MTU) {
-            frame.canid = rec_frame->fd.can_id;
+            canid_t id = rec_frame->fd.can_id;
+            frame.eff = !!(id & CAN_EFF_FLAG);
+            frame.rtr = !!(id & CAN_RTR_FLAG);
+            frame.err = !!(id & CAN_ERR_FLAG);
+            frame.canid = id & (frame.eff ? CAN_EFF_MASK : CAN_SFF_MASK);
             frame.data.resize(rec_frame->fd.len);
             frame.dlc = len2dlc(frame.length());
 
@@ -185,7 +201,10 @@ backend_socket::backend_socket(bridge* br, const string& ifname):
                     frame.esi = true;
             }
 
-            memcpy(frame.data.data(), rec_frame->fd.data, rec_frame->fd.len);
+            if (rec_frame->fd.len > 0) {
+                memcpy(frame.data.data(), rec_frame->fd.data,
+                       rec_frame->fd.len);
+            }
         } else {
             log_warn("received invalid frame of %zu bytes on %s", n,
                      m_name.c_str());
@@ -212,8 +231,13 @@ void backend_socket::send_to_host_cc(const can_frame& frame) {
 
     ::can_frame canraw{};
     canraw.can_id = frame.id();
+    if (frame.eff)
+        canraw.can_id |= CAN_EFF_FLAG;
+    if (frame.rtr)
+        canraw.can_id |= CAN_RTR_FLAG;
     canraw.can_dlc = min(frame.length(), sizeof(canraw.data));
-    memcpy(canraw.data, frame.data.data(), canraw.can_dlc);
+    if (canraw.can_dlc > 0)
+        memcpy(canraw.data, frame.data.data(), canraw.can_dlc);
 
     size_t ret = mwr::fd_write(m_socket, &canraw, sizeof(canraw));
     if (ret != sizeof(canraw))
@@ -231,6 +255,8 @@ void backend_socket::send_to_host_fd(const can_frame& frame) {
 
     ::canfd_frame canfdraw{};
     canfdraw.can_id = frame.id();
+    if (frame.eff)
+        canfdraw.can_id |= CAN_EFF_FLAG;
     canfdraw.len = min(frame.length(), sizeof(canfdraw.data));
     canfdraw.flags = 0;
 
@@ -245,7 +271,8 @@ void backend_socket::send_to_host_fd(const can_frame& frame) {
         canfdraw.flags |= CANFD_FDF;
 #endif
 
-    memcpy(canfdraw.data, frame.data.data(), canfdraw.len);
+    if (canfdraw.len > 0)
+        memcpy(canfdraw.data, frame.data.data(), canfdraw.len);
 
     size_t ret = mwr::fd_write(m_socket, &canfdraw, sizeof(canfdraw));
     if (ret != sizeof(canfdraw))
