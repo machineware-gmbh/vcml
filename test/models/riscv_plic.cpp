@@ -57,6 +57,7 @@ public:
         add_test("glitch", &plic_stim::test_glitch);
         add_test("pending", &plic_stim::test_pending);
         add_test("edge", &plic_stim::test_edge);
+        add_test("irq_reset", &plic_stim::test_irq_reset);
     }
 
     virtual void gpio_notify(const gpio_target_socket& socket,
@@ -166,6 +167,23 @@ public:
         irqs1.write(false);
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irqt1.read()) << "irqt1 not disabled";
+    }
+
+    void test_irq_reset() {
+        enable_irqs();
+
+        irqs1.write(true);
+        wait(SC_ZERO_TIME);
+        ASSERT_TRUE(irqt1.read());
+        ASSERT_TRUE(irqt2.read());
+
+        plic.reset();
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irqt1.read());
+        EXPECT_FALSE(irqt2.read());
+
+        irqs1.write(false);
+        wait(SC_ZERO_TIME);
     }
 
     void test_pending() {

@@ -221,6 +221,8 @@ void plic::reset() {
 
     m_level.reset();
     m_latched.reset();
+
+    update();
 }
 
 void plic::set_edge_triggered(size_t irqno, bool edge) {
