@@ -30,7 +30,7 @@ u16 len2dlc(size_t len, bool canxl) {
         return 12;
     if (len <= 32)
         return 13;
-    if (len <= 40)
+    if (len <= 48)
         return 14;
     return 15;
 }

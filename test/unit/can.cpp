@@ -25,6 +25,24 @@ TEST(can, to_string) {
     std::cout << frame << std::endl;
 }
 
+TEST(canfd, dlc) {
+    for (u16 dlc = 0; dlc <= 8; dlc++) {
+        EXPECT_EQ(len2dlc(dlc), dlc);
+        EXPECT_EQ(dlc2len(dlc), dlc);
+    }
+
+    const size_t lengths[] = { 8, 12, 16, 20, 24, 32, 48, 64 };
+    for (size_t i = 1; i < std::size(lengths); i++) {
+        for (size_t len = lengths[i - 1] + 1; len <= lengths[i]; len++) {
+            EXPECT_EQ(len2dlc(len), 8 + i) << "length " << len;
+            EXPECT_EQ(dlc2len(len2dlc(len)), lengths[i]) << "length " << len;
+        }
+    }
+
+    EXPECT_EQ(len2dlc(2048, true), 2047);
+    EXPECT_EQ(dlc2len(2047, true), 2048);
+}
+
 TEST(canfd, to_string) {
     can_frame frame{};
     frame.canid = 0x321;
