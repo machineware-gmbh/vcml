@@ -21,20 +21,45 @@ public:
     gpio_target_socket irq_timer_0;
     gpio_target_socket irq_timer_1;
 
+    riscv::clint clint;
+
     clint_stim(const sc_module_name& nm):
         test_base(nm),
         out("out"),
         irq_sw_0("irq_sw_0"),
         irq_sw_1("irq_sw_1"),
         irq_timer_0("irq_timer_0"),
-        irq_timer_1("irq_timer_1") {}
+        irq_timer_1("irq_timer_1"),
+        clint("clint") {
+        clk.bind(clint.clk);
+        rst.bind(clint.rst);
+        out.bind(clint.in);
 
-    virtual void run_test() override {
+        clint.irq_sw[0].bind(irq_sw_0);
+        clint.irq_sw[1].bind(irq_sw_1);
+
+        clint.irq_timer[0].bind(irq_timer_0);
+        clint.irq_timer[1].bind(irq_timer_1);
+
+        add_test("strings", &clint_stim::test_strings);
+        add_test("reset", &clint_stim::test_reset);
+        add_test("timer", &clint_stim::test_timer);
+        add_test("swi", &clint_stim::test_swi);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(clint.kind(), "vcml::riscv::clint");
+        EXPECT_STREQ(clint.version(), VCML_VERSION_STRING);
+    }
+
+    void test_reset() {
         ASSERT_FALSE(irq_sw_0.read()) << "IRQ_SW_0 not reset";
         ASSERT_FALSE(irq_sw_1.read()) << "IRQ_SW_1 not reset";
         ASSERT_FALSE(irq_timer_0.read()) << "IRQ_TIMER_0 not reset";
         ASSERT_FALSE(irq_timer_1.read()) << "IRQ_TIMER_1 not reset";
+    }
 
+    void test_timer() {
         // test that time register counts correctly
         u64 mtime;
         ASSERT_OK(out.readw(0xbff8, mtime)) << "cannot read mtime";
@@ -78,7 +103,9 @@ public:
         wait(SC_ZERO_TIME);
         ASSERT_TRUE(irq_timer_0.read()) << "IRQ_TIMER_0 not triggered";
         ASSERT_TRUE(irq_timer_1.read()) << "IRQ_TIMER_1 not triggered";
+    }
 
+    void test_swi() {
         // test software generated interrupts
         u32 msip = ~0u;
         ASSERT_OK(out.writew(0x4, msip)) << "cannot write msip1";
@@ -95,17 +122,5 @@ public:
 
 TEST(clint, clint) {
     clint_stim stim("stim");
-    riscv::clint clint("clint");
-
-    stim.clk.bind(clint.clk);
-    stim.rst.bind(clint.rst);
-    stim.out.bind(clint.in);
-
-    clint.irq_sw[0].bind(stim.irq_sw_0);
-    clint.irq_sw[1].bind(stim.irq_sw_1);
-
-    clint.irq_timer[0].bind(stim.irq_timer_0);
-    clint.irq_timer[1].bind(stim.irq_timer_1);
-
     sc_core::sc_start();
 }

@@ -183,6 +183,10 @@ public:
         rst.bind(io_bus.rst);
         rst.bind(pci_root.rst);
         rst.bind(pci_device.rst);
+
+        add_test("strings", &pci_test::test_strings);
+        add_test("enumeration", &pci_test::test_enumeration);
+        add_test("bars", &pci_test::test_bars);
     }
 
     template <typename T>
@@ -199,7 +203,12 @@ public:
             << "failed to write PCI config at offset " << std::hex << addr;
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(pci_device.pci::device::kind(), "vcml::pci::device");
+        EXPECT_STREQ(pci_device.version(), VCML_VERSION_STRING);
+    }
+
+    void test_enumeration() {
         //
         // devices that are not ready must look like empty slots
         //
@@ -222,7 +231,9 @@ public:
         u32 nodev = 0;
         pci_read_cfg(1, PCI_VENDOR_OFFSET, nodev);
         EXPECT_EQ(nodev, 0xffffffff) << "vendor/device reported at slot 1";
+    }
 
+    void test_bars() {
         //
         // test mapping bar0
         //
@@ -286,6 +297,5 @@ public:
 
 TEST(pci, simulate) {
     pci_test test("pci");
-    EXPECT_STREQ(test.pci_device.pci::device::kind(), "vcml::pci::device");
     sc_core::sc_start();
 }

@@ -43,9 +43,17 @@ public:
         rst.bind(dmem.rst);
         rst.bind(ibus.rst);
         rst.bind(dbus.rst);
+
+        add_test("strings", &loader_test::test_strings);
+        add_test("images", &loader_test::test_images);
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(loader.kind(), "vcml::meta::loader");
+        EXPECT_STREQ(loader.version(), VCML_VERSION_STRING);
+    }
+
+    void test_images() {
         u32 code_start = 0;
         u32 global_a = 0;
         u64 global_b = 0;
@@ -63,6 +71,5 @@ public:
 
 TEST(loader, simulate) {
     loader_test stim;
-    EXPECT_STREQ(stim.loader.kind(), "vcml::meta::loader");
     sc_core::sc_start();
 }

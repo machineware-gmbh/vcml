@@ -13,6 +13,8 @@
 class gic400_stim : public test_base
 {
 public:
+    arm::gic400 gic400;
+
     tlm_initiator_socket distif_out;
     tlm_initiator_socket cpuif_out;
     tlm_initiator_socket vifctrl_out;
@@ -29,6 +31,7 @@ public:
 
     gic400_stim(const sc_module_name& nm):
         test_base(nm),
+        gic400("gic400"),
         distif_out("distif_out"),
         cpuif_out("cpuif_out"),
         vifctrl_out("vifctrl_out"),
@@ -38,41 +41,84 @@ public:
         nfirq_in("nfirq_in", 2),
         nirq_in("nirq_in", 2),
         vfirq_in("vfirq_in", 2),
-        vnirq_in("vnirq_in", 2) {}
+        vnirq_in("vnirq_in", 2) {
+        clk.bind(gic400.clk);
+        rst.bind(gic400.rst);
 
-    virtual void run_test() override {
-        enum addresses : u64 {
-            GICC_IIDR = 0xfc,   // CPU Interface Identification
-            GICC_CTLR = 0x00,   // CPU Interface Control Register
-            GICC_PMR = 0x04,    // Interrupt Priority Mask Register
-            GICC_BPR = 0x08,    // Binary Point Register
-            GICC_IAR = 0x0c,    // Interrupt Acknowledge Register
-            GICC_EOIR = 0x10,   // End of Interrupt Register
-            GICC_RPR = 0x14,    // Running Priority Register
-            GICC_HPPIR = 0x18,  // Highest Pending IRQ register
-            GICC_AIAR = 0x20,   // Alias Interrupt Acknowledge Register
-            GICC_AEOIR = 0x24,  // Alias End of Interrupt Register
-            GICC_AHPPIR = 0x28, // Alias Highest Pending IRQ register
+        distif_out.bind(gic400.distif.in);
+        cpuif_out.bind(gic400.cpuif.in);
+        vifctrl_out.bind(gic400.vifctrl.in);
+        vcpuif_out.bind(gic400.vcpuif.in);
 
-            GICD_CTLR = 0x000,          // Distributor Control Register
-            GICD_IGROUPR_SPI = 0x084,   // Interrupt Group Register
-            GICD_ISENABLER_SPI = 0x104, // Interrupt Set-Enable Registers
-            GICD_ICENABLER_SPI = 0x184, // Interrupt Clear-Enable Registers
-            GICD_ITARGETS_SPI = 0x820,  // Interrupt Target Registers
-            GICD_IPRIORITY_SGI = 0x400, // SGI Priority Register
-            GICD_IPRIORITY_SPI = 0x420, // SPI Priority Register
-            GICD_ICFGR_SPI = 0xc08,     // SPI Configuration Register
+        for (int cpu = 0; cpu < 2; cpu++) {
+            gic400.fiq_out[cpu].bind(nfirq_in[cpu]);
+            gic400.irq_out[cpu].bind(nirq_in[cpu]);
+            gic400.vfiq_out[cpu].bind(vfirq_in[cpu]);
+            gic400.virq_out[cpu].bind(vnirq_in[cpu]);
+            spi_out[cpu].bind(gic400.spi_in[cpu]);
+            ppi_out[cpu].bind(gic400.ppi(cpu, 0));
+        }
 
-            GICV_CTLR = 0x00,  // VM Control Register
-            GICV_PMR = 0x04,   // VM Priority Mask Register
-            GICV_IAR = 0x0c,   // VM Interrupt Acknowledge Register
-            GICV_EOIR = 0x10,  // VM End of Interrupt Register
-            GICV_HPPIR = 0x18, // VM Highest Priority Pending IRQ
+        spi_out[2].bind(gic400.spi_in[10]);
 
-            GICH_HCR = 0x00, // Hypervisor Control Register
-            GICH_LR = 0x100, // List Registers
-        };
+        add_test("strings", &gic400_stim::test_strings);
+        add_test("iidr", &gic400_stim::test_iidr);
+        add_test("spi1", &gic400_stim::test_spi1);
+        add_test("spi0", &gic400_stim::test_spi0);
+        add_test("level_spi", &gic400_stim::test_level_spi);
+        add_test("ipriority", &gic400_stim::test_ipriority);
+        add_test("irq_priority", &gic400_stim::test_irq_priority);
+        add_test("virq", &gic400_stim::test_virq);
+        add_test("virq_hw", &gic400_stim::test_virq_hw);
+        add_test("grouping", &gic400_stim::test_grouping);
+    }
 
+    enum addresses : u64 {
+        GICC_IIDR = 0xfc,   // CPU Interface Identification
+        GICC_CTLR = 0x00,   // CPU Interface Control Register
+        GICC_PMR = 0x04,    // Interrupt Priority Mask Register
+        GICC_BPR = 0x08,    // Binary Point Register
+        GICC_IAR = 0x0c,    // Interrupt Acknowledge Register
+        GICC_EOIR = 0x10,   // End of Interrupt Register
+        GICC_RPR = 0x14,    // Running Priority Register
+        GICC_HPPIR = 0x18,  // Highest Pending IRQ register
+        GICC_AIAR = 0x20,   // Alias Interrupt Acknowledge Register
+        GICC_AEOIR = 0x24,  // Alias End of Interrupt Register
+        GICC_AHPPIR = 0x28, // Alias Highest Pending IRQ register
+
+        GICD_CTLR = 0x000,          // Distributor Control Register
+        GICD_IGROUPR_SPI = 0x084,   // Interrupt Group Register
+        GICD_ISENABLER_SPI = 0x104, // Interrupt Set-Enable Registers
+        GICD_ICENABLER_SPI = 0x184, // Interrupt Clear-Enable Registers
+        GICD_ITARGETS_SPI = 0x820,  // Interrupt Target Registers
+        GICD_IPRIORITY_SGI = 0x400, // SGI Priority Register
+        GICD_IPRIORITY_SPI = 0x420, // SPI Priority Register
+        GICD_ICFGR_SPI = 0xc08,     // SPI Configuration Register
+
+        GICV_CTLR = 0x00,  // VM Control Register
+        GICV_PMR = 0x04,   // VM Priority Mask Register
+        GICV_IAR = 0x0c,   // VM Interrupt Acknowledge Register
+        GICV_EOIR = 0x10,  // VM End of Interrupt Register
+        GICV_HPPIR = 0x18, // VM Highest Priority Pending IRQ
+
+        GICH_HCR = 0x00, // Hypervisor Control Register
+        GICH_LR = 0x100, // List Registers
+    };
+
+    void test_strings() {
+        EXPECT_STREQ(gic400.kind(), "vcml::arm::gic400");
+        EXPECT_STREQ(gic400.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(gic400.cpuif.kind(), "vcml::arm::gic400::cpuif");
+        EXPECT_STREQ(gic400.cpuif.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(gic400.vcpuif.kind(), "vcml::arm::gic400::vcpuif");
+        EXPECT_STREQ(gic400.vcpuif.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(gic400.distif.kind(), "vcml::arm::gic400::distif");
+        EXPECT_STREQ(gic400.distif.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(gic400.vifctrl.kind(), "vcml::arm::gic400::vifctrl");
+        EXPECT_STREQ(gic400.vifctrl.version(), VCML_VERSION_STRING);
+    }
+
+    void test_iidr() {
         u32 val = ~0;
         EXPECT_OK(cpuif_out.readw(GICC_IIDR, val, sbi_cpuid(0)))
             << "failed to read GICC_IIDR for cpu0";
@@ -88,7 +134,9 @@ public:
         val = ~0;
         EXPECT_CE(cpuif_out.writew(GICC_IIDR, val))
             << "writing to GICC_IIDR should not be allowed";
+    }
 
+    void test_spi1() {
         /**********************************************************************
          *                                                                    *
          * SPI Test - Interrupt triggered by Peripheral 1                     *
@@ -96,7 +144,7 @@ public:
          **********************************************************************/
 
         // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
-        val = 0x1;
+        u32 val = 0x1;
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)))
             << "failed to set GICC_CTLR for cpu0 HIGH";
         EXPECT_OK(cpuif_out.readw(GICC_CTLR, val))
@@ -196,7 +244,9 @@ public:
         EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI + 0x01, val));
         EXPECT_OK(distif_out.writew(GICD_CTLR, val));
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)));
+    }
 
+    void test_spi0() {
         /**********************************************************************
          *                                                                    *
          * SPI Test - Interrupt triggered by Peripheral 0                     *
@@ -204,7 +254,7 @@ public:
          **********************************************************************/
 
         // Read CPUIF and DISTIF CTLR register
-        val = ~0;
+        u32 val = ~0;
         EXPECT_OK(cpuif_out.readw(GICC_CTLR, val, sbi_cpuid(0)))
             << "failed to read GICC_CTLR for cpu0";
 
@@ -289,7 +339,9 @@ public:
         EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI, val));
         EXPECT_OK(distif_out.writew(GICD_CTLR, val));
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)));
+    }
 
+    void test_level_spi() {
         /**********************************************************************
          *                                                                    *
          *        Trigger Bug with Re-raising Level Triggered SPIs            *
@@ -313,7 +365,7 @@ public:
         EXPECT_EQ(nirq_in[1], 0) << "IRQ shouldn't have been signaled to cpu1";
 
         // cpu0 reads IAR of its CPU interface
-        val = 0x0;
+        u32 val = 0x0;
         EXPECT_OK(cpuif_out.readw(GICC_IAR, val, sbi_cpuid(0)));
         EXPECT_EQ(val, 0x20);
         wait(SC_ZERO_TIME);
@@ -347,7 +399,9 @@ public:
         EXPECT_OK(distif_out.writew(GICD_CTLR, val));
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)));
         EXPECT_OK(distif_out.writew(GICD_ICFGR_SPI, 0xaaaaaaaa));
+    }
 
+    void test_ipriority() {
         /**********************************************************************
          *                                                                    *
          * SPI Test - trigger IPRIORITY_SPI/SGI bug in gic400::update         *
@@ -355,7 +409,7 @@ public:
          **********************************************************************/
 
         // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
-        val = 0x1;
+        u32 val = 0x1;
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)))
             << "failed to set GICC_CTLR for cpu0 HIGH";
         EXPECT_OK(cpuif_out.readw(GICC_CTLR, val, sbi_cpuid(0)))
@@ -446,7 +500,9 @@ public:
         EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI, val));
         EXPECT_OK(distif_out.writew(GICD_CTLR, val));
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)));
+    }
 
+    void test_irq_priority() {
         /**********************************************************************
          *                                                                    *
          * SPI Test - trigger bug in gic400::get_irq_priority                 *
@@ -455,7 +511,7 @@ public:
 
         // setting priority in IPRIORITY_SPI to maximum 0xff and in
         // IPRIORITY_SGI to 0x1
-        val = 0x1;
+        u32 val = 0x1;
         EXPECT_OK(distif_out.writew(GICD_IPRIORITY_SPI, val))
             << "failed to write GICD_IPRIORITY_SPI register";
         val = 0xff; // idle priority
@@ -521,7 +577,9 @@ public:
             << "failed to write GICD_IPRIORITY_SGI register";
         EXPECT_OK(distif_out.writew(GICD_IPRIORITY_SPI, val))
             << "failed to write GICD_IPRIORITY_SPI register";
+    }
 
+    void test_virq() {
         /**********************************************************************
          *                                                                    *
          *              Virtual Interrupt Test                                *
@@ -529,7 +587,7 @@ public:
          **********************************************************************/
 
         // allow forwarding virtual interrupts
-        val = 0x01;
+        u32 val = 0x01;
         EXPECT_OK(vcpuif_out.writew(GICV_CTLR, val, sbi_cpuid(0)))
             << "failed to write GICV_CTLR in VCPUIF";
         EXPECT_OK(vcpuif_out.readw(GICV_CTLR, val))
@@ -584,7 +642,9 @@ public:
             << "failed to write GICH_HCR register of VIFCTRL";
         EXPECT_OK(vcpuif_out.writew(GICV_PMR, val))
             << "failed to write GICV_PMR register of VCPUIF";
+    }
 
+    void test_virq_hw() {
         /**********************************************************************
          *                                                                    *
          *           Virtual Interrupt Test - Hardware interrupt              *
@@ -592,7 +652,7 @@ public:
          **********************************************************************/
 
         // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
-        val = 0x1;
+        u32 val = 0x1;
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)))
             << "failed to set GICC_CTLR for cpu0 HIGH";
         val = 0x1;
@@ -708,6 +768,10 @@ public:
             << "failed to write GICH_HCR";
         EXPECT_OK(vcpuif_out.writew(GICV_PMR, val))
             << "failed to write GICV_PMR register";
+    }
+
+    void test_grouping() {
+        EXPECT_OK(distif_out.writew(GICD_ITARGETS_SPI + 0xa, 1));
 
         /**********************************************************************
          *                                                                    *
@@ -717,7 +781,7 @@ public:
 
         // Testing Interrupt in Group 1
         // write CPUIF0 and DISTIF CTLR register -> allow forwarding for CPU0
-        val = 0x3;
+        u32 val = 0x3;
         EXPECT_OK(cpuif_out.writew(GICC_CTLR, val, sbi_cpuid(0)))
             << "failed to set GICC_CTLR for cpu0 HIGH";
         EXPECT_OK(cpuif_out.readw(GICC_CTLR, val, sbi_cpuid(0)))
@@ -1022,32 +1086,5 @@ public:
 
 TEST(gic400, gic400) {
     gic400_stim stim("stim");
-    arm::gic400 gic400("gic400");
-
-    EXPECT_STREQ(gic400.kind(), "vcml::arm::gic400");
-    EXPECT_STREQ(gic400.cpuif.kind(), "vcml::arm::gic400::cpuif");
-    EXPECT_STREQ(gic400.vcpuif.kind(), "vcml::arm::gic400::vcpuif");
-    EXPECT_STREQ(gic400.distif.kind(), "vcml::arm::gic400::distif");
-    EXPECT_STREQ(gic400.vifctrl.kind(), "vcml::arm::gic400::vifctrl");
-
-    stim.clk.bind(gic400.clk);
-    stim.rst.bind(gic400.rst);
-
-    stim.distif_out.bind(gic400.distif.in);
-    stim.cpuif_out.bind(gic400.cpuif.in);
-    stim.vifctrl_out.bind(gic400.vifctrl.in);
-    stim.vcpuif_out.bind(gic400.vcpuif.in);
-
-    for (int cpu = 0; cpu < 2; cpu++) {
-        gic400.fiq_out[cpu].bind(stim.nfirq_in[cpu]);
-        gic400.irq_out[cpu].bind(stim.nirq_in[cpu]);
-        gic400.vfiq_out[cpu].bind(stim.vfirq_in[cpu]);
-        gic400.virq_out[cpu].bind(stim.vnirq_in[cpu]);
-        stim.spi_out[cpu].bind(gic400.spi_in[cpu]);
-        stim.ppi_out[cpu].bind(gic400.ppi(cpu, 0));
-    }
-
-    stim.spi_out[2].bind(gic400.spi_in[10]);
-
     sc_core::sc_start();
 }

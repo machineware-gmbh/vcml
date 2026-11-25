@@ -25,6 +25,8 @@ public:
 
     size_t irqt1_edges;
 
+    riscv::plic plic;
+
     plic_stim(const sc_module_name& nm):
         test_base(nm),
         out("out"),
@@ -34,7 +36,28 @@ public:
         irqs2("irqs2"),
         irqs3("irqs3"),
         irqs33("irqs33"),
-        irqt1_edges() {}
+        irqt1_edges(),
+        plic("PLIC") {
+        clk.bind(plic.clk);
+        rst.bind(plic.rst);
+
+        out.bind(plic.in);
+
+        plic.irqt[1].bind(irqt1);
+        plic.irqt[2].bind(irqt2);
+
+        irqs1.bind(plic.irqs[1]);
+        irqs2.bind(plic.irqs[2]);
+        irqs3.bind(plic.irqs[3]);
+        irqs33.bind(plic.irqs[33]);
+
+        add_test("strings", &plic_stim::test_strings);
+        add_test("reset", &plic_stim::test_reset);
+        add_test("claim", &plic_stim::test_claim);
+        add_test("glitch", &plic_stim::test_glitch);
+        add_test("pending", &plic_stim::test_pending);
+        add_test("edge", &plic_stim::test_edge);
+    }
 
     virtual void gpio_notify(const gpio_target_socket& socket,
                              bool state) override {
@@ -42,14 +65,31 @@ public:
             irqt1_edges++;
     }
 
-    virtual void run_test() override {
+    void enable_irqs() {
+        EXPECT_OK(out.writew(0x201000, 0u));
+        EXPECT_OK(out.writew(0x202000, 0u));
+        EXPECT_OK(out.writew(0x000004, 1u));
+        EXPECT_OK(out.writew(0x000008, 1u));
+        EXPECT_OK(out.writew(0x002080, 6u));
+        EXPECT_OK(out.writew(0x002100, 6u));
+        wait(SC_ZERO_TIME);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(plic.kind(), "vcml::riscv::plic");
+        EXPECT_STREQ(plic.version(), VCML_VERSION_STRING);
+    }
+
+    void test_reset() {
         // test that interrupts are reset
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irqt1.read()) << "irqt1 not reset";
         EXPECT_FALSE(irqt2.read()) << "irqt2 not reset";
         EXPECT_FALSE(irqs1.read()) << "irqs1 not reset";
         EXPECT_FALSE(irqs2.read()) << "irqs2 not reset";
+    }
 
+    void test_claim() {
         // test that interrupts are disabled
         irqs1.write(true);
         irqs2.write(true);
@@ -107,6 +147,10 @@ public:
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irqt1.read()) << "irqt1 not disabled";
         EXPECT_FALSE(irqt2.read()) << "irqt2 not disabled";
+    }
+
+    void test_glitch() {
+        enable_irqs();
 
         // test that re-evaluating does not toggle an already active line
         irqs1.write(true);
@@ -122,6 +166,10 @@ public:
         irqs1.write(false);
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irqt1.read()) << "irqt1 not disabled";
+    }
+
+    void test_pending() {
+        enable_irqs();
 
         // test that pending reports an irq above 31 against its own claim
         EXPECT_OK(out.writew(0x000084, 1u)); // irq 33 priority
@@ -143,6 +191,12 @@ public:
         irqs1.write(false);
         irqs33.write(false);
         wait(SC_ZERO_TIME);
+    }
+
+    void test_edge() {
+        enable_irqs();
+
+        u32 claim;
 
         // test that an edge-triggered source latches a pulse until claimed
         EXPECT_OK(out.writew(0x00000c, 1u)); // irq 3 priority
@@ -165,23 +219,8 @@ public:
 
 TEST(plic, plic) {
     vcml::broker broker("test");
-    broker.define("PLIC.edge_irqs", "3");
+    broker.define("STIM.PLIC.edge_irqs", "3");
 
     plic_stim stim("STIM");
-    riscv::plic plic("PLIC");
-
-    stim.clk.bind(plic.clk);
-    stim.rst.bind(plic.rst);
-
-    stim.out.bind(plic.in);
-
-    plic.irqt[1].bind(stim.irqt1);
-    plic.irqt[2].bind(stim.irqt2);
-
-    stim.irqs1.bind(plic.irqs[1]);
-    stim.irqs2.bind(plic.irqs[2]);
-    stim.irqs3.bind(plic.irqs[3]);
-    stim.irqs33.bind(plic.irqs[33]);
-
     sc_core::sc_start();
 }

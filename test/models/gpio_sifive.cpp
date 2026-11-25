@@ -35,7 +35,11 @@ public:
         gpio1.bind(model.gpio_in[1]);
         model.irq[1].bind(irq);
 
-        EXPECT_STREQ(model.kind(), "vcml::gpio::sifive");
+        add_test("strings", &gpio_sifive_test::test_strings);
+        add_test("output", &gpio_sifive_test::test_output);
+        add_test("input", &gpio_sifive_test::test_input);
+        add_test("iof", &gpio_sifive_test::test_iof);
+        add_test("commands", &gpio_sifive_test::test_commands);
     }
 
     enum : u64 {
@@ -55,6 +59,11 @@ public:
         ADDR_IOF_SEL = 0x3c,
         ADDR_OUT_XOR = 0x40,
     };
+
+    void test_strings() {
+        EXPECT_STREQ(model.kind(), "vcml::gpio::sifive");
+        EXPECT_STREQ(model.version(), VCML_VERSION_STRING);
+    }
 
     void test_output() {
         GTEST_LOG_(INFO) << "testing output GPIOs";
@@ -163,17 +172,6 @@ public:
         model.execute("status", std::cout);
 
         GTEST_LOG_(INFO) << "test complete";
-    }
-
-    virtual void run_test() override {
-        wait(SC_ZERO_TIME);
-        test_output();
-        wait(SC_ZERO_TIME);
-        test_input();
-        wait(SC_ZERO_TIME);
-        test_iof();
-        wait(SC_ZERO_TIME);
-        test_commands();
     }
 };
 

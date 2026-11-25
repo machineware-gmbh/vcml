@@ -50,7 +50,11 @@ public:
         rst.bind(model.rst);
         clk.bind(model.clk);
 
-        EXPECT_STREQ(model.kind(), "vcml::spi::sifive");
+        add_test("strings", &test_harness::test_strings);
+        add_test("fmt_reset", &test_harness::test_fmt_reset);
+        add_test("serial_clock", &test_harness::test_serial_clock);
+        add_test("transmit", &test_harness::test_transmit);
+        add_test("receive", &test_harness::test_receive);
     }
 
     enum : u64 {
@@ -67,6 +71,11 @@ public:
         ADDR_IE = 0x70,
         ADDR_IP = 0x74,
     };
+
+    void test_strings() {
+        EXPECT_STREQ(model.kind(), "vcml::spi::sifive");
+        EXPECT_STREQ(model.version(), VCML_VERSION_STRING);
+    }
 
     void test_fmt_reset() {
         u32 data;
@@ -197,17 +206,6 @@ public:
         EXPECT_EQ(data, 0x80000000);
 
         GTEST_LOG_(INFO) << "finished testing receive";
-    }
-
-    virtual void run_test() override {
-        wait(SC_ZERO_TIME);
-        test_fmt_reset();
-        wait(SC_ZERO_TIME);
-        test_serial_clock();
-        wait(SC_ZERO_TIME);
-        test_transmit();
-        wait(SC_ZERO_TIME);
-        test_receive();
     }
 };
 

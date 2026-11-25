@@ -263,6 +263,11 @@ public:
 
     void test_strings() {
         EXPECT_STREQ(mmio0.kind(), "vcml::virtio::mmio");
+        EXPECT_STREQ(mmio0.module::version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(bus.kind(), "vcml::generic::bus");
+        EXPECT_STREQ(bus.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(mem.kind(), "vcml::generic::memory");
+        EXPECT_STREQ(mem.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(mmio0.version.name(), "test.mmio0.version");
         EXPECT_FALSE(mmio0.use_packed_queues);
         EXPECT_TRUE(mmio1.use_packed_queues);
@@ -938,7 +943,5 @@ TEST(virtio, mmio) {
     broker.define("test.mmio2.shm_base", to_string((u64)SHM_BASE));
 
     virtio_mmio_test test("test");
-    EXPECT_STREQ(test.bus.kind(), "vcml::generic::bus");
-    EXPECT_STREQ(test.mem.kind(), "vcml::generic::memory");
     sc_core::sc_start();
 }

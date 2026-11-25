@@ -113,6 +113,7 @@ public:
         sound("sound") {
         stim.virtio_out.bind(sound.virtio_in);
 
+        add_test("strings", &virtio_sound_stim::test_strings);
         add_test("mmio", &virtio_sound_stim::test_mmio);
         add_test("identify", &virtio_sound_stim::test_identify);
         add_test("unconfigured", &virtio_sound_stim::test_unconfigured);
@@ -141,6 +142,11 @@ public:
         rst.bind(bus.rst);
         rst.bind(mem.rst);
         rst.bind(virtio.rst);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(sound.kind(), "vcml::virtio::sound");
+        EXPECT_STREQ(sound.version(), VCML_VERSION_STRING);
     }
 
     void test_mmio() {
@@ -507,6 +513,5 @@ public:
 
 TEST(virtio, sound) {
     virtio_sound_stim stim;
-    EXPECT_STREQ(stim.sound.kind(), "vcml::virtio::sound");
     sc_core::sc_start();
 }

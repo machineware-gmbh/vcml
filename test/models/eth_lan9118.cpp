@@ -70,6 +70,17 @@ public:
         lan.eth_rx.stub();
         rst.bind(lan.rst);
         clk.bind(lan.clk);
+
+        add_test("strings", &lan9118_bench::test_strings);
+        add_test("irq_reset", &lan9118_bench::test_irq_reset);
+        add_test("ids", &lan9118_bench::test_ids);
+        add_test("eeprom", &lan9118_bench::test_eeprom);
+        add_test("mac_address", &lan9118_bench::test_mac_address);
+        add_test("free_run", &lan9118_bench::test_free_run);
+        add_test("gpt", &lan9118_bench::test_gpt);
+        add_test("mac_regs", &lan9118_bench::test_mac_regs);
+        add_test("phy_regs", &lan9118_bench::test_phy_regs);
+        add_test("sw_irq", &lan9118_bench::test_sw_irq);
     }
 
     void check_irq(unsigned int irq) {
@@ -106,11 +117,22 @@ public:
         mac_write(MAC_MII_ACC, cmd);
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(lan.kind(), "vcml::ethernet::lan9118");
+        EXPECT_STREQ(lan.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(lan.phy.kind(), "vcml::ethernet::lan9118_phy");
+        EXPECT_STREQ(lan.phy.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(lan.mac.kind(), "vcml::ethernet::lan9118_mac");
+        EXPECT_STREQ(lan.mac.version(), VCML_VERSION_STRING);
+    }
+
+    void test_irq_reset() {
         // test that interrupts are reset
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irq.read()) << "irq not reset";
+    }
 
+    void test_ids() {
         // check ID and BYTE_TEST
         u32 data = 0;
         EXPECT_OK(out.readw(CSR_ID_REV, data)) << "cannot read ID_REV";
@@ -120,28 +142,38 @@ public:
         EXPECT_OK(out.readw(CSR_BYTE_TEST, data)) << "cannot read BYTE_TEST";
         EXPECT_EQ(data, 0x87654321) << "wrong byte test value";
         EXPECT_CE(out.writew(CSR_BYTE_TEST, data)) << "must be read only";
+    }
 
+    void test_eeprom() {
         // check EEPROM access
+        u32 data = 0;
         u32 cmd = 0; // read EEPROM cell 0
         EXPECT_OK(out.writew(CSR_E2P_CMD, cmd)) << "cannot write EEPROM cmd";
         EXPECT_OK(out.readw(CSR_E2P_DATA, data)) << "cannot read EEPROM data";
         EXPECT_EQ(data, 0xa5) << "EEPROM magic value mismatch";
+    }
 
+    void test_mac_address() {
         // check MAC was loaded from EEPROM
         mac_addr addr = lan.mac_address();
         EXPECT_EQ(to_string(addr), "12:34:56:78:9a:bc") << "address broken";
         EXPECT_EQ(lan.mac.addrh, 0xbc9au) << "address not loaded into MAC";
         EXPECT_EQ(lan.mac.addrl, 0x78563412u) << "address not loaded into MAC";
+    }
 
+    void test_free_run() {
         // check free running timer
+        u32 data = 0;
         EXPECT_OK(out.readw(CSR_FREE_RUN, data)) << "cannot read timer";
         EXPECT_EQ(data, 0) << "timer not reset";
         wait(1, SC_SEC);
         EXPECT_OK(out.readw(CSR_FREE_RUN, data)) << "cannot read timer";
         EXPECT_EQ(data, 25000000) << "timer did not count";
+    }
 
+    void test_gpt() {
         // check general purpose timer
-        data = 1u << 29 | 0x1000;
+        u32 data = 1u << 29 | 0x1000;
         EXPECT_OK(out.writew(CSR_GPT_CFG, data)) << "cannot configure GPT";
         EXPECT_OK(out.readw(CSR_GPT_CNT, data)) << "cannot read GPT";
         EXPECT_EQ(data, 0x1000);
@@ -152,15 +184,21 @@ public:
         EXPECT_OK(out.readw(CSR_GPT_CNT, data)) << "cannot read GPT";
         EXPECT_EQ(data, 0x1000 - 10) << "GPT reports wrong wrap value";
         check_irq(19);
+    }
 
+    void test_mac_regs() {
         // check MAC register access
         EXPECT_EQ(mac_read(MAC_ADDRH), 0x0000bc9a) << "cannot read MAC_ADDRH";
         EXPECT_EQ(mac_read(MAC_ADDRL), 0x78563412) << "cannot read MAC_ADDRL";
+    }
 
+    void test_phy_regs() {
         // check PHY register access
         EXPECT_EQ(phy_read(PHY_IDENT1), 0x0007) << "cannot read PHY_IDENT1";
         EXPECT_EQ(phy_read(PHY_IDENT2), 0xc0d1) << "cannot read PHY_IDENT2";
+    }
 
+    void test_sw_irq() {
         // check software interrupt
         EXPECT_OK(out.writew(CSR_IRQ_CFG, 1u << 8)) << "cannot enable IRQs";
         EXPECT_OK(out.writew(CSR_IRQ_EN, 1u << 31)) << "cannot enable SW_IRQ";
@@ -172,8 +210,5 @@ public:
 
 TEST(eth, lan9118) {
     lan9118_bench test("bench");
-    EXPECT_STREQ(test.lan.kind(), "vcml::ethernet::lan9118");
-    EXPECT_STREQ(test.lan.phy.kind(), "vcml::ethernet::lan9118_phy");
-    EXPECT_STREQ(test.lan.mac.kind(), "vcml::ethernet::lan9118_mac");
     sc_core::sc_start();
 }

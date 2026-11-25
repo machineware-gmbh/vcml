@@ -40,16 +40,16 @@ public:
         pl031.irq.bind(irq);
         rst.bind(pl031.rst);
         pl031.clk.stub(1 * Hz);
-        EXPECT_STREQ(pl031.kind(), "vcml::timers::pl031");
+
+        add_test("strings", &pl031_test::test_strings);
+        add_test("amba_ids", &pl031_test::test_amba_ids);
+        add_test("time_date", &pl031_test::test_time_date);
+        add_test("alarm_irq", &pl031_test::test_alarm_irq);
     }
 
-    virtual void run_test() override {
-        wait(SC_ZERO_TIME);
-        test_amba_ids();
-        wait(SC_ZERO_TIME);
-        test_time_date();
-        wait(SC_ZERO_TIME);
-        test_alarm_irq();
+    void test_strings() {
+        EXPECT_STREQ(pl031.kind(), "vcml::timers::pl031");
+        EXPECT_STREQ(pl031.version(), VCML_VERSION_STRING);
     }
 
     constexpr u64 pl031_pid(size_t i) { return 0xfe0 + i * 4; }

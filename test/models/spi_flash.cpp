@@ -23,6 +23,11 @@ public:
         cs_out.bind(flash.cs_in);
         rst.bind(flash.rst);
         clk.bind(flash.clk);
+
+        add_test("strings", &test_harness::test_strings);
+        add_test("ident", &test_harness::test_ident);
+        add_test("write_disable", &test_harness::test_write_disable);
+        add_test("write_enable", &test_harness::test_write_enable);
     }
 
     void spi_send(u8 data) {
@@ -37,7 +42,12 @@ public:
         return tx.miso;
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(flash.kind(), "vcml::spi::flash");
+        EXPECT_STREQ(flash.version(), VCML_VERSION_STRING);
+    }
+
+    void test_ident() {
         flash.reset();
         cs_out.raise();
 
@@ -46,21 +56,30 @@ public:
         u32 jedec_ex = spi_recv() << 8 | spi_recv();
         EXPECT_EQ(jedec_id, 0x202014);
         EXPECT_EQ(jedec_ex, 0);
+    }
+
+    void test_write_disable() {
+        flash.reset();
+        cs_out.raise();
 
         spi_send(0x04); // WRITE_DISABLE
         spi_send(0x05); // READ_STATUS
         u8 status = spi_recv();
         EXPECT_EQ(status, bit(7));
+    }
+
+    void test_write_enable() {
+        flash.reset();
+        cs_out.raise();
 
         spi_send(0x06); // WRITE_ENABLE
         spi_send(0x05); // READ_STATUS
-        status = spi_recv();
+        u8 status = spi_recv();
         EXPECT_EQ(status, 0);
     }
 };
 
 TEST(generic_memory, access) {
     test_harness test("spi");
-    EXPECT_STREQ(test.flash.kind(), "vcml::spi::flash");
     sc_core::sc_start();
 }

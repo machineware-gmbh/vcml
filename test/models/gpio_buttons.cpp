@@ -29,8 +29,14 @@ public:
 
         button1.pressed_state = false;
 
+        add_test("strings", &gpio_buttons_test::test_strings);
         add_test("active_high", &gpio_buttons_test::test_active_high);
         add_test("test_active_low", &gpio_buttons_test::test_active_low);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(button0.kind(), "vcml::gpio::buttons");
+        EXPECT_STREQ(button0.version(), VCML_VERSION_STRING);
     }
 
     void test_active_high() {
@@ -104,6 +110,5 @@ public:
 
 TEST(gpio, buttons) {
     gpio_buttons_test test("test");
-    EXPECT_STREQ(test.button0.kind(), "vcml::gpio::buttons");
     sc_core::sc_start();
 }

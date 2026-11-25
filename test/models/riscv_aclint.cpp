@@ -53,6 +53,26 @@ public:
         aclint.irq_mswi[1].bind(irq_msw1);
         aclint.irq_sswi[0].bind(irq_ssw0);
         aclint.irq_sswi[1].bind(irq_ssw1);
+
+        add_test("strings", &aclint_test::test_strings);
+        add_test("reset", &aclint_test::test_reset);
+        add_test("timer", &aclint_test::test_timer);
+        add_test("mswi", &aclint_test::test_mswi);
+        add_test("sswi", &aclint_test::test_sswi);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(aclint.kind(), "vcml::riscv::aclint");
+        EXPECT_STREQ(aclint.version(), VCML_VERSION_STRING);
+    }
+
+    void test_reset() {
+        ASSERT_FALSE(irq_mtimer0.read()) << "IRQ_TIMER_0 not reset";
+        ASSERT_FALSE(irq_mtimer1.read()) << "IRQ_TIMER_1 not reset";
+        ASSERT_FALSE(irq_msw0.read()) << "IRQ_SW_0 not reset";
+        ASSERT_FALSE(irq_msw1.read()) << "IRQ_SW_1 not reset";
+        ASSERT_FALSE(irq_ssw0.read()) << "IRQ_SW_0 not reset";
+        ASSERT_FALSE(irq_ssw1.read()) << "IRQ_SW_1 not reset";
     }
 
     void test_timer() {
@@ -116,27 +136,12 @@ public:
         ASSERT_FALSE(irq1.read()) << "IRQ_TIMER_1 not cleared";
     }
 
-    virtual void run_test() override {
-        ASSERT_FALSE(irq_mtimer0.read()) << "IRQ_TIMER_0 not reset";
-        ASSERT_FALSE(irq_mtimer1.read()) << "IRQ_TIMER_1 not reset";
-        ASSERT_FALSE(irq_msw0.read()) << "IRQ_SW_0 not reset";
-        ASSERT_FALSE(irq_msw1.read()) << "IRQ_SW_1 not reset";
-        ASSERT_FALSE(irq_ssw0.read()) << "IRQ_SW_0 not reset";
-        ASSERT_FALSE(irq_ssw1.read()) << "IRQ_SW_1 not reset";
+    void test_mswi() { test_swi(out_mswi, irq_msw0, irq_msw1); }
 
-        test_timer();
-        wait(SC_ZERO_TIME);
-
-        test_swi(out_mswi, irq_msw0, irq_msw1);
-        wait(SC_ZERO_TIME);
-
-        test_swi(out_sswi, irq_ssw0, irq_ssw1);
-        wait(SC_ZERO_TIME);
-    }
+    void test_sswi() { test_swi(out_sswi, irq_ssw0, irq_ssw1); }
 };
 
 TEST(aclint, aclint) {
     aclint_test test("test");
-    EXPECT_STREQ(test.aclint.kind(), "vcml::riscv::aclint");
     sc_core::sc_start();
 }

@@ -21,17 +21,38 @@ public:
     gpio_target_socket irq2;
     gpio_target_socket irqc;
 
+    timers::sp804 sp804;
+
     sp804_stim(const sc_module_name& nm):
         test_base(nm),
         out("out"),
         rst_out("rst_out"),
         irq1("irq1"),
         irq2("irq2"),
-        irqc("irqc") {
+        irqc("irqc"),
+        sp804("sp804") {
         rst_out.bind(rst);
+
+        out.bind(sp804.in);
+        clk.bind(sp804.clk);
+        rst.bind(sp804.rst);
+
+        sp804.irq1.bind(irq1);
+        sp804.irq2.bind(irq2);
+        sp804.irqc.bind(irqc);
+
+        add_test("strings", &sp804_stim::test_strings);
+        add_test("oneshot", &sp804_stim::test_oneshot);
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(sp804.kind(), "vcml::arm::sp804");
+        EXPECT_STREQ(sp804.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(sp804.timer1.kind(), "vcml::arm::sp804::timer");
+        EXPECT_STREQ(sp804.timer1.version(), VCML_VERSION_STRING);
+    }
+
+    void test_oneshot() {
         enum addresses : u64 {
             TIMER1_LOAD = 0x00,
             TIMER1_VALUE = 0x04,
@@ -86,17 +107,5 @@ public:
 
 TEST(sp804, main) {
     sp804_stim stim("stim");
-    timers::sp804 sp804("sp804");
-    EXPECT_STREQ(sp804.kind(), "vcml::arm::sp804");
-    EXPECT_STREQ(sp804.timer1.kind(), "vcml::arm::sp804::timer");
-
-    stim.out.bind(sp804.in);
-    stim.clk.bind(sp804.clk);
-    stim.rst.bind(sp804.rst);
-
-    sp804.irq1.bind(stim.irq1);
-    sp804.irq2.bind(stim.irq2);
-    sp804.irqc.bind(stim.irqc);
-
     sc_core::sc_start();
 }

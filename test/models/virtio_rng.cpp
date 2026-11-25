@@ -39,6 +39,7 @@ public:
         rng.pseudo = true;
         rng.seed = 42;
 
+        add_test("strings", &virtio_rng_stim::test_strings);
         add_test("mmio", &virtio_rng_stim::test_mmio);
         add_test("identify", &virtio_rng_stim::test_identify);
         add_test("pseudo", &virtio_rng_stim::test_pseudo);
@@ -62,6 +63,11 @@ public:
         rst.bind(bus.rst);
         rst.bind(mem.rst);
         rst.bind(virtio.rst);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(rng.kind(), "vcml::virtio::rng");
+        EXPECT_STREQ(rng.version(), VCML_VERSION_STRING);
     }
 
     void test_mmio() {
@@ -183,6 +189,5 @@ public:
 
 TEST(virtio, rng) {
     virtio_rng_stim stim;
-    EXPECT_STREQ(stim.rng.kind(), "vcml::virtio::rng");
     sc_core::sc_start();
 }

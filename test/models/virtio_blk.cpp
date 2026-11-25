@@ -73,6 +73,7 @@ public:
         blk("blk") {
         stim.virtio_out.bind(blk.virtio_in);
 
+        add_test("strings", &virtio_blk_stim::test_strings);
         add_test("mmio", &virtio_blk_stim::test_mmio);
         add_test("identify", &virtio_blk_stim::test_identify);
         add_test("config", &virtio_blk_stim::test_config);
@@ -98,6 +99,11 @@ public:
         rst.bind(bus.rst);
         rst.bind(mem.rst);
         rst.bind(virtio.rst);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(blk.kind(), "vcml::virtio::blk");
+        EXPECT_STREQ(blk.version(), VCML_VERSION_STRING);
     }
 
     void test_mmio() {
@@ -335,6 +341,5 @@ public:
 
 TEST(virtio, blk) {
     virtio_blk_stim stim;
-    EXPECT_STREQ(stim.blk.kind(), "vcml::virtio::blk");
     sc_core::sc_start();
 }

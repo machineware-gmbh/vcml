@@ -52,6 +52,7 @@ public:
         model.irq.bind(irq);
         model.i2c.bind(i2c);
 
+        add_test("strings", &sifive_i2c_bench::test_strings);
         add_test("setup", &sifive_i2c_bench::test_setup);
         add_test("write", &sifive_i2c_bench::test_write);
         add_test("read", &sifive_i2c_bench::test_read);
@@ -64,6 +65,11 @@ public:
 
     tlm_response_status reg_write(u32 addr, u8 val) {
         return out.writew(addr * sizeof(u8), val);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(model.kind(), "vcml::i2c::sifive");
+        EXPECT_STREQ(model.version(), VCML_VERSION_STRING);
     }
 
     void test_setup() {
@@ -193,6 +199,5 @@ public:
 
 TEST(i2c_sifive, simulate) {
     sifive_i2c_bench test("test");
-    EXPECT_STREQ(test.model.kind(), "vcml::i2c::sifive");
     sc_core::sc_start();
 }

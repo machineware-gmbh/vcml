@@ -36,9 +36,21 @@ public:
         u64 addr = ram.size - sizeof(data);
         ram.set(addr, data);
         EXPECT_EQ(ram.get<u32>(addr), data);
+
+        add_test("strings", &test_harness::test_strings);
+        add_test("read_write", &test_harness::test_read_write);
+        add_test("read_only", &test_harness::test_read_only);
+        add_test("alignment", &test_harness::test_alignment);
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(ram.kind(), "vcml::generic::memory");
+        EXPECT_STREQ(ram.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(rom.kind(), "vcml::generic::memory");
+        EXPECT_STREQ(rom.version(), VCML_VERSION_STRING);
+    }
+
+    void test_read_write() {
         ASSERT_OK(ram_port.writew(0x0, 0x11223344))
             << "cannot write 32bits to address 0";
         ASSERT_OK(ram_port.writew(0x4, 0x55667788))
@@ -54,7 +66,9 @@ public:
             << "memory does not provide DMI access";
         EXPECT_GT(ram_port.dmi_cache().get_entries().size(), 0)
             << "did not get DMI access to memory";
+    }
 
+    void test_read_only() {
         ASSERT_CE(rom_port.writew(0x0, 0xfefefefe, SBI_NODMI))
             << "read-only memory permitted write access";
         ASSERT_OK(rom_port.writew(0x0, 0xfefefefe, SBI_DEBUG))
@@ -65,7 +79,9 @@ public:
         rom_port.dmi_cache().invalidate(0, -1);
         ASSERT_CE(rom_port.writew(0x0, 0xfefefefe))
             << "read-only memory permitted write access after DMI invalidate";
+    }
 
+    void test_alignment() {
         ASSERT_TRUE(is_aligned(ram.data(), VCML_ALIGN_2M))
             << "memory is not 21 bit aligned";
     }

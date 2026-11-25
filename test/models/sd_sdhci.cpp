@@ -64,13 +64,29 @@ public:
 
         // IRQ Mapping
         sdhci.irq.stub();
+
+        add_test("strings", &sdhci_harness::test_strings);
+        add_test("go_idle_state", &sdhci_harness::test_go_idle_state);
+        add_test("read_multiple_block",
+                 &sdhci_harness::test_read_multiple_block);
+        add_test("write_multiple_block",
+                 &sdhci_harness::test_write_multiple_block);
+        add_test("read_multiple_block_dma",
+                 &sdhci_harness::test_read_multiple_block_dma);
+        add_test("write_multiple_block_dma",
+                 &sdhci_harness::test_write_multiple_block_dma);
     }
 
     virtual ~sdhci_harness() {
         // nothing to do
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(sdhci.kind(), "vcml::sd::sdhci");
+        EXPECT_STREQ(sdhci.version(), VCML_VERSION_STRING);
+    }
+
+    void test_go_idle_state() {
         /**********************************************************************
          *                                                                    *
          *             test go_idle_state (without DMA)                       *
@@ -124,7 +140,9 @@ public:
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
+    }
 
+    void test_read_multiple_block() {
         /**********************************************************************
          *                                                                    *
          *             test read_multiple_block (without DMA)                 *
@@ -134,6 +152,7 @@ public:
         ASSERT_OK(out.writew(0x2f, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = false; // tests without DMA
 
+        vcml::sd_command cmd;
         cmd.spi = false;
         cmd.opcode = 18;
         cmd.argument = 0;
@@ -177,6 +196,7 @@ public:
         ASSERT_OK(out.writew<u16>(0x0e, 0x123a))
             << "write CMD18 (READ_MULTIPLE_BLOCK) to CMD register";
 
+        u32 value_of_response;
         ASSERT_OK(out.readw(0x10, value_of_response))
             << "read the RESPONSE register";
         EXPECT_EQ(0x01020304, value_of_response);
@@ -184,12 +204,14 @@ public:
         EXPECT_TRUE(sdhci.irq.read())
             << "check whether an interrupt has been triggered";
 
+        u32 value_of_normal_int_stat;
         ASSERT_OK(out.readw(0x30, value_of_normal_int_stat))
             << "check if it was the right interrupt (Command Complete = "
                "0x0001, Buffer Read Ready = 0x0020)";
         EXPECT_EQ(0x0021, value_of_normal_int_stat);
         ASSERT_OK(out.writew(0x30, 0x0021)) << "clear the interrupt";
 
+        u32 value_of_error_int_stat;
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
@@ -225,7 +247,9 @@ public:
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
+    }
 
+    void test_write_multiple_block() {
         /**********************************************************************
          *                                                                    *
          *             test write_multiple_block (without DMA)                *
@@ -235,6 +259,7 @@ public:
         ASSERT_OK(out.writew(0x2f, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = false; // tests without DMA
 
+        vcml::sd_command cmd;
         cmd.spi = false;
         cmd.opcode = 25;
         cmd.argument = 0;
@@ -283,6 +308,7 @@ public:
         ASSERT_OK(out.writew<u16>(0x0e, 0x193a))
             << "write CMD25 (WRITE_MULTIPLE_BLOCK) to CMD register";
 
+        u32 value_of_response;
         ASSERT_OK(out.readw(0x10, value_of_response))
             << "read the RESPONSE register";
         EXPECT_EQ(0x01020304, value_of_response);
@@ -290,12 +316,14 @@ public:
         EXPECT_TRUE(sdhci.irq.read())
             << "check whether an interrupt has been triggered";
 
+        u32 value_of_normal_int_stat;
         ASSERT_OK(out.readw(0x30, value_of_normal_int_stat))
             << "check if it was the right interrupt (Command Complete = "
                "0x0001, Buffer Write Ready = 0x0010)";
         EXPECT_EQ(0x0011, value_of_normal_int_stat);
         ASSERT_OK(out.writew<u16>(0x30, 0x0011)) << "clear the interrupt";
 
+        u32 value_of_error_int_stat;
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
@@ -331,7 +359,9 @@ public:
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
+    }
 
+    void test_read_multiple_block_dma() {
         /**********************************************************************
          *                                                                    *
          *             test read_multiple_block (with DMA)                    *
@@ -341,6 +371,7 @@ public:
         ASSERT_OK(out.writew<u8>(0x2f, 0x01)) << "reset the SDHCI";
         sdhci.dma_enabled = true; // tests with DMA
 
+        vcml::sd_command cmd;
         cmd.spi = false;
         cmd.opcode = 18;
         cmd.argument = 0;
@@ -385,6 +416,7 @@ public:
         ASSERT_OK(out.writew<u16>(0x0e, 0x123a))
             << "write CMD18 (READ_MULTIPLE_BLOCK) to CMD register";
 
+        u32 value_of_response;
         ASSERT_OK(out.readw(0x10, value_of_response))
             << "read the RESPONSE register";
         EXPECT_EQ(0x01020304, value_of_response);
@@ -393,11 +425,13 @@ public:
         EXPECT_TRUE(sdhci.irq.read())
             << "check whether an interrupt has been triggered";
 
+        u32 value_of_normal_int_stat;
         ASSERT_OK(out.readw(0x30, value_of_normal_int_stat))
             << "check if it was the right interrupt (cmd complete = 0x0001)";
         EXPECT_EQ(0x0003, value_of_normal_int_stat);
         ASSERT_OK(out.writew<u16>(0x30, 0x0003)) << "clear the interrupt";
 
+        u32 value_of_error_int_stat;
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
@@ -410,7 +444,9 @@ public:
             << "check host memory (DMA) was successful";
         ASSERT_EQ(mem1, 0x100f0e0d0c0b0a09)
             << "check host memory (DMA) was successful";
+    }
 
+    void test_write_multiple_block_dma() {
         /**********************************************************************
          *                                                                    *
          *             test write_multiple_block (with DMA)                   *
@@ -420,6 +456,7 @@ public:
         ASSERT_OK(out.writew(0x2f, 0x01)) << "reset the SDHCI controller";
         sdhci.dma_enabled = true; // tests with DMA
 
+        vcml::sd_command cmd;
         cmd.spi = false;
         cmd.opcode = 25;
         cmd.argument = 0;
@@ -436,6 +473,7 @@ public:
         EXPECT_CALL(sdcard, test_transport(_))
             .WillOnce(DoAll(SetArgReferee<0>(cmd), Return(SD_OK_RX_RDY)));
 
+        u8 test_sd_mem[16];
         memset(test_sd_mem, 0, sizeof(test_sd_mem)); // reset buffer
 
         EXPECT_CALL(sdcard, test_data_write(_))
@@ -458,8 +496,8 @@ public:
             .WillOnce(
                 DoAll(SaveArg<0>(&test_sd_mem[15]), Return(SDRX_OK_BLK_DONE)));
 
-        mem0 = 0x0807060504030201;
-        mem1 = 0x100f0e0d0c0b0a09;
+        u64 mem0 = 0x0807060504030201;
+        u64 mem1 = 0x100f0e0d0c0b0a09;
         ASSERT_OK(mem.write(range(0x40, 0x47), &mem0, SBI_NONE));
         ASSERT_OK(mem.write(range(0x48, 0x4f), &mem1, SBI_NONE));
 
@@ -473,6 +511,7 @@ public:
         ASSERT_OK(out.writew<u16>(0x0e, 0x193a))
             << "write CMD25 (WRITE_MULTIPLE_BLOCK) to CMD register";
 
+        u32 value_of_response;
         ASSERT_OK(out.readw(0x10, value_of_response))
             << "read the RESPONSE register";
         EXPECT_EQ(0x01020304, value_of_response);
@@ -481,11 +520,13 @@ public:
         EXPECT_TRUE(sdhci.irq.read())
             << "check whether an interrupt has been triggered";
 
+        u32 value_of_normal_int_stat;
         ASSERT_OK(out.readw(0x30, value_of_normal_int_stat))
             << "check if it was the right interrupt (cmd complete = 0x0001)";
         EXPECT_EQ(0x0003, value_of_normal_int_stat);
         ASSERT_OK(out.writew<u16>(0x30, 0x0003)) << "clear the interrupt";
 
+        u32 value_of_error_int_stat;
         ASSERT_OK(out.readw(0x32, value_of_error_int_stat))
             << "error interrupt has been triggered additionally";
         EXPECT_EQ(0x0000, value_of_error_int_stat);
@@ -507,6 +548,5 @@ public:
 
 TEST(sd, sdhci) {
     sdhci_harness test("TEST");
-    EXPECT_STREQ(test.sdhci.kind(), "vcml::sd::sdhci");
     sc_core::sc_start();
 }

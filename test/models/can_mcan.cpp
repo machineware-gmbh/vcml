@@ -204,8 +204,15 @@ public:
         m_can.irq0.bind(irq0);
         m_can.irq1.stub();
 
-        EXPECT_STREQ(m_can.kind(), "vcml::can::m_can");
+        add_test("strings", &m_can_bench::test_strings);
+        add_test("tx", &m_can_bench::test_tx);
+        add_test("rx", &m_can_bench::test_rx);
     };
+
+    void test_strings() {
+        EXPECT_STREQ(m_can.kind(), "vcml::can::m_can");
+        EXPECT_STREQ(m_can.version(), VCML_VERSION_STRING);
+    }
 
     void check_irq(u32 irq) {
         u32 data = 0;
@@ -460,7 +467,7 @@ public:
         EXPECT_EQ(get_field<RXFS_FFL>(rxf0s), 0) << "wrong rx fif0 fill level";
     }
 
-    virtual void run_test() override {
+    void test_tx() {
         setup_m_can();
 
         // transmission tests
@@ -469,6 +476,10 @@ public:
         test_tx_frame(generate_can_frame(false, true));  // can + rtr
         test_tx_fd_frame(generate_canfd_frame(false));   // canfd
         test_tx_fd_frame(generate_canfd_frame(true));    // canfd + eff
+    }
+
+    void test_rx() {
+        setup_m_can();
 
         // reception tests
         test_rx_frame(generate_can_frame(false, false)); // can

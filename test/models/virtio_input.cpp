@@ -70,6 +70,7 @@ public:
         tstim.virtio_out.bind(touch.virtio_in);
         mstim.virtio_out.bind(mtouch.virtio_in);
 
+        add_test("strings", &virtio_rng_stim::test_strings);
         add_test("mmio", &virtio_rng_stim::test_mmio);
         add_test("identify", &virtio_rng_stim::test_identify);
         add_test("config_ids", &virtio_rng_stim::test_config_ids);
@@ -98,6 +99,11 @@ public:
         rst.bind(bus.rst);
         rst.bind(mem.rst);
         rst.bind(virtio.rst);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(input.kind(), "vcml::virtio::input");
+        EXPECT_STREQ(input.version(), VCML_VERSION_STRING);
     }
 
     void test_mmio() {
@@ -486,6 +492,5 @@ TEST(virtio, rng) {
     broker.define("stim.mtouch.multitouch", "true");
 
     virtio_rng_stim stim("stim");
-    EXPECT_STREQ(stim.input.kind(), "vcml::virtio::input");
     sc_core::sc_start();
 }

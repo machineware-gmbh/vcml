@@ -93,6 +93,8 @@ TEST(display, attach_backend) {
 
     display display("display");
     console console("console");
+    EXPECT_STREQ(console.kind(), "vcml::ui::console");
+    EXPECT_STREQ(console.version(), VCML_VERSION_STRING);
     console.display = display.name();
 
     auto mode = videomode::a8r8g8b8(16, 16);

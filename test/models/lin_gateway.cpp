@@ -62,7 +62,9 @@ public:
 
     void test_strings() {
         EXPECT_STREQ(gateway.kind(), "vcml::lin::gateway");
+        EXPECT_STREQ(gateway.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(network.kind(), "vcml::lin::network");
+        EXPECT_STREQ(network.version(), VCML_VERSION_STRING);
     }
 
     void test_tx() {

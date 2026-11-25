@@ -73,6 +73,7 @@ public:
         clk.bind(spicard.clk);
         clk.bind(bridge.clk);
 
+        add_test("strings", &sd_card_bench::test_strings);
         add_test("sd_identification", &sd_card_bench::test_sd_identification);
         add_test("sd_capacity", &sd_card_bench::test_sd_capacity);
         add_test("sd_rca", &sd_card_bench::test_sd_rca);
@@ -186,6 +187,13 @@ public:
                         const vector<u8>& data) {
         EXPECT_EQ(sd_cmd(sd, 24, addr).status, SD_OK_RX_RDY);
         EXPECT_EQ(sd_write(sd, data), SDRX_OK_COMPLETE);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(sdsc.kind(), "vcml::sd::card");
+        EXPECT_STREQ(sdsc.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(bridge.kind(), "vcml::spi::spi2sd");
+        EXPECT_STREQ(bridge.version(), VCML_VERSION_STRING);
     }
 
     void test_sd_identification() {
@@ -789,7 +797,5 @@ public:
 
 TEST(sd, card) {
     sd_card_bench test("bench");
-    EXPECT_STREQ(test.sdsc.kind(), "vcml::sd::card");
-    EXPECT_STREQ(test.bridge.kind(), "vcml::spi::spi2sd");
     sc_core::sc_start();
 }

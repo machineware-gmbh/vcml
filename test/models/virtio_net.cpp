@@ -97,6 +97,7 @@ public:
         net.eth_tx.bind(eth_rx);
         eth_tx.bind(net.eth_rx);
 
+        add_test("strings", &virtio_net_stim::test_strings);
         add_test("mmio", &virtio_net_stim::test_mmio);
         add_test("identify", &virtio_net_stim::test_identify);
         add_test("config", &virtio_net_stim::test_config);
@@ -130,8 +131,11 @@ public:
         rst.bind(bus.rst);
         rst.bind(mem.rst);
         rst.bind(virtio.rst);
+    }
 
+    void test_strings() {
         EXPECT_STREQ(virtio_net.kind(), "vcml::virtio::net");
+        EXPECT_STREQ(virtio_net.version(), VCML_VERSION_STRING);
     }
 
     void test_mmio() {

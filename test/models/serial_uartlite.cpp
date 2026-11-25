@@ -78,6 +78,11 @@ public:
 
     void write_control(u32 val) { ASSERT_OK(out.writew(0xc, val)); }
 
+    void test_strings() {
+        EXPECT_STREQ(uart.kind(), "vcml::serial::uartlite");
+        EXPECT_STREQ(uart.version(), VCML_VERSION_STRING);
+    }
+
     void test_rx() {
         write_control(RST_TX_FIFO | RST_RX_FIFO);
 
@@ -234,8 +239,7 @@ public:
 
         uart.reset();
 
-        EXPECT_STREQ(uart.kind(), "vcml::serial::uartlite");
-
+        add_test("strings", &uartlite_test::test_strings);
         add_test("test_rx", &uartlite_test::test_rx);
         add_test("test_rx_overflow", &uartlite_test::test_rx_overflow);
         add_test("test_tx", &uartlite_test::test_tx);

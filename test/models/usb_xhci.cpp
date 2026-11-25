@@ -60,12 +60,25 @@ public:
         rst.bind(mem.rst);
         rst.bind(xhci.rst);
 
+        add_test("strings", &xhci_test::test_strings);
+        add_test("capabilities", &xhci_test::test_capabilities);
+        add_test("ports", &xhci_test::test_ports);
+        add_test("microframes", &xhci_test::test_microframes);
+    }
+
+    void test_strings() {
         EXPECT_STREQ(xhci.kind(), "vcml::usb::xhci");
+        EXPECT_STREQ(xhci.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(keyboard2.kind(), "vcml::usb::keyboard");
+        EXPECT_STREQ(keyboard2.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(keyboard3.kind(), "vcml::usb::keyboard");
+        EXPECT_STREQ(keyboard3.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(drive2.kind(), "vcml::usb::drive");
+        EXPECT_STREQ(drive2.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(hostdev.kind(), "vcml::usb::hostdev");
+        EXPECT_STREQ(hostdev.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(headset.kind(), "vcml::usb::headset");
+        EXPECT_STREQ(headset.version(), VCML_VERSION_STRING);
     }
 
     void test_capabilities() {
@@ -112,15 +125,6 @@ public:
         wait(125, SC_US);
         ASSERT_OK(out.readw(0x1600, end));
         EXPECT_EQ(end - start, 1);
-    }
-
-    virtual void run_test() override {
-        wait(SC_ZERO_TIME);
-        test_capabilities();
-        wait(SC_ZERO_TIME);
-        test_ports();
-        wait(SC_ZERO_TIME);
-        test_microframes();
     }
 };
 

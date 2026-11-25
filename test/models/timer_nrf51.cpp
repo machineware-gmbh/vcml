@@ -44,10 +44,19 @@ public:
         nrf51.irq.bind(irq);
         rst.bind(nrf51.rst);
         nrf51.clk.stub(16 * MHz);
-        EXPECT_STREQ(nrf51.kind(), "vcml::timers::nrf51");
+
+        add_test("strings", &nrf51_test::test_strings);
+        add_test("timer", &nrf51_test::test_timer);
+        add_test("interrupts", &nrf51_test::test_interrupts);
+        add_test("counter", &nrf51_test::test_counter);
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(nrf51.kind(), "vcml::timers::nrf51");
+        EXPECT_STREQ(nrf51.version(), VCML_VERSION_STRING);
+    }
+
+    void test_timer() {
         u32 data;
         wait(SC_ZERO_TIME);
         ASSERT_FALSE(irq) << "irq did not reset";
@@ -76,6 +85,12 @@ public:
         ASSERT_OK(out.readw<u32>(nrf51_cc(3), data));
         ASSERT_EQ(data, 0);
         ASSERT_FALSE(irq);
+    }
+
+    void test_interrupts() {
+        u32 data;
+        ASSERT_OK(out.writew<u32>(NRF51_BITMODE, 3));
+        ASSERT_OK(out.writew<u32>(NRF51_PRESCALER, 4));
 
         // test interrupts
         ASSERT_OK(out.writew<u32>(NRF51_INTENSET, bit(16)));
@@ -94,6 +109,11 @@ public:
         ASSERT_OK(out.writew<u32>(nrf51_compare(0), 0));
         ASSERT_FALSE(irq);
         ASSERT_OK(out.writew<u32>(NRF51_START, 0));
+    }
+
+    void test_counter() {
+        u32 data;
+        ASSERT_OK(out.writew<u32>(NRF51_INTENSET, bit(16)));
 
         // test counter mode
         ASSERT_OK(out.writew<u32>(NRF51_MODE, 1));

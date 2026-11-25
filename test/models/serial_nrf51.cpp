@@ -56,14 +56,21 @@ public:
         serial_tx.bind(nrf51.serial_rx);
         rst.bind(nrf51.rst);
         clk.bind(nrf51.clk);
-        EXPECT_STREQ(nrf51.kind(), "vcml::serial::nrf51");
+
+        add_test("strings", &nrf51_test::test_strings);
+        add_test("config", &nrf51_test::test_config);
+        add_test("interrupts", &nrf51_test::test_interrupts);
+        add_test("transfer", &nrf51_test::test_transfer);
     }
 
     MOCK_METHOD(void, serial_receive, (u8), (override));
 
-    virtual void run_test() override {
-        u32 data;
+    void test_strings() {
+        EXPECT_STREQ(nrf51.kind(), "vcml::serial::nrf51");
+        EXPECT_STREQ(nrf51.version(), VCML_VERSION_STRING);
+    }
 
+    void test_config() {
         wait(SC_ZERO_TIME);
         EXPECT_FALSE(irq) << "irq did not reset";
 
@@ -72,6 +79,10 @@ public:
         EXPECT_EQ(nrf51.serial_tx.baud(), 1200) << "baud rate not set";
         EXPECT_OK(out.writew<u32>(NRF51_CONFIG, 14));
         EXPECT_EQ(nrf51.serial_tx.parity(), SERIAL_PARITY_MARK);
+    }
+
+    void test_interrupts() {
+        u32 data;
 
         // test interrupt setting
         EXPECT_OK(out.writew<u32>(NRF51_ENABLE, 4));
@@ -84,6 +95,12 @@ public:
         EXPECT_OK(out.writew<u32>(NRF51_INTENCLR, bit(9)));
         EXPECT_OK(out.readw<u32>(NRF51_INTENSET, data));
         EXPECT_EQ(data, bit(7));
+    }
+
+    void test_transfer() {
+        u32 data;
+        EXPECT_OK(out.writew<u32>(NRF51_ENABLE, 4));
+        EXPECT_OK(out.writew<u32>(NRF51_INTENSET, bit(7)));
 
         // test transmission
         EXPECT_OK(out.writew<u32>(NRF51_STARTTX, 1));

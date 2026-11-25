@@ -27,14 +27,25 @@ public:
         fb.clk.stub(60);
         fb.rst.stub();
         fb.out.bind(vmem.in);
+
+        add_test("strings", &test_harness::test_strings);
+        add_test("resolution", &test_harness::test_resolution);
+        add_test("vptr", &test_harness::test_vptr);
     }
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(fb.kind(), "vcml::generic::fbdev");
+        EXPECT_STREQ(fb.version(), VCML_VERSION_STRING);
+    }
+
+    void test_resolution() {
         ASSERT_EQ(fb.xres, XRES) << "unexpected screen width";
         ASSERT_EQ(fb.yres, YRES) << "unexpected screen height";
         ASSERT_EQ(fb.stride(), XRES * 4) << "wrong stride";
         ASSERT_EQ(fb.size(), XRES * YRES * 4) << "wrong size";
+    }
 
+    void test_vptr() {
         wait(1.0, SC_SEC);
 
         EXPECT_EQ(fb.vptr(), vmem.data());
@@ -45,6 +56,5 @@ TEST(generic_fbdev, run) {
     vcml::broker broker("test");
     broker.define("harness.fb.displays", "null:0");
     test_harness test("harness");
-    EXPECT_STREQ(test.fb.kind(), "vcml::generic::fbdev");
     sc_core::sc_start();
 }

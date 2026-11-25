@@ -47,12 +47,21 @@ public:
         serial_tx.bind(cdns.serial_rx);
         rst.bind(cdns.rst);
         clk.bind(cdns.clk);
-        EXPECT_STREQ(cdns.kind(), "vcml::serial::cdns");
+
+        add_test("strings", &cdns_test::test_strings);
+        add_test("reset", &cdns_test::test_reset);
+        add_test("transmit", &cdns_test::test_transmit);
+        add_test("receive", &cdns_test::test_receive);
     }
 
     MOCK_METHOD(void, serial_receive, (u8), (override));
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(cdns.kind(), "vcml::serial::cdns");
+        EXPECT_STREQ(cdns.version(), VCML_VERSION_STRING);
+    }
+
+    void test_reset() {
         u32 data;
 
         wait(SC_ZERO_TIME);
@@ -62,6 +71,10 @@ public:
         ASSERT_OK(out.writew(CDNS_CR, 3));
         ASSERT_OK(out.readw(CDNS_CR, data));
         EXPECT_EQ(data, 0);
+    }
+
+    void test_transmit() {
+        u32 data;
 
         // enable transmit
         ASSERT_OK(out.writew(CDNS_CR, bit(4)));
@@ -80,6 +93,10 @@ public:
         ASSERT_OK(out.writew<u32>(CDNS_TXRX, 'Y'));
         ASSERT_OK(out.readw(CDNS_ISR, data));
         EXPECT_EQ(data, bit(3) | bit(1)); // rx + tx empty
+    }
+
+    void test_receive() {
+        u32 data;
 
         // receive data
         ASSERT_OK(out.writew(CDNS_CR, bit(2)));

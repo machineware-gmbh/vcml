@@ -57,8 +57,14 @@ public:
         uart.serial_rx.bind(bench_tx);
         uart.serial_tx.bind(bench_rx);
 
+        add_test("strings", &sifive_bench::test_strings);
         add_test("general", &sifive_bench::test_general);
         add_test("div", &sifive_bench::test_div);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(uart.kind(), "vcml::serial::sifive");
+        EXPECT_STREQ(uart.version(), VCML_VERSION_STRING);
     }
 
     virtual void test_general() {
@@ -172,6 +178,5 @@ public:
 
 TEST(sifive, main) {
     sifive_bench bench("bench");
-    EXPECT_STREQ(bench.uart.kind(), "vcml::serial::sifive");
     sc_core::sc_start();
 }

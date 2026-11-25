@@ -122,6 +122,14 @@ public:
 
         clk.bind(mem.clk);
         clk.bind(dma.clk);
+
+        add_test("strings", &pl330_bench::test_strings);
+        add_test("transfer", &pl330_bench::test_transfer);
+        add_test("unaligned_source_transfer",
+                 &pl330_bench::test_unaligned_source_transfer);
+        add_test("unaligned_dest_transfer",
+                 &pl330_bench::test_unaligned_dest_transfer);
+        add_test("rdwrfault", &pl330_bench::test_rdwrfault);
     }
 
     void execute_dbg_insn(u32 channel_nr, size_t start_address) {
@@ -147,6 +155,15 @@ public:
         out.read(inten_addr, &irq_enable_bit, 4);
         irq_enable_bit |= 0b1 << ev_id;
         out.write(inten_addr, &irq_enable_bit, 4);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(dma.kind(), "vcml::dma::pl330");
+        EXPECT_STREQ(dma.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(dma.manager.kind(), "vcml::dma::pl330::manager");
+        EXPECT_STREQ(dma.manager.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(dma.channels[0].kind(), "vcml::dma::pl330::channel");
+        EXPECT_STREQ(dma.channels[0].version(), VCML_VERSION_STRING);
     }
 
     void test_transfer() {
@@ -266,7 +283,8 @@ public:
         }
     }
 
-    void trigger_rdwrfault() {
+    void test_rdwrfault() {
+        dma.reset();
         auto* data_char_ptr = mem.data();
         u8* const channel_insn_buffer = &data_char_ptr[0x1000];
         u8* insn_buf_tail = channel_insn_buffer;
@@ -285,22 +303,9 @@ public:
         // expect fault
         EXPECT_EQ(dma.fsrc[0], 1);
     }
-
-    virtual void run_test() override {
-        test_transfer();
-        dma.reset();
-        test_unaligned_source_transfer();
-        dma.reset();
-        test_unaligned_dest_transfer();
-        dma.reset();
-        trigger_rdwrfault();
-    }
 };
 
 TEST(arm_pl330, main) {
     pl330_bench bench("bench");
-    EXPECT_STREQ(bench.dma.kind(), "vcml::dma::pl330");
-    EXPECT_STREQ(bench.dma.manager.kind(), "vcml::dma::pl330::manager");
-    EXPECT_STREQ(bench.dma.channels[0].kind(), "vcml::dma::pl330::channel");
     sc_core::sc_start();
 }

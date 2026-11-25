@@ -35,25 +35,36 @@ public:
 
         uart.serial_rx.stub();
         uart.serial_tx.stub();
+
+        add_test("strings", &pl011_bench::test_strings);
+        add_test("status", &pl011_bench::test_status);
+        add_test("transmit", &pl011_bench::test_transmit);
     }
 
-    virtual void run_test() override {
-        enum addresses : u64 {
-            PL011_UARTDR = 0x00,
-            PL011_UARTFR = 0x18,
-            PL011_UARTCR = 0x30,
-            PL011_UARTIMSC = 0x38,
-            PL011_UARTRIS = 0x3c,
-        };
+    enum addresses : u64 {
+        PL011_UARTDR = 0x00,
+        PL011_UARTFR = 0x18,
+        PL011_UARTCR = 0x30,
+        PL011_UARTIMSC = 0x38,
+        PL011_UARTRIS = 0x3c,
+    };
 
+    void test_strings() {
+        EXPECT_STREQ(uart.kind(), "vcml::serial::pl011");
+        EXPECT_STREQ(uart.version(), VCML_VERSION_STRING);
+    }
+
+    void test_status() {
         // check initial UART status
         u32 val = 0;
         EXPECT_OK(out.readw(PL011_UARTFR, val));
         EXPECT_TRUE(val & serial::pl011::FR_RXFE) << "RX FIFO not empty";
         EXPECT_TRUE(val & serial::pl011::FR_TXFE) << "TX FIFO not empty";
+    }
 
+    void test_transmit() {
         // enable UART and transmission
-        val = serial::pl011::CR_TXE | serial::pl011::CR_UARTEN;
+        u32 val = serial::pl011::CR_TXE | serial::pl011::CR_UARTEN;
         EXPECT_OK(out.writew(PL011_UARTCR, val)) << "cannot write UARTCR";
 
         // send data
@@ -89,6 +100,5 @@ public:
 
 TEST(arm_pl011, main) {
     pl011_bench bench("bench");
-    EXPECT_STREQ(bench.uart.kind(), "vcml::serial::pl011");
     sc_core::sc_start();
 }

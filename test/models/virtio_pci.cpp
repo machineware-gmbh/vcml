@@ -137,6 +137,7 @@ public:
             rst.bind(comp->rst);
         }
 
+        add_test("strings", &virtio_pci_test::test_strings);
         add_test("identification", &virtio_pci_test::test_identification);
         add_test("capabilities", &virtio_pci_test::test_capabilities);
         add_test("features", &virtio_pci_test::test_features);
@@ -283,8 +284,12 @@ public:
         return data;
     }
 
-    void test_identification() {
+    void test_strings() {
         EXPECT_STREQ(virtio_pci.kind(), "vcml::virtio::pci");
+        EXPECT_STREQ(virtio_pci.version(), VCML_VERSION_STRING);
+    }
+
+    void test_identification() {
         EXPECT_EQ(pci_read_cfg<u16>(PCI_VENDOR_OFFSET), PCI_VENDOR_QUMRANET);
         EXPECT_EQ(pci_read_cfg<u16>(PCI_DEVICE_OFFSET),
                   PCI_DEVICE_VIRTIO + virtio_echo::DEVICE_ID);

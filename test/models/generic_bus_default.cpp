@@ -64,10 +64,16 @@ public:
         bus.bind_default(out2, mem_def2.in, 0x100);
         bus.bind_default(mem_glob.in);
 
+        add_test("strings", &bus_default_harness::test_strings);
         add_test("routing", &bus_default_harness::test_routing);
         add_test("dmi", &bus_default_harness::test_dmi);
         add_test("mappings", &bus_default_harness::test_mappings);
         add_test("mmap", &bus_default_harness::test_mmap);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(bus.kind(), "vcml::generic::bus");
+        EXPECT_STREQ(bus.version(), VCML_VERSION_STRING);
     }
 
     void test_routing() {

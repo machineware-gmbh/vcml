@@ -68,6 +68,7 @@ public:
         bus.stub(0xe000, 0xe7ff);
         tlm_stub(bus, *this, "out2", 0xe800, 0xefff);
 
+        add_test("strings", &bus_harness::test_strings);
         add_test("read_write", &bus_harness::test_read_write);
         add_test("dmi", &bus_harness::test_dmi);
         add_test("dmi_offset", &bus_harness::test_dmi_offset);
@@ -76,6 +77,11 @@ public:
         add_test("mmap", &bus_harness::test_mmap);
         add_test("mappings", &bus_harness::test_mappings);
         add_test("invalid_mapping", &bus_harness::test_invalid_mapping);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(bus.kind(), "vcml::generic::bus");
+        EXPECT_STREQ(bus.version(), VCML_VERSION_STRING);
     }
 
     void test_read_write() {

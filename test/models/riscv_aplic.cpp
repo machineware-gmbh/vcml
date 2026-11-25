@@ -76,14 +76,25 @@ public:
         aplic_m.msi.bind(msi_m);
         aplic_s.msi.bind(msi_s);
         aplic_i.msi.stub();
+
+        add_test("strings", &aplic_test::test_strings);
+        add_test("alignment", &aplic_test::test_alignment);
+        add_test("contexts", &aplic_test::test_contexts);
+        add_test("msi", &aplic_test::test_msi);
+        add_test("direct", &aplic_test::test_direct);
     }
 
-    virtual void run_test() override {
-        u32 data;
+    void test_strings() {
+        EXPECT_STREQ(aplic_m.kind(), "vcml::riscv::aplic");
+        EXPECT_STREQ(aplic_m.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(aplic_s.kind(), "vcml::riscv::aplic");
+        EXPECT_STREQ(aplic_s.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(aplic_i.kind(), "vcml::riscv::aplic");
+        EXPECT_STREQ(aplic_i.version(), VCML_VERSION_STRING);
+    }
 
-        ASSERT_STREQ(aplic_m.kind(), "vcml::riscv::aplic");
-        ASSERT_STREQ(aplic_s.kind(), "vcml::riscv::aplic");
-        ASSERT_STREQ(aplic_i.kind(), "vcml::riscv::aplic");
+    void test_alignment() {
+        u32 data;
 
         // make sure only naturally aligned accesses work
         for (auto* r : aplic_m.get_registers()) {
@@ -91,6 +102,10 @@ public:
             ASSERT_CE(out_m.readw(addr + 1, data));
             ASSERT_CE(out_m.writew<u64>(addr, 0));
         }
+    }
+
+    void test_contexts() {
+        u32 data;
 
         // make sure no contexts got spawned
         ASSERT_AE(out_m.readw(0x4000, data));
@@ -99,6 +114,10 @@ public:
         ASSERT_AE(out_s.readw(0x4020, data));
         ASSERT_AE(out_i.readw(0x4000, data));
         ASSERT_OK(out_i.readw(0x4020, data));
+    }
+
+    void test_msi() {
+        u32 data;
 
         // reset
         aplic_m.reset();
@@ -196,6 +215,14 @@ public:
         EXPECT_EQ(data, 0);
         ASSERT_OK(out_m.readw(0x1d00, data));
         EXPECT_EQ(data, 0);
+    }
+
+    void test_direct() {
+        u32 data;
+
+        ASSERT_OK(out_i.writew(0x0000, 0xfffffffa));
+        ASSERT_OK(out_i.readw(0x0000, data));
+        ASSERT_EQ(data, 0x80000100);
 
         // enable interrupt delivery
         ASSERT_OK(out_i.writew(0x4020, 3u));

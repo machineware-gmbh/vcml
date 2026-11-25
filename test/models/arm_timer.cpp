@@ -35,9 +35,8 @@ public:
         rst.bind(timer.rst);
         clk.bind(timer.clk);
 
-        EXPECT_STREQ(timer.kind(), "vcml::arm::arch_timer");
-        EXPECT_STREQ(timer.frames[0].kind(),
-                     "vcml::arm::arch_timer::cntframe");
+        add_test("strings", &arch_timer_test::test_strings);
+        add_test("timer", &arch_timer_test::test_timer);
     }
 
     constexpr u64 ctl_voff(size_t idx) { return 0x80 + idx * 8; }
@@ -53,7 +52,14 @@ public:
         CNTV_CTL = 0x3c,
     };
 
-    virtual void run_test() override {
+    void test_strings() {
+        EXPECT_STREQ(timer.kind(), "vcml::arm::arch_timer");
+        EXPECT_STREQ(timer.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(timer.frames[0].kind(),
+                     "vcml::arm::arch_timer::cntframe");
+    }
+
+    void test_timer() {
         ASSERT_FALSE(irq0_phys) << "irq_phys did not reset";
         ASSERT_FALSE(irq0_virt) << "irq_virt did not reset";
 

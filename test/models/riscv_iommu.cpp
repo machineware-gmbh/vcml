@@ -113,6 +113,7 @@ public:
 
         dma.allow_dmi = false;
 
+        add_test("strings", &iommu_test::test_strings);
         add_test("capabilities", &iommu_test::test_capabilities);
         add_test("feature_control", &iommu_test::test_feature_control);
         add_test("iohpmcycles", &iommu_test::test_iohpmcycles);
@@ -126,8 +127,6 @@ public:
         add_test("msi_mrif", &iommu_test::test_iommu_msi_mrif);
         add_test("tr_debug", &iommu_test::test_iommu_tr_debug);
         add_test("iommu_dmi", &iommu_test::test_iommu_dmi);
-
-        EXPECT_STREQ(iommu.kind(), "vcml::riscv::iommu");
     }
 
     bool enable_counters(bool en) {
@@ -138,6 +137,11 @@ public:
                 return false;
         }
         return true;
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(iommu.kind(), "vcml::riscv::iommu");
+        EXPECT_STREQ(iommu.version(), VCML_VERSION_STRING);
     }
 
     void test_capabilities() {

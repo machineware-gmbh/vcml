@@ -22,6 +22,7 @@ public:
         spi.bind(max31855.spi_in);
         max31855.bind(cs, true);
 
+        add_test("strings", &max31855_bench::test_strings);
         add_test("temperature", &max31855_bench::test_temperature);
         add_test("negative_temperature",
                  &max31855_bench::test_negative_temperature);
@@ -40,6 +41,11 @@ public:
             EXPECT_EQ(payload.miso, byte[i]);
         }
         cs = false;
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(max31855.kind(), "vcml::spi::max31855");
+        EXPECT_STREQ(max31855.version(), VCML_VERSION_STRING);
     }
 
     void test_temperature() {
@@ -161,6 +167,5 @@ public:
 
 TEST(max31855, simulate) {
     max31855_bench test("bench");
-    EXPECT_STREQ(test.max31855.kind(), "vcml::spi::max31855");
     sc_core::sc_start();
 }

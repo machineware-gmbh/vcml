@@ -22,24 +22,46 @@ public:
                 (const gpio_target_socket& socket, bool state,
                  gpio_vector vector),
                 (override));
+    arm::gicv2m gicv2m;
+
     tlm_initiator_socket out;
 
     gpio_target_array<> in;
 
     gicv2m_stim(const sc_module_name& nm):
-        test_base(nm), out("out"), in("in") {}
+        test_base(nm), gicv2m("gicv2m"), out("out"), in("in") {
+        clk.bind(gicv2m.clk);
+        rst.bind(gicv2m.rst);
 
-    virtual void run_test() override {
-        enum addresses : size_t {
-            TYPER_ADDR = 0x008,
-            SETSPI_ADDR = 0x040,
-            IIDR_ADDR = 0xfcc,
-        };
+        out.bind(gicv2m.in);
 
+        for (size_t i = BASE_SPI; i < BASE_SPI + NUM_SPI; i++)
+            gicv2m.out[i].bind(in[i]);
+
+        add_test("strings", &gicv2m_stim::test_strings);
+        add_test("typer", &gicv2m_stim::test_typer);
+        add_test("setspi", &gicv2m_stim::test_setspi);
+        add_test("iidr", &gicv2m_stim::test_iidr);
+    }
+
+    enum addresses : size_t {
+        TYPER_ADDR = 0x008,
+        SETSPI_ADDR = 0x040,
+        IIDR_ADDR = 0xfcc,
+    };
+
+    void test_strings() {
+        EXPECT_STREQ(gicv2m.kind(), "vcml::arm::gicv2m");
+        EXPECT_STREQ(gicv2m.version(), VCML_VERSION_STRING);
+    }
+
+    void test_typer() {
         u32 val = ~0;
         EXPECT_OK(out.readw(TYPER_ADDR, val)) << "failed to read TYPER reg";
         EXPECT_EQ(val, BASE_SPI << 16 | NUM_SPI);
+    }
 
+    void test_setspi() {
         Sequence s;
         for (size_t i = BASE_SPI; i < BASE_SPI + NUM_SPI; i++) {
             EXPECT_CALL(*this, gpio_notify(Ref(in[i]), true, GPIO_NO_VECTOR))
@@ -53,8 +75,10 @@ public:
         EXPECT_CALL(*this, gpio_notify(_, _, _)).Times(0).InSequence(s);
         EXPECT_OK(out.writew(SETSPI_ADDR, BASE_SPI + NUM_SPI))
             << "failed to write SETSPI reg";
+    }
 
-        val = ~0;
+    void test_iidr() {
+        u32 val = ~0;
         EXPECT_OK(out.readw(IIDR_ADDR, val)) << "failed to read IIDR reg";
         EXPECT_EQ(val, 'M' << 20);
     }
@@ -62,21 +86,9 @@ public:
 
 TEST(gicv2m, gicv2m) {
     vcml::broker broker("test");
-    broker.define("gicv2m.base_spi", BASE_SPI);
-    broker.define("gicv2m.num_spi", NUM_SPI);
+    broker.define("gicv2m_stim.gicv2m.base_spi", BASE_SPI);
+    broker.define("gicv2m_stim.gicv2m.num_spi", NUM_SPI);
 
     gicv2m_stim stim("gicv2m_stim");
-    arm::gicv2m gicv2m("gicv2m");
-
-    stim.clk.bind(gicv2m.clk);
-    stim.rst.bind(gicv2m.rst);
-
-    stim.out.bind(gicv2m.in);
-
-    for (size_t i = BASE_SPI; i < BASE_SPI + NUM_SPI; i++)
-        gicv2m.out[i].bind(stim.in[i]);
-
-    EXPECT_STREQ(gicv2m.kind(), "vcml::arm::gicv2m");
-
     sc_core::sc_start();
 }

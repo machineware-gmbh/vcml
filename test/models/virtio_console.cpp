@@ -60,6 +60,7 @@ public:
         console.serial_tx.bind(serial_rx);
         serial_tx.bind(console.serial_rx);
 
+        add_test("strings", &virtio_rng_stim::test_strings);
         add_test("mmio", &virtio_rng_stim::test_mmio);
         add_test("identify", &virtio_rng_stim::test_identify);
         add_test("config", &virtio_rng_stim::test_config);
@@ -87,6 +88,11 @@ public:
         rst.bind(bus.rst);
         rst.bind(mem.rst);
         rst.bind(virtio.rst);
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(console.kind(), "vcml::virtio::console");
+        EXPECT_STREQ(console.version(), VCML_VERSION_STRING);
     }
 
     void test_mmio() {
@@ -282,6 +288,5 @@ TEST(virtio, rng) {
     stim.rst.stub();
 
     tlm::tlm_global_quantum::instance().set(sc_time(10, SC_MS));
-    EXPECT_STREQ(stim.console.kind(), "vcml::virtio::console");
     sc_core::sc_start();
 }

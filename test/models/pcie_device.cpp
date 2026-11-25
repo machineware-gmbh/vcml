@@ -187,6 +187,7 @@ public:
         rst.bind(pcie_root.rst);
         rst.bind(pcie_device.rst);
 
+        add_test("strings", &pcie_test::test_strings);
         add_test("test_unimplemented_bar", &pcie_test::test_unimplemented_bar);
         add_test("test_dmi_invalidate_unmapped",
                  &pcie_test::test_dmi_invalidate_unmapped);
@@ -219,6 +220,13 @@ public:
         }
 
         return 0;
+    }
+
+    void test_strings() {
+        EXPECT_STREQ(pcie_root.kind(), "vcml::pcie::host");
+        EXPECT_STREQ(pcie_root.version(), VCML_VERSION_STRING);
+        EXPECT_STREQ(pcie_device.pci::device::kind(), "vcml::pci::device");
+        EXPECT_STREQ(pcie_device.version(), VCML_VERSION_STRING);
     }
 
     void test_unimplemented_bar() {
