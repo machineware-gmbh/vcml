@@ -72,17 +72,18 @@ static void sdl_audio_rx(void* userdata, Uint8* buffer, int len) {
 
 SDL_AudioDeviceID driver_sdl::open(bool capture, u32 format, u32 channels,
                                    u32 rate) {
-    m_buffer.clear();
-
     SDL_AudioDeviceID device = capture ? m_input : m_output;
     if (device) {
-        if (format == m_format && channels == m_channels && m_rate == rate)
+        if (format == m_format && channels == m_channels && m_rate == rate) {
+            lock_guard<mutex> guard(m_mtx);
+            m_buffer.clear();
             return device;
+        }
 
-        SDL_CloseAudioDevice(m_output);
-        m_format = FORMAT_INVALID;
-        m_channels = 0;
-        m_rate = 0;
+        if (capture)
+            input_shutdown();
+        else
+            output_shutdown();
     }
 
     if (!output_supports_format(format))
@@ -100,6 +101,7 @@ SDL_AudioDeviceID driver_sdl::open(bool capture, u32 format, u32 channels,
     if (!device)
         return 0;
 
+    lock_guard<mutex> guard(m_mtx);
     m_format = format;
     m_channels = channels;
     m_rate = rate;
@@ -127,8 +129,11 @@ void driver_sdl::push_buffer(const void* buf, size_t len) {
 
 void driver_sdl::pop_buffer(void* buf, size_t len) {
     size_t bytes = min(len, m_buffer.size());
-    memcpy(buf, m_buffer.data(), bytes);
-    if (bytes < len)
+    if (bytes > 0)
+        memcpy(buf, m_buffer.data(), bytes);
+    if (bytes < len && m_format == FORMAT_INVALID)
+        memset((u8*)buf + bytes, 0, len - bytes);
+    else if (bytes < len)
         fill_silence((u8*)buf + bytes, len - bytes, m_format);
     m_buffer.erase(m_buffer.begin(), m_buffer.begin() + bytes);
 }
@@ -151,6 +156,7 @@ driver_sdl::driver_sdl(stream& owner, const string& type):
     m_rate(),
     m_maxsz(),
     m_output(),
+    m_input(),
     m_mtx(),
     m_buffer(),
     // we choose a buffer size large enough to fit 250ms of audio samples in
@@ -163,12 +169,8 @@ driver_sdl::driver_sdl(stream& owner, const string& type):
 }
 
 driver_sdl::~driver_sdl() {
-    lock_guard<mutex> guard(m_mtx);
-
-    if (m_output) {
-        SDL_CloseAudioDevice(m_output);
-        m_output = 0;
-    }
+    driver_sdl::output_shutdown();
+    driver_sdl::input_shutdown();
 }
 
 size_t driver_sdl::output_min_channels() {
@@ -205,13 +207,13 @@ bool driver_sdl::output_supports_rate(u32 rate) {
 }
 
 bool driver_sdl::output_configure(u32 format, u32 channels, u32 rate) {
+    SDL_AudioDeviceID device = open(false, format, channels, rate);
     lock_guard<mutex> guard(m_mtx);
-    m_output = open(false, format, channels, rate);
+    m_output = device;
     return m_output != 0;
 }
 
 void driver_sdl::output_enable(bool enable) {
-    lock_guard<mutex> guard(m_mtx);
     if (m_output)
         SDL_PauseAudioDevice(m_output, enable ? 0 : 1);
 }
@@ -223,11 +225,16 @@ void driver_sdl::output_xfer(const void* buf, size_t len) {
 }
 
 void driver_sdl::output_shutdown() {
-    lock_guard<mutex> guard(m_mtx);
-    if (m_output) {
-        SDL_CloseAudioDevice(m_output);
-        m_output = 0;
+    SDL_AudioDeviceID device = 0;
+
+    {
+        lock_guard<mutex> guard(m_mtx);
+        std::swap(device, m_output);
+        m_buffer.clear();
     }
+
+    if (device)
+        SDL_CloseAudioDevice(device);
 }
 
 size_t driver_sdl::input_min_channels() {
@@ -264,13 +271,13 @@ bool driver_sdl::input_supports_rate(u32 rate) {
 }
 
 bool driver_sdl::input_configure(u32 format, u32 channels, u32 rate) {
+    SDL_AudioDeviceID device = open(true, format, channels, rate);
     lock_guard<mutex> guard(m_mtx);
-    m_input = open(true, format, channels, rate);
+    m_input = device;
     return m_input != 0;
 }
 
 void driver_sdl::input_enable(bool enable) {
-    lock_guard<mutex> guard(m_mtx);
     if (m_input)
         SDL_PauseAudioDevice(m_input, enable ? 0 : 1);
 }
@@ -281,11 +288,16 @@ void driver_sdl::input_xfer(void* buf, size_t len) {
 }
 
 void driver_sdl::input_shutdown() {
-    lock_guard<mutex> guard(m_mtx);
-    if (m_input) {
-        SDL_CloseAudioDevice(m_input);
-        m_input = 0;
+    SDL_AudioDeviceID device = 0;
+
+    {
+        lock_guard<mutex> guard(m_mtx);
+        std::swap(device, m_input);
+        m_buffer.clear();
     }
+
+    if (device)
+        SDL_CloseAudioDevice(device);
 }
 
 void driver_sdl::handle_tx(void* buf, size_t len) {

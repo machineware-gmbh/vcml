@@ -59,6 +59,11 @@ static u32 format_from_wav(const wav_file_header& hdr) {
     return FORMAT_INVALID;
 }
 
+static bool wav_header_valid(const wav_file_header& hdr) {
+    return hdr.chunk_id == fourcc("RIFF") && hdr.format == fourcc("WAVE") &&
+           hdr.subchunk1_id == fourcc("fmt ");
+}
+
 static void wav_update_size(fstream& file) {
     if (!file)
         return;
@@ -92,7 +97,7 @@ void driver_wav::load_input_params() {
     if (input)
         m_input_size = input.tellg();
 
-    if (m_input_size > sizeof(wav_file_header)) {
+    if (m_input_size > sizeof(wav_file_header) && wav_header_valid(hdr)) {
         m_input_format = format_from_wav(hdr);
         m_input_channels = hdr.num_channels;
         m_input_rate = hdr.sample_rate;
@@ -226,6 +231,9 @@ bool driver_wav::input_supports_rate(u32 rate) {
 }
 
 bool driver_wav::input_configure(u32 format, u32 channels, u32 rate) {
+    m_input.close();
+    m_input.clear();
+
     if (format != m_input_format)
         return false;
     if (channels != m_input_channels)
@@ -252,9 +260,11 @@ void driver_wav::input_enable(bool enable) {
 
 void driver_wav::input_xfer(void* buf, size_t len) {
     size_t done = 0;
-    while (m_input && m_input_enabled && done < len) {
+    while (m_input.is_open() && m_input && m_input_enabled && done < len) {
         char* dest = (char*)buf + done;
-        size_t num = min<size_t>(len - done, m_input_size - m_input.tellg());
+        size_t pos = m_input.tellg();
+        size_t num = pos < m_input_size ? m_input_size - pos : 0;
+        num = min<size_t>(len - done, num);
 
         if (num == 0) {
             // restart file from the beginning
@@ -263,10 +273,12 @@ void driver_wav::input_xfer(void* buf, size_t len) {
         }
 
         m_input.read(dest, num);
-        done += num;
+        done += m_input.gcount();
     }
 
-    if (done < len)
+    if (done < len && m_input_format == FORMAT_INVALID)
+        memset((u8*)buf + done, 0, len - done);
+    else if (done < len)
         fill_silence((u8*)buf + done, len - done, m_input_format);
 }
 
