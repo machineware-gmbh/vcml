@@ -72,7 +72,7 @@ public:
     void run();
     void register_display(backend* disp);
     void unregister_display(backend* disp);
-    void update_display(backend* disp);
+    void update_display(backend* disp, const function<void()>& update);
 
     static sdl& instance();
     static backend* create(u32 nr);

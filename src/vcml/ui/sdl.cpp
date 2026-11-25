@@ -1,4 +1,4 @@
-/******************************************************************************ce().run();
+/******************************************************************************
  *                                                                            *
  * Copyright (C) 2022 MachineWare GmbH                                        *
  * All Rights Reserved                                                        *
@@ -416,7 +416,7 @@ void sdl_client::exit_window() {
 }
 
 void sdl_client::draw_window() {
-    if (!disp || !window || !renderer || !texture)
+    if (!disp || !window || !renderer || !texture || reinit)
         return;
 
     SDL_Rect rect = {};
@@ -587,6 +587,10 @@ void sdl::run() {
     }
 
     SDL_Quit();
+
+#if SDL_VERSION_ATLEAST(2, 0, 16)
+    SDL_TLSCleanup();
+#endif
 }
 
 sdl::~sdl() {
@@ -628,8 +632,10 @@ void sdl::unregister_display(backend* disp) {
     it->disp = nullptr;
 }
 
-void sdl::update_display(backend* disp) {
+void sdl::update_display(backend* disp, const function<void()>& update) {
     lock_guard<mutex> lock(m_mtx);
+
+    update();
 
     auto finder = [disp](const sdl_client& s) -> bool {
         return s.disp == disp;
@@ -670,9 +676,10 @@ void sdl_display::init(const videomode& mode, u8* fb) {
 }
 
 void sdl_display::reinit(const videomode& mode, u8* fb) {
-    backend::shutdown();
-    backend::init(mode, fb);
-    m_owner.update_display(this);
+    m_owner.update_display(this, [&]() {
+        backend::shutdown();
+        backend::init(mode, fb);
+    });
 }
 
 void sdl_display::shutdown() {
