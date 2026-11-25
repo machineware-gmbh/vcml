@@ -45,6 +45,7 @@ public:
         add_test("reset", &clint_stim::test_reset);
         add_test("timer", &clint_stim::test_timer);
         add_test("swi", &clint_stim::test_swi);
+        add_test("irq_reset", &clint_stim::test_irq_reset);
     }
 
     void test_strings() {
@@ -117,6 +118,27 @@ public:
         ASSERT_OK(out.writew(0x4, 0u)) << "cannot write msip1";
         wait(SC_ZERO_TIME);
         ASSERT_FALSE(irq_sw_1.read()) << "IRQ_TIMER_1 not cleared";
+    }
+
+    void test_irq_reset() {
+        ASSERT_OK(out.writew(0x4, 1u));
+        ASSERT_OK(out.writew(0x4000, 0ul));
+        ASSERT_OK(out.writew(0x4008, 100ul));
+        wait(SC_ZERO_TIME);
+        ASSERT_TRUE(irq_sw_1.read());
+        ASSERT_TRUE(irq_timer_0.read());
+        ASSERT_FALSE(irq_timer_1.read());
+
+        clint.reset();
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irq_sw_1.read());
+        EXPECT_FALSE(irq_timer_0.read());
+        EXPECT_FALSE(irq_timer_1.read());
+
+        wait(clock_cycles(200));
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irq_timer_0.read());
+        EXPECT_FALSE(irq_timer_1.read());
     }
 };
 

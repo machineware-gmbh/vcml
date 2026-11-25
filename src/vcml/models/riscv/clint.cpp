@@ -104,6 +104,12 @@ void clint::reset() {
     peripheral::reset();
 
     m_time_reset = sc_time_stamp();
+    m_trigger.cancel();
+
+    for (auto& it : irq_sw)
+        it.second->write(false);
+    for (auto& it : irq_timer)
+        it.second->write(false);
 }
 
 VCML_EXPORT_MODEL(vcml::riscv::clint, name, args) {
