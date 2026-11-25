@@ -59,6 +59,31 @@ public:
         add_test("timer", &aclint_test::test_timer);
         add_test("mswi", &aclint_test::test_mswi);
         add_test("sswi", &aclint_test::test_sswi);
+        add_test("irq_reset", &aclint_test::test_irq_reset);
+    }
+
+    void test_irq_reset() {
+        ASSERT_OK(out_mswi.writew(0x4, 1u));
+        ASSERT_OK(out_sswi.writew(0x0, 1u));
+        ASSERT_OK(out_mtimer.writew(0x0, 0ul));
+        ASSERT_OK(out_mtimer.writew(0x8, 100ul));
+        wait(SC_ZERO_TIME);
+        ASSERT_TRUE(irq_msw1.read());
+        ASSERT_TRUE(irq_ssw0.read());
+        ASSERT_TRUE(irq_mtimer0.read());
+        ASSERT_FALSE(irq_mtimer1.read());
+
+        aclint.reset();
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irq_msw1.read());
+        EXPECT_FALSE(irq_ssw0.read());
+        EXPECT_FALSE(irq_mtimer0.read());
+        EXPECT_FALSE(irq_mtimer1.read());
+
+        wait(clock_cycles(200));
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irq_mtimer0.read());
+        EXPECT_FALSE(irq_mtimer1.read());
     }
 
     void test_strings() {
