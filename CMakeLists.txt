@@ -24,6 +24,7 @@ option(VCML_UNITY_BUILD "Enable unity build" OFF)
 set(VCML_LINTER "" CACHE STRING "Code linter to use")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(CMakePackageConfigHelpers)
 include(FindGithubRepo)
 include(GenVersionInfo)
 include(Sanitizer)
@@ -342,6 +343,19 @@ install(TARGETS vcml DESTINATION lib)
 install(TARGETS vcml-main DESTINATION lib)
 install(DIRECTORY ${inc}/ DESTINATION include)
 install(DIRECTORY ${gen}/ DESTINATION include)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/vcml-config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/vcml-config.cmake"
+    INSTALL_DESTINATION lib/cmake)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/vcml-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY ExactVersion)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcml-config.cmake" DESTINATION lib/cmake)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcml-config-version.cmake" DESTINATION lib/cmake)
 
 if(VCML_BUILD_UTILS)
     add_subdirectory(utils)

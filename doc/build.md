@@ -59,9 +59,10 @@ After building, the installed library can be found in `<source-dir>/BUILD/<prese
 build tree is located in `<source-dir>/BUILD/<preset>/.BUILD`. The `clang-tidy`
 preset builds a Clang debug version with `clang-tidy` enabled as code linter.
 
-Other CMake projects that use VCML do not link against this installation. They build VCML
-from source as part of their own build. To let them find it, set the environment variable
-`VCML_HOME` to `<source-dir>` (with initialized submodules), not to the install path.
+Other CMake projects that use VCML usually build it from source as part of their own build.
+To let them find it, set the environment variable `VCML_HOME` to `<source-dir>` (with
+initialized submodules), not to the install path. Alternatively, they can link against the
+installation, see [Using an installed VCML](#using-an-installed-vcml).
 
 ## Expert Build
 If an advanced configuration of VCML is desired, such as modifying the installation path
@@ -158,14 +159,42 @@ After installation, the following new files should be present:
 <install-dir>/lib/libvcmld.a  # library (on debug builds)
 <install-dir>/include/vcml.h  # library header
 <install-dir>/include/vcml/   # header files
+<install-dir>/lib/cmake/      # CMake package (vcml-config.cmake)
 <install-dir>/bin/            # utility programs/scripts
 ```
-Other CMake projects that use VCML build it from source as part of their own build
-instead of linking against `<install-dir>`. The environment should be updated so that
-they can find the VCML sources:
+Other CMake projects that use VCML usually build it from source as part of their own
+build instead of linking against `<install-dir>`. The environment should be updated so
+that they can find the VCML sources:
 ```sh
 export VCML_HOME=<source-dir>
 ```
+
+### Using an installed VCML
+
+The installation also contains a CMake package, so a project can link against
+`<install-dir>` instead of building VCML from source:
+```cmake
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(FindGithubRepo)
+include(LinkWhole)
+
+find_package(vcml CONFIG REQUIRED PATHS <install-dir>/lib/cmake)
+
+add_executable(my-vp src/main.cpp)
+target_link_whole_archives(my-vp vcml)
+```
+The package defines the imported targets `vcml` and `vcml-main`. Note that:
+
+- The project needs the [MachineWare CMake modules](https://github.com/machineware-gmbh/cmake)
+  on its `CMAKE_MODULE_PATH` and must include `FindGithubRepo` before calling
+  `find_package(vcml)`.
+- LibMWR and SystemC are not part of the installation. They are located via `MWR_HOME`
+  and `SYSTEMC_HOME` as usual and LibMWR is built from source.
+- Optional dependencies that VCML was built with (SDL2, libslirp, Lua, libusb) must also
+  be available to the project.
+- The requested version must match the installed version exactly.
+- An installation holds either the release library (`libvcml.a`) or the debug library
+  (`libvcmld.a`), so the build type of the project must match the one VCML was built with.
 
 ### Maintaining Multiple Builds
 

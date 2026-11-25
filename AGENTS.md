@@ -96,7 +96,9 @@ Projects that build on VCML work the same way.
 | `VCML_HOME` | VCML source tree, for projects that build on VCML | github.com/machineware-gmbh/vcml |
 
 - `VCML_HOME` must point to a VCML source directory with initialized
-  submodules, not to an install prefix.
+  submodules, not to an install prefix. To use an installed VCML instead,
+  call `find_package(vcml CONFIG REQUIRED PATHS <install-dir>/lib/cmake)`;
+  see [doc/build.md](doc/build.md#using-an-installed-vcml).
 - Values are cached on the first configure. Changing the environment later
   does not affect an existing build directory: use a fresh one or pass
   `-D<NAME>_HOME=<path>`.

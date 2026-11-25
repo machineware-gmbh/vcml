@@ -1,0 +1,67 @@
+ ##############################################################################
+ #                                                                            #
+ # Copyright (C) 2026 MachineWare GmbH                                        #
+ # All Rights Reserved                                                        #
+ #                                                                            #
+ # This work is licensed under the terms described in the LICENSE file found  #
+ # in the root directory of this source tree.                                 #
+ #                                                                            #
+ ##############################################################################
+
+@PACKAGE_INIT@
+
+if(NOT TARGET vcml)
+    get_filename_component(__vcml_home "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
+    add_library(vcml STATIC IMPORTED GLOBAL)
+    set_target_properties(vcml PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${__vcml_home}/include"
+        IMPORTED_LOCATION "${__vcml_home}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}vcml${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        IMPORTED_LOCATION_DEBUG "${__vcml_home}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}vcmld${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        VERSION "@VCML_VERSION@")
+    add_library(vcml-main STATIC IMPORTED GLOBAL)
+    set_target_properties(vcml-main PROPERTIES
+        IMPORTED_LOCATION "${__vcml_home}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}vcml-main${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        VERSION "@VCML_VERSION@")
+    unset(__vcml_home)
+
+    find_github_repo(mwr "machineware-gmbh/mwr" "v@MWR_VERSION@")
+    find_package(SystemC "2.3.0" REQUIRED)
+
+    target_compile_features(vcml INTERFACE cxx_std_17)
+    target_compile_definitions(vcml INTERFACE $<$<CONFIG:DEBUG>:VCML_DEBUG>)
+    target_compile_definitions(vcml INTERFACE SC_INCLUDE_DYNAMIC_PROCESSES)
+    target_compile_definitions(vcml INTERFACE SC_DISABLE_API_VERSION_CHECK)
+    target_include_directories(vcml SYSTEM INTERFACE ${SYSTEMC_INCLUDE_DIRS})
+
+    target_link_libraries(vcml INTERFACE mwr)
+    target_link_libraries(vcml INTERFACE vcml-main)
+    target_link_libraries(vcml INTERFACE ${SYSTEMC_LIBRARIES})
+    target_link_libraries(vcml-main INTERFACE vcml)
+
+    if("@SDL2_FOUND@")
+        find_package(SDL2 REQUIRED)
+        target_link_libraries(vcml INTERFACE ${SDL2_LIBRARIES})
+    endif()
+
+    if("@LIBSLIRP_FOUND@")
+        find_package(LibSLIRP REQUIRED)
+        target_link_libraries(vcml INTERFACE ${LIBSLIRP_LIBRARIES})
+    endif()
+
+    if("@LUA_FOUND@")
+        find_package(Lua "5.3" REQUIRED)
+        target_link_libraries(vcml INTERFACE ${LUA_LIBRARIES})
+    endif()
+
+    if("@LIBUSB_FOUND@")
+        find_package(LibUSB REQUIRED)
+        target_link_libraries(vcml INTERFACE ${LIBUSB_LIBRARIES})
+    endif()
+
+    if("@VCML_COVERAGE@")
+        target_compile_options(vcml INTERFACE --coverage)
+        target_link_libraries(vcml INTERFACE -lgcov)
+    endif()
+endif()
+
+check_required_components(vcml)
