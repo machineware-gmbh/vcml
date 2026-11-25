@@ -43,6 +43,7 @@ public:
 
         add_test("strings", &sp804_stim::test_strings);
         add_test("oneshot", &sp804_stim::test_oneshot);
+        add_test("irq_reset", &sp804_stim::test_irq_reset);
     }
 
     void test_strings() {
@@ -50,6 +51,28 @@ public:
         EXPECT_STREQ(sp804.version(), VCML_VERSION_STRING);
         EXPECT_STREQ(sp804.timer1.kind(), "vcml::arm::sp804::timer");
         EXPECT_STREQ(sp804.timer1.version(), VCML_VERSION_STRING);
+    }
+
+    void test_irq_reset() {
+        u32 val = timers::sp804::timer::CONTROL_ENABLED |
+                  timers::sp804::timer::CONTROL_IRQEN |
+                  timers::sp804::timer::CONTROL_ONESHOT |
+                  timers::sp804::timer::CONTROL_32BIT;
+        ASSERT_OK(out.writew(0x00, 0x100u));
+        ASSERT_OK(out.writew(0x08, val));
+        wait(irqc.default_event());
+        ASSERT_TRUE(irq1);
+        ASSERT_TRUE(irqc);
+
+        rst_out = true;
+        wait(SC_ZERO_TIME);
+        rst_out = false;
+        wait(SC_ZERO_TIME);
+        EXPECT_FALSE(irq1);
+        EXPECT_FALSE(irqc);
+
+        ASSERT_OK(out.readw(0x10, val));
+        EXPECT_EQ(val, 0u);
     }
 
     void test_oneshot() {

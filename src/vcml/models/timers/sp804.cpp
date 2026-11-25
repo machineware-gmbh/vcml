@@ -138,6 +138,7 @@ sp804::timer::~timer() {
 void sp804::timer::reset() {
     peripheral::reset();
     m_ev.cancel();
+    irq = false;
 }
 
 void sp804::update_irqc() {
