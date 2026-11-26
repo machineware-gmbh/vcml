@@ -128,7 +128,7 @@ static const device_desc HEADSET_DESC{
     0xffff,             // device id (patched later)
     0x0,                // bcd_device
     "MachineWare GmbH", // vendor string
-    "VCML Headset",     // product string
+    "VCML headset",     // product string
     VCML_GIT_REV_SHORT, // serial number string
     {
         {
@@ -155,7 +155,7 @@ static const device_desc HEADSET_DESC{
                             USB_DST_AC_HEADER,   // bDescriptorSubType
                             0x00,                // bcdADC[0]
                             0x01,                // bcdADC[1]
-                            0x45,                // wTotalLength[0]
+                            0x47,                // wTotalLength[0]
                             0x00,                // wTotalLength[1]
                             0x02,                // bInCollection
                             IFXID_PLAYBACK,      // bInterfaceNr
@@ -176,14 +176,15 @@ static const device_desc HEADSET_DESC{
                             0x00,                      // iTerminal
 
                             // UAC interface feature unit descriptor
-                            0x09,
+                            0x0a,
                             USB_DT_CS_INTERFACE,     // bDescriptorType
                             USB_DST_AC_FEATURE_UNIT, // bDescriptorSubType
                             ENTID_PLAYBACK_FEATURE,  // bUnitID
                             ENTID_PLAYBACK_INPUT,    // bSourceID
                             0x01,                    // bControlSize
                             bit(USB_AUDIO_MUTE_CONTROL - 1), // bmaControls[0]
-                            bit(USB_AUDIO_MUTE_CONTROL - 1), // bmaControls[1]
+                            0x00,                            // bmaControls[1]
+                            0x00,                            // bmaControls[2]
                             0x00,                            // iFeature
 
                             // UAC interface output terminal descriptor
@@ -212,20 +213,21 @@ static const device_desc HEADSET_DESC{
                             0x00,                      // iTerminal
 
                             // UAC interface feature unit descriptor
-                            0x08,
+                            0x09,
                             USB_DT_CS_INTERFACE,     // bDescriptorType
                             USB_DST_AC_FEATURE_UNIT, // bDescriptorSubType
                             ENTID_CAPTURE_FEATURE,   // bUnitID
                             ENTID_CAPTURE_INPUT,     // bSourceID
                             0x01,                    // bControlSize
                             bit(USB_AUDIO_MUTE_CONTROL - 1), // bmaControls[0]
+                            0x00,                            // bmaControls[1]
                             0x00,                            // iFeature
 
                             // UAC interface output terminal descriptor
                             0x09,                       // bLength
                             USB_DT_CS_INTERFACE,        // bDescriptorType
                             USB_DST_AC_OUTPUT_TERMINAL, // bDescriptorSubType
-                            ENTID_PLAYBACK_OUTPUT,      // bTerminalID
+                            ENTID_CAPTURE_OUTPUT,       // bTerminalID
                             0x01,                       // wTerminalType[0]
                             0x01,                       // wTerminalType[1]
                             ENTID_CAPTURE_INPUT,        // bAssocTerminal
@@ -237,14 +239,14 @@ static const device_desc HEADSET_DESC{
 
                 // interface 1 (altsetting 0 = off)
                 {
-                    IFXID_PLAYBACK,          // bInterfaceNumber
-                    ALTSET_PLAYBACK_OFF,     // bAlternateSetting
-                    USB_CLASS_AUDIO,         // bInterfaceClass
-                    USB_SUBCLASS_STREAMING,  // bInterfaceSubClass
-                    0,                       // bInterfaceProtocol
-                    STRID_AUDIO_CAPTURE_OFF, // iInterface
-                    {},                      // no endpoints
-                    {},                      // no extra descriptors
+                    IFXID_PLAYBACK,           // bInterfaceNumber
+                    ALTSET_PLAYBACK_OFF,      // bAlternateSetting
+                    USB_CLASS_AUDIO,          // bInterfaceClass
+                    USB_SUBCLASS_STREAMING,   // bInterfaceSubClass
+                    0,                        // bInterfaceProtocol
+                    STRID_AUDIO_PLAYBACK_OFF, // iInterface
+                    {},                       // no endpoints
+                    {},                       // no extra descriptors
                 },
 
                 // interface 1 (altsetting 1 = stereo output)
@@ -254,7 +256,7 @@ static const device_desc HEADSET_DESC{
                     USB_CLASS_AUDIO,        // bInterfaceClass
                     USB_SUBCLASS_STREAMING, // bInterfaceSubClass
                     0,                      // bInterfaceProtocol
-                    STRID_AUDIO_CAPTURE,    // iInterface
+                    STRID_AUDIO_PLAYBACK,   // iInterface
                     {
                         // endpoints
                         {
@@ -281,13 +283,13 @@ static const device_desc HEADSET_DESC{
                     // extra descriptors
                     {
                         // AS General descriptor
-                        0x07,                // bLength
-                        USB_DT_CS_INTERFACE, // bDescriptorType
-                        USB_DST_AS_GENERAL,  // bDescriptorSubType
-                        0x01,                // bTerminalLink
-                        0x00,                // bDelay
-                        0x01,                // wFormatTag[0]
-                        0x00,                // wFormatTag[1]
+                        0x07,                 // bLength
+                        USB_DT_CS_INTERFACE,  // bDescriptorType
+                        USB_DST_AS_GENERAL,   // bDescriptorSubType
+                        ENTID_PLAYBACK_INPUT, // bTerminalLink
+                        0x00,                 // bDelay
+                        0x01,                 // wFormatTag[0]
+                        0x00,                 // wFormatTag[1]
 
                         // Format Type descriptor
                         0x0b,                   // bLength
@@ -318,12 +320,12 @@ static const device_desc HEADSET_DESC{
 
                 // interface 2 (altsetting 1 = mono recording)
                 {
-                    IFXID_CAPTURE,           // bInterfaceNumber
-                    ALTSET_CAPTURE_ON,       // bAlternateSetting
-                    USB_CLASS_AUDIO,         // bInterfaceClass
-                    USB_SUBCLASS_STREAMING,  // bInterfaceSubClass
-                    0,                       // bInterfaceProtocol
-                    STRID_AUDIO_CAPTURE_OFF, // iInterface
+                    IFXID_CAPTURE,          // bInterfaceNumber
+                    ALTSET_CAPTURE_ON,      // bAlternateSetting
+                    USB_CLASS_AUDIO,        // bInterfaceClass
+                    USB_SUBCLASS_STREAMING, // bInterfaceSubClass
+                    0,                      // bInterfaceProtocol
+                    STRID_AUDIO_CAPTURE,    // iInterface
                     {
                         // endpoints
                         {
@@ -350,13 +352,13 @@ static const device_desc HEADSET_DESC{
                     // extra descriptors
                     {
                         // AS General descriptor
-                        0x07,                // bLength
-                        USB_DT_CS_INTERFACE, // bDescriptorType
-                        USB_DST_AS_GENERAL,  // bDescriptorSubType
-                        0x01,                // bTerminalLink
-                        0x00,                // bDelay
-                        0x01,                // wFormatTag[0]
-                        0x00,                // wFormatTag[1]
+                        0x07,                 // bLength
+                        USB_DT_CS_INTERFACE,  // bDescriptorType
+                        USB_DST_AS_GENERAL,   // bDescriptorSubType
+                        ENTID_CAPTURE_OUTPUT, // bTerminalLink
+                        0x00,                 // bDelay
+                        0x01,                 // wFormatTag[0]
+                        0x00,                 // wFormatTag[1]
 
                         // Format Type descriptor
                         0x0b,                   // bLength
@@ -409,8 +411,24 @@ headset::~headset() {
 
 usb_result headset::get_audio_attribute(u8 req, u8 control, u8 channel, u8 ifx,
                                         u8 entity, u8* data, size_t length) {
+    if (!is_configured()) {
+        log_warn("%s: device not configured", __func__);
+        return USB_RESULT_STALL;
+    }
+
     if (ifx != IFXID_CONTROL) {
         log_warn("%s: invalid interface %hhu", __func__, ifx);
+        return USB_RESULT_STALL;
+    }
+
+    if (req != USB_AUDIO_REQ_GET_CUR) {
+        log_warn("%s: unsupported request %s", __func__,
+                 usb_audio_request_str(req));
+        return USB_RESULT_STALL;
+    }
+
+    if (channel != 0) {
+        log_warn("%s: invalid channel %hhu", __func__, channel);
         return USB_RESULT_STALL;
     }
 
@@ -437,8 +455,24 @@ usb_result headset::get_audio_attribute(u8 req, u8 control, u8 channel, u8 ifx,
 
 usb_result headset::set_audio_attribute(u8 req, u8 control, u8 channel, u8 ifx,
                                         u8 entity, u8* data, size_t length) {
+    if (!is_configured()) {
+        log_warn("%s: device not configured", __func__);
+        return USB_RESULT_STALL;
+    }
+
     if (ifx != IFXID_CONTROL) {
         log_warn("%s: invalid interface %hhu", __func__, ifx);
+        return USB_RESULT_STALL;
+    }
+
+    if (req != USB_AUDIO_REQ_SET_CUR) {
+        log_warn("%s: unsupported request %s", __func__,
+                 usb_audio_request_str(req));
+        return USB_RESULT_STALL;
+    }
+
+    if (channel != 0) {
+        log_warn("%s: invalid channel %hhu", __func__, channel);
         return USB_RESULT_STALL;
     }
 
@@ -486,7 +520,7 @@ usb_result headset::setup_playback_interface(u8 altsetting) {
 usb_result headset::setup_capture_interface(u8 altsetting) {
     switch (altsetting) {
     case ALTSET_CAPTURE_ON:
-        m_input.configure(audio::FORMAT_S16LE, 2, 48000);
+        m_input.configure(audio::FORMAT_S16LE, 1, 48000);
         m_input.start();
         return USB_RESULT_SUCCESS;
     case ALTSET_CAPTURE_OFF:
@@ -501,6 +535,9 @@ usb_result headset::setup_capture_interface(u8 altsetting) {
 
 usb_result headset::switch_interface(size_t idx, const interface_desc& ifx) {
     switch (idx) {
+    case IFXID_CONTROL:
+        return USB_RESULT_SUCCESS;
+
     case IFXID_PLAYBACK:
         return setup_playback_interface(ifx.alternate_setting);
 
