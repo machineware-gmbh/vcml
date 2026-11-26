@@ -345,8 +345,8 @@ scsi_response scsi_disk::scsi_mode_sense(scsi_request& req, bool is10) {
         size_t nblks = mwr::udivup(capacity(), blksz);
         req.payload.back() = 8; // record bdsize
         req.payload.insert(req.payload.end(), 8, 0);
-        scsi_write(&req.payload.back() - 7, 3, nblks);
-        scsi_write(&req.payload.back() - 3, 3, blksz);
+        scsi_write(&req.payload.back() - 6, 3, min<size_t>(nblks, 0xffffff));
+        scsi_write(&req.payload.back() - 2, 3, blksz);
     }
 
     if (page == SCSI_MODE_PAGE_ALL_PAGES) {
@@ -396,7 +396,7 @@ scsi_response scsi_disk::scsi_handle_seek(scsi_request& req) {
         return SCSI_CHECK_CONDITION;
     }
 
-    if (seek(off)) {
+    if (!seek(off)) {
         m_sense = SENSE_MEDIUM_ERROR;
         return SCSI_CHECK_CONDITION;
     }

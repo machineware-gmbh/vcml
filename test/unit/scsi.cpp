@@ -69,6 +69,36 @@ TEST(scsi, mode_sense) {
     EXPECT_FALSE(req.payload.empty());
 }
 
+TEST(scsi, mode_sense_block_descriptor) {
+    block::scsi_disk disk("disk");
+    block::scsi_request req{};
+    req.command[0] = 0x1a;
+    req.command[2] = 0x08;
+    ASSERT_TRUE(success(disk.scsi_handle_command(req)));
+    ASSERT_GE(req.payload.size(), 12);
+    EXPECT_EQ(req.payload[3], 8);
+
+    size_t blocks = udivup(disk.capacity(), disk.blocksize());
+    EXPECT_EQ(req.payload[4], 0);
+    EXPECT_EQ(block::scsi_read(&req.payload[5], 3), blocks);
+    EXPECT_EQ(req.payload[8], 0);
+    EXPECT_EQ(block::scsi_read(&req.payload[9], 3), disk.blocksize());
+}
+
+TEST(scsi, seek) {
+    block::scsi_disk disk("disk");
+    block::scsi_request req{};
+    req.command[0] = block::SCSI_SEEK_10;
+    EXPECT_EQ(block::SCSI_SEEK_10, 0x2b);
+    EXPECT_TRUE(success(disk.scsi_handle_command(req)));
+    EXPECT_EQ(disk.get_sense(), block::SENSE_NOTHING);
+
+    size_t blocks = udivup(disk.capacity(), disk.blocksize());
+    block::scsi_write(req.command + 2, 4, blocks + 1);
+    EXPECT_FALSE(success(disk.scsi_handle_command(req)));
+    EXPECT_EQ(disk.get_sense(), block::SENSE_ILLEGAL_FIELD);
+}
+
 TEST(scsi, read_sense) {
     block::scsi_disk disk("disk");
     disk.set_sense(block::SENSE_MEDIUM_ERROR);
