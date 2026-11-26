@@ -107,6 +107,7 @@ private:
     ring m_cmdring;
 
     devslot m_slots[MAX_SLOTS];
+    bool m_erfull[MAX_INTRS];
 
     u64 get_mfindex() const;
 
@@ -124,6 +125,7 @@ private:
     u32 read_mfindex();
 
     void write_iman(u32 val, size_t idx);
+    void write_erstba(u64 val, size_t idx);
     void write_erdp(u64 val, size_t idx);
     void write_doorbell(u32 val, size_t idx);
 
@@ -132,7 +134,7 @@ private:
 
     void update_irq(size_t idx);
 
-    void handle_event(size_t intr, trb& event);
+    bool handle_event(size_t intr, trb& event);
 
     void send_event(size_t intr, trb& event);
     void send_cc_event(size_t intr, u32 ccode, u32 slotid, u64 addr);
