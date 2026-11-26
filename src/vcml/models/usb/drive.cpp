@@ -19,7 +19,7 @@ static const device_desc DRIVE_DESC{
     0,                  // device class
     0,                  // device subclass
     0,                  // device protocol
-    8,                  // max packet size
+    64,                 // max packet size
     0xffff,             // vendor id (patched later)
     0xffff,             // device id (patched later)
     0x0,                // bcd_device
@@ -108,6 +108,9 @@ static_assert(sizeof(usb_msd_cbw) == 31, "invalid cbw struct size");
 static_assert(sizeof(usb_msd_csw) == 13, "invalid csw struct size");
 #pragma pack(pop)
 
+using block::scsi_command_str;
+using block::scsi_command_transfers_to_device;
+
 enum msd_status : u8 {
     STS_SUCCESS = 0,
     STS_ERROR = 1,
@@ -169,7 +172,7 @@ usb_result drive::get_data(u32 ep, u8* data, size_t len) {
         usb_msd_csw csw;
         csw.signature = fourcc("USBS");
         csw.tag = m_tag;
-        csw.residue = 0;
+        csw.residue = m_buflen;
         csw.status = m_status;
         memcpy(data, &csw, sizeof(csw));
         m_mode = MODE_CBW;
@@ -217,31 +220,51 @@ usb_result drive::set_data(u32 ep, const u8* data, size_t len) {
             return USB_RESULT_STALL;
         }
 
+        if (cbw.cmd_len == 0 || cbw.cmd_len > 16) {
+            log_warn("invalid command length: %hhu", cbw.cmd_len);
+            return USB_RESULT_STALL;
+        }
+
         memcpy(m_req.command, cbw.cmd, 16);
+        m_req.payload.clear();
         m_buflen = cbw.data_len;
         m_status = STS_SUCCESS;
         m_tag = cbw.tag;
 
         if (cbw.flags & 0x80) {
             m_mode = m_buflen ? MODE_DATA_IN : MODE_CSW;
-            if (failed(disk.scsi_handle_command(m_req))) {
+            if (m_buflen && scsi_command_transfers_to_device(cbw.cmd[0])) {
+                log_warn("invalid data direction for %s",
+                         scsi_command_str(cbw.cmd[0]));
+                m_req.payload.assign(m_buflen, 0xee);
+                m_status = STS_PROTOCOL;
+            } else if (failed(disk.scsi_handle_command(m_req))) {
                 m_req.payload.assign(m_buflen, 0xee);
                 m_status = STS_ERROR;
             }
+
+            if (m_status == STS_SUCCESS)
+                m_buflen -= min(m_req.payload.size(), m_buflen);
+            m_req.payload.resize(cbw.data_len);
+        } else if (m_buflen) {
+            m_mode = MODE_DATA_OUT;
         } else {
-            m_req.payload.clear();
-            m_mode = m_buflen ? MODE_DATA_OUT : MODE_CSW;
+            if (failed(disk.scsi_handle_command(m_req)))
+                m_status = STS_ERROR;
+            m_mode = MODE_CSW;
         }
 
         return USB_RESULT_SUCCESS;
     }
 
     case MODE_DATA_OUT: {
-        len = min(len, m_buflen);
+        len = min(len, m_buflen - m_req.payload.size());
         m_req.payload.insert(m_req.payload.end(), data, data + len);
         if (m_req.payload.size() == m_buflen) {
             if (failed(disk.scsi_handle_command(m_req)))
-                m_status = STS_SUCCESS;
+                m_status = STS_ERROR;
+            else
+                m_buflen = 0;
             m_mode = MODE_CSW;
         }
 
@@ -262,6 +285,8 @@ usb_result drive::handle_control(u16 req, u16 val, u16 idx, u8* data,
         return USB_RESULT_SUCCESS;
     case USB_REQ_OUT | USB_REQ_CLASS | USB_REQ_IFACE | USB_REQ_RESET_DRIVE:
         log_debug("usb mass storage drive reset requested");
+        m_mode = MODE_CBW;
+        m_req.payload.clear();
         return USB_RESULT_SUCCESS;
     default:
         return device::handle_control(req, val, idx, data, length);
