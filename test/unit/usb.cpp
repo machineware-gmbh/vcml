@@ -39,6 +39,162 @@ TEST(usb, packet) {
     EXPECT_EQ(str, "USB_TOKEN_OUT @ 7.5 [<no data>] (USB_RESULT_NACK)");
 }
 
+TEST(usb, release) {
+    EXPECT_STREQ(usb_release_str(USB_1_0), "USB 1.0");
+    EXPECT_STREQ(usb_release_str(USB_1_1), "USB 1.1");
+    EXPECT_STREQ(usb_release_str(USB_2_0), "USB 2.0");
+    EXPECT_STREQ(usb_release_str(USB_2_1), "USB 2.1");
+    EXPECT_STREQ(usb_release_str(USB_3_0), "USB 3.0");
+    EXPECT_STREQ(usb_release_str(USB_3_1), "USB 3.1");
+    EXPECT_STREQ(usb_release_str(USB_3_2), "USB 3.2");
+    EXPECT_STREQ(usb_release_str(USB_4_0), "USB 4.0");
+    EXPECT_STREQ(usb_release_str(0x123), "unknown USB release");
+}
+
+TEST(usb, strings) {
+    EXPECT_STREQ(usb_token_str(USB_TOKEN_IN), "USB_TOKEN_IN");
+    EXPECT_STREQ(usb_token_str(USB_TOKEN_OUT), "USB_TOKEN_OUT");
+    EXPECT_STREQ(usb_token_str(USB_TOKEN_SETUP), "USB_TOKEN_SETUP");
+
+    EXPECT_STREQ(usb_result_str(USB_RESULT_SUCCESS), "USB_RESULT_SUCCESS");
+    EXPECT_STREQ(usb_result_str(USB_RESULT_INCOMPLETE),
+                 "USB_RESULT_INCOMPLETE");
+    EXPECT_STREQ(usb_result_str(USB_RESULT_NODEV), "USB_RESULT_NODEV");
+    EXPECT_STREQ(usb_result_str(USB_RESULT_NACK), "USB_RESULT_NACK");
+    EXPECT_STREQ(usb_result_str(USB_RESULT_STALL), "USB_RESULT_STALL");
+    EXPECT_STREQ(usb_result_str(USB_RESULT_BABBLE), "USB_RESULT_BABBLE");
+    EXPECT_STREQ(usb_result_str(USB_RESULT_IOERROR), "USB_RESULT_IOERROR");
+
+    EXPECT_STREQ(usb_desc_str(USB_DT_DEVICE), "USB_DT_DEVICE");
+    EXPECT_STREQ(usb_desc_str(USB_DT_CONFIG), "USB_DT_CONFIG");
+    EXPECT_STREQ(usb_desc_str(USB_DT_STRING), "USB_DT_STRING");
+    EXPECT_STREQ(usb_desc_str(USB_DT_INTERFACE), "USB_DT_INTERFACE");
+    EXPECT_STREQ(usb_desc_str(USB_DT_ENDPOINT), "USB_DT_ENDPOINT");
+    EXPECT_STREQ(usb_desc_str(USB_DT_DEVICE_QUALIFIER),
+                 "USB_DT_DEVICE_QUALIFIER");
+    EXPECT_STREQ(usb_desc_str(USB_DT_OTHER_SPEED_CONFIG),
+                 "USB_DT_OTHER_SPEED_CONFIG");
+    EXPECT_STREQ(usb_desc_str(USB_DT_DEBUG), "USB_DT_DEBUG");
+    EXPECT_STREQ(usb_desc_str(USB_DT_INTERFACE_ASSOC),
+                 "USB_DT_INTERFACE_ASSOC");
+    EXPECT_STREQ(usb_desc_str(USB_DT_BOS), "USB_DT_BOS");
+    EXPECT_STREQ(usb_desc_str(USB_DT_DEVICE_CAPABILITY),
+                 "USB_DT_DEVICE_CAPABILITY");
+    EXPECT_STREQ(usb_desc_str(USB_DT_HID), "USB_DT_HID");
+    EXPECT_STREQ(usb_desc_str(USB_DT_REPORT), "USB_DT_REPORT");
+    EXPECT_STREQ(usb_desc_str(USB_DT_PHYSICAL), "USB_DT_PHYSICAL");
+    EXPECT_STREQ(usb_desc_str(USB_DT_CS_INTERFACE), "USB_DT_CS_INTERFACE");
+    EXPECT_STREQ(usb_desc_str(USB_DT_CS_ENDPOINT), "USB_DT_CS_ENDPOINT");
+    EXPECT_STREQ(usb_desc_str(USB_DT_ENDPOINT_COMPANION),
+                 "USB_DT_ENDPOINT_COMPANION");
+    EXPECT_STREQ(usb_desc_str(0x42), "USB_DT_UNKNOWN");
+
+    EXPECT_STREQ(usb_endpoint_str(USB_EP_CTRL), "USB_EP_CTRL");
+    EXPECT_STREQ(usb_endpoint_str(USB_EP_ISOC), "USB_EP_ISOC");
+    EXPECT_STREQ(usb_endpoint_str(USB_EP_BULK), "USB_EP_BULK");
+    EXPECT_STREQ(usb_endpoint_str(USB_EP_IRQ), "USB_EP_IRQ");
+    EXPECT_STREQ(usb_endpoint_str(USB_EP_ISOC | USB_EP_ISOC_ASYNC |
+                                  USB_EP_ISOC_FEEDBACK),
+                 "USB_EP_ISOC");
+    EXPECT_STREQ(usb_endpoint_str(USB_EP_IRQ | USB_EP_IRQ_NOTIFICATION),
+                 "USB_EP_IRQ");
+}
+
+TEST(usb, packet_helpers) {
+    u8 buf[8] = { 0x2d };
+
+    usb_packet p = usb_packet_setup(3, buf, sizeof(buf));
+    EXPECT_EQ(p.addr, 3u);
+    EXPECT_EQ(p.epno, 0u);
+    EXPECT_EQ(p.token, USB_TOKEN_SETUP);
+    EXPECT_EQ(p.result, USB_RESULT_INCOMPLETE);
+    EXPECT_EQ(p.data, buf);
+    EXPECT_EQ(p.length, sizeof(buf));
+
+    p = usb_packet_in(4, 2, buf, 5);
+    EXPECT_EQ(p.addr, 4u);
+    EXPECT_EQ(p.epno, 2u);
+    EXPECT_EQ(p.token, USB_TOKEN_IN);
+    EXPECT_EQ(p.result, USB_RESULT_INCOMPLETE);
+    EXPECT_EQ(p.data, buf);
+    EXPECT_EQ(p.length, 5u);
+
+    p = usb_packet_out(5, 1, buf, 3);
+    EXPECT_EQ(p.addr, 5u);
+    EXPECT_EQ(p.epno, 1u);
+    EXPECT_EQ(p.token, USB_TOKEN_OUT);
+    EXPECT_EQ(p.result, USB_RESULT_INCOMPLETE);
+    EXPECT_EQ(p.data, buf);
+    EXPECT_EQ(p.length, 3u);
+
+    p = usb_packet_setup(3, buf, 1);
+    EXPECT_EQ(to_string(p),
+              "USB_TOKEN_SETUP @ 3.0 [2d] (USB_RESULT_INCOMPLETE)");
+
+    p.length = 0;
+    p.data = nullptr;
+    const usb_result results[] = {
+        USB_RESULT_SUCCESS, USB_RESULT_INCOMPLETE, USB_RESULT_NODEV,
+        USB_RESULT_NACK,    USB_RESULT_STALL,      USB_RESULT_BABBLE,
+        USB_RESULT_IOERROR,
+    };
+
+    for (usb_result res : results) {
+        p.result = res;
+        EXPECT_EQ(to_string(p), mkstr("USB_TOKEN_SETUP @ 3.0 [<no data>] (%s)",
+                                      usb_result_str(res)));
+    }
+}
+
+TEST(usb, results) {
+    EXPECT_TRUE(success(USB_RESULT_SUCCESS));
+    EXPECT_FALSE(failed(USB_RESULT_SUCCESS));
+    EXPECT_FALSE(success(USB_RESULT_INCOMPLETE));
+    EXPECT_FALSE(failed(USB_RESULT_INCOMPLETE));
+
+    const usb_result errors[] = {
+        USB_RESULT_NODEV,  USB_RESULT_NACK,    USB_RESULT_STALL,
+        USB_RESULT_BABBLE, USB_RESULT_IOERROR,
+    };
+
+    for (usb_result res : errors) {
+        EXPECT_FALSE(success(res)) << usb_result_str(res);
+        EXPECT_TRUE(failed(res)) << usb_result_str(res);
+    }
+
+    usb_packet p = usb_packet_in(1, 1, nullptr, 0);
+    EXPECT_FALSE(success(p));
+    EXPECT_FALSE(failed(p));
+    p.result = USB_RESULT_SUCCESS;
+    EXPECT_TRUE(success(p));
+    EXPECT_FALSE(failed(p));
+    p.result = USB_RESULT_STALL;
+    EXPECT_FALSE(success(p));
+    EXPECT_TRUE(failed(p));
+
+    EXPECT_EQ(usb_ep_in(1), 0x81);
+    EXPECT_EQ(usb_ep_in(0x81), 0x81);
+    EXPECT_EQ(usb_ep_out(2), 0x02);
+    EXPECT_EQ(usb_ep_out(15), 0x0f);
+}
+
+TEST(usb, speed_max) {
+    const std::pair<u16, usb_speed> speeds[] = {
+        { 0x0000, USB_SPEED_NONE },   { USB_1_0, USB_SPEED_LOW },
+        { USB_1_1, USB_SPEED_FULL },  { 0x0120, USB_SPEED_NONE },
+        { USB_2_0, USB_SPEED_HIGH },  { 0x0201, USB_SPEED_HIGH },
+        { USB_2_1, USB_SPEED_HIGH },  { USB_3_0, USB_SPEED_SUPER },
+        { USB_3_1, USB_SPEED_SUPER }, { USB_3_2, USB_SPEED_SUPER },
+        { USB_4_0, USB_SPEED_NONE },
+    };
+
+    usb::device_desc desc{};
+    for (auto [bcd, speed] : speeds) {
+        desc.bcd_usb = bcd;
+        EXPECT_EQ(usb::usb_speed_max(desc), speed) << usb_release_str(bcd);
+    }
+}
+
 MATCHER_P(usb_match_socket, name, "Matches an USB socket by name") {
     return strcmp(arg.basename(), name) == 0;
 }

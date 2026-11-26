@@ -79,6 +79,18 @@ static size_t count_interfaces(const vector<interface_desc>& v) {
     return ifaces.size();
 }
 
+static bool has_interface(const config_desc* cfg, u32 ifx) {
+    if (!cfg)
+        return false;
+
+    for (const interface_desc& desc : cfg->interfaces) {
+        if (desc.interface_number == ifx)
+            return true;
+    }
+
+    return false;
+}
+
 template <>
 void write_data(u8*& ptr, size_t& size, const config_desc& desc) {
     write_data<u8>(ptr, size, sizeof(usb_config_desc));
@@ -205,10 +217,6 @@ device::device(const sc_module_name& nm, const device_desc& desc):
     m_iface_altsettings() {
     memset(&m_ep0, 0, sizeof(m_ep0));
 
-    define_string(STRID_MANUFACTURER, m_desc.manufacturer);
-    define_string(STRID_PRODUCT, m_desc.product);
-    define_string(STRID_SERIALNO, m_desc.serial_number);
-
     register_command("usb_attach", 0, &device::cmd_usb_attach,
                      "usb_attach [port] attach the given port to the host");
     register_command("usb_detach", 0, &device::cmd_usb_detach,
@@ -254,10 +262,11 @@ usb_result device::get_interface(size_t idx, u8& data) {
     if (!m_config)
         return USB_RESULT_STALL;
 
-    if (idx >= m_config->interfaces.size())
+    if (!has_interface(m_config, idx))
         return USB_RESULT_STALL;
 
-    data = m_iface_altsettings[idx];
+    auto it = m_iface_altsettings.find(idx);
+    data = it != m_iface_altsettings.end() ? it->second : 0;
     return USB_RESULT_SUCCESS;
 }
 
@@ -272,7 +281,7 @@ usb_result device::set_interface(size_t idx, u16 altset) {
         return USB_RESULT_STALL;
     }
 
-    if (idx >= m_config->interfaces.size()) {
+    if (!has_interface(m_config, idx)) {
         log_warn("invalid index");
         return USB_RESULT_STALL;
     }
@@ -315,7 +324,13 @@ usb_result device::get_descriptor(u8 type, u8 idx, u8* data, size_t size) {
 
         string value = "???";
         auto it = m_strtab.find(idx);
-        if (it != m_strtab.end())
+        if (idx == STRID_MANUFACTURER)
+            value = m_desc.manufacturer;
+        else if (idx == STRID_PRODUCT)
+            value = m_desc.product;
+        else if (idx == STRID_SERIALNO)
+            value = m_desc.serial_number;
+        else if (it != m_strtab.end())
             value = it->second;
         else
             log_warn("unknown string index: %hhu", idx);
@@ -340,6 +355,8 @@ usb_result device::get_descriptor(u8 type, u8 idx, u8* data, size_t size) {
     case USB_DT_BOS: {
         write_data<u8>(data, size, sizeof(usb_bos_desc));
         write_data<u8>(data, size, USB_DT_BOS);
+        write_data<u16>(data, size, sizeof(usb_bos_desc));
+        write_data<u8>(data, size, 0);
         return USB_RESULT_SUCCESS;
     }
 
@@ -526,12 +543,12 @@ usb_result device::handle_ep0(usb_packet& p) {
 bool device::altset_active(u32 ifx, u32 altset) const {
     auto it = m_iface_altsettings.find(ifx);
     if (it == m_iface_altsettings.end())
-        return false;
+        return altset == 0 && is_configured() && has_interface(m_config, ifx);
     return it->second == altset;
 }
 
 void device::define_string(u8 idx, const string& str) {
-    VCML_ERROR_ON(!idx, "invalid string index: %hhu", idx);
+    VCML_ERROR_ON(idx <= STRID_SERIALNO, "invalid string index: %hhu", idx);
 
     auto it = m_strtab.find(idx);
     if (it != m_strtab.end())
@@ -626,6 +643,10 @@ usb_result device::handle_data(usb_packet& p) {
 void device::usb_reset_device() {
     log_debug("usb reset device");
     usb_reset_endpoint(0);
+    m_state = STATE_DEFAULT;
+    m_address = 0;
+    m_config = nullptr;
+    m_iface_altsettings.clear();
 }
 
 void device::usb_reset_endpoint(int ep) {
@@ -634,7 +655,7 @@ void device::usb_reset_endpoint(int ep) {
     case 0:
         m_ep0.req = 0;
         m_ep0.state = STATE_SETUP;
-        m_state = STATE_DEFAULT;
+        m_stalled = false;
         break;
     }
 }
@@ -650,7 +671,7 @@ void device::usb_transport(usb_packet& p) {
     else
         p.result = handle_data(p);
 
-    if (failed(p)) {
+    if (p.epno == 0 && failed(p)) {
         m_ep0.state = STATE_SETUP;
         m_stalled = true;
     }

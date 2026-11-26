@@ -170,7 +170,7 @@ const char* usb_desc_str(u8 dt) {
     case USB_DT_ENDPOINT_COMPANION:
         return "USB_DT_ENDPOINT_COMPANION";
     default:
-        return "USB_DT_UNKOWN";
+        return "USB_DT_UNKNOWN";
     }
 }
 

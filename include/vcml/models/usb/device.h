@@ -66,18 +66,15 @@ struct device_desc {
 };
 
 constexpr usb_speed usb_speed_max(const device_desc& desc) {
-    switch (desc.bcd_usb) {
-    case 0x100:
-        return USB_SPEED_LOW;
-    case 0x110:
-        return USB_SPEED_FULL;
-    case 0x200:
-        return USB_SPEED_HIGH;
-    case 0x300:
+    if (desc.bcd_usb >= 0x300 && desc.bcd_usb < 0x400)
         return USB_SPEED_SUPER;
-    default:
-        return USB_SPEED_NONE;
-    }
+    if (desc.bcd_usb >= 0x200 && desc.bcd_usb < 0x300)
+        return USB_SPEED_HIGH;
+    if (desc.bcd_usb == 0x110)
+        return USB_SPEED_FULL;
+    if (desc.bcd_usb == 0x100)
+        return USB_SPEED_LOW;
+    return USB_SPEED_NONE;
 }
 
 class device : public module, public usb_dev_if
