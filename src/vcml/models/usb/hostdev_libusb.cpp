@@ -22,8 +22,8 @@ namespace usb {
 struct libusb {
     libusb_context* context;
     libusb(): context(nullptr) {
-        int r = libusb_init(&context);
-        VCML_ERROR_ON(r < 0, "failed to initialize libusb");
+        if (libusb_init(&context) < 0)
+            context = nullptr;
     }
 
     ~libusb() {
@@ -37,10 +37,16 @@ struct libusb {
     }
 
     libusb_device* find_device(u32 bus, u32 addr) {
+        if (!context)
+            return nullptr;
+
         libusb_device* found = nullptr;
         libusb_device** list = nullptr;
-        size_t n = libusb_get_device_list(context, &list);
-        for (size_t i = 0; i < n; i++) {
+        ssize_t n = libusb_get_device_list(context, &list);
+        if (n < 0)
+            return nullptr;
+
+        for (ssize_t i = 0; i < n; i++) {
             if (libusb_get_bus_number(list[i]) == bus &&
                 libusb_get_device_address(list[i]) == addr) {
                 found = libusb_ref_device(list[i]);
@@ -146,6 +152,8 @@ hostdev::hostdev(const sc_module_name& nm, u32 bus, u32 addr):
     usb_in("usb_in") {
     memset(m_ifs, 0, sizeof(m_ifs));
     if (hostbus > 0u && hostaddr > 0u) {
+        if (!libusb::instance().context)
+            log_error("failed to initialize libusb");
         m_device = libusb::instance().find_device(hostbus, hostaddr);
         if (!m_device) {
             log_error("no USB device on bus %u at address %u", hostbus.get(),
