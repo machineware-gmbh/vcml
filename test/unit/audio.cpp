@@ -86,3 +86,21 @@ TEST(audio, fill_silence) {
     fill_silence(&buf, sizeof(buf), FORMAT_S32BE);
     EXPECT_EQ(buf, 0x00000000);
 }
+
+TEST(audio, fill_silence_partial) {
+    u8 buf[8];
+    memset(buf, 0xaa, sizeof(buf));
+    fill_silence(buf + 1, 3, FORMAT_U16LE);
+    const u8 expect16[8] = { 0xaa, 0xff, 0x7f, 0xff, 0xaa, 0xaa, 0xaa, 0xaa };
+    EXPECT_EQ(memcmp(buf, expect16, sizeof(buf)), 0);
+
+    memset(buf, 0xaa, sizeof(buf));
+    fill_silence(buf + 1, 6, FORMAT_U32LE);
+    const u8 expect32[8] = { 0xaa, 0xff, 0xff, 0xff, 0x7f, 0xff, 0xff, 0xaa };
+    EXPECT_EQ(memcmp(buf, expect32, sizeof(buf)), 0);
+
+    memset(buf, 0xaa, sizeof(buf));
+    fill_silence(buf, 0, FORMAT_U16LE);
+    const u8 expect0[8] = { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa };
+    EXPECT_EQ(memcmp(buf, expect0, sizeof(buf)), 0);
+}

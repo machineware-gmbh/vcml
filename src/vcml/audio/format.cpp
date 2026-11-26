@@ -56,8 +56,8 @@ void fill_silence(void* buf, size_t len, u32 format) {
         u16 fill = format_is_signed(format) ? 0 : 0x7fff;
         if (!format_is_native_endian(format))
             fill = bswap(fill);
-        for (size_t i = 0; i < len; i += sizeof(u16))
-            *(u16*)((u8*)buf + i) = fill;
+        for (size_t i = 0; i < len; i += sizeof(fill))
+            memcpy((u8*)buf + i, &fill, min(sizeof(fill), len - i));
         break;
     }
 
@@ -65,8 +65,8 @@ void fill_silence(void* buf, size_t len, u32 format) {
         u32 fill = format_is_signed(format) ? 0 : 0x7fffffff;
         if (!format_is_native_endian(format))
             fill = bswap(fill);
-        for (size_t i = 0; i < len; i += sizeof(u32))
-            *(u32*)((u8*)buf + i) = fill;
+        for (size_t i = 0; i < len; i += sizeof(fill))
+            memcpy((u8*)buf + i, &fill, min(sizeof(fill), len - i));
         break;
     }
 
