@@ -170,50 +170,50 @@ enum usb_hid_request : u16 {
     USB_REQ_SET_PROTOCOL = 0x0b,
 };
 
+static bool is_modifier(u8 hid) {
+    return hid >= 0xe0 && hid <= 0xe7;
+}
+
 void keyboard::poll_modifier_keys(u8& data) {
     data = 0;
-    if (m_keyboard.ctrl_l())
-        data |= bit(0);
-    if (m_keyboard.shift_l())
-        data |= bit(1);
-    if (m_keyboard.alt_l())
-        data |= bit(2);
-    if (m_keyboard.meta_l())
-        data |= bit(3);
-    if (m_keyboard.ctrl_r())
-        data |= bit(4);
-    if (m_keyboard.shift_r())
-        data |= bit(5);
-    if (m_keyboard.alt_r())
-        data |= bit(6);
-    if (m_keyboard.meta_r())
-        data |= bit(7);
+    for (u8 hid : m_keys) {
+        if (is_modifier(hid))
+            data |= bit(hid - 0xe0);
+    }
 }
 
 void keyboard::poll_standard_keys(u8* data, size_t length) {
     ui::input_event ev;
-    if (m_keyboard.pop_event(ev) && ev.is_key()) {
-        u8 hid = USB_HID_KEYCODE_TABLE[ev.code & 0xff];
-        if (ev.state == 0)
-            stl_remove(m_keys, hid);
-        else
-            stl_add_unique(m_keys, hid);
+    if (m_keyboard.pop_event(ev) && ev.is_key() && ev.code < 256) {
+        u8 hid = USB_HID_KEYCODE_TABLE[ev.code];
+        if (hid != 0x00 && hid != 0xff) {
+            if (ev.state == 0)
+                stl_remove(m_keys, hid);
+            else
+                stl_add_unique(m_keys, hid);
+        }
     }
 
-    if (m_keys.size() <= length) {
-        memcpy(data, m_keys.data(), m_keys.size());
-        memset(data + m_keys.size(), 0, length - m_keys.size());
-    } else {
-        memcpy(data, m_keys.data(), length - 1);
-        data[length - 1] = 1; // rollover
+    size_t n = 0;
+    memset(data, 0, length);
+    for (u8 hid : m_keys) {
+        if (is_modifier(hid))
+            continue;
+
+        if (n == length) {
+            memset(data, 1, length); // rollover
+            break;
+        }
+
+        data[n++] = hid;
     }
 }
 
 void keyboard::poll_keys(u8* data, size_t length) {
     VCML_ERROR_ON(length < 8, "insufficient buffer size to poll keys");
+    poll_standard_keys(data + 2, length - 2);
     poll_modifier_keys(data[0]);
     data[1] = 0; // reserved
-    poll_standard_keys(data + 2, length - 2);
 }
 
 keyboard::keyboard(const sc_module_name& nm):
@@ -282,6 +282,9 @@ usb_result keyboard::set_report(u8* data, size_t length) {
 }
 
 usb_result keyboard::get_data(u32 ep, u8* data, size_t len) {
+    if (!is_configured())
+        return USB_RESULT_STALL;
+
     if (ep != 1) {
         log_error("invalid endpoint contacted: %u", ep);
         return USB_RESULT_NACK;
@@ -315,16 +318,20 @@ usb_result keyboard::handle_control(u16 req, u16 val, u16 idx, u8* data,
     switch (req) {
     case USB_REQ_IN | USB_REQ_CLASS | USB_REQ_IFACE | USB_REQ_GET_REPORT: {
         log_debug("get_report(%zu)", length);
-        return USB_RESULT_SUCCESS;
+        return get_report(data, length);
     }
 
     case USB_REQ_IN | USB_REQ_CLASS | USB_REQ_IFACE | USB_REQ_GET_IDLE: {
         log_debug("get_idle(%zu)", length);
+        memset(data, 0, length);
         return USB_RESULT_SUCCESS;
     }
 
     case USB_REQ_IN | USB_REQ_CLASS | USB_REQ_IFACE | USB_REQ_GET_PROTOCOL: {
         log_debug("get_protocol(%zu)", length);
+        memset(data, 0, length);
+        if (length > 0)
+            data[0] = 1;
         return USB_RESULT_SUCCESS;
     }
 
