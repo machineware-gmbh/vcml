@@ -28,9 +28,9 @@ public:
     }
 
     simphase_tester(const sc_module_name& nm): test_base(nm) {
-        on_end_of_elaboration([&]() { do_end_of_elaboration(); });
-        on_start_of_simulation([&]() { do_start_of_simulation(); });
-        on_end_of_simulation([&]() { do_end_of_simulation(); });
+        on_end_of_elaboration([&] { do_end_of_elaboration(); });
+        on_start_of_simulation([&] { do_start_of_simulation(); });
+        on_end_of_simulation([&] { do_end_of_simulation(); });
 
         EXPECT_CALL(*this, do_end_of_elaboration()).Times(1);
         EXPECT_CALL(*this, do_start_of_simulation()).Times(1);
@@ -42,13 +42,13 @@ public:
         EXPECT_EQ(sc_time_stamp(), SC_ZERO_TIME);
 
         EXPECT_CALL(*this, do_next_update()).Times(1);
-        on_next_update([&]() { next_update(); });
+        on_next_update([&] { next_update(); });
         wait(SC_ZERO_TIME);
         EXPECT_CALL(*this, do_next_update()).Times(0);
         wait(1.0, SC_SEC);
 
-        on_each_delta_cycle([&]() { do_each_delta_cycle(); });
-        on_each_time_step([&]() { do_each_time_step(); });
+        on_each_delta_cycle([&] { do_each_delta_cycle(); });
+        on_each_time_step([&] { do_each_time_step(); });
 
         EXPECT_CALL(*this, do_each_delta_cycle()).Times(2);
         EXPECT_CALL(*this, do_each_time_step()).Times(0);

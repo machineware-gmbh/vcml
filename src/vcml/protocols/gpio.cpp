@@ -342,7 +342,7 @@ bool gpio_target_socket::operator==(const gpio_target_socket& other) const {
 }
 
 bool gpio_target_socket::operator!=(const gpio_target_socket& other) const {
-    return !(operator==(other));
+    return !operator==(other);
 }
 
 void gpio_target_socket::on_subscribe(const string& event,

@@ -295,7 +295,7 @@ TEST(vspserver, events) {
 
     {
         vspserver session("localhost", 0);
-        thread client([&]() {
+        thread client([&] {
             test_vsp_client vsp(session.port()); // client 0
             bool resumed = false;
             run_client(session, tr, leds, term, vsp, resumed);

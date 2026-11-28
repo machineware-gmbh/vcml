@@ -568,7 +568,7 @@ vector<cpureg> target::cpuregs() const {
 
 const cpureg* target::find_cpureg(size_t regno) const {
     auto it = m_cpuregs.find(regno);
-    return it != m_cpuregs.end() ? &(it->second) : nullptr;
+    return it != m_cpuregs.end() ? &it->second : nullptr;
 }
 
 const cpureg* target::find_cpureg(const string& name) const {
@@ -587,7 +587,7 @@ const cpureg* target::find_cpureg(const string& name) const {
         }
 
         if (regname == lname)
-            return &(it.second);
+            return &it.second;
     }
 
     return nullptr;
@@ -892,21 +892,20 @@ const watchpoint* target::insert_watchpoint(const range& addr,
     if (wp == m_watchpoints.end()) {
         u64 id_r = USER_ID_NONE;
         u64 id_w = USER_ID_NONE;
-        if (is_read_allowed(prot)) {
-            if (!insert_watchpoint_id(addr, VCML_ACCESS_READ, id_r))
-                return nullptr;
+        if (is_read_allowed(prot) &&
+            !insert_watchpoint_id(addr, VCML_ACCESS_READ, id_r)) {
+            return nullptr;
         }
 
-        if (is_write_allowed(prot)) {
-            if (!insert_watchpoint_id(addr, VCML_ACCESS_WRITE, id_w)) {
-                if (is_read_allowed(prot)) {
-                    if (id_r)
-                        remove_watchpoint_id(id_r);
-                    else
-                        remove_watchpoint(addr, VCML_ACCESS_READ);
-                }
-                return nullptr;
+        if (is_write_allowed(prot) &&
+            !insert_watchpoint_id(addr, VCML_ACCESS_WRITE, id_w)) {
+            if (is_read_allowed(prot)) {
+                if (id_r)
+                    remove_watchpoint_id(id_r);
+                else
+                    remove_watchpoint(addr, VCML_ACCESS_READ);
             }
+            return nullptr;
         }
 
         const symbol* obj = m_symbols.find_object(addr.start);
@@ -917,19 +916,18 @@ const watchpoint* target::insert_watchpoint(const range& addr,
         return *wp;
     }
 
-    if (is_read_allowed(prot) && !(*wp)->has_read_subscribers()) {
-        if (!insert_watchpoint_id(addr, VCML_ACCESS_READ, (*wp)->user_id_r))
-            return nullptr;
+    if (is_read_allowed(prot) && !(*wp)->has_read_subscribers() &&
+        !insert_watchpoint_id(addr, VCML_ACCESS_READ, (*wp)->user_id_r)) {
+        return nullptr;
     }
 
-    if (is_write_allowed(prot) && !(*wp)->has_write_subscribers()) {
-        if (!insert_watchpoint_id(addr, VCML_ACCESS_WRITE, (*wp)->user_id_w)) {
-            if (is_read_allowed(prot) && !(*wp)->has_read_subscribers()) {
-                try_remove_watchpoint(**wp, VCML_ACCESS_READ);
-                (*wp)->user_id_r = 0;
-            }
-            return nullptr;
+    if (is_write_allowed(prot) && !(*wp)->has_write_subscribers() &&
+        !insert_watchpoint_id(addr, VCML_ACCESS_WRITE, (*wp)->user_id_w)) {
+        if (is_read_allowed(prot) && !(*wp)->has_read_subscribers()) {
+            try_remove_watchpoint(**wp, VCML_ACCESS_READ);
+            (*wp)->user_id_r = 0;
         }
+        return nullptr;
     }
 
     if (is_read_allowed(prot))
@@ -952,16 +950,18 @@ bool target::remove_watchpoint(const watchpoint* wp, vcml_access prot,
 
     if (is_read_allowed(prot)) {
         (*it)->unsubscribe(VCML_ACCESS_READ, subscr);
-        if (!(*it)->has_read_subscribers())
-            if (!try_remove_watchpoint(**it, VCML_ACCESS_READ))
-                return false;
+        if (!(*it)->has_read_subscribers() &&
+            !try_remove_watchpoint(**it, VCML_ACCESS_READ)) {
+            return false;
+        }
     }
 
     if (is_write_allowed(prot)) {
         (*it)->unsubscribe(VCML_ACCESS_WRITE, subscr);
-        if (!(*it)->has_write_subscribers())
-            if (!try_remove_watchpoint(**it, VCML_ACCESS_WRITE))
-                return false;
+        if (!(*it)->has_write_subscribers() &&
+            !try_remove_watchpoint(**it, VCML_ACCESS_WRITE)) {
+            return false;
+        }
     }
 
     if (!(*it)->has_any_subscribers()) {
@@ -984,16 +984,18 @@ bool target::remove_watchpoint(const range& addr, vcml_access prot,
 
     if (is_read_allowed(prot)) {
         (*wp)->unsubscribe(VCML_ACCESS_READ, subscr);
-        if (!(*wp)->has_read_subscribers())
-            if (!try_remove_watchpoint(**wp, VCML_ACCESS_READ))
-                return false;
+        if (!(*wp)->has_read_subscribers() &&
+            !try_remove_watchpoint(**wp, VCML_ACCESS_READ)) {
+            return false;
+        }
     }
 
     if (is_write_allowed(prot)) {
         (*wp)->unsubscribe(VCML_ACCESS_WRITE, subscr);
-        if (!(*wp)->has_write_subscribers())
-            if (!try_remove_watchpoint(**wp, VCML_ACCESS_WRITE))
-                return false;
+        if (!(*wp)->has_write_subscribers() &&
+            !try_remove_watchpoint(**wp, VCML_ACCESS_WRITE)) {
+            return false;
+        }
     }
 
     if (!(*wp)->has_any_subscribers()) {

@@ -70,7 +70,7 @@ TEST(vspserver, stop_before_resume_completes) {
     slow_cpu cpu("cpu");
     vspserver session("localhost", 0);
 
-    thread client([&]() {
+    thread client([&] {
         test_vsp_client vsp(session.port());
         ASSERT_TRUE(wait_for([&]() { return has_client(session, 0); }));
         run_client(vsp, cpu);

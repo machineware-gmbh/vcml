@@ -894,7 +894,7 @@ vnc::vnc(u32 no):
     m_running(),
     m_mutex(),
     m_thread() {
-    static bool debug_vnc = []() {
+    static bool debug_vnc = [] {
         auto env = mwr::getenv("VCML_DEBUG_VNC");
         return env && *env != "0";
     }();

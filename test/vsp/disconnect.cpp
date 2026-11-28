@@ -47,7 +47,7 @@ TEST(vspserver, disconnect) {
     test_vsp_cpu cpu("cpu");
     vspserver session("localhost", 0);
 
-    thread client([&]() {
+    thread client([&] {
         test_vsp_client stay(session.port()); // client 0
         ASSERT_TRUE(wait_for([&]() { return has_client(session, 0); }));
         run_client(session, cpu, stay);

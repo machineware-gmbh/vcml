@@ -116,7 +116,7 @@ inline bool wait_for(FN cond, size_t timeoutms = 5000) {
 }
 
 inline bool wait_finished(test_vsp_client& vsp) {
-    return wait_for([&]() {
+    return wait_for([&] {
         return starts_with(vsp.command("status"), "OK,stopped:finished");
     });
 }

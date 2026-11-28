@@ -146,7 +146,7 @@ TEST(vspserver, memory_and_symbols) {
 
     {
         vspserver session("localhost", 0);
-        thread client([&]() {
+        thread client([&] {
             test_vsp_client vsp(session.port()); // client 0
 
             // without status, as before: no telling errors from zeroes

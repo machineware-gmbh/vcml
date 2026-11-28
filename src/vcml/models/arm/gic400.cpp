@@ -189,7 +189,7 @@ void gic400::distif::write_isenabler_spi(u32 val, size_t idx) {
     for (size_t i = 0; i < 32; i++) {
         if (val & bit(i)) {
             m_parent->enable_irq(irq + i, gic400::ALL_CPU);
-            if ((m_parent->get_irq_level(irq + i, gic400::ALL_CPU)) &&
+            if (m_parent->get_irq_level(irq + i, gic400::ALL_CPU) &&
                 (m_parent->get_irq_trigger(irq + i) == gic400::LEVEL)) {
                 m_parent->set_irq_pending(irq + i, true, gic400::ALL_CPU);
             }
@@ -1219,7 +1219,7 @@ u32 gic400::vcpuif::read_iar(bool debug) {
 
     u32 rbpr = group == GRP1 ? abpr : bpr;
     u32 prio = m_vifctrl->get_irq_priority(cpu, irq) << 3;
-    u32 mask = ~0ul << ((extract(rbpr, 0, 3)) + 1);
+    u32 mask = ~0ul << (extract(rbpr, 0, 3) + 1);
     rpr.bank(cpu) = prio & mask;
     u32 preemptlvl = prio >> ((ALIAS ? VIRT_ABPR_MIN : VIRT_BPR_MIN) + 1);
     u32 bitno = preemptlvl % 32;
@@ -1503,16 +1503,14 @@ pair<bool, bool> gic400::update_excp_state(size_t cpu, size_t& irq,
     else
         amsk = get_prio_mask(abpr, true, virt);
 
-    if (group == GRP0 && (ctlr & GICC_CTLR_ENABLE_GROUP0)) {
-        if (!active && prio < (rpr & msk)) {
-            next_irq = true;
-            next_grp0 = true;
-        }
-    } else if (group == GRP1 && (ctlr & GICC_CTLR_ENABLE_GROUP1)) {
-        if (!active && prio < (rpr & amsk)) {
-            next_irq = true;
-            next_grp0 = false;
-        }
+    if (group == GRP0 && (ctlr & GICC_CTLR_ENABLE_GROUP0) && !active &&
+        prio < (rpr & msk)) {
+        next_irq = true;
+        next_grp0 = true;
+    } else if (group == GRP1 && (ctlr & GICC_CTLR_ENABLE_GROUP1) && !active &&
+               prio < (rpr & amsk)) {
+        next_irq = true;
+        next_grp0 = false;
     }
 
     return { next_irq, next_grp0 };

@@ -166,7 +166,7 @@ void processor::processor_thread() {
 
         if (async && !is_stepping()) {
             m_async = true;
-            vcml::sc_async([&]() { running = processor_thread_async(); },
+            vcml::sc_async([&] { running = processor_thread_async(); },
                            async_affinity);
         } else {
             m_async = false;

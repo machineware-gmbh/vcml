@@ -304,11 +304,11 @@ public:
     }
 
     bool wait_received(size_t count) {
-        return wait_until([&]() { return received.size() >= count; });
+        return wait_until([&] { return received.size() >= count; });
     }
 
     bool wait_received(u32 id, vcml::can_frame& frame) {
-        return wait_until([&]() {
+        return wait_until([&] {
             for (const vcml::can_frame& rx : received) {
                 if (rx.id() == id && rx.eff == (id > CAN_MSG_ID_SID)) {
                     frame = rx;

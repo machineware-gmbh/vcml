@@ -1345,12 +1345,10 @@ int iommu::transmit_mrif(context& ctx, tlm_generic_payload& tx,
         return IOMMU_FAULT_MRIF_ACCESS;
     }
 
-    if (enabled & mask) {
-        if (failed(rs = dma_writew(naddr, nid, false))) {
-            tx.set_response_status(rs);
-            log_debug("failed to write mrif notify at 0x%llx", naddr);
-            return IOMMU_FAULT_MRIF_ACCESS;
-        }
+    if ((enabled & mask) && failed(rs = dma_writew(naddr, nid, false))) {
+        tx.set_response_status(rs);
+        log_debug("failed to write mrif notify at 0x%llx", naddr);
+        return IOMMU_FAULT_MRIF_ACCESS;
     }
 
     // mark transaction completed: no forwarding
@@ -1470,10 +1468,8 @@ void iommu::increment_counter(context& ctx, u32 event) {
                 continue;
         }
 
-        if (hpmevt & IOHPMEVT_PV_PSCV) {
-            if (pid != pid_pscid)
-                continue;
-        }
+        if ((hpmevt & IOHPMEVT_PV_PSCV) && pid != pid_pscid)
+            continue;
 
         iohpmctr[i - 1]++;
 

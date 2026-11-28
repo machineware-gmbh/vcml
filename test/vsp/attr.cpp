@@ -32,7 +32,7 @@ TEST(vspserver, attributes) {
     EXPECT_STREQ(cpu.scalar.property_base::kind(), "vcml::property");
 
     vspserver session("localhost", 0);
-    thread client([&]() {
+    thread client([&] {
         test_vsp_client vsp(session.port()); // client 0
         ASSERT_TRUE(wait_for([&]() { return has_client(session, 0); }));
 

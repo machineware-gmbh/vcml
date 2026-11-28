@@ -277,7 +277,7 @@ void sdl_client::notify_btn(SDL_MouseButtonEvent& event) {
         disp->notify_btn(button, event.state == SDL_PRESSED);
 }
 
-static bool g_sdl_needs_grabbing_fix = []() {
+static bool g_sdl_needs_grabbing_fix = [] {
     auto env = mwr::getenv("VCML_SDL_NEEDS_GRABBING_FIX");
     return env && (*env)[0] == '1';
 }();
@@ -676,7 +676,7 @@ void sdl_display::init(const videomode& mode, u8* fb) {
 }
 
 void sdl_display::reinit(const videomode& mode, u8* fb) {
-    m_owner.update_display(this, [&]() {
+    m_owner.update_display(this, [&] {
         backend::shutdown();
         backend::init(mode, fb);
     });

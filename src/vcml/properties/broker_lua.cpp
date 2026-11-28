@@ -18,12 +18,10 @@ namespace vcml {
 
 static optional<string> lua_getstring(lua_State* lua, int idx,
                                       bool escape = false) {
-    if (luaL_callmeta(lua, idx, "__tostring")) {
-        if (lua_isstring(lua, -1)) {
-            string result = lua_tostring(lua, -1);
-            lua_pop(lua, 1);
-            return result;
-        }
+    if (luaL_callmeta(lua, idx, "__tostring") && lua_isstring(lua, -1)) {
+        string result = lua_tostring(lua, -1);
+        lua_pop(lua, 1);
+        return result;
     }
 
     switch (lua_type(lua, idx)) {
@@ -49,7 +47,7 @@ static optional<string> lua_getstring(lua_State* lua, int idx,
         while (lua_next(lua, -2)) {
             if (auto elem = lua_getstring(lua, -1, true)) {
                 if (!result.empty())
-                    result += " ";
+                    result += ' ';
                 result += *elem;
             }
             lua_pop(lua, 1);

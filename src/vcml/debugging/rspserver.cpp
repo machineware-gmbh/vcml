@@ -227,7 +227,7 @@ int rspserver::buffered_client() {
 
 void rspserver::run_async() {
     m_mutex.lock();
-    m_thread = thread([&]() {
+    m_thread = thread([&] {
         mwr::set_thread_name(m_name);
         run();
     });

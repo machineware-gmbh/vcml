@@ -316,7 +316,7 @@ public:
         // simulation keeps tracing on the same socket
         atomic<bool> stop(false);
         atomic<size_t> rounds(0);
-        thread other([&]() {
+        thread other([&] {
             while (!stop) {
                 auto* tr = new count_subscriber();
                 out.subscribe_event(VSP_EVENT_TRACE, tr);

@@ -97,7 +97,7 @@ public:
     void add_test(const string& name, void (T::*func)(void)) {
         T* host = dynamic_cast<T*>(this);
         ASSERT_NE(host, nullptr);
-        m_tests.emplace_back(name, [=]() { (host->*func)(); });
+        m_tests.emplace_back(name, [=] { (host->*func)(); });
     }
 };
 

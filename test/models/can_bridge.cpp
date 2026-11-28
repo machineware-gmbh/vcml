@@ -183,7 +183,7 @@ public:
         EXPECT_TRUE(backend->frames.empty());
 
         received.clear();
-        thread t([&]() { backend->send_to_guest(frame1); });
+        thread t([&] { backend->send_to_guest(frame1); });
         t.join();
         wait(clock_cycles(2));
         EXPECT_THAT(received, ElementsAre(frame1));

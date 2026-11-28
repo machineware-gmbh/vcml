@@ -221,13 +221,12 @@ static void pl330_insn_dmaadnh(pl330* dma, pl330::channel* ch, u8 opcode,
 
 static void pl330_insn_dmaend(pl330* dma, pl330::channel* ch, u8 opcode,
                               u8* args, size_t len) {
-    if (ch->get_state() == CHS_EXECUTING) {
-        // wait for all transfers to complete
-        if (!dma->mfifo.empty(ch->chid) || !dma->read_queue.empty(ch->chid) ||
-            !dma->write_queue.empty(ch->chid)) {
-            ch->stall = true;
-            return;
-        }
+    // wait for all transfers to complete
+    if (ch->get_state() == CHS_EXECUTING &&
+        (!dma->mfifo.empty(ch->chid) || !dma->read_queue.empty(ch->chid) ||
+         !dma->write_queue.empty(ch->chid))) {
+        ch->stall = true;
+        return;
     }
 
     // flush fifo, cache and queues
@@ -860,7 +859,7 @@ static u32 process_write_queue(pl330& dma, pl330::channel& channel) {
         else {
             assert(len <= static_cast<int>(dma.mfifo.size()));
             std::generate_n(data, len,
-                            [&]() { return dma.mfifo.pop().value().buf; });
+                            [&] { return dma.mfifo.pop().value().buf; });
         }
 
         if (insn.inc || insn.burst_len_counter == 1) {

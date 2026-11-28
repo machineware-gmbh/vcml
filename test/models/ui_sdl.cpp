@@ -58,7 +58,7 @@ public:
     bool wait_started(string& driver) {
         std::unique_lock<mutex> guard(m_mtx);
         bool done = m_cv.wait_for(guard, std::chrono::seconds(30),
-                                  [&]() { return m_started || m_failed; });
+                                  [&] { return m_started || m_failed; });
 
         EXPECT_TRUE(done) << "timeout waiting for SDL ui thread";
         driver = m_driver;

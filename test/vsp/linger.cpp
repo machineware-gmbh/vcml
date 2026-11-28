@@ -70,7 +70,7 @@ TEST(vspserver, linger) {
 
     {
         vspserver session("localhost", 0);
-        thread client([&]() { run_client(session, cpu); });
+        thread client([&] { run_client(session, cpu); });
         session.start();
         client.join();
     }

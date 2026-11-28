@@ -76,7 +76,7 @@ void suspend_manager::request_pause(suspender* s) {
         // no active suspenders, queue ourselves into the waiting queue
         // and schedule a handle_request if nobody was there to do it before
         if (waiting_suspenders.empty())
-            on_next_update([&]() { handle_requests(); });
+            on_next_update([&] { handle_requests(); });
         stl_add_unique(waiting_suspenders, s);
     }
 
@@ -198,7 +198,7 @@ void suspend_manager::handle_requests() {
         INSCIGHT_KTHREAD_SUSPENDED();
 #endif
 
-        cv_resume.wait(suspender_lock, [&]() {
+        cv_resume.wait(suspender_lock, [&] {
             return active_suspenders.empty() || is_quitting;
         });
 

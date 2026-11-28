@@ -352,11 +352,11 @@ void mmio::write_queue_sel(u32 val) {
         queue_num_max = q.limit;
         queue_num = q.size;
         queue_ready = m_queues.count(val);
-        queue_desc_lo = (u32)(q.desc);
+        queue_desc_lo = (u32)q.desc;
         queue_desc_hi = (u32)(q.desc >> 32);
-        queue_driver_lo = (u32)(q.driver);
+        queue_driver_lo = (u32)q.driver;
         queue_driver_hi = (u32)(q.driver >> 32);
-        queue_device_lo = (u32)(q.device);
+        queue_device_lo = (u32)q.device;
         queue_device_hi = (u32)(q.device >> 32);
     } else {
         queue_num_max = 0;

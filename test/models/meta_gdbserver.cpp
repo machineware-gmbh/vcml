@@ -304,7 +304,7 @@ public:
     void run_session(function<void(rsp_client&)> session) {
         u16 port = find_property<int>("test.gdb.port").get();
         atomic<bool> done(false);
-        thread client([&]() {
+        thread client([&] {
             try {
                 rsp_client rsp(port);
                 session(rsp);

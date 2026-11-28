@@ -15,7 +15,7 @@ TEST(vspserver, quit) {
 
     {
         vspserver session("localhost", 0);
-        thread client([&]() {
+        thread client([&] {
             test_vsp_client vsp(session.port()); // client 0
             ASSERT_TRUE(wait_for([&]() { return has_client(session, 0); }));
             EXPECT_TRUE(starts_with(vsp.command("mkbp,cpu,0x1000"), "OK"));

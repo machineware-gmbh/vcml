@@ -60,7 +60,7 @@ TEST(vspserver, reconnect) {
     test_vsp_cpu cpu("cpu");
     vspserver session("localhost", 0);
 
-    thread client([&]() {
+    thread client([&] {
         run_client(session, cpu);
         cpu.done = true;
     });

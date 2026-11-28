@@ -27,7 +27,7 @@ u8 sd_crc7(const sd_command& cmd) {
     u8 buffer[5] = {
         (u8)(cmd.opcode | 0x40),  (u8)(cmd.argument >> 24),
         (u8)(cmd.argument >> 16), (u8)(cmd.argument >> 8),
-        (u8)(cmd.argument),
+        (u8)cmd.argument,
     };
     return crc7(buffer, sizeof(buffer)) | 1;
 }

@@ -82,12 +82,12 @@ TEST(systemc, callback) {
     sc_report_handler::set_actions(SC_ID_NO_SC_START_ACTIVITY_, SC_DO_NOTHING);
 
     unsigned int elab_calls = 0, start_calls = 0;
-    on_end_of_elaboration([&elab_calls]() { elab_calls++; });
-    on_start_of_simulation([&start_calls]() { start_calls++; });
+    on_end_of_elaboration([&elab_calls] { elab_calls++; });
+    on_start_of_simulation([&start_calls] { start_calls++; });
 
     unsigned int delta_calls = 0, time_calls = 0;
-    on_each_delta_cycle([&delta_calls]() { delta_calls++; });
-    on_each_time_step([&time_calls]() { time_calls++; });
+    on_each_delta_cycle([&delta_calls] { delta_calls++; });
+    on_each_time_step([&time_calls] { time_calls++; });
 
     delta_calls = time_calls = 0;
     sc_core::sc_start(SC_ZERO_TIME);
@@ -132,7 +132,7 @@ TEST(systemc, time_stamp) {
     sc_report_handler::set_actions(SC_ID_NO_SC_START_ACTIVITY_, SC_DO_NOTHING);
 
     bool checked = false;
-    on_each_time_step([&checked]() {
+    on_each_time_step([&checked] {
         sc_time now = sc_time_stamp();
         EXPECT_EQ(time_stamp_ns(), time_to_ns(now));
         EXPECT_EQ(time_stamp_us(), time_to_us(now));

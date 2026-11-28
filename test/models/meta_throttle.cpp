@@ -127,7 +127,7 @@ public:
 
         suspended_us = 0;
         suspender.suspend();
-        thread t([&]() {
+        thread t([&] {
             while (!suspender.is_suspending())
                 mwr::usleep(100);
             mwr::usleep(3 * interval_us);

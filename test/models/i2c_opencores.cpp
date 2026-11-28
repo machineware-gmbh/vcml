@@ -10,7 +10,7 @@
 
 #include "testing.h"
 
-using oci2c = vcml::i2c::oci2c;
+using vcml::i2c::oci2c;
 
 // oci2c registers are always 8bit wide, but we can test with 8/16/32bit data
 // register accesses by specifying a register shift (e.g. u32 -> shift 2)
